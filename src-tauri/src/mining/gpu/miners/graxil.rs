@@ -1,4 +1,4 @@
-// Copyright 2025. The Tari Project
+// Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
@@ -20,66 +20,189 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use axum::async_trait;
-
-use log::{info, warn};
 use std::{
-    path::PathBuf,
     sync::atomic::{AtomicBool, Ordering},
     time::Duration,
 };
-use tari_common_types::tari_address::TariAddress;
+
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
+
+use axum::async_trait;
+use log::{info, warn};
+use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
 
-use crate::port_allocator::PortAllocator;
-#[cfg(target_os = "windows")]
-use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::{
-    gpu_miner_sha_websocket::GpuMinerShaWebSocket,
+    binaries::{Binaries, BinaryResolver},
+    configs::{
+        config_mining::{ConfigMining, ConfigMiningContent},
+        trait_config::ConfigImpl,
+    },
+    events_emitter::EventsEmitter,
+    mining::gpu::{
+        consts::{GpuConnectionType, GpuMinerStatus},
+        interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+        miners::{load_file_content, GpuCommonInformation, GpuDeviceType, GpuVendor},
+        utils::gpu_miner_sha_websocket::GpuMinerShaWebSocket,
+    },
+    port_allocator::PortAllocator,
     process_adapter::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
         StatusMonitor,
     },
+    process_utils,
     setup::setup_manager::SetupManager,
-    GpuMinerStatus,
+    APPLICATION_FOLDER_ID,
 };
 
-const LOG_TARGET: &str = "tari::universe::gpu_miner_sha_adapter";
+const LOG_TARGET: &str = "tari::universe::mining::gpu::miners::graxil";
 
-#[derive(Clone)]
-pub struct GpuMinerShaAdapter {
-    pub tari_address: Option<TariAddress>,
-    pub intensity: Option<u32>,
-    pub batch_size: Option<u32>,
-    pub worker_name: Option<String>,
-    pub pool_url: Option<String>,
-    pub(crate) gpu_status_sender: Sender<GpuMinerStatus>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraxilGpuDeviceInformation {
+    pub name: String,
+    pub device_id: u32,
+    pub platform_name: String,
+    pub vendor: GpuVendor,
+    pub max_work_group_size: usize,
+    pub max_compute_units: u32,
+    pub global_mem_size: u64,
+    pub device_type: GpuDeviceType,
 }
 
-impl GpuMinerShaAdapter {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GraxilGpuDeviceInformationFile {
+    pub devices: Vec<GraxilGpuDeviceInformation>,
+}
+
+#[derive(Default)]
+pub struct GraxilGpuMiner {
+    pub tari_address: Option<String>,
+    pub intensity_percentage: Option<u32>,
+    pub worker_name: Option<String>,
+    pub connection_type: Option<GpuConnectionType>,
+    pub gpu_status_sender: Sender<GpuMinerStatus>,
+    pub gpu_devices: Vec<GpuCommonInformation>,
+}
+
+impl GraxilGpuMiner {
     pub fn new(gpu_status_sender: Sender<GpuMinerStatus>) -> Self {
         Self {
             tari_address: None,
-            batch_size: None,
-            intensity: None,
+            intensity_percentage: None,
             worker_name: None,
+            connection_type: None,
             gpu_status_sender,
-            pool_url: None,
+            gpu_devices: vec![],
         }
     }
 }
 
-impl ProcessAdapter for GpuMinerShaAdapter {
-    type StatusMonitor = GpuMinerShaStatusMonitor;
+impl GpuMinerInterfaceTrait for GraxilGpuMiner {
+    async fn load_tari_address(&mut self, tari_address: &str) -> Result<(), anyhow::Error> {
+        self.tari_address = Some(tari_address.to_string());
+        Ok(())
+    }
+    async fn load_worker_name(&mut self, worker_name: &str) -> Result<(), anyhow::Error> {
+        self.worker_name = Some(worker_name.to_string());
+        Ok(())
+    }
+    async fn load_intensity_percentage(
+        &mut self,
+        intensity_percentage: u32,
+    ) -> Result<(), anyhow::Error> {
+        self.intensity_percentage = Some(intensity_percentage);
+        Ok(())
+    }
+    async fn load_connection_type(
+        &mut self,
+        connection_type: GpuConnectionType,
+    ) -> Result<(), anyhow::Error> {
+        self.connection_type = Some(connection_type);
+        Ok(())
+    }
+    async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
+        let config_path =
+            dirs::config_dir().ok_or_else(|| anyhow::anyhow!("Failed to get config directory"))?;
+
+        let config_dir = config_path.join(APPLICATION_FOLDER_ID);
+        let gpu_information_file_directory = config_dir.join("gpuminer");
+        let gpu_information_file_path =
+            gpu_information_file_directory.join("gpu_information_opencl.json");
+        gpu_information_file_path
+            .try_exists()
+            .map_err(|e| anyhow::anyhow!("Failed to check if gpu status file exists: {}", e))?;
+
+        let args = vec![
+            "--detect".to_string(),
+            "--information-file-dir".to_string(),
+            gpu_information_file_directory.to_string_lossy().to_string(),
+        ];
+
+        let gpu_miner_binary = BinaryResolver::current()
+            .get_binary_path(Binaries::GpuMinerSHA3X)
+            .await?;
+
+        info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpu_miner_binary.clone());
+        crate::download_utils::set_permissions(&gpu_miner_binary).await?;
+        let child = process_utils::launch_child_process(
+            &gpu_miner_binary,
+            &config_dir,
+            None,
+            &args,
+            false,
+        )?;
+        let output = child.wait_with_output().await?;
+        info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
+
+        match output.status.code() {
+            Some(0) => {
+                let gpu_status_file =
+                    load_file_content::<GraxilGpuDeviceInformationFile>(&gpu_information_file_path)
+                        .await?;
+                let common_gpu_devices = gpu_status_file
+                    .devices
+                    .iter()
+                    .map(|device| GpuCommonInformation::from_graxil_devices(device.clone()))
+                    .collect::<Vec<GpuCommonInformation>>();
+
+                self.gpu_devices = common_gpu_devices.clone();
+                EventsEmitter::emit_detected_devices(common_gpu_devices).await;
+
+                let devices_indexes: Vec<u32> =
+                    self.gpu_devices.iter().map(|d| d.device_id).collect();
+                ConfigMining::update_field(
+                    ConfigMiningContent::populate_gpu_devices_settings,
+                    devices_indexes,
+                )
+                .await?;
+
+                EventsEmitter::emit_update_gpu_devices_settings(
+                    ConfigMining::content().await.gpu_devices_settings().clone(),
+                )
+                .await;
+
+                Ok(())
+            }
+            _ => Err(anyhow::anyhow!(
+                "Non-zero exit code: {:?}",
+                output.status.code()
+            )),
+        }
+    }
+}
+
+impl ProcessAdapter for GraxilGpuMiner {
     type ProcessInstance = ProcessInstance;
+    type StatusMonitor = GpuMinerStatusInterface;
 
     fn spawn_inner(
         &self,
-        base_folder: PathBuf,
-        _config_folder: PathBuf,
-        log_folder: PathBuf,
-        binary_version_path: PathBuf,
+        base_folder: std::path::PathBuf,
+        _config_folder: std::path::PathBuf,
+        log_folder: std::path::PathBuf,
+        binary_version_path: std::path::PathBuf,
         _is_first_start: bool,
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let inner_shutdown = Shutdown::new();
@@ -94,34 +217,43 @@ impl ProcessAdapter for GpuMinerShaAdapter {
             "--gpu".to_string(),
         ];
 
-        if let Some(pool_url) = &self.pool_url {
-            args.push("--pool".to_string());
-            args.push(pool_url.clone());
+        if let Some(connection_type) = &self.connection_type {
+            match connection_type {
+                GpuConnectionType::Node {
+                    node_grpc_address: _,
+                } => {
+                    return Err(anyhow::anyhow!("Graxil does not support node mining"));
+                }
+                GpuConnectionType::Pool { pool_url } => {
+                    args.push("--pool".to_string());
+                    args.push(pool_url.clone());
+                }
+            }
+        } else {
+            return Err(anyhow::anyhow!(
+                "Connection type must be set before starting the GraxilMiner"
+            ));
         }
 
         if let Some(tari_address) = &self.tari_address {
             args.push("--wallet".to_string());
-            args.push(tari_address.to_base58());
+            args.push(tari_address.clone());
         } else {
             return Err(anyhow::anyhow!(
-                "Tari address must be set before starting the GpuMinerShaAdapter"
+                "Tari address must be set before starting the GraxilMiner"
             ));
         }
 
-        if let Some(intensity) = self.intensity {
+        if let Some(intensity) = self.intensity_percentage {
             args.push("--gpu-intensity".to_string());
             args.push(intensity.to_string());
         }
-
-        if let Some(batch_size) = self.batch_size {
-            args.push("--gpu-batch-size".to_string());
-            args.push(batch_size.to_string());
-        }
-
-        if let Some(worker_name) = &self.worker_name {
-            args.push("--worker".to_string());
-            args.push(worker_name.clone());
-        }
+        args.push("--worker".to_string());
+        args.push(
+            self.worker_name
+                .clone()
+                .unwrap_or_else(|| "tari-universe".to_string()),
+        );
 
         args.push("--log-dir".to_string());
         args.push(log_folder.to_string_lossy().to_string());
@@ -142,19 +274,19 @@ impl ProcessAdapter for GpuMinerShaAdapter {
                 },
                 handle: None,
             },
-            GpuMinerShaStatusMonitor {
+            GpuMinerStatusInterface::Graxil(GraxilGpuMinerStatusMonitor {
                 gpu_status_sender: self.gpu_status_sender.clone(),
                 websocket_listener: GpuMinerShaWebSocket::new(ws_port),
-            },
+            }),
         ))
     }
 
     fn name(&self) -> &str {
-        "GpuMinerShaAdapter"
+        "graxil"
     }
 
     fn pid_file_name(&self) -> &str {
-        "gpu_miner_sha.pid"
+        "graxil_pid"
     }
 }
 
@@ -163,13 +295,13 @@ impl ProcessAdapter for GpuMinerShaAdapter {
 static WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Clone)]
-pub struct GpuMinerShaStatusMonitor {
+pub struct GraxilGpuMinerStatusMonitor {
     gpu_status_sender: Sender<GpuMinerStatus>,
     websocket_listener: GpuMinerShaWebSocket,
 }
 
 #[async_trait]
-impl StatusMonitor for GpuMinerShaStatusMonitor {
+impl StatusMonitor for GraxilGpuMinerStatusMonitor {
     async fn handle_unhealthy(
         &self,
         duration_since_last_healthy_status: Duration,
@@ -223,7 +355,7 @@ impl StatusMonitor for GpuMinerShaStatusMonitor {
     }
 }
 
-impl GpuMinerShaStatusMonitor {
+impl GraxilGpuMinerStatusMonitor {
     pub async fn status(&self) -> Result<GpuMinerStatus, anyhow::Error> {
         self.websocket_listener.clone().connect().await;
         let last_status = self.websocket_listener.get_last_message().await;

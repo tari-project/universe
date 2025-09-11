@@ -43,6 +43,8 @@
   "gpu-device-enabled-description": "Enable or disable specific GPU device.",
   "gpu-device-no-found": "⚠️ No GPU devices found",
   "gpu-engine": "Gpu Engine",
+  "gpu-miners": "GPU Miners",
+  "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "GPU Mining",
   "gpu-unavailable": "⚠️ GPU disabled because your hardware does not support it",
   "hardware-status": "Hardware status",

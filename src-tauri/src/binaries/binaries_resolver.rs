@@ -153,6 +153,18 @@ impl BinaryResolver {
                 false,
             ),
         );
+        binary_manager.insert(
+            Binaries::LolMiner,
+            BinaryManager::new(
+                Binaries::LolMiner.name().to_string(),
+                None,
+                Box::new(GithubReleasesAdapter {
+                    repo: "lolMiner-releases".to_string(),
+                    owner: "Lolliedieb".to_string(),
+                }),
+                false,
+            ),
+        );
 
         binary_manager.insert(
             Binaries::MergeMiningProxy,

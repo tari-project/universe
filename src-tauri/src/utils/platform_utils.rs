@@ -33,7 +33,7 @@ use crate::tasks_tracker::TasksTrackers;
 use anyhow::anyhow;
 use std::fmt::Display;
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub enum CurrentOperatingSystem {
     Windows,
     Linux,

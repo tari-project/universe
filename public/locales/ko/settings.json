@@ -43,6 +43,8 @@
   "gpu-device-enabled-description": "특정 GPU 장치를 활성화하거나 비활성화합니다.",
   "gpu-device-no-found": "⚠️ GPU 장치를 찾을 수 없습니다",
   "gpu-engine": "GPU 엔진",
+  "gpu-miners": "GPU Miners",
+  "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "GPU 채굴",
   "gpu-unavailable": "⚠️ 하드웨어가 지원하지 않아 GPU가 비활성화되었습니다",
   "hardware-status": "하드웨어 상태",

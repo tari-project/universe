@@ -20,65 +20,44 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{
-    fs::File,
-    io::BufReader,
-    path::{Path, PathBuf},
+use crate::mining::pools::{
+    adapters::{lucky_pool::LuckyPoolAdapter, support_xmr_pool::SupportXmrPoolAdapter},
+    PoolStatus,
 };
 
-use anyhow::anyhow;
-use log::debug;
+pub mod lucky_pool;
+pub mod support_xmr_pool;
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
-pub struct GpuStatus {
-    pub recommended_grid_size: u32,
-    pub recommended_block_size: u32,
-    pub max_grid_size: u32,
+pub(crate) trait PoolApiAdapter: Clone {
+    fn name(&self) -> &str;
+    fn convert_api_data(&self, data: &str) -> Result<PoolStatus, anyhow::Error>;
+    async fn request_pool_status(&self, address: String) -> Result<PoolStatus, anyhow::Error>;
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
-pub struct GpuSettings {
-    pub is_excluded: bool,
-    pub is_available: bool,
+#[derive(Clone, Debug)]
+pub enum PoolApiAdapters {
+    LuckyPool(LuckyPoolAdapter),
+    SupportXmrPool(SupportXmrPoolAdapter),
 }
 
-impl Default for GpuSettings {
-    fn default() -> Self {
-        Self {
-            is_excluded: false,
-            is_available: true,
+impl PoolApiAdapter for PoolApiAdapters {
+    fn name(&self) -> &str {
+        match self {
+            PoolApiAdapters::LuckyPool(adapter) => adapter.name(),
+            PoolApiAdapters::SupportXmrPool(adapter) => adapter.name(),
         }
     }
-}
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
-pub struct GpuDevice {
-    pub device_name: String,
-    pub device_index: u32,
-    pub status: GpuStatus,
-    pub settings: GpuSettings,
-}
-
-#[derive(serde::Deserialize, serde::Serialize, Debug, Clone, Default)]
-pub struct GpuStatusFile {
-    pub gpu_devices: Vec<GpuDevice>,
-}
-
-impl GpuStatusFile {
-    pub fn load(path: &PathBuf) -> Result<Self, anyhow::Error> {
-        let file = File::open(path)?;
-        let reader = BufReader::new(file);
-        let config = serde_json::from_reader(reader)?;
-        Ok(config)
+    fn convert_api_data(&self, data: &str) -> Result<PoolStatus, anyhow::Error> {
+        match self {
+            PoolApiAdapters::LuckyPool(adapter) => adapter.convert_api_data(data),
+            PoolApiAdapters::SupportXmrPool(adapter) => adapter.convert_api_data(data),
+        }
     }
-
-    #[allow(dead_code)]
-    pub fn save(new_content: GpuStatusFile, path: &Path) -> Result<(), anyhow::Error> {
-        debug!("Updating gpu status file with {new_content:?}, at path: {path:?}");
-        let content = serde_json::to_string_pretty(&new_content)?;
-
-        std::fs::write(path, content)
-            .map_err(|e| anyhow!("Failed to save gpu status file: {}", e))?;
-        Ok(())
+    async fn request_pool_status(&self, address: String) -> Result<PoolStatus, anyhow::Error> {
+        match self {
+            PoolApiAdapters::LuckyPool(adapter) => adapter.request_pool_status(address).await,
+            PoolApiAdapters::SupportXmrPool(adapter) => adapter.request_pool_status(address).await,
+        }
     }
 }

@@ -23,31 +23,25 @@
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
-    events_emitter::EventsEmitter,
-    gpu_devices::GpuDevices,
-    gpu_miner::EngineType,
-    gpu_miner_adapter::GpuMinerStatus,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
+    mining::gpu::{
+        consts::{EngineType, GpuMinerType},
+        manager::GpuManager,
+    },
     progress_trackers::{
         progress_plans::SetupStep,
         progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::setup_manager::SetupPhase,
-    systemtray_manager::SystemTrayGpuData,
     tasks_tracker::TasksTrackers,
-    utils::locks_utils::try_write_with_retry,
-    UniverseAppState,
 };
 use anyhow::Error;
 use log::error;
 use tari_shutdown::ShutdownSignal;
-use tauri::{AppHandle, Manager};
-use tokio::{
-    select,
-    sync::{
-        watch::{Receiver, Sender},
-        Mutex,
-    },
+use tauri::AppHandle;
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex,
 };
 use tokio_util::task::TaskTracker;
 
@@ -60,6 +54,7 @@ use super::{
 
 static LOG_TARGET: &str = "tari::universe::phase_gpu_mining";
 
+#[allow(dead_code)]
 #[derive(Clone, Default)]
 pub struct GpuMiningSetupPhaseAppConfiguration {
     gpu_engine: EngineType,
@@ -68,6 +63,7 @@ pub struct GpuMiningSetupPhaseAppConfiguration {
 pub struct GpuMiningSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
+    #[allow(dead_code)]
     app_configuration: GpuMiningSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
@@ -171,13 +167,35 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             let glytex_initialization_result = binary_resolver
                 .initialize_binary(Binaries::GpuMiner, None)
                 .await;
+            let lolminer_initialization_result = binary_resolver
+                .initialize_binary(Binaries::LolMiner, None)
+                .await;
 
-            if let (Err(graxil_err), Err(glytex_err)) =
-                (graxil_initialization_result, glytex_initialization_result)
+            let graxil_is_err = graxil_initialization_result.as_ref().err();
+            let glytex_is_err = glytex_initialization_result.as_ref().err();
+            let lolminer_is_err = lolminer_initialization_result.as_ref().err();
+
+            if let (Some(graxil_err), Some(glytex_err), Some(lolminer_err)) =
+                (graxil_is_err, glytex_is_err, lolminer_is_err)
             {
                 return Err(anyhow::anyhow!(
-                    "Failed to initialize GPU miner binaries: Graxil: {graxil_err}, Glytex: {glytex_err}"
+                    "Failed to initialize GPU miner binaries: Graxil: {graxil_err}, Glytex: {glytex_err}, LolMiner: {lolminer_err}"
                 ));
+            }
+
+            // Graxil is supported on Windows | Linux | MacOS
+            if graxil_initialization_result.is_ok() && GpuMinerType::Graxil.is_supported_on_current_platform() {
+                GpuManager::load_miner(GpuMinerType::Graxil).await;
+            }
+
+            // Glytex is supported on Windows | Linux | MacOS
+            if glytex_initialization_result.is_ok() && GpuMinerType::Glytex.is_supported_on_current_platform() {
+                GpuManager::load_miner(GpuMinerType::Glytex).await;
+            }
+
+            // LolMiner is supported on Windows | Linux
+            if lolminer_initialization_result.is_ok() && GpuMinerType::LolMiner.is_supported_on_current_platform() {
+                GpuManager::load_miner(GpuMinerType::LolMiner).await;
             }
 
             Ok(())
@@ -185,7 +203,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
 
         progress_stepper
             .complete_step(SetupStep::DetectGpu, || async {
-                if let Err(original_error) = self.resolve_detect_gpu_step().await {
+                if let Err(original_error) = GpuManager::detect_devices().await {
                     #[cfg(target_os = "windows")]
                     {
                         use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
@@ -209,7 +227,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                         }
 
                         // Retry GPU detection after adding GPU drivers
-                        if let Err(first_retry_error) = self.resolve_detect_gpu_step().await {
+                        if let Err(first_retry_error) = GpuManager::detect_devices().await {
                             // Try adding Khronos OpenCL as a fallback
                             if let Err(e) = SystemDependenciesManager::get_instance()
                                 .get_windows_dependencies_resolver()
@@ -229,7 +247,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                             }
 
                             // Final retry after adding all dependencies
-                            self.resolve_detect_gpu_step().await?;
+                            GpuManager::detect_devices().await?;
                         }
                     }
                     #[cfg(not(target_os = "windows"))]
@@ -250,6 +268,8 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             })
             .await?;
 
+        GpuManager::load_saved_miner().await;
+
         Ok(())
     }
 
@@ -261,77 +281,6 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         } else {
             self.status_sender
                 .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
-        }
-
-        let app_handle_clone = self.app_handle.clone();
-        TasksTrackers::current()
-            .gpu_mining_phase
-            .get_task_tracker()
-            .await
-            .spawn(async move {
-                let app_state = app_handle_clone.state::<UniverseAppState>().clone();
-                let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
-                let mut shutdown_signal =
-                    TasksTrackers::current().gpu_mining_phase.get_signal().await;
-
-                loop {
-                    select! {
-                        _ = gpu_status_watch_rx.changed() => {
-                            let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                            EventsEmitter::emit_gpu_mining_update(gpu_status.clone()).await;
-                            let gpu_systemtray_data = SystemTrayGpuData {
-                                gpu_hashrate: gpu_status.hash_rate,
-                                estimated_earning: gpu_status.estimated_earnings
-                            };
-
-                            match try_write_with_retry(&app_state.systemtray_manager, 6).await {
-                                Ok(mut sm) => {
-                                    sm.update_tray_with_gpu_data(gpu_systemtray_data);
-                                },
-                                Err(e) => {
-                                    let err_msg = format!("Failed to acquire systemtray_manager write lock: {e}");
-                                    error!(target: LOG_TARGET, "{err_msg}");
-                                }
-                            }
-
-                        },
-                        _ = shutdown_signal.wait() => {
-                            break;
-                        },
-                    }
-                }
-            });
-
-        Ok(())
-    }
-}
-
-impl GpuMiningSetupPhase {
-    async fn resolve_detect_gpu_step(&self) -> Result<(), Error> {
-        let state = self.app_handle.state::<UniverseAppState>();
-        let (data_dir, config_dir, _log_dir) = self.get_app_dirs()?;
-        let glytex_detection_result = state
-            .gpu_miner
-            .write()
-            .await
-            .detect(
-                config_dir.clone(),
-                self.app_configuration.gpu_engine.clone(),
-            )
-            .await;
-
-        let graxil_detection_result = GpuDevices::current()
-            .write()
-            .await
-            .detect(data_dir.clone())
-            .await;
-
-        if let (Err(graxil_err), Err(glytex_err)) =
-            (graxil_detection_result, glytex_detection_result)
-        {
-            return Err(anyhow::anyhow!(
-                "Failed to detect GPU devices: Graxil: {graxil_err}, Glytex: {glytex_err}"
-            ));
         }
 
         Ok(())

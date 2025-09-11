@@ -26,9 +26,16 @@ use std::{sync::LazyLock, time::SystemTime};
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::configs::pools::{
-    cpu_pools::{CpuPool, LuckyPoolCpuConfig, SupportXTMCpuPoolConfig},
-    gpu_pools::{GpuPool, LuckyPoolGpuConfig, SupportXTMGpuPoolConfig},
+use crate::{
+    configs::pools::{
+        cpu_pools::{CpuPool, LuckyPoolCpuConfig, SupportXTMCpuPoolConfig},
+        gpu_pools::{GpuPool, LuckyPoolGpuConfig, SupportXTMGpuPoolConfig},
+        PoolConfig,
+    },
+    mining::pools::{
+        cpu_pool_manager::CpuPoolManager, gpu_pool_manager::GpuPoolManager,
+        PoolManagerInterfaceTrait,
+    },
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -136,6 +143,10 @@ impl ConfigPools {
     pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
+
+        // Loads the selected pools into the pool managers as they are set with lucky pool by default
+        CpuPoolManager::handle_new_selected_pool(config.content.selected_cpu_pool()).await;
+        GpuPoolManager::handle_new_selected_pool(config.content.selected_gpu_pool()).await;
     }
 }
 
