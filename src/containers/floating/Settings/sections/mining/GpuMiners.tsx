@@ -18,7 +18,7 @@ const Wrapper = styled(m.div)`
 const minerLabel = {
     [GpuMinerType.LolMiner]: 'LolMiner(C29)',
     [GpuMinerType.Glytex]: 'Glytex(SHA3x)',
-    [GpuMinerType.Graxil]: 'LolMiner(SHA3x)',
+    [GpuMinerType.Graxil]: 'Graxil(SHA3x)',
 };
 
 export default function GpuMiners() {
