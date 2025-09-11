@@ -169,7 +169,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
 
         let mut args: Vec<String> = vec![
             "--algo".to_string(),
-            "C29AE".to_string(),
+            "CR29".to_string(),
             format!("--apiport={}", api_port),
             format!("--apihost={}", "127.0.0.1"),
         ];
