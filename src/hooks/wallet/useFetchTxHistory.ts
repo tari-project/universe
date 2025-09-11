@@ -28,9 +28,7 @@ export function useFetchTxHistory() {
             const limit = 20;
             const offset = limit * (pageParam as number);
             const walletTransactions = await fetchTransactionsHistory({ filter, offset, limit });
-
             let mergedList = mergeTransactionLists({ walletTransactions, bridgeTransactions });
-
             if (shouldRefetchBridgeItems({ walletTransactions: mergedList, bridgeTransactions })) {
                 await refetchBridgeTxs();
                 mergedList = mergeTransactionLists({ walletTransactions, bridgeTransactions });

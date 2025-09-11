@@ -106,6 +106,7 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     ) : (
         listMarkup
     );
+
     const isEmpty = !walletLoading && !transactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
     return (
