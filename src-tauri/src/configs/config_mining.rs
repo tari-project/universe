@@ -107,7 +107,11 @@ impl Default for ConfigMiningContent {
             created_at: SystemTime::now(),
             selected_mining_mode: "Eco".to_string(),
             mine_on_app_start: true,
-            gpu_miner_type: GpuMinerType::LolMiner,
+            gpu_miner_type: if cfg!(target_os = "windows") || cfg!(target_os = "linux") {
+                GpuMinerType::LolMiner
+            } else {
+                GpuMinerType::Graxil
+            },
             mining_modes: HashMap::from([
                 (
                     "Eco".to_string(),
