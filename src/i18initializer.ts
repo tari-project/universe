@@ -17,6 +17,7 @@ export enum Language {
     FR = 'fr',
     DE = 'de', // German
     VI = 'vi', // Vietnamese
+    PT_BR = 'pt-BR', // Brazilian Portuguese
 }
 
 // System can have various regional variations for language codes, so we resolve them
@@ -87,6 +88,10 @@ export const resolveI18nLanguage = (languageCode: string): Language => {
         case 'vi':
         case 'vi-VN':
             return Language.VI;
+        case 'pt':
+        case 'pt-BR':
+        case 'pt-PT':
+            return Language.PT_BR;
         default:
             return Language.EN;
     }
@@ -107,6 +112,7 @@ export const LanguageList: Record<Language, string> = {
     [Language.FR]: 'Français', // French
     [Language.DE]: 'Deutsch', // German
     [Language.VI]: 'Tiếng Việt', // Vietnamese
+    [Language.PT_BR]: 'Português (Brasil)',
 };
 
 // Initialize i18n with new supported languages
@@ -136,6 +142,7 @@ i18n.use(HttpBackend)
             Language.FR,
             Language.DE,
             Language.VI,
+            Language.PT_BR,
         ],
         saveMissingTo: 'all',
         contextSeparator: '-',

@@ -1,0 +1,26 @@
+{
+  "connected-since": "Conectado desde",
+  "connections": "conexões",
+  "established": "Estabelecido",
+  "listener-addresses": "Endereços de escuta",
+  "miners": "Mineradores",
+  "network-info": "Informações da rede",
+  "p2pool-chain-tip": "Ponta da Cadeia P2Pool",
+  "p2pool-connected": "P2Pool Conectado",
+  "p2pool-connection-info": "Conexão",
+  "p2pool-connection-info-more": "Detalhes da conexão",
+  "p2pool-peers": "Pares P2pool",
+  "p2pool-stats": "Estatísticas P2pool",
+  "pending": "Pendente",
+  "randomx-stats": "Estatísticas RandomX",
+  "sha3-stats": "Estatísticas SHA3",
+  "stats": {
+    "earned": "Você ganhou",
+    "tile-heading": "Recompensas em Andamento",
+    "tile-heading-zero": "Recompensas começam em ~30 minutos",
+    "tile-loading": "Pool está aquecendo",
+    "tooltip-copy": "“Em Andamento” até você ganhar um mínimo de <strong>{{amount}}</strong>. Pode haver um atraso entre o envio do seu pagamento e a exibição nas transações e saldo da sua carteira.",
+    "tooltip-tile-heading": "Limite de recompensas"
+  },
+  "tribe": "Tribo"
+}
