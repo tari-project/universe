@@ -141,20 +141,11 @@ impl GpuManager {
     // Loads the saved miner from config or the first available one
     pub async fn load_saved_miner() {
         let mut instance = INSTANCE.write().await;
-        // if instance.fallback_mode {
-        //     info!(target: LOG_TARGET, "Gpu Miner Fallback mode enabled, skipping loading saved gpu miner");
-        //     let fallback_gpu_miner_type = GpuMinerType::Glytex;
-        //     let adapter = instance.resolve_miner_interface(&fallback_gpu_miner_type);
-        //     instance.selected_miner = fallback_gpu_miner_type.clone();
-        //     instance.process_watcher.adapter = adapter;
-        //     EventsEmitter::emit_update_selected_gpu_miner(fallback_gpu_miner_type).await;
-        //     return;
-        // }
-
         let selected_gpu_miner_type = if instance.fallback_mode {
             info!(target: LOG_TARGET, "Gpu Miner uses fallback mode, forcing Glytex gpu miner");
             instance.fallback_mode = false;
-            GpuMinerType::Glytex // Force glytex in fallback mode
+            EventsEmitter::emit_gpu_miner_fallback(false).await;
+            GpuMinerType::Graxil // Force Graxil in fallback mode
         } else {
             ConfigMining::content().await.gpu_miner_type().clone()
         };
@@ -204,6 +195,7 @@ impl GpuManager {
 
     pub async fn set_fallback_mode(fallback: bool) -> Result<(), anyhow::Error> {
         let mut instance = INSTANCE.write().await;
+        EventsEmitter::emit_gpu_miner_fallback(true).await;
         instance.fallback_mode = fallback;
         Ok(())
     }

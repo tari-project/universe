@@ -95,6 +95,7 @@ pub struct ConfigMiningContent {
     gpu_devices_settings: GpuDevicesSettings,
     squad_override: Option<String>,
     gpu_miner_type: GpuMinerType,
+    is_lolminer_tested: bool,
     version: i32,
 }
 
@@ -106,7 +107,7 @@ impl Default for ConfigMiningContent {
             created_at: SystemTime::now(),
             selected_mining_mode: "Eco".to_string(),
             mine_on_app_start: true,
-            gpu_miner_type: GpuMinerType::Graxil,
+            gpu_miner_type: GpuMinerType::LolMiner,
             mining_modes: HashMap::from([
                 (
                     "Eco".to_string(),
@@ -150,6 +151,7 @@ impl Default for ConfigMiningContent {
             gpu_engine: EngineType::OpenCL,
             gpu_devices_settings: GpuDevicesSettings::new(),
             squad_override: None,
+            is_lolminer_tested: false,
         }
     }
 }
