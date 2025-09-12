@@ -38,6 +38,7 @@
   },
   "experimental-title": "Экспериментальные функции",
   "experimental-warning": "⚠️ Внимание: Эти функции находятся в активной разработке и могут работать непредсказуемо. Пожалуйста, будьте осторожны.",
+  "fallback-info": "Selected miner failed to start, used fallback miner instead.",
   "feedback-required": "Требуется обратная связь",
   "gpu-device-enabled": "Устройства для майнинга на GPU",
   "gpu-device-enabled-description": "Включить или отключить конкретное устройство GPU.",
