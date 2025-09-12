@@ -64,6 +64,7 @@ use crate::{
 
 static LOG_TARGET: &str = "tari::mining::gpu::manager";
 static INSTANCE: LazyLock<RwLock<GpuManager>> = LazyLock::new(|| RwLock::new(GpuManager::new()));
+static FALLBACK_GPU_MINER_TYPE: GpuMinerType = GpuMinerType::Graxil;
 
 pub struct GpuManager {
     systray_manager: Option<Arc<RwLock<SystemTrayManager>>>,
@@ -145,7 +146,7 @@ impl GpuManager {
             info!(target: LOG_TARGET, "Gpu Miner uses fallback mode, forcing Glytex gpu miner");
             instance.fallback_mode = false;
             EventsEmitter::emit_gpu_miner_fallback(true).await;
-            GpuMinerType::Graxil // Force Graxil in fallback mode
+            FALLBACK_GPU_MINER_TYPE.clone()
         } else {
             EventsEmitter::emit_gpu_miner_fallback(false).await;
             ConfigMining::content().await.gpu_miner_type().clone()
@@ -228,7 +229,12 @@ impl GpuManager {
         if *ConfigPools::content().await.gpu_pool_enabled()
             && instance.selected_miner.is_pool_mining_supported()
         {
-            let current_selected_pool = ConfigPools::content().await.selected_gpu_pool().clone();
+            let current_selected_pool = if instance.fallback_mode {
+                GpuPool::default_for_miner_type(FALLBACK_GPU_MINER_TYPE.clone())
+                    .unwrap_or(ConfigPools::content().await.selected_gpu_pool().clone())
+            } else {
+                ConfigPools::content().await.selected_gpu_pool().clone()
+            };
             let current_selected_pool_url = current_selected_pool.get_pool_url();
             instance
                 .process_watcher
