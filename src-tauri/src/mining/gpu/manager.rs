@@ -144,7 +144,6 @@ impl GpuManager {
         let mut instance = INSTANCE.write().await;
         let selected_gpu_miner_type = if instance.fallback_mode {
             info!(target: LOG_TARGET, "Gpu Miner uses fallback mode, forcing Glytex gpu miner");
-            instance.fallback_mode = false;
             EventsEmitter::emit_gpu_miner_fallback(true).await;
             FALLBACK_GPU_MINER_TYPE.clone()
         } else {
@@ -230,6 +229,7 @@ impl GpuManager {
             && instance.selected_miner.is_pool_mining_supported()
         {
             let current_selected_pool = if instance.fallback_mode {
+                instance.fallback_mode = false;
                 GpuPool::default_for_miner_type(FALLBACK_GPU_MINER_TYPE.clone())
                     .unwrap_or(ConfigPools::content().await.selected_gpu_pool().clone())
             } else {
