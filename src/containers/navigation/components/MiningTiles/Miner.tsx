@@ -62,9 +62,16 @@ export default function MinerTile({
 
     const mainNumber = isPoolEnabled ? currentUnpaid : formattedHashRate.value;
     const mainUnit = isPoolEnabled ? 'XTM' : formattedHashRate.unit;
-    const mainLabel = isPoolEnabled
-        ? t('stats.tile-heading', { context: isMining && currentUnpaid === 0 && 'zero', ns: 'p2p' })
-        : t(mainLabelKey);
+
+    let mainLabel: string;
+    if (enabled && isPoolEnabled) {
+        const context = isMining && currentUnpaid === 0 && 'zero';
+        mainLabel = t('stats.tile-heading', { context, ns: 'p2p' });
+    } else if (enabled) {
+        mainLabel = t(mainLabelKey);
+    } else {
+        mainLabel = t('stats.tile-disabled-heading', { unit: title, ns: 'p2p' });
+    }
 
     const [isOpen, setIsOpen] = useState(false);
     const { refs, context, floatingStyles } = useFloating({
@@ -108,7 +115,7 @@ export default function MinerTile({
                 minerModuleState={minerModuleState}
             />
             <AnimatePresence>
-                {isOpen && showTooltip && !hasMinerModuleCrashed && (
+                {enabled && isOpen && showTooltip && !hasMinerModuleCrashed && (
                     <Tooltip ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
                         <ExpandedBox
                             initial={{ opacity: 0, y: 10 }}
