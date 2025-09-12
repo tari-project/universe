@@ -4,8 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 interface Props {
     totals?: {
-        all: number;
-        completed: number;
         active: number;
         inactive: number;
     };

@@ -33,7 +33,7 @@ export default function CrewList({
     isLoading,
     error,
     onRefresh,
-    isFiltered = false,
+    isFiltered = true,
     // Pagination props
     currentPage = 1,
     totalPages = 1,

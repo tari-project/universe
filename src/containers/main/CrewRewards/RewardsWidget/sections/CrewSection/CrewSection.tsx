@@ -62,7 +62,6 @@ export default function CrewSection() {
             <Filters totals={progressData?.totals} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
 
             <CrewList
-                isFiltered={activeFilter !== 'active'}
                 members={membersData?.members || []}
                 minRequirements={progressData?.minRequirements}
                 membersToNudge={progressData?.membersToNudge || []}

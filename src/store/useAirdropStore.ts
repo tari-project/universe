@@ -153,8 +153,6 @@ export interface ReferrerProgress {
 }
 
 export interface CrewMembersTotals {
-    all: number;
-    completed: number;
     active: number;
     inactive: number;
 }
