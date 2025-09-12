@@ -38,6 +38,7 @@
   },
   "experimental-title": "Fitur Eksperimental",
   "experimental-warning": "⚠️ Peringatan: Fitur-fitur ini sedang dalam pengembangan aktif dan dapat berperilaku tidak terduga. Harap lanjutkan dengan hati-hati.",
+  "fallback-info": "Selected miner failed to start, used fallback miner instead.",
   "feedback-required": "Umpan balik diperlukan",
   "gpu-device-enabled": "Perangkat Penambangan GPU",
   "gpu-device-enabled-description": "Aktifkan atau nonaktifkan perangkat GPU tertentu.",
