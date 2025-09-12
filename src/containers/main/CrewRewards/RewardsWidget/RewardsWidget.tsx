@@ -44,7 +44,7 @@ export default function RewardsWidget() {
         return (
             <PositionWrapper {...introAnimation}>
                 <Holder>
-                    <WidgetWrapper $isOpen={isOpen} $isLogin={true}>
+                    <WidgetWrapper $isOpen={false} $isLogin={true}>
                         <LoginSection />
                     </WidgetWrapper>
                 </Holder>
