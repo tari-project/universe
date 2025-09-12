@@ -7,17 +7,15 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 interface GreenModalProps {
     onClose: () => void;
     children: ReactNode;
-    boxWidth?: number;
     padding?: number;
     showModal: boolean;
 }
 
-export default function GreenModal({ children, showModal, boxWidth, padding, onClose }: GreenModalProps) {
+export default function GreenModal({ children, showModal, padding, onClose }: GreenModalProps) {
     return (
         <Dialog open={showModal} onOpenChange={onClose}>
             <DialogContent variant="wrapper">
                 <BoxWrapper
-                    $boxWidth={boxWidth}
                     $padding={padding}
                     initial={{ opacity: 0, y: '100px' }}
                     animate={{ opacity: 1, y: 0 }}

@@ -18,7 +18,7 @@ const PaperWalletModal = memo(function PaperWalletModal() {
     };
 
     return (
-        <GreenModal onClose={handleClose} showModal={showModal} boxWidth={700}>
+        <GreenModal onClose={handleClose} showModal={showModal}>
             {section === 'Connect' && <ConnectSection setSection={setSection} />}
             {section === 'QRCode' && <QRCodeSection onDoneClick={handleClose} />}
         </GreenModal>
