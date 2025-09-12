@@ -171,7 +171,7 @@ export interface MembersResponse {
     members: CrewMember[];
     pagination: PaginationInfo;
     filters: {
-        status: 'all' | 'completed' | 'active' | 'inactive';
+        status: 'active' | 'inactive';
     };
 }
 
@@ -224,7 +224,7 @@ export interface AirdropStoreState {
     referrerProgress?: ReferrerProgress;
     minRequirements?: MinRequirements;
     crewQueryParams: {
-        status: 'all' | 'completed' | 'active' | 'inactive';
+        status: 'active' | 'inactive';
         page: number;
         limit: number;
     };
@@ -241,7 +241,7 @@ const initialState: AirdropStoreState = {
     latestXSpaceEvent: null,
     uiSendRecvEnabled: true,
     crewQueryParams: {
-        status: 'all',
+        status: 'active',
         page: 1,
         limit: 20,
     },
