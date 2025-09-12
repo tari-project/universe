@@ -3,6 +3,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { setShowCloseDialog, useUserFeedbackStore } from '@app/store/stores/userFeedbackStore.ts';
 import { checkMiningTime } from '@app/store/actions/miningStoreActions.ts';
 import { setIsShuttingDown } from '@app/store/actions/uiStoreActions.ts';
+import { queryClient } from '@app/App/queryClient.ts';
+import { fetchSurvey } from '@app/hooks/user/surveys/useFetchSurveyContent.ts';
 
 export function useShutdownHandler() {
     const [canProceedWithShutdown, setCanProceedWithShutdown] = useState(false);
@@ -34,8 +36,19 @@ export function useShutdownHandler() {
             return;
         }
         const isEarlyClose = validateMiningTime();
+
         if (isEarlyClose && !earlyClosedDismissed) {
-            setShowCloseDialog(true);
+            const qd = await queryClient.ensureQueryData({
+                queryKey: ['surveys', 'close'],
+                queryFn: async () => await fetchSurvey('close'),
+            });
+
+            if (qd && qd.slug === 'close') {
+                setShowCloseDialog(true);
+            } else {
+                console.warn(`[early-close] no survey content available.`);
+                setCanProceedWithShutdown(true);
+            }
         } else {
             setCanProceedWithShutdown(true);
         }
