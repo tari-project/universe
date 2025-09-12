@@ -153,6 +153,8 @@ export interface ReferrerProgress {
 }
 
 export interface CrewMembersTotals {
+    all: number;
+    completed: number;
     active: number;
     inactive: number;
 }
@@ -169,7 +171,7 @@ export interface MembersResponse {
     members: CrewMember[];
     pagination: PaginationInfo;
     filters: {
-        status: 'active' | 'inactive';
+        status: 'all' | 'completed' | 'active' | 'inactive';
     };
 }
 
@@ -222,7 +224,7 @@ export interface AirdropStoreState {
     referrerProgress?: ReferrerProgress;
     minRequirements?: MinRequirements;
     crewQueryParams: {
-        status: 'active' | 'inactive';
+        status: 'all' | 'completed' | 'active' | 'inactive';
         page: number;
         limit: number;
     };

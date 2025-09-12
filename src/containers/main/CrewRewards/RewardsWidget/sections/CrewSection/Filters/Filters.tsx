@@ -7,7 +7,7 @@ interface Props {
         active: number;
         inactive: number;
     };
-    activeFilter: 'active' | 'inactive';
+    activeFilter: 'all' | 'completed' | 'active' | 'inactive';
     onFilterChange: (filter: 'active' | 'inactive') => void;
 }
 
