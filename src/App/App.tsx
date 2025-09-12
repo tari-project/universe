@@ -9,7 +9,6 @@ import ThemeProvider from '../theme/ThemeProvider.tsx';
 
 import { AppContentContainer } from './App.styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
-import { TOWER_CANVAS_ID } from '@app/store/types/ui.ts';
 import { queryClient } from './queryClient.ts';
 
 import Splashscreen from '../containers/phase/Splashscreen/Splashscreen.tsx';
@@ -75,7 +74,6 @@ export default function App() {
                 <LazyMotion features={domMax} strict>
                     <FloatingElements />
                     <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
-                    <canvas id={TOWER_CANVAS_ID} />
                 </LazyMotion>
             </ThemeProvider>
         </QueryClientProvider>

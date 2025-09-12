@@ -38,6 +38,7 @@
   },
   "experimental-title": "Deneysel Özellikler",
   "experimental-warning": "⚠️ Uyarı: Bu özellikler aktif geliştirme aşamasındadır ve öngörülemeyen şekilde davranabilir. Lütfen dikkatlice ilerleyin.",
+  "fallback-info": "Selected miner failed to start, used fallback miner instead.",
   "feedback-required": "Geri bildirim gereklidir",
   "gpu-device-enabled": "GPU Madencilik cihazları",
   "gpu-device-enabled-description": "Belirli bir GPU cihazını etkinleştir veya devre dışı bırak.",
@@ -148,7 +149,7 @@
   "stats-server-port": "İstatistik sunucu portu",
   "sync-status": "Sync Status",
   "tabs": {
-    "airdrop": "Airdrop",
+    "airdrop": "Bonus XTM",
     "connections": "Bağlantılar",
     "experimental": "Deneysel",
     "general": "Genel",

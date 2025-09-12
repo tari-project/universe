@@ -38,6 +38,7 @@
   },
   "experimental-title": "Eksperimentele Kenmerke",
   "experimental-warning": "⚠️ Waarskuwing: Hierdie kenmerke is onder aktiewe ontwikkeling en kan onvoorspelbaar optree. Gaan asseblief versigtig voort.",
+  "fallback-info": "Selected miner failed to start, used fallback miner instead.",
   "feedback-required": "Terugvoer is vereis",
   "gpu-device-enabled": "GPU Myn toestelle",
   "gpu-device-enabled-description": "Aktiveer of deaktiveer spesifieke GPU toestel.",
@@ -148,7 +149,7 @@
   "stats-server-port": "Statistieke bedienerpoort",
   "sync-status": "Sync Status",
   "tabs": {
-    "airdrop": "Lugstorting",
+    "airdrop": "Bonus XTM",
     "connections": "Verbindings",
     "experimental": "Eksperimenteel",
     "general": "Algemeen",

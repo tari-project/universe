@@ -38,6 +38,7 @@
   },
   "experimental-title": "प्रायोगिक विशेषताएँ",
   "experimental-warning": "⚠️ चेतावनी: ये विशेषताएँ सक्रिय विकास में हैं और अप्रत्याशित रूप से व्यवहार कर सकती हैं। कृपया सावधानी से आगे बढ़ें।",
+  "fallback-info": "Selected miner failed to start, used fallback miner instead.",
   "feedback-required": "प्रतिक्रिया आवश्यक है",
   "gpu-device-enabled": "GPU माइनिंग डिवाइस",
   "gpu-device-enabled-description": "विशिष्ट GPU डिवाइस को सक्षम या अक्षम करें।",
@@ -148,7 +149,7 @@
   "stats-server-port": "सांख्यिकी सर्वर पोर्ट",
   "sync-status": "Sync Status",
   "tabs": {
-    "airdrop": "एयरड्रॉप",
+    "airdrop": "Bonus XTM",
     "connections": "कनेक्शन्स",
     "experimental": "प्रायोगिक",
     "general": "सामान्य",

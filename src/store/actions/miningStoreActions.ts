@@ -51,9 +51,12 @@ export const setMiningControlsEnabled = (miningControlsEnabled: boolean) =>
     useMiningStore.setState((state) => {
         const gpu_mining_enabled = useConfigMiningStore.getState().gpu_mining_enabled;
         const cpu_mining_enabled = useConfigMiningStore.getState().cpu_mining_enabled;
+        const neitherEnabled = !gpu_mining_enabled && !cpu_mining_enabled;
+
+        const enabled = neitherEnabled ? false : miningControlsEnabled;
         return {
-            miningControlsEnabled:
-                state.isChangingMode || (!gpu_mining_enabled && !cpu_mining_enabled) ? false : miningControlsEnabled,
+            ...state,
+            miningControlsEnabled: enabled,
         };
     });
 export const getMiningNetwork = async () => {
@@ -224,4 +227,8 @@ export const checkMiningTime = () => {
     const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
     useMiningStore.setState({ sessionMiningTime: { ...current, durationMs: diff } });
     return diff;
+};
+
+export const handleGpuMinerFallback = (isGpuMinerFallback: boolean) => {
+    useMiningStore.setState({ isGpuMinerFallback });
 };

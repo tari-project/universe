@@ -38,6 +38,7 @@
   },
   "experimental-title": "Experimentelle Funktionen",
   "experimental-warning": "⚠️ Warnung: Diese Funktionen befinden sich in aktiver Entwicklung und könnten unberechenbar reagieren. Bitte gehe vorsichtig vor.",
+  "fallback-info": "Selected miner failed to start, used fallback miner instead.",
   "feedback-required": "Feedback ist erforderlich",
   "gpu-device-enabled": "GPU-Mining-Geräte",
   "gpu-device-enabled-description": "Bestimmtes GPU-Gerät aktivieren oder deaktivieren.",
@@ -148,7 +149,7 @@
   "stats-server-port": "Statistik-Server-Port",
   "sync-status": "Sync Status",
   "tabs": {
-    "airdrop": "Airdrop",
+    "airdrop": "Bonus XTM",
     "connections": "Verbindungen",
     "experimental": "Experimentell",
     "general": "Allgemein",

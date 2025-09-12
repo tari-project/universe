@@ -49,16 +49,13 @@ async function initializeAnimation() {
         } catch (error) {
             console.error('Failed to set animation state:', error);
             useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
-
             loaded = false;
-        } finally {
-            if (loaded) {
-                setAnimationState('showVisual');
-            }
+        }
+        if (loaded) {
+            setAnimationState('showVisual');
         }
     } catch (e) {
         console.error('Error at loadTowerAnimation:', e);
-        useConfigUIStore.setState((c) => ({ ...c, visual_mode: false }));
         useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
     }
 }

@@ -30,11 +30,13 @@ use super::utils::phase_builder::PhaseBuilder;
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::commands::{start_cpu_mining, start_gpu_mining};
 use crate::configs::config_core::ConfigCoreContent;
+use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
+use crate::mining::gpu::consts::GpuMinerType;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
@@ -312,6 +314,17 @@ impl SetupManager {
             let _unused = ConfigCore::update_field(
                 ConfigCoreContent::set_exchange_id,
                 built_in_exchange_id.clone(),
+            )
+            .await;
+        }
+
+        let config_minig = ConfigMining::content().await.clone();
+        if !*config_minig.is_lolminer_tested() {
+            let _unused =
+                ConfigMining::update_field(ConfigMiningContent::set_is_lolminer_tested, true).await;
+            let _unused = ConfigMining::update_field(
+                ConfigMiningContent::set_gpu_miner_type,
+                GpuMinerType::LolMiner,
             )
             .await;
         }

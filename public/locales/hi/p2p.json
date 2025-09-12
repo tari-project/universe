@@ -18,6 +18,7 @@
     "earned": "You earned",
     "tile-heading": "इनाम प्रगति पर",
     "tile-heading-zero": "Rewards start in ~30 mins",
+    "tile-disabled-heading": "{{unit}} is disabled",
     "tile-loading": "पूल गर्म हो रहा है",
     "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
     "tooltip-tile-heading": "इनाम सीमा"

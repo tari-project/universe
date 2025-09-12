@@ -21,7 +21,6 @@ export const useUiMiningStateMachine = () => {
     const preventStop = isMiningInitiated || isChangingMode;
     const shouldStop = !isMining && !notStarted && !preventStop;
     const shouldStart = isMining && notStarted;
-
     const noVisualMode = !visualMode || visualModeLoading;
 
     const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);

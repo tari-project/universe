@@ -8,6 +8,7 @@ import { SettingsGroupContent, SettingsGroupTitle, SettingsGroupWrapper } from '
 import * as m from 'motion/react-m';
 import { switchSelectedMiner } from '@app/store/actions/miningStoreActions.ts';
 import { GpuMinerType } from '@app/types/events-payloads.ts';
+import light from '@app/theme/palettes/light';
 
 const Wrapper = styled(m.div)`
     width: 100%;
@@ -25,6 +26,7 @@ export default function GpuMiners() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const availableMiners = useMiningStore((state) => state.availableMiners);
     const selectedMiner = useMiningStore((state) => state.selectedMiner);
+    const isGpuMinerFallback = useMiningStore((s) => s.isGpuMinerFallback);
 
     const minerOptions = useMemo(() => {
         return (
@@ -55,6 +57,16 @@ export default function GpuMiners() {
                             forceHeight={36}
                         />
                     </Wrapper>
+                    {isGpuMinerFallback && (
+                        <Wrapper>
+                            <Typography variant="p" style={{ color: light.palette.warning.main, marginTop: 8 }}>
+                                {t('fallback-info', {
+                                    ns: 'settings',
+                                    defaultValue: 'Selected miner failed to start, used fallback miner instead.',
+                                })}
+                            </Typography>
+                        </Wrapper>
+                    )}
                 </SettingsGroupContent>
             ) : (
                 <Typography variant="p">{t('gpu-miners-not-found', { ns: 'settings' })}</Typography>

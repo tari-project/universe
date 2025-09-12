@@ -38,6 +38,7 @@
   },
   "experimental-title": "実験的機能",
   "experimental-warning": "⚠️ 警告: これらの機能は開発中であり、予測不可能な動作をする可能性があります。慎重に進めてください。",
+  "fallback-info": "Selected miner failed to start, used fallback miner instead.",
   "feedback-required": "フィードバックが必要です",
   "gpu-device-enabled": "GPUマイニングデバイス",
   "gpu-device-enabled-description": "特定のGPUデバイスを有効または無効にします。",
@@ -148,7 +149,7 @@
   "stats-server-port": "統計サーバーポート",
   "sync-status": "Sync Status",
   "tabs": {
-    "airdrop": "エアドロップ",
+    "airdrop": "Bonus XTM",
     "connections": "接続",
     "experimental": "実験的",
     "general": "一般",

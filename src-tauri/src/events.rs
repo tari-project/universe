@@ -80,6 +80,7 @@ pub enum EventType {
     UpdateAppModuleStatus,
     UpdateSelectedMiner,
     AvailableMiners,
+    GpuMinerFallback,
 }
 
 #[derive(Clone, Debug, Serialize)]
