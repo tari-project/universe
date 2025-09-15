@@ -79,7 +79,7 @@ export const calculateTimeRemaining = (member: CrewMember, minRequirements: MinR
     if (daysRemaining <= 0) return undefined;
 
     return {
-        current: daysRemaining,
+        current: progress.miningDaysProgress,
         total: minRequirements.totalDaysRequired,
         unit: 'Days',
     };
