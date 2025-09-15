@@ -12,9 +12,10 @@ import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
 interface Props {
     entry: CrewEntry & { memberId?: string; claimableRewardId?: string };
     isClaimed?: boolean;
+    minDaysRequired?: number;
 }
 
-export default function CrewEntry({ entry, isClaimed }: Props) {
+export default function CrewEntry({ entry, isClaimed, minDaysRequired }: Props) {
     const { handle, reward, progress, timeRemaining, status, user, memberId, claimableRewardId } = entry;
     const [isClaimingReward, setIsClaimingReward] = useState(false);
     const [isSendingNudge, setIsSendingNudge] = useState(false);
@@ -104,7 +105,7 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
                         canClaim={Boolean(canClaim && !isClaimingReward && meetsRequirements)}
                         canNudge={canNudge && !isSendingNudge}
                         isClaimed={isClaimed ?? false}
-                        timeRemaining={timeRemaining ?? { current: 0, total: 0, unit: '' }}
+                        timeRemaining={timeRemaining ?? { current: 0, total: minDaysRequired || 0, unit: 'Days' }}
                         claimAmount={reward?.amount ?? 0}
                         onClaim={handleClaim}
                         onNudge={handleNudge}

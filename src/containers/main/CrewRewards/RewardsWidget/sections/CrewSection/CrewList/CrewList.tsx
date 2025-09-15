@@ -160,7 +160,11 @@ export default function CrewList({
                                     <CrewDivider text={t('airdrop:crewRewards.crewStatus.inProgress')} />
                                     <ListGroup>
                                         {inProgressList.map((item) => (
-                                            <CrewEntry key={item.id} entry={item} />
+                                            <CrewEntry
+                                                key={item.id}
+                                                entry={item}
+                                                minDaysRequired={minRequirements?.totalDaysRequired}
+                                            />
                                         ))}
                                     </ListGroup>
                                 </>
