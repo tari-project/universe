@@ -27,10 +27,22 @@ export default function CrewEntry({ entry, isClaimed, minDaysRequired }: Props) 
 
     const canClaim = progress && progress >= 100;
 
-    const isNudgeOnCooldown =
-        memberId && nudgeCooldowns[memberId] ? Date.now() - nudgeCooldowns[memberId] < 5 * 60 * 1000 : false;
+    // Check if 12 hours have passed since last nudge
+    const isNudgeOnCooldown = () => {
+        if (memberId && nudgeCooldowns[memberId]) {
+            return Date.now() - nudgeCooldowns[memberId] < 12 * 60 * 60 * 1000; // 12 hours
+        }
 
-    const canNudge = status === 'needs_nudge' && !isNudgeOnCooldown;
+        // Check lastNudgeDate from entry if available
+        if (entry.lastNudgeDate) {
+            const lastNudgeTime = new Date(entry.lastNudgeDate).getTime();
+            return Date.now() - lastNudgeTime < 12 * 60 * 60 * 1000; // 12 hours
+        }
+
+        return false;
+    };
+
+    const canNudge = status === 'needs_nudge' && !isNudgeOnCooldown();
 
     const [showNudge, setShowNudge] = useState(false);
     const [showClaim, setShowClaim] = useState(false);
