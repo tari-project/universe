@@ -59,8 +59,7 @@ export const setCoinbaseTransactions = ({ newTxs, offset = 0 }: { newTxs: Transa
     useWalletStore.setState((c) => ({ ...c, coinbase_transactions: coinbase_transactions }));
 };
 
-function resetWalletStates() {
-    // reset wallet states on import
+export const importSeedWords = async (seedWords: string[]) => {
     useWalletStore.setState((c) => ({
         ...c,
         is_wallet_importing: true,
@@ -75,14 +74,6 @@ function resetWalletStates() {
         },
     }));
 
-    // reset pool stats too
-    const initialPoolStats = useMiningPoolsStore.getInitialState();
-    useMiningPoolsStore.setState(initialPoolStats);
-}
-
-export const importSeedWords = async (seedWords: string[]) => {
-    resetWalletStates();
-
     const anyMiningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
 
@@ -90,7 +81,10 @@ export const importSeedWords = async (seedWords: string[]) => {
         if (anyMiningInitiated) {
             await stopMining();
         }
-        await invoke('import_seed_words', { seedWords });
+        await invoke('import_seed_words', { seedWords }).then(() => {
+            const initialPoolStats = useMiningPoolsStore.getInitialState();
+            useMiningPoolsStore.setState({ ...initialPoolStats });
+        });
 
         useWalletStore.setState((c) => ({ ...c, is_wallet_importing: false }));
         await refreshTransactions();
