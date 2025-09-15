@@ -38,6 +38,10 @@ export const useUiMiningStateMachine = () => {
         const interval = 2000; // 2 seconds
 
         const attemptStop = () => {
+            if (animationStatus === 'started') {
+                console.info(getTowerLogPrefix('info'), `Cancelling force stop: status=${animationStatus}`);
+                return;
+            }
             if (animationStatus === 'not-started') {
                 console.info(getTowerLogPrefix('info'), `Animation stopped: status=${animationStatus}`);
                 return;

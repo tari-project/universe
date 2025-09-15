@@ -13,6 +13,7 @@ import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
+import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 
 // NOTE: Tx status differ for core and proto(grpc)
 export const COINBASE_BITFLAG = 6144;
@@ -58,7 +59,8 @@ export const setCoinbaseTransactions = ({ newTxs, offset = 0 }: { newTxs: Transa
     useWalletStore.setState((c) => ({ ...c, coinbase_transactions: coinbase_transactions }));
 };
 
-export const importSeedWords = async (seedWords: string[]) => {
+function resetWalletStates() {
+    // reset wallet states on import
     useWalletStore.setState((c) => ({
         ...c,
         is_wallet_importing: true,
@@ -72,6 +74,14 @@ export const importSeedWords = async (seedWords: string[]) => {
             progress: 0,
         },
     }));
+
+    // reset pool stats too
+    const initialPoolStats = useMiningPoolsStore.getInitialState();
+    useMiningPoolsStore.setState(initialPoolStats);
+}
+
+export const importSeedWords = async (seedWords: string[]) => {
+    resetWalletStates();
 
     const anyMiningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
