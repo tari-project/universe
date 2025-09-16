@@ -347,9 +347,20 @@ impl GpuManager {
             if let Some(fallback_miner) = fallback_miner {
                 info!(target: LOG_TARGET, "Switching to fallback gpu miner: {fallback_miner}");
                 self.switch_miner(fallback_miner).await?;
-                let _unused =
-                    start_gpu_mining(app_handle.state::<UniverseAppState>(), app_handle.clone())
-                        .await;
+
+                // TODO temporary fix for deadlock
+                let mut shutdown_signal =
+                    TasksTrackers::current().gpu_mining_phase.get_signal().await;
+                TasksTrackers::current()
+                    .gpu_mining_phase
+                    .get_task_tracker()
+                    .await
+                    .spawn(async move {
+                        select! {
+                            _ = shutdown_signal.wait() => {}
+                            _ = start_gpu_mining(app_handle.state::<UniverseAppState>(), app_handle.clone()) => {}
+                        }
+                    });
             } else {
                 error!(target: LOG_TARGET, "No healthy gpu miners left to switch to");
                 //TODO Probably we will need to handle it better in the future, app modules maybe need to know that no miners are healthy ?
