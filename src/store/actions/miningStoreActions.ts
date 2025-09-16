@@ -228,7 +228,3 @@ export const checkMiningTime = () => {
     useMiningStore.setState({ sessionMiningTime: { ...current, durationMs: diff } });
     return diff;
 };
-
-export const handleGpuMinerFallback = (isGpuMinerFallback: boolean) => {
-    useMiningStore.setState({ isGpuMinerFallback });
-};

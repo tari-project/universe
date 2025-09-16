@@ -44,6 +44,7 @@ use crate::{
     mining::gpu::{
         consts::{GpuConnectionType, GpuMinerStatus},
         interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+        manager::GpuManager,
         miners::{load_file_content, GpuCommonInformation, GpuDeviceType, GpuVendor},
         utils::gpu_miner_sha_websocket::GpuMinerShaWebSocket,
     },
@@ -52,9 +53,7 @@ use crate::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
         StatusMonitor,
     },
-    process_utils,
-    setup::setup_manager::SetupManager,
-    APPLICATION_FOLDER_ID,
+    process_utils, APPLICATION_FOLDER_ID,
 };
 
 const LOG_TARGET: &str = "tari::universe::mining::gpu::miners::graxil";
@@ -292,7 +291,7 @@ impl ProcessAdapter for GraxilGpuMiner {
 
 // This is a flag to indicate if the fallback to solo mining has been triggered
 // We want to avoid triggering it multiple times per session
-static WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED: AtomicBool = AtomicBool::new(false);
+static WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Clone)]
 pub struct GraxilGpuMinerStatusMonitor {
@@ -306,18 +305,14 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
         &self,
         duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
-        // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
         info!(target: LOG_TARGET, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
-        if duration_since_last_healthy_status.as_secs().gt(&(60 * 30))
-            && !WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.load(Ordering::SeqCst)
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 3)) // Fallback after 3 minutes of unhealthiness
+            && !WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.load(Ordering::SeqCst)
         {
-            match SetupManager::get_instance()
-                .turn_off_gpu_pool_feature()
-                .await
-            {
+            match GpuManager::write().await.handle_unhealthy_miner().await {
                 Ok(_) => {
                     info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
-                    WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.store(true, Ordering::SeqCst);
+                    WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.store(true, Ordering::SeqCst);
                     return Ok(HandleUnhealthyResult::Stop);
                 }
                 Err(error) => {
@@ -345,6 +340,10 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
                 info!(target: LOG_TARGET, "ShaMiner status: {status:?}");
                 let _ = self.gpu_status_sender.send(status.clone());
                 if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
+                    if !GpuManager::read().await.is_current_miner_healthy().await {
+                        info!(target: LOG_TARGET, "Marking current miner as healthy again");
+                        let _unused = GpuManager::write().await.handle_healthy_miner().await;
+                    }
                     HealthStatus::Healthy
                 } else {
                     HealthStatus::Warning
