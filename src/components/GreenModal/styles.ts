@@ -14,18 +14,12 @@ export const BoxWrapper = styled(m.div)<{ $boxWidth?: number; $padding?: number 
     gap: 40px;
     max-width: 100%;
     padding: 40px;
-    width: clamp(600px, 45vw, 635px);
+    width: clamp(max(40vw, 620px), calc(700px + 2vh), min(60vw, 840px));
 
     @media (max-height: 900px) {
         gap: 20px;
         padding: 20px;
     }
-
-    ${({ $boxWidth }) =>
-        $boxWidth &&
-        css`
-            width: clamp(600px, 45vw, ${$boxWidth}px);
-        `}
 
     ${({ $padding }) =>
         $padding &&

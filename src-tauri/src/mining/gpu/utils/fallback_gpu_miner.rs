@@ -35,7 +35,7 @@ const LOG_TARGET: &str = "tari::universe::fallback_gpu_miner";
 
 pub async fn fallback_gpu_miner(app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
     let config_gpu_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
-    if config_gpu_miner_type != GpuMinerType::Glytex {
+    if config_gpu_miner_type != GpuMinerType::Graxil {
         TasksTrackers::current()
             .node_phase
             .get_task_tracker()

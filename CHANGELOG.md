@@ -1,3 +1,32 @@
+🚀 TARI UNIVERSE v1.6.0: The Kingdom of All Waters
+
+_September 15, 2025_
+
+Hey Tari fam,
+
+Introducing Tari Universe v1.6.0 "The Kingdom of All Waters." This release is a huge step forward for the Tari community: the Cuckaroo29 hard fork is nearly upon us! At block 95,000, Tari becomes the first blockchain with dedicated mining lanes for every type of mining hardware. No matter what you're running, there's a lane built for you.
+
+This four-lane approach doesn't only make mining fairer, it makes the network incredibly secure by requiring attackers to control multiple mining hardware ecosystems simultaneously to successfully 51% attack the network.
+
+🛣️ **Four Mining Lanes** – Every miner gets their own dedicated space:
+
+- 🤝 **25% Tari RandomX merge-mining with Monero**
+- ⚡ **25% Tari RandomX mining** for nearly any desktop or laptop hardware
+- 🔧 **25% SHA-3x algorithm** for FPGA/ASIC miners (the "big" miners)
+- 🎮 **NEW - 25% Cuckaroo29 (C29) algorithm** for ASIC-resistant GPU mining (for desktop GPU miners)
+
+✨ WHAT'S NEW
+
+- **C29 Support**: GPU mining defaults to C29 pool mining (LuckyPool) if your system can support it.
+
+**Things to know:**
+- C29 requires 7+ GB VRAM and measures performance in Graphs per second (G/s) rather than Hashes per second (H/s).
+- It's memory-bound, so Tari Universe power levels won't have any effect (it's either on or off).
+- Tari Universe automatically switches to SHA-3x pool mining for GPUs with less VRAM.
+- Mac support for Cuckaroo29 mining coming in a future update
+
+---
+
 🚀 TARI UNIVERSE v1.5.17: Soon's Question
 
 _September 9, 2025_

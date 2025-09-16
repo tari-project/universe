@@ -23,6 +23,7 @@ interface UIStoreState {
     towerInitalized: boolean;
     showTapplet: boolean;
     isShuttingDown: boolean;
+    seedlessUI: boolean;
 }
 const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -45,6 +46,7 @@ const initialState: UIStoreState = {
     towerInitalized: false,
     showTapplet: false,
     isShuttingDown: false,
+    seedlessUI: false,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({

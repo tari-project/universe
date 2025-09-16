@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 
 const KEY_SURVEYS = 'surveys';
 
-async function fetchSurvey(slug: string): Promise<Survey> {
+export async function fetchSurvey(slug: string): Promise<Survey> {
     try {
         const res = await handleAirdropRequest<Survey>({
             path: `/survey/${slug}`,

@@ -64,6 +64,7 @@ use crate::{
 
 static LOG_TARGET: &str = "tari::mining::gpu::manager";
 static INSTANCE: LazyLock<RwLock<GpuManager>> = LazyLock::new(|| RwLock::new(GpuManager::new()));
+static FALLBACK_GPU_MINER_TYPE: GpuMinerType = GpuMinerType::Graxil;
 
 pub struct GpuManager {
     systray_manager: Option<Arc<RwLock<SystemTrayManager>>>,
@@ -141,21 +142,12 @@ impl GpuManager {
     // Loads the saved miner from config or the first available one
     pub async fn load_saved_miner() {
         let mut instance = INSTANCE.write().await;
-        // if instance.fallback_mode {
-        //     info!(target: LOG_TARGET, "Gpu Miner Fallback mode enabled, skipping loading saved gpu miner");
-        //     let fallback_gpu_miner_type = GpuMinerType::Glytex;
-        //     let adapter = instance.resolve_miner_interface(&fallback_gpu_miner_type);
-        //     instance.selected_miner = fallback_gpu_miner_type.clone();
-        //     instance.process_watcher.adapter = adapter;
-        //     EventsEmitter::emit_update_selected_gpu_miner(fallback_gpu_miner_type).await;
-        //     return;
-        // }
-
         let selected_gpu_miner_type = if instance.fallback_mode {
             info!(target: LOG_TARGET, "Gpu Miner uses fallback mode, forcing Glytex gpu miner");
-            instance.fallback_mode = false;
-            GpuMinerType::Glytex // Force glytex in fallback mode
+            EventsEmitter::emit_gpu_miner_fallback(true).await;
+            FALLBACK_GPU_MINER_TYPE.clone()
         } else {
+            EventsEmitter::emit_gpu_miner_fallback(false).await;
             ConfigMining::content().await.gpu_miner_type().clone()
         };
 
@@ -236,7 +228,13 @@ impl GpuManager {
         if *ConfigPools::content().await.gpu_pool_enabled()
             && instance.selected_miner.is_pool_mining_supported()
         {
-            let current_selected_pool = ConfigPools::content().await.selected_gpu_pool().clone();
+            let current_selected_pool = if instance.fallback_mode {
+                instance.fallback_mode = false;
+                GpuPool::default_for_miner_type(FALLBACK_GPU_MINER_TYPE.clone())
+                    .unwrap_or(ConfigPools::content().await.selected_gpu_pool().clone())
+            } else {
+                ConfigPools::content().await.selected_gpu_pool().clone()
+            };
             let current_selected_pool_url = current_selected_pool.get_pool_url();
             instance
                 .process_watcher

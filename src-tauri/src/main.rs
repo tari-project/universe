@@ -280,13 +280,13 @@ fn main() {
         .into(),
     );
 
-    let systray_manager = Arc::new(RwLock::new(SystemTrayManager::new()));
+    let systemtray_manager = Arc::new(RwLock::new(SystemTrayManager::new()));
 
     block_on(GpuManager::initialize(
         stats_collector.take_gpu_miner(),
         gpu_status_tx.clone(),
         Some(base_node_watch_rx.clone()),
-        Some(systray_manager.clone()),
+        Some(systemtray_manager.clone()),
     ));
 
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
@@ -344,7 +344,7 @@ fn main() {
         feedback: Arc::new(RwLock::new(feedback)),
         tor_manager,
         updates_manager,
-        systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
+        systemtray_manager,
         mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
         websocket_message_tx: Arc::new(websocket_message_tx),
         websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),

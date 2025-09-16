@@ -205,4 +205,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'AvailableMiners';
           payload: GpuMinerType[];
+      }
+    | {
+          event_type: 'GpuMinerFallback';
+          payload: boolean;
       };
