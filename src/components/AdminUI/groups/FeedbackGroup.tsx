@@ -26,7 +26,6 @@ export function FeedbackGroup() {
 
     return (
         <>
-            <CategoryLabel>Feedback</CategoryLabel>
             <ButtonGroup>
                 <AdminButton onClick={() => setShowCloseDialog(!showCloseDialog)} $isActive={showCloseDialog}>
                     Early Close

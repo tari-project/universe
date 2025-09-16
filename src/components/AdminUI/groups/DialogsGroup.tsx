@@ -17,7 +17,6 @@ export function DialogsGroup() {
 
     return (
         <>
-            <CategoryLabel>Dialogs</CategoryLabel>
             <ButtonGroup>
                 <AdminButton
                     onClick={() =>

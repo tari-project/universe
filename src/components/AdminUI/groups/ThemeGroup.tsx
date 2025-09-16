@@ -7,16 +7,13 @@ export function ThemeGroup() {
     const theme = useUIStore((s) => s.theme);
 
     return (
-        <>
-            <CategoryLabel>Theme</CategoryLabel>
-            <ButtonGroup>
-                <AdminButton onClick={() => setUITheme('light')} $isActive={theme === 'light'}>
-                    Light Theme
-                </AdminButton>
-                <AdminButton onClick={() => setUITheme('dark')} $isActive={theme === 'dark'}>
-                    Dark Theme
-                </AdminButton>
-            </ButtonGroup>
-        </>
+        <ButtonGroup>
+            <AdminButton onClick={() => setUITheme('light')} $isActive={theme === 'light'}>
+                Light Theme
+            </AdminButton>
+            <AdminButton onClick={() => setUITheme('dark')} $isActive={theme === 'dark'}>
+                Dark Theme
+            </AdminButton>
+        </ButtonGroup>
     );
 }

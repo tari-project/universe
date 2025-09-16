@@ -43,7 +43,6 @@ export function ToastsGroup() {
 
     return (
         <>
-            <CategoryLabel>{`Toast Testing`}</CategoryLabel>
             <ButtonGroup>
                 <AdminButton onClick={showSuccessToast}>{`Success Toast`}</AdminButton>
                 <AdminButton onClick={showErrorToast}>{`Error Toast`}</AdminButton>

@@ -11,7 +11,6 @@ export function GreenModalsGroup() {
 
     return (
         <>
-            <CategoryLabel>Green Modals</CategoryLabel>
             <ButtonGroup>
                 <AdminButton onClick={() => setShowPaperWallet(!showPaperWallet)} $isActive={showPaperWallet}>
                     Paper Wallet

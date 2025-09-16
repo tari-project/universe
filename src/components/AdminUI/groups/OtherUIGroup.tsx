@@ -22,7 +22,6 @@ export function OtherUIGroup() {
 
     return (
         <>
-            <CategoryLabel>{`Other UI`}</CategoryLabel>
             <ButtonGroup>
                 <AdminButton onClick={shiftConnectionStatus}>{`Change connection status`}</AdminButton>
                 <AdminButton
