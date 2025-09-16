@@ -216,11 +216,6 @@ impl GpuManager {
             .gpu_mining_phase
             .get_task_tracker()
             .await;
-        let binary = match self.selected_miner {
-            GpuMinerType::Graxil => Binaries::GpuMinerSHA3X,
-            GpuMinerType::LolMiner => Binaries::LolMiner,
-            GpuMinerType::Glytex => Binaries::GpuMiner,
-        };
 
         if *ConfigPools::content().await.gpu_pool_enabled()
             && self.selected_miner.is_pool_mining_supported()
@@ -233,7 +228,16 @@ impl GpuManager {
                     pool_url: current_selected_pool_url,
                 })
                 .await?;
+        } else if self.selected_miner.is_solo_mining_supported() {
+            self.process_watcher
+                .adapter
+                .load_connection_type(GpuConnectionType::Node {
+                    node_grpc_address: grpc_node_address,
+                })
+                .await?;
         } else {
+            info!(target: LOG_TARGET, "Selected gpu miner does not support solo mining, cannot start mining without a pool | Switching to glytex");
+            self.switch_miner(GpuMinerType::Glytex).await?;
             self.process_watcher
                 .adapter
                 .load_connection_type(GpuConnectionType::Node {
@@ -241,6 +245,12 @@ impl GpuManager {
                 })
                 .await?;
         }
+
+        let binary = match self.selected_miner {
+            GpuMinerType::Graxil => Binaries::GpuMinerSHA3X,
+            GpuMinerType::LolMiner => Binaries::LolMiner,
+            GpuMinerType::Glytex => Binaries::GpuMiner,
+        };
 
         self.process_watcher
             .adapter

@@ -142,6 +142,10 @@ impl GpuMinerType {
         self.get_expected_features()
             .contains(&GpuMinerFeature::PoolMining)
     }
+    pub fn is_solo_mining_supported(&self) -> bool {
+        self.get_expected_features()
+            .contains(&GpuMinerFeature::SoloMining)
+    }
 }
 
 impl std::fmt::Display for GpuMinerType {
