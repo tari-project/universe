@@ -126,6 +126,7 @@ pub trait PoolManagerInterfaceTrait {
     /// Force an immediate update of the current pool statuses
     /// This can be called whenever an immediate update is needed, e.g., after changing the
     /// selected pool or wallet address while not mining
+    #[allow(dead_code)]
     async fn update_current_pool_status() {
         Self::get_write_manager()
             .await
