@@ -79,14 +79,6 @@ export const AdminButton = styled('button')<{ $isActive?: boolean }>`
     }
 `;
 
-export const CategoryLabel = styled('div')`
-    color: #999;
-    font-size: 10px;
-    text-transform: uppercase;
-    padding-bottom: 2px;
-    border-bottom: 1px solid #666;
-`;
-
 export const ButtonGroup = styled('div')`
     display: grid;
     grid-auto-flow: row;

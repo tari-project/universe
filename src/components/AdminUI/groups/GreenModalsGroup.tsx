@@ -1,5 +1,5 @@
 /* eslint-disable i18next/no-literal-string */
-import { AdminButton, ButtonGroup, CategoryLabel } from '../styles';
+import { AdminButton, ButtonGroup } from '../styles';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
 import { useSecurityStore } from '@app/store/useSecurityStore.ts';
 import { useShareRewardStore } from '@app/store/useShareRewardStore';

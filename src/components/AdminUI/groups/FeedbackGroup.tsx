@@ -1,5 +1,5 @@
 /* eslint-disable i18next/no-literal-string */
-import { AdminButton, ButtonGroup, CategoryLabel, ExtraContent } from '../styles';
+import { AdminButton, ButtonGroup, ExtraContent } from '../styles';
 
 import {
     setMininimumMiningTimeMs,

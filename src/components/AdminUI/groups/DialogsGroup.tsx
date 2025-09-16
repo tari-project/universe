@@ -1,5 +1,5 @@
 /* eslint-disable i18next/no-literal-string */
-import { AdminButton, ButtonGroup, CategoryLabel } from '../styles';
+import { AdminButton, ButtonGroup } from '../styles';
 
 import { useAppStateStore } from '@app/store/appStateStore';
 import { setCriticalProblem, setDialogToShow, setShowExternalDependenciesDialog } from '@app/store/actions';

@@ -1,4 +1,4 @@
-import { AdminButton, ButtonGroup, CategoryLabel } from '../styles';
+import { AdminButton, ButtonGroup } from '../styles';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 
 export function ToastsGroup() {

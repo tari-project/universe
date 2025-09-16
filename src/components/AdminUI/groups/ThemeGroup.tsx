@@ -1,5 +1,5 @@
 /* eslint-disable i18next/no-literal-string */
-import { AdminButton, ButtonGroup, CategoryLabel } from '../styles';
+import { AdminButton, ButtonGroup } from '../styles';
 import { useUIStore } from '@app/store/useUIStore';
 import { setUITheme } from '@app/store';
 
