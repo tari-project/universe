@@ -28,7 +28,7 @@ use super::listeners::{setup_listener, SetupFeature, SetupFeaturesList};
 use super::trait_setup_phase::SetupPhaseImpl;
 use super::utils::phase_builder::PhaseBuilder;
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
-use crate::commands::{start_cpu_mining, start_gpu_mining};
+use crate::commands::start_cpu_mining;
 use crate::configs::config_core::ConfigCoreContent;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
@@ -37,6 +37,7 @@ use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
 use crate::mining::gpu::consts::GpuMinerType;
+use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
@@ -248,6 +249,11 @@ impl SetupManager {
         }
 
         drop(websocket_events_manager_guard);
+
+        GpuManager::write()
+            .await
+            .load_app_handle(app_handle.clone())
+            .await;
 
         // Listen for websocket reconnection events to restart events manager
         let websocket_event_manager_clone = state.websocket_event_manager.clone();
@@ -789,9 +795,6 @@ impl SetupManager {
     pub async fn turn_off_gpu_pool_feature(&self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Turning off GPU Pool feature");
 
-        let app_handle = self.app_handle().await;
-        let app_state = app_handle.state::<UniverseAppState>().clone();
-
         // We want to stop the stats watcher as its not needed when solo mining
         // Normal flow would monitor the status for extra hour but in case of disabling pool mining we want to stop it right away
         GpuPoolManager::stop_stats_watcher().await;
@@ -800,11 +803,6 @@ impl SetupManager {
         ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, false).await?;
         // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
         EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
-
-        // Start mining will now pickup that GPU Pool is turn off and will start glytex instead
-        start_gpu_mining(app_state.clone(), app_handle.clone())
-            .await
-            .map_err(anyhow::Error::msg)?;
 
         Ok(())
     }

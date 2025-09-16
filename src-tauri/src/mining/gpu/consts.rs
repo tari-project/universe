@@ -22,7 +22,6 @@
 
 use std::fmt::Display;
 
-use anyhow::Error;
 use serde::{Deserialize, Serialize};
 
 use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
@@ -197,7 +196,7 @@ impl GpuMiner {
             features: miner_type.get_expected_features(),
             supported_algorithms: miner_type.supported_algorithms(),
             is_healthy,
-            last_error: last_error,
+            last_error,
         }
     }
 }

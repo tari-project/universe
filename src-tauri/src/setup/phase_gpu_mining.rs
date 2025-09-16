@@ -152,6 +152,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         SetupDefaultAdapter::setup(self).await;
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
 
@@ -280,7 +281,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             })
             .await?;
 
-        GpuManager::write().await.load_saved_miner().await;
+        GpuManager::write().await.load_saved_miner().await?;
 
         Ok(())
     }

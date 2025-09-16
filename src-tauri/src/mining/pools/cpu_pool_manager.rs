@@ -29,9 +29,8 @@ use tokio::{
 
 use crate::{
     configs::{
-        config_pools::{ConfigPools, ConfigPoolsContent},
+        config_pools::ConfigPoolsContent,
         pools::{cpu_pools::CpuPool, PoolConfig},
-        trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
     mining::pools::{
@@ -73,13 +72,15 @@ impl CpuPoolManager {
                 .pool_status_manager
                 .write()
                 .await
-                .handle_pool_change(pool_adapter);
+                .handle_pool_change(pool_adapter)
+                .await;
         } else {
             INSTANCE
                 .pool_status_manager
                 .write()
                 .await
-                .load_pool_adapter(pool_adapter);
+                .load_pool_adapter(pool_adapter)
+                .await;
         }
     }
 }

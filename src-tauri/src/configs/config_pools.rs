@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use getset::{Getters, Setters};
-use log::info;
 use serde::{Deserialize, Serialize};
 use std::{sync::LazyLock, time::SystemTime};
 use tauri::AppHandle;
@@ -33,10 +32,7 @@ use crate::{
         gpu_pools::{GpuPool, LuckyPoolGpuConfig, SupportXTMGpuPoolConfig},
         PoolConfig,
     },
-    mining::pools::{
-        cpu_pool_manager::CpuPoolManager, gpu_pool_manager::GpuPoolManager,
-        PoolManagerInterfaceTrait,
-    },
+    mining::pools::{cpu_pool_manager::CpuPoolManager, gpu_pool_manager::GpuPoolManager},
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};

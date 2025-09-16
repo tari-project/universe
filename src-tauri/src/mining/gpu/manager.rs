@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use anyhow::Error;
 use log::{error, info};
 use std::{
     collections::HashMap,
@@ -28,6 +27,7 @@ use std::{
     sync::{Arc, LazyLock},
 };
 use tari_shutdown::Shutdown;
+use tauri::{AppHandle, Manager};
 
 use tari_common_types::tari_address::TariAddress;
 use tokio::{
@@ -40,6 +40,7 @@ use tokio::{
 
 use crate::{
     binaries::Binaries,
+    commands::start_gpu_mining,
     configs::{
         config_mining::{ConfigMining, ConfigMiningContent},
         config_pools::ConfigPools,
@@ -64,12 +65,14 @@ use crate::{
     systemtray_manager::{SystemTrayGpuData, SystemTrayManager},
     tasks_tracker::TasksTrackers,
     utils::{locks_utils::try_write_with_retry, math_utils::estimate_earning},
+    UniverseAppState,
 };
 
 static LOG_TARGET: &str = "tari::mining::gpu::manager";
 static INSTANCE: LazyLock<RwLock<GpuManager>> = LazyLock::new(|| RwLock::new(GpuManager::new()));
 
 pub struct GpuManager {
+    app_handle: Option<AppHandle>,
     systray_manager: Option<Arc<RwLock<SystemTrayManager>>>,
     // ======= Miner config =======
     selected_miner: GpuMinerType,
@@ -99,6 +102,7 @@ pub struct GpuManager {
 impl GpuManager {
     pub fn new() -> Self {
         Self {
+            app_handle: None,
             systray_manager: None,
             // ======= Miner config =======
             selected_miner: GpuMinerType::LolMiner,
@@ -132,6 +136,10 @@ impl GpuManager {
         INSTANCE.write().await
     }
 
+    pub async fn load_app_handle(&mut self, app_handle: AppHandle) {
+        self.app_handle = Some(app_handle);
+    }
+
     pub async fn initialize(
         process_stats_collector: Sender<ProcessWatcherStats>,
         status_channel: Sender<GpuMinerStatus>,
@@ -150,37 +158,30 @@ impl GpuManager {
 
     // Loads the saved miner from config or the first available one
     pub async fn load_saved_miner(&mut self) -> Result<(), anyhow::Error> {
-        let selected_gpu_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
+        let mut selected_gpu_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
 
         if self.available_miners.contains_key(&selected_gpu_miner_type) {
             info!(target: LOG_TARGET, "Loaded saved gpu miner: {selected_gpu_miner_type}");
-            let adapter = self.resolve_miner_interface(&selected_gpu_miner_type);
-            self.process_watcher.adapter = adapter;
-            self.selected_miner = selected_gpu_miner_type.clone();
-            if let Some(miner) = self.available_miners.get(&selected_gpu_miner_type) {
-                EventsEmitter::emit_update_selected_gpu_miner(miner.clone()).await;
-            }
         } else if !self.available_miners.is_empty() {
-            MINERS_PRIORITY
-                .iter()
-                .find_map(|miner_type| {
-                    let is_healthy = self
-                        .available_miners
-                        .get(miner_type)
-                        .map(|m| m.is_healthy)
-                        .unwrap_or(false);
-                    if is_healthy {
-                        Some(miner_type)
-                    } else {
-                        None
-                    }
-                })
-                .map(|fallback_miner_type| {
-                    self.switch_miner(fallback_miner_type.clone());
-                });
+            if let Some(fallback_miner_type) = MINERS_PRIORITY.iter().find_map(|miner_type| {
+                let is_healthy = self
+                    .available_miners
+                    .get(miner_type)
+                    .map(|m| m.is_healthy)
+                    .unwrap_or(false);
+                if is_healthy {
+                    Some(miner_type)
+                } else {
+                    None
+                }
+            }) {
+                selected_gpu_miner_type = fallback_miner_type.clone();
+            }
         } else {
             return Err(anyhow::anyhow!("No available gpu miners to load"));
         }
+
+        self.switch_miner(selected_gpu_miner_type).await?;
 
         Ok(())
     }
@@ -304,7 +305,7 @@ impl GpuManager {
             info!(target: LOG_TARGET, "Set selected gpu miner interface in process watcher");
             EventsEmitter::emit_update_selected_gpu_miner(miner_cloned).await;
             ConfigMining::update_field(ConfigMiningContent::set_gpu_miner_type, miner_type.clone())
-                .await;
+                .await?;
             GpuPoolManager::handle_miner_switch(new_miner.clone()).await;
         } else {
             return Err(anyhow::anyhow!("Selected gpu miner is not available"));
@@ -313,24 +314,94 @@ impl GpuManager {
         Ok(())
     }
 
-    // Will need to mark current seleceted miner as unhealthy and switch to another one based on priority
-    // If no other miners are available, we will just mark the current one as unhealthy and emit the status
+    /// Will need to mark current seleceted miner as unhealthy and switch to another one based on priority
+    /// If no other miners are available, we will just mark the current one as unhealthy and emit the status
     pub async fn handle_unhealthy_miner(&mut self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Handling unhealthy gpu miner");
+
+        // mark current miner as unhealthy
+        if let Some(current_miner) = self.available_miners.get_mut(&self.selected_miner) {
+            current_miner.is_healthy = false;
+            current_miner.last_error =
+                Some("Miner process crashed or became unresponsive".to_string());
+        }
+
+        // app handle is required to start mining on new miner
+        if let Some(app_handle) = self.app_handle.clone() {
+            let fallback_miner = MINERS_PRIORITY
+                .iter()
+                .find_map(|miner_type| {
+                    let is_healthy = self
+                        .available_miners
+                        .get(miner_type)
+                        .map(|m| m.is_healthy)
+                        .unwrap_or(false);
+                    if is_healthy && *miner_type != self.selected_miner {
+                        Some(miner_type)
+                    } else {
+                        None
+                    }
+                })
+                .cloned();
+
+            if let Some(fallback_miner) = fallback_miner {
+                info!(target: LOG_TARGET, "Switching to fallback gpu miner: {fallback_miner}");
+                self.switch_miner(fallback_miner).await?;
+                let _unused =
+                    start_gpu_mining(app_handle.state::<UniverseAppState>(), app_handle.clone())
+                        .await;
+            } else {
+                error!(target: LOG_TARGET, "No healthy gpu miners left to switch to");
+                //TODO Probably we will need to handle it better in the future, app modules maybe need to know that no miners are healthy ?
+            }
+        }
+
+        EventsEmitter::emit_available_gpu_miners(
+            self.available_miners
+                .keys()
+                .cloned()
+                .collect::<Vec<GpuMinerType>>(),
+        )
+        .await;
+
         Ok(())
     }
 
-    // Will need to mark current seleceted miner as healthy if it was unhealthy before
-    // If the miner was healthy before, we do nothing
+    pub async fn is_current_miner_healthy(&self) -> bool {
+        self.available_miners
+            .get(&self.selected_miner)
+            .map(|m| m.is_healthy)
+            .unwrap_or(false)
+    }
+
+    /// Will need to mark current seleceted miner as healthy if it was unhealthy before
+    /// If the miner was healthy before, we do nothing
+    /// Mainly for cases when the miner was unhealthy and user want to try again and this time it works
     pub async fn handle_healthy_miner(&mut self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Handling healthy gpu miner");
+        // mark current miner as healthy
+        if let Some(current_miner) = self.available_miners.get_mut(&self.selected_miner) {
+            if !current_miner.is_healthy {
+                current_miner.is_healthy = true;
+                current_miner.last_error = None;
+            }
+            EventsEmitter::emit_update_selected_gpu_miner(current_miner.clone()).await;
+        }
+
+        EventsEmitter::emit_available_gpu_miners(
+            self.available_miners
+                .keys()
+                .cloned()
+                .collect::<Vec<GpuMinerType>>(),
+        )
+        .await;
+
         Ok(())
     }
 
-    // Should iterate over available miners and detect devices for each of them
-    // If at least one miner detects devices, we consider the detection successful
-    // If detection fails for some of the miners we need to remove them from available miners
-    // If no miners are left, we return an error
+    /// Should iterate over available miners and detect devices for each of them
+    /// If at least one miner detects devices, we consider the detection successful
+    ///  If detection fails for some of the miners we need to remove them from available miners
+    /// If no miners are left, we return an error
     pub async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
         let mut successful_detection = false;
         let mut unhealthy_miners = vec![];
@@ -351,10 +422,10 @@ impl GpuManager {
         }
 
         for miner_type in unhealthy_miners {
-            self.available_miners.get_mut(&miner_type).map(|m| {
-                m.is_healthy = false;
-                m.last_error = Some(format!("Device detection failed"));
-            });
+            if let Some(miner) = self.available_miners.get_mut(&miner_type) {
+                miner.is_healthy = false;
+                miner.last_error = Some("Device detection failed".to_string());
+            }
             info!(target: LOG_TARGET, "Marked miner {miner_type} as unhealthy due to detection failure");
         }
 
