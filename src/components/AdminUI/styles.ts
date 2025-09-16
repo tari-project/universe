@@ -97,11 +97,15 @@ export const ButtonGroup = styled('div')`
 export const ExtraContent = styled.div`
     display: flex;
     flex-direction: column;
-    font-size: 14px;
+
+    font-size: 11px;
     gap: 4px;
+    color: #fff;
+
     label {
         gap: 4px;
         justify-content: space-between;
+        align-items: center;
         display: flex;
         input {
             display: flex;
