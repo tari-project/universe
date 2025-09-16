@@ -28,7 +28,11 @@ use tokio::{
 };
 
 use crate::{
-    configs::pools::{cpu_pools::CpuPool, PoolConfig},
+    configs::{
+        config_pools::{ConfigPools, ConfigPoolsContent},
+        pools::{cpu_pools::CpuPool, PoolConfig},
+        trait_config::ConfigImpl,
+    },
     events_emitter::EventsEmitter,
     mining::pools::{
         adapters::PoolApiAdapters, pools_manager::PoolManager, PoolManagerInterfaceTrait,
@@ -57,6 +61,25 @@ impl CpuPoolManager {
         );
         Self {
             pool_status_manager: RwLock::new(pool_manager),
+        }
+    }
+
+    pub async fn initialize_from_pool_config(config_content: &ConfigPoolsContent) {
+        let current_selected_pool = config_content.selected_cpu_pool().clone();
+        let pool_adapter = Self::resolve_pool_adapter(&current_selected_pool);
+
+        if *config_content.cpu_pool_enabled() {
+            INSTANCE
+                .pool_status_manager
+                .write()
+                .await
+                .handle_pool_change(pool_adapter);
+        } else {
+            INSTANCE
+                .pool_status_manager
+                .write()
+                .await
+                .load_pool_adapter(pool_adapter);
         }
     }
 }

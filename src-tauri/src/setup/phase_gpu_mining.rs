@@ -171,12 +171,12 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                 .initialize_binary(Binaries::LolMiner, None)
                 .await;
 
-            let graxil_is_err = graxil_initialization_result.as_ref().err();
-            let glytex_is_err = glytex_initialization_result.as_ref().err();
-            let lolminer_is_err = lolminer_initialization_result.as_ref().err();
+            let graxil_err = graxil_initialization_result.as_ref().err();
+            let glytex_err = glytex_initialization_result.as_ref().err();
+            let lolminer_err = lolminer_initialization_result.as_ref().err();
 
             if let (Some(graxil_err), Some(glytex_err), Some(lolminer_err)) =
-                (graxil_is_err, glytex_is_err, lolminer_is_err)
+                (graxil_err, glytex_err, lolminer_err)
             {
                 return Err(anyhow::anyhow!(
                     "Failed to initialize GPU miner binaries: Graxil: {graxil_err}, Glytex: {glytex_err}, LolMiner: {lolminer_err}"
@@ -184,18 +184,30 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             }
 
             // Graxil is supported on Windows | Linux | MacOS
-            if graxil_initialization_result.is_ok() && GpuMinerType::Graxil.is_supported_on_current_platform() {
-                GpuManager::load_miner(GpuMinerType::Graxil).await;
+            if GpuMinerType::Graxil.is_supported_on_current_platform() {
+                GpuManager::write().await.load_miner(
+                    GpuMinerType::Graxil,
+                    graxil_initialization_result.is_ok(),
+                    graxil_err.map(|e| e.to_string()),
+                ).await;
             }
 
             // Glytex is supported on Windows | Linux | MacOS
-            if glytex_initialization_result.is_ok() && GpuMinerType::Glytex.is_supported_on_current_platform() {
-                GpuManager::load_miner(GpuMinerType::Glytex).await;
+            if GpuMinerType::Glytex.is_supported_on_current_platform() {
+                GpuManager::write().await.load_miner(
+                    GpuMinerType::Glytex,
+                    glytex_initialization_result.is_ok(),
+                    glytex_err.map(|e| e.to_string()),
+                ).await;
             }
 
             // LolMiner is supported on Windows | Linux
-            if lolminer_initialization_result.is_ok() && GpuMinerType::LolMiner.is_supported_on_current_platform() {
-                GpuManager::load_miner(GpuMinerType::LolMiner).await;
+            if GpuMinerType::LolMiner.is_supported_on_current_platform() {
+                GpuManager::write().await.load_miner(
+                    GpuMinerType::LolMiner,
+                    lolminer_initialization_result.is_ok(),
+                    lolminer_err.map(|e| e.to_string()),
+                ).await;
             }
 
             Ok(())
@@ -203,7 +215,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
 
         progress_stepper
             .complete_step(SetupStep::DetectGpu, || async {
-                if let Err(original_error) = GpuManager::detect_devices().await {
+                if let Err(original_error) = GpuManager::write().await.detect_devices().await {
                     #[cfg(target_os = "windows")]
                     {
                         use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
@@ -268,7 +280,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             })
             .await?;
 
-        GpuManager::load_saved_miner().await;
+        GpuManager::write().await.load_saved_miner().await;
 
         Ok(())
     }

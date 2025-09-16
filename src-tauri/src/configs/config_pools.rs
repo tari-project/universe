@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use getset::{Getters, Setters};
+use log::info;
 use serde::{Deserialize, Serialize};
 use std::{sync::LazyLock, time::SystemTime};
 use tauri::AppHandle;
@@ -144,9 +145,9 @@ impl ConfigPools {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
-        // Loads the selected pools into the pool managers as they are set with lucky pool by default
-        CpuPoolManager::handle_new_selected_pool(config.content.selected_cpu_pool()).await;
-        GpuPoolManager::handle_new_selected_pool(config.content.selected_gpu_pool()).await;
+        // We want to initialize and fetch initial pool status only if pool mining is enabled_enabled() {
+        CpuPoolManager::initialize_from_pool_config(&config.content).await;
+        GpuPoolManager::initialize_from_pool_config(&config.content).await;
     }
 }
 

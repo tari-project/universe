@@ -472,19 +472,6 @@ impl SetupManager {
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
         }
 
-        // Check if we are on pool mining and we do not have mine on start selected
-        // In that case we want to send pool update so we won't display 0 balance
-        if !*ConfigMining::content().await.mine_on_app_start() {
-            if *ConfigPools::content().await.cpu_pool_enabled() {
-                info!(target: LOG_TARGET, "Requesting initial CPU pool status update");
-                CpuPoolManager::update_current_pool_status().await;
-            }
-            if *ConfigPools::content().await.gpu_pool_enabled() {
-                info!(target: LOG_TARGET, "Requesting initial GPU pool status update");
-                GpuPoolManager::update_current_pool_status().await;
-            }
-        }
-
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
 

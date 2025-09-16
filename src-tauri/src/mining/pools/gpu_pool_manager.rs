@@ -25,11 +25,18 @@ use std::{collections::HashMap, sync::LazyLock};
 use tokio::{spawn, sync::RwLock};
 
 use crate::{
-    configs::pools::{gpu_pools::GpuPool, PoolConfig},
+    configs::{
+        config_pools::{ConfigPools, ConfigPoolsContent},
+        pools::{gpu_pools::GpuPool, PoolConfig},
+        trait_config::ConfigImpl,
+    },
     events_emitter::EventsEmitter,
-    mining::pools::{
-        adapters::PoolApiAdapters, pools_manager::PoolManager, PoolManagerInterfaceTrait,
-        PoolStatus,
+    mining::{
+        gpu::consts::GpuMinerType,
+        pools::{
+            adapters::PoolApiAdapters, pools_manager::PoolManager, PoolManagerInterfaceTrait,
+            PoolStatus,
+        },
     },
     tasks_tracker::TasksTrackers,
 };
@@ -55,6 +62,38 @@ impl GpuPoolManager {
         Self {
             pool_status_manager: RwLock::new(pool_manager),
         }
+    }
+    pub async fn initialize_from_pool_config(config_content: &ConfigPoolsContent) {
+        let current_selected_pool = config_content.selected_gpu_pool().clone();
+        let pool_adapter = Self::resolve_pool_adapter(&current_selected_pool);
+
+        if *config_content.gpu_pool_enabled() {
+            INSTANCE
+                .pool_status_manager
+                .write()
+                .await
+                .handle_pool_change(pool_adapter);
+        } else {
+            INSTANCE
+                .pool_status_manager
+                .write()
+                .await
+                .load_pool_adapter(pool_adapter);
+        }
+    }
+
+    /// Handle the case when user switches or fallbacks the GPU miner type (e.g., from Lolminer to Graxil)
+    /// Behavior:
+    /// 1. If the currently selected pool supports the new miner type, do nothing (keep using the same pool)
+    /// 2. If the currently selected pool does not support the new miner type, switch to the default pool for that miner type
+    ///   - Update pool config values and adapter in the pool manager
+    ///   - Emit event to the frontend to update the selected pool in the settings UI
+    /// 3. If the new miner type is Glytex (solo mining only), disable pool mining
+    ///   - Emit event to the frontend to update the settings UI
+    /// ### Arguments
+    /// * `miner` - The new GPU miner type
+    pub async fn handle_miner_switch(miner: GpuMinerType) {
+        let current_selected_pool = ConfigPools::content().await.selected_gpu_pool().clone();
     }
 }
 

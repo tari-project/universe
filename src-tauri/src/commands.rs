@@ -1415,21 +1415,23 @@ pub async fn start_gpu_mining(
 
     info!(target: LOG_TARGET, "3. Starting gpu miner");
 
-    let start_mining_result = GpuManager::start_mining(
-        tari_address,
-        telemetry_id,
-        gpu_usage_percentage,
-        selected_engine,
-        app.path()
-            .app_local_data_dir()
-            .expect("Could not get data dir"),
-        app.path()
-            .app_config_dir()
-            .expect("Could not get config dir"),
-        app.path().app_log_dir().expect("Could not get log dir"),
-        grpc_address,
-    )
-    .await;
+    let start_mining_result = GpuManager::write()
+        .await
+        .start_mining(
+            tari_address,
+            telemetry_id,
+            gpu_usage_percentage,
+            selected_engine,
+            app.path()
+                .app_local_data_dir()
+                .expect("Could not get data dir"),
+            app.path()
+                .app_config_dir()
+                .expect("Could not get config dir"),
+            app.path().app_log_dir().expect("Could not get log dir"),
+            grpc_address,
+        )
+        .await;
 
     if let Err(e) = start_mining_result {
         let err_msg = format!("Could not start GPU mining: {e}");
@@ -1472,7 +1474,11 @@ pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Resul
 pub async fn stop_gpu_mining() -> Result<(), String> {
     let timer = Instant::now();
 
-    GpuManager::stop_mining().await.map_err(|e| e.to_string())?;
+    GpuManager::write()
+        .await
+        .stop_mining()
+        .await
+        .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
@@ -1491,28 +1497,11 @@ pub async fn switch_gpu_miner(gpu_miner_type: GpuMinerType) -> Result<(), String
     .await
     .map_err(|e| e.to_string())?;
 
-    GpuManager::switch_miner(gpu_miner_type.clone())
+    GpuManager::write()
+        .await
+        .switch_miner(gpu_miner_type.clone())
         .await
         .map_err(|e| e.to_string())?;
-
-    // Adjust GpuPool config to the new miner type
-    match GpuPool::default_for_miner_type(gpu_miner_type) {
-        Some(pool) => {
-            ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, true)
-                .await
-                .map_err(|e| e.to_string())?;
-            ConfigPools::update_field(ConfigPoolsContent::update_selected_gpu_config, pool)
-                .await
-                .map_err(|e| e.to_string())?;
-            EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
-        }
-        None => {
-            ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, false)
-                .await
-                .map_err(|e| e.to_string())?;
-            EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
-        }
-    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "switch_gpu_miner took too long: {:?}", timer.elapsed());
@@ -1869,12 +1858,15 @@ pub async fn reset_gpu_pool_config(gpu_pool_name: String) -> Result<(), InvokeEr
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[reset_pool_gpu_pool_config] called with gpu_pool_name: {gpu_pool_name:?}");
 
-    let gpu_pool = GpuPool::default_from_name(&gpu_pool_name).map_err(InvokeError::from_anyhow)?;
+    let current_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
+    let gpu_pool = GpuPool::default_from_name_and_miner_type(&gpu_pool_name, current_miner_type);
 
-    ConfigPools::update_field(ConfigPoolsContent::update_selected_gpu_config, gpu_pool)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
-    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+    if let Some(pool) = &gpu_pool {
+        ConfigPools::update_field(ConfigPoolsContent::update_selected_gpu_config, pool.clone())
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "reset_pool_gpu_pool_config took too long: {:?}", timer.elapsed());
