@@ -16,6 +16,7 @@ import { ThemeGroup } from './groups/ThemeGroup';
 import { DialogsGroup } from './groups/DialogsGroup';
 import { GreenModalsGroup } from './groups/GreenModalsGroup';
 import { OtherUIGroup } from './groups/OtherUIGroup';
+import { ToastsGroup } from './groups/ToastsGroup';
 import { AnimatePresence } from 'motion/react';
 import { FeedbackGroup } from './groups/FeedbackGroup.tsx';
 
@@ -53,6 +54,7 @@ const AdminUI = memo(function AdminUI() {
                                     <FeedbackGroup />
                                     <DialogsGroup />
                                     <GreenModalsGroup />
+                                    <ToastsGroup />
                                     <OtherUIGroup />
                                 </MenuContent>
                             </MenuWrapper>
