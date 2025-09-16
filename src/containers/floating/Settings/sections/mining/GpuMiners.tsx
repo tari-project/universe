@@ -22,12 +22,6 @@ const minerLabel = {
     [GpuMinerType.Graxil]: 'Graxil(SHA3x)',
 };
 
-const brokenMinerLabel = {
-    [GpuMinerType.LolMiner]: 'LolMiner(C29) - NOT WORKING',
-    [GpuMinerType.Glytex]: 'Glytex(SHA3x) - NOT WORKING',
-    [GpuMinerType.Graxil]: 'Graxil(SHA3x) - NOT WORKING',
-};
-
 export default function GpuMiners() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const availableMiners = useMiningStore((state) => state.availableMiners);
