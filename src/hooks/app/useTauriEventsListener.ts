@@ -16,7 +16,6 @@ import {
 } from '@app/store/actions/uiStoreActions';
 import {
     handleAvailableMinersChanged,
-    handleGpuMinerFallback,
     handleSelectedMinerChanged,
     setAvailableEngines,
 } from '@app/store/actions/miningStoreActions';
@@ -233,9 +232,6 @@ const useTauriEventsListener = () => {
                             break;
                         case 'SeedBackedUp':
                             handleSeedBackedUp(event.payload);
-                            break;
-                        case 'GpuMinerFallback':
-                            handleGpuMinerFallback(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

@@ -22,13 +22,17 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{configs::pools::PoolConfig, mining::gpu::consts::GpuMinerType};
+use crate::{
+    configs::pools::PoolConfig,
+    mining::gpu::consts::{GpuMinerType, GpuMiningAlgorithm},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SupportXTMGpuPoolConfig {
     pool_url: String,
     stats_url: String,
     pool_name: String,
+    supported_algorithms: Vec<GpuMiningAlgorithm>,
 }
 
 impl Default for SupportXTMGpuPoolConfig {
@@ -38,6 +42,7 @@ impl Default for SupportXTMGpuPoolConfig {
             stats_url: "https://backend.sha3x.supportxtm.com/api/miner/%TARI_ADDRESS%/stats"
                 .to_string(),
             pool_name: "SupportXTMPool".to_string(),
+            supported_algorithms: vec![GpuMiningAlgorithm::SHA3X],
         }
     }
 }
@@ -57,6 +62,7 @@ pub struct LuckyPoolGpuConfig {
     pool_url: String,
     stats_url: String,
     pool_name: String,
+    supported_algorithms: Vec<GpuMiningAlgorithm>,
 }
 
 impl Default for LuckyPoolGpuConfig {
@@ -66,6 +72,7 @@ impl Default for LuckyPoolGpuConfig {
             stats_url: "https://api-tari.luckypool.io/stats_address?address=%TARI_ADDRESS%"
                 .to_string(),
             pool_name: "LuckyPool".to_string(),
+            supported_algorithms: vec![GpuMiningAlgorithm::SHA3X, GpuMiningAlgorithm::C29],
         }
     }
 }
@@ -80,7 +87,7 @@ impl LuckyPoolGpuConfig {
             GpuMinerType::LolMiner => {
                 "https://taric29.luckypool.io/api/stats_address?address=%TARI_ADDRESS%".to_string()
             }
-            _ => LuckyPoolGpuConfig::default().get_pool_url(),
+            _ => LuckyPoolGpuConfig::default().get_raw_stats_url(),
         };
         Self {
             pool_url,
@@ -140,12 +147,60 @@ impl PoolConfig for GpuPool {
 }
 
 impl GpuPool {
+    pub fn default_from_name_and_miner_type(name: &str, miner_type: GpuMinerType) -> Option<Self> {
+        if miner_type.eq(&GpuMinerType::Glytex) {
+            return None; // solo mining only
+        }
+
+        match name {
+            "LuckyPool" => Some(GpuPool::LuckyPool(LuckyPoolGpuConfig::new(miner_type))),
+            "SupportXTMPool" => Some(GpuPool::SupportXTMPool(SupportXTMGpuPoolConfig::default())),
+            _ => None,
+        }
+    }
+
     pub fn default_for_miner_type(miner_type: GpuMinerType) -> Option<Self> {
-        match miner_type {
-            GpuMinerType::Glytex => None, // solo mining only
-            GpuMinerType::LolMiner | GpuMinerType::Graxil => {
-                Some(GpuPool::LuckyPool(LuckyPoolGpuConfig::new(miner_type)))
+        if miner_type.eq(&GpuMinerType::Glytex) {
+            return None; // solo mining only
+        }
+
+        Some(GpuPool::LuckyPool(LuckyPoolGpuConfig::new(miner_type)))
+    }
+
+    pub fn get_supported_algorithms(&self) -> Vec<GpuMiningAlgorithm> {
+        match self {
+            GpuPool::LuckyPool(config) => config.supported_algorithms.clone(),
+            GpuPool::SupportXTMPool(config) => config.supported_algorithms.clone(),
+        }
+    }
+
+    pub fn is_miner_algorithms_supported(&self, miner_type: &GpuMinerType) -> bool {
+        let is_supported = self
+            .get_supported_algorithms()
+            .iter()
+            .any(|alg| miner_type.supported_algorithms().contains(alg));
+
+        // LuckyPool with c29 algo requires specific pool URL for LolMiner
+        if miner_type.eq(&GpuMinerType::LolMiner) {
+            if self.get_pool_url().contains("c29") {
+                println!("LolMiner requires specific pool URL for c29 algo, checking if current pool URL is correct...");
+                return true;
+            } else {
+                println!("LolMiner requires specific pool URL for c29 algo, but current pool URL is not correct.");
+                return false;
             }
         }
+
+        if miner_type.eq(&GpuMinerType::Graxil) {
+            if self.get_pool_url().contains("c29") {
+                println!("Graxil does not support c29 algo, returning false.");
+                return false;
+            } else {
+                println!("Graxil does not support c29 algo, returning true.");
+                return true;
+            }
+        }
+
+        is_supported
     }
 }
