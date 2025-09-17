@@ -62,7 +62,7 @@ export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void;
 
     return (
         <FormProvider {...methods}>
-            {!isExchangeMiner && <StepChip>{`Step 2 of 2 `}</StepChip>}
+            {!isExchangeMiner && <StepChip>{t('steps.chip', { step: 2, total: 2 })}</StepChip>}
             <Wrapper onSubmit={methods.handleSubmit(handleSubmit)}>
                 <TextWrapper>
                     <Typography variant="h5">{t('security.pin.creation-title', { context })}</Typography>
