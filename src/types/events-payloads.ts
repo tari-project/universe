@@ -111,8 +111,6 @@ export enum GpuMinerType {
 export enum GpuMinerFeature {
     SoloMining = 'SoloMining',
     PoolMining = 'PoolMining',
-    DeviceInformation = 'DeviceInformation',
-    DeviceParameters = 'DeviceParameters',
     DeviceExclusion = 'DeviceExclusion',
     MiningIntensity = 'MiningIntensity',
     EngineSelection = 'EngineSelection',

@@ -70,8 +70,6 @@ const generateMinerSummary = (miner: GpuMiner): string => {
     if (features.includes(GpuMinerFeature.DeviceExclusion)) availableFeatures.push('device exclusion');
     if (features.includes(GpuMinerFeature.MiningIntensity)) availableFeatures.push('GPU usage control');
     if (features.includes(GpuMinerFeature.EngineSelection)) availableFeatures.push('engine selection');
-    if (features.includes(GpuMinerFeature.DeviceParameters)) availableFeatures.push('device parameters');
-    if (features.includes(GpuMinerFeature.DeviceInformation)) availableFeatures.push('device information');
 
     const featuresText =
         availableFeatures.length > 0
