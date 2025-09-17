@@ -346,10 +346,13 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
                     }
                     HealthStatus::Healthy
                 } else {
-                    HealthStatus::Warning
+                    HealthStatus::Unhealthy
                 }
             }
-            Err(_) => HealthStatus::Unhealthy,
+            Err(_) => {
+                let _ = self.gpu_status_sender.send(GpuMinerStatus::default());
+                HealthStatus::Unhealthy
+            }
         }
     }
 }
