@@ -24,7 +24,6 @@ interface MiningStoreState {
     availableMiners?: GpuMinerType[];
     selectedMiner?: GpuMiner;
     sessionMiningTime: SessionMiningTime;
-    isGpuMinerFallback: boolean;
 }
 
 const initialState: MiningStoreState = {
@@ -44,7 +43,6 @@ const initialState: MiningStoreState = {
     network: undefined,
     availableMiners: undefined,
     selectedMiner: undefined,
-    isGpuMinerFallback: false,
 };
 
 export const useMiningStore = create<MiningStoreState>()(() => ({

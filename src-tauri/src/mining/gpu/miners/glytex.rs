@@ -20,7 +20,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{fs::read_dir, time::Duration};
+use std::{
+    fs::read_dir,
+    sync::atomic::{AtomicBool, Ordering},
+    time::Duration,
+};
 
 use axum::async_trait;
 use log::{info, warn};
@@ -39,10 +43,12 @@ use crate::{
     mining::gpu::{
         consts::{EngineType, GpuConnectionType, GpuMinerStatus},
         interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+        manager::GpuManager,
         miners::{load_file_content, GpuCommonInformation},
     },
     process_adapter::{
-        HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+        HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
+        StatusMonitor,
     },
     process_utils, APPLICATION_FOLDER_ID,
 };
@@ -380,8 +386,36 @@ pub struct GlytexGpuMinerStatusMonitor {
     gpu_status_sender: Sender<GpuMinerStatus>,
 }
 
+// This is a flag to indicate if the fallback to other miner has already been triggered
+// We want to avoid triggering it multiple times per session
+static WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED: AtomicBool = AtomicBool::new(false);
+
 #[async_trait]
 impl StatusMonitor for GlytexGpuMinerStatusMonitor {
+    async fn handle_unhealthy(
+        &self,
+        duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        info!(target: LOG_TARGET, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 3)) // Fallback after 3 minutes of unhealthiness
+            && !WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.load(Ordering::SeqCst)
+        {
+            match GpuManager::write().await.handle_unhealthy_miner().await {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
+                    WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.store(true, Ordering::SeqCst);
+                    return Ok(HandleUnhealthyResult::Stop);
+                }
+                Err(error) => {
+                    warn!(target: LOG_TARGET, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {error} | Continuing to monitor.");
+                    return Ok(HandleUnhealthyResult::Continue);
+                }
+            }
+        } else {
+            return Ok(HandleUnhealthyResult::Continue);
+        }
+    }
+
     async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(inner) => inner,
@@ -397,6 +431,10 @@ impl StatusMonitor for GlytexGpuMinerStatusMonitor {
                 let _ = self.gpu_status_sender.send(status.clone());
                 // GPU returns 0 for first 10 seconds until it has an average
                 if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
+                    if !GpuManager::read().await.is_current_miner_healthy().await {
+                        info!(target: LOG_TARGET, "Marking current miner as healthy again");
+                        let _unused = GpuManager::write().await.handle_healthy_miner().await;
+                    }
                     HealthStatus::Healthy
                 } else {
                     HealthStatus::Warning
