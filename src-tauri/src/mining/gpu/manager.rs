@@ -389,7 +389,8 @@ impl GpuManager {
         if let Some(miner) = self.available_miners.get(&new_miner) {
             info!(target: LOG_TARGET, "Found selected gpu miner in available miners");
             let miner_type = miner.miner_type.clone();
-            let adapter = self.resolve_miner_interface(&miner_type);
+            let mut adapter = self.resolve_miner_interface(&miner_type);
+            adapter.detect_devices().await?;
             let miner_cloned = miner.clone();
             info!(target: LOG_TARGET, "Resolved selected gpu miner interface");
             self.selected_miner = miner_type.clone();
