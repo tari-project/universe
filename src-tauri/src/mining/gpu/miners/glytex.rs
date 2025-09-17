@@ -416,28 +416,27 @@ impl StatusMonitor for GlytexGpuMinerStatusMonitor {
         }
     }
 
-    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(inner) => inner,
             Err(_) => {
                 warn!(target: LOG_TARGET, "Timeout error in GpuMinerAdapter check_health");
                 let _ = self.gpu_status_sender.send(GpuMinerStatus::default());
-                return HealthStatus::Warning;
+                return HealthStatus::Unhealthy;
             }
         };
 
         match status {
             Ok(status) => {
                 let _ = self.gpu_status_sender.send(status.clone());
-                // GPU returns 0 for first 10 seconds until it has an average
-                if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
+                if status.hash_rate > 0.0 {
                     if !GpuManager::read().await.is_current_miner_healthy().await {
                         info!(target: LOG_TARGET, "Marking current miner as healthy again");
                         let _unused = GpuManager::write().await.handle_healthy_miner().await;
                     }
                     HealthStatus::Healthy
                 } else {
-                    HealthStatus::Warning
+                    HealthStatus::Unhealthy
                 }
             }
             Err(_) => {
