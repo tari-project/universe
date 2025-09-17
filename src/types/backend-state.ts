@@ -200,9 +200,9 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'UpdateSelectedMiner';
-          payload: GpuMiner;
+          payload: GpuMinerType;
       }
     | {
           event_type: 'AvailableMiners';
-          payload: GpuMinerType[];
+          payload: Record<GpuMinerType, GpuMiner>;
       };
