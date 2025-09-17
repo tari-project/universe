@@ -8,6 +8,7 @@ const plugins: UserConfig['plugins'] = [
     react({
         babel: {
             plugins: [
+                ['babel-plugin-react-compiler'],
                 [
                     'babel-plugin-styled-components',
                     {
@@ -15,7 +16,6 @@ const plugins: UserConfig['plugins'] = [
                         fileName: true,
                     },
                 ],
-                ['babel-plugin-react-compiler'],
             ],
         },
     }),
