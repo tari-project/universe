@@ -388,7 +388,7 @@ impl SetupManager {
                         }
                     }
                     Err(e) => {
-                        error!(target: LOG_TARGET, "Error loading internal wallet: {e:?}");
+                        error!(target: LOG_TARGET, "Error loading internal wallet (with DEFAULT_EXCHANGE_ID): {e:?}");
                         EventsEmitter::emit_critical_problem(CriticalProblemPayload {
                             title: Some("Wallet(seed) not initialized!".to_string()),
                             description: Some(

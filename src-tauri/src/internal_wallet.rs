@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::anyhow;
+use log::error;
 use monero_address_creator::network::Mainnet;
 use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
@@ -370,9 +371,13 @@ impl InternalWallet {
             };
             tari_seed.encipher(Some(pin_password))?
         } else {
-            tari_seed
-                .to_binary()
-                .expect("[add_tari_wallet] Failed to convert tari seed to binary")
+            match tari_seed.to_binary() {
+                Ok(b) => b,
+                Err(e) => {
+                    log::error!(target: LOG_TARGET, "[ add_tari_wallet ] Could not convert {e:?}");
+                    return Err(anyhow!(e.to_string()));
+                }
+            }
         };
 
         let credentials = Credential {
