@@ -134,6 +134,17 @@ impl PoolManager {
         }
     }
 
+    /// Load a new pool adapter configuration
+    /// This does not start the periodic task or fetch the status, it only updates the adapter used
+    /// for future requests. To start fetching status, call `spawn_periodic_pool_status_update_task`.
+    /// ### Arguments
+    /// * `adapter` - The new pool adapter configuration to use
+    /// ### Note
+    /// Added for cases when pool is disabled but we want to load the correct last adapter from config
+    pub async fn load_pool_adapter(&mut self, adapter: PoolApiAdapters) {
+        self.pool_adapter = adapter;
+    }
+
     pub async fn handle_pool_change(&mut self, adapter: PoolApiAdapters) {
         info!(target: LOG_TARGET, "Updated pool configuration to: {adapter:?}");
         self.pool_adapter = adapter.clone();

@@ -22,19 +22,27 @@
 
 use std::{collections::HashMap, sync::LazyLock};
 
+use log::info;
 use tokio::{spawn, sync::RwLock};
 
 use crate::{
-    configs::pools::{gpu_pools::GpuPool, PoolConfig},
-    events_emitter::EventsEmitter,
-    mining::pools::{
-        adapters::PoolApiAdapters, pools_manager::PoolManager, PoolManagerInterfaceTrait,
-        PoolStatus,
+    configs::{
+        config_pools::{ConfigPools, ConfigPoolsContent},
+        pools::{gpu_pools::GpuPool, PoolConfig},
+        trait_config::ConfigImpl,
     },
+    events_emitter::EventsEmitter,
+    mining::{
+        gpu::consts::GpuMinerType,
+        pools::{
+            adapters::PoolApiAdapters, pools_manager::PoolManager, PoolManagerInterfaceTrait,
+            PoolStatus,
+        },
+    },
+    setup::setup_manager::SetupManager,
     tasks_tracker::TasksTrackers,
 };
 
-#[allow(dead_code)]
 static LOG_TARGET: &str = "tari::mining::pools::gpu_pool_manager";
 static INSTANCE: LazyLock<GpuPoolManager> = LazyLock::new(GpuPoolManager::new);
 
@@ -54,6 +62,77 @@ impl GpuPoolManager {
         );
         Self {
             pool_status_manager: RwLock::new(pool_manager),
+        }
+    }
+    pub async fn initialize_from_pool_config(config_content: &ConfigPoolsContent) {
+        let current_selected_pool = config_content.selected_gpu_pool().clone();
+        let pool_adapter = Self::resolve_pool_adapter(&current_selected_pool);
+
+        if *config_content.gpu_pool_enabled() {
+            INSTANCE
+                .pool_status_manager
+                .write()
+                .await
+                .handle_pool_change(pool_adapter)
+                .await;
+        } else {
+            INSTANCE
+                .pool_status_manager
+                .write()
+                .await
+                .load_pool_adapter(pool_adapter)
+                .await;
+        }
+    }
+
+    /// Handle the case when user switches or fallbacks the GPU miner type (e.g., from Lolminer to Graxil)
+    /// Behavior:
+    /// 1. If the currently selected pool supports the new miner type, do nothing (keep using the same pool)
+    /// 2. If the currently selected pool does not support the new miner type, switch to the default pool for that miner type
+    ///   - Update pool config values and adapter in the pool manager
+    ///   - Emit event to the frontend to update the selected pool in the settings UI
+    /// 3. If the new miner type is Glytex (solo mining only), disable pool mining
+    ///   - Emit event to the frontend to update the settings UI
+    /// ### Arguments
+    /// * `miner` - The new GPU miner type
+    pub async fn handle_miner_switch(miner: GpuMinerType) {
+        let current_selected_pool = ConfigPools::content().await.selected_gpu_pool().clone();
+
+        if current_selected_pool.is_miner_algorithms_supported(&miner) {
+            info!(target: LOG_TARGET, "Current selected GPU pool '{}' supports the new miner type '{miner:?}', no pool switch needed", current_selected_pool.name());
+        } else {
+            info!(target: LOG_TARGET, "Current selected GPU pool '{}' does not support the new miner type '{miner:?}', switching to default pool for that miner", current_selected_pool.name());
+            match GpuPool::default_for_miner_type(miner) {
+                // LolMiner or Graxil
+                Some(pool) => {
+                    let _unused = ConfigPools::update_field(
+                        ConfigPoolsContent::set_selected_gpu_pool,
+                        pool.name().to_string(),
+                    )
+                    .await;
+
+                    let _unused = ConfigPools::update_field(
+                        ConfigPoolsContent::update_selected_gpu_config,
+                        pool.clone(),
+                    )
+                    .await;
+                    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone())
+                        .await;
+
+                    INSTANCE
+                        .pool_status_manager
+                        .write()
+                        .await
+                        .handle_pool_change(Self::resolve_pool_adapter(&pool))
+                        .await;
+                }
+                // Glytex
+                None => {
+                    let _unused = SetupManager::get_instance()
+                        .turn_off_gpu_pool_feature()
+                        .await;
+                }
+            };
         }
     }
 }

@@ -142,6 +142,10 @@ impl GpuMinerType {
         self.get_expected_features()
             .contains(&GpuMinerFeature::PoolMining)
     }
+    pub fn is_solo_mining_supported(&self) -> bool {
+        self.get_expected_features()
+            .contains(&GpuMinerFeature::SoloMining)
+    }
 }
 
 impl std::fmt::Display for GpuMinerType {
@@ -155,7 +159,7 @@ impl std::fmt::Display for GpuMinerType {
     }
 }
 
-#[derive(Eq, Hash, PartialEq, Clone, Serialize)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Serialize, Deserialize)]
 pub enum GpuMiningAlgorithm {
     SHA3X,
     C29,
@@ -183,16 +187,29 @@ pub enum GpuMinerFeature {
 #[derive(Clone, Serialize)]
 pub struct GpuMiner {
     pub miner_type: GpuMinerType,
+    pub is_healthy: bool,
+    pub last_error: Option<String>,
     pub features: Vec<GpuMinerFeature>,
     pub supported_algorithms: Vec<GpuMiningAlgorithm>,
 }
 
 impl GpuMiner {
-    pub fn new(miner_type: GpuMinerType) -> Self {
+    pub fn new(miner_type: GpuMinerType, is_healthy: bool, last_error: Option<String>) -> Self {
         Self {
             miner_type: miner_type.clone(),
             features: miner_type.get_expected_features(),
             supported_algorithms: miner_type.supported_algorithms(),
+            is_healthy,
+            last_error,
         }
     }
 }
+
+/// Defines priority of miners to be used when multiple miners are available
+/// The first miner in the list has the highest priority
+/// Used for selecting default or fallback miner
+pub const MINERS_PRIORITY: &[GpuMinerType] = &[
+    GpuMinerType::LolMiner,
+    GpuMinerType::Graxil,
+    GpuMinerType::Glytex,
+];
