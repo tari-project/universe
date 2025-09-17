@@ -1,6 +1,9 @@
 {
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "Bonus gems earned",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "Claim Gems",
   "claimModalFieldLabel": "Optional",
   "claimModalFieldPlaceholder": "Enter invite code",
@@ -46,6 +49,7 @@
       "loginButton": "Log in & Start Earning!",
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
+    "manageYourCrew": "Manage your crew",
     "myCrew": "My Crew",
     "of": "of",
     "streak": {
@@ -62,10 +66,10 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Rewards"
   },
   "doLater": "I'll do this later",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "Gems",
   "giftReferralCode": "Earn bonus XTM for each friend you invite to Tari Universe. Once they connect their account and mine, you'll start earning rewards.",
   "giftReferralCodeHeader": "Claim your referral code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gems.",

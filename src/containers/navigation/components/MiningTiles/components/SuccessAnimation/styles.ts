@@ -46,8 +46,7 @@ export const Eyebrow = styled(m.div)`
     font-size: 10px;
     font-style: normal;
     font-weight: 600;
-    line-height: normal;
-    line-height: 100%;
+    line-height: 1;
 `;
 
 export const NumberGroup = styled(m.div)`

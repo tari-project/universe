@@ -147,6 +147,8 @@
   "should-use-system-language": "使用系统语言",
   "stable-version-note": "关闭应用程序的预发布版本后，您将恢复到稳定版本，该版本优先考虑可靠性和一致性。您可能会错过最新的功能和增强。",
   "stats-server-port": "统计服务器端口",
+  "sync-complete": "Synced",
+  "sync-incomplete": "Syncing...",
   "sync-status": "Sync Status",
   "tabs": {
     "airdrop": "Bonus XTM",

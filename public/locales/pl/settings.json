@@ -149,6 +149,8 @@
   "should-use-system-language": "Użyj języka systemowego",
   "stable-version-note": "Wyłączając wersję przedpremierową aplikacji, powrócisz do stabilnego wydania, które priorytetowo traktuje niezawodność i spójność. Możesz jednak przegapić najnowsze funkcje i ulepszenia.",
   "stats-server-port": "Port serwera statystyk",
+  "sync-complete": "Synced",
+  "sync-incomplete": "Syncing...",
   "sync-status": "Sync Status",
   "tabs": {
     "airdrop": "Bonus XTM",

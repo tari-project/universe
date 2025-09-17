@@ -1,7 +1,10 @@
 {
   "airdropGame": "Gra Airdrop",
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "Zdobyto bonusowe klejnoty",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "Odbierz klejnoty",
   "claimModalFieldLabel": "Opcjonalne",
   "claimModalFieldPlaceholder": "Wpisz kod polecający",
@@ -47,6 +50,7 @@
       "loginButton": "Log in & Start Earning!",
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
+    "manageYourCrew": "Manage your crew",
     "myCrew": "My Crew",
     "of": "of",
     "streak": {
@@ -63,10 +67,10 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Rewards"
   },
   "doLater": "Zrobię to później",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "Klejnoty",
   "giftReferralCode": "Zarabiaj bonus XTM za każdego znajomego, którego zaprosisz do Tari Universe. Po połączeniu konta i rozpoczęciu wydobycia zaczniesz otrzymywać nagrody.",
   "giftReferralCodeHeader": "Odbierz swój kod polecający <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> klejnotów.",
