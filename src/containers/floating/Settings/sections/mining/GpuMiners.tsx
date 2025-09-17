@@ -8,7 +8,6 @@ import { SettingsGroupContent, SettingsGroupTitle, SettingsGroupWrapper } from '
 import * as m from 'motion/react-m';
 import { switchSelectedMiner } from '@app/store/actions/miningStoreActions.ts';
 import { GpuMinerType } from '@app/types/events-payloads.ts';
-import light from '@app/theme/palettes/light';
 
 const Wrapper = styled(m.div)`
     width: 100%;
