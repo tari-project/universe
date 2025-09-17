@@ -88,21 +88,16 @@ impl GpuMinerType {
         match self {
             GpuMinerType::Glytex => vec![
                 GpuMinerFeature::SoloMining,
-                GpuMinerFeature::DeviceInformation,
                 GpuMinerFeature::DeviceExclusion,
                 GpuMinerFeature::MiningIntensity,
                 GpuMinerFeature::EngineSelection,
             ],
             GpuMinerType::Graxil => vec![
                 GpuMinerFeature::PoolMining,
-                GpuMinerFeature::DeviceInformation,
                 GpuMinerFeature::DeviceExclusion,
                 GpuMinerFeature::MiningIntensity,
             ],
-            GpuMinerType::LolMiner => vec![
-                GpuMinerFeature::PoolMining,
-                GpuMinerFeature::DeviceInformation,
-            ],
+            GpuMinerType::LolMiner => vec![GpuMinerFeature::PoolMining],
         }
     }
 
@@ -170,10 +165,6 @@ pub enum GpuMinerFeature {
     /// Support for mining in a pool
     PoolMining,
     /// Mining stats per GPU
-    DeviceInformation,
-    /// Gpu parameters like power limit, core clock, memory clock
-    #[allow(dead_code)]
-    DeviceParameters,
     /// Exclude specific GPU devices from mining
     DeviceExclusion,
     /// Control mining intensity
