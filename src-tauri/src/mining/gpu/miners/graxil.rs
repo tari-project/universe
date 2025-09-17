@@ -325,13 +325,13 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
         }
     }
 
-    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         info!(target: LOG_TARGET, "Checking health of ShaMiner");
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(inner) => inner,
             Err(_) => {
                 warn!(target: LOG_TARGET, "Timeout error in ShaMiner check_health");
-                return HealthStatus::Warning;
+                return HealthStatus::Unhealthy;
             }
         };
 
@@ -339,7 +339,7 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
             Ok(status) => {
                 info!(target: LOG_TARGET, "ShaMiner status: {status:?}");
                 let _ = self.gpu_status_sender.send(status.clone());
-                if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
+                if status.hash_rate > 0.0 {
                     if !GpuManager::read().await.is_current_miner_healthy().await {
                         info!(target: LOG_TARGET, "Marking current miner as healthy again");
                         let _unused = GpuManager::write().await.handle_healthy_miner().await;
