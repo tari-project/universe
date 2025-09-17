@@ -216,7 +216,8 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
 
         progress_stepper
             .complete_step(SetupStep::DetectGpu, || async {
-                if let Err(original_error) = GpuManager::write().await.detect_devices().await {
+                let mut gpu_manager = GpuManager::write().await;
+                if let Err(original_error) = gpu_manager.detect_devices().await {
                     #[cfg(target_os = "windows")]
                     {
                         use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
@@ -240,7 +241,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                         }
 
                         // Retry GPU detection after adding GPU drivers
-                        if let Err(first_retry_error) = GpuManager::detect_devices().await {
+                        if let Err(first_retry_error) = gpu_manager.detect_devices().await {
                             // Try adding Khronos OpenCL as a fallback
                             if let Err(e) = SystemDependenciesManager::get_instance()
                                 .get_windows_dependencies_resolver()
@@ -260,7 +261,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                             }
 
                             // Final retry after adding all dependencies
-                            GpuManager::detect_devices().await?;
+                            gpu_manager.detect_devices().await?;
                         }
                     }
                     #[cfg(not(target_os = "windows"))]
