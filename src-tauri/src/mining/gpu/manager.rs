@@ -197,6 +197,111 @@ impl GpuManager {
             .insert(miner.miner_type.clone(), miner);
     }
 
+    /// Handles loading the pool connection for the selected miner.
+    /// If the selected miner does not support pool mining, it attempts to switch to a fallback miner that does.
+    /// If no suitable miner is found, an error is returned.
+    async fn handle_pool_connection_load(&mut self) -> Result<(), anyhow::Error> {
+        if self.selected_miner.is_pool_mining_supported() {
+            let current_selected_pool = ConfigPools::content().await.selected_gpu_pool().clone();
+            let current_selected_pool_url = current_selected_pool.get_pool_url();
+            self.process_watcher
+                .adapter
+                .load_connection_type(GpuConnectionType::Pool {
+                    pool_url: current_selected_pool_url,
+                })
+                .await?;
+        } else {
+            // check if there is other minre that supports pool mining and switch to it if yes and then load pool connection to adapter
+            let fallback_miner = MINERS_PRIORITY
+                .iter()
+                .find_map(|miner_type| {
+                    let is_healthy = self
+                        .available_miners
+                        .get(miner_type)
+                        .map(|m| m.is_healthy)
+                        .unwrap_or(false);
+                    if is_healthy
+                        && *miner_type != self.selected_miner
+                        && miner_type.is_pool_mining_supported()
+                    {
+                        Some(miner_type)
+                    } else {
+                        None
+                    }
+                })
+                .cloned();
+
+            if let Some(fallback_miner) = fallback_miner {
+                info!(target: LOG_TARGET, "Selected gpu miner does not support pool mining, switching to fallback miner: {fallback_miner}");
+                self.switch_miner(fallback_miner).await?;
+                let current_selected_pool =
+                    ConfigPools::content().await.selected_gpu_pool().clone();
+                let current_selected_pool_url = current_selected_pool.get_pool_url();
+                self.process_watcher
+                    .adapter
+                    .load_connection_type(GpuConnectionType::Pool {
+                        pool_url: current_selected_pool_url,
+                    })
+                    .await?;
+            } else {
+                return Err(anyhow::anyhow!("Selected gpu miner does not support pool mining and no other miners are available"));
+            }
+        }
+        Ok(())
+    }
+
+    /// Handles loading the node connection for the selected miner.
+    /// If the selected miner does not support solo mining, it attempts to switch to a fallback miner that does.
+    /// If no suitable miner is found, an error is returned.
+    async fn handle_node_connection_load(
+        &mut self,
+        grpc_node_address: String,
+    ) -> Result<(), anyhow::Error> {
+        if self.selected_miner.is_solo_mining_supported() {
+            self.process_watcher
+                .adapter
+                .load_connection_type(GpuConnectionType::Node {
+                    node_grpc_address: grpc_node_address,
+                })
+                .await?;
+        } else {
+            // check if there is other minre that supports solo mining and switch to it if yes and then load node connection to adapter
+            let fallback_miner = MINERS_PRIORITY
+                .iter()
+                .find_map(|miner_type| {
+                    let is_healthy = self
+                        .available_miners
+                        .get(miner_type)
+                        .map(|m| m.is_healthy)
+                        .unwrap_or(false);
+                    if is_healthy
+                        && *miner_type != self.selected_miner
+                        && miner_type.is_solo_mining_supported()
+                    {
+                        Some(miner_type)
+                    } else {
+                        None
+                    }
+                })
+                .cloned();
+
+            if let Some(fallback_miner) = fallback_miner {
+                info!(target: LOG_TARGET, "Selected gpu miner does not support solo mining, switching to fallback miner: {fallback_miner}");
+                self.switch_miner(fallback_miner).await?;
+                self.process_watcher
+                    .adapter
+                    .load_connection_type(GpuConnectionType::Node {
+                        node_grpc_address: grpc_node_address,
+                    })
+                    .await?;
+            } else {
+                return Err(anyhow::anyhow!("Selected gpu miner does not support solo mining and no other miners are available"));
+            }
+        }
+
+        Ok(())
+    }
+
     pub async fn start_mining(
         &mut self,
         tari_address: TariAddress,
@@ -217,33 +322,10 @@ impl GpuManager {
             .get_task_tracker()
             .await;
 
-        if *ConfigPools::content().await.gpu_pool_enabled()
-            && self.selected_miner.is_pool_mining_supported()
-        {
-            let current_selected_pool = ConfigPools::content().await.selected_gpu_pool().clone();
-            let current_selected_pool_url = current_selected_pool.get_pool_url();
-            self.process_watcher
-                .adapter
-                .load_connection_type(GpuConnectionType::Pool {
-                    pool_url: current_selected_pool_url,
-                })
-                .await?;
-        } else if self.selected_miner.is_solo_mining_supported() {
-            self.process_watcher
-                .adapter
-                .load_connection_type(GpuConnectionType::Node {
-                    node_grpc_address: grpc_node_address,
-                })
-                .await?;
+        if *ConfigPools::content().await.gpu_pool_enabled() {
+            self.handle_pool_connection_load().await?;
         } else {
-            info!(target: LOG_TARGET, "Selected gpu miner does not support solo mining, cannot start mining without a pool | Switching to glytex");
-            self.switch_miner(GpuMinerType::Glytex).await?;
-            self.process_watcher
-                .adapter
-                .load_connection_type(GpuConnectionType::Node {
-                    node_grpc_address: grpc_node_address,
-                })
-                .await?;
+            self.handle_node_connection_load(grpc_node_address).await?;
         }
 
         let binary = match self.selected_miner {
@@ -307,7 +389,8 @@ impl GpuManager {
         if let Some(miner) = self.available_miners.get(&new_miner) {
             info!(target: LOG_TARGET, "Found selected gpu miner in available miners");
             let miner_type = miner.miner_type.clone();
-            let adapter = self.resolve_miner_interface(&miner_type);
+            let mut adapter = self.resolve_miner_interface(&miner_type);
+            adapter.detect_devices().await?;
             let miner_cloned = miner.clone();
             info!(target: LOG_TARGET, "Resolved selected gpu miner interface");
             self.selected_miner = miner_type.clone();
