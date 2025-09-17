@@ -9,6 +9,7 @@ import * as m from 'motion/react-m';
 import { switchSelectedMiner } from '@app/store/actions/miningStoreActions.ts';
 import { GpuMinerType } from '@app/types/events-payloads.ts';
 import light from '@app/theme/palettes/light';
+import { getSelectedMiner } from '@app/store/selectors/minningStoreSelectors';
 
 const Wrapper = styled(m.div)`
     width: 100%;
@@ -25,16 +26,17 @@ const minerLabel = {
 export default function GpuMiners() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const availableMiners = useMiningStore((state) => state.availableMiners);
-    const selectedMiner = useMiningStore((state) => state.selectedMiner);
+    const availableMinersValues = availableMiners ? Object.values(availableMiners) : undefined;
+    const selectedMiner = useMiningStore(getSelectedMiner);
 
     const minerOptions = useMemo(() => {
         return (
-            availableMiners?.map((minerType) => ({
-                label: minerLabel[minerType],
-                value: minerType,
+            availableMinersValues?.map((miner) => ({
+                label: minerLabel[miner.miner_type],
+                value: miner.miner_type,
             })) || []
         );
-    }, [availableMiners]);
+    }, [availableMinersValues]);
 
     const handleMinerChange = useCallback(async (value: string) => {
         await switchSelectedMiner(value as GpuMinerType);
@@ -45,7 +47,7 @@ export default function GpuMiners() {
             <SettingsGroupTitle>
                 <Typography variant="h6">{t('gpu-miners', { ns: 'settings' })}</Typography>
             </SettingsGroupTitle>
-            {availableMiners && availableMiners.length > 0 ? (
+            {availableMinersValues && availableMinersValues?.length > 0 ? (
                 <SettingsGroupContent>
                     <Wrapper>
                         <Select

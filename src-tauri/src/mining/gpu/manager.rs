@@ -313,7 +313,7 @@ impl GpuManager {
             self.selected_miner = miner_type.clone();
             self.process_watcher.adapter = adapter;
             info!(target: LOG_TARGET, "Set selected gpu miner interface in process watcher");
-            EventsEmitter::emit_update_selected_gpu_miner(miner_cloned).await;
+            EventsEmitter::emit_update_selected_gpu_miner(miner_cloned.miner_type).await;
             ConfigMining::update_field(ConfigMiningContent::set_gpu_miner_type, miner_type.clone())
                 .await?;
             GpuPoolManager::handle_miner_switch(new_miner.clone()).await;
@@ -377,13 +377,7 @@ impl GpuManager {
             }
         }
 
-        EventsEmitter::emit_available_gpu_miners(
-            self.available_miners
-                .keys()
-                .cloned()
-                .collect::<Vec<GpuMinerType>>(),
-        )
-        .await;
+        EventsEmitter::emit_available_gpu_miners(self.available_miners.clone()).await;
 
         Ok(())
     }
@@ -405,16 +399,10 @@ impl GpuManager {
                 current_miner.is_healthy = true;
                 current_miner.last_error = None;
             }
-            EventsEmitter::emit_update_selected_gpu_miner(current_miner.clone()).await;
+            EventsEmitter::emit_update_selected_gpu_miner(current_miner.miner_type.clone()).await;
         }
 
-        EventsEmitter::emit_available_gpu_miners(
-            self.available_miners
-                .keys()
-                .cloned()
-                .collect::<Vec<GpuMinerType>>(),
-        )
-        .await;
+        EventsEmitter::emit_available_gpu_miners(self.available_miners.clone()).await;
 
         Ok(())
     }
@@ -453,13 +441,7 @@ impl GpuManager {
         if !successful_detection {
             return Err(anyhow::anyhow!("No miners detected any devices"));
         }
-        EventsEmitter::emit_available_gpu_miners(
-            self.available_miners
-                .keys()
-                .cloned()
-                .collect::<Vec<GpuMinerType>>(),
-        )
-        .await;
+        EventsEmitter::emit_available_gpu_miners(self.available_miners.clone()).await;
 
         Ok(())
     }
