@@ -32,15 +32,13 @@ import {
     OptionHeader,
     OptionTitleRow,
     OptionSummary,
-    SectionDivider,
-    TooltipWrapper,
-    Tooltip,
 } from './GpuMinerSelect.styles';
 
 interface Props {
     miners: GpuMiner[];
     selectedMiner?: GpuMiner;
     onChange: (minerType: GpuMinerType) => void;
+    hideChips?: boolean;
 }
 
 const minerLabel = {
@@ -86,10 +84,9 @@ const generateMinerSummary = (miner: GpuMiner): string => {
     return `Supports ${miningTypeText} on ${algorithmText}${featuresText}`;
 };
 
-export function GpuMinerSelect({ miners, selectedMiner, onChange }: Props) {
+export function GpuMinerSelect({ miners, selectedMiner, onChange, hideChips }: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
-    const [tooltipVisible, setTooltipVisible] = useState(false);
     const listRef = useRef<(HTMLElement | null)[]>([]);
 
     const { update, refs, elements, context, floatingStyles } = useFloating({
@@ -170,21 +167,29 @@ export function GpuMinerSelect({ miners, selectedMiner, onChange }: Props) {
             >
                 <TriggerContent>
                     <TriggerTitle>
-                        <TooltipWrapper
-                            onMouseEnter={() => !selectedMiner?.is_healthy && setTooltipVisible(true)}
-                            onMouseLeave={() => setTooltipVisible(false)}
-                        >
-                            <HealthIndicator $isHealthy={selectedMiner?.is_healthy ?? true} />
-                            <Tooltip $visible={tooltipVisible && !selectedMiner?.is_healthy}>
-                                {selectedMiner?.last_error || 'Miner is not healthy'}
-                            </Tooltip>
-                        </TooltipWrapper>
+                        <HealthIndicator $isHealthy={selectedMiner?.is_healthy ?? true} />
                         <Typography variant="span">
                             {selectedMiner ? minerLabel[selectedMiner.miner_type] : 'Select GPU Miner'}
                         </Typography>
+                        {selectedMiner && !selectedMiner.is_healthy && selectedMiner.last_error && (
+                            <Typography
+                                variant="span"
+                                style={{
+                                    fontSize: '11px',
+                                    color: '#EF4444',
+                                    fontWeight: 600,
+                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                                }}
+                            >
+                                {`Failed with: ${selectedMiner.last_error}`}
+                            </Typography>
+                        )}
                     </TriggerTitle>
                     {selectedMiner && <TriggerSummary>{generateMinerSummary(selectedMiner)}</TriggerSummary>}
-                    {selectedMiner && (
+                    {selectedMiner && !hideChips && (
                         <ChipsContainer>
                             {selectedMiner.features.map(renderFeatureChip)}
                             {selectedMiner.features.length > 0 && selectedMiner.supported_algorithms.length > 0 && (
@@ -259,13 +264,15 @@ export function GpuMinerSelect({ miners, selectedMiner, onChange }: Props) {
                                             )}
                                         </OptionHeader>
                                         <OptionSummary>{generateMinerSummary(miner)}</OptionSummary>
-                                        <ChipsContainer>
-                                            {miner.features.map(renderFeatureChip)}
-                                            {miner.features.length > 0 && miner.supported_algorithms.length > 0 && (
-                                                <ChipsSeparator />
-                                            )}
-                                            {miner.supported_algorithms.map(renderAlgorithmChip)}
-                                        </ChipsContainer>
+                                        {!hideChips && (
+                                            <ChipsContainer>
+                                                {miner.features.map(renderFeatureChip)}
+                                                {miner.features.length > 0 && miner.supported_algorithms.length > 0 && (
+                                                    <ChipsSeparator />
+                                                )}
+                                                {miner.supported_algorithms.map(renderAlgorithmChip)}
+                                            </ChipsContainer>
+                                        )}
                                     </OptionItem>
                                 );
                             })}

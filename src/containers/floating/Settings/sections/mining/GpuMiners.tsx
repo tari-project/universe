@@ -38,6 +38,7 @@ export default function GpuMiners() {
                             miners={availableMinersValues}
                             selectedMiner={selectedMiner}
                             onChange={handleMinerChange}
+                            hideChips={true}
                         />
                     </Wrapper>
                 </SettingsGroupContent>
