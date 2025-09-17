@@ -102,8 +102,6 @@ impl GpuMinerType {
             GpuMinerType::LolMiner => vec![
                 GpuMinerFeature::PoolMining,
                 GpuMinerFeature::DeviceInformation,
-                GpuMinerFeature::DeviceExclusion,
-                GpuMinerFeature::MiningIntensity,
             ],
         }
     }

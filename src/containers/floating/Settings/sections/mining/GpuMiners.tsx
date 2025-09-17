@@ -2,14 +2,13 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { useMiningStore } from '@app/store/useMiningStore';
-import { Select } from '@app/components/elements/inputs/Select';
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { SettingsGroupContent, SettingsGroupTitle, SettingsGroupWrapper } from '../../components/SettingsGroup.styles';
 import * as m from 'motion/react-m';
 import { switchSelectedMiner } from '@app/store/actions/miningStoreActions.ts';
 import { GpuMinerType } from '@app/types/events-payloads.ts';
-import light from '@app/theme/palettes/light';
 import { getSelectedMiner } from '@app/store/selectors/minningStoreSelectors';
+import { GpuMinerSelect } from './components/GpuMinerSelect.tsx';
 
 const Wrapper = styled(m.div)`
     width: 100%;
@@ -17,29 +16,14 @@ const Wrapper = styled(m.div)`
     position: relative;
 `;
 
-const minerLabel = {
-    [GpuMinerType.LolMiner]: 'LolMiner(C29)',
-    [GpuMinerType.Glytex]: 'Glytex(SHA3x)',
-    [GpuMinerType.Graxil]: 'Graxil(SHA3x)',
-};
-
 export default function GpuMiners() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const availableMiners = useMiningStore((state) => state.availableMiners);
     const availableMinersValues = availableMiners ? Object.values(availableMiners) : undefined;
     const selectedMiner = useMiningStore(getSelectedMiner);
 
-    const minerOptions = useMemo(() => {
-        return (
-            availableMinersValues?.map((miner) => ({
-                label: minerLabel[miner.miner_type],
-                value: miner.miner_type,
-            })) || []
-        );
-    }, [availableMinersValues]);
-
-    const handleMinerChange = useCallback(async (value: string) => {
-        await switchSelectedMiner(value as GpuMinerType);
+    const handleMinerChange = useCallback(async (value: GpuMinerType) => {
+        await switchSelectedMiner(value);
     }, []);
 
     return (
@@ -50,12 +34,10 @@ export default function GpuMiners() {
             {availableMinersValues && availableMinersValues?.length > 0 ? (
                 <SettingsGroupContent>
                     <Wrapper>
-                        <Select
-                            options={minerOptions}
+                        <GpuMinerSelect
+                            miners={availableMinersValues}
+                            selectedMiner={selectedMiner}
                             onChange={handleMinerChange}
-                            selectedValue={selectedMiner?.miner_type}
-                            variant="bordered"
-                            forceHeight={36}
                         />
                     </Wrapper>
                 </SettingsGroupContent>
