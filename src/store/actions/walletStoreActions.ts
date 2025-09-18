@@ -45,9 +45,11 @@ export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'al
             setCoinbaseTransactions({ newTxs: transactions, offset });
         }
 
+        console.log(`transactions len post invoke= `, transactions?.length);
         return transactions;
     } catch (error) {
         console.error(`Could not get transaction history for rewards: `, error);
+        console.log(`transactions len in ERROR= `, transactions?.length);
         return transactions;
     }
 };

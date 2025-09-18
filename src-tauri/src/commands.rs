@@ -574,6 +574,8 @@ pub async fn get_transactions(
             vec![]
         });
 
+    info!(target: LOG_TARGET, "[ get_transactions ] command {:#?}", &transactions[..5]);
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_transactions took too long: {:?}", timer.elapsed());
     }
