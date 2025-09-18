@@ -25,7 +25,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use tokio::{
     fs::OpenOptions,
-    io::{AsyncReadExt, BufReader},
+    io::{AsyncReadExt, AsyncWriteExt, BufReader},
 };
 
 use crate::mining::gpu::miners::{glytex::GlytexGpuDevice, graxil::GraxilGpuDeviceInformation};
@@ -83,4 +83,19 @@ where
 
     let gpu_information_file = serde_json::from_str(&contents)?;
     Ok(gpu_information_file)
+}
+
+pub async fn save_file_content<T>(path: &PathBuf, content: &T) -> Result<(), anyhow::Error>
+where
+    T: serde::Serialize,
+{
+    let serialized = serde_json::to_string_pretty(content)?;
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(path)
+        .await?;
+    file.write_all(serialized.as_bytes()).await?;
+    Ok(())
 }
