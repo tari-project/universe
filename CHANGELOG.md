@@ -1,3 +1,22 @@
+🚀 TARI UNIVERSE v1.6.1: Hotfix — The Kingdom of All Waters Part 2
+
+_September 18, 2025_
+
+🔄 Rolling out via auto-update
+
+Hey Tari fam,
+
+🐓 Following up on the workaround we shared before the hard fork at block 95,000: this hotfix resolves the C29 pool address bug. If you didn't manage to apply the workaround in time, no worries—LuckyPool temporarily redirected the SHA-3 pool to C29 so you didn't miss out. With this update, Tari Universe now automatically defaults to the correct C29 pool address.
+
+✨ WHAT'S FIXED
+
+- 🎯 **Correct C29 Pool Connection** – Tari Universe now automatically connects to the right Cuckaroo29 pool address without any manual setup needed.
+- ⚡ **Faster GPU Switching** – When your GPU needs to switch miners, it now happens in 3 minutes instead of 30.
+- 🔧 **Smarter GPU Management** – Better fallback logic means if one GPU miner isn't working, the app intelligently switches to the best alternative for your hardware.
+- 🌐 **Pool Stats Fix** – Fixed the SHA-3x pool stats display so you can track your mining progress accurately.
+
+---
+
 🚀 TARI UNIVERSE v1.6.0: The Kingdom of All Waters
 
 _September 15, 2025_
