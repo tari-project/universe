@@ -134,7 +134,7 @@ impl GpuMinerInterfaceTrait for GlytexGpuMiner {
         let gpu_status_file_path = gpu_engine_statuses_path.join(gpu_status_file_name);
         let mut gpu_status_file =
             load_file_content::<GlytexGpuDevices>(&gpu_status_file_path).await?;
-        for device in gpu_status_file.gpu_devices.iter_mut() {
+        for device in &mut gpu_status_file.gpu_devices.iter_mut() {
             if self.excluded_devices.contains(&device.device_index) {
                 device.settings.is_excluded = true;
             } else {
