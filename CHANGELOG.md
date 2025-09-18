@@ -2,8 +2,6 @@
 
 _September 18, 2025_
 
-🔄 Rolling out via auto-update
-
 Hey Tari fam,
 
 🐓 Following up on the workaround we shared before the hard fork at block 95,000: this hotfix resolves the C29 pool address bug. If you didn't manage to apply the workaround in time, no worries—LuckyPool temporarily redirected the SHA-3 pool to C29 so you didn't miss out. With this update, Tari Universe now automatically defaults to the correct C29 pool address.
