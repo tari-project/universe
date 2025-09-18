@@ -111,8 +111,6 @@ export enum GpuMinerType {
 export enum GpuMinerFeature {
     SoloMining = 'SoloMining',
     PoolMining = 'PoolMining',
-    DeviceInformation = 'DeviceInformation',
-    DeviceParameters = 'DeviceParameters',
     DeviceExclusion = 'DeviceExclusion',
     MiningIntensity = 'MiningIntensity',
     EngineSelection = 'EngineSelection',
@@ -127,4 +125,6 @@ export interface GpuMiner {
     miner_type: GpuMinerType;
     features: GpuMinerFeature[];
     supported_algorithms: GpuMiningAlgorithm[];
+    is_healthy: boolean;
+    last_error?: string;
 }

@@ -241,7 +241,7 @@ const initialState: AirdropStoreState = {
     latestXSpaceEvent: null,
     uiSendRecvEnabled: true,
     crewQueryParams: {
-        status: 'all',
+        status: 'active',
         page: 1,
         limit: 20,
     },
