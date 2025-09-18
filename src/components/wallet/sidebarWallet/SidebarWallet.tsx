@@ -27,12 +27,7 @@ import { open } from '@tauri-apps/plugin-shell';
 
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
-import {
-    fetchTransactionsHistory,
-    setDetailsItem,
-    setIsSwapping,
-    setTxHistoryFilter,
-} from '@app/store/actions/walletStoreActions.ts';
+import { setDetailsItem, setIsSwapping, setTxHistoryFilter } from '@app/store/actions/walletStoreActions.ts';
 
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
@@ -67,7 +62,6 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
 
     function handleFilterChange(newFilter: TxHistoryFilter) {
         setTxHistoryFilter(newFilter);
-        void fetchTransactionsHistory({ offset: 0, limit: 20, filter: newFilter });
     }
 
     useEffect(() => {

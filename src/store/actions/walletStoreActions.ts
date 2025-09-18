@@ -42,6 +42,7 @@ export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'al
         if (filter === 'rewards') {
             setCoinbaseTransactions({ newTxs: transactions, offset });
         }
+
         return transactions;
     } catch (error) {
         console.error(`Could not get transaction history for rewards: `, error);
@@ -129,6 +130,9 @@ export const setWalletBalance = async (balance: WalletBalance) => {
 
 export const setIsSwapping = (isSwapping: boolean) => {
     useWalletStore.setState((c) => ({ ...c, is_swapping: isSwapping }));
+};
+export const setIsSwitching = (is_wallet_switching: boolean) => {
+    useWalletStore.setState((c) => ({ ...c, is_wallet_switching }));
 };
 
 export const setTxHistoryFilter = (filter: TxHistoryFilter) => {

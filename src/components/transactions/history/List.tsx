@@ -25,9 +25,11 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const walletImporting = useWalletStore((s) => s.is_wallet_importing);
+    const walletSwitching = useWalletStore((s) => s.is_wallet_switching);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
 
-    const walletLoading = walletImporting || walletScanning?.is_scanning || isFetching;
+    // TODO clean up
+    const walletLoading = walletImporting || walletScanning?.is_scanning || isFetching || walletSwitching;
 
     useEffect(() => {
         const el = targetRef?.current;
@@ -106,6 +108,8 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     ) : (
         listMarkup
     );
+
+    // TODO fix this check
     const isEmpty = !walletLoading && !transactions?.length;
     const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
     return (
