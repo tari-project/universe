@@ -84,7 +84,7 @@ impl GpuDevicesSettings {
 #[getset(get = "pub", set = "pub")]
 #[allow(clippy::struct_excessive_bools)]
 pub struct ConfigMiningContent {
-    was_config_migrated: bool,
+    version: i32,
     created_at: SystemTime,
     selected_mining_mode: String,
     mining_modes: HashMap<String, MiningMode>,
@@ -96,14 +96,12 @@ pub struct ConfigMiningContent {
     squad_override: Option<String>,
     gpu_miner_type: GpuMinerType,
     is_lolminer_tested: bool,
-    version: i32,
 }
 
 impl Default for ConfigMiningContent {
     fn default() -> Self {
         Self {
             version: 0,
-            was_config_migrated: false,
             created_at: SystemTime::now(),
             selected_mining_mode: "Eco".to_string(),
             mine_on_app_start: true,

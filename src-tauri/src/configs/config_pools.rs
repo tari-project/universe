@@ -47,7 +47,7 @@ static INSTANCE: LazyLock<RwLock<ConfigPools>> = LazyLock::new(|| RwLock::new(Co
 pub struct ConfigPoolsContent {
     // ======= Config internals =======
     #[getset(get = "pub", set = "pub")]
-    was_config_migrated: bool,
+    version: u32,
     #[getset(get = "pub", set = "pub")]
     created_at: SystemTime,
     // ======= Gpu Pool =======
@@ -70,7 +70,7 @@ impl Default for ConfigPoolsContent {
     fn default() -> Self {
         Self {
             // ======= Config internals =======
-            was_config_migrated: false,
+            version: 0,
             created_at: SystemTime::now(),
             // ======= Gpu Pool =======
             gpu_pool_enabled: true,

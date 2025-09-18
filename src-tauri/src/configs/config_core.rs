@@ -50,7 +50,6 @@ static INSTANCE: LazyLock<RwLock<ConfigCore>> = LazyLock::new(|| RwLock::new(Con
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigCoreContent {
     version: u32,
-    was_config_migrated: bool,
     created_at: SystemTime,
     use_tor: bool,
     allow_telemetry: bool,
@@ -103,7 +102,6 @@ impl Default for ConfigCoreContent {
 
         Self {
             version: 0,
-            was_config_migrated: false,
             created_at: SystemTime::now(),
             use_tor: true,
             allow_telemetry: true,
