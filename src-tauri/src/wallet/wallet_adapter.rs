@@ -165,6 +165,16 @@ impl WalletAdapter {
                     None
                 };
 
+
+
+                let bytes = MemoField::from_bytes(&tx.raw_payment_id).get_payment_id();
+                let p_id_str = MemoField::stringify_bytes(&bytes);
+
+                if tx.direction == 2 {
+                    info!(target: LOG_TARGET, "pre-refresh for tx_id: {:?} tx.user_payment_id {:?}",&tx.tx_id, &tx.user_payment_id);
+                    info!(target: LOG_TARGET, "payment_id bytes for tx_id: {:?}: {:?}",&tx.tx_id, &bytes);
+                }
+
                 Ok(TransactionInfo {
                     tx_id: tx.tx_id.to_string(),
                     source_address: TariAddress::from_bytes(&tx.source_address)?.to_base58(),
@@ -176,7 +186,7 @@ impl WalletAdapter {
                     excess_sig: tx.excess_sig,
                     fee: tx.fee,
                     timestamp: tx.timestamp,
-                    payment_id: MemoField::stringify_bytes(&tx.user_payment_id),
+                    payment_id: p_id_str,
                     mined_in_block_height: tx.mined_in_block_height,
                     payment_reference,
                 })
