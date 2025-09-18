@@ -66,7 +66,7 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
     const listMarkup = (
         <ListItemWrapper>
-            {transactions?.map((tx, i) => {
+            {transactions?.slice(0, 2)?.map((tx, i) => {
                 const txId = tx.walletTransactionDetails?.txId || tx.paymentId;
                 const hash = tx.bridgeTransactionDetails?.transactionHash;
                 const hasNoId = !txId && !hash?.length;

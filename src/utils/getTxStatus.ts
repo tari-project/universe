@@ -58,6 +58,7 @@ export function getTxStatusTitleKey(transaction: CombinedBridgeWalletTransaction
     });
 }
 export function getTxTitle(transaction: CombinedBridgeWalletTransaction): string {
+    console.log(transaction);
     if (transaction.bridgeTransactionDetails) {
         return 'Bridge XTM to WXTM';
     }
