@@ -37,20 +37,15 @@ const filterToBitflag = (filter: TxHistoryFilter): number => {
 
 export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'all-activity' }: TxArgs) => {
     const bitflag = filterToBitflag(filter);
-    let transactions: TransactionInfo[] = [];
     try {
-        transactions = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
-
+        const transactions = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
         if (filter === 'rewards') {
             setCoinbaseTransactions({ newTxs: transactions, offset });
         }
-
-        console.log(`transactions len post invoke= `, transactions?.length);
         return transactions;
     } catch (error) {
         console.error(`Could not get transaction history for rewards: `, error);
-        console.log(`transactions len in ERROR= `, transactions?.length);
-        return transactions;
+        return [] as TransactionInfo[];
     }
 };
 
