@@ -8,7 +8,7 @@ export interface SessionMiningTime {
     durationMs?: number;
 }
 
-interface MiningStoreState {
+export interface MiningStoreState {
     hashrateReady?: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
@@ -21,8 +21,8 @@ interface MiningStoreState {
     network?: Network;
     engine?: string;
     availableEngines: string[];
-    availableMiners?: GpuMinerType[];
-    selectedMiner?: GpuMiner;
+    availableMiners?: Record<GpuMinerType, GpuMiner>;
+    selectedMiner?: GpuMinerType;
     sessionMiningTime: SessionMiningTime;
 }
 

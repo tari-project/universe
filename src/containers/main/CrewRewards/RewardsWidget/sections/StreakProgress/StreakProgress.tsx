@@ -15,7 +15,7 @@ export default function StreakProgress({ isInline = false }: Props) {
 
     const { data, isLoading } = useReferrerProgress();
     const referrerProgress = data?.referrerProgress;
-    const totalDaysRequired = data?.minRequirements?.totalDaysRequired ?? 1;
+    const totalDaysRequired = data?.referrerProgress?.minReferrerDaysRequired ?? 0;
 
     const currentStreak = referrerProgress?.currentStreak || 0;
     const meetsMinimumDays = referrerProgress?.meetsMinimumDays || false;
