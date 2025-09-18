@@ -158,19 +158,17 @@ export const stopMining = async () => {
         setError(e as string);
     }
 };
-export const handleSelectedMinerChanged = (miner: GpuMiner) => {
+export const handleSelectedMinerChanged = (miner: GpuMinerType) => {
     useMiningStore.setState({ selectedMiner: miner });
 };
 
-export const handleAvailableMinersChanged = (miners: GpuMinerType[]) => {
+export const handleAvailableMinersChanged = (miners: Record<GpuMinerType, GpuMiner>) => {
     useMiningStore.setState({ availableMiners: miners });
 };
 
-export const switchSelectedMiner = async (gpuMinerType: GpuMinerType) => {
-    const currentMiner = useMiningStore.getState().selectedMiner?.miner_type;
-    useMiningStore.setState((state) => ({
-        selectedMiner: { ...state.selectedMiner, miner_type: gpuMinerType } as GpuMiner,
-    }));
+export const switchSelectedMiner = async (newGpuMiner: GpuMinerType) => {
+    const oldMiner = useMiningStore.getState().selectedMiner;
+    useMiningStore.setState({ selectedMiner: newGpuMiner });
 
     const anyMiningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
@@ -181,15 +179,13 @@ export const switchSelectedMiner = async (gpuMinerType: GpuMinerType) => {
         await stopGpuMining();
     }
     try {
-        await invoke('switch_gpu_miner', { gpuMinerType });
+        await invoke('switch_gpu_miner', { gpuMinerType: newGpuMiner });
 
         if (anyMiningInitiated) {
             await startGpuMining();
         }
     } catch (e) {
-        useMiningStore.setState((state) => ({
-            selectedMiner: { ...state.selectedMiner, miner_type: currentMiner } as GpuMiner,
-        }));
+        useMiningStore.setState({ selectedMiner: oldMiner });
         console.error('Could not switch selected miner: ', e);
         setError(e as string);
     }
