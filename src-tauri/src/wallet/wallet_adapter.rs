@@ -171,8 +171,8 @@ impl WalletAdapter {
                 let p_id_str = MemoField::stringify_bytes(&bytes);
 
                 if tx.direction == 2 {
-                    info!(target: LOG_TARGET, "pre-refresh for tx_id: {:?} tx.user_payment_id {:?}",&tx.tx_id, &tx.user_payment_id);
-                    info!(target: LOG_TARGET, "payment_id bytes for tx_id: {:?}: {:?}",&tx.tx_id, &bytes);
+                    info!(target: LOG_TARGET, "tx_id: {:?} tx.user_payment_id {:?}",&tx.tx_id, &tx.user_payment_id);
+                    info!(target: LOG_TARGET, "tx_id: {:?} converted string {:?}",&tx.tx_id, &p_id_str);
                 }
 
                 Ok(TransactionInfo {
