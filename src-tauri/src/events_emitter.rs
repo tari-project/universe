@@ -200,7 +200,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_update_selected_gpu_miner(payload: GpuMiner) {
+    pub async fn emit_update_selected_gpu_miner(payload: GpuMinerType) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::UpdateSelectedMiner,
@@ -214,7 +214,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_available_gpu_miners(payload: Vec<GpuMinerType>) {
+    pub async fn emit_available_gpu_miners(payload: HashMap<GpuMinerType, GpuMiner>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::AvailableMiners,
