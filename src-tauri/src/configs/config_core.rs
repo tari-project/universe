@@ -93,7 +93,7 @@ impl Default for ConfigCoreContent {
             .chars()
             .nth(0)
             .map(|c| {
-                if (c as u32) % 2 == 0 {
+                if (c as u32).is_multiple_of(2) {
                     ABTestSelector::GroupA
                 } else {
                     ABTestSelector::GroupB
