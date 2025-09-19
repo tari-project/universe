@@ -1,7 +1,10 @@
 {
   "airdropGame": "Airdrop Speletjie",
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "Bonus edelstene verdien",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "Eis Edelstene",
   "claimModalFieldLabel": "Opsioneel",
   "claimModalFieldPlaceholder": "Voer verwysingskode in",
@@ -47,6 +50,7 @@
       "loginButton": "Log in & Start Earning!",
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
+    "manageYourCrew": "Manage your crew",
     "myCrew": "My Crew",
     "of": "of",
     "streak": {
@@ -63,10 +67,10 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Rewards"
   },
   "doLater": "Ek sal dit later doen",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "Edelstene",
   "giftReferralCode": "Verdien bonus XTM vir elke vriend wat u na Tari Heelal nooi. Sodra hulle hul rekening koppel en begin myn, sal u belonings begin verdien.",
   "giftReferralCodeHeader": "Eis u verwysingskode <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> edelstene.",
