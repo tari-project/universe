@@ -1,7 +1,10 @@
 {
   "airdropGame": "Testnet Belohnungen",
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "Bonus-Edelsteine verdient",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "Edelsteine beanspruchen",
   "claimModalFieldLabel": "Optional",
   "claimModalFieldPlaceholder": "Gib den Einladungscode ein",
@@ -47,6 +50,7 @@
       "loginButton": "Log in & Start Earning!",
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
+    "manageYourCrew": "Manage your crew",
     "myCrew": "My Crew",
     "of": "of",
     "streak": {
@@ -63,10 +67,10 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Rewards"
   },
   "doLater": "Ich mache das später",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "Edelsteine",
   "giftReferralCode": "Verdiene Bonus-XTM für jeden Freund, den du in Tari Universe einlädst. Sobald sie ihr Konto verbinden und minen, wirst du anfangen, Belohnungen zu verdienen.",
   "giftReferralCodeHeader": "Beanspruche deinen Empfehlungs-Code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> Edelsteine.",

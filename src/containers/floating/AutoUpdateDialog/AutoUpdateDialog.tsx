@@ -100,7 +100,7 @@ const AutoUpdateDialog = memo(function AutoUpdateDialog() {
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
                 <Typography variant="p">{t(subtitle, { version })}</Typography>
                 {isDownloading && <UpdatedStatus contentLength={contentLength} downloaded={downloaded} />}
-                {isDownloaded && <Typography variant="p">{`Update downloaded: Restarting Tari Universe`}</Typography>}
+                {isDownloaded && <Typography variant="p">{t('updated-downloaded')}</Typography>}
                 <ButtonSectionWrapper>
                     {!isDownloading && !couldNotUpdate && (
                         <ButtonsWrapper>
