@@ -37,6 +37,7 @@ use crate::{
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
+pub const POOLS_CONFIG_VERSION: u32 = 0;
 static INSTANCE: LazyLock<RwLock<ConfigPools>> = LazyLock::new(|| RwLock::new(ConfigPools::new()));
 
 #[allow(clippy::struct_excessive_bools)]
@@ -47,7 +48,7 @@ static INSTANCE: LazyLock<RwLock<ConfigPools>> = LazyLock::new(|| RwLock::new(Co
 pub struct ConfigPoolsContent {
     // ======= Config internals =======
     #[getset(get = "pub", set = "pub")]
-    was_config_migrated: bool,
+    version_counter: u32,
     #[getset(get = "pub", set = "pub")]
     created_at: SystemTime,
     // ======= Gpu Pool =======
@@ -70,7 +71,7 @@ impl Default for ConfigPoolsContent {
     fn default() -> Self {
         Self {
             // ======= Config internals =======
-            was_config_migrated: false,
+            version_counter: POOLS_CONFIG_VERSION,
             created_at: SystemTime::now(),
             // ======= Gpu Pool =======
             gpu_pool_enabled: true,

@@ -124,4 +124,5 @@ export const Text = styled.div`
     opacity: 0.8;
     font-weight: 400;
     line-height: 120%;
+    max-width: 500px;
 `;
