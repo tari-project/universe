@@ -53,6 +53,12 @@ pub trait GpuMinerInterfaceTrait: Send + Sync {
     async fn load_gpu_engine(&mut self, _engine: EngineType) -> Result<(), anyhow::Error> {
         Ok(())
     }
+    async fn load_excluded_devices(
+        &mut self,
+        _excluded_devices: Vec<u32>,
+    ) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
 }
 
 pub enum GpuMinerInterface {
@@ -116,6 +122,19 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
             GpuMinerInterface::LolMiner(miner) => miner.detect_devices().await,
             GpuMinerInterface::Graxil(miner) => miner.detect_devices().await,
             GpuMinerInterface::Glytex(miner) => miner.detect_devices().await,
+        }
+    }
+
+    async fn load_excluded_devices(
+        &mut self,
+        excluded_devices: Vec<u32>,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            GpuMinerInterface::LolMiner(miner) => {
+                miner.load_excluded_devices(excluded_devices).await
+            }
+            GpuMinerInterface::Graxil(miner) => miner.load_excluded_devices(excluded_devices).await,
+            GpuMinerInterface::Glytex(miner) => miner.load_excluded_devices(excluded_devices).await,
         }
     }
 }
