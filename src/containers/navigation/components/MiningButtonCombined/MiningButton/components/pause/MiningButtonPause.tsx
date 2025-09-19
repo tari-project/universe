@@ -5,8 +5,10 @@ import { offset, useClick, useDismiss, useFloating, useInteractions, useRole } f
 import MiningButton from '../../MiningButton.tsx';
 import PauseIcon from '../../../icons/PauseIcon.tsx';
 
-import { Options, OptionWrapper, TriggerWrapper } from './styles.ts';
+import { IconWrapper, Options, OptionText, OptionWrapper, TriggerWrapper } from './styles.ts';
 import { Trans, useTranslation } from 'react-i18next';
+import { TimerIcon } from './TimerIcon.tsx';
+import { PauseOutlineIcon } from './PauseOutlineIcon.tsx';
 
 interface MiningButtonPauseProps {
     isMining: boolean;
@@ -14,7 +16,6 @@ interface MiningButtonPauseProps {
 }
 
 export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: MiningButtonPauseProps) {
-    const { t } = useTranslation('mining-view');
     const [showPauseOptions, setShowPauseOptions] = useState(false);
 
     const { refs, floatingStyles, context } = useFloating({
@@ -49,23 +50,42 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
                 {showPauseOptions && (
                     <Options ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
                         <OptionWrapper>
-                            <Trans
-                                ns="mining-view"
-                                i18nKey="pause.for-duration"
-                                components={{ strong: <strong /> }}
-                                values={{ duration: `2 hours` }}
-                            />
+                            <IconWrapper>
+                                <TimerIcon />
+                            </IconWrapper>
+                            <OptionText>
+                                <Trans
+                                    ns="mining-view"
+                                    i18nKey="pause.for-duration"
+                                    components={{ strong: <strong /> }}
+                                    values={{ duration: `2 hours` }}
+                                />
+                            </OptionText>
                         </OptionWrapper>
                         <OptionWrapper>
-                            <Trans
-                                ns="mining-view"
-                                i18nKey="pause.for-duration"
-                                components={{ strong: <strong /> }}
-                                values={{ duration: `8 hours` }}
-                            />
+                            <IconWrapper>
+                                <TimerIcon />
+                            </IconWrapper>
+                            <OptionText>
+                                <Trans
+                                    ns="mining-view"
+                                    i18nKey="pause.for-duration"
+                                    components={{ strong: <strong /> }}
+                                    values={{ duration: `8 hours` }}
+                                />
+                            </OptionText>
                         </OptionWrapper>
                         <OptionWrapper>
-                            <Trans ns="mining-view" i18nKey="pause.until-restart" components={{ strong: <strong /> }} />
+                            <IconWrapper>
+                                <PauseOutlineIcon />
+                            </IconWrapper>
+                            <OptionText>
+                                <Trans
+                                    ns="mining-view"
+                                    i18nKey="pause.until-restart"
+                                    components={{ strong: <strong /> }}
+                                />
+                            </OptionText>
                         </OptionWrapper>
                     </Options>
                 )}
