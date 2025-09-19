@@ -1,7 +1,10 @@
 {
   "airdropGame": "Récompenses Testnet",
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "Gemmes bonus gagnées",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "Réclamer des gemmes",
   "claimModalFieldLabel": "Facultatif",
   "claimModalFieldPlaceholder": "Entre le code d'invitation",
@@ -47,6 +50,7 @@
       "loginButton": "Log in & Start Earning!",
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
+    "manageYourCrew": "Manage your crew",
     "myCrew": "My Crew",
     "of": "of",
     "streak": {
@@ -63,10 +67,10 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Rewards"
   },
   "doLater": "Je ferai ça plus tard",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "Gemmes",
   "giftReferralCode": "Gagnez des XTM bonus pour chaque ami que vous invitez dans Tari Universe. Une fois qu'ils ont connecté leur compte et miné, vous commencerez à recevoir des récompenses.",
   "giftReferralCodeHeader": "Réclame les <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gemmes de ton code de parrainage.",
