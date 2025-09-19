@@ -30,12 +30,16 @@ use tokio::{
 use crate::{
     configs::{
         config_pools::ConfigPoolsContent,
-        pools::{cpu_pools::CpuPool, PoolConfig},
+        pools::{cpu_pools::CpuPool, BasePoolData},
     },
     events_emitter::EventsEmitter,
     mining::pools::{
-        adapters::PoolApiAdapters, pools_manager::PoolManager, PoolManagerInterfaceTrait,
-        PoolStatus,
+        adapters::{
+            kryptex_pool::KryptexPoolAdapter, lucky_pool::LuckyPoolAdapter,
+            support_xmr_pool::SupportXmrPoolAdapter, PoolApiAdapters,
+        },
+        pools_manager::PoolManager,
+        PoolManagerInterfaceTrait, PoolStatus,
     },
     tasks_tracker::TasksTrackers,
 };
@@ -51,8 +55,9 @@ pub struct CpuPoolManager {
 impl CpuPoolManager {
     pub fn new() -> Self {
         let cpu_pool = CpuPool::default();
+        let cpu_pool_data = cpu_pool.default_content();
 
-        let pool_adapter = Self::resolve_pool_adapter(&cpu_pool);
+        let pool_adapter = Self::resolve_pool_adapter(&cpu_pool, cpu_pool_data);
         let pool_manager = PoolManager::new(
             pool_adapter,
             TasksTrackers::current().cpu_mining_phase.clone(),
@@ -64,8 +69,8 @@ impl CpuPoolManager {
     }
 
     pub async fn initialize_from_pool_config(config_content: &ConfigPoolsContent) {
-        let current_selected_pool = config_content.selected_cpu_pool().clone();
-        let pool_adapter = Self::resolve_pool_adapter(&current_selected_pool);
+        let (cpu_pool, cpu_pool_content) = config_content.current_cpu_pool().clone();
+        let pool_adapter = Self::resolve_pool_adapter(&cpu_pool, cpu_pool_content);
 
         if *config_content.cpu_pool_enabled() {
             INSTANCE
@@ -87,7 +92,6 @@ impl CpuPoolManager {
 
 impl PoolManagerInterfaceTrait for CpuPoolManager {
     type PoolConfigType = CpuPool;
-
     async fn get_write_manager() -> RwLockWriteGuard<'static, PoolManager> {
         INSTANCE.pool_status_manager.write().await
     }
@@ -101,20 +105,19 @@ impl PoolManagerInterfaceTrait for CpuPoolManager {
         }
     }
 
-    fn resolve_pool_adapter(pool: &CpuPool) -> PoolApiAdapters {
+    fn resolve_pool_adapter(pool: &CpuPool, pool_data: BasePoolData) -> PoolApiAdapters {
         match pool {
-            CpuPool::LuckyPool(_) => PoolApiAdapters::LuckyPool(
-                crate::mining::pools::adapters::lucky_pool::LuckyPoolAdapter::new(
-                    pool.name().to_string(),
-                    pool.get_raw_stats_url(),
-                ),
+            CpuPool::LuckyPoolRANDOMX => PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(
+                pool_data.pool_name,
+                pool_data.stats_url,
+            )),
+            CpuPool::SupportXTMPoolRANDOMX => PoolApiAdapters::SupportXmr(
+                SupportXmrPoolAdapter::new(pool_data.pool_name, pool_data.stats_url),
             ),
-            CpuPool::SupportXTMPool(_) => PoolApiAdapters::SupportXmrPool(
-                crate::mining::pools::adapters::support_xmr_pool::SupportXmrPoolAdapter::new(
-                    pool.name().to_string(),
-                    pool.get_raw_stats_url(),
-                ),
-            ),
+            CpuPool::KryptexPoolRANDOMX => PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(
+                pool_data.pool_name,
+                pool_data.stats_url,
+            )),
         }
     }
 }

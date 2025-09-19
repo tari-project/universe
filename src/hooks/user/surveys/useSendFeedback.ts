@@ -50,8 +50,8 @@ function useFeedbackMetadata() {
     const miningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
     const gpu_pool_enabled = useConfigPoolsStore((s) => s.gpu_pool_enabled);
     const cpu_pool_enabled = useConfigPoolsStore((s) => s.cpu_pool_enabled);
-    const selected_cpu_pool = useConfigPoolsStore((s) => s.selected_cpu_pool);
-    const selected_gpu_pool = useConfigPoolsStore((s) => s.selected_gpu_pool);
+    const selected_cpu_pool = useConfigPoolsStore((s) => s.current_cpu_pool);
+    const selected_gpu_pool = useConfigPoolsStore((s) => s.current_gpu_pool);
 
     const gpuData = gpusFormatted(gpus);
 

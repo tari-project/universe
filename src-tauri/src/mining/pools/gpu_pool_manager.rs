@@ -28,15 +28,19 @@ use tokio::{spawn, sync::RwLock};
 use crate::{
     configs::{
         config_pools::{ConfigPools, ConfigPoolsContent},
-        pools::{gpu_pools::GpuPool, PoolConfig},
+        pools::{gpu_pools::GpuPool, BasePoolData},
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
     mining::{
         gpu::consts::GpuMinerType,
         pools::{
-            adapters::PoolApiAdapters, pools_manager::PoolManager, PoolManagerInterfaceTrait,
-            PoolStatus,
+            adapters::{
+                kryptex_pool::KryptexPoolAdapter, lucky_pool::LuckyPoolAdapter,
+                support_xmr_pool::SupportXmrPoolAdapter, PoolApiAdapters,
+            },
+            pools_manager::PoolManager,
+            PoolManagerInterfaceTrait, PoolStatus,
         },
     },
     setup::setup_manager::SetupManager,
@@ -53,8 +57,9 @@ pub struct GpuPoolManager {
 impl GpuPoolManager {
     pub fn new() -> Self {
         let gpu_pool = GpuPool::default();
+        let gpu_pool_content = gpu_pool.default_content();
 
-        let pool_adapter = Self::resolve_pool_adapter(&gpu_pool);
+        let pool_adapter = Self::resolve_pool_adapter(&gpu_pool, gpu_pool_content);
         let pool_manager = PoolManager::new(
             pool_adapter,
             TasksTrackers::current().gpu_mining_phase.clone(),
@@ -65,8 +70,8 @@ impl GpuPoolManager {
         }
     }
     pub async fn initialize_from_pool_config(config_content: &ConfigPoolsContent) {
-        let current_selected_pool = config_content.selected_gpu_pool().clone();
-        let pool_adapter = Self::resolve_pool_adapter(&current_selected_pool);
+        let (gpu_pool, gpu_pool_content) = config_content.current_gpu_pool().clone();
+        let pool_adapter = Self::resolve_pool_adapter(&gpu_pool, gpu_pool_content);
 
         if *config_content.gpu_pool_enabled() {
             INSTANCE
@@ -96,42 +101,43 @@ impl GpuPoolManager {
     /// ### Arguments
     /// * `miner` - The new GPU miner type
     pub async fn handle_miner_switch(miner: GpuMinerType) {
-        let current_selected_pool = ConfigPools::content().await.selected_gpu_pool().clone();
+        let (current_pool, _current_pool_content) =
+            ConfigPools::content().await.current_gpu_pool().clone();
 
-        if current_selected_pool.is_miner_algorithms_supported(&miner) {
-            info!(target: LOG_TARGET, "Current selected GPU pool '{}' supports the new miner type '{miner:?}', no pool switch needed", current_selected_pool.name());
+        if !miner.is_pool_mining_supported() {
+            info!(target: LOG_TARGET, "New GPU miner type '{miner:?}' does not support pool mining, disabling GPU pool feature");
+            let _unused = SetupManager::get_instance()
+                .turn_off_gpu_pool_feature()
+                .await;
+            return;
+        }
+
+        if miner.is_pool_supported(&current_pool) {
+            info!(target: LOG_TARGET, "Current selected GPU pool '{current_pool}' supports the new miner type '{miner:?}', no pool switch needed");
         } else {
-            info!(target: LOG_TARGET, "Current selected GPU pool '{}' does not support the new miner type '{miner:?}', switching to default pool for that miner", current_selected_pool.name());
-            match GpuPool::default_for_miner_type(miner) {
+            info!(target: LOG_TARGET, "Current selected GPU pool '{current_pool}' does not support the new miner type '{miner:?}', switching to default pool for that miner");
+            if let Some(default_miner_pool) = miner.default_pool() {
                 // LolMiner or Graxil
-                Some(pool) => {
-                    let _unused = ConfigPools::update_field(
-                        ConfigPoolsContent::set_selected_gpu_pool,
-                        pool.name().to_string(),
-                    )
+                let _unused = ConfigPools::update_field(
+                    ConfigPoolsContent::set_current_gpu_pool,
+                    default_miner_pool,
+                )
+                .await;
+                EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone())
                     .await;
 
-                    let _unused = ConfigPools::update_field(
-                        ConfigPoolsContent::update_selected_gpu_config,
-                        pool.clone(),
-                    )
-                    .await;
-                    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone())
-                        .await;
+                let (default_pool, default_pool_content) =
+                    ConfigPools::content().await.current_gpu_pool().clone();
 
-                    INSTANCE
-                        .pool_status_manager
-                        .write()
-                        .await
-                        .handle_pool_change(Self::resolve_pool_adapter(&pool))
-                        .await;
-                }
-                // Glytex
-                None => {
-                    let _unused = SetupManager::get_instance()
-                        .turn_off_gpu_pool_feature()
-                        .await;
-                }
+                INSTANCE
+                    .pool_status_manager
+                    .write()
+                    .await
+                    .handle_pool_change(Self::resolve_pool_adapter(
+                        &default_pool,
+                        default_pool_content,
+                    ))
+                    .await;
             };
         }
     }
@@ -153,19 +159,26 @@ impl PoolManagerInterfaceTrait for GpuPoolManager {
         }
     }
 
-    fn resolve_pool_adapter(pool: &GpuPool) -> PoolApiAdapters {
+    fn resolve_pool_adapter(pool: &GpuPool, pool_data: BasePoolData) -> PoolApiAdapters {
         match pool {
-            GpuPool::LuckyPool(_) => PoolApiAdapters::LuckyPool(
-                crate::mining::pools::adapters::lucky_pool::LuckyPoolAdapter::new(
-                    pool.name().to_string(),
-                    pool.get_raw_stats_url(),
-                ),
-            ),
-            GpuPool::SupportXTMPool(_) => PoolApiAdapters::SupportXmrPool(
-                crate::mining::pools::adapters::support_xmr_pool::SupportXmrPoolAdapter::new(
-                    pool.name().to_string(),
-                    pool.get_raw_stats_url(),
-                ),
+            GpuPool::LuckyPoolC29 => PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(
+                pool_data.pool_name,
+                pool_data.stats_url,
+            )),
+            GpuPool::KryptexPoolC29 => PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(
+                pool_data.pool_name,
+                pool_data.stats_url,
+            )),
+            GpuPool::KryptexPoolSHA3X => PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(
+                pool_data.pool_name,
+                pool_data.stats_url,
+            )),
+            GpuPool::LuckyPoolSHA3X => PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(
+                pool_data.pool_name,
+                pool_data.stats_url,
+            )),
+            GpuPool::SupportXTMPoolSHA3X => PoolApiAdapters::SupportXmr(
+                SupportXmrPoolAdapter::new(pool_data.pool_name, pool_data.stats_url),
             ),
         }
     }

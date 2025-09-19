@@ -44,7 +44,7 @@ use crate::{
     configs::{
         config_mining::{ConfigMining, ConfigMiningContent},
         config_pools::ConfigPools,
-        pools::{gpu_pools::GpuPool, PoolConfig},
+        pools::gpu_pools::GpuPool,
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
@@ -202,12 +202,12 @@ impl GpuManager {
     /// If no suitable miner is found, an error is returned.
     async fn handle_pool_connection_load(&mut self) -> Result<(), anyhow::Error> {
         if self.selected_miner.is_pool_mining_supported() {
-            let current_selected_pool = ConfigPools::content().await.selected_gpu_pool().clone();
-            let current_selected_pool_url = current_selected_pool.get_pool_url();
+            let (_current_pool, current_pool_data) =
+                ConfigPools::content().await.current_gpu_pool().clone();
             self.process_watcher
                 .adapter
                 .load_connection_type(GpuConnectionType::Pool {
-                    pool_url: current_selected_pool_url,
+                    pool_url: current_pool_data.pool_url,
                 })
                 .await?;
         } else {
@@ -234,13 +234,13 @@ impl GpuManager {
             if let Some(fallback_miner) = fallback_miner {
                 info!(target: LOG_TARGET, "Selected gpu miner does not support pool mining, switching to fallback miner: {fallback_miner}");
                 self.switch_miner(fallback_miner).await?;
-                let current_selected_pool =
-                    ConfigPools::content().await.selected_gpu_pool().clone();
-                let current_selected_pool_url = current_selected_pool.get_pool_url();
+                let (_current_pool, current_pool_data) =
+                    ConfigPools::content().await.current_gpu_pool().clone();
+
                 self.process_watcher
                     .adapter
                     .load_connection_type(GpuConnectionType::Pool {
-                        pool_url: current_selected_pool_url,
+                        pool_url: current_pool_data.pool_url,
                     })
                     .await?;
             } else {

@@ -25,6 +25,7 @@ use crate::commands::{CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::configs::config_pools::ConfigPoolsContent;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::configs::pools::cpu_pools::CpuPool;
+use crate::configs::pools::BasePoolData;
 use crate::mining::cpu::CpuMinerConnection;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
@@ -74,40 +75,41 @@ impl CpuMinerConfig {
         }
     }
 
+    fn resolve_pool_connection(&mut self, pool_data: BasePoolData, tari_address: &TariAddress) {
+        self.pool_status_url = Some(
+            pool_data
+                .stats_url
+                .replace("%TARI_ADDRESS%", &tari_address.to_base58()),
+        );
+        let pool_url = pool_data.pool_url;
+
+        if let Ok((host_name, port)) = Self::split_url_to_hostname_port(&pool_url) {
+            self.pool_host_name = Some(host_name);
+            self.pool_port = Some(port);
+        } else {
+            error!(target: LOG_TARGET, "Invalid pool URL format: {pool_url}");
+        }
+
+        self.node_connection = CpuMinerConnection::Pool;
+    }
     pub fn load_from_config_pools(
         &mut self,
         config_pools_content: ConfigPoolsContent,
         tari_address: &TariAddress,
     ) {
+        let (selected_cpu_pool, selected_cpu_pool_data) =
+            config_pools_content.current_cpu_pool().clone();
+
         if *config_pools_content.cpu_pool_enabled() {
-            match config_pools_content.selected_cpu_pool() {
-                CpuPool::SupportXTMPool(global_tari_pool) => {
-                    self.pool_status_url =
-                        Some(global_tari_pool.get_stats_url(tari_address.to_base58().as_str()));
-                    let pool_url = global_tari_pool.get_pool_url();
-
-                    if let Ok((host_name, port)) = Self::split_url_to_hostname_port(&pool_url) {
-                        self.pool_host_name = Some(host_name);
-                        self.pool_port = Some(port);
-                    } else {
-                        error!(target: LOG_TARGET, "Invalid pool URL format: {pool_url}");
-                    }
-
-                    self.node_connection = CpuMinerConnection::Pool;
+            match selected_cpu_pool {
+                CpuPool::SupportXTMPoolRANDOMX => {
+                    self.resolve_pool_connection(selected_cpu_pool_data, tari_address)
                 }
-                CpuPool::LuckyPool(lucky_pool) => {
-                    self.pool_status_url =
-                        Some(lucky_pool.get_stats_url(tari_address.to_base58().as_str()));
-                    let pool_url = lucky_pool.get_pool_url();
-
-                    if let Ok((host_name, port)) = Self::split_url_to_hostname_port(&pool_url) {
-                        self.pool_host_name = Some(host_name);
-                        self.pool_port = Some(port);
-                    } else {
-                        error!(target: LOG_TARGET, "Invalid pool URL format: {pool_url}");
-                    }
-
-                    self.node_connection = CpuMinerConnection::Pool;
+                CpuPool::LuckyPoolRANDOMX => {
+                    self.resolve_pool_connection(selected_cpu_pool_data, tari_address)
+                }
+                CpuPool::KryptexPoolRANDOMX => {
+                    self.resolve_pool_connection(selected_cpu_pool_data, tari_address)
                 }
             }
         } else {

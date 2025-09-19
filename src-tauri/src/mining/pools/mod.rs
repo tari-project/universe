@@ -20,14 +20,14 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
+use std::{any::Any, collections::HashMap};
 
 use serde::Serialize;
 use tari_common_types::tari_address::TariAddress;
 use tokio::sync::RwLockWriteGuard;
 
 use crate::{
-    configs::pools::PoolConfig,
+    configs::pools::BasePoolData,
     mining::pools::{adapters::PoolApiAdapters, pools_manager::PoolManager},
 };
 
@@ -45,7 +45,7 @@ pub(crate) struct PoolStatus {
 }
 
 pub trait PoolManagerInterfaceTrait {
-    type PoolConfigType: PoolConfig;
+    type PoolConfigType: Any;
 
     // =============== Getters ===============
 
@@ -66,7 +66,10 @@ pub trait PoolManagerInterfaceTrait {
     /// * `pool` - The selected pool configuration
     /// ### Returns
     /// The appropriate pool adapter for the selected pool
-    fn resolve_pool_adapter(pool: &Self::PoolConfigType) -> PoolApiAdapters;
+    fn resolve_pool_adapter(
+        pool: &Self::PoolConfigType,
+        pool_data: BasePoolData,
+    ) -> PoolApiAdapters;
 
     // =============== Predefined methods ===============
 
@@ -76,8 +79,8 @@ pub trait PoolManagerInterfaceTrait {
     /// This should be called whenever the selected pool configuration changes
     /// ### Arguments
     /// * `pool` - The new selected CPU pool configuration
-    async fn handle_new_selected_pool(pool: Self::PoolConfigType) {
-        let new_pool_adapter = Self::resolve_pool_adapter(&pool);
+    async fn handle_new_selected_pool(pool: Self::PoolConfigType, pool_data: BasePoolData) {
+        let new_pool_adapter = Self::resolve_pool_adapter(&pool, pool_data);
 
         Self::get_write_manager()
             .await
