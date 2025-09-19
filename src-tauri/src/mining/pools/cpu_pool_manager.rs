@@ -57,7 +57,7 @@ impl CpuPoolManager {
         let cpu_pool = CpuPool::default();
         let cpu_pool_data = cpu_pool.default_content();
 
-        let pool_adapter = Self::resolve_pool_adapter(&cpu_pool, cpu_pool_data);
+        let pool_adapter = Self::resolve_pool_adapter(cpu_pool_data);
         let pool_manager = PoolManager::new(
             pool_adapter,
             TasksTrackers::current().cpu_mining_phase.clone(),
@@ -69,8 +69,8 @@ impl CpuPoolManager {
     }
 
     pub async fn initialize_from_pool_config(config_content: &ConfigPoolsContent) {
-        let (cpu_pool, cpu_pool_content) = config_content.current_cpu_pool().clone();
-        let pool_adapter = Self::resolve_pool_adapter(&cpu_pool, cpu_pool_content);
+        let cpu_pool_content = config_content.current_cpu_pool().clone();
+        let pool_adapter = Self::resolve_pool_adapter(cpu_pool_content);
 
         if *config_content.cpu_pool_enabled() {
             INSTANCE
@@ -105,19 +105,17 @@ impl PoolManagerInterfaceTrait for CpuPoolManager {
         }
     }
 
-    fn resolve_pool_adapter(pool: &CpuPool, pool_data: BasePoolData) -> PoolApiAdapters {
-        match pool {
-            CpuPool::LuckyPoolRANDOMX => PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(
-                pool_data.pool_name,
-                pool_data.stats_url,
-            )),
+    fn resolve_pool_adapter(pool: BasePoolData<CpuPool>) -> PoolApiAdapters {
+        match pool.pool_type {
+            CpuPool::LuckyPoolRANDOMX => {
+                PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(pool.pool_name, pool.stats_url))
+            }
             CpuPool::SupportXTMPoolRANDOMX => PoolApiAdapters::SupportXmr(
-                SupportXmrPoolAdapter::new(pool_data.pool_name, pool_data.stats_url),
+                SupportXmrPoolAdapter::new(pool.pool_name, pool.stats_url),
             ),
-            CpuPool::KryptexPoolRANDOMX => PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(
-                pool_data.pool_name,
-                pool_data.stats_url,
-            )),
+            CpuPool::KryptexPoolRANDOMX => {
+                PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(pool.pool_name, pool.stats_url))
+            }
         }
     }
 }

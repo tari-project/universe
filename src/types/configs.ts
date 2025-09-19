@@ -122,8 +122,16 @@ export enum CpuPools {
     KryptexPoolRandomX = 'KryptexPoolRANDOMX',
 }
 
+export enum PoolOrigin {
+    SupportXTM = 'SupportXTM',
+    LuckyPool = 'LuckyPool',
+    Kryptex = 'Kryptex',
+}
+
 export interface BasePoolData {
     pool_name: string;
+    pool_type: GpuPools | CpuPools;
+    pool_origin: PoolOrigin;
     pool_url: string;
     stats_url: string;
 }

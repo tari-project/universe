@@ -59,7 +59,7 @@ impl GpuPoolManager {
         let gpu_pool = GpuPool::default();
         let gpu_pool_content = gpu_pool.default_content();
 
-        let pool_adapter = Self::resolve_pool_adapter(&gpu_pool, gpu_pool_content);
+        let pool_adapter = Self::resolve_pool_adapter(gpu_pool_content);
         let pool_manager = PoolManager::new(
             pool_adapter,
             TasksTrackers::current().gpu_mining_phase.clone(),
@@ -70,8 +70,8 @@ impl GpuPoolManager {
         }
     }
     pub async fn initialize_from_pool_config(config_content: &ConfigPoolsContent) {
-        let (gpu_pool, gpu_pool_content) = config_content.current_gpu_pool().clone();
-        let pool_adapter = Self::resolve_pool_adapter(&gpu_pool, gpu_pool_content);
+        let gpu_pool_content = config_content.current_gpu_pool().clone();
+        let pool_adapter = Self::resolve_pool_adapter(gpu_pool_content);
 
         if *config_content.gpu_pool_enabled() {
             INSTANCE
@@ -101,8 +101,7 @@ impl GpuPoolManager {
     /// ### Arguments
     /// * `miner` - The new GPU miner type
     pub async fn handle_miner_switch(miner: GpuMinerType) {
-        let (current_pool, _current_pool_content) =
-            ConfigPools::content().await.current_gpu_pool().clone();
+        let current_pool_content = ConfigPools::content().await.current_gpu_pool().clone();
 
         if !miner.is_pool_mining_supported() {
             info!(target: LOG_TARGET, "New GPU miner type '{miner:?}' does not support pool mining, disabling GPU pool feature");
@@ -112,10 +111,10 @@ impl GpuPoolManager {
             return;
         }
 
-        if miner.is_pool_supported(&current_pool) {
-            info!(target: LOG_TARGET, "Current selected GPU pool '{current_pool}' supports the new miner type '{miner:?}', no pool switch needed");
+        if miner.is_pool_supported(&current_pool_content.pool_type) {
+            info!(target: LOG_TARGET, "Current selected GPU pool '{}' supports the new miner type '{miner:?}', no pool switch needed", current_pool_content.pool_name);
         } else {
-            info!(target: LOG_TARGET, "Current selected GPU pool '{current_pool}' does not support the new miner type '{miner:?}', switching to default pool for that miner");
+            info!(target: LOG_TARGET, "Current selected GPU pool '{}' does not support the new miner type '{miner:?}', switching to default pool for that miner", current_pool_content.pool_name);
             if let Some(default_miner_pool) = miner.default_pool() {
                 // LolMiner or Graxil
                 let _unused = ConfigPools::update_field(
@@ -126,17 +125,13 @@ impl GpuPoolManager {
                 EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone())
                     .await;
 
-                let (default_pool, default_pool_content) =
-                    ConfigPools::content().await.current_gpu_pool().clone();
+                let default_pool_content = ConfigPools::content().await.current_gpu_pool().clone();
 
                 INSTANCE
                     .pool_status_manager
                     .write()
                     .await
-                    .handle_pool_change(Self::resolve_pool_adapter(
-                        &default_pool,
-                        default_pool_content,
-                    ))
+                    .handle_pool_change(Self::resolve_pool_adapter(default_pool_content))
                     .await;
             };
         }
@@ -159,26 +154,22 @@ impl PoolManagerInterfaceTrait for GpuPoolManager {
         }
     }
 
-    fn resolve_pool_adapter(pool: &GpuPool, pool_data: BasePoolData) -> PoolApiAdapters {
-        match pool {
-            GpuPool::LuckyPoolC29 => PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(
-                pool_data.pool_name,
-                pool_data.stats_url,
-            )),
-            GpuPool::KryptexPoolC29 => PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(
-                pool_data.pool_name,
-                pool_data.stats_url,
-            )),
-            GpuPool::KryptexPoolSHA3X => PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(
-                pool_data.pool_name,
-                pool_data.stats_url,
-            )),
-            GpuPool::LuckyPoolSHA3X => PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(
-                pool_data.pool_name,
-                pool_data.stats_url,
-            )),
+    fn resolve_pool_adapter(pool: BasePoolData<GpuPool>) -> PoolApiAdapters {
+        match pool.pool_type {
+            GpuPool::LuckyPoolC29 => {
+                PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(pool.pool_name, pool.stats_url))
+            }
+            GpuPool::KryptexPoolC29 => {
+                PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(pool.pool_name, pool.stats_url))
+            }
+            GpuPool::KryptexPoolSHA3X => {
+                PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(pool.pool_name, pool.stats_url))
+            }
+            GpuPool::LuckyPoolSHA3X => {
+                PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(pool.pool_name, pool.stats_url))
+            }
             GpuPool::SupportXTMPoolSHA3X => PoolApiAdapters::SupportXmr(
-                SupportXmrPoolAdapter::new(pool_data.pool_name, pool_data.stats_url),
+                SupportXmrPoolAdapter::new(pool.pool_name, pool.stats_url),
             ),
         }
     }

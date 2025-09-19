@@ -40,7 +40,7 @@ use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
-use tari_common_types::tari_address::TariAddress;
+use tari_common_types::tari_address::{self, TariAddress};
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_transaction_components::tari_amount::MicroMinotari;
 use tokio::sync::{watch, RwLock};
@@ -54,6 +54,7 @@ pub struct CpuMinerConfig {
     pub pool_host_name: Option<String>,
     pub pool_port: Option<u16>,
     pub pool_status_url: Option<String>,
+    pub worker_name: Option<String>,
 }
 
 impl CpuMinerConfig {
@@ -75,7 +76,11 @@ impl CpuMinerConfig {
         }
     }
 
-    fn resolve_pool_connection(&mut self, pool_data: BasePoolData, tari_address: &TariAddress) {
+    fn resolve_pool_connection(
+        &mut self,
+        pool_data: BasePoolData<CpuPool>,
+        tari_address: &TariAddress,
+    ) {
         self.pool_status_url = Some(
             pool_data
                 .stats_url
@@ -90,6 +95,18 @@ impl CpuMinerConfig {
             error!(target: LOG_TARGET, "Invalid pool URL format: {pool_url}");
         }
 
+        match pool_data.pool_type {
+            CpuPool::SupportXTMPoolRANDOMX => {
+                self.worker_name = None;
+            }
+            CpuPool::LuckyPoolRANDOMX => {
+                self.worker_name = Some(".Tari-universe".to_string());
+            }
+            CpuPool::KryptexPoolRANDOMX => {
+                self.worker_name = Some("/Tari-universe".to_string());
+            }
+        }
+
         self.node_connection = CpuMinerConnection::Pool;
     }
     pub fn load_from_config_pools(
@@ -97,11 +114,10 @@ impl CpuMinerConfig {
         config_pools_content: ConfigPoolsContent,
         tari_address: &TariAddress,
     ) {
-        let (selected_cpu_pool, selected_cpu_pool_data) =
-            config_pools_content.current_cpu_pool().clone();
+        let selected_cpu_pool_data = config_pools_content.current_cpu_pool().clone();
 
         if *config_pools_content.cpu_pool_enabled() {
-            match selected_cpu_pool {
+            match selected_cpu_pool_data.pool_type {
                 CpuPool::SupportXTMPoolRANDOMX => {
                     self.resolve_pool_connection(selected_cpu_pool_data, tari_address)
                 }
@@ -184,10 +200,21 @@ impl CpuMiner {
                         }
                     };
 
+                let mut tari_address = tari_address.to_base58();
+
+                // Append worker name if provided and pool supports it
+                // Luckypool tari_address.worker_name
+                // Kryptex tari_address/worker_name
+                if let Some(worker_name) = &cpu_miner_config.worker_name {
+                    if !worker_name.is_empty() {
+                        tari_address = format!("{}{}", tari_address, worker_name);
+                    }
+                }
+
                 XmrigNodeConnection::Pool {
                     host_name: pool_address,
                     port,
-                    tari_address: tari_address.to_base58(),
+                    tari_address: tari_address,
                 }
             }
         };

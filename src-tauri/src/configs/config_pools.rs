@@ -52,14 +52,14 @@ pub struct ConfigPoolsContent {
     #[getset(set = "pub")]
     current_gpu_pool: GpuPool,
     #[getset(get = "pub", set = "pub")]
-    gpu_pools: HashMap<GpuPool, BasePoolData>,
+    gpu_pools: HashMap<GpuPool, BasePoolData<GpuPool>>,
     // ======= Cpu Pool =======
     #[getset(get = "pub", set = "pub")]
     cpu_pool_enabled: bool,
     #[getset(set = "pub")]
     current_cpu_pool: CpuPool,
     #[getset(get = "pub", set = "pub")]
-    cpu_pools: HashMap<CpuPool, BasePoolData>,
+    cpu_pools: HashMap<CpuPool, BasePoolData<CpuPool>>,
 }
 
 impl Default for ConfigPoolsContent {
@@ -81,32 +81,34 @@ impl Default for ConfigPoolsContent {
 }
 impl ConfigContentImpl for ConfigPoolsContent {}
 impl ConfigPoolsContent {
-    pub fn current_gpu_pool(&self) -> (GpuPool, BasePoolData) {
-        let content = self
-            .gpu_pools
+    pub fn current_gpu_pool(&self) -> BasePoolData<GpuPool> {
+        self.gpu_pools
             .get(&self.current_gpu_pool)
             .cloned()
-            .unwrap_or_else(|| GpuPool::default().default_content());
-        (self.current_gpu_pool.clone(), content)
+            .unwrap_or_else(|| GpuPool::default().default_content())
     }
 
-    pub fn current_cpu_pool(&self) -> (CpuPool, BasePoolData) {
-        let content = self
-            .cpu_pools
+    pub fn current_cpu_pool(&self) -> BasePoolData<CpuPool> {
+        self.cpu_pools
             .get(&self.current_cpu_pool)
             .cloned()
-            .unwrap_or_else(|| CpuPool::default().default_content());
-        (self.current_cpu_pool.clone(), content)
+            .unwrap_or_else(|| CpuPool::default().default_content())
     }
 
-    pub fn update_current_cpu_config(&mut self, updated_config: BasePoolData) -> &mut Self {
+    pub fn update_current_cpu_config(
+        &mut self,
+        updated_config: BasePoolData<CpuPool>,
+    ) -> &mut Self {
         if let Some(pool) = self.cpu_pools.get_mut(&self.current_cpu_pool) {
             *pool = updated_config.clone();
         }
         self
     }
 
-    pub fn update_current_gpu_config(&mut self, updated_config: BasePoolData) -> &mut Self {
+    pub fn update_current_gpu_config(
+        &mut self,
+        updated_config: BasePoolData<GpuPool>,
+    ) -> &mut Self {
         if let Some(pool) = self.gpu_pools.get_mut(&self.current_gpu_pool) {
             *pool = updated_config.clone();
         }

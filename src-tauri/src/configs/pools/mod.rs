@@ -26,8 +26,16 @@ pub mod cpu_pools;
 pub mod gpu_pools;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BasePoolData {
+pub enum PoolOrigin {
+    SupportXTM,
+    LuckyPool,
+    Kryptex,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BasePoolData<T> {
     pub pool_name: String,
     pub pool_url: String,
     pub stats_url: String,
+    pub pool_type: T,
+    pub pool_origin: PoolOrigin,
 }

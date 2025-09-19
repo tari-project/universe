@@ -224,8 +224,8 @@ impl WebsocketEventsManager {
         let tari_address = InternalWallet::tari_address().await;
 
         let pools_config = ConfigPools::content().await;
-        let gpu_pool_name = pools_config.current_gpu_pool().1.pool_name;
-        let cpu_pool_name = pools_config.current_cpu_pool().1.pool_name;
+        let gpu_pool_name = pools_config.current_gpu_pool().pool_name;
+        let cpu_pool_name = pools_config.current_cpu_pool().pool_name;
 
         let signable_message = format!(
             "{},{},{},{},{},{},{},{},{}",

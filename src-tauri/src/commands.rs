@@ -1786,9 +1786,9 @@ pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
     .await
     .map_err(InvokeError::from_anyhow)?;
 
-    let (cpu_pool, cpu_pool_content) = ConfigPools::content().await.current_cpu_pool();
+    let cpu_pool_content = ConfigPools::content().await.current_cpu_pool();
 
-    CpuPoolManager::handle_new_selected_pool(cpu_pool, cpu_pool_content).await;
+    CpuPoolManager::handle_new_selected_pool(cpu_pool_content).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "change_cpu_pool took too long: {:?}", timer.elapsed());
@@ -1808,9 +1808,9 @@ pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
     .await
     .map_err(InvokeError::from_anyhow)?;
 
-    let (gpu_pool, gpu_pool_content) = ConfigPools::content().await.current_gpu_pool();
+    let gpu_pool_content = ConfigPools::content().await.current_gpu_pool();
 
-    GpuPoolManager::handle_new_selected_pool(gpu_pool, gpu_pool_content).await;
+    GpuPoolManager::handle_new_selected_pool(gpu_pool_content).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "change_gpu_pool took too long: {:?}", timer.elapsed());
@@ -1820,7 +1820,7 @@ pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
 
 #[tauri::command]
 pub async fn update_selected_gpu_pool_config(
-    updated_config: BasePoolData,
+    updated_config: BasePoolData<GpuPool>,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[update_selected_gpu_pool_config] called with updated_config: {updated_config:?}");
@@ -1841,7 +1841,7 @@ pub async fn update_selected_gpu_pool_config(
 
 #[tauri::command]
 pub async fn update_selected_cpu_pool_config(
-    updated_config: BasePoolData,
+    updated_config: BasePoolData<CpuPool>,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[update_selected_cpu_pool_config] called with updated_config: {updated_config:?}");
@@ -1874,7 +1874,7 @@ pub async fn reset_gpu_pool_config(gpu_pool_name: String) -> Result<(), InvokeEr
     .await
     .map_err(InvokeError::from_anyhow)?;
     EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
-    GpuPoolManager::handle_new_selected_pool(gpu_pool.clone(), gpu_pool.default_content()).await;
+    GpuPoolManager::handle_new_selected_pool(gpu_pool.default_content()).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "reset_pool_gpu_pool_config took too long: {:?}", timer.elapsed());
@@ -1896,7 +1896,7 @@ pub async fn reset_cpu_pool_config(cpu_pool_name: String) -> Result<(), InvokeEr
     .await
     .map_err(InvokeError::from_anyhow)?;
     EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
-    CpuPoolManager::handle_new_selected_pool(cpu_pool.clone(), cpu_pool.default_content()).await;
+    CpuPoolManager::handle_new_selected_pool(cpu_pool.default_content()).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "reset_pool_cpu_pool_config took too long: {:?}", timer.elapsed());

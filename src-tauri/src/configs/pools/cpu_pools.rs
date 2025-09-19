@@ -25,7 +25,7 @@ use std::{collections::HashMap, fmt::Display, sync::LazyLock};
 use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 
-use crate::configs::pools::BasePoolData;
+use crate::configs::pools::{BasePoolData, PoolOrigin};
 
 fn global_tari_cpu_mining_pool_url() -> String {
     match Network::get_current_or_user_setting_or_default() {
@@ -49,23 +49,34 @@ fn global_tari_cpu_mining_pool_status_url() -> String {
     }
 }
 
-static DEFAULT_CPU_SUPPORTXTM_RANDOMX: LazyLock<BasePoolData> = LazyLock::new(|| BasePoolData {
-    pool_name: "SupportXTMPoolRANDOMX".to_string(),
-    pool_url: global_tari_cpu_mining_pool_url(),
-    stats_url: global_tari_cpu_mining_pool_status_url(),
-});
+static DEFAULT_CPU_SUPPORTXTM_RANDOMX: LazyLock<BasePoolData<CpuPool>> =
+    LazyLock::new(|| BasePoolData {
+        pool_name: "SupportXTMPool [ RANDOMX] ".to_string(),
+        pool_url: global_tari_cpu_mining_pool_url(),
+        stats_url: global_tari_cpu_mining_pool_status_url(),
+        pool_type: CpuPool::SupportXTMPoolRANDOMX,
+        pool_origin: PoolOrigin::SupportXTM,
+    });
 
-static DEFAULT_CPU_LUCKYPOOL_RANDOMX: LazyLock<BasePoolData> = LazyLock::new(|| BasePoolData {
-    pool_name: "LuckyPoolRANDOMX".to_string(),
-    pool_url: "turx.luckypool.io:10118".to_string(),
-    stats_url: "https://tarirx.luckypool.io/api/stats_address?address=%TARI_ADDRESS%".to_string(),
-});
+static DEFAULT_CPU_LUCKYPOOL_RANDOMX: LazyLock<BasePoolData<CpuPool>> =
+    LazyLock::new(|| BasePoolData {
+        pool_name: "LuckyPool [ RANDOMX] ".to_string(),
+        pool_url: "turx.luckypool.io:10118".to_string(),
+        stats_url: "https://tarirx.luckypool.io/api/stats_address?address=%TARI_ADDRESS%"
+            .to_string(),
+        pool_type: CpuPool::LuckyPoolRANDOMX,
+        pool_origin: PoolOrigin::LuckyPool,
+    });
 
-static DEFAULT_CPU_KRYPTEX_RANDOMX: LazyLock<BasePoolData> = LazyLock::new(|| BasePoolData {
-    pool_name: "KryptexPoolRANDOMX".to_string(),
-    pool_url: "xtm-rx-tu.kryptex.network:7038".to_string(),
-    stats_url: "https://pool.kryptex.com/xtm-rx/api/v1/miner/balance/%TARI_ADDRESS%".to_string(),
-});
+static DEFAULT_CPU_KRYPTEX_RANDOMX: LazyLock<BasePoolData<CpuPool>> =
+    LazyLock::new(|| BasePoolData {
+        pool_name: "KryptexPool [ RANDOMX] ".to_string(),
+        pool_url: "xtm-rx-tu.kryptex.network:7038".to_string(),
+        stats_url: "https://pool.kryptex.com/xtm-rx/api/v1/miner/balance/%TARI_ADDRESS%"
+            .to_string(),
+        pool_type: CpuPool::KryptexPoolRANDOMX,
+        pool_origin: PoolOrigin::Kryptex,
+    });
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
 pub enum CpuPool {
@@ -96,7 +107,7 @@ impl CpuPool {
         }
     }
 
-    pub fn default_content(&self) -> BasePoolData {
+    pub fn default_content(&self) -> BasePoolData<CpuPool> {
         match self {
             CpuPool::SupportXTMPoolRANDOMX => DEFAULT_CPU_SUPPORTXTM_RANDOMX.clone(),
             CpuPool::LuckyPoolRANDOMX => DEFAULT_CPU_LUCKYPOOL_RANDOMX.clone(),
@@ -104,7 +115,7 @@ impl CpuPool {
         }
     }
 
-    pub fn load_default_pools_data() -> HashMap<Self, BasePoolData> {
+    pub fn load_default_pools_data() -> HashMap<Self, BasePoolData<CpuPool>> {
         use CpuPool::*;
         let mut cpu_pools = HashMap::new();
         cpu_pools.insert(

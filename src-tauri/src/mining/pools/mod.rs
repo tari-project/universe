@@ -66,10 +66,7 @@ pub trait PoolManagerInterfaceTrait {
     /// * `pool` - The selected pool configuration
     /// ### Returns
     /// The appropriate pool adapter for the selected pool
-    fn resolve_pool_adapter(
-        pool: &Self::PoolConfigType,
-        pool_data: BasePoolData,
-    ) -> PoolApiAdapters;
+    fn resolve_pool_adapter(pool: BasePoolData<Self::PoolConfigType>) -> PoolApiAdapters;
 
     // =============== Predefined methods ===============
 
@@ -79,8 +76,8 @@ pub trait PoolManagerInterfaceTrait {
     /// This should be called whenever the selected pool configuration changes
     /// ### Arguments
     /// * `pool` - The new selected CPU pool configuration
-    async fn handle_new_selected_pool(pool: Self::PoolConfigType, pool_data: BasePoolData) {
-        let new_pool_adapter = Self::resolve_pool_adapter(&pool, pool_data);
+    async fn handle_new_selected_pool(pool: BasePoolData<Self::PoolConfigType>) {
+        let new_pool_adapter = Self::resolve_pool_adapter(pool);
 
         Self::get_write_manager()
             .await

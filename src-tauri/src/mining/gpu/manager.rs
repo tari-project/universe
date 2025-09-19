@@ -44,7 +44,7 @@ use crate::{
     configs::{
         config_mining::{ConfigMining, ConfigMiningContent},
         config_pools::ConfigPools,
-        pools::gpu_pools::GpuPool,
+        pools::{gpu_pools::GpuPool, PoolOrigin},
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
@@ -201,9 +201,12 @@ impl GpuManager {
     /// If the selected miner does not support pool mining, it attempts to switch to a fallback miner that does.
     /// If no suitable miner is found, an error is returned.
     async fn handle_pool_connection_load(&mut self) -> Result<(), anyhow::Error> {
-        if self.selected_miner.is_pool_mining_supported() {
-            let (_current_pool, current_pool_data) =
-                ConfigPools::content().await.current_gpu_pool().clone();
+        let current_pool_data = ConfigPools::content().await.current_gpu_pool().clone();
+        if self.selected_miner.is_pool_mining_supported()
+            && self
+                .selected_miner
+                .is_pool_supported(&current_pool_data.pool_type)
+        {
             self.process_watcher
                 .adapter
                 .load_connection_type(GpuConnectionType::Pool {
@@ -223,6 +226,7 @@ impl GpuManager {
                     if is_healthy
                         && *miner_type != self.selected_miner
                         && miner_type.is_pool_mining_supported()
+                        && miner_type.is_pool_supported(&current_pool_data.pool_type)
                     {
                         Some(miner_type)
                     } else {
@@ -234,8 +238,7 @@ impl GpuManager {
             if let Some(fallback_miner) = fallback_miner {
                 info!(target: LOG_TARGET, "Selected gpu miner does not support pool mining, switching to fallback miner: {fallback_miner}");
                 self.switch_miner(fallback_miner).await?;
-                let (_current_pool, current_pool_data) =
-                    ConfigPools::content().await.current_gpu_pool().clone();
+                let current_pool_data = ConfigPools::content().await.current_gpu_pool().clone();
 
                 self.process_watcher
                     .adapter
@@ -305,7 +308,7 @@ impl GpuManager {
     pub async fn start_mining(
         &mut self,
         tari_address: TariAddress,
-        telemetry_id: String,
+        _telemetry_id: String,
         gpu_usage_percentage: u32,
         selected_engine: EngineType,
         base_path: PathBuf,
@@ -334,13 +337,23 @@ impl GpuManager {
             GpuMinerType::Glytex => Binaries::GpuMiner,
         };
 
+        // Worker name format depends on the pool
+        // LuckyPool: .Tari-Universe
+        // Kryptex: /Tari-Universe
+        // SupportXTM: Not specified so we use None
+        let worker_name = match ConfigPools::content().await.current_gpu_pool().pool_origin {
+            PoolOrigin::LuckyPool => Some(".Tari-Universe"),
+            PoolOrigin::SupportXTM => None,
+            PoolOrigin::Kryptex => Some("/Tari-Universe"),
+        };
+
         self.process_watcher
             .adapter
             .load_tari_address(&tari_address.to_base58())
             .await?;
         self.process_watcher
             .adapter
-            .load_worker_name(&telemetry_id)
+            .load_worker_name(worker_name)
             .await?;
         self.process_watcher
             .adapter
