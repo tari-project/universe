@@ -131,8 +131,8 @@ export const setWalletBalance = async (balance: WalletBalance) => {
 export const setIsSwapping = (isSwapping: boolean) => {
     useWalletStore.setState((c) => ({ ...c, is_swapping: isSwapping }));
 };
-export const setIsSwitching = (is_wallet_switching: boolean) => {
-    useWalletStore.setState((c) => ({ ...c, is_wallet_switching }));
+export const setIsWalletLoading = (isLoading: boolean) => {
+    useWalletStore.setState((c) => ({ ...c, isLoading }));
 };
 
 export const setTxHistoryFilter = (filter: TxHistoryFilter) => {

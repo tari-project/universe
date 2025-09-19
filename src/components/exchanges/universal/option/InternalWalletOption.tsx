@@ -30,7 +30,7 @@ import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
 import { Ref } from 'react';
 import { WalletAddressNetwork } from '@app/types/transactions.ts';
-import { setIsSwitching } from '@app/store/actions/walletStoreActions.ts';
+import { setIsWalletLoading } from '@app/store/actions/walletStoreActions.ts';
 
 interface XCOptionProps {
     isCurrent?: boolean;
@@ -44,12 +44,12 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
     const base_tari_address = useWalletStore((state) => state.tari_address_emoji);
 
     const handleRevertToInternalWallet = async () => {
-        setIsSwitching(true);
+        setIsWalletLoading(true);
         await invoke('revert_to_internal_wallet')
             .then(() => {
                 setShowUniversalModal(false);
                 restartMining();
-                setIsSwitching(false);
+                setIsWalletLoading(false);
             })
             .catch((e) => {
                 console.error('Could not revert to internal wallet', e);
@@ -60,7 +60,7 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
                 if (showError) {
                     setError(errorMessage);
                 }
-                setIsSwitching(false);
+                setIsWalletLoading(false);
             });
     };
 

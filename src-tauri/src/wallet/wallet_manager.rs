@@ -311,6 +311,7 @@ impl WalletManager {
         if self.is_initial_scan_completed() {
             // TODO - need to change this so we can get scan progress?
             log::info!(target: LOG_TARGET, "Initial wallet scan already completed, skipping");
+            EventsEmitter::emit_wallet_status_updated(true, None).await;
             return Ok(());
         }
 

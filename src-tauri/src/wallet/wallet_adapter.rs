@@ -20,12 +20,15 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::events_emitter::EventsEmitter;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec};
 use crate::process_adapter_utils::setup_working_directory;
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::wallet::transaction_service::TransactionService;
 use crate::wallet::wallet_status_monitor::{WalletStatusMonitor, WalletStatusMonitorError};
 use crate::wallet::wallet_types::{
@@ -45,9 +48,6 @@ use tari_shutdown::Shutdown;
 use tari_transaction_components::tari_amount::MicroMinotari;
 use tari_transaction_components::transaction_components::memo_field::MemoField;
 use tokio::sync::watch;
-
-#[cfg(target_os = "windows")]
-use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
@@ -233,6 +233,7 @@ impl WalletAdapter {
                         // Case 1: Scan has reached or exceeded target height
                         if state.scanned_height >= block_height {
                             info!(target: LOG_TARGET, "Wallet scan completed up to block height {block_height}");
+                            EventsEmitter::emit_wallet_status_updated(false, None).await;
                             return Ok(state);
                         }
                         // Case 2: Wallet is at height 0 but is connected - likely means scan finished already
