@@ -1,7 +1,10 @@
 {
   "airdropGame": "Permainan Airdrop",
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "Permata bonus diperoleh",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "Klaim Permata",
   "claimModalFieldLabel": "Opsional",
   "claimModalFieldPlaceholder": "Masukkan kode referensi",
@@ -47,6 +50,7 @@
       "loginButton": "Log in & Start Earning!",
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
+    "manageYourCrew": "Manage your crew",
     "myCrew": "My Crew",
     "of": "of",
     "streak": {
@@ -63,10 +67,10 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Rewards"
   },
   "doLater": "Saya akan melakukannya nanti",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "Permata",
   "giftReferralCode": "Dapatkan bonus XTM untuk setiap teman yang Anda undang ke Tari Universe. Setelah mereka menghubungkan akun dan mulai menambang, Anda akan mulai mendapatkan hadiah.",
   "giftReferralCodeHeader": "Klaim kode referensi Anda <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> permata.",

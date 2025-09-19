@@ -147,6 +147,8 @@
   "should-use-system-language": "Gebruik stelsel taal",
   "stable-version-note": "Deur die voorafvrystelling weergawe van die toepassing af te skakel, sal jy terugkeer na die stabiele weergawe, wat betroubaarheid en konsekwentheid prioritiseer. Jy mag dalk die nuutste kenmerke en verbeterings mis.",
   "stats-server-port": "Statistieke bedienerpoort",
+  "sync-complete": "Synced",
+  "sync-incomplete": "Syncing...",
   "sync-status": "Sync Status",
   "tabs": {
     "airdrop": "Bonus XTM",

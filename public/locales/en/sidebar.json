@@ -13,6 +13,9 @@
   "paper-wallet-tooltip-message": "Track your XTM balance anywhere by syncing Universe with Tari Universe Mobile.",
   "paper-wallet-tooltip-title": "Sync with Phone",
   "recent-wins": "Recent wins",
+  "reward": {
+    "stacked": "You stacked"
+  },
   "rewards": "Rewards",
   "setup-scheduler": "Setup Scheduler",
   "share": {

@@ -176,11 +176,6 @@ struct UniverseAppState {
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
 }
 
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
-struct FEPayload {
-    token: Option<String>,
-}
-
 #[allow(clippy::too_many_lines)]
 fn main() {
     #[cfg(target_os = "linux")]

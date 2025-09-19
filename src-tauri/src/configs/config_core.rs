@@ -41,6 +41,7 @@ pub struct AirdropTokens {
     pub refresh_token: String,
 }
 
+pub const CORE_CONFIG_VERSION: u32 = 0;
 static INSTANCE: LazyLock<RwLock<ConfigCore>> = LazyLock::new(|| RwLock::new(ConfigCore::new()));
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Clone)]
@@ -49,8 +50,7 @@ static INSTANCE: LazyLock<RwLock<ConfigCore>> = LazyLock::new(|| RwLock::new(Con
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigCoreContent {
-    version: u32,
-    was_config_migrated: bool,
+    version_counter: u32,
     created_at: SystemTime,
     use_tor: bool,
     allow_telemetry: bool,
@@ -93,7 +93,7 @@ impl Default for ConfigCoreContent {
             .chars()
             .nth(0)
             .map(|c| {
-                if (c as u32) % 2 == 0 {
+                if (c as u32).is_multiple_of(2) {
                     ABTestSelector::GroupA
                 } else {
                     ABTestSelector::GroupB
@@ -102,8 +102,7 @@ impl Default for ConfigCoreContent {
             .unwrap_or(ABTestSelector::GroupA);
 
         Self {
-            version: 0,
-            was_config_migrated: false,
+            version_counter: CORE_CONFIG_VERSION,
             created_at: SystemTime::now(),
             use_tor: true,
             allow_telemetry: true,
@@ -141,9 +140,9 @@ impl ConfigCore {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
-        if config.content.version.eq(&0) && config.content.node_type.eq(&NodeType::Local) {
+        if config.content.version_counter.eq(&0) && config.content.node_type.eq(&NodeType::Local) {
             config.content.node_type = NodeType::RemoteUntilLocal;
-            config.content.version = 1;
+            config.content.version_counter = 1;
             let _unused = Self::_save_config(config._get_content().clone());
         };
     }

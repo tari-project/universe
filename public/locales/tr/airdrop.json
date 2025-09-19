@@ -1,7 +1,10 @@
 {
   "airdropGame": "Airdrop Oyunu",
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "Bonus taşlar kazanıldı",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "Taşları Talep Et",
   "claimModalFieldLabel": "İsteğe Bağlı",
   "claimModalFieldPlaceholder": "Referans kodunu girin",
@@ -47,6 +50,7 @@
       "loginButton": "Log in & Start Earning!",
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
+    "manageYourCrew": "Manage your crew",
     "myCrew": "My Crew",
     "of": "of",
     "streak": {
@@ -63,10 +67,10 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Rewards"
   },
   "doLater": "Bunu daha sonra yapacağım",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "Taşlar",
   "giftReferralCode": "Tari Universe'e davet ettiğiniz her arkadaş için bonus XTM kazanın. Hesaplarını bağlayıp madenciliğe başladıklarında ödül kazanmaya başlayacaksınız.",
   "giftReferralCodeHeader": "Referans kodunuzu talep edin <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> taş.",
