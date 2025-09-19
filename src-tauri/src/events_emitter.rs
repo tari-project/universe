@@ -646,6 +646,7 @@ impl EventsEmitter {
         }
     }
 
+    #[cfg(target_os = "macos")]
     pub async fn emit_show_keyring_dialog() {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

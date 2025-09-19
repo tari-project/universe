@@ -830,7 +830,9 @@ impl InternalWallet {
                         }
                         Err(e) => {
                             // Only display once
+                            #[cfg(target_os = "macos")]
                             EventsEmitter::emit_show_keyring_dialog().await;
+
                             return Err(anyhow!("Failed to get tari seed from keyring: {e}"));
                         }
                     }
@@ -890,7 +892,9 @@ impl InternalWallet {
                         cred.encrypted_seed
                     }
                     Err(e) => {
+                        #[cfg(target_os = "macos")]
                         EventsEmitter::emit_show_keyring_dialog().await;
+
                         return Err(anyhow!("Failed to get monero seed from keyring: {e}"));
                     }
                 }
@@ -1015,7 +1019,6 @@ where
             Err(CredentialError::Keyring(_)) => {
                 use tauri::Listener;
                 use tokio::sync::oneshot;
-
                 EventsEmitter::emit_show_keyring_dialog().await;
                 let (tx, rx) = oneshot::channel();
                 _app_handle.once("keyring-dialog-response", |_event| {
