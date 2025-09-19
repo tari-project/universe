@@ -38,8 +38,8 @@
     "step_6": "Coba atur ulang aplikasi (di Pengaturan)"
   },
   "pause": {
-    "for-duration": "Pause for {{duration}}",
-    "until-restart": "Pause until I <strong>Restart<strong/>"
+    "for-duration": "Pause for <strong>{{duration}}<strong/>",
+    "until-restart": "Pause until I<strong> Restart<strong/>"
   },
   "pool": {
     "accepted_shares": "Saham Diterima",
