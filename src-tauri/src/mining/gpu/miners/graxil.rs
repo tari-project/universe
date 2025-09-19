@@ -237,7 +237,7 @@ impl ProcessAdapter for GraxilGpuMiner {
         if let Some(tari_address) = &self.tari_address {
             let mut address = tari_address.clone();
             if let Some(worker_name) = &self.worker_name {
-                address = format!("{}{}", tari_address, worker_name.);
+                address = format!("{}{}", tari_address, worker_name);
             }
 
             args.push("--wallet".to_string());
