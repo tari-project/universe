@@ -8,8 +8,6 @@ export const Wrapper = styled.div<{ $isSettingUp?: boolean }>`
 
     width: 100%;
     pointer-events: none;
-    padding-left: ${({ $isSettingUp }) => ($isSettingUp ? '0' : '368px')};
-    transition: padding-left 0.3s ease;
 `;
 
 export const Inside = styled.div`
