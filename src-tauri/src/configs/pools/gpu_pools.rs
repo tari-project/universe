@@ -108,6 +108,16 @@ impl GpuPool {
         }
     }
 
+    pub fn key_string(&self) -> String {
+        match self {
+            GpuPool::LuckyPoolSHA3X => "LuckyPoolSHA3X".to_string(),
+            GpuPool::LuckyPoolC29 => "LuckyPoolC29".to_string(),
+            GpuPool::SupportXTMPoolSHA3X => "SupportXTMPoolSHA3X".to_string(),
+            GpuPool::KryptexPoolSHA3X => "KryptexPoolSHA3X".to_string(),
+            GpuPool::KryptexPoolC29 => "KryptexPoolC29".to_string(),
+        }
+    }
+
     pub fn default_content(&self) -> BasePoolData<GpuPool> {
         match self {
             GpuPool::LuckyPoolSHA3X => DEFAULT_GPU_LUCKYPOOL_SHA3X.clone(),

@@ -107,6 +107,14 @@ impl CpuPool {
         }
     }
 
+    pub fn key_string(&self) -> String {
+        match self {
+            CpuPool::SupportXTMPoolRANDOMX => "SupportXTMPoolRANDOMX".to_string(),
+            CpuPool::LuckyPoolRANDOMX => "LuckyPoolRANDOMX".to_string(),
+            CpuPool::KryptexPoolRANDOMX => "KryptexPoolRANDOMX".to_string(),
+        }
+    }
+
     pub fn default_content(&self) -> BasePoolData<CpuPool> {
         match self {
             CpuPool::SupportXTMPoolRANDOMX => DEFAULT_CPU_SUPPORTXTM_RANDOMX.clone(),

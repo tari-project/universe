@@ -107,15 +107,17 @@ impl PoolManagerInterfaceTrait for CpuPoolManager {
 
     fn resolve_pool_adapter(pool: BasePoolData<CpuPool>) -> PoolApiAdapters {
         match pool.pool_type {
-            CpuPool::LuckyPoolRANDOMX => {
-                PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(pool.pool_name, pool.stats_url))
-            }
+            CpuPool::LuckyPoolRANDOMX => PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(
+                pool.pool_type.key_string(),
+                pool.stats_url,
+            )),
             CpuPool::SupportXTMPoolRANDOMX => PoolApiAdapters::SupportXmr(
-                SupportXmrPoolAdapter::new(pool.pool_name, pool.stats_url),
+                SupportXmrPoolAdapter::new(pool.pool_type.key_string(), pool.stats_url),
             ),
-            CpuPool::KryptexPoolRANDOMX => {
-                PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(pool.pool_name, pool.stats_url))
-            }
+            CpuPool::KryptexPoolRANDOMX => PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(
+                pool.pool_type.key_string(),
+                pool.stats_url,
+            )),
         }
     }
 }

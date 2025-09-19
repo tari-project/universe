@@ -39,8 +39,8 @@ pub mod pools_manager;
 #[derive(Clone, Debug, Serialize, Default)]
 pub(crate) struct PoolStatus {
     pub accepted_shares: u64,
-    pub unpaid: u64,
-    pub balance: u64,
+    pub unpaid: f64,
+    pub balance: f64,
     pub min_payout: u64,
 }
 

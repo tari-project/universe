@@ -71,8 +71,8 @@ impl PoolApiAdapter for SupportXmrPoolAdapter {
         let response: SupportXmrPoolStatusResponseBody = serde_json::from_str(data)?;
         let pool_status = PoolStatus {
             accepted_shares: response.valid_shares,
-            unpaid: response.amt_due,
-            balance: response.amt_paid + response.amt_due,
+            unpaid: response.amt_due as f64,
+            balance: response.amt_paid as f64 + response.amt_due as f64,
             min_payout: 0,
         };
         Ok(pool_status)
