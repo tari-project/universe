@@ -43,7 +43,7 @@ export const PoolConfiguration = <T extends FieldValues = BasePoolData>({
     onSave,
     onReset,
     isReadOnly = false,
-    hiddenFields = ['pool_name'] as (keyof T)[],
+    hiddenFields = ['pool_name', 'pool_type', 'stats_url', 'pool_origin'] as (keyof T)[],
 }: PoolConfigurationProps<T>) => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const {

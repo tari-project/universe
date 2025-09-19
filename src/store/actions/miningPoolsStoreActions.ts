@@ -57,7 +57,7 @@ export const clearCurrentSuccessValue = (type: PoolType) => {
 };
 
 export const setCpuPoolStats = (cpuPoolStats: Record<string, PoolStats>) => {
-    const currentSelectedPool = useConfigPoolsStore.getState().selected_cpu_pool;
+    const currentSelectedPool = useConfigPoolsStore.getState().current_cpu_pool;
 
     if (!currentSelectedPool) return;
     if (!cpuPoolStats[currentSelectedPool]) return;
@@ -77,7 +77,7 @@ export const setCpuPoolStats = (cpuPoolStats: Record<string, PoolStats>) => {
     });
 };
 export const setGpuPoolStats = (gpuPoolStats: Record<string, PoolStats>) => {
-    const currentSelectedPool = useConfigPoolsStore.getState().selected_gpu_pool;
+    const currentSelectedPool = useConfigPoolsStore.getState().current_gpu_pool;
     if (!currentSelectedPool) return;
     if (!gpuPoolStats[currentSelectedPool]) return;
 

@@ -22,7 +22,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useCallback, useMemo } from 'react';
 import { Select } from '@app/components/elements/inputs/Select';
 import { PoolConfiguration } from './PoolsConfiguration';
-import { BasePoolData } from '@app/types/configs';
+import { BasePoolData, GpuPools } from '@app/types/configs';
 
 export const GpuPoolsSettings = () => {
     const { t } = useTranslation('settings');
@@ -39,12 +39,12 @@ export const GpuPoolsSettings = () => {
     const poolsOptions = useMemo(() => {
         return (availableGpuPools || []).map((pool) => ({
             label: pool.pool_name,
-            value: pool.pool_name,
+            value: pool.pool_type,
         }));
     }, [availableGpuPools]);
 
     const handlePoolChange = useCallback(async (value: string) => {
-        await changeGpuPool(value);
+        await changeGpuPool(value as GpuPools);
     }, []);
 
     const handlePoolConfigurationChange = useCallback(async (updatedConfig: BasePoolData) => {
@@ -86,7 +86,7 @@ export const GpuPoolsSettings = () => {
                         <Select
                             options={poolsOptions}
                             onChange={handlePoolChange}
-                            selectedValue={selectedGpuPoolData?.pool_name}
+                            selectedValue={selectedGpuPoolData?.pool_type}
                             variant="bordered"
                             forceHeight={36}
                         />

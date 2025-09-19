@@ -1,6 +1,5 @@
 import {
     BackgroundNodeSyncUpdatePayload,
-    ConfigPoolsPayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
@@ -24,7 +23,7 @@ import {
     SystemDependency,
     WalletBalance,
 } from './app-status.ts';
-import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
+import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 import { AppModuleState } from '@app/store/types/setup.ts';
 
@@ -120,7 +119,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'ConfigPoolsLoaded';
-          payload: ConfigPoolsPayload;
+          payload: ConfigPools;
       }
     | {
           event_type: 'RestartingPhases';

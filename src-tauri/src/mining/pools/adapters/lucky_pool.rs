@@ -30,16 +30,16 @@ use serde::{Deserialize, Serialize};
 static LOG_TARGET: &str = "universe::mining::pools::adapters::lucky_pool";
 
 // LuckyPool API can sometimes return field values as either strings or numbers.
-// This enum helps to handle both cases during deserialization and retriveve the value as a u64.
+// This enum helps to handle both cases during deserialization and retriveve the value as a f64.
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LuckyPoolNumber {
     String(String),
-    Number(u64),
+    Number(f64),
 }
 
 impl Default for LuckyPoolNumber {
     fn default() -> Self {
-        LuckyPoolNumber::Number(0)
+        LuckyPoolNumber::Number(0.0)
     }
 }
 
@@ -53,9 +53,9 @@ impl std::fmt::Display for LuckyPoolNumber {
 }
 
 impl LuckyPoolNumber {
-    pub fn get_number(&self) -> u64 {
+    pub fn get_number(&self) -> f64 {
         match self {
-            LuckyPoolNumber::String(s) => s.parse().unwrap_or(0),
+            LuckyPoolNumber::String(s) => s.parse().unwrap_or(0.0),
             LuckyPoolNumber::Number(n) => *n,
         }
     }
@@ -81,7 +81,7 @@ where
         where
             E: de::Error,
         {
-            if let Ok(n) = value.parse::<u64>() {
+            if let Ok(n) = value.parse::<f64>() {
                 Ok(LuckyPoolNumber::Number(n))
             } else {
                 Ok(LuckyPoolNumber::String(value.to_string()))
@@ -92,7 +92,7 @@ where
         where
             E: de::Error,
         {
-            Ok(LuckyPoolNumber::Number(value))
+            Ok(LuckyPoolNumber::Number(value as f64))
         }
     }
 
@@ -156,11 +156,11 @@ impl PoolApiAdapter for LuckyPoolAdapter {
 
         let converted_data: LuckyPoolStatusResponseBody = serde_json::from_str(data)?;
         let pool_status = PoolStatus {
-            accepted_shares: converted_data.stats.accepted_shares.get_number(),
+            accepted_shares: converted_data.stats.accepted_shares.get_number() as u64,
             unpaid: converted_data.stats.unlocked.get_number()
                 + converted_data.stats.locked.get_number(),
             balance: converted_data.stats.paid.get_number(),
-            min_payout: converted_data.stats.payment_threshold.get_number(),
+            min_payout: converted_data.stats.payment_threshold.get_number() as u64,
         };
         Ok(pool_status)
     }
