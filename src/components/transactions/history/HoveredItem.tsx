@@ -32,8 +32,13 @@ const ItemHover = memo(function ItemHover({ item, button }: Props) {
     const isLoggedIn = !!airdropTokens;
     const showShareButton = sharingEnabled && isLoggedIn;
     return (
-        <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <ButtonWrapper initial={{ opacity: 0, x: 5 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 5 }}>
+        <HoverWrapper
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+        >
+            <ButtonWrapper>
                 {button ? (
                     button
                 ) : (
