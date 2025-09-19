@@ -38,6 +38,7 @@
     "waiting-for-wallet": "Waiting for wallet",
     "wallet-started": "Wallet started"
   },
+  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
   "would-you-like-to-install": "Would you like to install Tari Universe {{version}} now?",
   "yes": "Yes"
 }

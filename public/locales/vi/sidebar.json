@@ -13,6 +13,9 @@
   "paper-wallet-tooltip-message": "Theo dõi số dư XTM mọi nơi bằng cách đồng bộ Universe với Tari Universe Mobile.",
   "paper-wallet-tooltip-title": "Đồng bộ với điện thoại",
   "recent-wins": "Chiến thắng gần đây",
+  "reward": {
+    "stacked": "You stacked"
+  },
   "rewards": "Phần thưởng",
   "setup-scheduler": "Thiết lập lịch đào",
   "share": {

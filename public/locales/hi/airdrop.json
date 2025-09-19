@@ -1,7 +1,10 @@
 {
   "airdropGame": "एयरड्रॉप गेम",
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "बोनस रत्न अर्जित किए",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "रत्नों का दावा करें",
   "claimModalFieldLabel": "वैकल्पिक",
   "claimModalFieldPlaceholder": "रेफरल कोड दर्ज करें",
@@ -47,6 +50,7 @@
       "loginButton": "Log in & Start Earning!",
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
+    "manageYourCrew": "Manage your crew",
     "myCrew": "My Crew",
     "of": "of",
     "streak": {
@@ -63,10 +67,10 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Rewards"
   },
   "doLater": "मैं इसे बाद में करूंगा",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "रत्न",
   "giftReferralCode": "Tari Universe में आमंत्रित प्रत्येक मित्र के लिए बोनस XTM कमाएं। एक बार जब वे अपना खाता कनेक्ट कर लेते हैं और माइनिंग शुरू करते हैं, तो आप पुरस्कार कमाना शुरू करेंगे।",
   "giftReferralCodeHeader": "अपना रेफरल कोड <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> रत्नों का दावा करें।",

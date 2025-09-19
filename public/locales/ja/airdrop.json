@@ -1,7 +1,10 @@
 {
   "airdropGame": "エアドロップゲーム",
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "ボーナスジェムを獲得しました",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "ジェムを請求",
   "claimModalFieldLabel": "任意",
   "claimModalFieldPlaceholder": "紹介コードを入力",
@@ -47,6 +50,7 @@
       "loginButton": "Log in & Start Earning!",
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
+    "manageYourCrew": "Manage your crew",
     "myCrew": "My Crew",
     "of": "of",
     "streak": {
@@ -63,10 +67,10 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Rewards"
   },
   "doLater": "後で行います",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "ジェム",
   "giftReferralCode": "Tari Universeに招待した友達ごとにボーナスXTMを獲得しましょう。彼らがアカウントを接続してマイニングすると、報酬の獲得が始まります。",
   "giftReferralCodeHeader": "紹介コードを請求して<span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span>ジェムを獲得。",

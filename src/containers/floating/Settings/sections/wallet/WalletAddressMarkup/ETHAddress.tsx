@@ -12,8 +12,10 @@ import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 import { ExchangeMiner } from '@app/types/exchange.ts';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
+import { useTranslation } from 'react-i18next';
 
 export default function ETHAddress() {
+    const { t } = useTranslation('wallet');
     const { data } = useFetchExchangeBranding();
     // should only exist in case mining to exchange with wxtm_mode enabled
     const ethAddress = useWalletStore((state) => state.getETHAddressOfCurrentExchange());
@@ -45,7 +47,7 @@ export default function ETHAddress() {
     return ethAddress?.length ? (
         <ETHAddressWrapper>
             <SettingsGroupTitle>
-                <Typography variant="h6">{`Exchange ETH Address`}</Typography>
+                <Typography variant="h6">{t('xc.address-eth')}</Typography>
             </SettingsGroupTitle>
             <AddressEditor initialAddress={ethAddress} onApply={handleSubmit} rules={validationRules} isWXTM={true} />
         </ETHAddressWrapper>

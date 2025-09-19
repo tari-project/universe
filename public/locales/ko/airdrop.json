@@ -1,7 +1,10 @@
 {
   "airdropGame": "에어드롭 게임",
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "보너스 젬 획득",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "보석 받기",
   "claimModalFieldLabel": "선택 사항",
   "claimModalFieldPlaceholder": "추천 코드 입력",
@@ -47,6 +50,7 @@
       "loginButton": "Log in & Start Earning!",
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
+    "manageYourCrew": "Manage your crew",
     "myCrew": "My Crew",
     "of": "of",
     "streak": {
@@ -63,10 +67,10 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Rewards"
   },
   "doLater": "나중에 할게요",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "보석",
   "giftReferralCode": "Tari Universe에 친구를 초대할 때마다 보너스 XTM을 받으세요. 그들이 계정을 연결하고 채굴하기 시작하면 보상을 받기 시작합니다.",
   "giftReferralCodeHeader": "추천 코드를 사용하여 <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> 보석을 받으세요.",
