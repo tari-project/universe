@@ -1,10 +1,10 @@
 import { ReactNode } from 'react';
-import { DropdownWrapper, HitBox, ButtonWrapper, Text, IconWrapper, Shadow } from './styles';
-import ModeDropdown from './components/ModeDropdown/ModeDropdown';
-import AnimatedBackground from './components/AnimatedBackground/AnimatedBackground';
+import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useConfigMiningStore } from '@app/store';
-import { AnimatePresence } from 'motion/react';
+import ModeDropdown from './components/ModeDropdown/ModeDropdown';
+import AnimatedBackground from './components/AnimatedBackground/AnimatedBackground';
+import { DropdownWrapper, HitBox, ButtonWrapper, Text, IconWrapper, Shadow } from './styles';
 
 interface Props {
     onClick: () => void;

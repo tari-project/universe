@@ -9,9 +9,9 @@ import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 import { startMining, stopMining } from '@app/store/actions/miningStoreActions.ts';
 import type { ReactElement } from 'react';
 import MiningButton from './MiningButton/MiningButton.tsx';
-import StopIcon from './icons/StopIcon.tsx';
 import PlayIcon from './icons/PlayIcon.tsx';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
+import PauseIcon from '@app/containers/navigation/components/MiningButtonCombined/icons/PauseIcon.tsx';
 
 export default function MiningButtonCombined() {
     const gpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isGpuMiningModuleInitialized);
@@ -47,10 +47,10 @@ export default function MiningButtonCombined() {
         button = (
             <MiningButton
                 key="stop"
-                buttonText="stop-mining"
+                buttonText="pause-mining"
                 onClick={handleStopMining}
                 disabled={isMiningButtonDisabled}
-                icon={<StopIcon />}
+                icon={<PauseIcon />}
                 isMining={isMining}
             />
         );
