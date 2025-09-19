@@ -147,6 +147,8 @@
   "should-use-system-language": "시스템 언어 사용",
   "stable-version-note": "애플리케이션의 사전 릴리스 버전을 끄면 안정 릴리스로 돌아가며, 이는 신뢰성과 일관성을 우선시합니다. 최신 기능과 개선 사항을 놓칠 수 있습니다.",
   "stats-server-port": "통계 서버 포트",
+  "sync-complete": "Synced",
+  "sync-incomplete": "Syncing...",
   "sync-status": "Sync Status",
   "tabs": {
     "airdrop": "Bonus XTM",

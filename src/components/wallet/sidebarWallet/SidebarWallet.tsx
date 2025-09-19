@@ -39,6 +39,7 @@ import { FilterSelect, TxHistoryFilter } from '@app/components/transactions/hist
 import { WalletUIMode } from '@app/types/events-payloads.ts';
 import SecureWalletWarning from './SecureWalletWarning/SecureWalletWarning.tsx';
 import FailedModuleAlertButton from '@app/components/dialogs/FailedModuleAlertButton.tsx';
+import { useTranslation } from 'react-i18next';
 
 interface SidebarWalletProps {
     section: string;
@@ -46,6 +47,7 @@ interface SidebarWalletProps {
 }
 
 export default function SidebarWallet({ section, setSection }: SidebarWalletProps) {
+    const { t } = useTranslation('wallet');
     const { data: xcData } = useFetchExchangeBranding();
     const detailsItem = useWalletStore((s) => s.detailsItem);
     const filter = useWalletStore((s) => s.tx_history_filter);
@@ -176,7 +178,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                         <Wrapper $listHidden={!isStandardWalletUI || isSyncing || walletIsLoading}>
                             {standardWalletLoading ? <SyncLoading>{syncMarkup}</SyncLoading> : walletMarkup}
                             <BuyTariButton onClick={() => setIsSwapping(true)}>
-                                <span>{'Buy Tari (XTM)'}</span>
+                                <span>{`${t('swap.buy-tari')} (XTM)`}</span>
                             </BuyTariButton>
                         </Wrapper>
                     </WalletWrapper>

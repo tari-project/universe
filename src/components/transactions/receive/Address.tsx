@@ -76,7 +76,7 @@ export function Address({ useEmoji, setUseEmoji }: Props) {
     const textOptionMarkup = <TextOption>{`Tx`}</TextOption>;
     const emojiOptionMarkup = (
         <ImgOption>
-            <img src={YatHand} alt="" />
+            <img src={YatHand} alt="Yat Hand emoji img" />
         </ImgOption>
     );
 

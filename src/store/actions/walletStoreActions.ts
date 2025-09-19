@@ -13,6 +13,7 @@ import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
+import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 
 // NOTE: Tx status differ for core and proto(grpc)
 export const COINBASE_BITFLAG = 6144;
@@ -78,7 +79,10 @@ export const importSeedWords = async (seedWords: string[]) => {
         if (anyMiningInitiated) {
             await stopMining();
         }
-        await invoke('import_seed_words', { seedWords });
+        await invoke('import_seed_words', { seedWords }).then(() => {
+            const initialPoolStats = useMiningPoolsStore.getInitialState();
+            useMiningPoolsStore.setState({ ...initialPoolStats });
+        });
 
         useWalletStore.setState((c) => ({ ...c, is_wallet_importing: false }));
         await refreshTransactions();

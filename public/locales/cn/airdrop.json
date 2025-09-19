@@ -1,7 +1,10 @@
 {
   "airdropGame": "空投游戏",
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "获得的奖励宝石",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "领取宝石",
   "claimModalFieldLabel": "可选",
   "claimModalFieldPlaceholder": "输入推荐码",
@@ -47,6 +50,7 @@
       "loginButton": "Log in & Start Earning!",
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
+    "manageYourCrew": "Manage your crew",
     "myCrew": "My Crew",
     "of": "of",
     "streak": {
@@ -63,10 +67,10 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Rewards"
   },
   "doLater": "我稍后再做",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "宝石",
   "giftReferralCode": "邀请朋友加入Tari Universe即可获得奖励XTM。一旦他们连接账户并开始挖矿，您就会开始获得奖励。",
   "giftReferralCodeHeader": "领取您的推荐码<span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span>宝石。",

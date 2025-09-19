@@ -21,9 +21,9 @@ function mergeDeep(target, source) {
     for (const key in source) {
         if (
             Object.prototype.hasOwnProperty.call(source, key) &&
-            key !== "__proto__" &&
-            key !== "constructor" &&
-            key !== "prototype"
+            key !== '__proto__' &&
+            key !== 'constructor' &&
+            key !== 'prototype'
         ) {
             // If the property is an object, call mergeDeep recursively
             if (typeof source[key] === 'object' && source[key] !== null) {
