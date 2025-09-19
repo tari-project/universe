@@ -49,7 +49,7 @@ export const MenuWrapper = styled(m.div)`
 
 export const MenuContent = styled(m.div)`
     background: #444;
-    padding: 20px;
+    padding: 10px;
     border-radius: 8px;
 
     display: flex;
@@ -79,14 +79,6 @@ export const AdminButton = styled('button')<{ $isActive?: boolean }>`
     }
 `;
 
-export const CategoryLabel = styled('div')`
-    color: #999;
-    font-size: 10px;
-    text-transform: uppercase;
-    padding-bottom: 2px;
-    border-bottom: 1px solid #666;
-`;
-
 export const ButtonGroup = styled('div')`
     display: grid;
     grid-auto-flow: row;
@@ -97,11 +89,15 @@ export const ButtonGroup = styled('div')`
 export const ExtraContent = styled.div`
     display: flex;
     flex-direction: column;
-    font-size: 14px;
+
+    font-size: 11px;
     gap: 4px;
+    color: #fff;
+
     label {
         gap: 4px;
         justify-content: space-between;
+        align-items: center;
         display: flex;
         input {
             display: flex;
@@ -117,4 +113,51 @@ export const ExtraContent = styled.div`
             border-radius: 4px;
         }
     }
+`;
+
+export const CollapsibleWrapper = styled('div')`
+    background-color: #333;
+    border-radius: 4px;
+`;
+
+export const CategoryHeader = styled('div')`
+    color: #999;
+    font-size: 10px;
+    text-transform: uppercase;
+
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+
+    padding: 10px;
+
+    &:hover {
+        color: #ccc;
+    }
+`;
+
+export const CategoryToggle = styled('span')<{ $isOpen: boolean }>`
+    font-size: 12px;
+    font-weight: bold;
+    color: #ccc;
+    transition: transform 0.2s ease;
+
+    ${({ $isOpen }) =>
+        $isOpen &&
+        css`
+            transform: rotate(0deg);
+        `}
+`;
+
+export const CollapsibleContent = styled(m.div)`
+    overflow: hidden;
+`;
+
+export const CollapsibleContentPadding = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0 10px 10px 10px;
 `;

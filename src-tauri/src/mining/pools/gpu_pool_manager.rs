@@ -98,6 +98,14 @@ impl GpuPoolManager {
     pub async fn handle_miner_switch(miner: GpuMinerType) {
         let current_selected_pool = ConfigPools::content().await.selected_gpu_pool().clone();
 
+        if !miner.is_pool_mining_supported() {
+            info!(target: LOG_TARGET, "New GPU miner type '{miner:?}' does not support pool mining, disabling GPU pool feature");
+            let _unused = SetupManager::get_instance()
+                .turn_off_gpu_pool_feature()
+                .await;
+            return;
+        }
+
         if current_selected_pool.is_miner_algorithms_supported(&miner) {
             info!(target: LOG_TARGET, "Current selected GPU pool '{}' supports the new miner type '{miner:?}', no pool switch needed", current_selected_pool.name());
         } else {

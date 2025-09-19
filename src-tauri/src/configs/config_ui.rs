@@ -35,6 +35,7 @@ use tokio::sync::RwLock;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
+pub const UI_CONFIG_VERSION: u32 = 0;
 static INSTANCE: LazyLock<RwLock<ConfigUI>> = LazyLock::new(|| RwLock::new(ConfigUI::new()));
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
@@ -76,7 +77,7 @@ impl DisplayMode {
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigUIContent {
-    was_config_migrated: bool,
+    version_counter: u32,
     created_at: SystemTime,
     display_mode: DisplayMode,
     has_system_language_been_proposed: bool,
@@ -93,7 +94,7 @@ pub struct ConfigUIContent {
 impl Default for ConfigUIContent {
     fn default() -> Self {
         Self {
-            was_config_migrated: false,
+            version_counter: UI_CONFIG_VERSION,
             created_at: SystemTime::now(),
             display_mode: DisplayMode::System,
             has_system_language_been_proposed: false,
