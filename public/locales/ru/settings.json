@@ -147,6 +147,8 @@
   "should-use-system-language": "Использовать системный язык",
   "stable-version-note": "Отключив пре-релизную версию приложения, Вы вернетесь к стабильной версии, которая опирается на надежность и последовательность. При этом Вы можете упустить последние функции и улучшения.",
   "stats-server-port": "Порт сервера статистики",
+  "sync-complete": "Synced",
+  "sync-incomplete": "Syncing...",
   "sync-status": "Sync Status",
   "tabs": {
     "airdrop": "Bonus XTM",

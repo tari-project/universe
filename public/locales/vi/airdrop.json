@@ -1,6 +1,9 @@
 {
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "Số gem thưởng đã nhận",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "Nhận Gem",
   "claimModalFieldLabel": "Không bắt buộc",
   "claimModalFieldPlaceholder": "Nhập mã giới thiệu",
@@ -46,6 +49,7 @@
       "loginButton": "Log in & Start Earning!",
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
+    "manageYourCrew": "Manage your crew",
     "myCrew": "My Crew",
     "of": "of",
     "streak": {
@@ -62,10 +66,10 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Rewards"
   },
   "doLater": "Để sau",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "Gem",
   "giftReferralCode": "Kiếm bonus XTM cho mỗi người bạn mà bạn mời vào Tari Universe. Khi họ kết nối tài khoản và bắt đầu đào, bạn sẽ bắt đầu kiếm phần thưởng.",
   "giftReferralCodeHeader": "Nhận mã giới thiệu của bạn <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gem.",

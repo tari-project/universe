@@ -13,7 +13,7 @@ import { useExchangeStore } from '@app/store/useExchangeStore.ts';
 const pinArr = Array.from({ length: DEFAULT_PIN_LENGTH }, (_, i) => i);
 export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void; onSubmit: (pin: string) => void }) {
     const isExchangeMiner = useExchangeStore((s) => s.currentExchangeMinerId !== 'universal');
-    const { t } = useTranslation('wallet');
+    const { t } = useTranslation(['wallet', 'staged-security']);
 
     const [isConfirm, setIsConfirm] = useState(false);
     const [initialCode, setInitialCode] = useState('');
@@ -62,7 +62,7 @@ export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void;
 
     return (
         <FormProvider {...methods}>
-            {!isExchangeMiner && <StepChip>{`Step 2 of 2 `}</StepChip>}
+            {!isExchangeMiner && <StepChip>{t('staged-security:steps.chip', { step: 2, total: 2 })}</StepChip>}
             <Wrapper onSubmit={methods.handleSubmit(handleSubmit)}>
                 <TextWrapper>
                     <Typography variant="h5">{t('security.pin.creation-title', { context })}</Typography>

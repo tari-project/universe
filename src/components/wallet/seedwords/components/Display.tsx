@@ -4,6 +4,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { useTranslation } from 'react-i18next';
 
 interface DisplayProps {
     words: string[];
@@ -13,6 +14,7 @@ interface DisplayProps {
     isSeedlessUI?: boolean;
 }
 const Display = memo(function Display({ isVisible, words, onToggleClick, isLoading, isSeedlessUI }: DisplayProps) {
+    const { t } = useTranslation('wallet');
     function handleToggleClick() {
         onToggleClick?.(isVisible);
     }
@@ -42,7 +44,7 @@ const Display = memo(function Display({ isVisible, words, onToggleClick, isLoadi
 
     const emptySeedWords = (
         <AddSeedWordsWrapper>
-            <Typography variant="p">{`Add seedwords to restore another Tari Address`}</Typography>
+            <Typography variant="p">{t('security.seedwords-empty')}</Typography>
         </AddSeedWordsWrapper>
     );
 

@@ -78,7 +78,11 @@ export default function Network() {
                             <Stack direction="row">
                                 <Typography>{t('sync-status')}</Typography>
                                 <Typography>
-                                    <b>{baseNodeStatus ? (is_synced ? 'Synced' : 'Syncing...') : 'N/A'}</b>
+                                    <b>
+                                        {baseNodeStatus
+                                            ? t('sync', { context: is_synced ? 'complete' : 'incomplete' })
+                                            : 'N/A'}
+                                    </b>
                                 </Typography>
                             </Stack>
                             <Stack direction="row">
