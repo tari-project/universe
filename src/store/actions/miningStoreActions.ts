@@ -140,7 +140,6 @@ export const startMining = async () => {
     try {
         await startCpuMining();
         await startGpuMining();
-        console.info('Mining started.');
         handleSessionMiningTime({ startTimestamp: Date.now() });
     } catch (e) {
         console.error('Failed to start mining: ', e);
