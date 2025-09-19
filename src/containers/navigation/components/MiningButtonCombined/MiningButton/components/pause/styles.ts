@@ -60,3 +60,29 @@ export const OptionText = styled.span`
     line-height: 1.2;
     color: ${({ theme }) => theme.palette.text.primary};
 `;
+
+export const ChipWrapper = styled(m.div)`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    padding: 4px 7px;
+    gap: 3px;
+    height: 18px;
+
+    svg {
+        display: flex;
+        max-width: 100%;
+    }
+`;
+
+export const ChipText = styled.div`
+    height: 9px;
+    align-items: center;
+    display: flex;
+    font-size: 10px;
+    line-height: 9px;
+    font-weight: 600;
+`;

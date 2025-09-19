@@ -122,10 +122,10 @@ export const HitBox = styled.button`
     }
 `;
 
-export const Text = styled.div`
+export const Text = styled(m.div)`
     color: #f0f1f1;
-    text-align: center;
-
+    display: flex;
+    width: 100%;
     font-family: Poppins, sans-serif;
     font-size: 16px;
     font-style: normal;
@@ -178,4 +178,12 @@ export const Shadow = styled(m.div)`
     background: linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.4) 100%);
     border-radius: 500px;
     z-index: 0;
+`;
+
+export const TextWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    justify-content: center;
+    align-items: flex-start;
 `;

@@ -31,6 +31,8 @@ const item = {
     show: { opacity: 1, y: 0 },
 };
 
+const TEMP_TIME = '4:20';
+
 export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: MiningButtonPauseProps) {
     const [showPauseOptions, setShowPauseOptions] = useState(false);
     const { refs, floatingStyles, context } = useFloating({
@@ -86,6 +88,7 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
                     disabled={isMiningButtonDisabled}
                     icon={<PauseIcon />}
                     isMining={isMining}
+                    resumeTime={TEMP_TIME}
                 />
             </TriggerWrapper>
             <AnimatePresence>
