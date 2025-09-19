@@ -10,6 +10,7 @@ import {
     InviteFriendsMessage,
     LoadingPlaceholder,
     PhotoWrapper,
+    OnlineIndicator,
 } from './styles';
 
 import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
@@ -67,11 +68,17 @@ export default function StatsRow() {
                                     <AvatarInviteButton />
                                 </PhotoWrapper>
                             ))}
-                        {crewData?.members.map(({ image, displayName }, index) => (
-                            <PhotoWrapper key={`${index}-crewminiavatar`} onClick={handleCrewToggle}>
-                                <Avatar image={image} username={displayName} size={28} />
-                            </PhotoWrapper>
-                        ))}
+                        {crewData?.members.map(({ image, displayName, isCurrentlyMining, lastActivityDate }, index) => {
+                            const lastActivityMoreThan1Hour =
+                                Date.now() - new Date(lastActivityDate).getTime() > 1000 * 60 * 60;
+                            const isOnline = !lastActivityMoreThan1Hour && !!isCurrentlyMining;
+                            return (
+                                <PhotoWrapper key={`${index}-crewminiavatar`} onClick={handleCrewToggle}>
+                                    {isCurrentlyMining && <OnlineIndicator $isOnline={isOnline} />}
+                                    <Avatar image={image} username={displayName} size={28} />
+                                </PhotoWrapper>
+                            );
+                        })}
                     </PhotosRow>
 
                     <TextWrapper>

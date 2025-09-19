@@ -184,6 +184,8 @@ export interface ReferrerProgressResponse {
         name: string;
         displayName: string;
         image: string;
+        isCurrentlyMining: boolean;
+        lastActivityDate: string;
     }[];
     membersToNudge: {
         id: string;
