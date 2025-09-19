@@ -196,11 +196,11 @@ export const handleSessionMiningTime = ({ startTimestamp, stopTimestamp }: Sessi
     if (stopTimestamp) {
         const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
         useMiningStore.setState({
-            sessionMiningTime: { ...current, startTimestamp, stopTimestamp, durationMs: diff },
+            sessionMiningTime: { ...current, stopTimestamp, durationMs: diff },
         });
     }
 
-    if (startTimestamp) {
+    if (startTimestamp && !current.startTimestamp) {
         useMiningStore.setState({ sessionMiningTime: { ...current, startTimestamp } });
     }
 };
