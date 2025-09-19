@@ -20,6 +20,8 @@
   "mining-button-text": {
     "cancel-mining": "Mining abbrechen",
     "changing-mode": "Modus wird geändert",
+    "pause-mining": "Pause Mining",
+    "resume-mining": "Resume Mining",
     "start-mining": "Mining starten",
     "started-auto-mining": "Auto Mining gestartet",
     "starting-mining": "Mining wird gestartet",
@@ -34,6 +36,10 @@
     "step_4": "Versuche, eine Tor-Bridge zu verwenden (in den Einstellungen)",
     "step_5": "Versuche, Tor zu deaktivieren (in den Einstellungen)",
     "step_6": "Versuche einen App-Reset (in den Einstellungen)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}<strong/>",
+    "until-restart": "Pause until I<strong> Restart<strong/>"
   },
   "pool": {
     "accepted_shares": "Akzeptierte Anteile",

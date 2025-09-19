@@ -6,12 +6,13 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
-import { startMining, stopMining } from '@app/store/actions/miningStoreActions.ts';
+import { startMining } from '@app/store/actions/miningStoreActions.ts';
 import type { ReactElement } from 'react';
 import MiningButton from './MiningButton/MiningButton.tsx';
-import StopIcon from './icons/StopIcon.tsx';
 import PlayIcon from './icons/PlayIcon.tsx';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
+
+import MiningButtonPause from './MiningButton/components/pause/MiningButtonPause.tsx';
 
 export default function MiningButtonCombined() {
     const gpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isGpuMiningModuleInitialized);
@@ -35,25 +36,12 @@ export default function MiningButtonCombined() {
         await startMining();
     }, []);
 
-    const handleStopMining = useCallback(async () => {
-        await stopMining();
-    }, []);
-
     let button: ReactElement | null;
 
     if (isAppLoading) {
         button = <LoadingButton key="loading" />;
     } else if (isMining) {
-        button = (
-            <MiningButton
-                key="stop"
-                buttonText="stop-mining"
-                onClick={handleStopMining}
-                disabled={isMiningButtonDisabled}
-                icon={<StopIcon />}
-                isMining={isMining}
-            />
-        );
+        button = <MiningButtonPause key="stop" isMining={isMining} isMiningButtonDisabled={isMiningButtonDisabled} />;
     } else {
         button = (
             <MiningButton
@@ -66,7 +54,6 @@ export default function MiningButtonCombined() {
             />
         );
     }
-
     return (
         <ButtonWrapper>
             <AnimatePresence mode="popLayout">{button}</AnimatePresence>

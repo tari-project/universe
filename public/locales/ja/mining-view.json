@@ -20,7 +20,8 @@
   "mining-button-text": {
     "cancel-mining": "マイニングをキャンセル",
     "changing-mode": "モードを変更中",
-    "pause-mining": "マイニングを一時停止",
+    "pause-mining": "Pause Mining",
+    "resume-mining": "Resume Mining",
     "start-mining": "マイニングを開始",
     "started-auto-mining": "自動マイニング開始",
     "starting-mining": "マイニング開始",
@@ -35,6 +36,10 @@
     "step_4": "Torブリッジを使用してみてください（設定で）",
     "step_5": "Torを無効にしてみてください（設定で）",
     "step_6": "アプリをリセットしてみてください（設定で）"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}<strong/>",
+    "until-restart": "Pause until I<strong> Restart<strong/>"
   },
   "pool": {
     "accepted_shares": "受け入れられたシェア",
