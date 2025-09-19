@@ -60,6 +60,7 @@ import {
     handlePinLocked,
     handleSeedBackedUp,
     handleSelectedTariAddressChange,
+    setIsWalletLoading,
 } from '@app/store/actions/walletStoreActions';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
@@ -232,6 +233,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'SeedBackedUp':
                             handleSeedBackedUp(event.payload);
+                            break;
+                        case 'WalletStatusUpdate':
+                            setIsWalletLoading(event.payload?.loading);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

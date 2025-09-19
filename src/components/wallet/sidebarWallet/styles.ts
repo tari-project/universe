@@ -13,7 +13,7 @@ export const WalletWrapper = styled(m.div)`
     position: relative;
 `;
 
-export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean }>`
+export const Wrapper = styled.div<{ $swapsPanel?: boolean; $listHidden?: boolean }>`
     border-radius: 20px;
     background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
     padding: 11px;
@@ -31,23 +31,23 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $seedlessUI?: boolean
         height: 425px;
         padding: 10px;
 
-        ${({ $swapsPanel, $seedlessUI }) =>
-            ($swapsPanel || $seedlessUI) &&
+        ${({ $swapsPanel, $listHidden }) =>
+            ($swapsPanel || $listHidden) &&
             css`
                 height: auto;
             `};
     }
     @media (max-height: 690px) {
         height: 360px;
-        ${({ $swapsPanel, $seedlessUI }) =>
-            ($swapsPanel || $seedlessUI) &&
+        ${({ $swapsPanel, $listHidden }) =>
+            ($swapsPanel || $listHidden) &&
             css`
                 height: auto;
             `};
     }
 
-    ${({ $swapsPanel, $seedlessUI }) =>
-        ($swapsPanel || $seedlessUI) &&
+    ${({ $swapsPanel, $listHidden }) =>
+        ($swapsPanel || $listHidden) &&
         css`
             height: auto;
         `};

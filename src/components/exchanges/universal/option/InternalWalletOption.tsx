@@ -27,10 +27,10 @@ import { formatCountdown } from '@app/utils/formatters.ts';
 import { setError, useWalletStore } from '@app/store';
 import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 
-import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
 import { Ref } from 'react';
 import { WalletAddressNetwork } from '@app/types/transactions.ts';
+import { setIsWalletLoading } from '@app/store/actions/walletStoreActions.ts';
 
 interface XCOptionProps {
     isCurrent?: boolean;
@@ -44,21 +44,23 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
     const base_tari_address = useWalletStore((state) => state.tari_address_emoji);
 
     const handleRevertToInternalWallet = async () => {
+        setIsWalletLoading(true);
         await invoke('revert_to_internal_wallet')
             .then(() => {
                 setShowUniversalModal(false);
-                refreshTransactions();
                 restartMining();
+                setIsWalletLoading(false);
             })
             .catch((e) => {
                 console.error('Could not revert to internal wallet', e);
                 const errorMessage = e as unknown as string;
-                if (
+                const showError =
                     !errorMessage.includes('User canceled the operation') &&
-                    !errorMessage.includes('PIN entry cancelled')
-                ) {
+                    !errorMessage.includes('PIN entry cancelled');
+                if (showError) {
                     setError(errorMessage);
                 }
+                setIsWalletLoading(false);
             });
     };
 
