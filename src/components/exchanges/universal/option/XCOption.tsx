@@ -70,6 +70,10 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
             tariAddress = encodedAddress;
         }
 
+        console.info('Setting new Exchange Miner:', selectedExchangeMiner);
+        console.info('With Tari address:', tariAddress);
+        console.info('With mining address:', miningAddress);
+
         await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner, miningAddress: tariAddress })
             .then(() => {
                 setShowUniversalModal(false);
