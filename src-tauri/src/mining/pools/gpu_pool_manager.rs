@@ -106,6 +106,12 @@ impl GpuPoolManager {
             return;
         }
 
+        if !*ConfigPools::content().await.gpu_pool_enabled() {
+            let _unused =
+                ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, true).await;
+            EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+        }
+
         if current_selected_pool.is_miner_algorithms_supported(&miner) {
             info!(target: LOG_TARGET, "Current selected GPU pool '{}' supports the new miner type '{miner:?}', no pool switch needed", current_selected_pool.name());
         } else {
