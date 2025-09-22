@@ -173,7 +173,8 @@ impl InternalWallet {
             && wallet_config.selected_external_tari_address().is_none()
         {
             log::error!(target: LOG_TARGET, "No Tari wallets found");
-            return Err(anyhow!("No Tari wallets found"));
+            // In case of no wallets found, return falls to trigger migration or new wallet creation
+            return Ok(false);
         }
         // An owned tari wallet id found
 
@@ -218,6 +219,7 @@ impl InternalWallet {
         )
         .await?;
         let wallet_config = ConfigWallet::content().await;
+
         let internal_wallet =
             if InternalWallet::validate_wallet_config_for_seed(app_handle, &wallet_config).await? {
                 InternalWallet::load_latest_version(app_handle, wallet_config).await?
