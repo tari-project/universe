@@ -19,7 +19,7 @@ interface ExchangeAddressProps {
 }
 export const ExchangeAddress = ({
     handleIsAddressValid,
-    handleAddressChanged: handleAddressChange,
+    handleAddressChanged,
     value,
     disabled,
     walletAddressNetwork,
@@ -29,7 +29,6 @@ export const ExchangeAddress = ({
         control,
         watch,
         reset,
-        trigger,
         setValue,
         formState: { errors, isValid },
     } = useForm();
@@ -37,10 +36,6 @@ export const ExchangeAddress = ({
     const address = watch('address');
 
     const { validateAddress } = useValidateTariAddress();
-    useEffect(() => {
-        trigger('address');
-        handleAddressChange(address || '');
-    }, [address, trigger, handleAddressChange]);
 
     useEffect(() => {
         if (value) {
@@ -50,7 +45,6 @@ export const ExchangeAddress = ({
 
     const handlePaste = useCallback(
         (value: string) => {
-            console.info('Pasted value:', value);
             setValue('address', value);
         },
         [setValue]
@@ -88,6 +82,10 @@ export const ExchangeAddress = ({
                                 <StyledInputWrapper>
                                     <StyledInput
                                         {...field}
+                                        onChange={(e) => {
+                                            field.onChange(e);
+                                            handleAddressChanged(e.target.value);
+                                        }}
                                         disabled={disabled}
                                         type="text"
                                         placeholder={t('wallet-address')}
