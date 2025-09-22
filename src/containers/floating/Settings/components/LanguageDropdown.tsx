@@ -1,10 +1,9 @@
 import { Select, SelectOption } from '@app/components/elements/inputs/Select.tsx';
 import { Language, LanguageList, resolveI18nLanguage } from '@app/i18initializer.ts';
 import styled from 'styled-components';
-import i18n from 'i18next';
 import * as m from 'motion/react-m';
 import { setApplicationLanguage } from '@app/store';
-import { useReducer } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type LanguageOption = SelectOption;
 
@@ -20,10 +19,9 @@ const Wrapper = styled(m.div)`
 `;
 
 function LanguageDropdown() {
-    const [, forceUpdate] = useReducer((x) => x + 1, 0);
+    const { i18n } = useTranslation();
     const handleLanguageChange = (value: string) => {
         setApplicationLanguage(value as Language);
-        forceUpdate(); // Since i18n is outside of store component doesn't update
     };
     return (
         <Wrapper>
