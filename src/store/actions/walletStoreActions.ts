@@ -38,10 +38,8 @@ const filterToBitflag = (filter: TxHistoryFilter): number => {
 
 export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'all-activity' }: TxArgs) => {
     const bitflag = filterToBitflag(filter);
-    let transactions: TransactionInfo[] = [];
     try {
-        transactions = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
-
+        const transactions = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
         if (filter === 'rewards') {
             setCoinbaseTransactions({ newTxs: transactions, offset });
         }
@@ -49,7 +47,7 @@ export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'al
         return transactions;
     } catch (error) {
         console.error(`Could not get transaction history for rewards: `, error);
-        return transactions;
+        return [] as TransactionInfo[];
     }
 };
 
@@ -136,6 +134,9 @@ export const setWalletBalance = async (balance: WalletBalance) => {
 
 export const setIsSwapping = (isSwapping: boolean) => {
     useWalletStore.setState((c) => ({ ...c, is_swapping: isSwapping }));
+};
+export const setIsWalletLoading = (isLoading: boolean) => {
+    useWalletStore.setState((c) => ({ ...c, isLoading }));
 };
 
 export const setTxHistoryFilter = (filter: TxHistoryFilter) => {

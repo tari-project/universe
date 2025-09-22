@@ -23,7 +23,7 @@ use crate::configs::config_mining::GpuDevicesSettings;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
-    InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload,
+    InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload, WalletStatusUpdatePayload,
 };
 use crate::internal_wallet::TariAddressType;
 use crate::mining::gpu::consts::{GpuMiner, GpuMinerStatus, GpuMinerType};
@@ -727,6 +727,17 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET, "Failed to emit SeedBackedUp event: {e:?}");
+        }
+    }
+
+    pub async fn emit_wallet_status_updated(loading: bool, unhealthy: Option<bool>) {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        let evt = Event {
+            event_type: EventType::WalletStatusUpdate,
+            payload: WalletStatusUpdatePayload { loading, unhealthy },
+        };
+        if let Err(e) = Self::get_app_handle().await.emit(BACKEND_STATE_UPDATE, evt) {
+            error!(target: LOG_TARGET, "Failed to emit WalletStatusUpdate event: {e:?}");
         }
     }
 }

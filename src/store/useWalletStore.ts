@@ -53,6 +53,7 @@ export interface WalletStoreState {
     bridge_transactions: BackendBridgeTransaction[];
     cold_wallet_address?: string;
     is_wallet_importing: boolean;
+    isLoading: boolean;
     is_swapping?: boolean;
     detailsItem?: CombinedBridgeWalletTransaction | null;
     wallet_scanning: {
@@ -80,6 +81,7 @@ export const initialState: WalletStoreState = {
     bridge_transactions: [],
     cold_wallet_address: undefined,
     is_wallet_importing: false,
+    isLoading: false,
     wallet_scanning: {
         is_scanning: true,
         scanned_height: 0,
