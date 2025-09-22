@@ -40,7 +40,7 @@ use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
-use tari_common_types::tari_address::{self, TariAddress};
+use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_transaction_components::tari_amount::MicroMinotari;
 use tokio::sync::{watch, RwLock};
@@ -214,7 +214,7 @@ impl CpuMiner {
                 XmrigNodeConnection::Pool {
                     host_name: pool_address,
                     port,
-                    tari_address: tari_address,
+                    tari_address,
                 }
             }
         };
