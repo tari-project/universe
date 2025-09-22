@@ -68,14 +68,14 @@ export default function Tile({
     const isModuleFailed = minerModuleState?.status === AppModuleStatus.Failed;
     const animationState = animationStatus;
     const visualMode = useConfigUIStore((s) => s.visual_mode);
+
     const towerInitalized = useUIStore((s) => s.towerInitalized);
     const isConnectedToTariNetwork = useNodeStore((s) => s.isNodeConnected);
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
-    const canAnimateTower = useMemo(
-        () => visualMode && towerInitalized && animationState === 'free' && !isLoading,
-        [animationState, visualMode, isLoading, towerInitalized]
-    );
+    const canAnimateTower = useMemo(() => {
+        return visualMode && towerInitalized && animationState === 'free' && !isLoading;
+    }, [animationState, visualMode, isLoading, towerInitalized]);
 
     useEffect(() => {
         if (!successValue || isLoading) return;
@@ -83,11 +83,11 @@ export default function Tile({
         const resetTimer = setTimeout(() => {
             clearCurrentSuccessValue(title);
             setShowSuccessAnimation(false);
-        }, 5000);
+        }, 3000);
         return () => {
             clearTimeout(resetTimer);
         };
-    }, [isLoading, successValue, title, visualMode]);
+    }, [isLoading, successValue, title]);
 
     const handleClick = () => {
         if (isModuleFailed) {
@@ -98,7 +98,7 @@ export default function Tile({
     useEffect(() => {
         if (!canAnimateTower) return;
         if (showSuccessAnimation) {
-            setAnimationState('success');
+            setAnimationState('success', true);
         }
     }, [canAnimateTower, showSuccessAnimation]);
 

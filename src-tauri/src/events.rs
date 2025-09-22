@@ -69,6 +69,7 @@ pub enum EventType {
     ShouldShowExchangeMinerModal,
     SelectedTariAddressChanged,
     WalletUIModeChanged,
+    #[cfg(target_os = "macos")]
     ShowKeyringDialog,
     CreatePin,
     EnterPin,

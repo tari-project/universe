@@ -163,17 +163,8 @@ impl GpuManager {
         if self.available_miners.contains_key(&selected_gpu_miner_type) {
             info!(target: LOG_TARGET, "Loaded saved gpu miner: {selected_gpu_miner_type}");
         } else if !self.available_miners.is_empty() {
-            if let Some(fallback_miner_type) = MINERS_PRIORITY.iter().find_map(|miner_type| {
-                let is_healthy = self
-                    .available_miners
-                    .get(miner_type)
-                    .map(|m| m.is_healthy)
-                    .unwrap_or(false);
-                if is_healthy {
-                    Some(miner_type)
-                } else {
-                    None
-                }
+            if let Some(fallback_miner_type) = MINERS_PRIORITY.iter().find(|miner_type| {
+                matches!(self.available_miners.get(miner_type), Some(m) if m.is_healthy)
             }) {
                 selected_gpu_miner_type = fallback_miner_type.clone();
             }
@@ -214,20 +205,16 @@ impl GpuManager {
             // check if there is other minre that supports pool mining and switch to it if yes and then load pool connection to adapter
             let fallback_miner = MINERS_PRIORITY
                 .iter()
-                .find_map(|miner_type| {
+                .find(|miner_type| {
                     let is_healthy = self
                         .available_miners
                         .get(miner_type)
                         .map(|m| m.is_healthy)
                         .unwrap_or(false);
-                    if is_healthy
-                        && *miner_type != self.selected_miner
+
+                    is_healthy
+                        && *miner_type != &self.selected_miner
                         && miner_type.is_pool_mining_supported()
-                    {
-                        Some(miner_type)
-                    } else {
-                        None
-                    }
                 })
                 .cloned();
 
@@ -268,20 +255,16 @@ impl GpuManager {
             // check if there is other minre that supports solo mining and switch to it if yes and then load node connection to adapter
             let fallback_miner = MINERS_PRIORITY
                 .iter()
-                .find_map(|miner_type| {
+                .find(|miner_type| {
                     let is_healthy = self
                         .available_miners
                         .get(miner_type)
                         .map(|m| m.is_healthy)
                         .unwrap_or(false);
-                    if is_healthy
-                        && *miner_type != self.selected_miner
+
+                    is_healthy
+                        && *miner_type != &self.selected_miner
                         && miner_type.is_solo_mining_supported()
-                    {
-                        Some(miner_type)
-                    } else {
-                        None
-                    }
                 })
                 .cloned();
 
@@ -302,6 +285,7 @@ impl GpuManager {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn start_mining(
         &mut self,
         tari_address: TariAddress,
@@ -429,17 +413,14 @@ impl GpuManager {
         if let Some(app_handle) = self.app_handle.clone() {
             let fallback_miner = MINERS_PRIORITY
                 .iter()
-                .find_map(|miner_type| {
+                .find(|miner_type| {
                     let is_healthy = self
                         .available_miners
                         .get(miner_type)
                         .map(|m| m.is_healthy)
                         .unwrap_or(false);
-                    if is_healthy && *miner_type != self.selected_miner {
-                        Some(miner_type)
-                    } else {
-                        None
-                    }
+
+                    is_healthy && *miner_type != &self.selected_miner
                 })
                 .cloned();
 

@@ -163,7 +163,7 @@ impl InternalWallet {
         app_handle: &AppHandle,
         wallet_config: &ConfigWalletContent,
     ) -> Result<bool, anyhow::Error> {
-        if *wallet_config.version() < WALLET_VERSION {
+        if *wallet_config.version_counter() < WALLET_VERSION {
             log::info!(target: LOG_TARGET, "Wallet config version is outdated, migration needed");
             return Ok(false);
         }
@@ -621,13 +621,13 @@ impl InternalWallet {
         if monero_address.is_empty() {
             panic!(
                 "Unexpected! Monero address should be accessible for v{:?}",
-                *wallet_config.version()
+                *wallet_config.version_counter()
             );
         }
         if (*wallet_config.tari_wallets()).is_empty() {
             panic!(
                 "Unexpected! Tari wallets field should be defined in the config for v{:?}",
-                *wallet_config.version()
+                *wallet_config.version_counter()
             );
         }
 
@@ -830,7 +830,9 @@ impl InternalWallet {
                         }
                         Err(e) => {
                             // Only display once
+                            #[cfg(target_os = "macos")]
                             EventsEmitter::emit_show_keyring_dialog().await;
+
                             return Err(anyhow!("Failed to get tari seed from keyring: {e}"));
                         }
                     }
@@ -890,7 +892,9 @@ impl InternalWallet {
                         cred.encrypted_seed
                     }
                     Err(e) => {
+                        #[cfg(target_os = "macos")]
                         EventsEmitter::emit_show_keyring_dialog().await;
+
                         return Err(anyhow!("Failed to get monero seed from keyring: {e}"));
                     }
                 }
@@ -1015,7 +1019,6 @@ where
             Err(CredentialError::Keyring(_)) => {
                 use tauri::Listener;
                 use tokio::sync::oneshot;
-
                 EventsEmitter::emit_show_keyring_dialog().await;
                 let (tx, rx) = oneshot::channel();
                 _app_handle.once("keyring-dialog-response", |_event| {

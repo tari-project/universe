@@ -1,6 +1,12 @@
 {
   "common": {
+    "all-done": "You’re all done!",
     "got-it": "Đã hiểu"
+  },
+  "complete": {
+    "continue": "Continue to Tari Universe",
+    "happy-mining": "Happy mining!",
+    "secured": "Your wallet is now securely backed up—great job!\\nYour Tari tokens are safe and ready whenever you need them, even if you switch or lose your device."
   },
   "completedTip": {
     "text": "Bạn có thể tìm lại cụm từ khôi phục trong phần cài đặt",
@@ -9,6 +15,7 @@
   "intro": {
     "balance": "Ví của bạn có <span>{{balance}}</span> XTM",
     "button": "Sao lưu cụm từ khôi phục",
+    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
     "text": "Tari Universe tự động tạo ví cho bạn khi bắt đầu đào. Hãy đảm bảo bạn luôn có quyền truy cập ví bằng cách lưu cụm từ khôi phục ở nơi an toàn.",
     "title": "Bảo vệ token bằng cách sao lưu cụm từ khôi phục",
     "warning": "Rất khuyến nghị"
@@ -25,6 +32,17 @@
     "text": "Bạn sẽ cần mã này để khôi phục ví.",
     "title": "Ghi lại cụm từ khôi phục và lưu ở nơi an toàn"
   },
+  "skip": "Skip for now",
+  "steps": {
+    "chip": "Step {{step}} of {{total}}",
+    "complete-false": "Incomplete",
+    "complete-true": "Complete",
+    "step": "Step {{stepNumber}}",
+    "subtitle-pin": "Prevents unauthorized wallet access",
+    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
+    "title-pin": "Set a secure PIN",
+    "title-seeds": "Back up your Seed Phrase"
+  },
   "verifySeed": {
     "button": "XÁC NHẬN CỤM TỪ KHÔI PHỤC",
     "placeholder": "Nhấn vào các từ bên dưới theo đúng thứ tự",
@@ -32,7 +50,7 @@
     "title": "Xác nhận cụm từ khôi phục"
   },
   "warning": {
-    "title": "Secure your wallet",
-    "steps": "Steps"
+    "steps": "Steps",
+    "title": "Secure your wallet"
   }
 }
