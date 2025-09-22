@@ -103,9 +103,9 @@ impl GraxilGpuMiner {
 impl GpuMinerInterfaceTrait for GraxilGpuMiner {
     async fn load_excluded_devices(
         &mut self,
-        _excluded_devices: Vec<u32>,
+        excluded_devices: Vec<u32>,
     ) -> Result<(), anyhow::Error> {
-        self.excluded_devices = _excluded_devices;
+        self.excluded_devices = excluded_devices;
         Ok(())
     }
 

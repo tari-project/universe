@@ -118,9 +118,9 @@ impl GlytexGpuMiner {
 impl GpuMinerInterfaceTrait for GlytexGpuMiner {
     async fn load_excluded_devices(
         &mut self,
-        _excluded_devices: Vec<u32>,
+        excluded_devices: Vec<u32>,
     ) -> Result<(), anyhow::Error> {
-        self.excluded_devices = _excluded_devices;
+        self.excluded_devices = excluded_devices;
 
         let selected_engine = self.selected_engine.clone().unwrap_or(EngineType::OpenCL);
         let config_path =
@@ -135,11 +135,7 @@ impl GpuMinerInterfaceTrait for GlytexGpuMiner {
         let mut gpu_status_file =
             load_file_content::<GlytexGpuDevices>(&gpu_status_file_path).await?;
         for device in &mut gpu_status_file.gpu_devices.iter_mut() {
-            if self.excluded_devices.contains(&device.device_index) {
-                device.settings.is_excluded = true;
-            } else {
-                device.settings.is_excluded = false;
-            }
+            device.settings.is_excluded = self.excluded_devices.contains(&device.device_index);
         }
         save_file_content::<GlytexGpuDevices>(&gpu_status_file_path, &gpu_status_file).await?;
 
