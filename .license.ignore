@@ -1,5 +1,6 @@
-./src-tauri/env.esme
+./src-tauri/env.esmeralda
 ./src-tauri/env.mainnet
+./src-tauri/env.nextnet
 ./tari-win-bundler/Bundle.wxs
 ./tari-win-bundler/Tari Universe.wixproj
 ./tari-win-bundler/Tari Universe.wixproj.user
