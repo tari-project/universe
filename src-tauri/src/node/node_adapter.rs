@@ -392,6 +392,7 @@ impl StatusMonitor for NodeStatusMonitor {
                     .join("peer_db"),
             )
             .await;
+
             let _unused = fs::remove_dir_all(
                 base_path
                     .join("node")
@@ -399,7 +400,15 @@ impl StatusMonitor for NodeStatusMonitor {
                     .join("libtor"),
             )
             .await;
+
             let _unused = fs::remove_dir_all(base_path.join("tor-data")).await;
+            let _unused = fs::remove_dir_all(
+                base_path
+                    .join("node")
+                    .join(Network::get_current().to_string().to_lowercase())
+                    .join("config"),
+            )
+            .await;
         }
 
         Ok(HandleUnhealthyResult::Continue)
