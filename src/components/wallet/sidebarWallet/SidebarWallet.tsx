@@ -27,12 +27,7 @@ import { open } from '@tauri-apps/plugin-shell';
 
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
-import {
-    fetchTransactionsHistory,
-    setDetailsItem,
-    setIsSwapping,
-    setTxHistoryFilter,
-} from '@app/store/actions/walletStoreActions.ts';
+import { setDetailsItem, setIsSwapping, setTxHistoryFilter } from '@app/store/actions/walletStoreActions.ts';
 
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
@@ -63,13 +58,13 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
 
     const isConnectedToTariNetwork = useNodeStore((s) => s.isNodeConnected);
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
+    const walletIsLoading = useWalletStore((s) => s.isLoading);
 
     const targetRef = useRef<HTMLDivElement>(null) as RefObject<HTMLDivElement>;
     const [isScrolled, setIsScrolled] = useState(false);
 
     function handleFilterChange(newFilter: TxHistoryFilter) {
         setTxHistoryFilter(newFilter);
-        void fetchTransactionsHistory({ offset: 0, limit: 20, filter: newFilter });
     }
 
     useEffect(() => {
@@ -161,12 +156,13 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
         return (
             <AnimatePresence initial={false} mode="wait">
                 <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
-                    <Wrapper $seedlessUI={true}>{walletMarkup}</Wrapper>
+                    <Wrapper $listHidden>{walletMarkup}</Wrapper>
                 </WalletWrapper>
             </AnimatePresence>
         );
     }
 
+    const standardWalletLoading = isStandardWalletUI && (isSyncing || walletIsLoading);
     return (
         <>
             <AnimatePresence initial={false} mode="wait">
@@ -179,8 +175,8 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     </SwapsWrapper>
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
-                        <Wrapper $seedlessUI={!isStandardWalletUI || isSyncing}>
-                            {isSyncing && isStandardWalletUI ? <SyncLoading>{syncMarkup}</SyncLoading> : walletMarkup}
+                        <Wrapper $listHidden={!isStandardWalletUI || isSyncing || walletIsLoading}>
+                            {standardWalletLoading ? <SyncLoading>{syncMarkup}</SyncLoading> : walletMarkup}
                             <BuyTariButton onClick={() => setIsSwapping(true)}>
                                 <span>{`${t('swap.buy-tari')} (XTM)`}</span>
                             </BuyTariButton>

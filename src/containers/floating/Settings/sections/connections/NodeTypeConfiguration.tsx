@@ -21,8 +21,8 @@ export default function NodeTypeConfiguration() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const node_type = useConfigCoreStore((s) => s.node_type || 'Local');
 
-    const handleChange = useCallback((nodeType: string) => {
-        setNodeType(nodeType as NodeType);
+    const handleChange = useCallback(async (nodeType: string) => {
+        await setNodeType(nodeType as NodeType);
     }, []);
 
     const tabOptions: SelectOption[] = useMemo(

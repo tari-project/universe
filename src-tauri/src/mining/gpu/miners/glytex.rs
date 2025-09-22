@@ -44,7 +44,7 @@ use crate::{
         consts::{EngineType, GpuConnectionType, GpuMinerStatus},
         interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
         manager::GpuManager,
-        miners::{load_file_content, GpuCommonInformation},
+        miners::{load_file_content, save_file_content, GpuCommonInformation},
     },
     process_adapter::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
@@ -97,6 +97,7 @@ pub struct GlytexGpuMiner {
     pub selected_engine: Option<EngineType>,
     pub gpu_status_sender: Sender<GpuMinerStatus>,
     pub gpu_devices: Vec<GpuCommonInformation>,
+    pub excluded_devices: Vec<u32>,
 }
 
 impl GlytexGpuMiner {
@@ -109,11 +110,38 @@ impl GlytexGpuMiner {
             selected_engine: None,
             gpu_status_sender,
             gpu_devices: vec![],
+            excluded_devices: vec![],
         }
     }
 }
 
 impl GpuMinerInterfaceTrait for GlytexGpuMiner {
+    async fn load_excluded_devices(
+        &mut self,
+        excluded_devices: Vec<u32>,
+    ) -> Result<(), anyhow::Error> {
+        self.excluded_devices = excluded_devices;
+
+        let selected_engine = self.selected_engine.clone().unwrap_or(EngineType::OpenCL);
+        let config_path =
+            dirs::config_dir().ok_or_else(|| anyhow::anyhow!("Failed to get config directory"))?;
+
+        let config_dir = config_path.join(APPLICATION_FOLDER_ID);
+
+        let gpu_engine_statuses_path = config_dir.join("gpuminer").join("engine_statuses");
+
+        let gpu_status_file_name = format!("{selected_engine}_gpu_status.json");
+        let gpu_status_file_path = gpu_engine_statuses_path.join(gpu_status_file_name);
+        let mut gpu_status_file =
+            load_file_content::<GlytexGpuDevices>(&gpu_status_file_path).await?;
+        for device in &mut gpu_status_file.gpu_devices.iter_mut() {
+            device.settings.is_excluded = self.excluded_devices.contains(&device.device_index);
+        }
+        save_file_content::<GlytexGpuDevices>(&gpu_status_file_path, &gpu_status_file).await?;
+
+        Ok(())
+    }
+
     async fn load_tari_address(&mut self, tari_address: &str) -> Result<(), anyhow::Error> {
         self.tari_address = Some(tari_address.to_string());
         Ok(())

@@ -109,6 +109,7 @@ export function TxInput({
                     aria-errormessage={errorMessage}
                     $isSecondary={isSecondary}
                     $hasValidityIcon={isValid}
+                    maxLength={240}
                 />
 
                 {isValid && (
