@@ -10,7 +10,7 @@ export const BannerContent = styled(m.div)<{
     top: 16px;
     right: 20px;
 
-    z-index: 99;
+    z-index: 2;
     display: flex;
     align-items: center;
     padding: 8px 10px;
