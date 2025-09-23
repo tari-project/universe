@@ -13,8 +13,8 @@ export default function LogIn() {
 
     const tooltipContent = authUrlCopied ? (
         <>
-            <Typography variant="h6">{`Could not open URL`}</Typography>
-            <Typography variant="p">{`It has been copied to your clipboard, please visit the link directly to log in`}</Typography>
+            <Typography variant="h6">{t('auth.url-error')}</Typography>
+            <Typography variant="p">{t('auth.url-error-copy')}</Typography>
         </>
     ) : (
         <>
@@ -25,7 +25,7 @@ export default function LogIn() {
 
     return (
         <button onClick={() => handleAuth()} style={{ borderRadius: 10 }}>
-            <SidebarItem text={t('joinAirdrop')} tooltipContent={tooltipContent}>
+            <SidebarItem text={t('earnBonusXTM')} tooltipContent={tooltipContent}>
                 <ActionImgWrapper style={{ marginBottom: '-4px' }}>
                     <GemImgLarge src={gem} alt="gem ico" />
                 </ActionImgWrapper>

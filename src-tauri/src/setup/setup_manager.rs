@@ -28,13 +28,19 @@ use super::listeners::{setup_listener, SetupFeature, SetupFeaturesList};
 use super::trait_setup_phase::SetupPhaseImpl;
 use super::utils::phase_builder::PhaseBuilder;
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
-use crate::commands::{start_cpu_mining, start_gpu_mining};
+use crate::commands::start_cpu_mining;
 use crate::configs::config_core::ConfigCoreContent;
+use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
+use crate::mining::gpu::consts::GpuMinerType;
+use crate::mining::gpu::manager::GpuManager;
+use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
+use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
+use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::progress_trackers::progress_plans::SetupStep;
 use crate::setup::{
     phase_core::CoreSetupPhase, phase_cpu_mining::CpuMiningSetupPhase,
@@ -226,10 +232,6 @@ impl SetupManager {
         let state = app_handle.state::<UniverseAppState>();
         let in_memory_config = state.in_memory_config.clone();
 
-        let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
-        websocket_events_manager_guard.set_app_handle(app_handle.clone());
-        drop(websocket_events_manager_guard);
-
         let mut websocket_manager_write = state.websocket_manager.write().await;
         websocket_manager_write.set_app_handle(app_handle.clone());
         drop(websocket_manager_write);
@@ -237,6 +239,44 @@ impl SetupManager {
         let webview = app_handle
             .get_webview_window("main")
             .expect("main window must exist");
+
+        let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
+        if let Err(e) = websocket_events_manager_guard
+            .set_app_handle(app_handle.clone(), state.websocket_manager.clone())
+            .await
+        {
+            error!(target: LOG_TARGET, "Failed to start websocket events manager: {e}");
+        }
+
+        drop(websocket_events_manager_guard);
+
+        GpuManager::write()
+            .await
+            .load_app_handle(app_handle.clone())
+            .await;
+
+        // Listen for websocket reconnection events to restart events manager
+        let websocket_event_manager_clone = state.websocket_event_manager.clone();
+        let websocket_manager_clone = state.websocket_manager.clone();
+        let app_handle_clone = app_handle.clone();
+        webview.listen("websocket-reconnected", move |_event| {
+            let websocket_event_manager_clone = websocket_event_manager_clone.clone();
+            let websocket_manager_clone = websocket_manager_clone.clone();
+            let app_handle_clone = app_handle_clone.clone();
+
+            tauri::async_runtime::spawn(async move {
+                info!(target: LOG_TARGET, "Restarting websocket events manager after reconnection");
+                let mut events_manager_guard = websocket_event_manager_clone.write().await;
+                if let Err(e) = events_manager_guard
+                    .set_app_handle(app_handle_clone, websocket_manager_clone)
+                    .await
+                {
+                    error!(target: LOG_TARGET, "Failed to restart websocket events manager: {e}");
+                } else {
+                    info!(target: LOG_TARGET, "Websocket events manager restarted successfully");
+                }
+            });
+        });
         let websocket_tx = state.websocket_message_tx.clone();
         webview.listen("ws-tx", move |event: tauri::Event| {
             let event_cloned = event.clone();
@@ -280,6 +320,17 @@ impl SetupManager {
             let _unused = ConfigCore::update_field(
                 ConfigCoreContent::set_exchange_id,
                 built_in_exchange_id.clone(),
+            )
+            .await;
+        }
+
+        let config_minig = ConfigMining::content().await.clone();
+        if !*config_minig.is_lolminer_tested() {
+            let _unused =
+                ConfigMining::update_field(ConfigMiningContent::set_is_lolminer_tested, true).await;
+            let _unused = ConfigMining::update_field(
+                ConfigMiningContent::set_gpu_miner_type,
+                GpuMinerType::LolMiner,
             )
             .await;
         }
@@ -744,29 +795,14 @@ impl SetupManager {
     pub async fn turn_off_gpu_pool_feature(&self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Turning off GPU Pool feature");
 
-        let app_handle = self.app_handle().await;
-        let app_state = app_handle.state::<UniverseAppState>().clone();
-
-        // At the point of calling this method gpu miner will be stopped by do_health_check method
-        // It handles stopping the process of miner but is not stopping the status updates
-        // So we need to stop the status updates here as its more complicated to do it in stop method called by do_health_check
-
-        app_state
-            .gpu_miner_sha
-            .write()
-            .await
-            .stop_status_updates()
-            .await?;
+        // We want to stop the stats watcher as its not needed when solo mining
+        // Normal flow would monitor the status for extra hour but in case of disabling pool mining we want to stop it right away
+        GpuPoolManager::stop_stats_watcher().await;
 
         // Updates the config to disable GPU Pool feature in next resolve_setup_features call
         ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, false).await?;
         // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
         EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
-
-        // Start mining will now pickup that GPU Pool is turn off and will start glytex instead
-        start_gpu_mining(app_state.clone(), app_handle.clone())
-            .await
-            .map_err(anyhow::Error::msg)?;
 
         Ok(())
     }
@@ -779,16 +815,9 @@ impl SetupManager {
         let app_handle = self.app_handle().await;
         let app_state = app_handle.state::<UniverseAppState>().clone();
 
-        // At the point of calling this method cpu miner will be stopped by do_health_check method
-        // It handles stopping the process of miner but is not stopping the status updates
-        // So we need to stop the status updates here as its more complicated to do it in stop method called by do_health_check
-
-        app_state
-            .cpu_miner
-            .write()
-            .await
-            .stop_status_updates()
-            .await?;
+        // We want to stop the stats watcher as its not needed when solo mining
+        // Normal flow would monitor the status for extra hour but in case of disabling pool mining we want to stop it right away
+        CpuPoolManager::stop_stats_watcher().await;
 
         // Updates the config to disable CPU Pool feature in next resolve_setup_features call
         ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, false).await?;

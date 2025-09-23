@@ -1,16 +1,9 @@
 import styled, { css } from 'styled-components';
 
-export const AvatarWrapper = styled.div<{ $isOnline: boolean; $image: string }>`
-    width: 41px;
-    height: 41px;
+export const AvatarWrapper = styled.div<{ $isOnline: boolean }>`
     border-radius: 50%;
     border: 2px solid #01a405;
     flex-shrink: 0;
-
-    background-image: url(${({ $image }) => $image});
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
 
     position: relative;
 

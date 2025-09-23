@@ -19,6 +19,13 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+use super::{
+    listeners::SetupFeaturesList,
+    setup_manager::PhaseStatus,
+    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
+};
+use crate::wallet::wallet_manager::{WalletManagerError, STOP_ON_ERROR_CODES};
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{
@@ -39,6 +46,7 @@ use crate::{
     UniverseAppState,
 };
 use anyhow::Error;
+use log::{error, warn};
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
@@ -46,13 +54,6 @@ use tokio::sync::{
     Mutex,
 };
 use tokio_util::task::TaskTracker;
-
-use super::{
-    listeners::SetupFeaturesList,
-    setup_manager::PhaseStatus,
-    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
-    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
-};
 
 static LOG_TARGET: &str = "tari::universe::phase_wallet";
 
@@ -160,6 +161,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let app_state_clone = app_state.clone();
         let is_local_node = app_state.node_manager.is_local_current().await;
         let use_tor = self.app_configuration.use_tor && is_local_node && !cfg!(target_os = "macos");
 
@@ -176,37 +178,59 @@ impl SetupPhaseImpl for WalletSetupPhase {
             })
             .await?;
 
-        progress_stepper.complete_step(SetupStep::StartWallet,  || async  {
-            let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
-            if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
-                log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
-                // if let Err(e) = app_state.wallet_manager.clean_data_folder(&data_dir).await {
-                //     log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {e}");
-                // }
-                if
-                    let Err(e) = ConfigWallet::update_field(
-                        ConfigWalletContent::set_wallet_migration_nonce,
-                        WALLET_MIGRATION_NONCE
-                    ).await
-                {
-                    log::warn!(target: LOG_TARGET, "Failed to update wallet migration nonce: {e}");
+        progress_stepper
+            .complete_step(SetupStep::StartWallet, || async {
+                for _i in 0..2 {
+                    let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
+                    if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
+                        log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
+                        // if let Err(e) = app_state.wallet_manager.clean_data_folder(&data_dir).await {
+                        //     log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {e}");
+                        // }
+                        if
+                        let Err(e) = ConfigWallet::update_field(
+                            ConfigWalletContent::set_wallet_migration_nonce,
+                            WALLET_MIGRATION_NONCE
+                        ).await
+                        {
+                            log::warn!(target: LOG_TARGET, "Failed to update wallet migration nonce: {e}");
+                        }
+                    }
+
+                    let wallet_config = WalletStartupConfig {
+                        base_path: data_dir.clone(),
+                        config_path: config_dir.clone(),
+                        log_path: log_dir.clone(),
+                        use_tor,
+                        connect_with_local_node: is_local_node,
+                    };
+                    match app_state_clone.wallet_manager.ensure_started(
+                        TasksTrackers::current().wallet_phase.get_signal().await,
+                        wallet_config.clone()
+                    ).await {
+                        Ok(_) => { break; }
+                        Err(e)=> {
+                            if let WalletManagerError::ExitCode(code) = e {
+                                if STOP_ON_ERROR_CODES.contains(&code) {
+                                    warn!(target: LOG_TARGET, "Wallet config is corrupt or needs a restart, deleting and trying again.");
+                                    app_state.wallet_manager.clean_data_folder(&data_dir).await?;
+                                }
+                                continue;
+                            }
+                            if let WalletManagerError::UnknownError(e) = e {
+                                warn!(target: LOG_TARGET, "WalletManagerError::UnknownError({e:?}) needs a restart.");
+                                continue;
+                            }
+                            error!(target: LOG_TARGET, "Could not start wallet manager after restart: {e:?} | Exiting the app");
+                            self.app_handle.exit(-1);
+                            return Err(e.into());
+                        }
+                    }
+
                 }
-            }
-
-            let wallet_config = WalletStartupConfig {
-                base_path: data_dir.clone(),
-                config_path: config_dir.clone(),
-                log_path: log_dir.clone(),
-                use_tor,
-                connect_with_local_node: is_local_node,
-            };
-            app_state.wallet_manager.ensure_started(
-                TasksTrackers::current().wallet_phase.get_signal().await,
-                wallet_config
-            ).await?;
-
-            Ok(())
-        }).await?;
+                Ok(())
+            })
+            .await?;
 
         let bridge_binary_progress_tracker =
             progress_stepper.track_step_incrementally(SetupStep::SetupBridge);

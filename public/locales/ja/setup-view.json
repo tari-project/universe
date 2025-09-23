@@ -1,7 +1,7 @@
 {
   "actions": {
-    "earn-gems": "ジェムを獲得",
-    "earn-gems-copy": "友達を招待してジェムを獲得するためにソーシャルアカウントを接続",
+    "earn-gems": "ボーナスXTMを獲得",
+    "earn-gems-copy": "友達を招待してボーナスXTMを獲得するためにソーシャルアカウントを接続",
     "earn-gems-cta": "Xアカウントを接続",
     "mode": "モードをカスタマイズ",
     "mode-copy": "マシンのマイニングの強度をカスタマイズできることをご存知ですか？"
@@ -22,7 +22,6 @@
     "checking-latest-version-gpuminer": "xtrgpuminerの最新バージョンを確認中",
     "checking-latest-version-mmproxy": "mmproxyの最新バージョンを確認中",
     "checking-latest-version-node": "ノードの最新バージョンを確認中",
-    "checking-latest-version-sha-p2pool": "sha-p2poolの最新バージョンを確認中",
     "checking-latest-version-tor": "Torの最新バージョンを確認中",
     "checking-latest-version-wallet": "ウォレットの最新バージョンを確認中",
     "checking-latest-version-xmrig": "xmrigの最新バージョンを確認中",
@@ -31,7 +30,6 @@
     "minotari-node-restarting": "Minotariノードのデータが破損しました。古いデータをクリーニングしています",
     "preparing-for-initial-sync": "ネットワークピアに接続中 {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "マージマイニングプロキシを開始しています",
-    "starting-p2pool": "P2Poolを開始しています",
     "starting-up": "起動中",
     "waiting-for-block-sync": "ブロック同期を待っています。{{local_height}}/{{tip_height}} ブロックが同期されました",
     "waiting-for-header-sync": "ヘッダー同期を待っています。{{local_height}}/{{tip_height}} ヘッダーが同期されました",
@@ -40,6 +38,7 @@
     "waiting-for-wallet": "ウォレットを待っています",
     "wallet-started": "ウォレットが起動しました"
   },
+  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
   "would-you-like-to-install": "Tari Universe {{version}} を今すぐインストールしますか？",
   "yes": "はい"
 }

@@ -52,7 +52,7 @@ pub(crate) struct ProcessWatcherStats {
 }
 
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
-    pub(crate) adapter: TAdapter,
+    pub adapter: TAdapter,
     watcher_task: Option<JoinHandle<Result<i32, anyhow::Error>>>,
     internal_shutdown: Shutdown,
     pub poll_time: tokio::time::Duration,
@@ -194,9 +194,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                         return child.stop().await;
                     }
                 }
-                if let Err(_unused) = stats_broadcast.send(stats.clone()) {
-                    warn!(target: LOG_TARGET, "Failed to broadcast process watcher stats for {name}");
-                }
+                stats_broadcast.send_replace(stats.clone());
             }
         }));
         Ok(())
@@ -336,7 +334,6 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             warn!(target: LOG_TARGET, "Restarting {name} after health check failure");
             *uptime = Instant::now();
             stats.num_restarts += 1;
-            stats.current_uptime = uptime.elapsed();
             match status_monitor3
                 .handle_unhealthy(*duration_since_last_healthy_status)
                 .await
@@ -363,11 +360,14 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             // unhealthy_timer.elapsed() resolves to around 10 seconds
             *duration_since_last_healthy_status += unhealthy_timer.elapsed();
         }
-    } else {
-        stats.current_uptime = uptime.elapsed();
+    }
+
+    if is_healthy {
         // Reset the duration once we have a healthy status
         *duration_since_last_healthy_status = Duration::from_secs(0);
     }
+
+    stats.current_uptime = uptime.elapsed();
 
     Ok(None)
 }

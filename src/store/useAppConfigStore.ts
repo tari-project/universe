@@ -19,7 +19,6 @@ const configCoreInitialState: ConfigCore = {
     allow_notifications: true,
     anon_id: '',
     auto_update: false,
-    is_p2pool_enabled: false,
     last_changelog_version: '',
     mmproxy_monero_nodes: [],
     mmproxy_use_monero_failover: false,
@@ -29,7 +28,6 @@ const configCoreInitialState: ConfigCore = {
     use_tor: false,
     airdrop_tokens: undefined,
     last_binaries_update_timestamp: '',
-    p2pool_stats_server_port: undefined,
     exchange_id: undefined,
 };
 

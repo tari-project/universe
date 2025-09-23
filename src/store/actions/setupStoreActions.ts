@@ -1,7 +1,13 @@
 import { loadTowerAnimation, setAnimationProperties, setAnimationState } from '@tari-project/tari-tower';
 
 import { useSetupStore } from '../useSetupStore';
-import { startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
+import {
+    handleSessionMiningTime,
+    startCpuMining,
+    startGpuMining,
+    stopCpuMining,
+    stopGpuMining,
+} from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
     fetchTransactionsHistory,
@@ -43,16 +49,13 @@ async function initializeAnimation() {
         } catch (error) {
             console.error('Failed to set animation state:', error);
             useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
-
             loaded = false;
-        } finally {
-            if (loaded) {
-                setAnimationState('showVisual');
-            }
+        }
+        if (loaded) {
+            setAnimationState('showVisual');
         }
     } catch (e) {
         console.error('Error at loadTowerAnimation:', e);
-        useConfigUIStore.setState((c) => ({ ...c, visual_mode: false }));
         useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
     }
 }
@@ -164,6 +167,7 @@ const handleCpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             const wasMineOnAppStartExecuted = useMiningStore.getState().wasMineOnAppStartExecuted;
             if (mineOnAppStart && cpuMiningEnabled && !wasMineOnAppStartExecuted) {
                 await startCpuMining();
+                handleSessionMiningTime({ startTimestamp: Date.now() });
                 useMiningStore.setState((c) => ({ ...c, wasMineOnAppStartExecuted: true }));
             } else if (gpuMiningInitiated && cpuMiningEnabled) {
                 await startCpuMining();
@@ -194,6 +198,7 @@ const handleGpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             const wasMineOnAppStartExecuted = useMiningStore.getState().wasMineOnAppStartExecuted;
             if (mineOnAppStart && gpuMiningEnabled && !wasMineOnAppStartExecuted) {
                 await startGpuMining();
+                handleSessionMiningTime({ startTimestamp: Date.now() });
                 useMiningStore.setState((c) => ({ ...c, wasMineOnAppStartExecuted: true }));
             } else if (cpuMiningInitiated && gpuMiningEnabled) {
                 await startGpuMining();

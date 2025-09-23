@@ -7,12 +7,9 @@ import { CombinedBridgeWalletTransaction, useWalletStore } from '@app/store';
 
 import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
-import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/ListLoadingAnimation.tsx';
-import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
-
 import { HistoryListItem } from './ListItem.tsx';
 import { PlaceholderItem } from './ListItem.styles.ts';
-import { ListItemWrapper, ListWrapper } from './List.styles.ts';
+import { EmptyText, ListItemWrapper, ListWrapper } from './List.styles.ts';
 import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
@@ -25,9 +22,11 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const walletImporting = useWalletStore((s) => s.is_wallet_importing);
+    const walletIsLoading = useWalletStore((s) => s.isLoading);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
 
-    const walletLoading = walletImporting || walletScanning?.is_scanning;
+    // TODO clean up
+    const walletLoading = walletImporting || walletScanning?.is_scanning || isFetching || walletIsLoading;
 
     useEffect(() => {
         const el = targetRef?.current;
@@ -91,28 +90,13 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
         </ListItemWrapper>
     );
 
-    const baseMarkup = walletScanning.is_scanning ? (
-        <ListLoadingAnimation
-            loadingText={
-                walletScanning.is_scanning && walletScanning.total_height > 0
-                    ? t('wallet-scanning-with-progress', {
-                          scanned: walletScanning.scanned_height.toLocaleString(),
-                          total: walletScanning.total_height.toLocaleString(),
-                          percent: walletScanning.progress.toFixed(1),
-                      })
-                    : t('wallet-is-scanning')
-            }
-        />
-    ) : (
-        listMarkup
-    );
     const isEmpty = !walletLoading && !transactions?.length;
-    const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
+    const emptyMarkup = isEmpty ? <EmptyText>{t('empty-tx')}</EmptyText> : null;
     return (
         <>
             <ListWrapper>
                 {emptyMarkup}
-                {baseMarkup}
+                {listMarkup}
                 {/*added placeholder so the scroll can trigger fetch*/}
                 {!walletScanning?.is_scanning ? <PlaceholderItem ref={ref} $isLast /> : null}
             </ListWrapper>

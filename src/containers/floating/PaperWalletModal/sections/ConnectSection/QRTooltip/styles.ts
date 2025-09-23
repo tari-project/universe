@@ -18,8 +18,8 @@ export const Menu = styled(m.div)`
     gap: 8px;
     padding: 22px;
     background: #fff;
-    border-radius: 15.306px;
-    box-shadow: 0px 2.915px 24.782px 0px rgba(0, 0, 0, 0.25);
+    border-radius: 15px;
+    box-shadow: 0 3px 25px 0 rgba(0, 0, 0, 0.25);
 `;
 
 export const Image = styled('img')`
@@ -30,7 +30,7 @@ export const Image = styled('img')`
 export const Text = styled('div')`
     color: #000;
     text-align: center;
-    font-size: 14.577px;
+    font-size: 15px;
     font-weight: 600;
     line-height: 99.7%;
 `;

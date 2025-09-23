@@ -1,7 +1,7 @@
 {
   "actions": {
-    "earn-gems": "Заработать драгоценные камни",
-    "earn-gems-copy": "Подключите свою социальную учетную запись, чтобы зарабатывать драгоценные камни за приглашение друзей",
+    "earn-gems": "Заработать бонусные XTM",
+    "earn-gems-copy": "Подключите свою социальную учетную запись, чтобы зарабатывать бонусные XTM, приглашая друзей",
     "earn-gems-cta": "Подключить X аккаунт",
     "mode": "Настроить режим",
     "mode-copy": "Знаете ли вы, что можете настроить, насколько интенсивно вы хотите, чтобы ваша машина майнила?"
@@ -22,7 +22,6 @@
     "checking-latest-version-gpuminer": "Проверка последней версии xtrgpuminer",
     "checking-latest-version-mmproxy": "Проверка последней версии mmproxy",
     "checking-latest-version-node": "Проверка последней версии узла",
-    "checking-latest-version-sha-p2pool": "Проверка последней версии sha-p2pool",
     "checking-latest-version-tor": "Проверка последней версии Tor",
     "checking-latest-version-wallet": "Проверка последней версии кошелька",
     "checking-latest-version-xmrig": "Проверка последней версии xmrig",
@@ -31,7 +30,6 @@
     "minotari-node-restarting": "Данные узла Minotari были повреждены, очистка старых данных",
     "preparing-for-initial-sync": "Подключение к узлам сети {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Запуск прокси для объединенного майнинга",
-    "starting-p2pool": "Запуск P2Pool",
     "starting-up": "Запуск",
     "waiting-for-block-sync": "Ожидание синхронизации блоков. Синхронизировано {{local_height}}/{{tip_height}} блоков",
     "waiting-for-header-sync": "Ожидание синхронизации заголовков. Синхронизировано {{local_height}}/{{tip_height}} заголовков",
@@ -40,6 +38,7 @@
     "waiting-for-wallet": "Ожидание кошелька",
     "wallet-started": "Кошелек запущен"
   },
+  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
   "would-you-like-to-install": "Хотите установить Tari Universe {{version}} сейчас?",
   "yes": "Да"
 }

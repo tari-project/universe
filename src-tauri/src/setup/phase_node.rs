@@ -241,7 +241,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             warn!(target: LOG_TARGET, "NodeManagerError::UnknownError({error:?}) needs a restart.");
                             continue;
                         }
-                        error!(target: LOG_TARGET, "Could not start node manager after restart: {e:?} | Exitting the app");
+                        error!(target: LOG_TARGET, "Could not start node manager after restart: {e:?} | Exiting the app");
                         self.app_handle.exit(-1);
                         return Err(e.into());
                     }

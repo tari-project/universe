@@ -13,6 +13,9 @@
   "paper-wallet-tooltip-message": "Universe 지갑을 Tari Universe Mobile에 동기화하여 어디서든 XTM을 추적하세요.",
   "paper-wallet-tooltip-title": "휴대폰과 동기화",
   "recent-wins": "최근 승리",
+  "reward": {
+    "stacked": "You stacked"
+  },
   "rewards": "보상",
   "setup-scheduler": "스케줄러 설정",
   "share": {

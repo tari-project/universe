@@ -3,6 +3,7 @@
         "bridge": "0.2.0",
         "glytex": "0.2.32 | ad20e05",
         "graxil": "1.0.12 | 7834798",
+        "lolminer": "1.98",
         "minotari_node": "5.0.1 | 9aa1e44",
         "mmproxy": "5.0.1 | 9aa1e44",
         "sha-p2pool": "1.0.3 | cff9241",

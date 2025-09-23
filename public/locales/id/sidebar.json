@@ -13,6 +13,9 @@
   "paper-wallet-tooltip-message": "Lacak XTM Anda di mana saja dengan menyinkronkan dompet Universe Anda ke Tari Universe Mobile.",
   "paper-wallet-tooltip-title": "Sinkronkan dengan Ponsel",
   "recent-wins": "Kemenangan terbaru",
+  "reward": {
+    "stacked": "You stacked"
+  },
   "rewards": "Hadiah",
   "setup-scheduler": "Atur Penjadwal",
   "share": {

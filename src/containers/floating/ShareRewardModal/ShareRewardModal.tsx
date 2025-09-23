@@ -63,45 +63,41 @@ const ShareRewardModal = memo(function ShareRewardModal() {
     }, [shareUrl]);
 
     return (
-        <AnimatePresence>
-            {showModal && (
-                <GreenModal onClose={handleClose} boxWidth={600} padding={30}>
-                    <HeroImage src={genericHeroImage} alt="" />
+        <GreenModal onClose={handleClose} padding={30} showModal={showModal}>
+            <HeroImage src={genericHeroImage} alt="" />
 
-                    <ContentWrapper>
-                        <Title>{t('share.title')}</Title>
-                        {block ? (
-                            <WinnerPill>
-                                {t('share.winner-pill')} #{block.toLocaleString()}
-                            </WinnerPill>
-                        ) : null}
+            <ContentWrapper>
+                <Title>{t('share.title')}</Title>
+                {block ? (
+                    <WinnerPill>
+                        {t('share.winner-pill')} #{block.toLocaleString()}
+                    </WinnerPill>
+                ) : null}
 
-                        <BlackButton onClick={handleCopy}>
-                            <AnimatePresence>
-                                {copied && (
-                                    <Copied initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                        {t('share.copied')}
-                                    </Copied>
-                                )}
-                            </AnimatePresence>
-                            <GemPill>
-                                {gemsValue} <GemImage src={gemImage} alt="" />
-                            </GemPill>
+                <BlackButton onClick={handleCopy}>
+                    <AnimatePresence>
+                        {copied && (
+                            <Copied initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                {t('share.copied')}
+                            </Copied>
+                        )}
+                    </AnimatePresence>
+                    <GemPill>
+                        {gemsValue} <GemImage src={gemImage} alt="" />
+                    </GemPill>
 
-                            {t('share.button-text')}
-                        </BlackButton>
+                    {t('share.button-text')}
+                </BlackButton>
 
-                        <RewardWrapper>
-                            <Label>{t('share.reward')}</Label>
-                            <Value>
-                                <Number>{earningsFormatted}</Number>
-                                <Trans>XTM</Trans>
-                            </Value>
-                        </RewardWrapper>
-                    </ContentWrapper>
-                </GreenModal>
-            )}
-        </AnimatePresence>
+                <RewardWrapper>
+                    <Label>{t('share.reward')}</Label>
+                    <Value>
+                        <Number>{earningsFormatted}</Number>
+                        <Trans>XTM</Trans>
+                    </Value>
+                </RewardWrapper>
+            </ContentWrapper>
+        </GreenModal>
     );
 });
 

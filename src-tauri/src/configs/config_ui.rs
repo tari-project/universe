@@ -25,17 +25,24 @@ use crate::{
     internal_wallet::TariAddressType,
 };
 
-use std::{sync::LazyLock, time::SystemTime};
-
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::{sync::LazyLock, time::SystemTime};
 use sys_locale::get_locale;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
+pub const UI_CONFIG_VERSION: u32 = 0;
 static INSTANCE: LazyLock<RwLock<ConfigUI>> = LazyLock::new(|| RwLock::new(ConfigUI::new()));
+
+#[derive(Serialize, Deserialize, Clone, Copy)]
+pub struct FeedbackPrompt {
+    feedback_sent: bool,
+    last_dismissed: Option<SystemTime>,
+}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum WalletUIMode {
@@ -70,7 +77,7 @@ impl DisplayMode {
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigUIContent {
-    was_config_migrated: bool,
+    version_counter: u32,
     created_at: SystemTime,
     display_mode: DisplayMode,
     has_system_language_been_proposed: bool,
@@ -81,12 +88,13 @@ pub struct ConfigUIContent {
     show_experimental_settings: bool,
     was_staged_security_modal_shown: bool, // TODO: Migrated to ConfigWallet, remove after some time
     wallet_ui_mode: WalletUIMode,
+    feedback: HashMap<String, FeedbackPrompt>,
 }
 
 impl Default for ConfigUIContent {
     fn default() -> Self {
         Self {
-            was_config_migrated: false,
+            version_counter: UI_CONFIG_VERSION,
             created_at: SystemTime::now(),
             display_mode: DisplayMode::System,
             has_system_language_been_proposed: false,
@@ -97,11 +105,26 @@ impl Default for ConfigUIContent {
             show_experimental_settings: false,
             was_staged_security_modal_shown: false,
             wallet_ui_mode: WalletUIMode::Standard,
+            feedback: HashMap::from([
+                (
+                    "early_close".to_string(),
+                    FeedbackPrompt {
+                        feedback_sent: false,
+                        last_dismissed: None,
+                    },
+                ),
+                (
+                    "long_time_miner".to_string(),
+                    FeedbackPrompt {
+                        feedback_sent: false,
+                        last_dismissed: None,
+                    },
+                ),
+            ]),
         }
     }
 }
 impl ConfigContentImpl for ConfigUIContent {}
-
 impl ConfigUIContent {
     pub fn propose_system_language(&mut self, fallback_language: String) -> &mut Self {
         if self.has_system_language_been_proposed() | !self.should_always_use_system_language() {
@@ -112,6 +135,19 @@ impl ConfigUIContent {
             self.has_system_language_been_proposed = true;
             self
         }
+    }
+    pub fn update_feedback_sent(&mut self, feedback_type: String) -> &mut Self {
+        if let Some(feedback_item) = self.feedback.get_mut(&feedback_type) {
+            feedback_item.feedback_sent = true;
+        }
+        self
+    }
+
+    pub fn update_feedback_dismissed(&mut self, feedback_type: String) -> &mut Self {
+        if let Some(feedback_item) = self.feedback.get_mut(&feedback_type) {
+            feedback_item.last_dismissed = Some(SystemTime::now());
+        }
+        self
     }
 }
 pub struct ConfigUI {

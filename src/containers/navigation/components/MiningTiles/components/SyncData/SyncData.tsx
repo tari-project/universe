@@ -9,6 +9,8 @@ export default function SyncData() {
     const [isComplete, setIsComplete] = useState(false);
     const [isStarted, setIsStarted] = useState(false);
     const { setupPhaseTitle } = useCurrentPhaseDetails();
+
+    const titleKey = setupPhaseTitle === 'setup-cpu-mining' ? 'setup-mining' : setupPhaseTitle;
     return (
         <Wrapper>
             <TextWrapper>
@@ -20,7 +22,7 @@ export default function SyncData() {
                     />
                     {isStarted && !isComplete && t('wallet:sync-message.line2')}
                 </CountdownText>
-                {setupPhaseTitle && <Label>{t(`phase-title.${setupPhaseTitle}`, { context: 'compact' })}</Label>}
+                {titleKey && <Label>{t(`phase-title.${titleKey}`, { context: 'compact' })}</Label>}
             </TextWrapper>
         </Wrapper>
     );

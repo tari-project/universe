@@ -101,3 +101,30 @@ export interface ProgressTrackerUpdatePayload {
     setup_phase: SetupPhase;
     is_completed: boolean;
 }
+
+export enum GpuMinerType {
+    Glytex = 'Glytex',
+    Graxil = 'Graxil',
+    LolMiner = 'LolMiner',
+}
+
+export enum GpuMinerFeature {
+    SoloMining = 'SoloMining',
+    PoolMining = 'PoolMining',
+    DeviceExclusion = 'DeviceExclusion',
+    MiningIntensity = 'MiningIntensity',
+    EngineSelection = 'EngineSelection',
+}
+
+export enum GpuMiningAlgorithm {
+    SHA3X = 'SHA3X',
+    C29 = 'C29',
+}
+
+export interface GpuMiner {
+    miner_type: GpuMinerType;
+    features: GpuMinerFeature[];
+    supported_algorithms: GpuMiningAlgorithm[];
+    is_healthy: boolean;
+    last_error?: string;
+}

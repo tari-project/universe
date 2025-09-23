@@ -1,7 +1,7 @@
 {
   "actions": {
-    "earn-gems": "Gagner des gemmes",
-    "earn-gems-copy": "Connectez votre compte social pour gagner des gemmes en invitant des amis",
+    "earn-gems": "Gagner des XTM bonus",
+    "earn-gems-copy": "Connectez votre compte social pour gagner des XTM bonus en invitant des amis",
     "earn-gems-cta": "Connecter le compte X",
     "mode": "Personnaliser le mode",
     "mode-copy": "Saviez-vous que vous pouvez personnaliser l\"intensité de minage de votre machine ?"
@@ -22,7 +22,6 @@
     "checking-latest-version-gpuminer": "Vérification de la dernière version de xtrgpuminer",
     "checking-latest-version-mmproxy": "Vérification de la dernière version de mmproxy",
     "checking-latest-version-node": "Vérification de la dernière version de node",
-    "checking-latest-version-sha-p2pool": "Vérification de la dernière version de sha-p2pool",
     "checking-latest-version-tor": "Vérification de la dernière version de Tor",
     "checking-latest-version-wallet": "Vérification de la dernière version de wallet",
     "checking-latest-version-xmrig": "Vérification de la dernière version de xmrig",
@@ -31,7 +30,6 @@
     "minotari-node-restarting": "Les données du nœud Minotari étaient corrompues, nettoyage des anciennes données",
     "preparing-for-initial-sync": "Connexion aux pairs du réseau {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Démarrage du proxy de minage combiné",
-    "starting-p2pool": "Démarrage de P2Pool",
     "starting-up": "En cours de démarrage",
     "waiting-for-block-sync": "En attente de synchronisation des blocs. Blocs {{local_height}}/{{tip_height}} synchronisés",
     "waiting-for-header-sync": "En attente de synchronisation des en-têtes. En-têtes {{local_height}}/{{tip_height}} synchronisés",
@@ -40,6 +38,7 @@
     "waiting-for-wallet": "En attente du porte-monnaie",
     "wallet-started": "Portefeuille démarré"
   },
+  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
   "would-you-like-to-install": "Souhaitez-vous installer Tari Universe {{version}} maintenant ?",
   "yes": "Oui"
 }

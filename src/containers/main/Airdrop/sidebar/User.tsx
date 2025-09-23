@@ -4,7 +4,7 @@ import { TooltipAction } from './items.style';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Trans, useTranslation } from 'react-i18next';
 import { handleAirdropLogout } from '@app/store';
-import Avatar from './components/Avatar/Avatar';
+import Avatar from '@app/components/elements/Avatar/Avatar';
 
 export default function User() {
     const { t } = useTranslation('airdrop');
@@ -32,7 +32,7 @@ export default function User() {
     );
     return (
         <SidebarItem tooltipContent={tooltipContent}>
-            <Avatar image={profileimageurl} username={name} />
+            <Avatar image={profileimageurl} username={name} size={38} />
         </SidebarItem>
     );
 }

@@ -10,11 +10,6 @@ export enum WebsocketEventNames {
     CREW_NUDGE = 'crew_nudge',
 }
 
-export interface SignData {
-    signature: string;
-    pubKey: string;
-}
-
 interface QuestCompletedEvent {
     name: WebsocketEventNames.COMPLETED_QUEST;
     data: {

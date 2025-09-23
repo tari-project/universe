@@ -1,7 +1,7 @@
 {
   "actions": {
-    "earn-gems": "보석 획득",
-    "earn-gems-copy": "친구를 초대하여 보석을 얻으려면 소셜 계정을 연결하세요",
+    "earn-gems": "보너스 XTM 획득",
+    "earn-gems-copy": "친구를 초대하여 보너스 XTM을 얻으려면 소셜 계정을 연결하세요",
     "earn-gems-cta": "X 계정 연결",
     "mode": "모드 사용자 정의",
     "mode-copy": "기계의 채굴 강도를 사용자 정의할 수 있다는 것을 알고 계셨나요?"
@@ -22,7 +22,6 @@
     "checking-latest-version-gpuminer": "xtrgpuminer의 최신 버전 확인 중",
     "checking-latest-version-mmproxy": "mmproxy의 최신 버전 확인 중",
     "checking-latest-version-node": "노드의 최신 버전 확인 중",
-    "checking-latest-version-sha-p2pool": "sha-p2pool의 최신 버전 확인 중",
     "checking-latest-version-tor": "최신 Tor 버전 확인 중",
     "checking-latest-version-wallet": "지갑의 최신 버전 확인 중",
     "checking-latest-version-xmrig": "xmrig의 최신 버전 확인 중",
@@ -31,7 +30,6 @@
     "minotari-node-restarting": "Minotari 노드 데이터가 손상되었습니다. 오래된 데이터를 정리 중입니다",
     "preparing-for-initial-sync": "네트워크 피어에 연결 중 {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "병합 채굴 프록시 시작 중",
-    "starting-p2pool": "P2Pool 시작 중",
     "starting-up": "시작 중",
     "waiting-for-block-sync": "블록 동기화 대기 중. {{local_height}}/{{tip_height}} 블록 동기화됨",
     "waiting-for-header-sync": "헤더 동기화 대기 중. {{local_height}}/{{tip_height}} 헤더 동기화됨",
@@ -40,6 +38,7 @@
     "waiting-for-wallet": "지갑 대기 중",
     "wallet-started": "지갑 시작됨"
   },
+  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
   "would-you-like-to-install": "지금 Tari Universe {{version}}을(를) 설치하시겠습니까?",
   "yes": "예"
 }

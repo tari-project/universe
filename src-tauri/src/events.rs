@@ -27,8 +27,8 @@ use std::{
 };
 
 use crate::{
-    gpu_devices::GpuDeviceInformation,
     internal_wallet::TariAddressType,
+    mining::gpu::miners::GpuCommonInformation,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
     setup::{listeners::AppModule, setup_manager::SetupPhase},
     wallet::wallet_types::{TransactionInfo, WalletBalance},
@@ -39,8 +39,8 @@ pub enum EventType {
     WalletBalanceUpdate,
     BaseNodeUpdate,
     GpuDevicesUpdate,
-    CpuPoolStatsUpdate,
-    GpuPoolStatsUpdate,
+    CpuPoolsStatsUpdate,
+    GpuPoolsStatsUpdate,
     CpuMiningUpdate,
     GpuMiningUpdate,
     NewBlockHeight,
@@ -69,6 +69,7 @@ pub enum EventType {
     ShouldShowExchangeMinerModal,
     SelectedTariAddressChanged,
     WalletUIModeChanged,
+    #[cfg(target_os = "macos")]
     ShowKeyringDialog,
     CreatePin,
     EnterPin,
@@ -78,6 +79,9 @@ pub enum EventType {
     SetupProgressUpdate,
     UpdateTorEntryGuards,
     UpdateAppModuleStatus,
+    UpdateSelectedMiner,
+    AvailableMiners,
+    WalletStatusUpdate,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -123,7 +127,7 @@ pub struct DetectedAvailableGpuEnginesPayload {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct DetectedDevicesPayload {
-    pub devices: Vec<GpuDeviceInformation>,
+    pub devices: Vec<GpuCommonInformation>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -187,4 +191,10 @@ pub struct TariAddressUpdatePayload {
     pub tari_address_base58: String,
     pub tari_address_emoji: String,
     pub tari_address_type: TariAddressType,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct WalletStatusUpdatePayload {
+    pub loading: bool,
+    pub unhealthy: Option<bool>,
 }

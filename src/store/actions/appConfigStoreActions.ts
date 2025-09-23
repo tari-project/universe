@@ -24,7 +24,9 @@ import {
     ConfigPools,
     ConfigUI,
     ConfigWallet,
+    FeedbackPrompts,
     GpuDeviceSettings,
+    PromptType,
 } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
@@ -32,6 +34,7 @@ import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fet
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 import { ConfigPoolsPayload, WalletUIMode } from '@app/types/events-payloads.ts';
 import { getSelectedCpuPool, getSelectedGpuPool } from '../selectors/appConfigStoreSelectors.ts';
+import { setFeedbackConfigItems } from '@app/store/stores/userFeedbackStore.ts';
 
 export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     useConfigCoreStore.setState((c) => ({ ...c, ...coreConfig }));
@@ -53,6 +56,7 @@ export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {
     }));
 };
 export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
+    setFeedbackConfigItems(uiConfig.feedback);
     const configTheme = uiConfig.display_mode?.toLowerCase();
     useConfigUIStore.setState((c) => ({ ...c, ...uiConfig, display_mode: configTheme }));
     if (configTheme) {
@@ -176,14 +180,6 @@ export const setCpuMiningEnabled = async (enabled: boolean) => {
             await stopCpuMining();
         }
     }
-};
-export const setCustomStatsServerPort = async (port?: number) => {
-    useConfigCoreStore.setState((c) => ({ ...c, p2pool_stats_server_port: port }));
-    invoke('set_p2pool_stats_server_port', { port }).catch((e) => {
-        console.error('Could not set p2pool stats server port', e);
-        setError('Could not change p2pool stats server port');
-        useConfigCoreStore.setState((c) => ({ ...c, p2pool_stats_server_port: port }));
-    });
 };
 export const setGpuMiningEnabled = async (enabled: boolean) => {
     useConfigMiningStore.setState((c) => ({ ...c, gpu_mining_enabled: enabled }));
@@ -709,4 +705,21 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
         console.error('Could not set excluded gpu device: ', e);
         setError(e as string);
     }
+};
+
+export const handleFeedbackFields = (feedbackType: PromptType, feedback_sent: boolean) => {
+    const current = useConfigUIStore.getState().feedback;
+    const now = Date.now();
+    const updated: FeedbackPrompts = {
+        [feedbackType]: {
+            ...current?.[feedbackType],
+            feedback_sent,
+            last_dismissed: {
+                secs_since_epoch: now / 1000,
+            },
+        },
+    };
+    const feedback = { ...current, ...updated };
+    setFeedbackConfigItems(feedback);
+    useConfigUIStore.setState({ feedback });
 };

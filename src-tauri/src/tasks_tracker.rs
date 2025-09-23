@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.use crate::UniverseAppState;
 
 use log::info;
-use std::sync::LazyLock;
+use std::sync::{Arc, LazyLock};
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::sync::RwLock;
 use tokio_util::task::TaskTracker;
@@ -66,23 +66,23 @@ impl TaskTrackerUtil {
 }
 
 pub struct TasksTrackers {
-    pub wallet_phase: TaskTrackerUtil,
-    pub node_phase: TaskTrackerUtil,
-    pub cpu_mining_phase: TaskTrackerUtil,
-    pub gpu_mining_phase: TaskTrackerUtil,
-    pub core_phase: TaskTrackerUtil,
-    pub common: TaskTrackerUtil,
+    pub wallet_phase: Arc<TaskTrackerUtil>,
+    pub node_phase: Arc<TaskTrackerUtil>,
+    pub cpu_mining_phase: Arc<TaskTrackerUtil>,
+    pub gpu_mining_phase: Arc<TaskTrackerUtil>,
+    pub core_phase: Arc<TaskTrackerUtil>,
+    pub common: Arc<TaskTrackerUtil>,
 }
 
 impl TasksTrackers {
     fn new() -> Self {
         Self {
-            wallet_phase: TaskTrackerUtil::new("Wallet phase"),
-            node_phase: TaskTrackerUtil::new("Node phase"),
-            cpu_mining_phase: TaskTrackerUtil::new("CPU Mining phase"),
-            gpu_mining_phase: TaskTrackerUtil::new("GPU Mining phase"),
-            core_phase: TaskTrackerUtil::new("Core phase"),
-            common: TaskTrackerUtil::new("Common"),
+            wallet_phase: Arc::new(TaskTrackerUtil::new("Wallet phase")),
+            node_phase: Arc::new(TaskTrackerUtil::new("Node phase")),
+            cpu_mining_phase: Arc::new(TaskTrackerUtil::new("CPU Mining phase")),
+            gpu_mining_phase: Arc::new(TaskTrackerUtil::new("GPU Mining phase")),
+            core_phase: Arc::new(TaskTrackerUtil::new("Core phase")),
+            common: Arc::new(TaskTrackerUtil::new("Common")),
         }
     }
 

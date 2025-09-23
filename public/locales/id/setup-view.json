@@ -1,7 +1,7 @@
 {
   "actions": {
-    "earn-gems": "Dapatkan permata",
-    "earn-gems-copy": "Hubungkan akun sosial Anda untuk mendapatkan permata dengan mengundang teman",
+    "earn-gems": "Dapatkan bonus XTM",
+    "earn-gems-copy": "Hubungkan akun sosial Anda untuk mendapatkan bonus XTM dengan mengundang teman",
     "earn-gems-cta": "Hubungkan Akun X",
     "mode": "Sesuaikan Mode",
     "mode-copy": "Tahukah Anda bahwa Anda dapat menyesuaikan seberapa keras Anda ingin mesin Anda menambang?"
@@ -22,7 +22,6 @@
     "checking-latest-version-gpuminer": "Memeriksa versi terbaru dari xtrgpuminer",
     "checking-latest-version-mmproxy": "Memeriksa versi terbaru dari mmproxy",
     "checking-latest-version-node": "Memeriksa versi terbaru dari node",
-    "checking-latest-version-sha-p2pool": "Memeriksa versi terbaru dari sha-p2pool",
     "checking-latest-version-tor": "Memeriksa versi terbaru tor",
     "checking-latest-version-wallet": "Memeriksa versi terbaru dari dompet",
     "checking-latest-version-xmrig": "Memeriksa versi terbaru dari xmrig",
@@ -31,7 +30,6 @@
     "minotari-node-restarting": "Data node Minotari rusak, membersihkan data lama",
     "preparing-for-initial-sync": "Menghubungkan ke rekan jaringan {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Memulai proxy penambangan gabungan",
-    "starting-p2pool": "Memulai P2Pool",
     "starting-up": "Memulai",
     "waiting-for-block-sync": "Menunggu sinkronisasi blok. {{local_height}}/{{tip_height}} blok tersinkronisasi",
     "waiting-for-header-sync": "Menunggu sinkronisasi header. {{local_height}}/{{tip_height}} header tersinkronisasi",
@@ -40,6 +38,7 @@
     "waiting-for-wallet": "Menunggu dompet",
     "wallet-started": "Dompet dimulai"
   },
+  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
   "would-you-like-to-install": "Apakah Anda ingin menginstal Tari Universe {{version}} sekarang?",
   "yes": "Ya"
 }

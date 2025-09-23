@@ -1,7 +1,7 @@
 {
   "actions": {
-    "earn-gems": "रत्न कमाएं",
-    "earn-gems-copy": "दोस्तों को आमंत्रित करने के लिए रत्न कमाने के लिए अपने सामाजिक खाते को कनेक्ट करें",
+    "earn-gems": "बोनस XTM कमाएं",
+    "earn-gems-copy": "दोस्तों को आमंत्रित करने के लिए बोनस XTM कमाने के लिए अपने सामाजिक खाते को कनेक्ट करें",
     "earn-gems-cta": "X खाता कनेक्ट करें",
     "mode": "मोड कस्टमाइज़ करें",
     "mode-copy": "क्या आप जानते हैं कि आप यह कस्टमाइज़ कर सकते हैं कि आप अपनी मशीन को कितना कठिन खनन करना चाहते हैं?"
@@ -22,7 +22,6 @@
     "checking-latest-version-gpuminer": "xtrgpuminer के नवीनतम संस्करण की जाँच कर रहा है",
     "checking-latest-version-mmproxy": "mmproxy के नवीनतम संस्करण की जाँच कर रहा है",
     "checking-latest-version-node": "नोड के नवीनतम संस्करण की जाँच कर रहा है",
-    "checking-latest-version-sha-p2pool": "sha-p2pool के नवीनतम संस्करण की जाँच कर रहा है",
     "checking-latest-version-tor": "टोर के नवीनतम संस्करण की जाँच कर रहे हैं",
     "checking-latest-version-wallet": "वॉलेट के नवीनतम संस्करण की जाँच कर रहा है",
     "checking-latest-version-xmrig": "xmrig के नवीनतम संस्करण की जाँच कर रहा है",
@@ -31,7 +30,6 @@
     "minotari-node-restarting": "मिनोटारी नोड डेटा भ्रष्ट था, पुराने डेटा को साफ कर रहा है",
     "preparing-for-initial-sync": "नेटवर्क साथियों से कनेक्ट हो रहा है {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "मर्ज माइनिंग प्रॉक्सी शुरू हो रहा है",
-    "starting-p2pool": "P2Pool शुरू हो रहा है",
     "starting-up": "शुरू हो रहा है",
     "waiting-for-block-sync": "ब्लॉक सिंक की प्रतीक्षा कर रहा है। {{local_height}}/{{tip_height}} ब्लॉक सिंक हो गए हैं",
     "waiting-for-header-sync": "हेडर सिंक की प्रतीक्षा कर रहा है। {{local_height}}/{{tip_height}} हेडर सिंक हो गए हैं",
@@ -40,6 +38,7 @@
     "waiting-for-wallet": "वॉलेट की प्रतीक्षा कर रहा है",
     "wallet-started": "वॉलेट शुरू हो गया"
   },
+  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
   "would-you-like-to-install": "क्या आप अब Tari Universe {{version}} स्थापित करना चाहेंगे?",
   "yes": "हाँ"
 }

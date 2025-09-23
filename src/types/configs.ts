@@ -3,7 +3,6 @@ import { WalletUIMode } from './events-payloads';
 
 export interface ConfigCore {
     created_at: string;
-    is_p2pool_enabled: boolean;
     use_tor: boolean;
     allow_telemetry: boolean;
     allow_notifications: boolean;
@@ -13,7 +12,6 @@ export interface ConfigCore {
     mmproxy_use_monero_failover: boolean;
     mmproxy_monero_nodes: string[];
     auto_update: boolean;
-    p2pool_stats_server_port?: number;
     pre_release: boolean;
     last_changelog_version: string;
     airdrop_tokens?: {
@@ -43,7 +41,19 @@ export interface ConfigUI {
     show_experimental_settings: boolean;
     wallet_ui_mode: WalletUIMode;
     was_staged_security_modal_shown: boolean;
+    feedback?: FeedbackPrompts;
 }
+
+export interface FeedbackPrompt {
+    feedback_sent: boolean;
+    last_dismissed: {
+        secs_since_epoch?: number;
+        nanos_since_epoch?: number;
+    } | null;
+}
+
+export type PromptType = 'long_time_miner' | 'early_close';
+export type FeedbackPrompts = Partial<Record<PromptType, FeedbackPrompt>>;
 
 export type MiningModes = Record<MiningModeType, MiningMode>;
 

@@ -1,7 +1,7 @@
 {
   "actions": {
-    "earn-gems": "Verdien edelstene",
-    "earn-gems-copy": "Koppel jou sosiale rekening om edelstene te verdien vir die uitnodiging van vriende",
+    "earn-gems": "Verdien bonus XTM",
+    "earn-gems-copy": "Koppel jou sosiale rekening om bonus XTM te verdien vir die uitnodiging van vriende",
     "earn-gems-cta": "Koppel X Rekening",
     "mode": "Pas Modus Aan",
     "mode-copy": "Het jy geweet jy kan aanpas hoe hard jy wil hê jou masjien moet myn?"
@@ -22,7 +22,6 @@
     "checking-latest-version-gpuminer": "Bepaal nuutste weergawe van xtrgpuminer",
     "checking-latest-version-mmproxy": "Bepaal nuutste weergawe van mmproxy",
     "checking-latest-version-node": "Bepaal nuutste weergawe van node",
-    "checking-latest-version-sha-p2pool": "Bepaal nuutste weergawe van sha-p2pool",
     "checking-latest-version-tor": "Kontroleer nuutste weergawe van tor",
     "checking-latest-version-wallet": "Bepaal nuutste weergawe van beursie",
     "checking-latest-version-xmrig": "Bepaal nuutste weergawe van xmrig",
@@ -31,7 +30,6 @@
     "minotari-node-restarting": "Minotari-knooppuntdata was korrup, ou data word skoongemaak",
     "preparing-for-initial-sync": "Gekoppel aan netwerk nodes {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Begin mmproxy",
-    "starting-p2pool": "Begin P2Pool",
     "starting-up": "Begin",
     "waiting-for-block-sync": "Wag vir bloksinchronisasie. {{local_height}}/{{tip_height}} gesinchroniseer",
     "waiting-for-header-sync": "Wag vir kopkopsinchronisasie. {{local_height}}/{{tip_height}} gesinchroniseer",
@@ -40,6 +38,7 @@
     "waiting-for-wallet": "Wag vir beursie",
     "wallet-started": "Beursie het begin"
   },
+  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
   "would-you-like-to-install": "Wil jy nou Tari Universe {{version}} installeer?",
   "yes": "Ja"
 }

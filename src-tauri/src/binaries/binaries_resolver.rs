@@ -153,6 +153,18 @@ impl BinaryResolver {
                 false,
             ),
         );
+        binary_manager.insert(
+            Binaries::LolMiner,
+            BinaryManager::new(
+                Binaries::LolMiner.name().to_string(),
+                None,
+                Box::new(GithubReleasesAdapter {
+                    repo: "lolMiner-releases".to_string(),
+                    owner: "Lolliedieb".to_string(),
+                }),
+                false,
+            ),
+        );
 
         binary_manager.insert(
             Binaries::MergeMiningProxy,
@@ -187,19 +199,6 @@ impl BinaryResolver {
                 None,
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
-                    owner: "tari-project".to_string(),
-                }),
-                true,
-            ),
-        );
-
-        binary_manager.insert(
-            Binaries::ShaP2pool,
-            BinaryManager::new(
-                Binaries::ShaP2pool.name().to_string(),
-                None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "sha-p2pool".to_string(),
                     owner: "tari-project".to_string(),
                 }),
                 true,

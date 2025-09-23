@@ -73,7 +73,7 @@ export default function SeedPhrase() {
                     </Header>
 
                     <Content>
-                        <StepChip>{`Step 1 of 2 `}</StepChip>
+                        <StepChip>{t('steps.chip', { step: 1, total: 2 })}</StepChip>
                         {content}
                     </Content>
                 </Wrapper>

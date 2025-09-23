@@ -56,7 +56,7 @@ pub struct MiningStatusMessage {
 pub struct MiningStatusManager {
     app: Option<AppHandle>,
     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
-    gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
+    pub(crate) gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
     node_latest_status: watch::Receiver<BaseNodeStatus>,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
     is_started: Arc<Mutex<bool>>,

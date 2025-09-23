@@ -9,13 +9,14 @@ interface Props {
 export default function DaysProgress({ current, total }: Props) {
     const { t } = useTranslation();
 
+    // Generate pills based on total days required
+    const pills = Array.from({ length: total }, (_, index) => (
+        <Pill key={index + 1} $isActive={current >= index + 1} />
+    ));
+
     return (
         <Wrapper>
-            <Pills>
-                <Pill $isActive={current >= 1} />
-                <Pill $isActive={current >= 2} />
-                <Pill $isActive={current >= 3} />
-            </Pills>
+            <Pills>{pills}</Pills>
             <Text>
                 {t('airdrop:crewRewards.streak.day')} {`${current}/${total}`}
             </Text>

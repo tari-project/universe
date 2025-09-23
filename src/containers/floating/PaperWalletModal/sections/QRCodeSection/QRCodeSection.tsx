@@ -10,6 +10,7 @@ import {
     QRCodeWrapper,
     QRContentWrapper,
     Text,
+    TextWrapper,
     Title,
     VisibleToggle,
     WarningText,
@@ -69,6 +70,7 @@ export default function QRCodeSection({ onDoneClick }: Props) {
         };
     }, [resetSelfClosingTimeout]);
 
+    const shrinkFont = identificationCode.length > 30;
     return (
         <Wrapper>
             <CodeWrapper>
@@ -77,37 +79,36 @@ export default function QRCodeSection({ onDoneClick }: Props) {
                         size={190}
                         style={{ borderRadius: 15 }}
                         value={qrCodeValue}
-                        quietZone={6}
+                        quietZone={12}
                         eyeRadius={4}
                         ecLevel="M"
                     />
                 </QRCodeWrapper>
 
                 <QRContentWrapper>
-                    <WarningText>❗ {t('qrcode.warning')}</WarningText>
-
-                    <Title>{t('qrcode.title')}</Title>
-
-                    <Text>{t('qrcode.text')}</Text>
-
+                    <TextWrapper>
+                        <WarningText>❗ {t('qrcode.warning')}</WarningText>
+                        <Title>{t('qrcode.title')}</Title>
+                        <Text>{t('qrcode.text')}</Text>
+                    </TextWrapper>
                     <InputWrapper>
+                        <VisibleToggle onClick={handleVisibleToggleClick}>
+                            {!showCode ? <ShowIcon /> : <HideIcon />}
+                        </VisibleToggle>
                         <InputLabel>{copied ? t('qrcode.copied') : t('qrcode.inputLabel')}</InputLabel>
                         <InputField
                             type={showCode ? 'text' : 'password'}
                             value={identificationCode}
+                            $shrinkFont={shrinkFont}
                             readOnly
                             onClick={handleCopyClick}
                         />
-                        <VisibleToggle onClick={handleVisibleToggleClick}>
-                            {!showCode ? <ShowIcon /> : <HideIcon />}
-                        </VisibleToggle>
                     </InputWrapper>
                 </QRContentWrapper>
             </CodeWrapper>
 
-            <Divider />
-
             <ButtonWrapper>
+                <Divider />
                 <BlackButton onClick={onDoneClick}>
                     <span>{t('qrcode.blackButton')}</span>
                 </BlackButton>

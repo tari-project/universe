@@ -4,16 +4,11 @@ import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import eslintPlugin from '@nabla/vite-plugin-eslint';
 
-const ReactCompilerConfig = {
-    sources: (filename) => {
-        return filename.indexOf('src/App') !== -1;
-    },
-};
-
 const plugins: UserConfig['plugins'] = [
     react({
         babel: {
             plugins: [
+                ['babel-plugin-react-compiler'],
                 [
                     'babel-plugin-styled-components',
                     {
@@ -21,7 +16,6 @@ const plugins: UserConfig['plugins'] = [
                         fileName: true,
                     },
                 ],
-                ['babel-plugin-react-compiler', ReactCompilerConfig],
             ],
         },
     }),

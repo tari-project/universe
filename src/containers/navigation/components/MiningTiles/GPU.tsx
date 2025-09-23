@@ -4,6 +4,7 @@ import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore';
 import { useEffect, useRef } from 'react';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors';
 import { useSetupStore } from '@app/store/useSetupStore';
+import { getSelectedMiner } from '@app/store/selectors/minningStoreSelectors';
 
 export default function GPUTile() {
     const gpuPoolStats = useMiningPoolsStore((s) => s.gpuPoolStats);
@@ -16,7 +17,7 @@ export default function GPUTile() {
     const miningInitiated = useMiningStore((s) => s.isGpuMiningInitiated);
     const gpu_mining_status = useMiningMetricsStore((s) => s.gpu_mining_status);
     const isGpuPoolEnabled = useConfigPoolsStore((s) => s.gpu_pool_enabled);
-
+    const selectedMiner = useMiningStore(getSelectedMiner);
     const { hash_rate, is_mining } = gpu_mining_status;
 
     useEffect(() => useMiningPoolsStore.subscribe((s) => (statsRef.current = s.gpuPoolStats)), []);
@@ -39,6 +40,7 @@ export default function GPUTile() {
             progressDiff={rewardsRef.current?.rewardValue}
             unpaidFMT={rewardsRef.current?.unpaidFMT || '-'}
             minerModuleState={gpuMiningModuleState}
+            algo={selectedMiner?.supported_algorithms?.[0]}
         />
     );
 }

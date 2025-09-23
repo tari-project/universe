@@ -1,7 +1,7 @@
 {
   "actions": {
-    "earn-gems": "Zarabiaj klejnoty",
-    "earn-gems-copy": "Połącz swoje konto społecznościowe, aby zdobywać klejnoty za zapraszanie znajomych",
+    "earn-gems": "Zarabiaj bonus XTM",
+    "earn-gems-copy": "Połącz swoje konto społecznościowe, aby zarabiać bonus XTM za zapraszanie znajomych",
     "earn-gems-cta": "Połącz konto X",
     "mode": "Dostosuj tryb",
     "mode-copy": "Czy wiesz, że możesz dostosować, jak intensywnie chcesz, aby Twoja maszyna kopała?"
@@ -22,7 +22,6 @@
     "checking-latest-version-gpuminer": "Sprawdzanie najnowszej wersji xtrgpuminer",
     "checking-latest-version-mmproxy": "Sprawdzanie najnowszej wersji mmproxy",
     "checking-latest-version-node": "Sprawdzanie najnowszej wersji węzła",
-    "checking-latest-version-sha-p2pool": "Sprawdzanie najnowszej wersji sha-p2pool",
     "checking-latest-version-tor": "Sprawdzanie najnowszej wersji Tor",
     "checking-latest-version-wallet": "Sprawdzanie najnowszej wersji portfela",
     "checking-latest-version-xmrig": "Sprawdzanie najnowszej wersji xmrig",
@@ -31,7 +30,6 @@
     "minotari-node-restarting": "Dane węzła Minotari były uszkodzone, czyszczenie starych danych",
     "preparing-for-initial-sync": "Łączenie się z urządzeniami równorzędnymi w sieci {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Uruchamianie mmproxy",
-    "starting-p2pool": "Uruchamianie P2Pool",
     "starting-up": "Uruchamianie",
     "waiting-for-block-sync": "Oczekiwanie na synchronizację bloków. {{local_height}}/{{tip_height}} zsynchronizowano",
     "waiting-for-header-sync": "Oczekiwanie na synchronizację nagłówków. {{local_height}}/{{tip_height}} zsynchronizowano",
@@ -40,6 +38,7 @@
     "waiting-for-wallet": "Oczekiwanie na portfel",
     "wallet-started": "Portfel uruchomiony"
   },
+  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
   "would-you-like-to-install": "Czy chciałbys zainstalować Tari Universe {{version}} teraz?",
   "yes": "Tak"
 }

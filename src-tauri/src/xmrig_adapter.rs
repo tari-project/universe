@@ -52,12 +52,6 @@ pub enum XmrigNodeConnection {
         port: u16,
         tari_address: String,
     },
-    MergeMinedPool {
-        host_name: String,
-        port: u16,
-        monero_address: String,
-        tari_address: String,
-    },
 }
 
 impl XmrigNodeConnection {
@@ -90,20 +84,6 @@ impl XmrigNodeConnection {
                     "--coin=monero".to_string(),
                     "--user".to_string(),
                     format!("{}", monero_address),
-                ]
-            }
-            XmrigNodeConnection::MergeMinedPool {
-                host_name,
-                port,
-                monero_address,
-                tari_address,
-            } => {
-                vec![
-                    "--url".to_string(),
-                    format!("{}:{}", host_name, port),
-                    "--coin=monero".to_string(),
-                    "--user".to_string(),
-                    format!("{}:{}", monero_address, tari_address),
                 ]
             }
         }

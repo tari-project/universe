@@ -7,6 +7,7 @@ import coinImage3 from './images/coin3.png';
 import coinImage4 from './images/coin4.png';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, Variants } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 const coins = [
     { img: coinImage1, delay: 0.3, $top: '-20px', $left: '40px', $width: '49px' },
@@ -61,6 +62,7 @@ interface Props {
 }
 
 export default function SuccessAnimation({ show, setShow, value, unit = 'XTM' }: Props) {
+    const { t } = useTranslation('sidebar');
     const [animatedValue, setAnimatedValue] = useState(0);
 
     useEffect(() => {
@@ -85,7 +87,7 @@ export default function SuccessAnimation({ show, setShow, value, unit = 'XTM' }:
             {show && (
                 <Wrapper {...wrapperMotion}>
                     <MiddleText>
-                        <Eyebrow {...eyebrowMotion}>{`You stacked`}</Eyebrow>
+                        <Eyebrow {...eyebrowMotion}>{t('reward.stacked')}</Eyebrow>
                         <NumberGroup {...numberGroupMotion}>
                             <Number>
                                 <NumberFlow

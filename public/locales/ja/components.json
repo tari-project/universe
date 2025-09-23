@@ -29,7 +29,6 @@
     "resuming-all-processes": "すべてのプロセスを再開しています...",
     "resuming-mm-proxy": "MMプロキシを再開しています...",
     "resuming-node": "ノードを再開しています...",
-    "resuming-p2pool": "P2Poolを再開しています...",
     "resuming-tor": "Torを再開しています...",
     "resuming-wallet": "ウォレットを再開しています...",
     "syncing-node": "ノードを同期しています...",

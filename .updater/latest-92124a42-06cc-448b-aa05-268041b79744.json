@@ -1,19 +1,19 @@
 {
-  "version": "1.5.12",
+  "version": "1.5.15",
   "notes": "Tari Universe - See the assets to download this version and install",
-  "pub_date": "2025-08-26T13:40:38Z",
+  "pub_date": "2025-09-04T15:51:02Z",
   "platforms": {
     "darwin-aarch64": {
-      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/92124a42-06cc-448b-aa05-268041b79744/1.5.12/Tari Universe-MEXC.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFc3OHVRb3BqWVNFYzhOaGhZRjQzUGlmSDVEcXVZTnlpR253MUJ6a1NSRzNyL2RIODdlcDFxV3JKTDBTeWsrYk9xVHJqeWg1R1dGTTVnYndZMVZIdUE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU2MjE1MDA2CWZpbGU6VGFyaSBVbml2ZXJzZS1NRVhDLmFwcC50YXIuZ3oKUnMzRGx2WHhzQkExMUd3V0FHYU1KcFgrRzBrTXpjcUMzRXJWWk9LTUczSldFelMrd3hZRTJiVGJFR0lBY0lVYmxOWWhNYkhDZUhmck05OUtOSVcyREE9PQo="
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/92124a42-06cc-448b-aa05-268041b79744/1.5.15/Tari Universe-MEXC.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGZHTDNTMVd4M1ZvVkwrY1ZHcm1Hb29kNDd3ZXNIeU05ZC93TGdtMUxpQVpyZ3YxdzQvZllSZWdLSDAvdjFldzVMNWgxb1VjcHRWK3VPUUVReHNTUWdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU2OTk5OTgzCWZpbGU6VGFyaSBVbml2ZXJzZS1NRVhDLmFwcC50YXIuZ3oKWGlsc3lsMWVNOFpiVTRLeDRlVy96cXE1ekdGMGpxN0FwY2NkaktJNmRQQ3BUYWhHR0hYTkhIWmNTUmpvbG9kbEJrMVpPclFuV21McHdPRUZkazNyQmc9PQo="
     },
     "darwin-x86_64": {
-      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/92124a42-06cc-448b-aa05-268041b79744/1.5.12/Tari Universe-MEXC.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFc3OHVRb3BqWVNFYzhOaGhZRjQzUGlmSDVEcXVZTnlpR253MUJ6a1NSRzNyL2RIODdlcDFxV3JKTDBTeWsrYk9xVHJqeWg1R1dGTTVnYndZMVZIdUE0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU2MjE1MDA2CWZpbGU6VGFyaSBVbml2ZXJzZS1NRVhDLmFwcC50YXIuZ3oKUnMzRGx2WHhzQkExMUd3V0FHYU1KcFgrRzBrTXpjcUMzRXJWWk9LTUczSldFelMrd3hZRTJiVGJFR0lBY0lVYmxOWWhNYkhDZUhmck05OUtOSVcyREE9PQo="
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/92124a42-06cc-448b-aa05-268041b79744/1.5.15/Tari Universe-MEXC.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGZHTDNTMVd4M1ZvVkwrY1ZHcm1Hb29kNDd3ZXNIeU05ZC93TGdtMUxpQVpyZ3YxdzQvZllSZWdLSDAvdjFldzVMNWgxb1VjcHRWK3VPUUVReHNTUWdRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU2OTk5OTgzCWZpbGU6VGFyaSBVbml2ZXJzZS1NRVhDLmFwcC50YXIuZ3oKWGlsc3lsMWVNOFpiVTRLeDRlVy96cXE1ekdGMGpxN0FwY2NkaktJNmRQQ3BUYWhHR0hYTkhIWmNTUmpvbG9kbEJrMVpPclFuV21McHdPRUZkazNyQmc9PQo="
     },
     "windows-x86_64": {
-      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/92124a42-06cc-448b-aa05-268041b79744/1.5.12/Tari Universe-MEXC_1.5.12_x64_en-US.msi",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFgzNzhqMlcvTkUyd0daK2tSY2o5RSsxeTV4Y2hyN3ovYk12T2tmQksrdU0ya3FZMWRITS94ZWZOdG5GQWFHeVRjSmVxSkg1Zmt1SnY4djRrRjQ2RHdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU2MjE1MzYwCWZpbGU6VGFyaSBVbml2ZXJzZS1NRVhDXzEuNS4xMl94NjRfZW4tVVMubXNpCnBlRDYyek9nR05lV08rNDg1Z1kzbmZPR2dKT1o1L04xYWl0TDRjcllWeXpldi9zSS9FajVmVkQvU1ZWYXgwdlhUdEEzMDFlTmpEUi83bi96akFFaUJRPT0K"
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/92124a42-06cc-448b-aa05-268041b79744/1.5.15/Tari Universe-MEXC_1.5.15_x64_en-US.msi",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFpMU2NySnk0RGlGYXpIVkVQemJ2ZHMrb0hqeXExbEJ6K0pucUYwUmNINFVsVHExaVNmTFVQSHNOWFZ3dFE2OFMrUzQ2dmJ0ZjV6UVVjRk5WSlV1TVFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU3MDAwMTE3CWZpbGU6VGFyaSBVbml2ZXJzZS1NRVhDXzEuNS4xNV94NjRfZW4tVVMubXNpCnkwRUxnYU5GdCsxaldJenRXUFNtOU0vZ243VFRaSGhTVHZHNzJCZi9RS29majlHVGRmNlpVNmdIMFlZcG5kU2YxY1JRYUtoTkxOQ01JNFB5TUJwUkN3PT0K"
     }
   }
 }

@@ -1,6 +1,12 @@
 {
   "common": {
+    "all-done": "You’re all done!",
     "got-it": "समझ गया"
+  },
+  "complete": {
+    "continue": "Continue to Tari Universe",
+    "happy-mining": "Happy mining!",
+    "secured": "Your wallet is now securely backed up—great job!\\nYour Tari tokens are safe and ready whenever you need them, even if you switch or lose your device."
   },
   "completedTip": {
     "text": "आपका सीड वाक्यांश आपके सेटिंग्स में फिर से पाया जा सकता है",
@@ -28,6 +34,7 @@
   },
   "skip": "Skip for now",
   "steps": {
+    "chip": "Step {{step}} of {{total}}",
     "complete-false": "Incomplete",
     "complete-true": "Complete",
     "step": "Step {{stepNumber}}",
@@ -43,7 +50,7 @@
     "title": "अपने सीड वाक्यांश को सत्यापित करें"
   },
   "warning": {
-    "title": "Secure your wallet",
-    "steps": "Steps"
+    "steps": "Steps",
+    "title": "Secure your wallet"
   }
 }

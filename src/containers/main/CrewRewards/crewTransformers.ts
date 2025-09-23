@@ -74,12 +74,9 @@ export const calculateTimeRemaining = (member: CrewMember, minRequirements: MinR
     if (!latestReward || latestReward.progressTowardsReward.isComplete) return undefined;
 
     const progress = latestReward.progressTowardsReward;
-    const daysRemaining = minRequirements.totalDaysRequired - progress.miningDaysProgress;
-
-    if (daysRemaining <= 0) return undefined;
 
     return {
-        current: daysRemaining,
+        current: progress.miningDaysProgress,
         total: minRequirements.totalDaysRequired,
         unit: 'Days',
     };

@@ -1,3 +1,71 @@
+🚀 TARI UNIVERSE v1.6.1: Hotfix — The Kingdom of All Waters Part 2
+
+_September 18, 2025_
+
+Hey Tari fam,
+
+🐓 Following up on the workaround we shared before the hard fork at block 95,000: this hotfix resolves the C29 pool address bug. If you didn't manage to apply the workaround in time, no worries—LuckyPool temporarily redirected the SHA-3 pool to C29 so you didn't miss out. With this update, Tari Universe now automatically defaults to the correct C29 pool address.
+
+✨ WHAT'S FIXED
+
+- 🎯 **Correct C29 Pool Connection** – Tari Universe now automatically connects to the right Cuckaroo29 pool address without any manual setup needed.
+- ⚡ **Faster GPU Switching** – When your GPU needs to switch miners, it now happens in 3 minutes instead of 30.
+- 🔧 **Smarter GPU Management** – Better fallback logic means if one GPU miner isn't working, the app intelligently switches to the best alternative for your hardware.
+- 🌐 **Pool Stats Fix** – Fixed the SHA-3x pool stats display so you can track your mining progress accurately.
+
+---
+
+🚀 TARI UNIVERSE v1.6.0: The Kingdom of All Waters
+
+_September 15, 2025_
+
+Hey Tari fam,
+
+Introducing Tari Universe v1.6.0 "The Kingdom of All Waters." This release is a huge step forward for the Tari community: the Cuckaroo29 hard fork is nearly upon us! At block 95,000, Tari becomes the first blockchain with dedicated mining lanes for every type of mining hardware. No matter what you're running, there's a lane built for you.
+
+This four-lane approach doesn't only make mining fairer, it makes the network incredibly secure by requiring attackers to control multiple mining hardware ecosystems simultaneously to successfully 51% attack the network.
+
+🛣️ **Four Mining Lanes** – Every miner gets their own dedicated space:
+
+- 🤝 **25% Tari RandomX merge-mining with Monero**
+- ⚡ **25% Tari RandomX mining** for nearly any desktop or laptop hardware
+- 🔧 **25% SHA-3x algorithm** for FPGA/ASIC miners (the "big" miners)
+- 🎮 **NEW - 25% Cuckaroo29 (C29) algorithm** for ASIC-resistant GPU mining (for desktop GPU miners)
+
+✨ WHAT'S NEW
+
+- **C29 Support**: GPU mining defaults to C29 pool mining (LuckyPool) if your system can support it.
+
+**Things to know:**
+- C29 requires 7+ GB VRAM and measures performance in Graphs per second (G/s) rather than Hashes per second (H/s).
+- It's memory-bound, so Tari Universe power levels won't have any effect (it's either on or off).
+- Tari Universe automatically switches to SHA-3x pool mining for GPUs with less VRAM.
+- Mac support for Cuckaroo29 mining coming in a future update
+
+---
+
+🚀 TARI UNIVERSE v1.5.17: Soon's Question
+
+_September 9, 2025_
+
+✨ WHAT'S NEW
+
+- 📝 **Quick Exit Survey** – If you close the app, we'll ask a couple of quick questions to help us prioritize what to fix next.
+
+---
+
+🚀 TARI UNIVERSE v1.5.15: Hotfix — Tor Process Fix
+
+_September 4, 2025_
+
+🔄 Rolling out via auto-update
+
+✨ WHAT'S FIXED
+
+- 🔧 **Tor Process Cleanup** – Enhanced our cleanup routines to properly terminate Tor processes that were preventing local node updates and causing lingering version incompatibilities.
+
+---
+
 🚀 TARI UNIVERSE v1.5.14: The Season of Light — Part 8
 
 _September 2, 2025_

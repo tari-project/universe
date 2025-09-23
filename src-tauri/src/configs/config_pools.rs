@@ -26,13 +26,18 @@ use std::{sync::LazyLock, time::SystemTime};
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::configs::pools::{
-    cpu_pools::{CpuPool, LuckyPoolCpuConfig, SupportXTMCpuPoolConfig},
-    gpu_pools::{GpuPool, LuckyPoolGpuConfig, SupportXTMGpuPoolConfig},
+use crate::{
+    configs::pools::{
+        cpu_pools::{CpuPool, LuckyPoolCpuConfig, SupportXTMCpuPoolConfig},
+        gpu_pools::{GpuPool, LuckyPoolGpuConfig, SupportXTMGpuPoolConfig},
+        PoolConfig,
+    },
+    mining::pools::{cpu_pool_manager::CpuPoolManager, gpu_pool_manager::GpuPoolManager},
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
+pub const POOLS_CONFIG_VERSION: u32 = 0;
 static INSTANCE: LazyLock<RwLock<ConfigPools>> = LazyLock::new(|| RwLock::new(ConfigPools::new()));
 
 #[allow(clippy::struct_excessive_bools)]
@@ -43,7 +48,7 @@ static INSTANCE: LazyLock<RwLock<ConfigPools>> = LazyLock::new(|| RwLock::new(Co
 pub struct ConfigPoolsContent {
     // ======= Config internals =======
     #[getset(get = "pub", set = "pub")]
-    was_config_migrated: bool,
+    version_counter: u32,
     #[getset(get = "pub", set = "pub")]
     created_at: SystemTime,
     // ======= Gpu Pool =======
@@ -66,7 +71,7 @@ impl Default for ConfigPoolsContent {
     fn default() -> Self {
         Self {
             // ======= Config internals =======
-            was_config_migrated: false,
+            version_counter: POOLS_CONFIG_VERSION,
             created_at: SystemTime::now(),
             // ======= Gpu Pool =======
             gpu_pool_enabled: true,
@@ -136,6 +141,10 @@ impl ConfigPools {
     pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
+
+        // We want to initialize and fetch initial pool status only if pool mining is enabled_enabled() {
+        CpuPoolManager::initialize_from_pool_config(&config.content).await;
+        GpuPoolManager::initialize_from_pool_config(&config.content).await;
     }
 }
 

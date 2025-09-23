@@ -1,0 +1,8 @@
+{
+  "feedback": {
+    "chip_text": "Feedback",
+    "optional_label": "(optional)",
+    "submit_cta": "Send Feedback",
+    "text_placeholder": "Add any other details here"
+  }
+}

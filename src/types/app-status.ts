@@ -49,97 +49,9 @@ export interface TransactionInfo {
     payment_reference?: string;
 }
 
-export interface P2poolStatsResult {
-    connection_info: P2poolConnectionInfo;
-    connected_since?: number;
-    randomx_stats: P2poolStats;
-    sha3x_stats: P2poolStats;
-}
-
-interface P2poolConnectionInfo {
-    listener_addresses: string[];
-    connected_peers: number;
-    network_info: P2poolNetworkInfo;
-}
-
-interface P2poolNetworkInfo {
-    num_peers: number;
-    connection_counters: P2poolConnectionCounters;
-}
-
-interface P2poolConnectionCounters {
-    pending_incoming: number;
-    pending_outgoing: number;
-    established_incoming: number;
-    established_outgoing: number;
-}
-
-export interface P2poolStats {
-    squad: P2poolSquadDetails;
-    num_of_miners: number;
-    share_chain_height: number;
-    height?: number;
-    p2pool_block_stats: P2poolBlockStats;
-}
-
-interface PeerInfo {
-    version: number;
-    peer_id?: string;
-    current_sha3x_height: number;
-    current_random_x_height: number;
-    current_sha3x_pow: number;
-    current_random_x_pow: number;
-    squad: string;
-    timestamp: number;
-    user_agent?: string;
-    user_agent_version?: string;
-    public_addresses: string[];
-}
-
-export interface ConnectedPeerInfo {
-    peer_id: string;
-    peer_info: PeerInfo;
-    last_grey_list_reason?: string;
-    last_ping?: string;
-}
-
-export interface P2poolConnections {
-    peers: ConnectedPeerInfo[];
-}
-
-interface P2poolSquadDetails {
-    id: string;
-    name: string;
-}
-
-interface P2poolBlockStats {
-    accepted: number;
-    rejected: number;
-    submitted: number;
-}
-
-export enum GpuVendor {
-    NVIDIA,
-    AMD,
-    Intel,
-    Unknown,
-}
-
-export enum GpuDeviceType {
-    Integrated,
-    Dedicated,
-    Unknown,
-}
-
 export interface GpuDevice {
     name: string;
     device_id: number;
-    platform_name: string;
-    vendor: GpuVendor;
-    max_work_group_size: number;
-    max_compute_units: number;
-    global_mem_size: number;
-    device_type: GpuDeviceType;
 }
 
 export interface CpuMinerStatus {
@@ -197,7 +109,6 @@ export interface ApplicationsVersions {
     minotari_node: ApplicationsInformation;
     mm_proxy: ApplicationsInformation;
     wallet: ApplicationsInformation;
-    sha_p2pool: ApplicationsInformation;
     bridge: ApplicationsInformation;
 }
 

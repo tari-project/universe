@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const Wrapper = styled('div')`
     display: flex;
@@ -16,7 +16,7 @@ export const Divider = styled('div')`
 export const CodeWrapper = styled('div')`
     display: flex;
     align-items: center;
-    gap: 30px;
+    gap: 20px;
 `;
 
 export const ButtonWrapper = styled('div')`
@@ -26,15 +26,16 @@ export const ButtonWrapper = styled('div')`
 `;
 
 export const QRCodeWrapper = styled('div')`
-    background: white;
-    width: 200px;
-    height: 200px;
     border-radius: 15px;
+    display: flex;
 `;
 
 export const QRContentWrapper = styled('div')`
     display: flex;
     flex-direction: column;
+    gap: 20px;
+    align-items: stretch;
+    justify-content: space-between;
 `;
 
 export const WarningText = styled('div')`
@@ -57,6 +58,11 @@ export const WarningText = styled('div')`
     margin-bottom: 5px;
 `;
 
+export const TextWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+`;
 export const Title = styled('div')`
     color: #000;
     font-size: 18px;
@@ -70,8 +76,7 @@ export const Text = styled('div')`
     color: rgba(0, 0, 0, 0.75);
     font-size: 12px;
     font-weight: 500;
-    line-height: 110%;
-    margin-bottom: 20px;
+    line-height: 1.2;
 `;
 
 export const InputWrapper = styled('div')`
@@ -81,10 +86,10 @@ export const InputWrapper = styled('div')`
     background: rgba(0, 0, 0, 0.1);
 `;
 
-export const InputField = styled('input')`
+export const InputField = styled('input')<{ $shrinkFont?: boolean }>`
     height: 69px;
     width: 100%;
-    padding: 18px 18px 0 18px;
+    padding: 18px 8px 0;
 
     color: #000;
     font-size: 18px;
@@ -92,10 +97,15 @@ export const InputField = styled('input')`
     text-align: center;
 
     cursor: pointer;
-
     &::placeholder {
         color: rgba(0, 0, 0, 0.75);
     }
+
+    ${({ $shrinkFont }) =>
+        $shrinkFont &&
+        css`
+            font-size: 16px;
+        `}
 `;
 
 export const InputLabel = styled('div')`
@@ -111,16 +121,21 @@ export const InputLabel = styled('div')`
 
 export const VisibleToggle = styled('button')`
     position: absolute;
-    top: 50%;
-    right: 18px;
-    width: 29px;
-    height: 29px;
-
-    transform: translateY(-50%);
+    top: 6px;
+    right: 6px;
+    width: 23px;
+    height: 23px;
+    display: flex;
+    align-items: center;
+    opacity: 0.9;
     transition: transform 0.2s ease-in-out;
+
+    svg {
+        max-width: 100%;
+    }
 
     &:hover {
         cursor: pointer;
-        transform: translateY(-50%) scale(1.2);
+        transform: scale(1.1);
     }
 `;

@@ -27,15 +27,11 @@ use app_in_memory_config::AppInMemoryConfig;
 use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
 use events_emitter::EventsEmitter;
-use gpu_miner_adapter::GpuMinerStatus;
-use gpu_miner_sha::GpuMinerSha;
 use log::{error, info, warn};
 use mining_status_manager::MiningStatusManager;
 use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
 use node::node_manager::NodeType;
-use p2pool::models::Connections;
-use pool_status_watcher::{PoolStatus, PoolStatusWatcher};
 use process_stats_collector::ProcessStatsCollectorBuilder;
 
 use node::remote_node_adapter::RemoteNodeAdapter;
@@ -72,13 +68,12 @@ use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
 
-use crate::commands::CpuMinerConnection;
 use crate::feedback::Feedback;
-use crate::gpu_miner::GpuMiner;
+use crate::mining::cpu::CpuMinerConnection;
+use crate::mining::gpu::consts::GpuMinerStatus;
+use crate::mining::gpu::manager::GpuManager;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
-use crate::p2pool::models::P2poolStats;
-use crate::p2pool_manager::P2poolManager;
 use crate::tor_manager::TorManager;
 use crate::wallet::wallet_manager::WalletManager;
 use crate::wallet::wallet_types::WalletState;
@@ -98,25 +93,15 @@ mod events;
 mod events_emitter;
 mod events_manager;
 mod feedback;
-mod gpu_devices;
-mod gpu_miner;
-mod gpu_miner_adapter;
-mod gpu_miner_sha;
-mod gpu_miner_sha_adapter;
-mod gpu_miner_sha_websocket;
-mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
+mod mining;
 mod mining_status_manager;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
 mod node;
-mod p2pool;
-mod p2pool_adapter;
-mod p2pool_manager;
 mod pin;
-mod pool_status_watcher;
 mod port_allocator;
 mod process_adapter;
 mod process_adapter_utils;
@@ -171,13 +156,8 @@ struct UniverseAppState {
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     cpu_miner_status_watch_rx: Arc<watch::Receiver<CpuMinerStatus>>,
-    gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
-    p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
-    is_getting_p2pool_connections: Arc<AtomicBool>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
-    gpu_miner: Arc<RwLock<GpuMiner>>,
-    gpu_miner_sha: Arc<RwLock<GpuMinerSha>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
@@ -185,21 +165,14 @@ struct UniverseAppState {
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
     telemetry_service: Arc<RwLock<TelemetryService>>,
     feedback: Arc<RwLock<Feedback>>,
-    p2pool_manager: P2poolManager,
     tor_manager: TorManager,
     updates_manager: UpdatesManager,
-    cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
     mining_status_manager: Arc<RwLock<MiningStatusManager>>,
     websocket_message_tx: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
-}
-
-#[derive(Clone, serde::Serialize, serde::Deserialize)]
-struct FEPayload {
-    token: Option<String>,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -282,11 +255,9 @@ fn main() {
         &mut stats_collector,
         base_node_watch_rx.clone(),
     );
-    let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
-    let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
-        node_connection: CpuMinerConnection::BuiltInProxy,
+        node_connection: CpuMinerConnection::Local,
         pool_host_name: None,
         pool_port: None,
         monero_address: "".to_string(),
@@ -302,17 +273,15 @@ fn main() {
         )
         .into(),
     );
-    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(
-        GpuMiner::new(
-            gpu_status_tx.clone(),
-            base_node_watch_rx.clone(),
-            &mut stats_collector,
-        )
-        .into(),
-    );
 
-    let gpu_miner_sha: Arc<RwLock<GpuMinerSha>> =
-        Arc::new(GpuMinerSha::new(&mut stats_collector, gpu_status_tx.clone()).into());
+    let systemtray_manager = Arc::new(RwLock::new(SystemTrayManager::new()));
+
+    block_on(GpuManager::initialize(
+        stats_collector.take_gpu_miner(),
+        gpu_status_tx.clone(),
+        Some(base_node_watch_rx.clone()),
+        Some(systemtray_manager.clone()),
+    ));
 
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
@@ -324,7 +293,6 @@ fn main() {
         Some(Network::default()),
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
-        p2pool_stats_rx.clone(),
         tor_watch_rx.clone(),
         stats_collector.build(),
         node_manager.clone(),
@@ -356,28 +324,21 @@ fn main() {
         app_in_memory_config.clone(),
     );
     let app_state = UniverseAppState {
-        is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
-        gpu_latest_status: Arc::new(gpu_status_rx),
-        p2pool_latest_status: Arc::new(p2pool_stats_rx),
         in_memory_config: app_in_memory_config.clone(),
         cpu_miner: cpu_miner.clone(),
-        gpu_miner: gpu_miner.clone(),
-        gpu_miner_sha: gpu_miner_sha.clone(),
         cpu_miner_config: cpu_config.clone(),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
-        p2pool_manager,
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
         telemetry_service: Arc::new(RwLock::new(telemetry_service)),
         feedback: Arc::new(RwLock::new(feedback)),
         tor_manager,
         updates_manager,
-        cached_p2pool_connections: Arc::new(RwLock::new(None)),
-        systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
+        systemtray_manager,
         mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
         websocket_message_tx: Arc::new(websocket_message_tx),
         websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
@@ -552,11 +513,9 @@ fn main() {
             commands::get_applications_versions,
             commands::get_monero_seed_words,
             commands::get_network,
-            commands::get_p2pool_stats,
             commands::get_paper_wallet_details,
             commands::get_seed_words,
             commands::get_tor_config,
-            commands::get_tor_entry_guards,
             commands::get_transactions,
             commands::import_seed_words,
             commands::revert_to_internal_wallet,
@@ -566,7 +525,6 @@ fn main() {
             commands::restart_application,
             commands::send_feedback,
             commands::set_allow_telemetry,
-            commands::send_data_telemetry_service, // TODO: Unused
             commands::set_application_language,
             commands::set_auto_update,
             commands::set_cpu_mining_enabled,
@@ -578,7 +536,6 @@ fn main() {
             commands::set_external_tari_address,
             commands::confirm_exchange_address,
             commands::select_exchange_miner,
-            commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,
             commands::set_should_auto_launch,
@@ -591,25 +548,16 @@ fn main() {
             commands::stop_gpu_mining,
             commands::toggle_cpu_pool_mining,
             commands::toggle_gpu_pool_mining,
-            commands::get_p2pool_connections,
-            commands::set_p2pool_stats_server_port,
-            commands::get_used_p2pool_stats_server_port,
             commands::proceed_with_update,
             commands::set_pre_release,
-            commands::check_for_updates,
-            commands::try_update,
             commands::toggle_device_exclusion,
-            commands::get_network,
-            commands::sign_ws_data, // TODO: Unused
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
             commands::frontend_ready,
             commands::start_mining_status,
             commands::stop_mining_status,
-            commands::websocket_connect,
             commands::websocket_get_status,
-            commands::websocket_close,
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,
             commands::verify_address_for_send,
@@ -637,7 +585,9 @@ fn main() {
             commands::reset_gpu_pool_config,
             commands::reset_cpu_pool_config,
             commands::restart_phases,
-            commands::list_connected_peers
+            commands::list_connected_peers,
+            commands::switch_gpu_miner,
+            commands::set_feedback_fields,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {
@@ -683,7 +633,7 @@ fn main() {
             tauri::RunEvent::ExitRequested { api: _, code, .. } => {
                 info!(
                     target: LOG_TARGET,
-                    "App shutdown request caught with code: {code:#?}"
+                    "App shutdown request [ExitRequested] caught with code: {code:#?}"
                 );
                 if let Some(exit_code) = code {
                     if exit_code == RESTART_EXIT_CODE {
@@ -695,7 +645,7 @@ fn main() {
                 info!(target: LOG_TARGET, "App shutdown complete");
             }
             tauri::RunEvent::Exit => {
-                info!(target: LOG_TARGET, "App shutdown caught");
+                info!(target: LOG_TARGET, "App shutdown [Exit] caught");
                 block_on(TasksTrackers::current().stop_all_processes());
                 if is_restart_requested_clone.load(Ordering::SeqCst) {
                     app_handle.cleanup_before_exit();

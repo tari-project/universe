@@ -45,7 +45,8 @@
       "maybe-later": "Maybe later",
       "start-now": "Start now",
       "title": "Protect your Tari"
-    }
+    },
+    "seedwords-empty": "Add seed words to restore another Tari Address"
   },
   "send": {
     "balance": "余额",
@@ -166,10 +167,11 @@
   "wallet-is-scanning": "<strong>Wallet is loading...</strong>",
   "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> {{scanned}} / {{total}}",
   "xc": {
+    "address-eth": "Exchange ETH Address",
     "buy-tari": "Buy Tari from an exchange",
     "buy-tari-subtitle": "Available on selected exchanges.",
     "mine-directly-to": "Mine directly to an exchange",
-    "mine-directly-to-exchange": "{{exchangeName}}",
+    "mine-directly-to-exchange": "Mine directly to {{exchangeName}}",
     "mining-here": "Mining here",
     "or": "or"
   }

@@ -15,6 +15,7 @@ export default function StreakProgress({ isInline = false }: Props) {
 
     const { data, isLoading } = useReferrerProgress();
     const referrerProgress = data?.referrerProgress;
+    const totalDaysRequired = data?.referrerProgress?.minReferrerDaysRequired ?? 0;
 
     const currentStreak = referrerProgress?.currentStreak || 0;
     const meetsMinimumDays = referrerProgress?.meetsMinimumDays || false;
@@ -28,6 +29,11 @@ export default function StreakProgress({ isInline = false }: Props) {
                 </LoadingMessage>
             </Wrapper>
         );
+    }
+
+    // Hide component if totalDaysRequired is 0
+    if (totalDaysRequired === 0) {
+        return null;
     }
 
     const isStreakActive = currentStreak >= STREAK_DAYS_REQUIRED;

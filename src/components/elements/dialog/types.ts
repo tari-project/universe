@@ -1,5 +1,5 @@
 import { CSSProperties, HTMLProps, ReactNode, Ref } from 'react';
-type DialogVariant = 'primary' | 'transparent';
+type DialogVariant = 'primary' | 'transparent' | 'wrapper';
 
 export interface DialogOptions {
     open: boolean;
@@ -9,6 +9,7 @@ export interface DialogOptions {
 export interface ContentWrapperProps {
     variant?: DialogVariant;
     style?: CSSProperties;
+    closeButton?: ReactNode;
 }
 export interface ContentWrapperStyleProps {
     $variant?: DialogVariant;

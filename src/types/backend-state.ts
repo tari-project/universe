@@ -5,6 +5,8 @@ import {
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
+    GpuMiner,
+    GpuMinerType,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
     ProgressTrackerUpdatePayload,
@@ -145,12 +147,12 @@ export type BackendStateUpdateEvent =
           payload: ConnectionStatusPayload;
       }
     | {
-          event_type: 'CpuPoolStatsUpdate';
-          payload: PoolStats;
+          event_type: 'CpuPoolsStatsUpdate';
+          payload: Record<string, PoolStats>;
       }
     | {
-          event_type: 'GpuPoolStatsUpdate';
-          payload: PoolStats;
+          event_type: 'GpuPoolsStatsUpdate';
+          payload: Record<string, PoolStats>;
       }
     | {
           event_type: 'ExchangeIdChanged';
@@ -195,4 +197,19 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'SeedBackedUp';
           payload: boolean;
+      }
+    | {
+          event_type: 'UpdateSelectedMiner';
+          payload: GpuMinerType;
+      }
+    | {
+          event_type: 'AvailableMiners';
+          payload: Record<GpuMinerType, GpuMiner>;
+      }
+    | {
+          event_type: 'WalletStatusUpdate';
+          payload: {
+              loading: boolean;
+              unhealthy?: boolean;
+          };
       };

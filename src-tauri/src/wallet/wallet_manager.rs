@@ -74,11 +74,14 @@ pub enum WalletManagerError {
     WalletNotStarted,
     #[error("Node manager error: {0}")]
     NodeManagerError(#[from] NodeManagerError),
+    #[error("Wallet failed to start and was stopped with exit code: {}", .0)]
+    ExitCode(i32),
     #[error("Unknown error: {0}")]
     UnknownError(#[from] anyhow::Error),
     #[error("Ootle Wallet initialization failed: {0}")]
     OotleWalletError(String),
 }
+pub const STOP_ON_ERROR_CODES: [i32; 1] = [101];
 
 pub struct WalletManager {
     minotari_scanner: Arc<RwLock<MinotariWalletScanner>>,
@@ -281,6 +284,7 @@ impl WalletManager {
 
         // let tari_wallet_details = InternalWallet::tari_wallet_details().await;
         // process_watcher.adapter.wallet_birthday = tari_wallet_details.map(|d| d.wallet_birthday);
+        // process_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
 
         // process_watcher
         //     .start(
@@ -293,7 +297,18 @@ impl WalletManager {
         //     )
         //     .await?;
         // info!(target: LOG_TARGET, "Wallet process started successfully");
-        // process_watcher.wait_ready().await?;
+
+        // match // process_watcher.wait_ready().await {
+        //     Ok(_) => Ok::<(), anyhow::Error>(()),
+        //     Err(e) => {
+        //         let exit_code = process_watcher.stop().await?;
+        //         if exit_code != 0 {
+        //             return Err(WalletManagerError::ExitCode(exit_code));
+        //         }
+        //         return Err(WalletManagerError::UnknownError(e));
+        //     }
+        // }?;
+
         Ok(())
     }
 
@@ -440,7 +455,9 @@ impl WalletManager {
     //     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
     // ) -> Result<(), WalletManagerError> {
     //     if self.is_initial_scan_completed() {
+    // TODO - need to change this so we can get scan progress?
     //         log::info!(target: LOG_TARGET, "Initial wallet scan already completed, skipping");
+    // EventsEmitter::emit_wallet_status_updated(true, None).await;
     //         return Ok(());
     //     }
 

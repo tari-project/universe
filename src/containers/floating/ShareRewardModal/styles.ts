@@ -24,7 +24,7 @@ export const ContentWrapper = styled('div')`
     gap: 20px;
 
     @media (max-height: 800px) {
-        padding-top: 190px;
+        padding-top: 200px;
     }
 `;
 

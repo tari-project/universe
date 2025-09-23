@@ -6,7 +6,6 @@ import {
     fetchLatestXSpaceEvent,
 } from '@app/store/actions/airdropStoreActions';
 import { FEATURE_FLAGS } from '@app/store/consts';
-import { initialiseSocket } from '@app/utils/socket';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { useCallback, useEffect, useRef } from 'react';
 
@@ -26,10 +25,6 @@ export const useAirdropPolling = () => {
             await fetchAllUserData();
             await fetchLatestXSpaceEvent();
         }, DEBOUNCE_DELAY);
-    }, []);
-
-    useEffect(() => {
-        initialiseSocket();
     }, []);
 
     const fetchFeatureFlags = useCallback(async () => {

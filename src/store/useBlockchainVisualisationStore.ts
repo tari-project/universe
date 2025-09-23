@@ -61,23 +61,24 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
 
     console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
 
-    useBlockchainVisualisationStore.setState((curr) => ({ rewardCount: (curr.rewardCount || 0) + 1 }));
+    useBlockchainVisualisationStore.setState((curr) => ({ ...curr, rewardCount: (curr.rewardCount || 0) + 1 }));
     if (canAnimate) {
-        setMiningControlsEnabled(false);
         const visualModeEnabled = useConfigUIStore.getState().visual_mode;
         if (visualModeEnabled) {
+            setMiningControlsEnabled(false);
             const successTier = getSuccessTier(earnings);
             setAnimationState(successTier);
+            setMiningControlsEnabled(true);
         }
         useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings }));
         await refreshTransactions();
         await setWalletBalance(balance);
-        setMiningControlsEnabled(true);
         useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings: undefined, latestBlockPayload: undefined }));
     } else {
         await refreshTransactions();
 
         useBlockchainVisualisationStore.setState((curr) => ({
+            ...curr,
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
             displayBlockHeight: blockHeight,
             earnings: undefined,
@@ -101,6 +102,7 @@ export const handleWinRecap = (recapData: Recap) => {
     setMiningControlsEnabled(false);
     const successTier = getSuccessTier(recapData.totalEarnings);
     setAnimationState(successTier);
+    setMiningControlsEnabled(true);
     useBlockchainVisualisationStore.setState((c) => ({ ...c, recapData, recapCount: recapData.count }));
 };
 export const handleWinReplay = (txItem: CombinedBridgeWalletTransaction) => {

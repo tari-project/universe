@@ -1,7 +1,7 @@
 {
   "actions": {
-    "earn-gems": "Nhận gems",
-    "earn-gems-copy": "Kết nối tài khoản mạng xã hội để nhận gems khi mời bạn bè",
+    "earn-gems": "Kiếm bonus XTM",
+    "earn-gems-copy": "Kết nối tài khoản mạng xã hội để kiếm bonus XTM khi mời bạn bè",
     "earn-gems-cta": "Kết nối tài khoản X",
     "mode": "Tùy chỉnh chế độ",
     "mode-copy": "Bạn có biết bạn có thể tùy chỉnh mức độ đào của máy không?"
@@ -22,7 +22,6 @@
     "checking-latest-version-gpuminer": "Đang kiểm tra phiên bản mới nhất của xtrgpuminer",
     "checking-latest-version-mmproxy": "Đang kiểm tra phiên bản mới nhất của mmproxy",
     "checking-latest-version-node": "Đang kiểm tra phiên bản mới nhất của node",
-    "checking-latest-version-sha-p2pool": "Đang kiểm tra phiên bản mới nhất của sha-p2pool",
     "checking-latest-version-tor": "Đang kiểm tra phiên bản mới nhất của tor",
     "checking-latest-version-wallet": "Đang kiểm tra phiên bản mới nhất của ví",
     "checking-latest-version-xmrig": "Đang kiểm tra phiên bản mới nhất của xmrig",
@@ -31,7 +30,6 @@
     "minotari-node-restarting": "Dữ liệu node Minotari bị lỗi, đang dọn dẹp dữ liệu cũ",
     "preparing-for-initial-sync": "Đang kết nối với các node mạng {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Đang khởi động merge mining proxy",
-    "starting-p2pool": "Đang khởi động P2Pool",
     "starting-up": "Đang khởi động",
     "waiting-for-block-sync": "Đang chờ đồng bộ block. {{local_header_height}}/{{tip_header_height}} header và {{local_block_height}}/{{tip_block_height}} block đã đồng bộ.",
     "waiting-for-header-sync": "Đang chờ đồng bộ header. {{local_header_height}}/{{tip_header_height}} header và {{local_block_height}}/{{tip_block_height}} block đã đồng bộ.",
@@ -40,6 +38,7 @@
     "waiting-for-wallet": "Đang chờ ví",
     "wallet-started": "Ví đã khởi động"
   },
+  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
   "would-you-like-to-install": "Bạn có muốn cài đặt Tari Universe {{version}} ngay không?",
   "yes": "Có"
 }

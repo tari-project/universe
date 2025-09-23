@@ -180,6 +180,13 @@ export interface ReferrerProgressResponse {
     totals: CrewMembersTotals;
     memberImages: string[];
     minRequirements: MinRequirements;
+    members: {
+        name: string;
+        displayName: string;
+        image: string;
+        isCurrentlyMining: boolean;
+        lastActivityDate: string;
+    }[];
     membersToNudge: {
         id: string;
         name: string;
@@ -236,7 +243,7 @@ const initialState: AirdropStoreState = {
     latestXSpaceEvent: null,
     uiSendRecvEnabled: true,
     crewQueryParams: {
-        status: 'all',
+        status: 'active',
         page: 1,
         limit: 20,
     },

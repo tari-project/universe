@@ -12,9 +12,10 @@ import { useReferrerProgress } from '@app/hooks/crew/useReferrerProgress';
 interface Props {
     entry: CrewEntry & { memberId?: string; claimableRewardId?: string };
     isClaimed?: boolean;
+    minDaysRequired?: number;
 }
 
-export default function CrewEntry({ entry, isClaimed }: Props) {
+export default function CrewEntry({ entry, isClaimed, minDaysRequired }: Props) {
     const { handle, reward, progress, timeRemaining, status, user, memberId, claimableRewardId } = entry;
     const [isClaimingReward, setIsClaimingReward] = useState(false);
     const [isSendingNudge, setIsSendingNudge] = useState(false);
@@ -26,10 +27,22 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
 
     const canClaim = progress && progress >= 100;
 
-    const isNudgeOnCooldown =
-        memberId && nudgeCooldowns[memberId] ? Date.now() - nudgeCooldowns[memberId] < 5 * 60 * 1000 : false;
+    // Check if 12 hours have passed since last nudge
+    const isNudgeOnCooldown = () => {
+        if (memberId && nudgeCooldowns[memberId]) {
+            return Date.now() - nudgeCooldowns[memberId] < 12 * 60 * 60 * 1000; // 12 hours
+        }
 
-    const canNudge = status === 'needs_nudge' && !isNudgeOnCooldown;
+        // Check lastNudgeDate from entry if available
+        if (entry.lastNudgeDate) {
+            const lastNudgeTime = new Date(entry.lastNudgeDate).getTime();
+            return Date.now() - lastNudgeTime < 12 * 60 * 60 * 1000; // 12 hours
+        }
+
+        return false;
+    };
+
+    const canNudge = status === 'needs_nudge' && !isNudgeOnCooldown();
 
     const [showNudge, setShowNudge] = useState(false);
     const [showClaim, setShowClaim] = useState(false);
@@ -96,7 +109,7 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
                 showClaim={showClaim}
                 setShowClaim={setShowClaim}
             />
-            <CrewAvatar image={user.avatar} isOnline={user.isOnline} />
+            <CrewAvatar image={user.avatar} username={handle} isOnline={user.isOnline} />
             <ContentWrapper>
                 <TopRow>
                     <Username>{handle}</Username>
@@ -104,7 +117,7 @@ export default function CrewEntry({ entry, isClaimed }: Props) {
                         canClaim={Boolean(canClaim && !isClaimingReward && meetsRequirements)}
                         canNudge={canNudge && !isSendingNudge}
                         isClaimed={isClaimed ?? false}
-                        timeRemaining={timeRemaining ?? { current: 0, total: 0, unit: '' }}
+                        timeRemaining={timeRemaining ?? { current: 0, total: minDaysRequired || 0, unit: 'Days' }}
                         claimAmount={reward?.amount ?? 0}
                         onClaim={handleClaim}
                         onNudge={handleNudge}

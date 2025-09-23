@@ -124,10 +124,19 @@ impl BinaryManager {
         let selected_version = self.selected_version.clone();
         let selected_hash = self.selected_hash.clone();
         let binary = Binaries::from_name(&self.binary_name);
-        let main_url = self.adapter.get_base_main_download_url(&selected_version);
-        let fallback_url = self
+        let mut main_url = self.adapter.get_base_main_download_url(&selected_version);
+        let mut fallback_url = self
             .adapter
             .get_base_fallback_download_url(&selected_version);
+
+        if self.binary_name.eq(Binaries::LolMiner.name()) {
+            // urls produces will be like:
+            // https://github.com/Lolliedieb/lolMiner-releases/releases/download/v1.97/lolMiner_v1.97_Lin64.tar.gz
+            // But real format for that specific binary is:
+            // https://github.com/Lolliedieb/lolMiner-releases/releases/download/1.97/lolMiner_v1.97_Lin64.tar.gz
+            main_url = main_url.replace("/v", "/");
+            fallback_url = fallback_url.replace("/v", "/");
+        }
 
         let mut network = match Network::get_current_or_user_setting_or_default() {
             Network::NextNet => "nextnet",
@@ -278,9 +287,9 @@ impl BinaryManager {
                 Binaries::MinotariNode => &TasksTrackers::current().node_phase,
                 Binaries::Tor => &TasksTrackers::current().node_phase,
                 Binaries::MergeMiningProxy => &TasksTrackers::current().cpu_mining_phase,
-                Binaries::ShaP2pool => &TasksTrackers::current().common,
                 Binaries::BridgeTapplet => &TasksTrackers::current().wallet_phase,
                 Binaries::GpuMinerSHA3X => &TasksTrackers::current().gpu_mining_phase,
+                Binaries::LolMiner => &TasksTrackers::current().gpu_mining_phase,
             };
             let binary_name = self.binary_name.clone();
             let shutdown_signal = task_tacker.get_signal().await;
@@ -324,6 +333,14 @@ impl BinaryManager {
         &self,
         progress_channel: Option<IncrementalProgressTracker>,
     ) -> Result<(), Error> {
+        #[cfg(target_os = "windows")]
+        {
+            // Add Windows Defender exclusions before download to prevent interference
+            if let Err(e) = self.add_windows_defender_exclusions().await {
+                warn!(target: LOG_TARGET, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
+            }
+        }
+
         let mut last_error_message = String::new();
         for retry in 0..3 {
             match self
@@ -332,15 +349,6 @@ impl BinaryManager {
             {
                 Ok(_) => {
                     info!(target: LOG_TARGET, "Successfully downloaded binary: {} on retry: {}", self.binary_name, retry);
-
-                    #[cfg(target_os = "windows")]
-                    {
-                        // Add Windows Defender exclusions after successful download
-                        if let Err(e) = self.add_windows_defender_exclusions().await {
-                            warn!(target: LOG_TARGET, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
-                        }
-                    }
-
                     return Ok(());
                 }
                 Err(error) => {

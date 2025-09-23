@@ -1,6 +1,7 @@
 import styled, { css } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { m } from 'motion/react';
+import { DIALOG_Z_INDEX } from '@app/components/elements/dialog/Dialog.styles.ts';
 
 export const QRContainer = styled.div`
     display: flex;
@@ -146,7 +147,7 @@ export const CopyAddressButton = styled.button<{ $isCopied: boolean }>`
 `;
 
 export const TooltipWrapper = styled.div`
-    z-index: 10; // same as dialog
+    z-index: ${DIALOG_Z_INDEX}; // same as dialog
 `;
 
 export const Tooltip = styled(m.div)`

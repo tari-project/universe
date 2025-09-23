@@ -37,7 +37,7 @@ export default function CrewSection() {
     // Get current filter state from store (query params only)
     const activeFilter = useAirdropStore((state) => state.crewQueryParams.status);
 
-    const handleFilterChange = (status: 'all' | 'completed' | 'active' | 'inactive') => {
+    const handleFilterChange = (status: 'active' | 'inactive') => {
         setCrewQueryParams({ status, page: 1 }); // Reset to page 1 when filter changes
     };
 
@@ -62,7 +62,6 @@ export default function CrewSection() {
             <Filters totals={progressData?.totals} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
 
             <CrewList
-                isFiltered={activeFilter !== 'all'}
                 members={membersData?.members || []}
                 minRequirements={progressData?.minRequirements}
                 membersToNudge={progressData?.membersToNudge || []}

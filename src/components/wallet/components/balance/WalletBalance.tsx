@@ -45,6 +45,7 @@ export const WalletBalance = () => {
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const isConnected = useNodeStore((s) => s.isNodeConnected);
     const cached = useConfigWalletStore((s) => s.last_known_balance);
+    const walletIsLoading = useWalletStore((s) => s.isLoading);
     const available = useWalletStore((s) => s.balance?.available_balance);
     const total = useWalletStore((s) => s.calculated_balance);
     const scanData = useWalletStore((s) => s.wallet_scanning);
@@ -56,7 +57,7 @@ export const WalletBalance = () => {
     const balanceMismatch = removeXTMCryptoDecimals(roundToTwoDecimals(available || 0)) != balance;
 
     const displayText = hideBalance ? '*******' : formatNumber(available || 0, FormatPreset.XTM_LONG);
-    const isLoading = !isConnected || isScanning;
+    const isLoading = !isConnected || isScanning || walletIsLoading;
 
     const balanceText = balanceMismatch
         ? `${t('history.available-balance')}: ${displayText} XTM`
@@ -83,7 +84,7 @@ export const WalletBalance = () => {
                         onCompleted={() => setIsComplete(true)}
                         isCompact={true}
                     />
-                    {isStarted && !isComplete && t('sync-message.line2')}
+                    {isStarted && !isComplete && isScanning && t('sync-message.line2')}
                 </>
             )}
         </LoadingText>

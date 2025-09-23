@@ -1,7 +1,7 @@
 {
   "actions": {
-    "earn-gems": "赚取宝石",
-    "earn-gems-copy": "连接您的社交账户以通过邀请朋友赚取宝石",
+    "earn-gems": "赚取奖励XTM",
+    "earn-gems-copy": "连接您的社交账户，通过邀请朋友赚取奖励XTM",
     "earn-gems-cta": "连接X账户",
     "mode": "自定义模式",
     "mode-copy": "您知道您可以自定义您的机器挖矿的强度吗？"
@@ -22,7 +22,6 @@
     "checking-latest-version-gpuminer": "正在检查 xtrgpuminer 的最新版本",
     "checking-latest-version-mmproxy": "正在检查 mmproxy 的最新版本",
     "checking-latest-version-node": "正在检查节点的最新版本",
-    "checking-latest-version-sha-p2pool": "正在检查 sha-p2pool 的最新版本",
     "checking-latest-version-tor": "检查 Tor 的最新版本",
     "checking-latest-version-wallet": "正在检查钱包的最新版本",
     "checking-latest-version-xmrig": "正在检查 xmrig 的最新版本",
@@ -31,7 +30,6 @@
     "minotari-node-restarting": "Minotari 节点数据损坏，正在清理旧数据",
     "preparing-for-initial-sync": "连接到网络节点 {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "启动合并挖矿代理",
-    "starting-p2pool": "启动 P2Pool",
     "starting-up": "启动中",
     "waiting-for-block-sync": "等待区块同步。{{local_height}}/{{tip_height}} 个区块已同步",
     "waiting-for-header-sync": "等待头同步。{{local_height}}/{{tip_height}} 个头已同步",
@@ -40,6 +38,7 @@
     "waiting-for-wallet": "等待钱包",
     "wallet-started": "钱包已启动"
   },
+  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
   "would-you-like-to-install": "您想现在安装 Tari Universe {{version}} 吗？",
   "yes": "是"
 }

@@ -1,39 +1,7 @@
 import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
 
-export const Wrapper = styled('div')`
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    z-index: 101;
-
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
-    pointer-events: all;
-
-    overflow: hidden;
-    overflow-y: auto;
-`;
-
-export const Cover = styled(m.div)`
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 0;
-    cursor: pointer;
-
-    backdrop-filter: blur(10px);
-`;
-
 export const BoxWrapper = styled(m.div)<{ $boxWidth?: number; $padding?: number }>`
-    width: 100%;
     flex-shrink: 0;
     border-radius: 35px;
     background: linear-gradient(180deg, #c9eb00 32.79%, #fff 92.04%);
@@ -42,21 +10,16 @@ export const BoxWrapper = styled(m.div)<{ $boxWidth?: number; $padding?: number 
     z-index: 1;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 40px;
-    max-width: 635px;
-    padding: 50px;
+    max-width: 100%;
+    padding: 40px;
+    width: clamp(max(40vw, 620px), calc(700px + 2vh), min(60vw, 840px));
 
     @media (max-height: 900px) {
         gap: 20px;
         padding: 20px;
     }
-
-    ${({ $boxWidth }) =>
-        $boxWidth &&
-        css`
-            max-width: ${$boxWidth}px;
-        `}
 
     ${({ $padding }) =>
         $padding &&

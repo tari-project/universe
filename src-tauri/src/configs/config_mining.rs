@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::gpu_miner::EngineType;
+use crate::mining::gpu::consts::{EngineType, GpuMinerType};
 use getset::{Getters, Setters};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
@@ -30,10 +30,9 @@ use tokio::sync::RwLock;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
+pub const MINING_CONFIG_VERSION: u32 = 1;
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
     LazyLock::new(|| RwLock::new(ConfigMining::new()));
-
-pub const MINING_CONFIG_VERSION: i32 = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum MiningModeType {
@@ -65,7 +64,10 @@ impl GpuDevicesSettings {
     }
 
     pub fn add(&mut self, device_id: u32) {
-        self.0.entry(device_id).or_default();
+        self.0.entry(device_id).or_insert(GpuDeviceSettings {
+            device_id,
+            is_excluded: false,
+        });
     }
     pub fn set_excluded(&mut self, device_id: u32, is_excluded: bool) {
         if let Some(settings) = self.0.get_mut(&device_id) {
@@ -81,7 +83,7 @@ impl GpuDevicesSettings {
 #[getset(get = "pub", set = "pub")]
 #[allow(clippy::struct_excessive_bools)]
 pub struct ConfigMiningContent {
-    was_config_migrated: bool,
+    version_counter: u32,
     created_at: SystemTime,
     selected_mining_mode: String,
     mining_modes: HashMap<String, MiningMode>,
@@ -91,17 +93,22 @@ pub struct ConfigMiningContent {
     gpu_engine: EngineType,
     gpu_devices_settings: GpuDevicesSettings,
     squad_override: Option<String>,
-    version: i32,
+    gpu_miner_type: GpuMinerType,
+    is_lolminer_tested: bool,
 }
 
 impl Default for ConfigMiningContent {
     fn default() -> Self {
         Self {
-            version: 0,
-            was_config_migrated: false,
+            version_counter: MINING_CONFIG_VERSION,
             created_at: SystemTime::now(),
             selected_mining_mode: "Eco".to_string(),
             mine_on_app_start: true,
+            gpu_miner_type: if cfg!(target_os = "windows") || cfg!(target_os = "linux") {
+                GpuMinerType::LolMiner
+            } else {
+                GpuMinerType::Graxil
+            },
             mining_modes: HashMap::from([
                 (
                     "Eco".to_string(),
@@ -145,6 +152,7 @@ impl Default for ConfigMiningContent {
             gpu_engine: EngineType::OpenCL,
             gpu_devices_settings: GpuDevicesSettings::new(),
             squad_override: None,
+            is_lolminer_tested: false,
         }
     }
 }
@@ -192,6 +200,20 @@ impl ConfigMiningContent {
                 0
             }
         }
+    }
+
+    pub fn get_excluded_devices(&self) -> Vec<u32> {
+        self.gpu_devices_settings
+            .0
+            .iter()
+            .filter_map(|(&device_id, settings)| {
+                if settings.is_excluded {
+                    Some(device_id)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub fn get_selected_gpu_usage_percentage(&self) -> u32 {
@@ -255,11 +277,15 @@ impl ConfigMining {
     }
 
     async fn _check_for_migration() -> Result<(), anyhow::Error> {
-        let current_version = Self::content().await.version;
+        let current_version = Self::content().await.version_counter;
         if current_version < MINING_CONFIG_VERSION {
             info!("Mining config needs migration v{current_version:?} => v{MINING_CONFIG_VERSION}");
             Self::_migrate().await?;
-            Self::update_field(ConfigMiningContent::set_version, MINING_CONFIG_VERSION).await?;
+            Self::update_field(
+                ConfigMiningContent::set_version_counter,
+                MINING_CONFIG_VERSION,
+            )
+            .await?;
             return Ok(());
         }
         Ok(())

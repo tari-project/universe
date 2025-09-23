@@ -1,5 +1,5 @@
 {
-    "version": "1.5.15",
+    "version": "1.6.1",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -71,7 +71,7 @@
                 ],
                 "script-src": "'self' 'unsafe-eval'",
                 "worker-src": "'self' blob: https://cdn.npmjs.com/@tari-project/tari-tower",
-                "img-src": "'self' data: blob: base64: https://*.twimg.com https://cdn.npmjs.com/@tari-project/tari-tower http://127.0.0.1 http://127.0.0.1/ http://127.0.0.1:* http://localhost http://localhost/ http://localhost:* https://static.tari.com https://static.tari.com/*",
+                "img-src": "'self' data: blob: base64: https://*.twimg.com https://cdn.npmjs.com/@tari-project/tari-tower http://127.0.0.1 http://127.0.0.1/ http://127.0.0.1:* http://localhost http://localhost/ http://localhost:* https://static.tari.com https://static.tari.com/* https://lh3.googleusercontent.com",
                 "object-src": "'self' data: blob:",
                 "media-src": "'self' data: blob: tauri: https:",
                 "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'"

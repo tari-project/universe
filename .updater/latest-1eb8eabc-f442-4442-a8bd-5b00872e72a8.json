@@ -1,19 +1,19 @@
 {
-  "version": "1.5.12",
+  "version": "1.5.15",
   "notes": "Tari Universe - See the assets to download this version and install",
-  "pub_date": "2025-08-26T13:40:29Z",
+  "pub_date": "2025-09-04T15:52:06Z",
   "platforms": {
     "darwin-aarch64": {
-      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/1eb8eabc-f442-4442-a8bd-5b00872e72a8/1.5.12/Tari Universe-Gate.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFhWeFVpS0JESWJ5TTVVRW8ydEl0RlFtVGs2ZjZ6RDhRQUdqLzh3NlBnTnkreHpRNVFnaVFkaTUycUtqaS9USXpodG1HZ1gwS1c1bk1jOUllUlRJZHdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU2MjE1NTExCWZpbGU6VGFyaSBVbml2ZXJzZS1HYXRlLmFwcC50YXIuZ3oKUEhMREY1YzkrZHZramt2VldNVE1GalgrY0hhN2FldUJXZXEwSGY4U0dobjd5UlVoR1pTTVlJbnRXR1N4VW9kMDM3eUJFenhmRU5uMU1EMUM0RlFIQkE9PQo="
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/1eb8eabc-f442-4442-a8bd-5b00872e72a8/1.5.15/Tari Universe-Gate.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGU1bGpjQmh6OUcrVkdsYngxcWlpT3B4V1Zqa2lRQW1ERmFCWmJMU3pkVE1kREJHTXZVeHNFeHV1N0hDRTZEdmZlZ3hRYmNtTSsyQ3B0clFtWHl6QkFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU2OTk5ODU1CWZpbGU6VGFyaSBVbml2ZXJzZS1HYXRlLmFwcC50YXIuZ3oKREdmeVIxQm45RDFGV2JIQ2YvTTU0VkdNa09FSEZGTndsU1JNTDNkdEpZT0FFZUZOU3J3M3pWWURXT1R3ZVdQdTBzV01Zc0hIWHYwaFpEbElsaDQrQnc9PQo="
     },
     "darwin-x86_64": {
-      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/1eb8eabc-f442-4442-a8bd-5b00872e72a8/1.5.12/Tari Universe-Gate.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFhWeFVpS0JESWJ5TTVVRW8ydEl0RlFtVGs2ZjZ6RDhRQUdqLzh3NlBnTnkreHpRNVFnaVFkaTUycUtqaS9USXpodG1HZ1gwS1c1bk1jOUllUlRJZHdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU2MjE1NTExCWZpbGU6VGFyaSBVbml2ZXJzZS1HYXRlLmFwcC50YXIuZ3oKUEhMREY1YzkrZHZramt2VldNVE1GalgrY0hhN2FldUJXZXEwSGY4U0dobjd5UlVoR1pTTVlJbnRXR1N4VW9kMDM3eUJFenhmRU5uMU1EMUM0RlFIQkE9PQo="
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/1eb8eabc-f442-4442-a8bd-5b00872e72a8/1.5.15/Tari Universe-Gate.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGU1bGpjQmh6OUcrVkdsYngxcWlpT3B4V1Zqa2lRQW1ERmFCWmJMU3pkVE1kREJHTXZVeHNFeHV1N0hDRTZEdmZlZ3hRYmNtTSsyQ3B0clFtWHl6QkFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU2OTk5ODU1CWZpbGU6VGFyaSBVbml2ZXJzZS1HYXRlLmFwcC50YXIuZ3oKREdmeVIxQm45RDFGV2JIQ2YvTTU0VkdNa09FSEZGTndsU1JNTDNkdEpZT0FFZUZOU3J3M3pWWURXT1R3ZVdQdTBzV01Zc0hIWHYwaFpEbElsaDQrQnc9PQo="
     },
     "windows-x86_64": {
-      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/1eb8eabc-f442-4442-a8bd-5b00872e72a8/1.5.12/Tari Universe-Gate_1.5.12_x64_en-US.msi",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGEvckVTR2lUSXhuVDFVcHZhR1pNVU5NRnE3QlArM0lXTmN3VkYzZGVVa0wvYUNvQ3BFV1YyZjNKUE9XYTRZY3Y4UDhON0pNNTJGWG9KQWZqT1RGaEFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU2MjE1NTA0CWZpbGU6VGFyaSBVbml2ZXJzZS1HYXRlXzEuNS4xMl94NjRfZW4tVVMubXNpCmhTS212bHFDNTgySjIvQzlEWDBkbm1OVmJlNG16TjdpUU0wN21TY0lXZjZuN1NCMS9LU1JBcEZjUjZGaTZadGQ1T3VxNVVjU2htTXdNSXoyRFVJUERBPT0K"
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/1eb8eabc-f442-4442-a8bd-5b00872e72a8/1.5.15/Tari Universe-Gate_1.5.15_x64_en-US.msi",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOFZkbmd0bk9qTnZaa1hXOFJuUlIvRHNQaTk2K0Fpa0U5bkpRM1FKSU54Uks1K1k3RW4vMzhiTE5QMFVzcUxlTytxbDJxa0N1ZFRYVm8zQzBvT3FwNXdZPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU3MDAwMTI2CWZpbGU6VGFyaSBVbml2ZXJzZS1HYXRlXzEuNS4xNV94NjRfZW4tVVMubXNpCjNHd0NSOGEwRnRHd0hlb3FUTVJMbkpwck5rZzFLL3pYRHJJd1ZFVGIwRmRyODJZMWkxL3MyaFVMbFlZS0ZjVS9rdXhxbmkxUTZzSUQ0TWpVU1lINkJ3PT0K"
     }
   }
 }
