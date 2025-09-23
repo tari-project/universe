@@ -39,7 +39,7 @@ export const Text = styled.div`
 
     max-width: 250px;
 
-    span {
+    strong {
         color: #fff;
         font-weight: 700;
     }
