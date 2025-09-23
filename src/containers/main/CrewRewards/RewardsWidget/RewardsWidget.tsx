@@ -1,6 +1,6 @@
 import CrewSection from './sections/CrewSection/CrewSection';
 import MainSection from './sections/MainSection/MainSection';
-import StreakProgress from './sections/StreakProgress/StreakProgress';
+//import StreakProgress from './sections/StreakProgress/StreakProgress';
 
 import { Holder, PositionWrapper, WidgetWrapper } from './styles';
 import { useCrewRewardsStore } from '../../../../store/useCrewRewardsStore';
@@ -49,7 +49,7 @@ export default function RewardsWidget() {
                     <AnimatePresence>{isOpen && <CrewSection />}</AnimatePresence>
                 </WidgetWrapper>
 
-                {!isOpen && <StreakProgress />}
+                {/* {!isOpen && <StreakProgress />} */}
             </Holder>
         </PositionWrapper>
     );
