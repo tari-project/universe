@@ -19,7 +19,7 @@ export default function CrewEmpty({ inactiveCount = 0, onFilterChange }: Props) 
 
             <Buttons>
                 <ButtonOutline onClick={() => onFilterChange('inactive')}>Nudge your Friends</ButtonOutline>
-                <InviteFriendsButton />
+                <InviteFriendsButton largeButton={true} />
             </Buttons>
         </Wrapper>
     );

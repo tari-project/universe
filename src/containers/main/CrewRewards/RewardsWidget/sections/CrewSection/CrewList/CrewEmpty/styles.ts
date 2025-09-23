@@ -69,4 +69,11 @@ export const ButtonOutline = styled.button`
 
     border-radius: 60px;
     border: 1px solid rgba(255, 255, 255, 0.1);
+
+    cursor: pointer;
+    transition: background 0.2s ease-in-out;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
 `;
