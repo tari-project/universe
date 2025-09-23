@@ -108,7 +108,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_app_in_memory_config'): Promise<ConfigBackendInMemory>;
     function invoke(
         param: 'select_exchange_miner',
-        payload: { exchange_miner: ExchangeMiner; mining_address: string }
+        payload: { exchangeMiner: ExchangeMiner; miningAddress: string }
     ): Promise<void>;
     function invoke(param: 'launch_builtin_tapplet'): Promise<ActiveTapplet>;
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;

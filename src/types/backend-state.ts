@@ -204,4 +204,11 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'AvailableMiners';
           payload: Record<GpuMinerType, GpuMiner>;
+      }
+    | {
+          event_type: 'WalletStatusUpdate';
+          payload: {
+              loading: boolean;
+              unhealthy?: boolean;
+          };
       };

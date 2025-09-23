@@ -331,6 +331,8 @@ impl GpuManager {
             PoolOrigin::Kryptex => Some("/Tari-Universe"),
         };
 
+        let excluded_devices = ConfigMining::content().await.get_excluded_devices();
+
         self.process_watcher
             .adapter
             .load_tari_address(&tari_address.to_base58())
@@ -346,6 +348,10 @@ impl GpuManager {
         self.process_watcher
             .adapter
             .load_gpu_engine(selected_engine)
+            .await?;
+        self.process_watcher
+            .adapter
+            .load_excluded_devices(excluded_devices)
             .await?;
 
         self.process_watcher

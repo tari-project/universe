@@ -64,7 +64,10 @@ impl MinotariNodeMigrationInfo {
         }
         let contents = fs::read_to_string(path)?;
 
-        Ok(serde_json::from_str(contents.as_str())?)
+        let deserialized_content =
+            serde_json::from_str(&contents).unwrap_or(MinotariNodeMigrationInfo::default());
+
+        Ok(deserialized_content)
     }
 }
 

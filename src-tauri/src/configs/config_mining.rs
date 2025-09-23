@@ -202,6 +202,20 @@ impl ConfigMiningContent {
         }
     }
 
+    pub fn get_excluded_devices(&self) -> Vec<u32> {
+        self.gpu_devices_settings
+            .0
+            .iter()
+            .filter_map(|(&device_id, settings)| {
+                if settings.is_excluded {
+                    Some(device_id)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
     pub fn get_selected_gpu_usage_percentage(&self) -> u32 {
         match self.mining_modes.get(&self.selected_mining_mode) {
             Some(mode) => mode.gpu_usage_percentage,

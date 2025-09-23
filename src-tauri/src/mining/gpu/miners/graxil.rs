@@ -83,6 +83,7 @@ pub struct GraxilGpuMiner {
     pub connection_type: Option<GpuConnectionType>,
     pub gpu_status_sender: Sender<GpuMinerStatus>,
     pub gpu_devices: Vec<GpuCommonInformation>,
+    pub excluded_devices: Vec<u32>,
 }
 
 impl GraxilGpuMiner {
@@ -94,11 +95,20 @@ impl GraxilGpuMiner {
             connection_type: None,
             gpu_status_sender,
             gpu_devices: vec![],
+            excluded_devices: vec![],
         }
     }
 }
 
 impl GpuMinerInterfaceTrait for GraxilGpuMiner {
+    async fn load_excluded_devices(
+        &mut self,
+        excluded_devices: Vec<u32>,
+    ) -> Result<(), anyhow::Error> {
+        self.excluded_devices = excluded_devices;
+        Ok(())
+    }
+
     async fn load_tari_address(&mut self, tari_address: &str) -> Result<(), anyhow::Error> {
         self.tari_address = Some(tari_address.to_string());
         Ok(())
@@ -255,6 +265,15 @@ impl ProcessAdapter for GraxilGpuMiner {
 
         args.push("--log-dir".to_string());
         args.push(log_folder.to_string_lossy().to_string());
+
+        args.push("--excluded-devices".to_string());
+        args.push(
+            self.excluded_devices
+                .iter()
+                .map(|id| id.to_string())
+                .collect::<Vec<String>>()
+                .join(","),
+        );
 
         #[cfg(target_os = "windows")]
         add_firewall_rule("graxil.exe".to_string(), binary_version_path.clone())?;
