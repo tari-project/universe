@@ -290,7 +290,7 @@ pub async fn get_applications_versions(
     let xmrig_port = &cpu_miner.get_port().await;
     // let gpu_miner = &state.gpu_miner.read().await;
     // let xtr_port = gpu_miner.get_port().await;
-    let wallet_port = &state.wallet_manager.get_port().await;
+    // let wallet_port = &state.wallet_manager.get_port().await;
     let node_manager = &state.node_manager;
     let node_port = node_manager
         .clone()
@@ -339,7 +339,7 @@ pub async fn get_applications_versions(
         },
         wallet: ApplicationsInformation {
             version: wallet_version,
-            port: Some(*wallet_port),
+            port: None,
         },
         xtrgpuminer: ApplicationsInformation {
             version: xtrgpuminer_version,
@@ -424,9 +424,11 @@ pub async fn get_paper_wallet_details(
     );
     // Add wallet_balance as a query parameter if it exists
     if let Some(balance) = &wallet_balance {
-        let available_balance = balance.available_balance
-            + balance.timelocked_balance
-            + balance.pending_incoming_balance;
+        let available_balance = balance
+            .balances
+            .get(&Currency::Xtm)
+            .map(|b| b.available_balance)
+            .unwrap_or(0);
 
         link.push_str(&format!(
             "&balance={}",
@@ -645,7 +647,7 @@ pub async fn import_seed_words(
         .map_err(|_| "Could not find wallet data dir".to_string())?;
     state
         .wallet_manager
-        .clean_data_folder(&base_path)
+        .reset_data()
         .await
         .map_err(|e| e.to_string())?;
 
@@ -1702,8 +1704,18 @@ pub fn validate_minotari_amount(
         .clone()
         .and_then(|state| state.balance);
 
-    let available_balance = balance.expect("Could not get balance").available_balance;
-    match m_amount.cmp(&available_balance) {
+    if balance.is_none() {
+        return Err(InvokeError::from("Could not get balance".to_string()));
+    }
+    let balance = balance.unwrap();
+
+    let minotari_balance = balance
+        .balances
+        .get(&Currency::Xtm)
+        .map(|b| b.available_balance)
+        .unwrap_or(0);
+
+    match m_amount.0.cmp(&minotari_balance) {
         std::cmp::Ordering::Less => Ok(()),
         _ => Err(InvokeError::from("Insufficient balance".to_string())),
     }
@@ -1981,30 +1993,31 @@ pub async fn refresh_wallet_history(
     state: tauri::State<'_, UniverseAppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
-    SetupManager::get_instance()
-        .shutdown_phases(vec![SetupPhase::Wallet])
-        .await;
+    todo!("Find out if this is still needed")
+    // SetupManager::get_instance()
+    //     .shutdown_phases(vec![SetupPhase::Wallet])
+    //     .await;
 
-    let base_path = app_handle
-        .path()
-        .app_local_data_dir()
-        .map_err(|_| "Could not find wallet data dir".to_string())?;
-    state
-        .wallet_manager
-        .clean_data_folder(&base_path)
-        .await
-        .map_err(|e| e.to_string())?;
+    // let base_path = app_handle
+    //     .path()
+    //     .app_local_data_dir()
+    //     .map_err(|_| "Could not find wallet data dir".to_string())?;
+    // state
+    //     .wallet_manager
+    //     .clean_data_folder(&base_path)
+    //     .await
+    //     .map_err(|e| e.to_string())?;
 
-    // Trigger it manually to immediately update the UI
-    let node_status_watch_rx = state.node_status_watch_rx.clone();
-    let node_status = *node_status_watch_rx.borrow();
-    EventsEmitter::emit_init_wallet_scanning_progress(0, node_status.block_height, 0.0).await;
+    // // Trigger it manually to immediately update the UI
+    // let node_status_watch_rx = state.node_status_watch_rx.clone();
+    // let node_status = *node_status_watch_rx.borrow();
+    // EventsEmitter::emit_init_wallet_scanning_progress(0, node_status.block_height, 0.0).await;
 
-    SetupManager::get_instance()
-        .resume_phases(vec![SetupPhase::Wallet])
-        .await;
+    // SetupManager::get_instance()
+    //     .resume_phases(vec![SetupPhase::Wallet])
+    //     .await;
 
-    Ok(())
+    // Ok(())
 }
 
 // Used in convertEthAddressToTariAddress [bridgeApiActions.ts]

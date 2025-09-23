@@ -21,11 +21,12 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::process_adapter::{HealthStatus, StatusMonitor};
-use crate::wallet::wallet_types::{NetworkStatus, WalletBalance, WalletState};
+use crate::wallet::wallet_types::{Balances, Currency, NetworkStatus, WalletBalance, WalletState};
 use async_trait::async_trait;
 use log::warn;
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::GetStateRequest;
+use std::collections::HashMap;
 use std::time::Duration;
 use tari_common_types::tari_address::TariAddressError;
 use tokio::sync::watch;
@@ -93,9 +94,20 @@ impl WalletStatusMonitor {
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
         let status = res.into_inner();
 
+        let mut balances = Balances {
+            balances: HashMap::new(),
+        };
+        balances.balances.insert(
+            Currency::Xtm,
+            WalletBalance::from_option(status.balance).ok_or(
+                WalletStatusMonitorError::UnknownError(anyhow::anyhow!(
+                    "Failed to get XTM balance"
+                )),
+            )?,
+        );
         Ok(WalletState {
             scanned_height: status.scanned_height,
-            balance: WalletBalance::from_option(status.balance),
+            balance: Some(balances),
             network: NetworkStatus::from(status.network),
         })
     }

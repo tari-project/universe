@@ -154,7 +154,6 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 #[derive(Clone)]
 struct UniverseAppState {
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
-    #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     cpu_miner_status_watch_rx: Arc<watch::Receiver<CpuMinerStatus>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
@@ -191,16 +190,16 @@ fn main() {
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
 
-    #[cfg(debug_assertions)]
-    {
-        if cfg!(tokio_unstable) {
-            console_subscriber::init();
-        } else {
-            println!(
-                "Tokio console disabled. To enable, run with: RUSTFLAGS=\"--cfg tokio_unstable\""
-            );
-        }
-    }
+    // #[cfg(debug_assertions)]
+    // {
+    //     if cfg!(tokio_unstable) {
+    //         console_subscriber::init();
+    //     } else {
+    //         println!(
+    //             "Tokio console disabled. To enable, run with: RUSTFLAGS=\"--cfg tokio_unstable\""
+    //         );
+    //     }
+    // }
 
     let client = sentry::init((
         "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
@@ -618,7 +617,7 @@ fn main() {
 
         match event {
             tauri::RunEvent::Ready => {
-                info!(target: LOG_TARGET, "RunEvent Ready");
+                info!(target: LOG_TARGET, "Tari Universe {} Ready", app_handle.package_info().version);
                 let handle_clone = app_handle.clone();
                 let state = handle_clone.state::<UniverseAppState>();
 

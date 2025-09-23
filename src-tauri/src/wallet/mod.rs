@@ -20,9 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+pub mod minotari_wallet_adapter;
+pub mod minotari_wallet_scanner;
+pub mod ootle_wallet_scanner;
 pub mod spend_wallet;
 pub mod transaction_service;
-pub mod wallet_adapter;
+pub(crate) mod wallet_db;
 pub mod wallet_manager;
+pub mod wallet_scanner;
 pub mod wallet_status_monitor;
 pub mod wallet_types;

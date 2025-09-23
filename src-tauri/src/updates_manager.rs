@@ -27,7 +27,7 @@ use tokio::{
 };
 
 use anyhow::anyhow;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 
 use serde::{Deserialize, Serialize};
 use tauri::{Emitter, Url};
@@ -142,6 +142,7 @@ impl UpdatesManager {
         enable_downgrade: bool,
         timeout_duration: Duration,
     ) -> Result<(), anyhow::Error> {
+        debug!(target: LOG_TARGET, "try_update: Checking for updates");
         let res = tokio::time::timeout(
             timeout_duration,
             self.check_for_update(app.clone(), enable_downgrade),

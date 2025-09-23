@@ -239,7 +239,7 @@ impl ConfigImpl for ConfigWallet {
 
             match Self::_load_config() {
                 Ok(config_content) => {
-                    log::info!(target: LOG_TARGET, "[{}] [load_config] loaded config content", Self::_get_name());
+                    log::debug!(target: LOG_TARGET, "[{}] [load_config] loaded config content", Self::_get_name());
                     config_content
                 }
                 Err(e) => {

@@ -64,29 +64,30 @@ impl EventsManager {
             match wallet_manager.wait_for_scan_to_height(block_height, Some(Duration::from_secs(20))).await {
                 Ok(scanned_wallet_state) => {
                     if let Some(balance) = scanned_wallet_state.balance {
-                        // Check for coinbase transaction if there's pending balance
-                        let coinbase_tx = if balance.pending_incoming_balance.gt(&MicroMinotari::zero()) {
-                            match wallet_manager.find_coinbase_transaction_for_block(block_height).await {
-                                Ok(tx) => tx,
-                                Err(e) => {
-                                    error!(target: LOG_TARGET, "Failed to get coinbase transaction: {e:?}");
-                                    None
-                                }
-                            }
-                        } else {
-                            None
-                        };
+                        // TODO: Remove. It is almost impossible to mine a block solo and see it.
+                        // // Check for coinbase transaction if there's pending balance
+                        // let coinbase_tx = if balance.pending_incoming_balance.gt(&MicroMinotari::zero()) {
+                        //     match wallet_manager.find_coinbase_transaction_for_block(block_height).await {
+                        //         Ok(tx) => tx,
+                        //         Err(e) => {
+                        //             error!(target: LOG_TARGET, "Failed to get coinbase transaction: {e:?}");
+                        //             None
+                        //         }
+                        //     }
+                        // } else {
+                        //     None
+                        // };
 
-                        EventsEmitter::emit_new_block_mined(
-                            block_height,
-                            coinbase_tx.clone(),
-                            Some(balance),
-                        )
-                        .await;
-                        let allow_notifications = *ConfigCore::content().await.allow_notifications();
-                        if coinbase_tx.is_some() && allow_notifications {
-                            send_new_block_mined(app_clone.clone(), block_height).await;
-                        }
+                        // EventsEmitter::emit_new_block_mined(
+                        //     block_height,
+                        //     coinbase_tx.clone(),
+                        //     Some(balance),
+                        // )
+                        // .await;
+                        // let allow_notifications = *ConfigCore::content().await.allow_notifications();
+                        // if coinbase_tx.is_some() && allow_notifications {
+                        //     send_new_block_mined(app_clone.clone(), block_height).await;
+                        // }
                     } else {
                         error!(target: LOG_TARGET, "Wallet balance is None after new block height #{block_height}");
                         EventsEmitter::emit_new_block_mined(

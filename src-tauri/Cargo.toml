@@ -43,13 +43,10 @@ keyring = { version = "3.0.5", features = [
   "linux-native-sync-persistent",
   "windows-native",
 ] }
-libsqlite3-sys = { version = "0.25.1", features = [
-  "bundled",
-] } # Required for tari_wallet
 log = "0.4.22"
 log4rs = "1.3.0"
-minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", tag = "v5.0.0-pre.8" }
-minotari_wallet_grpc_client = { git = "https://github.com/tari-project/tari.git", tag = "v5.0.0-pre.8" }
+minotari_node_grpc_client = { git = "https://github.com/stringhandler/tari.git", branch = "st-update-libsqlite" }
+minotari_wallet_grpc_client = { git = "https://github.com/stringhandler/tari.git", branch = "st-update-libsqlite" }
 monero-address-creator = { git = "https://github.com/tari-project/monero-address-creator.git", rev = "6129ca0" }
 nix = { version = "0.29.0", features = ["signal"] }
 nvml-wrapper = "0.10.0"
@@ -73,14 +70,20 @@ serde_cbor = "0.11.2"
 serde_json = "1"
 serde_yaml = "0.9.10"
 sha2 = "0.10.8"
+sqlx = { version = "0.8.6", features = [
+  "runtime-tokio",
+  "sqlite",
+  "migrate",
+  "chrono",
+] }
+tari_transaction_components = { git = "https://github.com/stringhandler/tari.git", branch = "st-update-libsqlite" }
 sys-locale = "0.3.1"
 sysinfo = "0.31.2"
 tar = "0.4.26"
-tari_common = { git = "https://github.com/tari-project/tari.git", tag = "v5.0.0-pre.8" }
-tari_common_types = { git = "https://github.com/tari-project/tari.git", tag = "v5.0.0-pre.8" }
-tari_transaction_components = { git = "https://github.com/tari-project/tari.git", tag = "v5.0.0-pre.8" }
+tari_common = { git = "https://github.com/stringhandler/tari.git", branch = "st-update-libsqlite" }
+tari_common_types = { git = "https://github.com/stringhandler/tari.git", branch = "st-update-libsqlite" }
 tari_crypto = "0.22.1"
-tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v5.0.0-pre.8" }
+tari_shutdown = { git = "https://github.com/stringhandler/tari.git", branch = "st-update-libsqlite" }
 tari_utilities = "0.8.0"
 tauri = { version = "2", features = [
   "protocol-asset",
@@ -111,7 +114,12 @@ tungstenite = "0.26.2"
 urlencoding = "2.1.3"
 xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
 zip = "2.2.0"
-tari_transaction_key_manager = { git = "https://github.com/tari-project/tari", tag = "v5.0.0-pre.8" }
+tari_transaction_key_manager = { git = "https://github.com/stringhandler/tari", branch = "st-update-libsqlite" }
+
+tari_ootle_wallet_sdk = { git = "https://github.com/tari-project/tari-ootle", branch = "development", optional = true }
+tari_ootle_wallet_sdk_services = { git = "https://github.com/tari-project/tari-ootle", branch = "development", optional = true }
+tari_ootle_wallet_storage_sqlite = { git = "https://github.com/tari-project/tari-ootle", branch = "development", optional = true }
+tari_ootle_common_types = { git = "https://github.com/tari-project/tari-ootle", branch = "development", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 planif = "1.0.0"
@@ -121,19 +129,28 @@ winreg = "0.52.0"
 # needed for keymanager. TODO: Find a way of creating a keymanager without bundling sqlite
 chrono = "0.4.38"
 device_query = "2.1.0"
-libsqlite3-sys = { version = "0.25.1", features = ["bundled"] }
+libsqlite3-sys = { version = "0.30.1", features = ["bundled"] }
 log = "0.4.22"
 nvml-wrapper = "0.10.0"
 rand = "0.8.5"
 sys-locale = "0.3.1"
 
 [features]
+# Change this when not debugging ootle
+# default = []
+default = ["ootle"]
 custom-protocol = [
   "tauri/custom-protocol",
 ] # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 release-ci = ["tauri/custom-protocol"]
 release-ci-beta = ["tauri/custom-protocol"]
 exchange-ci = ["tauri/custom-protocol"]
+ootle = [
+  "tari_ootle_wallet_sdk",
+  "tari_ootle_wallet_sdk_services",
+  "tari_ootle_wallet_storage_sqlite",
+  "tari_ootle_common_types",
+]
 
 [package.metadata.cargo-machete]
 ignored = [

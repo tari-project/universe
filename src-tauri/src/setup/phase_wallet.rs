@@ -184,9 +184,9 @@ impl SetupPhaseImpl for WalletSetupPhase {
                     let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
                     if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
                         log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
-                        if let Err(e) = app_state.wallet_manager.clean_data_folder(&data_dir).await {
-                            log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {e}");
-                        }
+                        // if let Err(e) = app_state.wallet_manager.clean_data_folder(&data_dir).await {
+                        //     log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {e}");
+                        // }
                         if
                         let Err(e) = ConfigWallet::update_field(
                             ConfigWalletContent::set_wallet_migration_nonce,
@@ -258,12 +258,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        if InternalWallet::is_internal().await {
-            app_state
-                .wallet_manager
-                .wait_for_initial_wallet_scan(node_status_watch_rx)
-                .await?;
-        }
+        // TODO: Maybe just check that the wallet is ok starting.
+        // if InternalWallet::is_internal().await {
+        //     app_state
+        //         .wallet_manager
+        //         .start_wallet_scan(node_status_watch_rx)
+        //         .await?;
+        // }
 
         let config_wallet = ConfigWallet::content().await;
         let is_pin_locked = PinManager::pin_locked().await;
