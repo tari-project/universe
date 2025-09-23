@@ -60,23 +60,19 @@ export const useProgressCountdown = (isCompact = false) => {
         }
     }, [countdown, nodeSetupParams]);
 
-    const shouldReset = !hasValidEstimate(nodeSetupParams);
-
     useEffect(() => {
         // Handle node type changes during setup
         if (!nodeType) return;
-        if (nodeType !== 'Local') {
+        if (nodeType === 'Local') {
+            if (!hasValidEstimate(nodeSetupParams)) {
+                setCountdown(-1);
+            }
+        } else {
             setCountdown(REMOTE_DEFAULT_ESTIMATE);
         }
+        // eslint-disable-next-line react-compiler/react-compiler
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [nodeType]);
-
-    useEffect(() => {
-        // Handle node type changes during setup
-        if (!nodeType) return;
-        if (nodeType === 'Local' && shouldReset) {
-            setCountdown(-1);
-        }
-    }, [nodeSetupParams, nodeType, shouldReset]);
 
     useEffect(() => {
         const interval = setInterval(() => {
