@@ -1,5 +1,6 @@
 import InviteFriendsButton from '../../../MainSection/segments/TopRow/InviteFriendsButton/InviteFriendsButton';
 import { Wrapper, Title, Text, Buttons, ButtonOutline, TextWrapper } from './styles';
+import { useTranslation, Trans } from 'react-i18next';
 
 interface Props {
     inactiveCount?: number;
@@ -7,18 +8,22 @@ interface Props {
 }
 
 export default function CrewEmpty({ inactiveCount = 0, onFilterChange }: Props) {
+    const { t } = useTranslation();
+
     return (
         <Wrapper>
             <TextWrapper>
-                <Title>Your friends are slacking!</Title>
+                <Title>{t('airdrop:crewRewards.crewEmpty.title')}</Title>
 
                 <Text>
-                    You have <span>{inactiveCount}</span> inactive friends. Give them a nudge or invite more.
+                    <Trans i18nKey="airdrop:crewRewards.crewEmpty.description" values={{ inactiveCount }} />
                 </Text>
             </TextWrapper>
 
             <Buttons>
-                <ButtonOutline onClick={() => onFilterChange('inactive')}>Nudge your Friends</ButtonOutline>
+                <ButtonOutline onClick={() => onFilterChange('inactive')}>
+                    {t('airdrop:crewRewards.crewEmpty.nudgeButton')}
+                </ButtonOutline>
                 <InviteFriendsButton largeButton={true} />
             </Buttons>
         </Wrapper>

@@ -67,7 +67,12 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards"
+    "title": "Rewards",
+    "crewEmpty": {
+      "title": "Your friends are slacking!",
+      "description": "You have <strong>{{inactiveCount}}</strong> inactive friends. Give them a nudge or invite more.",
+      "nudgeButton": "Nudge your Friends"
+    }
   },
   "doLater": "Ek sal dit later doen",
   "earnBonusXTM": "Bonus XTM",
