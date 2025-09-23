@@ -15,12 +15,12 @@
   "randomx-stats": "RandomX 통계",
   "sha3-stats": "SHA3 통계",
   "stats": {
-    "earned": "You earned",
+    "earned": "획득한 금액",
     "tile-heading": "진행 중인 보상",
-    "tile-heading-zero": "Rewards start in ~30 mins",
-    "tile-disabled-heading": "{{unit}} is disabled",
+    "tile-heading-zero": "보상은 약 30분 후 시작됩니다",
+    "tile-disabled-heading": "{{unit}}이(가) 비활성화되었습니다",
     "tile-loading": "풀 준비 중",
-    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
+    "tooltip-copy": "최소 <strong>{{amount}}</strong>을 벌기 전까지 \"진행 중\"입니다. 지급이 완료되고 지갑 거래 및 잔액에 표시되기까지 지연이 있을 수 있습니다.",
     "tooltip-tile-heading": "보상 기준"
   },
   "tribe": "부족"

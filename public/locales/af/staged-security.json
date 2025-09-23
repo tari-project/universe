@@ -1,12 +1,12 @@
 {
   "common": {
-    "all-done": "You’re all done!",
+    "all-done": "Jy is klaar!",
     "got-it": "Verstaan"
   },
   "complete": {
-    "continue": "Continue to Tari Universe",
-    "happy-mining": "Happy mining!",
-    "secured": "Your wallet is now securely backed up—great job!\\nYour Tari tokens are safe and ready whenever you need them, even if you switch or lose your device."
+    "continue": "Gaan voort na Tari Universe",
+    "happy-mining": "Gelukkige mynbou!",
+    "secured": "Jou beursie is nou veilig gerugsteun—goeie werk!\nJou Tari tokens is veilig en gereed wanneer jy dit nodig het, selfs al verander of verloor jy jou toestel."
   },
   "completedTip": {
     "text": "Jou saadfrase kan weer in jou instellings gevind word",
@@ -14,10 +14,10 @@
   },
   "intro": {
     "balance": "Jou beursie het <span>{{balance}}</span> XTM",
-    "button": "Secure my wallet",
-    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
+    "button": "Beveilig my beursie",
+    "subtitle": "Jy het nou jou eerste Tari tokens. Kom ons beskerm vinnig jou beursie in twee maklike stappe.",
     "text": "Tari Universe stel outomaties \"n beursie vir jou op wanneer jy begin myn. Maak seker jy het altyd toegang tot jou beursie deur jou saadfrase op \"n veilige plek te stoor.",
-    "title": "Let’s secure your wallet.",
+    "title": "Kom ons beveilig jou beursie.",
     "warning": "Sterk aanbeveel"
   },
   "reminderTip": {
@@ -25,32 +25,32 @@
     "title": "Rugsteun vinnig jou saadfrase in instellings"
   },
   "seedPhrase": {
-    "button": "Verify seed phrase",
+    "button": "Verifieer saadfrase",
     "checkbox": "Ek verstaan dat as ek my herstel saadfrase verloor, ek nie my beursie sal kan herstel nie.",
     "copied": "Gekopieer!",
     "copy": "Kopieer na knipbord",
     "text": "Jy sal hierdie kode weer nodig hê om jou beursie te herstel.",
     "title": "Skryf jou saadfrase neer en stoor dit op \"n veilige plek"
   },
-  "skip": "Skip for now",
+  "skip": "Slaan oor vir nou",
   "steps": {
-    "chip": "Step {{step}} of {{total}}",
-    "complete-false": "Incomplete",
-    "complete-true": "Complete",
-    "step": "Step {{stepNumber}}",
-    "subtitle-pin": "Prevents unauthorized wallet access",
-    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
-    "title-pin": "Set a secure PIN",
-    "title-seeds": "Back up your Seed Phrase"
+    "chip": "Stap {{step}} van {{total}}",
+    "complete-false": "Onvolledig",
+    "complete-true": "Voltooi",
+    "step": "Stap {{stepNumber}}",
+    "subtitle-pin": "Voorkom ongemagtigde beursietoegang",
+    "subtitle-seeds": "Verseker dat jy fondse kan herstel as jy jou toestel verloor",
+    "title-pin": "Stel \"n veilige PIN",
+    "title-seeds": "Rugsteun jou Saadfrase"
   },
   "verifySeed": {
-    "button": "Confirm seed phrase",
+    "button": "Bevestig saadfrase",
     "placeholder": "Klik die woorde hieronder in die korrekte volgorde",
     "text": "Om seker te maak jy het jou saadfrase korrek neergeskryf, kies asseblief die woorde in die korrekte volgorde.",
     "title": "Verifieer jou saadfrase"
   },
   "warning": {
-    "steps": "Steps",
-    "title": "Secure your wallet"
+    "steps": "Stappe",
+    "title": "Beveilig jou beursie"
   }
 }

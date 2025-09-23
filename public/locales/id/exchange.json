@@ -1,13 +1,13 @@
 {
-  "earn": "Earn up to {{amount}}% in bonus XTM",
-  "help-find-address": "Help me find my {{ exchange }} address",
-  "main-logo-title": "Season\nOne",
-  "paste-from-clipboard": "Paste from clipboard",
-  "season-one-reward": "Season one bonus",
+  "earn": "Dapatkan hingga {{amount}}% dalam bonus XTM",
+  "help-find-address": "Bantu saya menemukan alamat {{ exchange }} saya",
+  "main-logo-title": "Musim\nSatu",
+  "paste-from-clipboard": "Tempel dari clipboard",
+  "season-one-reward": "Bonus musim satu",
   "select": {
-    "modal-title": "Start mining Tari (XTM) directly to your wallet on a supported exchange"
+    "modal-title": "Mulai menambang Tari (XTM) langsung ke dompet Anda di bursa yang didukung"
   },
-  "selected-exchange-miner": "You're mining here",
-  "time-left": "Time left",
-  "wallet-address": "Wallet Address"
+  "selected-exchange-miner": "Anda menambang di sini",
+  "time-left": "Waktu tersisa",
+  "wallet-address": "Alamat Dompet"
 }

@@ -1,12 +1,12 @@
 {
   "common": {
-    "all-done": "You’re all done!",
+    "all-done": "모두 완료되었습니다!",
     "got-it": "알겠습니다"
   },
   "complete": {
-    "continue": "Continue to Tari Universe",
-    "happy-mining": "Happy mining!",
-    "secured": "Your wallet is now securely backed up—great job!\\nYour Tari tokens are safe and ready whenever you need them, even if you switch or lose your device."
+    "continue": "Tari Universe로 계속",
+    "happy-mining": "즐거운 채굴 되세요!",
+    "secured": "지갑이 안전하게 백업되었습니다—잘하셨습니다!\n기기를 변경하거나 분실하더라도 Tari 토큰은 안전하며 필요할 때 언제든지 사용할 수 있습니다."
   },
   "completedTip": {
     "text": "설정에서 시드 구문을 다시 찾을 수 있습니다",
@@ -14,10 +14,10 @@
   },
   "intro": {
     "balance": "지갑에 <span>{{balance}}</span> XTM이 있습니다",
-    "button": "Secure my wallet",
-    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
+    "button": "내 지갑 보호",
+    "subtitle": "이제 첫 Tari 토큰을 보유하게 되었습니다. 두 가지 간단한 단계로 지갑을 빠르게 보호합시다.",
     "text": "타리 유니버스는 채굴을 시작할 때 자동으로 지갑을 설정합니다. 시드 구문을 안전한 곳에 보관하여 항상 지갑에 접근할 수 있도록 하세요.",
-    "title": "Let’s secure your wallet.",
+    "title": "지갑을 보호합시다.",
     "warning": "강력 추천"
   },
   "reminderTip": {
@@ -25,32 +25,32 @@
     "title": "설정에서 시드 구문을 빠르게 백업하세요"
   },
   "seedPhrase": {
-    "button": "Verify seed phrase",
+    "button": "시드 구문 확인",
     "checkbox": "복구 시드 구문을 잃어버리면 지갑을 복원할 수 없음을 이해합니다.",
     "copied": "복사되었습니다!",
     "copy": "클립보드에 복사",
     "text": "지갑을 복원하려면 이 코드를 다시 사용해야 합니다.",
     "title": "시드 구문을 적어 안전한 곳에 보관하세요"
   },
-  "skip": "Skip for now",
+  "skip": "지금은 건너뛰기",
   "steps": {
-    "chip": "Step {{step}} of {{total}}",
-    "complete-false": "Incomplete",
-    "complete-true": "Complete",
-    "step": "Step {{stepNumber}}",
-    "subtitle-pin": "Prevents unauthorized wallet access",
-    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
-    "title-pin": "Set a secure PIN",
-    "title-seeds": "Back up your Seed Phrase"
+    "chip": "{{total}} 중 {{step}} 단계",
+    "complete-false": "미완료",
+    "complete-true": "완료",
+    "step": "단계 {{stepNumber}}",
+    "subtitle-pin": "무단 지갑 접근 방지",
+    "subtitle-seeds": "기기를 분실해도 자금을 복구할 수 있도록 보장합니다",
+    "title-pin": "안전한 PIN 설정",
+    "title-seeds": "시드 구문 백업"
   },
   "verifySeed": {
-    "button": "Confirm seed phrase",
+    "button": "시드 구문 확인",
     "placeholder": "아래 단어를 올바른 순서로 클릭하세요",
     "text": "시드 구문을 올바르게 기록했는지 확인하려면, 단어를 올바른 순서로 선택하세요.",
     "title": "시드 구문 확인"
   },
   "warning": {
-    "steps": "Steps",
-    "title": "Secure your wallet"
+    "steps": "단계",
+    "title": "지갑 보호"
   }
 }

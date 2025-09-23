@@ -38,7 +38,7 @@
     "waiting-for-wallet": "Cüzdan bekleniyor",
     "wallet-started": "Cüzdan başlatıldı"
   },
-  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
+  "updated-downloaded": "Güncelleme indirildi: Tari Universe yeniden başlatılıyor",
   "would-you-like-to-install": "Tari Universe'ü şimdi yüklemek ister misiniz {{version}} ?",
   "yes": "Evet"
 }

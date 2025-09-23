@@ -1,11 +1,11 @@
 {
-  "all-activity": "All activity",
+  "all-activity": "Tüm etkinlik",
   "confirmation-message": "İşleminiz gönderildi!\nBirkaç blok madenciliğinden sonra geçmişinizde görünecektir.",
   "empty-tx": "İşlem bulunamadı",
   "history": {
     "available-balance": "Mevcut",
     "label-rewards": "Ödüllerim",
-    "my-balance": "My Balance",
+    "my-balance": "Bakiyem",
     "sync-with-phone": "Telefonla Senkronize Et",
     "transaction-details": "İşlem Detayları",
     "view-details": "Detayları görüntüle"
@@ -20,33 +20,33 @@
     "tooltip-emoji-id-text2": "Yat desteği yakında geliyor!",
     "tooltip-emoji-id-title": "Emoji Kimliği"
   },
-  "rewards": "Rewards",
+  "rewards": "Ödüller",
   "security": {
     "keychain": {
-      "enable": "Enable Keychain Access",
-      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+      "enable": "Anahtar Zinciri Erişimini Etkinleştir",
+      "warning": "Bu işlem için anahtar zinciri erişimi gereklidir.\nLütfen tekrar deneyin ve “izin ver” seçeneğini seçin."
     },
     "pin": {
-      "create": "Create PIN",
-      "create-confirm": "Confirm PIN",
-      "creation-subtitle": "Set a secure PIN code to protect your wallet on this device.\nYour PIN stays private—it’s never stored or shared with Tari Universe.",
-      "creation-subtitle-confirm": "Enter your PIN again to confirm it is correct.",
-      "creation-title": "Create your Wallet PIN",
-      "creation-title-confirm": "Confirm your PIN",
-      "enter": "Enter your PIN",
-      "enter-new": "Enter a new PIN",
-      "enter-skip": "Skip for now",
-      "error-match": "That’s not quite right. Try again or create a new PIN.",
-      "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
-      "forgot": "Forgot PIN"
+      "create": "PIN Oluştur",
+      "create-confirm": "PIN\"i Onayla",
+      "creation-subtitle": "Bu cihazda cüzdanınızı korumak için güvenli bir PIN kodu ayarlayın.\nPIN\"iniz gizli kalır—Tari Universe ile asla saklanmaz veya paylaşılmaz.",
+      "creation-subtitle-confirm": "Doğru olduğunu onaylamak için PIN\"inizi tekrar girin.",
+      "creation-title": "Cüzdan PIN\"inizi oluşturun",
+      "creation-title-confirm": "PIN\"inizi onaylayın",
+      "enter": "PIN\"inizi girin",
+      "enter-new": "Yeni bir PIN girin",
+      "enter-skip": "Şimdilik atla",
+      "error-match": "Bu tam olarak doğru değil. Tekrar deneyin veya yeni bir PIN oluşturun.",
+      "explainer": "Bu PIN\"i unutursanız, cüzdanınıza yeniden erişmenin tek yolu seed cümlenizden geri yüklemektir.",
+      "forgot": "PIN\"i unuttum"
     },
     "reminder": {
-      "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
-      "maybe-later": "Maybe later",
-      "start-now": "Start now",
-      "title": "Protect your Tari"
+      "description": "Cüzdanınızı henüz güvence altına almadınız. Seed cümlenizi yedeklemek, tokenlerinizi güvende tutar ve yalnızca sizin erişebilmenizi sağlar.\nHadi şimdi yapalım—sadece bir anınızı alacak",
+      "maybe-later": "Belki sonra",
+      "start-now": "Şimdi başla",
+      "title": "Tari\"nizi koruyun"
     },
-    "seedwords-empty": "Add seed words to restore another Tari Address"
+    "seedwords-empty": "Başka bir Tari Adresini geri yüklemek için seed kelimeleri ekleyin"
   },
   "send": {
     "balance": "Bakiye",
@@ -99,7 +99,7 @@
     "balance": "Bakiye",
     "block-hash": "Blok Hash",
     "buy-tari": "Tari Satın Al",
-    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
+    "buy-tari-subtitle": "Bu desteklenen borsalardan herhangi birinden Tari satın alın.",
     "buy-tari-wxtm": "Tari (wXTM) Satın Al",
     "completed": "Tamamlandı",
     "connect-not-supported": "WalletConnect bağlayıcısı bulunamadı.",
@@ -147,14 +147,14 @@
     "your-xtm-is-on-the-way": "XTM'leriniz yolda!"
   },
   "sync-message": {
-    "completed": "Any moment now",
-    "line1": "Sync in progress. ",
-    "line2": " remaining",
+    "completed": "Her an şimdi",
+    "line1": "Senkronizasyon devam ediyor.",
+    "line2": " kalan",
     "line3": "until your wallet balance is displayed",
-    "tooltip-description": "This was your last synced balance, we'll update it once the wallet is ready.",
-    "tooltip-description-mining": "This was your last synced balance, we'll update it once the wallet is ready. But don’t worry, you’re actively mining and earning XTM.",
-    "tooltip-title": "Why the delay?",
-    "top-line": "You are now mining Tari XTM"
+    "tooltip-description": "Bu, son senkronize edilen bakiyenizdi, cüzdan hazır olduğunda güncelleyeceğiz.",
+    "tooltip-description-mining": "Bu, son senkronize edilen bakiyenizdi, cüzdan hazır olduğunda güncelleyeceğiz. Ama endişelenmeyin, aktif olarak madencilik yapıyor ve XTM kazanıyorsunuz.",
+    "tooltip-title": "Neden gecikme?",
+    "top-line": "Şu anda Tari XTM madenciliği yapıyorsunuz"
   },
   "tabs": {
     "history": "Geçmiş",
@@ -162,17 +162,17 @@
     "send": "Gönder"
   },
   "tari": "Tari",
-  "transactions": "Transactions",
+  "transactions": "İşlemler",
   "wallet-connected": "Cüzdan Bağlandı",
-  "wallet-is-scanning": "<strong>Wallet is loading...</strong>",
-  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> {{scanned}} / {{total}}",
+  "wallet-is-scanning": "<strong>Cüzdan yükleniyor...</strong>",
+  "wallet-scanning-with-progress": "<strong>Cüzdan yükleniyor {{percentage}}%</strong> {{scanned}} / {{total}}",
   "xc": {
-    "address-eth": "Exchange ETH Address",
-    "buy-tari": "Buy Tari from an exchange",
-    "buy-tari-subtitle": "Available on selected exchanges.",
-    "mine-directly-to": "Mine directly to an exchange",
-    "mine-directly-to-exchange": "Mine directly to {{exchangeName}}",
-    "mining-here": "Mining here",
-    "or": "or"
+    "address-eth": "ETH Adresini Değiştir",
+    "buy-tari": "Bir borsadan Tari satın alın",
+    "buy-tari-subtitle": "Seçili borsalarda mevcut.",
+    "mine-directly-to": "Bir borsaya doğrudan madencilik yap",
+    "mine-directly-to-exchange": "{{exchangeName}}\"e doğrudan madencilik yap",
+    "mining-here": "Burada madencilik yapılıyor",
+    "or": "veya"
   }
 }

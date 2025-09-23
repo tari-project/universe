@@ -1,12 +1,12 @@
 {
   "common": {
-    "all-done": "You’re all done!",
+    "all-done": "Hepsi tamam!",
     "got-it": "Anladım"
   },
   "complete": {
-    "continue": "Continue to Tari Universe",
-    "happy-mining": "Happy mining!",
-    "secured": "Your wallet is now securely backed up—great job!\\nYour Tari tokens are safe and ready whenever you need them, even if you switch or lose your device."
+    "continue": "Tari Universe\"e devam et",
+    "happy-mining": "Mutlu madencilikler!",
+    "secured": "Cüzdanınız şimdi güvenli bir şekilde yedeklendi—harika iş!\nTari tokenleriniz güvende ve cihazınızı değiştirseniz veya kaybetseniz bile ihtiyaç duyduğunuzda hazır."
   },
   "completedTip": {
     "text": "Seed kelimeleriniz ayarlarınızda tekrar bulunabilir",
@@ -14,10 +14,10 @@
   },
   "intro": {
     "balance": "Cüzdanınızda <span>{{balance}}</span> XTM var",
-    "button": "Secure my wallet",
-    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
+    "button": "Cüzdanımı güvence altına al",
+    "subtitle": "Artık ilk Tari tokenlerinize sahipsiniz. Cüzdanınızı iki kolay adımda hızlıca koruyalım.",
     "text": "Tari Universe, madenciliğe başladığınızda sizin için otomatik olarak bir cüzdan kurar. Seed kelimelerinizi güvenli bir yerde saklayarak cüzdanınıza her zaman erişiminiz olduğundan emin olun.",
-    "title": "Let’s secure your wallet.",
+    "title": "Cüzdanınızı güvence altına alalım.",
     "warning": "Şiddetle tavsiye edilir"
   },
   "reminderTip": {
@@ -25,32 +25,32 @@
     "title": "Ayarlarınızda seed kelimelerinizi hızlıca yedekleyin"
   },
   "seedPhrase": {
-    "button": "Verify seed phrase",
+    "button": "Seed cümlesini doğrula",
     "checkbox": "Kurtarma seed kelimelerimi kaybedersem cüzdanımı geri yükleyemeyeceğimi anlıyorum.",
     "copied": "Kopyalandı!",
     "copy": "Panoya kopyala",
     "text": "Cüzdanınızı geri yüklemek için bu koda tekrar ihtiyacınız olacak.",
     "title": "Seed kelimelerinizi yazın ve güvenli bir yerde saklayın"
   },
-  "skip": "Skip for now",
+  "skip": "Şimdilik atla",
   "steps": {
-    "chip": "Step {{step}} of {{total}}",
-    "complete-false": "Incomplete",
-    "complete-true": "Complete",
-    "step": "Step {{stepNumber}}",
-    "subtitle-pin": "Prevents unauthorized wallet access",
-    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
-    "title-pin": "Set a secure PIN",
-    "title-seeds": "Back up your Seed Phrase"
+    "chip": "{{total}} adımın {{step}}\"i",
+    "complete-false": "Tamamlanmadı",
+    "complete-true": "Tamamlandı",
+    "step": "Adım {{stepNumber}}",
+    "subtitle-pin": "Yetkisiz cüzdan erişimini önler",
+    "subtitle-seeds": "Cihazınızı kaybederseniz fonlarınızı kurtarabileceğinizi garanti eder",
+    "title-pin": "Güvenli bir PIN ayarlayın",
+    "title-seeds": "Seed Cümlenizi Yedekleyin"
   },
   "verifySeed": {
-    "button": "Confirm seed phrase",
+    "button": "Seed cümlesini onayla",
     "placeholder": "Aşağıdaki kelimelere doğru sırayla tıklayın",
     "text": "Seed kelimelerinizi doğru yazdığınızdan emin olmak için lütfen kelimeleri doğru sırayla seçin.",
     "title": "Seed kelimelerinizi doğrulayın"
   },
   "warning": {
-    "steps": "Steps",
-    "title": "Secure your wallet"
+    "steps": "Adımlar",
+    "title": "Cüzdanınızı güvence altına alın"
   }
 }

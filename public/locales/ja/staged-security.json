@@ -1,12 +1,12 @@
 {
   "common": {
-    "all-done": "You’re all done!",
+    "all-done": "すべて完了しました！",
     "got-it": "了解しました"
   },
   "complete": {
-    "continue": "Continue to Tari Universe",
-    "happy-mining": "Happy mining!",
-    "secured": "Your wallet is now securely backed up—great job!\\nYour Tari tokens are safe and ready whenever you need them, even if you switch or lose your device."
+    "continue": "Tari Universeに進む",
+    "happy-mining": "マイニングを楽しんでください！",
+    "secured": "ウォレットは安全にバックアップされました—素晴らしい仕事です！\nデバイスを切り替えたり紛失したりしても、Tariトークンは安全で、必要なときにいつでも準備が整っています。"
   },
   "completedTip": {
     "text": "シードフレーズは設定で再度確認できます",
@@ -14,10 +14,10 @@
   },
   "intro": {
     "balance": "あなたのウォレットには<span>{{balance}}</span> XTMがあります",
-    "button": "Secure my wallet",
-    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
+    "button": "ウォレットを保護",
+    "subtitle": "最初のTariトークンを手に入れました。2つの簡単なステップでウォレットをすばやく保護しましょう。",
     "text": "Tari Universeは、マイニングを開始すると自動的にウォレットを設定します。シードフレーズを安全な場所に保管して、常にウォレットにアクセスできるようにしてください。",
-    "title": "Let’s secure your wallet.",
+    "title": "ウォレットを保護しましょう。",
     "warning": "強く推奨"
   },
   "reminderTip": {
@@ -25,32 +25,32 @@
     "title": "設定でシードフレーズをすばやくバックアップ"
   },
   "seedPhrase": {
-    "button": "Verify seed phrase",
+    "button": "シードフレーズを確認",
     "checkbox": "リカバリーシードフレーズを失うとウォレットを復元できないことを理解しています。",
     "copied": "コピーしました！",
     "copy": "クリップボードにコピー",
     "text": "このコードはウォレットを復元する際に再度必要になります。",
     "title": "シードフレーズを書き留めて安全な場所に保管してください"
   },
-  "skip": "Skip for now",
+  "skip": "今はスキップ",
   "steps": {
-    "chip": "Step {{step}} of {{total}}",
-    "complete-false": "Incomplete",
-    "complete-true": "Complete",
-    "step": "Step {{stepNumber}}",
-    "subtitle-pin": "Prevents unauthorized wallet access",
-    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
-    "title-pin": "Set a secure PIN",
-    "title-seeds": "Back up your Seed Phrase"
+    "chip": "ステップ {{step}} / {{total}}",
+    "complete-false": "未完了",
+    "complete-true": "完了",
+    "step": "ステップ {{stepNumber}}",
+    "subtitle-pin": "不正なウォレットアクセスを防止",
+    "subtitle-seeds": "デバイスを紛失した場合でも資金を回復できるようにします",
+    "title-pin": "安全なPINを設定",
+    "title-seeds": "シードフレーズをバックアップ"
   },
   "verifySeed": {
-    "button": "Confirm seed phrase",
+    "button": "シードフレーズを確認",
     "placeholder": "以下の単語を正しい順序でクリックしてください",
     "text": "シードフレーズを正しく書き留めたことを確認するため、正しい順序で単語を選択してください。",
     "title": "シードフレーズを確認"
   },
   "warning": {
-    "steps": "Steps",
-    "title": "Secure your wallet"
+    "steps": "ステップ",
+    "title": "ウォレットを保護"
   }
 }
