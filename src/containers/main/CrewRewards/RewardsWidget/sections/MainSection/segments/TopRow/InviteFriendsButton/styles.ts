@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import * as m from 'motion/react-m';
 
-export const Wrapper = styled.button`
+export const Wrapper = styled(m.button)`
     display: flex;
     align-items: center;
     flex-shrink: 0;

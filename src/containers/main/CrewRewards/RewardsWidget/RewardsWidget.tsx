@@ -1,6 +1,3 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-
 import CrewSection from './sections/CrewSection/CrewSection';
 import MainSection from './sections/MainSection/MainSection';
 import StreakProgress from './sections/StreakProgress/StreakProgress';
@@ -19,8 +16,7 @@ const introAnimation = {
 };
 
 export default function RewardsWidget() {
-    const { t } = useTranslation();
-    const { isOpen, setIsOpen, isMinimized } = useCrewRewardsStore();
+    const { isOpen, isMinimized } = useCrewRewardsStore();
     const isLoggedIn = useAirdropStore((s) => !!s.airdropTokens);
 
     if (isMinimized) {

@@ -18,7 +18,7 @@ export default function InviteFriendsButton() {
     };
 
     return (
-        <Wrapper type="button" onClick={handleClick}>
+        <Wrapper type="button" onClick={handleClick} layout>
             <AnimatePresence>
                 {isCopied && (
                     <Copied
