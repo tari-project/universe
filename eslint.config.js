@@ -51,7 +51,6 @@ export default [
             'react/jsx-uses-react': 'off',
             'react/react-in-jsx-scope': 'off',
             'i18next/no-literal-string': ['error', { markupOnly: true }],
-            'react-hooks/react-compiler': 'warn',
         },
     },
     reactCompiler.configs.recommended,
