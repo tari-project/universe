@@ -1,13 +1,13 @@
 {
   "bubbles": {
-    "active-miners": "active miners",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
-    "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "active-miners": "활성 채굴자",
+    "ago": "전",
+    "block": "블록",
+    "got-rewarded": "보상을 받았습니다",
+    "miners": "채굴자",
+    "pool": "풀",
+    "solved": "해결됨",
+    "solving": "해결 중"
   },
   "connection-to-node-lost": "마이너와의 연결이 끊어졌습니다. 마이너가 다시 연결되거나 재시작될 때까지 기다려주세요.",
   "cpu-power": "CPU 전력",
@@ -38,7 +38,7 @@
   },
   "pool": {
     "accepted_shares": "수락된 공유",
-    "balance": "Total earnings",
+    "balance": "총 수익",
     "min_payout": "최소 지급액",
     "unpaid": "미지급"
   },

@@ -38,7 +38,7 @@
     "waiting-for-wallet": "等待钱包",
     "wallet-started": "钱包已启动"
   },
-  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
+  "updated-downloaded": "更新已下载：重新启动 Tari Universe",
   "would-you-like-to-install": "您想现在安装 Tari Universe {{version}} 吗？",
   "yes": "是"
 }
