@@ -1,11 +1,11 @@
 {
-  "all-activity": "All activity",
+  "all-activity": "所有活动",
   "confirmation-message": "您的交易已提交！\n在挖掘几个区块后，它将显示在您的历史记录中。",
   "empty-tx": "未找到交易",
   "history": {
     "available-balance": "可用",
     "label-rewards": "我的奖励",
-    "my-balance": "My Balance",
+    "my-balance": "我的余额",
     "sync-with-phone": "与手机同步",
     "transaction-details": "交易详情",
     "view-details": "查看详情"
@@ -20,33 +20,33 @@
     "tooltip-emoji-id-text2": "Yat支持即将推出！",
     "tooltip-emoji-id-title": "表情符号ID"
   },
-  "rewards": "Rewards",
+  "rewards": "奖励",
   "security": {
     "keychain": {
-      "enable": "Enable Keychain Access",
-      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+      "enable": "启用钥匙串访问",
+      "warning": "此操作需要钥匙串访问。\n请重试并选择“允许”。"
     },
     "pin": {
-      "create": "Create PIN",
-      "create-confirm": "Confirm PIN",
-      "creation-subtitle": "Set a secure PIN code to protect your wallet on this device.\nYour PIN stays private—it’s never stored or shared with Tari Universe.",
-      "creation-subtitle-confirm": "Enter your PIN again to confirm it is correct.",
-      "creation-title": "Create your Wallet PIN",
-      "creation-title-confirm": "Confirm your PIN",
-      "enter": "Enter your PIN",
-      "enter-new": "Enter a new PIN",
-      "enter-skip": "Skip for now",
-      "error-match": "That’s not quite right. Try again or create a new PIN.",
-      "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
-      "forgot": "Forgot PIN"
+      "create": "创建 PIN",
+      "create-confirm": "确认 PIN",
+      "creation-subtitle": "设置一个安全的 PIN 码以保护您在此设备上的钱包。\n您的 PIN 是私密的——它不会被存储或与 Tari Universe 共享。",
+      "creation-subtitle-confirm": "再次输入您的 PIN 以确认其正确。",
+      "creation-title": "创建您的钱包 PIN",
+      "creation-title-confirm": "确认您的 PIN",
+      "enter": "输入您的 PIN",
+      "enter-new": "输入新 PIN",
+      "enter-skip": "暂时跳过",
+      "error-match": "这不太对。请重试或创建新 PIN。",
+      "explainer": "如果您忘记此 PIN，恢复种子短语是重新访问钱包的唯一方法。",
+      "forgot": "忘记 PIN"
     },
     "reminder": {
-      "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
-      "maybe-later": "Maybe later",
-      "start-now": "Start now",
-      "title": "Protect your Tari"
+      "description": "您尚未保护您的钱包。备份您的种子短语可以确保您的代币安全，并确保只有您可以访问它们。\n让我们现在就做——只需片刻。",
+      "maybe-later": "也许稍后",
+      "start-now": "立即开始",
+      "title": "保护您的 Tari"
     },
-    "seedwords-empty": "Add seed words to restore another Tari Address"
+    "seedwords-empty": "添加种子词以恢复另一个 Tari 地址"
   },
   "send": {
     "balance": "余额",
@@ -99,7 +99,7 @@
     "balance": "余额",
     "block-hash": "区块哈希",
     "buy-tari": "购买 Tari",
-    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
+    "buy-tari-subtitle": "从以下支持的交易所购买 Tari。",
     "buy-tari-wxtm": "购买 Tari (wXTM)",
     "completed": "已完成",
     "connect-not-supported": "未找到 WalletConnect 连接器。",
@@ -147,14 +147,14 @@
     "your-xtm-is-on-the-way": "您的 XTM 正在路上！"
   },
   "sync-message": {
-    "completed": "Any moment now",
-    "line1": "Sync in progress. ",
-    "line2": " remaining",
+    "completed": "随时准备就绪",
+    "line1": "正在同步。",
+    "line2": " 剩余",
     "line3": "until your wallet balance is displayed",
-    "tooltip-description": "This was your last synced balance, we'll update it once the wallet is ready.",
-    "tooltip-description-mining": "This was your last synced balance, we'll update it once the wallet is ready. But don’t worry, you’re actively mining and earning XTM.",
-    "tooltip-title": "Why the delay?",
-    "top-line": "You are now mining Tari XTM"
+    "tooltip-description": "这是您上次同步的余额，钱包准备好后我们会更新。",
+    "tooltip-description-mining": "这是您上次同步的余额，钱包准备好后我们会更新。但别担心，您正在积极挖矿并赚取 XTM。",
+    "tooltip-title": "为什么延迟？",
+    "top-line": "您现在正在挖矿 Tari XTM"
   },
   "tabs": {
     "history": "历史",
@@ -162,17 +162,17 @@
     "send": "发送"
   },
   "tari": "Tari",
-  "transactions": "Transactions",
+  "transactions": "交易",
   "wallet-connected": "钱包已连接",
-  "wallet-is-scanning": "<strong>Wallet is loading...</strong>",
-  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> {{scanned}} / {{total}}",
+  "wallet-is-scanning": "<strong>钱包正在加载...</strong>",
+  "wallet-scanning-with-progress": "<strong>钱包正在加载 {{percentage}}%</strong> {{scanned}} / {{total}}",
   "xc": {
-    "address-eth": "Exchange ETH Address",
-    "buy-tari": "Buy Tari from an exchange",
-    "buy-tari-subtitle": "Available on selected exchanges.",
-    "mine-directly-to": "Mine directly to an exchange",
-    "mine-directly-to-exchange": "Mine directly to {{exchangeName}}",
-    "mining-here": "Mining here",
-    "or": "or"
+    "address-eth": "交易所 ETH 地址",
+    "buy-tari": "从交易所购买 Tari",
+    "buy-tari-subtitle": "在精选交易所可用。",
+    "mine-directly-to": "直接挖矿到交易所",
+    "mine-directly-to-exchange": "直接挖矿到 {{exchangeName}}",
+    "mining-here": "在这里挖矿",
+    "or": "或"
   }
 }

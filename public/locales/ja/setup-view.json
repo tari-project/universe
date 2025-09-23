@@ -38,7 +38,7 @@
     "waiting-for-wallet": "ウォレットを待っています",
     "wallet-started": "ウォレットが起動しました"
   },
-  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
+  "updated-downloaded": "アップデートがダウンロードされました：Tari Universeを再起動中",
   "would-you-like-to-install": "Tari Universe {{version}} を今すぐインストールしますか？",
   "yes": "はい"
 }

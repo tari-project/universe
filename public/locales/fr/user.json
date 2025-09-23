@@ -1,8 +1,8 @@
 {
   "feedback": {
-    "chip_text": "Feedback",
-    "optional_label": "(optional)",
-    "submit_cta": "Send Feedback",
-    "text_placeholder": "Add any other details here"
+    "chip_text": "Retour d\"information",
+    "optional_label": "(facultatif)",
+    "submit_cta": "Envoyer des commentaires",
+    "text_placeholder": "Ajoutez d\"autres détails ici"
   }
 }

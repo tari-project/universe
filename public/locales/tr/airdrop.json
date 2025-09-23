@@ -1,8 +1,8 @@
 {
   "airdropGame": "Airdrop Oyunu",
   "auth": {
-    "url-error": "Could not open URL",
-    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+    "url-error": "URL açılamadı",
+    "url-error-copy": "Panonuza kopyalandı, lütfen giriş yapmak için bağlantıyı doğrudan ziyaret edin"
   },
   "bonus-gems-earned": "Bonus taşlar kazanıldı",
   "claimGems": "Taşları Talep Et",
@@ -18,56 +18,56 @@
   "copying": "Kopyalanıyor...",
   "crewRewards": {
     "actions": {
-      "claim": "Claim {{amount}} XTM",
-      "claimed": "Claimed",
-      "nudge": "Nudge"
+      "claim": "{{amount}} XTM talep et",
+      "claimed": "Talep Edildi",
+      "nudge": "Hatırlatma"
     },
-    "activeMinersStat": "Active Miners",
-    "bonusXTMEarned": "Bonus XTM Earned",
-    "copied": "Copied!",
+    "activeMinersStat": "Aktif Madenciler",
+    "bonusXTMEarned": "Kazanılan Bonus XTM",
+    "copied": "Kopyalandı!",
     "crewStatus": {
-      "completed": "Completed",
-      "inProgress": "In Progress",
-      "needsNudge": "Needs Nudge"
+      "completed": "Tamamlandı",
+      "inProgress": "Devam Ediyor",
+      "needsNudge": "Hatırlatma Gerekiyor"
     },
-    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
-    "errorLoadingData": "Error loading crew data. Please try again.",
+    "earnDescription": "Arkadaşınızın madencilik yaptığı her <strong>{{daysRequired}} gün</strong> için <strong>{{userReward}} XTM</strong> kazanın. Arkadaşınız da <strong>{{friendReward}} XTM</strong> kazanacak.",
+    "errorLoadingData": "Ekip verileri yüklenirken hata oluştu. Lütfen tekrar deneyin.",
     "feedback": {
-      "nudgeSent": "Nudge sent!",
-      "rewardClaimed": "Reward claimed!"
+      "nudgeSent": "Hatırlatma gönderildi!",
+      "rewardClaimed": "Ödül talep edildi!"
     },
     "filters": {
-      "active": "Active",
-      "all": "All",
-      "complete": "Complete",
-      "inactive": "Inactive"
+      "active": "Aktif",
+      "all": "Tümü",
+      "complete": "Tamamlandı",
+      "inactive": "Pasif"
     },
-    "inviteFriends": "Invite Friends",
-    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "inviteFriends": "Arkadaşları Davet Et",
+    "inviteFriendsMessage": "Arkadaşlarınızı davet edin ve <strong>bonus XTM</strong> kazanmaya başlayın!",
     "login": {
-      "bonusText": "Earn bonus rewards up to {{maxWeeks}} weeks per invite",
-      "description": "You earn <strong>{{userReward}} bonus XTM/week</strong> AND your friend earns <strong>{{friendReward}} bonus XTM/week</strong> when you and your friend both mine",
-      "loginButton": "Log in & Start Earning!",
-      "title": "Mine with friends. <strong>Earn together.</strong>"
+      "bonusText": "Her davet için {{maxWeeks}} haftaya kadar bonus ödüller kazanın",
+      "description": "Siz ve arkadaşınız madencilik yaptığınızda <strong>{{userReward}} bonus XTM/hafta</strong> kazanırsınız VE arkadaşınız <strong>{{friendReward}} bonus XTM/hafta</strong> kazanır",
+      "loginButton": "Giriş Yap & Kazanmaya Başla!",
+      "title": "Arkadaşlarınızla madencilik yapın. <strong>Birlikte kazanın.</strong>"
     },
-    "manageYourCrew": "Manage your crew",
-    "myCrew": "My Crew",
-    "of": "of",
+    "manageYourCrew": "Ekibinizi yönetin",
+    "myCrew": "Ekibim",
+    "of": "üzerinden",
     "streak": {
-      "day": "Day",
-      "dayStreak": "{{days}} Day Streak",
-      "daysToMinimum": "{{days}} more days to meet minimum requirements!",
-      "keepStreak": "Keep your streak to keep earning rewards!",
-      "loadingStreak": "Loading streak...",
-      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
-      "minimumRequirementsMet": "You've met the minimum requirements. Keep going!",
-      "multiDayStreak": "{{days}} Day Streak",
-      "oneDayStreak": "1 Day Streak",
-      "startMiningMessage": "Start mining to begin your streak and earn rewards!",
-      "startYourStreak": "Start Your Streak!",
-      "unlockBonusRewards": "Unlock your bonus rewards"
+      "day": "Gün",
+      "dayStreak": "{{days}} Günlük Seri",
+      "daysToMinimum": "Minimum gereksinimleri karşılamak için {{days}} gün daha!",
+      "keepStreak": "Ödüller kazanmaya devam etmek için serinizi koruyun!",
+      "loadingStreak": "Seri yükleniyor...",
+      "mineConsecutiveDays": "Bonus XTM kazanmak için her hafta en az <strong>{{streakDaysRequired}} ardışık gün</strong> madencilik yapın.",
+      "minimumRequirementsMet": "Minimum gereksinimleri karşıladınız. Devam edin!",
+      "multiDayStreak": "{{days}} Günlük Seri",
+      "oneDayStreak": "1 Günlük Seri",
+      "startMiningMessage": "Serinizi başlatmak ve ödüller kazanmak için madenciliğe başlayın!",
+      "startYourStreak": "Serinizi Başlatın!",
+      "unlockBonusRewards": "Bonus ödüllerinizi açın"
     },
-    "title": "Rewards"
+    "title": "Ödüller"
   },
   "doLater": "Bunu daha sonra yapacağım",
   "earnBonusXTM": "Bonus XTM",

@@ -1,12 +1,12 @@
 {
   "common": {
-    "all-done": "You’re all done!",
+    "all-done": "Sie sind fertig!",
     "got-it": "Verstanden"
   },
   "complete": {
-    "continue": "Continue to Tari Universe",
-    "happy-mining": "Happy mining!",
-    "secured": "Your wallet is now securely backed up—great job!\\nYour Tari tokens are safe and ready whenever you need them, even if you switch or lose your device."
+    "continue": "Weiter zu Tari Universe",
+    "happy-mining": "Viel Spaß beim Mining!",
+    "secured": "Ihr Wallet ist jetzt sicher gesichert – gute Arbeit!\nIhre Tari-Token sind sicher und bereit, wann immer Sie sie benötigen, auch wenn Sie Ihr Gerät wechseln oder verlieren."
   },
   "completedTip": {
     "text": "Ihre Seed-Wörter können in Ihren Einstellungen erneut gefunden werden",
@@ -14,10 +14,10 @@
   },
   "intro": {
     "balance": "Ihr Wallet hat <span>{{balance}}</span> XTM",
-    "button": "Secure my wallet",
-    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
+    "button": "Mein Wallet sichern",
+    "subtitle": "Sie haben jetzt Ihre ersten Tari-Token. Lassen Sie uns Ihr Wallet schnell in zwei einfachen Schritten schützen.",
     "text": "Tari Universe richtet automatisch eine Wallet für Sie ein, wenn Sie mit dem Mining beginnen. Stellen Sie sicher, dass Sie immer Zugriff auf Ihre Wallet haben, indem Sie Ihre Seed-Wörter an einem sicheren Ort aufbewahren.",
-    "title": "Let’s secure your wallet.",
+    "title": "Lassen Sie uns Ihr Wallet sichern.",
     "warning": "Sehr empfohlen"
   },
   "reminderTip": {
@@ -25,32 +25,32 @@
     "title": "Sichern Sie Ihre Seed-Wörter schnell in den Einstellungen"
   },
   "seedPhrase": {
-    "button": "Verify seed phrase",
+    "button": "Seed-Phrase überprüfen",
     "checkbox": "Ich verstehe, dass ich meine Wallet nicht wiederherstellen kann, wenn ich meine Wiederherstellungs-Seed-Wörter verliere.",
     "copied": "Kopiert!",
     "copy": "In die Zwischenablage kopieren",
     "text": "Sie benötigen diesen Code erneut, um Ihre Wallet wiederherzustellen.",
     "title": "Notieren Sie Ihre Seed-Wörter und bewahren Sie sie an einem sicheren Ort auf"
   },
-  "skip": "Skip for now",
+  "skip": "Für jetzt überspringen",
   "steps": {
-    "chip": "Step {{step}} of {{total}}",
-    "complete-false": "Incomplete",
-    "complete-true": "Complete",
-    "step": "Step {{stepNumber}}",
-    "subtitle-pin": "Prevents unauthorized wallet access",
-    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
-    "title-pin": "Set a secure PIN",
-    "title-seeds": "Back up your Seed Phrase"
+    "chip": "Schritt {{step}} von {{total}}",
+    "complete-false": "Unvollständig",
+    "complete-true": "Abgeschlossen",
+    "step": "Schritt {{stepNumber}}",
+    "subtitle-pin": "Verhindert unbefugten Zugriff auf das Wallet",
+    "subtitle-seeds": "Stellt sicher, dass Sie Gelder wiederherstellen können, wenn Sie Ihr Gerät verlieren",
+    "title-pin": "Sicheren PIN festlegen",
+    "title-seeds": "Sichern Sie Ihre Seed-Phrase"
   },
   "verifySeed": {
-    "button": "Confirm seed phrase",
+    "button": "Seed-Phrase bestätigen",
     "placeholder": "Klicken Sie die Wörter unten in der richtigen Reihenfolge an",
     "text": "Um sicherzustellen, dass Sie Ihre Seed-Wörter korrekt aufgeschrieben haben, wählen Sie bitte die Wörter in der richtigen Reihenfolge aus.",
     "title": "Überprüfen Sie Ihre Seed-Wörter"
   },
   "warning": {
-    "steps": "Steps",
-    "title": "Secure your wallet"
+    "steps": "Schritte",
+    "title": "Sichern Sie Ihr Wallet"
   }
 }

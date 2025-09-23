@@ -1,11 +1,11 @@
 {
-  "all-activity": "All activity",
+  "all-activity": "Wszystkie aktywności",
   "confirmation-message": "Twoja transakcja została przesłana!\nPojawi się w historii po wykopaniu kilku bloków.",
   "empty-tx": "Nie znaleziono transakcji",
   "history": {
     "available-balance": "Dostępne",
     "label-rewards": "Moje nagrody",
-    "my-balance": "My Balance",
+    "my-balance": "Moje saldo",
     "sync-with-phone": "Synchronizuj z telefonem",
     "transaction-details": "Szczegóły transakcji",
     "view-details": "Zobacz szczegóły"
@@ -20,33 +20,33 @@
     "tooltip-emoji-id-text2": "Wsparcie Yat wkrótce!",
     "tooltip-emoji-id-title": "ID Emoji"
   },
-  "rewards": "Rewards",
+  "rewards": "Nagrody",
   "security": {
     "keychain": {
-      "enable": "Enable Keychain Access",
-      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+      "enable": "Włącz dostęp do pęku kluczy",
+      "warning": "Dostęp do pęku kluczy jest wymagany do tej operacji.\nProszę spróbować ponownie i wybrać „zezwól”."
     },
     "pin": {
-      "create": "Create PIN",
-      "create-confirm": "Confirm PIN",
-      "creation-subtitle": "Set a secure PIN code to protect your wallet on this device.\nYour PIN stays private—it’s never stored or shared with Tari Universe.",
-      "creation-subtitle-confirm": "Enter your PIN again to confirm it is correct.",
-      "creation-title": "Create your Wallet PIN",
-      "creation-title-confirm": "Confirm your PIN",
-      "enter": "Enter your PIN",
-      "enter-new": "Enter a new PIN",
-      "enter-skip": "Skip for now",
-      "error-match": "That’s not quite right. Try again or create a new PIN.",
-      "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
-      "forgot": "Forgot PIN"
+      "create": "Utwórz PIN",
+      "create-confirm": "Potwierdź PIN",
+      "creation-subtitle": "Ustaw bezpieczny kod PIN, aby chronić swój portfel na tym urządzeniu.\nTwój PIN pozostaje prywatny—nigdy nie jest przechowywany ani udostępniany w Tari Universe.",
+      "creation-subtitle-confirm": "Wprowadź ponownie swój PIN, aby potwierdzić jego poprawność.",
+      "creation-title": "Utwórz PIN do portfela",
+      "creation-title-confirm": "Potwierdź swój PIN",
+      "enter": "Wprowadź swój PIN",
+      "enter-new": "Wprowadź nowy PIN",
+      "enter-skip": "Pomiń na razie",
+      "error-match": "To nie całkiem to. Spróbuj ponownie lub utwórz nowy PIN.",
+      "explainer": "Jeśli zapomnisz tego PIN-u, jedynym sposobem na odzyskanie dostępu do portfela jest przywrócenie go z frazy kluczowej.",
+      "forgot": "Zapomniałeś PIN"
     },
     "reminder": {
-      "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
-      "maybe-later": "Maybe later",
-      "start-now": "Start now",
-      "title": "Protect your Tari"
+      "description": "Nie zabezpieczyłeś jeszcze swojego portfela. Kopia zapasowa frazy kluczowej zabezpiecza twoje tokeny i zapewnia, że tylko ty masz do nich dostęp.\nZróbmy to teraz—zajmie to tylko chwilę",
+      "maybe-later": "Może później",
+      "start-now": "Rozpocznij teraz",
+      "title": "Chroń swoje Tari"
     },
-    "seedwords-empty": "Add seed words to restore another Tari Address"
+    "seedwords-empty": "Dodaj słowa kluczowe, aby przywrócić inny adres Tari"
   },
   "send": {
     "balance": "Saldo",
@@ -99,7 +99,7 @@
     "balance": "Saldo",
     "block-hash": "Hash bloku",
     "buy-tari": "Kup Tari",
-    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
+    "buy-tari-subtitle": "Kup Tari na jednej z obsługiwanych giełd.",
     "buy-tari-wxtm": "Kup Tari (wXTM)",
     "completed": "Ukończono",
     "connect-not-supported": "Nie znaleziono konektora WalletConnect.",
@@ -147,14 +147,14 @@
     "your-xtm-is-on-the-way": "Twoje XTM jest w drodze!"
   },
   "sync-message": {
-    "completed": "Any moment now",
-    "line1": "Sync in progress. ",
-    "line2": " remaining",
+    "completed": "Już za chwilę",
+    "line1": "Synchronizacja w toku.",
+    "line2": " pozostało",
     "line3": "until your wallet balance is displayed",
-    "tooltip-description": "This was your last synced balance, we'll update it once the wallet is ready.",
-    "tooltip-description-mining": "This was your last synced balance, we'll update it once the wallet is ready. But don’t worry, you’re actively mining and earning XTM.",
-    "tooltip-title": "Why the delay?",
-    "top-line": "You are now mining Tari XTM"
+    "tooltip-description": "To był twój ostatni zsynchronizowany stan konta, zaktualizujemy go, gdy portfel będzie gotowy.",
+    "tooltip-description-mining": "To był twój ostatni zsynchronizowany stan konta, zaktualizujemy go, gdy portfel będzie gotowy. Ale nie martw się, aktywnie kopiesz i zarabiasz XTM.",
+    "tooltip-title": "Dlaczego opóźnienie?",
+    "top-line": "Teraz kopiesz Tari XTM"
   },
   "tabs": {
     "history": "Historia",
@@ -162,17 +162,17 @@
     "send": "Wyślij"
   },
   "tari": "Tari",
-  "transactions": "Transactions",
+  "transactions": "Transakcje",
   "wallet-connected": "Portfel połączony",
-  "wallet-is-scanning": "<strong>Wallet is loading...</strong>",
-  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> {{scanned}} / {{total}}",
+  "wallet-is-scanning": "<strong>Portfel się ładuje...</strong>",
+  "wallet-scanning-with-progress": "<strong>Portfel ładuje się {{percentage}}%</strong> {{scanned}} / {{total}}",
   "xc": {
-    "address-eth": "Exchange ETH Address",
-    "buy-tari": "Buy Tari from an exchange",
-    "buy-tari-subtitle": "Available on selected exchanges.",
-    "mine-directly-to": "Mine directly to an exchange",
-    "mine-directly-to-exchange": "Mine directly to {{exchangeName}}",
-    "mining-here": "Mining here",
-    "or": "or"
+    "address-eth": "Adres wymiany ETH",
+    "buy-tari": "Kup Tari na giełdzie",
+    "buy-tari-subtitle": "Dostępne na wybranych giełdach.",
+    "mine-directly-to": "Kop bezpośrednio na giełdę",
+    "mine-directly-to-exchange": "Kop bezpośrednio do {{exchangeName}}",
+    "mining-here": "Kopanie tutaj",
+    "or": "lub"
   }
 }

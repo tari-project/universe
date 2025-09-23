@@ -1,11 +1,11 @@
 {
-  "all-activity": "All activity",
+  "all-activity": "모든 활동",
   "confirmation-message": "거래가 제출되었습니다!\n몇 개의 블록을 채굴한 후 기록에 표시됩니다.",
   "empty-tx": "거래를 찾을 수 없음",
   "history": {
     "available-balance": "사용 가능",
     "label-rewards": "내 보상",
-    "my-balance": "My Balance",
+    "my-balance": "내 잔액",
     "sync-with-phone": "전화와 동기화",
     "transaction-details": "거래 세부 정보",
     "view-details": "세부 정보 보기"
@@ -20,33 +20,33 @@
     "tooltip-emoji-id-text2": "Yat 지원이 곧 제공됩니다!",
     "tooltip-emoji-id-title": "이모지 ID"
   },
-  "rewards": "Rewards",
+  "rewards": "보상",
   "security": {
     "keychain": {
-      "enable": "Enable Keychain Access",
-      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+      "enable": "키체인 접근 활성화",
+      "warning": "이 작업을 위해 키체인 접근이 필요합니다.\n다시 시도하고 \"허용\"을 선택하세요."
     },
     "pin": {
-      "create": "Create PIN",
-      "create-confirm": "Confirm PIN",
-      "creation-subtitle": "Set a secure PIN code to protect your wallet on this device.\nYour PIN stays private—it’s never stored or shared with Tari Universe.",
-      "creation-subtitle-confirm": "Enter your PIN again to confirm it is correct.",
-      "creation-title": "Create your Wallet PIN",
-      "creation-title-confirm": "Confirm your PIN",
-      "enter": "Enter your PIN",
-      "enter-new": "Enter a new PIN",
-      "enter-skip": "Skip for now",
-      "error-match": "That’s not quite right. Try again or create a new PIN.",
-      "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
-      "forgot": "Forgot PIN"
+      "create": "PIN 생성",
+      "create-confirm": "PIN 확인",
+      "creation-subtitle": "이 기기에서 지갑을 보호하기 위해 안전한 PIN 코드를 설정하세요.\nPIN은 비공개로 유지되며 Tari Universe와 공유되거나 저장되지 않습니다.",
+      "creation-subtitle-confirm": "PIN이 올바른지 확인하기 위해 다시 입력하세요.",
+      "creation-title": "지갑 PIN 생성",
+      "creation-title-confirm": "PIN 확인",
+      "enter": "PIN 입력",
+      "enter-new": "새 PIN 입력",
+      "enter-skip": "지금은 건너뛰기",
+      "error-match": "정확하지 않습니다. 다시 시도하거나 새 PIN을 생성하세요.",
+      "explainer": "이 PIN을 잊어버리면, 지갑에 다시 접근할 수 있는 유일한 방법은 시드 구문을 통해 복원하는 것입니다.",
+      "forgot": "PIN을 잊으셨나요"
     },
     "reminder": {
-      "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
-      "maybe-later": "Maybe later",
-      "start-now": "Start now",
-      "title": "Protect your Tari"
+      "description": "아직 지갑을 보호하지 않았습니다. 시드 구문을 백업하면 토큰이 안전하게 보호되며, 오직 본인만 접근할 수 있습니다.\n지금 바로 시작하세요—잠시만 걸립니다",
+      "maybe-later": "나중에",
+      "start-now": "지금 시작",
+      "title": "Tari를 보호하세요"
     },
-    "seedwords-empty": "Add seed words to restore another Tari Address"
+    "seedwords-empty": "다른 Tari 주소를 복원하려면 시드 단어를 추가하세요"
   },
   "send": {
     "balance": "잔액",
@@ -99,7 +99,7 @@
     "balance": "잔액",
     "block-hash": "블록 해시",
     "buy-tari": "Tari 구매",
-    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
+    "buy-tari-subtitle": "지원되는 거래소에서 Tari를 구매하세요.",
     "buy-tari-wxtm": "Tari (wXTM) 구매",
     "completed": "완료됨",
     "connect-not-supported": "WalletConnect 커넥터를 찾을 수 없습니다.",
@@ -147,14 +147,14 @@
     "your-xtm-is-on-the-way": "XTM이 전송 중입니다!"
   },
   "sync-message": {
-    "completed": "Any moment now",
-    "line1": "Sync in progress. ",
-    "line2": " remaining",
+    "completed": "곧 완료됩니다",
+    "line1": "동기화 진행 중입니다.",
+    "line2": " 남음",
     "line3": "until your wallet balance is displayed",
-    "tooltip-description": "This was your last synced balance, we'll update it once the wallet is ready.",
-    "tooltip-description-mining": "This was your last synced balance, we'll update it once the wallet is ready. But don’t worry, you’re actively mining and earning XTM.",
-    "tooltip-title": "Why the delay?",
-    "top-line": "You are now mining Tari XTM"
+    "tooltip-description": "이것은 마지막으로 동기화된 잔액입니다. 지갑이 준비되면 업데이트됩니다.",
+    "tooltip-description-mining": "이것은 마지막으로 동기화된 잔액입니다. 지갑이 준비되면 업데이트됩니다. 걱정하지 마세요, 활발히 채굴 중이며 XTM을 벌고 있습니다.",
+    "tooltip-title": "왜 지연되나요?",
+    "top-line": "지금 Tari XTM을 채굴 중입니다"
   },
   "tabs": {
     "history": "기록",
@@ -162,17 +162,17 @@
     "send": "보내기"
   },
   "tari": "타리",
-  "transactions": "Transactions",
+  "transactions": "거래",
   "wallet-connected": "지갑 연결됨",
-  "wallet-is-scanning": "<strong>Wallet is loading...</strong>",
-  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> {{scanned}} / {{total}}",
+  "wallet-is-scanning": "<strong>지갑 로딩 중...</strong>",
+  "wallet-scanning-with-progress": "<strong>지갑 로딩 중 {{percentage}}%</strong> {{scanned}} / {{total}}",
   "xc": {
-    "address-eth": "Exchange ETH Address",
-    "buy-tari": "Buy Tari from an exchange",
-    "buy-tari-subtitle": "Available on selected exchanges.",
-    "mine-directly-to": "Mine directly to an exchange",
-    "mine-directly-to-exchange": "Mine directly to {{exchangeName}}",
-    "mining-here": "Mining here",
-    "or": "or"
+    "address-eth": "거래소 ETH 주소",
+    "buy-tari": "거래소에서 Tari 구매",
+    "buy-tari-subtitle": "선택된 거래소에서 사용 가능합니다.",
+    "mine-directly-to": "거래소로 직접 채굴",
+    "mine-directly-to-exchange": "{{exchangeName}}로 직접 채굴",
+    "mining-here": "여기서 채굴 중",
+    "or": "또는"
   }
 }
