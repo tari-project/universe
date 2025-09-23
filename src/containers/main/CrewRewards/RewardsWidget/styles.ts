@@ -20,7 +20,7 @@ export const Holder = styled('div')`
     pointer-events: none;
 `;
 
-export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolean; $isHovering?: boolean }>`
+export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolean }>`
     position: relative;
     z-index: 1;
 
@@ -50,12 +50,6 @@ export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolea
     * {
         pointer-events: all;
     }
-
-    ${({ $isHovering }) =>
-        $isHovering &&
-        css`
-            max-height: 163px;
-        `}
 
     ${({ $isOpen }) =>
         $isOpen &&

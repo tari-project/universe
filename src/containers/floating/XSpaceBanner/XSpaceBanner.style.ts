@@ -30,7 +30,7 @@ export const BannerContent = styled(m.div)<{
     ${({ $crewRewardsActive }) =>
         $crewRewardsActive &&
         css`
-            top: 180px;
+            top: 138px;
             right: 12px;
         `}
 
