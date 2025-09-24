@@ -113,8 +113,8 @@ impl GpuMinerInterfaceTrait for GraxilGpuMiner {
         self.tari_address = Some(tari_address.to_string());
         Ok(())
     }
-    async fn load_worker_name(&mut self, worker_name: &str) -> Result<(), anyhow::Error> {
-        self.worker_name = Some(worker_name.to_string());
+    async fn load_worker_name(&mut self, worker_name: Option<&str>) -> Result<(), anyhow::Error> {
+        self.worker_name = worker_name.map(|name| name.to_string());
         Ok(())
     }
     async fn load_intensity_percentage(
@@ -245,8 +245,13 @@ impl ProcessAdapter for GraxilGpuMiner {
         }
 
         if let Some(tari_address) = &self.tari_address {
+            let mut address = tari_address.clone();
+            if let Some(worker_name) = &self.worker_name {
+                address = format!("{}{}", tari_address, worker_name);
+            }
+
             args.push("--wallet".to_string());
-            args.push(tari_address.clone());
+            args.push(address.clone());
         } else {
             return Err(anyhow::anyhow!(
                 "Tari address must be set before starting the GraxilMiner"
@@ -257,12 +262,6 @@ impl ProcessAdapter for GraxilGpuMiner {
             args.push("--gpu-intensity".to_string());
             args.push(intensity.to_string());
         }
-        args.push("--worker".to_string());
-        args.push(
-            self.worker_name
-                .clone()
-                .unwrap_or_else(|| "tari-universe".to_string()),
-        );
 
         args.push("--log-dir".to_string());
         args.push(log_folder.to_string_lossy().to_string());

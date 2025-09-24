@@ -29,7 +29,7 @@ use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
-use crate::configs::pools::PoolConfig;
+use crate::configs::pools::BasePoolData;
 use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
@@ -1779,12 +1779,16 @@ pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[change_cpu_pool] called with cpu_pool: {cpu_pool:?}");
 
-    ConfigPools::update_field(ConfigPoolsContent::set_selected_cpu_pool, cpu_pool)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigPools::update_field(
+        ConfigPoolsContent::set_current_cpu_pool,
+        CpuPool::from_string(&cpu_pool).map_err(InvokeError::from_anyhow)?,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
-    CpuPoolManager::handle_new_selected_pool(ConfigPools::content().await.selected_cpu_pool())
-        .await;
+    let cpu_pool_content = ConfigPools::content().await.current_cpu_pool();
+
+    CpuPoolManager::handle_new_selected_pool(cpu_pool_content).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "change_cpu_pool took too long: {:?}", timer.elapsed());
@@ -1797,12 +1801,16 @@ pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[change_gpu_pool] called with gpu_pool: {gpu_pool:?}");
 
-    ConfigPools::update_field(ConfigPoolsContent::set_selected_gpu_pool, gpu_pool)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigPools::update_field(
+        ConfigPoolsContent::set_current_gpu_pool,
+        GpuPool::from_string(&gpu_pool).map_err(InvokeError::from_anyhow)?,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
-    GpuPoolManager::handle_new_selected_pool(ConfigPools::content().await.selected_gpu_pool())
-        .await;
+    let gpu_pool_content = ConfigPools::content().await.current_gpu_pool();
+
+    GpuPoolManager::handle_new_selected_pool(gpu_pool_content).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "change_gpu_pool took too long: {:?}", timer.elapsed());
@@ -1811,12 +1819,14 @@ pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
-pub async fn update_selected_gpu_pool_config(updated_config: GpuPool) -> Result<(), InvokeError> {
+pub async fn update_selected_gpu_pool_config(
+    updated_config: BasePoolData<GpuPool>,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[update_selected_gpu_pool_config] called with updated_config: {updated_config:?}");
 
     ConfigPools::update_field(
-        ConfigPoolsContent::update_selected_gpu_config,
+        ConfigPoolsContent::update_current_gpu_config,
         updated_config,
     )
     .await
@@ -1830,12 +1840,14 @@ pub async fn update_selected_gpu_pool_config(updated_config: GpuPool) -> Result<
 }
 
 #[tauri::command]
-pub async fn update_selected_cpu_pool_config(updated_config: CpuPool) -> Result<(), InvokeError> {
+pub async fn update_selected_cpu_pool_config(
+    updated_config: BasePoolData<CpuPool>,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[update_selected_cpu_pool_config] called with updated_config: {updated_config:?}");
 
     ConfigPools::update_field(
-        ConfigPoolsContent::update_selected_cpu_config,
+        ConfigPoolsContent::update_current_cpu_config,
         updated_config,
     )
     .await
@@ -1853,15 +1865,16 @@ pub async fn reset_gpu_pool_config(gpu_pool_name: String) -> Result<(), InvokeEr
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[reset_pool_gpu_pool_config] called with gpu_pool_name: {gpu_pool_name:?}");
 
-    let current_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
-    let gpu_pool = GpuPool::default_from_name_and_miner_type(&gpu_pool_name, current_miner_type);
+    let gpu_pool = GpuPool::from_string(&gpu_pool_name).map_err(InvokeError::from_anyhow)?;
 
-    if let Some(pool) = &gpu_pool {
-        ConfigPools::update_field(ConfigPoolsContent::update_selected_gpu_config, pool.clone())
-            .await
-            .map_err(InvokeError::from_anyhow)?;
-        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
-    }
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_current_gpu_config,
+        gpu_pool.default_content(),
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+    GpuPoolManager::handle_new_selected_pool(gpu_pool.default_content()).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "reset_pool_gpu_pool_config took too long: {:?}", timer.elapsed());
@@ -1874,12 +1887,16 @@ pub async fn reset_cpu_pool_config(cpu_pool_name: String) -> Result<(), InvokeEr
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[reset_pool_cpu_pool_config] called with cpu_pool_name: {cpu_pool_name:?}");
 
-    let cpu_pool = CpuPool::default_from_name(&cpu_pool_name).map_err(InvokeError::from_anyhow)?;
+    let cpu_pool = CpuPool::from_string(&cpu_pool_name).map_err(InvokeError::from_anyhow)?;
 
-    ConfigPools::update_field(ConfigPoolsContent::update_selected_cpu_config, cpu_pool)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_current_cpu_config,
+        cpu_pool.default_content(),
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
     EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+    CpuPoolManager::handle_new_selected_pool(cpu_pool.default_content()).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "reset_pool_cpu_pool_config took too long: {:?}", timer.elapsed());

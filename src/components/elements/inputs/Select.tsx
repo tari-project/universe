@@ -143,6 +143,8 @@ export function Select({
     const selectedLabel = selectedOption?.label;
     const selectedIcon = selectedOption?.iconSrc;
 
+    console.log('selectedValue', selectedValue);
+
     const triggerOption = isMinimal ? (
         <>
             {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}

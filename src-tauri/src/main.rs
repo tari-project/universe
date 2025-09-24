@@ -263,6 +263,7 @@ fn main() {
         pool_port: None,
         monero_address: "".to_string(),
         pool_status_url: None,
+        worker_name: None,
     }));
 
     let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::default()));
