@@ -23,7 +23,13 @@
 use std::{path::PathBuf, sync::LazyLock};
 
 use crate::{
+    configs::{
+        config_mining::{ConfigMining, ConfigMiningContent},
+        trait_config::ConfigImpl,
+    },
+    events_emitter::EventsEmitter,
     hardware::{cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader},
+    mining::gpu::{interface::GpuMinerInterfaceTrait, manager::GpuManager, miners::GpuDeviceType},
     APPLICATION_FOLDER_ID,
 };
 
@@ -38,7 +44,7 @@ use super::{
     },
 };
 use anyhow::Error;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use tokio::sync::RwLock;
@@ -355,6 +361,58 @@ impl HardwareStatusMonitor {
         }
 
         Ok(platform_devices)
+    }
+
+    // This method will decide if gpu mining is recommended by which we mean if it should be enabled by default in config mining
+    // It will have two steps verification:
+    // Checking raw_detected_devices in graxil which includes device_type ( INTEGRATED or DEDICATED )
+    // Checking system memory with sysinfo
+    // If there is at least one dedicated gpu and system memory is above 16GB we recommend enabling gpu mining
+    pub async fn decide_if_gpu_mining_is_recommended(&self) -> Result<(), Error> {
+        let mut is_dedicated_gpu_found = false;
+        let mut is_system_memory_above_8gb = false;
+
+        if let Ok(mut graxil_interface) = GpuManager::write().await.get_raw_graxil_miner() {
+            // TODO remove that extra detection step when miners will persist their state
+            graxil_interface.detect_devices().await?;
+            let raw_devices = graxil_interface.get_raw_gpu_devices();
+            info!(target: LOG_TARGET, "Raw detected GPU devices: {:?}", raw_devices);
+            for device in raw_devices {
+                if device.device_type == GpuDeviceType::Dedicated {
+                    is_dedicated_gpu_found = true;
+                }
+            }
+        }
+
+        let system = System::new_all();
+        let total_memory_mb = system.total_memory() / 1024; // Convert KB to MB
+        if total_memory_mb >= 16384 {
+            is_system_memory_above_8gb = true;
+        }
+
+        info!(target: LOG_TARGET, "System total memory: {} MB", total_memory_mb);
+        info!(target: LOG_TARGET, "Is dedicated GPU found: {}", is_dedicated_gpu_found);
+
+        let was_gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
+        let should_enable_gpu_mining = is_dedicated_gpu_found && is_system_memory_above_8gb;
+
+        if was_gpu_mining_enabled.ne(&should_enable_gpu_mining) {
+            if should_enable_gpu_mining {
+                info!(target: LOG_TARGET, "GPU mining is recommended, turning on gpu mining");
+            } else {
+                info!(target: LOG_TARGET, "GPU mining is NOT recommended, turning off gpu mining");
+            }
+            ConfigMining::update_field(
+                ConfigMiningContent::set_gpu_mining_enabled,
+                should_enable_gpu_mining,
+            )
+            .await?;
+            EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
+        } else {
+            info!(target: LOG_TARGET, "GPU mining recommendation has not changed, remaining as is: {}", was_gpu_mining_enabled);
+        }
+
+        Ok(())
     }
 
     pub fn current() -> &'static HardwareStatusMonitor {
