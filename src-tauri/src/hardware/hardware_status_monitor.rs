@@ -394,8 +394,7 @@ impl HardwareStatusMonitor {
         info!(target: LOG_TARGET, "Is dedicated GPU found: {}", is_dedicated_gpu_found);
 
         let is_gpu_mining_recommended = *ConfigMining::content().await.is_gpu_mining_recommended();
-        let should_recommend_gpu_mining =
-            is_dedicated_gpu_found && (!is_dedicated_gpu_found || is_system_memory_above_16gb);
+        let should_recommend_gpu_mining = is_dedicated_gpu_found || is_system_memory_above_16gb;
 
         // is_gpu_mining_recommended is by default true on first run
         // This check handles first time check and cases when something change on the machine which caused to gpu not work
