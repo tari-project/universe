@@ -29,10 +29,8 @@ const variants = {
     },
     exit: {
         opacity: 0,
-        scale: 1.5,
         transition: {
-            duration: 0.8,
-            ease,
+            duration: 0,
         },
     },
 };
