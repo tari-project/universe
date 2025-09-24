@@ -407,6 +407,11 @@ impl HardwareStatusMonitor {
                 should_enable_gpu_mining,
             )
             .await?;
+            ConfigMining::update_field(
+                ConfigMiningContent::set_is_gpu_mining_recommended,
+                should_enable_gpu_mining,
+            )
+            .await?;
             EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
         } else {
             info!(target: LOG_TARGET, "GPU mining recommendation has not changed, remaining as is: {}", was_gpu_mining_enabled);
