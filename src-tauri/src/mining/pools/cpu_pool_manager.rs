@@ -90,8 +90,7 @@ impl CpuPoolManager {
     }
 }
 
-impl PoolManagerInterfaceTrait for CpuPoolManager {
-    type PoolConfigType = CpuPool;
+impl PoolManagerInterfaceTrait<CpuPool> for CpuPoolManager {
     async fn get_write_manager() -> RwLockWriteGuard<'static, PoolManager> {
         INSTANCE.pool_status_manager.write().await
     }

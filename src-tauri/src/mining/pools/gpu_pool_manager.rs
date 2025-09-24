@@ -144,9 +144,7 @@ impl GpuPoolManager {
     }
 }
 
-impl PoolManagerInterfaceTrait for GpuPoolManager {
-    type PoolConfigType = GpuPool;
-
+impl PoolManagerInterfaceTrait<GpuPool> for GpuPoolManager {
     async fn get_write_manager() -> tokio::sync::RwLockWriteGuard<'static, PoolManager> {
         INSTANCE.pool_status_manager.write().await
     }

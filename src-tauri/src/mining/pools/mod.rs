@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{any::Any, collections::HashMap};
+use std::collections::HashMap;
 
 use serde::Serialize;
 use tari_common_types::tari_address::TariAddress;
@@ -44,9 +44,7 @@ pub(crate) struct PoolStatus {
     pub min_payout: u64,
 }
 
-pub trait PoolManagerInterfaceTrait {
-    type PoolConfigType: Any;
-
+pub trait PoolManagerInterfaceTrait<T> {
     // =============== Getters ===============
 
     async fn get_write_manager() -> RwLockWriteGuard<'static, PoolManager>;
@@ -66,7 +64,7 @@ pub trait PoolManagerInterfaceTrait {
     /// * `pool` - The selected pool configuration
     /// ### Returns
     /// The appropriate pool adapter for the selected pool
-    fn resolve_pool_adapter(pool: BasePoolData<Self::PoolConfigType>) -> PoolApiAdapters;
+    fn resolve_pool_adapter(pool: BasePoolData<T>) -> PoolApiAdapters;
 
     // =============== Predefined methods ===============
 
@@ -76,7 +74,7 @@ pub trait PoolManagerInterfaceTrait {
     /// This should be called whenever the selected pool configuration changes
     /// ### Arguments
     /// * `pool` - The new selected CPU pool configuration
-    async fn handle_new_selected_pool(pool: BasePoolData<Self::PoolConfigType>) {
+    async fn handle_new_selected_pool(pool: BasePoolData<T>) {
         let new_pool_adapter = Self::resolve_pool_adapter(pool);
 
         Self::get_write_manager()
