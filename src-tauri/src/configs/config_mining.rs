@@ -95,6 +95,7 @@ pub struct ConfigMiningContent {
     squad_override: Option<String>,
     gpu_miner_type: GpuMinerType,
     is_lolminer_tested: bool,
+    is_gpu_mining_recommended: bool,
 }
 
 impl Default for ConfigMiningContent {
@@ -153,6 +154,7 @@ impl Default for ConfigMiningContent {
             gpu_devices_settings: GpuDevicesSettings::new(),
             squad_override: None,
             is_lolminer_tested: false,
+            is_gpu_mining_recommended: true,
         }
     }
 }

@@ -66,6 +66,7 @@ export interface ConfigMining {
     gpu_devices_settings: Record<number, GpuDeviceSettings>;
     cpu_mining_enabled: boolean;
     gpu_engine: string;
+    is_gpu_mining_recommended: boolean;
 }
 
 export interface ConfigMiningSelectors {

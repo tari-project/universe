@@ -140,6 +140,16 @@ impl GpuManager {
         self.app_handle = Some(app_handle);
     }
 
+    pub fn get_raw_graxil_miner(&self) -> Result<GraxilGpuMiner, anyhow::Error> {
+        if self.available_miners.contains_key(&GpuMinerType::Graxil) {
+            Ok(GraxilGpuMiner::new(
+                self.gpu_internal_status_channel.clone(),
+            ))
+        } else {
+            Err(anyhow::anyhow!("Graxil miner is not available"))
+        }
+    }
+
     pub async fn initialize(
         process_stats_collector: Sender<ProcessWatcherStats>,
         status_channel: Sender<GpuMinerStatus>,
