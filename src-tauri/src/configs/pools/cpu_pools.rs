@@ -51,7 +51,7 @@ fn global_tari_cpu_mining_pool_status_url() -> String {
 
 static DEFAULT_CPU_SUPPORTXTM_RANDOMX: LazyLock<BasePoolData<CpuPool>> =
     LazyLock::new(|| BasePoolData {
-        pool_name: "SupportXTMPool [ RANDOMX] ".to_string(),
+        pool_name: "SupportXTMPool [ RANDOMX ] ".to_string(),
         pool_url: global_tari_cpu_mining_pool_url(),
         stats_url: global_tari_cpu_mining_pool_status_url(),
         pool_type: CpuPool::SupportXTMPoolRANDOMX,
@@ -60,7 +60,7 @@ static DEFAULT_CPU_SUPPORTXTM_RANDOMX: LazyLock<BasePoolData<CpuPool>> =
 
 static DEFAULT_CPU_LUCKYPOOL_RANDOMX: LazyLock<BasePoolData<CpuPool>> =
     LazyLock::new(|| BasePoolData {
-        pool_name: "LuckyPool [ RANDOMX] ".to_string(),
+        pool_name: "LuckyPool [ RANDOMX ] ".to_string(),
         pool_url: "turx.luckypool.io:10118".to_string(),
         stats_url: "https://tarirx.luckypool.io/api/stats_address?address=%TARI_ADDRESS%"
             .to_string(),
@@ -70,7 +70,7 @@ static DEFAULT_CPU_LUCKYPOOL_RANDOMX: LazyLock<BasePoolData<CpuPool>> =
 
 static DEFAULT_CPU_KRYPTEX_RANDOMX: LazyLock<BasePoolData<CpuPool>> =
     LazyLock::new(|| BasePoolData {
-        pool_name: "KryptexPool [ RANDOMX] ".to_string(),
+        pool_name: "KryptexPool [ RANDOMX ] ".to_string(),
         pool_url: "xtm-rx-tu.kryptex.network:7038".to_string(),
         stats_url: "https://pool.kryptex.com/xtm-rx/api/v1/miner/balance/%TARI_ADDRESS%"
             .to_string(),

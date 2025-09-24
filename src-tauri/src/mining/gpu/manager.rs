@@ -326,9 +326,9 @@ impl GpuManager {
         // Kryptex: /Tari-Universe
         // SupportXTM: Not specified so we use None
         let worker_name = match ConfigPools::content().await.current_gpu_pool().pool_origin {
-            PoolOrigin::LuckyPool => Some(".Tari-Universe"),
+            PoolOrigin::LuckyPool => Some(".Tari-universe"),
             PoolOrigin::SupportXTM => None,
-            PoolOrigin::Kryptex => Some("/Tari-Universe"),
+            PoolOrigin::Kryptex => Some("/Tari-universe"),
         };
 
         let excluded_devices = ConfigMining::content().await.get_excluded_devices();
