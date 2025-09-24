@@ -370,7 +370,7 @@ impl HardwareStatusMonitor {
     // If there is at least one dedicated gpu and system memory is above 16GB we recommend enabling gpu mining
     pub async fn decide_if_gpu_mining_is_recommended(&self) -> Result<(), Error> {
         let mut is_dedicated_gpu_found = false;
-        let mut is_system_memory_above_8gb = false;
+        let mut is_system_memory_above_16gb = false;
 
         if let Ok(mut graxil_interface) = GpuManager::write().await.get_raw_graxil_miner() {
             // TODO remove that extra detection step when miners will persist their state
@@ -387,14 +387,15 @@ impl HardwareStatusMonitor {
         let system = System::new_all();
         let total_memory_mb = system.total_memory() / 1024; // Convert KB to MB
         if total_memory_mb >= 16384 {
-            is_system_memory_above_8gb = true;
+            is_system_memory_above_16gb = true;
         }
 
         info!(target: LOG_TARGET, "System total memory: {} MB", total_memory_mb);
         info!(target: LOG_TARGET, "Is dedicated GPU found: {}", is_dedicated_gpu_found);
 
         let is_gpu_mining_recommended = *ConfigMining::content().await.is_gpu_mining_recommended();
-        let should_recommend_gpu_mining = is_dedicated_gpu_found && is_system_memory_above_8gb;
+        let should_recommend_gpu_mining =
+            is_dedicated_gpu_found && (!is_dedicated_gpu_found || is_system_memory_above_16gb);
 
         // is_gpu_mining_recommended is by default true on first run
         // This check handles first time check and cases when something change on the machine which caused to gpu not work
