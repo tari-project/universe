@@ -48,6 +48,7 @@ const configMininigInitialState: ConfigMining = {
     mining_modes: {},
     selected_mining_mode: 'Eco',
     gpu_devices_settings: {},
+    is_gpu_mining_recommended: true,
 };
 
 const configUIInitialState: UIConfigStoreState = {
