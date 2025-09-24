@@ -397,11 +397,6 @@ impl HardwareStatusMonitor {
         let should_enable_gpu_mining = is_dedicated_gpu_found && is_system_memory_above_8gb;
 
         if was_gpu_mining_enabled.ne(&should_enable_gpu_mining) {
-            if should_enable_gpu_mining {
-                info!(target: LOG_TARGET, "GPU mining is recommended, turning on gpu mining");
-            } else {
-                info!(target: LOG_TARGET, "GPU mining is NOT recommended, turning off gpu mining");
-            }
             ConfigMining::update_field(
                 ConfigMiningContent::set_gpu_mining_enabled,
                 should_enable_gpu_mining,

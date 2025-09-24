@@ -154,7 +154,7 @@ impl Default for ConfigMiningContent {
             gpu_devices_settings: GpuDevicesSettings::new(),
             squad_override: None,
             is_lolminer_tested: false,
-            is_gpu_mining_recommended: false,
+            is_gpu_mining_recommended: true,
         }
     }
 }
