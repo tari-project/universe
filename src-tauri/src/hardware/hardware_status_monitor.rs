@@ -393,24 +393,23 @@ impl HardwareStatusMonitor {
         info!(target: LOG_TARGET, "System total memory: {} MB", total_memory_mb);
         info!(target: LOG_TARGET, "Is dedicated GPU found: {}", is_dedicated_gpu_found);
 
-        let was_gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
-        let should_enable_gpu_mining = is_dedicated_gpu_found && is_system_memory_above_8gb;
+        let is_gpu_mining_recommended = *ConfigMining::content().await.is_gpu_mining_recommended();
+        let should_recommend_gpu_mining = is_dedicated_gpu_found && is_system_memory_above_8gb;
 
-        if was_gpu_mining_enabled.ne(&should_enable_gpu_mining) {
-            ConfigMining::update_field(
-                ConfigMiningContent::set_gpu_mining_enabled,
-                should_enable_gpu_mining,
-            )
-            .await?;
-            ConfigMining::update_field(
-                ConfigMiningContent::set_is_gpu_mining_recommended,
-                should_enable_gpu_mining,
-            )
-            .await?;
-            EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
-        } else {
-            info!(target: LOG_TARGET, "GPU mining recommendation has not changed, remaining as is: {}", was_gpu_mining_enabled);
+        // is_gpu_mining_recommended is by default true on first run
+        // This check handles first time check and cases when something change on the machine which caused to gpu not work
+        // If there is change from recommended to not recommended we turn off gpu mining
+        if is_gpu_mining_recommended && !should_recommend_gpu_mining {
+            ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, false).await?;
         }
+
+        // Always update the recommendation flag
+        ConfigMining::update_field(
+            ConfigMiningContent::set_is_gpu_mining_recommended,
+            should_recommend_gpu_mining,
+        )
+        .await?;
+        EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
 
         Ok(())
     }
