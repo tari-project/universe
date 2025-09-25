@@ -47,6 +47,7 @@
   "gpu-miners": "GPU Miners",
   "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "Minage GPU",
+  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
   "gpu-unavailable": "⚠️ GPU désactivé car votre matériel ne le supporte pas",
   "hardware-status": "État du matériel",
   "idle-timeout": {

@@ -4,12 +4,13 @@ import { Inside, ListGroup, MessageButton, MessageText, MessageWrapper, OuterWra
 import { useTranslation } from 'react-i18next';
 import type { CrewMember, MinRequirements, ReferrerProgressResponse } from '@app/store/useAirdropStore';
 import { transformCrewMemberToEntry } from '@app/containers/main/CrewRewards/crewTransformers';
-import CrewEntrySkeleton from './CrewEntrySkeleton/CrewEntrySkeleton';
 import PaginationControls from './PaginationControls/PaginationControls';
+import CrewEmpty from './CrewEmpty/CrewEmpty';
 
 interface Props {
     members: CrewMember[];
     membersToNudge: ReferrerProgressResponse['membersToNudge'];
+    totals?: ReferrerProgressResponse['totals'];
     minRequirements?: MinRequirements;
     isLoading: boolean;
     isFiltered?: boolean;
@@ -24,11 +25,14 @@ interface Props {
     hasPrevPage?: boolean;
     onNextPage?: () => void;
     onPrevPage?: () => void;
+    activeFilter?: 'active' | 'inactive';
+    onFilterChange: (status: 'active' | 'inactive') => void;
 }
 
 export default function CrewList({
     members,
     membersToNudge,
+    totals,
     minRequirements,
     isLoading,
     error,
@@ -43,21 +47,13 @@ export default function CrewList({
     hasPrevPage = false,
     onNextPage,
     onPrevPage,
+    activeFilter,
+    onFilterChange,
 }: Props) {
     const { t } = useTranslation();
 
     if (isLoading) {
-        return (
-            <OuterWrapper>
-                <Wrapper>
-                    <Inside>
-                        {[...Array(5)].map((_, i) => (
-                            <CrewEntrySkeleton key={i} />
-                        ))}
-                    </Inside>
-                </Wrapper>
-            </OuterWrapper>
-        );
+        return null;
     }
 
     if (error || !members) {
@@ -99,9 +95,15 @@ export default function CrewList({
                 <Wrapper>
                     <Inside>
                         {isEmpty ? (
-                            <MessageWrapper>
-                                <MessageText>{'No crew members found'}</MessageText>
-                            </MessageWrapper>
+                            <>
+                                {totals?.inactive === 0 || activeFilter === 'inactive' ? (
+                                    <MessageWrapper>
+                                        <MessageText>{'No friends found'}</MessageText>
+                                    </MessageWrapper>
+                                ) : (
+                                    <CrewEmpty inactiveCount={totals?.inactive || 0} onFilterChange={onFilterChange} />
+                                )}
+                            </>
                         ) : (
                             <>
                                 <ListGroup>

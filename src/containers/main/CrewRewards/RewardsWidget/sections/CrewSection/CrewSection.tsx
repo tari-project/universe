@@ -35,7 +35,7 @@ export default function CrewSection() {
     } = useReferrerProgress();
 
     // Get current filter state from store (query params only)
-    const activeFilter = useAirdropStore((state) => state.crewQueryParams.status);
+    const activeFilter = useAirdropStore((state) => state.crewQueryParams.status) as 'active' | 'inactive';
 
     const handleFilterChange = (status: 'active' | 'inactive') => {
         setCrewQueryParams({ status, page: 1 }); // Reset to page 1 when filter changes
@@ -65,11 +65,13 @@ export default function CrewSection() {
                 members={membersData?.members || []}
                 minRequirements={progressData?.minRequirements}
                 membersToNudge={progressData?.membersToNudge || []}
+                totals={progressData?.totals}
                 isLoading={membersLoading || progressLoading}
                 error={membersError || progressError}
                 onRefresh={async () => {
                     await Promise.all([refetchMembers(), refetchProgress()]);
                 }}
+                activeFilter={activeFilter}
                 // Pagination props
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -79,6 +81,7 @@ export default function CrewSection() {
                 hasPrevPage={hasPrevPage}
                 onNextPage={nextPage}
                 onPrevPage={prevPage}
+                onFilterChange={handleFilterChange}
             />
         </Wrapper>
     );
