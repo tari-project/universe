@@ -620,6 +620,22 @@ impl GpuManager {
         gpu_status
     }
 
+    pub async fn on_app_exit(&self) {
+        match self
+            .process_watcher
+            .adapter
+            .ensure_no_hanging_processes_are_running()
+            .await
+        {
+            Ok(_) => {
+                info!(target: LOG_TARGET, "GpuManager::on_app_exit completed successfully");
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "GpuManager::on_app_exit failed: {}", e);
+            }
+        }
+    }
+
     #[allow(dead_code)]
     pub async fn handle_engine_change(_new_engine: EngineType) -> Result<(), anyhow::Error> {
         todo!()

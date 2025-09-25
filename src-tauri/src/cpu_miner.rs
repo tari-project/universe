@@ -28,6 +28,7 @@ use crate::configs::pools::cpu_pools::CpuPool;
 use crate::mining::cpu::CpuMinerConnection;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
+use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
@@ -264,6 +265,24 @@ impl CpuMiner {
         info!(target: LOG_TARGET, "Stopping status updates");
         self.pool_status_shutdown_signal.trigger();
         Ok(())
+    }
+
+    pub async fn on_app_exit(&self) {
+        match self
+            .watcher
+            .read()
+            .await
+            .adapter
+            .ensure_no_hanging_processes_are_running()
+            .await
+        {
+            Ok(_) => {
+                info!(target: LOG_TARGET, "CpuMiner processes cleaned up successfully on app exit");
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to clean up CpuMiner processes on app exit: {}", e);
+            }
+        }
     }
 
     pub async fn is_running(&self) -> bool {
