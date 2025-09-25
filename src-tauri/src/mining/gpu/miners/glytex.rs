@@ -41,7 +41,7 @@ use crate::{
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
     mining::gpu::{
-        consts::{EngineType, GpuConnectionType, GpuMinerStatus},
+        consts::{EngineType, GpuConnectionType, GpuMinerStatus, GpuMinerType},
         interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
         manager::GpuManager,
         miners::{load_file_content, save_file_content, GpuCommonInformation},
@@ -449,7 +449,11 @@ impl StatusMonitor for GlytexGpuMinerStatusMonitor {
             Ok(inner) => inner,
             Err(_) => {
                 warn!(target: LOG_TARGET, "Timeout error in GpuMinerAdapter check_health");
-                let _ = self.gpu_status_sender.send(GpuMinerStatus::default());
+                let _ = self
+                    .gpu_status_sender
+                    .send(GpuMinerStatus::default_with_algorithm(
+                        GpuMinerType::Glytex.main_algorithm(),
+                    ));
                 return HealthStatus::Unhealthy;
             }
         };
@@ -468,7 +472,11 @@ impl StatusMonitor for GlytexGpuMinerStatusMonitor {
                 }
             }
             Err(_) => {
-                let _ = self.gpu_status_sender.send(GpuMinerStatus::default());
+                let _ = self
+                    .gpu_status_sender
+                    .send(GpuMinerStatus::default_with_algorithm(
+                        GpuMinerType::Glytex.main_algorithm(),
+                    ));
                 HealthStatus::Unhealthy
             }
         }
@@ -492,12 +500,14 @@ impl GlytexGpuMinerStatusMonitor {
                         is_mining: false,
                         hash_rate: 0.0,
                         estimated_earnings: 0,
+                        algorithm: GpuMinerType::Glytex.main_algorithm(),
                     });
                 }
                 return Ok(GpuMinerStatus {
                     is_mining: false,
                     hash_rate: 0.0,
                     estimated_earnings: 0,
+                    algorithm: GpuMinerType::Glytex.main_algorithm(),
                 });
             }
         };
@@ -510,6 +520,7 @@ impl GlytexGpuMinerStatusMonitor {
                     is_mining: false,
                     hash_rate: 0.0,
                     estimated_earnings: 0,
+                    algorithm: GpuMinerType::Glytex.main_algorithm(),
                 });
             }
         };
@@ -518,6 +529,7 @@ impl GlytexGpuMinerStatusMonitor {
             is_mining: true,
             estimated_earnings: 0,
             hash_rate: body.total_hashrate.ten_seconds.unwrap_or(0.0),
+            algorithm: GpuMinerType::Glytex.main_algorithm(),
         })
     }
 }
