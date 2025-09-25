@@ -1,3 +1,21 @@
+🚀 TARI UNIVERSE v1.6.2: The Luminous Threshold
+
+_September 25, 2025_
+
+Hey Tari fam,
+
+This release is all about removing friction! We're making the first-time experience smoother for new users while fixing pain points that have been tripping up our veteran miners.
+
+✨ WHAT'S FIXED
+
+- **First-time experience** – GPU mining now automatically disables on systems with integrated graphics and less than 16 GB RAM to prevent performance issues. Advanced users can re-enable it in Settings if needed.
+- **Pool options** – Added Kryptex to the list of available mining pools for more choice and flexibility.
+- **GPU & antivirus** – Fixed pool switching issues and improved Windows Defender integration to prevent mining binaries from being flagged as false positives.
+- **Wallet reliability** – Transaction history now loads properly after switching between local and remote nodes, plus better handling of long transaction descriptions and wallet resets.
+- **Settings fixes** – Language dropdown now updates correctly when changed, exchange addresses save properly, and corrupted config files automatically recover.
+
+---
+
 🚀 TARI UNIVERSE v1.6.1: Hotfix — The Kingdom of All Waters Part 2
 
 _September 18, 2025_
