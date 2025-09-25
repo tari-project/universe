@@ -61,7 +61,7 @@ export const Buttons = styled.div<{ $singleButton?: boolean }>`
             justify-content: center;
 
             > * {
-                max-width: 200px;
+                width: 180px;
                 flex: none;
             }
         `}
