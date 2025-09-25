@@ -27,18 +27,11 @@ const variants = {
             ease,
         },
     },
-    exit: {
-        opacity: 0,
-        transition: {
-            duration: 0,
-        },
-    },
 };
 
 export const AppContentContainer = styled(m.div).attrs({
     variants,
     animate: 'visible',
-    exit: 'exit',
 })`
     width: 100vw;
     height: 100vh;
