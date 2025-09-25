@@ -12,6 +12,32 @@ name: Release
   schedule:
     - cron: '05 00 * * *'
   workflow_dispatch:
+    inputs:
+      # version:
+      #   type: string
+      #   description: 'override build version'
+      platforms:
+        default: Supported
+        required: true
+        description: 'target build platform'
+        type: choice
+        options:
+          - Supported
+          - Windows
+          - MacOS
+          - Linux-x64
+          - Linux-arm64
+          - Linux-x64-rpm
+          - Linux-arm64-rpm
+      tari_network:
+        default: esmeralda
+        required: true
+        description: 'target testNet'
+        type: choice
+        options:
+          - esmeralda
+          - nextnet
+          - mainnet
 
 concurrency:
   # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
@@ -25,37 +51,83 @@ env:
   BETA_STRING: '(Beta)'
 
 jobs:
+  set-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      tari_network: ${{ steps.set-matrix.outputs.tari_network }}
+      tari_target_network: ${{ steps.set-matrix.outputs.tari_target_network }}
+
+    steps:
+      - id: set-matrix
+        run: |
+          # set -xueo pipefail
+          if [[ "${{ github.ref }}" =~ ^refs/heads/release* ]] && [ "${{ github.event_name }}" != "workflow_dispatch" ] ; then
+            echo "Release Build - Build everything for mainNet"
+            echo "tari_network=mainnet" >> $GITHUB_OUTPUT
+            echo "tari_target_network=mainnet" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ] ; then
+            echo "Ad-hoc Build - selective"
+            echo "tari_network=${{ github.event.inputs.tari_network }}" >> $GITHUB_OUTPUT
+            echo "tari_target_network=${{ github.event.inputs.tari_network == 'esmeralda' && 'testnet' || github.event.inputs.tari_network }}" >> $GITHUB_OUTPUT
+          else
+            echo "Other builds"
+            echo "tari_network=esmeralda" >> $GITHUB_OUTPUT
+            echo "tari_target_network=testnet" >> $GITHUB_OUTPUT
+          fi
+
+          inputPlatforms=${{ github.event.inputs.platforms }}
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ "${inputPlatforms}" != "Supported" ]; then
+            case "${inputPlatforms}" in
+              Linux-x64)
+                matrix='{"include":[{"platform":"ubuntu-22.04","args":"--bundles deb,appimage","extra":"-x64"}]}'
+                ;;
+              Linux-arm64)
+                matrix='{"include":[{"platform":"ubuntu-22.04-arm","args":"--bundles deb,appimage"}]}'
+                ;;
+              Linux-x64-rpm)
+                matrix='{"include":[{"platform":"ubuntu-22.04","args":"--bundles rpm","extra":"-x64-rpm"}]}'
+                ;;
+              Linux-arm64-rpm)
+                matrix='{"include":[{"platform":"ubuntu-22.04-arm","args":"--bundles rpm","extra":"-rpm"}]}'
+                ;;
+              MacOS)
+                matrix='{"include":[{"platform":"macos-latest","args":"--target universal-apple-darwin"}]}'
+                ;;
+              Windows)
+                matrix='{"include":[{"platform":"windows-latest","args":"--bundles msi"}]}'
+                ;;
+            esac
+          else
+            # Supported / default builds systems
+            # Windows x64 and MacOS universal
+
+            # Linux - Too many people with too many variations.
+            # We can't handle all the linux versions right now it's spreading efforts too thin.
+            # Linux rpm - Too slow. Maybe some day though... some day...
+
+            matrix='{"include":[
+              {"platform":"windows-latest","args":"--bundles msi"},
+              {"platform":"macos-latest","args":"--target universal-apple-darwin"}
+            ]}'
+          fi
+
+          # Setup the json build matrix
+          echo $matrix
+          echo $matrix | jq .
+          echo "matrix=$(echo "${matrix}" | jq -c .)" >> $GITHUB_OUTPUT
+
   builds:
-    name: Building ${{ matrix.platform }}${{ matrix.extra }}
+    name: Building ${{ matrix.platform }}${{ matrix.extra }} for ${{ needs.set-matrix.outputs.tari_network }}
+    needs: set-matrix
     # best effort disabled by default
     continue-on-error: ${{ matrix.best_effort || false }}
     permissions:
       contents: write
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          # Too many people with too many variations.
-          # We can't handle all the linux versions right now it's spreading efforts too thin.
-          # - platform: 'ubuntu-22.04'
-          #   args: '--bundles deb,appimage'
-          #   extra: '-x64'
-          # - platform: 'ubuntu-24.04-arm'
-          #   args: '--bundles deb,appimage'
-          #   best_effort: true
-          # Too slow. Maybe some day though... some day...
-          # - platform: 'ubuntu-22.04'
-          #   args: '--bundles rpm'
-          #   extra: '-x64-rpm'
-          #   best_effort: true
-          # - platform: 'ubuntu-24.04-arm'
-          #   args: '--bundles rpm'
-          #   extra: '-rpm'
-          #   best_effort: true
-          - platform: 'windows-latest'
-            args: '--bundles msi'
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+      matrix: ${{ fromJSON(needs.set-matrix.outputs.matrix) }}
+
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v5
@@ -71,10 +143,9 @@ jobs:
         run: |
           sudo bash ./scripts/check-get-yq.sh
 
-      - name: BETA Builds - Set environment variables
-        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+      - name: BETA Builds - Set environment variables - ${{ needs.set-matrix.outputs.tari_network }}
+        if: ${{ ! startsWith(github.ref, 'refs/heads/release') }}
         env:
-          BETA_STRING: '(Beta)'
           AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
           AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
           TELEMETRY_API_URL: ${{ secrets.BETA_TELEMETRY_API_URL }}
@@ -87,10 +158,9 @@ jobs:
           OS_BETA_DATE_SUFFIX: ${{ runner.os == 'Linux' && '-' || ' - ' }}
         shell: bash
         run: |
-          #set -xueo pipefail
-          echo "TARI_NETWORK=esme" >> $GITHUB_ENV
-          echo "TARI_TARGET_NETWORK=testnet" >> $GITHUB_ENV
           # Make envs available to other steps
+          echo "TARI_NETWORK=${{ needs.set-matrix.outputs.tari_network }}" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=${{ needs.set-matrix.outputs.tari_target_network }}" >> $GITHUB_ENV
           echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
           echo "TELEMETRY_API_URL=${{ env.TELEMETRY_API_URL }}" >> $GITHUB_ENV
@@ -118,7 +188,7 @@ jobs:
           # Don't mess with the double quotes and inner escaped quotes
           yq eval ".productName = \"${{ env.OS_BINARY_NAME }}${OS_BETA_STRING}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
           yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}${OS_BETA_STRING_BinName}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
-          yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" --output-format=json -i tauri.conf.json
+          yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | ${{ needs.set-matrix.outputs.tari_network }}\"" --output-format=json -i tauri.conf.json
           yq eval ".build.beforeBuildCommand = \"npm run build -- --mode development\"" --output-format=json -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe.beta\"" --output-format=json -i tauri.conf.json
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/beta-latest.json\"]" \
@@ -136,13 +206,12 @@ jobs:
           OS_BINARY_NAME: ${{ runner.os == 'Linux' && 'tari_universe' || 'Tari Universe' }}
         shell: bash
         run: |
-          #set -xueo pipefail
           # Setup tauri action envs
           echo "tagName=v__VERSION__" >> $GITHUB_ENV
           echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
           #echo "releaseId=" >> $GITHUB_ENV
-          echo "TARI_NETWORK=mainnet" >> $GITHUB_ENV
-          echo "TARI_TARGET_NETWORK=mainnet" >> $GITHUB_ENV
+          echo "TARI_NETWORK=${{ needs.set-matrix.outputs.tari_network }}" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=${{ needs.set-matrix.outputs.tari_target_network }}" >> $GITHUB_ENV
           echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
           echo "BRIDGE_WALLET_CONNECT_PROJECT_ID=${{ env.BRIDGE_WALLET_CONNECT_PROJECT_ID }}" >> $GITHUB_ENV
           echo "BRIDGE_BACKEND_API_URL=${{ env.BRIDGE_BACKEND_API_URL }}" >> $GITHUB_ENV
@@ -430,7 +499,7 @@ jobs:
           echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
 
       - name: BETA Builds - Upload assets
-        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        if: ${{ ! startsWith(github.ref, 'refs/heads/release') }}
         uses: actions/upload-artifact@v4
         with:
           name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
