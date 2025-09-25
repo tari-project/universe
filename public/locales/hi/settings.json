@@ -47,6 +47,7 @@
   "gpu-miners": "GPU Miners",
   "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "जीपीयू माइनिंग",
+  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
   "gpu-unavailable": "⚠️ जीपीयू अक्षम है क्योंकि आपका हार्डवेयर इसे समर्थन नहीं करता",
   "hardware-status": "हार्डवेयर स्थिति",
   "idle-timeout": {

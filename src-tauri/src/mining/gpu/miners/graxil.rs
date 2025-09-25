@@ -83,6 +83,7 @@ pub struct GraxilGpuMiner {
     pub connection_type: Option<GpuConnectionType>,
     pub gpu_status_sender: Sender<GpuMinerStatus>,
     pub gpu_devices: Vec<GpuCommonInformation>,
+    pub raw_gpu_devices: Vec<GraxilGpuDeviceInformation>,
     pub excluded_devices: Vec<u32>,
 }
 
@@ -95,8 +96,13 @@ impl GraxilGpuMiner {
             connection_type: None,
             gpu_status_sender,
             gpu_devices: vec![],
+            raw_gpu_devices: vec![],
             excluded_devices: vec![],
         }
+    }
+
+    pub fn get_raw_gpu_devices(&self) -> Vec<GraxilGpuDeviceInformation> {
+        self.raw_gpu_devices.clone()
     }
 }
 
@@ -170,6 +176,8 @@ impl GpuMinerInterfaceTrait for GraxilGpuMiner {
                 let gpu_status_file =
                     load_file_content::<GraxilGpuDeviceInformationFile>(&gpu_information_file_path)
                         .await?;
+                self.raw_gpu_devices = gpu_status_file.devices.clone();
+
                 let common_gpu_devices = gpu_status_file
                     .devices
                     .iter()
