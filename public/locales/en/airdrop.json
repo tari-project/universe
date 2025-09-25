@@ -69,8 +69,11 @@
     "title": "Rewards",
     "crewEmpty": {
       "title": "Your friends are slacking!",
+      "titleSingular": "Your friend is slacking!",
       "description": "You have <strong>{{inactiveCount}}</strong> inactive friends. Give them a nudge or invite more.",
-      "nudgeButton": "Nudge your Friends"
+      "descriptionSingular": "You have <strong>{{inactiveCount}}</strong> inactive friend. Give them a nudge or invite more.",
+      "nudgeButton": "Nudge your Friends",
+      "nudgeButtonSingular": "Nudge your Friend"
     }
   },
   "doLater": "I'll do this later",

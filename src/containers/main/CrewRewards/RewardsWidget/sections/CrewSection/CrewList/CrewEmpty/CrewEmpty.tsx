@@ -9,20 +9,38 @@ interface Props {
 
 export default function CrewEmpty({ inactiveCount = 0, onFilterChange }: Props) {
     const { t } = useTranslation();
+    const isSingular = inactiveCount === 1;
 
     return (
         <Wrapper>
             <TextWrapper>
-                <Title>{t('airdrop:crewRewards.crewEmpty.title')}</Title>
+                <Title>
+                    {t(
+                        isSingular
+                            ? 'airdrop:crewRewards.crewEmpty.titleSingular'
+                            : 'airdrop:crewRewards.crewEmpty.title'
+                    )}
+                </Title>
 
                 <Text>
-                    <Trans i18nKey="airdrop:crewRewards.crewEmpty.description" values={{ inactiveCount }} />
+                    <Trans
+                        i18nKey={
+                            isSingular
+                                ? 'airdrop:crewRewards.crewEmpty.descriptionSingular'
+                                : 'airdrop:crewRewards.crewEmpty.description'
+                        }
+                        values={{ inactiveCount }}
+                    />
                 </Text>
             </TextWrapper>
 
             <Buttons>
                 <ButtonOutline onClick={() => onFilterChange('inactive')}>
-                    {t('airdrop:crewRewards.crewEmpty.nudgeButton')}
+                    {t(
+                        isSingular
+                            ? 'airdrop:crewRewards.crewEmpty.nudgeButtonSingular'
+                            : 'airdrop:crewRewards.crewEmpty.nudgeButton'
+                    )}
                 </ButtonOutline>
                 <InviteFriendsButton largeButton={true} />
             </Buttons>
