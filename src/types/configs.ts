@@ -66,6 +66,7 @@ export interface ConfigMining {
     gpu_devices_settings: Record<number, GpuDeviceSettings>;
     cpu_mining_enabled: boolean;
     gpu_engine: string;
+    is_gpu_mining_recommended: boolean;
 }
 
 export interface ConfigMiningSelectors {
@@ -99,29 +100,41 @@ export interface ConfigPools {
     // ======= Gpu Pool =======
     // When false we are solo mining with glytex, if true we are pool mining with graxil
     gpu_pool_enabled: boolean; // Whether GPU pool mining is enabled | defaults to true
-    selected_gpu_pool?: string; // Name of the selected GPU pool => defaults to LuckyPool
-    available_gpu_pools?: Record<GpuPools, BasePoolData>; // Available GPU pools
+    current_gpu_pool?: GpuPools; // Name of the selected GPU pool => defaults to LuckyPool
+    gpu_pools?: Record<GpuPools, BasePoolData>; // Available GPU pools
     // ======= Cpu Pool =======
     // When false we are solo mining with xmrig and mmproxy if true we are pool mining with xmrig
     cpu_pool_enabled: boolean; // Whether CPU pool mining is enabled | defaults to true
-    selected_cpu_pool?: string; // Name of the selected CPU pool => defaults to LuckyPool
-    available_cpu_pools?: Record<CpuPools, BasePoolData>; // Available CPU pools
+    current_cpu_pool?: CpuPools; // Name of the selected CPU pool => defaults to LuckyPool
+    cpu_pools?: Record<CpuPools, BasePoolData>; // Available CPU pools
 }
 
 export enum GpuPools {
-    LuckyPool = 'LuckyPool',
-    SupportXTMPool = 'SupportXTMPool',
+    LuckyPoolSHA3X = 'LuckyPoolSHA3X',
+    LuckyPoolC29 = 'LuckyPoolC29',
+    SupportXTMPoolSHA3X = 'SupportXTMPoolSHA3X',
+    KryptexPoolSHA3X = 'KryptexPoolSHA3X',
+    KryptexPoolC29 = 'KryptexPoolC29',
 }
 
 export enum CpuPools {
+    SupportXTMPoolRandomX = 'SupportXTMPoolRANDOMX',
+    LuckyPoolRandomX = 'LuckyPoolRANDOMX',
+    KryptexPoolRandomX = 'KryptexPoolRANDOMX',
+}
+
+export enum PoolOrigin {
+    SupportXTM = 'SupportXTM',
     LuckyPool = 'LuckyPool',
-    SupportXTMPool = 'SupportXTMPool',
+    Kryptex = 'Kryptex',
 }
 
 export interface BasePoolData {
+    pool_name: string;
+    pool_type: GpuPools | CpuPools;
+    pool_origin: PoolOrigin;
     pool_url: string;
     stats_url: string;
-    pool_name: string;
 }
 
 export interface ConfigBackendInMemory {

@@ -1,7 +1,7 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import * as m from 'motion/react-m';
 
-export const Wrapper = styled.button`
+export const Wrapper = styled(m.button)<{ $largeButton?: boolean }>`
     display: flex;
     align-items: center;
     flex-shrink: 0;
@@ -31,6 +31,20 @@ export const Wrapper = styled.button`
     &:hover {
         background: rgba(255, 255, 255, 0.1);
     }
+
+    ${({ $largeButton }) =>
+        $largeButton &&
+        css`
+            height: auto;
+            padding: 0px 4px 0px 11px;
+            border: none;
+            background: #111;
+            justify-content: center;
+
+            &:hover {
+                background: #222;
+            }
+        `}
 `;
 
 export const IconWrapper = styled.div`

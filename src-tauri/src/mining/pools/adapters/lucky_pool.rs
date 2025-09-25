@@ -30,7 +30,7 @@ use serde::{Deserialize, Serialize};
 static LOG_TARGET: &str = "universe::mining::pools::adapters::lucky_pool";
 
 // LuckyPool API can sometimes return field values as either strings or numbers.
-// This enum helps to handle both cases during deserialization and retriveve the value as a u64.
+// This enum helps to handle both cases during deserialization and retriveve the value as a f64.
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LuckyPoolNumber {
     String(String),
@@ -157,9 +157,9 @@ impl PoolApiAdapter for LuckyPoolAdapter {
         let converted_data: LuckyPoolStatusResponseBody = serde_json::from_str(data)?;
         let pool_status = PoolStatus {
             accepted_shares: converted_data.stats.accepted_shares.get_number(),
-            unpaid: converted_data.stats.unlocked.get_number()
-                + converted_data.stats.locked.get_number(),
-            balance: converted_data.stats.paid.get_number(),
+            unpaid: (converted_data.stats.unlocked.get_number()
+                + converted_data.stats.locked.get_number()) as f64,
+            balance: converted_data.stats.paid.get_number() as f64,
             min_payout: converted_data.stats.payment_threshold.get_number(),
         };
         Ok(pool_status)

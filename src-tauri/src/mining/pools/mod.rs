@@ -27,7 +27,7 @@ use tari_common_types::tari_address::TariAddress;
 use tokio::sync::RwLockWriteGuard;
 
 use crate::{
-    configs::pools::PoolConfig,
+    configs::pools::BasePoolData,
     mining::pools::{adapters::PoolApiAdapters, pools_manager::PoolManager},
 };
 
@@ -39,14 +39,12 @@ pub mod pools_manager;
 #[derive(Clone, Debug, Serialize, Default)]
 pub(crate) struct PoolStatus {
     pub accepted_shares: u64,
-    pub unpaid: u64,
-    pub balance: u64,
+    pub unpaid: f64,
+    pub balance: f64,
     pub min_payout: u64,
 }
 
-pub trait PoolManagerInterfaceTrait {
-    type PoolConfigType: PoolConfig;
-
+pub trait PoolManagerInterfaceTrait<T> {
     // =============== Getters ===============
 
     async fn get_write_manager() -> RwLockWriteGuard<'static, PoolManager>;
@@ -66,7 +64,7 @@ pub trait PoolManagerInterfaceTrait {
     /// * `pool` - The selected pool configuration
     /// ### Returns
     /// The appropriate pool adapter for the selected pool
-    fn resolve_pool_adapter(pool: &Self::PoolConfigType) -> PoolApiAdapters;
+    fn resolve_pool_adapter(pool: BasePoolData<T>) -> PoolApiAdapters;
 
     // =============== Predefined methods ===============
 
@@ -76,8 +74,8 @@ pub trait PoolManagerInterfaceTrait {
     /// This should be called whenever the selected pool configuration changes
     /// ### Arguments
     /// * `pool` - The new selected CPU pool configuration
-    async fn handle_new_selected_pool(pool: Self::PoolConfigType) {
-        let new_pool_adapter = Self::resolve_pool_adapter(&pool);
+    async fn handle_new_selected_pool(pool: BasePoolData<T>) {
+        let new_pool_adapter = Self::resolve_pool_adapter(pool);
 
         Self::get_write_manager()
             .await

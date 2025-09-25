@@ -20,187 +20,122 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::{collections::HashMap, fmt::Display, sync::LazyLock};
+
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    configs::pools::PoolConfig,
-    mining::gpu::consts::{GpuMinerType, GpuMiningAlgorithm},
-};
+use crate::configs::pools::{BasePoolData, PoolOrigin};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SupportXTMGpuPoolConfig {
-    pool_url: String,
-    stats_url: String,
-    pool_name: String,
-    supported_algorithms: Vec<GpuMiningAlgorithm>,
-}
+static DEFAULT_GPU_LUCKYPOOL_SHA3X: LazyLock<BasePoolData<GpuPool>> =
+    LazyLock::new(|| BasePoolData {
+        pool_name: "LuckyPool [ SHA3X ]".to_string(),
+        pool_url: "tu.luckypool.io:5118".to_string(),
+        stats_url: "https://api-tari.luckypool.io/stats_address?address=%TARI_ADDRESS%".to_string(),
+        pool_type: GpuPool::LuckyPoolSHA3X,
+        pool_origin: PoolOrigin::LuckyPool,
+    });
 
-impl Default for SupportXTMGpuPoolConfig {
-    fn default() -> Self {
-        Self {
-            pool_url: "pool.sha3x.supportxtm.com:6118".to_string(),
-            stats_url: "https://backend.sha3x.supportxtm.com/api/miner/%TARI_ADDRESS%/stats"
-                .to_string(),
-            pool_name: "SupportXTMPool".to_string(),
-            supported_algorithms: vec![GpuMiningAlgorithm::SHA3X],
-        }
-    }
-}
+static DEFAULT_GPU_LUCKYPOOL_C29: LazyLock<BasePoolData<GpuPool>> =
+    LazyLock::new(|| BasePoolData {
+        pool_name: "LuckyPool [ C29 ]".to_string(),
+        pool_url: "taric29.luckypool.io:3111".to_string(),
+        stats_url: "https://taric29.luckypool.io/api/stats_address?address=%TARI_ADDRESS%"
+            .to_string(),
+        pool_type: GpuPool::LuckyPoolC29,
+        pool_origin: PoolOrigin::LuckyPool,
+    });
 
-impl SupportXTMGpuPoolConfig {
-    pub fn get_raw_stats_url(&self) -> String {
-        self.stats_url.clone()
-    }
+static DEFAULT_GPU_SUPPORTXTM_SHA3X: LazyLock<BasePoolData<GpuPool>> =
+    LazyLock::new(|| BasePoolData {
+        pool_name: "SupportXTMPool [ SHA3X ]".to_string(),
+        pool_url: "pool.sha3x.supportxtm.com:6118".to_string(),
+        stats_url: "https://backend.sha3x.supportxtm.com/api/miner/%TARI_ADDRESS%/stats"
+            .to_string(),
+        pool_type: GpuPool::SupportXTMPoolSHA3X,
+        pool_origin: PoolOrigin::SupportXTM,
+    });
 
-    pub fn get_pool_url(&self) -> String {
-        self.pool_url.clone()
-    }
-}
+static DEFAULT_GPU_KRYPTEX_SHA3X: LazyLock<BasePoolData<GpuPool>> =
+    LazyLock::new(|| BasePoolData {
+        pool_name: "KryptexPool [ SHA3X ]".to_string(),
+        pool_url: "xtm-sha3x-tu.kryptex.network:7039".to_string(),
+        stats_url: "https://pool.kryptex.com/xtm-sha3x/api/v1/miner/balance/%TARI_ADDRESS%"
+            .to_string(),
+        pool_type: GpuPool::KryptexPoolSHA3X,
+        pool_origin: PoolOrigin::Kryptex,
+    });
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LuckyPoolGpuConfig {
-    pool_url: String,
-    stats_url: String,
-    pool_name: String,
-    supported_algorithms: Vec<GpuMiningAlgorithm>,
-}
+static DEFAULT_GPU_KRYPTEX_C29: LazyLock<BasePoolData<GpuPool>> = LazyLock::new(|| BasePoolData {
+    pool_name: "KryptexPool [ C29 ]".to_string(),
+    pool_url: "xtm-c29-tu.kryptex.network:7040".to_string(),
+    stats_url: "https://pool.kryptex.com/xtm-c29/api/v1/miner/balance/%TARI_ADDRESS%".to_string(),
+    pool_type: GpuPool::KryptexPoolC29,
+    pool_origin: PoolOrigin::Kryptex,
+});
 
-impl Default for LuckyPoolGpuConfig {
-    fn default() -> Self {
-        Self {
-            pool_url: "tu.luckypool.io:5118".to_string(),
-            stats_url: "https://api-tari.luckypool.io/stats_address?address=%TARI_ADDRESS%"
-                .to_string(),
-            pool_name: "LuckyPool".to_string(),
-            supported_algorithms: vec![GpuMiningAlgorithm::SHA3X, GpuMiningAlgorithm::C29],
-        }
-    }
-}
-
-impl LuckyPoolGpuConfig {
-    pub fn new(miner_type: GpuMinerType) -> Self {
-        let pool_url = match miner_type {
-            GpuMinerType::LolMiner => "taric29.luckypool.io:3111".to_string(),
-            _ => LuckyPoolGpuConfig::default().get_pool_url(),
-        };
-        let stats_url = match miner_type {
-            GpuMinerType::LolMiner => {
-                "https://taric29.luckypool.io/api/stats_address?address=%TARI_ADDRESS%".to_string()
-            }
-            _ => LuckyPoolGpuConfig::default().get_raw_stats_url(),
-        };
-        Self {
-            pool_url,
-            stats_url,
-            ..LuckyPoolGpuConfig::default()
-        }
-    }
-
-    pub fn get_raw_stats_url(&self) -> String {
-        self.stats_url.clone()
-    }
-    pub fn get_pool_url(&self) -> String {
-        self.pool_url.clone()
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
 pub enum GpuPool {
-    LuckyPool(LuckyPoolGpuConfig),
-    SupportXTMPool(SupportXTMGpuPoolConfig),
+    #[default]
+    LuckyPoolSHA3X,
+    LuckyPoolC29,
+    SupportXTMPoolSHA3X,
+    KryptexPoolSHA3X,
+    KryptexPoolC29,
 }
 
-impl Default for GpuPool {
-    fn default() -> Self {
-        GpuPool::LuckyPool(LuckyPoolGpuConfig::default())
-    }
-}
-
-impl PoolConfig for GpuPool {
-    fn name(&self) -> String {
-        match self {
-            GpuPool::LuckyPool(config) => config.pool_name.clone(),
-            GpuPool::SupportXTMPool(config) => config.pool_name.clone(),
-        }
-    }
-
-    fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
-        match name {
-            "LuckyPool" => Ok(GpuPool::LuckyPool(LuckyPoolGpuConfig::default())),
-            "SupportXTMPool" => Ok(GpuPool::SupportXTMPool(SupportXTMGpuPoolConfig::default())),
-            _ => Err(anyhow::anyhow!("Unknown GPU pool name: {}", name)),
-        }
-    }
-
-    fn get_raw_stats_url(&self) -> String {
-        match self {
-            GpuPool::LuckyPool(config) => config.get_raw_stats_url(),
-            GpuPool::SupportXTMPool(config) => config.get_raw_stats_url(),
-        }
-    }
-    fn get_pool_url(&self) -> String {
-        match self {
-            GpuPool::LuckyPool(config) => config.get_pool_url(),
-            GpuPool::SupportXTMPool(config) => config.get_pool_url(),
-        }
+impl Display for GpuPool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            GpuPool::LuckyPoolSHA3X => "LuckyPoolSHA3X",
+            GpuPool::LuckyPoolC29 => "LuckyPoolC29",
+            GpuPool::SupportXTMPoolSHA3X => "SupportXTMPoolSHA3X",
+            GpuPool::KryptexPoolSHA3X => "KryptexPoolSHA3X",
+            GpuPool::KryptexPoolC29 => "KryptexPoolC29",
+        };
+        write!(f, "{name}")
     }
 }
 
 impl GpuPool {
-    pub fn default_from_name_and_miner_type(name: &str, miner_type: GpuMinerType) -> Option<Self> {
-        if miner_type.eq(&GpuMinerType::Glytex) {
-            return None; // solo mining only
-        }
-
-        match name {
-            "LuckyPool" => Some(GpuPool::LuckyPool(LuckyPoolGpuConfig::new(miner_type))),
-            "SupportXTMPool" => Some(GpuPool::SupportXTMPool(SupportXTMGpuPoolConfig::default())),
-            _ => None,
+    pub fn from_string(pool_name: &str) -> Result<GpuPool, anyhow::Error> {
+        match pool_name {
+            "LuckyPoolSHA3X" => Ok(GpuPool::LuckyPoolSHA3X),
+            "LuckyPoolC29" => Ok(GpuPool::LuckyPoolC29),
+            "SupportXTMPoolSHA3X" => Ok(GpuPool::SupportXTMPoolSHA3X),
+            "KryptexPoolSHA3X" => Ok(GpuPool::KryptexPoolSHA3X),
+            "KryptexPoolC29" => Ok(GpuPool::KryptexPoolC29),
+            _ => Err(anyhow::anyhow!("Invalid GPU pool name")),
         }
     }
 
-    pub fn default_for_miner_type(miner_type: GpuMinerType) -> Option<Self> {
-        if miner_type.eq(&GpuMinerType::Glytex) {
-            return None; // solo mining only
-        }
-
-        Some(GpuPool::LuckyPool(LuckyPoolGpuConfig::new(miner_type)))
-    }
-
-    pub fn get_supported_algorithms(&self) -> Vec<GpuMiningAlgorithm> {
+    pub fn key_string(&self) -> String {
         match self {
-            GpuPool::LuckyPool(config) => config.supported_algorithms.clone(),
-            GpuPool::SupportXTMPool(config) => config.supported_algorithms.clone(),
+            GpuPool::LuckyPoolSHA3X => "LuckyPoolSHA3X".to_string(),
+            GpuPool::LuckyPoolC29 => "LuckyPoolC29".to_string(),
+            GpuPool::SupportXTMPoolSHA3X => "SupportXTMPoolSHA3X".to_string(),
+            GpuPool::KryptexPoolSHA3X => "KryptexPoolSHA3X".to_string(),
+            GpuPool::KryptexPoolC29 => "KryptexPoolC29".to_string(),
         }
     }
 
-    pub fn is_miner_algorithms_supported(&self, miner_type: &GpuMinerType) -> bool {
-        let is_supported = self
-            .get_supported_algorithms()
-            .iter()
-            .any(|alg| miner_type.supported_algorithms().contains(alg));
-
-        // LuckyPool with c29 algo requires specific pool URL for LolMiner
-        if miner_type.eq(&GpuMinerType::LolMiner) {
-            if self.get_pool_url().contains("c29") {
-                println!("LolMiner requires specific pool URL for c29 algo, checking if current pool URL is correct...");
-                return true;
-            } else {
-                println!("LolMiner requires specific pool URL for c29 algo, but current pool URL is not correct.");
-                return false;
-            }
+    pub fn default_content(&self) -> BasePoolData<GpuPool> {
+        match self {
+            GpuPool::LuckyPoolSHA3X => DEFAULT_GPU_LUCKYPOOL_SHA3X.clone(),
+            GpuPool::LuckyPoolC29 => DEFAULT_GPU_LUCKYPOOL_C29.clone(),
+            GpuPool::SupportXTMPoolSHA3X => DEFAULT_GPU_SUPPORTXTM_SHA3X.clone(),
+            GpuPool::KryptexPoolSHA3X => DEFAULT_GPU_KRYPTEX_SHA3X.clone(),
+            GpuPool::KryptexPoolC29 => DEFAULT_GPU_KRYPTEX_C29.clone(),
         }
+    }
 
-        if miner_type.eq(&GpuMinerType::Graxil) {
-            if self.get_pool_url().contains("c29") {
-                println!("Graxil does not support c29 algo, returning false.");
-                return false;
-            } else {
-                println!("Graxil does not support c29 algo, returning true.");
-                return true;
-            }
-        }
-
-        is_supported
+    pub fn load_default_pools_data() -> HashMap<Self, BasePoolData<GpuPool>> {
+        use GpuPool::*;
+        let mut gpu_pools = HashMap::new();
+        gpu_pools.insert(LuckyPoolSHA3X, DEFAULT_GPU_LUCKYPOOL_SHA3X.clone());
+        gpu_pools.insert(LuckyPoolC29, DEFAULT_GPU_LUCKYPOOL_C29.clone());
+        gpu_pools.insert(SupportXTMPoolSHA3X, DEFAULT_GPU_SUPPORTXTM_SHA3X.clone());
+        gpu_pools.insert(KryptexPoolSHA3X, DEFAULT_GPU_KRYPTEX_SHA3X.clone());
+        gpu_pools.insert(KryptexPoolC29, DEFAULT_GPU_KRYPTEX_C29.clone());
+        gpu_pools
     }
 }
