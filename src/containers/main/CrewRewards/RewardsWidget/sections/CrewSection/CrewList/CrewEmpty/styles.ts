@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const Wrapper = styled.div`
     display: flex;
@@ -45,12 +45,26 @@ export const Text = styled.div`
     }
 `;
 
-export const Buttons = styled.div`
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-
+export const Buttons = styled.div<{ $singleButton?: boolean }>`
+    display: flex;
     gap: 5px;
     align-self: stretch;
+    justify-content: stretch;
+
+    > * {
+        flex: 1;
+    }
+
+    ${({ $singleButton }) =>
+        $singleButton &&
+        css`
+            justify-content: center;
+
+            > * {
+                max-width: 200px;
+                flex: none;
+            }
+        `}
 `;
 
 export const ButtonOutline = styled.button`

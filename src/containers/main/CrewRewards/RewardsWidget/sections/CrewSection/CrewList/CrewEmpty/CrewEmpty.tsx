@@ -34,7 +34,7 @@ export default function CrewEmpty({ inactiveCount = 0, onFilterChange }: Props) 
                 </Text>
             </TextWrapper>
 
-            <Buttons>
+            <Buttons $singleButton={isZero}>
                 {!isZero && (
                     <ButtonOutline onClick={() => onFilterChange('inactive')}>
                         {t(
