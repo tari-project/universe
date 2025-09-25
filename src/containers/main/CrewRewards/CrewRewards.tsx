@@ -10,6 +10,7 @@ const CrewRewards = memo(function CrewRewards() {
     const setShowWidget = useCrewRewardsStore((s) => s.setShowWidget);
     const crewRewardsEnabled = useAirdropStore((s) => s.features?.includes(FEATURE_FLAGS.FE_CREW_UI));
     const showTapplet = useUIStore((s) => s.showTapplet);
+    const isShuttingDown = useUIStore((s) => s.isShuttingDown);
 
     useEffect(() => {
         if (crewRewardsEnabled) {
@@ -18,6 +19,8 @@ const CrewRewards = memo(function CrewRewards() {
             setShowWidget(false);
         }
     }, [crewRewardsEnabled, setShowWidget]);
+
+    if (isShuttingDown) return null;
 
     return <AnimatePresence>{showWidget && !showTapplet && <RewardsWidget />}</AnimatePresence>;
 });
