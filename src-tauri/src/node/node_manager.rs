@@ -424,6 +424,46 @@ impl NodeManager {
         Err(anyhow::anyhow!("grpc_address not set"))
     }
 
+    pub async fn on_app_exit(&self) {
+        if let Some(local_node_adapter) = {
+            let watcher_guard = self.local_node_watcher.read().await;
+            watcher_guard
+                .as_ref()
+                .map(|watcher| watcher.adapter.clone())
+        } {
+            match local_node_adapter
+                .ensure_no_hanging_processes_are_running()
+                .await
+            {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "LocalNodeAdapter::on_app_exit completed successfully");
+                }
+                Err(e) => {
+                    error!(target: LOG_TARGET, "LocalNodeAdapter::on_app_exit failed: {}", e);
+                }
+            }
+        }
+
+        if let Some(remote_node_adapter) = {
+            let watcher_guard = self.remote_node_watcher.read().await;
+            watcher_guard
+                .as_ref()
+                .map(|watcher| watcher.adapter.clone())
+        } {
+            match remote_node_adapter
+                .ensure_no_hanging_processes_are_running()
+                .await
+            {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "RemoteNodeAdapter::on_app_exit completed successfully");
+                }
+                Err(e) => {
+                    error!(target: LOG_TARGET, "RemoteNodeAdapter::on_app_exit failed: {}", e);
+                }
+            }
+        }
+    }
+
     pub async fn get_grpc_port(&self) -> Result<u16, anyhow::Error> {
         let current_adapter = self.current_adapter.read().await;
         let grpc_address = current_adapter.get_grpc_address();

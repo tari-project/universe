@@ -25,6 +25,7 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::internal_wallet::InternalWallet;
 use crate::node::node_manager::{NodeManager, NodeManagerError};
+use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
@@ -33,7 +34,7 @@ use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
 use crate::wallet::wallet_types::{TransactionInfo, TransactionStatus, WalletBalance, WalletState};
 use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
-use log::info;
+use log::{error, info};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
@@ -186,6 +187,24 @@ impl WalletManager {
     pub fn is_initial_scan_completed(&self) -> bool {
         self.initial_scan_completed
             .load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    pub async fn on_app_exit(&self) {
+        match self
+            .watcher
+            .read()
+            .await
+            .adapter
+            .ensure_no_hanging_processes_are_running()
+            .await
+        {
+            Ok(_) => {
+                info!(target: LOG_TARGET, "WalletManager::on_app_exit completed successfully");
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "WalletManager::on_app_exit failed: {}", e);
+            }
+        }
     }
 
     pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
