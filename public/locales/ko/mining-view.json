@@ -20,7 +20,8 @@
   "mining-button-text": {
     "cancel-mining": "채굴 취소",
     "changing-mode": "모드 변경 중",
-    "pause-mining": "채굴 일시 중지",
+    "pause-mining": "Pause Mining",
+    "resume-mining": "Resume Mining",
     "start-mining": "채굴 시작",
     "started-auto-mining": "자동 채굴 시작됨",
     "starting-mining": "채굴 시작 중",
@@ -35,6 +36,10 @@
     "step_4": "Tor 브리지를 사용해 보세요 (설정에서)",
     "step_5": "Tor를 비활성화해 보세요 (설정에서)",
     "step_6": "앱을 재설정해 보세요 (설정에서)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}<strong/>",
+    "until-restart": "Pause until I<strong> Restart<strong/>"
   },
   "pool": {
     "accepted_shares": "수락된 공유",
