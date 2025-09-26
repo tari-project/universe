@@ -193,6 +193,11 @@ export interface ReferrerProgressResponse {
         displayName?: string;
         imageUrl?: string;
     }[];
+    rewardsConfig: {
+        referrerRewards: number;
+        referralRewards: number;
+        requirement: number;
+    };
 }
 
 export interface Reward {
