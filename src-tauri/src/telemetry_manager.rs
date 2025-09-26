@@ -31,6 +31,7 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::internal_wallet::InternalWallet;
 use crate::mining::gpu::consts::GpuMinerStatus;
+use crate::mining::gpu::consts::GpuMiningAlgorithm;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeManager;
 use crate::process_stats_collector::ProcessStatsCollector;
@@ -170,6 +171,7 @@ pub struct TelemetryData {
     pub cpu_utilization: Option<f32>,
     pub cpu_make: Option<String>,
     pub gpu_hash_rate: Option<f64>,
+    pub gpu_hash_rate_c29: Option<f64>,
     pub gpu_utilization: Option<f32>,
     pub gpu_make: Option<String>,
     pub mode: String,
@@ -436,7 +438,16 @@ async fn get_telemetry_data_inner(
             (None, vec![])
         };
 
-    let gpu_hash_rate = Some(gpu_status.hash_rate);
+    let mut gpu_hash_rate = None;
+    let mut gpu_hash_rate_c29 = None;
+
+    if gpu_status.algorithm.eq(&GpuMiningAlgorithm::SHA3X) {
+        gpu_hash_rate = Some(gpu_status.hash_rate);
+    } else {
+        gpu_hash_rate_c29 = Some(gpu_status.hash_rate);
+    }
+
+    let is_hashrate_some = gpu_hash_rate.is_some() || gpu_hash_rate_c29.is_some();
 
     let gpu_utilization = if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
         let filtered_gpus = gpu_hardware_parameters
@@ -468,7 +479,7 @@ async fn get_telemetry_data_inner(
     let mining_config = ConfigMining::content().await;
     let version = env!("CARGO_PKG_VERSION").to_string();
     let gpu_mining_used =
-        *mining_config.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
+        *mining_config.gpu_mining_enabled() && gpu_make.is_some() && is_hashrate_some;
     let cpu_resource_used =
         *mining_config.cpu_mining_enabled() && cpu_make.is_some() && cpu_hash_rate.is_some();
     let resource_used = match (gpu_mining_used, cpu_resource_used) {
@@ -658,6 +669,7 @@ async fn get_telemetry_data_inner(
         cpu_utilization,
         cpu_make,
         gpu_make,
+        gpu_hash_rate_c29,
         gpu_hash_rate,
         gpu_utilization,
         resource_used,
