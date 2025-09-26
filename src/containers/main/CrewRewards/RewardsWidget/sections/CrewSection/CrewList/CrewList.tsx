@@ -27,6 +27,7 @@ interface Props {
     onPrevPage?: () => void;
     activeFilter?: 'active' | 'inactive';
     onFilterChange: (status: 'active' | 'inactive') => void;
+    noMembers: boolean;
 }
 
 export default function CrewList({
@@ -49,6 +50,7 @@ export default function CrewList({
     onPrevPage,
     activeFilter,
     onFilterChange,
+    noMembers,
 }: Props) {
     const { t } = useTranslation();
 
@@ -89,6 +91,17 @@ export default function CrewList({
 
     const isEmpty = transformedEntries.length === 0 && membersToNudge.length === 0;
 
+    if (noMembers)
+        return (
+            <OuterWrapper>
+                <Wrapper>
+                    <Inside>
+                        <CrewEmpty noMembers={true} onFilterChange={onFilterChange} />
+                    </Inside>
+                </Wrapper>
+            </OuterWrapper>
+        );
+
     if (isFiltered) {
         return (
             <OuterWrapper>
@@ -101,7 +114,11 @@ export default function CrewList({
                                         <MessageText>{'No friends found'}</MessageText>
                                     </MessageWrapper>
                                 ) : (
-                                    <CrewEmpty inactiveCount={totals?.inactive || 0} onFilterChange={onFilterChange} />
+                                    <CrewEmpty
+                                        inactiveCount={totals?.inactive || 0}
+                                        onFilterChange={onFilterChange}
+                                        noMembers={noMembers}
+                                    />
                                 )}
                             </>
                         ) : (

@@ -35,7 +35,7 @@ export const Wrapper = styled(m.button)<{ $largeButton?: boolean }>`
     ${({ $largeButton }) =>
         $largeButton &&
         css`
-            height: auto;
+            height: 40px;
             padding: 0px 4px 0px 11px;
             border: none;
             background: #111;
