@@ -23,7 +23,6 @@
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    events_emitter::EventsEmitter,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     internal_wallet::InternalWallet,
     mm_proxy_manager::StartConfig,
@@ -32,21 +31,15 @@ use crate::{
         progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::{listeners::SetupFeature, setup_manager::SetupPhase},
-    systemtray_manager::SystemTrayCpuData,
     tasks_tracker::TasksTrackers,
-    utils::locks_utils::try_write_with_retry,
     UniverseAppState,
 };
 use anyhow::Error;
-use log::error;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tokio::{
-    select,
-    sync::{
-        watch::{Receiver, Sender},
-        Mutex,
-    },
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex,
 };
 use tokio_util::task::TaskTracker;
 
@@ -57,6 +50,7 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
+#[allow(dead_code)]
 static LOG_TARGET: &str = "tari::universe::phase_cpu_mining";
 
 #[derive(Clone, Default)]

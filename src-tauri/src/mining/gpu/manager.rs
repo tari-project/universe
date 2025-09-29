@@ -21,10 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use log::{error, info};
-use std::{
-    collections::HashMap,
-    sync::{Arc, LazyLock},
-};
+use std::{collections::HashMap, sync::LazyLock};
 use tari_shutdown::Shutdown;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
@@ -59,9 +56,9 @@ use crate::{
     node::node_adapter::BaseNodeStatus,
     process_adapter::ProcessAdapter,
     process_watcher::{ProcessWatcher, ProcessWatcherStats},
-    systemtray_manager::{SystemTrayGpuData, SystemTrayManager},
+    systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
-    utils::{locks_utils::try_write_with_retry, math_utils::estimate_earning},
+    utils::math_utils::estimate_earning,
     UniverseAppState,
 };
 
@@ -70,7 +67,6 @@ static INSTANCE: LazyLock<RwLock<GpuManager>> = LazyLock::new(|| RwLock::new(Gpu
 
 pub struct GpuManager {
     app_handle: Option<AppHandle>,
-    systray_manager: Option<Arc<RwLock<SystemTrayManager>>>,
     // ======= Miner config =======
     selected_miner: GpuMinerType,
     available_miners: HashMap<GpuMinerType, GpuMiner>,
@@ -100,7 +96,6 @@ impl GpuManager {
     pub fn new() -> Self {
         Self {
             app_handle: None,
-            systray_manager: None,
             // ======= Miner config =======
             selected_miner: GpuMinerType::LolMiner,
             available_miners: HashMap::new(),
@@ -584,7 +579,6 @@ impl GpuManager {
         let gpu_external_status_channel = self.gpu_external_status_channel.clone();
         let node_status_channel = self.node_status_channel.clone();
         let connection_type = self.connection_type.clone();
-        let systray_manager = self.systray_manager.clone();
 
         let mut internal_shutdown_signal = self.status_thread_shutdown.to_signal();
         let mut global_shutdown_signal =
@@ -616,23 +610,8 @@ impl GpuManager {
                             let _res = gpu_external_status_channel.send(paresd_status.clone());
                             EventsEmitter::emit_gpu_mining_update(paresd_status.clone()).await;
 
-                            if let Some(systray_manager) = systray_manager.clone() {
-                                let gpu_systemtray_data = SystemTrayGpuData {
-                                    gpu_hashrate: paresd_status.hash_rate,
-                                    estimated_earning: paresd_status.estimated_earnings
-                                };
-
-                            match try_write_with_retry(&systray_manager, 6).await {
-                                Ok(mut systemtray_manager) => {
-                                        systemtray_manager.update_tray_with_gpu_data(gpu_systemtray_data);
-
-                                },
-                                Err(e) => {
-                                    let err_msg = format!("Failed to acquire systemtray_manager write lock: {e}");
-                                    error!(target: LOG_TARGET, "{err_msg}");
-                                }
-                            }
-                            }
+                            SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::GpuHashrate(paresd_status.hash_rate)));
+                            SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::GpuEstimatedEarnings(paresd_status.estimated_earnings as f64)));
                         } else {
                             break;
                         }

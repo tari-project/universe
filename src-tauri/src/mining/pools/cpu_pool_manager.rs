@@ -41,6 +41,7 @@ use crate::{
         pools_manager::PoolManager,
         PoolManagerInterfaceTrait, PoolStatus,
     },
+    systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
 };
 
@@ -96,10 +97,13 @@ impl PoolManagerInterfaceTrait<CpuPool> for CpuPoolManager {
     }
 
     fn construct_callback_for_pool_status_update(
-    ) -> impl Fn(HashMap<String, PoolStatus>) + Send + Sync + 'static {
-        move |pool_statuses: HashMap<String, PoolStatus>| {
+    ) -> impl Fn(HashMap<String, PoolStatus>, PoolStatus) + Send + Sync + 'static {
+        move |pool_statuses: HashMap<String, PoolStatus>, current_status: PoolStatus| {
             spawn(async move {
                 EventsEmitter::emit_cpu_pools_status_update(pool_statuses).await;
+                SystemTrayManager::get_channel_sender().await.send(Some(
+                    SystemTrayEvents::CpuPoolPendingRewards(current_status.unpaid),
+                ));
             });
         }
     }

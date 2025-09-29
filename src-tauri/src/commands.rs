@@ -25,7 +25,7 @@ use crate::app_in_memory_config::{AppInMemoryConfig, ExchangeMiner, DEFAULT_EXCH
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
-use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
+use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, MiningModeType};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
@@ -48,6 +48,7 @@ use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
+use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
 use crate::tapplets::interface::ActiveTapplet;
 use crate::tapplets::tapplet_server::start_tapplet;
 use crate::tasks_tracker::TasksTrackers;
@@ -918,10 +919,15 @@ pub async fn set_auto_update(auto_update: bool) -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
-pub async fn set_cpu_mining_enabled(enabled: bool) -> Result<(), String> {
+pub async fn set_cpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let _unused =
         ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
+
+    SystemTrayManager::get_channel_sender()
+        .await
+        .send(Some(SystemTrayEvents::CpuMiningState(enabled)))
+        .map_err(|e| InvokeError::from_anyhow(anyhow::anyhow!(e.to_string())))?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -1006,6 +1012,11 @@ pub async fn set_gpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
         .await
         .map_err(InvokeError::from_anyhow)?;
 
+    SystemTrayManager::get_channel_sender()
+        .await
+        .send(Some(SystemTrayEvents::GpuMiningState(enabled)))
+        .map_err(|e| InvokeError::from_anyhow(anyhow::anyhow!(e.to_string())))?;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "set_gpu_mining_enabled took too long: {:?}",
@@ -1038,9 +1049,16 @@ pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[select_mining_mode] called with mode: {mode:?}");
 
-    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode)
+    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone())
         .await
         .map_err(InvokeError::from_anyhow)?;
+
+    SystemTrayManager::get_channel_sender()
+        .await
+        .send(Some(SystemTrayEvents::MiningMode(MiningModeType::from(
+            mode.clone(),
+        ))))
+        .map_err(|e| InvokeError::from_anyhow(anyhow::anyhow!(e.to_string())))?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "select_mining_mode took too long: {:?}", timer.elapsed());

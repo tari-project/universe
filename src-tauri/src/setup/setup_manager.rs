@@ -48,6 +48,7 @@ use crate::setup::{
     phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
     phase_wallet::WalletSetupPhase,
 };
+use crate::systemtray_manager::SystemTrayManager;
 use crate::utils::platform_utils::PlatformUtils;
 use crate::{
     configs::{
@@ -310,6 +311,12 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
+
+        // Initialize after configs are loaded as its reads mining mode from config
+        SystemTrayManager::write()
+            .await
+            .initialize_tray(&app_handle)
+            .await;
 
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {node_type:?}");

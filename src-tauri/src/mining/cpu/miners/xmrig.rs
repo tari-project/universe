@@ -102,7 +102,7 @@ impl ProcessAdapter for XmrigAdapter {
             } => {
                 let mut extra_args = vec![];
                 let extended_user_address = match worker_name {
-                    Some(worker_name) => format!("{}{}", self.address.to_string(), worker_name),
+                    Some(worker_name) => format!("{}{}", self.address, worker_name),
                     None => self.address.to_string(),
                 };
                 extra_args.push(format!("--url={}", pool_url));

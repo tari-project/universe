@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, LazyLock},
-    thread,
-};
+use std::{sync::LazyLock, thread};
 
 use log::{error, info};
 use tari_shutdown::Shutdown;
@@ -32,9 +29,9 @@ use crate::{
     },
     node::node_adapter::BaseNodeStatus,
     process_watcher::{ProcessWatcher, ProcessWatcherStats},
-    systemtray_manager::{SystemTrayCpuData, SystemTrayManager},
+    systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
-    utils::{locks_utils::try_write_with_retry, math_utils::estimate_earning},
+    utils::math_utils::estimate_earning,
     UniverseAppState,
 };
 
@@ -43,7 +40,6 @@ static INSTANCE: LazyLock<RwLock<CpuManager>> = LazyLock::new(|| RwLock::new(Cpu
 
 pub struct CpuManager {
     app_handle: Option<AppHandle>,
-    systray_manager: Option<Arc<RwLock<SystemTrayManager>>>,
     // ======= Process watcher =======
     process_watcher: ProcessWatcher<XmrigAdapter>,
     // ======= Parameters tracking =======
@@ -66,7 +62,6 @@ impl CpuManager {
     pub fn new() -> Self {
         Self {
             app_handle: None,
-            systray_manager: None,
             // ======= Process watcher =======
             process_watcher: ProcessWatcher::new(
                 XmrigAdapter::new(Sender::new(CpuMinerStatus::default())),
@@ -276,7 +271,6 @@ impl CpuManager {
         let cpu_external_status_channel = self.cpu_external_status_channel.clone();
         let node_status_channel = self.node_status_channel.clone();
         let connection_type = self.connection_type.clone();
-        let systray_manager = self.systray_manager.clone();
 
         let mut internal_shutdown_signal = self.status_thread_shutdown.to_signal();
         let mut global_shutdown_signal =
@@ -309,23 +303,8 @@ impl CpuManager {
                             let _res = cpu_external_status_channel.send(paresd_status.clone());
                             EventsEmitter::emit_cpu_mining_update(paresd_status.clone()).await;
 
-                            if let Some(systray_manager) = systray_manager.clone() {
-                                let cpu_systemtray_data = SystemTrayCpuData {
-                                    cpu_hashrate: paresd_status.hash_rate,
-                                    estimated_earning: paresd_status.estimated_earnings
-                                };
-
-                            match try_write_with_retry(&systray_manager, 6).await {
-                                Ok(mut systemtray_manager) => {
-                                        systemtray_manager.update_tray_with_cpu_data(cpu_systemtray_data);
-
-                                },
-                                Err(e) => {
-                                    let err_msg = format!("Failed to acquire systemtray_manager write lock: {e}");
-                                    error!(target: LOG_TARGET, "{err_msg}");
-                                }
-                            }
-                            }
+                            SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::CpuHashrate(paresd_status.hash_rate)));
+                            SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::CpuEstimatedEarnings(paresd_status.estimated_earnings as f64)));
                         } else {
                             break;
                         }

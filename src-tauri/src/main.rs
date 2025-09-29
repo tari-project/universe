@@ -37,7 +37,6 @@ use node::remote_node_adapter::RemoteNodeAdapter;
 use setup::setup_manager::SetupManager;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
-use systemtray_manager::SystemTrayManager;
 use tasks_tracker::TasksTrackers;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
