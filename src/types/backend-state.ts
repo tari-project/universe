@@ -6,6 +6,7 @@ import {
     DetectedDevicesPayload,
     GpuMiner,
     GpuMinerType,
+    MinerControlsState,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
     ProgressTrackerUpdatePayload,
@@ -211,4 +212,12 @@ export type BackendStateUpdateEvent =
               loading: boolean;
               unhealthy?: boolean;
           };
+      }
+    | {
+          event_type: 'UpdateCpuMinerControlsState';
+          payload: MinerControlsState;
+      }
+    | {
+          event_type: 'UpdateGpuMinerControlsState';
+          payload: MinerControlsState;
       };

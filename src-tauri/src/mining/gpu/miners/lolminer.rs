@@ -41,11 +41,14 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
-    mining::gpu::{
-        consts::{GpuConnectionType, GpuMinerStatus},
-        interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
-        manager::GpuManager,
-        miners::GpuCommonInformation,
+    mining::{
+        gpu::{
+            consts::GpuMinerStatus,
+            interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+            manager::GpuManager,
+            miners::GpuCommonInformation,
+        },
+        GpuConnectionType,
     },
     port_allocator::PortAllocator,
     process_adapter::{

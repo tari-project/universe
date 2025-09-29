@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::sync::LazyLock;
+
 use log::{error, info};
 
 use tauri::{
@@ -27,42 +29,52 @@ use tauri::{
     tray::TrayIcon,
     AppHandle, Manager, Wry,
 };
+use tokio::sync::{watch::Sender, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
-use crate::utils::{
-    formatting_utils::{format_currency, format_hashrate},
-    platform_utils::{CurrentOperatingSystem, PlatformUtils},
+use crate::{
+    configs::config_mining::{MiningMode, MiningModeType},
+    tasks_tracker::TasksTrackers,
+    utils::{
+        formatting_utils::{format_currency, format_hashrate},
+        platform_utils::{CurrentOperatingSystem, PlatformUtils},
+    },
 };
 
+static INSTANCE: LazyLock<RwLock<SystemTrayManager>> =
+    LazyLock::new(|| RwLock::new(SystemTrayManager::new()));
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
 
 #[derive(Debug)]
 pub enum SystrayItemId {
+    OpenTariUniverse,
+    ToggleMinning,
     CpuHashrate,
     GpuHashrate,
-    EstimatedEarning,
-    MinimizeToggle,
+    CpuMiningState,
+    GpuMiningState,
+    Power,
+    Rewards,
+    Settings,
+    Close,
 }
 
 impl SystrayItemId {
     pub fn to_str(&self) -> &str {
         match self {
+            SystrayItemId::OpenTariUniverse => "open_tari_universe",
+            SystrayItemId::ToggleMinning => "toggle_minning",
             SystrayItemId::CpuHashrate => "cpu_hashrate",
             SystrayItemId::GpuHashrate => "gpu_hashrate",
-            SystrayItemId::EstimatedEarning => "estimated_earning",
-            SystrayItemId::MinimizeToggle => "minimize_toggle",
+            SystrayItemId::CpuMiningState => "cpu_mining_state",
+            SystrayItemId::GpuMiningState => "gpu_mining_state",
+            SystrayItemId::Power => "power",
+            SystrayItemId::Rewards => "rewards",
+            SystrayItemId::Settings => "settings",
+            SystrayItemId::Close => "close",
+
         }
     }
 
-    pub fn get_title(&self, value: f64) -> String {
-        match self {
-            SystrayItemId::CpuHashrate => format!("CPU Power: {}", format_hashrate(value)),
-            SystrayItemId::GpuHashrate => format!("GPU Power: {}", format_hashrate(value)),
-            SystrayItemId::EstimatedEarning => {
-                format!("Est. Earning: {}", format_currency(value, "XTM/day"))
-            }
-            SystrayItemId::MinimizeToggle => "Minimize/Unminimize".to_string(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -81,6 +93,21 @@ pub struct SystemTrayCpuData {
 pub struct SystemTrayData {
     pub cpu: SystemTrayCpuData,
     pub gpu: SystemTrayGpuData,
+    pub is_cpu_mining_turned_on: bool,
+    pub is_gpu_mining_turned_on: bool,
+    pub mining_mode: MiningModeType,
+    pub cpu_pool_pending_rewards: f64,
+    pub gpu_pool_pending_rewards: f64,
+}
+
+pub enum SystemTrayEvents {
+    UpdateCpuData(SystemTrayCpuData),
+    UpdateGpuData(SystemTrayGpuData),
+    UpdateCpuMiningState(bool),
+    UpdateGpuMiningState(bool),
+    UpdateMiningMode(MiningModeType),
+    UpdateCpuPoolPendingRewards(f64),
+    UpdateGpuPoolPendingRewards(f64),
 }
 
 #[derive(Clone)]
@@ -88,15 +115,87 @@ pub struct SystemTrayManager {
     pub tray: Option<TrayIcon>,
     pub menu: Option<Menu<Wry>>,
     pub data: SystemTrayData,
+    pub channel: Sender<Option<SystemTrayEvents>>,
 }
 
 impl SystemTrayManager {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Self {
             tray: None,
             menu: None,
             data: SystemTrayData::default(),
+            channel: Sender::new(None),
         }
+    }
+
+    pub async fn read() -> RwLockReadGuard<'static, SystemTrayManager> {
+        INSTANCE.read().await
+    }
+
+    pub async fn write() -> RwLockWriteGuard<'static, SystemTrayManager> {
+        INSTANCE.write().await
+    }
+
+    pub async fn get_channel_sender(&self) -> Sender<Option<SystemTrayEvents>> {
+        self.channel.clone()
+    }
+
+    async fn start_tray_data_listener(&mut self) {
+        let mut receiver = self.channel.subscribe();
+        let mut manager = Self::write().await;
+        let task_tracker = TasksTrackers::current().common.get_task_tracker().await;
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+
+        info!(target: LOG_TARGET, "Starting system tray data listener");
+        task_tracker.spawn(async move {
+            loop {
+                tokio::select! {
+                    _ = shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET, "Shutting down system tray data listener");
+                        break;
+                    }
+
+                    result = receiver.changed() => {
+                        if result.is_ok() {
+                            if let Some(event) = &*receiver.borrow() {
+                                match event {
+                                    SystemTrayEvents::UpdateCpuData(data) => {
+                                        manager.update_tray_with_cpu_data(data.clone());
+                                    }
+                                    SystemTrayEvents::UpdateGpuData(data) => {
+                                        manager.update_tray_with_gpu_data(data.clone());
+                                    }
+                                    SystemTrayEvents::UpdateCpuMiningState(state) => {
+                                        manager.data.is_cpu_mining_turned_on = *state;
+                                        manager.update_tray(manager.data.clone());
+                                    }
+                                    SystemTrayEvents::UpdateGpuMiningState(state) => {
+                                        manager.data.is_gpu_mining_turned_on = *state;
+                                        manager.update_tray(manager.data.clone());
+                                    }
+                                    SystemTrayEvents::UpdateMiningMode(mode) => {
+                                        manager.data.mining_mode = mode.clone();
+                                        manager.update_tray(manager.data.clone());
+                                    }
+                                    SystemTrayEvents::UpdateCpuPoolPendingRewards(rewards) => {
+                                        manager.data.cpu_pool_pending_rewards = *rewards;
+                                        manager.update_tray(manager.data.clone());
+                                    }
+                                    SystemTrayEvents::UpdateGpuPoolPendingRewards(rewards) => {
+                                        manager.data.gpu_pool_pending_rewards = *rewards;
+                                        manager.update_tray(manager.data.clone());
+                                    }
+                                }
+                            }
+                        } else {
+                            error!(target: LOG_TARGET, "System tray data listener channel closed");
+                            break;
+                        }
+
+                    }
+                }
+            }
+        });
     }
 
     fn initialize_menu(&self, app: AppHandle) -> Result<Menu<Wry>, anyhow::Error> {
@@ -226,6 +325,8 @@ impl SystemTrayManager {
         self.data.cpu = data;
         self.update_tray(self.data.clone());
     }
+
+    fn update_menu_item
 
     pub fn update_tray(&mut self, data: SystemTrayData) {
         if let Some(tray) = &self.tray {

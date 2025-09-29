@@ -16,6 +16,8 @@ import {
 } from '@app/store/actions/uiStoreActions';
 import {
     handleAvailableMinersChanged,
+    handleCpuMinerControlsStateChanged,
+    handleGpuMinerControlsStateChanged,
     handleSelectedMinerChanged,
     setAvailableEngines,
 } from '@app/store/actions/miningStoreActions';
@@ -236,6 +238,12 @@ const useTauriEventsListener = () => {
                             break;
                         case 'WalletStatusUpdate':
                             setIsWalletLoading(event.payload?.loading);
+                            break;
+                        case 'UpdateCpuMinerControlsState':
+                            handleCpuMinerControlsStateChanged(event.payload);
+                            break;
+                        case 'UpdateGpuMinerControlsState':
+                            handleGpuMinerControlsStateChanged(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

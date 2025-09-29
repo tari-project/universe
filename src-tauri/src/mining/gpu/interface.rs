@@ -25,13 +25,16 @@ use std::time::Duration;
 use axum::async_trait;
 
 use crate::{
-    mining::gpu::{
-        consts::{EngineType, GpuConnectionType},
-        miners::{
-            glytex::{GlytexGpuMiner, GlytexGpuMinerStatusMonitor},
-            graxil::{GraxilGpuMiner, GraxilGpuMinerStatusMonitor},
-            lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
+    mining::{
+        gpu::{
+            consts::EngineType,
+            miners::{
+                glytex::{GlytexGpuMiner, GlytexGpuMinerStatusMonitor},
+                graxil::{GraxilGpuMiner, GraxilGpuMinerStatusMonitor},
+                lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
+            },
         },
+        GpuConnectionType,
     },
     process_adapter::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor,

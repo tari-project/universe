@@ -36,8 +36,9 @@ use tokio::{
 use crate::{
     airdrop::decode_jwt_claims_without_exp,
     app_in_memory_config::AppInMemoryConfig,
-    commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
+    commands::{sign_ws_data, SignWsDataResponse},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    mining::cpu::CpuMinerStatus,
     tasks_tracker::TasksTrackers,
     BaseNodeStatus, GpuMinerStatus,
 };

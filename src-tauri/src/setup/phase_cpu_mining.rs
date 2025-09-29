@@ -253,45 +253,6 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
                 .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
         }
 
-        let app_handle_clone = self.app_handle.clone();
-        TasksTrackers::current()
-            .cpu_mining_phase
-            .get_task_tracker()
-            .await
-            .spawn(async move {
-                let app_state = app_handle_clone.state::<UniverseAppState>().clone();
-                let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
-                let mut shutdown_signal =
-                    TasksTrackers::current().cpu_mining_phase.get_signal().await;
-
-                loop {
-                    select! {
-                        _ = cpu_miner_status_watch_rx.changed() => {
-                            let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
-                            EventsEmitter::emit_cpu_mining_update(cpu_status.clone()).await;
-
-                        let cpu_systemtray_data = SystemTrayCpuData {
-                            cpu_hashrate: cpu_status.hash_rate,
-                            estimated_earning: cpu_status.estimated_earnings,
-                        };
-
-                        match try_write_with_retry(&app_state.systemtray_manager, 6).await {
-                            Ok(mut sm) => {
-                                sm.update_tray_with_cpu_data(cpu_systemtray_data);
-                            },
-                            Err(error) => {
-                                error!(target: LOG_TARGET, "Failed to acquire systemtray_manager write lock: {error}");
-                            }
-                        }
-
-                        }
-                        _ = shutdown_signal.wait() => {
-                            break;
-                        },
-                    }
-                }
-            });
-
         Ok(())
     }
 }

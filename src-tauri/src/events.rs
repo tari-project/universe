@@ -82,6 +82,8 @@ pub enum EventType {
     UpdateSelectedMiner,
     AvailableMiners,
     WalletStatusUpdate,
+    UpdateCpuMinerControlsState,
+    UpdateGpuMinerControlsState,
 }
 
 #[derive(Clone, Debug, Serialize)]
