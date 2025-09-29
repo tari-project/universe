@@ -29,6 +29,7 @@ import {
     setCriticalError,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
+    setIsSettingsOpen,
 } from '@app/store/actions/appStateStoreActions';
 import {
     handleBaseNodeStatusUpdate,
@@ -244,6 +245,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'UpdateGpuMinerControlsState':
                             handleGpuMinerControlsStateChanged(event.payload);
+                            break;
+                        case 'OpenSettings':
+                            setIsSettingsOpen(true);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

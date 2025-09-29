@@ -101,7 +101,7 @@ impl PoolManagerInterfaceTrait<CpuPool> for CpuPoolManager {
         move |pool_statuses: HashMap<String, PoolStatus>, current_status: PoolStatus| {
             spawn(async move {
                 EventsEmitter::emit_cpu_pools_status_update(pool_statuses).await;
-                SystemTrayManager::get_channel_sender().await.send(Some(
+                let _unused = SystemTrayManager::get_channel_sender().await.send(Some(
                     SystemTrayEvents::CpuPoolPendingRewards(current_status.unpaid),
                 ));
             });

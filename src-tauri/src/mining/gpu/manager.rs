@@ -610,8 +610,8 @@ impl GpuManager {
                             let _res = gpu_external_status_channel.send(paresd_status.clone());
                             EventsEmitter::emit_gpu_mining_update(paresd_status.clone()).await;
 
-                            SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::GpuHashrate(paresd_status.hash_rate)));
-                            SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::GpuEstimatedEarnings(paresd_status.estimated_earnings as f64)));
+                            info!(target: LOG_TARGET, "Gpu hashrate: {}", paresd_status.hash_rate);
+                            let _unused = SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::GpuHashrate(paresd_status.hash_rate)));
                         } else {
                             break;
                         }

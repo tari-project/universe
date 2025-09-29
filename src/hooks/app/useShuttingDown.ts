@@ -12,7 +12,7 @@ export function useShuttingDown() {
         const ul = appWindow.onCloseRequested(async (event) => {
             if (!isShuttingDown && !shutdownInitiated) {
                 event.preventDefault();
-                await onShutdownCaught();
+                // await onShutdownCaught();
             }
         });
         return () => {

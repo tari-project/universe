@@ -350,6 +350,22 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_http::init())
+        .on_window_event(|window, event| match event {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
+                api.prevent_close();
+                if let Some(window) = window.get_webview_window("main") {
+                    if window.is_visible().unwrap_or(false) {
+                        let _unused = window.hide().map_err(|err| {
+                            error!(
+                                target: LOG_TARGET,
+                                "Couldn't hide the main window {err:?}"
+                            )
+                        });
+                    }
+                }
+            }
+            _ => {}
+        })
         .setup(|app| {
             let config_path = app
                 .path()

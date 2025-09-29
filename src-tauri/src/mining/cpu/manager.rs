@@ -303,8 +303,7 @@ impl CpuManager {
                             let _res = cpu_external_status_channel.send(paresd_status.clone());
                             EventsEmitter::emit_cpu_mining_update(paresd_status.clone()).await;
 
-                            SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::CpuHashrate(paresd_status.hash_rate)));
-                            SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::CpuEstimatedEarnings(paresd_status.estimated_earnings as f64)));
+                            let _unused = SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::CpuHashrate(paresd_status.hash_rate)));
                         } else {
                             break;
                         }

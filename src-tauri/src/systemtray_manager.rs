@@ -22,12 +22,11 @@
 
 use std::{fmt::Display, sync::LazyLock};
 
+use futures::executor::block_on;
 use log::{error, info};
 
 use tauri::{
-    menu::{Menu, MenuItem, PredefinedMenuItem},
-    tray::TrayIcon,
-    AppHandle, Wry,
+    menu::{Menu, MenuItem, PredefinedMenuItem}, tray::TrayIcon, AppHandle, Manager, Wry
 };
 use tokio::sync::{watch::Sender, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
@@ -35,9 +34,7 @@ use crate::{
     configs::{
         config_mining::{ConfigMining, MiningModeType},
         trait_config::ConfigImpl,
-    },
-    tasks_tracker::TasksTrackers,
-    utils::formatting_utils::{format_currency, format_hashrate},
+    }, events_emitter::EventsEmitter, tasks_tracker::TasksTrackers, utils::{formatting_utils::{format_currency, format_hashrate}, platform_utils::{CurrentOperatingSystem, PlatformUtils}}
 };
 
 static INSTANCE: LazyLock<RwLock<SystemTrayManager>> =
@@ -51,17 +48,16 @@ pub enum SystemTrayDataItem {
     GpuMiningState { is_gpu_mining_turned_on: bool },
     Power { mode: String },
     PendingRewards { rewards: f64 },
-    EstimatedEarnings { earnings: f64 },
 }
 
 impl Display for SystemTrayDataItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SystemTrayDataItem::CpuHashrate { hashrate } => {
-                write!(f, "CPU Power: {}", format_hashrate(*hashrate))
+                write!(f, "CPU Hashrate: {}", format_hashrate(*hashrate))
             }
             SystemTrayDataItem::GpuHashrate { hashrate } => {
-                write!(f, "GPU Power: {}", format_hashrate(*hashrate))
+                write!(f, "GPU Hashrate: {}", format_hashrate(*hashrate))
             }
             SystemTrayDataItem::CpuMiningState {
                 is_cpu_mining_turned_on,
@@ -90,20 +86,13 @@ impl Display for SystemTrayDataItem {
                 )
             }
             SystemTrayDataItem::Power { mode } => {
-                write!(f, "Power: {}", mode)
+                write!(f, "Power Mode: {}", mode)
             }
             SystemTrayDataItem::PendingRewards { rewards } => {
                 write!(
                     f,
-                    "Pending Rewards ( Pools ): {} Combined ( CPU & GPU )",
-                    format_currency(*rewards, "XTM")
-                )
-            }
-            SystemTrayDataItem::EstimatedEarnings { earnings } => {
-                write!(
-                    f,
-                    "Estimated Earnings ( Solo ): {} XTM/day",
-                    format_currency(*earnings, "XTM")
+                    "Pending Rewards: {}",
+                    format_currency(*rewards / 1_000_000.0, "XTM")
                 )
             }
         }
@@ -119,7 +108,6 @@ impl SystemTrayDataItem {
             SystemTrayDataItem::GpuMiningState { .. } => "gpu_mining_state",
             SystemTrayDataItem::Power { .. } => "power",
             SystemTrayDataItem::PendingRewards { .. } => "pending_rewards",
-            SystemTrayDataItem::EstimatedEarnings { .. } => "estimated_earnings",
         }
     }
 }
@@ -167,10 +155,9 @@ pub struct SystemTrayData {
     pub is_gpu_mining_turned_on: bool,
     pub mining_mode: MiningModeType,
     pub pool_pending_rewards: f64,
-    pub estimated_earning: f64,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum SystemTrayEvents {
     CpuHashrate(f64),
     GpuHashrate(f64),
@@ -179,8 +166,6 @@ pub enum SystemTrayEvents {
     MiningMode(MiningModeType),
     CpuPoolPendingRewards(f64),
     GpuPoolPendingRewards(f64),
-    CpuEstimatedEarnings(f64),
-    GpuEstimatedEarnings(f64),
 }
 
 #[derive(Clone)]
@@ -226,8 +211,6 @@ impl SystemTrayManager {
         task_tracker.spawn(async move {
             let mut last_gpu_pool_pending_rewards = 0.0;
             let mut last_cpu_pool_pending_rewards = 0.0;
-            let mut last_cpu_estimated_earning = 0.0;
-            let mut last_gpu_estimated_earning = 0.0;
 
             loop {
                 tokio::select! {
@@ -236,19 +219,23 @@ impl SystemTrayManager {
                         break;
                     }
 
+                    
                     result = receiver.changed() => {
                         if result.is_ok() {
                             // Clone the event data immediately to avoid holding the guard across await points
                             let event_opt = receiver.borrow().clone();
                             if let Some(event) = event_opt {
+                                info!(target: LOG_TARGET, "Received system tray event: {:?}", event);
                                 match event {
                                     SystemTrayEvents::CpuHashrate(hashrate) => {
+                                        info!(target: LOG_TARGET, "Received CPU hashrate update: {}", hashrate);
                                         Self::write().await.update_menu_item(
                                             SystemTrayDataItem::CpuHashrate { hashrate }
                                         );
                                         Self::write().await.data.cpu_hashrate = hashrate;
                                     },
                                     SystemTrayEvents::GpuHashrate(hashrate) => {
+                                        info!(target: LOG_TARGET, "Received GPU hashrate update: {}", hashrate);
                                         Self::write().await.update_menu_item(
                                             SystemTrayDataItem::GpuHashrate { hashrate }
                                         );
@@ -270,7 +257,7 @@ impl SystemTrayManager {
                                         Self::write().await.update_menu_item(
                                             SystemTrayDataItem::Power { mode: mode.to_string() }
                                         );
-                                        Self::write().await.data.mining_mode = mode.clone();
+                                        Self::write().await.data.mining_mode = mode;
                                     },
                                     SystemTrayEvents::CpuPoolPendingRewards(rewards) => {
                                         last_cpu_pool_pending_rewards = rewards;
@@ -287,22 +274,6 @@ impl SystemTrayManager {
                                             SystemTrayDataItem::PendingRewards { rewards: total_rewards }
                                         );
                                         Self::write().await.data.pool_pending_rewards = total_rewards;
-                                    },
-                                    SystemTrayEvents::CpuEstimatedEarnings(earning) => {
-                                        last_cpu_estimated_earning = earning;
-                                        let total_earning = last_cpu_estimated_earning + last_gpu_estimated_earning;
-                                        Self::write().await.update_menu_item(
-                                            SystemTrayDataItem::EstimatedEarnings { earnings: total_earning }
-                                        );
-                                        Self::write().await.data.estimated_earning = total_earning;
-                                    },
-                                    SystemTrayEvents::GpuEstimatedEarnings(earning) => {
-                                        last_gpu_estimated_earning = earning;
-                                        let total_earning = last_cpu_estimated_earning + last_gpu_estimated_earning;
-                                        Self::write().await.update_menu_item(
-                                            SystemTrayDataItem::EstimatedEarnings { earnings: total_earning }
-                                        );
-                                        Self::write().await.data.estimated_earning = total_earning;
                                     },
                                 }
                             }
@@ -385,10 +356,6 @@ impl SystemTrayManager {
         let pool_pending_rewards = self
             .initialize_menu_data_item(SystemTrayDataItem::PendingRewards { rewards: 0.0 }, false);
 
-        let estimated_earnings = self.initialize_menu_data_item(
-            SystemTrayDataItem::EstimatedEarnings { earnings: 0.0 },
-            false,
-        );
 
         // Action items
 
@@ -407,7 +374,7 @@ impl SystemTrayManager {
                 #[cfg(target_os = "macos")]
                 &about_separator,
                 &open_tari_universe,
-                &settings,
+                &toggle_mining,
                 &top_action_separator,
                 &cpu_hashrate,
                 &gpu_hashrate,
@@ -416,9 +383,8 @@ impl SystemTrayManager {
                 &power,
                 &rewards_separator,
                 &pool_pending_rewards,
-                &estimated_earnings,
                 &bottom_action_separator,
-                &toggle_mining,
+                &settings,
                 &quit,
             ],
         )?;
@@ -452,53 +418,95 @@ impl SystemTrayManager {
             }
         }
 
-        // tray.on_menu_event(move |app, event| match event.id.as_ref() {
-        // "minimize_toggle" => {
-        //     let window = match app.get_webview_window("main") {
-        //         Some(window) => window,
-        //         None => {
-        //             error!(target: LOG_TARGET, "Failed to get main window");
-        //             return;
-        //         }
-        //     };
+        tray.on_menu_event(move |app, event| match event.id.as_ref() {
+        "minimize_toggle" => {
+            let window = match app.get_webview_window("main") {
+                Some(window) => window,
+                None => {
+                    error!(target: LOG_TARGET, "Failed to get main window");
+                    return;
+                }
+            };
 
-        //     if window.is_minimized().unwrap_or(false) {
-        //         info!(target: LOG_TARGET, "Unminimizing window");
-        //         match PlatformUtils::detect_current_os() {
-        //             CurrentOperatingSystem::Linux => {
-        //                 window.hide().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed hide window: {error}"));
-        //                 window.unminimize().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to unminimize window: {error}"));
-        //                 window.show().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to show window: {error}"));
-        //                 window.set_focus().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to set focus on window: {error}"));
-        //             }
-        //             _ => {
-        //                 window.unminimize().unwrap_or_else(|error| {
-        //                     error!(target: LOG_TARGET, "Failed to unminimize window: {error}");
-        //                 });
-        //                 window.set_focus().unwrap_or_else(|error| {
-        //                     error!(target: LOG_TARGET, "Failed to set focus on window: {error}");
-        //                 });
-        //             }
-        //         }
-        //     } else {
-        //         info!(target: LOG_TARGET, "Minimizing window");
-        //         window.minimize().unwrap_or_else(|error| {
-        //             error!(target: LOG_TARGET, "Failed to minimize window: {error}");
-        //         });
-        //     }
-        // },
-        //     "open_tari_universe" => {}
-        //     "settings" => {}
-        //     "close" => {}
-        //     "mining_toggle" => {}
-        //     _ => {
-        //         error!(target: LOG_TARGET, "menu item {:?} not handled", event.id);
-        //     }
-        // });
+            if window.is_minimized().unwrap_or(false) {
+                info!(target: LOG_TARGET, "Unminimizing window");
+                match PlatformUtils::detect_current_os() {
+                    CurrentOperatingSystem::Linux => {
+                        window.hide().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed hide window: {error}"));
+                        window.unminimize().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to unminimize window: {error}"));
+                        window.show().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to show window: {error}"));
+                        window.set_focus().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to set focus on window: {error}"));
+                    }
+                    _ => {
+                        window.unminimize().unwrap_or_else(|error| {
+                            error!(target: LOG_TARGET, "Failed to unminimize window: {error}");
+                        });
+                        window.set_focus().unwrap_or_else(|error| {
+                            error!(target: LOG_TARGET, "Failed to set focus on window: {error}");
+                        });
+                    }
+                }
+            } else {
+                info!(target: LOG_TARGET, "Minimizing window");
+                window.minimize().unwrap_or_else(|error| {
+                    error!(target: LOG_TARGET, "Failed to minimize window: {error}");
+                });
+            }
+        },
+            "open_tari_universe" => {
+                block_on(Self::open_tari_universe_action(app.clone()));
+            }
+            "settings" => {
+                block_on(Self::open_settings_action(app.clone()));
+            }
+            "close" => {
+                info!(target: LOG_TARGET, "Quitting application from system tray");
+                app.exit(0);
+            }
+            "mining_toggle" => {}
+            _ => {
+                error!(target: LOG_TARGET, "menu item {:?} not handled", event.id);
+            }
+        });
 
         self.tray.replace(tray);
 
         self.start_tray_data_listener().await;
+    }
+
+    async fn open_tari_universe_action(app_handle: AppHandle) {
+
+                        let window = match app_handle.get_webview_window("main") {
+                Some(window) => window,
+                None => {
+                    error!(target: LOG_TARGET, "Failed to get main window");
+                    return;
+                }
+            };
+
+                        info!(target: LOG_TARGET, "Unminimizing window");
+                match PlatformUtils::detect_current_os() {
+                    CurrentOperatingSystem::Linux => {
+                        window.hide().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed hide window: {error}"));
+                        window.unminimize().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to unminimize window: {error}"));
+                        window.show().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to show window: {error}"));
+                        window.set_focus().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to set focus on window: {error}"));
+                    }
+                    _ => {
+                        window.unminimize().unwrap_or_else(|error| {
+                            error!(target: LOG_TARGET, "Failed to unminimize window: {error}");
+                        });
+                        window.set_focus().unwrap_or_else(|error| {
+                            error!(target: LOG_TARGET, "Failed to set focus on window: {error}");
+                        });
+                    }
+                }
+
+    }
+
+    async fn open_settings_action(app_handle: AppHandle) {
+        Self::open_tari_universe_action(app_handle).await;
+        EventsEmitter::emit_open_settings().await;
     }
 
     fn update_menu_item(&mut self, item: SystemTrayDataItem) {

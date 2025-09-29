@@ -220,4 +220,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'UpdateGpuMinerControlsState';
           payload: MinerControlsState;
+      }
+    | {
+          event_type: 'OpenSettings';
+          payload: undefined;
       };
