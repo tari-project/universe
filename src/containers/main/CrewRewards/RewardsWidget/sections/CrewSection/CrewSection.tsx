@@ -41,6 +41,7 @@ export default function CrewSection() {
         setCrewQueryParams({ status, page: 1 }); // Reset to page 1 when filter changes
     };
 
+    const noMembers = progressData?.members.length === 0;
     const rewardsConfig = progressData?.rewardsConfig;
 
     return (
@@ -63,7 +64,13 @@ export default function CrewSection() {
                 )}
             </IntroTextWrapper>
 
-            <Filters totals={progressData?.totals} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
+            {!noMembers && (
+                <Filters
+                    totals={progressData?.totals}
+                    activeFilter={activeFilter}
+                    onFilterChange={handleFilterChange}
+                />
+            )}
 
             <CrewList
                 members={membersData?.members || []}
@@ -86,6 +93,7 @@ export default function CrewSection() {
                 onNextPage={nextPage}
                 onPrevPage={prevPage}
                 onFilterChange={handleFilterChange}
+                noMembers={noMembers}
             />
         </Wrapper>
     );
