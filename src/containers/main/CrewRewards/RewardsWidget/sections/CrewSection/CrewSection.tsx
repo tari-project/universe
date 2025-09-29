@@ -42,6 +42,7 @@ export default function CrewSection() {
     };
 
     const noMembers = progressData?.members.length === 0;
+    const rewardsConfig = progressData?.rewardsConfig;
 
     return (
         <Wrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -49,16 +50,18 @@ export default function CrewSection() {
 
             <IntroTextWrapper>
                 <Title>{t('airdrop:crewRewards.myCrew')}</Title>
-                <Text>
-                    <Trans
-                        i18nKey="airdrop:crewRewards.earnDescription"
-                        values={{
-                            userReward: 100,
-                            daysRequired: 7,
-                            friendReward: 50,
-                        }}
-                    />
-                </Text>
+                {rewardsConfig && (
+                    <Text>
+                        <Trans
+                            i18nKey="airdrop:crewRewards.earnDescription"
+                            values={{
+                                userReward: rewardsConfig.referrerRewards,
+                                daysRequired: rewardsConfig.requirement,
+                                friendReward: rewardsConfig.referralRewards,
+                            }}
+                        />
+                    </Text>
+                )}
             </IntroTextWrapper>
 
             {!noMembers && (
