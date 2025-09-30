@@ -288,6 +288,7 @@ impl SystemTrayManager {
                                         Self::write().await.data.pool_pending_rewards = total_rewards;
                                     },
                                     SystemTrayEvents::CpuMiningActivity(is_active) => {
+                                        info!(target: LOG_TARGET, "Received CPU mining activity update: {}", is_active);
                                         last_cpu_mining_activity = is_active;
                                         let is_mining =  last_cpu_mining_activity || last_gpu_mining_activity;
                                         Self::write().await.update_menu_action_item(
@@ -296,6 +297,7 @@ impl SystemTrayManager {
                                         Self::write().await.data.is_mining = is_mining;
                                     },
                                     SystemTrayEvents::GpuMiningActivity(is_active) => {
+                                        info!(target: LOG_TARGET, "Received GPU mining activity update: {}", is_active);
                                         last_gpu_mining_activity = is_active;
                                         let is_mining =  last_cpu_mining_activity || last_gpu_mining_activity;
                                         Self::write().await.update_menu_action_item(

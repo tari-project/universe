@@ -298,7 +298,6 @@ impl GpuManager {
             Ok(_) => {
                 info!(target: LOG_TARGET, "Started gpu miner: {}", self.selected_miner);
                 EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Started).await;
-                EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
                 let _unused = SystemTrayManager::get_channel_sender()
                     .await
                     .send(Some(SystemTrayEvents::GpuMiningActivity(true)));
@@ -309,7 +308,6 @@ impl GpuManager {
                 error!(target: LOG_TARGET, "{err_msg}", );
                 sentry::capture_message(&err_msg, sentry::Level::Error);
 
-                EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
                 EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
                 let _unused = SystemTrayManager::get_channel_sender()
                     .await
