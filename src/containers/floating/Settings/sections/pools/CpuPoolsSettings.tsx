@@ -33,9 +33,6 @@ export const CpuPoolsSettings = () => {
     const selectedCpuPoolData = useConfigPoolsStore(getSelectedCpuPool);
     const availableCpuPools = useConfigPoolsStore(useShallow(getAvailableCpuPools));
 
-    console.log('availableCpuPools', availableCpuPools);
-    console.log('selectedCpuPoolData', selectedCpuPoolData);
-
     const handleToggleCpuPool = (enabled: boolean) => {
         void toggleCpuPool(enabled);
     };

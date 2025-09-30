@@ -1,5 +1,3 @@
-import { loadTowerAnimation, setAnimationProperties, setAnimationState } from '@tari-project/tari-tower';
-
 import { useSetupStore } from '../useSetupStore';
 import {
     handleSessionMiningTime,
@@ -12,52 +10,17 @@ import {
     fetchApplicationsVersionsWithRetry,
     fetchTransactionsHistory,
     useConfigMiningStore,
-    useConfigUIStore,
     useMiningStore,
-    useUIStore,
     useWalletStore,
 } from '@app/store';
 
-import { TOWER_CANVAS_ID } from '../types/ui';
 import { ProgressTrackerUpdatePayload, SetupPhase } from '@app/types/events-payloads';
 import { AppModule, AppModuleState, AppModuleStatus } from '../types/setup';
-import { animationDarkBg, animationLightBg } from '@app/store/actions/uiStoreActions.ts';
 import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
+import { loadAnimation } from '@app/store/actions/uiStoreActions.ts';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
-}
-
-async function initializeAnimation() {
-    const visual_mode = useConfigUIStore.getState().visual_mode;
-    const towerInitalized = useUIStore.getState().towerInitalized;
-    if (!visual_mode || towerInitalized) return;
-
-    const uiTheme = useUIStore.getState().theme as string;
-    const preferredTheme = uiTheme === 'system' ? useUIStore.getState().preferredTheme : uiTheme;
-    const animationStyle = preferredTheme === 'dark' ? animationDarkBg : animationLightBg;
-
-    const offset = useUIStore.getState().towerSidebarOffset;
-    try {
-        console.info('Loading tower animation from Setup Store');
-        let loaded = false;
-        try {
-            await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: offset });
-            setAnimationProperties(animationStyle);
-            useUIStore.setState((c) => ({ ...c, towerInitalized: true }));
-            loaded = true;
-        } catch (error) {
-            console.error('Failed to set animation state:', error);
-            useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
-            loaded = false;
-        }
-        if (loaded) {
-            setAnimationState('showVisual');
-        }
-    } catch (e) {
-        console.error('Error at loadTowerAnimation:', e);
-        useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
-    }
 }
 
 export const handleAppLoaded = async () => {
@@ -65,7 +28,8 @@ export const handleAppLoaded = async () => {
     await fetchBridgeTransactionsHistory(tari_address_base58);
     // todo move it to event
     await fetchApplicationsVersionsWithRetry();
-    await initializeAnimation();
+    console.info('Loading tower animation from Setup Store');
+    await loadAnimation();
 };
 
 export const updateSetupProgress = (payload: ProgressTrackerUpdatePayload | undefined) => {
