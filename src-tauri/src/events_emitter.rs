@@ -780,4 +780,17 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit OpenSettings event: {e:?}");
         }
     }
+
+    pub async fn emit_systray_app_shutdown_requested() {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::SystrayAppShutdownRequested,
+                payload: (),
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit SystrayAppShutdownRequested event: {e:?}");
+        }
+    }
 }

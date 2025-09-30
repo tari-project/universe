@@ -482,7 +482,7 @@ impl SystemTrayManager {
             }
             "close" => {
                 info!(target: LOG_TARGET, "Quitting application from system tray");
-                app.exit(0);
+                block_on(Self::close_tari_universe_action(app.clone()));
             }
             "mining_toggle" => {
                 tauri::async_runtime::spawn(async move {
@@ -499,8 +499,12 @@ impl SystemTrayManager {
         self.start_tray_data_listener().await;
     }
 
-    async fn open_tari_universe_action(app_handle: AppHandle) {
+    async fn close_tari_universe_action(app: AppHandle) {
+        Self::open_tari_universe_action(app.clone()).await;
+        EventsEmitter::emit_systray_app_shutdown_requested().await;
+    }
 
+    async fn open_tari_universe_action(app_handle: AppHandle) {
                 let window = match app_handle.get_webview_window("main") {
                 Some(window) => window,
                 None => {
@@ -509,6 +513,13 @@ impl SystemTrayManager {
                 }
             };
 
+                if !window.is_minimized().unwrap_or(false) && window.is_visible().unwrap_or(false) {
+                    info!(target: LOG_TARGET, "Focusing window");
+                    window.set_focus().unwrap_or_else(|error| {
+                        error!(target: LOG_TARGET, "Failed to set focus on window: {error}");
+                    });
+                    return;
+                }
                 info!(target: LOG_TARGET, "Unminimizing window");
                 match PlatformUtils::detect_current_os() {
                     CurrentOperatingSystem::Linux => {

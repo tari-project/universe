@@ -30,6 +30,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
     setIsSettingsOpen,
+    handleSystrayAppShutdownRequested,
 } from '@app/store/actions/appStateStoreActions';
 import {
     handleBaseNodeStatusUpdate,
@@ -248,6 +249,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'OpenSettings':
                             setIsSettingsOpen(true);
+                            break;
+                        case 'SystrayAppShutdownRequested':
+                            handleSystrayAppShutdownRequested();
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

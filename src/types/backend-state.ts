@@ -224,4 +224,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'OpenSettings';
           payload: undefined;
+      }
+    | {
+          event_type: 'SystrayAppShutdownRequested';
+          payload: undefined;
       };
