@@ -24,12 +24,12 @@ export interface DisabledPhasesPayload {
 }
 
 export const handleAppLoaded = async () => {
+    console.info('Loading tower animation from Setup Store');
+    await loadAnimation();
     const tari_address_base58 = useWalletStore.getState().tari_address_base58;
     await fetchBridgeTransactionsHistory(tari_address_base58);
     // todo move it to event
     await fetchApplicationsVersionsWithRetry();
-    console.info('Loading tower animation from Setup Store');
-    await loadAnimation();
 };
 
 export const updateSetupProgress = (payload: ProgressTrackerUpdatePayload | undefined) => {
