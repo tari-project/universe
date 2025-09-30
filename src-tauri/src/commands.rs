@@ -924,10 +924,7 @@ pub async fn set_cpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
     let _unused =
         ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
 
-    SystemTrayManager::get_channel_sender()
-        .await
-        .send(Some(SystemTrayEvents::CpuMiningState(enabled)))
-        .map_err(|e| InvokeError::from_anyhow(anyhow::anyhow!(e.to_string())))?;
+    SystemTrayManager::send_event(SystemTrayEvents::CpuMiningState(enabled)).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -1012,10 +1009,7 @@ pub async fn set_gpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
         .await
         .map_err(InvokeError::from_anyhow)?;
 
-    SystemTrayManager::get_channel_sender()
-        .await
-        .send(Some(SystemTrayEvents::GpuMiningState(enabled)))
-        .map_err(|e| InvokeError::from_anyhow(anyhow::anyhow!(e.to_string())))?;
+    SystemTrayManager::send_event(SystemTrayEvents::GpuMiningState(enabled)).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -1053,12 +1047,10 @@ pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
         .await
         .map_err(InvokeError::from_anyhow)?;
 
-    SystemTrayManager::get_channel_sender()
-        .await
-        .send(Some(SystemTrayEvents::MiningMode(MiningModeType::from(
-            mode.clone(),
-        ))))
-        .map_err(|e| InvokeError::from_anyhow(anyhow::anyhow!(e.to_string())))?;
+    SystemTrayManager::send_event(SystemTrayEvents::MiningMode(MiningModeType::from(
+        mode.clone(),
+    )))
+    .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "select_mining_mode took too long: {:?}", timer.elapsed());

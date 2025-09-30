@@ -298,9 +298,7 @@ impl GpuManager {
             Ok(_) => {
                 info!(target: LOG_TARGET, "Started gpu miner: {}", self.selected_miner);
                 EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Started).await;
-                let _unused = SystemTrayManager::get_channel_sender()
-                    .await
-                    .send(Some(SystemTrayEvents::GpuMiningActivity(true)));
+                SystemTrayManager::send_event(SystemTrayEvents::GpuMiningActivity(true)).await;
                 Ok(())
             }
             Err(e) => {
@@ -309,9 +307,7 @@ impl GpuManager {
                 sentry::capture_message(&err_msg, sentry::Level::Error);
 
                 EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
-                let _unused = SystemTrayManager::get_channel_sender()
-                    .await
-                    .send(Some(SystemTrayEvents::GpuMiningActivity(false)));
+                SystemTrayManager::send_event(SystemTrayEvents::GpuMiningActivity(false)).await;
                 Err(anyhow::anyhow!("{err_msg}"))
             }
         }
@@ -436,9 +432,7 @@ impl GpuManager {
         // It will handle stopping the stats watcher after 1 hour of grace period
         GpuPoolManager::handle_mining_status_change(false).await;
         EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
-        let _unused = SystemTrayManager::get_channel_sender()
-            .await
-            .send(Some(SystemTrayEvents::GpuMiningActivity(false)));
+        SystemTrayManager::send_event(SystemTrayEvents::GpuMiningActivity(false)).await;
         info!(target: LOG_TARGET, "Stopped gpu miner");
         Ok(())
     }
@@ -603,7 +597,7 @@ impl GpuManager {
                     _ = internal_shutdown_signal.wait() => {
                         info!(target: LOG_TARGET, "Shutting down gpu miner status updates");
                         EventsEmitter::emit_gpu_mining_update(GpuMinerStatus::default()).await;
-                        let _unused = SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::GpuHashrate(0.0)));
+                        SystemTrayManager::send_event(SystemTrayEvents::GpuHashrate(0.0)).await;
                         break;
                     },
                     _ = global_shutdown_signal.wait() => {
@@ -621,7 +615,7 @@ impl GpuManager {
                             EventsEmitter::emit_gpu_mining_update(paresd_status.clone()).await;
 
                             info!(target: LOG_TARGET, "Gpu hashrate: {}", paresd_status.hash_rate);
-                            let _unused = SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::GpuHashrate(paresd_status.hash_rate)));
+                            SystemTrayManager::send_event(SystemTrayEvents::GpuHashrate(paresd_status.hash_rate)).await;
                         } else {
                             break;
                         }

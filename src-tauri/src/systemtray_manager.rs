@@ -30,7 +30,7 @@ use tauri::{
     tray::TrayIcon,
     AppHandle, Manager, Wry,
 };
-use tokio::sync::{watch::Sender, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use tokio::sync::{mpsc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use crate::{
     configs::{
@@ -186,17 +186,18 @@ pub struct SystemTrayManager {
     pub tray: Option<TrayIcon>,
     pub menu: Option<Menu<Wry>>,
     pub data: SystemTrayData,
-    pub channel: Sender<Option<SystemTrayEvents>>,
+    pub channel: mpsc::UnboundedSender<SystemTrayEvents>,
 }
 
 impl SystemTrayManager {
     fn new() -> Self {
+        let (sender, _) = mpsc::unbounded_channel();
         Self {
             app_handle: None,
             tray: None,
             menu: None,
             data: SystemTrayData::default(),
-            channel: Sender::new(None),
+            channel: sender,
         }
     }
 
@@ -209,12 +210,23 @@ impl SystemTrayManager {
         INSTANCE.write().await
     }
 
-    pub async fn get_channel_sender() -> Sender<Option<SystemTrayEvents>> {
-        INSTANCE.read().await.channel.clone()
+    pub async fn send_event(event: SystemTrayEvents) {
+        match INSTANCE.read().await.channel.send(event) {
+            Ok(_) => {
+                info!(target: LOG_TARGET, "Sent system tray event");
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to send system tray event: {e}");
+            }
+        };
     }
 
     async fn start_tray_data_listener(&mut self) {
-        let mut receiver = self.channel.subscribe();
+        // Create a new receiver since we need to move it into the task
+        let (sender, mut receiver) = mpsc::unbounded_channel();
+
+        // Replace the old channel with the new sender
+        self.channel = sender;
 
         let task_tracker = TasksTrackers::current().common.get_task_tracker().await;
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
@@ -232,22 +244,18 @@ impl SystemTrayManager {
                         info!(target: LOG_TARGET, "Shutting down system tray data listener");
                         break;
                     }
-                    result = receiver.changed() => {
-                        if result.is_ok() {
-                            // Clone the event data immediately to avoid holding the guard across await points
-                            let event_opt = receiver.borrow().clone();
-                            if let Some(event) = event_opt {
-                                info!(target: LOG_TARGET, "Received system tray event: {:?}", event);
+                    event = receiver.recv() => {
+                        match event {
+                            Some(event) => {
+                                info!(target: LOG_TARGET, "================================================== Received system tray event: {:?}", event);
                                 match event {
                                     SystemTrayEvents::CpuHashrate(hashrate) => {
-                                        info!(target: LOG_TARGET, "Received CPU hashrate update: {}", hashrate);
                                         Self::write().await.update_menu_data_item(
                                             SystemTrayDataItem::CpuHashrate { hashrate }
                                         );
                                         Self::write().await.data.cpu_hashrate = hashrate;
                                     },
                                     SystemTrayEvents::GpuHashrate(hashrate) => {
-                                        info!(target: LOG_TARGET, "Received GPU hashrate update: {}", hashrate);
                                         Self::write().await.update_menu_data_item(
                                             SystemTrayDataItem::GpuHashrate { hashrate }
                                         );
@@ -290,7 +298,7 @@ impl SystemTrayManager {
                                     SystemTrayEvents::CpuMiningActivity(is_active) => {
                                         info!(target: LOG_TARGET, "Received CPU mining activity update: {}", is_active);
                                         last_cpu_mining_activity = is_active;
-                                        let is_mining =  last_cpu_mining_activity || last_gpu_mining_activity;
+                                        let is_mining = last_cpu_mining_activity || last_gpu_mining_activity;
                                         Self::write().await.update_menu_action_item(
                                             SystemTrayActionItem::ToggleMining { is_mining }
                                         );
@@ -299,7 +307,7 @@ impl SystemTrayManager {
                                     SystemTrayEvents::GpuMiningActivity(is_active) => {
                                         info!(target: LOG_TARGET, "Received GPU mining activity update: {}", is_active);
                                         last_gpu_mining_activity = is_active;
-                                        let is_mining =  last_cpu_mining_activity || last_gpu_mining_activity;
+                                        let is_mining = last_cpu_mining_activity || last_gpu_mining_activity;
                                         Self::write().await.update_menu_action_item(
                                             SystemTrayActionItem::ToggleMining { is_mining }
                                         );
@@ -307,11 +315,11 @@ impl SystemTrayManager {
                                     }
                                 }
                             }
-                        } else {
-                            error!(target: LOG_TARGET, "System tray data listener channel closed");
-                            break;
+                            None => {
+                                info!(target: LOG_TARGET, "System tray data listener channel closed");
+                                break;
+                            }
                         }
-
                     }
                 }
             }

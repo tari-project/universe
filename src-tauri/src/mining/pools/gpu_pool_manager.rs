@@ -156,9 +156,10 @@ impl PoolManagerInterfaceTrait<GpuPool> for GpuPoolManager {
             spawn(async move {
                 EventsEmitter::emit_gpu_pools_status_update(pool_statuses).await;
 
-                let _unused = SystemTrayManager::get_channel_sender().await.send(Some(
-                    SystemTrayEvents::GpuPoolPendingRewards(current_status.unpaid),
-                ));
+                SystemTrayManager::send_event(SystemTrayEvents::GpuPoolPendingRewards(
+                    current_status.unpaid,
+                ))
+                .await;
             });
         }
     }
