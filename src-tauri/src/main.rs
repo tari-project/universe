@@ -355,10 +355,10 @@ fn main() {
                 api.prevent_close();
                 if let Some(window) = window.get_webview_window("main") {
                     if window.is_visible().unwrap_or(false) {
-                        let _unused = window.hide().map_err(|err| {
+                        let _unused = window.minimize().map_err(|err| {
                             error!(
                                 target: LOG_TARGET,
-                               "Couldn't hide the main window {err:?}"
+                               "Couldn't minimize the main window {err:?}"
                             )
                         });
                     }
