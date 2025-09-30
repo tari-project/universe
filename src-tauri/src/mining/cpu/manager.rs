@@ -115,6 +115,9 @@ impl CpuManager {
             Ok(_) => {
                 info!(target: LOG_TARGET, "Started cpu miner");
                 EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Started).await;
+                let _unused = SystemTrayManager::get_channel_sender()
+                    .await
+                    .send(Some(SystemTrayEvents::CpuMiningActivity(true)));
                 Ok(())
             }
             Err(e) => {
@@ -123,6 +126,9 @@ impl CpuManager {
                 sentry::capture_message(&err_msg, sentry::Level::Error);
 
                 EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Stopped).await;
+                let _unused = SystemTrayManager::get_channel_sender()
+                    .await
+                    .send(Some(SystemTrayEvents::CpuMiningActivity(false)));
                 Err(anyhow::anyhow!(err_msg))
             }
         }
@@ -262,6 +268,9 @@ impl CpuManager {
         // It will handle stopping the stats watcher after 1 hour of grace period
         CpuPoolManager::handle_mining_status_change(false).await;
         EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Stopped).await;
+        let _unused = SystemTrayManager::get_channel_sender()
+            .await
+            .send(Some(SystemTrayEvents::CpuMiningActivity(false)));
         info!(target: LOG_TARGET, "Stopped cpu miner");
         Ok(())
     }
@@ -286,6 +295,7 @@ impl CpuManager {
                     _ = internal_shutdown_signal.wait() => {
                         info!(target: LOG_TARGET, "Shutting down cpu miner status updates");
                         EventsEmitter::emit_cpu_mining_update(CpuMinerStatus::default()).await;
+                        let _unused = SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::CpuHashrate(0.0)));
                         break;
                     },
                     _ = global_shutdown_signal.wait() => {

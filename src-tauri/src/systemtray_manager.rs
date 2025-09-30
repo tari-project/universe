@@ -28,13 +28,13 @@ use log::{error, info};
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem}, tray::TrayIcon, AppHandle, Manager, Wry
 };
-use tokio::sync::{watch::Sender, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use tokio::{runtime, sync::{watch::Sender, RwLock, RwLockReadGuard, RwLockWriteGuard}};
 
 use crate::{
     configs::{
         config_mining::{ConfigMining, MiningModeType},
         trait_config::ConfigImpl,
-    }, events_emitter::EventsEmitter, tasks_tracker::TasksTrackers, utils::{formatting_utils::{format_currency, format_hashrate}, platform_utils::{CurrentOperatingSystem, PlatformUtils}}
+    }, events_emitter::EventsEmitter, mining::{cpu::manager::CpuManager, gpu::{consts::GpuMiner, manager::GpuManager}}, tasks_tracker::TasksTrackers, utils::{formatting_utils::{format_currency, format_hashrate}, platform_utils::{CurrentOperatingSystem, PlatformUtils}}
 };
 
 static INSTANCE: LazyLock<RwLock<SystemTrayManager>> =
@@ -155,6 +155,7 @@ pub struct SystemTrayData {
     pub is_gpu_mining_turned_on: bool,
     pub mining_mode: MiningModeType,
     pub pool_pending_rewards: f64,
+    pub is_mining: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -166,6 +167,8 @@ pub enum SystemTrayEvents {
     MiningMode(MiningModeType),
     CpuPoolPendingRewards(f64),
     GpuPoolPendingRewards(f64),
+    CpuMiningActivity(bool),
+    GpuMiningActivity(bool),
 }
 
 #[derive(Clone)]
@@ -211,6 +214,8 @@ impl SystemTrayManager {
         task_tracker.spawn(async move {
             let mut last_gpu_pool_pending_rewards = 0.0;
             let mut last_cpu_pool_pending_rewards = 0.0;
+            let mut last_cpu_mining_activity = false;
+            let mut last_gpu_mining_activity = false;
 
             loop {
                 tokio::select! {
@@ -229,32 +234,32 @@ impl SystemTrayManager {
                                 match event {
                                     SystemTrayEvents::CpuHashrate(hashrate) => {
                                         info!(target: LOG_TARGET, "Received CPU hashrate update: {}", hashrate);
-                                        Self::write().await.update_menu_item(
+                                        Self::write().await.update_menu_data_item(
                                             SystemTrayDataItem::CpuHashrate { hashrate }
                                         );
                                         Self::write().await.data.cpu_hashrate = hashrate;
                                     },
                                     SystemTrayEvents::GpuHashrate(hashrate) => {
                                         info!(target: LOG_TARGET, "Received GPU hashrate update: {}", hashrate);
-                                        Self::write().await.update_menu_item(
+                                        Self::write().await.update_menu_data_item(
                                             SystemTrayDataItem::GpuHashrate { hashrate }
                                         );
                                         Self::write().await.data.gpu_hashrate = hashrate;
                                     },
                                     SystemTrayEvents::CpuMiningState(is_turned_on) => {
-                                        Self::write().await.update_menu_item(
+                                        Self::write().await.update_menu_data_item(
                                             SystemTrayDataItem::CpuMiningState { is_cpu_mining_turned_on: is_turned_on }
                                         );
                                         Self::write().await.data.is_cpu_mining_turned_on = is_turned_on;
                                     },
                                     SystemTrayEvents::GpuMiningState(is_turned_on) => {
-                                        Self::write().await.update_menu_item(
+                                        Self::write().await.update_menu_data_item(
                                             SystemTrayDataItem::GpuMiningState { is_gpu_mining_turned_on: is_turned_on }
                                         );
                                         Self::write().await.data.is_gpu_mining_turned_on = is_turned_on;
                                     },
                                     SystemTrayEvents::MiningMode(mode) => {
-                                        Self::write().await.update_menu_item(
+                                        Self::write().await.update_menu_data_item(
                                             SystemTrayDataItem::Power { mode: mode.to_string() }
                                         );
                                         Self::write().await.data.mining_mode = mode;
@@ -262,7 +267,7 @@ impl SystemTrayManager {
                                     SystemTrayEvents::CpuPoolPendingRewards(rewards) => {
                                         last_cpu_pool_pending_rewards = rewards;
                                         let total_rewards = last_cpu_pool_pending_rewards + last_gpu_pool_pending_rewards;
-                                        Self::write().await.update_menu_item(
+                                        Self::write().await.update_menu_data_item(
                                             SystemTrayDataItem::PendingRewards { rewards: total_rewards }
                                         );
                                         Self::write().await.data.pool_pending_rewards = total_rewards;
@@ -270,11 +275,27 @@ impl SystemTrayManager {
                                     SystemTrayEvents::GpuPoolPendingRewards(rewards) => {
                                         last_gpu_pool_pending_rewards = rewards;
                                         let total_rewards = last_cpu_pool_pending_rewards + last_gpu_pool_pending_rewards;
-                                        Self::write().await.update_menu_item(
+                                        Self::write().await.update_menu_data_item(
                                             SystemTrayDataItem::PendingRewards { rewards: total_rewards }
                                         );
                                         Self::write().await.data.pool_pending_rewards = total_rewards;
                                     },
+                                    SystemTrayEvents::CpuMiningActivity(is_active) => {
+                                        last_cpu_mining_activity = is_active;
+                                        let is_mining =  last_cpu_mining_activity || last_gpu_mining_activity;
+                                        Self::write().await.update_menu_action_item(
+                                            SystemTrayActionItem::ToggleMining { is_mining }
+                                        );
+                                        Self::write().await.data.is_mining = is_mining;
+                                    },
+                                    SystemTrayEvents::GpuMiningActivity(is_active) => {
+                                        last_gpu_mining_activity = is_active;
+                                        let is_mining =  last_cpu_mining_activity || last_gpu_mining_activity;
+                                        Self::write().await.update_menu_action_item(
+                                            SystemTrayActionItem::ToggleMining { is_mining }
+                                        );
+                                        Self::write().await.data.is_mining = is_mining;
+                                    }
                                 }
                             }
                         } else {
@@ -463,7 +484,11 @@ impl SystemTrayManager {
                 info!(target: LOG_TARGET, "Quitting application from system tray");
                 app.exit(0);
             }
-            "mining_toggle" => {}
+            "mining_toggle" => {
+                tauri::async_runtime::spawn(async move {
+                    Self::toggle_mining_action().await;
+                });
+            }
             _ => {
                 error!(target: LOG_TARGET, "menu item {:?} not handled", event.id);
             }
@@ -476,7 +501,7 @@ impl SystemTrayManager {
 
     async fn open_tari_universe_action(app_handle: AppHandle) {
 
-                        let window = match app_handle.get_webview_window("main") {
+                let window = match app_handle.get_webview_window("main") {
                 Some(window) => window,
                 None => {
                     error!(target: LOG_TARGET, "Failed to get main window");
@@ -484,7 +509,7 @@ impl SystemTrayManager {
                 }
             };
 
-                        info!(target: LOG_TARGET, "Unminimizing window");
+                info!(target: LOG_TARGET, "Unminimizing window");
                 match PlatformUtils::detect_current_os() {
                     CurrentOperatingSystem::Linux => {
                         window.hide().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed hide window: {error}"));
@@ -509,7 +534,35 @@ impl SystemTrayManager {
         EventsEmitter::emit_open_settings().await;
     }
 
-    fn update_menu_item(&mut self, item: SystemTrayDataItem) {
+    async fn toggle_mining_action() {
+        let is_mining = Self::read().await.data.is_mining;
+        if is_mining {
+            CpuManager::write().await.stop_mining().await.ok();
+            GpuManager::write().await.stop_mining().await.ok();
+        } else {
+            CpuManager::write().await.start_mining().await.ok();
+            GpuManager::write().await.start_mining().await.ok();
+      }
+    }
+    fn update_menu_data_item(&mut self, item: SystemTrayDataItem) {
+        if let Some(menu) = &self.menu {
+            if let Some(menu_item) = menu.get(item.id()) {
+                if let Some(menu_item) = menu_item.as_menuitem() {
+                    if let Err(e) = menu_item.set_text(item.to_string()) {
+                        error!(target: LOG_TARGET, "Failed to update menu field: {e}");
+                    }
+                } else {
+                    error!(target: LOG_TARGET, "Failed to get menu item for {item}");
+                }
+            } else {
+                error!(target: LOG_TARGET, "Failed to get menu item by id for {item}");
+            }
+        } else {
+            error!(target: LOG_TARGET, "Menu is not initialized");
+        }
+    }
+
+    fn update_menu_action_item(&mut self, item: SystemTrayActionItem) {
         if let Some(menu) = &self.menu {
             if let Some(menu_item) = menu.get(item.id()) {
                 if let Some(menu_item) = menu_item.as_menuitem() {

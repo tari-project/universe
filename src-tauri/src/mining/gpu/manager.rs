@@ -298,6 +298,10 @@ impl GpuManager {
             Ok(_) => {
                 info!(target: LOG_TARGET, "Started gpu miner: {}", self.selected_miner);
                 EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Started).await;
+                EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
+                let _unused = SystemTrayManager::get_channel_sender()
+                    .await
+                    .send(Some(SystemTrayEvents::GpuMiningActivity(true)));
                 Ok(())
             }
             Err(e) => {
@@ -306,6 +310,10 @@ impl GpuManager {
                 sentry::capture_message(&err_msg, sentry::Level::Error);
 
                 EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
+                EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
+                let _unused = SystemTrayManager::get_channel_sender()
+                    .await
+                    .send(Some(SystemTrayEvents::GpuMiningActivity(false)));
                 Err(anyhow::anyhow!("{err_msg}"))
             }
         }
@@ -430,6 +438,9 @@ impl GpuManager {
         // It will handle stopping the stats watcher after 1 hour of grace period
         GpuPoolManager::handle_mining_status_change(false).await;
         EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
+        let _unused = SystemTrayManager::get_channel_sender()
+            .await
+            .send(Some(SystemTrayEvents::GpuMiningActivity(false)));
         info!(target: LOG_TARGET, "Stopped gpu miner");
         Ok(())
     }
@@ -594,6 +605,7 @@ impl GpuManager {
                     _ = internal_shutdown_signal.wait() => {
                         info!(target: LOG_TARGET, "Shutting down gpu miner status updates");
                         EventsEmitter::emit_gpu_mining_update(GpuMinerStatus::default()).await;
+                        let _unused = SystemTrayManager::get_channel_sender().await.send(Some(SystemTrayEvents::GpuHashrate(0.0)));
                         break;
                     },
                     _ = global_shutdown_signal.wait() => {
