@@ -212,9 +212,7 @@ impl SystemTrayManager {
 
     pub async fn send_event(event: SystemTrayEvents) {
         match INSTANCE.read().await.channel.send(event) {
-            Ok(_) => {
-                info!(target: LOG_TARGET, "Sent system tray event");
-            }
+            Ok(_) => {}
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to send system tray event: {e}");
             }
@@ -247,7 +245,6 @@ impl SystemTrayManager {
                     event = receiver.recv() => {
                         match event {
                             Some(event) => {
-                                info!(target: LOG_TARGET, "================================================== Received system tray event: {:?}", event);
                                 match event {
                                     SystemTrayEvents::CpuHashrate(hashrate) => {
                                         Self::write().await.update_menu_data_item(
