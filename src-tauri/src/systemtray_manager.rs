@@ -448,40 +448,6 @@ impl SystemTrayManager {
         }
 
         tray.on_menu_event(move |app, event| match event.id.as_ref() {
-        "minimize_toggle" => {
-            let window = match app.get_webview_window("main") {
-                Some(window) => window,
-                None => {
-                    error!(target: LOG_TARGET, "Failed to get main window");
-                    return;
-                }
-            };
-
-            if window.is_minimized().unwrap_or(false) {
-                info!(target: LOG_TARGET, "Unminimizing window");
-                match PlatformUtils::detect_current_os() {
-                    CurrentOperatingSystem::Linux => {
-                        window.hide().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed hide window: {error}"));
-                        window.unminimize().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to unminimize window: {error}"));
-                        window.show().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to show window: {error}"));
-                        window.set_focus().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to set focus on window: {error}"));
-                    }
-                    _ => {
-                        window.unminimize().unwrap_or_else(|error| {
-                            error!(target: LOG_TARGET, "Failed to unminimize window: {error}");
-                        });
-                        window.set_focus().unwrap_or_else(|error| {
-                            error!(target: LOG_TARGET, "Failed to set focus on window: {error}");
-                        });
-                    }
-                }
-            } else {
-                info!(target: LOG_TARGET, "Minimizing window");
-                window.minimize().unwrap_or_else(|error| {
-                    error!(target: LOG_TARGET, "Failed to minimize window: {error}");
-                });
-            }
-        },
             "open_tari_universe" => {
                 block_on(Self::open_tari_universe_action(app.clone()));
             }
@@ -545,6 +511,9 @@ impl SystemTrayManager {
                 );
             }
             _ => {
+                window.show().unwrap_or_else(|error| {
+                    error!(target: LOG_TARGET, "Failed to show window: {error}");
+                });
                 window.unminimize().unwrap_or_else(|error| {
                     error!(target: LOG_TARGET, "Failed to unminimize window: {error}");
                 });
