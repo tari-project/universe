@@ -26,15 +26,24 @@ use futures::executor::block_on;
 use log::{error, info};
 
 use tauri::{
-    menu::{Menu, MenuItem, PredefinedMenuItem}, tray::TrayIcon, AppHandle, Manager, Wry
+    menu::{Menu, MenuItem, PredefinedMenuItem},
+    tray::TrayIcon,
+    AppHandle, Manager, Wry,
 };
-use tokio::{runtime, sync::{watch::Sender, RwLock, RwLockReadGuard, RwLockWriteGuard}};
+use tokio::sync::{watch::Sender, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use crate::{
     configs::{
         config_mining::{ConfigMining, MiningModeType},
         trait_config::ConfigImpl,
-    }, events_emitter::EventsEmitter, mining::{cpu::manager::CpuManager, gpu::{consts::GpuMiner, manager::GpuManager}}, tasks_tracker::TasksTrackers, utils::{formatting_utils::{format_currency, format_hashrate}, platform_utils::{CurrentOperatingSystem, PlatformUtils}}
+    },
+    events_emitter::EventsEmitter,
+    mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
+    tasks_tracker::TasksTrackers,
+    utils::{
+        formatting_utils::{format_currency, format_hashrate},
+        platform_utils::{CurrentOperatingSystem, PlatformUtils},
+    },
 };
 
 static INSTANCE: LazyLock<RwLock<SystemTrayManager>> =
@@ -223,8 +232,6 @@ impl SystemTrayManager {
                         info!(target: LOG_TARGET, "Shutting down system tray data listener");
                         break;
                     }
-
-                    
                     result = receiver.changed() => {
                         if result.is_ok() {
                             // Clone the event data immediately to avoid holding the guard across await points
@@ -377,7 +384,6 @@ impl SystemTrayManager {
         let pool_pending_rewards = self
             .initialize_menu_data_item(SystemTrayDataItem::PendingRewards { rewards: 0.0 }, false);
 
-
         // Action items
 
         let open_tari_universe =
@@ -505,39 +511,46 @@ impl SystemTrayManager {
     }
 
     async fn open_tari_universe_action(app_handle: AppHandle) {
-                let window = match app_handle.get_webview_window("main") {
-                Some(window) => window,
-                None => {
-                    error!(target: LOG_TARGET, "Failed to get main window");
-                    return;
-                }
-            };
+        let window = match app_handle.get_webview_window("main") {
+            Some(window) => window,
+            None => {
+                error!(target: LOG_TARGET, "Failed to get main window");
+                return;
+            }
+        };
 
-                if !window.is_minimized().unwrap_or(false) && window.is_visible().unwrap_or(false) {
-                    info!(target: LOG_TARGET, "Focusing window");
-                    window.set_focus().unwrap_or_else(|error| {
-                        error!(target: LOG_TARGET, "Failed to set focus on window: {error}");
-                    });
-                    return;
-                }
-                info!(target: LOG_TARGET, "Unminimizing window");
-                match PlatformUtils::detect_current_os() {
-                    CurrentOperatingSystem::Linux => {
-                        window.hide().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed hide window: {error}"));
-                        window.unminimize().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to unminimize window: {error}"));
-                        window.show().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to show window: {error}"));
-                        window.set_focus().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to set focus on window: {error}"));
-                    }
-                    _ => {
-                        window.unminimize().unwrap_or_else(|error| {
-                            error!(target: LOG_TARGET, "Failed to unminimize window: {error}");
-                        });
-                        window.set_focus().unwrap_or_else(|error| {
-                            error!(target: LOG_TARGET, "Failed to set focus on window: {error}");
-                        });
-                    }
-                }
-
+        if !window.is_minimized().unwrap_or(false) && window.is_visible().unwrap_or(false) {
+            info!(target: LOG_TARGET, "Focusing window");
+            window.set_focus().unwrap_or_else(|error| {
+                error!(target: LOG_TARGET, "Failed to set focus on window: {error}");
+            });
+            return;
+        }
+        info!(target: LOG_TARGET, "Unminimizing window");
+        match PlatformUtils::detect_current_os() {
+            CurrentOperatingSystem::Linux => {
+                window.hide().unwrap_or_else(
+                    |error| error!(target: LOG_TARGET, "Failed hide window: {error}"),
+                );
+                window.unminimize().unwrap_or_else(
+                    |error| error!(target: LOG_TARGET, "Failed to unminimize window: {error}"),
+                );
+                window.show().unwrap_or_else(
+                    |error| error!(target: LOG_TARGET, "Failed to show window: {error}"),
+                );
+                window.set_focus().unwrap_or_else(
+                    |error| error!(target: LOG_TARGET, "Failed to set focus on window: {error}"),
+                );
+            }
+            _ => {
+                window.unminimize().unwrap_or_else(|error| {
+                    error!(target: LOG_TARGET, "Failed to unminimize window: {error}");
+                });
+                window.set_focus().unwrap_or_else(|error| {
+                    error!(target: LOG_TARGET, "Failed to set focus on window: {error}");
+                });
+            }
+        }
     }
 
     async fn open_settings_action(app_handle: AppHandle) {
@@ -553,7 +566,7 @@ impl SystemTrayManager {
         } else {
             CpuManager::write().await.start_mining().await.ok();
             GpuManager::write().await.start_mining().await.ok();
-      }
+        }
     }
     fn update_menu_data_item(&mut self, item: SystemTrayDataItem) {
         if let Some(menu) = &self.menu {
