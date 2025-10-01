@@ -161,12 +161,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
                     .init_periodic_updates(&self.app_handle)
                     .await?;
 
-                state
-                    .systemtray_manager
-                    .write()
-                    .await
-                    .initialize_tray(&self.app_handle)?;
-
                 AutoLauncher::current()
                     .initialize_auto_launcher(self.app_configuration.is_auto_launcher_enabled)
                     .await?;
