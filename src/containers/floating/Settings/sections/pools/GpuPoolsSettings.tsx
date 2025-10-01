@@ -53,7 +53,7 @@ export const GpuPoolsSettings = () => {
 
     const handleResetToDefaultPoolConfiguration = async () => {
         if (!selectedGpuPoolData) return;
-        await resetGpuPoolConfiguration(selectedGpuPoolData.pool_name);
+        await resetGpuPoolConfiguration(selectedGpuPoolData.pool_type);
     };
 
     return (
