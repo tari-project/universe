@@ -57,7 +57,7 @@ export const CpuPoolsSettings = () => {
 
     const handleResetToDefaultPoolConfiguration = async () => {
         if (!selectedCpuPoolData) return;
-        await resetCpuPoolConfiguration(selectedCpuPoolData.pool_name);
+        await resetCpuPoolConfiguration(selectedCpuPoolData.pool_type);
     };
 
     return (

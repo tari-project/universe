@@ -1733,11 +1733,11 @@ pub async fn update_selected_cpu_pool_config(
 }
 
 #[tauri::command]
-pub async fn reset_gpu_pool_config(gpu_pool_name: String) -> Result<(), InvokeError> {
+pub async fn reset_gpu_pool_config(gpu_pool_type: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[reset_pool_gpu_pool_config] called with gpu_pool_name: {gpu_pool_name:?}");
+    info!(target: LOG_TARGET, "[reset_pool_gpu_pool_config] called with gpu_pool_name: {gpu_pool_type:?}");
 
-    let gpu_pool = GpuPool::from_string(&gpu_pool_name).map_err(InvokeError::from_anyhow)?;
+    let gpu_pool = GpuPool::from_string(&gpu_pool_type).map_err(InvokeError::from_anyhow)?;
 
     ConfigPools::update_field(
         ConfigPoolsContent::update_current_gpu_config,
@@ -1755,11 +1755,11 @@ pub async fn reset_gpu_pool_config(gpu_pool_name: String) -> Result<(), InvokeEr
 }
 
 #[tauri::command]
-pub async fn reset_cpu_pool_config(cpu_pool_name: String) -> Result<(), InvokeError> {
+pub async fn reset_cpu_pool_config(cpu_pool_type: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[reset_pool_cpu_pool_config] called with cpu_pool_name: {cpu_pool_name:?}");
+    info!(target: LOG_TARGET, "[reset_pool_cpu_pool_config] called with cpu_pool_name: {cpu_pool_type:?}");
 
-    let cpu_pool = CpuPool::from_string(&cpu_pool_name).map_err(InvokeError::from_anyhow)?;
+    let cpu_pool = CpuPool::from_string(&cpu_pool_type).map_err(InvokeError::from_anyhow)?;
 
     ConfigPools::update_field(
         ConfigPoolsContent::update_current_cpu_config,
