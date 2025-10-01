@@ -5,9 +5,11 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { convertHexToRGBA, formatNumber, FormatPreset } from '@app/utils';
 import { PoolStats as IPoolStats } from '@app/types/app-status.ts';
 import styled from 'styled-components';
+import { PoolOrigin } from '@app/types/configs';
 
 interface PoolStatsProps {
     poolStatus?: IPoolStats;
+    poolOrigin?: PoolOrigin;
     isMining?: boolean;
 }
 
@@ -41,20 +43,30 @@ const ContentCol = styled.div`
     gap: 4px;
 `;
 
-export function PoolStats({ poolStatus, isMining = false }: PoolStatsProps) {
+export function PoolStats({ poolStatus, poolOrigin, isMining = false }: PoolStatsProps) {
     const { t } = useTranslation(['mining-view', 'settings'], { useSuspense: false });
     const unpaidFMT = formatNumber(poolStatus?.unpaid || 0, FormatPreset.XTM_LONG_DEC);
     const balanceFMT = formatNumber(poolStatus?.balance || 0, FormatPreset.XTM_LONG_DEC);
+
+    let show_accepted_shares = true;
+    let show_balance = true;
+
+    if (poolOrigin === PoolOrigin.Kryptex) {
+        show_accepted_shares = false;
+        show_balance = false;
+    }
 
     const loadingMarkup = isMining && !poolStatus ? <LoadingDots /> : null;
     const markup = poolStatus ? (
         <Wrapper>
             <ContentWrapper>
-                <ContentCol>
-                    <Typography>
-                        {t('pool.accepted_shares')}: <strong>{poolStatus?.accepted_shares ?? `-`}</strong>
-                    </Typography>
-                </ContentCol>
+                {show_accepted_shares && (
+                    <ContentCol>
+                        <Typography>
+                            {t('pool.accepted_shares')}: <strong>{poolStatus?.accepted_shares ?? `-`}</strong>
+                        </Typography>
+                    </ContentCol>
+                )}
                 <ContentCol>
                     <Typography>
                         {t('pool.unpaid')}:{' '}
@@ -64,15 +76,17 @@ export function PoolStats({ poolStatus, isMining = false }: PoolStatsProps) {
                         </strong>
                     </Typography>
                 </ContentCol>
-                <ContentCol>
-                    <Typography>
-                        {t('pool.balance')}:{' '}
-                        <strong>
-                            {balanceFMT}
-                            {` XTM`}
-                        </strong>
-                    </Typography>
-                </ContentCol>
+                {show_balance && (
+                    <ContentCol>
+                        <Typography>
+                            {t('pool.balance')}:{' '}
+                            <strong>
+                                {balanceFMT}
+                                {` XTM`}
+                            </strong>
+                        </Typography>
+                    </ContentCol>
+                )}
             </ContentWrapper>
         </Wrapper>
     ) : null;
