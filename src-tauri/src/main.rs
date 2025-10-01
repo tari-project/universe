@@ -634,7 +634,22 @@ fn main() {
             }
             tauri::RunEvent::Exit => {
                 info!(target: LOG_TARGET, "App shutdown [Exit] caught");
-                block_on(TasksTrackers::current().stop_all_processes());
+                let app_handle_clone = app_handle.clone();
+
+                let closing_task = tauri::async_runtime::spawn(async move {
+                    let state = app_handle_clone.state::<UniverseAppState>();
+                    TasksTrackers::current().stop_all_processes().await;
+                    GpuManager::read().await.on_app_exit().await;
+                    CpuManager::read().await.on_app_exit().await;
+                    state.tor_manager.on_app_exit().await;
+                    state.wallet_manager.on_app_exit().await;
+                    state.node_manager.on_app_exit().await;
+                });
+
+                block_on(closing_task).unwrap_or_else(|e| {
+                    error!(target: LOG_TARGET, "Could not join closing task: {e:?}");
+                });
+
                 if is_restart_requested_clone.load(Ordering::SeqCst) {
                     app_handle.cleanup_before_exit();
                     let env = app_handle.env();
