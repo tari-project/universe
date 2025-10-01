@@ -333,6 +333,14 @@ impl BinaryManager {
         &self,
         progress_channel: Option<IncrementalProgressTracker>,
     ) -> Result<(), Error> {
+        #[cfg(target_os = "windows")]
+        {
+            // Add Windows Defender exclusions before download to prevent interference
+            if let Err(e) = self.add_windows_defender_exclusions().await {
+                warn!(target: LOG_TARGET, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
+            }
+        }
+
         let mut last_error_message = String::new();
         for retry in 0..3 {
             match self
@@ -341,15 +349,6 @@ impl BinaryManager {
             {
                 Ok(_) => {
                     info!(target: LOG_TARGET, "Successfully downloaded binary: {} on retry: {}", self.binary_name, retry);
-
-                    #[cfg(target_os = "windows")]
-                    {
-                        // Add Windows Defender exclusions after successful download
-                        if let Err(e) = self.add_windows_defender_exclusions().await {
-                            warn!(target: LOG_TARGET, "Failed to add Windows Defender exclusions for {}: {}", self.binary_name, e);
-                        }
-                    }
-
                     return Ok(());
                 }
                 Err(error) => {

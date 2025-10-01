@@ -4,9 +4,11 @@ import InviteFriendsButton from './InviteFriendsButton/InviteFriendsButton';
 import { useTranslation } from 'react-i18next';
 import ToggleButton from './ToggleButton/ToggleButton';
 import MinimizeButton from './MinimizeButton/MinimizeButton';
+import { useCrewRewardsStore } from '@app/store/useCrewRewardsStore';
 
 export default function TopRow() {
     const { t } = useTranslation();
+    const { isOpen } = useCrewRewardsStore();
 
     return (
         <Wrapper>
@@ -17,7 +19,7 @@ export default function TopRow() {
             <RightSide>
                 <InviteFriendsButton />
                 <ActionButtons>
-                    <MinimizeButton />
+                    {!isOpen && <MinimizeButton />}
                     <ToggleButton />
                 </ActionButtons>
             </RightSide>

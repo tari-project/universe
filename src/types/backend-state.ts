@@ -1,12 +1,12 @@
 import {
     BackgroundNodeSyncUpdatePayload,
-    ConfigPoolsPayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
     GpuMiner,
     GpuMinerType,
+    MinerControlsState,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
     ProgressTrackerUpdatePayload,
@@ -24,7 +24,7 @@ import {
     SystemDependency,
     WalletBalance,
 } from './app-status.ts';
-import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
+import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 import { AppModuleState } from '@app/store/types/setup.ts';
 
@@ -120,7 +120,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'ConfigPoolsLoaded';
-          payload: ConfigPoolsPayload;
+          payload: ConfigPools;
       }
     | {
           event_type: 'RestartingPhases';
@@ -205,4 +205,27 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'AvailableMiners';
           payload: Record<GpuMinerType, GpuMiner>;
+      }
+    | {
+          event_type: 'WalletStatusUpdate';
+          payload: {
+              loading: boolean;
+              unhealthy?: boolean;
+          };
+      }
+    | {
+          event_type: 'UpdateCpuMinerControlsState';
+          payload: MinerControlsState;
+      }
+    | {
+          event_type: 'UpdateGpuMinerControlsState';
+          payload: MinerControlsState;
+      }
+    | {
+          event_type: 'OpenSettings';
+          payload: undefined;
+      }
+    | {
+          event_type: 'SystrayAppShutdownRequested';
+          payload: undefined;
       };

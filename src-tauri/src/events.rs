@@ -81,6 +81,11 @@ pub enum EventType {
     UpdateAppModuleStatus,
     UpdateSelectedMiner,
     AvailableMiners,
+    WalletStatusUpdate,
+    UpdateCpuMinerControlsState,
+    UpdateGpuMinerControlsState,
+    OpenSettings,
+    SystrayAppShutdownRequested,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -190,4 +195,10 @@ pub struct TariAddressUpdatePayload {
     pub tari_address_base58: String,
     pub tari_address_emoji: String,
     pub tari_address_type: TariAddressType,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct WalletStatusUpdatePayload {
+    pub loading: bool,
+    pub unhealthy: Option<bool>,
 }

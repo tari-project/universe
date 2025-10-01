@@ -20,10 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::{collections::HashMap, fmt::Display, sync::LazyLock};
+
 use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 
-use crate::configs::pools::PoolConfig;
+use crate::configs::pools::{BasePoolData, PoolOrigin};
 
 fn global_tari_cpu_mining_pool_url() -> String {
     match Network::get_current_or_user_setting_or_default() {
@@ -46,103 +48,90 @@ fn global_tari_cpu_mining_pool_status_url() -> String {
         }
     }
 }
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SupportXTMCpuPoolConfig {
-    pool_url: String,
-    stats_url: String,
-    pool_name: String,
-}
 
-impl Default for SupportXTMCpuPoolConfig {
-    fn default() -> Self {
-        Self {
-            pool_url: global_tari_cpu_mining_pool_url(),
-            stats_url: global_tari_cpu_mining_pool_status_url(),
-            pool_name: "SupportXTMPool".to_string(),
-        }
-    }
-}
+static DEFAULT_CPU_SUPPORTXTM_RANDOMX: LazyLock<BasePoolData<CpuPool>> =
+    LazyLock::new(|| BasePoolData {
+        pool_name: "SupportXTMPool [ RANDOMX ] ".to_string(),
+        pool_url: global_tari_cpu_mining_pool_url(),
+        stats_url: global_tari_cpu_mining_pool_status_url(),
+        pool_type: CpuPool::SupportXTMPoolRANDOMX,
+        pool_origin: PoolOrigin::SupportXTM,
+    });
 
-impl SupportXTMCpuPoolConfig {
-    pub fn get_raw_stats_url(&self) -> String {
-        self.stats_url.clone()
-    }
-    pub fn get_stats_url(&self, tari_address: &str) -> String {
-        self.stats_url.replace("%TARI_ADDRESS%", tari_address)
-    }
-    pub fn get_pool_url(&self) -> String {
-        self.pool_url.clone()
-    }
-}
+static DEFAULT_CPU_LUCKYPOOL_RANDOMX: LazyLock<BasePoolData<CpuPool>> =
+    LazyLock::new(|| BasePoolData {
+        pool_name: "LuckyPool [ RANDOMX ] ".to_string(),
+        pool_url: "turx.luckypool.io:10118".to_string(),
+        stats_url: "https://tarirx.luckypool.io/api/stats_address?address=%TARI_ADDRESS%"
+            .to_string(),
+        pool_type: CpuPool::LuckyPoolRANDOMX,
+        pool_origin: PoolOrigin::LuckyPool,
+    });
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LuckyPoolCpuConfig {
-    pool_url: String,
-    stats_url: String,
-    pool_name: String,
-}
+static DEFAULT_CPU_KRYPTEX_RANDOMX: LazyLock<BasePoolData<CpuPool>> =
+    LazyLock::new(|| BasePoolData {
+        pool_name: "KryptexPool [ RANDOMX ] ".to_string(),
+        pool_url: "xtm-rx-tu.kryptex.network:7038".to_string(),
+        stats_url: "https://pool.kryptex.com/xtm-rx/api/v1/miner/balance/%TARI_ADDRESS%"
+            .to_string(),
+        pool_type: CpuPool::KryptexPoolRANDOMX,
+        pool_origin: PoolOrigin::Kryptex,
+    });
 
-impl Default for LuckyPoolCpuConfig {
-    fn default() -> Self {
-        Self {
-            pool_url: "turx.luckypool.io:10118".to_string(),
-            stats_url: "https://tarirx.luckypool.io/api/stats_address?address=%TARI_ADDRESS%"
-                .to_string(),
-            pool_name: "LuckyPool".to_string(),
-        }
-    }
-}
-
-impl LuckyPoolCpuConfig {
-    pub fn get_raw_stats_url(&self) -> String {
-        self.stats_url.clone()
-    }
-
-    pub fn get_stats_url(&self, tari_address: &str) -> String {
-        self.stats_url.replace("%TARI_ADDRESS%", tari_address)
-    }
-    pub fn get_pool_url(&self) -> String {
-        self.pool_url.clone()
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
 pub enum CpuPool {
-    SupportXTMPool(SupportXTMCpuPoolConfig),
-    LuckyPool(LuckyPoolCpuConfig),
+    SupportXTMPoolRANDOMX,
+    #[default]
+    LuckyPoolRANDOMX,
+    KryptexPoolRANDOMX,
 }
 
-impl Default for CpuPool {
-    fn default() -> Self {
-        CpuPool::LuckyPool(LuckyPoolCpuConfig::default())
+impl Display for CpuPool {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let name = match self {
+            CpuPool::SupportXTMPoolRANDOMX => "SupportXTMPoolRANDOMX",
+            CpuPool::LuckyPoolRANDOMX => "LuckyPoolRANDOMX",
+            CpuPool::KryptexPoolRANDOMX => "KryptexPoolRANDOMX",
+        };
+        write!(f, "{name}")
     }
 }
 
-impl PoolConfig for CpuPool {
-    fn name(&self) -> String {
-        match self {
-            CpuPool::SupportXTMPool(config) => config.pool_name.clone(),
-            CpuPool::LuckyPool(config) => config.pool_name.clone(),
+impl CpuPool {
+    pub fn from_string(pool_name: &str) -> Result<CpuPool, anyhow::Error> {
+        match pool_name {
+            "SupportXTMPoolRANDOMX" => Ok(CpuPool::SupportXTMPoolRANDOMX),
+            "LuckyPoolRANDOMX" => Ok(CpuPool::LuckyPoolRANDOMX),
+            "KryptexPoolRANDOMX" => Ok(CpuPool::KryptexPoolRANDOMX),
+            _ => Err(anyhow::anyhow!("Invalid CPU pool name")),
         }
     }
 
-    fn default_from_name(name: &str) -> Result<Self, anyhow::Error> {
-        match name {
-            "LuckyPool" => Ok(CpuPool::LuckyPool(LuckyPoolCpuConfig::default())),
-            "SupportXTMPool" => Ok(CpuPool::SupportXTMPool(SupportXTMCpuPoolConfig::default())),
-            _ => Err(anyhow::anyhow!("Unknown CPU pool name: {}", name)),
+    pub fn key_string(&self) -> String {
+        match self {
+            CpuPool::SupportXTMPoolRANDOMX => "SupportXTMPoolRANDOMX".to_string(),
+            CpuPool::LuckyPoolRANDOMX => "LuckyPoolRANDOMX".to_string(),
+            CpuPool::KryptexPoolRANDOMX => "KryptexPoolRANDOMX".to_string(),
         }
     }
-    fn get_raw_stats_url(&self) -> String {
+
+    pub fn default_content(&self) -> BasePoolData<CpuPool> {
         match self {
-            CpuPool::SupportXTMPool(config) => config.get_raw_stats_url(),
-            CpuPool::LuckyPool(config) => config.get_raw_stats_url(),
+            CpuPool::SupportXTMPoolRANDOMX => DEFAULT_CPU_SUPPORTXTM_RANDOMX.clone(),
+            CpuPool::LuckyPoolRANDOMX => DEFAULT_CPU_LUCKYPOOL_RANDOMX.clone(),
+            CpuPool::KryptexPoolRANDOMX => DEFAULT_CPU_KRYPTEX_RANDOMX.clone(),
         }
     }
-    fn get_pool_url(&self) -> String {
-        match self {
-            CpuPool::SupportXTMPool(config) => config.get_pool_url(),
-            CpuPool::LuckyPool(config) => config.get_pool_url(),
-        }
+
+    pub fn load_default_pools_data() -> HashMap<Self, BasePoolData<CpuPool>> {
+        use CpuPool::*;
+        let mut cpu_pools = HashMap::new();
+        cpu_pools.insert(
+            SupportXTMPoolRANDOMX,
+            DEFAULT_CPU_SUPPORTXTM_RANDOMX.clone(),
+        );
+        cpu_pools.insert(LuckyPoolRANDOMX, DEFAULT_CPU_LUCKYPOOL_RANDOMX.clone());
+        cpu_pools.insert(KryptexPoolRANDOMX, DEFAULT_CPU_KRYPTEX_RANDOMX.clone());
+        cpu_pools
     }
 }

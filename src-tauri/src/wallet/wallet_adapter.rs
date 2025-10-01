@@ -20,12 +20,15 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::events_emitter::EventsEmitter;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec};
 use crate::process_adapter_utils::setup_working_directory;
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::wallet::transaction_service::TransactionService;
 use crate::wallet::wallet_status_monitor::{WalletStatusMonitor, WalletStatusMonitorError};
 use crate::wallet::wallet_types::{
@@ -45,9 +48,6 @@ use tari_shutdown::Shutdown;
 use tari_transaction_components::tari_amount::MicroMinotari;
 use tari_transaction_components::transaction_components::memo_field::MemoField;
 use tokio::sync::watch;
-
-#[cfg(target_os = "windows")]
-use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
@@ -78,7 +78,6 @@ pub struct WalletAdapter {
     connect_with_local_node: bool,
     pub(crate) view_private_key: String,
     pub(crate) spend_key: String,
-    pub(crate) tcp_listener_port: u16,
     pub(crate) grpc_port: u16,
     pub(crate) state_broadcast: watch::Sender<Option<WalletState>>,
     pub(crate) wallet_birthday: Option<u16>,
@@ -87,14 +86,12 @@ pub struct WalletAdapter {
 
 impl WalletAdapter {
     pub fn new(state_broadcast: watch::Sender<Option<WalletState>>) -> Self {
-        let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
             use_tor: false,
             connect_with_local_node: false,
             view_private_key: "".to_string(),
             spend_key: "".to_string(),
-            tcp_listener_port,
             grpc_port,
             state_broadcast,
             wallet_birthday: None,
@@ -233,6 +230,7 @@ impl WalletAdapter {
                         // Case 1: Scan has reached or exceeded target height
                         if state.scanned_height >= block_height {
                             info!(target: LOG_TARGET, "Wallet scan completed up to block height {block_height}");
+                            EventsEmitter::emit_wallet_status_updated(false, None).await;
                             return Ok(state);
                         }
                         // Case 2: Wallet is at height 0 but is connected - likely means scan finished already
@@ -388,19 +386,6 @@ impl ProcessAdapter for WalletAdapter {
                 args.push("-p".to_string());
                 args.push("wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string());
             }
-            args.push("-p".to_string());
-            args.push("wallet.p2p.transport.type=tcp".to_string());
-            args.push("-p".to_string());
-            args.push(format!(
-                "wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/{}",
-                self.tcp_listener_port
-            ));
-            args.push("-p".to_string());
-            args.push(format!(
-                "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/{}",
-                self.tcp_listener_port
-            ));
-
             args.push("-p".to_string());
             let network = Network::get_current_or_user_setting_or_default();
             match network {

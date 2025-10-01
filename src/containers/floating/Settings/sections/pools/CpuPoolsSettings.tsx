@@ -22,7 +22,7 @@ import { useCallback, useMemo } from 'react';
 import { getAvailableCpuPools, getSelectedCpuPool } from '@app/store/selectors/appConfigStoreSelectors';
 import { useShallow } from 'zustand/react/shallow';
 import { PoolConfiguration } from './PoolsConfiguration';
-import { BasePoolData } from '@app/types/configs';
+import { BasePoolData, CpuPools } from '@app/types/configs';
 
 export const CpuPoolsSettings = () => {
     const { t } = useTranslation('settings');
@@ -33,6 +33,9 @@ export const CpuPoolsSettings = () => {
     const selectedCpuPoolData = useConfigPoolsStore(getSelectedCpuPool);
     const availableCpuPools = useConfigPoolsStore(useShallow(getAvailableCpuPools));
 
+    console.log('availableCpuPools', availableCpuPools);
+    console.log('selectedCpuPoolData', selectedCpuPoolData);
+
     const handleToggleCpuPool = (enabled: boolean) => {
         void toggleCpuPool(enabled);
     };
@@ -40,12 +43,12 @@ export const CpuPoolsSettings = () => {
     const poolsOptions = useMemo(() => {
         return (availableCpuPools || []).map((pool) => ({
             label: pool.pool_name,
-            value: pool.pool_name,
+            value: pool.pool_type,
         }));
     }, [availableCpuPools]);
 
     const handlePoolChange = useCallback(async (value: string) => {
-        await changeCpuPool(value);
+        await changeCpuPool(value as CpuPools);
     }, []);
 
     const handlePoolConfigurationChange = useCallback(async (updatedConfig: BasePoolData) => {
@@ -54,7 +57,7 @@ export const CpuPoolsSettings = () => {
 
     const handleResetToDefaultPoolConfiguration = async () => {
         if (!selectedCpuPoolData) return;
-        await resetCpuPoolConfiguration(selectedCpuPoolData.pool_name);
+        await resetCpuPoolConfiguration(selectedCpuPoolData.pool_type);
     };
 
     return (
@@ -72,7 +75,13 @@ export const CpuPoolsSettings = () => {
                 </SettingsGroupAction>
             </SettingsGroup>
 
-            {selectedCpuPoolData && <PoolStats poolStatus={pool_status} isMining={isCpuPoolEnabled && isMining} />}
+            {selectedCpuPoolData && (
+                <PoolStats
+                    poolStatus={pool_status}
+                    poolOrigin={selectedCpuPoolData.pool_origin}
+                    isMining={isCpuPoolEnabled && isMining}
+                />
+            )}
             <SettingsGroupWrapper $subGroup style={{ marginTop: '12px' }}>
                 <SettingsGroup>
                     <SettingsGroupTitle>
@@ -87,7 +96,7 @@ export const CpuPoolsSettings = () => {
                         <Select
                             options={poolsOptions}
                             onChange={handlePoolChange}
-                            selectedValue={selectedCpuPoolData?.pool_name}
+                            selectedValue={selectedCpuPoolData?.pool_type}
                             variant="bordered"
                             forceHeight={36}
                         />

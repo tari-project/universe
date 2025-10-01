@@ -5,7 +5,7 @@ import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 
-export default function InviteFriendsButton() {
+export default function InviteFriendsButton({ largeButton = false }: { largeButton?: boolean }) {
     const { t } = useTranslation();
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const airdropUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdrop_url || '');
@@ -18,7 +18,7 @@ export default function InviteFriendsButton() {
     };
 
     return (
-        <Wrapper type="button" onClick={handleClick}>
+        <Wrapper type="button" onClick={handleClick} $largeButton={largeButton}>
             <AnimatePresence>
                 {isCopied && (
                     <Copied
@@ -31,7 +31,7 @@ export default function InviteFriendsButton() {
                     </Copied>
                 )}
             </AnimatePresence>
-            {t('airdrop:crewRewards.inviteFriends')}
+            {largeButton ? 'Invite More Friends' : t('airdrop:crewRewards.inviteFriends')}
             <IconWrapper>
                 <LinkIcon />
             </IconWrapper>

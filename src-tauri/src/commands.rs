@@ -25,17 +25,18 @@ use crate::app_in_memory_config::{AppInMemoryConfig, ExchangeMiner, DEFAULT_EXCH
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
-use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
+use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, MiningModeType};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
-use crate::configs::pools::PoolConfig;
+use crate::configs::pools::BasePoolData;
 use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
+use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::consts::{EngineType, GpuMinerType};
 use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
@@ -47,6 +48,7 @@ use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
+use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
 use crate::tapplets::interface::ActiveTapplet;
 use crate::tapplets::tapplet_server::start_tapplet;
 use crate::tasks_tracker::TasksTrackers;
@@ -77,7 +79,6 @@ use tari_utilities::encoding::MBase58;
 use tari_utilities::SafePassword;
 use tauri::ipc::InvokeError;
 use tauri::Manager;
-use tauri_plugin_sentry::sentry;
 use urlencoding::encode;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
@@ -99,32 +100,6 @@ pub struct ApplicationsVersions {
     wallet: ApplicationsInformation,
     xtrgpuminer: ApplicationsInformation,
     bridge: ApplicationsInformation,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct CpuMinerStatus {
-    pub is_mining: bool,
-    pub hash_rate: f64,
-    pub estimated_earnings: u64,
-    pub connection: CpuMinerConnectionStatus,
-}
-
-impl Default for CpuMinerStatus {
-    fn default() -> Self {
-        Self {
-            is_mining: false,
-            hash_rate: 0.0,
-            estimated_earnings: 0,
-            connection: CpuMinerConnectionStatus {
-                is_connected: false,
-            },
-        }
-    }
-}
-#[derive(Debug, Serialize, Clone, Default)]
-pub struct CpuMinerConnectionStatus {
-    pub is_connected: bool,
-    // pub error: Option<String>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -286,8 +261,8 @@ pub async fn get_applications_versions(
     let binary_resolver = BinaryResolver::current();
 
     let mmp_port = &state.mm_proxy_manager.get_port().await;
-    let cpu_miner = &state.cpu_miner.read().await;
-    let xmrig_port = &cpu_miner.get_port().await;
+    // let cpu_miner = &state.cpu_miner.read().await;
+    // let xmrig_port = &cpu_miner.get_port().await;
     // let gpu_miner = &state.gpu_miner.read().await;
     // let xtr_port = gpu_miner.get_port().await;
     let wallet_port = &state.wallet_manager.get_port().await;
@@ -331,7 +306,8 @@ pub async fn get_applications_versions(
         },
         xmrig: ApplicationsInformation {
             version: xmrig_version,
-            port: Some(*xmrig_port),
+            // port: Some(*xmrig_port),
+            port: Some(0),
         },
         mm_proxy: ApplicationsInformation {
             version: mm_proxy_version,
@@ -943,10 +919,12 @@ pub async fn set_auto_update(auto_update: bool) -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
-pub async fn set_cpu_mining_enabled(enabled: bool) -> Result<(), String> {
+pub async fn set_cpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let _unused =
         ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
+
+    SystemTrayManager::send_event(SystemTrayEvents::CpuMiningState(enabled)).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -1031,6 +1009,8 @@ pub async fn set_gpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
         .await
         .map_err(InvokeError::from_anyhow)?;
 
+    SystemTrayManager::send_event(SystemTrayEvents::GpuMiningState(enabled)).await;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "set_gpu_mining_enabled took too long: {:?}",
@@ -1063,9 +1043,14 @@ pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[select_mining_mode] called with mode: {mode:?}");
 
-    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode)
+    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone())
         .await
         .map_err(InvokeError::from_anyhow)?;
+
+    SystemTrayManager::send_event(SystemTrayEvents::MiningMode(MiningModeType::from(
+        mode.clone(),
+    )))
+    .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "select_mining_mode took too long: {:?}", timer.elapsed());
@@ -1304,66 +1289,15 @@ pub async fn set_airdrop_tokens(airdrop_tokens: Option<AirdropTokens>) -> Result
 }
 
 #[tauri::command]
-pub async fn start_cpu_mining(
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<(), String> {
+pub async fn start_cpu_mining() -> Result<(), String> {
     let timer = Instant::now();
-    let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
-    let cpu_usage_percentage = ConfigMining::content()
+
+    CpuManager::write()
         .await
-        .get_selected_cpu_usage_percentage();
+        .start_mining()
+        .await
+        .map_err(|e| e.to_string())?;
 
-    let cpu_miner = state.cpu_miner.read().await;
-    let cpu_miner_running = cpu_miner.is_running().await;
-
-    let mut cpu_config = state.cpu_miner_config.write().await;
-    let tari_address = InternalWallet::tari_address().await;
-    cpu_config.load_from_config_pools(ConfigPools::content().await.clone(), &tari_address);
-    drop(cpu_config);
-
-    drop(cpu_miner);
-    let cpu_miner_config = state.cpu_miner_config.read().await;
-    drop(cpu_miner_config);
-    let tari_address = InternalWallet::tari_address().await;
-
-    if cpu_mining_enabled && !cpu_miner_running {
-        let cpu_miner_config = state.cpu_miner_config.read().await;
-        let mmproxy_manager = &state.mm_proxy_manager;
-        let mut cpu_miner = state.cpu_miner.write().await;
-        let res = cpu_miner
-            .start(
-                TasksTrackers::current().cpu_mining_phase.get_signal().await,
-                &cpu_miner_config,
-                mmproxy_manager,
-                app.path()
-                    .app_local_data_dir()
-                    .expect("Could not get data dir"),
-                app.path()
-                    .app_config_dir()
-                    .expect("Could not get config dir"),
-                app.path().app_log_dir().expect("Could not get log dir"),
-                cpu_usage_percentage,
-                &tari_address,
-            )
-            .await;
-        drop(cpu_miner_config);
-
-        if let Err(e) = res {
-            let err_msg = format!("Could not start CPU mining: {e}");
-            error!(target: LOG_TARGET, "{err_msg}");
-            sentry::capture_message(&err_msg, sentry::Level::Error);
-            cpu_miner
-                .stop()
-                .await
-                .inspect_err(|e| {
-                    let stop_err = format!("Error stopping CPU miner: {e}");
-                    error!(target: LOG_TARGET, "{stop_err}");
-                })
-                .ok();
-            return Err(e.to_string());
-        }
-    }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "start_cpu_mining took too long: {:?}", timer.elapsed());
     }
@@ -1371,74 +1305,14 @@ pub async fn start_cpu_mining(
 }
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
-pub async fn start_gpu_mining(
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<(), String> {
-    let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
-
-    if !gpu_mining_enabled {
-        info!(target: LOG_TARGET, "GPU mining is disabled, not starting GPU miner.");
-        return Ok(());
-    }
-
+pub async fn start_gpu_mining() -> Result<(), String> {
     let timer = Instant::now();
 
-    let mut telemetry_id = state
-        .telemetry_manager
-        .read()
+    GpuManager::write()
         .await
-        .get_unique_string()
-        .await;
-
-    if telemetry_id.is_empty() {
-        telemetry_id = "tari-universe".to_string();
-    }
-
-    if telemetry_id.is_empty() {
-        telemetry_id = "tari-universe".to_string();
-    }
-
-    let tari_address = InternalWallet::tari_address().await;
-
-    let gpu_usage_percentage = ConfigMining::content()
-        .await
-        .get_selected_gpu_usage_percentage();
-
-    let grpc_address = state
-        .node_manager
-        .get_grpc_address()
+        .start_mining()
         .await
         .map_err(|e| e.to_string())?;
-    let selected_engine = ConfigMining::content().await.gpu_engine().clone();
-
-    info!(target: LOG_TARGET, "3. Starting gpu miner");
-
-    let start_mining_result = GpuManager::write()
-        .await
-        .start_mining(
-            tari_address,
-            telemetry_id,
-            gpu_usage_percentage,
-            selected_engine,
-            app.path()
-                .app_local_data_dir()
-                .expect("Could not get data dir"),
-            app.path()
-                .app_config_dir()
-                .expect("Could not get config dir"),
-            app.path().app_log_dir().expect("Could not get log dir"),
-            grpc_address,
-        )
-        .await;
-
-    if let Err(e) = start_mining_result {
-        let err_msg = format!("Could not start GPU mining: {e}");
-        error!(target: LOG_TARGET, "{err_msg}", );
-        sentry::capture_message(&err_msg, sentry::Level::Error);
-
-        return Err(e.to_string());
-    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "start_gpu_mining took too long: {:?}", timer.elapsed());
@@ -1448,16 +1322,14 @@ pub async fn start_gpu_mining(
 }
 
 #[tauri::command]
-pub async fn stop_cpu_mining(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+pub async fn stop_cpu_mining() -> Result<(), String> {
     let timer = Instant::now();
-    state
-        .cpu_miner
-        .write()
+
+    CpuManager::write()
         .await
-        .stop()
+        .stop_mining()
         .await
         .map_err(|e| e.to_string())?;
-    info!(target:LOG_TARGET, "cpu miner stopped");
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
@@ -1779,12 +1651,16 @@ pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[change_cpu_pool] called with cpu_pool: {cpu_pool:?}");
 
-    ConfigPools::update_field(ConfigPoolsContent::set_selected_cpu_pool, cpu_pool)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigPools::update_field(
+        ConfigPoolsContent::set_current_cpu_pool,
+        CpuPool::from_string(&cpu_pool).map_err(InvokeError::from_anyhow)?,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
-    CpuPoolManager::handle_new_selected_pool(ConfigPools::content().await.selected_cpu_pool())
-        .await;
+    let cpu_pool_content = ConfigPools::content().await.current_cpu_pool();
+
+    CpuPoolManager::handle_new_selected_pool(cpu_pool_content).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "change_cpu_pool took too long: {:?}", timer.elapsed());
@@ -1797,12 +1673,16 @@ pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[change_gpu_pool] called with gpu_pool: {gpu_pool:?}");
 
-    ConfigPools::update_field(ConfigPoolsContent::set_selected_gpu_pool, gpu_pool)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigPools::update_field(
+        ConfigPoolsContent::set_current_gpu_pool,
+        GpuPool::from_string(&gpu_pool).map_err(InvokeError::from_anyhow)?,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
-    GpuPoolManager::handle_new_selected_pool(ConfigPools::content().await.selected_gpu_pool())
-        .await;
+    let gpu_pool_content = ConfigPools::content().await.current_gpu_pool();
+
+    GpuPoolManager::handle_new_selected_pool(gpu_pool_content).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "change_gpu_pool took too long: {:?}", timer.elapsed());
@@ -1811,12 +1691,14 @@ pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
-pub async fn update_selected_gpu_pool_config(updated_config: GpuPool) -> Result<(), InvokeError> {
+pub async fn update_selected_gpu_pool_config(
+    updated_config: BasePoolData<GpuPool>,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[update_selected_gpu_pool_config] called with updated_config: {updated_config:?}");
 
     ConfigPools::update_field(
-        ConfigPoolsContent::update_selected_gpu_config,
+        ConfigPoolsContent::update_current_gpu_config,
         updated_config,
     )
     .await
@@ -1830,12 +1712,14 @@ pub async fn update_selected_gpu_pool_config(updated_config: GpuPool) -> Result<
 }
 
 #[tauri::command]
-pub async fn update_selected_cpu_pool_config(updated_config: CpuPool) -> Result<(), InvokeError> {
+pub async fn update_selected_cpu_pool_config(
+    updated_config: BasePoolData<CpuPool>,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[update_selected_cpu_pool_config] called with updated_config: {updated_config:?}");
 
     ConfigPools::update_field(
-        ConfigPoolsContent::update_selected_cpu_config,
+        ConfigPoolsContent::update_current_cpu_config,
         updated_config,
     )
     .await
@@ -1849,19 +1733,20 @@ pub async fn update_selected_cpu_pool_config(updated_config: CpuPool) -> Result<
 }
 
 #[tauri::command]
-pub async fn reset_gpu_pool_config(gpu_pool_name: String) -> Result<(), InvokeError> {
+pub async fn reset_gpu_pool_config(gpu_pool_type: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[reset_pool_gpu_pool_config] called with gpu_pool_name: {gpu_pool_name:?}");
+    info!(target: LOG_TARGET, "[reset_pool_gpu_pool_config] called with gpu_pool_name: {gpu_pool_type:?}");
 
-    let current_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
-    let gpu_pool = GpuPool::default_from_name_and_miner_type(&gpu_pool_name, current_miner_type);
+    let gpu_pool = GpuPool::from_string(&gpu_pool_type).map_err(InvokeError::from_anyhow)?;
 
-    if let Some(pool) = &gpu_pool {
-        ConfigPools::update_field(ConfigPoolsContent::update_selected_gpu_config, pool.clone())
-            .await
-            .map_err(InvokeError::from_anyhow)?;
-        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
-    }
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_current_gpu_config,
+        gpu_pool.default_content(),
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+    EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+    GpuPoolManager::handle_new_selected_pool(gpu_pool.default_content()).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "reset_pool_gpu_pool_config took too long: {:?}", timer.elapsed());
@@ -1870,16 +1755,20 @@ pub async fn reset_gpu_pool_config(gpu_pool_name: String) -> Result<(), InvokeEr
 }
 
 #[tauri::command]
-pub async fn reset_cpu_pool_config(cpu_pool_name: String) -> Result<(), InvokeError> {
+pub async fn reset_cpu_pool_config(cpu_pool_type: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[reset_pool_cpu_pool_config] called with cpu_pool_name: {cpu_pool_name:?}");
+    info!(target: LOG_TARGET, "[reset_pool_cpu_pool_config] called with cpu_pool_name: {cpu_pool_type:?}");
 
-    let cpu_pool = CpuPool::default_from_name(&cpu_pool_name).map_err(InvokeError::from_anyhow)?;
+    let cpu_pool = CpuPool::from_string(&cpu_pool_type).map_err(InvokeError::from_anyhow)?;
 
-    ConfigPools::update_field(ConfigPoolsContent::update_selected_cpu_config, cpu_pool)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_current_cpu_config,
+        cpu_pool.default_content(),
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
     EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+    CpuPoolManager::handle_new_selected_pool(cpu_pool.default_content()).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "reset_pool_cpu_pool_config took too long: {:?}", timer.elapsed());

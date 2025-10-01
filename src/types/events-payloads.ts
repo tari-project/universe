@@ -88,11 +88,6 @@ export type BackgroundNodeSyncUpdatePayload =
 
 export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';
 
-export interface ConfigPoolsPayload extends Omit<ConfigPools, 'available_gpu_pools' | 'available_cpu_pools'> {
-    available_gpu_pools?: [{ [GpuPools.LuckyPool]: BasePoolData }, { [GpuPools.SupportXTMPool]: BasePoolData }]; // Available GPU pools
-    available_cpu_pools?: [{ [CpuPools.LuckyPool]: BasePoolData }, { [CpuPools.SupportXTMPool]: BasePoolData }]; // Available CPU pools
-}
-
 export interface ProgressTrackerUpdatePayload {
     phase_title: string;
     title: string;
@@ -119,6 +114,14 @@ export enum GpuMinerFeature {
 export enum GpuMiningAlgorithm {
     SHA3X = 'SHA3X',
     C29 = 'C29',
+}
+
+export enum MinerControlsState {
+    Initiated = 'Initiated',
+    Started = 'Started',
+    Stopped = 'Stopped',
+    Restarting = 'Restarting',
+    Idle = 'Idle',
 }
 
 export interface GpuMiner {

@@ -24,15 +24,17 @@ import {
     ConfigPools,
     ConfigUI,
     ConfigWallet,
+    CpuPools,
     FeedbackPrompts,
     GpuDeviceSettings,
+    GpuPools,
     PromptType,
 } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
 import { fetchExchangeContent, refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
-import { ConfigPoolsPayload, WalletUIMode } from '@app/types/events-payloads.ts';
+import { WalletUIMode } from '@app/types/events-payloads.ts';
 import { getSelectedCpuPool, getSelectedGpuPool } from '../selectors/appConfigStoreSelectors.ts';
 import { setFeedbackConfigItems } from '@app/store/stores/userFeedbackStore.ts';
 
@@ -76,28 +78,8 @@ export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
     useConfigMiningStore.setState((c) => ({ ...c, ...miningConfig }));
 };
 
-export const handleConfigPoolsLoaded = (poolsConfig: ConfigPoolsPayload) => {
-    const formattedPoolsConfig: ConfigPools = {
-        ...poolsConfig,
-        available_gpu_pools: poolsConfig.available_gpu_pools?.reduce(
-            (acc, pool) => {
-                const poolName = Object.keys(pool)[0];
-                acc[poolName] = pool[poolName];
-                return acc;
-            },
-            {} as Record<string, BasePoolData>
-        ),
-        available_cpu_pools: poolsConfig.available_cpu_pools?.reduce(
-            (acc, pool) => {
-                const poolName = Object.keys(pool)[0];
-                acc[poolName] = pool[poolName];
-                return acc;
-            },
-            {} as Record<string, BasePoolData>
-        ),
-    };
-
-    useConfigPoolsStore.setState((c) => ({ ...c, ...formattedPoolsConfig }));
+export const handleConfigPoolsLoaded = (poolsConfig: ConfigPools) => {
+    useConfigPoolsStore.setState((c) => ({ ...c, ...poolsConfig }));
 };
 
 export const setAirdropTokensInConfig = (
@@ -464,9 +446,9 @@ export const toggleGpuPool = async (enabled: boolean) => {
     }
 };
 
-export const changeGpuPool = async (gpuPool: string) => {
-    const previousGpuPool = getSelectedGpuPool(useConfigPoolsStore.getState())?.pool_name;
-    useConfigPoolsStore.setState((c) => ({ ...c, selected_gpu_pool: gpuPool }));
+export const changeGpuPool = async (gpuPool: GpuPools) => {
+    const previousGpuPool = useConfigPoolsStore.getState().current_gpu_pool;
+    useConfigPoolsStore.setState((c) => ({ ...c, current_gpu_pool: gpuPool }));
 
     const isGpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
     const anyMiningInitiated =
@@ -488,13 +470,13 @@ export const changeGpuPool = async (gpuPool: string) => {
     } catch (e) {
         console.error('Could not change GPU pool', e);
         setError('Could not change GPU pool');
-        useConfigPoolsStore.setState((c) => ({ ...c, selected_gpu_pool: previousGpuPool }));
+        useConfigPoolsStore.setState((c) => ({ ...c, current_gpu_pool: previousGpuPool }));
     }
 };
 
-export const changeCpuPool = async (cpuPool: string) => {
-    const previousCpuPool = getSelectedCpuPool(useConfigPoolsStore.getState())?.pool_name;
-    useConfigPoolsStore.setState((c) => ({ ...c, selected_cpu_pool: cpuPool }));
+export const changeCpuPool = async (cpuPool: CpuPools) => {
+    const previousCpuPool = useConfigPoolsStore.getState().current_cpu_pool;
+    useConfigPoolsStore.setState((c) => ({ ...c, current_cpu_pool: cpuPool }));
 
     const isCpuMiningEnabled = useConfigMiningStore.getState().cpu_mining_enabled;
     const anyMiningInitiated =
@@ -516,13 +498,13 @@ export const changeCpuPool = async (cpuPool: string) => {
     } catch (e) {
         console.error('Could not change CPU pool', e);
         setError('Could not change CPU pool');
-        useConfigPoolsStore.setState((c) => ({ ...c, selected_cpu_pool: previousCpuPool }));
+        useConfigPoolsStore.setState((c) => ({ ...c, current_cpu_pool: previousCpuPool }));
     }
 };
 
 export const changeCpuPoolConfiguration = async (updatedConfig: BasePoolData) => {
     const previousCpuPoolData = getSelectedCpuPool(useConfigPoolsStore.getState());
-    const availableCpuPools = useConfigPoolsStore.getState().available_cpu_pools;
+    const availableCpuPools = useConfigPoolsStore.getState().cpu_pools;
 
     const isCpuMiningEnabled = useConfigMiningStore.getState().cpu_mining_enabled;
     const anyMiningInitiated =
@@ -543,9 +525,9 @@ export const changeCpuPoolConfiguration = async (updatedConfig: BasePoolData) =>
 
     useConfigPoolsStore.setState((c) => ({
         ...c,
-        available_cpu_pools: {
+        cpu_pools: {
             ...availableCpuPools,
-            [updatedCpuPoolData.pool_name]: updatedCpuPoolData,
+            [updatedCpuPoolData.pool_type]: updatedCpuPoolData,
         },
     }));
 
@@ -556,7 +538,7 @@ export const changeCpuPoolConfiguration = async (updatedConfig: BasePoolData) =>
         }
 
         await invoke('update_selected_cpu_pool_config', {
-            updatedConfig: { [updatedCpuPoolData.pool_name]: updatedCpuPoolData },
+            updatedConfig: updatedCpuPoolData,
         });
 
         if (anyMiningInitiated && isCpuMiningEnabled) {
@@ -572,7 +554,7 @@ export const changeCpuPoolConfiguration = async (updatedConfig: BasePoolData) =>
 
 export const changeGpuPoolConfiguration = async (updatedConfig: BasePoolData) => {
     const previousGpuPoolData = getSelectedGpuPool(useConfigPoolsStore.getState());
-    const availableGpuPools = useConfigPoolsStore.getState().available_gpu_pools;
+    const availableGpuPools = useConfigPoolsStore.getState().gpu_pools;
 
     const isGpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
     const anyMiningInitiated =
@@ -593,9 +575,9 @@ export const changeGpuPoolConfiguration = async (updatedConfig: BasePoolData) =>
 
     useConfigPoolsStore.setState((c) => ({
         ...c,
-        available_gpu_pools: {
+        gpu_pools: {
             ...availableGpuPools,
-            [updatedGpuPoolData.pool_name]: updatedGpuPoolData,
+            [updatedGpuPoolData.pool_type]: updatedGpuPoolData,
         },
     }));
 
@@ -606,7 +588,7 @@ export const changeGpuPoolConfiguration = async (updatedConfig: BasePoolData) =>
         }
 
         await invoke('update_selected_gpu_pool_config', {
-            updatedConfig: { [updatedGpuPoolData.pool_name]: updatedGpuPoolData },
+            updatedConfig: updatedGpuPoolData,
         });
 
         if (anyMiningInitiated && isGpuMiningEnabled) {
@@ -621,7 +603,7 @@ export const changeGpuPoolConfiguration = async (updatedConfig: BasePoolData) =>
     }
 };
 
-export const resetGpuPoolConfiguration = async (gpuPoolName: string) => {
+export const resetGpuPoolConfiguration = async (gpuPoolType: string) => {
     const isGpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
     const anyMiningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
@@ -634,7 +616,7 @@ export const resetGpuPoolConfiguration = async (gpuPoolName: string) => {
             await stopGpuMining();
         }
 
-        await invoke('reset_gpu_pool_config', { gpuPoolName });
+        await invoke('reset_gpu_pool_config', { gpuPoolType });
 
         if (anyMiningInitiated && isGpuMiningEnabled) {
             console.info('Restarting GPU mining...');
@@ -646,7 +628,7 @@ export const resetGpuPoolConfiguration = async (gpuPoolName: string) => {
     }
 };
 
-export const resetCpuPoolConfiguration = async (cpuPoolName: string) => {
+export const resetCpuPoolConfiguration = async (cpuPoolType: string) => {
     const isCpuMiningEnabled = useConfigMiningStore.getState().cpu_mining_enabled;
     const anyMiningInitiated =
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
@@ -659,7 +641,7 @@ export const resetCpuPoolConfiguration = async (cpuPoolName: string) => {
             await stopCpuMining();
         }
 
-        await invoke('reset_cpu_pool_config', { cpuPoolName });
+        await invoke('reset_cpu_pool_config', { cpuPoolType });
 
         if (anyMiningInitiated && isCpuMiningEnabled) {
             console.info('Restarting CPU mining...');

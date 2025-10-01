@@ -22,7 +22,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useCallback, useMemo } from 'react';
 import { Select } from '@app/components/elements/inputs/Select';
 import { PoolConfiguration } from './PoolsConfiguration';
-import { BasePoolData } from '@app/types/configs';
+import { BasePoolData, GpuPools } from '@app/types/configs';
 
 export const GpuPoolsSettings = () => {
     const { t } = useTranslation('settings');
@@ -39,12 +39,12 @@ export const GpuPoolsSettings = () => {
     const poolsOptions = useMemo(() => {
         return (availableGpuPools || []).map((pool) => ({
             label: pool.pool_name,
-            value: pool.pool_name,
+            value: pool.pool_type,
         }));
     }, [availableGpuPools]);
 
     const handlePoolChange = useCallback(async (value: string) => {
-        await changeGpuPool(value);
+        await changeGpuPool(value as GpuPools);
     }, []);
 
     const handlePoolConfigurationChange = useCallback(async (updatedConfig: BasePoolData) => {
@@ -53,7 +53,7 @@ export const GpuPoolsSettings = () => {
 
     const handleResetToDefaultPoolConfiguration = async () => {
         if (!selectedGpuPoolData) return;
-        await resetGpuPoolConfiguration(selectedGpuPoolData.pool_name);
+        await resetGpuPoolConfiguration(selectedGpuPoolData.pool_type);
     };
 
     return (
@@ -71,7 +71,13 @@ export const GpuPoolsSettings = () => {
                 </SettingsGroupAction>
             </SettingsGroup>
 
-            {selectedGpuPoolData && <PoolStats poolStatus={pool_status} isMining={isGpuPoolEnabled && isMining} />}
+            {selectedGpuPoolData && (
+                <PoolStats
+                    poolStatus={pool_status}
+                    poolOrigin={selectedGpuPoolData.pool_origin}
+                    isMining={isGpuPoolEnabled && isMining}
+                />
+            )}
             <SettingsGroupWrapper $subGroup style={{ marginTop: '12px' }}>
                 <SettingsGroup>
                     <SettingsGroupTitle>
@@ -86,7 +92,7 @@ export const GpuPoolsSettings = () => {
                         <Select
                             options={poolsOptions}
                             onChange={handlePoolChange}
-                            selectedValue={selectedGpuPoolData?.pool_name}
+                            selectedValue={selectedGpuPoolData?.pool_type}
                             variant="bordered"
                             forceHeight={36}
                         />

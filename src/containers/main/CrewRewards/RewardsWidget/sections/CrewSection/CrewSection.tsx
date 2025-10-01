@@ -35,11 +35,14 @@ export default function CrewSection() {
     } = useReferrerProgress();
 
     // Get current filter state from store (query params only)
-    const activeFilter = useAirdropStore((state) => state.crewQueryParams.status);
+    const activeFilter = useAirdropStore((state) => state.crewQueryParams.status) as 'active' | 'inactive';
 
     const handleFilterChange = (status: 'active' | 'inactive') => {
         setCrewQueryParams({ status, page: 1 }); // Reset to page 1 when filter changes
     };
+
+    const noMembers = progressData?.members.length === 0;
+    const rewardsConfig = progressData?.rewardsConfig;
 
     return (
         <Wrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -47,29 +50,39 @@ export default function CrewSection() {
 
             <IntroTextWrapper>
                 <Title>{t('airdrop:crewRewards.myCrew')}</Title>
-                <Text>
-                    <Trans
-                        i18nKey="airdrop:crewRewards.earnDescription"
-                        values={{
-                            userReward: 100,
-                            daysRequired: 7,
-                            friendReward: 50,
-                        }}
-                    />
-                </Text>
+                {rewardsConfig && (
+                    <Text>
+                        <Trans
+                            i18nKey="airdrop:crewRewards.earnDescription"
+                            values={{
+                                userReward: rewardsConfig.referrerRewards,
+                                daysRequired: rewardsConfig.requirement,
+                                friendReward: rewardsConfig.referralRewards,
+                            }}
+                        />
+                    </Text>
+                )}
             </IntroTextWrapper>
 
-            <Filters totals={progressData?.totals} activeFilter={activeFilter} onFilterChange={handleFilterChange} />
+            {!noMembers && (
+                <Filters
+                    totals={progressData?.totals}
+                    activeFilter={activeFilter}
+                    onFilterChange={handleFilterChange}
+                />
+            )}
 
             <CrewList
                 members={membersData?.members || []}
                 minRequirements={progressData?.minRequirements}
                 membersToNudge={progressData?.membersToNudge || []}
+                totals={progressData?.totals}
                 isLoading={membersLoading || progressLoading}
                 error={membersError || progressError}
                 onRefresh={async () => {
                     await Promise.all([refetchMembers(), refetchProgress()]);
                 }}
+                activeFilter={activeFilter}
                 // Pagination props
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -79,6 +92,8 @@ export default function CrewSection() {
                 hasPrevPage={hasPrevPage}
                 onNextPage={nextPage}
                 onPrevPage={prevPage}
+                onFilterChange={handleFilterChange}
+                noMembers={noMembers}
             />
         </Wrapper>
     );

@@ -1,44 +1,45 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { queryClient } from '@app/App/queryClient.ts';
-import { BackendBridgeTransaction, useConfigBEInMemoryStore, useUIStore, useWalletStore } from '@app/store';
+import { useConfigBEInMemoryStore, useConfigUIStore, useWalletStore } from '@app/store';
 import { fetchTransactionsHistory } from '@app/store/actions/walletStoreActions';
 import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
 import { mergeTransactionLists, shouldRefetchBridgeItems } from './helpers.ts';
 
 export const KEY_TX = `transactions`;
-export const KEY_BRIDGE_TX = `bridge`;
+
+async function baseQuery({ pageParam, filter, walletAddress }) {
+    const limit = 20;
+    const offset = limit * (pageParam as number);
+    try {
+        const walletTransactions = await fetchTransactionsHistory({ offset, limit, filter });
+        let bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress);
+        let mergedList = mergeTransactionLists({ walletTransactions, bridgeTransactions });
+        const shouldRefetch = shouldRefetchBridgeItems({ walletTransactions: mergedList, bridgeTransactions });
+
+        if (shouldRefetch) {
+            bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress);
+            mergedList = mergeTransactionLists({ walletTransactions, bridgeTransactions });
+        }
+
+        return mergedList;
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+}
 
 export function useFetchTxHistory() {
-    const isSeedlessUI = useUIStore((s) => s.seedlessUI);
+    const walletUiMode = useConfigUIStore((s) => s.wallet_ui_mode);
     const baseUrl = useConfigBEInMemoryStore((s) => s.bridge_backend_api_url);
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const filter = useWalletStore((s) => s.tx_history_filter);
 
-    const queriesEnabled = Boolean(walletAddress?.length);
-
-    const baseQueryKeys = [KEY_TX, `walletAddress: ${walletAddress}`, { seedlessUI: isSeedlessUI }];
-
-    const { data: bridgeTransactions, refetch: refetchBridgeTxs } = useQuery<BackendBridgeTransaction[]>({
-        queryKey: [...baseQueryKeys, KEY_BRIDGE_TX],
-        queryFn: async () => await fetchBridgeTransactionsHistory(walletAddress),
-        enabled: !!baseUrl?.length && queriesEnabled,
-    });
+    const baseQueryKeys = [KEY_TX, { walletAddress, walletUiMode }];
+    const queriesEnabled = Boolean(walletAddress?.length && !!baseUrl?.length);
 
     return useInfiniteQuery({
         queryKey: [...baseQueryKeys, { filter }],
-        queryFn: async ({ pageParam }) => {
-            const limit = 20;
-            const offset = limit * (pageParam as number);
-            const walletTransactions = await fetchTransactionsHistory({ filter, offset, limit });
-            const mergedList = mergeTransactionLists({ walletTransactions, bridgeTransactions });
-            const shouldRefetch = shouldRefetchBridgeItems({ walletTransactions: mergedList, bridgeTransactions });
-            if (shouldRefetch) {
-                await refetchBridgeTxs();
-                return mergeTransactionLists({ walletTransactions, bridgeTransactions });
-            } else {
-                return mergedList;
-            }
-        },
+        queryFn: async ({ pageParam }) => await baseQuery({ pageParam, filter, walletAddress }),
         enabled: queriesEnabled,
         initialPageParam: 0,
         getNextPageParam: (lastPage, _allPages, lastPageParam) => {
@@ -53,7 +54,7 @@ export function useFetchTxHistory() {
             }
             return firstPageParam - 1;
         },
-        refetchInterval: 1000 * 60 * 10,
+        refetchInterval: 1000 * 60 * 15,
         refetchIntervalInBackground: true,
     });
 }

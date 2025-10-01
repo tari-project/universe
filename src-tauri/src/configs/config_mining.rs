@@ -24,7 +24,7 @@ use crate::mining::gpu::consts::{EngineType, GpuMinerType};
 use getset::{Getters, Setters};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, sync::LazyLock, time::SystemTime};
+use std::{collections::HashMap, fmt::Display, sync::LazyLock, time::SystemTime};
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
@@ -34,14 +34,51 @@ pub const MINING_CONFIG_VERSION: u32 = 1;
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
     LazyLock::new(|| RwLock::new(ConfigMining::new()));
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub enum MiningModeType {
+    #[default]
     Eco,
     Turbo,
     Ludicrous,
     Custom,
     User,
 }
+
+impl Display for MiningModeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mode_str = match self {
+            MiningModeType::Eco => "Eco",
+            MiningModeType::Turbo => "Turbo",
+            MiningModeType::Ludicrous => "Ludicrous",
+            MiningModeType::Custom => "Custom",
+            MiningModeType::User => "User",
+        };
+        write!(f, "{mode_str}")
+    }
+}
+
+impl From<&str> for MiningModeType {
+    fn from(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "eco" => MiningModeType::Eco,
+            "turbo" => MiningModeType::Turbo,
+            "ludicrous" => MiningModeType::Ludicrous,
+            "custom" => MiningModeType::Custom,
+            "user" => MiningModeType::User,
+            _ => {
+                warn!("Unknown mining mode type: {s}, defaulting to Eco");
+                MiningModeType::Eco
+            }
+        }
+    }
+}
+
+impl From<String> for MiningModeType {
+    fn from(s: String) -> Self {
+        Self::from(s.as_str())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MiningMode {
     pub mode_type: MiningModeType,
@@ -95,6 +132,7 @@ pub struct ConfigMiningContent {
     squad_override: Option<String>,
     gpu_miner_type: GpuMinerType,
     is_lolminer_tested: bool,
+    is_gpu_mining_recommended: bool,
 }
 
 impl Default for ConfigMiningContent {
@@ -153,6 +191,7 @@ impl Default for ConfigMiningContent {
             gpu_devices_settings: GpuDevicesSettings::new(),
             squad_override: None,
             is_lolminer_tested: false,
+            is_gpu_mining_recommended: true,
         }
     }
 }
@@ -200,6 +239,20 @@ impl ConfigMiningContent {
                 0
             }
         }
+    }
+
+    pub fn get_excluded_devices(&self) -> Vec<u32> {
+        self.gpu_devices_settings
+            .0
+            .iter()
+            .filter_map(|(&device_id, settings)| {
+                if settings.is_excluded {
+                    Some(device_id)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub fn get_selected_gpu_usage_percentage(&self) -> u32 {

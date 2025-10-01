@@ -47,6 +47,7 @@
   "gpu-miners": "GPU Miners",
   "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "GPU Madenciliği",
+  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
   "gpu-unavailable": "⚠️ Donanımınız desteklemediği için GPU devre dışı bırakıldı",
   "hardware-status": "Donanım durumu",
   "idle-timeout": {

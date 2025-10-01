@@ -51,7 +51,7 @@
       "title": "Mine with friends. <strong>Earn together.</strong>"
     },
     "manageYourCrew": "Manage your crew",
-    "myCrew": "My Crew",
+    "myCrew": "Your Friends",
     "of": "of",
     "streak": {
       "day": "Day",
@@ -67,7 +67,17 @@
       "startYourStreak": "Start Your Streak!",
       "unlockBonusRewards": "Unlock your bonus rewards"
     },
-    "title": "Rewards"
+    "title": "Rewards",
+    "crewEmpty": {
+      "title": "Your friends are slacking!",
+      "titleSingular": "Your friend is slacking!",
+      "titleZero": "Start building your crew!",
+      "description": "You have <strong>{{inactiveCount}}</strong> inactive friends. Give them a nudge or invite more.",
+      "descriptionSingular": "You have <strong>{{inactiveCount}}</strong> inactive friend. Give them a nudge or invite more.",
+      "descriptionZero": "Invite friends to start earning bonus rewards together!",
+      "nudgeButton": "Nudge your Friends",
+      "nudgeButtonSingular": "Nudge your Friend"
+    }
   },
   "doLater": "後で行います",
   "earnBonusXTM": "Bonus XTM",
