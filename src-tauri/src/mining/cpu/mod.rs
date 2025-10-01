@@ -20,8 +20,32 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CpuMinerConnection {
-    Local,
-    Pool,
+use serde::Serialize;
+
+pub mod manager;
+pub mod miners;
+
+#[derive(Debug, Serialize, Clone)]
+pub struct CpuMinerStatus {
+    pub is_mining: bool,
+    pub hash_rate: f64,
+    pub estimated_earnings: u64,
+    pub connection: CpuMinerConnectionStatus,
+}
+
+impl Default for CpuMinerStatus {
+    fn default() -> Self {
+        Self {
+            is_mining: false,
+            hash_rate: 0.0,
+            estimated_earnings: 0,
+            connection: CpuMinerConnectionStatus {
+                is_connected: false,
+            },
+        }
+    }
+}
+#[derive(Debug, Serialize, Clone, Default)]
+pub struct CpuMinerConnectionStatus {
+    pub is_connected: bool,
 }

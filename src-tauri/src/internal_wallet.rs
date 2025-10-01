@@ -296,9 +296,6 @@ impl InternalWallet {
             // External(Seedless)
         }
 
-        let mut cpu_config = state.cpu_miner_config.write().await;
-        cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
-
         ConfigUI::handle_wallet_type_update(self.tari_address_type.clone()).await?;
         EventsEmitter::emit_selected_tari_address_changed(
             self.extract_tari_address(),

@@ -1,8 +1,8 @@
 import { BasePoolData, ConfigPools } from '@app/types/configs';
 
 export const getSelectedCpuPool = (state: ConfigPools): BasePoolData | undefined => {
-    const selectedCpuPoolName = state.selected_cpu_pool;
-    const availableCpuPools = state.available_cpu_pools;
+    const selectedCpuPoolName = state.current_cpu_pool;
+    const availableCpuPools = state.cpu_pools;
 
     if (!selectedCpuPoolName || !availableCpuPools) {
         return undefined;
@@ -13,8 +13,8 @@ export const getSelectedCpuPool = (state: ConfigPools): BasePoolData | undefined
 };
 
 export const getSelectedGpuPool = (state: ConfigPools): BasePoolData | undefined => {
-    const selectedGpuPoolName = state.selected_gpu_pool;
-    const availableGpuPools = state.available_gpu_pools;
+    const selectedGpuPoolName = state.current_gpu_pool;
+    const availableGpuPools = state.gpu_pools;
 
     if (!selectedGpuPoolName || !availableGpuPools) {
         return undefined;
@@ -25,9 +25,9 @@ export const getSelectedGpuPool = (state: ConfigPools): BasePoolData | undefined
 };
 
 export const getAvailableCpuPools = (state: ConfigPools) => {
-    return state.available_cpu_pools ? Object.values(state.available_cpu_pools) : [];
+    return state.cpu_pools ? Object.values(state.cpu_pools) : [];
 };
 
 export const getAvailableGpuPools = (state: ConfigPools): BasePoolData[] => {
-    return state.available_gpu_pools ? Object.values(state.available_gpu_pools) : [];
+    return state.gpu_pools ? Object.values(state.gpu_pools) : [];
 };

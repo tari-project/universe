@@ -20,24 +20,4 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use serde::Deserialize;
-
-#[derive(Deserialize, Debug, Clone)]
-pub(crate) struct Summary {
-    pub(crate) connection: Connection,
-
-    pub(crate) hashrate: Hashrate,
-    // hugepages: bool,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Connection {
-    pub(crate) uptime: u64,
-    // Sometimes doesn't exist
-    // pub(crate) error_log: Vec<String>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Hashrate {
-    pub(crate) total: Vec<Option<f64>>,
-}
+pub mod xmrig;

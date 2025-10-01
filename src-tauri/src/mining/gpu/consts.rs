@@ -24,7 +24,10 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
+use crate::{
+    configs::pools::gpu_pools::GpuPool,
+    utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
+};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Default)]
 pub enum EngineType {
@@ -60,20 +63,6 @@ pub(crate) struct GpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: f64,
     pub estimated_earnings: u64,
-}
-
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum GpuConnectionType {
-    Node { node_grpc_address: String },
-    Pool { pool_url: String },
-}
-
-impl Default for GpuConnectionType {
-    fn default() -> Self {
-        GpuConnectionType::Pool {
-            pool_url: String::new(),
-        }
-    }
 }
 
 #[derive(Eq, Hash, PartialEq, Clone, Deserialize, Serialize, Debug)]
@@ -124,6 +113,30 @@ impl GpuMinerType {
                 CurrentOperatingSystem::Windows,
                 CurrentOperatingSystem::Linux,
             ],
+        }
+    }
+
+    pub fn supported_pools(&self) -> Vec<GpuPool> {
+        match self {
+            GpuMinerType::Glytex => vec![],
+            GpuMinerType::Graxil => vec![
+                GpuPool::LuckyPoolSHA3X,
+                GpuPool::SupportXTMPoolSHA3X,
+                GpuPool::KryptexPoolSHA3X,
+            ],
+            GpuMinerType::LolMiner => vec![GpuPool::KryptexPoolC29, GpuPool::LuckyPoolC29],
+        }
+    }
+
+    pub fn is_pool_supported(&self, pool: &GpuPool) -> bool {
+        self.supported_pools().contains(pool)
+    }
+
+    pub fn default_pool(&self) -> Option<GpuPool> {
+        match self {
+            GpuMinerType::Glytex => None,
+            GpuMinerType::Graxil => Some(GpuPool::LuckyPoolSHA3X),
+            GpuMinerType::LolMiner => Some(GpuPool::LuckyPoolC29),
         }
     }
 

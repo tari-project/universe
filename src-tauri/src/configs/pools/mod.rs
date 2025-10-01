@@ -20,14 +20,22 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use serde::{Deserialize, Serialize};
+
 pub mod cpu_pools;
 pub mod gpu_pools;
 
-pub trait PoolConfig: Default + Clone {
-    fn name(&self) -> String;
-    fn default_from_name(name: &str) -> Result<Self, anyhow::Error>
-    where
-        Self: Sized;
-    fn get_raw_stats_url(&self) -> String;
-    fn get_pool_url(&self) -> String;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum PoolOrigin {
+    SupportXTM,
+    LuckyPool,
+    Kryptex,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BasePoolData<T> {
+    pub pool_name: String,
+    pub pool_url: String,
+    pub stats_url: String,
+    pub pool_type: T,
+    pub pool_origin: PoolOrigin,
 }

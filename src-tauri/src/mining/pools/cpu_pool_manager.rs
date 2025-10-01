@@ -30,13 +30,18 @@ use tokio::{
 use crate::{
     configs::{
         config_pools::ConfigPoolsContent,
-        pools::{cpu_pools::CpuPool, PoolConfig},
+        pools::{cpu_pools::CpuPool, BasePoolData},
     },
     events_emitter::EventsEmitter,
     mining::pools::{
-        adapters::PoolApiAdapters, pools_manager::PoolManager, PoolManagerInterfaceTrait,
-        PoolStatus,
+        adapters::{
+            kryptex_pool::KryptexPoolAdapter, lucky_pool::LuckyPoolAdapter,
+            support_xmr_pool::SupportXmrPoolAdapter, PoolApiAdapters,
+        },
+        pools_manager::PoolManager,
+        PoolManagerInterfaceTrait, PoolStatus,
     },
+    systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
 };
 
@@ -51,8 +56,9 @@ pub struct CpuPoolManager {
 impl CpuPoolManager {
     pub fn new() -> Self {
         let cpu_pool = CpuPool::default();
+        let cpu_pool_data = cpu_pool.default_content();
 
-        let pool_adapter = Self::resolve_pool_adapter(&cpu_pool);
+        let pool_adapter = Self::resolve_pool_adapter(cpu_pool_data);
         let pool_manager = PoolManager::new(
             pool_adapter,
             TasksTrackers::current().cpu_mining_phase.clone(),
@@ -64,8 +70,8 @@ impl CpuPoolManager {
     }
 
     pub async fn initialize_from_pool_config(config_content: &ConfigPoolsContent) {
-        let current_selected_pool = config_content.selected_cpu_pool().clone();
-        let pool_adapter = Self::resolve_pool_adapter(&current_selected_pool);
+        let cpu_pool_content = config_content.current_cpu_pool().clone();
+        let pool_adapter = Self::resolve_pool_adapter(cpu_pool_content);
 
         if *config_content.cpu_pool_enabled() {
             INSTANCE
@@ -85,36 +91,37 @@ impl CpuPoolManager {
     }
 }
 
-impl PoolManagerInterfaceTrait for CpuPoolManager {
-    type PoolConfigType = CpuPool;
-
+impl PoolManagerInterfaceTrait<CpuPool> for CpuPoolManager {
     async fn get_write_manager() -> RwLockWriteGuard<'static, PoolManager> {
         INSTANCE.pool_status_manager.write().await
     }
 
     fn construct_callback_for_pool_status_update(
-    ) -> impl Fn(HashMap<String, PoolStatus>) + Send + Sync + 'static {
-        move |pool_statuses: HashMap<String, PoolStatus>| {
+    ) -> impl Fn(HashMap<String, PoolStatus>, PoolStatus) + Send + Sync + 'static {
+        move |pool_statuses: HashMap<String, PoolStatus>, current_status: PoolStatus| {
             spawn(async move {
                 EventsEmitter::emit_cpu_pools_status_update(pool_statuses).await;
+                SystemTrayManager::send_event(SystemTrayEvents::CpuPoolPendingRewards(
+                    current_status.unpaid,
+                ))
+                .await;
             });
         }
     }
 
-    fn resolve_pool_adapter(pool: &CpuPool) -> PoolApiAdapters {
-        match pool {
-            CpuPool::LuckyPool(_) => PoolApiAdapters::LuckyPool(
-                crate::mining::pools::adapters::lucky_pool::LuckyPoolAdapter::new(
-                    pool.name().to_string(),
-                    pool.get_raw_stats_url(),
-                ),
+    fn resolve_pool_adapter(pool: BasePoolData<CpuPool>) -> PoolApiAdapters {
+        match pool.pool_type {
+            CpuPool::LuckyPoolRANDOMX => PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(
+                pool.pool_type.key_string(),
+                pool.stats_url,
+            )),
+            CpuPool::SupportXTMPoolRANDOMX => PoolApiAdapters::SupportXmr(
+                SupportXmrPoolAdapter::new(pool.pool_type.key_string(), pool.stats_url),
             ),
-            CpuPool::SupportXTMPool(_) => PoolApiAdapters::SupportXmrPool(
-                crate::mining::pools::adapters::support_xmr_pool::SupportXmrPoolAdapter::new(
-                    pool.name().to_string(),
-                    pool.get_raw_stats_url(),
-                ),
-            ),
+            CpuPool::KryptexPoolRANDOMX => PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(
+                pool.pool_type.key_string(),
+                pool.stats_url,
+            )),
         }
     }
 }

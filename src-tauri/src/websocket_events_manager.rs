@@ -34,14 +34,12 @@ use tokio::{
     time,
 };
 
+use crate::mining::cpu::CpuMinerStatus;
 use crate::websocket_manager::WebsocketManager;
 use crate::{
     airdrop::decode_jwt_claims_without_exp,
-    commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
-    configs::{
-        config_core::ConfigCore, config_pools::ConfigPools, pools::PoolConfig,
-        trait_config::ConfigImpl,
-    },
+    commands::{sign_ws_data, SignWsDataResponse},
+    configs::{config_core::ConfigCore, config_pools::ConfigPools, trait_config::ConfigImpl},
     internal_wallet::InternalWallet,
     tasks_tracker::TasksTrackers,
     websocket_manager::WebsocketMessage,
@@ -227,8 +225,8 @@ impl WebsocketEventsManager {
         let tari_address = InternalWallet::tari_address().await;
 
         let pools_config = ConfigPools::content().await;
-        let gpu_pool_name = pools_config.selected_gpu_pool().name();
-        let cpu_pool_name = pools_config.selected_cpu_pool().name();
+        let gpu_pool_name = pools_config.current_gpu_pool().pool_name;
+        let cpu_pool_name = pools_config.current_cpu_pool().pool_name;
 
         let signable_message = format!(
             "{},{},{},{},{},{},{},{},{}",

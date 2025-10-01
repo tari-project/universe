@@ -36,6 +36,7 @@ use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
+use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::consts::GpuMinerType;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
@@ -47,6 +48,7 @@ use crate::setup::{
     phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
     phase_wallet::WalletSetupPhase,
 };
+use crate::systemtray_manager::SystemTrayManager;
 use crate::utils::platform_utils::PlatformUtils;
 use crate::{
     configs::{
@@ -254,6 +256,10 @@ impl SetupManager {
             .await
             .load_app_handle(app_handle.clone())
             .await;
+        CpuManager::write()
+            .await
+            .load_app_handle(app_handle.clone())
+            .await;
 
         // Listen for websocket reconnection events to restart events manager
         let websocket_event_manager_clone = state.websocket_event_manager.clone();
@@ -305,6 +311,12 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
+
+        // Initialize after configs are loaded as its reads mining mode from config
+        SystemTrayManager::write()
+            .await
+            .initialize_tray(&app_handle)
+            .await;
 
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {node_type:?}");
@@ -812,9 +824,6 @@ impl SetupManager {
     /// It will make only difference in case of pool connection issues as we do not use other cpu miner
     pub async fn turn_off_cpu_pool_feature(&self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Turning off CPU Pool feature");
-        let app_handle = self.app_handle().await;
-        let app_state = app_handle.state::<UniverseAppState>().clone();
-
         // We want to stop the stats watcher as its not needed when solo mining
         // Normal flow would monitor the status for extra hour but in case of disabling pool mining we want to stop it right away
         CpuPoolManager::stop_stats_watcher().await;
@@ -827,9 +836,7 @@ impl SetupManager {
         // Solo mining will require mmproxy to be running
         self.restart_phases(vec![SetupPhase::CpuMining]).await;
 
-        start_cpu_mining(app_state.clone(), app_handle.clone())
-            .await
-            .map_err(anyhow::Error::msg)?;
+        start_cpu_mining().await.map_err(anyhow::Error::msg)?;
 
         Ok(())
     }
