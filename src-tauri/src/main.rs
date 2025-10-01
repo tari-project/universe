@@ -640,7 +640,7 @@ fn main() {
                     let state = app_handle_clone.state::<UniverseAppState>();
                     TasksTrackers::current().stop_all_processes().await;
                     GpuManager::read().await.on_app_exit().await;
-                    state.cpu_miner.read().await.on_app_exit().await;
+                    CpuManager::read().await.on_app_exit().await;
                     state.tor_manager.on_app_exit().await;
                     state.wallet_manager.on_app_exit().await;
                     state.node_manager.on_app_exit().await;

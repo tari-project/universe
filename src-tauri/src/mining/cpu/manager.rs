@@ -50,6 +50,7 @@ use crate::{
         CpuConnectionType, MinerControlsState,
     },
     node::node_adapter::BaseNodeStatus,
+    process_adapter::ProcessAdapter,
     process_watcher::{ProcessWatcher, ProcessWatcherStats},
     systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
@@ -290,6 +291,22 @@ impl CpuManager {
         SystemTrayManager::send_event(SystemTrayEvents::CpuMiningActivity(false)).await;
         info!(target: LOG_TARGET, "Stopped cpu miner");
         Ok(())
+    }
+
+    pub async fn on_app_exit(&self) {
+        match self
+            .process_watcher
+            .adapter
+            .ensure_no_hanging_processes_are_running()
+            .await
+        {
+            Ok(_) => {
+                info!(target: LOG_TARGET, "CpuMiner processes cleaned up successfully on app exit");
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to clean up CpuMiner processes on app exit: {}", e);
+            }
+        }
     }
 
     pub async fn initialize_status_updates(&mut self) {
