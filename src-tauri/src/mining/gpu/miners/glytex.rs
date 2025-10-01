@@ -191,7 +191,7 @@ impl GpuMinerInterfaceTrait for GlytexGpuMiner {
         ];
 
         let gpuminer_bin = BinaryResolver::current()
-            .get_binary_path(Binaries::GpuMiner)
+            .get_binary_path(Binaries::Glytex)
             .await?;
 
         crate::download_utils::set_permissions(&gpuminer_bin).await?;

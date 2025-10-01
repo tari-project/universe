@@ -168,7 +168,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                 // Graxil is supported on Windows | Linux | MacOS
                 if GpuMinerType::Graxil.is_supported_on_current_platform() {
                     let graxil_initialization_result = binary_resolver
-                        .initialize_binary(Binaries::GpuMinerSHA3X, graxil_binary_progress_tracker)
+                        .initialize_binary(Binaries::Graxil, graxil_binary_progress_tracker)
                         .await;
 
                     let graxil_err = graxil_initialization_result.as_ref().err();
@@ -192,7 +192,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                 // Glytex is supported on Windows | Linux | MacOS
                 if GpuMinerType::Glytex.is_supported_on_current_platform() {
                     let glytex_initialization_result = binary_resolver
-                        .initialize_binary(Binaries::GpuMiner, None)
+                        .initialize_binary(Binaries::Glytex, None)
                         .await;
 
                     let glytex_err = glytex_initialization_result.as_ref().err();
