@@ -132,7 +132,6 @@ impl CpuManager {
     }
     pub async fn start_mining(&mut self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Starting cpu miner");
-        EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Initiated).await;
         match self.start_mining_inner().await {
             Ok(_) => {
                 info!(target: LOG_TARGET, "Started cpu miner");
@@ -158,6 +157,8 @@ impl CpuManager {
         if !cpu_mining_enabled {
             return Err(anyhow::anyhow!("CPU mining is disabled"));
         }
+
+        EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Initiated).await;
 
         if let Some(app_handle) = &self.app_handle {
             let base_path = app_handle

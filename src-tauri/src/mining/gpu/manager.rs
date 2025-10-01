@@ -292,7 +292,6 @@ impl GpuManager {
     pub async fn start_mining(&mut self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Starting gpu miner: {}", self.selected_miner);
         info!(target: LOG_TARGET, "Adapter miner type: {}", self.process_watcher.adapter.name());
-        EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Initiated).await;
 
         match self.start_mining_inner().await {
             Ok(_) => {
@@ -317,9 +316,10 @@ impl GpuManager {
         let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
 
         if !gpu_mining_enabled {
-            info!(target: LOG_TARGET, "GPU mining is disabled, not starting GPU miner.");
-            return Ok(());
+            return Err(anyhow::anyhow!("GPU mining is disabled"));
         }
+
+        EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Initiated).await;
 
         if let Some(app_handle) = self.app_handle.clone() {
             let base_path = app_handle
