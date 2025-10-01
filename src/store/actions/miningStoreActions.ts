@@ -8,7 +8,7 @@ import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '../useAppConfigStore.ts';
 import { Network } from '@app/utils/network.ts';
 import { setupStoreSelectors } from '../selectors/setupStoreSelectors.ts';
-import { GpuMiner, GpuMinerType } from '@app/types/events-payloads.ts';
+import { GpuMiner, GpuMinerType, MinerControlsState } from '@app/types/events-payloads.ts';
 
 export const restartMining = async () => {
     const isMining =
@@ -78,7 +78,6 @@ export const startCpuMining = async () => {
 
     if (!enabled || !cpuMiningModuleInitialized || initiated) return;
 
-    useMiningStore.setState({ isCpuMiningInitiated: true });
     console.info('CPU Mining starting....');
     try {
         await invoke('start_cpu_mining', {});
@@ -86,7 +85,6 @@ export const startCpuMining = async () => {
     } catch (e) {
         console.error('Failed to start CPU mining: ', e);
         setError(e as string);
-        useMiningStore.setState({ isCpuMiningInitiated: false });
     }
 };
 export const startGpuMining = async () => {
@@ -94,7 +92,6 @@ export const startGpuMining = async () => {
     if (!useConfigMiningStore.getState().gpu_mining_enabled) return;
     if (useMiningStore.getState().isGpuMiningInitiated) return;
 
-    useMiningStore.setState({ isGpuMiningInitiated: true });
     console.info('GPU Mining starting....');
     try {
         await invoke('start_gpu_mining', {});
@@ -102,35 +99,30 @@ export const startGpuMining = async () => {
     } catch (e) {
         console.error('Failed to start GPU mining: ', e);
         setError(e as string);
-        useMiningStore.setState({ isGpuMiningInitiated: false });
     }
 };
 export const stopCpuMining = async () => {
     if (!useMiningStore.getState().isCpuMiningInitiated) return;
 
     console.info('CPU Mining stopping...');
-    useMiningStore.setState({ isCpuMiningInitiated: false });
     try {
         await invoke('stop_cpu_mining', {});
         console.info('CPU Mining stopped.');
     } catch (e) {
         console.error('Failed to stop CPU mining: ', e);
         setError(e as string);
-        useMiningStore.setState({ isCpuMiningInitiated: true });
     }
 };
 export const stopGpuMining = async () => {
     if (!useMiningStore.getState().isGpuMiningInitiated) return;
 
     console.info('GPU Mining stopping...');
-    useMiningStore.setState({ isGpuMiningInitiated: false });
     try {
         await invoke('stop_gpu_mining', {});
         console.info('GPU Mining stopped.');
     } catch (e) {
         console.error('Failed to stop GPU mining: ', e);
         setError(e as string);
-        useMiningStore.setState({ isGpuMiningInitiated: true });
     }
 };
 
@@ -222,4 +214,32 @@ export const checkMiningTime = () => {
     const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
     useMiningStore.setState({ sessionMiningTime: { ...current, durationMs: diff } });
     return diff;
+};
+
+export const handleCpuMinerControlsStateChanged = (state: MinerControlsState) => {
+    switch (state) {
+        case MinerControlsState.Idle:
+            useMiningStore.setState({ isCpuMiningInitiated: false });
+            break;
+        case MinerControlsState.Started:
+            useMiningStore.setState({ isCpuMiningInitiated: true });
+            break;
+        case MinerControlsState.Stopped:
+            useMiningStore.setState({ isCpuMiningInitiated: false });
+            break;
+    }
+};
+
+export const handleGpuMinerControlsStateChanged = (state: MinerControlsState) => {
+    switch (state) {
+        case MinerControlsState.Idle:
+            useMiningStore.setState({ isGpuMiningInitiated: false });
+            break;
+        case MinerControlsState.Started:
+            useMiningStore.setState({ isGpuMiningInitiated: true });
+            break;
+        case MinerControlsState.Stopped:
+            useMiningStore.setState({ isGpuMiningInitiated: false });
+            break;
+    }
 };

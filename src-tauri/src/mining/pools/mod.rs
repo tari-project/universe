@@ -57,7 +57,7 @@ pub trait PoolManagerInterfaceTrait<T> {
     /// ### Arguments
     /// * `pool_statuses` - A map of pool names to their respective statuses
     fn construct_callback_for_pool_status_update(
-    ) -> impl Fn(HashMap<String, PoolStatus>) + Send + Sync + 'static;
+    ) -> impl Fn(HashMap<String, PoolStatus>, PoolStatus) + Send + Sync + 'static;
 
     /// Resolve the appropriate pool adapter based on the selected pool configuration
     /// ### Arguments

@@ -23,7 +23,6 @@
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    events_emitter::EventsEmitter,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     internal_wallet::InternalWallet,
     mm_proxy_manager::StartConfig,
@@ -32,21 +31,15 @@ use crate::{
         progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
     setup::{listeners::SetupFeature, setup_manager::SetupPhase},
-    systemtray_manager::SystemTrayCpuData,
     tasks_tracker::TasksTrackers,
-    utils::locks_utils::try_write_with_retry,
     UniverseAppState,
 };
 use anyhow::Error;
-use log::error;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tokio::{
-    select,
-    sync::{
-        watch::{Receiver, Sender},
-        Mutex,
-    },
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex,
 };
 use tokio_util::task::TaskTracker;
 
@@ -57,6 +50,7 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 
+#[allow(dead_code)]
 static LOG_TARGET: &str = "tari::universe::phase_cpu_mining";
 
 #[derive(Clone, Default)]
@@ -252,45 +246,6 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
             self.status_sender
                 .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
         }
-
-        let app_handle_clone = self.app_handle.clone();
-        TasksTrackers::current()
-            .cpu_mining_phase
-            .get_task_tracker()
-            .await
-            .spawn(async move {
-                let app_state = app_handle_clone.state::<UniverseAppState>().clone();
-                let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
-                let mut shutdown_signal =
-                    TasksTrackers::current().cpu_mining_phase.get_signal().await;
-
-                loop {
-                    select! {
-                        _ = cpu_miner_status_watch_rx.changed() => {
-                            let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
-                            EventsEmitter::emit_cpu_mining_update(cpu_status.clone()).await;
-
-                        let cpu_systemtray_data = SystemTrayCpuData {
-                            cpu_hashrate: cpu_status.hash_rate,
-                            estimated_earning: cpu_status.estimated_earnings,
-                        };
-
-                        match try_write_with_retry(&app_state.systemtray_manager, 6).await {
-                            Ok(mut sm) => {
-                                sm.update_tray_with_cpu_data(cpu_systemtray_data);
-                            },
-                            Err(error) => {
-                                error!(target: LOG_TARGET, "Failed to acquire systemtray_manager write lock: {error}");
-                            }
-                        }
-
-                        }
-                        _ = shutdown_signal.wait() => {
-                            break;
-                        },
-                    }
-                }
-            });
 
         Ok(())
     }
