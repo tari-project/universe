@@ -330,16 +330,6 @@ impl ProcessAdapter for LocalNodeAdapter {
         } else {
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
-            args.push("-p".to_string());
-            args.push(format!(
-                "base_node.p2p.public_addresses=/ip4/127.0.0.1/tcp/{}",
-                self.tcp_listener_port
-            ));
-            args.push("-p".to_string());
-            args.push(format!(
-                "base_node.p2p.transport.tcp.listener_address=/ip4/127.0.0.1/tcp/{}",
-                self.tcp_listener_port
-            ));
             let network = Network::get_current_or_user_setting_or_default();
             args.push("-p".to_string());
             match network {
