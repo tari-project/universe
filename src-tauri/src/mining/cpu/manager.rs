@@ -223,8 +223,19 @@ impl CpuManager {
 
             let binary = crate::binaries::Binaries::Xmrig;
 
+            let cpu_usage_percentage = ConfigMining::content()
+                .await
+                .get_selected_cpu_usage_percentage();
+
             self.process_watcher.adapter.cpu_threads =
-                Some(Self::determine_number_of_cores_to_use().await);
+                Some(Self::determine_number_of_cores_to_use(cpu_usage_percentage).await);
+
+            if cpu_usage_percentage <= 1 {
+                self.process_watcher.adapter.extra_options =
+                    vec!["--randomx-mode=light".to_string()]
+            } else {
+                self.process_watcher.adapter.extra_options = vec!["--randomx-mode=fast".to_string()]
+            }
 
             self.process_watcher
                 .start(
@@ -247,11 +258,7 @@ impl CpuManager {
         Ok(())
     }
 
-    async fn determine_number_of_cores_to_use() -> u32 {
-        let cpu_usage_percentage = ConfigMining::content()
-            .await
-            .get_selected_cpu_usage_percentage();
-
+    async fn determine_number_of_cores_to_use(cpu_usage_percentage: u32) -> u32 {
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => {
