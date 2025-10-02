@@ -43,11 +43,10 @@ use crate::{
     events_emitter::EventsEmitter,
     mining::{
         gpu::{
-            consts::GpuMinerStatus,
+            consts::{GpuMinerStatus, GpuMinerType},
             interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
             manager::GpuManager,
             miners::GpuCommonInformation,
-            GpuMinerType,
         },
         GpuConnectionType,
     },
