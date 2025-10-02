@@ -23,90 +23,42 @@
 use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
+use serde::Deserialize;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 use tari_shutdown::Shutdown;
-use tokio::sync::watch;
+use tokio::sync::watch::Sender;
+use uuid::Uuid;
 
+use crate::mining::cpu::{CpuMinerConnectionStatus, CpuMinerStatus};
+use crate::mining::CpuConnectionType;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
     StatusMonitor,
 };
 use crate::setup::setup_manager::SetupManager;
-use crate::xmrig;
-use crate::xmrig::http_api::models::Summary;
-use crate::xmrig::http_api::XmrigHttpApiClient;
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
-pub enum XmrigNodeConnection {
-    LocalMmproxy {
-        host_name: String,
-        port: u16,
-        monero_address: String,
-    },
-    Pool {
-        host_name: String,
-        port: u16,
-        tari_address: String,
-    },
-}
-
-impl XmrigNodeConnection {
-    pub fn generate_args(&self) -> Vec<String> {
-        match self {
-            XmrigNodeConnection::LocalMmproxy {
-                host_name,
-                port,
-                monero_address,
-            } => {
-                vec![
-                    "--daemon".to_string(),
-                    format!("--url={}:{}", host_name, port),
-                    // "--daemon-poll-interval=10000".to_string(),
-                    "--coin=monero".to_string(),
-                    // We are using a local daemon, so retry as soon as possible
-                    "--retry-pause=1".to_string(),
-                    "--user".to_string(),
-                    format!("{}", monero_address),
-                ]
-            }
-            XmrigNodeConnection::Pool {
-                host_name,
-                port,
-                tari_address: monero_address,
-            } => {
-                vec![
-                    "--url".to_string(),
-                    format!("{}:{}", host_name, port),
-                    "--coin=monero".to_string(),
-                    "--user".to_string(),
-                    format!("{}", monero_address),
-                ]
-            }
-        }
-    }
-}
-
 pub struct XmrigAdapter {
-    pub node_connection: Option<XmrigNodeConnection>,
-    // pub monero_address: Option<String>,
+    pub connection_type: CpuConnectionType,
+    pub address: String,
     pub http_api_token: String,
     pub http_api_port: u16,
     pub cpu_threads: Option<u32>,
     pub extra_options: Vec<String>,
-    pub summary_broadcast: watch::Sender<Option<Summary>>,
+    pub summary_broadcast: Sender<CpuMinerStatus>,
 }
 
 impl XmrigAdapter {
-    pub fn new(summary_broadcast: watch::Sender<Option<Summary>>) -> Self {
+    pub fn new(summary_broadcast: Sender<CpuMinerStatus>) -> Self {
         let http_api_port = PortAllocator::new().assign_port_with_fallback();
-        let http_api_token = "pass".to_string();
+        let http_api_token = Uuid::new_v4().to_string();
         Self {
-            node_connection: None,
-            // monero_address: None,
+            connection_type: CpuConnectionType::default(),
+            address: String::new(),
             http_api_token: http_api_token.clone(),
             http_api_port,
             cpu_threads: None,
@@ -129,11 +81,39 @@ impl ProcessAdapter for XmrigAdapter {
         _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let xmrig_shutdown = Shutdown::new();
-        let mut args = self
-            .node_connection
-            .as_ref()
-            .ok_or(anyhow::anyhow!("Node connection not set"))?
-            .generate_args();
+
+        let mut args = vec![];
+
+        let connection_type_args = match &self.connection_type {
+            CpuConnectionType::LocalMMProxy { local_proxy_url } => {
+                let extra_args = vec![
+                    "--user".to_string(),
+                    self.address.to_string(),
+                    "--daemon".to_string(),
+                    "--retry-pause=1".to_string(),
+                    format!("--url={}", local_proxy_url),
+                    "--coin=monero".to_string(), // is it needed? if yes then is it needed for pool mining?
+                ];
+                extra_args
+            }
+            CpuConnectionType::Pool {
+                pool_url,
+                worker_name,
+            } => {
+                let mut extra_args = vec![];
+                let extended_user_address = match worker_name {
+                    Some(worker_name) => format!("{}{}", self.address, worker_name),
+                    None => self.address.to_string(),
+                };
+                extra_args.push(format!("--url={}", pool_url));
+                extra_args.push("--user".to_string());
+                extra_args.push(extended_user_address);
+                extra_args
+            }
+        };
+
+        args.extend(connection_type_args);
+
         let xmrig_log_file = log_dir.join("xmrig").join("xmrig.log");
         std::fs::create_dir_all(
             xmrig_log_file
@@ -187,10 +167,8 @@ impl ProcessAdapter for XmrigAdapter {
             },
             XmrigStatusMonitor {
                 summary_broadcast: self.summary_broadcast.clone(),
-                client: XmrigHttpApiClient::new(
-                    format!("http://127.0.0.1:{}", self.http_api_port),
-                    self.http_api_token.clone(),
-                ),
+                access_token: self.http_api_token.clone(),
+                http_api_port: self.http_api_port.to_string(),
             },
         ))
     }
@@ -210,8 +188,9 @@ static WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED: AtomicBool = AtomicBool::new(false
 
 #[derive(Clone)]
 pub struct XmrigStatusMonitor {
-    client: XmrigHttpApiClient,
-    summary_broadcast: watch::Sender<Option<Summary>>,
+    http_api_port: String,
+    access_token: String,
+    summary_broadcast: Sender<CpuMinerStatus>,
 }
 
 #[async_trait]
@@ -245,13 +224,13 @@ impl StatusMonitor for XmrigStatusMonitor {
     }
 
     async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
-        match tokio::time::timeout(timeout_duration, self.summary()).await {
-            Ok(summary_result) => match summary_result {
-                Ok(summary) => {
-                    let _result = self.summary_broadcast.send(Some(summary.clone()));
+        match tokio::time::timeout(timeout_duration, self.status()).await {
+            Ok(status) => match status {
+                Ok(status) => {
+                    let _result = self.summary_broadcast.send(status.clone());
 
-                    if summary.hashrate.total.iter().all(|x| x.eq(&Some(0.0))) {
-                        warn!(target: LOG_TARGET, "Xmrig has zero hashrate reported.");
+                    if status.hash_rate.le(&0.0) {
+                        warn!(target: LOG_TARGET, "Xmrig hash rate is 0");
                         return HealthStatus::Unhealthy;
                     }
 
@@ -259,21 +238,71 @@ impl StatusMonitor for XmrigStatusMonitor {
                 }
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to get xmrig summary: {e}");
-                    let _result = self.summary_broadcast.send(None);
+                    let _result = self.summary_broadcast.send(CpuMinerStatus::default());
                     HealthStatus::Unhealthy
                 }
             },
             Err(_timeout_error) => {
                 warn!(target: LOG_TARGET, "Timeout while getting xmrig summary");
-                let _result = self.summary_broadcast.send(None);
-                HealthStatus::Warning
+                let _result = self.summary_broadcast.send(CpuMinerStatus::default());
+                HealthStatus::Unhealthy
             }
         }
     }
 }
 
+#[derive(Deserialize, Debug, Clone)]
+pub(crate) struct Summary {
+    pub(crate) connection: Connection,
+    pub(crate) hashrate: Hashrate,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Connection {
+    pub(crate) uptime: u64,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Hashrate {
+    pub(crate) total: Vec<Option<f64>>,
+}
+
 impl XmrigStatusMonitor {
-    pub async fn summary(&self) -> Result<xmrig::http_api::models::Summary, Error> {
-        self.client.summary().await
+    pub async fn status(&self) -> Result<CpuMinerStatus, Error> {
+        let client = reqwest::Client::new();
+        let response = match client
+            .get(format!("http://127.0.0.1:{}/2/summary", self.http_api_port))
+            .header("Authorization", format!("Bearer {}", self.access_token))
+            .send()
+            .await
+        {
+            Ok(response) => response,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Error in getting response from Xmrig status: {e}");
+                if e.is_connect() {
+                    return Ok(CpuMinerStatus::default());
+                }
+                return Ok(CpuMinerStatus::default());
+            }
+        };
+        let text = response.text().await?;
+        let body: Summary = match serde_json::from_str(&text) {
+            Ok(body) => body,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Error decoding body from  in Xmrig status: {e}");
+                return Ok(CpuMinerStatus::default());
+            }
+        };
+
+        info!(target: LOG_TARGET, "Xmrig status: {:?}", body);
+
+        Ok(CpuMinerStatus {
+            is_mining: true,
+            estimated_earnings: 0,
+            hash_rate: body.hashrate.total.iter().copied().flatten().sum(),
+            connection: CpuMinerConnectionStatus {
+                is_connected: body.connection.uptime > 0,
+            },
+        })
     }
 }

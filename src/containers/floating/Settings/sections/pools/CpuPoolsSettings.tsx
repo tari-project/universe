@@ -54,7 +54,7 @@ export const CpuPoolsSettings = () => {
 
     const handleResetToDefaultPoolConfiguration = async () => {
         if (!selectedCpuPoolData) return;
-        await resetCpuPoolConfiguration(selectedCpuPoolData.pool_name);
+        await resetCpuPoolConfiguration(selectedCpuPoolData.pool_type);
     };
 
     return (
@@ -72,7 +72,13 @@ export const CpuPoolsSettings = () => {
                 </SettingsGroupAction>
             </SettingsGroup>
 
-            {selectedCpuPoolData && <PoolStats poolStatus={pool_status} isMining={isCpuPoolEnabled && isMining} />}
+            {selectedCpuPoolData && (
+                <PoolStats
+                    poolStatus={pool_status}
+                    poolOrigin={selectedCpuPoolData.pool_origin}
+                    isMining={isCpuPoolEnabled && isMining}
+                />
+            )}
             <SettingsGroupWrapper $subGroup style={{ marginTop: '12px' }}>
                 <SettingsGroup>
                     <SettingsGroupTitle>

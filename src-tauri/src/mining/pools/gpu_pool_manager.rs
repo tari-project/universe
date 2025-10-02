@@ -44,6 +44,7 @@ use crate::{
         },
     },
     setup::setup_manager::SetupManager,
+    systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
 };
 
@@ -150,10 +151,15 @@ impl PoolManagerInterfaceTrait<GpuPool> for GpuPoolManager {
     }
 
     fn construct_callback_for_pool_status_update(
-    ) -> impl Fn(HashMap<String, PoolStatus>) + Send + Sync + 'static {
-        move |pool_statuses: HashMap<String, PoolStatus>| {
+    ) -> impl Fn(HashMap<String, PoolStatus>, PoolStatus) + Send + Sync + 'static {
+        move |pool_statuses: HashMap<String, PoolStatus>, current_status: PoolStatus| {
             spawn(async move {
                 EventsEmitter::emit_gpu_pools_status_update(pool_statuses).await;
+
+                SystemTrayManager::send_event(SystemTrayEvents::GpuPoolPendingRewards(
+                    current_status.unpaid,
+                ))
+                .await;
             });
         }
     }

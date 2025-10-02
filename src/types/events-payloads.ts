@@ -115,6 +115,14 @@ export enum GpuMiningAlgorithm {
     C29 = 'C29',
 }
 
+export enum MinerControlsState {
+    Initiated = 'Initiated',
+    Started = 'Started',
+    Stopped = 'Stopped',
+    Restarting = 'Restarting',
+    Idle = 'Idle',
+}
+
 export interface GpuMiner {
     miner_type: GpuMinerType;
     features: GpuMinerFeature[];

@@ -14,6 +14,7 @@ interface AppState {
     isAppUpdateAvailable: boolean;
     networkStatus?: NetworkStatus;
     isStuckOnOrphanChain: boolean;
+    isSystrayAppShutdownRequested: boolean;
 }
 
 const initialstate: AppState = {
@@ -22,6 +23,7 @@ const initialstate: AppState = {
     releaseNotes: '',
     isAppUpdateAvailable: false,
     isStuckOnOrphanChain: false,
+    isSystrayAppShutdownRequested: false,
 };
 
 export const useAppStateStore = create<AppState>()(() => ({
