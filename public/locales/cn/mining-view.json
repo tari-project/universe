@@ -20,7 +20,8 @@
   "mining-button-text": {
     "cancel-mining": "取消挖矿",
     "changing-mode": "更改模式",
-    "pause-mining": "暂停挖矿",
+    "pause-mining": "Pause Mining",
+    "resume-mining": "Resume Mining",
     "start-mining": "开始挖矿",
     "started-auto-mining": "自动挖矿开始",
     "starting-mining": "开始挖矿",
@@ -35,6 +36,10 @@
     "step_4": "尝试使用 Tor 桥接（在设置中）",
     "step_5": "尝试禁用 Tor（在设置中）",
     "step_6": "尝试重置应用程序（在设置中）"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}<strong/>",
+    "until-restart": "Pause until I<strong> Restart<strong/>"
   },
   "pool": {
     "accepted_shares": "已接受份额",
