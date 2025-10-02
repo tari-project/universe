@@ -410,7 +410,7 @@ async fn wait_node_synced_with_progress(app_handle: tauri::AppHandle) -> Result<
                             let percentage = *progress_percentage_rx.borrow();
                             if let Some(step) = progress_params.get("step").cloned() {
                                 EventsEmitter::emit_background_node_sync_update(progress_params.clone()).await;
-                                if step == "Block" && percentage == 1.0 || step == "Done" {
+                                if step == "Done" || (step == "Block" && percentage == 1.0) {
                                     break;
                                 }
                             }
