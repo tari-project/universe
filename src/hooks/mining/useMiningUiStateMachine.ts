@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { setAnimationState, getCurrentState, getTowerLogPrefix } from '@tari-project/tari-tower';
+import { setAnimationState, getCurrentAnimationState, getTowerLogPrefix } from '@tari-project/tari-tower';
 
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
@@ -15,7 +15,6 @@ export const useUiMiningStateMachine = () => {
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const visualModeLoading = useConfigUIStore((s) => s.visualModeToggleLoading);
     const towerInitalized = useUIStore((s) => s.towerInitalized);
-
     const preventStop = isMiningInitiated || isChangingMode;
     const isMining = cpuIsMining || gpuIsMining;
 
@@ -33,11 +32,13 @@ export const useUiMiningStateMachine = () => {
     const forceAnimationStop = useCallback(() => {
         let retryCount = 0;
         const maxRetries = 15;
-        const interval = 1500;
+        const interval = 1000;
+
+        if (shouldStart) return;
 
         const attemptStop = () => {
-            const animationStatus = getCurrentState();
-            if (animationStatus === 'not-started') {
+            const animationStatus = getCurrentAnimationState();
+            if (animationStatus === 'NOT_STARTED') {
                 console.info(getTowerLogPrefix('info'), `Animation stopped: status=${animationStatus}`);
                 return;
             }
@@ -65,12 +66,13 @@ export const useUiMiningStateMachine = () => {
         return () => {
             clearStopTimeout();
         };
-    }, []);
+    }, [shouldStart]);
 
     useEffect(() => {
-        const notStarted = getCurrentState() === 'not-started';
+        const state = getCurrentAnimationState();
+        const notStarted = state === 'NOT_STARTED';
         if (isMining) {
-            setShouldStart(notStarted);
+            setShouldStart(isMining && notStarted);
         } else {
             setShouldStop(!notStarted && !preventStop);
         }
@@ -78,6 +80,7 @@ export const useUiMiningStateMachine = () => {
 
     useEffect(() => {
         if (noVisualMode || !towerInitalized) return;
+
         if (shouldStop) {
             forceAnimationStop();
             return;
@@ -85,6 +88,7 @@ export const useUiMiningStateMachine = () => {
         if (shouldStart) {
             setAnimationState('start');
         }
+
         return () => {
             clearStopTimeout();
         };

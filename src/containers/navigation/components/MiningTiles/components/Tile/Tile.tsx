@@ -23,7 +23,7 @@ import {
     NumberUnit,
 } from './styles';
 import { UseInteractionsReturn } from '@floating-ui/react';
-import { setAnimationState, getCurrentState } from '@tari-project/tari-tower';
+import { setAnimationState, getCurrentAnimationState } from '@tari-project/tari-tower';
 import { PoolType } from '@app/store/useMiningPoolsStore.ts';
 import { clearCurrentSuccessValue } from '@app/store/actions/miningPoolsStoreActions.ts';
 import { AppModuleState, AppModuleStatus } from '@app/store/types/setup';
@@ -73,8 +73,8 @@ export default function Tile({
     const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
     const canAnimateTower = useMemo(() => {
-        const animationState = getCurrentState();
-        return visualMode && towerInitalized && animationState === 'free' && !isLoading;
+        const animationState = getCurrentAnimationState();
+        return visualMode && towerInitalized && animationState === 'FREE' && !isLoading;
     }, [visualMode, isLoading, towerInitalized]);
 
     useEffect(() => {
