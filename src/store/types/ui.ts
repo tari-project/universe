@@ -1,7 +1,7 @@
 import { SB_MINI_WIDTH, SB_SPACING } from '@app/theme/styles.ts';
 
 export const sidebarTowerOffset = SB_SPACING + SB_MINI_WIDTH;
-export const TOWER_CANVAS_ID = 'tari_tower';
+export const TOWER_CANVAS_ID = 'tower-canvas';
 const _DIALOG_TYPES = [
     'logs',
     'restart',
