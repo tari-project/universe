@@ -1,5 +1,4 @@
 import { GpuDevice, TransactionInfo, WalletBalance } from './app-status';
-import { BasePoolData, ConfigPools, CpuPools, GpuPools } from './configs';
 
 export enum SetupPhase {
     Core = 'Core',
