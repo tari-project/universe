@@ -129,7 +129,7 @@ export function formatHashrate(hashrate: number, joinUnit = true, algo = GpuMini
     const unit = algo === GpuMiningAlgorithm.SHA3X ? 'H' : 'G';
     if (hashrate < 1000) {
         return {
-            value: hashrate,
+            value: Number(hashrate.toFixed(2)),
             unit: `${unit}/s`,
         };
     }
