@@ -60,9 +60,9 @@ impl PoolApiAdapter for KryptexPoolAdapter {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, anyhow::Error> {
         let response: KryptexPoolStatusResponseBody = serde_json::from_str(data)?;
         let pool_status = PoolStatus {
-            accepted_shares: 0,                       // Kryptex API does not provide this info
-            unpaid: response.unconfirmed * 1000000.0, // kryptex provides already formatted value so we need to revert it
-            balance: response.total * 1000000.0, // kryptex provides already formatted value so we need to revert it
+            accepted_shares: 0,                 // Kryptex API does not provide this info
+            unpaid: response.total * 1000000.0, // kryptex provides already formatted value so we need to revert it
+            balance: 0.0,                       // Kryptex API does not provide this info
             min_payout: response.threshold as u64,
         };
         Ok(pool_status)

@@ -24,8 +24,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use app_in_memory_config::AppInMemoryConfig;
-use commands::CpuMinerStatus;
-use cpu_miner::CpuMinerConfig;
 use events_emitter::EventsEmitter;
 use log::{error, info, warn};
 use mining_status_manager::MiningStatusManager;
@@ -39,7 +37,6 @@ use node::remote_node_adapter::RemoteNodeAdapter;
 use setup::setup_manager::SetupManager;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
-use systemtray_manager::SystemTrayManager;
 use tasks_tracker::TasksTrackers;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
@@ -66,10 +63,9 @@ use app_in_memory_config::EXCHANGE_ID;
 
 use telemetry_manager::TelemetryManager;
 
-use crate::cpu_miner::CpuMiner;
-
 use crate::feedback::Feedback;
-use crate::mining::cpu::CpuMinerConnection;
+use crate::mining::cpu::manager::CpuManager;
+use crate::mining::cpu::CpuMinerStatus;
 use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mm_proxy_manager::MmProxyManager;
@@ -86,7 +82,6 @@ mod binaries;
 mod commands;
 mod configs;
 mod consts;
-mod cpu_miner;
 mod credential_manager;
 mod download_utils;
 mod events;
@@ -128,8 +123,6 @@ mod utils;
 mod wallet;
 mod websocket_events_manager;
 mod websocket_manager;
-mod xmrig;
-mod xmrig_adapter;
 
 const LOG_TARGET: &str = "tari::universe::main";
 const RESTART_EXIT_CODE: i32 = i32::MAX;
@@ -156,10 +149,7 @@ struct UniverseAppState {
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
-    cpu_miner_status_watch_rx: Arc<watch::Receiver<CpuMinerStatus>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-    cpu_miner: Arc<RwLock<CpuMiner>>,
-    cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
@@ -168,7 +158,6 @@ struct UniverseAppState {
     feedback: Arc<RwLock<Feedback>>,
     tor_manager: TorManager,
     updates_manager: UpdatesManager,
-    systemtray_manager: Arc<RwLock<SystemTrayManager>>,
     mining_status_manager: Arc<RwLock<MiningStatusManager>>,
     websocket_message_tx: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
@@ -257,32 +246,18 @@ fn main() {
         base_node_watch_rx.clone(),
     );
 
-    let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
-        node_connection: CpuMinerConnection::Local,
-        pool_host_name: None,
-        pool_port: None,
-        monero_address: "".to_string(),
-        pool_status_url: None,
-        worker_name: None,
-    }));
-
     let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::default()));
-    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
-        CpuMiner::new(
-            &mut stats_collector,
-            cpu_miner_status_watch_tx,
-            base_node_watch_rx.clone(),
-        )
-        .into(),
-    );
-
-    let systemtray_manager = Arc::new(RwLock::new(SystemTrayManager::new()));
 
     block_on(GpuManager::initialize(
         stats_collector.take_gpu_miner(),
         gpu_status_tx.clone(),
         Some(base_node_watch_rx.clone()),
-        Some(systemtray_manager.clone()),
+    ));
+
+    block_on(CpuManager::initialize(
+        stats_collector.take_cpu_miner(),
+        cpu_miner_status_watch_tx.clone(),
+        Some(base_node_watch_rx.clone()),
     ));
 
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
@@ -328,10 +303,7 @@ fn main() {
     let app_state = UniverseAppState {
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
-        cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
         in_memory_config: app_in_memory_config.clone(),
-        cpu_miner: cpu_miner.clone(),
-        cpu_miner_config: cpu_config.clone(),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
@@ -340,7 +312,6 @@ fn main() {
         feedback: Arc::new(RwLock::new(feedback)),
         tor_manager,
         updates_manager,
-        systemtray_manager,
         mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
         websocket_message_tx: Arc::new(websocket_message_tx),
         websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
@@ -379,6 +350,21 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_http::init())
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                if let Some(window) = window.get_webview_window("main") {
+                    if window.is_visible().unwrap_or(false) {
+                        let _unused = window.hide().map_err(|err| {
+                            error!(
+                                target: LOG_TARGET,
+                               "Couldn't hide the main window {err:?}"
+                            )
+                        });
+                    }
+                }
+            }
+        })
         .setup(|app| {
             let config_path = app
                 .path()
@@ -648,7 +634,22 @@ fn main() {
             }
             tauri::RunEvent::Exit => {
                 info!(target: LOG_TARGET, "App shutdown [Exit] caught");
-                block_on(TasksTrackers::current().stop_all_processes());
+                let app_handle_clone = app_handle.clone();
+
+                let closing_task = tauri::async_runtime::spawn(async move {
+                    let state = app_handle_clone.state::<UniverseAppState>();
+                    TasksTrackers::current().stop_all_processes().await;
+                    GpuManager::read().await.on_app_exit().await;
+                    CpuManager::read().await.on_app_exit().await;
+                    state.tor_manager.on_app_exit().await;
+                    state.wallet_manager.on_app_exit().await;
+                    state.node_manager.on_app_exit().await;
+                });
+
+                block_on(closing_task).unwrap_or_else(|e| {
+                    error!(target: LOG_TARGET, "Could not join closing task: {e:?}");
+                });
+
                 if is_restart_requested_clone.load(Ordering::SeqCst) {
                     app_handle.cleanup_before_exit();
                     let env = app_handle.env();

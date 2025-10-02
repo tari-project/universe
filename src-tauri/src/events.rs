@@ -82,6 +82,10 @@ pub enum EventType {
     UpdateSelectedMiner,
     AvailableMiners,
     WalletStatusUpdate,
+    UpdateCpuMinerControlsState,
+    UpdateGpuMinerControlsState,
+    OpenSettings,
+    SystrayAppShutdownRequested,
 }
 
 #[derive(Clone, Debug, Serialize)]

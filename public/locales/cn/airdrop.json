@@ -1,8 +1,8 @@
 {
   "airdropGame": "空投游戏",
   "auth": {
-    "url-error": "Could not open URL",
-    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+    "url-error": "无法打开 URL",
+    "url-error-copy": "已复制到剪贴板，请直接访问链接以登录"
   },
   "bonus-gems-earned": "获得的奖励宝石",
   "claimGems": "领取宝石",
@@ -18,64 +18,59 @@
   "copying": "正在复制...",
   "crewRewards": {
     "actions": {
-      "claim": "Claim {{amount}} XTM",
-      "claimed": "Claimed",
-      "nudge": "Nudge"
+      "claim": "领取 {{amount}} XTM",
+      "claimed": "已领取",
+      "nudge": "提醒"
     },
-    "activeMinersStat": "Active Miners",
-    "bonusXTMEarned": "Bonus XTM Earned",
-    "copied": "Copied!",
+    "activeMinersStat": "活跃矿工",
+    "bonusXTMEarned": "获得的奖励 XTM",
+    "copied": "已复制！",
     "crewStatus": {
-      "completed": "Completed",
-      "inProgress": "In Progress",
-      "needsNudge": "Needs Nudge"
+      "completed": "已完成",
+      "inProgress": "进行中",
+      "needsNudge": "需要提醒"
     },
-    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
-    "errorLoadingData": "Error loading crew data. Please try again.",
+    "earnDescription": "每当您的朋友挖矿 <strong>{{daysRequired}} 天</strong>，您将获得 <strong>{{userReward}} XTM</strong>。您的朋友也将获得 <strong>{{friendReward}} XTM</strong>。",
+    "errorLoadingData": "加载团队数据时出错。请重试。",
     "feedback": {
-      "nudgeSent": "Nudge sent!",
-      "rewardClaimed": "Reward claimed!"
+      "nudgeSent": "提醒已发送！",
+      "rewardClaimed": "奖励已领取！"
     },
     "filters": {
-      "active": "Active",
-      "all": "All",
-      "complete": "Complete",
-      "inactive": "Inactive"
+      "active": "活跃",
+      "all": "全部",
+      "complete": "完成",
+      "inactive": "不活跃"
     },
-    "inviteFriends": "Invite Friends",
-    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "inviteFriends": "邀请朋友",
+    "inviteFriendsMessage": "邀请朋友并开始赚取 <strong>奖励 XTM！</strong>",
     "login": {
-      "bonusText": "Earn bonus rewards up to {{maxWeeks}} weeks per invite",
-      "description": "You earn <strong>{{userReward}} bonus XTM/week</strong> AND your friend earns <strong>{{friendReward}} bonus XTM/week</strong> when you and your friend both mine",
-      "loginButton": "Log in & Start Earning!",
-      "title": "Mine with friends. <strong>Earn together.</strong>"
+      "bonusText": "每次邀请可赚取最多 {{maxWeeks}} 周的奖励",
+      "description": "当您和您的朋友都在挖矿时，您将获得 <strong>{{userReward}} 奖励 XTM/周</strong>，您的朋友也将获得 <strong>{{friendReward}} 奖励 XTM/周</strong>",
+      "loginButton": "登录并开始赚取！",
+      "title": "与朋友一起挖矿。<strong>共同赚取。</strong>"
     },
-    "manageYourCrew": "Manage your crew",
-    "myCrew": "Your Friends",
-    "of": "of",
+    "manageYourCrew": "管理您的团队",
+    "myCrew": "我的团队",
+    "of": "的",
     "streak": {
-      "day": "Day",
-      "dayStreak": "{{days}} Day Streak",
-      "daysToMinimum": "{{days}} more days to meet minimum requirements!",
-      "keepStreak": "Keep your streak to keep earning rewards!",
-      "loadingStreak": "Loading streak...",
-      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
-      "minimumRequirementsMet": "You've met the minimum requirements. Keep going!",
-      "multiDayStreak": "{{days}} Day Streak",
-      "oneDayStreak": "1 Day Streak",
-      "startMiningMessage": "Start mining to begin your streak and earn rewards!",
-      "startYourStreak": "Start Your Streak!",
-      "unlockBonusRewards": "Unlock your bonus rewards"
+      "day": "天",
+      "dayStreak": "{{days}} 天连胜",
+      "daysToMinimum": "还需 {{days}} 天才能满足最低要求！",
+      "keepStreak": "保持连胜以继续赚取奖励！",
+      "loadingStreak": "加载连胜中...",
+      "mineConsecutiveDays": "每周至少连续挖矿 <strong>{{streakDaysRequired}} 天</strong> 以赚取您的奖励 XTM。",
+      "minimumRequirementsMet": "您已满足最低要求。继续加油！",
+      "multiDayStreak": "{{days}} 天连胜",
+      "oneDayStreak": "1 天连胜",
+      "startMiningMessage": "开始挖矿以开始您的连胜并赚取奖励！",
+      "startYourStreak": "开始您的连胜！",
+      "unlockBonusRewards": "解锁您的奖励"
     },
-    "title": "Rewards",
-    "crewEmpty": {
-      "title": "Your friends are slacking!",
-      "description": "You have <strong>{{inactiveCount}}</strong> inactive friends. Give them a nudge or invite more.",
-      "nudgeButton": "Nudge your Friends"
-    }
+    "title": "奖励"
   },
   "doLater": "我稍后再做",
-  "earnBonusXTM": "Bonus XTM",
+  "earnBonusXTM": "奖励 XTM",
   "gems": "宝石",
   "giftReferralCode": "邀请朋友加入Tari Universe即可获得奖励XTM。一旦他们连接账户并开始挖矿，您就会开始获得奖励。",
   "giftReferralCodeHeader": "领取您的推荐码<span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span>宝石。",

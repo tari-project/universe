@@ -16,6 +16,8 @@ import {
 } from '@app/store/actions/uiStoreActions';
 import {
     handleAvailableMinersChanged,
+    handleCpuMinerControlsStateChanged,
+    handleGpuMinerControlsStateChanged,
     handleSelectedMinerChanged,
     setAvailableEngines,
 } from '@app/store/actions/miningStoreActions';
@@ -27,6 +29,8 @@ import {
     setCriticalError,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
+    setIsSettingsOpen,
+    handleSystrayAppShutdownRequested,
 } from '@app/store/actions/appStateStoreActions';
 import {
     handleBaseNodeStatusUpdate,
@@ -236,6 +240,18 @@ const useTauriEventsListener = () => {
                             break;
                         case 'WalletStatusUpdate':
                             setIsWalletLoading(event.payload?.loading);
+                            break;
+                        case 'UpdateCpuMinerControlsState':
+                            handleCpuMinerControlsStateChanged(event.payload);
+                            break;
+                        case 'UpdateGpuMinerControlsState':
+                            handleGpuMinerControlsStateChanged(event.payload);
+                            break;
+                        case 'OpenSettings':
+                            setIsSettingsOpen(true);
+                            break;
+                        case 'SystrayAppShutdownRequested':
+                            handleSystrayAppShutdownRequested();
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

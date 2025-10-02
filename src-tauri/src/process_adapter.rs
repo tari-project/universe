@@ -96,6 +96,17 @@ pub(crate) trait ProcessAdapter {
         None
     }
 
+    async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
+        let binary_name = OsStr::new(self.name());
+        if let Some(process) = Self::find_process_pid_by_name(binary_name) {
+            let parsed_id =
+                i32::try_from(process).expect("Failed to parse process ID from u32 to i32");
+            warn!(target: LOG_TARGET, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
+            kill_process(parsed_id).await?;
+        }
+        Ok(())
+    }
+
     async fn kill_previous_instances(
         &self,
         base_folder: PathBuf,

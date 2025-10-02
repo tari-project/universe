@@ -24,12 +24,12 @@ use crate::airdrop;
 use crate::airdrop::get_wallet_view_key_hashed;
 
 use crate::app_in_memory_config::AppInMemoryConfig;
-use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
 use crate::configs::trait_config::ConfigImpl;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::internal_wallet::InternalWallet;
+use crate::mining::cpu::CpuMinerStatus;
 use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::mining::gpu::consts::GpuMiningAlgorithm;
 use crate::node::node_adapter::BaseNodeStatus;

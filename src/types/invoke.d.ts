@@ -126,16 +126,10 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'save_wxtm_address', payload: { address: string; exchangeId: string }): Promise<void>;
     function invoke(param: 'change_cpu_pool', payload: { cpuPool: string }): Promise<void>;
     function invoke(param: 'change_gpu_pool', payload: { gpuPool: string }): Promise<void>;
-    function invoke(
-        param: 'update_selected_cpu_pool',
-        payload: { cpuPool: Record<string, BasePoolData> }
-    ): Promise<void>;
-    function invoke(
-        param: 'update_selected_gpu_pool',
-        payload: { gpuPool: Record<string, BasePoolData> }
-    ): Promise<void>;
-    function invoke(param: 'reset_gpu_pool_config', payload: { gpuPoolName: string }): Promise<void>;
-    function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolName: string }): Promise<void>;
+    function invoke(param: 'update_selected_cpu_pool', payload: { updated_config: BasePoolData }): Promise<void>;
+    function invoke(param: 'update_selected_gpu_pool', payload: { updated_config: BasePoolData }): Promise<void>;
+    function invoke(param: 'reset_gpu_pool_config', payload: { gpuPoolType: string }): Promise<void>;
+    function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolType: string }): Promise<void>;
     function invoke(param: 'restart_phases', payload: { phases: SetupPhase[] }): Promise<void>;
     function invoke(param: 'list_connected_peers'): Promise<string[]>;
     function invoke(param: 'switch_gpu_miner', payload: { gpuMinerType: GpuMinerType }): Promise<void>;
