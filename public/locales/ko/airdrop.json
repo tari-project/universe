@@ -1,8 +1,8 @@
 {
   "airdropGame": "에어드롭 게임",
   "auth": {
-    "url-error": "Could not open URL",
-    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+    "url-error": "URL을 열 수 없습니다",
+    "url-error-copy": "클립보드에 복사되었습니다. 링크를 직접 방문하여 로그인하세요"
   },
   "bonus-gems-earned": "보너스 젬 획득",
   "claimGems": "보석 받기",
@@ -18,69 +18,59 @@
   "copying": "복사 중...",
   "crewRewards": {
     "actions": {
-      "claim": "Claim {{amount}} XTM",
-      "claimed": "Claimed",
-      "nudge": "Nudge"
+      "claim": "{{amount}} XTM 청구",
+      "claimed": "청구됨",
+      "nudge": "알림"
     },
-    "activeMinersStat": "Active Miners",
-    "bonusXTMEarned": "Bonus XTM Earned",
-    "copied": "Copied!",
+    "activeMinersStat": "활성 채굴자",
+    "bonusXTMEarned": "획득한 보너스 XTM",
+    "copied": "복사됨!",
     "crewStatus": {
-      "completed": "Completed",
-      "inProgress": "In Progress",
-      "needsNudge": "Needs Nudge"
+      "completed": "완료됨",
+      "inProgress": "진행 중",
+      "needsNudge": "알림 필요"
     },
-    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
-    "errorLoadingData": "Error loading crew data. Please try again.",
+    "earnDescription": "친구가 채굴하는 <strong>{{daysRequired}}일</strong>마다 <strong>{{userReward}} XTM</strong>을 획득하세요. 친구도 <strong>{{friendReward}} XTM</strong>을 획득합니다.",
+    "errorLoadingData": "팀 데이터 로딩 오류. 다시 시도하세요.",
     "feedback": {
-      "nudgeSent": "Nudge sent!",
-      "rewardClaimed": "Reward claimed!"
+      "nudgeSent": "알림이 전송되었습니다!",
+      "rewardClaimed": "보상이 청구되었습니다!"
     },
     "filters": {
-      "active": "Active",
-      "all": "All",
-      "complete": "Complete",
-      "inactive": "Inactive"
+      "active": "활성",
+      "all": "모두",
+      "complete": "완료",
+      "inactive": "비활성"
     },
-    "inviteFriends": "Invite Friends",
-    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "inviteFriends": "친구 초대",
+    "inviteFriendsMessage": "친구를 초대하고 <strong>보너스 XTM</strong>을 벌기 시작하세요!",
     "login": {
-      "bonusText": "Earn bonus rewards up to {{maxWeeks}} weeks per invite",
-      "description": "You earn <strong>{{userReward}} bonus XTM/week</strong> AND your friend earns <strong>{{friendReward}} bonus XTM/week</strong> when you and your friend both mine",
-      "loginButton": "Log in & Start Earning!",
-      "title": "Mine with friends. <strong>Earn together.</strong>"
+      "bonusText": "초대당 최대 {{maxWeeks}}주 동안 보너스 보상을 획득하세요",
+      "description": "당신과 친구가 모두 채굴할 때 <strong>{{userReward}} 보너스 XTM/주</strong>를 획득하고 친구도 <strong>{{friendReward}} 보너스 XTM/주</strong>를 획득합니다",
+      "loginButton": "로그인하고 벌기 시작!",
+      "title": "친구와 함께 채굴하세요. <strong>함께 벌기</strong>"
     },
-    "manageYourCrew": "Manage your crew",
-    "myCrew": "Your Friends",
-    "of": "of",
+    "manageYourCrew": "팀 관리",
+    "myCrew": "내 팀",
+    "of": "의",
     "streak": {
-      "day": "Day",
-      "dayStreak": "{{days}} Day Streak",
-      "daysToMinimum": "{{days}} more days to meet minimum requirements!",
-      "keepStreak": "Keep your streak to keep earning rewards!",
-      "loadingStreak": "Loading streak...",
-      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
-      "minimumRequirementsMet": "You've met the minimum requirements. Keep going!",
-      "multiDayStreak": "{{days}} Day Streak",
-      "oneDayStreak": "1 Day Streak",
-      "startMiningMessage": "Start mining to begin your streak and earn rewards!",
-      "startYourStreak": "Start Your Streak!",
-      "unlockBonusRewards": "Unlock your bonus rewards"
+      "day": "일",
+      "dayStreak": "{{days}}일 연속",
+      "daysToMinimum": "최소 요구 사항을 충족하려면 {{days}}일 더 필요합니다!",
+      "keepStreak": "연속 기록을 유지하여 보상을 계속 받으세요!",
+      "loadingStreak": "연속 기록 로딩 중...",
+      "mineConsecutiveDays": "보너스 XTM을 얻으려면 매주 최소 <strong>{{streakDaysRequired}}일 연속</strong>으로 채굴하세요.",
+      "minimumRequirementsMet": "최소 요구 사항을 충족했습니다. 계속하세요!",
+      "multiDayStreak": "{{days}}일 연속",
+      "oneDayStreak": "1일 연속",
+      "startMiningMessage": "채굴을 시작하여 연속 기록을 시작하고 보상을 받으세요!",
+      "startYourStreak": "연속 기록 시작!",
+      "unlockBonusRewards": "보너스 보상 잠금 해제"
     },
-    "title": "Rewards",
-    "crewEmpty": {
-      "title": "Your friends are slacking!",
-      "titleSingular": "Your friend is slacking!",
-      "titleZero": "Start building your crew!",
-      "description": "You have <strong>{{inactiveCount}}</strong> inactive friends. Give them a nudge or invite more.",
-      "descriptionSingular": "You have <strong>{{inactiveCount}}</strong> inactive friend. Give them a nudge or invite more.",
-      "descriptionZero": "Invite friends to start earning bonus rewards together!",
-      "nudgeButton": "Nudge your Friends",
-      "nudgeButtonSingular": "Nudge your Friend"
-    }
+    "title": "보상"
   },
   "doLater": "나중에 할게요",
-  "earnBonusXTM": "Bonus XTM",
+  "earnBonusXTM": "보너스 XTM",
   "gems": "보석",
   "giftReferralCode": "Tari Universe에 친구를 초대할 때마다 보너스 XTM을 받으세요. 그들이 계정을 연결하고 채굴하기 시작하면 보상을 받기 시작합니다.",
   "giftReferralCodeHeader": "추천 코드를 사용하여 <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> 보석을 받으세요.",
