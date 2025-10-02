@@ -38,7 +38,7 @@
     "waiting-for-wallet": "Ожидание кошелька",
     "wallet-started": "Кошелек запущен"
   },
-  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
+  "updated-downloaded": "Обновление загружено: перезапуск Tari Universe",
   "would-you-like-to-install": "Хотите установить Tari Universe {{version}} сейчас?",
   "yes": "Да"
 }

@@ -1,8 +1,8 @@
 {
   "airdropGame": "Testnet Belohnungen",
   "auth": {
-    "url-error": "Could not open URL",
-    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+    "url-error": "URL konnte nicht geöffnet werden",
+    "url-error-copy": "Es wurde in Ihre Zwischenablage kopiert, bitte besuchen Sie den Link direkt, um sich anzumelden"
   },
   "bonus-gems-earned": "Bonus-Edelsteine verdient",
   "claimGems": "Edelsteine beanspruchen",
@@ -18,66 +18,56 @@
   "copying": "Kopieren...",
   "crewRewards": {
     "actions": {
-      "claim": "Claim {{amount}} XTM",
-      "claimed": "Claimed",
-      "nudge": "Nudge"
+      "claim": "{{amount}} XTM beanspruchen",
+      "claimed": "Beansprucht",
+      "nudge": "Anstoßen"
     },
-    "activeMinersStat": "Active Miners",
-    "bonusXTMEarned": "Bonus XTM Earned",
-    "copied": "Copied!",
+    "activeMinersStat": "Aktive Miner",
+    "bonusXTMEarned": "Bonus XTM verdient",
+    "copied": "Kopiert!",
     "crewStatus": {
-      "completed": "Completed",
-      "inProgress": "In Progress",
-      "needsNudge": "Needs Nudge"
+      "completed": "Abgeschlossen",
+      "inProgress": "In Bearbeitung",
+      "needsNudge": "Benötigt Anstoß"
     },
-    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
-    "errorLoadingData": "Error loading crew data. Please try again.",
+    "earnDescription": "Verdienen Sie <strong>{{userReward}} XTM</strong> für alle <strong>{{daysRequired}} Tage</strong>, die Ihr Freund mined. Ihr Freund wird auch <strong>{{friendReward}} XTM</strong> verdienen.",
+    "errorLoadingData": "Fehler beim Laden der Crew-Daten. Bitte versuchen Sie es erneut.",
     "feedback": {
-      "nudgeSent": "Nudge sent!",
-      "rewardClaimed": "Reward claimed!"
+      "nudgeSent": "Anstoß gesendet!",
+      "rewardClaimed": "Belohnung beansprucht!"
     },
     "filters": {
-      "active": "Active",
-      "all": "All",
-      "complete": "Complete",
-      "inactive": "Inactive"
+      "active": "Aktiv",
+      "all": "Alle",
+      "complete": "Abgeschlossen",
+      "inactive": "Inaktiv"
     },
-    "inviteFriends": "Invite Friends",
-    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "inviteFriends": "Freunde einladen",
+    "inviteFriendsMessage": "Laden Sie Freunde ein und beginnen Sie, <strong>Bonus XTM</strong> zu verdienen!",
     "login": {
-      "bonusText": "Earn bonus rewards up to {{maxWeeks}} weeks per invite",
-      "description": "You earn <strong>{{userReward}} bonus XTM/week</strong> AND your friend earns <strong>{{friendReward}} bonus XTM/week</strong> when you and your friend both mine",
-      "loginButton": "Log in & Start Earning!",
-      "title": "Mine with friends. <strong>Earn together.</strong>"
+      "bonusText": "Verdienen Sie Bonusbelohnungen bis zu {{maxWeeks}} Wochen pro Einladung",
+      "description": "Sie verdienen <strong>{{userReward}} Bonus XTM/Woche</strong> UND Ihr Freund verdient <strong>{{friendReward}} Bonus XTM/Woche</strong>, wenn Sie und Ihr Freund beide minen",
+      "loginButton": "Einloggen & Verdienen beginnen!",
+      "title": "Minen Sie mit Freunden. <strong>Verdienen Sie gemeinsam.</strong>"
     },
-    "manageYourCrew": "Manage your crew",
-    "myCrew": "Your Friends",
-    "of": "of",
+    "manageYourCrew": "Verwalten Sie Ihre Crew",
+    "myCrew": "Meine Crew",
+    "of": "von",
     "streak": {
-      "day": "Day",
-      "dayStreak": "{{days}} Day Streak",
-      "daysToMinimum": "{{days}} more days to meet minimum requirements!",
-      "keepStreak": "Keep your streak to keep earning rewards!",
-      "loadingStreak": "Loading streak...",
-      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
-      "minimumRequirementsMet": "You've met the minimum requirements. Keep going!",
-      "multiDayStreak": "{{days}} Day Streak",
-      "oneDayStreak": "1 Day Streak",
-      "startMiningMessage": "Start mining to begin your streak and earn rewards!",
-      "startYourStreak": "Start Your Streak!",
-      "unlockBonusRewards": "Unlock your bonus rewards"
+      "day": "Tag",
+      "dayStreak": "{{days}}-Tage-Serie",
+      "daysToMinimum": "Noch {{days}} Tage, um die Mindestanforderungen zu erfüllen!",
+      "keepStreak": "Halten Sie Ihre Serie, um weiterhin Belohnungen zu verdienen!",
+      "loadingStreak": "Serie wird geladen...",
+      "mineConsecutiveDays": "Minen Sie mindestens <strong>{{streakDaysRequired}} aufeinanderfolgende Tage</strong> pro Woche, um Ihren Bonus XTM zu verdienen.",
+      "minimumRequirementsMet": "Sie haben die Mindestanforderungen erfüllt. Weiter so!",
+      "multiDayStreak": "{{days}}-Tage-Serie",
+      "oneDayStreak": "1-Tages-Serie",
+      "startMiningMessage": "Beginnen Sie mit dem Mining, um Ihre Serie zu starten und Belohnungen zu verdienen!",
+      "startYourStreak": "Starten Sie Ihre Serie!",
+      "unlockBonusRewards": "Schalten Sie Ihre Bonusbelohnungen frei"
     },
-    "title": "Rewards",
-    "crewEmpty": {
-      "title": "Your friends are slacking!",
-      "titleSingular": "Your friend is slacking!",
-      "titleZero": "Start building your crew!",
-      "description": "You have <strong>{{inactiveCount}}</strong> inactive friends. Give them a nudge or invite more.",
-      "descriptionSingular": "You have <strong>{{inactiveCount}}</strong> inactive friend. Give them a nudge or invite more.",
-      "descriptionZero": "Invite friends to start earning bonus rewards together!",
-      "nudgeButton": "Nudge your Friends",
-      "nudgeButtonSingular": "Nudge your Friend"
-    }
+    "title": "Belohnungen"
   },
   "doLater": "Ich mache das später",
   "earnBonusXTM": "Bonus XTM",

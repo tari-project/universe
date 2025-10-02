@@ -15,12 +15,12 @@
   "randomx-stats": "RandomX Статистика",
   "sha3-stats": "SHA3 Статистика",
   "stats": {
-    "earned": "You earned",
+    "earned": "Вы заработали",
     "tile-heading": "Вознаграждение в процессе",
-    "tile-heading-zero": "Rewards start in ~30 mins",
+    "tile-heading-zero": "Награды начнутся через ~30 минут",
     "tile-disabled-heading": "{{unit}} задизейблен",
     "tile-loading": "Пул разогревается",
-    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
+    "tooltip-copy": "«В процессе» до тех пор, пока вы не заработаете минимум <strong>{{amount}}</strong>. Может быть задержка между отправкой вашего платежа и его отображением в ваших транзакциях и балансе кошелька.",
     "tooltip-tile-heading": "Порог вознаграждения"
   },
   "tribe": "Команда"
