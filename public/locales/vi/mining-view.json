@@ -50,5 +50,15 @@
   "you-earn-rewards-separately": "Bạn nhận phần thưởng đào CPU và GPU riêng biệt",
   "you-won-block": "Bạn là người thắng <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Bạn đã thắng {{ blocks }}</span> khi bạn vắng mặt",
-  "your-reward-is": "Phần thưởng của bạn là"
+  "your-reward-is": "Phần thưởng của bạn là",
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  }
 }

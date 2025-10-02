@@ -1,13 +1,13 @@
 {
   "bubbles": {
-    "active-miners": "active miners",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
-    "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "active-miners": "aktiewe myners",
+    "ago": "gelede",
+    "block": "blok",
+    "got-rewarded": "het beloning gekry",
+    "miners": "myners",
+    "pool": "Swembad",
+    "solved": "opgelos",
+    "solving": "word opgelos"
   },
   "connection-to-node-lost": "Kontak met mynwerker verloor. Wag asseblief vir mynwerker om kontak te maak of begin weer.",
   "cpu-hashrate": "CPU Hashrate",
@@ -46,7 +46,7 @@
   },
   "pool": {
     "accepted_shares": "Aanvaarde aandele",
-    "balance": "Total earnings",
+    "balance": "Totale verdienste",
     "min_payout": "Minimum uitbetaling",
     "unpaid": "Onbetaald"
   },

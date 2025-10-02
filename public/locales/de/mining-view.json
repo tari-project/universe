@@ -1,13 +1,13 @@
 {
   "bubbles": {
-    "active-miners": "active miners",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
+    "active-miners": "aktive Miner",
+    "ago": "vor",
+    "block": "Block",
+    "got-rewarded": "wurde belohnt",
+    "miners": "Miner",
     "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "solved": "gelöst",
+    "solving": "wird gelöst"
   },
   "connection-to-node-lost": "Verbindung zum Miner verloren. Bitte warte, bis der Miner sich wieder verbindet, oder starte den Miner neu.",
   "cpu-power": "CPU-Leistung",
@@ -43,7 +43,7 @@
   },
   "pool": {
     "accepted_shares": "Akzeptierte Anteile",
-    "balance": "Total earnings",
+    "balance": "Gesamteinnahmen",
     "min_payout": "Mindestzahlung",
     "unpaid": "Unbezahlt"
   },

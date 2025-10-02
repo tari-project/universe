@@ -1,13 +1,13 @@
 {
   "bubbles": {
-    "active-miners": "active miners",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
-    "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "active-miners": "активные майнеры",
+    "ago": "назад",
+    "block": "блок",
+    "got-rewarded": "получил награду",
+    "miners": "майнеры",
+    "pool": "Пул",
+    "solved": "решено",
+    "solving": "решается"
   },
   "connection-to-node-lost": "Соединение с майнером потеряно. Пожалуйста, подождите, пока майнер переподключится, или перезапустите его.",
   "cpu-power": "CPU Мощность",
@@ -43,7 +43,7 @@
   },
   "pool": {
     "accepted_shares": "Принятые шары",
-    "balance": "Total earnings",
+    "balance": "Общий заработок",
     "min_payout": "Минимальная выплата",
     "unpaid": "Не выплачено"
   },

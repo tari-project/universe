@@ -15,12 +15,12 @@
   "randomx-stats": "RandomX Statistieke",
   "sha3-stats": "SHA3 Statistieke",
   "stats": {
-    "earned": "You earned",
+    "earned": "Jy het verdien",
     "tile-heading": "Belonings in Proses",
-    "tile-heading-zero": "Rewards start in ~30 mins",
-    "tile-disabled-heading": "{{unit}} is disabled",
+    "tile-heading-zero": "Belonings begin oor ~30 minute",
+    "tile-disabled-heading": "{{unit}} is gedeaktiveer",
     "tile-loading": "Swembad is besig om op te warm",
-    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
+    "tooltip-copy": "“Aan die gang” totdat jy \"n minimum van <strong>{{amount}}</strong> verdien. Daar mag \"n vertraging wees tussen die stuur van jou uitbetaling en dit wat in jou beursie transaksies en balans vertoon word.",
     "tooltip-tile-heading": "Beloningsdrempel"
   },
   "tribe": "Stam"
