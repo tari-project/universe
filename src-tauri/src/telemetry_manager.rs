@@ -171,7 +171,6 @@ pub struct TelemetryData {
     pub cpu_utilization: Option<f32>,
     pub cpu_make: Option<String>,
     pub gpu_hash_rate: Option<f64>,
-    pub gpu_hash_rate_c29: Option<f64>,
     pub gpu_utilization: Option<f32>,
     pub gpu_make: Option<String>,
     pub mode: String,
@@ -505,6 +504,14 @@ async fn get_telemetry_data_inner(
         config.use_tor().to_string(),
     );
 
+    // c29 hashrate
+    if let Some(gpu_hash_rate_c29) = gpu_hash_rate_c29 {
+        extra_data.insert(
+            "gpu_hash_rate_c29".to_string(),
+            gpu_hash_rate_c29.to_string(),
+        );
+    }
+
     // Add payment ID from current tari address
     if InternalWallet::is_initialized() {
         if let Some(_state) = app_handle.try_state::<crate::UniverseAppState>() {
@@ -669,7 +676,6 @@ async fn get_telemetry_data_inner(
         cpu_utilization,
         cpu_make,
         gpu_make,
-        gpu_hash_rate_c29,
         gpu_hash_rate,
         gpu_utilization,
         resource_used,
