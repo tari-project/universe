@@ -62,7 +62,19 @@ impl EngineType {
 pub(crate) struct GpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: f64,
-    pub estimated_earnings: u64,
+    pub estimated_earnings: u64, // Only for node connections
+    pub algorithm: GpuMiningAlgorithm,
+}
+
+impl GpuMinerStatus {
+    pub fn default_with_algorithm(algorithm: GpuMiningAlgorithm) -> Self {
+        Self {
+            is_mining: false,
+            hash_rate: 0.0,
+            estimated_earnings: 0,
+            algorithm,
+        }
+    }
 }
 
 #[derive(Eq, Hash, PartialEq, Clone, Deserialize, Serialize, Debug)]
@@ -87,6 +99,14 @@ impl GpuMinerType {
                 GpuMinerFeature::MiningIntensity,
             ],
             GpuMinerType::LolMiner => vec![GpuMinerFeature::PoolMining],
+        }
+    }
+
+    pub fn main_algorithm(&self) -> GpuMiningAlgorithm {
+        match self {
+            GpuMinerType::Glytex => GpuMiningAlgorithm::SHA3X,
+            GpuMinerType::Graxil => GpuMiningAlgorithm::SHA3X,
+            GpuMinerType::LolMiner => GpuMiningAlgorithm::C29,
         }
     }
 
@@ -165,9 +185,10 @@ impl std::fmt::Display for GpuMinerType {
     }
 }
 
-#[derive(Debug, Eq, Hash, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Serialize, Deserialize, Default)]
 pub enum GpuMiningAlgorithm {
     SHA3X,
+    #[default]
     C29,
 }
 
