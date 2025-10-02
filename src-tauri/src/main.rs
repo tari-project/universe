@@ -61,6 +61,9 @@ use utils::logging_utils::setup_logging;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
+#[cfg(target_os = "macos")]
+use tauri::AppHandle;
+
 use telemetry_manager::TelemetryManager;
 
 use crate::feedback::Feedback;
@@ -355,12 +358,19 @@ fn main() {
                 api.prevent_close();
                 if let Some(window) = window.get_webview_window("main") {
                     if window.is_visible().unwrap_or(false) {
-                        let _unused = window.hide().map_err(|err| {
-                            error!(
-                                target: LOG_TARGET,
-                               "Couldn't hide the main window {err:?}"
-                            )
-                        });
+                        #[cfg(target_os = "macos")]
+                        {
+                            AppHandle::hide(&window.app_handle()).unwrap_or_else(|error| {
+                                error!(target: LOG_TARGET, "Failed to hide app: {error}");
+                            });
+                        }
+
+                        #[cfg(not(target_os = "macos"))]
+                        {
+                            window.minimize().unwrap_or_else(|error| {
+                                error!(target: LOG_TARGET, "Failed to minimize window: {error}");
+                            });
+                        }
                     }
                 }
             }
