@@ -41,12 +41,15 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
-    mining::gpu::{
-        consts::{GpuConnectionType, GpuMinerStatus},
-        interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
-        manager::GpuManager,
-        miners::{load_file_content, GpuCommonInformation, GpuDeviceType, GpuVendor},
-        utils::gpu_miner_sha_websocket::GpuMinerShaWebSocket,
+    mining::{
+        gpu::{
+            consts::GpuMinerStatus,
+            interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+            manager::GpuManager,
+            miners::{load_file_content, GpuCommonInformation, GpuDeviceType, GpuVendor},
+            utils::gpu_miner_sha_websocket::GpuMinerShaWebSocket,
+        },
+        GpuConnectionType,
     },
     port_allocator::PortAllocator,
     process_adapter::{

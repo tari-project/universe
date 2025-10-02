@@ -1,13 +1,13 @@
 {
-  "earn": "Earn up to {{amount}}% in bonus XTM",
-  "help-find-address": "Help me find my {{ exchange }} address",
-  "main-logo-title": "Season\nOne",
-  "paste-from-clipboard": "Paste from clipboard",
-  "season-one-reward": "Season one bonus",
+  "earn": "Verdienen Sie bis zu {{amount}}% Bonus XTM",
+  "help-find-address": "Helfen Sie mir, meine {{ exchange }}-Adresse zu finden",
+  "main-logo-title": "Saison\nEins",
+  "paste-from-clipboard": "Aus Zwischenablage einfügen",
+  "season-one-reward": "Bonus für Saison eins",
   "select": {
-    "modal-title": "Start mining Tari (XTM) directly to your wallet on a supported exchange"
+    "modal-title": "Beginnen Sie mit dem Mining von Tari (XTM) direkt in Ihr Wallet an einer unterstützten Börse"
   },
-  "selected-exchange-miner": "You're mining here",
-  "time-left": "Time left",
-  "wallet-address": "Wallet Address"
+  "selected-exchange-miner": "Sie minen hier",
+  "time-left": "Verbleibende Zeit",
+  "wallet-address": "Wallet-Adresse"
 }

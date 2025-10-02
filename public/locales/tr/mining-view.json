@@ -1,13 +1,13 @@
 {
   "bubbles": {
-    "active-miners": "active miners",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
-    "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "active-miners": "aktif madenciler",
+    "ago": "önce",
+    "block": "blok",
+    "got-rewarded": "ödüllendirildi",
+    "miners": "madenciler",
+    "pool": "Havuz",
+    "solved": "çözüldü",
+    "solving": "çözülüyor"
   },
   "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
   "cpu-power": "CPU Gücü",
@@ -38,7 +38,7 @@
   },
   "pool": {
     "accepted_shares": "Kabul Edilen Paylar",
-    "balance": "Total earnings",
+    "balance": "Toplam kazanç",
     "min_payout": "Minimum ödeme",
     "unpaid": "Ödenmemiş"
   },

@@ -97,3 +97,7 @@ export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
         clearSetupProgress(phase);
     }
 };
+
+export const handleSystrayAppShutdownRequested = () => {
+    useAppStateStore.setState({ isSystrayAppShutdownRequested: true });
+};

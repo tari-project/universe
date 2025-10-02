@@ -53,7 +53,7 @@ export const GpuPoolsSettings = () => {
 
     const handleResetToDefaultPoolConfiguration = async () => {
         if (!selectedGpuPoolData) return;
-        await resetGpuPoolConfiguration(selectedGpuPoolData.pool_name);
+        await resetGpuPoolConfiguration(selectedGpuPoolData.pool_type);
     };
 
     return (
@@ -71,7 +71,13 @@ export const GpuPoolsSettings = () => {
                 </SettingsGroupAction>
             </SettingsGroup>
 
-            {selectedGpuPoolData && <PoolStats poolStatus={pool_status} isMining={isGpuPoolEnabled && isMining} />}
+            {selectedGpuPoolData && (
+                <PoolStats
+                    poolStatus={pool_status}
+                    poolOrigin={selectedGpuPoolData.pool_origin}
+                    isMining={isGpuPoolEnabled && isMining}
+                />
+            )}
             <SettingsGroupWrapper $subGroup style={{ marginTop: '12px' }}>
                 <SettingsGroup>
                     <SettingsGroupTitle>

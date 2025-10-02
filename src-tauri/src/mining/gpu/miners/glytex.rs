@@ -40,11 +40,14 @@ use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
-    mining::gpu::{
-        consts::{EngineType, GpuConnectionType, GpuMinerStatus},
-        interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
-        manager::GpuManager,
-        miners::{load_file_content, save_file_content, GpuCommonInformation},
+    mining::{
+        gpu::{
+            consts::{EngineType, GpuMinerStatus},
+            interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+            manager::GpuManager,
+            miners::{load_file_content, save_file_content, GpuCommonInformation},
+        },
+        GpuConnectionType,
     },
     process_adapter::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
