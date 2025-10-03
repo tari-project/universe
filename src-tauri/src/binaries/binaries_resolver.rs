@@ -130,9 +130,9 @@ impl BinaryResolver {
         );
 
         binary_manager.insert(
-            Binaries::GpuMiner,
+            Binaries::Glytex,
             BinaryManager::new(
-                Binaries::GpuMiner.name().to_string(),
+                Binaries::Glytex.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
                     repo: "glytex".to_string(),
@@ -142,9 +142,9 @@ impl BinaryResolver {
             ),
         );
         binary_manager.insert(
-            Binaries::GpuMinerSHA3X,
+            Binaries::Graxil,
             BinaryManager::new(
-                Binaries::GpuMinerSHA3X.name().to_string(),
+                Binaries::Graxil.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
                     repo: "graxil".to_string(),

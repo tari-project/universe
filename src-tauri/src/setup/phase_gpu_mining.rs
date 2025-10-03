@@ -161,58 +161,91 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         let graxil_binary_progress_tracker =
             progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
 
-        progress_stepper.complete_step(SetupStep::BinariesGpuMiner,  || async {
-            let graxil_initialization_result = binary_resolver
-                .initialize_binary(Binaries::GpuMinerSHA3X, graxil_binary_progress_tracker)
-                .await;
-            let glytex_initialization_result = binary_resolver
-                .initialize_binary(Binaries::GpuMiner, None)
-                .await;
-            let lolminer_initialization_result = binary_resolver
-                .initialize_binary(Binaries::LolMiner, None)
-                .await;
+        progress_stepper
+            .complete_step(SetupStep::BinariesGpuMiner, || async {
+                let mut is_any_miner_succeeded = false;
 
-            let graxil_err = graxil_initialization_result.as_ref().err();
-            let glytex_err = glytex_initialization_result.as_ref().err();
-            let lolminer_err = lolminer_initialization_result.as_ref().err();
+                // Graxil is supported on Windows | Linux | MacOS
+                if GpuMinerType::Graxil.is_supported_on_current_platform() {
+                    let graxil_initialization_result = binary_resolver
+                        .initialize_binary(Binaries::Graxil, graxil_binary_progress_tracker)
+                        .await;
 
-            if let (Some(graxil_err), Some(glytex_err), Some(lolminer_err)) =
-                (graxil_err, glytex_err, lolminer_err)
-            {
-                return Err(anyhow::anyhow!(
-                    "Failed to initialize GPU miner binaries: Graxil: {graxil_err}, Glytex: {glytex_err}, LolMiner: {lolminer_err}"
-                ));
-            }
+                    let graxil_err = graxil_initialization_result.as_ref().err();
 
-            // Graxil is supported on Windows | Linux | MacOS
-            if GpuMinerType::Graxil.is_supported_on_current_platform() {
-                GpuManager::write().await.load_miner(
-                    GpuMinerType::Graxil,
-                    graxil_initialization_result.is_ok(),
-                    graxil_err.map(|e| e.to_string()),
-                ).await;
-            }
+                    if graxil_initialization_result.is_ok() {
+                        is_any_miner_succeeded = true;
+                    }else {
+                        error!(target: LOG_TARGET, "Graxil initialization error: {:?}", graxil_err);
+                    }
 
-            // Glytex is supported on Windows | Linux | MacOS
-            if GpuMinerType::Glytex.is_supported_on_current_platform() {
-                GpuManager::write().await.load_miner(
-                    GpuMinerType::Glytex,
-                    glytex_initialization_result.is_ok(),
-                    glytex_err.map(|e| e.to_string()),
-                ).await;
-            }
+                    GpuManager::write()
+                        .await
+                        .load_miner(
+                            GpuMinerType::Graxil,
+                            graxil_initialization_result.is_ok(),
+                            graxil_err.map(|e| e.to_string()),
+                        )
+                        .await;
+                }
 
-            // LolMiner is supported on Windows | Linux
-            if GpuMinerType::LolMiner.is_supported_on_current_platform() {
-                GpuManager::write().await.load_miner(
-                    GpuMinerType::LolMiner,
-                    lolminer_initialization_result.is_ok(),
-                    lolminer_err.map(|e| e.to_string()),
-                ).await;
-            }
+                // Glytex is supported on Windows | Linux | MacOS
+                if GpuMinerType::Glytex.is_supported_on_current_platform() {
+                    let glytex_initialization_result = binary_resolver
+                        .initialize_binary(Binaries::Glytex, None)
+                        .await;
 
-            Ok(())
-        }).await?;
+                    let glytex_err = glytex_initialization_result.as_ref().err();
+
+                    if glytex_initialization_result.is_ok() {
+                        is_any_miner_succeeded = true;
+                    } else {
+                        error!(target: LOG_TARGET, "Glytex initialization error: {:?}", glytex_err);
+                    }
+
+                    GpuManager::write()
+                        .await
+                        .load_miner(
+                            GpuMinerType::Glytex,
+                            glytex_initialization_result.is_ok(),
+                            glytex_err.map(|e| e.to_string()),
+                        )
+                        .await;
+                }
+
+                // LolMiner is supported on Windows | Linux
+                if GpuMinerType::LolMiner.is_supported_on_current_platform() {
+                    let lolminer_initialization_result = binary_resolver
+                        .initialize_binary(Binaries::LolMiner, None)
+                        .await;
+
+                    let lolminer_err = lolminer_initialization_result.as_ref().err();
+
+                    if lolminer_initialization_result.is_ok() {
+                        is_any_miner_succeeded = true;
+                    }else {
+                        error!(target: LOG_TARGET, "LolMiner initialization error: {:?}", lolminer_err);
+                    }
+
+                    GpuManager::write()
+                        .await
+                        .load_miner(
+                            GpuMinerType::LolMiner,
+                            lolminer_initialization_result.is_ok(),
+                            lolminer_err.map(|e| e.to_string()),
+                        )
+                        .await;
+                }
+
+                if !is_any_miner_succeeded {
+                    return Err(anyhow::anyhow!(
+                        "Failed to initialize GPU miner binaries: Graxil, Glytex, LolMiner"
+                    ));
+                }
+
+                Ok(())
+            })
+            .await?;
 
         progress_stepper
             .complete_step(SetupStep::DetectGpu, || async {
