@@ -586,6 +586,8 @@ fn main() {
             commands::list_connected_peers,
             commands::switch_gpu_miner,
             commands::set_feedback_fields,
+            commands::set_mode_mining_time,
+            commands::set_eco_alert_seen
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

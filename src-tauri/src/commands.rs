@@ -1968,3 +1968,27 @@ pub async fn set_feedback_fields(feedback_type: String, was_sent: bool) -> Resul
 
     Ok(())
 }
+
+#[tauri::command]
+pub async fn set_mode_mining_time(mode: MiningModeType, duration: u64) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    ConfigMining::update_mining_times(mode, duration)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_mode_mining_time took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_eco_alert_seen() -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    ConfigMining::update_field(ConfigMiningContent::set_eco_alert_seen, true)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_eco_alert_seen took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}

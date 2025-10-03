@@ -24,6 +24,7 @@ use crate::mining::gpu::consts::{EngineType, GpuMinerType};
 use getset::{Getters, Setters};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 use std::{collections::HashMap, fmt::Display, sync::LazyLock, time::SystemTime};
 use tauri::AppHandle;
 use tokio::sync::RwLock;
@@ -133,6 +134,8 @@ pub struct ConfigMiningContent {
     gpu_miner_type: GpuMinerType,
     is_lolminer_tested: bool,
     is_gpu_mining_recommended: bool,
+    eco_alert_seen: bool,
+    mode_mining_times: HashMap<String, Duration>, // we only need Eco for now, but we can add to this if needed
 }
 
 impl Default for ConfigMiningContent {
@@ -192,6 +195,8 @@ impl Default for ConfigMiningContent {
             squad_override: None,
             is_lolminer_tested: false,
             is_gpu_mining_recommended: true,
+            eco_alert_seen: false,
+            mode_mining_times: HashMap::from([("Eco".to_string(), Duration::new(0, 0))]),
         }
     }
 }
@@ -279,6 +284,19 @@ impl ConfigMining {
         Self::_check_for_migration()
             .await
             .expect("Could not check for migration");
+    }
+
+    pub async fn update_mining_times(
+        mode: MiningModeType,
+        duration: u64,
+    ) -> Result<(), anyhow::Error> {
+        let mut mode_mining_times = Self::content().await.mode_mining_times;
+
+        mode_mining_times
+            .entry(mode.to_string())
+            .and_modify(|t| *t = Duration::from_secs(t.as_secs() + duration));
+
+        Ok(())
     }
 
     async fn _migrate() -> Result<(), anyhow::Error> {
