@@ -32,36 +32,44 @@ export const AirdropClaimExample: React.FC = () => {
     return (
         <div className="p-6 bg-white rounded-lg shadow-lg border">
             <h2 className="text-xl font-bold mb-4">Airdrop Claim</h2>
-            
+
             {claimStatus?.hasClaim ? (
                 <div className="space-y-4">
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                         <h3 className="font-semibold text-green-800 mb-2">Claim Available!</h3>
                         <div className="text-sm text-green-700 space-y-1">
-                            <p><strong>Amount:</strong> {claimStatus.amount} {claimStatus.claimTarget.toUpperCase()}</p>
-                            <p><strong>USD Value:</strong> ${claimStatus.usdtAmount}</p>
-                            <p><strong>Available Since:</strong> {new Date(claimStatus.claimDate).toLocaleDateString()}</p>
+                            <p>
+                                <strong>Amount:</strong> {claimStatus.amount} {claimStatus.claimTarget.toUpperCase()}
+                            </p>
+                            <p>
+                                <strong>USD Value:</strong> ${claimStatus.usdtAmount}
+                            </p>
+                            <p>
+                                <strong>Available Since:</strong> {new Date(claimStatus.claimDate).toLocaleDateString()}
+                            </p>
                         </div>
                     </div>
-                    
+
                     <div className="space-y-2">
-                        <AirdropClaimButton 
+                        <AirdropClaimButton
                             claimTarget="xtm"
                             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                         >
                             Claim {claimStatus.amount} XTM
                         </AirdropClaimButton>
-                        
-                        <AirdropClaimButton 
+
+                        <AirdropClaimButton
                             claimTarget="usd"
                             className="w-full bg-green-600 hover:bg-green-700 text-white"
                         >
                             Claim ${claimStatus.usdtAmount} USDT
                         </AirdropClaimButton>
                     </div>
-                    
+
                     <div className="text-xs text-gray-500 mt-4">
-                        <p><strong>How it works:</strong></p>
+                        <p>
+                            <strong>How it works:</strong>
+                        </p>
                         <ol className="list-decimal list-inside space-y-1 mt-1">
                             <li>Click the claim button to start the automated process</li>
                             <li>System fetches security token and requests OTP via secure WebSocket</li>

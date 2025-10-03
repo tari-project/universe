@@ -119,11 +119,3 @@ pub async fn create_otp_request_message(
     info!(target: LOG_TARGET, "OTP request message created successfully");
     Ok(websocket_message)
 }
-
-pub fn generate_nonce() -> String {
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis();
-    format!("{}-{}", timestamp, uuid::Uuid::new_v4())
-}
