@@ -153,8 +153,9 @@ export const StyledButton = styled.button<ButtonStyleProps>`
         switch ($size) {
             case 'xs':
                 return css`
-                    padding: 0 8px;
-                    font-size: 10px;
+                    padding: 4px 8px;
+                    font-size: 12px;
+                    line-height: 1.1;
                 `;
             case 'smaller':
                 return css`

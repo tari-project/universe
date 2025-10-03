@@ -20,6 +20,7 @@ import {
     handleGpuMinerControlsStateChanged,
     handleSelectedMinerChanged,
     setAvailableEngines,
+    setShowEcoAlert,
 } from '@app/store/actions/miningStoreActions';
 import {
     handleRestartingPhases,
@@ -252,6 +253,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'SystrayAppShutdownRequested':
                             handleSystrayAppShutdownRequested();
+                            break;
+                        case 'ShowEcoAlert':
+                            setShowEcoAlert(true);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

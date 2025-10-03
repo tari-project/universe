@@ -1,7 +1,7 @@
 import type { KnipConfig } from 'knip';
 
 const config: KnipConfig = {
-    project: ['src/**/*.{js,ts,tsx}', 'scripts/**/*.{js,ts}', '!src/hooks/helpers/useCheckMiningTime.ts'], // TODO - remove this when we re-instate long-time feedback
+    project: ['src/**/*.{js,ts,tsx}', 'scripts/**/*.{js,ts}'],
     rules: {
         files: 'error',
         dependencies: 'warn',

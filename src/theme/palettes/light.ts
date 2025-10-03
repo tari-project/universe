@@ -91,7 +91,7 @@ const lightPalette: ThemePalette = {
         },
         action: {
             background: {
-                default: c.grey[50],
+                default: '#fdfdfd',
                 accent: c.grey[100],
                 contrast: c.brightGreen[500],
                 secondary: '#000',

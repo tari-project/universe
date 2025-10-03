@@ -106,7 +106,7 @@ const Input = styled.input<{ $isSolid?: boolean; $hasDecorators?: boolean; $isLo
                 ? theme.colors.greyscale[950]
                 : $isSolid
                   ? theme.palette.success.light
-                  : `radial-gradient(50px 45px at -15px 15px, #000 0%, ${theme.colors.teal[700]} 100%)`};
+                  : `radial-gradient(50px 45px at -15px 15px, #000 0%, ${theme.colors.teal[800]} 100%)`};
 
         &:before {
             background: #fff;
@@ -121,7 +121,7 @@ const Input = styled.input<{ $isSolid?: boolean; $hasDecorators?: boolean; $isLo
                 ? theme.colors.greyscale[950]
                 : $isSolid
                   ? theme.palette.success.main
-                  : `radial-gradient(at 100% 100%, #000 0% ${theme.colors.teal[700]} 90%)`};
+                  : `radial-gradient(at 100% 100%, #000 0% ${theme.colors.teal[800]} 90%)`};
     }
 
     ${({ $isLoading }) =>

@@ -228,4 +228,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'SystrayAppShutdownRequested';
           payload: undefined;
+      }
+    | {
+          event_type: 'ShowEcoAlert';
+          payload: undefined;
       };

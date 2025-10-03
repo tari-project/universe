@@ -38,6 +38,7 @@ import { getModeList } from './helpers.ts';
 interface Props {
     disabled?: boolean;
     loading?: boolean;
+    open?: boolean;
 }
 
 interface ModeDropdownMiningMode {
@@ -47,7 +48,7 @@ interface ModeDropdownMiningMode {
     icon: string;
 }
 
-export default function ModeDropdown({ disabled, loading }: Props) {
+export default function ModeDropdown({ disabled, loading, open = false }: Props) {
     const { t } = useTranslation('mining-view');
     const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
@@ -132,6 +133,8 @@ export default function ModeDropdown({ disabled, loading }: Props) {
         },
         [selectedMiningMode]
     );
+
+    useEffect(() => setIsOpen(open), [open]);
 
     return (
         <Wrapper>
