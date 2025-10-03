@@ -9,7 +9,7 @@ import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import type { InputName, SendInputs } from './types.ts';
 import { FormField } from './FormField.tsx';
 
-import { BottomWrapper, FormFieldsWrapper } from './Send.styles';
+import { BottomWrapper, FormFieldsWrapper, MiniButton } from './Send.styles';
 
 import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
@@ -146,7 +146,7 @@ export function SendForm({ isBack }: Props) {
                     miniButton={
                         <>
                             {!isWalletScanning && (
-                                <Button
+                                <MiniButton
                                     variant="outlined"
                                     size="xs"
                                     color="grey"
@@ -162,7 +162,7 @@ export function SendForm({ isBack }: Props) {
                                     }}
                                 >
                                     {t('send.max')}
-                                </Button>
+                                </MiniButton>
                             )}
                         </>
                     }
