@@ -28,7 +28,7 @@ import SettingsModal from './Settings/SettingsModal.tsx';
 import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 import UniversalEXSelectorModal from './UniversalEXSelectorModal/UniversalEXSelectorModal.tsx';
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
-
+import AirdropClaimModal from '../main/Airdrop/AirdropClaim/AirdropClaimModal.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -59,7 +59,7 @@ const FloatingElements = () => {
             <EnterPinDialog />
             <CrewRewards />
             <SettingsModal />
-
+            <AirdropClaimModal />
             <FailedModuleInitializationDialog />
             <CloseUserFeedbackDialog />
             <LongTimeUserFeedbackDialog />

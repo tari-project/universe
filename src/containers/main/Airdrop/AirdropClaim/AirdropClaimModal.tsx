@@ -48,16 +48,17 @@ import {
     HowItWorksNote,
 } from './styles';
 
-interface AirdropClaimModalProps {
-    showModal: boolean;
-    onClose: () => void;
-}
-
-export default function AirdropClaimModal({ showModal, onClose }: AirdropClaimModalProps) {
+export default function AirdropClaimModal() {
     const [selectedTarget, setSelectedTarget] = useState<'xtm' | 'usd'>('xtm');
     const claimState = useAirdropStore((state) => state.claim);
     const { performBackgroundClaim, isProcessing, currentStep, error } = useBackgroundClaimSubmission();
-    const { data: claimStatus, isLoading: isLoadingStatus } = useClaimStatus(showModal);
+    const { data: claimStatus, isLoading: isLoadingStatus } = useClaimStatus();
+
+    const [showModal, setShowModal] = useState(true);
+
+    const onClose = () => {
+        console.log('onClose');
+    };
 
     const handleClaim = async () => {
         if (!claimStatus?.hasClaim || isProcessing) {
@@ -69,7 +70,7 @@ export default function AirdropClaimModal({ showModal, onClose }: AirdropClaimMo
         try {
             const result = await performBackgroundClaim(selectedTarget);
             setClaimResult(result);
-            
+
             // Close modal on success after a brief delay to show success state
             if (result.success) {
                 setTimeout(() => {
@@ -119,42 +120,42 @@ export default function AirdropClaimModal({ showModal, onClose }: AirdropClaimMo
     return (
         <GreenModal showModal={showModal} onClose={onClose} padding={24}>
             <ModalWrapper>
-                <ModalTitle>Airdrop Claim</ModalTitle>
+                <ModalTitle>{'Airdrop Claim'}</ModalTitle>
 
                 {isLoadingStatus ? (
                     <LoadingContainer>
                         <LoadingSpinner />
-                        <LoadingText>Checking claim status...</LoadingText>
+                        <LoadingText>{'Checking claim status...'}</LoadingText>
                     </LoadingContainer>
                 ) : error ? (
                     <ErrorContainer>
-                        <ErrorTitle>Error</ErrorTitle>
+                        <ErrorTitle>{'Error'}</ErrorTitle>
                         <ErrorText>{error}</ErrorText>
                     </ErrorContainer>
                 ) : !claimStatus?.hasClaim ? (
                     <EmptyStateContainer>
-                        <EmptyStateIcon>💎</EmptyStateIcon>
-                        <EmptyStateTitle>No Claims Available</EmptyStateTitle>
+                        <EmptyStateIcon>{'💎'}</EmptyStateIcon>
+                        <EmptyStateTitle>{'No Claims Available'}</EmptyStateTitle>
                         <EmptyStateText>
-                            Continue mining to earn airdrop rewards. Claims will appear here when available.
+                            {'Continue mining to earn airdrop rewards. Claims will appear here when available.'}
                         </EmptyStateText>
                     </EmptyStateContainer>
                 ) : (
                     <ContentContainer>
                         {/* Claim Status */}
                         <ClaimStatusCard>
-                            <ClaimStatusTitle>Claim Available!</ClaimStatusTitle>
+                            <ClaimStatusTitle>{'Claim Available!'}</ClaimStatusTitle>
                             <ClaimStatusDetails>
                                 <ClaimStatusRow>
-                                    <ClaimStatusLabel>Amount:</ClaimStatusLabel>
-                                    <ClaimStatusValue>{claimStatus.amount} XTM</ClaimStatusValue>
+                                    <ClaimStatusLabel>{'Amount:'}</ClaimStatusLabel>
+                                    <ClaimStatusValue>{claimStatus.amount}{' XTM'}</ClaimStatusValue>
                                 </ClaimStatusRow>
                                 <ClaimStatusRow>
-                                    <ClaimStatusLabel>USD Value:</ClaimStatusLabel>
-                                    <ClaimStatusValue>${claimStatus.usdtAmount}</ClaimStatusValue>
+                                    <ClaimStatusLabel>{'USD Value:'}</ClaimStatusLabel>
+                                    <ClaimStatusValue>{'$'}{claimStatus.usdtAmount}</ClaimStatusValue>
                                 </ClaimStatusRow>
                                 <ClaimStatusRow>
-                                    <ClaimStatusLabel>Available Since:</ClaimStatusLabel>
+                                    <ClaimStatusLabel>{'Available Since:'}</ClaimStatusLabel>
                                     <ClaimStatusValue>
                                         {new Date(claimStatus.claimDate).toLocaleDateString()}
                                     </ClaimStatusValue>
@@ -164,7 +165,7 @@ export default function AirdropClaimModal({ showModal, onClose }: AirdropClaimMo
 
                         {/* Target Selection */}
                         <TargetSelectionContainer>
-                            <TargetSelectionLabel>Choose Claim Type:</TargetSelectionLabel>
+                            <TargetSelectionLabel>{'Choose Claim Type:'}</TargetSelectionLabel>
                             <TargetOptions>
                                 <TargetOption $disabled={isProcessing}>
                                     <TargetRadio
@@ -176,8 +177,8 @@ export default function AirdropClaimModal({ showModal, onClose }: AirdropClaimMo
                                         disabled={isProcessing}
                                     />
                                     <TargetContent>
-                                        <TargetTitle>Tari (XTM)</TargetTitle>
-                                        <TargetAmount>{claimStatus.amount} XTM</TargetAmount>
+                                        <TargetTitle>{'Tari (XTM)'}</TargetTitle>
+                                        <TargetAmount>{claimStatus.amount}{' XTM'}</TargetAmount>
                                     </TargetContent>
                                 </TargetOption>
                                 <TargetOption $disabled={isProcessing}>
@@ -190,8 +191,8 @@ export default function AirdropClaimModal({ showModal, onClose }: AirdropClaimMo
                                         disabled={isProcessing}
                                     />
                                     <TargetContent>
-                                        <TargetTitle>USDT (Stablecoin)</TargetTitle>
-                                        <TargetAmount>${claimStatus.usdtAmount} USDT</TargetAmount>
+                                        <TargetTitle>{'USDT (Stablecoin)'}</TargetTitle>
+                                        <TargetAmount>{'$'}{claimStatus.usdtAmount}{' USDT'}</TargetAmount>
                                     </TargetContent>
                                 </TargetOption>
                             </TargetOptions>
@@ -201,8 +202,8 @@ export default function AirdropClaimModal({ showModal, onClose }: AirdropClaimMo
                         {isProcessing && (
                             <ProgressContainer>
                                 <ProgressHeader>
-                                    <ProgressTitle>Processing Claim</ProgressTitle>
-                                    <ProgressCounter>{getStepProgress()}/5</ProgressCounter>
+                                    <ProgressTitle>{'Processing Claim'}</ProgressTitle>
+                                    <ProgressCounter>{getStepProgress()}{'/'}{5}</ProgressCounter>
                                 </ProgressHeader>
                                 <ProgressBar>
                                     <ProgressFill $progress={(getStepProgress() / 5) * 100} />
@@ -212,32 +213,27 @@ export default function AirdropClaimModal({ showModal, onClose }: AirdropClaimMo
                         )}
 
                         {/* Claim Button */}
-                        <ClaimButton
-                            onClick={handleClaim}
-                            $disabled={isDisabled}
-                            $processing={isProcessing}
-                        >
+                        <ClaimButton onClick={handleClaim} $disabled={isDisabled} $processing={isProcessing}>
                             <ButtonContent>
                                 {isProcessing && <ButtonSpinner />}
                                 <span>
-                                    {isProcessing 
-                                        ? 'Processing...' 
-                                        : `Claim ${selectedTarget === 'xtm' ? `${claimStatus.amount} XTM` : `$${claimStatus.usdtAmount} USDT`}`
-                                    }
+                                    {isProcessing
+                                        ? 'Processing...'
+                                        : `Claim ${selectedTarget === 'xtm' ? `${claimStatus.amount} XTM` : `$${claimStatus.usdtAmount} USDT`}`}
                                 </span>
                             </ButtonContent>
                         </ClaimButton>
 
                         {/* How it works */}
                         <HowItWorksContainer>
-                            <HowItWorksTitle>How it works:</HowItWorksTitle>
+                            <HowItWorksTitle>{'How it works:'}</HowItWorksTitle>
                             <HowItWorksList>
-                                <li>Security tokens are fetched automatically</li>
-                                <li>Verification is handled in the background</li>
-                                <li>Your claim is submitted securely</li>
-                                <li>You'll see a confirmation when complete</li>
+                                <li>{'Security tokens are fetched automatically'}</li>
+                                <li>{'Verification is handled in the background'}</li>
+                                <li>{'Your claim is submitted securely'}</li>
+                                <li>{'You\'ll see a confirmation when complete'}</li>
                             </HowItWorksList>
-                            <HowItWorksNote>Entire process takes 10-30 seconds</HowItWorksNote>
+                            <HowItWorksNote>{'Entire process takes 10-30 seconds'}</HowItWorksNote>
                         </HowItWorksContainer>
                     </ContentContainer>
                 )}
