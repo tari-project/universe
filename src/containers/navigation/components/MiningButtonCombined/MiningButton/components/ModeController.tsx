@@ -4,15 +4,18 @@ import { offset, useClick, useDismiss, useFloating, useInteractions, useRole } f
 import styled from 'styled-components';
 import ModeDropdown from './ModeDropdown/ModeDropdown.tsx';
 import EcoAlert from './tooltip/EcoAlert.tsx';
+import { useMiningStore } from '@app/store';
+import { setShowEcoAlert } from '@app/store/actions/miningStoreActions.ts';
 
 const RefWrapper = styled.div``;
 
 export default function ModeController() {
-    const [showModeAlert, setShowModeAlert] = useState(true);
+    const [modesOpen, setModesOpen] = useState(false);
+    const showEcoAlert = useMiningStore((s) => s.showEcoAlert);
 
     const { refs, floatingStyles, context } = useFloating({
-        open: showModeAlert,
-        onOpenChange: setShowModeAlert,
+        open: showEcoAlert,
+        onOpenChange: setShowEcoAlert,
         placement: 'right-start',
         middleware: [offset({ mainAxis: 20, alignmentAxis: -4 })],
     });
@@ -23,15 +26,20 @@ export default function ModeController() {
 
     const { getFloatingProps } = useInteractions([click, dismiss, role]);
 
+    function handleModesClick() {
+        setModesOpen(true);
+        setShowEcoAlert(false);
+    }
+
     return (
         <>
             <RefWrapper ref={refs.setReference}>
-                <ModeDropdown />
+                <ModeDropdown open={modesOpen} />
             </RefWrapper>
             <AnimatePresence>
-                {showModeAlert && (
+                {showEcoAlert && (
                     <RefWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
-                        <EcoAlert />
+                        <EcoAlert onAllClick={handleModesClick} />
                     </RefWrapper>
                 )}
             </AnimatePresence>

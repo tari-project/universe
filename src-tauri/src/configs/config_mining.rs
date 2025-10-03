@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use super::trait_config::{ConfigContentImpl, ConfigImpl};
+use crate::events_emitter::EventsEmitter;
 use crate::mining::gpu::consts::{EngineType, GpuMinerType};
 use getset::{Getters, Setters};
 use log::{info, warn};
@@ -28,8 +30,6 @@ use std::time::Duration;
 use std::{collections::HashMap, fmt::Display, sync::LazyLock, time::SystemTime};
 use tauri::AppHandle;
 use tokio::sync::RwLock;
-
-use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 pub const MINING_CONFIG_VERSION: u32 = 1;
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
@@ -295,6 +295,20 @@ impl ConfigMining {
         mode_mining_times
             .entry(mode.to_string())
             .and_modify(|t| *t = Duration::from_secs(t.as_secs() + duration));
+
+        Self::update_field(
+            ConfigMiningContent::set_mode_mining_times,
+            mode_mining_times,
+        )
+        .await?;
+
+        if mode.to_string() == "Eco".to_string() && !Self::content().await.eco_alert_seen {
+            let secs = mode_mining_times.get("Eco").unwrap().as_secs();
+            // if secs >= 108000 {
+            if secs >= 500 {
+                EventsEmitter::emit_show_eco_alert().await;
+            }
+        }
 
         Ok(())
     }

@@ -24,6 +24,7 @@ export interface MiningStoreState {
     availableMiners?: Record<GpuMinerType, GpuMiner>;
     selectedMiner?: GpuMinerType;
     sessionMiningTime: SessionMiningTime;
+    showEcoAlert: boolean;
 }
 
 const initialState: MiningStoreState = {
@@ -43,6 +44,7 @@ const initialState: MiningStoreState = {
     network: undefined,
     availableMiners: undefined,
     selectedMiner: undefined,
+    showEcoAlert: false,
 };
 
 export const useMiningStore = create<MiningStoreState>()(() => ({

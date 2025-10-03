@@ -1972,6 +1972,7 @@ pub async fn set_feedback_fields(feedback_type: String, was_sent: bool) -> Resul
 #[tauri::command]
 pub async fn set_mode_mining_time(mode: MiningModeType, duration: u64) -> Result<(), InvokeError> {
     let timer = Instant::now();
+
     ConfigMining::update_mining_times(mode, duration)
         .await
         .map_err(InvokeError::from_anyhow)?;

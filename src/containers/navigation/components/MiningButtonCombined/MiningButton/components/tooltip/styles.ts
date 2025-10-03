@@ -5,9 +5,9 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 export const Wrapper = styled(m.div)`
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     background-color: ${({ theme }) => theme.palette.background.tooltip};
-    padding: 10px;
+    padding: 15px;
     border-radius: 10px;
 `;
 
@@ -36,6 +36,7 @@ export const CTASection = styled.div`
     display: flex;
     justify-content: space-between;
     width: 100%;
+    gap: 8px;
 `;
 
 export const Icon = styled.img`
