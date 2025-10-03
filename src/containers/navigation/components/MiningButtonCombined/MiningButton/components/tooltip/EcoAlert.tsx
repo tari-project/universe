@@ -5,8 +5,9 @@ import turboIcon from '@app/assets/icons/emoji/tornado.png';
 
 interface EcoAlertProps {
     onAllClick: () => void;
+    onTurboClick: () => void;
 }
-export default function EcoAlert({ onAllClick }: EcoAlertProps) {
+export default function EcoAlert({ onAllClick, onTurboClick }: EcoAlertProps) {
     return (
         <Wrapper>
             <Title>{`Not getting enough rewards?`}</Title>
@@ -16,7 +17,7 @@ export default function EcoAlert({ onAllClick }: EcoAlertProps) {
             </BodyTextWrapper>
             <CTASection>
                 <Button size="xs" fluid onClick={onAllClick}>{`See all modes`}</Button>
-                <Button size="xs" backgroundColor="teal" fluid>
+                <Button size="xs" backgroundColor="teal" fluid onClick={onTurboClick}>
                     <CTAContent>
                         {`Use Turbo️`}
                         <Icon src={turboIcon} />

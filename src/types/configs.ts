@@ -67,6 +67,7 @@ export interface ConfigMining {
     cpu_mining_enabled: boolean;
     gpu_engine: string;
     is_gpu_mining_recommended: boolean;
+    eco_alert_needed: boolean;
 }
 
 export interface ConfigMiningSelectors {

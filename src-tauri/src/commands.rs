@@ -1047,6 +1047,12 @@ pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
         .await
         .map_err(InvokeError::from_anyhow)?;
 
+    if mode != "Eco" {
+        ConfigMining::update_field(ConfigMiningContent::set_eco_alert_needed, false)
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+    }
+
     SystemTrayManager::send_event(SystemTrayEvents::MiningMode(MiningModeType::from(
         mode.clone(),
     )))
@@ -1983,13 +1989,13 @@ pub async fn set_mode_mining_time(mode: MiningModeType, duration: u64) -> Result
 }
 
 #[tauri::command]
-pub async fn set_eco_alert_seen() -> Result<(), InvokeError> {
+pub async fn set_eco_alert_needed() -> Result<(), InvokeError> {
     let timer = Instant::now();
-    ConfigMining::update_field(ConfigMiningContent::set_eco_alert_seen, true)
+    ConfigMining::update_field(ConfigMiningContent::set_eco_alert_needed, false)
         .await
         .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_eco_alert_seen took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "set_eco_alert_needed took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }

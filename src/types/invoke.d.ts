@@ -135,4 +135,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'switch_gpu_miner', payload: { gpuMinerType: GpuMinerType }): Promise<void>;
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
     function invoke(param: 'set_mode_mining_time', payload: { mode: string; duration: number }): Promise<void>;
+    function invoke(param: 'set_eco_alert_needed'): Promise<void>;
 }

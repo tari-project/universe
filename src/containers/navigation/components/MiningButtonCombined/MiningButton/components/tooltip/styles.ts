@@ -1,8 +1,7 @@
-import * as m from 'motion/react-m';
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-export const Wrapper = styled(m.div)`
+export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     gap: 10px;
