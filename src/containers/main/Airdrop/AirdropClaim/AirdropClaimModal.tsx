@@ -4,6 +4,49 @@ import { useBackgroundClaimSubmission } from '@app/hooks/airdrop/claim/useBackgr
 import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
 import { useAirdropStore } from '@app/store';
 import { setClaimInProgress, setClaimResult } from '@app/store/actions/airdropStoreActions';
+import {
+    ModalWrapper,
+    ModalTitle,
+    LoadingContainer,
+    LoadingSpinner,
+    LoadingText,
+    ErrorContainer,
+    ErrorTitle,
+    ErrorText,
+    EmptyStateContainer,
+    EmptyStateIcon,
+    EmptyStateTitle,
+    EmptyStateText,
+    ContentContainer,
+    ClaimStatusCard,
+    ClaimStatusTitle,
+    ClaimStatusDetails,
+    ClaimStatusRow,
+    ClaimStatusLabel,
+    ClaimStatusValue,
+    TargetSelectionContainer,
+    TargetSelectionLabel,
+    TargetOptions,
+    TargetOption,
+    TargetRadio,
+    TargetContent,
+    TargetTitle,
+    TargetAmount,
+    ProgressContainer,
+    ProgressHeader,
+    ProgressTitle,
+    ProgressCounter,
+    ProgressBar,
+    ProgressFill,
+    ProgressText,
+    ClaimButton,
+    ButtonContent,
+    ButtonSpinner,
+    HowItWorksContainer,
+    HowItWorksTitle,
+    HowItWorksList,
+    HowItWorksNote,
+} from './styles';
 
 interface AirdropClaimModalProps {
     showModal: boolean;
@@ -75,152 +118,130 @@ export default function AirdropClaimModal({ showModal, onClose }: AirdropClaimMo
 
     return (
         <GreenModal showModal={showModal} onClose={onClose} padding={24}>
-            <div className="w-full max-w-md mx-auto">
-                <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
-                    Airdrop Claim
-                </h2>
+            <ModalWrapper>
+                <ModalTitle>Airdrop Claim</ModalTitle>
 
                 {isLoadingStatus ? (
-                    <div className="text-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600">Checking claim status...</p>
-                    </div>
+                    <LoadingContainer>
+                        <LoadingSpinner />
+                        <LoadingText>Checking claim status...</LoadingText>
+                    </LoadingContainer>
                 ) : error ? (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                        <h3 className="font-semibold text-red-800 mb-2">Error</h3>
-                        <p className="text-red-600 text-sm">{error}</p>
-                    </div>
+                    <ErrorContainer>
+                        <ErrorTitle>Error</ErrorTitle>
+                        <ErrorText>{error}</ErrorText>
+                    </ErrorContainer>
                 ) : !claimStatus?.hasClaim ? (
-                    <div className="text-center py-8">
-                        <div className="mb-4">
-                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <span className="text-2xl">💎</span>
-                            </div>
-                        </div>
-                        <h3 className="font-semibold text-gray-700 mb-2">No Claims Available</h3>
-                        <p className="text-gray-600 text-sm">
+                    <EmptyStateContainer>
+                        <EmptyStateIcon>💎</EmptyStateIcon>
+                        <EmptyStateTitle>No Claims Available</EmptyStateTitle>
+                        <EmptyStateText>
                             Continue mining to earn airdrop rewards. Claims will appear here when available.
-                        </p>
-                    </div>
+                        </EmptyStateText>
+                    </EmptyStateContainer>
                 ) : (
-                    <div className="space-y-6">
+                    <ContentContainer>
                         {/* Claim Status */}
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                            <h3 className="font-semibold text-green-800 mb-3">🎉 Claim Available!</h3>
-                            <div className="space-y-2 text-sm text-green-700">
-                                <div className="flex justify-between">
-                                    <span>Amount:</span>
-                                    <span className="font-medium">{claimStatus.amount} XTM</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>USD Value:</span>
-                                    <span className="font-medium">${claimStatus.usdtAmount}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span>Available Since:</span>
-                                    <span className="font-medium">
+                        <ClaimStatusCard>
+                            <ClaimStatusTitle>Claim Available!</ClaimStatusTitle>
+                            <ClaimStatusDetails>
+                                <ClaimStatusRow>
+                                    <ClaimStatusLabel>Amount:</ClaimStatusLabel>
+                                    <ClaimStatusValue>{claimStatus.amount} XTM</ClaimStatusValue>
+                                </ClaimStatusRow>
+                                <ClaimStatusRow>
+                                    <ClaimStatusLabel>USD Value:</ClaimStatusLabel>
+                                    <ClaimStatusValue>${claimStatus.usdtAmount}</ClaimStatusValue>
+                                </ClaimStatusRow>
+                                <ClaimStatusRow>
+                                    <ClaimStatusLabel>Available Since:</ClaimStatusLabel>
+                                    <ClaimStatusValue>
                                         {new Date(claimStatus.claimDate).toLocaleDateString()}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
+                                    </ClaimStatusValue>
+                                </ClaimStatusRow>
+                            </ClaimStatusDetails>
+                        </ClaimStatusCard>
 
                         {/* Target Selection */}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-3">
-                                Choose Claim Type:
-                            </label>
-                            <div className="space-y-2">
-                                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                    <input
+                        <TargetSelectionContainer>
+                            <TargetSelectionLabel>Choose Claim Type:</TargetSelectionLabel>
+                            <TargetOptions>
+                                <TargetOption $disabled={isProcessing}>
+                                    <TargetRadio
                                         type="radio"
                                         name="claimTarget"
                                         value="xtm"
                                         checked={selectedTarget === 'xtm'}
                                         onChange={(e) => setSelectedTarget(e.target.value as 'xtm')}
                                         disabled={isProcessing}
-                                        className="mr-3"
                                     />
-                                    <div className="flex-1">
-                                        <div className="font-medium">Tari (XTM)</div>
-                                        <div className="text-sm text-gray-600">{claimStatus.amount} XTM</div>
-                                    </div>
-                                </label>
-                                <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                    <input
+                                    <TargetContent>
+                                        <TargetTitle>Tari (XTM)</TargetTitle>
+                                        <TargetAmount>{claimStatus.amount} XTM</TargetAmount>
+                                    </TargetContent>
+                                </TargetOption>
+                                <TargetOption $disabled={isProcessing}>
+                                    <TargetRadio
                                         type="radio"
                                         name="claimTarget"
                                         value="usd"
                                         checked={selectedTarget === 'usd'}
                                         onChange={(e) => setSelectedTarget(e.target.value as 'usd')}
                                         disabled={isProcessing}
-                                        className="mr-3"
                                     />
-                                    <div className="flex-1">
-                                        <div className="font-medium">USDT (Stablecoin)</div>
-                                        <div className="text-sm text-gray-600">${claimStatus.usdtAmount} USDT</div>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
+                                    <TargetContent>
+                                        <TargetTitle>USDT (Stablecoin)</TargetTitle>
+                                        <TargetAmount>${claimStatus.usdtAmount} USDT</TargetAmount>
+                                    </TargetContent>
+                                </TargetOption>
+                            </TargetOptions>
+                        </TargetSelectionContainer>
 
                         {/* Progress Indicator */}
                         {isProcessing && (
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm font-medium text-blue-800">Processing Claim</span>
-                                    <span className="text-xs text-blue-600">{getStepProgress()}/5</span>
-                                </div>
-                                <div className="w-full bg-blue-200 rounded-full h-2 mb-2">
-                                    <div 
-                                        className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                                        style={{ width: `${(getStepProgress() / 5) * 100}%` }}
-                                    ></div>
-                                </div>
-                                <p className="text-sm text-blue-700">{getStepText()}</p>
-                            </div>
+                            <ProgressContainer>
+                                <ProgressHeader>
+                                    <ProgressTitle>Processing Claim</ProgressTitle>
+                                    <ProgressCounter>{getStepProgress()}/5</ProgressCounter>
+                                </ProgressHeader>
+                                <ProgressBar>
+                                    <ProgressFill $progress={(getStepProgress() / 5) * 100} />
+                                </ProgressBar>
+                                <ProgressText>{getStepText()}</ProgressText>
+                            </ProgressContainer>
                         )}
 
                         {/* Claim Button */}
-                        <button
+                        <ClaimButton
                             onClick={handleClaim}
-                            disabled={isDisabled}
-                            className={`
-                                w-full py-3 px-6 rounded-lg font-medium transition-all duration-200
-                                ${isDisabled 
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                                    : 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer shadow-lg hover:shadow-xl'
-                                }
-                                ${isProcessing ? 'animate-pulse' : ''}
-                            `}
+                            $disabled={isDisabled}
+                            $processing={isProcessing}
                         >
-                            <div className="flex items-center justify-center gap-2">
-                                {isProcessing && (
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                )}
+                            <ButtonContent>
+                                {isProcessing && <ButtonSpinner />}
                                 <span>
                                     {isProcessing 
                                         ? 'Processing...' 
                                         : `Claim ${selectedTarget === 'xtm' ? `${claimStatus.amount} XTM` : `$${claimStatus.usdtAmount} USDT`}`
                                     }
                                 </span>
-                            </div>
-                        </button>
+                            </ButtonContent>
+                        </ClaimButton>
 
                         {/* How it works */}
-                        <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
-                            <p className="font-medium mb-2">How it works:</p>
-                            <ol className="list-decimal list-inside space-y-1">
+                        <HowItWorksContainer>
+                            <HowItWorksTitle>How it works:</HowItWorksTitle>
+                            <HowItWorksList>
                                 <li>Security tokens are fetched automatically</li>
                                 <li>Verification is handled in the background</li>
                                 <li>Your claim is submitted securely</li>
                                 <li>You'll see a confirmation when complete</li>
-                            </ol>
-                            <p className="mt-2 text-gray-400">Entire process takes 10-30 seconds</p>
-                        </div>
-                    </div>
+                            </HowItWorksList>
+                            <HowItWorksNote>Entire process takes 10-30 seconds</HowItWorksNote>
+                        </HowItWorksContainer>
+                    </ContentContainer>
                 )}
-            </div>
+            </ModalWrapper>
         </GreenModal>
     );
 }

@@ -22,7 +22,7 @@ async function fetchClaimStatus(): Promise<ClaimStatus> {
     return response.data;
 }
 
-export function useClaimStatus(enabled: boolean = true) {
+export function useClaimStatus(enabled = true) {
     return useQuery({
         queryKey: [KEY_CLAIM_STATUS],
         queryFn: fetchClaimStatus,
