@@ -20,6 +20,7 @@ import {
 } from '@app/store';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import type { XSpaceEvent } from '@app/types/ws.ts';
+import type { AirdropClaimState, BackgroundClaimResult } from '@app/types/airdrop-claim.ts';
 import { invoke } from '@tauri-apps/api/core';
 
 interface TokenResponse {
@@ -379,4 +380,36 @@ export const fetchAllUserData = async () => {
     if (authToken) {
         await fetchData();
     }
+};
+
+// AIRDROP CLAIM ACTIONS
+export const setClaimInProgress = (isInProgress: boolean) => {
+    useAirdropStore.setState((state) => ({
+        claim: {
+            ...state.claim,
+            isClaimInProgress: isInProgress,
+            lastClaimTimestamp: isInProgress ? Date.now() : (state.claim?.lastClaimTimestamp || null),
+        },
+    }));
+};
+
+export const setClaimResult = (result: BackgroundClaimResult) => {
+    useAirdropStore.setState((state) => ({
+        claim: {
+            ...state.claim,
+            isClaimInProgress: false,
+            lastClaimResult: result,
+            lastClaimTimestamp: Date.now(),
+        },
+    }));
+};
+
+export const clearClaimState = () => {
+    useAirdropStore.setState({
+        claim: {
+            isClaimInProgress: false,
+            lastClaimResult: null,
+            lastClaimTimestamp: null,
+        },
+    });
 };

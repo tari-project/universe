@@ -4,7 +4,6 @@ import AdminUI from '../../components/AdminUI/AdminUI.tsx';
 import ToastStack from '../../components/ToastStack/ToastStack.tsx';
 import XCLinkModal from '../../components/exchanges/LinkModal/LinkModal.tsx';
 import { CustomPowerLevelsDialogContainer } from '../navigation/components/Miner/components/CustomPowerLevels/CustomPowerLevelsDialogContainer.tsx';
-import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
 import CrewRewards from '../main/CrewRewards/CrewRewards.tsx';
 
 import AutoUpdateDialog from './AutoUpdateDialog/AutoUpdateDialog.tsx';
@@ -29,6 +28,7 @@ import SettingsModal from './Settings/SettingsModal.tsx';
 import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 import UniversalEXSelectorModal from './UniversalEXSelectorModal/UniversalEXSelectorModal.tsx';
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
+import AirdropClaimModal from '../main/Airdrop/AirdropClaim/AirdropClaimModal.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -43,7 +43,6 @@ const FloatingElements = () => {
             <PaperWalletModal />
             <LudicrousCofirmationDialog />
             <ShareRewardModal />
-            <ShellOfSecrets />
             <ToastStack />
             <CriticalProblemDialog />
             <ReleaseNotesDialog />
@@ -60,6 +59,7 @@ const FloatingElements = () => {
             <EnterPinDialog />
             <CrewRewards />
             <SettingsModal />
+            <AirdropClaimModal />
             <FailedModuleInitializationDialog />
             <CloseUserFeedbackDialog />
             <LongTimeUserFeedbackDialog />

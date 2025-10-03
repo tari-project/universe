@@ -79,6 +79,7 @@ use crate::wallet::wallet_types::WalletState;
 
 mod ab_test_selector;
 mod airdrop;
+mod airdrop_claim;
 mod app_in_memory_config;
 mod auto_launcher;
 mod binaries;
@@ -586,6 +587,7 @@ fn main() {
             commands::list_connected_peers,
             commands::switch_gpu_miner,
             commands::set_feedback_fields,
+            commands::send_otp_request,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {
