@@ -31,9 +31,9 @@ export function useClaimStatus(enabled: boolean = true) {
         gcTime: 2 * 60 * 1000, // 2 minutes
         retry: 2,
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-        refetchInterval: (data) => {
+        refetchInterval: (query) => {
             // Only poll if we have a claim available
-            return data?.hasClaim ? 30 * 1000 : false;
+            return query.state.data?.hasClaim ? 30 * 1000 : false;
         },
     });
 }

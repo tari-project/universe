@@ -79,7 +79,7 @@ export const AirdropClaimButton: React.FC<AirdropClaimButtonProps> = ({
                 ${isProcessing ? 'animate-pulse' : ''}
                 ${className}
             `}
-            aria-label={getButtonText()}
+            aria-label={String(getButtonText())}
         >
             <div className="flex items-center justify-center gap-2">
                 {isProcessing && (

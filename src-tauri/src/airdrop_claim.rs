@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{error, info, warn};
+use log::{error, info};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -52,7 +52,7 @@ pub struct OtpRequestMessage {
 }
 
 impl OtpRequest {
-    pub fn new(csrf_token: String, wallet_address: String) -> Self {
+    pub async fn new(csrf_token: String, wallet_address: String) -> Self {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -103,7 +103,7 @@ pub async fn create_otp_request_message(
 ) -> Result<WebsocketMessage, String> {
     info!(target: LOG_TARGET, "Creating OTP request for wallet: {}", wallet_address);
     
-    let otp_request = OtpRequest::new(csrf_token, wallet_address);
+    let otp_request = OtpRequest::new(csrf_token, wallet_address).await;
     let signed_message = otp_request.sign().await?;
     
     let websocket_message = WebsocketMessage {

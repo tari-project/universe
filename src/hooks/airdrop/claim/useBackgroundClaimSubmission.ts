@@ -24,7 +24,7 @@ async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult> {
     const response = await handleAirdropRequest<ClaimSubmissionResponse>({
         path: '/tari/claim-airdrop',
         method: 'POST',
-        body: claimRequest,
+        body: claimRequest as unknown as Record<string, unknown>,
         headers: {
             'Content-Type': 'application/json',
         },

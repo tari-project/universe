@@ -386,8 +386,8 @@ export const fetchAllUserData = async () => {
 export const setClaimInProgress = (isInProgress: boolean) => {
     useAirdropStore.setState((state) => ({
         claim: {
-            ...state.claim,
             isClaimInProgress: isInProgress,
+            lastClaimResult: state.claim?.lastClaimResult || null,
             lastClaimTimestamp: isInProgress ? Date.now() : (state.claim?.lastClaimTimestamp || null),
         },
     }));
@@ -396,7 +396,6 @@ export const setClaimInProgress = (isInProgress: boolean) => {
 export const setClaimResult = (result: BackgroundClaimResult) => {
     useAirdropStore.setState((state) => ({
         claim: {
-            ...state.claim,
             isClaimInProgress: false,
             lastClaimResult: result,
             lastClaimTimestamp: Date.now(),
