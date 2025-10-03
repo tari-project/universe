@@ -49,7 +49,7 @@ export default function ModeController() {
                 <ModeDropdown open={modesOpen} />
             </RefWrapper>
             <AnimatePresence>
-                {!showEcoAlert && (
+                {showEcoAlert && (
                     <RefWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
                         <m.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
                             <EcoAlert onAllClick={handleModesClick} onTurboClick={handleTurboClick} />

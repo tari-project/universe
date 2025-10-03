@@ -6,7 +6,7 @@ export const Wrapper = styled.div`
     flex-direction: column;
     gap: 12px;
     background-color: ${({ theme }) => theme.palette.background.tooltip};
-    box-shadow: 0 4px 34px 0 rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 40px 3px rgba(0, 0, 0, 0.05);
     padding: 15px;
     border-radius: 10px;
 `;
