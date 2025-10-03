@@ -16,10 +16,14 @@ export default function EcoAlert({ onAllClick, onTurboClick }: EcoAlertProps) {
                 <Typography variant="p">{`Try turning the power mode up.`}</Typography>
             </BodyTextWrapper>
             <CTASection>
-                <Button size="xs" fluid onClick={onAllClick}>{`See all modes`}</Button>
+                <Button size="xs" fluid onClick={onAllClick}>
+                    <CTAContent>
+                        <Typography>{`See all modes`}</Typography>
+                    </CTAContent>
+                </Button>
                 <Button size="xs" backgroundColor="teal" fluid onClick={onTurboClick}>
                     <CTAContent>
-                        {`Use Turbo️`}
+                        <Typography>{`Use Turbo️`}</Typography>
                         <Icon src={turboIcon} />
                     </CTAContent>
                 </Button>

@@ -4,8 +4,9 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     background-color: ${({ theme }) => theme.palette.background.tooltip};
+    box-shadow: 0 4px 34px 0 rgba(0, 0, 0, 0.1);
     padding: 15px;
     border-radius: 10px;
 `;
@@ -30,15 +31,17 @@ export const BodyTextWrapper = styled.div`
 export const CTAContent = styled.div`
     display: flex;
     align-items: center;
+    font-weight: 500;
+    gap: 2px;
 `;
 export const CTASection = styled.div`
     display: flex;
     justify-content: space-between;
     width: 100%;
-    gap: 8px;
+    gap: 6px;
 `;
 
 export const Icon = styled.img`
-    height: 12px;
+    height: 11px;
     display: flex;
 `;

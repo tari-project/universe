@@ -302,12 +302,13 @@ impl ConfigMining {
         )
         .await?;
 
-        if mode.to_string() == "Eco" && Self::content().await.eco_alert_needed {
+        // if mode.to_string() == "Eco" && Self::content().await.eco_alert_needed {
+        if mode.to_string() == "Eco" {
             let secs = mode_mining_times
                 .get("Eco")
                 .unwrap_or(&Duration::new(0, 0))
                 .as_secs();
-            if secs >= 1000 {
+            if secs >= 500 {
                 // if secs >= 108000 {
                 EventsEmitter::emit_show_eco_alert().await;
             }
