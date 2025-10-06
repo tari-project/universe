@@ -34,6 +34,7 @@ use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
+use crate::http_client::{HttpClient, HttpRequest, HttpResponse};
 use crate::events_manager::EventsManager;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
 use crate::mining::cpu::manager::CpuManager;
@@ -1967,4 +1968,71 @@ pub async fn set_feedback_fields(feedback_type: String, was_sent: bool) -> Resul
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn http_request(request: HttpRequest) -> HttpResponse {
+    let timer = Instant::now();
+    
+    let client = match HttpClient::new() {
+        Ok(client) => client,
+        Err(e) => {
+            return HttpResponse {
+                status: 0,
+                headers: std::collections::HashMap::new(),
+                body: None,
+                error: Some(format!("Failed to create HTTP client: {}", e)),
+            };
+        }
+    };
+
+    let response = client.request(request).await;
+    
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "http_request took too long: {:?}", timer.elapsed());
+    }
+    
+    response
+}
+
+#[tauri::command]
+pub async fn http_request_airdrop(request: HttpRequest) -> HttpResponse {
+    let timer = Instant::now();
+    
+    // Add Tari Universe specific headers for airdrop requests
+    let mut modified_request = request;
+    if modified_request.headers.is_none() {
+        modified_request.headers = Some(std::collections::HashMap::new());
+    }
+    
+    if let Some(ref mut headers) = modified_request.headers {
+        headers.insert(
+            "X-Requested-With".to_string(),
+            format!("TariUniverse/{}", env!("CARGO_PKG_VERSION"))
+        );
+        headers.insert(
+            "Content-Type".to_string(),
+            "application/json".to_string()
+        );
+    }
+    
+    let client = match HttpClient::new() {
+        Ok(client) => client,
+        Err(e) => {
+            return HttpResponse {
+                status: 0,
+                headers: std::collections::HashMap::new(),
+                body: None,
+                error: Some(format!("Failed to create HTTP client: {}", e)),
+            };
+        }
+    };
+
+    let response = client.request(modified_request).await;
+    
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "http_request_airdrop took too long: {:?}", timer.elapsed());
+    }
+    
+    response
 }
