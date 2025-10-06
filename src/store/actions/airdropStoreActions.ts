@@ -45,6 +45,39 @@ function parseJwt(token: string): TokenResponse {
     return JSON.parse(jsonPayload);
 }
 
+function validateTokenStructure(tokens: AirdropTokens | undefined): boolean {
+    if (!tokens?.token || !tokens?.refreshToken) {
+        return false;
+    }
+
+    try {
+        const parsedToken = parseJwt(tokens.token);
+        const now = Math.floor(Date.now() / 1000);
+        
+        // Check if token has required fields and is not expired
+        return !!(
+            parsedToken.id &&
+            parsedToken.exp &&
+            parsedToken.exp > now
+        );
+    } catch (error) {
+        console.error('Token validation failed:', error);
+        return false;
+    }
+}
+
+function isTokenNearExpiry(tokens: AirdropTokens | undefined, windowHours: number = 1): boolean {
+    if (!tokens?.expiresAt) {
+        return true;
+    }
+    
+    const expirationTime = tokens.expiresAt * 1000;
+    const windowMs = windowHours * 60 * 60 * 1000;
+    const now = Date.now();
+    
+    return expirationTime - now < windowMs;
+}
+
 const clearState: AirdropStoreState = {
     authUuid: '',
     airdropTokens: undefined,
@@ -97,50 +130,105 @@ const getAirdropInMemoryConfig = async () => {
     return airdropInMemoryConfig;
 };
 const getExistingTokens = async () => {
-    const localStorageTokens = localStorage.getItem('airdrop-store');
-    const parsedStorageTokens = localStorageTokens ? JSON.parse(localStorageTokens) : undefined;
-    const storedTokens = useConfigCoreStore.getState().airdrop_tokens || parsedStorageTokens;
-    if (storedTokens) {
-        try {
-            if (!storedTokens?.token || !storedTokens?.refreshToken) {
+    // Priority: ConfigCore -> localStorage -> none
+    let storedTokens: AirdropTokens | undefined;
+    
+    try {
+        const configTokens = useConfigCoreStore.getState().airdrop_tokens;
+        if (configTokens && validateTokenStructure(configTokens)) {
+            storedTokens = configTokens;
+            console.info('Valid tokens loaded from ConfigCore');
+        } else {
+            // Fallback to localStorage
+            const localStorageTokens = localStorage.getItem('airdrop-store');
+            const parsedStorageTokens = localStorageTokens ? JSON.parse(localStorageTokens) : undefined;
+            
+            if (parsedStorageTokens?.airdropTokens && validateTokenStructure(parsedStorageTokens.airdropTokens)) {
+                storedTokens = parsedStorageTokens.airdropTokens;
+                console.info('Valid tokens loaded from localStorage, migrating to ConfigCore');
+                // Migrate to ConfigCore for future use
+                setAirdropTokensInConfig(storedTokens);
+            } else {
+                console.info('No valid tokens found in storage');
+                // Clear any invalid tokens
+                if (configTokens) {
+                    console.warn('Clearing invalid tokens from ConfigCore');
+                    setAirdropTokensInConfig(undefined);
+                }
                 return undefined;
             }
+        }
+
+        if (storedTokens) {
+            const tokensWithExpiry = {
+                ...storedTokens,
+                expiresAt: parseJwt(storedTokens.token).exp,
+            };
 
             useAirdropStore.setState((currentState) => ({
                 ...currentState,
-                airdropTokens: {
-                    ...storedTokens,
-                    expiresAt: parseJwt(storedTokens.token).exp,
-                },
+                airdropTokens: tokensWithExpiry,
             }));
-            setAirdropTokensInConfig(storedTokens);
-        } catch (e) {
-            console.error('Failed to parse existing tokens:', e);
+
+            // Check if tokens need refresh soon
+            if (isTokenNearExpiry(tokensWithExpiry, 1)) {
+                console.info('Tokens expire within 1 hour, will refresh proactively');
+            }
+
+            return tokensWithExpiry;
         }
-    } else {
-        console.info('No existing tokens found');
+    } catch (e) {
+        console.error('Failed to process existing tokens:', e);
+        // Clear potentially corrupted tokens
+        try {
+            setAirdropTokensInConfig(undefined);
+        } catch (clearError) {
+            console.error('Failed to clear corrupted tokens:', clearError);
+        }
     }
+    
+    return undefined;
 };
 
 export const airdropSetup = async () => {
     try {
-        console.info('Fetching backend in memory config');
+        console.info('Starting airdrop setup...');
         const beConfig = await getAirdropInMemoryConfig();
 
-        if (beConfig) {
-            console.info('Getting existing tokens');
-            await getExistingTokens();
-            if (beConfig.airdrop_url) {
-                console.info('Refreshing airdrop tokens');
-                await handleRefreshAirdropTokens();
-                await fetchAllUserData();
-                if (useUIStore.getState().showSplashscreen) {
-                    handleCloseSplashscreen();
+        if (beConfig?.airdrop_url) {
+            console.info('Loading existing tokens...');
+            const existingTokens = await getExistingTokens();
+            
+            if (existingTokens) {
+                // Check if we need to refresh tokens proactively
+                if (isTokenNearExpiry(existingTokens, 2)) {
+                    console.info('Tokens expire soon, refreshing proactively...');
+                    try {
+                        await handleRefreshAirdropTokens();
+                    } catch (refreshError) {
+                        console.error('Failed to refresh tokens during setup:', refreshError);
+                        // Continue with existing tokens if refresh fails
+                    }
                 }
+                
+                // Fetch user data with valid tokens
+                await fetchAllUserData();
+            } else {
+                console.info('No valid tokens found, user needs to authenticate');
             }
+            
+            if (useUIStore.getState().showSplashscreen) {
+                handleCloseSplashscreen();
+            }
+        } else {
+            console.warn('No airdrop URL configured, skipping token initialization');
         }
     } catch (error) {
-        console.error('Error in airdropSetup: ', error);
+        console.error('Error in airdropSetup:', error);
+        // Ensure splashscreen is closed even on error
+        if (useUIStore.getState().showSplashscreen) {
+            handleCloseSplashscreen();
+        }
     }
 };
 export const handleAirdropLogout = async (isUserLogout = false) => {
