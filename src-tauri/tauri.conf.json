@@ -54,6 +54,7 @@
                 "connect-src": [
                     "'self'",
                     "https:",
+                    "https://ut.tari.com",
                     "wss://ut.tari.com",
                     "wss://relay.walletconnect.org",
                     "https://rpc.ankr.com/eth",
