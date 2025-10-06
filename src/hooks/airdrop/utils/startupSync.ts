@@ -17,10 +17,10 @@ export async function waitForTokensReady(): Promise<void> {
     }
 
     console.info('Waiting for tokens-ready event from backend...');
-    
+
     tokensReadyPromise = new Promise<void>((resolve) => {
         let unlisten: UnlistenFn | null = null;
-        
+
         const setupListener = async () => {
             try {
                 unlisten = await listen('tokens-ready', (event) => {
@@ -44,7 +44,7 @@ export async function waitForTokensReady(): Promise<void> {
         };
 
         setupListener();
-        
+
         // Timeout fallback in case event never comes
         setTimeout(() => {
             if (!tokensReady) {

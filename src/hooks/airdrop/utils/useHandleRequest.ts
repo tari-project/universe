@@ -21,7 +21,7 @@ let retryCount = 0;
 function isConfiguredAirdropDomain(url: string): boolean {
     const baseUrl = useConfigBEInMemoryStore.getState().airdrop_api_url;
     if (!baseUrl) return false;
-    
+
     try {
         const urlObj = new URL(url);
         const baseUrlObj = new URL(baseUrl);
@@ -125,7 +125,7 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
 
     const fullUrl = `${baseUrl}${path}`;
     const headersWithAuth = airdropToken ? { Authorization: `Bearer ${airdropToken}` } : undefined;
-    
+
     const requestHeaders: Record<string, string> = {
         ...defaultHeaders,
         'Content-Type': 'application/json',
@@ -164,7 +164,7 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
             }
             return;
         }
-        
+
         return (await response.json()) as T;
     } catch (e) {
         console.error(`Caught error fetching data at ${fullUrl}: `, e);

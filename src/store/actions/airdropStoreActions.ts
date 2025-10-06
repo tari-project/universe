@@ -54,28 +54,24 @@ function validateTokenStructure(tokens: AirdropTokens | undefined): boolean {
     try {
         const parsedToken = parseJwt(tokens.token);
         const now = Math.floor(Date.now() / 1000);
-        
+
         // Check if token has required fields and is not expired
-        return !!(
-            parsedToken.id &&
-            parsedToken.exp &&
-            parsedToken.exp > now
-        );
+        return !!(parsedToken.id && parsedToken.exp && parsedToken.exp > now);
     } catch (error) {
         console.error('Token validation failed:', error);
         return false;
     }
 }
 
-function isTokenNearExpiry(tokens: AirdropTokens | undefined, windowHours: number = 1): boolean {
+function isTokenNearExpiry(tokens: AirdropTokens | undefined, windowHours = 1): boolean {
     if (!tokens?.expiresAt) {
         return true;
     }
-    
+
     const expirationTime = tokens.expiresAt * 1000;
     const windowMs = windowHours * 60 * 60 * 1000;
     const now = Date.now();
-    
+
     return expirationTime - now < windowMs;
 }
 
@@ -133,7 +129,7 @@ const getAirdropInMemoryConfig = async () => {
 const getExistingTokens = async () => {
     // Priority: ConfigCore -> localStorage -> none
     let storedTokens: AirdropTokens | undefined;
-    
+
     try {
         const configTokens = useConfigCoreStore.getState().airdrop_tokens;
         if (configTokens && validateTokenStructure(configTokens)) {
@@ -143,7 +139,7 @@ const getExistingTokens = async () => {
             // Fallback to localStorage
             const localStorageTokens = localStorage.getItem('airdrop-store');
             const parsedStorageTokens = localStorageTokens ? JSON.parse(localStorageTokens) : undefined;
-            
+
             if (parsedStorageTokens?.airdropTokens && validateTokenStructure(parsedStorageTokens.airdropTokens)) {
                 storedTokens = parsedStorageTokens.airdropTokens;
                 console.info('Valid tokens loaded from localStorage, migrating to ConfigCore');
@@ -187,7 +183,7 @@ const getExistingTokens = async () => {
             console.error('Failed to clear corrupted tokens:', clearError);
         }
     }
-    
+
     return undefined;
 };
 
@@ -199,7 +195,7 @@ export const airdropSetup = async () => {
         if (beConfig?.airdrop_url) {
             console.info('Loading existing tokens...');
             const existingTokens = await getExistingTokens();
-            
+
             if (existingTokens) {
                 // Check if we need to refresh tokens proactively
                 if (isTokenNearExpiry(existingTokens, 2)) {
@@ -211,13 +207,13 @@ export const airdropSetup = async () => {
                         // Continue with existing tokens if refresh fails
                     }
                 }
-                
+
                 // Fetch user data with valid tokens
                 await fetchAllUserData();
             } else {
                 console.info('No valid tokens found, user needs to authenticate');
             }
-            
+
             if (useUIStore.getState().showSplashscreen) {
                 handleCloseSplashscreen();
             }
@@ -233,9 +229,9 @@ export const airdropSetup = async () => {
     } finally {
         // Always emit tokens-ready event to unblock waiting components
         try {
-            await emit('tokens-ready', { 
+            await emit('tokens-ready', {
                 hasTokens: !!useAirdropStore.getState().airdropTokens,
-                timestamp: Date.now()
+                timestamp: Date.now(),
             });
             console.info('Emitted tokens-ready event');
         } catch (emitError) {

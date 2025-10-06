@@ -55,7 +55,7 @@ export async function handleRefreshAirdropTokens(): Promise<AirdropTokens | unde
     const expirationLimit = new Date(new Date().getTime() + 1000 * 60 * 60 * 5);
     const tokenExpirationTime = airdropTokens?.expiresAt && new Date(airdropTokens?.expiresAt * 1000);
     const tokenHasExpired = tokenExpirationTime && tokenExpirationTime < expirationLimit;
-    
+
     if (tokenHasExpired) {
         try {
             console.info(`Token expires at ${tokenExpirationTime?.toISOString()}, refreshing...`);

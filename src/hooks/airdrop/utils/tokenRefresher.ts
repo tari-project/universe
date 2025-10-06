@@ -22,7 +22,7 @@ interface HttpResponse {
 
 async function makeNativeRefreshRequest(refreshToken: string): Promise<AirdropTokens | undefined> {
     const airdropApiUrl = useConfigBEInMemoryStore.getState().airdrop_api_url;
-    
+
     if (!airdropApiUrl) {
         throw new Error('No API URL configured');
     }
@@ -67,7 +67,7 @@ export async function refreshTokensSafely(currentTokens: AirdropTokens): Promise
     refreshInFlight = (async () => {
         try {
             const refreshedTokens = await makeNativeRefreshRequest(currentTokens.refreshToken);
-            
+
             if (refreshedTokens) {
                 console.info('Token refresh successful');
                 await setAirdropTokens(refreshedTokens);
