@@ -1,8 +1,6 @@
 import styled, { css } from 'styled-components';
-import { InputHTMLAttributes, ReactNode } from 'react';
-import { Typography } from '@app/components/elements/Typography.tsx';
 
-const Wrapper = styled.label<{ $disabled?: boolean; $isLoading?: boolean }>`
+export const Wrapper = styled.label<{ $disabled?: boolean; $isLoading?: boolean }>`
     display: flex;
     cursor: pointer;
     position: relative;
@@ -21,7 +19,7 @@ const Wrapper = styled.label<{ $disabled?: boolean; $isLoading?: boolean }>`
             opacity: 0.7;
         `}
 `;
-const Label = styled.label<{ $disabled?: boolean }>`
+export const Label = styled.label<{ $disabled?: boolean }>`
     user-select: none;
     cursor: pointer;
     border-radius: 40px;
@@ -45,8 +43,7 @@ const Label = styled.label<{ $disabled?: boolean }>`
             opacity: 0.8;
         `}
 `;
-
-const Switch = styled.div<{ $hasDecorators?: boolean }>`
+export const Switch = styled.div<{ $hasDecorators?: boolean }>`
     position: relative;
     background: ${({ theme, $hasDecorators }) =>
         $hasDecorators
@@ -76,8 +73,7 @@ const Switch = styled.div<{ $hasDecorators?: boolean }>`
         transition: 300ms all;
     }
 `;
-
-const Input = styled.input<{ $isSolid?: boolean; $hasDecorators?: boolean; $isLoading?: boolean }>`
+export const Input = styled.input<{ $isSolid?: boolean; $hasDecorators?: boolean; $isLoading?: boolean }>`
     position: absolute;
     opacity: 0;
     width: 36px;
@@ -131,8 +127,7 @@ const Input = styled.input<{ $isSolid?: boolean; $hasDecorators?: boolean; $isLo
             opacity: 0.7;
         `}
 `;
-
-const Decorator = styled.div<{ $first?: boolean; $checked?: boolean }>`
+export const Decorator = styled.div<{ $first?: boolean; $checked?: boolean }>`
     position: absolute;
     z-index: 2;
     width: 20px;
@@ -151,64 +146,3 @@ const Decorator = styled.div<{ $first?: boolean; $checked?: boolean }>`
                   right: -3px;
               `}
 `;
-
-interface ToggleSwitchProps extends InputHTMLAttributes<HTMLInputElement> {
-    label?: string;
-    customDecorators?: { first: ReactNode; second?: ReactNode };
-    variant?: 'solid' | 'gradient';
-    isLoading?: boolean;
-}
-export function ToggleSwitch({
-    label,
-    variant = 'solid',
-    disabled,
-    onChange,
-    customDecorators,
-    isLoading = false,
-    ...props
-}: ToggleSwitchProps) {
-    const isSolid = variant === 'solid';
-
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            onChange?.({ target: { checked: !props.checked } } as React.ChangeEvent<HTMLInputElement>);
-        }
-    };
-
-    const switchMarkup = (
-        <Wrapper $isLoading={isLoading} $disabled={disabled}>
-            {customDecorators?.first ? (
-                <Decorator $first $checked={props.checked}>
-                    {customDecorators?.first}
-                </Decorator>
-            ) : null}
-            {customDecorators?.second ? (
-                <Decorator $checked={props.checked}>{customDecorators?.second}</Decorator>
-            ) : null}
-            <Input
-                $isLoading={isLoading}
-                disabled={disabled}
-                checked={props.checked || false}
-                type="checkbox"
-                onChange={onChange}
-                onKeyDown={handleKeyDown}
-                $hasDecorators={!!customDecorators}
-                $isSolid={isSolid}
-                {...props}
-            />
-            <Switch $hasDecorators={!!customDecorators} />
-        </Wrapper>
-    );
-
-    if (label) {
-        return (
-            <Label $disabled={disabled}>
-                <Typography variant="h6">{label}</Typography>
-                {switchMarkup}
-            </Label>
-        );
-    } else {
-        return switchMarkup;
-    }
-}

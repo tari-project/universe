@@ -1,4 +1,4 @@
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch.tsx';
 import { Trans, useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography';
 import { IoAddCircleOutline, IoRemoveCircleOutline } from 'react-icons/io5';

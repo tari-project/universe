@@ -8,7 +8,7 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
 import { Typography } from '@app/components/elements/Typography';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
 import {
     changeGpuPool,
     changeGpuPoolConfiguration,

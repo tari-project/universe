@@ -9,7 +9,7 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch.tsx';
 import { setShouldAlwaysUseSystemLanguage, useConfigUIStore } from '@app/store';
 
 export default function LanguageSettings() {
