@@ -87,6 +87,7 @@ mod configs;
 mod consts;
 mod credential_manager;
 mod download_utils;
+mod event_scheduler;
 mod events;
 mod events_emitter;
 mod events_manager;

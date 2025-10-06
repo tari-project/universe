@@ -1865,6 +1865,27 @@ pub async fn list_connected_peers(
         .map_err(|e| e.to_string())
 }
 
+// ================ Event Scheduler Commands ==================
+#[tauri::command]
+pub async fn add_scheduler_event() -> Result<(), InvokeError> {
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn remove_scheduler_event() -> Result<(), InvokeError> {
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn pause_scheduler_event() -> Result<(), InvokeError> {
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn resume_scheduler_event() -> Result<(), InvokeError> {
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn refresh_wallet_history(
     state: tauri::State<'_, UniverseAppState>,
