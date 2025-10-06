@@ -1,6 +1,7 @@
 import { AirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
 import { setAirdropTokens } from '@app/store';
 import { defaultHeaders } from '@app/utils';
+import { refreshTokensSafely, isRefreshInProgress } from '@app/hooks/airdrop/utils/tokenRefresher';
 
 async function refreshAirdropTokens(airdropTokens: AirdropTokens) {
     const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdrop_api_url;
@@ -38,24 +39,33 @@ async function refreshAirdropTokens(airdropTokens: AirdropTokens) {
 }
 export async function handleRefreshAirdropTokens(): Promise<AirdropTokens | undefined> {
     const airdropTokens = useAirdropStore.getState().airdropTokens;
-    let tokens: AirdropTokens | undefined = airdropTokens;
 
-    if (!tokens) {
+    if (!airdropTokens) {
+        console.warn('No tokens available for refresh');
         return;
     }
+
+    // Check if refresh is already in progress
+    if (isRefreshInProgress()) {
+        console.info('Token refresh already in progress, skipping duplicate request');
+        return airdropTokens;
+    }
+
     // 5 hours from now
     const expirationLimit = new Date(new Date().getTime() + 1000 * 60 * 60 * 5);
     const tokenExpirationTime = airdropTokens?.expiresAt && new Date(airdropTokens?.expiresAt * 1000);
     const tokenHasExpired = tokenExpirationTime && tokenExpirationTime < expirationLimit;
-    if (airdropTokens && tokenHasExpired) {
+    
+    if (tokenHasExpired) {
         try {
-            tokens = await refreshAirdropTokens(airdropTokens);
+            console.info(`Token expires at ${tokenExpirationTime?.toISOString()}, refreshing...`);
+            const refreshedTokens = await refreshTokensSafely(airdropTokens);
+            return refreshedTokens;
         } catch (error) {
             console.error('Error refreshing airdrop tokens:', error);
+            return airdropTokens; // Return current tokens on error
         }
     }
 
-    await setAirdropTokens(tokens);
-
-    return tokens;
+    return airdropTokens;
 }

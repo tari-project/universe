@@ -21,6 +21,7 @@ import {
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import type { XSpaceEvent } from '@app/types/ws.ts';
 import { invoke } from '@tauri-apps/api/core';
+import { emit } from '@tauri-apps/api/event';
 
 interface TokenResponse {
     exp: number;
@@ -228,6 +229,17 @@ export const airdropSetup = async () => {
         // Ensure splashscreen is closed even on error
         if (useUIStore.getState().showSplashscreen) {
             handleCloseSplashscreen();
+        }
+    } finally {
+        // Always emit tokens-ready event to unblock waiting components
+        try {
+            await emit('tokens-ready', { 
+                hasTokens: !!useAirdropStore.getState().airdropTokens,
+                timestamp: Date.now()
+            });
+            console.info('Emitted tokens-ready event');
+        } catch (emitError) {
+            console.error('Failed to emit tokens-ready event:', emitError);
         }
     }
 };

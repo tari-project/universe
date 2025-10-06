@@ -3,6 +3,7 @@ import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useA
 import { useConfigBEInMemoryStore } from '@app/store';
 import { defaultHeaders } from '@app/utils';
 import { invoke } from '@tauri-apps/api/core';
+import { waitForTokensReady } from './startupSync';
 
 interface RequestProps<B> {
     path: string;
@@ -132,6 +133,15 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
     headers,
     publicRequest,
 }: RequestProps<B>) {
+    // Wait for backend token initialization to complete
+    if (!publicRequest) {
+        try {
+            await waitForTokensReady();
+        } catch (error) {
+            console.warn('Failed to wait for tokens ready, proceeding anyway:', error);
+        }
+    }
+
     // use useConfigBEInMemoryStore now, not airdrop store for the URL
     const baseUrl = useConfigBEInMemoryStore.getState().airdrop_api_url;
 
@@ -173,20 +183,18 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
         ...(headers as Record<string, string>),
     };
 
-    // Check if we should use native HTTP client
-    if (shouldUseNativeHttp(fullUrl)) {
+    // Use native HTTP client for ut.tari.com by default (CORS-free)
+    const isUtTariUrl = fullUrl.includes('ut.tari.com');
+    if (isUtTariUrl) {
         try {
-            console.info('Using native HTTP client due to circuit breaker');
+            console.info('Using native HTTP client for ut.tari.com request');
             const result = await makeNativeHttpRequest<T>(fullUrl, method, requestHeaders, body);
             recordSuccess();
             return result;
         } catch (nativeError) {
-            console.error('Native HTTP request failed:', nativeError);
+            console.error('Native HTTP request failed, falling back to fetch:', nativeError);
             recordFailure();
-            if (onError) {
-                onError(nativeError);
-            }
-            return;
+            // Fall through to try fetch as fallback
         }
     }
 
@@ -219,22 +227,11 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
     } catch (e) {
         console.error(`Caught error fetching airdrop data at ${fullUrl}: `, e);
 
-        // Check if this is a CORS error and we should try native HTTP
-        if (fullUrl.includes('ut.tari.com') && isCorsError(e)) {
-            console.warn('CORS error detected, attempting native HTTP fallback');
-            recordFailure();
-            
-            try {
-                const result = await makeNativeHttpRequest<T>(fullUrl, method, requestHeaders, body);
-                recordSuccess();
-                return result;
-            } catch (nativeError) {
-                console.error('Native HTTP fallback also failed:', nativeError);
-                if (onError) {
-                    onError(nativeError);
-                }
-                return;
-            }
+        // For non-ut.tari.com URLs or if native HTTP already failed, just handle normally
+        if (!isUtTariUrl) {
+            console.error(`Caught error fetching airdrop data at ${fullUrl}: `, e);
+        } else {
+            console.error('Both native HTTP and fetch failed for ut.tari.com request:', e);
         }
 
         // Record failure if this is a ut.tari.com request
