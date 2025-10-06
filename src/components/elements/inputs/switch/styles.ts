@@ -73,7 +73,7 @@ export const Switch = styled.div<{ $hasDecorators?: boolean }>`
         transition: 300ms all;
     }
 `;
-export const Input = styled.input<{ $isSolid?: boolean; $hasDecorators?: boolean; $isLoading?: boolean }>`
+export const Input = styled.input<{ $hasDecorators?: boolean; $isLoading?: boolean }>`
     position: absolute;
     opacity: 0;
     width: 36px;
@@ -97,12 +97,8 @@ export const Input = styled.input<{ $isSolid?: boolean; $hasDecorators?: boolean
     }
 
     &:checked + ${Switch} {
-        background: ${({ $hasDecorators, $isSolid, theme }) =>
-            $hasDecorators
-                ? theme.colors.greyscale[950]
-                : $isSolid
-                  ? theme.palette.success.light
-                  : `radial-gradient(50px 45px at -15px 15px, #000 0%, ${theme.colors.teal[700]} 100%)`};
+        background: ${({ $hasDecorators, theme }) =>
+            $hasDecorators ? theme.colors.greyscale[950] : theme.palette.success.light};
 
         &:before {
             background: #fff;
@@ -112,13 +108,8 @@ export const Input = styled.input<{ $isSolid?: boolean; $hasDecorators?: boolean
     }
 
     &:checked:not(:disabled) + ${Switch} {
-        background: ${({ $hasDecorators, $isSolid, theme }) =>
-            $hasDecorators
-                ? theme.colors.greyscale[950]
-                : $isSolid
-                  ? theme.palette.success.main
-                  : `radial-gradient(at 100% 100%, #000 0% ${theme.colors.teal[700]} 90%)`};
-    }
+        background: ${({ $hasDecorators, theme }) =>
+            $hasDecorators ? theme.colors.greyscale[950] : theme.palette.success.main}
 
     ${({ $isLoading }) =>
         $isLoading &&

@@ -1,53 +1,62 @@
-import { InputHTMLAttributes, ReactNode } from 'react';
+import { InputHTMLAttributes, ReactNode, KeyboardEvent, ChangeEvent } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Decorator, Input, Label, Switch, Wrapper } from './styles.ts';
 
 interface ToggleSwitchProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
-    customDecorators?: { first: ReactNode; second?: ReactNode };
-    variant?: 'solid' | 'gradient';
     isLoading?: boolean;
+    customDecorators?: { first: ReactNode; second?: ReactNode };
 }
 export function ToggleSwitch({
     label,
-    variant = 'solid',
     disabled,
     onChange,
     customDecorators,
     isLoading = false,
     ...props
 }: ToggleSwitchProps) {
-    const isSolid = variant === 'solid';
+    const checked = props.checked || false;
+    const hasDecorators = !!customDecorators;
 
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-        if (event.key === 'Enter') {
-            event.preventDefault();
-            onChange?.({ target: { checked: !props.checked } } as React.ChangeEvent<HTMLInputElement>);
+    const first = customDecorators?.first;
+    const second = customDecorators?.second;
+
+    function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onChange?.({ target: { checked: !props.checked } } as ChangeEvent<HTMLInputElement>);
         }
-    };
+    }
+
+    const firstDecorator = first ? (
+        <Decorator $first $checked={checked}>
+            {first}
+        </Decorator>
+    ) : null;
+
+    const secondDecorator = second ? <Decorator $checked={checked}>{second}</Decorator> : null;
+
+    const baseSwitch = (
+        <>
+            <Input
+                type="checkbox"
+                checked={checked}
+                disabled={disabled}
+                onChange={onChange}
+                onKeyDown={handleKeyDown}
+                $isLoading={isLoading}
+                $hasDecorators={hasDecorators}
+                {...props}
+            />
+            <Switch $hasDecorators={hasDecorators} />
+        </>
+    );
 
     const switchMarkup = (
         <Wrapper $isLoading={isLoading} $disabled={disabled}>
-            {customDecorators?.first ? (
-                <Decorator $first $checked={props.checked}>
-                    {customDecorators?.first}
-                </Decorator>
-            ) : null}
-            {customDecorators?.second ? (
-                <Decorator $checked={props.checked}>{customDecorators?.second}</Decorator>
-            ) : null}
-            <Input
-                $isLoading={isLoading}
-                disabled={disabled}
-                checked={props.checked || false}
-                type="checkbox"
-                onChange={onChange}
-                onKeyDown={handleKeyDown}
-                $hasDecorators={!!customDecorators}
-                $isSolid={isSolid}
-                {...props}
-            />
-            <Switch $hasDecorators={!!customDecorators} />
+            {firstDecorator}
+            {secondDecorator}
+            {baseSwitch}
         </Wrapper>
     );
 
@@ -58,7 +67,7 @@ export function ToggleSwitch({
                 {switchMarkup}
             </Label>
         );
-    } else {
-        return switchMarkup;
     }
+
+    return switchMarkup;
 }

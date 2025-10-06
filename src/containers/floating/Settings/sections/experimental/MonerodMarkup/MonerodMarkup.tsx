@@ -71,7 +71,9 @@ const MonerodMarkup = () => {
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     {isSaveButtonVisible ? (
-                        <Button onClick={handleSubmit(onSave)}>{t('save')}</Button>
+                        <Button size="smaller" onClick={handleSubmit(onSave)}>
+                            {t('save')}
+                        </Button>
                     ) : (
                         <Controller
                             name="use_monero_fail"

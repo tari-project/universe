@@ -33,7 +33,6 @@ interface EditedTorConfig {
 }
 
 const hasBridgeError = (bridge: string) => {
-    // TODO: How should we validate the bridge? (IPv4, IPv6, different formats)
     return !bridge || bridge.trim().length === 0;
 };
 
@@ -59,6 +58,7 @@ export const TorMarkup = () => {
             setHasCheckedOs(true);
         }
     }, []);
+
     useEffect(() => {
         if (hasCheckedOs) return;
         checkPlatform();
@@ -151,7 +151,11 @@ export const TorMarkup = () => {
                         <Typography>{t('setup-tor-settings')}</Typography>
                     </SettingsGroupContent>
                     <SettingsGroupAction style={{ alignItems: 'center' }}>
-                        {isSaveButtonVisible && <Button onClick={onSave}>{t('save')}</Button>}
+                        {isSaveButtonVisible && (
+                            <Button size="smaller" onClick={onSave}>
+                                {t('save')}
+                            </Button>
+                        )}
                         <ToggleSwitch checked={editedUseTor} onChange={() => setEditedUseTor((p) => !p)} />
                     </SettingsGroupAction>
                 </SettingsGroup>
@@ -167,7 +171,6 @@ export const TorMarkup = () => {
                             <Typography variant="h6">{t('control-port')}</Typography>
                             <ToggleSwitch
                                 label={t('use-random-control-port')}
-                                variant="gradient"
                                 checked={isRandomControlPort}
                                 onChange={toggleRandomControlPort}
                             />
@@ -204,7 +207,6 @@ export const TorMarkup = () => {
                             <Typography variant="h6">{t('tor-bridges')}</Typography>
                             <ToggleSwitch
                                 label={t('use-tor-bridges')}
-                                variant="gradient"
                                 checked={editedConfig.use_bridges}
                                 onChange={toggleUseBridges}
                             />

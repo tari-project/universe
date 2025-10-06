@@ -147,8 +147,6 @@ impl WebsocketEventsManager {
                             drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
                               error!(target:LOG_TARGET, "could not send to websocket channel due to {e}");
                             }));
-                        } else {
-                            info!(target:LOG_TARGET, "No mining status message to send");
                         }
                   },
                   _= keep_alive_interval.tick()=>{
