@@ -94,19 +94,6 @@ impl WebsocketEventsManager {
         Ok(())
     }
 
-    // If we ever close websocket manager connection we should stop emitting messages using this
-    // pub async fn stop_emitting_message(&self) {
-    //     info!(target:LOG_TARGET,"stop websocket_events_manager");
-    //
-    //     match self.close_channel_tx.send(true) {
-    //         Ok(_) => {}
-    //         Err(_) => {
-    //             info!(target: LOG_TARGET,"websocket_events_manager has already been closed.");
-    //         }
-    //     };
-    //     info!(target: LOG_TARGET,"stopped emitting messages from websocket_events_manager");
-    // }
-
     pub async fn emit_interval_ws_events(&mut self) -> Result<(), anyhow::Error> {
         let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();
         let gpu_latest_miner_stats = self.gpu_latest_miner_stats.clone();
@@ -126,7 +113,7 @@ impl WebsocketEventsManager {
             return Ok(());
         }
 
-        info!(target: LOG_TARGET, "Starting websocket events manager with intervals: {}s mining, {}s keep-alive", 
+        info!(target: LOG_TARGET, "Starting websocket events manager with intervals: {}s mining, {}s keep-alive",
               INTERVAL_DURATION.as_secs(), KEEP_ALIVE_INTERVAL_DURATION.as_secs());
 
         let is_started_cloned = self.is_started.clone();
@@ -150,7 +137,6 @@ impl WebsocketEventsManager {
 
                 tokio::select! {
                   _= interval.tick() => {
-                        info!(target:LOG_TARGET, "✓ Mining status interval tick - assembling status");
                         if let Some(message) = WebsocketEventsManager::assemble_mining_status(
                           cpu_miner_status_watch_rx.clone(),
                           gpu_latest_miner_stats.clone(),
@@ -158,7 +144,6 @@ impl WebsocketEventsManager {
                           app_id.clone(),
                           app_version.clone(),
                         ).await {
-                            info!(target:LOG_TARGET, "sending mining status message {:?}", message);
                             drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
                               error!(target:LOG_TARGET, "could not send to websocket channel due to {e}");
                             }));
@@ -168,7 +153,6 @@ impl WebsocketEventsManager {
                   },
                   _= keep_alive_interval.tick()=>{
                         if let Some(message) = WebsocketEventsManager::assemble_keep_alive().await{
-                            info!(target:LOG_TARGET, "sending keep-alive message");
                             drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
                               error!(target:LOG_TARGET, "could not send to websocket keep-alive channel due to {:?}", e);
                             }));
