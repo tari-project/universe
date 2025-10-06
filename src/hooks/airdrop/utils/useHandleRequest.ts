@@ -45,7 +45,7 @@ function isCorsError(error: any): boolean {
 }
 
 function shouldUseNativeHttp(url: string): boolean {
-    const isUtTariUrl = url.includes('ut.tari.com');
+    const isAirdropApiUrl = isConfiguredAirdropDomain(url);
     const now = Date.now();
     
     // Reset circuit breaker if enough time has passed
@@ -53,10 +53,25 @@ function shouldUseNativeHttp(url: string): boolean {
         now - circuitBreakerState.lastFailureTime > CIRCUIT_BREAKER_RESET_TIMEOUT) {
         circuitBreakerState.isOpen = false;
         circuitBreakerState.failures = 0;
-        console.info('Circuit breaker reset for ut.tari.com');
+        console.info('Circuit breaker reset for airdrop API');
     }
     
-    return isUtTariUrl && circuitBreakerState.isOpen;
+    return isAirdropApiUrl && circuitBreakerState.isOpen;
+}
+
+function isConfiguredAirdropDomain(url: string): boolean {
+    const baseUrl = useConfigBEInMemoryStore.getState().airdrop_api_url;
+    if (!baseUrl) return false;
+    
+    try {
+        const urlObj = new URL(url);
+        const baseUrlObj = new URL(baseUrl);
+        return urlObj.hostname === baseUrlObj.hostname;
+    } catch (error) {
+        console.warn('Failed to parse URLs for domain comparison:', error);
+        // Fallback: check if URL contains known airdrop domains
+        return url.includes('ut.tari.com') || url.includes('rwa.yat.fyi');
+    }
 }
 
 function recordFailure(): void {
@@ -183,11 +198,11 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
         ...(headers as Record<string, string>),
     };
 
-    // Use native HTTP client for ut.tari.com by default (CORS-free)
-    const isUtTariUrl = fullUrl.includes('ut.tari.com');
-    if (isUtTariUrl) {
+    // Use native HTTP client for airdrop API by default (CORS-free)
+    const isAirdropApiUrl = isConfiguredAirdropDomain(fullUrl);
+    if (isAirdropApiUrl) {
         try {
-            console.info('Using native HTTP client for ut.tari.com request');
+            console.info('Using native HTTP client for airdrop API request');
             const result = await makeNativeHttpRequest<T>(fullUrl, method, requestHeaders, body);
             recordSuccess();
             return result;
@@ -208,8 +223,8 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
         if (!response.ok) {
             console.error(`Error fetching airdrop request at ${fullUrl}: `, response);
             
-            // Record failure for circuit breaker if this is a ut.tari.com request
-            if (fullUrl.includes('ut.tari.com')) {
+            // Record failure for circuit breaker if this is an airdrop API request
+            if (isAirdropApiUrl) {
                 recordFailure();
             }
             
@@ -219,7 +234,7 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
             return;
         } else {
             // Record success for circuit breaker
-            if (fullUrl.includes('ut.tari.com')) {
+            if (isAirdropApiUrl) {
                 recordSuccess();
             }
             return (await response.json()) as T;
@@ -227,15 +242,15 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
     } catch (e) {
         console.error(`Caught error fetching airdrop data at ${fullUrl}: `, e);
 
-        // For non-ut.tari.com URLs or if native HTTP already failed, just handle normally
-        if (!isUtTariUrl) {
+        // For non-airdrop URLs or if native HTTP already failed, just handle normally
+        if (!isAirdropApiUrl) {
             console.error(`Caught error fetching airdrop data at ${fullUrl}: `, e);
         } else {
-            console.error('Both native HTTP and fetch failed for ut.tari.com request:', e);
+            console.error('Both native HTTP and fetch failed for airdrop API request:', e);
         }
 
-        // Record failure if this is a ut.tari.com request
-        if (fullUrl.includes('ut.tari.com')) {
+        // Record failure if this is an airdrop API request
+        if (isAirdropApiUrl) {
             recordFailure();
         }
 

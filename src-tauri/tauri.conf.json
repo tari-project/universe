@@ -55,6 +55,7 @@
                     "'self'",
                     "https:",
                     "https://ut.tari.com",
+                    "https://rwa.yat.fyi",
                     "wss://ut.tari.com",
                     "wss://relay.walletconnect.org",
                     "https://rpc.ankr.com/eth",
