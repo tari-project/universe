@@ -63,7 +63,6 @@ async function initializeAnimation() {
 export const handleAppLoaded = async () => {
     const tari_address_base58 = useWalletStore.getState().tari_address_base58;
     await fetchBridgeTransactionsHistory(tari_address_base58);
-    // todo move it to event
     await fetchApplicationsVersionsWithRetry();
     await initializeAnimation();
 };
