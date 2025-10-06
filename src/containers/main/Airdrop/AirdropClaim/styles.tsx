@@ -29,8 +29,12 @@ export const LoadingSpinner = styled.div`
     animation: spin 1s linear infinite;
 
     @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
     }
 `;
 
@@ -105,7 +109,7 @@ export const ClaimStatusTitle = styled.h3`
     font-weight: 600;
     color: #166534;
     margin: 0 0 12px 0;
-    
+
     &::before {
         content: '🎉 ';
     }
@@ -253,15 +257,21 @@ export const ClaimButton = styled.button<{ $disabled?: boolean; $processing?: bo
                 box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
             }
 
-            ${$processing && css`
+            ${$processing &&
+            css`
                 animation: pulse 2s infinite;
             `}
         `;
     }}
 
     @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.8; }
+        0%,
+        100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.8;
+        }
     }
 `;
 
@@ -281,8 +291,12 @@ export const ButtonSpinner = styled.div`
     animation: spin 1s linear infinite;
 
     @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
     }
 `;
 
@@ -303,10 +317,10 @@ export const HowItWorksList = styled.ol`
     list-style: decimal inside;
     margin: 0;
     padding: 0;
-    
+
     li {
         margin-bottom: 4px;
-        
+
         &:last-child {
             margin-bottom: 0;
         }

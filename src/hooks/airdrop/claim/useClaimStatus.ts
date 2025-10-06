@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest';
 import type { ClaimStatus } from '@app/types/airdrop-claim';
+import { useAirdropStore } from '@app/store';
 
 export const KEY_CLAIM_STATUS = 'claim_status';
 
@@ -23,10 +24,11 @@ async function fetchClaimStatus(): Promise<ClaimStatus> {
 }
 
 export function useClaimStatus(enabled = true) {
+    const user = useAirdropStore((state) => state.userDetails?.user?.id);
     return useQuery({
-        queryKey: [KEY_CLAIM_STATUS],
+        queryKey: [KEY_CLAIM_STATUS, user],
         queryFn: fetchClaimStatus,
-        enabled,
+        enabled: !!user && enabled,
         staleTime: 30 * 1000, // 30 seconds
         gcTime: 2 * 60 * 1000, // 2 minutes
         retry: 2,

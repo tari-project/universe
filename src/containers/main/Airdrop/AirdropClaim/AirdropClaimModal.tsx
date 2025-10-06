@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import GreenModal from '@app/components/GreenModal/GreenModal.tsx';
-import { useBackgroundClaimSubmission } from '@app/hooks/airdrop/claim/useBackgroundClaimSubmission';
+import { useSimpleClaimSubmission } from '@app/hooks/airdrop/claim/useSimpleClaimSubmission';
 import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
 import { useAirdropStore } from '@app/store';
 import { setClaimInProgress, setClaimResult } from '@app/store/actions/airdropStoreActions';
@@ -51,7 +51,8 @@ import {
 export default function AirdropClaimModal() {
     const [selectedTarget, setSelectedTarget] = useState<'xtm' | 'usd'>('xtm');
     const claimState = useAirdropStore((state) => state.claim);
-    const { performBackgroundClaim, isProcessing, currentStep, error } = useBackgroundClaimSubmission();
+    const isLoggedIn = useAirdropStore((state) => state.userDetails?.user?.id);
+    const { performClaim, isProcessing, currentStep, error } = useSimpleClaimSubmission();
     const { data: claimStatus, isLoading: isLoadingStatus } = useClaimStatus();
 
     const [showModal, setShowModal] = useState(true);
@@ -68,7 +69,7 @@ export default function AirdropClaimModal() {
         setClaimInProgress(true);
 
         try {
-            const result = await performBackgroundClaim(selectedTarget);
+            const result = await performClaim(selectedTarget);
             setClaimResult(result);
 
             // Close modal on success after a brief delay to show success state
@@ -118,7 +119,7 @@ export default function AirdropClaimModal() {
     }, [showModal, claimStatus?.claimTarget]);
 
     return (
-        <GreenModal showModal={showModal} onClose={onClose} padding={24}>
+        <GreenModal showModal={!!isLoggedIn} onClose={onClose} padding={24}>
             <ModalWrapper>
                 <ModalTitle>{'Airdrop Claim'}</ModalTitle>
 
@@ -148,11 +149,17 @@ export default function AirdropClaimModal() {
                             <ClaimStatusDetails>
                                 <ClaimStatusRow>
                                     <ClaimStatusLabel>{'Amount:'}</ClaimStatusLabel>
-                                    <ClaimStatusValue>{claimStatus.amount}{' XTM'}</ClaimStatusValue>
+                                    <ClaimStatusValue>
+                                        {claimStatus.amount}
+                                        {' XTM'}
+                                    </ClaimStatusValue>
                                 </ClaimStatusRow>
                                 <ClaimStatusRow>
                                     <ClaimStatusLabel>{'USD Value:'}</ClaimStatusLabel>
-                                    <ClaimStatusValue>{'$'}{claimStatus.usdtAmount}</ClaimStatusValue>
+                                    <ClaimStatusValue>
+                                        {'$'}
+                                        {claimStatus.usdtAmount}
+                                    </ClaimStatusValue>
                                 </ClaimStatusRow>
                                 <ClaimStatusRow>
                                     <ClaimStatusLabel>{'Available Since:'}</ClaimStatusLabel>
@@ -178,7 +185,10 @@ export default function AirdropClaimModal() {
                                     />
                                     <TargetContent>
                                         <TargetTitle>{'Tari (XTM)'}</TargetTitle>
-                                        <TargetAmount>{claimStatus.amount}{' XTM'}</TargetAmount>
+                                        <TargetAmount>
+                                            {Number(claimStatus.amount)}
+                                            {' XTM'}
+                                        </TargetAmount>
                                     </TargetContent>
                                 </TargetOption>
                                 <TargetOption $disabled={isProcessing}>
@@ -192,7 +202,11 @@ export default function AirdropClaimModal() {
                                     />
                                     <TargetContent>
                                         <TargetTitle>{'USDT (Stablecoin)'}</TargetTitle>
-                                        <TargetAmount>{'$'}{claimStatus.usdtAmount}{' USDT'}</TargetAmount>
+                                        <TargetAmount>
+                                            {'$'}
+                                            {Number(claimStatus.usdtAmount).toFixed(2)}
+                                            {' USDT'}
+                                        </TargetAmount>
                                     </TargetContent>
                                 </TargetOption>
                             </TargetOptions>
@@ -203,7 +217,11 @@ export default function AirdropClaimModal() {
                             <ProgressContainer>
                                 <ProgressHeader>
                                     <ProgressTitle>{'Processing Claim'}</ProgressTitle>
-                                    <ProgressCounter>{getStepProgress()}{'/'}{5}</ProgressCounter>
+                                    <ProgressCounter>
+                                        {getStepProgress()}
+                                        {'/'}
+                                        {5}
+                                    </ProgressCounter>
                                 </ProgressHeader>
                                 <ProgressBar>
                                     <ProgressFill $progress={(getStepProgress() / 5) * 100} />
@@ -231,7 +249,7 @@ export default function AirdropClaimModal() {
                                 <li>{'Security tokens are fetched automatically'}</li>
                                 <li>{'Verification is handled in the background'}</li>
                                 <li>{'Your claim is submitted securely'}</li>
-                                <li>{'You\'ll see a confirmation when complete'}</li>
+                                <li>{"You'll see a confirmation when complete"}</li>
                             </HowItWorksList>
                             <HowItWorksNote>{'Entire process takes 10-30 seconds'}</HowItWorksNote>
                         </HowItWorksContainer>
