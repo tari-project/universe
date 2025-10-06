@@ -166,11 +166,11 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
     const fullUrl = `${baseUrl}${path}`;
     const headersWithAuth = airdropToken ? { Authorization: `Bearer ${airdropToken}` } : undefined;
     
-    const requestHeaders = {
+    const requestHeaders: Record<string, string> = {
         ...defaultHeaders,
         'Content-Type': 'application/json',
         ...headersWithAuth,
-        ...headers,
+        ...(headers as Record<string, string>),
     };
 
     // Check if we should use native HTTP client
