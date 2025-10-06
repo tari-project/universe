@@ -16,48 +16,7 @@ interface RequestProps<B> {
 
 const MAX_RETRIES = 3;
 const RETRY_INTERVAL = 250;
-const CIRCUIT_BREAKER_FAILURE_THRESHOLD = 3;
-const CIRCUIT_BREAKER_RESET_TIMEOUT = 60000; // 1 minute
-
 let retryCount = 0;
-
-// Circuit breaker state for ut.tari.com
-interface CircuitBreakerState {
-    failures: number;
-    lastFailureTime: number;
-    isOpen: boolean;
-}
-
-const circuitBreakerState: CircuitBreakerState = {
-    failures: 0,
-    lastFailureTime: 0,
-    isOpen: false,
-};
-
-function isCorsError(error: any): boolean {
-    const errorMessage = error?.message || error?.toString() || '';
-    return (
-        errorMessage.includes('CORS') ||
-        errorMessage.includes('Cross-Origin') ||
-        errorMessage.includes('net::ERR_FAILED') ||
-        error?.name === 'TypeError' // Often indicates CORS issues in fetch
-    );
-}
-
-function shouldUseNativeHttp(url: string): boolean {
-    const isAirdropApiUrl = isConfiguredAirdropDomain(url);
-    const now = Date.now();
-    
-    // Reset circuit breaker if enough time has passed
-    if (circuitBreakerState.isOpen && 
-        now - circuitBreakerState.lastFailureTime > CIRCUIT_BREAKER_RESET_TIMEOUT) {
-        circuitBreakerState.isOpen = false;
-        circuitBreakerState.failures = 0;
-        console.info('Circuit breaker reset for airdrop API');
-    }
-    
-    return isAirdropApiUrl && circuitBreakerState.isOpen;
-}
 
 function isConfiguredAirdropDomain(url: string): boolean {
     const baseUrl = useConfigBEInMemoryStore.getState().airdrop_api_url;
@@ -71,24 +30,6 @@ function isConfiguredAirdropDomain(url: string): boolean {
         console.warn('Failed to parse URLs for domain comparison:', error);
         // Fallback: check if URL contains known airdrop domains
         return url.includes('ut.tari.com') || url.includes('rwa.yat.fyi');
-    }
-}
-
-function recordFailure(): void {
-    circuitBreakerState.failures++;
-    circuitBreakerState.lastFailureTime = Date.now();
-    
-    if (circuitBreakerState.failures >= CIRCUIT_BREAKER_FAILURE_THRESHOLD) {
-        circuitBreakerState.isOpen = true;
-        console.warn(`Circuit breaker opened for ut.tari.com after ${circuitBreakerState.failures} failures`);
-    }
-}
-
-function recordSuccess(): void {
-    if (circuitBreakerState.failures > 0) {
-        circuitBreakerState.failures = 0;
-        circuitBreakerState.isOpen = false;
-        console.info('Circuit breaker reset due to successful request');
     }
 }
 
@@ -136,10 +77,6 @@ async function makeNativeHttpRequest<T>(
     }
 }
 
-//  TODO -
-//   'un-airdrop" - use RWA language & move request handler
-//   added by @shanimal08
-
 export async function handleAirdropRequest<T, B = Record<string, unknown>>({
     body,
     method,
@@ -157,9 +94,7 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
         }
     }
 
-    // use useConfigBEInMemoryStore now, not airdrop store for the URL
     const baseUrl = useConfigBEInMemoryStore.getState().airdrop_api_url;
-
     const airdropToken = useAirdropStore.getState().airdropTokens?.token;
     const airdropTokenExpiration = useAirdropStore.getState().airdropTokens?.expiresAt;
 
@@ -198,22 +133,24 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
         ...(headers as Record<string, string>),
     };
 
-    // Use native HTTP client for airdrop API by default (CORS-free)
+    // Use native HTTP client for all airdrop API requests (CORS-free, more reliable)
     const isAirdropApiUrl = isConfiguredAirdropDomain(fullUrl);
     if (isAirdropApiUrl) {
         try {
             console.info('Using native HTTP client for airdrop API request');
-            const result = await makeNativeHttpRequest<T>(fullUrl, method, requestHeaders, body);
-            recordSuccess();
-            return result;
+            return await makeNativeHttpRequest<T>(fullUrl, method, requestHeaders, body);
         } catch (nativeError) {
-            console.error('Native HTTP request failed, falling back to fetch:', nativeError);
-            recordFailure();
-            // Fall through to try fetch as fallback
+            console.error('Native HTTP request failed:', nativeError);
+            if (onError) {
+                onError(nativeError);
+            }
+            return;
         }
     }
 
+    // For non-airdrop URLs, use fetch (shouldn't happen in current usage)
     try {
+        console.warn(`Using fetch for non-airdrop URL: ${fullUrl}`);
         const response = await fetch(fullUrl, {
             method: method,
             headers: requestHeaders,
@@ -221,39 +158,16 @@ export async function handleAirdropRequest<T, B = Record<string, unknown>>({
         });
 
         if (!response.ok) {
-            console.error(`Error fetching airdrop request at ${fullUrl}: `, response);
-            
-            // Record failure for circuit breaker if this is an airdrop API request
-            if (isAirdropApiUrl) {
-                recordFailure();
-            }
-            
+            console.error(`Error fetching request at ${fullUrl}: `, response);
             if (onError) {
                 onError(response);
             }
             return;
-        } else {
-            // Record success for circuit breaker
-            if (isAirdropApiUrl) {
-                recordSuccess();
-            }
-            return (await response.json()) as T;
         }
+        
+        return (await response.json()) as T;
     } catch (e) {
-        console.error(`Caught error fetching airdrop data at ${fullUrl}: `, e);
-
-        // For non-airdrop URLs or if native HTTP already failed, just handle normally
-        if (!isAirdropApiUrl) {
-            console.error(`Caught error fetching airdrop data at ${fullUrl}: `, e);
-        } else {
-            console.error('Both native HTTP and fetch failed for airdrop API request:', e);
-        }
-
-        // Record failure if this is an airdrop API request
-        if (isAirdropApiUrl) {
-            recordFailure();
-        }
-
+        console.error(`Caught error fetching data at ${fullUrl}: `, e);
         if (onError) {
             onError(e);
         }
