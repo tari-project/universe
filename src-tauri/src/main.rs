@@ -92,6 +92,7 @@ mod events_emitter;
 mod events_manager;
 mod feedback;
 mod hardware;
+mod http_client;
 mod internal_wallet;
 mod mining;
 mod mining_status_manager;
@@ -586,6 +587,8 @@ fn main() {
             commands::list_connected_peers,
             commands::switch_gpu_miner,
             commands::set_feedback_fields,
+            commands::http_request,
+            commands::http_request_airdrop,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {
