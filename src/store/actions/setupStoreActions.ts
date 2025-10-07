@@ -68,14 +68,6 @@ export const handleAppLoaded = async () => {
     // todo move it to event
     await fetchApplicationsVersionsWithRetry();
     await initializeAnimation();
-
-    // TODO REMOVE LATER - just for testing
-    invoke('add_scheduler_event', {
-        eventId: 'test-event-id-1',
-        eventType: SchedulerEventType.Mine,
-        eventTiming: 'Between 10 AM and 11 AM',
-        miningMode: 'Eco',
-    }).catch(console.error);
 };
 
 export const updateSetupProgress = (payload: ProgressTrackerUpdatePayload | undefined) => {
