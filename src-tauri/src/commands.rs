@@ -1893,7 +1893,7 @@ pub async fn add_scheduler_event(
                 return Err("Mining mode is required for StartMining event".to_string());
             }
         }
-        "PauseMining" => SchedulerEventType::PauseMining,
+        "PauseMining" => SchedulerEventType::ResumeMining,
         _ => return Err("Invalid event type".to_string()),
     };
 

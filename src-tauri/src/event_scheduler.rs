@@ -200,7 +200,7 @@ pub struct ScheduledEventInfo {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub enum SchedulerEventType {
-    PauseMining,
+    ResumeMining,
     Mine { mining_mode: MiningMode }
 }
 
@@ -214,14 +214,14 @@ pub enum SchedulerEventState {
 
 impl SchedulerEventType {
     pub fn is_unique(&self) -> bool {
-        matches!(self, SchedulerEventType::PauseMining)
+        matches!(self, SchedulerEventType::ResumeMining)
     }
 }
 
 impl Display for SchedulerEventType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SchedulerEventType::PauseMining => write!(f, "Pause Mining"),
+            SchedulerEventType::ResumeMining => write!(f, "Pause Mining"),
             SchedulerEventType::Mine { mining_mode } => write!(f, "Mine ({})", mining_mode.mode_name),
         }
     }
@@ -343,7 +343,7 @@ impl EventScheduler {
         info!(target: LOG_TARGET, "Executing event callback for {:?} (ID: {:?})", event_type, event_id);
         
         match event_type {
-            SchedulerEventType::PauseMining => {
+            SchedulerEventType::ResumeMining => {
                 info!(target: LOG_TARGET, "============================ Event callback: Pausing mining...");
                 GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to start GPU mining during PauseMining event {:?}: {}", event_id, e);
@@ -370,7 +370,7 @@ impl EventScheduler {
     async fn cleanup_event_callback(&self, event_type: &SchedulerEventType, event_id: String) {
         info!(target: LOG_TARGET, "Cleaning up event with ID {:?}", event_id);
         match event_type {
-            SchedulerEventType::PauseMining => {},
+            SchedulerEventType::ResumeMining => {},
             SchedulerEventType::Mine { mining_mode } => {
                 GpuManager::write().await.stop_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to stop mining during cleanup of event {:?}: {}", event_id, e);
@@ -701,7 +701,7 @@ impl EventScheduler {
     pub async fn cleanup_pause_mining_in_events(&self) {
         let to_remove: Vec<String> = self.scheduled_events
             .iter()
-            .filter(|(_, event)| event.event_type == SchedulerEventType::PauseMining && matches!(event.timing, SchedulerEventTiming::In(_)))
+            .filter(|(_, event)| event.event_type == SchedulerEventType::ResumeMining && matches!(event.timing, SchedulerEventTiming::In(_)))
             .map(|(id, _)| id.clone())
             .collect();
             
