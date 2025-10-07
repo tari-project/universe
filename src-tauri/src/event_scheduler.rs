@@ -404,7 +404,6 @@ impl EventScheduler {
 
         match event_type {
             SchedulerEventType::ResumeMining => {
-                info!(target: LOG_TARGET, "============================ Event callback: Pausing mining...");
                 GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to start GPU mining during PauseMining event {:?}: {}", event_id, e);
                 });
@@ -560,8 +559,6 @@ impl EventScheduler {
             }
         }
 
-        info!(target: LOG_TARGET, "=================================== Scheduling new event {:?} with ID {:?}", event_type, event_id);
-
         let mut scheduled_event = ScheduledEvent {
             id: event_id.clone(),
             event_type: event_type.clone(),
@@ -573,8 +570,6 @@ impl EventScheduler {
         let task_handle =
             Self::create_scheduling_task(event_id.clone(), event_type, timing).await?;
         scheduled_event.task_handle = Some(task_handle);
-
-        info!(target: LOG_TARGET, "===================================== Added event {:?} with ID {:?}", scheduled_event.event_type, event_id.clone());
         events.insert(event_id.clone(), scheduled_event);
 
         Ok(event_id)
@@ -671,7 +666,6 @@ impl EventScheduler {
     ) -> Result<tokio::task::JoinHandle<()>, SchedulerError> {
         let handle = match timing {
             SchedulerEventTiming::In(duration) => tokio::spawn(async move {
-                info!(target: LOG_TARGET, "======================================== Scheduling 'In' event {:?} to trigger after {:?}", event_id, duration);
                 sleep(duration).await;
 
                 if let Some(sender) = &INSTANCE.read().await.message_sender {
@@ -709,7 +703,6 @@ impl EventScheduler {
                                     .to_std()
                                     .unwrap_or(Duration::from_secs(0));
                                 if end_wait > Duration::from_secs(0) {
-                                    info!(target: LOG_TARGET, "=============== Waiting for {:?} until end time {:?}", end_wait, next_end);
                                     sleep(end_wait).await;
                                 }
                                 if let Some(sender) = &INSTANCE.read().await.message_sender {
@@ -727,7 +720,6 @@ impl EventScheduler {
                                 let wait_duration = (next_start - now)
                                     .to_std()
                                     .unwrap_or(Duration::from_secs(0));
-                                info!(target: LOG_TARGET, "=============== Waiting for {:?} until next start time {:?}", wait_duration, next_start);
                                 sleep(wait_duration).await;
                             }
 
@@ -744,7 +736,6 @@ impl EventScheduler {
                                     .to_std()
                                     .unwrap_or(Duration::from_secs(0));
                                 if end_wait > Duration::from_secs(0) {
-                                    info!(target: LOG_TARGET, "=============== Waiting for {:?} until end time {:?}", end_wait, next_end);
                                     sleep(end_wait).await;
                                 }
                                 if let Some(sender) = &INSTANCE.read().await.message_sender {
