@@ -234,13 +234,16 @@ impl CpuManager {
                 .await
                 .get_selected_cpu_usage_percentage();
 
-            self.process_watcher.adapter.cpu_threads =
-                Some(Self::determine_number_of_cores_to_use(cpu_usage_percentage).await);
-
             if cpu_usage_percentage <= 1 {
+                self.process_watcher.adapter.cpu_threads =
+                    Some(Self::determine_number_of_cores_to_use(100).await);
+
                 self.process_watcher.adapter.extra_options =
                     vec!["--randomx-mode=light".to_string()]
             } else {
+                self.process_watcher.adapter.cpu_threads =
+                    Some(Self::determine_number_of_cores_to_use(cpu_usage_percentage).await);
+
                 self.process_watcher.adapter.extra_options = vec!["--randomx-mode=fast".to_string()]
             }
 
