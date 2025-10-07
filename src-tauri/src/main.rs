@@ -360,7 +360,7 @@ fn main() {
                     if window.is_visible().unwrap_or(false) {
                         #[cfg(target_os = "macos")]
                         {
-                            AppHandle::hide(&window.app_handle()).unwrap_or_else(|error| {
+                            AppHandle::hide(window.app_handle()).unwrap_or_else(|error| {
                                 error!(target: LOG_TARGET, "Failed to hide app: {error}");
                             });
                         }
