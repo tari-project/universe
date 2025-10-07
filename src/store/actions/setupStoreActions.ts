@@ -23,6 +23,8 @@ import { ProgressTrackerUpdatePayload, SetupPhase } from '@app/types/events-payl
 import { AppModule, AppModuleState, AppModuleStatus } from '../types/setup';
 import { animationDarkBg, animationLightBg } from '@app/store/actions/uiStoreActions.ts';
 import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
+import { invoke } from '@tauri-apps/api/core';
+import { SchedulerEventType } from '@app/types/app-status';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
@@ -66,6 +68,14 @@ export const handleAppLoaded = async () => {
     // todo move it to event
     await fetchApplicationsVersionsWithRetry();
     await initializeAnimation();
+
+    // TODO REMOVE LATER - just for testing
+    invoke('add_scheduler_event', {
+        eventId: 'test-event-id-1',
+        eventType: SchedulerEventType.Mine,
+        eventTiming: 'Between 10 AM and 11 AM',
+        miningMode: 'Eco',
+    }).catch(console.error);
 };
 
 export const updateSetupProgress = (payload: ProgressTrackerUpdatePayload | undefined) => {

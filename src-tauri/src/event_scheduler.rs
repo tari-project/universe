@@ -22,6 +22,7 @@
 
 #![allow(dead_code, unused_variables, unused_must_use)]
 
+use chrono::Local;
 use croner::{self, parser::CronParser};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -55,8 +56,8 @@ static EVENT_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 #[derive(Debug)]
 enum SchedulerMessage {
     AddEvent {
-        event_type: EventType,
-        timing: EventTiming,
+        event_type: SchedulerEventType,
+        timing: SchedulerEventTiming,
         event_id: String,
         response: tokio::sync::oneshot::Sender<Result<String, SchedulerError>>,
     },
@@ -73,6 +74,9 @@ enum SchedulerMessage {
         response: tokio::sync::oneshot::Sender<Result<(), SchedulerError>>,
     },
     TriggerEvent {
+        event_id: String,
+    },
+    TriggerCleanup {
         event_id: String,
     },
 }
@@ -104,12 +108,12 @@ impl Display for SchedulerError {
 impl std::error::Error for SchedulerError {}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum EventTiming {
+pub enum SchedulerEventTiming {
     In(Duration),            // e.g., In(2 hours) - triggers once after the duration
     Between(String, String), // e.g., Between("0 22 * * *", "0 6 * * *") (10PM to 6AM every day)
 }
 
-impl EventTiming {
+impl SchedulerEventTiming {
     // It will parse two cases:
     // 1. In X hours => EventTiming::In(Duration::from_secs(X * 3600))
     // 2. Between X and Y => EventTiming::Between("cron_pattern_for_X", "cron_pattern_for_Y") Where X and Y are 12-hour times like "10 PM" and "6 AM"
@@ -122,9 +126,11 @@ impl EventTiming {
                 let unit = parts[1].to_lowercase();
                 let duration = match unit.as_str() {
                     "hour" | "hours" => Duration::from_secs(value * 3600),
+                    "minute" | "minutes" => Duration::from_secs(value * 60),
+                    "second" | "seconds" => Duration::from_secs(value),
                     _ => return Err(SchedulerError::InternalError("Invalid duration unit".to_string())),
                 };
-                Ok(EventTiming::In(duration))
+                Ok(SchedulerEventTiming::In(duration))
             } else {
                 Err(SchedulerError::InternalError("Invalid 'In' format".to_string()))
             }
@@ -136,7 +142,7 @@ impl EventTiming {
                 // Convert to cron patterns
                 let start_cron = Self::time_to_cron(start)?;
                 let end_cron = Self::time_to_cron(end)?;
-                Ok(EventTiming::Between(start_cron, end_cron))
+                Ok(SchedulerEventTiming::Between(start_cron, end_cron))
             } else {
                 Err(SchedulerError::InternalError("Invalid 'Between' format".to_string()))
             }
@@ -164,25 +170,16 @@ impl EventTiming {
         // Cron pattern for every day at the specified hour
         Ok(format!("0 {} * * *", hour_24))
     }
-}
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ScheduledEventInfo {
-    pub id: String,
-    pub event_type: EventType,
-    pub timing: EventTiming,
-}
-
-impl EventTiming {
     pub fn is_persistent(&self) -> bool {
-        matches!(self, EventTiming::Between(_, _))
+        matches!(self, SchedulerEventTiming::Between(_, _))
     }
 
     /// Validates cron patterns for Between timing
     pub fn validate(&self) -> Result<(), SchedulerError> {
         match self {
-            EventTiming::In(_) => Ok(()),
-            EventTiming::Between(start, end) => {
+            SchedulerEventTiming::In(_) => Ok(()),
+            SchedulerEventTiming::Between(start, end) => {
                 // Validate both cron patterns
                 CronParser::builder()
                     .build()
@@ -198,30 +195,38 @@ impl EventTiming {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScheduledEventInfo {
+    pub id: String,
+    pub event_type: SchedulerEventType,
+    pub timing: SchedulerEventTiming,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub enum EventType {
+pub enum SchedulerEventType {
     PauseMining,
     Mine { mining_mode: MiningMode }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum EventState {
+pub enum SchedulerEventState {
     Active,
     Paused,
+    Triggered,
     Completed,
 }
 
-impl EventType {
+impl SchedulerEventType {
     pub fn is_unique(&self) -> bool {
-        matches!(self, EventType::PauseMining)
+        matches!(self, SchedulerEventType::PauseMining)
     }
 }
 
-impl Display for EventType {
+impl Display for SchedulerEventType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            EventType::PauseMining => write!(f, "Pause Mining"),
-            EventType::Mine { mining_mode } => write!(f, "Mine ({})", mining_mode.mode_name),
+            SchedulerEventType::PauseMining => write!(f, "Pause Mining"),
+            SchedulerEventType::Mine { mining_mode } => write!(f, "Mine ({})", mining_mode.mode_name),
         }
     }
 }
@@ -230,9 +235,9 @@ impl Display for EventType {
 #[derive(Debug)]
 struct ScheduledEvent {
     id: String,
-    event_type: EventType,
-    timing: EventTiming,
-    state: EventState,
+    event_type: SchedulerEventType,
+    timing: SchedulerEventTiming,
+    state: SchedulerEventState,
     task_handle: Option<tokio::task::JoinHandle<()>>,
 }
 
@@ -259,7 +264,7 @@ impl EventScheduler {
         INSTANCE.read().await
     }
 
-    pub async fn schedule_event(&self, event_type: EventType,event_id:String, timing: EventTiming) -> Result<String, SchedulerError> {
+    pub async fn schedule_event(&self, event_type: SchedulerEventType,event_id:String, timing: SchedulerEventTiming) -> Result<String, SchedulerError> {
         timing.validate()?;
 
         if let Some(sender) = &self.message_sender {
@@ -338,17 +343,30 @@ impl EventScheduler {
             error!(target: LOG_TARGET, "Failed to save persistent events to config: {}", e);
         });
     }
-    async fn execute_event_callback(&self, event_type: &EventType, event_id: String) {
+    async fn execute_event_callback(&self, event_type: &SchedulerEventType, event_id: String) {
         info!(target: LOG_TARGET, "Executing event callback for {:?} (ID: {:?})", event_type, event_id);
         
         match event_type {
-            EventType::PauseMining => {
-                info!(target: LOG_TARGET, "Event callback: Pausing mining...");
+            SchedulerEventType::PauseMining => {
+                info!(target: LOG_TARGET, "============================ Event callback: Pausing mining...");
                 // TODO: Add your pause mining logic here
             },
-            EventType::Mine { mining_mode } => {
-                info!(target: LOG_TARGET, "Event callback: Mining operation...");
+            SchedulerEventType::Mine { mining_mode } => {
+                info!(target: LOG_TARGET, "============================ Event callback: Mining operation...");
                 // TODO: Add your mining operation logic here
+            },
+        }
+    }
+
+    // Called in case of Between events when the end time is reached
+    async fn cleanup_event_callback(&self, event_type: &SchedulerEventType, event_id: String) {
+        info!(target: LOG_TARGET, "Cleaning up event with ID {:?}", event_id);
+        match event_type {
+            SchedulerEventType::PauseMining => {
+                info!(target: LOG_TARGET, "============================ Cleanup callback: Resuming mining...");
+            },
+            SchedulerEventType::Mine { mining_mode } => {
+                info!(target: LOG_TARGET, "============================ Cleanup callback: Stopping mining...");
             },
         }
     }
@@ -361,7 +379,7 @@ impl EventScheduler {
                     id: info.id,
                     event_type: info.event_type,
                     timing: info.timing,
-                    state: EventState::Active,
+                    state: SchedulerEventState::Active,
                     task_handle: None,
                 })
             })
@@ -429,7 +447,10 @@ impl EventScheduler {
                             Some(SchedulerMessage::TriggerEvent { event_id }) => {
                                 Self::handle_trigger_event(&internal_events, event_id).await;
                             },
-                            
+
+                            Some(SchedulerMessage::TriggerCleanup { event_id }) => {
+                                Self::handle_cleanup_event(&internal_events, event_id).await;
+                            }
                             
                             None => {
                                 warn!(target: LOG_TARGET, "Message channel closed, stopping scheduler");
@@ -448,9 +469,9 @@ impl EventScheduler {
 
     async fn handle_add_event(
         events: &mut HashMap<String, ScheduledEvent>,
-        event_type: EventType,
+        event_type: SchedulerEventType,
         event_id: String,
-        timing: EventTiming,
+        timing: SchedulerEventTiming,
     ) -> Result<String, SchedulerError> {
         if event_type.is_unique() {
             let to_remove: Vec<String> = events
@@ -466,18 +487,20 @@ impl EventScheduler {
             }
         }
 
+        info!(target: LOG_TARGET, "=================================== Scheduling new event {:?} with ID {:?}", event_type, event_id);
+
         let mut scheduled_event = ScheduledEvent {
             id: event_id.clone(),
             event_type: event_type.clone(),
             timing: timing.clone(),
-            state: EventState::Active,
+            state: SchedulerEventState::Active,
             task_handle: None,
         };
 
         let task_handle = Self::create_scheduling_task(event_id.clone(), event_type, timing).await?;
         scheduled_event.task_handle = Some(task_handle);
 
-        info!(target: LOG_TARGET, "Added event {:?} with ID {:?}", scheduled_event.event_type, event_id.clone());
+        info!(target: LOG_TARGET, "===================================== Added event {:?} with ID {:?}", scheduled_event.event_type, event_id.clone());
         events.insert(event_id.clone(), scheduled_event);
         
         Ok(event_id)
@@ -503,11 +526,11 @@ impl EventScheduler {
         event_id: String,
     ) -> Result<(), SchedulerError> {
         if let Some(event) = events.get_mut(&event_id) {
-            if event.state == EventState::Paused {
+            if event.state == SchedulerEventState::Paused {
                 return Err(SchedulerError::EventAlreadyPaused(event_id));
             }
             
-            event.state = EventState::Paused;
+            event.state = SchedulerEventState::Paused;
             if let Some(handle) = event.task_handle.take() {
                 handle.abort();
             }
@@ -524,11 +547,11 @@ impl EventScheduler {
         event_id: String,
     ) -> Result<(), SchedulerError> {
         if let Some(event) = events.get_mut(&event_id) {
-            if event.state != EventState::Paused {
+            if event.state != SchedulerEventState::Paused {
                 return Err(SchedulerError::EventAlreadyRunning(event_id));
             }
             
-            event.state = EventState::Active;
+            event.state = SchedulerEventState::Active;
             
             let task_handle = Self::create_scheduling_task(
                 event_id.clone(),
@@ -547,22 +570,30 @@ impl EventScheduler {
 
     async fn handle_trigger_event(events: &HashMap<String, ScheduledEvent>, event_id: String) {
         if let Some(event) = events.get(&event_id) {
-            if event.state == EventState::Active {
+            if event.state == SchedulerEventState::Active {
                 let scheduler = INSTANCE.read().await;
                 scheduler.execute_event_callback(&event.event_type, event_id).await;
             }
         }
     }
 
+    async fn handle_cleanup_event(events: &HashMap<String, ScheduledEvent>, event_id: String) {
+        if let Some(event) = events.get(&event_id) {
+            let scheduler = INSTANCE.read().await;
+            scheduler.cleanup_event_callback(&event.event_type, event_id.clone()).await;
+        }
+    }
+
     // Create a scheduling task for different timing types
     async fn create_scheduling_task(
         event_id: String,
-        _event_type: EventType, // Not used in scheduling logic, only for identification
-        timing: EventTiming,
+        _event_type: SchedulerEventType, // Not used in scheduling logic, only for identification
+        timing: SchedulerEventTiming,
     ) -> Result<tokio::task::JoinHandle<()>, SchedulerError> {
         let handle = match timing {
-            EventTiming::In(duration) => {
+            SchedulerEventTiming::In(duration) => {
                 tokio::spawn(async move {
+                    info!(target: LOG_TARGET, "======================================== Scheduling 'In' event {:?} to trigger after {:?}", event_id, duration);
                     sleep(duration).await;
                     
                     if let Some(sender) = &INSTANCE.read().await.message_sender {
@@ -571,7 +602,7 @@ impl EventScheduler {
                 })
             },
             
-            EventTiming::Between(start_cron, end_cron) => {
+            SchedulerEventTiming::Between(start_cron, end_cron) => {
                 let start_cron_parsed = CronParser::builder()
                     .build()
                     .parse(&start_cron)
@@ -583,11 +614,29 @@ impl EventScheduler {
                 
                 tokio::spawn(async move {
                     loop {
-                        if let Ok(next_start) = start_cron_parsed.find_next_occurrence(&chrono::Utc::now(), false) {
+                        if start_cron_parsed.is_time_matching(&chrono::Local::now()).is_ok() {
+                            info!(target: LOG_TARGET, "Start cron matched for event ID {:?} at {:?}", event_id, chrono::Local::now());
+                            if let Some(sender) = &INSTANCE.read().await.message_sender {
+                                let _ = sender.send(SchedulerMessage::TriggerEvent { event_id: event_id.clone() });
+                            }
+
+                            if let Ok(next_end) = end_cron_parsed.find_next_occurrence(&chrono::Local::now(), false) {
+                                let end_wait = (next_end - chrono::Local::now()).to_std().unwrap_or(Duration::from_secs(0));
+                                if end_wait > Duration::from_secs(0) {
+                                    info!(target: LOG_TARGET, "=============== Waiting for {:?} until end time {:?}", end_wait, next_end);
+                                    sleep(end_wait).await;
+                                }
+                                if let Some(sender) = &INSTANCE.read().await.message_sender {
+                                    let _ = sender.send(SchedulerMessage::TriggerCleanup { event_id: event_id.clone() });
+                                }
+                            }
+
+                        } else if let Ok(next_start) = start_cron_parsed.find_next_occurrence(&chrono::Local::now(), false) {
                             // Wait until start time
-                            let now = chrono::Utc::now();
+                            let now = chrono::Local::now();
                             if next_start > now {
                                 let wait_duration = (next_start - now).to_std().unwrap_or(Duration::from_secs(0));
+                                info!(target: LOG_TARGET, "=============== Waiting for {:?} until next start time {:?}", wait_duration, next_start);
                                 sleep(wait_duration).await;
                             }
                             
@@ -596,14 +645,16 @@ impl EventScheduler {
                             }
                             
                             if let Ok(next_end) = end_cron_parsed.find_next_occurrence(&next_start, false) {
-                                let end_wait = (next_end - chrono::Utc::now()).to_std().unwrap_or(Duration::from_secs(0));
+                                let end_wait = (next_end - chrono::Local::now()).to_std().unwrap_or(Duration::from_secs(0));
                                 if end_wait > Duration::from_secs(0) {
+                                    info!(target: LOG_TARGET, "=============== Waiting for {:?} until end time {:?}", end_wait, next_end);
                                     sleep(end_wait).await;
                                 }
+                                if let Some(sender) = &INSTANCE.read().await.message_sender {
+                                    let _ = sender.send(SchedulerMessage::TriggerCleanup { event_id: event_id.clone() });
+                                }
                             }
-                        } else {
-                            break;
-                        }
+                        } 
                     }
                 })
             }
@@ -612,14 +663,14 @@ impl EventScheduler {
         Ok(handle)
     }
 
-    fn calculate_next_execution(timing: &EventTiming) -> Option<chrono::DateTime<chrono::Utc>> {
+    fn calculate_next_execution(timing: &SchedulerEventTiming) -> Option<chrono::DateTime<chrono::Local>> {
         match timing {
-            EventTiming::In(duration) => {
-                Some(chrono::Utc::now() + chrono::Duration::from_std(*duration).ok()?)
+            SchedulerEventTiming::In(duration) => {
+                Some(chrono::Local::now() + chrono::Duration::from_std(*duration).ok()?)
             },
-            EventTiming::Between(start_cron, _) => {
+            SchedulerEventTiming::Between(start_cron, _) => {
                 let cron = CronParser::builder().build().parse(start_cron).ok()?;
-                cron.find_next_occurrence(&chrono::Utc::now(), false).ok()
+                cron.find_next_occurrence(&chrono::Local::now(), false).ok()
             }
         }
     }

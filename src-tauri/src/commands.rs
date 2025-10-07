@@ -32,7 +32,8 @@ use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId}
 use crate::configs::pools::BasePoolData;
 use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
-use crate::events::ConnectionStatusPayload;
+use crate::event_scheduler::{EventScheduler, SchedulerEventTiming, SchedulerEventType};
+use crate::events::{ConnectionStatusPayload, EventType};
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
@@ -60,6 +61,7 @@ use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
 use crate::{airdrop, UniverseAppState};
 
 use base64::prelude::*;
+use futures::TryFutureExt;
 use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -1867,22 +1869,80 @@ pub async fn list_connected_peers(
 
 // ================ Event Scheduler Commands ==================
 #[tauri::command]
-pub async fn add_scheduler_event() -> Result<(), InvokeError> {
+pub async fn add_scheduler_event(
+    event_id: String,
+    event_type: String,
+    event_timing: String,
+    mining_mode: Option<String>,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET, "add_scheduler_event called with event_id: {event_id:?}, event_type: {event_type:?}, event_timing: {event_timing:?}, mining_mode: {mining_mode:?}");
+
+    let event_timing =
+        SchedulerEventTiming::from_string(event_timing).map_err(|e| e.to_string())?;
+
+    let event_type = match event_type.as_str() {
+        "Mine" => {
+            if let Some(mode) = mining_mode {
+                let mining_modes = ConfigMining::content().await.mining_modes().clone();
+                let mining_mode = mining_modes
+                    .get(&mode)
+                    .ok_or("Invalid mining mode".to_string())?;
+                SchedulerEventType::Mine {
+                    mining_mode: mining_mode.clone(),
+                }
+            } else {
+                return Err("Mining mode is required for StartMining event".to_string());
+            }
+        }
+        "PauseMining" => SchedulerEventType::PauseMining,
+        _ => return Err("Invalid event type".to_string()),
+    };
+
+    EventScheduler::write()
+        .await
+        .schedule_event(event_type, event_id, event_timing)
+        .await
+        .map_err(|e| e.to_string())?;
+
     Ok(())
 }
 
 #[tauri::command]
-pub async fn remove_scheduler_event() -> Result<(), InvokeError> {
+pub async fn remove_scheduler_event(event_id: String) -> Result<(), String> {
+    info!(target: LOG_TARGET, "remove_scheduler_event called with event_id: {event_id:?}");
+
+    EventScheduler::write()
+        .await
+        .remove_event(event_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
     Ok(())
 }
 
 #[tauri::command]
-pub async fn pause_scheduler_event() -> Result<(), InvokeError> {
+pub async fn pause_scheduler_event(event_id: String) -> Result<(), String> {
+    info!(target: LOG_TARGET, "pause_scheduler_event called with event_id: {event_id:?}");
+
+    EventScheduler::write()
+        .await
+        .pause_event(event_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
     Ok(())
 }
 
 #[tauri::command]
-pub async fn resume_scheduler_event() -> Result<(), InvokeError> {
+pub async fn resume_scheduler_event(event_id: String) -> Result<(), String> {
+    info!(target: LOG_TARGET, "resume_scheduler_event called with event_id: {event_id:?}");
+
+    EventScheduler::write()
+        .await
+        .resume_event(event_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
     Ok(())
 }
 
