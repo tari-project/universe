@@ -23,8 +23,6 @@ import { ProgressTrackerUpdatePayload, SetupPhase } from '@app/types/events-payl
 import { AppModule, AppModuleState, AppModuleStatus } from '../types/setup';
 import { animationDarkBg, animationLightBg } from '@app/store/actions/uiStoreActions.ts';
 import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
-import { invoke } from '@tauri-apps/api/core';
-import { SchedulerEventType } from '@app/types/app-status';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];

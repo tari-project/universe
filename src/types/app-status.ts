@@ -137,6 +137,6 @@ export interface TariAddressVariants {
 }
 
 export enum SchedulerEventType {
-    PauseMining = 'PauseMining',
+    ResumeMining = 'ResumeMining',
     Mine = 'Mine',
 }
