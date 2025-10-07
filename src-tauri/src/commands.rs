@@ -33,7 +33,7 @@ use crate::configs::pools::BasePoolData;
 use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
 use crate::event_scheduler::{EventScheduler, SchedulerEventTiming, SchedulerEventType};
-use crate::events::{ConnectionStatusPayload, EventType};
+use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
@@ -61,7 +61,6 @@ use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
 use crate::{airdrop, UniverseAppState};
 
 use base64::prelude::*;
-use futures::TryFutureExt;
 use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
