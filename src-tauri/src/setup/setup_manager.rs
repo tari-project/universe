@@ -491,8 +491,7 @@ impl SetupManager {
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
         }
 
-        EventScheduler::write()
-            .await
+        EventScheduler::instance()
             .spawn_listener()
             .await
             .unwrap_or_else(|e| {

@@ -163,10 +163,7 @@ impl CpuManager {
         EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Initiated).await;
 
         // We want to clean up any pause mining events
-        EventScheduler::read()
-            .await
-            .cleanup_pause_mining_in_events()
-            .await;
+        EventScheduler::cleanup_resume_mining_in_events().await;
 
         if let Some(app_handle) = &self.app_handle {
             let base_path = app_handle
