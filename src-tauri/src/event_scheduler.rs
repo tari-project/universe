@@ -28,11 +28,8 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::Display,
-    sync::{
-        atomic::{AtomicU64},
-        LazyLock,
-    },
-    time::{Duration},
+    sync::{atomic::AtomicU64, LazyLock},
+    time::Duration,
 };
 use tokio::{
     sync::{mpsc, RwLock, RwLockReadGuard, RwLockWriteGuard},
@@ -41,8 +38,12 @@ use tokio::{
 
 use crate::{
     configs::{
-        config_core::{ConfigCore, ConfigCoreContent}, config_mining::{ConfigMining, ConfigMiningContent, MiningMode}, trait_config::ConfigImpl
-    }, mining::{cpu::manager::CpuManager, gpu::manager::GpuManager}, tasks_tracker::TasksTrackers
+        config_core::{ConfigCore, ConfigCoreContent},
+        config_mining::{ConfigMining, ConfigMiningContent, MiningMode},
+        trait_config::ConfigImpl,
+    },
+    mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
+    tasks_tracker::TasksTrackers,
 };
 
 static LOG_TARGET: &str = "tari::universe::event_scheduler";
@@ -78,7 +79,6 @@ enum SchedulerMessage {
         event_id: String,
     },
 }
-
 
 #[derive(Debug, Clone)]
 pub enum SchedulerError {
@@ -120,17 +120,25 @@ impl SchedulerEventTiming {
         if s.to_lowercase().starts_with("in ") {
             let parts: Vec<&str> = s[3..].split_whitespace().collect();
             if parts.len() == 2 {
-                let value: u64 = parts[0].parse().map_err(|_| SchedulerError::InternalError("Invalid duration value".to_string()))?;
+                let value: u64 = parts[0].parse().map_err(|_| {
+                    SchedulerError::InternalError("Invalid duration value".to_string())
+                })?;
                 let unit = parts[1].to_lowercase();
                 let duration = match unit.as_str() {
                     "hour" | "hours" => Duration::from_secs(value * 3600),
                     "minute" | "minutes" => Duration::from_secs(value * 60),
                     "second" | "seconds" => Duration::from_secs(value),
-                    _ => return Err(SchedulerError::InternalError("Invalid duration unit".to_string())),
+                    _ => {
+                        return Err(SchedulerError::InternalError(
+                            "Invalid duration unit".to_string(),
+                        ))
+                    }
                 };
                 Ok(SchedulerEventTiming::In(duration))
             } else {
-                Err(SchedulerError::InternalError("Invalid 'In' format".to_string()))
+                Err(SchedulerError::InternalError(
+                    "Invalid 'In' format".to_string(),
+                ))
             }
         } else if s.to_lowercase().starts_with("between ") {
             let parts: Vec<&str> = s[8..].trim().split(" and ").collect();
@@ -142,10 +150,14 @@ impl SchedulerEventTiming {
                 let end_cron = Self::time_to_cron(end)?;
                 Ok(SchedulerEventTiming::Between(start_cron, end_cron))
             } else {
-                Err(SchedulerError::InternalError("Invalid 'Between' format".to_string()))
+                Err(SchedulerError::InternalError(
+                    "Invalid 'Between' format".to_string(),
+                ))
             }
         } else {
-            Err(SchedulerError::InternalError("Invalid timing format".to_string()))
+            Err(SchedulerError::InternalError(
+                "Invalid timing format".to_string(),
+            ))
         }
     }
 
@@ -153,16 +165,30 @@ impl SchedulerEventTiming {
         // Expecting format like "10 PM" or "6 AM"
         let parts: Vec<&str> = time_str.split_whitespace().collect();
         if parts.len() != 2 {
-            return Err(SchedulerError::InternalError("Invalid time format".to_string()));
+            return Err(SchedulerError::InternalError(
+                "Invalid time format".to_string(),
+            ));
         }
-        let hour: u32 = parts[0].parse().map_err(|_| SchedulerError::InternalError("Invalid hour value".to_string()))?;
+        let hour: u32 = parts[0]
+            .parse()
+            .map_err(|_| SchedulerError::InternalError("Invalid hour value".to_string()))?;
         let period = parts[1].to_uppercase();
         if !(1..=12).contains(&hour) || (period != "AM" && period != "PM") {
-            return Err(SchedulerError::InternalError("Invalid time value".to_string()));
+            return Err(SchedulerError::InternalError(
+                "Invalid time value".to_string(),
+            ));
         }
         let hour_24 = if period == "AM" {
-            if hour == 12 { 0 } else { hour }
-        } else if hour == 12 { 12 } else { hour + 12 };
+            if hour == 12 {
+                0
+            } else {
+                hour
+            }
+        } else if hour == 12 {
+            12
+        } else {
+            hour + 12
+        };
         // Cron pattern for every day at the specified hour
         Ok(format!("0 {} * * *", hour_24))
     }
@@ -201,7 +227,7 @@ pub struct ScheduledEventInfo {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub enum SchedulerEventType {
     ResumeMining,
-    Mine { mining_mode: MiningMode }
+    Mine { mining_mode: MiningMode },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -222,7 +248,9 @@ impl Display for SchedulerEventType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SchedulerEventType::ResumeMining => write!(f, "Pause Mining"),
-            SchedulerEventType::Mine { mining_mode } => write!(f, "Mine ({})", mining_mode.mode_name),
+            SchedulerEventType::Mine { mining_mode } => {
+                write!(f, "Mine ({})", mining_mode.mode_name)
+            }
         }
     }
 }
@@ -238,7 +266,7 @@ struct ScheduledEvent {
 }
 
 pub struct EventScheduler {
-    scheduled_events: HashMap<String, ScheduledEvent>,  // Store events with their scheduling details
+    scheduled_events: HashMap<String, ScheduledEvent>, // Store events with their scheduling details
     message_sender: Option<mpsc::UnboundedSender<SchedulerMessage>>, // Channel for sending messages to the scheduler task
     is_running: bool, // Flag to track if the listener is running
 }
@@ -260,20 +288,29 @@ impl EventScheduler {
         INSTANCE.read().await
     }
 
-    pub async fn schedule_event(&self, event_type: SchedulerEventType,event_id:String, timing: SchedulerEventTiming) -> Result<String, SchedulerError> {
+    pub async fn schedule_event(
+        &self,
+        event_type: SchedulerEventType,
+        event_id: String,
+        timing: SchedulerEventTiming,
+    ) -> Result<String, SchedulerError> {
         timing.validate()?;
 
         if let Some(sender) = &self.message_sender {
             let (response_tx, response_rx) = tokio::sync::oneshot::channel();
-            
-            sender.send(SchedulerMessage::AddEvent {
-                event_type,
-                timing,
-                event_id,
-                response: response_tx,
-            }).map_err(|_| SchedulerError::SchedulerNotRunning)?;
 
-            response_rx.await.map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
+            sender
+                .send(SchedulerMessage::AddEvent {
+                    event_type,
+                    timing,
+                    event_id,
+                    response: response_tx,
+                })
+                .map_err(|_| SchedulerError::SchedulerNotRunning)?;
+
+            response_rx
+                .await
+                .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
         } else {
             Err(SchedulerError::SchedulerNotRunning)
         }
@@ -282,13 +319,17 @@ impl EventScheduler {
     pub async fn remove_event(&self, event_id: String) -> Result<(), SchedulerError> {
         if let Some(sender) = &self.message_sender {
             let (response_tx, response_rx) = tokio::sync::oneshot::channel();
-            
-            sender.send(SchedulerMessage::RemoveEvent {
-                event_id,
-                response: response_tx,
-            }).map_err(|_| SchedulerError::SchedulerNotRunning)?;
 
-            response_rx.await.map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
+            sender
+                .send(SchedulerMessage::RemoveEvent {
+                    event_id,
+                    response: response_tx,
+                })
+                .map_err(|_| SchedulerError::SchedulerNotRunning)?;
+
+            response_rx
+                .await
+                .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
         } else {
             Err(SchedulerError::SchedulerNotRunning)
         }
@@ -297,13 +338,17 @@ impl EventScheduler {
     pub async fn pause_event(&self, event_id: String) -> Result<(), SchedulerError> {
         if let Some(sender) = &self.message_sender {
             let (response_tx, response_rx) = tokio::sync::oneshot::channel();
-            
-            sender.send(SchedulerMessage::PauseEvent {
-                event_id,
-                response: response_tx,
-            }).map_err(|_| SchedulerError::SchedulerNotRunning)?;
 
-            response_rx.await.map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
+            sender
+                .send(SchedulerMessage::PauseEvent {
+                    event_id,
+                    response: response_tx,
+                })
+                .map_err(|_| SchedulerError::SchedulerNotRunning)?;
+
+            response_rx
+                .await
+                .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
         } else {
             Err(SchedulerError::SchedulerNotRunning)
         }
@@ -312,36 +357,51 @@ impl EventScheduler {
     pub async fn resume_event(&self, event_id: String) -> Result<(), SchedulerError> {
         if let Some(sender) = &self.message_sender {
             let (response_tx, response_rx) = tokio::sync::oneshot::channel();
-            
-            sender.send(SchedulerMessage::ResumeEvent {
-                event_id,
-                response: response_tx,
-            }).map_err(|_| SchedulerError::SchedulerNotRunning)?;
 
-            response_rx.await.map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
+            sender
+                .send(SchedulerMessage::ResumeEvent {
+                    event_id,
+                    response: response_tx,
+                })
+                .map_err(|_| SchedulerError::SchedulerNotRunning)?;
+
+            response_rx
+                .await
+                .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
         } else {
             Err(SchedulerError::SchedulerNotRunning)
         }
     }
 
-    async fn save_persistent_events_to_config(&self, scheduled_events: &HashMap<String, ScheduledEvent>) {
+    async fn save_persistent_events_to_config(
+        &self,
+        scheduled_events: &HashMap<String, ScheduledEvent>,
+    ) {
         let persistent_events: HashMap<String, ScheduledEventInfo> = HashMap::from_iter(
-            scheduled_events.iter()
+            scheduled_events
+                .iter()
                 .filter(|(_, event)| event.timing.is_persistent())
-                .map(|(id, event)| (id.clone(), ScheduledEventInfo {
-                    id: id.clone(),
-                    event_type: event.event_type.clone(),
-                    timing: event.timing.clone(),
-                }))
+                .map(|(id, event)| {
+                    (
+                        id.clone(),
+                        ScheduledEventInfo {
+                            id: id.clone(),
+                            event_type: event.event_type.clone(),
+                            timing: event.timing.clone(),
+                        },
+                    )
+                }),
         );
 
-        ConfigCore::update_field(ConfigCoreContent::set_scheduler_events, persistent_events).await.unwrap_or_else(|e| {
-            error!(target: LOG_TARGET, "Failed to save persistent events to config: {}", e);
-        });
+        ConfigCore::update_field(ConfigCoreContent::set_scheduler_events, persistent_events)
+            .await
+            .unwrap_or_else(|e| {
+                error!(target: LOG_TARGET, "Failed to save persistent events to config: {}", e);
+            });
     }
     async fn execute_event_callback(&self, event_type: &SchedulerEventType, event_id: String) {
         info!(target: LOG_TARGET, "Executing event callback for {:?} (ID: {:?})", event_type, event_id);
-        
+
         match event_type {
             SchedulerEventType::ResumeMining => {
                 info!(target: LOG_TARGET, "============================ Event callback: Pausing mining...");
@@ -351,7 +411,7 @@ impl EventScheduler {
                 CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to start CPU mining during PauseMining event {:?}: {}", event_id, e);
                 });
-            },
+            }
             SchedulerEventType::Mine { mining_mode } => {
                 ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.mode_name.clone()).await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
@@ -361,8 +421,8 @@ impl EventScheduler {
                 });
                 CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
-                }); 
-            },
+                });
+            }
         }
     }
 
@@ -370,7 +430,7 @@ impl EventScheduler {
     async fn cleanup_event_callback(&self, event_type: &SchedulerEventType, event_id: String) {
         info!(target: LOG_TARGET, "Cleaning up event with ID {:?}", event_id);
         match event_type {
-            SchedulerEventType::ResumeMining => {},
+            SchedulerEventType::ResumeMining => {}
             SchedulerEventType::Mine { mining_mode } => {
                 GpuManager::write().await.stop_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to stop mining during cleanup of event {:?}: {}", event_id, e);
@@ -378,23 +438,27 @@ impl EventScheduler {
                 CpuManager::write().await.stop_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to stop mining during cleanup of event {:?}: {}", event_id, e);
                 });
-            },
+            }
         }
     }
 
-    async fn load_persistent_events(&mut self) -> Result<HashMap<String, ScheduledEvent>, SchedulerError> {
+    async fn load_persistent_events(
+        &mut self,
+    ) -> Result<HashMap<String, ScheduledEvent>, SchedulerError> {
         let persistent_events_from_config = ConfigCore::content().await.scheduler_events().clone();
-        let scheduled_events = HashMap::from_iter(
-            persistent_events_from_config.into_iter().map(|(id, info)| {
-                (id, ScheduledEvent {
-                    id: info.id,
-                    event_type: info.event_type,
-                    timing: info.timing,
-                    state: SchedulerEventState::Active,
-                    task_handle: None,
-                })
-            })
-        );
+        let scheduled_events =
+            HashMap::from_iter(persistent_events_from_config.into_iter().map(|(id, info)| {
+                (
+                    id,
+                    ScheduledEvent {
+                        id: info.id,
+                        event_type: info.event_type,
+                        timing: info.timing,
+                        state: SchedulerEventState::Active,
+                        task_handle: None,
+                    },
+                )
+            }));
         Ok(scheduled_events)
     }
 
@@ -416,7 +480,6 @@ impl EventScheduler {
 
         task_tracker.spawn(async move {
             let mut internal_events: HashMap<String, ScheduledEvent> = HashMap::new();
-            
             for (id, event) in persistent_events_from_config {
                 Self::handle_add_event(&mut internal_events, event.event_type.clone(), id.clone(), event.timing.clone()).await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to reschedule persistent event {:?}: {}", id, e);
@@ -428,49 +491,40 @@ impl EventScheduler {
                 tokio::select! {
                     _ = shutdown_signal.wait() => {
                         info!(target: LOG_TARGET, "Event Scheduler Listener received shutdown signal");
-                        
+
                         let scheduler = INSTANCE.read().await;
                         scheduler.save_persistent_events_to_config(&internal_events).await;
-
                         for (_, mut event) in internal_events.drain() {
                             if let Some(handle) = event.task_handle.take() {
                                 handle.abort();
                             }
                         }
-                        
                         break;
                     },
-                    
                     message = message_rx.recv() => {
                         match message {
                             Some(SchedulerMessage::AddEvent { event_type, timing, event_id,response }) => {
                                 let result = Self::handle_add_event(&mut internal_events, event_type, event_id, timing).await;
                                 let _unused = response.send(result);
                             },
-                            
                             Some(SchedulerMessage::RemoveEvent { event_id, response }) => {
                                 let result = Self::handle_remove_event(&mut internal_events, event_id);
                                 let _unused = response.send(result);
                             },
-                            
                             Some(SchedulerMessage::PauseEvent { event_id, response }) => {
                                 let result = Self::handle_pause_event(&mut internal_events, event_id);
                                 let _unused = response.send(result);
                             },
-                            
                             Some(SchedulerMessage::ResumeEvent { event_id, response }) => {
                                 let result = Self::handle_resume_event(&mut internal_events, event_id).await;
                                 let _unused = response.send(result);
                             },
-                            
                             Some(SchedulerMessage::TriggerEvent { event_id }) => {
                                 Self::handle_trigger_event(&internal_events, event_id).await;
                             },
-
                             Some(SchedulerMessage::TriggerCleanup { event_id }) => {
                                 Self::handle_cleanup_event(&internal_events, event_id).await;
                             }
-                            
                             None => {
                                 warn!(target: LOG_TARGET, "Message channel closed, stopping scheduler");
                                 break;
@@ -498,7 +552,7 @@ impl EventScheduler {
                 .filter(|(_, event)| event.event_type == event_type)
                 .map(|(id, _)| id.clone())
                 .collect();
-                
+
             for id in to_remove {
                 if let Err(e) = Self::handle_remove_event(events, id.clone()) {
                     warn!(target: LOG_TARGET, "Failed to remove duplicate event {:?}: {}", id, e);
@@ -516,12 +570,13 @@ impl EventScheduler {
             task_handle: None,
         };
 
-        let task_handle = Self::create_scheduling_task(event_id.clone(), event_type, timing).await?;
+        let task_handle =
+            Self::create_scheduling_task(event_id.clone(), event_type, timing).await?;
         scheduled_event.task_handle = Some(task_handle);
 
         info!(target: LOG_TARGET, "===================================== Added event {:?} with ID {:?}", scheduled_event.event_type, event_id.clone());
         events.insert(event_id.clone(), scheduled_event);
-        
+
         Ok(event_id)
     }
 
@@ -548,12 +603,12 @@ impl EventScheduler {
             if event.state == SchedulerEventState::Paused {
                 return Err(SchedulerError::EventAlreadyPaused(event_id));
             }
-            
+
             event.state = SchedulerEventState::Paused;
             if let Some(handle) = event.task_handle.take() {
                 handle.abort();
             }
-            
+
             info!(target: LOG_TARGET, "Paused event with ID {:?}", event_id);
             Ok(())
         } else {
@@ -569,17 +624,18 @@ impl EventScheduler {
             if event.state != SchedulerEventState::Paused {
                 return Err(SchedulerError::EventAlreadyRunning(event_id));
             }
-            
+
             event.state = SchedulerEventState::Active;
-            
+
             let task_handle = Self::create_scheduling_task(
                 event_id.clone(),
                 event.event_type.clone(),
                 event.timing.clone(),
-            ).await?;
-            
+            )
+            .await?;
+
             event.task_handle = Some(task_handle);
-            
+
             info!(target: LOG_TARGET, "Resumed event with ID {:?}", event_id);
             Ok(())
         } else {
@@ -591,7 +647,9 @@ impl EventScheduler {
         if let Some(event) = events.get(&event_id) {
             if event.state == SchedulerEventState::Active {
                 let scheduler = INSTANCE.read().await;
-                scheduler.execute_event_callback(&event.event_type, event_id).await;
+                scheduler
+                    .execute_event_callback(&event.event_type, event_id)
+                    .await;
             }
         }
     }
@@ -599,7 +657,9 @@ impl EventScheduler {
     async fn handle_cleanup_event(events: &HashMap<String, ScheduledEvent>, event_id: String) {
         if let Some(event) = events.get(&event_id) {
             let scheduler = INSTANCE.read().await;
-            scheduler.cleanup_event_callback(&event.event_type, event_id.clone()).await;
+            scheduler
+                .cleanup_event_callback(&event.event_type, event_id.clone())
+                .await;
         }
     }
 
@@ -610,17 +670,15 @@ impl EventScheduler {
         timing: SchedulerEventTiming,
     ) -> Result<tokio::task::JoinHandle<()>, SchedulerError> {
         let handle = match timing {
-            SchedulerEventTiming::In(duration) => {
-                tokio::spawn(async move {
-                    info!(target: LOG_TARGET, "======================================== Scheduling 'In' event {:?} to trigger after {:?}", event_id, duration);
-                    sleep(duration).await;
-                    
-                    if let Some(sender) = &INSTANCE.read().await.message_sender {
-                        let _unused = sender.send(SchedulerMessage::TriggerEvent { event_id });
-                    }
-                })
-            },
-            
+            SchedulerEventTiming::In(duration) => tokio::spawn(async move {
+                info!(target: LOG_TARGET, "======================================== Scheduling 'In' event {:?} to trigger after {:?}", event_id, duration);
+                sleep(duration).await;
+
+                if let Some(sender) = &INSTANCE.read().await.message_sender {
+                    let _unused = sender.send(SchedulerMessage::TriggerEvent { event_id });
+                }
+            }),
+
             SchedulerEventTiming::Between(start_cron, end_cron) => {
                 let start_cron_parsed = CronParser::builder()
                     .build()
@@ -630,47 +688,69 @@ impl EventScheduler {
                     .build()
                     .parse(&end_cron)
                     .map_err(|_| SchedulerError::InvalidCronPattern(end_cron.clone()))?;
-                
+
                 tokio::spawn(async move {
                     loop {
-                        if start_cron_parsed.is_time_matching(&chrono::Local::now()).unwrap_or(false) {
+                        if start_cron_parsed
+                            .is_time_matching(&chrono::Local::now())
+                            .unwrap_or(false)
+                        {
                             info!(target: LOG_TARGET, "Start cron matched for event ID {:?} at {:?}", event_id, chrono::Local::now());
                             if let Some(sender) = &INSTANCE.read().await.message_sender {
-                                let _unused = sender.send(SchedulerMessage::TriggerEvent { event_id: event_id.clone() });
+                                let _unused = sender.send(SchedulerMessage::TriggerEvent {
+                                    event_id: event_id.clone(),
+                                });
                             }
 
-                            if let Ok(next_end) = end_cron_parsed.find_next_occurrence(&chrono::Local::now(), false) {
-                                let end_wait = (next_end - chrono::Local::now()).to_std().unwrap_or(Duration::from_secs(0));
+                            if let Ok(next_end) =
+                                end_cron_parsed.find_next_occurrence(&chrono::Local::now(), false)
+                            {
+                                let end_wait = (next_end - chrono::Local::now())
+                                    .to_std()
+                                    .unwrap_or(Duration::from_secs(0));
                                 if end_wait > Duration::from_secs(0) {
                                     info!(target: LOG_TARGET, "=============== Waiting for {:?} until end time {:?}", end_wait, next_end);
                                     sleep(end_wait).await;
                                 }
                                 if let Some(sender) = &INSTANCE.read().await.message_sender {
-                                    let _unused = sender.send(SchedulerMessage::TriggerCleanup { event_id: event_id.clone() });
+                                    let _unused = sender.send(SchedulerMessage::TriggerCleanup {
+                                        event_id: event_id.clone(),
+                                    });
                                 }
                             }
-
-                        } else if let Ok(next_start) = start_cron_parsed.find_next_occurrence(&chrono::Local::now(), false) {
+                        } else if let Ok(next_start) =
+                            start_cron_parsed.find_next_occurrence(&chrono::Local::now(), false)
+                        {
                             // Wait until start time
                             let now = chrono::Local::now();
                             if next_start > now {
-                                let wait_duration = (next_start - now).to_std().unwrap_or(Duration::from_secs(0));
+                                let wait_duration = (next_start - now)
+                                    .to_std()
+                                    .unwrap_or(Duration::from_secs(0));
                                 info!(target: LOG_TARGET, "=============== Waiting for {:?} until next start time {:?}", wait_duration, next_start);
                                 sleep(wait_duration).await;
                             }
-                            
+
                             if let Some(sender) = &INSTANCE.read().await.message_sender {
-                                let _unused = sender.send(SchedulerMessage::TriggerEvent { event_id: event_id.clone() });
+                                let _unused = sender.send(SchedulerMessage::TriggerEvent {
+                                    event_id: event_id.clone(),
+                                });
                             }
-                            
-                            if let Ok(next_end) = end_cron_parsed.find_next_occurrence(&next_start, false) {
-                                let end_wait = (next_end - chrono::Local::now()).to_std().unwrap_or(Duration::from_secs(0));
+
+                            if let Ok(next_end) =
+                                end_cron_parsed.find_next_occurrence(&next_start, false)
+                            {
+                                let end_wait = (next_end - chrono::Local::now())
+                                    .to_std()
+                                    .unwrap_or(Duration::from_secs(0));
                                 if end_wait > Duration::from_secs(0) {
                                     info!(target: LOG_TARGET, "=============== Waiting for {:?} until end time {:?}", end_wait, next_end);
                                     sleep(end_wait).await;
                                 }
                                 if let Some(sender) = &INSTANCE.read().await.message_sender {
-                                    let _unused = sender.send(SchedulerMessage::TriggerCleanup { event_id: event_id.clone() });
+                                    let _unused = sender.send(SchedulerMessage::TriggerCleanup {
+                                        event_id: event_id.clone(),
+                                    });
                                 }
                             }
                         } else {
@@ -682,15 +762,17 @@ impl EventScheduler {
                 })
             }
         };
-        
+
         Ok(handle)
     }
 
-    fn calculate_next_execution(timing: &SchedulerEventTiming) -> Option<chrono::DateTime<chrono::Local>> {
+    fn calculate_next_execution(
+        timing: &SchedulerEventTiming,
+    ) -> Option<chrono::DateTime<chrono::Local>> {
         match timing {
             SchedulerEventTiming::In(duration) => {
                 Some(chrono::Local::now() + chrono::Duration::from_std(*duration).ok()?)
-            },
+            }
             SchedulerEventTiming::Between(start_cron, _) => {
                 let cron = CronParser::builder().build().parse(start_cron).ok()?;
                 cron.find_next_occurrence(&chrono::Local::now(), false).ok()
@@ -699,12 +781,16 @@ impl EventScheduler {
     }
 
     pub async fn cleanup_pause_mining_in_events(&self) {
-        let to_remove: Vec<String> = self.scheduled_events
+        let to_remove: Vec<String> = self
+            .scheduled_events
             .iter()
-            .filter(|(_, event)| event.event_type == SchedulerEventType::ResumeMining && matches!(event.timing, SchedulerEventTiming::In(_)))
+            .filter(|(_, event)| {
+                event.event_type == SchedulerEventType::ResumeMining
+                    && matches!(event.timing, SchedulerEventTiming::In(_))
+            })
             .map(|(id, _)| id.clone())
             .collect();
-            
+
         for id in to_remove {
             self.remove_event(id.clone()).await.unwrap_or_else(|e| {
                 error!(target: LOG_TARGET, "Failed to remove 'In' PauseMining event {:?}: {}", id, e);
