@@ -214,11 +214,11 @@ impl CronSchedule {
     }
 
     pub fn is_time_in_range(&self, time: DateTime<Local>) -> bool {
-        if let (Some(next_start), Some(next_end)) = (
-            self.find_next_start_time(time),
-            self.find_next_end_time(time),
+        if let (Some(prev_start), Some(next_end)) = (
+            self.start_time.find_previous_occurrence(&time, false).ok(),
+            self.end_time.find_next_occurrence(&time, false).ok(),
         ) {
-            if next_start <= time && time < next_end {
+            if prev_start <= time && time < next_end {
                 return true;
             }
         }
@@ -233,11 +233,11 @@ pub enum SchedulerEventTiming {
 }
 
 impl SchedulerEventTiming {
-    fn parse_duration_unit(value: u64, unit: &str) -> Result<Duration, SchedulerError> {
+    fn parse_duration_unit(value: i64, unit: &str) -> Result<Duration, SchedulerError> {
         match unit {
-            "hour" | "hours" => Ok(Duration::hours(value as i64)),
-            "minute" | "minutes" => Ok(Duration::minutes(value as i64)),
-            "second" | "seconds" => Ok(Duration::seconds(value as i64)),
+            "hour" | "hours" => Ok(Duration::hours(value)),
+            "minute" | "minutes" => Ok(Duration::minutes(value)),
+            "second" | "seconds" => Ok(Duration::seconds(value)),
             _ => Err(SchedulerError::InternalError(
                 "Invalid duration unit".to_string(),
             )),
@@ -271,7 +271,7 @@ impl SchedulerEventTiming {
     pub fn from_string(string_value: String) -> Result<Self, SchedulerError> {
         let sanitized_string_value = string_value.trim().to_lowercase();
         if let Some(caps) = IN_PATTERN.captures(&sanitized_string_value) {
-            let value: u64 = caps[1]
+            let value: i64 = caps[1]
                 .parse()
                 .map_err(|_| SchedulerError::InternalError("Invalid duration value".to_string()))?;
             let unit = &caps[2];
@@ -777,8 +777,10 @@ impl EventScheduler {
             SchedulerEventTiming::Between(cron_schedule) => {
                 tokio::spawn(async move {
                     loop {
-                        if cron_schedule.is_time_in_range(Local::now()) {
-                            info!(target: LOG_TARGET, "Start cron matched for event ID {:?} at {:?}", event_id, Local::now());
+                        let local_now = Local::now();
+
+                        if cron_schedule.is_time_in_range(local_now) {
+                            info!(target: LOG_TARGET, "Start cron matched for event ID {:?} at {:?}", event_id, local_now);
                             let _unused =
                                 INSTANCE
                                     .message_sender
@@ -787,7 +789,7 @@ impl EventScheduler {
                                     });
 
                             if let Some(next_end_wait_time) =
-                                cron_schedule.find_next_end_wait_time(Local::now())
+                                cron_schedule.find_next_end_wait_time(local_now)
                             {
                                 sleep(next_end_wait_time).await;
                                 let _unused = INSTANCE.message_sender.send(
@@ -797,10 +799,10 @@ impl EventScheduler {
                                 );
                             }
                         } else if let Some(next_start) =
-                            cron_schedule.find_next_start_time(Local::now())
+                            cron_schedule.find_next_start_time(local_now)
                         {
                             // Wait until start time
-                            let now = Local::now();
+                            let now = local_now;
                             if next_start > now {
                                 let wait_duration = (next_start - now).to_std().unwrap_or_default();
                                 sleep(wait_duration).await;
