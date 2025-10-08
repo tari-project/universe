@@ -446,6 +446,9 @@ impl GpuManager {
             adapter.detect_devices().await?;
             let miner_cloned = miner.clone();
             info!(target: LOG_TARGET, "Resolved selected gpu miner interface");
+
+            self.stop_mining().await.ok(); // we ignore the error here, as we want to switch miner anyway
+
             self.selected_miner = miner_type.clone();
             self.process_watcher.adapter = adapter;
             info!(target: LOG_TARGET, "Set selected gpu miner interface in process watcher");
@@ -593,6 +596,11 @@ impl GpuManager {
 
         task_tracker.spawn(async move {
             loop {
+                if internal_shutdown_signal.is_triggered() || global_shutdown_signal.is_triggered() {
+                    info!(target: LOG_TARGET, "Shutting down gpu miner status updates from trigger");
+                    break;
+                }
+
                 select! {
                     _ = internal_shutdown_signal.wait() => {
                         info!(target: LOG_TARGET, "Shutting down gpu miner status updates");

@@ -54,7 +54,7 @@ impl TaskTrackerUtil {
         self.shutdown.write().await.trigger();
         info!(target: LOG_TARGET, "Triggering task close for {} processes", self.name);
         self.task_tracker.read().await.close();
-        info!(target: LOG_TARGET, "Waiting for {} processes to finish", self.name);
+        info!(target: LOG_TARGET, "Waiting for {} processes to finish | number of tasks: {}", self.name, self.task_tracker.read().await.len());
         self.task_tracker.read().await.wait().await;
         info!(target: LOG_TARGET, "{} processes have finished", self.name);
     }
