@@ -23,7 +23,7 @@
 #![allow(dead_code, unused_variables, unused_must_use)]
 
 use chrono::{DateTime, Duration, Local};
-use croner::{self, parser::CronParser};
+use croner::{self, parser::CronParser, Cron};
 use log::{error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -59,6 +59,8 @@ static BETWEEN_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^between\s+(\d{1,2})\s+(am|pm)\s+and\s+(\d{1,2})\s+(am|pm)$")
         .expect("Invalid Between Regex")
 });
+
+static ZERO_DURATION: std::time::Duration = std::time::Duration::from_secs(0);
 
 static LOG_TARGET: &str = "tari::universe::event_scheduler";
 static INSTANCE: LazyLock<EventScheduler> = LazyLock::new(|| EventScheduler::new());
@@ -125,10 +127,109 @@ impl Display for SchedulerError {
 
 impl std::error::Error for SchedulerError {}
 
+#[derive(Debug, Clone)]
+pub struct CronSchedule {
+    pub start_time: Cron,
+    pub end_time: Cron,
+    pub description: String,
+}
+
+impl<'de> Deserialize<'de> for CronSchedule {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct CronScheduleHelper {
+            start_time: String,
+            end_time: String,
+        }
+
+        let helper = CronScheduleHelper::deserialize(deserializer)?;
+        CronSchedule::new(&helper.start_time, &helper.end_time).map_err(serde::de::Error::custom)
+    }
+}
+
+impl Serialize for CronSchedule {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct CronScheduleHelper<'a> {
+            start_time: &'a str,
+            end_time: &'a str,
+        }
+
+        let helper = CronScheduleHelper {
+            start_time: &self.start_time.to_string(),
+            end_time: &self.end_time.to_string(),
+        };
+        helper.serialize(serializer)
+    }
+}
+
+impl CronSchedule {
+    pub fn new(start_time: &str, end_time: &str) -> Result<Self, SchedulerError> {
+        let start_time_cron = CronParser::builder()
+            .build()
+            .parse(start_time)
+            .map_err(|_| SchedulerError::InvalidCronPattern(start_time.to_string()))?;
+        let end_time_cron = CronParser::builder()
+            .build()
+            .parse(end_time)
+            .map_err(|_| SchedulerError::InvalidCronPattern(end_time.to_string()))?;
+
+        Ok(Self {
+            start_time: start_time_cron,
+            end_time: end_time_cron,
+            description: format!("From {} to {}", start_time, end_time),
+        })
+    }
+
+    pub fn find_next_start_time(&self, from: DateTime<Local>) -> Option<DateTime<Local>> {
+        self.start_time.find_next_occurrence(&from, false).ok()
+    }
+
+    pub fn find_next_start_wait_time(&self, from: DateTime<Local>) -> Option<std::time::Duration> {
+        self.find_next_start_time(from).map(|next_start| {
+            (next_start - from)
+                .to_std()
+                .unwrap_or_default()
+                .max(ZERO_DURATION)
+        })
+    }
+
+    pub fn find_next_end_time(&self, from: DateTime<Local>) -> Option<DateTime<Local>> {
+        self.end_time.find_next_occurrence(&from, false).ok()
+    }
+
+    pub fn find_next_end_wait_time(&self, from: DateTime<Local>) -> Option<std::time::Duration> {
+        self.find_next_end_time(from).map(|next_end| {
+            (next_end - from)
+                .to_std()
+                .unwrap_or_default()
+                .max(ZERO_DURATION)
+        })
+    }
+
+    pub fn is_time_in_range(&self, time: DateTime<Local>) -> bool {
+        if let (Some(next_start), Some(next_end)) = (
+            self.find_next_start_time(time),
+            self.find_next_end_time(time),
+        ) {
+            if next_start <= time && time < next_end {
+                return true;
+            }
+        }
+        false
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum SchedulerEventTiming {
-    In(Duration),            // e.g., In(2 hours) - triggers once after the duration
-    Between(String, String), // e.g., Between("0 22 * * *", "0 6 * * *") (10PM to 6AM every day)
+    In(Duration),          // e.g., In(2 hours) - triggers once after the duration
+    Between(CronSchedule), // e.g., Between("0 22 * * *", "0 6 * * *") (10PM to 6AM every day)
 }
 
 impl SchedulerEventTiming {
@@ -186,36 +287,17 @@ impl SchedulerEventTiming {
                 .map_err(|_| SchedulerError::InternalError("Invalid end hour".to_string()))?;
             let end_period = &caps[4];
 
-            Ok(SchedulerEventTiming::Between(
-                Self::parse_cron(start_hour, start_period)?,
-                Self::parse_cron(end_hour, end_period)?,
-            ))
+            Ok(SchedulerEventTiming::Between(CronSchedule::new(
+                &Self::parse_cron(start_hour, start_period)?,
+                &Self::parse_cron(end_hour, end_period)?,
+            )?))
         } else {
             Err(SchedulerError::InvalidTimingFormat(sanitized_string_value))
         }
     }
 
     pub fn is_persistent(&self) -> bool {
-        matches!(self, SchedulerEventTiming::Between(_, _))
-    }
-
-    /// Validates cron patterns for Between timing
-    pub fn validate(&self) -> Result<(), SchedulerError> {
-        match self {
-            SchedulerEventTiming::In(_) => Ok(()),
-            SchedulerEventTiming::Between(start, end) => {
-                // Validate both cron patterns
-                CronParser::builder()
-                    .build()
-                    .parse(start)
-                    .map_err(|_| SchedulerError::InvalidCronPattern(start.clone()))?;
-                CronParser::builder()
-                    .build()
-                    .parse(end)
-                    .map_err(|_| SchedulerError::InvalidCronPattern(end.clone()))?;
-                Ok(())
-            }
-        }
+        matches!(self, SchedulerEventTiming::Between { .. })
     }
 }
 
@@ -294,8 +376,6 @@ impl EventScheduler {
         event_id: String,
         timing: SchedulerEventTiming,
     ) -> Result<String, SchedulerError> {
-        timing.validate()?;
-
         let (response_tx, response_rx) = tokio::sync::oneshot::channel();
 
         self.message_sender
@@ -685,8 +765,6 @@ impl EventScheduler {
         _event_type: SchedulerEventType, // Not used in scheduling logic, only for identification
         timing: SchedulerEventTiming,
     ) -> Result<tokio::task::JoinHandle<()>, SchedulerError> {
-        const ZERO_DURATION: std::time::Duration = std::time::Duration::from_secs(0);
-
         let handle = match timing {
             SchedulerEventTiming::In(duration) => tokio::spawn(async move {
                 sleep(duration.to_std().unwrap_or_default()).await;
@@ -696,22 +774,10 @@ impl EventScheduler {
                     .send(SchedulerMessage::TriggerEvent { event_id });
             }),
 
-            SchedulerEventTiming::Between(start_cron, end_cron) => {
-                let start_cron_parsed = CronParser::builder()
-                    .build()
-                    .parse(&start_cron)
-                    .map_err(|_| SchedulerError::InvalidCronPattern(start_cron.clone()))?;
-                let end_cron_parsed = CronParser::builder()
-                    .build()
-                    .parse(&end_cron)
-                    .map_err(|_| SchedulerError::InvalidCronPattern(end_cron.clone()))?;
-
+            SchedulerEventTiming::Between(cron_schedule) => {
                 tokio::spawn(async move {
                     loop {
-                        if start_cron_parsed
-                            .is_time_matching(&Local::now())
-                            .unwrap_or(false)
-                        {
+                        if cron_schedule.is_time_in_range(Local::now()) {
                             info!(target: LOG_TARGET, "Start cron matched for event ID {:?} at {:?}", event_id, Local::now());
                             let _unused =
                                 INSTANCE
@@ -720,23 +786,18 @@ impl EventScheduler {
                                         event_id: event_id.clone(),
                                     });
 
-                            if let Ok(next_end) =
-                                end_cron_parsed.find_next_occurrence(&Local::now(), false)
+                            if let Some(next_end_wait_time) =
+                                cron_schedule.find_next_end_wait_time(Local::now())
                             {
-                                let end_wait =
-                                    (next_end - Local::now()).to_std().unwrap_or_default();
-                                if end_wait > ZERO_DURATION {
-                                    sleep(end_wait).await;
-                                }
-
+                                sleep(next_end_wait_time).await;
                                 let _unused = INSTANCE.message_sender.send(
                                     SchedulerMessage::TriggerCleanup {
                                         event_id: event_id.clone(),
                                     },
                                 );
                             }
-                        } else if let Ok(next_start) =
-                            start_cron_parsed.find_next_occurrence(&Local::now(), false)
+                        } else if let Some(next_start) =
+                            cron_schedule.find_next_start_time(Local::now())
                         {
                             // Wait until start time
                             let now = Local::now();
@@ -752,14 +813,10 @@ impl EventScheduler {
                                         event_id: event_id.clone(),
                                     });
 
-                            if let Ok(next_end) =
-                                end_cron_parsed.find_next_occurrence(&next_start, false)
+                            if let Some(next_end_wait_time) =
+                                cron_schedule.find_next_end_wait_time(next_start)
                             {
-                                let end_wait =
-                                    (next_end - Local::now()).to_std().unwrap_or_default();
-                                if end_wait > ZERO_DURATION {
-                                    sleep(end_wait).await;
-                                }
+                                sleep(next_end_wait_time).await;
                                 let _unused = INSTANCE.message_sender.send(
                                     SchedulerMessage::TriggerCleanup {
                                         event_id: event_id.clone(),
@@ -777,16 +834,6 @@ impl EventScheduler {
         };
 
         Ok(handle)
-    }
-
-    fn calculate_next_execution(timing: &SchedulerEventTiming) -> Option<DateTime<Local>> {
-        match timing {
-            SchedulerEventTiming::In(duration) => Some(Local::now() + *duration),
-            SchedulerEventTiming::Between(start_cron, _) => {
-                let cron = CronParser::builder().build().parse(start_cron).ok()?;
-                cron.find_next_occurrence(&Local::now(), false).ok()
-            }
-        }
     }
 
     pub async fn cleanup_resume_mining_in_events() {
