@@ -1897,8 +1897,7 @@ pub async fn add_scheduler_event(
         _ => return Err("Invalid event type".to_string()),
     };
 
-    EventScheduler::write()
-        .await
+    EventScheduler::instance()
         .schedule_event(event_type, event_id, event_timing)
         .await
         .map_err(|e| e.to_string())?;
@@ -1910,8 +1909,7 @@ pub async fn add_scheduler_event(
 pub async fn remove_scheduler_event(event_id: String) -> Result<(), String> {
     info!(target: LOG_TARGET, "remove_scheduler_event called with event_id: {event_id:?}");
 
-    EventScheduler::write()
-        .await
+    EventScheduler::instance()
         .remove_event(event_id)
         .await
         .map_err(|e| e.to_string())?;
@@ -1923,8 +1921,7 @@ pub async fn remove_scheduler_event(event_id: String) -> Result<(), String> {
 pub async fn pause_scheduler_event(event_id: String) -> Result<(), String> {
     info!(target: LOG_TARGET, "pause_scheduler_event called with event_id: {event_id:?}");
 
-    EventScheduler::write()
-        .await
+    EventScheduler::instance()
         .pause_event(event_id)
         .await
         .map_err(|e| e.to_string())?;
@@ -1936,8 +1933,7 @@ pub async fn pause_scheduler_event(event_id: String) -> Result<(), String> {
 pub async fn resume_scheduler_event(event_id: String) -> Result<(), String> {
     info!(target: LOG_TARGET, "resume_scheduler_event called with event_id: {event_id:?}");
 
-    EventScheduler::write()
-        .await
+    EventScheduler::instance()
         .resume_event(event_id)
         .await
         .map_err(|e| e.to_string())?;

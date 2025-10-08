@@ -63,7 +63,7 @@ static BETWEEN_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
 static ZERO_DURATION: std::time::Duration = std::time::Duration::from_secs(0);
 
 static LOG_TARGET: &str = "tari::universe::event_scheduler";
-static INSTANCE: LazyLock<EventScheduler> = LazyLock::new(|| EventScheduler::new());
+static INSTANCE: LazyLock<EventScheduler> = LazyLock::new(EventScheduler::new);
 static EVENT_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
 // Internal message types for the scheduler
@@ -809,14 +809,15 @@ impl EventScheduler {
 
                         // If is in time range, eg. currently is 10AM and the range is 9AM - 11AM, then we skip sleep and trigger callback immediately
                         // If not in range, eg. currently is 2PM and the range is 9AM - 11AM, then we sleep until next start time
-                        if !cron_schedule.is_time_in_range(local_now) {
-                            if let Some(next_start_wait_time) =
-                                cron_schedule.find_next_start_wait_time(local_now)
-                            {
-                                sleep(next_start_wait_time).await;
-                            }
-                        } else {
+                        if cron_schedule.is_time_in_range(local_now) {
                             continue;
+                        } else if let Some(next_start_wait_time) =
+                            cron_schedule.find_next_start_wait_time(local_now)
+                        {
+                            sleep(next_start_wait_time).await;
+                        } else {
+                            warn!(target: LOG_TARGET, "No next start time found for event with ID {:?}", event_id);
+                            break;
                         }
 
                         let _unused =
