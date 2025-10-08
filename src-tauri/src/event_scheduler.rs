@@ -234,10 +234,38 @@ pub enum SchedulerEventTiming {
 
 impl SchedulerEventTiming {
     fn parse_duration_unit(value: i64, unit: &str) -> Result<Duration, SchedulerError> {
+        const MAX_HOURS_VALUE: i64 = 24;
+        const MAX_MINUTES_VALUE: i64 = 60;
+        const MAX_SECONDS_VALUE: i64 = 60;
+
         match unit {
-            "hour" | "hours" => Ok(Duration::hours(value)),
-            "minute" | "minutes" => Ok(Duration::minutes(value)),
-            "second" | "seconds" => Ok(Duration::seconds(value)),
+            "hour" | "hours" => {
+                if value > MAX_HOURS_VALUE {
+                    Err(SchedulerError::InternalError(
+                        "Invalid hour value".to_string(),
+                    ))
+                } else {
+                    Ok(Duration::hours(value))
+                }
+            }
+            "minute" | "minutes" => {
+                if value > MAX_MINUTES_VALUE {
+                    Err(SchedulerError::InternalError(
+                        "Invalid minute value".to_string(),
+                    ))
+                } else {
+                    Ok(Duration::minutes(value))
+                }
+            }
+            "second" | "seconds" => {
+                if value > MAX_SECONDS_VALUE {
+                    Err(SchedulerError::InternalError(
+                        "Invalid second value".to_string(),
+                    ))
+                } else {
+                    Ok(Duration::seconds(value))
+                }
+            }
             _ => Err(SchedulerError::InternalError(
                 "Invalid duration unit".to_string(),
             )),
@@ -779,56 +807,36 @@ impl EventScheduler {
                     loop {
                         let local_now = Local::now();
 
-                        if cron_schedule.is_time_in_range(local_now) {
-                            info!(target: LOG_TARGET, "Start cron matched for event ID {:?} at {:?}", event_id, local_now);
-                            let _unused =
-                                INSTANCE
-                                    .message_sender
-                                    .send(SchedulerMessage::TriggerEvent {
-                                        event_id: event_id.clone(),
-                                    });
-
-                            if let Some(next_end_wait_time) =
-                                cron_schedule.find_next_end_wait_time(local_now)
+                        // If is in time range, eg. currently is 10AM and the range is 9AM - 11AM, then we skip sleep and trigger callback immediately
+                        // If not in range, eg. currently is 2PM and the range is 9AM - 11AM, then we sleep until next start time
+                        if !cron_schedule.is_time_in_range(local_now) {
+                            if let Some(next_start_wait_time) =
+                                cron_schedule.find_next_start_wait_time(local_now)
                             {
-                                sleep(next_end_wait_time).await;
-                                let _unused = INSTANCE.message_sender.send(
-                                    SchedulerMessage::TriggerCleanup {
-                                        event_id: event_id.clone(),
-                                    },
-                                );
-                            }
-                        } else if let Some(next_start) =
-                            cron_schedule.find_next_start_time(local_now)
-                        {
-                            // Wait until start time
-                            let now = local_now;
-                            if next_start > now {
-                                let wait_duration = (next_start - now).to_std().unwrap_or_default();
-                                sleep(wait_duration).await;
-                            }
-
-                            let _unused =
-                                INSTANCE
-                                    .message_sender
-                                    .send(SchedulerMessage::TriggerEvent {
-                                        event_id: event_id.clone(),
-                                    });
-
-                            if let Some(next_end_wait_time) =
-                                cron_schedule.find_next_end_wait_time(next_start)
-                            {
-                                sleep(next_end_wait_time).await;
-                                let _unused = INSTANCE.message_sender.send(
-                                    SchedulerMessage::TriggerCleanup {
-                                        event_id: event_id.clone(),
-                                    },
-                                );
+                                sleep(next_start_wait_time).await;
                             }
                         } else {
-                            // No next occurrence found, exit the loop
-                            warn!(target: LOG_TARGET, "No next occurrence found for event ID {:?}, stopping scheduling task", event_id);
-                            break;
+                            continue;
+                        }
+
+                        let _unused =
+                            INSTANCE
+                                .message_sender
+                                .send(SchedulerMessage::TriggerEvent {
+                                    event_id: event_id.clone(),
+                                });
+
+                        // Now wait until end time, eg. currently is 10AM and the range is 9AM - 11AM, then we wait until 11AM
+                        if let Some(next_end_wait_time) =
+                            cron_schedule.find_next_end_wait_time(local_now)
+                        {
+                            sleep(next_end_wait_time).await;
+                            let _unused =
+                                INSTANCE
+                                    .message_sender
+                                    .send(SchedulerMessage::TriggerCleanup {
+                                        event_id: event_id.clone(),
+                                    });
                         }
                     }
                 })
