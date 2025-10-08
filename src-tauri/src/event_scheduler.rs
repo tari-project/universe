@@ -25,6 +25,7 @@
 use chrono::{DateTime, Duration, Local};
 use croner::{self, parser::CronParser};
 use log::{error, info, warn};
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -48,6 +49,16 @@ use crate::{
     mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
     tasks_tracker::TasksTrackers,
 };
+
+static IN_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^in\s+(\d+)\s+(hour|hours|minute|minutes|second|seconds)$")
+        .expect("Invalid In Regex")
+});
+
+static BETWEEN_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^between\s+(\d{1,2})\s+(am|pm)\s+and\s+(\d{1,2})\s+(am|pm)$")
+        .expect("Invalid Between Regex")
+});
 
 static LOG_TARGET: &str = "tari::universe::event_scheduler";
 static INSTANCE: LazyLock<EventScheduler> = LazyLock::new(|| EventScheduler::new());
@@ -95,6 +106,7 @@ pub enum SchedulerError {
     EventAlreadyRunning(String),
     SchedulerNotRunning,
     InternalError(String),
+    InvalidTimingFormat(String),
 }
 
 impl Display for SchedulerError {
@@ -106,6 +118,7 @@ impl Display for SchedulerError {
             Self::EventAlreadyRunning(id) => write!(f, "Event already running: {:?}", id),
             Self::SchedulerNotRunning => write!(f, "Scheduler is not running"),
             Self::InternalError(msg) => write!(f, "Internal error: {}", msg),
+            Self::InvalidTimingFormat(format) => write!(f, "Invalid timing format: {}", format),
         }
     }
 }
@@ -119,73 +132,24 @@ pub enum SchedulerEventTiming {
 }
 
 impl SchedulerEventTiming {
-    // It will parse two cases:
-    // 1. In X hours => EventTiming::In(Duration::from_secs(X * 3600))
-    // 2. Between X and Y => EventTiming::Between("cron_pattern_for_X", "cron_pattern_for_Y") Where X and Y are 12-hour times like "10 PM" and "6 AM"
-    pub fn from_string(s: String) -> Result<Self, SchedulerError> {
-        let s = s.trim();
-        if s.to_lowercase().starts_with("in ") {
-            let parts: Vec<&str> = s[3..].split_whitespace().collect();
-            if parts.len() == 2 {
-                let value: i64 = parts[0].parse().map_err(|_| {
-                    SchedulerError::InternalError("Invalid duration value".to_string())
-                })?;
-                let unit = parts[1].to_lowercase();
-                let duration = match unit.as_str() {
-                    "hour" | "hours" => Duration::hours(value),
-                    "minute" | "minutes" => Duration::minutes(value),
-                    "second" | "seconds" => Duration::seconds(value),
-                    _ => {
-                        return Err(SchedulerError::InternalError(
-                            "Invalid duration unit".to_string(),
-                        ))
-                    }
-                };
-                Ok(SchedulerEventTiming::In(duration))
-            } else {
-                Err(SchedulerError::InternalError(
-                    "Invalid 'In' format".to_string(),
-                ))
-            }
-        } else if s.to_lowercase().starts_with("between ") {
-            let parts: Vec<&str> = s[8..].trim().split(" and ").collect();
-            if parts.len() == 2 {
-                let start = parts[0].trim();
-                let end = parts[1].trim();
-                // Convert to cron patterns
-                let start_cron = Self::time_to_cron(start)?;
-                let end_cron = Self::time_to_cron(end)?;
-                Ok(SchedulerEventTiming::Between(start_cron, end_cron))
-            } else {
-                Err(SchedulerError::InternalError(
-                    "Invalid 'Between' format".to_string(),
-                ))
-            }
-        } else {
-            Err(SchedulerError::InternalError(
-                "Invalid timing format".to_string(),
-            ))
+    fn parse_duration_unit(value: u64, unit: &str) -> Result<Duration, SchedulerError> {
+        match unit {
+            "hour" | "hours" => Ok(Duration::hours(value as i64)),
+            "minute" | "minutes" => Ok(Duration::minutes(value as i64)),
+            "second" | "seconds" => Ok(Duration::seconds(value as i64)),
+            _ => Err(SchedulerError::InternalError(
+                "Invalid duration unit".to_string(),
+            )),
         }
     }
 
-    fn time_to_cron(time_str: &str) -> Result<String, SchedulerError> {
-        // Expecting format like "10 PM" or "6 AM"
-        let parts: Vec<&str> = time_str.split_whitespace().collect();
-        if parts.len() != 2 {
-            return Err(SchedulerError::InternalError(
-                "Invalid time format".to_string(),
-            ));
-        }
-        let hour: u32 = parts[0]
-            .parse()
-            .map_err(|_| SchedulerError::InternalError("Invalid hour value".to_string()))?;
-        let period = parts[1].to_uppercase();
-        if !(1..=12).contains(&hour) || (period != "AM" && period != "PM") {
+    fn parse_cron(hour: u32, period: &str) -> Result<String, SchedulerError> {
+        if !(1..=12).contains(&hour) || (period != "am" && period != "pm") {
             return Err(SchedulerError::InternalError(
                 "Invalid time value".to_string(),
             ));
         }
-        let hour_24 = if period == "AM" {
+        let hour_24 = if period == "am" {
             if hour == 12 {
                 0
             } else {
@@ -198,6 +162,37 @@ impl SchedulerEventTiming {
         };
         // Cron pattern for every day at the specified hour
         Ok(format!("0 {} * * *", hour_24))
+    }
+
+    // It will parse two cases:
+    // 1. In X hours => EventTiming::In(Duration::from_secs(X * 3600))
+    // 2. Between X and Y => EventTiming::Between("cron_pattern_for_X", "cron_pattern_for_Y") Where X and Y are 12-hour times like "10 PM" and "6 AM"
+    pub fn from_string(string_value: String) -> Result<Self, SchedulerError> {
+        let sanitized_string_value = string_value.trim().to_lowercase();
+        if let Some(caps) = IN_PATTERN.captures(&sanitized_string_value) {
+            let value: u64 = caps[1]
+                .parse()
+                .map_err(|_| SchedulerError::InternalError("Invalid duration value".to_string()))?;
+            let unit = &caps[2];
+            let duration = Self::parse_duration_unit(value, unit)?;
+            Ok(SchedulerEventTiming::In(duration))
+        } else if let Some(caps) = BETWEEN_PATTERN.captures(&sanitized_string_value) {
+            let start_hour: u32 = caps[1]
+                .parse()
+                .map_err(|_| SchedulerError::InternalError("Invalid start hour".to_string()))?;
+            let start_period = &caps[2];
+            let end_hour: u32 = caps[3]
+                .parse()
+                .map_err(|_| SchedulerError::InternalError("Invalid end hour".to_string()))?;
+            let end_period = &caps[4];
+
+            Ok(SchedulerEventTiming::Between(
+                Self::parse_cron(start_hour, start_period)?,
+                Self::parse_cron(end_hour, end_period)?,
+            ))
+        } else {
+            Err(SchedulerError::InvalidTimingFormat(sanitized_string_value))
+        }
     }
 
     pub fn is_persistent(&self) -> bool {
@@ -690,6 +685,8 @@ impl EventScheduler {
         _event_type: SchedulerEventType, // Not used in scheduling logic, only for identification
         timing: SchedulerEventTiming,
     ) -> Result<tokio::task::JoinHandle<()>, SchedulerError> {
+        const ZERO_DURATION: std::time::Duration = std::time::Duration::from_secs(0);
+
         let handle = match timing {
             SchedulerEventTiming::In(duration) => tokio::spawn(async move {
                 sleep(duration.to_std().unwrap_or_default()).await;
@@ -728,7 +725,7 @@ impl EventScheduler {
                             {
                                 let end_wait =
                                     (next_end - Local::now()).to_std().unwrap_or_default();
-                                if end_wait > std::time::Duration::from_secs(0) {
+                                if end_wait > ZERO_DURATION {
                                     sleep(end_wait).await;
                                 }
 
@@ -760,7 +757,7 @@ impl EventScheduler {
                             {
                                 let end_wait =
                                     (next_end - Local::now()).to_std().unwrap_or_default();
-                                if end_wait > std::time::Duration::from_secs(0) {
+                                if end_wait > ZERO_DURATION {
                                     sleep(end_wait).await;
                                 }
                                 let _unused = INSTANCE.message_sender.send(
