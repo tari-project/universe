@@ -22,6 +22,7 @@
 
 #![allow(dead_code, unused_variables, unused_must_use)]
 
+use chrono::{DateTime, Duration, Local};
 use croner::{self, parser::CronParser};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -32,7 +33,6 @@ use std::{
         atomic::{AtomicBool, AtomicU64},
         LazyLock,
     },
-    time::Duration,
 };
 use tokio::{
     sync::{mpsc, RwLock},
@@ -127,14 +127,14 @@ impl SchedulerEventTiming {
         if s.to_lowercase().starts_with("in ") {
             let parts: Vec<&str> = s[3..].split_whitespace().collect();
             if parts.len() == 2 {
-                let value: u64 = parts[0].parse().map_err(|_| {
+                let value: i64 = parts[0].parse().map_err(|_| {
                     SchedulerError::InternalError("Invalid duration value".to_string())
                 })?;
                 let unit = parts[1].to_lowercase();
                 let duration = match unit.as_str() {
-                    "hour" | "hours" => Duration::from_secs(value * 3600),
-                    "minute" | "minutes" => Duration::from_secs(value * 60),
-                    "second" | "seconds" => Duration::from_secs(value),
+                    "hour" | "hours" => Duration::hours(value),
+                    "minute" | "minutes" => Duration::minutes(value),
+                    "second" | "seconds" => Duration::seconds(value),
                     _ => {
                         return Err(SchedulerError::InternalError(
                             "Invalid duration unit".to_string(),
@@ -692,7 +692,7 @@ impl EventScheduler {
     ) -> Result<tokio::task::JoinHandle<()>, SchedulerError> {
         let handle = match timing {
             SchedulerEventTiming::In(duration) => tokio::spawn(async move {
-                sleep(duration).await;
+                sleep(duration.to_std().unwrap_or_default()).await;
 
                 let _unused = INSTANCE
                     .message_sender
@@ -712,10 +712,10 @@ impl EventScheduler {
                 tokio::spawn(async move {
                     loop {
                         if start_cron_parsed
-                            .is_time_matching(&chrono::Local::now())
+                            .is_time_matching(&Local::now())
                             .unwrap_or(false)
                         {
-                            info!(target: LOG_TARGET, "Start cron matched for event ID {:?} at {:?}", event_id, chrono::Local::now());
+                            info!(target: LOG_TARGET, "Start cron matched for event ID {:?} at {:?}", event_id, Local::now());
                             let _unused =
                                 INSTANCE
                                     .message_sender
@@ -724,12 +724,11 @@ impl EventScheduler {
                                     });
 
                             if let Ok(next_end) =
-                                end_cron_parsed.find_next_occurrence(&chrono::Local::now(), false)
+                                end_cron_parsed.find_next_occurrence(&Local::now(), false)
                             {
-                                let end_wait = (next_end - chrono::Local::now())
-                                    .to_std()
-                                    .unwrap_or(Duration::from_secs(0));
-                                if end_wait > Duration::from_secs(0) {
+                                let end_wait =
+                                    (next_end - Local::now()).to_std().unwrap_or_default();
+                                if end_wait > std::time::Duration::from_secs(0) {
                                     sleep(end_wait).await;
                                 }
 
@@ -740,14 +739,12 @@ impl EventScheduler {
                                 );
                             }
                         } else if let Ok(next_start) =
-                            start_cron_parsed.find_next_occurrence(&chrono::Local::now(), false)
+                            start_cron_parsed.find_next_occurrence(&Local::now(), false)
                         {
                             // Wait until start time
-                            let now = chrono::Local::now();
+                            let now = Local::now();
                             if next_start > now {
-                                let wait_duration = (next_start - now)
-                                    .to_std()
-                                    .unwrap_or(Duration::from_secs(0));
+                                let wait_duration = (next_start - now).to_std().unwrap_or_default();
                                 sleep(wait_duration).await;
                             }
 
@@ -761,10 +758,9 @@ impl EventScheduler {
                             if let Ok(next_end) =
                                 end_cron_parsed.find_next_occurrence(&next_start, false)
                             {
-                                let end_wait = (next_end - chrono::Local::now())
-                                    .to_std()
-                                    .unwrap_or(Duration::from_secs(0));
-                                if end_wait > Duration::from_secs(0) {
+                                let end_wait =
+                                    (next_end - Local::now()).to_std().unwrap_or_default();
+                                if end_wait > std::time::Duration::from_secs(0) {
                                     sleep(end_wait).await;
                                 }
                                 let _unused = INSTANCE.message_sender.send(
@@ -786,16 +782,12 @@ impl EventScheduler {
         Ok(handle)
     }
 
-    fn calculate_next_execution(
-        timing: &SchedulerEventTiming,
-    ) -> Option<chrono::DateTime<chrono::Local>> {
+    fn calculate_next_execution(timing: &SchedulerEventTiming) -> Option<DateTime<Local>> {
         match timing {
-            SchedulerEventTiming::In(duration) => {
-                Some(chrono::Local::now() + chrono::Duration::from_std(*duration).ok()?)
-            }
+            SchedulerEventTiming::In(duration) => Some(Local::now() + *duration),
             SchedulerEventTiming::Between(start_cron, _) => {
                 let cron = CronParser::builder().build().parse(start_cron).ok()?;
-                cron.find_next_occurrence(&chrono::Local::now(), false).ok()
+                cron.find_next_occurrence(&Local::now(), false).ok()
             }
         }
     }
@@ -804,7 +796,7 @@ impl EventScheduler {
         INSTANCE
             .remove_event_by_type_and_timing(
                 SchedulerEventType::ResumeMining,
-                SchedulerEventTiming::In(Duration::from_secs(0)),
+                SchedulerEventTiming::In(Duration::seconds(0)),
             )
             .await;
     }
