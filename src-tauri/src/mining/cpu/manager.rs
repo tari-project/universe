@@ -229,7 +229,7 @@ impl CpuManager {
 
             if cpu_usage_percentage <= 1 {
                 self.process_watcher.adapter.cpu_threads =
-                    Some(Self::determine_number_of_cores_to_use(100).await);
+                    Some(Self::determine_number_of_cores_to_use(10).await);
 
                 self.process_watcher.adapter.extra_options =
                     vec!["--randomx-mode=light".to_string()]
