@@ -89,7 +89,7 @@ tauri = { version = "2", features = [
   "image-png",
   "image-ico",
   "tray-icon",
-  "devtools"
+  "devtools",
 ] }
 tauri-plugin-cli = "2"
 tauri-plugin-clipboard-manager = "2.2.0"
