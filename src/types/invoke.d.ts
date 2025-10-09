@@ -5,6 +5,7 @@ import {
     BridgeEnvs,
     TariAddressVariants,
     BaseNodeStatus,
+    SchedulerEventType,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
@@ -134,4 +135,12 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'list_connected_peers'): Promise<string[]>;
     function invoke(param: 'switch_gpu_miner', payload: { gpuMinerType: GpuMinerType }): Promise<void>;
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
+    // Scheduler commands
+    function invoke(
+        param: 'add_scheduler_event',
+        payload: { eventId: string; eventType: SchedulerEventType; eventTiming: string; miningMode?: string }
+    ): Promise<void>;
+    function invoke(param: 'remove_scheduler_event', payload: { eventId: string }): Promise<void>;
+    function invoke(param: 'pause_scheduler_event', payload: { eventId: string }): Promise<void>;
+    function invoke(param: 'resume_scheduler_event', payload: { eventId: string }): Promise<void>;
 }
