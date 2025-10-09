@@ -214,8 +214,13 @@ pub async fn exit_application(
     // When exit is called from here I can see that it triggers the RunEvent::Exit without triggering the RunEvent::ExitRequested before
     // Cleaning up processes in RunEvent::Exit is not reliable as it does not always get triggered properly so we doing it here
 
+    info!(target: LOG_TARGET, "Exit application command received, shutting down processes...");
+
     let _unused = GpuManager::write().await.stop_mining().await;
+    info!(target: LOG_TARGET, "GPU Mining stopped.");
+
     let _unused = CpuManager::write().await.stop_mining().await;
+    info!(target: LOG_TARGET, "CPU Mining stopped.");
 
     TasksTrackers::current().stop_all_processes().await;
     GpuManager::read().await.on_app_exit().await;

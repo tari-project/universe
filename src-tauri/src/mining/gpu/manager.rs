@@ -62,7 +62,7 @@ use crate::{
     UniverseAppState,
 };
 
-static LOG_TARGET: &str = "tari::mining::gpu::manager";
+static LOG_TARGET: &str = "tari::universe::mining::gpu::manager";
 static INSTANCE: LazyLock<RwLock<GpuManager>> = LazyLock::new(|| RwLock::new(GpuManager::new()));
 
 pub struct GpuManager {
@@ -428,9 +428,12 @@ impl GpuManager {
                 .gpu_external_status_channel
                 .send(GpuMinerStatus::default());
         }
+
+        info!(target: LOG_TARGET, "Stopped gpu miner process");
         // Mark mining as stopped in pool manager
         // It will handle stopping the stats watcher after 1 hour of grace period
         GpuPoolManager::handle_mining_status_change(false).await;
+        info!(target: LOG_TARGET, "Marked mining as stopped in pool manager");
         EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
         SystemTrayManager::send_event(SystemTrayEvents::GpuMiningActivity(false)).await;
         info!(target: LOG_TARGET, "Stopped gpu miner");
