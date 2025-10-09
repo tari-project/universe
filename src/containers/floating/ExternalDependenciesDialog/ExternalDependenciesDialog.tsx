@@ -47,7 +47,7 @@ export default function ExternalDependenciesDialog() {
     const handleRestart = useCallback(async () => {
         try {
             setIsRestarting(true);
-            await invoke('restart_application', { shouldStopMiners: true });
+            await invoke('restart_application');
         } catch (e) {
             console.error('Error restarting application:', e);
         }
