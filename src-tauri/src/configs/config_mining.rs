@@ -307,8 +307,8 @@ impl ConfigMining {
                 .get("Eco")
                 .unwrap_or(&Duration::new(0, 0))
                 .as_secs();
-
-            if secs >= 108000 {
+            let threshold = 3600 * 12; // 12 hours in seconds
+            if secs >= threshold {
                 EventsEmitter::emit_show_eco_alert().await;
             }
         }

@@ -4,11 +4,11 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     background-color: ${({ theme }) => theme.palette.background.tooltip};
     box-shadow: 0 4px 40px 3px rgba(0, 0, 0, 0.05);
-    padding: 15px;
-    border-radius: 10px;
+    padding: 14px 16px;
+    border-radius: min(10px, 10%);
 `;
 
 export const Title = styled(Typography).attrs({
@@ -16,7 +16,7 @@ export const Title = styled(Typography).attrs({
 })`
     color: ${({ theme }) => theme.palette.text.primary};
     white-space: pre;
-    line-height: 1.1;
+    line-height: 1;
     font-weight: 600;
 `;
 
@@ -25,14 +25,14 @@ export const BodyTextWrapper = styled.div`
     white-space: pre-line;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 `;
 
 export const CTAContent = styled.div`
     display: flex;
     align-items: center;
     font-weight: 500;
-    gap: 2px;
+    gap: 3px;
 `;
 export const CTASection = styled.div`
     display: flex;

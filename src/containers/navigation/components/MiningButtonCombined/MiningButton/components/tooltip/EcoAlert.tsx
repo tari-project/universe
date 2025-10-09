@@ -12,7 +12,7 @@ export default function EcoAlert({ onAllClick, onTurboClick }: EcoAlertProps) {
         <Wrapper>
             <Title>{`Not getting enough rewards?`}</Title>
             <BodyTextWrapper>
-                <Typography variant="p">{`Eco mode only uses 1% of available resources.`}</Typography>
+                <Typography variant="p">{`Eco mode only uses a low percentage of system resources.`}</Typography>
                 <Typography variant="p">{`Try turning the power mode up.`}</Typography>
             </BodyTextWrapper>
             <CTASection>
