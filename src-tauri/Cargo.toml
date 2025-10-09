@@ -113,6 +113,7 @@ xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
 zip = "2.2.0"
 tari_transaction_key_manager = { git = "https://github.com/tari-project/tari", tag = "v5.0.0-pre.8" }
 uuid = "1.18.1"
+croner = "3.0.0"
 
 [target.'cfg(windows)'.dependencies]
 planif = "1.0.0"
