@@ -80,6 +80,7 @@ export const startCpuMining = async () => {
 
     console.info('CPU Mining starting....');
     try {
+        useMiningStore.setState({ isCpuMiningInitiated: true });
         await invoke('start_cpu_mining', {});
         console.info('CPU Mining started.');
     } catch (e) {
@@ -94,6 +95,7 @@ export const startGpuMining = async () => {
 
     console.info('GPU Mining starting....');
     try {
+        useMiningStore.setState({ isGpuMiningInitiated: true });
         await invoke('start_gpu_mining', {});
         console.info('GPU Mining started.');
     } catch (e) {
@@ -106,6 +108,7 @@ export const stopCpuMining = async () => {
 
     console.info('CPU Mining stopping...');
     try {
+        useMiningStore.setState({ isCpuMiningInitiated: false });
         await invoke('stop_cpu_mining', {});
         console.info('CPU Mining stopped.');
     } catch (e) {
@@ -118,6 +121,7 @@ export const stopGpuMining = async () => {
 
     console.info('GPU Mining stopping...');
     try {
+        useMiningStore.setState({ isGpuMiningInitiated: false });
         await invoke('stop_gpu_mining', {});
         console.info('GPU Mining stopped.');
     } catch (e) {

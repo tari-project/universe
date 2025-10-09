@@ -49,14 +49,22 @@ impl TaskTrackerUtil {
     pub async fn get_task_tracker(&self) -> TaskTracker {
         self.task_tracker.read().await.clone()
     }
-    pub async fn close(&self) {
+    pub async fn trigger_shutdown(&self) {
         info!(target: LOG_TARGET, "Triggering shutdown for {} processes", self.name);
         self.shutdown.write().await.trigger();
+    }
+
+    pub async fn wait_for_clousure(&self) {
         info!(target: LOG_TARGET, "Triggering task close for {} processes", self.name);
         self.task_tracker.read().await.close();
         info!(target: LOG_TARGET, "Waiting for {} processes to finish | number of tasks: {}", self.name, self.task_tracker.read().await.len());
         self.task_tracker.read().await.wait().await;
         info!(target: LOG_TARGET, "{} processes have finished", self.name);
+    }
+
+    pub async fn close(&self) {
+        self.trigger_shutdown().await;
+        self.wait_for_clousure().await;
     }
 
     pub async fn replace(&self) {
@@ -91,11 +99,20 @@ impl TasksTrackers {
     }
 
     pub async fn stop_all_processes(&self) {
-        self.common.close().await;
-        self.core_phase.close().await;
-        self.cpu_mining_phase.close().await;
-        self.gpu_mining_phase.close().await;
-        self.wallet_phase.close().await;
-        self.node_phase.close().await;
+        // Trigger shutdown for all phases
+        self.common.trigger_shutdown().await;
+        self.core_phase.trigger_shutdown().await;
+        self.cpu_mining_phase.trigger_shutdown().await;
+        self.gpu_mining_phase.trigger_shutdown().await;
+        self.wallet_phase.trigger_shutdown().await;
+        self.node_phase.trigger_shutdown().await;
+
+        // Wait for all phases to finish
+        self.common.wait_for_clousure().await;
+        self.core_phase.wait_for_clousure().await;
+        self.cpu_mining_phase.wait_for_clousure().await;
+        self.gpu_mining_phase.wait_for_clousure().await;
+        self.wallet_phase.wait_for_clousure().await;
+        self.node_phase.wait_for_clousure().await;
     }
 }
