@@ -732,6 +732,7 @@ async fn reset_app_configs(
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 #[tauri::command]
 pub async fn reset_settings(
     reset_wallet: bool,
