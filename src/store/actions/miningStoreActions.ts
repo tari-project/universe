@@ -132,6 +132,14 @@ export const stopGpuMining = async () => {
 export const startMining = async () => {
     console.info('Mining starting....');
 
+    const eco_alert_needed = useConfigMiningStore.getState().eco_alert_needed;
+    if (eco_alert_needed) {
+        const storedTime = useConfigMiningStore.getState().mode_mining_times?.Eco.secs;
+        if (storedTime) {
+            handleEcoAlertCheck(storedTime);
+        }
+    }
+
     try {
         await startCpuMining();
         await startGpuMining();
@@ -186,15 +194,21 @@ export const switchSelectedMiner = async (newGpuMiner: GpuMinerType) => {
     }
 };
 
+const handleEcoAlertCheck = (diffSeconds: number) => {
+    const isEco = useConfigMiningStore.getState().getSelectedMiningMode()?.mode_type === MiningModeType.Eco;
+    if (!isEco) return;
+
+    invoke('set_mode_mining_time', { mode: 'Eco', duration: diffSeconds });
+};
+
 export const handleSessionMiningTime = ({ startTimestamp, stopTimestamp }: SessionMiningTime) => {
     const current = useMiningStore.getState().sessionMiningTime;
     if (stopTimestamp) {
         const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
-        const isEco = useConfigMiningStore.getState().getSelectedMiningMode()?.mode_type === MiningModeType.Eco;
-        if (isEco) {
-            const diffSeconds = Number((diff / 1000).toFixed());
-            invoke('set_mode_mining_time', { mode: 'Eco', duration: diffSeconds });
-        }
+        const diffSeconds = Number((diff / 1000).toFixed());
+
+        handleEcoAlertCheck(diffSeconds);
+
         useMiningStore.setState({
             sessionMiningTime: { ...current, stopTimestamp, durationMs: diff },
         });
