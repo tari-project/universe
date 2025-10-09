@@ -21,15 +21,9 @@
   "gpu-power": "GPU Krag",
   "gpu-usage": "GPU Usage",
   "mining-button-text": {
-    "cancel-mining": "Kanselleer myn",
-    "changing-mode": "Verander modus",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "Begin myn",
-    "started-auto-mining": "Outomatiese myn het begin",
-    "starting-mining": "Myn begin",
-    "stop-mining": "Stop Mynbou",
-    "waiting-for-idle": "Wag tot onaktief"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Begin myn"
   },
   "orphan-chain-tooltip": {
     "heading": "Dinge om te probeer:",

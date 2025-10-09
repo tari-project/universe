@@ -18,15 +18,9 @@
   "floor": "Stockwerk",
   "gpu-power": "GPU-Leistung",
   "mining-button-text": {
-    "cancel-mining": "Mining abbrechen",
-    "changing-mode": "Modus wird geändert",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "Mining starten",
-    "started-auto-mining": "Auto Mining gestartet",
-    "starting-mining": "Mining wird gestartet",
-    "stop-mining": "Mining stoppen",
-    "waiting-for-idle": "Warten auf Leerlauf"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Mining starten"
   },
   "orphan-chain-tooltip": {
     "heading": "Dinge, die du versuchen kannst:",

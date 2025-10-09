@@ -20,11 +20,11 @@
   "mining-button-text": {
     "cancel-mining": "Cancelar Mineração",
     "changing-mode": "Mudando modo",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "Iniciar Mineração",
     "started-auto-mining": "Mineração Automática Iniciada",
     "starting-mining": "Iniciando Mineração",
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Iniciar Mineração",
     "stop-mining": "Parar Mineração",
     "waiting-for-idle": "Aguardando Ociosidade"
   },

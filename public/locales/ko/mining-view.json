@@ -18,15 +18,9 @@
   "floor": "최저값",
   "gpu-power": "GPU 전력",
   "mining-button-text": {
-    "cancel-mining": "채굴 취소",
-    "changing-mode": "모드 변경 중",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "채굴 시작",
-    "started-auto-mining": "자동 채굴 시작됨",
-    "starting-mining": "채굴 시작 중",
-    "stop-mining": "채굴 중지",
-    "waiting-for-idle": "유휴 상태 대기 중"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "채굴 시작"
   },
   "orphan-chain-tooltip": {
     "heading": "시도할 것들:",

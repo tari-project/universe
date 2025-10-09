@@ -13,6 +13,7 @@ import PlayIcon from './icons/PlayIcon.tsx';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
 
 import MiningButtonPause from './MiningButton/components/pause/MiningButtonPause.tsx';
+import useResumeCountdown from '@app/containers/navigation/components/MiningButtonCombined/useResumeCountdown.ts';
 
 export default function MiningButtonCombined() {
     const gpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isGpuMiningModuleInitialized);
@@ -32,6 +33,8 @@ export default function MiningButtonCombined() {
         isMiningLoading || !isMiningControlsEnabled || !isMiningEnabled || !isMiningUnlocked || changingModes;
     const isAppLoading = isMiningLoading;
 
+    const resumeTime = useResumeCountdown();
+
     const handleStartMining = useCallback(async () => {
         await startMining();
     }, []);
@@ -41,16 +44,17 @@ export default function MiningButtonCombined() {
     if (isAppLoading) {
         button = <LoadingButton key="loading" />;
     } else if (isMining) {
-        button = <MiningButtonPause key="stop" isMining={isMining} isMiningButtonDisabled={isMiningButtonDisabled} />;
+        button = <MiningButtonPause key="pause" isMining={isMining} isMiningButtonDisabled={isMiningButtonDisabled} />;
     } else {
         button = (
             <MiningButton
                 key="start"
-                buttonText="start-mining"
+                buttonText="start"
                 onClick={handleStartMining}
                 disabled={isMiningButtonDisabled}
                 icon={<PlayIcon />}
                 isMining={isMining}
+                resumeTime={resumeTime}
             />
         );
     }

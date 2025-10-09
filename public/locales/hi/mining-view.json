@@ -18,15 +18,9 @@
   "floor": "न्यूनतम स्तर",
   "gpu-power": "GPU पावर",
   "mining-button-text": {
-    "cancel-mining": "माइनिंग रद्द करें",
-    "changing-mode": "मोड बदल रहा है",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "माइनिंग शुरू करें",
-    "started-auto-mining": "स्वचालित माइनिंग शुरू हुई",
-    "starting-mining": "माइनिंग शुरू हो रही है",
-    "stop-mining": "माइनिंग रोकें",
-    "waiting-for-idle": "निष्क्रिय होने की प्रतीक्षा"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "माइनिंग शुरू करें"
   },
   "orphan-chain-tooltip": {
     "heading": "कोशिश करने के लिए चीजें:",

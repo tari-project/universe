@@ -159,7 +159,10 @@ export const pauseMining = async (duration: number) => {
         eventType: SchedulerEventType.ResumeMining,
         eventTiming,
     })
-        .then(() => stopMining())
+        .then(() => {
+            stopMining();
+            useMiningStore.setState({ selectedResumeDuration: { durationHours: duration, timeStamp: Date.now() } });
+        })
         .catch((e) => console.error(e));
 };
 export const handleSelectedMinerChanged = (miner: GpuMinerType) => {

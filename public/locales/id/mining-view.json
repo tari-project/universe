@@ -18,15 +18,9 @@
   "floor": "Batas Bawah",
   "gpu-power": "Daya GPU",
   "mining-button-text": {
-    "cancel-mining": "Batalkan Penambangan",
-    "changing-mode": "Mengubah mode",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "Mulai Menambang",
-    "started-auto-mining": "Penambangan Otomatis Dimulai",
-    "starting-mining": "Memulai Penambangan",
-    "stop-mining": "Hentikan Penambangan",
-    "waiting-for-idle": "Menunggu Tidak Aktif"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Mulai Menambang"
   },
   "orphan-chain-tooltip": {
     "heading": "Hal-hal yang bisa dicoba:",
