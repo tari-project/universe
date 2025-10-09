@@ -22,7 +22,7 @@ export const ButtonWrapper = styled(m.div)<{ $selectedMode: string; $disabled: b
     background-position: center;
     background-repeat: no-repeat;
 
-    padding: 0 6px 0 14px;
+    padding: 0 6px 0 9px;
 
     transition:
         background 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87),
@@ -76,10 +76,8 @@ export const HitBox = styled.button`
     align-items: center;
     justify-content: flex-start;
     gap: 10px;
-
     width: 100%;
     height: 100%;
-
     position: relative;
     z-index: 1;
 
@@ -124,10 +122,10 @@ export const HitBox = styled.button`
     }
 `;
 
-export const Text = styled.div`
+export const Text = styled(m.div)`
     color: #f0f1f1;
-    text-align: center;
-
+    display: flex;
+    width: 100%;
     font-family: Poppins, sans-serif;
     font-size: 16px;
     font-style: normal;
@@ -145,17 +143,21 @@ export const DropdownWrapper = styled.div`
 `;
 
 export const IconWrapper = styled.div<{ $absolute?: boolean }>`
-    width: 27px;
-    height: 27px;
-
+    width: 37px;
+    height: 37px;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-
     border-radius: 100%;
+    color: #fff;
     background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(17px);
+    svg {
+        display: flex;
+        max-width: 100%;
+    }
 
     ${({ $absolute }) =>
         $absolute &&
@@ -176,4 +178,12 @@ export const Shadow = styled(m.div)`
     background: linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.4) 100%);
     border-radius: 500px;
     z-index: 0;
+`;
+
+export const TextWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    justify-content: center;
+    align-items: flex-start;
 `;

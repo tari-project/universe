@@ -23,7 +23,8 @@
   "mining-button-text": {
     "cancel-mining": "Kanselleer myn",
     "changing-mode": "Verander modus",
-    "pause-mining": "Onderbreek myn",
+    "pause-mining": "Pause Mining",
+    "resume-mining": "Resume Mining",
     "start-mining": "Begin myn",
     "started-auto-mining": "Outomatiese myn het begin",
     "starting-mining": "Myn begin",
@@ -38,6 +39,10 @@
     "step_4": "Probeer \"n Tor-brug gebruik (in Instellings)",
     "step_5": "Probeer Tor deaktiveer (in Instellings)",
     "step_6": "Probeer \"n toepassingherstel (in Instellings)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}<strong/>",
+    "until-restart": "Pause until I<strong> Restart<strong/>"
   },
   "pool": {
     "accepted_shares": "Aanvaarde aandele",

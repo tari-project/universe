@@ -5,14 +5,14 @@ import {
     BridgeEnvs,
     TariAddressVariants,
     BaseNodeStatus,
-    SchedulerEventType,
 } from './app-status';
 import { Language } from '@app/i18initializer';
-import { PaperWalletDetails } from '@app/types/app-status.ts';
-import { displayMode } from '@app/store/types.ts';
-import { BasePoolData, ConfigBackendInMemory } from '@app/types/configs.ts';
+import { PaperWalletDetails } from './app-status.ts';
+import { displayMode } from '../store/types.ts';
+import { BasePoolData, ConfigBackendInMemory } from './configs.ts';
 import { ExchangeMiner } from './exchange';
-import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
+import { ActiveTapplet } from './tapplets/tapplet.types';
+import { AddSchedulerEventPayload } from './mining/schedule.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -136,10 +136,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'switch_gpu_miner', payload: { gpuMinerType: GpuMinerType }): Promise<void>;
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
     // Scheduler commands
-    function invoke(
-        param: 'add_scheduler_event',
-        payload: { eventId: string; eventType: SchedulerEventType; eventTiming: string; miningMode?: string }
-    ): Promise<void>;
+    function invoke(param: 'add_scheduler_event', payload: AddSchedulerEventPayload): Promise<void>;
     function invoke(param: 'remove_scheduler_event', payload: { eventId: string }): Promise<void>;
     function invoke(param: 'pause_scheduler_event', payload: { eventId: string }): Promise<void>;
     function invoke(param: 'resume_scheduler_event', payload: { eventId: string }): Promise<void>;

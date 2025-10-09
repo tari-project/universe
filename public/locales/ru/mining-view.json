@@ -20,7 +20,8 @@
   "mining-button-text": {
     "cancel-mining": "Отмена майнинга",
     "changing-mode": "Изменение режима",
-    "pause-mining": "Пауза майнинга",
+    "pause-mining": "Pause Mining",
+    "resume-mining": "Resume Mining",
     "start-mining": "Начать майнинг",
     "started-auto-mining": "Авто-майнинг запущен",
     "starting-mining": "Запуск майнинга",
@@ -35,6 +36,10 @@
     "step_4": "Попробуйте использовать Tor Bridge (в Настройках)",
     "step_5": "Попробуйте отключить Tor (в Настройках)",
     "step_6": "Попробуйте сбросить настройки приложения (в Настройках)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}<strong/>",
+    "until-restart": "Pause until I<strong> Restart<strong/>"
   },
   "pool": {
     "accepted_shares": "Принятые шары",

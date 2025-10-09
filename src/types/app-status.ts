@@ -1,5 +1,4 @@
 import { AppModule } from '@app/store/types/setup';
-import { MiningModeType } from './configs';
 
 export interface TorConfig {
     control_port: number;
@@ -134,9 +133,4 @@ export interface TariAddressVariants {
     emoji_string: string;
     base58: string;
     hex: string;
-}
-
-export enum SchedulerEventType {
-    ResumeMining = 'ResumeMining',
-    Mine = 'Mine',
 }

@@ -1,10 +1,11 @@
 import { ReactNode } from 'react';
-import { DropdownWrapper, HitBox, ButtonWrapper, Text, IconWrapper, Shadow } from './styles';
-import ModeDropdown from './components/ModeDropdown/ModeDropdown';
-import AnimatedBackground from './components/AnimatedBackground/AnimatedBackground';
+import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useConfigMiningStore } from '@app/store';
-import { AnimatePresence } from 'motion/react';
+import ModeDropdown from './components/ModeDropdown/ModeDropdown';
+import AnimatedBackground from './components/AnimatedBackground/AnimatedBackground';
+import { DropdownWrapper, HitBox, ButtonWrapper, Text, IconWrapper, Shadow, TextWrapper } from './styles';
+import TimerChip from '@app/containers/navigation/components/MiningButtonCombined/MiningButton/components/pause/TimerChip.tsx';
 
 interface Props {
     onClick: () => void;
@@ -12,11 +13,14 @@ interface Props {
     buttonText: string;
     icon: ReactNode;
     isMining: boolean;
+    resumeTime?: string;
 }
 
-export default function MiningButton({ onClick, buttonText, icon, isMining, disabled = false }: Props) {
+export default function MiningButton({ onClick, buttonText, icon, isMining, disabled = false, resumeTime }: Props) {
     const { t } = useTranslation('mining-view');
     const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
+
+    const hasChip = !!resumeTime;
 
     return (
         <ButtonWrapper
@@ -30,7 +34,12 @@ export default function MiningButton({ onClick, buttonText, icon, isMining, disa
                 <IconWrapper $absolute={false} className="mining_button-icon">
                     {icon}
                 </IconWrapper>
-                <Text className="mining_button-text">{t(`mining-button-text.${buttonText}`)}</Text>
+                <TextWrapper>
+                    <Text className="mining_button-text" animate={{ scale: hasChip ? 0.9 : 1, x: hasChip ? -4 : 0 }}>
+                        {t(`mining-button-text.${buttonText}`)}
+                    </Text>
+                    {hasChip && <TimerChip resumeTime={resumeTime} />}
+                </TextWrapper>
             </HitBox>
             <DropdownWrapper>
                 <ModeDropdown />
