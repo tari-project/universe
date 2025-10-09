@@ -9,6 +9,7 @@ import { useConfigMiningStore } from '../useAppConfigStore.ts';
 import { Network } from '@app/utils/network.ts';
 import { setupStoreSelectors } from '../selectors/setupStoreSelectors.ts';
 import { GpuMiner, GpuMinerType, MinerControlsState } from '@app/types/events-payloads.ts';
+import { SchedulerEventType } from '@app/types/mining/schedule.ts';
 
 export const restartMining = async () => {
     const isMining =
@@ -149,6 +150,17 @@ export const stopMining = async () => {
         console.error('Failed to stop mining: ', e);
         setError(e as string);
     }
+};
+
+export const pauseMining = async (duration: number) => {
+    const eventTiming = `In ${duration} hours`;
+    invoke('add_scheduler_event', {
+        eventId: 'pause_mining',
+        eventType: SchedulerEventType.ResumeMining,
+        eventTiming,
+    })
+        .then(() => stopMining())
+        .catch((e) => console.error(e));
 };
 export const handleSelectedMinerChanged = (miner: GpuMinerType) => {
     useMiningStore.setState({ selectedMiner: miner });
