@@ -27,6 +27,15 @@
     "stop-mining": "Остановить майнинг",
     "waiting-for-idle": "Ожидание простоя"
   },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not getting enough rewards?"
+    }
+  },
   "orphan-chain-tooltip": {
     "heading": "Что можно попробовать:",
     "step_1": "Проверьте Ваше интернет-соединение",
