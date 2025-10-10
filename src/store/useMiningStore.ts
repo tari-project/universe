@@ -8,7 +8,7 @@ export interface SessionMiningTime {
     durationMs?: number;
 }
 
-interface ResumeMiningTime {
+export interface ResumeMiningTime {
     durationHours: number;
     timeStamp: number;
 }

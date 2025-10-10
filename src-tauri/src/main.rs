@@ -588,7 +588,7 @@ fn main() {
             commands::switch_gpu_miner,
             commands::set_feedback_fields,
             commands::set_mode_mining_time,
-            commands::set_eco_alert_needed
+            commands::set_eco_alert_needed,
             // Scheduler commands
             commands::add_scheduler_event,
             commands::remove_scheduler_event,

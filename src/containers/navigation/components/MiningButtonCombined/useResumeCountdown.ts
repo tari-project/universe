@@ -2,7 +2,8 @@ import { useMiningStore } from '@app/store';
 import { useCallback, useEffect, useState } from 'react';
 
 export default function useResumeCountdown() {
-    const [timeString, setTimeString] = useState<string | undefined>();
+    const [fullTimeString, setFullTimeString] = useState<string | undefined>();
+    const [displayString, setDisplayString] = useState<string | undefined>();
 
     const selectedResumeDuration = useMiningStore((s) => s.selectedResumeDuration);
     const durationHours = selectedResumeDuration?.durationHours;
@@ -10,7 +11,11 @@ export default function useResumeCountdown() {
     const durationMs = (durationHours || 0) * 60 * 60 * 1000;
 
     const handleCountdown = useCallback(() => {
-        if (!timeStampMs) return;
+        if (!selectedResumeDuration || !timeStampMs) {
+            setFullTimeString(undefined);
+            setDisplayString(undefined);
+            return;
+        }
         const fmt = (n: number) => String(Math.floor(n)).padStart(2, '0');
 
         const nowMs = Date.now();
@@ -21,20 +26,19 @@ export default function useResumeCountdown() {
 
         const hrs = seconds / 3600;
         const mins = (seconds / 60) % 60;
-        const s = seconds % 60;
 
-        setTimeString(`${fmt(hrs)}:${fmt(mins)}:${fmt(s)}`);
-    }, [durationMs, timeStampMs]);
+        const hrString = `${Math.floor(hrs)} hour${hrs >= 2 ? 's' : ''}`;
+        const mString = mins >= 1 ? ` and ${fmt(mins)} minute${mins >= 2 ? 's' : ''}` : '';
+
+        setFullTimeString(`Mining will auto-resume in ~${hrString}${mString}`);
+        setDisplayString(`${fmt(hrs)}:${fmt(mins)}`);
+    }, [durationMs, selectedResumeDuration, timeStampMs]);
 
     useEffect(() => {
-        if (!selectedResumeDuration) return;
-
-        const interval = setInterval(() => {
-            handleCountdown();
-        }, 1000);
-
+        const interval = setInterval(() => handleCountdown(), 1000 * 60);
+        handleCountdown();
         return () => clearInterval(interval);
-    }, [handleCountdown, selectedResumeDuration]);
+    }, [handleCountdown]);
 
-    return timeString;
+    return { displayString, fullTimeString };
 }

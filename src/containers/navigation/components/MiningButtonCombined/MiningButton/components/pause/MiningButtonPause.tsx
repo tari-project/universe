@@ -10,7 +10,7 @@ import { Trans } from 'react-i18next';
 import { TimerIcon } from './TimerIcon.tsx';
 import { PauseOutlineIcon } from './PauseOutlineIcon.tsx';
 import { stopMining } from '@app/store';
-import { pauseMining } from '@app/store/actions/miningStoreActions.ts';
+import { pauseMining, setResumeDuration } from '@app/store/actions/miningStoreActions.ts';
 
 interface MiningButtonPauseProps {
     isMining: boolean;
@@ -47,7 +47,7 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
     const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
 
     const handleStopMining = useCallback(async () => {
-        await stopMining();
+        await stopMining().then(() => setResumeDuration(undefined));
     }, []);
 
     const handlePause = useCallback(async (hours: number) => {
