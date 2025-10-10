@@ -10,7 +10,7 @@ export interface SessionMiningTime {
 
 interface ResumeMiningTime {
     durationHours: number;
-    timeStamp?: number;
+    timeStamp: number;
 }
 
 export interface MiningStoreState {
