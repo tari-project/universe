@@ -396,6 +396,8 @@ impl GpuManager {
                 .load_excluded_devices(excluded_devices)
                 .await?;
 
+            info!(target: LOG_TARGET, "Starting gpu miner process watcher with binary: {:?}", binary);
+
             self.process_watcher
                 .start(
                     base_path,
@@ -407,10 +409,15 @@ impl GpuManager {
                 )
                 .await?;
 
+            info!(target: LOG_TARGET, "Started gpu miner process watcher");
+
             if self.connection_type.is_pool() {
                 GpuPoolManager::start_stats_watcher().await;
+                info!(target: LOG_TARGET, "Started gpu miner pool watcher");
             }
+
             self.initialize_status_updates().await;
+            info!(target: LOG_TARGET, "Initialized gpu miner status updates");
         } else {
             return Err(anyhow::anyhow!("App handle is not set"));
         }
@@ -450,7 +457,7 @@ impl GpuManager {
             let miner_cloned = miner.clone();
             info!(target: LOG_TARGET, "Resolved selected gpu miner interface");
 
-            self.stop_mining().await.ok(); // we ignore the error here, as we want to switch miner anyway
+            self.stop_mining().await.ok();
 
             self.selected_miner = miner_type.clone();
             self.process_watcher.adapter = adapter;
@@ -493,8 +500,20 @@ impl GpuManager {
 
         if let Some(fallback_miner) = fallback_miner {
             info!(target: LOG_TARGET, "Switching to fallback gpu miner: {fallback_miner}");
-            self.switch_miner(fallback_miner).await?;
-            self.start_mining().await?;
+            TasksTrackers::current()
+                .gpu_mining_phase
+                .get_task_tracker()
+                .await
+                .spawn(async move {
+                    GpuManager::write().await.switch_miner(fallback_miner).await.unwrap_or_else(
+                        |e| {
+                            error!(target: LOG_TARGET, "Failed to switch to fallback gpu miner: {e}");
+                        },
+                    );
+                    GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                        error!(target: LOG_TARGET, "Failed to start mining with fallback gpu miner: {e}");
+                    });
+                });
         } else {
             error!(target: LOG_TARGET, "No healthy gpu miners left to switch to");
             //TODO Probably we will need to handle it better in the future, app modules maybe need to know that no miners are healthy ?
