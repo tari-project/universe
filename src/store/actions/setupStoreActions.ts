@@ -177,7 +177,6 @@ const handleCpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             break;
         case AppModuleStatus.NotInitialized: {
             const isCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
-
             if (isCpuMiningInitiated) {
                 await stopCpuMining();
             }
