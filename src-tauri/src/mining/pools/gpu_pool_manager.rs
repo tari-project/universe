@@ -48,7 +48,7 @@ use crate::{
     tasks_tracker::TasksTrackers,
 };
 
-static LOG_TARGET: &str = "tari::mining::pools::gpu_pool_manager";
+static LOG_TARGET: &str = "tari::universe::mining::pools::gpu_pool_manager";
 static INSTANCE: LazyLock<GpuPoolManager> = LazyLock::new(GpuPoolManager::new);
 
 pub struct GpuPoolManager {
