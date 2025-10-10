@@ -17,7 +17,12 @@ export function useShutdownHandler() {
     const minimumMiningTimeForClose = useUserFeedbackStore((s) => s.closeMiningTimeMs);
     const earlyClosedDismissed = useUserFeedbackStore((s) => s.earlyClosedDismissed);
 
-    const handleShutdown = useCallback(async () => await invoke('exit_application'), []);
+    const handleShutdown = useCallback(async () => {
+        console.info(`[shut_down_issues_check] invoking exit_application`);
+        await invoke('exit_application')
+            .then((r) => console.info(`[shut_down_issues_check] exit_application then`, r))
+            .catch((e) => console.error(`[shut_down_issues_check] exit_application catch`, e));
+    }, []);
 
     const validateMiningTime = useCallback(() => {
         const currentMiningTimeMs = checkMiningTime();
@@ -56,14 +61,17 @@ export function useShutdownHandler() {
 
     useEffect(() => {
         if (isEarlyClose) {
+            console.info(`[shut_down_issues_check] earlyClosedDismissed= `, earlyClosedDismissed);
             setPromptDismissed(earlyClosedDismissed);
         }
     }, [earlyClosedDismissed, isEarlyClose]);
 
     useEffect(() => {
+        console.info(`[shut_down_issues_check] canProceedWithShutdown= `, canProceedWithShutdown);
+        console.info(`[shut_down_issues_check] promptDismissed= `, promptDismissed);
         if (canProceedWithShutdown || promptDismissed) {
             setIsShuttingDown(true);
-            const shutdownTimeout = setTimeout(() => handleShutdown(), 250);
+            const shutdownTimeout = setTimeout(() => handleShutdown(), 50);
             return () => {
                 clearTimeout(shutdownTimeout);
             };
