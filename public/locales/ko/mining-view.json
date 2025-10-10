@@ -27,6 +27,15 @@
     "stop-mining": "채굴 중지",
     "waiting-for-idle": "유휴 상태 대기 중"
   },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
+  },
   "orphan-chain-tooltip": {
     "heading": "시도할 것들:",
     "step_1": "인터넷 연결을 확인하세요",
