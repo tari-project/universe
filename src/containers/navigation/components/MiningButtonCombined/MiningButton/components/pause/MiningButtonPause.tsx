@@ -32,6 +32,7 @@ const item = {
     show: { opacity: 1, y: 0 },
 };
 
+const env = import.meta.env.MODE;
 export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: MiningButtonPauseProps) {
     const [showPauseOptions, setShowPauseOptions] = useState(false);
     const { refs, floatingStyles, context } = useFloating({
@@ -50,18 +51,17 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
         await stopMining().then(() => setResumeDuration(undefined));
     }, []);
 
-    const handlePause = useCallback(async (hours: number) => {
-        console.info(`Pausing for ${hours} seconds!`);
-        await pauseMining(hours);
+    const handlePause = useCallback(async (hours: number, isMinutes = false) => {
+        await pauseMining(hours, isMinutes);
     }, []);
 
     function buttonClick() {
         setShowPauseOptions((c) => !c);
     }
 
-    function renderDurationOption(hours: number) {
+    function renderDurationOption(hours: number, isMinutes = false) {
         return (
-            <OptionWrapper variants={item} onClick={() => handlePause(hours)}>
+            <OptionWrapper variants={item} onClick={() => handlePause(hours, isMinutes)}>
                 <IconWrapper>
                     <TimerIcon />
                     <TimerAccent>{hours}</TimerAccent>
@@ -71,7 +71,7 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
                         ns="mining-view"
                         i18nKey="pause.for-duration"
                         components={{ strong: <strong /> }}
-                        values={{ duration: `${hours} hours` }}
+                        values={{ duration: `${hours} ${isMinutes ? 'minute' : 'hours'}` }}
                     />
                 </OptionText>
             </OptionWrapper>
@@ -114,6 +114,7 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
                                 />
                             </OptionText>
                         </OptionWrapper>
+                        {env === 'development' && renderDurationOption(1, true)}
                     </Options>
                 )}
             </AnimatePresence>

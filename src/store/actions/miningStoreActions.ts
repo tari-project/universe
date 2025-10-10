@@ -182,8 +182,8 @@ export const stopMining = async () => {
     }
 };
 
-export const pauseMining = async (duration: number) => {
-    const eventTiming = `In ${duration} minutes`;
+export const pauseMining = async (duration: number, isMinutes = false) => {
+    const eventTiming = `In ${duration} ${isMinutes ? 'minutes' : 'hours'}`; // for admin testing
     invoke('add_scheduler_event', {
         eventId: 'pause_mining',
         eventType: SchedulerEventType.ResumeMining,
@@ -191,7 +191,8 @@ export const pauseMining = async (duration: number) => {
     })
         .then(() => {
             stopMining();
-            setResumeDuration({ durationHours: duration, timeStamp: Date.now() });
+            const durationHours = isMinutes ? duration / 60 : duration;
+            setResumeDuration({ durationHours, timeStamp: Date.now() });
         })
         .catch((e) => console.error(e));
 };
