@@ -243,9 +243,11 @@ const useTauriEventsListener = () => {
                             setIsWalletLoading(event.payload?.loading);
                             break;
                         case 'UpdateCpuMinerControlsState':
+                            console.log('UpdateCpuMinerControlsState', event.payload);
                             handleCpuMinerControlsStateChanged(event.payload);
                             break;
                         case 'UpdateGpuMinerControlsState':
+                            console.log('UpdateGpuMinerControlsState', event.payload);
                             handleGpuMinerControlsStateChanged(event.payload);
                             break;
                         case 'OpenSettings':
