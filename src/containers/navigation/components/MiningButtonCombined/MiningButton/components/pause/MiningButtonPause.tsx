@@ -10,7 +10,7 @@ import { Trans } from 'react-i18next';
 import { TimerIcon } from './TimerIcon.tsx';
 import { PauseOutlineIcon } from './PauseOutlineIcon.tsx';
 import { stopMining } from '@app/store';
-import { pauseMining } from '@app/store/actions/miningStoreActions.ts';
+import { pauseMining, setResumeDuration } from '@app/store/actions/miningStoreActions.ts';
 
 interface MiningButtonPauseProps {
     isMining: boolean;
@@ -32,8 +32,6 @@ const item = {
     show: { opacity: 1, y: 0 },
 };
 
-const TEMP_TIME = '4:20';
-
 export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: MiningButtonPauseProps) {
     const [showPauseOptions, setShowPauseOptions] = useState(false);
     const { refs, floatingStyles, context } = useFloating({
@@ -49,7 +47,7 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
     const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
 
     const handleStopMining = useCallback(async () => {
-        await stopMining();
+        await stopMining().then(() => setResumeDuration(undefined));
     }, []);
 
     const handlePause = useCallback(async (hours: number) => {
@@ -84,12 +82,11 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
         <>
             <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
                 <MiningButton
-                    buttonText="pause-mining"
+                    buttonText="pause"
                     onClick={buttonClick}
                     disabled={isMiningButtonDisabled}
                     icon={<PauseIcon />}
                     isMining={isMining}
-                    resumeTime={TEMP_TIME}
                 />
             </TriggerWrapper>
             <AnimatePresence>

@@ -18,15 +18,9 @@
   "floor": "Floor",
   "gpu-power": "GPU Power",
   "mining-button-text": {
-    "cancel-mining": "Cancel Mining",
-    "changing-mode": "Changing mode",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "Start Mining",
-    "started-auto-mining": "Auto Mining Started",
-    "starting-mining": "Starting Mining",
-    "stop-mining": "Stop Mining",
-    "waiting-for-idle": "Waiting for Idle"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Start Mining"
   },
   "modes": {
     "eco": {

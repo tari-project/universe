@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 
-import { SessionMiningTime, useMiningStore } from '../useMiningStore.ts';
+import { ResumeMiningTime, SessionMiningTime, useMiningStore } from '../useMiningStore.ts';
 import { setError } from './appStateStoreActions.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '../useAppConfigStore.ts';
@@ -145,6 +145,7 @@ export const startMining = async () => {
         await startCpuMining();
         await startGpuMining();
         handleSessionMiningTime({ startTimestamp: Date.now() });
+        setResumeDuration(undefined);
     } catch (e) {
         console.error('Failed to start mining: ', e);
         setError(e as string);
@@ -170,8 +171,15 @@ export const pauseMining = async (duration: number) => {
         eventType: SchedulerEventType.ResumeMining,
         eventTiming,
     })
-        .then(() => stopMining())
+        .then(() => {
+            stopMining();
+            setResumeDuration({ durationHours: duration, timeStamp: Date.now() });
+        })
         .catch((e) => console.error(e));
+};
+
+export const setResumeDuration = (selectedResumeDuration: ResumeMiningTime | undefined) => {
+    useMiningStore.setState({ selectedResumeDuration });
 };
 export const handleSelectedMinerChanged = (miner: GpuMinerType) => {
     useMiningStore.setState({ selectedMiner: miner });

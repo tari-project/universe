@@ -20,11 +20,11 @@
   "mining-button-text": {
     "cancel-mining": "Отмена майнинга",
     "changing-mode": "Изменение режима",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "Начать майнинг",
     "started-auto-mining": "Авто-майнинг запущен",
     "starting-mining": "Запуск майнинга",
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Начать майнинг",
     "stop-mining": "Остановить майнинг",
     "waiting-for-idle": "Ожидание простоя"
   },

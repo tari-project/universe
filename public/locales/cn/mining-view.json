@@ -18,15 +18,9 @@
   "floor": "地板",
   "gpu-power": "GPU 功率",
   "mining-button-text": {
-    "cancel-mining": "取消挖矿",
-    "changing-mode": "更改模式",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "开始挖矿",
-    "started-auto-mining": "自动挖矿开始",
-    "starting-mining": "开始挖矿",
-    "stop-mining": "停止挖矿",
-    "waiting-for-idle": "等待空闲"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "开始挖矿"
   },
   "modes": {
     "eco": {

@@ -18,15 +18,9 @@
   "floor": "フロア",
   "gpu-power": "GPUパワー",
   "mining-button-text": {
-    "cancel-mining": "マイニングをキャンセル",
-    "changing-mode": "モードを変更中",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "マイニングを開始",
-    "started-auto-mining": "自動マイニング開始",
-    "starting-mining": "マイニング開始",
-    "stop-mining": "マイニングを停止",
-    "waiting-for-idle": "アイドル待機中"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "マイニングを開始"
   },
   "modes": {
     "eco": {

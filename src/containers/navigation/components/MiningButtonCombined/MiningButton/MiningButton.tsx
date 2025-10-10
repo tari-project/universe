@@ -13,14 +13,14 @@ interface Props {
     buttonText: string;
     icon: ReactNode;
     isMining: boolean;
-    resumeTime?: string;
+    resumeTime?: { displayString?: string; fullTimeString?: string };
 }
 
 export default function MiningButton({ onClick, buttonText, icon, isMining, disabled = false, resumeTime }: Props) {
     const { t } = useTranslation('mining-view');
     const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
 
-    const hasChip = !!resumeTime;
+    const hasChip = !!resumeTime?.displayString;
 
     return (
         <ButtonWrapper
@@ -36,7 +36,7 @@ export default function MiningButton({ onClick, buttonText, icon, isMining, disa
                 </IconWrapper>
                 <TextWrapper>
                     <Text className="mining_button-text" animate={{ scale: hasChip ? 0.9 : 1, x: hasChip ? -4 : 0 }}>
-                        {t(`mining-button-text.${buttonText}`)}
+                        {t(`mining-button-text.state`, { context: buttonText })}
                     </Text>
                     {hasChip && <TimerChip resumeTime={resumeTime} />}
                 </TextWrapper>

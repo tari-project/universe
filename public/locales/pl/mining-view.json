@@ -18,15 +18,9 @@
   "floor": "Poziom",
   "gpu-power": "Moc GPU",
   "mining-button-text": {
-    "cancel-mining": "Anuluj kopanie",
-    "changing-mode": "Zmiana trybu",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "Uruchom kopanie",
-    "started-auto-mining": "Automatyczne kopanie uruchomione",
-    "starting-mining": "Uruchamianie kopania",
-    "stop-mining": "Zatrzymaj kopanie",
-    "waiting-for-idle": "Oczekiwanie na bezczynność"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Uruchom kopanie"
   },
   "modes": {
     "eco": {

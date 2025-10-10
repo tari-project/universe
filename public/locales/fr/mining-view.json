@@ -18,15 +18,9 @@
   "floor": "Étage",
   "gpu-power": "Puissance GPU",
   "mining-button-text": {
-    "cancel-mining": "Annuler le minage",
-    "changing-mode": "Changement de mode",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "Démarrer le minage",
-    "started-auto-mining": "Démarrage du minage automatique",
-    "starting-mining": "Minage en cours de démarrage",
-    "stop-mining": "Arrêtez le minage",
-    "waiting-for-idle": "En attente d'inactivité"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Démarrer le minage"
   },
   "modes": {
     "eco": {

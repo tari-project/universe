@@ -20,11 +20,11 @@
   "mining-button-text": {
     "cancel-mining": "Hủy đào",
     "changing-mode": "Đang chuyển chế độ",
-    "pause-mining": "Pause Mining",
-    "resume-mining": "Resume Mining",
-    "start-mining": "Bắt đầu đào",
     "started-auto-mining": "Đã tự động đào",
     "starting-mining": "Đang bắt đầu đào",
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Bắt đầu đào",
     "stop-mining": "Dừng đào",
     "waiting-for-idle": "Đang chờ rảnh"
   },
