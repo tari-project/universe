@@ -28,6 +28,15 @@
     "stop-mining": "停止挖矿",
     "waiting-for-idle": "等待空闲"
   },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
+  },
   "orphan-chain-tooltip": {
     "heading": "尝试以下操作：",
     "step_1": "检查您的互联网连接",

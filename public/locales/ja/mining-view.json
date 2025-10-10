@@ -28,6 +28,15 @@
     "stop-mining": "マイニングを停止",
     "waiting-for-idle": "アイドル待機中"
   },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
+  },
   "orphan-chain-tooltip": {
     "heading": "試すべきこと:",
     "step_1": "インターネット接続を確認",

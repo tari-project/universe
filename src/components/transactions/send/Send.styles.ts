@@ -1,4 +1,5 @@
 import styled, { css } from 'styled-components';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const Wrapper = styled.div<{ $isLoading?: boolean; $hasError?: boolean }>`
     display: flex;
@@ -43,4 +44,9 @@ export const BottomWrapper = styled.div`
     gap: 8px;
     flex-direction: column;
     justify-content: flex-end;
+`;
+
+export const MiniButton = styled(Button)`
+    padding: 0 8px;
+    font-size: 10px;
 `;
