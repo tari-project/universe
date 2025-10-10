@@ -56,6 +56,7 @@ export type PromptType = 'long_time_miner' | 'early_close';
 export type FeedbackPrompts = Partial<Record<PromptType, FeedbackPrompt>>;
 
 export type MiningModes = Record<MiningModeType, MiningMode>;
+export type MiningModeTimes = Record<MiningModeType, { secs?: number; nanos?: number }>;
 
 export interface ConfigMining {
     created_at: string;
@@ -67,6 +68,8 @@ export interface ConfigMining {
     cpu_mining_enabled: boolean;
     gpu_engine: string;
     is_gpu_mining_recommended: boolean;
+    eco_alert_needed: boolean;
+    mode_mining_times?: MiningModeTimes;
 }
 
 export interface ConfigMiningSelectors {

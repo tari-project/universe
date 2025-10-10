@@ -9,6 +9,9 @@ import { useConfigMiningStore } from '../useAppConfigStore.ts';
 import { Network } from '@app/utils/network.ts';
 import { setupStoreSelectors } from '../selectors/setupStoreSelectors.ts';
 import { GpuMiner, GpuMinerType, MinerControlsState } from '@app/types/events-payloads.ts';
+import { MiningModeType } from '@app/types/configs.ts';
+import { useAirdropStore } from '@app/store';
+import { FEATURE_FLAGS } from '@app/store/consts.ts';
 
 export const restartMining = async () => {
     const isMining =
@@ -129,6 +132,14 @@ export const stopGpuMining = async () => {
 export const startMining = async () => {
     console.info('Mining starting....');
 
+    const eco_alert_needed = useConfigMiningStore.getState().eco_alert_needed;
+    if (eco_alert_needed) {
+        const storedTime = useConfigMiningStore.getState().mode_mining_times?.Eco.secs;
+        if (storedTime) {
+            handleEcoAlertCheck(storedTime);
+        }
+    }
+
     try {
         await startCpuMining();
         await startGpuMining();
@@ -183,10 +194,21 @@ export const switchSelectedMiner = async (newGpuMiner: GpuMinerType) => {
     }
 };
 
+const handleEcoAlertCheck = (diffSeconds: number) => {
+    const isEco = useConfigMiningStore.getState().getSelectedMiningMode()?.mode_type === MiningModeType.Eco;
+    if (!isEco) return;
+
+    invoke('set_mode_mining_time', { mode: 'Eco', duration: diffSeconds });
+};
+
 export const handleSessionMiningTime = ({ startTimestamp, stopTimestamp }: SessionMiningTime) => {
     const current = useMiningStore.getState().sessionMiningTime;
     if (stopTimestamp) {
         const diff = (stopTimestamp || 0) - (current.startTimestamp || 0);
+        const diffSeconds = Number((diff / 1000).toFixed());
+
+        handleEcoAlertCheck(diffSeconds);
+
         useMiningStore.setState({
             sessionMiningTime: { ...current, stopTimestamp, durationMs: diff },
         });
@@ -242,4 +264,11 @@ export const handleGpuMinerControlsStateChanged = (state: MinerControlsState) =>
             useMiningStore.setState({ isGpuMiningInitiated: false });
             break;
     }
+};
+
+export const setShowEcoAlert = (showEcoAlert: boolean) => {
+    const ff = useAirdropStore.getState().features;
+    const canShow = ff?.includes(FEATURE_FLAGS.FE_UI_ECO_ALERT);
+
+    useMiningStore.setState({ showEcoAlert: canShow && showEcoAlert });
 };
