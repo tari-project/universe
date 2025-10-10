@@ -641,21 +641,20 @@ fn main() {
                     target: LOG_TARGET,
                     "App shutdown request [ExitRequested] caught with code: {code:#?}"
                 );
+                let app_handle_clone = app_handle.clone();
                 if let Some(exit_code) = code {
                     if exit_code == RESTART_EXIT_CODE {
                         // RunEvent does not hold the exit code so we store it separately
                         is_restart_requested.store(true, Ordering::SeqCst);
                     }
                 }
-                block_on(TasksTrackers::current().stop_all_processes());
-                info!(target: LOG_TARGET, "App shutdown complete");
-            }
-            tauri::RunEvent::Exit => {
-                info!(target: LOG_TARGET, "App shutdown [Exit] caught");
-                let app_handle_clone = app_handle.clone();
 
                 let closing_task = tauri::async_runtime::spawn(async move {
                     let state = app_handle_clone.state::<UniverseAppState>();
+
+                    let _unused = GpuManager::write().await.stop_mining().await;
+                    let _unused = CpuManager::write().await.stop_mining().await;
+
                     TasksTrackers::current().stop_all_processes().await;
                     GpuManager::read().await.on_app_exit().await;
                     CpuManager::read().await.on_app_exit().await;
@@ -668,6 +667,10 @@ fn main() {
                     error!(target: LOG_TARGET, "Could not join closing task: {e:?}");
                 });
 
+                info!(target: LOG_TARGET, "All processes stopped");
+            }
+            tauri::RunEvent::Exit => {
+                info!(target: LOG_TARGET, "App shutdown [Exit] caught");
                 if is_restart_requested_clone.load(Ordering::SeqCst) {
                     app_handle.cleanup_before_exit();
                     let env = app_handle.env();

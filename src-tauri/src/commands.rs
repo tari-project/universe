@@ -207,8 +207,28 @@ pub async fn download_and_start_installer(id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn exit_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
+pub async fn exit_application(
+    _window: tauri::Window,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    // When exit is called from here I can see that it triggers the RunEvent::Exit without triggering the RunEvent::ExitRequested before
+    // Cleaning up processes in RunEvent::Exit is not reliable as it does not always get triggered properly so we doing it here
+
+    info!(target: LOG_TARGET, "Exit application command received, shutting down processes...");
+
+    let _unused = GpuManager::write().await.stop_mining().await;
+    info!(target: LOG_TARGET, "GPU Mining stopped.");
+
+    let _unused = CpuManager::write().await.stop_mining().await;
+    info!(target: LOG_TARGET, "CPU Mining stopped.");
+
     TasksTrackers::current().stop_all_processes().await;
+    GpuManager::read().await.on_app_exit().await;
+    CpuManager::read().await.on_app_exit().await;
+    state.tor_manager.on_app_exit().await;
+    state.wallet_manager.on_app_exit().await;
+    state.node_manager.on_app_exit().await;
 
     app.exit(0);
     Ok(())
@@ -718,6 +738,7 @@ async fn reset_app_configs(
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 #[tauri::command]
 pub async fn reset_settings(
     reset_wallet: bool,
@@ -731,7 +752,10 @@ pub async fn reset_settings(
         log::info!(target: LOG_TARGET, "[reset_settings] Pin successfully validated");
     }
 
+    let _unused = GpuManager::write().await.stop_mining().await;
+    let _unused = CpuManager::write().await.stop_mining().await;
     TasksTrackers::current().stop_all_processes().await;
+
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
     let app_config_dir = app_handle.path().app_config_dir();
     let app_cache_dir = app_handle.path().app_cache_dir();
@@ -838,14 +862,9 @@ pub async fn reset_settings(
 
 #[tauri::command]
 pub async fn restart_application(
-    should_stop_miners: bool,
     _window: tauri::Window,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    if should_stop_miners {
-        TasksTrackers::current().stop_all_processes().await;
-    }
-
     app.restart();
 }
 
