@@ -46,7 +46,7 @@ use crate::{
 };
 
 #[allow(dead_code)]
-static LOG_TARGET: &str = "tari::mining::pools::cpu_pool_manager";
+static LOG_TARGET: &str = "tari::universe::mining::pools::cpu_pool_manager";
 static INSTANCE: LazyLock<CpuPoolManager> = LazyLock::new(CpuPoolManager::new);
 
 pub struct CpuPoolManager {
