@@ -69,11 +69,6 @@ static EVENT_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 // Internal message types for the scheduler
 #[derive(Debug)]
 enum SchedulerMessage {
-    RemoveEventByTypeAndTiming {
-        event_type: SchedulerEventType,
-        timing: SchedulerEventTiming,
-        response: tokio::sync::oneshot::Sender<Result<(), SchedulerError>>,
-    },
     AddEvent {
         event_type: SchedulerEventType,
         timing: SchedulerEventTiming,
@@ -92,10 +87,13 @@ enum SchedulerMessage {
         event_id: String,
         response: tokio::sync::oneshot::Sender<Result<(), SchedulerError>>,
     },
-    TriggerEvent {
+    TriggerEnterCallback {
         event_id: String,
     },
-    TriggerCleanup {
+    TriggerExitCallback {
+        event_id: String,
+    },
+    CleanupSchedule {
         event_id: String,
     },
 }
@@ -465,26 +463,6 @@ impl EventScheduler {
             .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
     }
 
-    pub async fn remove_event_by_type_and_timing(
-        &self,
-        event_type: SchedulerEventType,
-        timing: SchedulerEventTiming,
-    ) -> Result<(), SchedulerError> {
-        let (response_tx, response_rx) = tokio::sync::oneshot::channel();
-
-        self.message_sender
-            .send(SchedulerMessage::RemoveEventByTypeAndTiming {
-                event_type,
-                timing,
-                response: response_tx,
-            })
-            .map_err(|_| SchedulerError::SchedulerNotRunning)?;
-
-        response_rx
-            .await
-            .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
-    }
-
     async fn save_persistent_events_to_config(scheduled_events: &HashMap<String, ScheduledEvent>) {
         let persistent_events: HashMap<String, ScheduledEventInfo> = HashMap::from_iter(
             scheduled_events
@@ -507,47 +485,6 @@ impl EventScheduler {
             .unwrap_or_else(|e| {
                 error!(target: LOG_TARGET, "Failed to save persistent events to config: {}", e);
             });
-    }
-    async fn execute_event_callback(event_type: &SchedulerEventType, event_id: String) {
-        info!(target: LOG_TARGET, "Executing event callback for {:?} (ID: {:?})", event_type, event_id);
-
-        match event_type {
-            SchedulerEventType::ResumeMining => {
-                GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to start GPU mining during PauseMining event {:?}: {}", event_id, e);
-                });
-                CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to start CPU mining during PauseMining event {:?}: {}", event_id, e);
-                });
-            }
-            SchedulerEventType::Mine { mining_mode } => {
-                ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.mode_name.clone()).await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
-                });
-                GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
-                });
-                CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
-                });
-            }
-        }
-    }
-
-    // Called in case of Between events when the end time is reached
-    async fn cleanup_event_callback(event_type: &SchedulerEventType, event_id: String) {
-        info!(target: LOG_TARGET, "Cleaning up event with ID {:?}", event_id);
-        match event_type {
-            SchedulerEventType::ResumeMining => {}
-            SchedulerEventType::Mine { mining_mode } => {
-                GpuManager::write().await.stop_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to stop mining during cleanup of event {:?}: {}", event_id, e);
-                });
-                CpuManager::write().await.stop_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to stop mining during cleanup of event {:?}: {}", event_id, e);
-                });
-            }
-        }
     }
 
     async fn load_persistent_events() -> Result<HashMap<String, ScheduledEvent>, SchedulerError> {
@@ -627,15 +564,18 @@ impl EventScheduler {
                                 let result = Self::handle_resume_event(&mut internal_events, event_id).await;
                                 let _unused = response.send(result);
                             },
-                            Some(SchedulerMessage::TriggerEvent { event_id }) => {
-                                Self::handle_trigger_event(&internal_events, event_id).await;
+                            Some(SchedulerMessage::TriggerEnterCallback { event_id }) => {
+                                Self::handle_enter_callback(&internal_events, event_id).await;
+                                
                             },
-                            Some(SchedulerMessage::TriggerCleanup { event_id }) => {
-                                Self::handle_cleanup_event(&internal_events, event_id).await;
+                            Some(SchedulerMessage::TriggerExitCallback { event_id }) => {
+                                Self::handle_exit_callback(&internal_events, event_id).await;
+                                
                             }
-                            Some(SchedulerMessage::RemoveEventByTypeAndTiming { event_type, timing, response }) => {
-                                Self::handle_remove_event_by_type_and_timing(&mut internal_events, event_type, timing, response).await;
+                            Some(SchedulerMessage::CleanupSchedule { event_id }) => {
+                                Self::handle_cleanup_schedule_events(&mut internal_events, event_id).await;
                             }
+
                             None => {
                                 warn!(target: LOG_TARGET, "Message channel closed, stopping scheduler");
                                 break;
@@ -691,6 +631,7 @@ impl EventScheduler {
         events: &mut HashMap<String, ScheduledEvent>,
         event_id: String,
     ) -> Result<(), SchedulerError> {
+        info!(target: LOG_TARGET, "Removing event with ID {:?}", event_id);
         if let Some(mut event) = events.remove(&event_id) {
             if let Some(handle) = event.task_handle.take() {
                 handle.abort();
@@ -750,42 +691,72 @@ impl EventScheduler {
         }
     }
 
-    async fn handle_trigger_event(events: &HashMap<String, ScheduledEvent>, event_id: String) {
+    async fn handle_enter_callback(
+        events: &HashMap<String, ScheduledEvent>,
+        event_id: String,
+    ) -> Result<(), SchedulerError> {
         if let Some(event) = events.get(&event_id) {
             if event.state == SchedulerEventState::Active {
-                Self::execute_event_callback(&event.event_type, event_id).await;
+                match event.event_type.clone() {
+            SchedulerEventType::ResumeMining => {
+                GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                    error!(target: LOG_TARGET, "Failed to start GPU mining during PauseMining event {:?}: {}", event_id, e);
+                });
+                CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                    error!(target: LOG_TARGET, "Failed to start CPU mining during PauseMining event {:?}: {}", event_id, e);
+                });
+            }
+            SchedulerEventType::Mine { mining_mode } => {
+                ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.mode_name.clone()).await.unwrap_or_else(|e| {
+                    error!(target: LOG_TARGET, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
+                });
+                GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                    error!(target: LOG_TARGET, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
+                });
+                CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                    error!(target: LOG_TARGET, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
+                });
             }
         }
+            }
+        }
+        Ok(())
     }
 
-    async fn handle_cleanup_event(events: &HashMap<String, ScheduledEvent>, event_id: String) {
+    async fn handle_exit_callback(
+        events: &HashMap<String, ScheduledEvent>,
+        event_id: String,
+    ) -> Result<(), SchedulerError> {
         if let Some(event) = events.get(&event_id) {
-            Self::cleanup_event_callback(&event.event_type, event_id.clone()).await;
-        }
-    }
-
-    async fn handle_remove_event_by_type_and_timing(
-        events: &mut HashMap<String, ScheduledEvent>,
-        event_type: SchedulerEventType,
-        timing: SchedulerEventTiming,
-        response: tokio::sync::oneshot::Sender<Result<(), SchedulerError>>,
-    ) {
-        let to_remove: Vec<String> = events
-            .iter()
-            .filter(|(_, event)| event.event_type == event_type && matches!(&event.timing, timing))
-            .map(|(id, _)| id.clone())
-            .collect();
-
-        for id in to_remove {
-            if let Err(e) = Self::handle_remove_event(events, id.clone()) {
-                warn!(target: LOG_TARGET, "Failed to remove event {:?}: {}", id, e);
-                let _unused = response.send(Err(e));
-                return;
+            match event.event_type.clone() {
+                SchedulerEventType::ResumeMining => {}
+                SchedulerEventType::Mine { mining_mode } => {
+                    GpuManager::write().await.stop_mining().await.unwrap_or_else(|e| {
+                        error!(target: LOG_TARGET, "Failed to stop mining during cleanup of event {:?}: {}", event_id, e);
+                    });
+                    CpuManager::write().await.stop_mining().await.unwrap_or_else(|e| {
+                        error!(target: LOG_TARGET, "Failed to stop mining during cleanup of event {:?}: {}", event_id, e);
+                    });
+                }
             }
         }
-
-        let _unused = response.send(Ok(()));
+        Ok(())
     }
+
+    async fn handle_cleanup_schedule_events(
+        events: &mut HashMap<String, ScheduledEvent>,
+        event_id: String,
+    ) {
+        if let Some(event) = events.get(&event_id) {
+            if let SchedulerEventTiming::In(_) = event.timing {
+                info!(target: LOG_TARGET, "Cleaning up schedule for event ID {:?}", event_id);
+                if let Err(e) = Self::handle_remove_event(events, event_id.clone()) {
+                    error!(target: LOG_TARGET, "Failed to clean up scheduled event {:?}: {}", event_id, e);
+                }
+            }
+        }
+    }
+
 
     // Create a scheduling task for different timing types
     async fn create_scheduling_task(
@@ -799,7 +770,8 @@ impl EventScheduler {
 
                 let _unused = INSTANCE
                     .message_sender
-                    .send(SchedulerMessage::TriggerEvent { event_id });
+                    .send(SchedulerMessage::TriggerEnterCallback { event_id });
+
             }),
 
             SchedulerEventTiming::Between(cron_schedule) => {
@@ -823,7 +795,7 @@ impl EventScheduler {
                         let _unused =
                             INSTANCE
                                 .message_sender
-                                .send(SchedulerMessage::TriggerEvent {
+                                .send(SchedulerMessage::TriggerEnterCallback {
                                     event_id: event_id.clone(),
                                 });
 
@@ -835,7 +807,7 @@ impl EventScheduler {
                             let _unused =
                                 INSTANCE
                                     .message_sender
-                                    .send(SchedulerMessage::TriggerCleanup {
+                                    .send(SchedulerMessage::TriggerExitCallback {
                                         event_id: event_id.clone(),
                                     });
                         }
@@ -845,14 +817,5 @@ impl EventScheduler {
         };
 
         Ok(handle)
-    }
-
-    pub async fn cleanup_resume_mining_in_events() {
-        INSTANCE
-            .remove_event_by_type_and_timing(
-                SchedulerEventType::ResumeMining,
-                SchedulerEventTiming::In(Duration::seconds(0)),
-            )
-            .await;
     }
 }

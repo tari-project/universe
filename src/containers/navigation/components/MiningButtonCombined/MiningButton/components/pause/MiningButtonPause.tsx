@@ -51,7 +51,7 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
     }, []);
 
     const handlePause = useCallback(async (hours: number) => {
-        console.info(`Pausing for ${hours} hours!`);
+        console.info(`Pausing for ${hours} seconds!`);
         await pauseMining(hours);
     }, []);
 

@@ -42,7 +42,6 @@ use crate::{
         pools::{gpu_pools::GpuPool, PoolOrigin},
         trait_config::ConfigImpl,
     },
-    event_scheduler::EventScheduler,
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     mining::{
@@ -321,9 +320,6 @@ impl GpuManager {
         }
 
         EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Initiated).await;
-
-        // We want to clean up any pause mining events
-        EventScheduler::cleanup_resume_mining_in_events().await;
 
         if let Some(app_handle) = self.app_handle.clone() {
             let base_path = app_handle
