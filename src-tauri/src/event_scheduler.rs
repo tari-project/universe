@@ -566,11 +566,11 @@ impl EventScheduler {
                             },
                             Some(SchedulerMessage::TriggerEnterCallback { event_id }) => {
                                 Self::handle_enter_callback(&internal_events, event_id).await;
-                                
+
                             },
                             Some(SchedulerMessage::TriggerExitCallback { event_id }) => {
                                 Self::handle_exit_callback(&internal_events, event_id).await;
-                                
+
                             }
                             Some(SchedulerMessage::CleanupSchedule { event_id }) => {
                                 Self::handle_cleanup_schedule_events(&mut internal_events, event_id).await;
@@ -698,26 +698,26 @@ impl EventScheduler {
         if let Some(event) = events.get(&event_id) {
             if event.state == SchedulerEventState::Active {
                 match event.event_type.clone() {
-            SchedulerEventType::ResumeMining => {
-                GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                    SchedulerEventType::ResumeMining => {
+                        GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to start GPU mining during PauseMining event {:?}: {}", event_id, e);
                 });
-                CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                        CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to start CPU mining during PauseMining event {:?}: {}", event_id, e);
                 });
-            }
-            SchedulerEventType::Mine { mining_mode } => {
-                ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.mode_name.clone()).await.unwrap_or_else(|e| {
+                    }
+                    SchedulerEventType::Mine { mining_mode } => {
+                        ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.mode_name.clone()).await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
                 });
-                GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                        GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
                 });
-                CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                        CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
                 });
-            }
-        }
+                    }
+                }
             }
         }
         Ok(())
@@ -757,7 +757,6 @@ impl EventScheduler {
         }
     }
 
-
     // Create a scheduling task for different timing types
     async fn create_scheduling_task(
         event_id: String,
@@ -771,7 +770,6 @@ impl EventScheduler {
                 let _unused = INSTANCE
                     .message_sender
                     .send(SchedulerMessage::TriggerEnterCallback { event_id });
-
             }),
 
             SchedulerEventTiming::Between(cron_schedule) => {
@@ -791,7 +789,6 @@ impl EventScheduler {
                             warn!(target: LOG_TARGET, "No next start time found for event with ID {:?}", event_id);
                             break;
                         }
-
                         let _unused =
                             INSTANCE
                                 .message_sender
@@ -804,12 +801,11 @@ impl EventScheduler {
                             cron_schedule.find_next_end_wait_time(local_now)
                         {
                             sleep(next_end_wait_time).await;
-                            let _unused =
-                                INSTANCE
-                                    .message_sender
-                                    .send(SchedulerMessage::TriggerExitCallback {
-                                        event_id: event_id.clone(),
-                                    });
+                            let _unused = INSTANCE.message_sender.send(
+                                SchedulerMessage::TriggerExitCallback {
+                                    event_id: event_id.clone(),
+                                },
+                            );
                         }
                     }
                 })
