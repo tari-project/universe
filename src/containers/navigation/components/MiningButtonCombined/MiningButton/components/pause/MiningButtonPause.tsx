@@ -41,7 +41,7 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
         placement: 'bottom',
         middleware: [offset(34)],
     });
-    const click = useClick(context);
+    const click = useClick(context, { enabled: false });
     const dismiss = useDismiss(context);
 
     const role = useRole(context, { role: 'listbox' });
@@ -71,7 +71,7 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
                         ns="mining-view"
                         i18nKey="pause.for-duration"
                         components={{ strong: <strong /> }}
-                        values={{ duration: `${hours} ${isMinutes ? 'minute' : 'hours'}` }}
+                        values={{ duration: `${hours} ${isMinutes ? 'minute (admin only)' : 'hours'}` }}
                     />
                 </OptionText>
             </OptionWrapper>
