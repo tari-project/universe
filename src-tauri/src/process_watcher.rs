@@ -164,6 +164,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             loop {
                 let unhealthy_timer = Instant::now();
                 select! {
+                      _ = inner_shutdown.wait() => {
+                          return child.stop().await;
+
+                      },
+                      _ = global_shutdown_signal.wait() => {
+                          return child.stop().await;
+                      }
                       _ = watch_timer.tick() => {
                         let status_monitor3 = status_monitor2.clone();
 
@@ -186,13 +193,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             return Ok(exit_code);
                         }
                     },
-                    _ = inner_shutdown.wait() => {
-                        return child.stop().await;
 
-                    },
-                    _ = global_shutdown_signal.wait() => {
-                        return child.stop().await;
-                    }
                 }
                 stats_broadcast.send_replace(stats.clone());
             }

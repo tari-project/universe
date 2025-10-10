@@ -37,7 +37,7 @@ use crate::{
     tasks_tracker::TaskTrackerUtil,
 };
 
-static LOG_TARGET: &str = "tari::mining::pools::pools_manager";
+static LOG_TARGET: &str = "tari::universe::mining::pools::pools_manager";
 
 #[derive(Clone)]
 struct TaskState {
