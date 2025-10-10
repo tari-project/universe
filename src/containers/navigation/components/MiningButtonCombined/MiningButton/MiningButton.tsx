@@ -2,10 +2,10 @@ import { ReactNode } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useConfigMiningStore } from '@app/store';
-import ModeDropdown from './components/ModeDropdown/ModeDropdown';
+import TimerChip from './components/pause/TimerChip.tsx';
+import ModeController from './components/ModeController.tsx';
 import AnimatedBackground from './components/AnimatedBackground/AnimatedBackground';
 import { DropdownWrapper, HitBox, ButtonWrapper, Text, IconWrapper, Shadow, TextWrapper } from './styles';
-import TimerChip from '@app/containers/navigation/components/MiningButtonCombined/MiningButton/components/pause/TimerChip.tsx';
 
 interface Props {
     onClick: () => void;
@@ -42,7 +42,7 @@ export default function MiningButton({ onClick, buttonText, icon, isMining, disa
                 </TextWrapper>
             </HitBox>
             <DropdownWrapper>
-                <ModeDropdown />
+                <ModeController />
             </DropdownWrapper>
             <AnimatePresence>
                 {!isMining && <Shadow initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />}

@@ -135,6 +135,8 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'list_connected_peers'): Promise<string[]>;
     function invoke(param: 'switch_gpu_miner', payload: { gpuMinerType: GpuMinerType }): Promise<void>;
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
+    function invoke(param: 'set_mode_mining_time', payload: { mode: string; duration: number }): Promise<void>;
+    function invoke(param: 'set_eco_alert_needed'): Promise<void>;
     // Scheduler commands
     function invoke(param: 'add_scheduler_event', payload: AddSchedulerEventPayload): Promise<void>;
     function invoke(param: 'remove_scheduler_event', payload: { eventId: string }): Promise<void>;
