@@ -580,7 +580,7 @@ impl SetupManager {
         let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
         let gpu_mining_phase_setup = PhaseBuilder::new()
-            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .with_setup_timeout_duration(Duration::from_secs(60 * 15)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![self.core_phase_status.subscribe()])
             .build::<GpuMiningSetupPhase>(
                 app_handle.clone(),
