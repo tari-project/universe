@@ -70,8 +70,6 @@ export const useProgressCountdown = (isCompact = false) => {
         } else {
             setCountdown(REMOTE_DEFAULT_ESTIMATE);
         }
-        // eslint-disable-next-line react-compiler/react-compiler
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [nodeType]);
 
     useEffect(() => {
