@@ -63,7 +63,7 @@ impl PoolApiAdapter for KryptexPoolAdapter {
             accepted_shares: 0,                 // Kryptex API does not provide this info
             unpaid: response.total * 1000000.0, // kryptex provides already formatted value so we need to revert it
             balance: 0.0,                       // Kryptex API does not provide this info
-            min_payout: response.threshold as u64,
+            min_payout: (response.threshold * 1000000.0) as u64, // kryptex provides already formatted value so we need to revert it
         };
         Ok(pool_status)
     }
