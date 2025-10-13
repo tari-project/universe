@@ -31,6 +31,7 @@ use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::internal_wallet::InternalWallet;
 use crate::mining::cpu::CpuMinerStatus;
 use crate::mining::gpu::consts::GpuMinerStatus;
+use crate::mining::gpu::consts::GpuMiningAlgorithm;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeManager;
 use crate::process_stats_collector::ProcessStatsCollector;
@@ -436,7 +437,16 @@ async fn get_telemetry_data_inner(
             (None, vec![])
         };
 
-    let gpu_hash_rate = Some(gpu_status.hash_rate);
+    let mut gpu_hash_rate = None;
+    let mut gpu_hash_rate_c29 = None;
+
+    if gpu_status.algorithm.eq(&GpuMiningAlgorithm::SHA3X) {
+        gpu_hash_rate = Some(gpu_status.hash_rate);
+    } else {
+        gpu_hash_rate_c29 = Some(gpu_status.hash_rate);
+    }
+
+    let is_hashrate_some = gpu_hash_rate.is_some() || gpu_hash_rate_c29.is_some();
 
     let gpu_utilization = if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
         let filtered_gpus = gpu_hardware_parameters
@@ -468,7 +478,7 @@ async fn get_telemetry_data_inner(
     let mining_config = ConfigMining::content().await;
     let version = env!("CARGO_PKG_VERSION").to_string();
     let gpu_mining_used =
-        *mining_config.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
+        *mining_config.gpu_mining_enabled() && gpu_make.is_some() && is_hashrate_some;
     let cpu_resource_used =
         *mining_config.cpu_mining_enabled() && cpu_make.is_some() && cpu_hash_rate.is_some();
     let resource_used = match (gpu_mining_used, cpu_resource_used) {
@@ -480,7 +490,10 @@ async fn get_telemetry_data_inner(
 
     let mut extra_data = HashMap::new();
     let is_orphan = node_manager.is_on_orphan_chain();
+    let node_type = node_manager.get_node_type().await;
+
     extra_data.insert("is_orphan".to_string(), is_orphan.to_string());
+    extra_data.insert("node_type".to_string(), node_type.to_string());
     extra_data.insert(
         "config_cpu_enabled".to_string(),
         mining_config.cpu_mining_enabled().to_string(),
@@ -493,6 +506,14 @@ async fn get_telemetry_data_inner(
         "config_tor_enabled".to_string(),
         config.use_tor().to_string(),
     );
+
+    // c29 hashrate
+    if let Some(gpu_hash_rate_c29) = gpu_hash_rate_c29 {
+        extra_data.insert(
+            "gpu_hash_rate_c29".to_string(),
+            gpu_hash_rate_c29.to_string(),
+        );
+    }
 
     // Add payment ID from current tari address
     if InternalWallet::is_initialized() {

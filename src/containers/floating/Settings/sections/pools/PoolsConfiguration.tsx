@@ -3,7 +3,7 @@ import { Controller, useForm, FieldValues, Path } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { BasePoolData } from '@app/types/configs';
 import { Input } from '@app/components/elements/inputs/Input';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
 import { Button } from '@app/components/elements/buttons/Button';
 import { Typography } from '@app/components/elements/Typography';
 import { Stack } from '@app/components/elements/Stack';
