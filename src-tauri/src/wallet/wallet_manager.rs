@@ -128,6 +128,7 @@ impl WalletManager {
     }
 
     async fn start_wallet_events_sync(&self) -> Result<(), WalletManagerError> {
+        info!(target: LOG_TARGET, "Starting wallet events sync task");
         let wallet_db = self.wallet_db.clone();
         let minotari_scanner = self.minotari_scanner.clone();
         let ootle_wallet_scanner = self.ootle_scanner.clone();
@@ -181,9 +182,9 @@ impl WalletManager {
                                     }
                                     for event in events {
                                         log::info!(target: LOG_TARGET, "Received wallet {}  event: {:?}", wallet.name, event);
-                                        wallet_db.apply_event(wallet.id, event).await;
+                                        wallet_db.apply_event(wallet.id, event).await?;
                                     }
-                                    wallet_db.update_last_sync_info(wallet.id, last_sync_height, Some(last_sync_block)).await;
+                                    wallet_db.update_last_sync_info(wallet.id, last_sync_height, Some(last_sync_block)).await?;
 
                                 }else {
                                     log::warn!(target: LOG_TARGET, "No view key found for wallet {}", wallet.name);
@@ -239,31 +240,36 @@ impl WalletManager {
             .await;
 
         self.node_manager.wait_ready().await?;
-        let lock = self.wallet_db.read().await;
-        if lock.is_some() {
-            // Already started
-            return Ok(());
+        {
+            let lock = self.wallet_db.read().await;
+            if lock.is_some() {
+                // Already started
+                return Ok(());
+            }
         }
 
         let db = WalletDb::new(&config.base_path.join("minotari").join("wallet.sqlite"));
-        let ootle_wallet_db_path = config.base_path.join("ootle");
+        // let ootle_wallet_db_path = config.base_path.join("ootle");
 
-        self.ootle_scanner
-            .read()
-            .await
-            .init(
-                "http://localhost:12008/json_rpc".to_string(),
-                &ootle_wallet_db_path,
-            )
-            .map_err(|e| {
-                log::error!(target: LOG_TARGET, "Failed to initialize Ootle scanner: {}", e);
-                WalletManagerError::OotleWalletError(e.to_string())
-            })?;
-        drop(lock);
+        // self.ootle_scanner
+        //     .read()
+        //     .await
+        //     .init(
+        //         "http://localhost:12008/json_rpc".to_string(),
+        //         &ootle_wallet_db_path,
+        //     )
+        //     .map_err(|e| {
+        //         log::error!(target: LOG_TARGET, "Failed to initialize Ootle scanner: {}", e);
+        //         WalletManagerError::OotleWalletError(e.to_string())
+        //     })?;
+        // drop(lock);
+        info!(target: LOG_TARGET, "Acquring lock to set wallet db");
         let mut lock = self.wallet_db.write().await;
         *lock = Some(db);
 
+        info!(target: LOG_TARGET, "Starting wallet events sync");
         self.start_wallet_events_sync().await?;
+        info!(target: LOG_TARGET, "Wallet events sync started");
         // Start Minotari Watcher.
 
         // let mut process_watcher = self.minotari_watcher.write().await;

@@ -521,6 +521,7 @@ impl SetupManager {
     }
 
     async fn setup_core_phase(&self) {
+        info!(target: LOG_TARGET, "Starting Core Setup Phase");
         let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
         let core_phase_setup = PhaseBuilder::new()
@@ -532,9 +533,11 @@ impl SetupManager {
             )
             .await;
         core_phase_setup.setup().await;
+        info!(target: LOG_TARGET, "Core Setup Phase completed");
     }
 
     async fn setup_cpu_mining_phase(&self) {
+        info!(target: LOG_TARGET, "Starting CPU Mining Setup Phase");
         let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
         let mut listeners = vec![self.core_phase_status.subscribe()];
@@ -554,9 +557,11 @@ impl SetupManager {
             )
             .await;
         cpu_mining_phase_setup.setup().await;
+        info!(target: LOG_TARGET, "CPU Mining Setup Phase completed");
     }
 
     async fn setup_gpu_mining_phase(&self) {
+        info!(target: LOG_TARGET, "Starting GPU Mining Setup Phase");
         let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
         let gpu_mining_phase_setup = PhaseBuilder::new()
@@ -569,9 +574,11 @@ impl SetupManager {
             )
             .await;
         gpu_mining_phase_setup.setup().await;
+        info!(target: LOG_TARGET, "GPU Mining Setup Phase completed");
     }
 
     async fn setup_node_phase(&self) {
+        info!(target: LOG_TARGET, "Starting Node Setup Phase");
         let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
 
@@ -585,9 +592,11 @@ impl SetupManager {
             )
             .await;
         node_phase_setup.setup().await;
+        info!(target: LOG_TARGET, "Node Setup Phase completed");
     }
 
     async fn setup_wallet_phase(&self) {
+        info!(target: LOG_TARGET, "Starting Wallet Setup Phase");
         let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
         let wallet_phase_setup = PhaseBuilder::new()
@@ -600,6 +609,7 @@ impl SetupManager {
             )
             .await;
         wallet_phase_setup.setup().await;
+        info!(target: LOG_TARGET, "Wallet Setup Phase completed");
     }
 
     pub async fn mark_exchange_modal_as_completed(&self) -> Result<(), anyhow::Error> {

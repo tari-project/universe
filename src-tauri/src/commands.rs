@@ -54,6 +54,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::wallet_manager::WalletManagerError;
+use crate::wallet::wallet_types::Currency;
 use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
 use crate::{airdrop, UniverseAppState};
 

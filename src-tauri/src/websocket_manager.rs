@@ -25,6 +25,7 @@ use std::time::Duration;
 
 use futures::SinkExt;
 use futures::StreamExt;
+use log::debug;
 use log::trace;
 use log::{error, info, warn};
 use serde::Deserialize;
@@ -122,7 +123,7 @@ impl WebsocketManager {
 
     pub fn set_app_handle(&mut self, app: AppHandle) {
         self.app = Some(app.clone());
-        log::info!("websocket manager app handle set");
+        debug!("websocket manager app handle set");
         let mut status_channel_rx = self.status_update_channel_rx.clone();
         let main_window = app
             .get_webview_window("main")
@@ -147,7 +148,7 @@ impl WebsocketManager {
     async fn connect_to_url(
         in_memory_config: &Arc<RwLock<AppInMemoryConfig>>,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, anyhow::Error> {
-        info!(target:LOG_TARGET,"connecting to websocket... [{}:{}]", file!(), line!());
+        debug!(target:LOG_TARGET,"connecting to websocket... [{}:{}]", file!(), line!());
         let config_read = in_memory_config.read().await;
         let mut adjusted_ws_url = config_read.airdrop_api_url.clone();
         if adjusted_ws_url.contains("https") {
@@ -161,7 +162,7 @@ impl WebsocketManager {
         adjusted_ws_url.push_str(&format!("/v2/ws?app_id={}", encode(&app_id)));
 
         let (ws_stream, _) = connect_async(adjusted_ws_url).await?;
-        info!(target:LOG_TARGET,"websocket connection established...");
+        debug!(target:LOG_TARGET,"websocket connection established...");
 
         Ok(ws_stream)
     }
@@ -211,7 +212,7 @@ impl WebsocketManager {
         if self.status_update_channel_rx.borrow().clone()
             == WebsocketManagerStatusMessage::Connected
         {
-            info!(target:LOG_TARGET,"websocket already connected");
+            debug!(target:LOG_TARGET,"websocket already connected");
             return Ok(());
         }
 
@@ -226,7 +227,7 @@ impl WebsocketManager {
 
         let status_update_channel_tx = self.status_update_channel_tx.clone();
         if let Err(e) = status_update_channel_tx.send(WebsocketManagerStatusMessage::Starting) {
-            info!(target: LOG_TARGET, "Could not send start channel message: {e}");
+            debug!(target: LOG_TARGET, "Could not send start channel message: {e}");
         }
 
         let in_memory_config = &self.app_in_memory_config;
@@ -250,7 +251,7 @@ impl WebsocketManager {
 
                         if let Ok(connection) = connection_res {
                             if !is_first_connection {
-                                info!(target: LOG_TARGET, "WebSocket reconnected - restarting events manager");
+                                debug!(target: LOG_TARGET, "WebSocket reconnected - restarting events manager");
                                 // Notify that we've reconnected - this could trigger events manager restart
                                 drop(app_cloned.emit("websocket-reconnected", ()));
                             }
@@ -279,7 +280,7 @@ impl WebsocketManager {
             }
         });
 
-        info!(target:LOG_TARGET,"waiting for websocket startup");
+        debug!(target:LOG_TARGET,"waiting for websocket startup");
         if status_update_channel_rx.changed().await.is_ok() {
             let value = status_update_channel_rx.borrow().clone();
             if value == WebsocketManagerStatusMessage::Connected {
@@ -303,7 +304,7 @@ impl WebsocketManager {
         close_channel_tx: tokio::sync::broadcast::Sender<bool>,
     ) {
         let (write_stream, read_stream) = connection_stream.split();
-        info!(target:LOG_TARGET,"listening to websocket events");
+        debug!(target:LOG_TARGET,"listening to websocket events");
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         let close_channel_tx_sender = close_channel_tx.clone();
@@ -327,7 +328,7 @@ impl WebsocketManager {
                 return;
             }
         }
-        info!(target:LOG_TARGET, "websocket task closed");
+        debug!(target:LOG_TARGET, "websocket task closed");
     }
 
     async fn wait_for_stopped_status(&self) {
@@ -360,7 +361,7 @@ async fn sender_task(
 ) -> Result<(), WebsocketError> {
     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
-    info!(target:LOG_TARGET,"websocket_manager: tx loop initialized...");
+    debug!(target:LOG_TARGET,"websocket_manager: tx loop initialized...");
 
     // Send initial handshake message to trigger server subscriptions
     let initial_message = WebsocketMessage {
@@ -376,7 +377,7 @@ async fn sender_task(
         .inspect_err(|e| {
             error!(target:LOG_TARGET,"Failed to send initial handshake message: {e}");
         })?;
-    info!(target:LOG_TARGET,"Initial handshake message sent: {handshake_json}");
+    debug!(target:LOG_TARGET,"Initial handshake message sent: {handshake_json}");
 
     let mut receiver = receiver_channel.lock().await;
     loop {
@@ -392,11 +393,11 @@ async fn sender_task(
                  // info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", message_as_json);
             },
             _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
-                info!(target:LOG_TARGET, "exiting websocket_manager sender task");
+                debug!(target:LOG_TARGET, "exiting websocket_manager sender task");
                 return Result::Ok(());
             },
             _=shutdown_signal.wait()=>{
-                info!(target:LOG_TARGET, "shutting down websocket_manager sender task");
+                debug!(target:LOG_TARGET, "shutting down websocket_manager sender task");
                 return Result::Ok(());
             }
         }
@@ -420,14 +421,14 @@ async fn receiver_task(
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
 ) {
     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-    info!(target:LOG_TARGET,"websocket_manager: rx loop initialized...");
+    debug!(target:LOG_TARGET,"websocket_manager: rx loop initialized...");
     loop {
         tokio::select! {
                 Some(msg_or_error) = read_stream.next() => {
                     match msg_or_error {
                         Result::Ok(msg) => match msg {
                             Message::Text(text) => {
-                                info!(target:LOG_TARGET,"websocket message received {text}");
+                                debug!(target:LOG_TARGET,"websocket message received {text}");
                                 let message_as_str = text.as_str();
                                 let messsage_value = serde_json::from_str::<Value>(message_as_str).inspect_err(|e|{
                                             error!(target:LOG_TARGET,"Received text websocket message that cannot be transformed to JSON: {e}");
@@ -440,7 +441,7 @@ async fn receiver_task(
                                 }
                             }
                             Message::Close(_) => {
-                                info!(target:LOG_TARGET, "webSocket connection got closed.");
+                                debug!(target:LOG_TARGET, "webSocket connection got closed.");
                                 return;
                             }
                             Message::Binary(_) => {
@@ -460,11 +461,11 @@ async fn receiver_task(
                     }
             },
             _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
-                info!(target:LOG_TARGET, "exiting websocket_manager receiver task");
+                debug!(target:LOG_TARGET, "exiting websocket_manager receiver task");
                 return;
             },
             _=shutdown_signal.wait()=>{
-                info!(target:LOG_TARGET, "shutting down websocket_manager receiver task");
+                debug!(target:LOG_TARGET, "shutting down websocket_manager receiver task");
                 return;
             }
         }

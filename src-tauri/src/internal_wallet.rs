@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::anyhow;
+use log::info;
 use monero_address_creator::network::Mainnet;
 use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
@@ -635,7 +636,7 @@ impl InternalWallet {
 
         let (encrypted_tari_seed, tari_wallet_details) = {
             if let Some(wallet_details) = ConfigWallet::content().await.tari_wallet_details() {
-                log::info!(target: LOG_TARGET, "Extracted(wallet config file) Tari Wallet Details: {wallet_details:?}");
+                info!(target: LOG_TARGET, "Extracted(wallet config file) Tari Wallet Details");
                 (None, wallet_details.clone())
             } else {
                 // If wallet details are not saved in the config file, extract them from the decrypted seed.

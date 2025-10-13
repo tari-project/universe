@@ -26,6 +26,7 @@ use std::time::Duration;
 use std::time::Instant;
 
 use futures::lock::Mutex;
+use log::debug;
 use log::{error, info, warn};
 use tari_common::configuration::Network;
 use tauri::AppHandle;
@@ -91,7 +92,7 @@ impl WebsocketEventsManager {
             error!(target: LOG_TARGET, "Failed to start websocket connection: {e}");
             return Err(anyhow::anyhow!(e));
         } else {
-            info!(target: LOG_TARGET, "Websocket events manager initialized successfully");
+            debug!(target: LOG_TARGET, "Websocket events manager initialized successfully");
         }
         Ok(())
     }
@@ -124,17 +125,17 @@ impl WebsocketEventsManager {
         let is_started = self.is_started.clone();
         let mut is_started_guard = is_started.lock().await;
         if *is_started_guard {
-            info!(target: LOG_TARGET, "Websocket events manager already started");
+            warn!(target: LOG_TARGET, "Websocket events manager already started");
             return Ok(());
         }
 
-        info!(target: LOG_TARGET, "Starting websocket events manager with intervals: {}s mining, {}s keep-alive", 
+        debug!(target: LOG_TARGET, "Starting websocket events manager with intervals: {}s mining, {}s keep-alive", 
               INTERVAL_DURATION.as_secs(), KEEP_ALIVE_INTERVAL_DURATION.as_secs());
 
         let is_started_cloned = self.is_started.clone();
 
         TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
-            info!(target: LOG_TARGET, "Websocket events manager task spawned successfully");
+            debug!(target: LOG_TARGET, "Websocket events manager task spawned successfully");
             let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
             // Create intervals inside the spawned task
@@ -144,7 +145,7 @@ impl WebsocketEventsManager {
             let mut keep_alive_interval = time::interval(KEEP_ALIVE_INTERVAL_DURATION);
             keep_alive_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
-            info!(target: LOG_TARGET, "Intervals created - starting event loop");
+            debug!(target: LOG_TARGET, "Intervals created - starting event loop");
 
             loop {
                 let app_version_option = app_cloned.clone().map(|handle| handle.package_info().version.clone().to_string());
@@ -152,7 +153,7 @@ impl WebsocketEventsManager {
 
                 tokio::select! {
                   _= interval.tick() => {
-                        info!(target:LOG_TARGET, "✓ Mining status interval tick - assembling status");
+                        debug!(target:LOG_TARGET, "✓ Mining status interval tick - assembling status");
                         if let Some(message) = WebsocketEventsManager::assemble_mining_status(
                           cpu_miner_status_watch_rx.clone(),
                           gpu_latest_miner_stats.clone(),
@@ -160,17 +161,17 @@ impl WebsocketEventsManager {
                           app_id.clone(),
                           app_version.clone(),
                         ).await {
-                            info!(target:LOG_TARGET, "sending mining status message {:?}", message);
+                            debug!(target:LOG_TARGET, "sending mining status message {:?}", message);
                             drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
                               error!(target:LOG_TARGET, "could not send to websocket channel due to {e}");
                             }));
                         } else {
-                            info!(target:LOG_TARGET, "No mining status message to send");
+                            debug!(target:LOG_TARGET, "No mining status message to send");
                         }
                   },
                   _= keep_alive_interval.tick()=>{
                         if let Some(message) = WebsocketEventsManager::assemble_keep_alive().await{
-                            info!(target:LOG_TARGET, "sending keep-alive message");
+                            debug!(target:LOG_TARGET, "sending keep-alive message");
                             drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
                               error!(target:LOG_TARGET, "could not send to websocket keep-alive channel due to {:?}", e);
                             }));
@@ -188,7 +189,7 @@ impl WebsocketEventsManager {
             }
         });
         *is_started_guard = true;
-        info!(target: LOG_TARGET, "Websocket events manager started successfully");
+        debug!(target: LOG_TARGET, "Websocket events manager started successfully");
         Ok(())
     }
 
@@ -290,7 +291,7 @@ impl WebsocketEventsManager {
         &mut self,
         websocket_manager: Arc<RwLock<WebsocketManager>>,
     ) -> Result<(), String> {
-        info!(target: LOG_TARGET, "websocket_connect command started");
+        debug!(target: LOG_TARGET, "websocket_connect command started");
         let timer = Instant::now();
 
         const MAX_RETRIES: u32 = 5;
@@ -317,7 +318,7 @@ impl WebsocketEventsManager {
                 if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
                     warn!(target: LOG_TARGET, "websocket_connect took too long: {:?}", timer.elapsed());
                 }
-                info!(target: LOG_TARGET, "websocket_connect command finished after {} retries", retry_count);
+                debug!(target: LOG_TARGET, "websocket_connect command finished after {} retries", retry_count);
                 return Ok(());
             }
 
@@ -343,7 +344,7 @@ impl WebsocketEventsManager {
                 ));
             }
 
-            info!(target: LOG_TARGET, "websocket_connect retry {} in {}ms - websocket manager not ready yet", retry_count, delay_ms);
+            debug!(target: LOG_TARGET, "websocket_connect retry {} in {}ms - websocket manager not ready yet", retry_count, delay_ms);
 
             // Sleep with exponential backoff
             sleep(Duration::from_millis(delay_ms));

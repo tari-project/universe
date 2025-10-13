@@ -294,7 +294,7 @@ impl TelemetryManager {
     }
 
     pub async fn initialize(&mut self, app_handle: tauri::AppHandle) -> Result<()> {
-        info!(target: LOG_TARGET, "Starting telemetry manager");
+        debug!(target: LOG_TARGET, "Starting telemetry manager");
         self.start_telemetry_process(TelemetryFrequency::default().into(), app_handle)
             .await?;
         Ok(())

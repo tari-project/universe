@@ -46,7 +46,7 @@ use crate::{
     UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, warn};
+use log::{error, info, warn};
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
@@ -158,6 +158,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {
+        info!(target: LOG_TARGET, "Starting wallet setup...");
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
@@ -204,6 +205,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                         use_tor,
                         connect_with_local_node: is_local_node,
                     };
+                    info!(target: LOG_TARGET, "Ensuring wallet is started...");
                     match app_state_clone.wallet_manager.ensure_started(
                         TasksTrackers::current().wallet_phase.get_signal().await,
                         wallet_config.clone()
@@ -213,7 +215,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                             if let WalletManagerError::ExitCode(code) = e {
                                 if STOP_ON_ERROR_CODES.contains(&code) {
                                     warn!(target: LOG_TARGET, "Wallet config is corrupt or needs a restart, deleting and trying again.");
-                                    app_state.wallet_manager.clean_data_folder(&data_dir).await?;
+                                    // app_state.wallet_manager.clean_data_folder(&data_dir).await?;
                                 }
                                 continue;
                             }
