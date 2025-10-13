@@ -147,7 +147,7 @@ impl BinaryManager {
             Network::Igor => "testnet",
         };
 
-        if binary.eq(&Binaries::GpuMiner) && network.eq("esme") {
+        if binary.eq(&Binaries::Glytex) && network.eq("esme") {
             network = "testnet";
         }
 
@@ -281,14 +281,14 @@ impl BinaryManager {
         if let Some(step_update_channel) = progress_channel {
             let (sender, mut receiver) = channel::<f64>(0.0);
             let task_tacker = match Binaries::from_name(&self.binary_name) {
-                Binaries::GpuMiner => &TasksTrackers::current().gpu_mining_phase,
+                Binaries::Glytex => &TasksTrackers::current().gpu_mining_phase,
                 Binaries::Xmrig => &TasksTrackers::current().cpu_mining_phase,
                 Binaries::Wallet => &TasksTrackers::current().wallet_phase,
                 Binaries::MinotariNode => &TasksTrackers::current().node_phase,
                 Binaries::Tor => &TasksTrackers::current().node_phase,
                 Binaries::MergeMiningProxy => &TasksTrackers::current().cpu_mining_phase,
                 Binaries::BridgeTapplet => &TasksTrackers::current().wallet_phase,
-                Binaries::GpuMinerSHA3X => &TasksTrackers::current().gpu_mining_phase,
+                Binaries::Graxil => &TasksTrackers::current().gpu_mining_phase,
                 Binaries::LolMiner => &TasksTrackers::current().gpu_mining_phase,
             };
             let binary_name = self.binary_name.clone();

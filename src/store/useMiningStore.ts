@@ -37,7 +37,6 @@ const initialState: MiningStoreState = {
     wasMineOnAppStartExecuted: false,
     isChangingMode: false,
     isExcludingGpuDevices: false,
-    //TODO: replace with CpuMiningUnlocked and GpuMiningUnlocked from useSetupStore
     miningControlsEnabled: true,
     availableEngines: [],
     engine: undefined,

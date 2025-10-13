@@ -43,7 +43,7 @@ use crate::{
     events_emitter::EventsEmitter,
     mining::{
         gpu::{
-            consts::GpuMinerStatus,
+            consts::{GpuMinerStatus, GpuMinerType},
             interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
             manager::GpuManager,
             miners::{load_file_content, GpuCommonInformation, GpuDeviceType, GpuVendor},
@@ -159,7 +159,7 @@ impl GpuMinerInterfaceTrait for GraxilGpuMiner {
         ];
 
         let gpu_miner_binary = BinaryResolver::current()
-            .get_binary_path(Binaries::GpuMinerSHA3X)
+            .get_binary_path(Binaries::Graxil)
             .await?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpu_miner_binary.clone());
@@ -360,6 +360,11 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
             Ok(inner) => inner,
             Err(_) => {
                 warn!(target: LOG_TARGET, "Timeout error in ShaMiner check_health");
+                let _ = self
+                    .gpu_status_sender
+                    .send(GpuMinerStatus::default_with_algorithm(
+                        GpuMinerType::Graxil.main_algorithm(),
+                    ));
                 return HealthStatus::Unhealthy;
             }
         };
@@ -379,7 +384,11 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
                 }
             }
             Err(_) => {
-                let _ = self.gpu_status_sender.send(GpuMinerStatus::default());
+                let _ = self
+                    .gpu_status_sender
+                    .send(GpuMinerStatus::default_with_algorithm(
+                        GpuMinerType::Graxil.main_algorithm(),
+                    ));
                 HealthStatus::Unhealthy
             }
         }
@@ -396,6 +405,7 @@ impl GraxilGpuMinerStatusMonitor {
                 is_mining: true,
                 estimated_earnings: 0,
                 hash_rate: status.current_hashrate as f64,
+                algorithm: GpuMinerType::Graxil.main_algorithm(),
             });
         }
 
@@ -403,6 +413,7 @@ impl GraxilGpuMinerStatusMonitor {
             is_mining: false,
             estimated_earnings: 0,
             hash_rate: 0.0,
+            algorithm: GpuMinerType::Graxil.main_algorithm(),
         })
     }
 }

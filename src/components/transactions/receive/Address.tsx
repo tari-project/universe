@@ -19,7 +19,7 @@ import YatHand from '/assets/img/yat_hand.png';
 import { truncateMiddle } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch.tsx';
 import emojiRegex from 'emoji-regex';
 import { AnimatePresence } from 'motion/react';
 import {

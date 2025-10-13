@@ -1,7 +1,7 @@
 import { memo, useCallback } from 'react';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch.tsx';
 
 import { useTranslation } from 'react-i18next';
 import {
