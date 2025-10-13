@@ -166,47 +166,6 @@ impl WebsocketManager {
         Ok(ws_stream)
     }
 
-    // Keeping in case we need to close the connection for some reason
-    // pub async fn close_connection(&self) {
-    //     if self.status_update_channel_rx.borrow().clone() == WebsocketManagerStatusMessage::Stopped
-    //     {
-    //         info!(target:LOG_TARGET,"websocket already stopped");
-    //         return;
-    //     }
-    //
-    //     info!(target:LOG_TARGET,"websocket start to close...");
-    //     let status_update_channel_tx = self.status_update_channel_tx.clone();
-    //
-    //     if let Err(e) = status_update_channel_tx.send(WebsocketManagerStatusMessage::Stopping) {
-    //         info!(target: LOG_TARGET, "Could not send stopping channel message: {e}");
-    //     }
-    //
-    //     match self.close_channel_tx.send(true) {
-    //         Ok(_) => loop {
-    //             if self
-    //                 .status_update_channel_rx
-    //                 .clone()
-    //                 .changed()
-    //                 .await
-    //                 .is_ok()
-    //             {
-    //                 let actual_state = self.status_update_channel_rx.borrow();
-    //                 if actual_state.clone() == WebsocketManagerStatusMessage::Stopped {
-    //                     info!(target:LOG_TARGET,"websocket stopped");
-    //
-    //                     return;
-    //                 }
-    //             } else {
-    //                 return;
-    //             }
-    //         },
-    //         Err(_) => {
-    //             info!(target: LOG_TARGET,"websocket connection has already been closed.");
-    //         }
-    //     };
-    //     info!(target: LOG_TARGET,"websocket connection closed");
-    // }
-
     pub async fn connect(&mut self) -> Result<(), anyhow::Error> {
         if self.status_update_channel_rx.borrow().clone()
             == WebsocketManagerStatusMessage::Connected
@@ -389,7 +348,6 @@ async fn sender_task(
                     .inspect_err(|e| {
                         error!(target:LOG_TARGET,"Failed to send websocket message: {e}");
                     })?;
-                 // info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", message_as_json);
             },
             _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
                 info!(target:LOG_TARGET, "exiting websocket_manager sender task");

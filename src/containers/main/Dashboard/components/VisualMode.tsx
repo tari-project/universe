@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch.tsx';
 import { Typography } from '@app/components/elements/Typography';
 import {
     SettingsGroup,

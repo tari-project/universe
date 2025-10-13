@@ -303,7 +303,7 @@ pub async fn get_applications_versions(
         .get_binary_version(Binaries::MergeMiningProxy)
         .await;
     let wallet_version = binary_resolver.get_binary_version(Binaries::Wallet).await;
-    let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::GpuMiner).await;
+    let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::Glytex).await;
     let bridge_version = binary_resolver
         .get_binary_version(Binaries::BridgeTapplet)
         .await;
