@@ -1,5 +1,5 @@
 {
-    "version": "1.6.2",
+    "version": "1.6.3",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -32,7 +32,7 @@
             "icons/systray_icon.ico",
             "icons/systray_icon.png"
         ],
-        "copyright": "Copyright (c) 2024 Tari Labs, LLC",
+        "copyright": "Copyright (c) 2025 Tari Labs, LLC",
         "shortDescription": "Tari Universe is a mining app for Tari.",
         "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
         "publisher": "Tari Labs, LLC",

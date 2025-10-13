@@ -1,5 +1,5 @@
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
 import { Stack } from '@app/components/elements/Stack';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
