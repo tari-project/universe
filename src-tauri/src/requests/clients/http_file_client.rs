@@ -394,6 +394,32 @@ impl HttpFileClient {
     }
 
     pub async fn extract(&self) -> Result<(), anyhow::Error> {
+        const MAX_RETRIES: u32 = 3;
+        let mut attempt = 0;
+
+        loop {
+            attempt += 1;
+            match self.extract_inner().await {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "Extraction completed successfully.");
+                    break;
+                }
+                Err(e) => {
+                    if attempt >= MAX_RETRIES {
+                        error!(target: LOG_TARGET, "Extraction failed after {} attempts: {}", attempt, e);
+                        return Err(anyhow::anyhow!("Extraction failed: {}", e));
+                    } else {
+                        warn!(target: LOG_TARGET, "Extraction attempt {} failed: {}. Retrying...", attempt, e);
+                        tokio::time::sleep(create_exponential_timeout(attempt)).await;
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn extract_inner(&self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Extracting file to {}", self.destination.display());
         if let Some(archive_destination) = &self.archive_destination {
             if archive_destination.exists() {
