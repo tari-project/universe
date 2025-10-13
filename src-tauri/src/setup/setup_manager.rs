@@ -851,8 +851,6 @@ impl SetupManager {
 
         self.restart_phases(vec![SetupPhase::CpuMining]).await;
 
-        start_cpu_mining().await.map_err(anyhow::Error::msg)?;
-
         Ok(())
     }
 

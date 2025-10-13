@@ -43,9 +43,12 @@ use anyhow::Error;
 use log::warn;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tokio::sync::{
-    watch::{Receiver, Sender},
-    Mutex,
+use tokio::{
+    spawn,
+    sync::{
+        watch::{Receiver, Sender},
+        Mutex,
+    },
 };
 use tokio_util::task::TaskTracker;
 
@@ -237,10 +240,15 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
                     Err(error) => {
                         if !WAS_FALLBACK_TO_POOL_MINING_TRIGGERED.load(std::sync::atomic::Ordering::SeqCst)
                         {
+                            warn!(target: LOG_TARGET, "MM Proxy failed to start. Falling back to CPU Pool mining. Error: {}", error);
                             WAS_FALLBACK_TO_POOL_MINING_TRIGGERED
                                 .store(true, std::sync::atomic::Ordering::SeqCst);
-                            warn!(target: LOG_TARGET, "MM Proxy failed to start. Falling back to CPU Pool mining. Error: {}", error);
-                            SetupManager::get_instance().turn_on_cpu_pool_feature().await?;
+                            // Has to be spawned as we are in the context setup phase
+                            // turn on cpu pool feature will shutdown this phase and restart it
+                            spawn(async move {
+                                SetupManager::get_instance().turn_on_cpu_pool_feature().await.expect("Failed to turn on CPU pool feature");
+                            });
+
                         }
                         return Err(error);
                     }
