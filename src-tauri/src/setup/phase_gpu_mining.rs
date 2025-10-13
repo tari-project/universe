@@ -161,15 +161,21 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         let graxil_binary_progress_tracker =
             progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
 
+        let glytex_binary_progress_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
+
+        let lolminer_binary_progress_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
+
         progress_stepper.complete_step(SetupStep::BinariesGpuMiner,  || async {
             let graxil_initialization_result = binary_resolver
                 .initialize_binary(Binaries::GpuMinerSHA3X, graxil_binary_progress_tracker)
                 .await;
             let glytex_initialization_result = binary_resolver
-                .initialize_binary(Binaries::GpuMiner, None)
+                .initialize_binary(Binaries::GpuMiner, glytex_binary_progress_tracker)
                 .await;
             let lolminer_initialization_result = binary_resolver
-                .initialize_binary(Binaries::LolMiner, None)
+                .initialize_binary(Binaries::LolMiner, lolminer_binary_progress_tracker)
                 .await;
 
             let graxil_err = graxil_initialization_result.as_ref().err();
