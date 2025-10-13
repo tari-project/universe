@@ -490,7 +490,10 @@ async fn get_telemetry_data_inner(
 
     let mut extra_data = HashMap::new();
     let is_orphan = node_manager.is_on_orphan_chain();
+    let node_type = node_manager.get_node_type().await;
+
     extra_data.insert("is_orphan".to_string(), is_orphan.to_string());
+    extra_data.insert("node_type".to_string(), node_type.to_string());
     extra_data.insert(
         "config_cpu_enabled".to_string(),
         mining_config.cpu_mining_enabled().to_string(),

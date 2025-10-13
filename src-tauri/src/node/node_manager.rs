@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -81,6 +82,17 @@ impl NodeType {
     }
     pub fn is_remote(&self) -> bool {
         matches!(self, NodeType::Remote | NodeType::RemoteUntilLocal)
+    }
+}
+
+impl Display for NodeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            NodeType::Local => write!(f, "Local"),
+            NodeType::Remote => write!(f, "Remote"),
+            NodeType::RemoteUntilLocal => write!(f, "RemoteUntilLocal"),
+            NodeType::LocalAfterRemote => write!(f, "LocalAfterRemote"),
+        }
     }
 }
 
