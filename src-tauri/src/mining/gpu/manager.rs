@@ -362,9 +362,9 @@ impl GpuManager {
             }
 
             let binary = match self.selected_miner {
-                GpuMinerType::Graxil => Binaries::GpuMinerSHA3X,
+                GpuMinerType::Graxil => Binaries::Graxil,
                 GpuMinerType::LolMiner => Binaries::LolMiner,
-                GpuMinerType::Glytex => Binaries::GpuMiner,
+                GpuMinerType::Glytex => Binaries::Glytex,
             };
 
             // Worker name format depends on the pool

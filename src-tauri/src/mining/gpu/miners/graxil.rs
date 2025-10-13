@@ -159,7 +159,7 @@ impl GpuMinerInterfaceTrait for GraxilGpuMiner {
         ];
 
         let gpu_miner_binary = BinaryResolver::current()
-            .get_binary_path(Binaries::GpuMinerSHA3X)
+            .get_binary_path(Binaries::Graxil)
             .await?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpu_miner_binary.clone());
