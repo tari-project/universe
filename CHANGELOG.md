@@ -1,3 +1,23 @@
+🚀 TARI UNIVERSE v1.6.3: The Invisible Garden
+
+_October 13, 2025_
+
+Hey everyone,
+
+Following up on our previous update that made Universe less resource-intensive for lower-end laptops—resulting in a 30% increase in new miner retention—this release introduces a new low-power Eco mode and system tray experience that allows you to put mining in the background while you use your computer for other things! Plus we've packed in some thoughtful optimizations and polish that make everything smoother and smarter.
+
+✨ WHAT'S NEW & FIXED
+
+- **System tray mining control** – Clicking the close button now minimizes to system tray instead of shutting down. Control mining, check pool rewards, adjust settings, or fully exit, all from your taskbar. Open the app from the dock menu anytime.
+- **Memory optimization** – CPU mining in Eco mode now uses XMRig's light mode, saving 2 GB of RAM.
+- **Better stats display** – Kryptex pool stats now hide fields when data isn't available. Hashrate formatting improved with proper decimals for all ranges.
+- **Reliability fixes** – Pool configuration updates work correctly again. Base node no longer advertises un-dialable TCP addresses. All mining processes properly terminate when shutting down.
+- **Translation updates** – Updated all translations and added Brazilian Portuguese, bringing the total supported languages to 14! 🇧🇷
+
+This release marks a major step forward in how you interact with Tari Universe throughout your day. Happy mining! 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.6.2: The Luminous Threshold
 
 _September 25, 2025_
