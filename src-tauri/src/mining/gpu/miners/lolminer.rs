@@ -43,7 +43,7 @@ use crate::{
     events_emitter::EventsEmitter,
     mining::{
         gpu::{
-            consts::GpuMinerStatus,
+            consts::{GpuMinerStatus, GpuMinerType},
             interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
             manager::GpuManager,
             miners::GpuCommonInformation,
@@ -304,7 +304,11 @@ impl StatusMonitor for LolMinerGpuMinerStatusMonitor {
             Ok(inner) => inner,
             Err(_) => {
                 warn!(target: LOG_TARGET, "Timeout error in GpuMinerAdapter check_health");
-                let _ = self.gpu_status_sender.send(GpuMinerStatus::default());
+                let _ = self
+                    .gpu_status_sender
+                    .send(GpuMinerStatus::default_with_algorithm(
+                        GpuMinerType::LolMiner.main_algorithm(),
+                    ));
                 return HealthStatus::Unhealthy;
             }
         };
@@ -323,7 +327,11 @@ impl StatusMonitor for LolMinerGpuMinerStatusMonitor {
                 }
             }
             Err(_) => {
-                let _ = self.gpu_status_sender.send(GpuMinerStatus::default());
+                let _ = self
+                    .gpu_status_sender
+                    .send(GpuMinerStatus::default_with_algorithm(
+                        GpuMinerType::LolMiner.main_algorithm(),
+                    ));
                 HealthStatus::Unhealthy
             }
         }
@@ -344,12 +352,14 @@ impl LolMinerGpuMinerStatusMonitor {
                         is_mining: false,
                         hash_rate: 0.0,
                         estimated_earnings: 0,
+                        algorithm: GpuMinerType::LolMiner.main_algorithm(),
                     });
                 }
                 return Ok(GpuMinerStatus {
                     is_mining: false,
                     hash_rate: 0.0,
                     estimated_earnings: 0,
+                    algorithm: GpuMinerType::LolMiner.main_algorithm(),
                 });
             }
         };
@@ -362,6 +372,7 @@ impl LolMinerGpuMinerStatusMonitor {
                     is_mining: false,
                     hash_rate: 0.0,
                     estimated_earnings: 0,
+                    algorithm: GpuMinerType::LolMiner.main_algorithm(),
                 });
             }
         };
@@ -377,6 +388,7 @@ impl LolMinerGpuMinerStatusMonitor {
                 * 100.0)
                 .round()
                 / 100.0),
+            algorithm: GpuMinerType::LolMiner.main_algorithm(),
         })
     }
 }

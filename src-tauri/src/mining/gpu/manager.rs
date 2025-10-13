@@ -107,8 +107,12 @@ impl GpuManager {
             // ======= Parameters tracking =======
             status_thread_shutdown: Shutdown::new(),
             process_stats_collector: Sender::new(ProcessWatcherStats::default()),
-            gpu_external_status_channel: Sender::new(GpuMinerStatus::default()),
-            gpu_internal_status_channel: Sender::new(GpuMinerStatus::default()),
+            gpu_external_status_channel: Sender::new(GpuMinerStatus::default_with_algorithm(
+                GpuMinerType::LolMiner.main_algorithm(),
+            )),
+            gpu_internal_status_channel: Sender::new(GpuMinerStatus::default_with_algorithm(
+                GpuMinerType::LolMiner.main_algorithm(),
+            )),
             node_status_channel: None,
             // ======= Cached config =======
             connection_type: GpuConnectionType::default(),
@@ -428,12 +432,14 @@ impl GpuManager {
     pub async fn stop_mining(&mut self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Stopping gpu miner");
         {
+            let _res =
+                self.gpu_external_status_channel
+                    .send(GpuMinerStatus::default_with_algorithm(
+                        self.selected_miner.main_algorithm(),
+                    ));
             self.process_watcher.status_monitor = None;
             self.process_watcher.stop().await?;
             self.status_thread_shutdown.trigger();
-            let _res = self
-                .gpu_external_status_channel
-                .send(GpuMinerStatus::default());
         }
 
         info!(target: LOG_TARGET, "Stopped gpu miner process");
@@ -607,6 +613,7 @@ impl GpuManager {
         let gpu_external_status_channel = self.gpu_external_status_channel.clone();
         let node_status_channel = self.node_status_channel.clone();
         let connection_type = self.connection_type.clone();
+        let mut last_known_status = self.gpu_internal_status_channel.borrow().clone();
 
         let mut internal_shutdown_signal = self.status_thread_shutdown.to_signal();
         let mut global_shutdown_signal =
@@ -626,7 +633,9 @@ impl GpuManager {
                 select! {
                     _ = internal_shutdown_signal.wait() => {
                         info!(target: LOG_TARGET, "Shutting down gpu miner status updates");
-                        EventsEmitter::emit_gpu_mining_update(GpuMinerStatus::default()).await;
+                        EventsEmitter::emit_gpu_mining_update(GpuMinerStatus::default_with_algorithm(
+                            last_known_status.algorithm.clone(),
+                        )).await;
                         SystemTrayManager::send_event(SystemTrayEvents::GpuHashrate(0.0)).await;
                         break;
                     },
@@ -642,6 +651,7 @@ impl GpuManager {
                                 GpuConnectionType::Pool { .. } => Self::handle_pool_connection_type_status_change(status.clone()).await,
                             };
                             let _res = gpu_external_status_channel.send(paresd_status.clone());
+                            last_known_status = paresd_status.clone();
                             EventsEmitter::emit_gpu_mining_update(paresd_status.clone()).await;
 
                             info!(target: LOG_TARGET, "Gpu hashrate: {}", paresd_status.hash_rate);
