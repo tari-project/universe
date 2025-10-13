@@ -4,11 +4,11 @@
         "glytex": "0.2.32 | ad20e05",
         "graxil": "1.0.13 | 16af6ba",
         "lolminer": "1.98",
-        "minotari_node": "5.0.1 | 9aa1e44",
-        "mmproxy": "5.0.1 | 9aa1e44",
+        "minotari_node": "5.1.0 | 633e5ae",
+        "mmproxy": "5.1.0 | 633e5ae",
         "sha-p2pool": "1.0.3 | cff9241",
         "tor": "14.5.1",
-        "wallet": "5.0.1 | 9aa1e44",
+        "wallet": "5.1.0 | 633e5ae",
         "xmrig": "6.24.0"
     }
 }
