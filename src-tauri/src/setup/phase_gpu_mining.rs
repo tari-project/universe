@@ -161,6 +161,12 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         let graxil_binary_progress_tracker =
             progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
 
+        let glytex_binary_progress_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
+
+        let lolminer_binary_progress_tracker =
+            progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
+
         progress_stepper
             .complete_step(SetupStep::BinariesGpuMiner, || async {
                 let mut is_any_miner_succeeded = false;
@@ -192,7 +198,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                 // Glytex is supported on Windows | Linux | MacOS
                 if GpuMinerType::Glytex.is_supported_on_current_platform() {
                     let glytex_initialization_result = binary_resolver
-                        .initialize_binary(Binaries::Glytex, None)
+                        .initialize_binary(Binaries::Glytex, glytex_binary_progress_tracker)
                         .await;
 
                     let glytex_err = glytex_initialization_result.as_ref().err();
@@ -216,7 +222,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                 // LolMiner is supported on Windows | Linux
                 if GpuMinerType::LolMiner.is_supported_on_current_platform() {
                     let lolminer_initialization_result = binary_resolver
-                        .initialize_binary(Binaries::LolMiner, None)
+                        .initialize_binary(Binaries::LolMiner, lolminer_binary_progress_tracker)
                         .await;
 
                     let lolminer_err = lolminer_initialization_result.as_ref().err();
