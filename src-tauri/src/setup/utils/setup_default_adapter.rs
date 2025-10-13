@@ -65,7 +65,6 @@ impl SetupDefaultAdapter {
             };
 
             info!(target: LOG_TARGET, "[ {} Phase ] Setup task finished", phase.get_phase_id());
-            
         });
     }
 }
