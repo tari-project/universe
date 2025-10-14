@@ -2,6 +2,8 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { FormWrapper, Text, Wrapper } from './styles.ts';
 import { TimePicker } from '@app/components/elements/inputs/time-picker/TimePicker.tsx';
 import ModeDropdown from '@app/containers/navigation/components/MiningButtonCombined/MiningButton/components/ModeDropdown/ModeDropdown.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 
 export default function Scheduler() {
     return (
@@ -13,6 +15,8 @@ export default function Scheduler() {
                 <TimePicker label={`Daily End Time`} />
                 <ModeDropdown />
             </FormWrapper>
+            <Button variant="black" size="xlarge" fluid>{`Save schedule`}</Button>
+            <TextButton fluid size="large">{`Cancel`}</TextButton>
         </Wrapper>
     );
 }

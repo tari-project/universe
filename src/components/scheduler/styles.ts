@@ -16,7 +16,7 @@ export const Text = styled(Typography)`
 export const FormWrapper = styled.div`
     display: flex;
     width: 100%;
-    align-items: center;
+    align-items: stretch;
     justify-content: stretch;
     gap: 20px;
 `;
