@@ -15,7 +15,7 @@ import {
 } from '../index.ts';
 import { restartMining, startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
-import { setUITheme } from './uiStoreActions';
+import { loadAnimation, setUITheme } from './uiStoreActions';
 import { displayMode } from '../types';
 import {
     BasePoolData,
@@ -73,6 +73,9 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
     } catch (e) {
         console.error('Could not set UI config:', e);
     }
+
+    console.info('Loading animation on startup after config UI is loaded.');
+    await loadAnimation();
 };
 export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
     useConfigMiningStore.setState((c) => ({ ...c, ...miningConfig }));

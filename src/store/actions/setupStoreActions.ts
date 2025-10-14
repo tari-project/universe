@@ -17,17 +17,12 @@ import {
 import { ProgressTrackerUpdatePayload, SetupPhase } from '@app/types/events-payloads';
 import { AppModule, AppModuleState, AppModuleStatus } from '../types/setup';
 import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
-import { loadAnimation } from '@app/store/actions/uiStoreActions.ts';
 
 export interface DisabledPhasesPayload {
     disabled_phases: SetupPhase[];
 }
 
 export const handleAppLoaded = async () => {
-    console.info('Loading tower animation from Setup Store');
-    console.info('[TOWER_LOG] in handleAppLoaded - before');
-    await loadAnimation();
-    console.info('[TOWER_LOG] in handleAppLoaded - after');
     const tari_address_base58 = useWalletStore.getState().tari_address_base58;
     await fetchBridgeTransactionsHistory(tari_address_base58);
     await fetchApplicationsVersionsWithRetry();

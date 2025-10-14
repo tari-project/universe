@@ -27,11 +27,7 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
 };
 
 export async function loadAnimation() {
-    console.info('[TOWER_LOG] loadAnimation()');
     const visualModeEnabled = useConfigUIStore.getState().visual_mode;
-
-    console.info('[TOWER_LOG] visualModeEnabled', visualModeEnabled);
-
     if (!visualModeEnabled) return;
 
     const uiTheme = useUIStore.getState().theme as string;
@@ -39,36 +35,22 @@ export async function loadAnimation() {
     const animationStyle = preferredTheme === 'dark' ? animationDarkBg : animationLightBg;
     const towerSidebarOffset = useUIStore.getState().towerSidebarOffset;
     const towerInitalized = useUIStore.getState().towerInitalized;
-    console.info(
-        '[TOWER_LOG] uiTheme, preferredTheme, animationStyle, towerSidebarOffset, towerInitalized',
-        uiTheme,
-        preferredTheme,
-        animationStyle,
-        towerSidebarOffset,
-        towerInitalized
-    );
+
     if (!towerInitalized) {
-        console.info('[TOWER_LOG] !towerInitalized');
         setAnimationProperties(animationStyle);
         await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset })
-            .then((loaded) => {
-                console.info('[TOWER_LOG] loadTowerAnimation loaded =', loaded);
+            .then((_) => {
                 useUIStore.setState((c) => ({ ...c, towerInitalized: true }));
                 setAnimationState('showVisual');
             })
             .catch((e) => {
-                console.info('[TOWER_LOG] loadTowerAnimation error, setting init false =', e);
                 console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
                 useUIStore.setState((c) => ({ ...c, towerInitalized: false }));
             });
-
-        console.info('[TOWER_LOG] ui state after loadTowerAnimation', JSON.stringify(useUIStore.getState(), null, 2));
     }
 }
 export async function removeAnimation() {
-    console.info('[TOWER_LOG] removeAnimation()');
     await removeTowerAnimation({ canvasId: TOWER_CANVAS_ID }).then((removed) => {
-        console.info('[TOWER_LOG] removed =', removed);
         if (removed) {
             // Force garbage collection to clean up WebGL context
             if (window.gc) {
@@ -77,27 +59,21 @@ export async function removeAnimation() {
         }
         useUIStore.setState((c) => ({ ...c, towerInitalized: !removed }));
     });
-    console.info('[TOWER_LOG] ui state after removeTowerAnimation', JSON.stringify(useUIStore.getState(), null, 2));
 }
 export const toggleVisualMode = async (enabled: boolean) => {
-    console.info('[TOWER_LOG] toggleVisualMode(), enabled =', enabled);
     useConfigUIStore.setState((c) => ({ ...c, visualModeToggleLoading: true }));
     try {
         await setVisualMode(enabled);
-        console.info('[TOWER_LOG] after setVisualMode()');
         if (enabled) {
             console.info(`Enabling visual mode. Loading animation from UI Store`);
             await loadAnimation();
         } else {
-            console.info('[TOWER_LOG] enabled was false so removing, calling removeAnimation() ');
             await removeAnimation();
         }
     } catch (e) {
         console.error('Could not toggle visual mode. Error at setVisualMode:', e);
     }
     useConfigUIStore.setState((c) => ({ ...c, visualModeToggleLoading: false }));
-
-    console.info('[TOWER_LOG] ui state after toggleVisualMode', JSON.stringify(useUIStore.getState(), null, 2));
 };
 export const handleConnectionStatusChanged = (connectionStatus: ConnectionStatusPayload) => {
     if (connectionStatus === 'InProgress') {
