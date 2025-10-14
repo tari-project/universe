@@ -50,13 +50,11 @@ export async function loadAnimation() {
     if (!towerInitalized) {
         console.info('[TOWER_LOG] !towerInitalized');
         setAnimationProperties(animationStyle);
-        loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset })
+        await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset })
             .then((loaded) => {
                 console.info('[TOWER_LOG] loadTowerAnimation loaded =', loaded);
-                if (loaded) {
-                    setAnimationState('showVisual');
-                }
-                useUIStore.setState((c) => ({ ...c, towerInitalized: loaded }));
+                useUIStore.setState((c) => ({ ...c, towerInitalized: true }));
+                setAnimationState('showVisual');
             })
             .catch((e) => {
                 console.info('[TOWER_LOG] loadTowerAnimation error, setting init false =', e);
@@ -69,7 +67,7 @@ export async function loadAnimation() {
 }
 export async function removeAnimation() {
     console.info('[TOWER_LOG] removeAnimation()');
-    removeTowerAnimation({ canvasId: TOWER_CANVAS_ID }).then((removed) => {
+    await removeTowerAnimation({ canvasId: TOWER_CANVAS_ID }).then((removed) => {
         console.info('[TOWER_LOG] removed =', removed);
         if (removed) {
             // Force garbage collection to clean up WebGL context
