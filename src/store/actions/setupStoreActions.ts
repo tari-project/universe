@@ -25,7 +25,9 @@ export interface DisabledPhasesPayload {
 
 export const handleAppLoaded = async () => {
     console.info('Loading tower animation from Setup Store');
+    console.info('[TOWER_LOG] in handleAppLoaded - before');
     await loadAnimation();
+    console.info('[TOWER_LOG] in handleAppLoaded - after');
     const tari_address_base58 = useWalletStore.getState().tari_address_base58;
     await fetchBridgeTransactionsHistory(tari_address_base58);
     await fetchApplicationsVersionsWithRetry();
