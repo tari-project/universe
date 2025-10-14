@@ -11,7 +11,7 @@ export const SidebarWrapper = styled(m.div)`
     border-radius: 20px;
     height: 100%;
     flex-shrink: 0;
-    padding: 15px 10px 10px 10px;
+    padding: 13px;
     position: relative;
     width: ${SB_WIDTH}px;
 
@@ -24,13 +24,14 @@ export const WrapperGrid = styled.div`
     height: 100%;
     display: flex;
     flex-flow: column;
+    gap: 10px;
     justify-content: space-between;
 `;
 
 export const GridAreaTop = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 6px;
 `;
 
 export const GridAreaBottom = styled.div<{ $swapsOpen?: boolean }>`
