@@ -28,6 +28,12 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
 
 export async function loadAnimation() {
     console.info('[TOWER_LOG] loadAnimation()');
+    const visualModeEnabled = useConfigUIStore.getState().visual_mode;
+
+    console.info('[TOWER_LOG] visualModeEnabled', visualModeEnabled);
+
+    if (!visualModeEnabled) return;
+
     const uiTheme = useUIStore.getState().theme as string;
     const preferredTheme = uiTheme === 'system' ? useUIStore.getState().preferredTheme : uiTheme;
     const animationStyle = preferredTheme === 'dark' ? animationDarkBg : animationLightBg;
