@@ -29,6 +29,7 @@ import SettingsModal from './Settings/SettingsModal.tsx';
 import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 import UniversalEXSelectorModal from './UniversalEXSelectorModal/UniversalEXSelectorModal.tsx';
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
+import SchedulerModal from './scheduler/SchedulerModal.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -63,6 +64,7 @@ const FloatingElements = () => {
             <FailedModuleInitializationDialog />
             <CloseUserFeedbackDialog />
             <LongTimeUserFeedbackDialog />
+            <SchedulerModal />
         </FloatingTree>
     );
 };

@@ -32,6 +32,7 @@ export const GridAreaTop = styled.div`
     display: flex;
     flex-direction: column;
     gap: 6px;
+    padding: 2px 0 0;
 `;
 
 export const GridAreaBottom = styled.div<{ $swapsOpen?: boolean }>`
