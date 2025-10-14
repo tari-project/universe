@@ -849,6 +849,19 @@ impl SetupManager {
         Ok(())
     }
 
+    // Currently used in case when mmproxy fails to start
+    // It throws error in mmproxy_manager.wait_ready() which breaks cpu mining for solo mode
+    pub async fn turn_on_cpu_pool_feature(&self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Turning on CPU Pool feature");
+        ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, true).await?;
+        // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
+        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+
+        self.restart_phases(vec![SetupPhase::CpuMining]).await;
+
+        Ok(())
+    }
+
     pub async fn handle_switch_to_local_node(&self) {
         let app_handle = self.app_handle().await;
         info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");

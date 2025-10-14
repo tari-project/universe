@@ -27,20 +27,21 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
 };
 
 export async function loadAnimation() {
+    const visualModeEnabled = useConfigUIStore.getState().visual_mode;
+    if (!visualModeEnabled) return;
+
     const uiTheme = useUIStore.getState().theme as string;
     const preferredTheme = uiTheme === 'system' ? useUIStore.getState().preferredTheme : uiTheme;
     const animationStyle = preferredTheme === 'dark' ? animationDarkBg : animationLightBg;
-
     const towerSidebarOffset = useUIStore.getState().towerSidebarOffset;
     const towerInitalized = useUIStore.getState().towerInitalized;
+
     if (!towerInitalized) {
         setAnimationProperties(animationStyle);
-        loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset })
-            .then((loaded) => {
-                if (loaded) {
-                    setAnimationState('showVisual');
-                }
-                useUIStore.setState((c) => ({ ...c, towerInitalized: loaded }));
+        await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset })
+            .then((_) => {
+                useUIStore.setState((c) => ({ ...c, towerInitalized: true }));
+                setAnimationState('showVisual');
             })
             .catch((e) => {
                 console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
@@ -49,7 +50,7 @@ export async function loadAnimation() {
     }
 }
 export async function removeAnimation() {
-    removeTowerAnimation({ canvasId: TOWER_CANVAS_ID }).then((removed) => {
+    await removeTowerAnimation({ canvasId: TOWER_CANVAS_ID }).then((removed) => {
         if (removed) {
             // Force garbage collection to clean up WebGL context
             if (window.gc) {

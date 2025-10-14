@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::sync::atomic::AtomicBool;
+
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
@@ -30,16 +32,23 @@ use crate::{
         progress_plans::SetupStep,
         progress_stepper::{ProgressStepper, ProgressStepperBuilder},
     },
-    setup::{listeners::SetupFeature, setup_manager::SetupPhase},
+    setup::{
+        listeners::SetupFeature,
+        setup_manager::{SetupManager, SetupPhase},
+    },
     tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
 use anyhow::Error;
+use log::warn;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tokio::sync::{
-    watch::{Receiver, Sender},
-    Mutex,
+use tokio::{
+    spawn,
+    sync::{
+        watch::{Receiver, Sender},
+        Mutex,
+    },
 };
 use tokio_util::task::TaskTracker;
 
@@ -52,6 +61,11 @@ use super::{
 
 #[allow(dead_code)]
 static LOG_TARGET: &str = "tari::universe::phase_cpu_mining";
+
+// This is a flag to indicate if the fallback to other pool mining has already been triggered.
+// We want to avoid triggering it multiple times per session
+// Its required for case when user is on solo mining and mmproxy fails to starts which makes cpu mining phase to fail and cpu mining broken
+static WAS_FALLBACK_TO_POOL_MINING_TRIGGERED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Clone, Default)]
 pub struct CpuMiningSetupPhaseAppConfiguration {
@@ -131,7 +145,7 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
         ProgressStepperBuilder::new()
             .add_incremental_step(SetupStep::BinariesCpuMiner, true)
             .add_incremental_step(SetupStep::BinariesMergeMiningProxy, true)
-            .add_step(SetupStep::MMProxy, true)
+            .add_step(SetupStep::MMProxy, false)
             .add_step(SetupStep::InitializeCpuHardware, false)
             .build(
                 app_handle.clone(),
@@ -221,7 +235,24 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
                     })
                     .await?;
 
-                state.mm_proxy_manager.wait_ready().await?;
+                match state.mm_proxy_manager.wait_ready().await {
+                    Ok(_) => {}
+                    Err(error) => {
+                        if !WAS_FALLBACK_TO_POOL_MINING_TRIGGERED.load(std::sync::atomic::Ordering::SeqCst)
+                        {
+                            warn!(target: LOG_TARGET, "MM Proxy failed to start. Falling back to CPU Pool mining. Error: {}", error);
+                            WAS_FALLBACK_TO_POOL_MINING_TRIGGERED
+                                .store(true, std::sync::atomic::Ordering::SeqCst);
+                            // Has to be spawned as we are in the context setup phase
+                            // turn on cpu pool feature will shutdown this phase and restart it
+                            spawn(async move {
+                                SetupManager::get_instance().turn_on_cpu_pool_feature().await.expect("Failed to turn on CPU pool feature");
+                            });
+
+                        }
+                        return Err(error);
+                    }
+                };
                 Ok(())
             })
             .await?;
