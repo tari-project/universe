@@ -10,7 +10,7 @@ export const Wrapper = styled.div`
     background: ${({ theme }) => theme.palette.background.paper};
     padding: 9px 15px;
     gap: 20px;
-    position: relative;
+    width: 100%;
 `;
 export const LabelWrapper = styled.div`
     display: flex;
@@ -29,27 +29,37 @@ export const InputWrapper = styled.div`
 
 export const SelectTrigger = styled.div`
     display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
 `;
-export const SelectList = styled.div`
+
+export const Row = styled.div`
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     border-radius: 10px;
     background: ${({ theme }) => theme.palette.background.paper};
     overflow-y: auto;
     justify-content: center;
+    padding: 8px 6px;
+    gap: 4px;
     box-shadow:
         20px 20px 45px rgba(0, 0, 0, 0.15),
         10px 10px 35px rgba(0, 0, 0, 0.25);
 `;
+export const OptionListWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 2px 4px;
+`;
 
 export const Option = styled.div<{ $active?: boolean; $selected?: boolean }>`
     display: flex;
-    flex: 1 0 auto;
     text-align: center;
-    font-size: 16px;
-    align-items: center;
     justify-content: center;
-    padding: 0 6px;
-    border: 1px solid ${({ theme, $selected }) => ($selected ? theme.palette.divider : 'transparent')};
-    background: ${({ theme, $active }) => ($active ? theme.palette.background.accent : theme.palette.background.paper)};
+    font-size: 16px;
+    background: ${({ theme, $active }) =>
+        $active ? theme.palette.background.default : theme.palette.background.paper};
+    border: 1px solid ${({ theme, $selected }) => ($selected ? theme.palette.background.tooltip : 'transparent')};
 `;

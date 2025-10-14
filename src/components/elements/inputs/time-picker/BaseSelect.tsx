@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import {
     autoUpdate,
     FloatingFocusManager,
@@ -8,118 +8,98 @@ import {
     useDismiss,
     useFloating,
     useInteractions,
-    useListNavigation,
-    useRole,
-    useTypeahead,
 } from '@floating-ui/react';
-import { Option, SelectList, SelectTrigger } from './styles.ts';
+import { InputWrapper, Row, SelectTrigger } from './styles.ts';
+import { OptionList } from '@app/components/elements/inputs/time-picker/OptionList.tsx';
+import { ChevronSVG } from '@app/components/elements/inputs/time-picker/chevron.tsx';
 
-interface BaseSelectProps {
-    options: string[];
+const fmtTimeUnit = (n: number): string => String(n).padStart(2, '0');
+
+const hourOptions = Array.from({ length: 12 }).map((_, i) => fmtTimeUnit(i + 1));
+const minuteOptions = Array.from({ length: 12 }).map((_, i = 1) => fmtTimeUnit(i * 5));
+
+interface TimeParts {
+    hour: string;
+    minute: string;
+    ampm: 'AM' | 'PM';
 }
 
-export const BaseSelect = ({ options }: BaseSelectProps) => {
+const initialTime: TimeParts = {
+    hour: hourOptions[0],
+    minute: minuteOptions[0],
+    ampm: 'AM',
+};
+export const BaseSelect = () => {
     const [isOpen, setIsOpen] = useState(false);
-    const [activeIndex, setActiveIndex] = useState<number | null>(null);
-    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-
+    const [time, setTime] = useState<TimeParts>(initialTime);
     const { refs, floatingStyles, context } = useFloating<HTMLElement>({
         placement: 'bottom-start',
         open: isOpen,
         onOpenChange: setIsOpen,
         whileElementsMounted: autoUpdate,
         middleware: [
-            offset(0),
+            offset({ mainAxis: 5, crossAxis: -10 }),
             size({
                 apply({ elements, availableHeight }) {
                     Object.assign(elements.floating.style, {
                         maxHeight: `${availableHeight}px`,
                     });
                 },
-                padding: 10,
+                padding: 30,
             }),
         ],
     });
 
-    const listRef = useRef<(HTMLElement | null)[]>([]);
-    const listContentRef = useRef(options);
-    const isTypingRef = useRef(false);
     const click = useClick(context, { event: 'mousedown' });
     const dismiss = useDismiss(context);
-    const role = useRole(context, { role: 'listbox' });
-    const listNav = useListNavigation(context, {
-        listRef,
-        activeIndex,
-        selectedIndex,
-        onNavigate: setActiveIndex,
-        loop: true,
-    });
-    const typeahead = useTypeahead(context, {
-        listRef: listContentRef,
-        activeIndex,
-        selectedIndex,
-        onMatch: isOpen ? setActiveIndex : setSelectedIndex,
-        onTypingChange(isTyping) {
-            isTypingRef.current = isTyping;
-        },
-    });
 
-    const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([
-        dismiss,
-        role,
-        listNav,
-        typeahead,
-        click,
-    ]);
+    const { getReferenceProps, getFloatingProps } = useInteractions([dismiss, click]);
 
-    const handleSelect = (index: number) => {
-        setSelectedIndex(index);
-        setIsOpen(false);
-    };
-
-    const selectedItemLabel = selectedIndex !== null ? options[selectedIndex] : undefined;
+    function handleHour(hour: string) {
+        setTime((c) => ({ ...c, hour }));
+    }
+    function handleMinute(minute: string) {
+        setTime((c) => ({ ...c, minute }));
+    }
+    function handleAMPM(val: string) {
+        if (val === 'AM' || val === 'PM') {
+            const ampm = val as 'AM' | 'PM';
+            setTime((c) => ({ ...c, ampm }));
+        }
+    }
 
     return (
-        <>
+        <InputWrapper>
             <SelectTrigger tabIndex={0} ref={refs.setReference} aria-autocomplete="none" {...getReferenceProps()}>
-                {selectedItemLabel || '11'}
+                {`${time.hour}:${time.minute} ${time.ampm}`} <ChevronSVG />
             </SelectTrigger>
             {isOpen && (
-                <FloatingFocusManager context={context} modal={false}>
-                    <SelectList ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
-                        {options.map((value, i) => (
-                            <Option
-                                key={value}
-                                ref={(node) => {
-                                    listRef.current[i] = node;
-                                }}
-                                role="option"
-                                tabIndex={i === activeIndex ? 0 : -1}
-                                aria-selected={i === selectedIndex && i === activeIndex}
-                                $active={i === activeIndex}
-                                $selected={i === selectedIndex}
-                                {...getItemProps({
-                                    onClick() {
-                                        handleSelect(i);
-                                    },
-                                    onKeyDown(e) {
-                                        if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            handleSelect(i);
-                                        }
-                                        if (e.key === ' ' && !isTypingRef.current) {
-                                            e.preventDefault();
-                                            handleSelect(i);
-                                        }
-                                    },
-                                })}
-                            >
-                                {value}
-                            </Option>
-                        ))}
-                    </SelectList>
+                <FloatingFocusManager context={context} initialFocus={-1}>
+                    <Row ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
+                        <OptionList
+                            initialIndex={0}
+                            tabIndex={0}
+                            options={hourOptions}
+                            context={context}
+                            onSelected={handleHour}
+                        />
+                        <OptionList
+                            initialIndex={0}
+                            tabIndex={hourOptions.length}
+                            options={minuteOptions}
+                            context={context}
+                            onSelected={handleMinute}
+                        />
+                        <OptionList
+                            initialIndex={0}
+                            tabIndex={hourOptions.length + minuteOptions.length}
+                            options={['AM', 'PM']}
+                            context={context}
+                            onSelected={handleAMPM}
+                        />
+                    </Row>
                 </FloatingFocusManager>
             )}
-        </>
+        </InputWrapper>
     );
 };
