@@ -50,8 +50,8 @@ export const Row = styled.div`
 export const OptionListWrapper = styled.div`
     display: flex;
     flex-direction: column;
+    width: 100%;
     overflow-y: auto;
-    padding: 2px 4px;
 `;
 
 export const Option = styled.div<{ $active?: boolean; $selected?: boolean }>`
@@ -59,7 +59,7 @@ export const Option = styled.div<{ $active?: boolean; $selected?: boolean }>`
     text-align: center;
     justify-content: center;
     font-size: 16px;
-    background: ${({ theme, $active }) =>
-        $active ? theme.palette.background.default : theme.palette.background.paper};
-    border: 1px solid ${({ theme, $selected }) => ($selected ? theme.palette.background.tooltip : 'transparent')};
+    padding: 2px 4px;
+    border: 1px solid ${({ theme, $selected }) => ($selected ? theme.colors.teal[400] : 'transparent')};
+    background: ${({ theme, $active }) => ($active ? theme.colors.teal[100] : theme.palette.background.paper)};
 `;

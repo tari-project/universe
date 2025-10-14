@@ -1,77 +1,72 @@
-import { useRef, useState } from 'react';
-import {
-    useClick,
-    useDismiss,
-    UseFloatingReturn,
-    useInteractions,
-    useListNavigation,
-    useRole,
-} from '@floating-ui/react';
+import { useEffect, useRef, useState } from 'react';
+import { useClick, UseFloatingReturn, useInteractions, useListNavigation } from '@floating-ui/react';
 import { Option, OptionListWrapper } from './styles.ts';
 
 interface OptionListProps {
+    id: string;
     options: string[];
     context: UseFloatingReturn['context'];
     onSelected: (value: string | 'AM' | 'PM') => void;
-    tabIndex: number;
-    initialIndex: number | null;
+    initialIndex: number;
 }
-export const OptionList = ({ options, context, onSelected, tabIndex, initialIndex }: OptionListProps) => {
-    const [activeIndex, setActiveIndex] = useState<number | null>(initialIndex);
-    const [selectedIndex, setSelectedIndex] = useState<number | null>(initialIndex);
+export const OptionList = ({ id, options, context, onSelected, initialIndex }: OptionListProps) => {
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
     const listRef = useRef<(HTMLElement | null)[]>([]);
-
-    const click = useClick(context, { event: 'mousedown' });
-    const dismiss = useDismiss(context);
-    const role = useRole(context, { role: 'listbox' });
+    const click = useClick(context);
     const listNav = useListNavigation(context, {
         listRef,
         activeIndex,
         selectedIndex,
-        onNavigate: setActiveIndex,
+        onNavigate: (i) => {
+            setActiveIndex(i);
+        },
         loop: true,
+        focusItemOnOpen: true,
+        nested: true,
     });
 
-    const { getItemProps } = useInteractions([dismiss, role, listNav, click]);
+    const { getItemProps } = useInteractions([listNav, click]);
 
     const handleSelect = (index: number) => {
-        onSelected(options[index]);
         setSelectedIndex(index);
+        onSelected(options[index]);
     };
 
+    useEffect(() => {
+        setSelectedIndex(initialIndex);
+    }, [initialIndex]);
+
     return (
-        <OptionListWrapper>
-            {options.map((value, i) => (
-                <Option
-                    key={value}
-                    ref={(node) => {
-                        listRef.current[i] = node;
-                    }}
-                    role="option"
-                    tabIndex={i === activeIndex ? tabIndex : -1}
-                    aria-selected={i === selectedIndex}
-                    $selected={i === selectedIndex}
-                    $active={i === activeIndex}
-                    {...getItemProps({
-                        onClick() {
-                            handleSelect(i);
-                        },
-                        onKeyDown(e) {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
+        <OptionListWrapper id={id}>
+            {options.map((value, i) => {
+                const isActive = i === activeIndex;
+                const isSelected = i === selectedIndex;
+                return (
+                    <Option
+                        key={`${id}_${value}`}
+                        ref={(node) => {
+                            listRef.current[i] = node;
+                        }}
+                        role="option"
+                        tabIndex={isActive ? 0 : -1}
+                        // aria-selected={isSelected}
+                        $selected={isSelected}
+                        $active={isActive}
+                        onClick={() => handleSelect(i)}
+                        {...getItemProps({
+                            onClick() {
                                 handleSelect(i);
-                            }
-                            if (e.key === ' ') {
-                                e.preventDefault();
-                                handleSelect(i);
-                            }
-                        },
-                    })}
-                >
-                    {value}
-                </Option>
-            ))}
+                            },
+                            active: isActive,
+                            selected: isSelected,
+                        })}
+                    >
+                        {value}
+                    </Option>
+                );
+            })}
         </OptionListWrapper>
     );
 };

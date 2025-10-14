@@ -8,6 +8,7 @@ import {
     useDismiss,
     useFloating,
     useInteractions,
+    useRole,
 } from '@floating-ui/react';
 import { InputWrapper, Row, SelectTrigger } from './styles.ts';
 import { OptionList } from '@app/components/elements/inputs/time-picker/OptionList.tsx';
@@ -16,7 +17,7 @@ import { ChevronSVG } from '@app/components/elements/inputs/time-picker/chevron.
 const fmtTimeUnit = (n: number): string => String(n).padStart(2, '0');
 
 const hourOptions = Array.from({ length: 12 }).map((_, i) => fmtTimeUnit(i + 1));
-const minuteOptions = Array.from({ length: 12 }).map((_, i = 1) => fmtTimeUnit(i * 5));
+const minuteOptions = Array.from({ length: 12 }).map((_, i) => fmtTimeUnit(i * 5));
 
 interface TimeParts {
     hour: string;
@@ -50,10 +51,11 @@ export const BaseSelect = () => {
         ],
     });
 
-    const click = useClick(context, { event: 'mousedown' });
+    const click = useClick(context);
     const dismiss = useDismiss(context);
+    const role = useRole(context, { role: 'listbox' });
 
-    const { getReferenceProps, getFloatingProps } = useInteractions([dismiss, click]);
+    const { getReferenceProps, getFloatingProps } = useInteractions([dismiss, click, role]);
 
     function handleHour(hour: string) {
         setTime((c) => ({ ...c, hour }));
@@ -70,29 +72,29 @@ export const BaseSelect = () => {
 
     return (
         <InputWrapper>
-            <SelectTrigger tabIndex={0} ref={refs.setReference} aria-autocomplete="none" {...getReferenceProps()}>
+            <SelectTrigger tabIndex={0} ref={refs.setReference} {...getReferenceProps()}>
                 {`${time.hour}:${time.minute} ${time.ampm}`} <ChevronSVG />
             </SelectTrigger>
             {isOpen && (
                 <FloatingFocusManager context={context} initialFocus={-1}>
                     <Row ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
                         <OptionList
-                            initialIndex={0}
-                            tabIndex={0}
+                            id="hours"
+                            initialIndex={hourOptions.indexOf(time.hour)}
                             options={hourOptions}
                             context={context}
                             onSelected={handleHour}
                         />
                         <OptionList
-                            initialIndex={0}
-                            tabIndex={hourOptions.length}
+                            id="minutes"
+                            initialIndex={minuteOptions.indexOf(time.minute)}
                             options={minuteOptions}
                             context={context}
                             onSelected={handleMinute}
                         />
                         <OptionList
-                            initialIndex={0}
-                            tabIndex={hourOptions.length + minuteOptions.length}
+                            id="AM_PM"
+                            initialIndex={['AM', 'PM'].indexOf(time.ampm)}
                             options={['AM', 'PM']}
                             context={context}
                             onSelected={handleAMPM}
