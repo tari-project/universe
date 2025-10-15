@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { offset, useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
 
@@ -15,6 +15,7 @@ import { pauseMining, setResumeDuration } from '@app/store/actions/miningStoreAc
 interface MiningButtonPauseProps {
     isMining: boolean;
     isMiningButtonDisabled?: boolean;
+    children: ReactNode;
 }
 
 const container = {
@@ -26,14 +27,13 @@ const container = {
         },
     },
 };
-
 const item = {
     hidden: { opacity: 0, y: -4 },
     show: { opacity: 1, y: 0 },
 };
-
 const env = import.meta.env.MODE;
-export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: MiningButtonPauseProps) {
+
+export default function MiningButtonPause({ children, isMining, isMiningButtonDisabled }: MiningButtonPauseProps) {
     const [showPauseOptions, setShowPauseOptions] = useState(false);
     const { refs, floatingStyles, context } = useFloating({
         open: showPauseOptions,
@@ -78,6 +78,12 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
         );
     }
 
+    useEffect(() => {
+        if (!isMining) {
+            setShowPauseOptions(false);
+        }
+    }, [isMining]);
+
     return (
         <>
             <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
@@ -87,7 +93,9 @@ export default function MiningButtonPause({ isMining, isMiningButtonDisabled }: 
                     disabled={isMiningButtonDisabled}
                     icon={<PauseIcon />}
                     isMining={isMining}
-                />
+                >
+                    {children}
+                </MiningButton>
             </TriggerWrapper>
             <AnimatePresence>
                 {showPauseOptions && (

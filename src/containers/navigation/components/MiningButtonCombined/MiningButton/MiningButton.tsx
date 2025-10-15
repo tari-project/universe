@@ -3,7 +3,6 @@ import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useConfigMiningStore } from '@app/store';
 import TimerChip from './components/pause/TimerChip.tsx';
-import ModeController from './components/ModeController.tsx';
 import AnimatedBackground from './components/AnimatedBackground/AnimatedBackground';
 import { DropdownWrapper, HitBox, ButtonWrapper, Text, IconWrapper, Shadow, TextWrapper } from './styles';
 
@@ -14,14 +13,23 @@ interface Props {
     icon: ReactNode;
     isMining: boolean;
     resumeTime?: { displayString?: string; fullTimeString?: string };
+    children: ReactNode;
 }
 
-export default function MiningButton({ onClick, buttonText, icon, isMining, disabled = false, resumeTime }: Props) {
+export default function MiningButton({
+    children,
+    onClick,
+    buttonText,
+    icon,
+    isMining,
+    disabled = false,
+    resumeTime,
+}: Props) {
     const { t } = useTranslation('mining-view');
     const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
 
     const hasChip = !!resumeTime?.displayString;
-
+    console.log(`isMining= `, isMining);
     return (
         <ButtonWrapper
             initial={{ opacity: 0 }}
@@ -41,13 +49,11 @@ export default function MiningButton({ onClick, buttonText, icon, isMining, disa
                     {hasChip && <TimerChip resumeTime={resumeTime} />}
                 </TextWrapper>
             </HitBox>
-            <DropdownWrapper>
-                <ModeController />
-            </DropdownWrapper>
+            <DropdownWrapper>{children}</DropdownWrapper>
             <AnimatePresence>
                 {!isMining && <Shadow initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />}
             </AnimatePresence>
-            <AnimatePresence>{isMining && <AnimatedBackground />}</AnimatePresence>
+            <AnimatePresence>{isMining ? <AnimatedBackground /> : null}</AnimatePresence>
         </ButtonWrapper>
     );
 }
