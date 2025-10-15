@@ -20,13 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{collections::HashMap, sync::Arc, time::Instant};
+use std::{collections::HashMap, sync::Arc};
 
 use log::{debug, info, warn};
 use tari_common_types::tari_address::TariAddress;
 use tokio::{
     sync::{mpsc, RwLock},
-    time::{interval, Duration},
+    time::{interval, Duration, Instant},
 };
 
 use crate::{
@@ -92,7 +92,7 @@ pub struct PoolManager {
     cached_mining_address: Option<String>,
     pool_stats: Arc<RwLock<HashMap<String, PoolStatus>>>,
     // Task tracking for periodic status updates
-    is_task_running: bool,
+    task_thread: Option<tokio::task::JoinHandle<()>>,
     is_mining_active: bool,
     task_tracker: Arc<TaskTrackerUtil>,
     // Communication channels
@@ -111,7 +111,7 @@ impl PoolManager {
             pool_adapter,
             cached_mining_address: None,
             pool_stats: Arc::new(RwLock::new(HashMap::new())),
-            is_task_running: false,
+            task_thread: None,
             is_mining_active: true,
             task_sender: None,
             task_tracker,
@@ -237,17 +237,24 @@ impl PoolManager {
             }
         }
         self.task_sender = None;
-        self.is_task_running = false;
+
+        if let Some(handle) = self.task_thread.take() {
+            let _ = handle.abort(); // Abort the task if still running
+            info!(target: LOG_TARGET, "Stopped periodic pool status update task");
+        }
     }
 
     pub async fn spawn_periodic_pool_status_update_task(&mut self) {
         // Check if task is already running
-        if self.is_task_running {
+        if self
+            .task_thread
+            .as_ref()
+            .is_some_and(|handle| !handle.is_finished())
+        {
             debug!(target: LOG_TARGET, "Periodic pool status update task is already running");
             self.toggle_mining_active(true).await; // Ensure mining active status is updated
             return;
         }
-        self.is_task_running = true;
 
         info!(target: LOG_TARGET, "Starting periodic pool status update task");
 
@@ -258,6 +265,7 @@ impl PoolManager {
 
             // Store senders/receivers in the struct
             self.task_sender = Some(task_sender);
+            self.is_mining_active = true; // We can get here only when mining is started so we ensure the state is correct
 
             // Create the task state with current values
             let mut task_state = TaskState::new(
@@ -271,12 +279,13 @@ impl PoolManager {
             let mut shutdown_signal = self.task_tracker.get_signal().await;
             let task_tracker = self.task_tracker.get_task_tracker().await;
 
-            task_tracker.spawn(async move {
+            self.task_thread = Some(task_tracker.spawn(async move {
             let mut mining_interval = interval(Duration::from_secs(60)); // Active mining: 60 seconds
             mining_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
             let mut non_mining_interval = interval(Duration::from_secs(300)); // Not mining: 300 seconds
             non_mining_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
-            let mut stop_task_at = None::<Instant>;
+            let mut stop_task_at = None::<Duration>;
+            let mut last_non_mining_tick: Option<Instant> = None;
 
             loop {
                 tokio::select! {
@@ -301,7 +310,7 @@ impl PoolManager {
                                 }else {
                                     // If not mining, set the stop time if not already set
                                     if stop_task_at.is_none() {
-                                        stop_task_at = Some(Instant::now() + Duration::from_secs(3600)); // 1 hour
+                                        stop_task_at = Some(Duration::from_secs(3600)); // 1 hour
                                     }
                                 }
                             }
@@ -327,7 +336,14 @@ impl PoolManager {
                     non_mining_interval_duration = non_mining_interval.tick() => {
                         if !task_state.is_mining_active {
                             // Not mining: 300 seconds
-                            task_state.tracking_duration += Duration::from_secs(non_mining_interval_duration.elapsed().as_secs());
+                            if let Some(last_tick) = last_non_mining_tick {
+                                let test = non_mining_interval_duration.checked_duration_since(last_tick);
+                                if let Some(elapsed) = test {
+                                    task_state.tracking_duration += elapsed;
+                                    debug!(target: LOG_TARGET, "Task: Non-mining interval elapsed: {:?}", elapsed);
+                                }
+                            }
+                            last_non_mining_tick = Some(non_mining_interval_duration);
                             Self::periodic_update_logic_static(&mut task_state).await;
                         }
                     }
@@ -336,7 +352,7 @@ impl PoolManager {
 
                 // Check if we should stop the task (1 hour after mining stopped)
                 if let Some(stop_at) = stop_task_at {
-                    if task_state.tracking_duration >= Duration::from_secs(stop_at.elapsed().as_secs()) {
+                    if task_state.tracking_duration > stop_at {
                         info!(target: LOG_TARGET, "Stopping periodic pool status update task - 1 hour grace period expired");
                         break;
                     }
@@ -344,7 +360,7 @@ impl PoolManager {
             }
 
             info!(target: LOG_TARGET, "Periodic pool status update task finished");
-        });
+        }));
         }
     }
 
