@@ -48,13 +48,14 @@ export const SelectWrapper = styled.div`
 export const Row = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
-    gap: 4px;
     width: 100%;
+    gap: 2px;
 `;
 export const OptionListWrapper = styled.div`
     display: flex;
     flex-direction: column;
     width: 100%;
+    padding: 2px;
     overflow-y: auto;
 `;
 
@@ -65,6 +66,10 @@ export const StyledOption = styled.div<{ $active?: boolean; $selected?: boolean 
     font-size: 16px;
     padding: 2px 4px;
     border-radius: 4px;
-    border: 1px solid ${({ theme, $selected }) => ($selected ? theme.colors.teal[400] : 'transparent')};
+    border-width: 2px;
+    border-style: solid;
+    border-color: ${({ theme, $selected }) => ($selected ? theme.colors.teal[200] : 'transparent')};
     background: ${({ theme, $active }) => ($active ? theme.colors.teal[100] : theme.palette.background.paper)};
+    cursor: pointer;
+    transition: border-color ease-in-out 0.15s background ease-in-out 0.12s;
 `;

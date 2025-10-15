@@ -9,7 +9,6 @@ import {
     useClick,
     useDismiss,
     useFloating,
-    useHover,
     useInteractions,
     useRole,
 } from '@floating-ui/react';
@@ -41,7 +40,7 @@ export const BaseSelect = () => {
     const [minute, setMinute] = useState<TimeParts['minute']>(initialTime.minute);
     const [AMPM, setAMPM] = useState<TimeParts['ampm']>(initialTime.ampm);
 
-    const [activeIndex, setActiveIndex] = useState(24);
+    const [activeIndex, setActiveIndex] = useState(0);
 
     const { refs, floatingStyles, context } = useFloating<HTMLElement>({
         placement: 'bottom-start',
@@ -85,10 +84,6 @@ export const BaseSelect = () => {
         setTime({ hour, minute, ampm: AMPM });
     }, [hour, minute, AMPM]);
 
-    function handleNav(i) {
-        setActiveIndex(i);
-    }
-
     return (
         <InputWrapper>
             <SelectTrigger tabIndex={0} ref={refs.setReference} {...getReferenceProps()}>
@@ -98,7 +93,8 @@ export const BaseSelect = () => {
                 <FloatingFocusManager context={context}>
                     <SelectWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
                         <Composite
-                            onNavigate={handleNav}
+                            dense
+                            onNavigate={setActiveIndex}
                             activeIndex={activeIndex}
                             render={(htmlProps) => <Row {...htmlProps} role="grid" />}
                         >
@@ -115,6 +111,13 @@ export const BaseSelect = () => {
                                                     role="option"
                                                     $selected={selected}
                                                     $active={activeIndex === i}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleSelect('h', value);
+                                                        }
+                                                    }}
                                                     onClick={() => handleSelect('h', value)}
                                                 >
                                                     {value}
@@ -138,6 +141,13 @@ export const BaseSelect = () => {
                                                     role="option"
                                                     $selected={selected}
                                                     $active={activeIndex === i}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleSelect('m', value);
+                                                        }
+                                                    }}
                                                     onClick={() => handleSelect('m', value)}
                                                 >
                                                     {value}
@@ -161,6 +171,13 @@ export const BaseSelect = () => {
                                                     role="option"
                                                     $selected={selected}
                                                     $active={activeIndex === i}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleSelect('ap', value);
+                                                        }
+                                                    }}
                                                     onClick={() => handleSelect('ap', value)}
                                                 >
                                                     {value}
