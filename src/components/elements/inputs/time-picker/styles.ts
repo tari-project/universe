@@ -39,9 +39,9 @@ export const Row = styled.div`
     flex-direction: row;
     border-radius: 10px;
     background: ${({ theme }) => theme.palette.background.paper};
-    overflow-y: auto;
     justify-content: center;
     padding: 8px 6px;
+    overflow: hidden;
     gap: 4px;
     box-shadow:
         20px 20px 45px rgba(0, 0, 0, 0.15),
@@ -54,7 +54,7 @@ export const OptionListWrapper = styled.div`
     overflow-y: auto;
 `;
 
-export const Option = styled.div<{ $active?: boolean; $selected?: boolean }>`
+export const StyledOption = styled.div<{ $active?: boolean; $selected?: boolean }>`
     display: flex;
     text-align: center;
     justify-content: center;
