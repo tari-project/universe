@@ -34,18 +34,22 @@ export const SelectTrigger = styled.div`
     width: 100%;
 `;
 
-export const Row = styled.div`
+export const SelectWrapper = styled.div`
     display: flex;
-    flex-direction: row;
     border-radius: 10px;
     background: ${({ theme }) => theme.palette.background.paper};
-    justify-content: center;
     padding: 8px 6px;
     overflow: hidden;
-    gap: 4px;
     box-shadow:
         20px 20px 45px rgba(0, 0, 0, 0.15),
         10px 10px 35px rgba(0, 0, 0, 0.25);
+`;
+
+export const Row = styled.div`
+    display: grid;
+    flex-direction: row;
+    gap: 4px;
+    width: 100%;
 `;
 export const OptionListWrapper = styled.div`
     display: flex;
