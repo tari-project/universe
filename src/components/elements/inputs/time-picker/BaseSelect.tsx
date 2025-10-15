@@ -9,6 +9,7 @@ import {
     useClick,
     useDismiss,
     useFloating,
+    useHover,
     useInteractions,
     useRole,
 } from '@floating-ui/react';
@@ -34,13 +35,13 @@ const initialTime: TimeParts = {
 };
 
 export const BaseSelect = () => {
-    const [isOpen, setIsOpen] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
     const [time, setTime] = useState<TimeParts>(initialTime);
     const [hour, setHour] = useState<TimeParts['hour']>(initialTime.hour);
     const [minute, setMinute] = useState<TimeParts['minute']>(initialTime.minute);
     const [AMPM, setAMPM] = useState<TimeParts['ampm']>(initialTime.ampm);
 
-    const [activeIndex, setActiveIndex] = useState(0);
+    const [activeIndex, setActiveIndex] = useState(24);
 
     const { refs, floatingStyles, context } = useFloating<HTMLElement>({
         placement: 'bottom-start',
@@ -62,7 +63,7 @@ export const BaseSelect = () => {
 
     const click = useClick(context);
     const dismiss = useDismiss(context);
-    const role = useRole(context, { role: 'listbox' });
+    const role = useRole(context, { role: 'grid' });
 
     const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([dismiss, click, role]);
 
@@ -84,6 +85,10 @@ export const BaseSelect = () => {
         setTime({ hour, minute, ampm: AMPM });
     }, [hour, minute, AMPM]);
 
+    function handleNav(i) {
+        setActiveIndex(i);
+    }
+
     return (
         <InputWrapper>
             <SelectTrigger tabIndex={0} ref={refs.setReference} {...getReferenceProps()}>
@@ -93,93 +98,78 @@ export const BaseSelect = () => {
                 <FloatingFocusManager context={context}>
                     <SelectWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
                         <Composite
-                            cols={3}
-                            orientation="vertical"
-                            onNavigate={setActiveIndex}
+                            onNavigate={handleNav}
                             activeIndex={activeIndex}
-                            itemSizes={[
-                                { width: 1, height: 12 },
-                                { width: 1, height: 12 },
-                                { width: 1, height: 2 },
-                            ]}
-                            render={<Row />}
+                            render={(htmlProps) => <Row {...htmlProps} role="grid" />}
                         >
-                            <CompositeItem
-                                render={(htmlProps) => (
-                                    <OptionListWrapper {...htmlProps}>
-                                        {hourOptions.map((value, i) => {
-                                            const selected = hour === hourOptions[i];
-                                            return (
+                            <OptionListWrapper>
+                                {hourOptions.map((value, i) => {
+                                    const selected = hour === hourOptions[i];
+                                    return (
+                                        <CompositeItem
+                                            key={`hours_${value}`}
+                                            render={(htmlProps) => (
                                                 <StyledOption
-                                                    key={`hours_${value}`}
+                                                    {...htmlProps}
+                                                    {...getItemProps()}
                                                     role="option"
-                                                    tabIndex={activeIndex === i ? 0 : -1}
-                                                    aria-selected={selected}
                                                     $selected={selected}
                                                     $active={activeIndex === i}
-                                                    {...getItemProps({
-                                                        onClick: () => handleSelect('h', value),
-                                                    })}
+                                                    onClick={() => handleSelect('h', value)}
                                                 >
                                                     {value}
                                                 </StyledOption>
-                                            );
-                                        })}
-                                    </OptionListWrapper>
-                                )}
-                            />
-
-                            <CompositeItem
-                                render={(htmlProps) => (
-                                    <OptionListWrapper {...htmlProps}>
-                                        {minuteOptions.map((value, _i) => {
-                                            const i = _i + 12;
-                                            const selected = minute === minuteOptions[_i];
-                                            return (
+                                            )}
+                                        />
+                                    );
+                                })}
+                            </OptionListWrapper>
+                            <OptionListWrapper>
+                                {minuteOptions.map((value, _i) => {
+                                    const i = _i + 12;
+                                    const selected = minute === minuteOptions[_i];
+                                    return (
+                                        <CompositeItem
+                                            key={`min_${value}`}
+                                            render={(htmlProps) => (
                                                 <StyledOption
-                                                    key={`min_${value}`}
+                                                    {...htmlProps}
+                                                    {...getItemProps()}
                                                     role="option"
-                                                    tabIndex={activeIndex === i ? 0 : -1}
-                                                    aria-selected={selected}
                                                     $selected={selected}
                                                     $active={activeIndex === i}
-                                                    {...getItemProps({
-                                                        onClick: () => handleSelect('m', value),
-                                                    })}
+                                                    onClick={() => handleSelect('m', value)}
                                                 >
                                                     {value}
                                                 </StyledOption>
-                                            );
-                                        })}
-                                    </OptionListWrapper>
-                                )}
-                            />
-
-                            <CompositeItem
-                                render={(htmlProps) => (
-                                    <OptionListWrapper {...htmlProps}>
-                                        {ampm.map((value, _i) => {
-                                            const i = _i + 24;
-                                            const selected = AMPM === ampm[_i];
-                                            return (
+                                            )}
+                                        />
+                                    );
+                                })}
+                            </OptionListWrapper>
+                            <OptionListWrapper>
+                                {ampm.map((value, _i) => {
+                                    const i = _i + 24;
+                                    const selected = AMPM === ampm[_i];
+                                    return (
+                                        <CompositeItem
+                                            key={`am_${value}`}
+                                            render={(htmlProps) => (
                                                 <StyledOption
-                                                    key={`am_${value}`}
+                                                    {...htmlProps}
+                                                    {...getItemProps()}
                                                     role="option"
-                                                    tabIndex={activeIndex === i ? 0 : -1}
-                                                    aria-selected={selected}
                                                     $selected={selected}
                                                     $active={activeIndex === i}
-                                                    {...getItemProps({
-                                                        onClick: () => handleSelect('ap', value),
-                                                    })}
+                                                    onClick={() => handleSelect('ap', value)}
                                                 >
                                                     {value}
                                                 </StyledOption>
-                                            );
-                                        })}
-                                    </OptionListWrapper>
-                                )}
-                            />
+                                            )}
+                                        />
+                                    );
+                                })}
+                            </OptionListWrapper>
                         </Composite>
                     </SelectWrapper>
                 </FloatingFocusManager>

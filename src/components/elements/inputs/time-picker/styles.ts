@@ -47,7 +47,7 @@ export const SelectWrapper = styled.div`
 
 export const Row = styled.div`
     display: grid;
-    flex-direction: row;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 4px;
     width: 100%;
 `;
@@ -64,6 +64,7 @@ export const StyledOption = styled.div<{ $active?: boolean; $selected?: boolean 
     justify-content: center;
     font-size: 16px;
     padding: 2px 4px;
+    border-radius: 4px;
     border: 1px solid ${({ theme, $selected }) => ($selected ? theme.colors.teal[400] : 'transparent')};
     background: ${({ theme, $active }) => ($active ? theme.colors.teal[100] : theme.palette.background.paper)};
 `;
