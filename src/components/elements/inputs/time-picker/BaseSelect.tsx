@@ -1,17 +1,19 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
     autoUpdate,
     FloatingFocusManager,
+    FloatingList,
     offset,
     size,
     useClick,
     useDismiss,
     useFloating,
     useInteractions,
+    useListNavigation,
     useRole,
 } from '@floating-ui/react';
-import { InputWrapper, Row, SelectTrigger } from './styles.ts';
-import { OptionList } from '@app/components/elements/inputs/time-picker/OptionList.tsx';
+import { InputWrapper, Option, OptionListWrapper, Row, SelectTrigger } from './styles.ts';
+
 import { ChevronSVG } from '@app/components/elements/inputs/time-picker/chevron.tsx';
 
 const fmtTimeUnit = (n: number): string => String(n).padStart(2, '0');
@@ -24,15 +26,21 @@ interface TimeParts {
     minute: string;
     ampm: 'AM' | 'PM';
 }
-
 const initialTime: TimeParts = {
     hour: hourOptions[0],
     minute: minuteOptions[0],
     ampm: 'AM',
 };
+
 export const BaseSelect = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [time, setTime] = useState<TimeParts>(initialTime);
+
+    const [activeIndex, setActiveIndex] = useState<number | null>(null);
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+    const listRef = useRef<(HTMLElement | null)[]>([]);
+
     const { refs, floatingStyles, context } = useFloating<HTMLElement>({
         placement: 'bottom-start',
         open: isOpen,
@@ -46,7 +54,7 @@ export const BaseSelect = () => {
                         maxHeight: `${availableHeight}px`,
                     });
                 },
-                padding: 30,
+                padding: 10,
             }),
         ],
     });
@@ -55,20 +63,18 @@ export const BaseSelect = () => {
     const dismiss = useDismiss(context);
     const role = useRole(context, { role: 'listbox' });
 
-    const { getReferenceProps, getFloatingProps } = useInteractions([dismiss, click, role]);
+    const listNav = useListNavigation(context, {
+        listRef,
+        activeIndex,
+        selectedIndex,
+        onNavigate: setActiveIndex,
+    });
 
-    function handleHour(hour: string) {
-        setTime((c) => ({ ...c, hour }));
-    }
-    function handleMinute(minute: string) {
-        setTime((c) => ({ ...c, minute }));
-    }
-    function handleAMPM(val: string) {
-        if (val === 'AM' || val === 'PM') {
-            const ampm = val as 'AM' | 'PM';
-            setTime((c) => ({ ...c, ampm }));
-        }
-    }
+    const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([dismiss, click, role, listNav]);
+
+    const handleSelect = (index: number) => {
+        setSelectedIndex(index);
+    };
 
     return (
         <InputWrapper>
@@ -78,27 +84,38 @@ export const BaseSelect = () => {
             {isOpen && (
                 <FloatingFocusManager context={context} initialFocus={-1}>
                     <Row ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
-                        <OptionList
-                            id="hours"
-                            initialIndex={hourOptions.indexOf(time.hour)}
-                            options={hourOptions}
-                            context={context}
-                            onSelected={handleHour}
-                        />
-                        <OptionList
-                            id="minutes"
-                            initialIndex={minuteOptions.indexOf(time.minute)}
-                            options={minuteOptions}
-                            context={context}
-                            onSelected={handleMinute}
-                        />
-                        <OptionList
-                            id="AM_PM"
-                            initialIndex={['AM', 'PM'].indexOf(time.ampm)}
-                            options={['AM', 'PM']}
-                            context={context}
-                            onSelected={handleAMPM}
-                        />
+                        <OptionListWrapper>
+                            <FloatingList elementsRef={listRef}>
+                                {hourOptions.map((value, i) => {
+                                    const isActive = i === activeIndex;
+                                    const isSelected = i === selectedIndex;
+                                    return (
+                                        <Option
+                                            key={`hours_${value}`}
+                                            ref={(node) => {
+                                                listRef.current[i] = node;
+                                            }}
+                                            role="option"
+                                            tabIndex={isActive ? 0 : -1}
+                                            aria-selected={isSelected}
+                                            $selected={isSelected}
+                                            $active={isActive}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    handleSelect(i);
+                                                }
+                                            }}
+                                            {...getItemProps({
+                                                onClick: () => handleSelect(i),
+                                            })}
+                                        >
+                                            {value}
+                                        </Option>
+                                    );
+                                })}
+                            </FloatingList>
+                        </OptionListWrapper>
                     </Row>
                 </FloatingFocusManager>
             )}

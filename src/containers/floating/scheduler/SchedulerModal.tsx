@@ -9,7 +9,7 @@ export default function SchedulerModal() {
         setShowScheduler(false);
     }
     return (
-        <Dialog open={showScheduler} onOpenChange={setShowScheduler}>
+        <Dialog open={true} onOpenChange={setShowScheduler}>
             <DialogContent variant="transparent" closeButton={<CloseButton onClick={onClose} />}>
                 <Scheduler />
             </DialogContent>

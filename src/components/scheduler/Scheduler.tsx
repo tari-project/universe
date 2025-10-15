@@ -12,7 +12,7 @@ export default function Scheduler() {
             <Text variant="p">{`Set specific times to automatically start mining. Your miner must stay open for schedules to run. If you close Tari Universe while a schedule is active, it will minimize to your system tray instead.`}</Text>
             <FormWrapper>
                 <TimePicker label={`Daily Start Time`} />
-                <TimePicker label={`Daily End Time`} />
+                {/*<TimePicker label={`Daily End Time`} />*/}
                 {/*<ModeDropdown />*/}
             </FormWrapper>
             <Button variant="black" size="xlarge" fluid>{`Save schedule`}</Button>
