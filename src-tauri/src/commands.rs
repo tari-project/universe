@@ -1406,13 +1406,17 @@ pub async fn switch_gpu_miner(gpu_miner_type: GpuMinerType) -> Result<(), String
 pub async fn toggle_cpu_pool_mining(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
 
-    ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, enabled)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    SetupManager::get_instance()
-        .restart_phases(vec![SetupPhase::CpuMining])
-        .await;
+    if enabled {
+        SetupManager::get_instance()
+            .turn_on_cpu_pool_feature()
+            .await
+            .map_err(|e| e.to_string())?;
+    } else {
+        SetupManager::get_instance()
+            .turn_off_cpu_pool_feature()
+            .await
+            .map_err(|e| e.to_string())?;
+    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "toggle_cpu_pool_mining took too long: {:?}", timer.elapsed());
@@ -1425,9 +1429,17 @@ pub async fn toggle_cpu_pool_mining(enabled: bool) -> Result<(), String> {
 pub async fn toggle_gpu_pool_mining(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
 
-    ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, enabled)
-        .await
-        .map_err(|e| e.to_string())?;
+    if enabled {
+        SetupManager::get_instance()
+            .turn_on_gpu_pool_feature()
+            .await
+            .map_err(|e| e.to_string())?;
+    } else {
+        SetupManager::get_instance()
+            .turn_off_gpu_pool_feature()
+            .await
+            .map_err(|e| e.to_string())?;
+    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "toggle_gpu_pool_mining took too long: {:?}", timer.elapsed());

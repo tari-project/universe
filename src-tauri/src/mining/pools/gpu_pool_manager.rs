@@ -113,9 +113,9 @@ impl GpuPoolManager {
         }
 
         if !*ConfigPools::content().await.gpu_pool_enabled() {
-            let _unused =
-                ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, true).await;
-            EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+            SetupManager::get_instance()
+                .turn_on_gpu_pool_feature()
+                .await;
         }
 
         if miner.is_pool_supported(&current_pool_content.pool_type) {

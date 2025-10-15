@@ -48,7 +48,7 @@ use crate::setup::{
     phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
     phase_wallet::WalletSetupPhase,
 };
-use crate::systemtray_manager::SystemTrayManager;
+use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
 use crate::utils::platform_utils::PlatformUtils;
 use crate::{
     configs::{
@@ -813,6 +813,15 @@ impl SetupManager {
 
         // Updates the config to disable GPU Pool feature in next resolve_setup_features call
         ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, false).await?;
+        // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
+        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+
+        Ok(())
+    }
+
+    pub async fn turn_on_gpu_pool_feature(&self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Turning on GPU Pool feature");
+        ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, true).await?;
         // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
         EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
 
