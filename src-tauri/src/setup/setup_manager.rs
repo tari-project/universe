@@ -48,7 +48,7 @@ use crate::setup::{
     phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
     phase_wallet::WalletSetupPhase,
 };
-use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
+use crate::systemtray_manager::SystemTrayManager;
 use crate::utils::platform_utils::PlatformUtils;
 use crate::{
     configs::{

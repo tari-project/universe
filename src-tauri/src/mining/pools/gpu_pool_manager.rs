@@ -113,7 +113,7 @@ impl GpuPoolManager {
         }
 
         if !*ConfigPools::content().await.gpu_pool_enabled() {
-            SetupManager::get_instance()
+            let _unused = SetupManager::get_instance()
                 .turn_on_gpu_pool_feature()
                 .await;
         }

@@ -239,7 +239,7 @@ impl PoolManager {
         self.task_sender = None;
 
         if let Some(handle) = self.task_thread.take() {
-            let _ = handle.abort(); // Abort the task if still running
+            handle.abort(); // Abort the task if still running
             info!(target: LOG_TARGET, "Stopped periodic pool status update task");
         }
     }

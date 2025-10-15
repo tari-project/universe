@@ -235,6 +235,7 @@ impl SystemTrayManager {
         };
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn start_tray_data_listener(&mut self) {
         // Create a new receiver since we need to move it into the task
         let (sender, mut receiver) = mpsc::unbounded_channel();
