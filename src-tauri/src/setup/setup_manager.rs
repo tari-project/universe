@@ -49,6 +49,7 @@ use crate::setup::{
     phase_wallet::WalletSetupPhase,
 };
 use crate::systemtray_manager::SystemTrayManager;
+use crate::utils::battery_status::BatteryStatus;
 use crate::utils::platform_utils::PlatformUtils;
 use crate::{
     configs::{
@@ -260,6 +261,8 @@ impl SetupManager {
             .await
             .load_app_handle(app_handle.clone())
             .await;
+
+        BatteryStatus::start_battery_listener().await;
 
         // Listen for websocket reconnection events to restart events manager
         let websocket_event_manager_clone = state.websocket_event_manager.clone();
