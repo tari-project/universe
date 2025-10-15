@@ -47,7 +47,7 @@
     "step_6": "Попробуйте сбросить настройки приложения (в Настройках)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}<strong/>",
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
     "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {

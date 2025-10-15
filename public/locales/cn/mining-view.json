@@ -41,7 +41,7 @@
     "step_6": "尝试重置应用程序（在设置中）"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}<strong/>",
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
     "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {

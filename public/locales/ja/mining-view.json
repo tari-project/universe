@@ -41,7 +41,7 @@
     "step_6": "アプリをリセットしてみてください（設定で）"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}<strong/>",
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
     "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {

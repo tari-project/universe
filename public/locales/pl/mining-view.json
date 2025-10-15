@@ -41,7 +41,7 @@
     "step_6": "Spróbuj zresetować aplikację (w Ustawieniach)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}<strong/>",
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
     "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {

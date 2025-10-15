@@ -41,7 +41,7 @@
     "step_6": "ऐप रीसेट करने का प्रयास करें (सेटिंग्स में)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}<strong/>",
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
     "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
