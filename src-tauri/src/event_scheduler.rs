@@ -779,16 +779,17 @@ impl EventScheduler {
 
                         // If is in time range, eg. currently is 10AM and the range is 9AM - 11AM, then we skip sleep and trigger callback immediately
                         // If not in range, eg. currently is 2PM and the range is 9AM - 11AM, then we sleep until next start time
-                        if cron_schedule.is_time_in_range(local_now) {
-                            continue;
-                        } else if let Some(next_start_wait_time) =
-                            cron_schedule.find_next_start_wait_time(local_now)
-                        {
-                            sleep(next_start_wait_time).await;
-                        } else {
-                            warn!(target: LOG_TARGET, "No next start time found for event with ID {:?}", event_id);
-                            break;
+                        if !cron_schedule.is_time_in_range(local_now) {
+                            if let Some(next_start_wait_time) =
+                                cron_schedule.find_next_start_wait_time(local_now)
+                            {
+                                sleep(next_start_wait_time).await;
+                            } else {
+                                warn!(target: LOG_TARGET, "No next start time found for event with ID {:?}", event_id);
+                                break;
+                            }
                         }
+
                         let _unused =
                             INSTANCE
                                 .message_sender
