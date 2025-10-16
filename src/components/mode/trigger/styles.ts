@@ -45,7 +45,7 @@ export const Content = styled.div<Props>`
 `;
 
 export const Label = styled(Typography)<Props>`
-    color: ${({ theme }) => theme.palette.text.secondary};
+    color: ${({ theme, $variant }) => ($variant === 'secondary' ? theme.palette.text.primary : '#797979')};
     font-size: 10px;
     font-weight: 500;
     line-height: 1;
@@ -53,7 +53,7 @@ export const Label = styled(Typography)<Props>`
 
 export const SelectedItem = styled.div<Props>`
     display: flex;
-    color: ${({ theme }) => theme.palette.text.primary};
+    color: ${({ theme, $variant }) => ($variant === 'secondary' ? theme.palette.text.primary : '#000')};
     font-family: Poppins, sans-serif;
     font-size: 14px;
     font-weight: 600;

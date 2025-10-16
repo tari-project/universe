@@ -44,10 +44,10 @@ export const MiningMode = ({ variant = 'primary', open = false }: MiningModeProp
     const { refs, floatingStyles, context } = useFloating({
         open: isOpen,
         onOpenChange: setIsOpen,
-        placement: 'bottom',
+        placement: 'bottom-end',
         whileElementsMounted: autoUpdate,
         middleware: [
-            offset(5),
+            offset({ mainAxis: 10 }),
             size({
                 apply({ elements, availableHeight }) {
                     const refWidth = elements.reference.getBoundingClientRect().width;
@@ -57,7 +57,6 @@ export const MiningMode = ({ variant = 'primary', open = false }: MiningModeProp
                     });
                 },
                 padding: {
-                    top: 10,
                     bottom: 20,
                 },
             }),

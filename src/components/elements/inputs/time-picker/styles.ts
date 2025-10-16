@@ -68,8 +68,10 @@ export const StyledOption = styled.div<{ $active?: boolean; $selected?: boolean 
     border-radius: 4px;
     border-width: 2px;
     border-style: solid;
-    border-color: ${({ theme, $selected }) => ($selected ? theme.colors.teal[200] : 'transparent')};
-    background: ${({ theme, $active }) => ($active ? theme.colors.teal[100] : theme.palette.background.paper)};
+    border-color: ${({ theme, $selected }) =>
+        $selected ? theme.colors.teal[theme.mode === 'dark' ? 800 : 200] : 'transparent'};
+    background: ${({ theme, $active }) =>
+        $active ? theme.colors.teal[theme.mode === 'dark' ? 950 : 100] : theme.palette.background.paper};
     cursor: pointer;
     transition: border-color ease-in-out 0.15s background ease-in-out 0.12s;
 `;

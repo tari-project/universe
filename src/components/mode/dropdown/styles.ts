@@ -7,5 +7,10 @@ export const OptionsList = styled(m.div)`
     overflow-y: auto;
     max-height: 100%;
     gap: 4px;
-    flex: 1 1 auto;
+    width: 100%;
+    box-shadow: 0 16px 30px 0 rgba(0, 0, 0, 0.25);
+    background: ${({ theme }) => theme.palette.background.tooltip};
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 10px;
 `;
