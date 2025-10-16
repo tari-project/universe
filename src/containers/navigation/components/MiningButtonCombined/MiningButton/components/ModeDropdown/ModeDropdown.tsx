@@ -39,7 +39,6 @@ interface Props {
     disabled?: boolean;
     loading?: boolean;
     open?: boolean;
-    variant?: 'primary' | 'secondary';
 }
 
 interface ModeDropdownMiningMode {
@@ -49,7 +48,7 @@ interface ModeDropdownMiningMode {
     icon: string;
 }
 
-export default function ModeDropdown({ disabled, loading, variant = 'primary', open = false }: Props) {
+export default function ModeDropdown({ disabled, loading, open = false }: Props) {
     const { t } = useTranslation('mining-view');
     const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
@@ -138,12 +137,11 @@ export default function ModeDropdown({ disabled, loading, variant = 'primary', o
     useEffect(() => setIsOpen(open), [open]);
 
     return (
-        <Wrapper $isSecondary={variant === 'secondary'}>
+        <Wrapper>
             <Trigger
                 ref={refs.setReference}
                 {...getReferenceProps()}
                 $isOpen={isOpen}
-                $isSecondary={variant === 'secondary'}
                 disabled={disabled || loading}
                 aria-disabled={disabled || loading}
                 role="combobox"

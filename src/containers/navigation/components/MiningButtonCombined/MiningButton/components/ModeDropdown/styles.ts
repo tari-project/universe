@@ -1,21 +1,14 @@
 import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
 
-export const Wrapper = styled.div<{ $isSecondary?: boolean }>`
+export const Wrapper = styled.div`
     position: relative;
     width: 100%;
     max-width: 200px;
     flex-shrink: 0;
-
-    ${({ $isSecondary }) =>
-        $isSecondary &&
-        css`
-            width: 100%;
-            flex: 1 1 auto;
-        `}
 `;
 
-export const Trigger = styled.button<{ $isOpen: boolean; $isSecondary?: boolean }>`
+export const Trigger = styled.button<{ $isOpen: boolean }>`
     flex-shrink: 0;
 
     width: 100%;
@@ -38,42 +31,25 @@ export const Trigger = styled.button<{ $isOpen: boolean; $isSecondary?: boolean 
         css`
             background: rgba(240, 241, 240, 1);
         `}
-
-    ${({ $isSecondary }) =>
-        $isSecondary &&
-        css`
-            width: 100%;
-            height: 100%;
-            flex: 1 1 auto;
-            align-items: baseline;
-            border-radius: 10px;
-            ${TextGroup} {
-                height: 100%;
-                justify-content: space-between;
-            }
-
-            ${IconWrapper} {
-                top: 75%;
-            }
-        `}
 `;
 
 export const TextGroup = styled.div`
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+
     width: 100%;
     gap: 1px;
 `;
 
 export const Eyebrow = styled.div`
     color: #797979;
-    display: flex;
     font-family: Poppins, sans-serif;
     font-size: 10px;
     font-style: normal;
     font-weight: 500;
-    line-height: 1;
+    line-height: normal;
+    line-height: 100%;
 `;
 
 export const SelectedValue = styled.div`
@@ -82,7 +58,8 @@ export const SelectedValue = styled.div`
     font-size: 14px;
     font-style: normal;
     font-weight: 600;
-    line-height: 1;
+    line-height: normal;
+    line-height: 100%;
 
     display: flex;
     align-items: center;
