@@ -12,7 +12,7 @@ import { GpuMiner, GpuMinerType, MinerControlsState } from '@app/types/events-pa
 import { MiningModeType } from '@app/types/configs.ts';
 import { useAirdropStore } from '@app/store';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
-import { SchedulerEventType } from '@app/types/mining/schedule.ts';
+import { TimeUnit } from '@app/types/mining/schedule.ts';
 
 export const restartMining = async () => {
     const isMining =
@@ -183,11 +183,10 @@ export const stopMining = async () => {
 };
 
 export const pauseMining = async (duration: number, isMinutes = false) => {
-    const eventTiming = `In ${duration} ${isMinutes ? 'minutes' : 'hours'}`; // for admin testing
-    invoke('add_scheduler_event', {
+    invoke('add_scheduler_in_event', {
         eventId: 'pause_mining',
-        eventType: SchedulerEventType.ResumeMining,
-        eventTiming,
+        timeValue: duration,
+        timeUnit: isMinutes ? TimeUnit.Minutes : TimeUnit.Hours, // isMinutes is for admin testing
     })
         .then(() => {
             stopMining();

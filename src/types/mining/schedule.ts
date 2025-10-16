@@ -1,11 +1,23 @@
-export enum SchedulerEventType {
-    ResumeMining = 'ResumeMining',
-    Mine = 'Mine',
+export enum TimePeriod {
+    AM = 'AM',
+    PM = 'PM',
 }
 
-export interface AddSchedulerEventPayload {
+export enum TimeUnit {
+    Seconds = 'Seconds',
+    Minutes = 'Minutes',
+    Hours = 'Hours',
+}
+
+export interface AddSchedulerEventInVariantPayload {
     eventId: string;
-    eventType: SchedulerEventType;
-    eventTiming: string;
-    miningMode?: string;
+    timeValue: number;
+    timeUnit: TimeUnit;
+}
+export interface AddSchedulerEventBetweenVariantPayload {
+    eventId: string;
+    startTimeValue: number;
+    startTimePeriod: TimePeriod;
+    endTimeValue: number;
+    endTimePeriod: TimePeriod;
 }

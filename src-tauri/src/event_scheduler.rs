@@ -25,7 +25,6 @@
 use chrono::{DateTime, Duration, Local};
 use croner::{self, parser::CronParser, Cron};
 use log::{error, info, warn};
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -49,16 +48,6 @@ use crate::{
     mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
     tasks_tracker::TasksTrackers,
 };
-
-static IN_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^in\s+(\d+)\s+(hour|hours|minute|minutes|second|seconds)$")
-        .expect("Invalid In Regex")
-});
-
-static BETWEEN_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^between\s+(\d{1,2})\s+(am|pm)\s+and\s+(\d{1,2})\s+(am|pm)$")
-        .expect("Invalid Between Regex")
-});
 
 static ZERO_DURATION: std::time::Duration = std::time::Duration::from_secs(0);
 
@@ -225,101 +214,105 @@ impl CronSchedule {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum TimeUnit {
+    Hours,
+    Minutes,
+    Seconds,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum TimePeriod {
+    AM,
+    PM,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum SchedulerEventTiming {
     In(Duration),          // e.g., In(2 hours) - triggers once after the duration
     Between(CronSchedule), // e.g., Between("0 22 * * *", "0 6 * * *") (10PM to 6AM every day)
 }
 
 impl SchedulerEventTiming {
-    fn parse_duration_unit(value: i64, unit: &str) -> Result<Duration, SchedulerError> {
+    fn parse_duration_unit(value: i64, unit: TimeUnit) -> Result<Duration, SchedulerError> {
         const MAX_HOURS_VALUE: i64 = 24;
         const MAX_MINUTES_VALUE: i64 = 60;
         const MAX_SECONDS_VALUE: i64 = 60;
 
         match unit {
-            "hour" | "hours" => {
-                if value > MAX_HOURS_VALUE {
-                    Err(SchedulerError::InternalError(
-                        "Invalid hour value".to_string(),
-                    ))
-                } else {
-                    Ok(Duration::hours(value))
+            TimeUnit::Hours => {
+                if value <= 0 || value > MAX_HOURS_VALUE {
+                    return Err(SchedulerError::InvalidTimingFormat(format!(
+                        "Hours value must be between 1 and {}",
+                        MAX_HOURS_VALUE
+                    )));
                 }
+                Ok(Duration::hours(value))
             }
-            "minute" | "minutes" => {
-                if value > MAX_MINUTES_VALUE {
-                    Err(SchedulerError::InternalError(
-                        "Invalid minute value".to_string(),
-                    ))
-                } else {
-                    Ok(Duration::minutes(value))
+            TimeUnit::Minutes => {
+                if value <= 0 || value > MAX_MINUTES_VALUE {
+                    return Err(SchedulerError::InvalidTimingFormat(format!(
+                        "Minutes value must be between 1 and {}",
+                        MAX_MINUTES_VALUE
+                    )));
                 }
+                Ok(Duration::minutes(value))
             }
-            "second" | "seconds" => {
-                if value > MAX_SECONDS_VALUE {
-                    Err(SchedulerError::InternalError(
-                        "Invalid second value".to_string(),
-                    ))
-                } else {
-                    Ok(Duration::seconds(value))
+            TimeUnit::Seconds => {
+                if value <= 0 || value > MAX_SECONDS_VALUE {
+                    return Err(SchedulerError::InvalidTimingFormat(format!(
+                        "Seconds value must be between 1 and {}",
+                        MAX_SECONDS_VALUE
+                    )));
                 }
+                Ok(Duration::seconds(value))
             }
-            _ => Err(SchedulerError::InternalError(
-                "Invalid duration unit".to_string(),
-            )),
         }
     }
 
-    fn parse_cron(hour: u32, period: &str) -> Result<String, SchedulerError> {
-        if !(1..=12).contains(&hour) || (period != "am" && period != "pm") {
-            return Err(SchedulerError::InternalError(
-                "Invalid time value".to_string(),
+    pub fn parse_in_variant(value: i64, unit: TimeUnit) -> Result<Self, SchedulerError> {
+        let duration = Self::parse_duration_unit(value, unit)?;
+        Ok(SchedulerEventTiming::In(duration))
+    }
+
+    pub fn parse_between_variant(
+        start_hour: i64,
+        start_period: TimePeriod,
+        end_hour: i64,
+        end_period: TimePeriod,
+    ) -> Result<Self, SchedulerError> {
+        let start_cron = Self::parse_cron(start_hour, start_period)?;
+        let end_cron = Self::parse_cron(end_hour, end_period)?;
+        Ok(SchedulerEventTiming::Between(CronSchedule::new(
+            &start_cron,
+            &end_cron,
+        )?))
+    }
+
+    fn parse_cron(hour: i64, period: TimePeriod) -> Result<String, SchedulerError> {
+        if !(1..=12).contains(&hour) {
+            return Err(SchedulerError::InvalidTimingFormat(
+                "Hour must be between 1 and 12".to_string(),
             ));
         }
-        let hour_24 = if period == "am" {
-            if hour == 12 {
-                0
-            } else {
-                hour
+
+        let hour_24 = match period {
+            TimePeriod::AM => {
+                if hour == 12 {
+                    0
+                } else {
+                    hour
+                }
             }
-        } else if hour == 12 {
-            12
-        } else {
-            hour + 12
+            TimePeriod::PM => {
+                if hour == 12 {
+                    12
+                } else {
+                    hour + 12
+                }
+            }
         };
         // Cron pattern for every day at the specified hour
         Ok(format!("0 {} * * *", hour_24))
-    }
-
-    // It will parse two cases:
-    // 1. In X hours => EventTiming::In(Duration::from_secs(X * 3600))
-    // 2. Between X and Y => EventTiming::Between("cron_pattern_for_X", "cron_pattern_for_Y") Where X and Y are 12-hour times like "10 PM" and "6 AM"
-    pub fn from_string(string_value: String) -> Result<Self, SchedulerError> {
-        let sanitized_string_value = string_value.trim().to_lowercase();
-        if let Some(caps) = IN_PATTERN.captures(&sanitized_string_value) {
-            let value: i64 = caps[1]
-                .parse()
-                .map_err(|_| SchedulerError::InternalError("Invalid duration value".to_string()))?;
-            let unit = &caps[2];
-            let duration = Self::parse_duration_unit(value, unit)?;
-            Ok(SchedulerEventTiming::In(duration))
-        } else if let Some(caps) = BETWEEN_PATTERN.captures(&sanitized_string_value) {
-            let start_hour: u32 = caps[1]
-                .parse()
-                .map_err(|_| SchedulerError::InternalError("Invalid start hour".to_string()))?;
-            let start_period = &caps[2];
-            let end_hour: u32 = caps[3]
-                .parse()
-                .map_err(|_| SchedulerError::InternalError("Invalid end hour".to_string()))?;
-            let end_period = &caps[4];
-
-            Ok(SchedulerEventTiming::Between(CronSchedule::new(
-                &Self::parse_cron(start_hour, start_period)?,
-                &Self::parse_cron(end_hour, end_period)?,
-            )?))
-        } else {
-            Err(SchedulerError::InvalidTimingFormat(sanitized_string_value))
-        }
     }
 
     pub fn is_persistent(&self) -> bool {
