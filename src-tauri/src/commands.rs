@@ -1898,12 +1898,12 @@ pub async fn list_connected_peers(
 pub async fn add_scheduler_in_event(
     event_id: String,
     time_value: i64,
-    timer_unit: TimeUnit,
+    time_unit: TimeUnit,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET, "add_scheduler_in_event called with event_id: {event_id:?}, time_value: {time_value:?}, timer_unit: {timer_unit:?}");
+    info!(target: LOG_TARGET, "add_scheduler_in_event called with event_id: {event_id:?}, time_value: {time_value:?}, timer_unit: {time_unit:?}");
 
-    let event_timing = SchedulerEventTiming::parse_in_variant(time_value, timer_unit)
-        .map_err(|e| e.to_string())?;
+    let event_timing =
+        SchedulerEventTiming::parse_in_variant(time_value, time_unit).map_err(|e| e.to_string())?;
 
     let event_type = SchedulerEventType::ResumeMining;
 
