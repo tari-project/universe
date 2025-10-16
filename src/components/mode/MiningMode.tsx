@@ -2,15 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState, KeyboardEvent } from
 import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import {
+    autoUpdate,
     FloatingFocusManager,
-    FloatingNode,
-    FloatingPortal,
     offset,
+    size,
     useClick,
     useDismiss,
     useFloating,
-    useFloatingNodeId,
-    useFloatingParentNodeId,
     useInteractions,
     useListNavigation,
     useRole,
@@ -19,7 +17,7 @@ import {
 
 import { MiningModes, MiningModeType } from '@app/types/configs.ts';
 import { setCustomLevelsDialogOpen, setDialogToShow, useConfigMiningStore } from '@app/store';
-import { ModeDropdownMiningMode } from '@app/components/mode/types.ts';
+import { ModeDropdownMiningMode, Variant } from '@app/components/mode/types.ts';
 import { selectMiningMode } from '@app/store/actions/appConfigStoreActions.ts';
 
 import SelectedIcon from '@app/assets/icons/SelectedIcon.tsx';
@@ -27,13 +25,14 @@ import SelectedIcon from '@app/assets/icons/SelectedIcon.tsx';
 import { getModeList } from './helpers.ts';
 import { List } from './dropdown/List.tsx';
 import { Trigger } from './trigger/Trigger.tsx';
-import { ListContainer, Option, OptionIcon, OptionText } from './styles.ts';
+import { ListContainer, Option, OptionIcon, OptionText, Wrapper } from './styles.ts';
 
 interface MiningModeProps {
+    variant?: Variant;
     open?: boolean;
 }
 
-export const MiningMode = ({ open = false }: MiningModeProps) => {
+export const MiningMode = ({ variant = 'primary', open = false }: MiningModeProps) => {
     const { t } = useTranslation('mining-view');
     const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
@@ -42,15 +41,27 @@ export const MiningMode = ({ open = false }: MiningModeProps) => {
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const listRef = useRef<(HTMLElement | null)[]>([]);
 
-    const parentId = useFloatingParentNodeId();
-    const nodeId = useFloatingNodeId(parentId || undefined);
-
     const { refs, floatingStyles, context } = useFloating({
-        nodeId,
         open: isOpen,
         onOpenChange: setIsOpen,
-        placement: 'bottom-end',
-        middleware: [offset(8)],
+        placement: 'bottom',
+        whileElementsMounted: autoUpdate,
+        middleware: [
+            offset(5),
+            size({
+                apply({ elements, availableHeight }) {
+                    const refWidth = elements.reference.getBoundingClientRect().width;
+                    Object.assign(elements.floating.style, {
+                        maxHeight: `${availableHeight}px`,
+                        maxWidth: `${refWidth}px`,
+                    });
+                },
+                padding: {
+                    top: 10,
+                    bottom: 20,
+                },
+            }),
+        ],
     });
 
     const modes: ModeDropdownMiningMode[] = useMemo(
@@ -133,7 +144,7 @@ export const MiningMode = ({ open = false }: MiningModeProps) => {
     useEffect(() => setIsOpen(open), [open]);
 
     return (
-        <FloatingNode id={nodeId}>
+        <Wrapper>
             <Trigger
                 ref={refs.setReference}
                 {...getReferenceProps()}
@@ -141,6 +152,8 @@ export const MiningMode = ({ open = false }: MiningModeProps) => {
                 aria-expanded={isOpen}
                 aria-haspopup="listbox"
                 label={t('mode')}
+                variant={variant}
+                isOpen={isOpen}
             >
                 {selectedMiningMode?.mode_name}
                 <OptionIcon
@@ -153,46 +166,44 @@ export const MiningMode = ({ open = false }: MiningModeProps) => {
             <AnimatePresence>
                 {isOpen && (
                     <FloatingFocusManager context={context} modal={true} initialFocus={activeIndex || 0}>
-                        <FloatingPortal>
-                            <ListContainer ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
-                                <List>
-                                    {modes.map((mode, index) => {
-                                        const isSelected = mode.name === selectedMiningMode?.mode_name;
-                                        const isActive = activeIndex === index;
-                                        return (
-                                            <Option
-                                                key={mode.name}
-                                                ref={(node) => {
-                                                    listRef.current[index] = node;
-                                                }}
-                                                onClick={() => handleSelectMode(mode)}
-                                                onKeyDown={(e) => handleKeyDown(e, mode)}
-                                                tabIndex={isActive ? 0 : -1}
-                                                role="option"
-                                                aria-selected={isSelected}
-                                                $isSelected={isSelected}
-                                                $isActive={isActive}
-                                                {...getItemProps({
-                                                    onClick: () => handleSelectMode(mode),
-                                                })}
-                                            >
-                                                <OptionIcon
-                                                    src={mode.icon}
-                                                    alt=""
-                                                    aria-hidden="true"
-                                                    className="option-icon"
-                                                />
-                                                <OptionText>{mode.name}</OptionText>
-                                                {isSelected && <SelectedIcon className="selected-icon" />}
-                                            </Option>
-                                        );
-                                    })}
-                                </List>
-                            </ListContainer>
-                        </FloatingPortal>
+                        <ListContainer ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
+                            <List>
+                                {modes.map((mode, index) => {
+                                    const isSelected = mode.name === selectedMiningMode?.mode_name;
+                                    const isActive = activeIndex === index;
+                                    return (
+                                        <Option
+                                            key={mode.name}
+                                            ref={(node) => {
+                                                listRef.current[index] = node;
+                                            }}
+                                            onClick={() => handleSelectMode(mode)}
+                                            onKeyDown={(e) => handleKeyDown(e, mode)}
+                                            tabIndex={isActive ? 0 : -1}
+                                            role="option"
+                                            aria-selected={isSelected}
+                                            $isSelected={isSelected}
+                                            $isActive={isActive}
+                                            {...getItemProps({
+                                                onClick: () => handleSelectMode(mode),
+                                            })}
+                                        >
+                                            <OptionIcon
+                                                src={mode.icon}
+                                                alt=""
+                                                aria-hidden="true"
+                                                className="option-icon"
+                                            />
+                                            <OptionText>{mode.name}</OptionText>
+                                            {isSelected && <SelectedIcon className="selected-icon" />}
+                                        </Option>
+                                    );
+                                })}
+                            </List>
+                        </ListContainer>
                     </FloatingFocusManager>
                 )}
             </AnimatePresence>
-        </FloatingNode>
+        </Wrapper>
     );
 };

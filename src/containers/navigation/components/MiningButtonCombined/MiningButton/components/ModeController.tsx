@@ -8,6 +8,7 @@ import { useMiningStore } from '@app/store';
 import { setShowEcoAlert } from '@app/store/actions/miningStoreActions.ts';
 import { selectMiningMode } from '@app/store/actions/appConfigStoreActions.ts';
 import { invoke } from '@tauri-apps/api/core';
+import { MiningMode } from '@app/components/mode/MiningMode.tsx';
 
 const RefWrapper = styled.div``;
 
@@ -46,7 +47,7 @@ export default function ModeController() {
     return (
         <>
             <RefWrapper ref={refs.setReference}>
-                <ModeDropdown open={modesOpen} />
+                <MiningMode open={modesOpen} />
             </RefWrapper>
             <AnimatePresence>
                 {showEcoAlert && (

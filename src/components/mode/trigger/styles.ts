@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Variant } from '../types.ts';
 
@@ -10,9 +10,33 @@ interface Props {
 export const TriggerCTA = styled.button<Props>`
     display: flex;
     flex: 1 1 auto;
-    flex-direction: column;
+    position: relative;
     width: 100%;
-    border: 1px solid deeppink;
+    align-items: center;
+    justify-content: space-between;
+`;
+
+export const TriggerContent = styled.div<Props>`
+    flex: 1 1 auto;
+    height: 45px;
+    padding: 9px 15px;
+
+    border-radius: 70px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(240, 241, 240, 0.75);
+    backdrop-filter: blur(5px);
+
+    transition: background 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
+
+    &:hover {
+        background: rgba(240, 241, 240, 1);
+    }
+
+    ${({ $isOpen }) =>
+        $isOpen &&
+        css`
+            background: rgba(240, 241, 240, 1);
+        `}
 `;
 
 export const Content = styled.div<Props>`
@@ -20,9 +44,45 @@ export const Content = styled.div<Props>`
     width: 100%;
 `;
 
-export const Label = styled(Typography)<Props>``;
+export const Label = styled(Typography)<Props>`
+    color: ${({ theme }) => theme.palette.text.secondary};
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1;
+`;
 
 export const SelectedItem = styled.div<Props>`
     display: flex;
-    width: 100%;
+    color: ${({ theme }) => theme.palette.text.primary};
+    font-family: Poppins, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    align-items: center;
+    gap: 5px;
+
+    .option-icon {
+        width: auto;
+        height: 16px;
+    }
+`;
+
+export const IconWrapper = styled.div<Props>`
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+
+    transition: transform 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
+    transform-origin: center;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    ${({ $isOpen }) =>
+        $isOpen &&
+        css`
+            transform: translateY(-50%) scaleY(-1);
+        `}
 `;

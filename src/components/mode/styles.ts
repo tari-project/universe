@@ -1,8 +1,22 @@
 import styled, { css } from 'styled-components';
 import { DIALOG_Z_INDEX } from '@app/components/elements/dialog/Dialog.styles.ts';
 
+export const Wrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    width: 100%;
+`;
 export const ListContainer = styled.div`
+    display: flex;
+    width: 100%;
+    overflow: hidden;
     z-index: ${DIALOG_Z_INDEX}; // same as dialog
+    box-shadow: 0 16px 30px 0 rgba(0, 0, 0, 0.25);
+    background: ${({ theme }) => theme.palette.background.tooltip};
+    backdrop-filter: blur(12px);
+    border-radius: 10px;
+    padding: 10px;
 `;
 
 export const Option = styled.button<{ $isSelected: boolean; $isActive?: boolean }>`

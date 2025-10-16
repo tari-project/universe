@@ -14,7 +14,8 @@ export default function Scheduler() {
             <FormWrapper>
                 {/*<TimePicker label={`Daily Start Time`} />*/}
                 {/*<TimePicker label={`Daily End Time`} />*/}
-                <ModeDropdown />
+                {/*<ModeDropdown />*/}
+                <MiningMode />
                 <MiningMode />
             </FormWrapper>
             <Button variant="black" size="xlarge" fluid>{`Save schedule`}</Button>
