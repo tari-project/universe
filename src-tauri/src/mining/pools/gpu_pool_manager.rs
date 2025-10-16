@@ -113,9 +113,9 @@ impl GpuPoolManager {
         }
 
         if !*ConfigPools::content().await.gpu_pool_enabled() {
-            let _unused =
-                ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, true).await;
-            EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await.clone()).await;
+            let _unused = SetupManager::get_instance()
+                .turn_on_gpu_pool_feature()
+                .await;
         }
 
         if miner.is_pool_supported(&current_pool_content.pool_type) {
@@ -156,9 +156,10 @@ impl PoolManagerInterfaceTrait<GpuPool> for GpuPoolManager {
             spawn(async move {
                 EventsEmitter::emit_gpu_pools_status_update(pool_statuses).await;
 
-                SystemTrayManager::send_event(SystemTrayEvents::GpuPoolPendingRewards(
-                    current_status.unpaid,
-                ))
+                SystemTrayManager::send_event(SystemTrayEvents::GpuPoolStats {
+                    pending_rewards: current_status.unpaid,
+                    share_count: current_status.accepted_shares,
+                })
                 .await;
             });
         }
