@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useConfigMiningStore } from '@app/store';
@@ -25,11 +25,15 @@ export default function MiningButton({
     disabled = false,
     resumeTime,
 }: Props) {
+    const [showBg, setShowBg] = useState(false);
     const { t } = useTranslation('mining-view');
     const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
-
     const hasChip = !!resumeTime?.displayString;
-    console.log(`isMining= `, isMining);
+
+    useEffect(() => {
+        setShowBg(isMining);
+    }, [isMining]);
+
     return (
         <ButtonWrapper
             initial={{ opacity: 0 }}
@@ -53,7 +57,7 @@ export default function MiningButton({
             <AnimatePresence>
                 {!isMining && <Shadow initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />}
             </AnimatePresence>
-            <AnimatePresence>{isMining ? <AnimatedBackground /> : null}</AnimatePresence>
+            <AnimatePresence>{showBg ? <AnimatedBackground /> : null}</AnimatePresence>
         </ButtonWrapper>
     );
 }

@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { offset, useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
 
@@ -48,10 +48,12 @@ export default function MiningButtonPause({ children, isMining, isMiningButtonDi
     const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
 
     const handleStopMining = useCallback(async () => {
+        setShowPauseOptions(false);
         await stopMining().then(() => setResumeDuration(undefined));
     }, []);
 
     const handlePause = useCallback(async (hours: number, isMinutes = false) => {
+        setShowPauseOptions(false);
         await pauseMining(hours, isMinutes);
     }, []);
 
@@ -77,12 +79,6 @@ export default function MiningButtonPause({ children, isMining, isMiningButtonDi
             </OptionWrapper>
         );
     }
-
-    useEffect(() => {
-        if (!isMining) {
-            setShowPauseOptions(false);
-        }
-    }, [isMining]);
 
     return (
         <>

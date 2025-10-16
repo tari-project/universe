@@ -52,7 +52,7 @@ export default function MiningButtonCombined() {
             <MiningButton
                 buttonText={resumeTime.displayString ? 'resume' : 'start'}
                 onClick={handleStartMining}
-                disabled={isMiningButtonDisabled}
+                disabled={isMiningButtonDisabled || isMiningLoading}
                 icon={<PlayIcon />}
                 isMining={isMining}
                 resumeTime={resumeTime}
