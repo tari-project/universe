@@ -20,6 +20,55 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+//! # Event Scheduler Module
+//!
+//! This module handles time-based events.
+//! It lets you schedule tasks to run at specific times or within time windows.
+//!
+//! ## What it does
+//!
+//! The scheduler can handle two main types of events:
+//! - **One-time events**: Run something after a delay (like "start mining in 2 hours")
+//! - **Recurring events**: Run something during specific time windows using cron expressions
+//!   (like "mine every day from 10 PM to 6 AM")
+//!
+//! It also manages different mining modes and keeps your scheduled events even when you
+//! restart the application.
+//!
+//! ## How it works
+//!
+//! The system uses message passing to stay thread-safe:
+//! - EventScheduler is the main interface you interact with
+//! - Each scheduled event runs in its own background task
+//! - All operations go through a central message loop
+//! - Events can be paused, resumed, or removed as needed
+//!
+//! ## Key parts
+//!
+//! - `CronSchedule`: Handles recurring time windows with cron expressions
+//! - `SchedulerEventTiming`: Defines when events should trigger (In/Between patterns)
+//! - `SchedulerEventType`: Defines what actions to perform (ResumeMining/Mine)
+//! - Persistent storage: Your recurring events are saved and restored automatically
+//!
+//! ## Basic usage
+//!
+//! ```rust
+//! // Schedule mining to start in 2 hours
+//! let timing = SchedulerEventTiming::parse_in_variant(2, TimeUnit::Hours)?;
+//! EventScheduler::instance()
+//!     .schedule_event(SchedulerEventType::ResumeMining, "start_mining".to_string(), timing)
+//!     .await?;
+//!
+//! // Schedule mining between 10 PM and 6 AM daily
+//! let timing = SchedulerEventTiming::parse_between_variant(10, TimePeriod::PM, 6, TimePeriod::AM)?;
+//! EventScheduler::instance()
+//!     .schedule_event(SchedulerEventType::ResumeMining, "night_mining".to_string(), timing)
+//!     .await?;
+//! ```
+//!
+//! The scheduler is thread-safe and all operations are async, so you can call it from
+//! multiple places without worrying about race conditions.
+
 #![allow(dead_code, unused_variables, unused_must_use)]
 
 use chrono::{DateTime, Duration, Local};
@@ -55,7 +104,8 @@ static LOG_TARGET: &str = "tari::universe::event_scheduler";
 static INSTANCE: LazyLock<EventScheduler> = LazyLock::new(EventScheduler::new);
 static EVENT_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
-// Internal message types for the scheduler
+/// Internal messages for communication between the public API and the scheduler's
+/// event loop. These go through a channel to keep everything thread-safe.
 #[derive(Debug)]
 enum SchedulerMessage {
     AddEvent {
@@ -89,12 +139,19 @@ enum SchedulerMessage {
 
 #[derive(Debug, Clone)]
 pub enum SchedulerError {
+    /// The provided cron pattern is invalid or malformed
     InvalidCronPattern(String),
+    /// No event exists with the specified ID
     EventNotFound(String),
+    /// Attempted to pause an event that is already paused
     EventAlreadyPaused(String),
+    /// Attempted to resume an event that is already running
     EventAlreadyRunning(String),
+    /// The scheduler service is not running
     SchedulerNotRunning,
+    /// An internal error occurred during operation
     InternalError(String),
+    /// The timing format provided is invalid
     InvalidTimingFormat(String),
 }
 
@@ -114,6 +171,8 @@ impl Display for SchedulerError {
 
 impl std::error::Error for SchedulerError {}
 
+/// A recurring schedule with start and end times using cron expressions.
+/// This handles time windows when events should be active, like "mine every weekday from 10 PM to 6 AM".
 #[derive(Debug, Clone)]
 pub struct CronSchedule {
     pub start_time: Cron,
@@ -157,6 +216,21 @@ impl Serialize for CronSchedule {
 }
 
 impl CronSchedule {
+    /// Creates a new schedule from cron expressions.
+    ///
+    /// ### Parameters
+    /// * `start_time` - When the schedule starts (e.g., "0 22 * * *" for 10 PM)
+    /// * `end_time` - When the schedule ends (e.g., "0 6 * * *" for 6 AM)
+    ///
+    /// ### Returns
+    /// * `Ok(CronSchedule)` - Schedule created successfully
+    /// * `Err(SchedulerError::InvalidCronPattern)` - Invalid cron expression
+    ///
+    /// ### Example
+    /// ```
+    /// // Schedule for 10 PM to 6 AM daily
+    /// let schedule = CronSchedule::new("0 22 * * *", "0 6 * * *")?;
+    /// ```
     pub fn new(start_time: &str, end_time: &str) -> Result<Self, SchedulerError> {
         let start_time_cron = CronParser::builder()
             .build()
@@ -174,10 +248,26 @@ impl CronSchedule {
         })
     }
 
+    /// Finds when this schedule starts next.
+    ///
+    /// ### Parameters
+    /// * `from` - Time to search from
+    ///
+    /// ### Returns
+    /// * `Some(DateTime<Local>)` - When it starts next
+    /// * `None` - If it never starts again
     pub fn find_next_start_time(&self, from: DateTime<Local>) -> Option<DateTime<Local>> {
         self.start_time.find_next_occurrence(&from, false).ok()
     }
 
+    /// How long to wait until this schedule starts next.
+    ///
+    /// ### Parameters
+    /// * `from` - Time to calculate from
+    ///
+    /// ### Returns
+    /// * `Some(Duration)` - Time to wait (at least 0)
+    /// * `None` - If it never starts again
     pub fn find_next_start_wait_time(&self, from: DateTime<Local>) -> Option<std::time::Duration> {
         self.find_next_start_time(from).map(|next_start| {
             (next_start - from)
@@ -187,10 +277,26 @@ impl CronSchedule {
         })
     }
 
+    /// Finds the next occurrence of the end time from a given moment.
+    ///
+    /// ### Parameters
+    /// * `from` - The reference time to search from
+    ///
+    /// ### Returns
+    /// * `Some(DateTime<Local>)` - The next end time occurrence
+    /// * `None` - If no future occurrence can be found
     pub fn find_next_end_time(&self, from: DateTime<Local>) -> Option<DateTime<Local>> {
         self.end_time.find_next_occurrence(&from, false).ok()
     }
 
+    /// Calculates how long to wait until the next end time from a given moment.
+    ///
+    /// ### Parameters
+    /// * `from` - The reference time to calculate from
+    ///
+    /// ### Returns
+    /// * `Some(Duration)` - Time to wait until next end time (minimum 0)
+    /// * `None` - If no future end time can be found
     pub fn find_next_end_wait_time(&self, from: DateTime<Local>) -> Option<std::time::Duration> {
         self.find_next_end_time(from).map(|next_end| {
             (next_end - from)
@@ -200,6 +306,17 @@ impl CronSchedule {
         })
     }
 
+    /// Checks if a time falls within this schedule's active period.
+    ///
+    /// Returns true if the time is between the most recent start time
+    /// and the next end time.
+    ///
+    /// ### Parameters
+    /// * `time` - Time to check
+    ///
+    /// ### Returns
+    /// * `true` - Time is within the active period
+    /// * `false` - Time is outside the active period
     pub fn is_time_in_range(&self, time: DateTime<Local>) -> bool {
         if let (Some(prev_start), Some(next_end)) = (
             self.start_time.find_previous_occurrence(&time, false).ok(),
@@ -226,13 +343,20 @@ pub enum TimePeriod {
     PM,
 }
 
+/// When a scheduled event should trigger.
+/// Either run once after a delay, or repeatedly during certain time windows.
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum SchedulerEventTiming {
-    In(Duration),          // e.g., In(2 hours) - triggers once after the duration
-    Between(CronSchedule), // e.g., Between("0 22 * * *", "0 6 * * *") (10PM to 6AM every day)
+    /// Run once after the specified time (e.g., In(2 hours))
+    /// The event gets removed after it runs.
+    In(Duration),
+    /// Run during recurring time windows (e.g., Between("0 22 * * *", "0 6 * * *") for 10PM to 6AM daily)
+    /// The event keeps repeating according to the schedule.
+    Between(CronSchedule),
 }
 
 impl SchedulerEventTiming {
+    /// Parses and validates a duration value with its time unit.
     fn parse_duration_unit(value: i64, unit: TimeUnit) -> Result<Duration, SchedulerError> {
         const MAX_HOURS_VALUE: i64 = 24;
         const MAX_MINUTES_VALUE: i64 = 60;
@@ -269,11 +393,46 @@ impl SchedulerEventTiming {
         }
     }
 
+    /// Create a one-time delay timing.
+    ///
+    /// ### Parameters
+    /// * `value` - How many units to wait (must be positive)
+    /// * `unit` - Time unit (Hours: 1-24, Minutes: 1-60, Seconds: 1-60)
+    ///
+    /// ### Returns
+    /// * `Ok(SchedulerEventTiming::In)` - Timing created
+    /// * `Err(SchedulerError::InvalidTimingFormat)` - Value out of range
+    ///
+    /// ### Example
+    /// ```
+    /// // Run something in 2 hours
+    /// let timing = SchedulerEventTiming::parse_in_variant(2, TimeUnit::Hours)?;
+    /// ```
     pub fn parse_in_variant(value: i64, unit: TimeUnit) -> Result<Self, SchedulerError> {
         let duration = Self::parse_duration_unit(value, unit)?;
         Ok(SchedulerEventTiming::In(duration))
     }
 
+    /// Create a recurring time window timing.
+    ///
+    /// ### Parameters
+    /// * `start_hour` - When to start (1-12)
+    /// * `start_period` - AM/PM for start time
+    /// * `end_hour` - When to end (1-12)
+    /// * `end_period` - AM/PM for end time
+    ///
+    /// ### Returns
+    /// * `Ok(SchedulerEventTiming::Between)` - Timing created
+    /// * `Err(SchedulerError::InvalidTimingFormat)` - Hours out of range
+    /// * `Err(SchedulerError::InvalidCronPattern)` - Cron generation failed
+    ///
+    /// ### Example
+    /// ```
+    /// // Run between 10 PM and 6 AM daily
+    /// let timing = SchedulerEventTiming::parse_between_variant(
+    ///     10, TimePeriod::PM, 6, TimePeriod::AM
+    /// )?;
+    /// ```
     pub fn parse_between_variant(
         start_hour: i64,
         start_period: TimePeriod,
@@ -288,6 +447,7 @@ impl SchedulerEventTiming {
         )?))
     }
 
+    /// Converts 12-hour format time to a cron expression.
     fn parse_cron(hour: i64, period: TimePeriod) -> Result<String, SchedulerError> {
         if !(1..=12).contains(&hour) {
             return Err(SchedulerError::InvalidTimingFormat(
@@ -315,11 +475,18 @@ impl SchedulerEventTiming {
         Ok(format!("0 {} * * *", hour_24))
     }
 
+    /// Checks if this timing represents a recurring event.
+    ///
+    /// ### Returns
+    /// * `true` - Between timing (survives app restarts)
+    /// * `false` - In timing (gets removed after running)
     pub fn is_persistent(&self) -> bool {
         matches!(self, SchedulerEventTiming::Between { .. })
     }
 }
 
+/// Basic info about a scheduled event.
+/// This is what gets saved to config and passed around externally.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScheduledEventInfo {
     pub id: String,
@@ -327,10 +494,20 @@ pub struct ScheduledEventInfo {
     pub timing: SchedulerEventTiming,
 }
 
+/// Defines the types of actions that can be scheduled.
+/// Each event type corresponds to a specific mining operation that will be
+/// performed when the event is triggered.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub enum SchedulerEventType {
+    /// Resume mining operations with the current configuration.
+    /// This is a unique event type - only one can exist at a time.
     ResumeMining,
-    Mine { mining_mode: MiningMode },
+    /// Start mining with a specific mining mode configuration.
+    /// Multiple Mine events can exist with different mining modes.
+    Mine {
+        /// The specific mining mode configuration to use
+        mining_mode: MiningMode,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -342,6 +519,11 @@ pub enum SchedulerEventState {
 }
 
 impl SchedulerEventType {
+    /// Checks if only one of this event type can exist at once.
+    ///
+    /// ### Returns
+    /// * `true` - ResumeMining events (only one allowed)
+    /// * `false` - Mine events (can have multiple with different modes)
     pub fn is_unique(&self) -> bool {
         matches!(self, SchedulerEventType::ResumeMining)
     }
@@ -358,7 +540,8 @@ impl Display for SchedulerEventType {
     }
 }
 
-// Internal representation of a scheduled event
+/// Internal event data with runtime info.
+/// Contains everything needed to manage an event while it's running.
 #[derive(Debug)]
 struct ScheduledEvent {
     id: String,
@@ -368,13 +551,17 @@ struct ScheduledEvent {
     task_handle: Option<tokio::task::JoinHandle<()>>,
 }
 
+/// The main scheduler that handles all your scheduled events.
+/// It's a singleton that uses message passing to stay thread-safe.
 pub struct EventScheduler {
-    message_sender: mpsc::UnboundedSender<SchedulerMessage>, // Channel for sending messages to the scheduler task
-    message_receiver: RwLock<mpsc::UnboundedReceiver<SchedulerMessage>>, // Channel for receiving messages in the scheduler task
-    is_running: AtomicBool, // Flag to track if the listener is running
+    message_sender: mpsc::UnboundedSender<SchedulerMessage>,
+    message_receiver: RwLock<mpsc::UnboundedReceiver<SchedulerMessage>>,
+    is_running: AtomicBool,
 }
 
 impl EventScheduler {
+    /// Creates a new scheduler instance.
+    /// Call `spawn_listener()` to actually start it.
     pub fn new() -> Self {
         let (message_sender, message_receiver) = mpsc::unbounded_channel::<SchedulerMessage>();
 
@@ -385,10 +572,33 @@ impl EventScheduler {
         }
     }
 
+    /// Gets the global scheduler instance.
+    /// Returns the global EventScheduler singleton.
     pub fn instance() -> &'static Self {
         &INSTANCE
     }
 
+    /// Schedules a new event.
+    ///
+    /// This is the main way to add new scheduled events. The scheduler will
+    /// handle everything and run it according to your timing settings.
+    ///
+    /// ### Parameters
+    /// * `event_type` - What to do (ResumeMining or Mine)
+    /// * `event_id` - Unique name for this event
+    /// * `timing` - When to run it (In or Between)
+    ///
+    /// ### Returns
+    /// * `Ok(String)` - Event ID of the scheduled event
+    /// * `Err(SchedulerError)` - If scheduling fails
+    ///
+    /// ### Example
+    /// ```
+    /// let timing = SchedulerEventTiming::parse_in_variant(2, TimeUnit::Hours)?;
+    /// let event_id = EventScheduler::instance()
+    ///     .schedule_event(SchedulerEventType::ResumeMining, "resume_mining".to_string(), timing)
+    ///     .await?;
+    /// ```
     pub async fn schedule_event(
         &self,
         event_type: SchedulerEventType,
@@ -411,6 +621,7 @@ impl EventScheduler {
             .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
     }
 
+    /// Removes an event permanently.
     pub async fn remove_event(&self, event_id: String) -> Result<(), SchedulerError> {
         let (response_tx, response_rx) = tokio::sync::oneshot::channel();
 
@@ -426,6 +637,7 @@ impl EventScheduler {
             .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
     }
 
+    /// Pauses an event. Can be resumed later with `resume_event()`.
     pub async fn pause_event(&self, event_id: String) -> Result<(), SchedulerError> {
         let (response_tx, response_rx) = tokio::sync::oneshot::channel();
 
@@ -441,6 +653,7 @@ impl EventScheduler {
             .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
     }
 
+    /// Resumes a paused event.
     pub async fn resume_event(&self, event_id: String) -> Result<(), SchedulerError> {
         let (response_tx, response_rx) = tokio::sync::oneshot::channel();
 
@@ -456,6 +669,13 @@ impl EventScheduler {
             .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
     }
 
+    /// Saves persistent events (Between timing) to the application configuration.
+    ///
+    /// This ensures that recurring events survive application restarts by storing
+    /// their configuration in the persistent config system.
+    ///
+    /// ### Parameters
+    /// * `scheduled_events` - Map of all current scheduled events
     async fn save_persistent_events_to_config(scheduled_events: &HashMap<String, ScheduledEvent>) {
         let persistent_events: HashMap<String, ScheduledEventInfo> = HashMap::from_iter(
             scheduled_events
@@ -480,6 +700,14 @@ impl EventScheduler {
             });
     }
 
+    /// Loads persistent events from the application configuration.
+    ///
+    /// Called during scheduler startup to restore recurring events that were
+    /// saved before the previous application shutdown.
+    ///
+    /// ### Returns
+    /// * `Ok(HashMap)` - Map of restored scheduled events
+    /// * `Err(SchedulerError)` - If loading fails
     async fn load_persistent_events() -> Result<HashMap<String, ScheduledEvent>, SchedulerError> {
         let persistent_events_from_config = ConfigCore::content().await.scheduler_events().clone();
         let scheduled_events =
@@ -498,6 +726,19 @@ impl EventScheduler {
         Ok(scheduled_events)
     }
 
+    /// Starts the scheduler's main event loop.
+    ///
+    /// This spawns the background task that handles all scheduler operations
+    /// and manages event execution. It also loads any saved events from config.
+    /// Runs until the app shuts down.
+    ///
+    /// ### Returns
+    /// * `Ok(())` - Started successfully
+    /// * `Err(SchedulerError::InternalError)` - Already running
+    ///
+    /// # Note
+    /// Call this once during app startup. It runs in the background and
+    /// handles everything automatically.
     pub async fn spawn_listener(&self) -> Result<(), SchedulerError> {
         if self.is_running.load(std::sync::atomic::Ordering::SeqCst) {
             return Err(SchedulerError::InternalError(
@@ -584,6 +825,20 @@ impl EventScheduler {
         Ok(())
     }
 
+    /// Internal handler for adding new events to the scheduler.
+    ///
+    /// Processes AddEvent messages from the public API, manages unique event types,
+    /// and creates the execution tasks for new events.
+    ///
+    /// ### Parameters
+    /// * `events` - Mutable reference to the events map
+    /// * `event_type` - Type of event to add
+    /// * `event_id` - Unique identifier for the event
+    /// * `timing` - When the event should trigger
+    ///
+    /// ### Returns
+    /// * `Ok(String)` - The event ID of the added event
+    /// * `Err(SchedulerError)` - If adding fails
     async fn handle_add_event(
         events: &mut HashMap<String, ScheduledEvent>,
         event_type: SchedulerEventType,
@@ -620,6 +875,18 @@ impl EventScheduler {
         Ok(event_id)
     }
 
+    /// Internal handler for removing events from the scheduler.
+    ///
+    /// Processes RemoveEvent messages, cancels the event's execution task,
+    /// and removes it from the events map.
+    ///
+    /// ### Parameters
+    /// * `events` - Mutable reference to the events map
+    /// * `event_id` - ID of the event to remove
+    ///
+    /// ### Returns
+    /// * `Ok(())` - Event successfully removed
+    /// * `Err(SchedulerError::EventNotFound)` - No event with the given ID
     fn handle_remove_event(
         events: &mut HashMap<String, ScheduledEvent>,
         event_id: String,
@@ -636,6 +903,18 @@ impl EventScheduler {
         }
     }
 
+    /// Internal handler for pausing events.
+    ///
+    /// Processes PauseEvent messages, changes the event state to Paused,
+    /// and cancels the event's execution task while keeping the event data.
+    ///
+    /// ### Parameters
+    /// * `events` - Mutable reference to the events map
+    /// * `event_id` - ID of the event to pause
+    ///
+    /// ### Returns
+    /// * `Ok(())` - Event successfully paused
+    /// * `Err(SchedulerError)` - If pausing fails
     fn handle_pause_event(
         events: &mut HashMap<String, ScheduledEvent>,
         event_id: String,
@@ -657,6 +936,18 @@ impl EventScheduler {
         }
     }
 
+    /// Internal handler for resuming paused events.
+    ///
+    /// Processes ResumeEvent messages, changes the event state back to Active,
+    /// and creates a new execution task for the event.
+    ///
+    /// ### Parameters
+    /// * `events` - Mutable reference to the events map
+    /// * `event_id` - ID of the event to resume
+    ///
+    /// ### Returns
+    /// * `Ok(())` - Event successfully resumed
+    /// * `Err(SchedulerError)` - If resuming fails
     async fn handle_resume_event(
         events: &mut HashMap<String, ScheduledEvent>,
         event_id: String,
@@ -684,6 +975,18 @@ impl EventScheduler {
         }
     }
 
+    /// Internal handler for event enter callbacks.
+    ///
+    /// Executes the actions associated with an event when it triggers.
+    /// This starts mining operations based on the event type.
+    ///
+    /// ### Parameters
+    /// * `events` - Reference to the events map
+    /// * `event_id` - ID of the event that triggered
+    ///
+    /// ### Returns
+    /// * `Ok(())` - Callback executed successfully
+    /// * `Err(SchedulerError)` - If execution fails
     async fn handle_enter_callback(
         events: &HashMap<String, ScheduledEvent>,
         event_id: String,
@@ -716,6 +1019,18 @@ impl EventScheduler {
         Ok(())
     }
 
+    /// Internal handler for event exit callbacks.
+    ///
+    /// Executes cleanup actions when a time window ends (for Between events).
+    /// This typically stops mining operations.
+    ///
+    /// ### Parameters
+    /// * `events` - Reference to the events map
+    /// * `event_id` - ID of the event that is ending
+    ///
+    /// ### Returns
+    /// * `Ok(())` - Callback executed successfully
+    /// * `Err(SchedulerError)` - If execution fails
     async fn handle_exit_callback(
         events: &HashMap<String, ScheduledEvent>,
         event_id: String,
@@ -736,6 +1051,14 @@ impl EventScheduler {
         Ok(())
     }
 
+    /// Internal handler for cleaning up completed one-time events.
+    ///
+    /// Removes "In" timing events after they execute, as they are not recurring.
+    /// "Between" timing events are kept for repeated execution.
+    ///
+    /// ### Parameters
+    /// * `events` - Mutable reference to the events map
+    /// * `event_id` - ID of the event to potentially clean up
     async fn handle_cleanup_schedule_events(
         events: &mut HashMap<String, ScheduledEvent>,
         event_id: String,
@@ -750,7 +1073,20 @@ impl EventScheduler {
         }
     }
 
-    // Create a scheduling task for different timing types
+    /// Creates a tokio task to handle the timing logic for an event.
+    ///
+    /// This spawns the appropriate timing task based on the event's timing type:
+    /// - "In" timing: Simple delay then trigger
+    /// - "Between" timing: Complex cron-based recurring schedule
+    ///
+    /// ### Parameters
+    /// * `event_id` - Unique identifier for the event
+    /// * `_event_type` - Type of event (not used in scheduling logic, only for identification)
+    /// * `timing` - When the event should be triggered
+    ///
+    /// ### Returns
+    /// * `Ok(JoinHandle)` - Handle to the spawned scheduling task
+    /// * `Err(SchedulerError)` - If task creation fails
     async fn create_scheduling_task(
         event_id: String,
         _event_type: SchedulerEventType, // Not used in scheduling logic, only for identification
