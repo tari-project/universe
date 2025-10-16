@@ -9,7 +9,7 @@ import {
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode } from '@app/store/types.ts';
-import { BasePoolData, ConfigBackendInMemory } from '@app/types/configs.ts';
+import { BasePoolData, ConfigBackendInMemory, PauseOnBatteryModeState } from '@app/types/configs.ts';
 import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
 
@@ -136,4 +136,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
     function invoke(param: 'set_mode_mining_time', payload: { mode: string; duration: number }): Promise<void>;
     function invoke(param: 'set_eco_alert_needed'): Promise<void>;
+    function invoke(param: 'set_pause_on_battery_mode', payload: { mode: PauseOnBatteryModeState }): Promise<void>;
 }

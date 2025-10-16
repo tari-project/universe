@@ -7,6 +7,7 @@ import {
     ConfigPools,
     ConfigUI,
     ConfigWallet,
+    PauseOnBatteryModeState,
 } from '@app/types/configs';
 import { WalletUIMode } from '@app/types/events-payloads';
 
@@ -50,6 +51,7 @@ const configMininigInitialState: ConfigMining = {
     gpu_devices_settings: {},
     is_gpu_mining_recommended: true,
     eco_alert_needed: false,
+    pause_on_battery_mode: PauseOnBatteryModeState.Enabled,
 };
 
 const configUIInitialState: UIConfigStoreState = {

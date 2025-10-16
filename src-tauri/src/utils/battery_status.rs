@@ -27,6 +27,8 @@ impl BatteryStatus {
         info!(target: LOG_TARGET, "No batteries found on the system.");
         let _unused = ConfigMining::update_field(ConfigMiningContent::set_pause_on_battery_mode, PauseOnBatteryModeState::NotSupported).await;
         EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
+
+        Self::stop_battery_listener().await;
     }
 
     async fn switched_to_charging_handler() {
@@ -47,6 +49,16 @@ impl BatteryStatus {
                 INSTANCE.should_resume_mining_once_charging.store(true, std::sync::atomic::Ordering::SeqCst);
             }
             INSTANCE.should_resume_mining_once_charging.store(false, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+
+    pub async fn stop_battery_listener() {
+        let mut thread_lock = INSTANCE.battery_listener_thread.lock().await;
+        if let Some(handle) = thread_lock.take() {
+            handle.abort();
+            log::info!(target: LOG_TARGET, "Battery listener thread stopped.");
+        } else {
+            log::info!(target: LOG_TARGET, "Battery listener thread is not running.");
         }
     }
 
