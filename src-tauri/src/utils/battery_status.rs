@@ -20,13 +20,20 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 use std::sync::{atomic::AtomicBool, LazyLock};
 
 use log::info;
 use tokio::{sync::Mutex, task::JoinHandle};
 
-use crate::{configs::{config_mining::{ConfigMining, ConfigMiningContent, PauseOnBatteryModeState}, trait_config::ConfigImpl}, events_emitter::EventsEmitter, mining::{cpu::manager::CpuManager, gpu::manager::GpuManager}, tasks_tracker::TasksTrackers};
+use crate::{
+    configs::{
+        config_mining::{ConfigMining, ConfigMiningContent, PauseOnBatteryModeState},
+        trait_config::ConfigImpl,
+    },
+    events_emitter::EventsEmitter,
+    mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
+    tasks_tracker::TasksTrackers,
+};
 
 const LOG_TARGET: &str = "tari::universe::battery_status";
 
@@ -45,31 +52,52 @@ impl BatteryStatus {
         }
     }
 
-
     async fn no_batteries_found_handler() {
         info!(target: LOG_TARGET, "No batteries found on the system.");
-        let _unused = ConfigMining::update_field(ConfigMiningContent::set_pause_on_battery_mode, PauseOnBatteryModeState::NotSupported).await;
+        let _unused = ConfigMining::update_field(
+            ConfigMiningContent::set_pause_on_battery_mode,
+            PauseOnBatteryModeState::NotSupported,
+        )
+        .await;
         EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
 
         Self::stop_battery_listener().await;
     }
 
     async fn switched_to_charging_handler() {
-        if INSTANCE.should_resume_mining_once_charging.load(std::sync::atomic::Ordering::SeqCst) && ConfigMining::content().await.pause_on_battery_mode().is_enabled() {
+        if INSTANCE
+            .should_resume_mining_once_charging
+            .load(std::sync::atomic::Ordering::SeqCst)
+            && ConfigMining::content()
+                .await
+                .pause_on_battery_mode()
+                .is_enabled()
+        {
             info!(target: LOG_TARGET, "Battery switched to charging state.");
             let _unused = GpuManager::write().await.start_mining().await;
             let _unused = CpuManager::write().await.start_mining().await;
         }
-        INSTANCE.should_resume_mining_once_charging.store(false, std::sync::atomic::Ordering::SeqCst);
+        INSTANCE
+            .should_resume_mining_once_charging
+            .store(false, std::sync::atomic::Ordering::SeqCst);
     }
 
     async fn switched_to_discharging_handler() {
-        if ConfigMining::content().await.pause_on_battery_mode().is_enabled() && !INSTANCE.should_resume_mining_once_charging.load(std::sync::atomic::Ordering::SeqCst) {
+        if ConfigMining::content()
+            .await
+            .pause_on_battery_mode()
+            .is_enabled()
+            && !INSTANCE
+                .should_resume_mining_once_charging
+                .load(std::sync::atomic::Ordering::SeqCst)
+        {
             info!(target: LOG_TARGET, "Battery switched to discharging state.");
             if GpuManager::read().await.is_running() || CpuManager::read().await.is_running() {
                 let _unused = GpuManager::write().await.stop_mining().await;
                 let _unused = CpuManager::write().await.stop_mining().await;
-                INSTANCE.should_resume_mining_once_charging.store(true, std::sync::atomic::Ordering::SeqCst);
+                INSTANCE
+                    .should_resume_mining_once_charging
+                    .store(true, std::sync::atomic::Ordering::SeqCst);
             };
         }
     }
@@ -85,7 +113,11 @@ impl BatteryStatus {
     }
 
     pub async fn start_battery_listener() {
-        if ConfigMining::content().await.pause_on_battery_mode().is_not_supported() {
+        if ConfigMining::content()
+            .await
+            .pause_on_battery_mode()
+            .is_not_supported()
+        {
             info!(target: LOG_TARGET, "Battery status monitoring is not supported, skipping battery listener startup.");
             return;
         }
@@ -99,8 +131,7 @@ impl BatteryStatus {
                 loop {
                     // Used spawn_blocking to handle non-Send battery operations
                     let _unused = tokio::task::spawn_blocking(|| {
-                        let battery_manager = battery::Manager::new().expect("Failed to create battery manager");
-                        
+                       let battery_manager = battery::Manager::new().expect("Failed to create battery manager");
                        if battery_manager.batteries().is_ok_and(|batteries| batteries.count() == 0) {
                             tokio::spawn(Self::no_batteries_found_handler());
                             return;
@@ -135,10 +166,7 @@ impl BatteryStatus {
                         } else if all_discharging {
                             tokio::spawn(Self::switched_to_discharging_handler());
                         }
-                        
                     }).await;
-                    
-
                     tokio::select! {
                         _ = tokio::time::sleep(tokio::time::Duration::from_secs(3)) => {},
                         _ = &mut common_shutdown_signal => {
