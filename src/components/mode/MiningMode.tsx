@@ -47,7 +47,7 @@ export const MiningMode = ({ variant = 'primary', open = false }: MiningModeProp
         placement: 'bottom-end',
         whileElementsMounted: autoUpdate,
         middleware: [
-            offset({ mainAxis: 10 }),
+            offset({ mainAxis: variant === 'primary' ? 10 : 5 }),
             size({
                 apply({ elements, availableHeight }) {
                     const refWidth = elements.reference.getBoundingClientRect().width;

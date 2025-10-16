@@ -43,19 +43,23 @@ export const BaseSelect = () => {
     const [activeIndex, setActiveIndex] = useState(0);
 
     const { refs, floatingStyles, context } = useFloating<HTMLElement>({
-        placement: 'bottom-start',
+        placement: 'bottom',
         open: isOpen,
         onOpenChange: setIsOpen,
         whileElementsMounted: autoUpdate,
         middleware: [
-            offset({ mainAxis: 5, crossAxis: -10 }),
+            offset({ mainAxis: 5 }),
             size({
                 apply({ elements, availableHeight }) {
+                    const refWidth = elements.reference.getBoundingClientRect().width;
                     Object.assign(elements.floating.style, {
                         maxHeight: `${availableHeight}px`,
+                        maxWidth: `${refWidth + 30}px`,
                     });
                 },
-                padding: 10,
+                padding: {
+                    bottom: 20,
+                },
             }),
         ],
     });

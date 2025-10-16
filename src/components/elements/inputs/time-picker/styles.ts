@@ -36,6 +36,8 @@ export const SelectTrigger = styled.div`
 
 export const SelectWrapper = styled.div`
     display: flex;
+    flex: 1 1 auto;
+    width: 100%;
     border-radius: 10px;
     background: ${({ theme }) => theme.palette.background.paper};
     padding: 8px 6px;

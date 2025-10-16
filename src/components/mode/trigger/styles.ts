@@ -25,7 +25,7 @@ export const TriggerContent = styled.div<Props>`
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(240, 241, 240, 0.75);
     backdrop-filter: blur(5px);
-
+    color: #000;
     transition: background 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
 
     &:hover {
@@ -41,11 +41,12 @@ export const TriggerContent = styled.div<Props>`
 
 export const Content = styled.div<Props>`
     display: flex;
+    justify-content: space-between;
     width: 100%;
 `;
 
 export const Label = styled(Typography)<Props>`
-    color: ${({ theme, $variant }) => ($variant === 'secondary' ? theme.palette.text.primary : '#797979')};
+    color: #797979;
     font-size: 10px;
     font-weight: 500;
     line-height: 1;
@@ -57,7 +58,6 @@ export const SelectedItem = styled.div<Props>`
     font-family: Poppins, sans-serif;
     font-size: 14px;
     font-weight: 600;
-    line-height: 1;
     align-items: center;
     gap: 5px;
 
@@ -68,11 +68,6 @@ export const SelectedItem = styled.div<Props>`
 `;
 
 export const IconWrapper = styled.div<Props>`
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-
     transition: transform 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
     transform-origin: center;
 
@@ -83,6 +78,38 @@ export const IconWrapper = styled.div<Props>`
     ${({ $isOpen }) =>
         $isOpen &&
         css`
-            transform: translateY(-50%) scaleY(-1);
+            transform: scaleY(-1);
         `}
+`;
+
+export const SecondaryTriggerContent = styled.div<Props>`
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    z-index: 1;
+    border-radius: 10px;
+    border: 1px solid ${({ theme }) => theme.palette.divider};
+    padding: 9px 15px;
+    gap: 20px;
+    width: 100%;
+    height: 100%;
+    backdrop-filter: blur(5px);
+    justify-content: space-between;
+
+    ${({ $isOpen }) =>
+        $isOpen &&
+        css`
+            background: rgba(240, 241, 240, 1);
+        `};
+
+    ${Label} {
+        font-size: 12px;
+    }
+
+    ${SelectedItem} {
+        text-transform: uppercase;
+        color: ${({ theme }) => theme.palette.text.primary};
+        font-size: 18px;
+        font-weight: 600;
+    }
 `;

@@ -13,7 +13,7 @@ export default function Scheduler() {
             <FormWrapper>
                 <TimePicker label={`Daily Start Time`} />
                 <TimePicker label={`Daily End Time`} />
-                <MiningMode />
+                <MiningMode variant="secondary" />
             </FormWrapper>
             <Button variant="black" size="xlarge" fluid>{`Save schedule`}</Button>
             <TextButton fluid size="large">{`Cancel`}</TextButton>
