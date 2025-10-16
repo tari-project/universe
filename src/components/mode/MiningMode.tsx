@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, KeyboardEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -134,13 +134,6 @@ export const MiningMode = ({ variant = 'primary', open = false }: MiningModeProp
         [selectedMiningMode]
     );
 
-    const handleKeyDown = useCallback(async (e: KeyboardEvent<HTMLButtonElement>, mode: ModeDropdownMiningMode) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            await handleSelectMode(mode);
-        }
-    }, []);
-
     useEffect(() => setIsOpen(open), [open]);
 
     return (
@@ -178,7 +171,12 @@ export const MiningMode = ({ variant = 'primary', open = false }: MiningModeProp
                                                 listRef.current[index] = node;
                                             }}
                                             onClick={() => handleSelectMode(mode)}
-                                            onKeyDown={(e) => handleKeyDown(e, mode)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    void handleSelectMode(mode);
+                                                }
+                                            }}
                                             tabIndex={isActive ? 0 : -1}
                                             role="option"
                                             aria-selected={isSelected}

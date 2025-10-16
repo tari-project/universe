@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import { offset, useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
 import styled from 'styled-components';
-import ModeDropdown from './ModeDropdown/ModeDropdown.tsx';
 import EcoAlert from './tooltip/EcoAlert.tsx';
 import { useMiningStore } from '@app/store';
 import { setShowEcoAlert } from '@app/store/actions/miningStoreActions.ts';
