@@ -47,8 +47,8 @@
     "step_6": "Thử đặt lại ứng dụng (trong Cài đặt)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}<strong/>",
-    "until-restart": "Pause until I<strong> Restart<strong/>"
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
     "accepted_shares": "Số share chấp nhận",

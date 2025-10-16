@@ -41,8 +41,8 @@
     "step_6": "Essayez de réinitialiser l\"application (dans les paramètres)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}<strong/>",
-    "until-restart": "Pause until I<strong> Restart<strong/>"
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
     "accepted_shares": "Parts acceptées",

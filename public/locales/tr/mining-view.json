@@ -47,8 +47,8 @@
     "step_6": "Uygulama sıfırlamayı deneyin (Ayarlar\"da)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}<strong/>",
-    "until-restart": "Pause until I<strong> Restart<strong/>"
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
     "accepted_shares": "Kabul Edilen Paylar",

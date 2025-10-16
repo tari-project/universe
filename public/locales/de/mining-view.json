@@ -41,8 +41,8 @@
     "step_6": "Versuche einen App-Reset (in den Einstellungen)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}<strong/>",
-    "until-restart": "Pause until I<strong> Restart<strong/>"
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
     "accepted_shares": "Akzeptierte Anteile",

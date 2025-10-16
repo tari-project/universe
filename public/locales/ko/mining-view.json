@@ -41,8 +41,8 @@
     "step_6": "앱을 재설정해 보세요 (설정에서)"
   },
   "pause": {
-    "for-duration": "Pause for <strong>{{duration}}<strong/>",
-    "until-restart": "Pause until I<strong> Restart<strong/>"
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
     "accepted_shares": "수락된 공유",
