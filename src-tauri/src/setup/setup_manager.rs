@@ -262,8 +262,6 @@ impl SetupManager {
             .load_app_handle(app_handle.clone())
             .await;
 
-        BatteryStatus::start_battery_listener().await;
-
         // Listen for websocket reconnection events to restart events manager
         let websocket_event_manager_clone = state.websocket_event_manager.clone();
         let websocket_manager_clone = state.websocket_manager.clone();
@@ -320,6 +318,8 @@ impl SetupManager {
             .await
             .initialize_tray(&app_handle)
             .await;
+
+        BatteryStatus::start_battery_listener().await;
 
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {node_type:?}");

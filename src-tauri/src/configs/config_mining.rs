@@ -113,6 +113,24 @@ impl GpuDevicesSettings {
         }
     }
 }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum PauseOnBatteryModeState {
+    Enabled,
+    Disabled,
+    NotSupported,
+}
+
+impl PauseOnBatteryModeState {
+    pub fn is_not_supported(&self) -> bool {
+        matches!(self, PauseOnBatteryModeState::NotSupported)
+    }
+    pub fn is_enabled(&self) -> bool {
+        matches!(self, PauseOnBatteryModeState::Enabled)
+    }
+    pub fn is_disabled(&self) -> bool {
+        matches!(self, PauseOnBatteryModeState::Disabled)
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -132,8 +150,10 @@ pub struct ConfigMiningContent {
     gpu_devices_settings: GpuDevicesSettings,
     squad_override: Option<String>,
     gpu_miner_type: GpuMinerType,
+    pause_on_battery_mode: PauseOnBatteryModeState,
     is_lolminer_tested: bool,
     is_gpu_mining_recommended: bool,
+
     eco_alert_needed: bool,
     mode_mining_times: HashMap<String, Duration>, // we only need Eco for now, but we can add to this if needed
 }
@@ -192,6 +212,7 @@ impl Default for ConfigMiningContent {
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
             gpu_devices_settings: GpuDevicesSettings::new(),
+            pause_on_battery_mode: PauseOnBatteryModeState::Enabled,
             squad_override: None,
             is_lolminer_tested: false,
             is_gpu_mining_recommended: true,
