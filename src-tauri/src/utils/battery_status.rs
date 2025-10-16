@@ -47,8 +47,7 @@ impl BatteryStatus {
                 let _unused = GpuManager::write().await.stop_mining().await;
                 let _unused = CpuManager::write().await.stop_mining().await;
                 INSTANCE.should_resume_mining_once_charging.store(true, std::sync::atomic::Ordering::SeqCst);
-            }
-            INSTANCE.should_resume_mining_once_charging.store(false, std::sync::atomic::Ordering::SeqCst);
+            };
         }
     }
 
