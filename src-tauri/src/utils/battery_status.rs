@@ -32,8 +32,8 @@ impl BatteryStatus {
     }
 
     async fn switched_to_charging_handler() {
-        info!(target: LOG_TARGET, "Battery switched to charging state.");
         if INSTANCE.should_resume_mining_once_charging.load(std::sync::atomic::Ordering::SeqCst) && ConfigMining::content().await.pause_on_battery_mode().is_enabled() {
+            info!(target: LOG_TARGET, "Battery switched to charging state.");
             let _unused = GpuManager::write().await.start_mining().await;
             let _unused = CpuManager::write().await.start_mining().await;
         }
@@ -41,8 +41,8 @@ impl BatteryStatus {
     }
 
     async fn switched_to_discharging_handler() {
-        info!(target: LOG_TARGET, "Battery switched to discharging state.");
-        if ConfigMining::content().await.pause_on_battery_mode().is_enabled() {
+        if ConfigMining::content().await.pause_on_battery_mode().is_enabled() && !INSTANCE.should_resume_mining_once_charging.load(std::sync::atomic::Ordering::SeqCst) {
+            info!(target: LOG_TARGET, "Battery switched to discharging state.");
             if GpuManager::read().await.is_running() || CpuManager::read().await.is_running() {
                 let _unused = GpuManager::write().await.stop_mining().await;
                 let _unused = CpuManager::write().await.stop_mining().await;

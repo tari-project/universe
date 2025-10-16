@@ -1979,12 +1979,12 @@ pub async fn set_security_warning_dismissed() -> Result<(), String> {
 
 #[tauri::command]
 pub async fn set_pause_on_battery_mode(
-    pause_on_battery: PauseOnBatteryModeState,
+    pause_on_battery_mode: PauseOnBatteryModeState,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigMining::update_field(
         ConfigMiningContent::set_pause_on_battery_mode,
-        pause_on_battery,
+        pause_on_battery_mode,
     )
     .await
     .map_err(InvokeError::from_anyhow)?;

@@ -211,10 +211,10 @@ export const setMineOnAppStart = async (mineOnAppStart: boolean) => {
     });
 };
 
-export const setPauseOnBatteryMode = async (mode: ConfigMining['pause_on_battery_mode']) => {
+export const setPauseOnBatteryMode = async (pauseOnBatteryMode: ConfigMining['pause_on_battery_mode']) => {
     const previousMode = useConfigMiningStore.getState().pause_on_battery_mode;
-    useConfigMiningStore.setState((c) => ({ ...c, pause_on_battery_mode: mode }));
-    invoke('set_pause_on_battery_mode', { mode }).catch((e) => {
+    useConfigMiningStore.setState((c) => ({ ...c, pause_on_battery_mode: pauseOnBatteryMode }));
+    invoke('set_pause_on_battery_mode', { pauseOnBatteryMode }).catch((e) => {
         console.error('Could not set pause on battery mode', e);
         setError('Could not change pause on battery mode');
         useConfigMiningStore.setState((c) => ({ ...c, pause_on_battery_mode: previousMode }));
