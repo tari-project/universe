@@ -142,9 +142,8 @@ impl BatteryStatus {
                         let mut all_charging = true;
                         let mut all_discharging = true;
 
-                        if let Some(batteries) = battery_manager.batteries().ok() {
-                            for maybe_battery in batteries {
-                                if let Ok(battery) = maybe_battery {
+                        if let Ok(batteries) = battery_manager.batteries() {
+                            for battery in batteries.flatten() {
                                     match battery.state() {
                                         battery::State::Charging | battery::State::Full => {
                                             all_discharging = false;
@@ -156,7 +155,6 @@ impl BatteryStatus {
                                             all_charging = false;
                                             all_discharging = false;
                                         }
-                                    }
                                 }
                             }
                         }
@@ -165,6 +163,8 @@ impl BatteryStatus {
                             tokio::spawn(Self::switched_to_charging_handler());
                         } else if all_discharging {
                             tokio::spawn(Self::switched_to_discharging_handler());
+                        } else {
+                            // Mixed states or unknown states, do nothing
                         }
                     }).await;
                     tokio::select! {

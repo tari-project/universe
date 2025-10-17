@@ -127,9 +127,6 @@ impl PauseOnBatteryModeState {
     pub fn is_enabled(&self) -> bool {
         matches!(self, PauseOnBatteryModeState::Enabled)
     }
-    pub fn is_disabled(&self) -> bool {
-        matches!(self, PauseOnBatteryModeState::Disabled)
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
