@@ -29,7 +29,7 @@ export const Wrapper = styled.div`
     z-index: 1;
     border-radius: 10px;
     border: 1px solid ${({ theme }) => theme.palette.divider};
-    background: ${({ theme }) => theme.palette.background.paper};
+    background: ${({ theme }) => theme.palette.background.default};
     width: 100%;
     height: 100%;
 `;
@@ -67,8 +67,8 @@ export const SelectWrapper = styled.div`
     flex: 1 1 auto;
     width: 100%;
     border-radius: 10px;
-    background: ${({ theme }) => theme.palette.background.paper};
-    padding: 8px 6px;
+    background: ${({ theme }) => theme.palette.background.default};
+    padding: 6px;
     overflow: hidden;
     box-shadow:
         20px 20px 45px rgba(0, 0, 0, 0.15),
@@ -79,29 +79,33 @@ export const Row = styled.div`
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     width: 100%;
-    gap: 2px;
+    gap: 4px;
 `;
 export const OptionListWrapper = styled.div`
     display: flex;
     flex-direction: column;
     width: 100%;
     padding: 2px;
+    gap: 4px;
     overflow-y: auto;
 `;
 
-export const StyledOption = styled.div<{ $active?: boolean; $selected?: boolean }>`
+export const StyledOption = styled.div<{
+    $active?: boolean;
+    $selected?: boolean;
+    $borderColour?: string;
+    $activeColour?: string;
+}>`
     display: flex;
     text-align: center;
     justify-content: center;
     font-size: 16px;
-    padding: 2px 4px;
-    border-radius: 4px;
+    padding: 2px;
+    border-radius: 5px;
     border-width: 2px;
     border-style: solid;
-    border-color: ${({ theme, $selected }) =>
-        $selected ? theme.colors.teal[theme.mode === 'dark' ? 800 : 200] : 'transparent'};
-    background: ${({ theme, $active }) =>
-        $active ? theme.colors.teal[theme.mode === 'dark' ? 950 : 100] : theme.palette.background.paper};
+    border-color: ${({ $selected, $borderColour }) => ($selected ? $borderColour : 'transparent')};
+    background: ${({ theme, $active, $activeColour }) => ($active ? $activeColour : theme.palette.background.default)};
     cursor: pointer;
-    transition: border-color ease-in-out 0.15s background ease-in-out 0.12s;
+    transition: border-color ease-in-out 0.15s background ease-in-out 0.2s;
 `;

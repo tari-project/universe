@@ -11,6 +11,8 @@ import {
     TriggerContent,
     TriggerCTA,
 } from './styles.ts';
+import { getModeColours } from '@app/components/mode/helpers.ts';
+import { MiningModeType } from '@app/types/configs.ts';
 
 interface TriggerProps extends HTMLProps<HTMLButtonElement> {
     ref: Ref<HTMLButtonElement>;
@@ -18,7 +20,7 @@ interface TriggerProps extends HTMLProps<HTMLButtonElement> {
     label?: string;
     variant?: Variant;
     isOpen?: boolean;
-    selectedMode?: string;
+    selectedMode: MiningModeType;
 }
 export const Trigger = ({
     ref,
@@ -29,10 +31,21 @@ export const Trigger = ({
     variant = 'primary',
     ...props
 }: TriggerProps) => {
-    const Wrapper = variant === 'secondary' ? SecondaryTriggerContent : TriggerContent;
+    const isSecondary = variant === 'secondary';
+    let styles;
+    const Wrapper = isSecondary ? SecondaryTriggerContent : TriggerContent;
+
+    if (isSecondary) {
+        const colours = getModeColours(selectedMode);
+        styles = {
+            background: `radial-gradient(ellipse at -10% 150%, ${colours.light} -25%, transparent 65%),
+        radial-gradient(ellipse at 90% 120%, ${colours.accent} -45%, transparent 60%) ${colours.base}`,
+        };
+    }
+
     return (
         <TriggerCTA {...props} ref={ref} $variant={variant} type="button">
-            <Wrapper $selectedMode={selectedMode}>
+            <Wrapper style={styles}>
                 <Content>{label ? <Label>{label}</Label> : null}</Content>
                 <Content>
                     <SelectedItem>{children}</SelectedItem>

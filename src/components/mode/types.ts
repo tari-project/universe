@@ -8,3 +8,11 @@ export interface ModeDropdownMiningMode {
     mode_type: MiningModeType;
     icon: string;
 }
+
+export interface ModeColourGroup {
+    base: string;
+    accent: string;
+    light: string;
+    dark: string;
+    shadow: string;
+}

@@ -25,6 +25,8 @@ import {
 
 import { ChevronSVG } from './chevron.tsx';
 import { CYCLE, TimeParts } from './types.ts';
+import { useConfigMiningStore } from '@app/store';
+import { getModeColours } from '@app/components/mode/helpers.ts';
 
 const fmtTimeUnit = (n: number): string => String(n).padStart(2, '0');
 
@@ -38,6 +40,8 @@ const defaultTime: TimeParts = {
 };
 
 export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
+    const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
+    const modeColour = getModeColours(selectedMiningMode?.mode_type);
     const _initialTime = initialTime || defaultTime;
     const [isOpen, setIsOpen] = useState(false);
     const [time, setTime] = useState<TimeParts>(_initialTime);
@@ -53,7 +57,7 @@ export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
         onOpenChange: setIsOpen,
         whileElementsMounted: autoUpdate,
         middleware: [
-            offset({ mainAxis: 5 }),
+            offset({ mainAxis: 20 }),
             size({
                 apply({ elements, availableHeight }) {
                     const refWidth = elements.reference.getBoundingClientRect().width;
@@ -94,7 +98,7 @@ export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
     }, [hour, minute, AMPM]);
 
     return (
-        <InputWrapper ref={refs.setPositionReference}>
+        <InputWrapper>
             <SelectTrigger tabIndex={0} ref={refs.setReference} {...getReferenceProps()}>
                 <TriggerContent>
                     {`${time.hour}:${time.minute} ${time.cycle}`}
@@ -125,6 +129,8 @@ export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
                                                     role="option"
                                                     $selected={selected}
                                                     $active={activeIndex === i}
+                                                    $borderColour={modeColour.light}
+                                                    $activeColour={modeColour.shadow}
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter' || e.key === ' ') {
                                                             e.preventDefault();
@@ -155,6 +161,8 @@ export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
                                                     role="option"
                                                     $selected={selected}
                                                     $active={activeIndex === i}
+                                                    $borderColour={modeColour.light}
+                                                    $activeColour={modeColour.shadow}
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter' || e.key === ' ') {
                                                             e.preventDefault();
@@ -185,6 +193,8 @@ export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
                                                     role="option"
                                                     $selected={selected}
                                                     $active={activeIndex === i}
+                                                    $borderColour={modeColour.light}
+                                                    $activeColour={modeColour.shadow}
                                                     onKeyDown={(e) => {
                                                         if (e.key === 'Enter' || e.key === ' ') {
                                                             e.preventDefault();
