@@ -5,6 +5,7 @@ import { Variant } from '../types.ts';
 interface Props {
     $variant?: Variant;
     $isOpen?: boolean;
+    $selectedMode?: string;
 }
 
 export const TriggerCTA = styled.button<Props>`
@@ -97,12 +98,6 @@ export const SecondaryTriggerContent = styled.div<Props>`
     justify-content: space-between;
     color: #fff;
 
-    ${({ $isOpen }) =>
-        $isOpen &&
-        css`
-            background: rgba(240, 241, 240, 1);
-        `};
-
     ${Content} {
         flex: 1 1 auto;
     }
@@ -118,4 +113,41 @@ export const SecondaryTriggerContent = styled.div<Props>`
         font-size: 18px;
         font-weight: 600;
     }
+
+    ${({ $isOpen }) =>
+        $isOpen &&
+        css`
+            background: rgba(240, 241, 240, 1);
+        `};
+
+    ${({ $selectedMode }) => {
+        switch ($selectedMode) {
+            case 'Ludicrous':
+                return css`
+                    background:
+                        radial-gradient(ellipse at -10% 150%, #ff6100 -25%, transparent 65%),
+                        radial-gradient(ellipse at 90% 120%, rgba(243, 177, 110, 0.66) -45%, transparent 60%) #77341f;
+                `;
+
+            case 'Custom':
+                return css`
+                    background:
+                        radial-gradient(ellipse at -10% 150%, #397fb9 -25%, transparent 65%),
+                        radial-gradient(ellipse at 90% 120%, rgba(138, 194, 239, 0.79) -45%, transparent 60%) #123959;
+                `;
+            case 'Turbo':
+                return css`
+                    background:
+                        radial-gradient(ellipse at -10% 150%, #4a7a60 -25%, transparent 65%),
+                        radial-gradient(ellipse at 90% 120%, rgba(157, 255, 177, 0.41) -45%, transparent 60%) #154349;
+                `;
+            case 'Eco':
+            default:
+                return css`
+                    background:
+                        radial-gradient(ellipse at -10% 150%, rgba(165, 185, 56, 0.89) -25%, transparent 65%),
+                        radial-gradient(ellipse at 90% 120%, rgba(255, 235, 171, 0.55) -45%, transparent 60%) #4e7a4a;
+                `;
+        }
+    }}
 `;

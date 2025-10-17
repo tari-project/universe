@@ -146,6 +146,7 @@ export const MiningMode = ({ variant = 'primary', open = false }: MiningModeProp
                 label={t('modes.mode', { context: variant === 'secondary' && 'long' })}
                 variant={variant}
                 isOpen={isOpen}
+                selectedMode={selectedMiningMode?.mode_name}
             >
                 {selectedMiningMode?.mode_name}
                 <OptionIcon

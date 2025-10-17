@@ -18,12 +18,21 @@ interface TriggerProps extends HTMLProps<HTMLButtonElement> {
     label?: string;
     variant?: Variant;
     isOpen?: boolean;
+    selectedMode?: string;
 }
-export const Trigger = ({ ref, children, label, isOpen, variant = 'primary', ...props }: TriggerProps) => {
+export const Trigger = ({
+    ref,
+    children,
+    label,
+    isOpen,
+    selectedMode,
+    variant = 'primary',
+    ...props
+}: TriggerProps) => {
     const Wrapper = variant === 'secondary' ? SecondaryTriggerContent : TriggerContent;
     return (
         <TriggerCTA {...props} ref={ref} $variant={variant} type="button">
-            <Wrapper>
+            <Wrapper $selectedMode={selectedMode}>
                 <Content>{label ? <Label>{label}</Label> : null}</Content>
                 <Content>
                     <SelectedItem>{children}</SelectedItem>
