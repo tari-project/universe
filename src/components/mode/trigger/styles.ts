@@ -87,12 +87,15 @@ export const SecondaryTriggerContent = styled.div<Props>`
     flex: 1 1 auto;
     z-index: 1;
     border-radius: 10px;
-    border: 1px solid ${({ theme }) => theme.palette.divider};
-    padding: 9px 15px;
+    background:
+        radial-gradient(ellipse at -10% 150%, #a5b938 -25%, transparent 65%),
+        radial-gradient(ellipse at 90% 120%, #ffebaba3 -45%, transparent 60%) #4e7a4a;
+    padding: 10px 15px;
     width: 100%;
     height: 100%;
     backdrop-filter: blur(5px);
     justify-content: space-between;
+    color: #fff;
 
     ${({ $isOpen }) =>
         $isOpen &&
@@ -104,12 +107,14 @@ export const SecondaryTriggerContent = styled.div<Props>`
         flex: 1 1 auto;
     }
     ${Label} {
+        color: #fff;
+        opacity: 0.75;
         font-size: 12px;
         line-height: 1.2;
     }
 
     ${SelectedItem} {
-        color: ${({ theme }) => theme.palette.text.primary};
+        color: #fff;
         font-size: 18px;
         font-weight: 600;
     }

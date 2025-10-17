@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const Container = styled.div`
     display: flex;
@@ -40,6 +40,20 @@ export const SelectTrigger = styled.div`
     flex: 1 1 auto;
 `;
 
+export const IconWrapper = styled.div<{ $isOpen?: boolean }>`
+    transition: transform 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
+    transform-origin: center;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    ${({ $isOpen }) =>
+        $isOpen &&
+        css`
+            transform: scaleY(-1);
+        `}
+`;
 export const TriggerContent = styled.div`
     width: 100%;
     display: flex;

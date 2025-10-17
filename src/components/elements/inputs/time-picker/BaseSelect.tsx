@@ -13,6 +13,7 @@ import {
     useRole,
 } from '@floating-ui/react';
 import {
+    IconWrapper,
     InputWrapper,
     OptionListWrapper,
     Row,
@@ -96,7 +97,10 @@ export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
         <InputWrapper ref={refs.setPositionReference}>
             <SelectTrigger tabIndex={0} ref={refs.setReference} {...getReferenceProps()}>
                 <TriggerContent>
-                    {`${time.hour}:${time.minute} ${time.cycle}`} <ChevronSVG />
+                    {`${time.hour}:${time.minute} ${time.cycle}`}
+                    <IconWrapper $isOpen={isOpen}>
+                        <ChevronSVG />
+                    </IconWrapper>
                 </TriggerContent>
             </SelectTrigger>
             {isOpen && (
