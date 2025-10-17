@@ -294,6 +294,8 @@ impl XmrigStatusMonitor {
             }
         };
 
+        info!(target: LOG_TARGET, "Xmrig status: {:?}", body);
+
         // body.hashrate.total is a vector of Option<f64> which elements are:
         // index 0: 10 seconds avarage hashrate
         // index 1: 60 seconds avarage hashrate
