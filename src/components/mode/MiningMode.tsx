@@ -143,7 +143,7 @@ export const MiningMode = ({ variant = 'primary', open = false }: MiningModeProp
                 role="combobox"
                 aria-expanded={isOpen}
                 aria-haspopup="listbox"
-                label={t('mode')}
+                label={t('modes.mode', { context: variant === 'secondary' && 'long' })}
                 variant={variant}
                 isOpen={isOpen}
             >

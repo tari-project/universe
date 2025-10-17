@@ -15,30 +15,26 @@ import {
 import { InputWrapper, OptionListWrapper, Row, SelectTrigger, SelectWrapper, StyledOption } from './styles.ts';
 
 import { ChevronSVG } from './chevron.tsx';
+import { CYCLE, TimeParts } from './types.ts';
 
 const fmtTimeUnit = (n: number): string => String(n).padStart(2, '0');
 
 const hourOptions = Array.from({ length: 12 }).map((_, i) => fmtTimeUnit(i + 1));
 const minuteOptions = Array.from({ length: 12 }).map((_, i) => fmtTimeUnit(i * 5));
-const ampm = ['AM', 'PM'];
 
-interface TimeParts {
-    hour: string;
-    minute: string;
-    ampm: 'AM' | 'PM';
-}
-const initialTime: TimeParts = {
+const defaultTime: TimeParts = {
     hour: hourOptions[0],
     minute: minuteOptions[0],
-    ampm: 'AM',
+    cycle: 'AM',
 };
 
-export const BaseSelect = () => {
+export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
+    const _initialTime = initialTime || defaultTime;
     const [isOpen, setIsOpen] = useState(false);
-    const [time, setTime] = useState<TimeParts>(initialTime);
-    const [hour, setHour] = useState<TimeParts['hour']>(initialTime.hour);
-    const [minute, setMinute] = useState<TimeParts['minute']>(initialTime.minute);
-    const [AMPM, setAMPM] = useState<TimeParts['ampm']>(initialTime.ampm);
+    const [time, setTime] = useState<TimeParts>(_initialTime);
+    const [hour, setHour] = useState<TimeParts['hour']>(_initialTime.hour);
+    const [minute, setMinute] = useState<TimeParts['minute']>(_initialTime.minute);
+    const [AMPM, setAMPM] = useState<TimeParts['cycle']>(_initialTime.cycle);
 
     const [activeIndex, setActiveIndex] = useState(0);
 
@@ -85,13 +81,13 @@ export const BaseSelect = () => {
     };
 
     useEffect(() => {
-        setTime({ hour, minute, ampm: AMPM });
+        setTime({ hour, minute, cycle: AMPM });
     }, [hour, minute, AMPM]);
 
     return (
         <InputWrapper>
             <SelectTrigger tabIndex={0} ref={refs.setReference} {...getReferenceProps()}>
-                {`${time.hour}:${time.minute} ${time.ampm}`} <ChevronSVG />
+                {`${time.hour}:${time.minute} ${time.cycle}`} <ChevronSVG />
             </SelectTrigger>
             {isOpen && (
                 <FloatingFocusManager context={context}>
@@ -162,9 +158,9 @@ export const BaseSelect = () => {
                                 })}
                             </OptionListWrapper>
                             <OptionListWrapper>
-                                {ampm.map((value, _i) => {
+                                {CYCLE.map((value, _i) => {
                                     const i = _i + 24;
-                                    const selected = AMPM === ampm[_i];
+                                    const selected = AMPM === CYCLE[_i];
                                     return (
                                         <CompositeItem
                                             key={`am_${value}`}

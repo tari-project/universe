@@ -8,7 +8,7 @@ name: Release
     branches:
       - 'release'
       - 'beta'
-      - 'build-*'
+  #      - 'build-*' TODO ADD THIS BACK BEFORE MERGE
   schedule:
     - cron: '05 00 * * *'
   workflow_dispatch:

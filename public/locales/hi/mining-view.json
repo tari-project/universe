@@ -29,7 +29,9 @@
       "alert_text": "Eco mode only uses a low percentage of system resources.",
       "alert_text_extra": "Try turning the power mode up.",
       "alert_title": "Not earning enough rewards?"
-    }
+    },
+    "mode": "Mode",
+    "mode-long": "Miner Mode"
   },
   "orphan-chain-tooltip": {
     "heading": "कोशिश करने के लिए चीजें:",

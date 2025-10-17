@@ -107,7 +107,6 @@ export const SecondaryTriggerContent = styled.div<Props>`
     }
 
     ${SelectedItem} {
-        text-transform: uppercase;
         color: ${({ theme }) => theme.palette.text.primary};
         font-size: 18px;
         font-weight: 600;
