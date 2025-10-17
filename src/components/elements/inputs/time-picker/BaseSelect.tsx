@@ -12,7 +12,15 @@ import {
     useInteractions,
     useRole,
 } from '@floating-ui/react';
-import { InputWrapper, OptionListWrapper, Row, SelectTrigger, SelectWrapper, StyledOption } from './styles.ts';
+import {
+    InputWrapper,
+    OptionListWrapper,
+    Row,
+    SelectTrigger,
+    SelectWrapper,
+    StyledOption,
+    TriggerContent,
+} from './styles.ts';
 
 import { ChevronSVG } from './chevron.tsx';
 import { CYCLE, TimeParts } from './types.ts';
@@ -39,7 +47,7 @@ export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
     const [activeIndex, setActiveIndex] = useState(0);
 
     const { refs, floatingStyles, context } = useFloating<HTMLElement>({
-        placement: 'bottom',
+        placement: 'bottom-end',
         open: isOpen,
         onOpenChange: setIsOpen,
         whileElementsMounted: autoUpdate,
@@ -50,7 +58,7 @@ export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
                     const refWidth = elements.reference.getBoundingClientRect().width;
                     Object.assign(elements.floating.style, {
                         maxHeight: `${availableHeight}px`,
-                        maxWidth: `${refWidth + 30}px`,
+                        maxWidth: `${refWidth}px`,
                     });
                 },
                 padding: {
@@ -85,9 +93,11 @@ export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
     }, [hour, minute, AMPM]);
 
     return (
-        <InputWrapper>
+        <InputWrapper ref={refs.setPositionReference}>
             <SelectTrigger tabIndex={0} ref={refs.setReference} {...getReferenceProps()}>
-                {`${time.hour}:${time.minute} ${time.cycle}`} <ChevronSVG />
+                <TriggerContent>
+                    {`${time.hour}:${time.minute} ${time.cycle}`} <ChevronSVG />
+                </TriggerContent>
             </SelectTrigger>
             {isOpen && (
                 <FloatingFocusManager context={context}>

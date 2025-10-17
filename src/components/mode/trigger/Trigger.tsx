@@ -24,11 +24,7 @@ export const Trigger = ({ ref, children, label, isOpen, variant = 'primary', ...
     return (
         <TriggerCTA {...props} ref={ref} $variant={variant} type="button">
             <Wrapper>
-                {label ? (
-                    <Content>
-                        <Label>{label}</Label>
-                    </Content>
-                ) : null}
+                <Content>{label ? <Label>{label}</Label> : null}</Content>
                 <Content>
                     <SelectedItem>{children}</SelectedItem>
                     <IconWrapper $isOpen={isOpen}>

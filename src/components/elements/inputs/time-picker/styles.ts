@@ -1,37 +1,51 @@
 import styled from 'styled-components';
 
-export const Wrapper = styled.div`
+export const Container = styled.div`
     display: flex;
-    flex-direction: column;
     flex: 1 1 auto;
-    z-index: 1;
-    border-radius: 10px;
-    border: 1px solid ${({ theme }) => theme.palette.divider};
-    background: ${({ theme }) => theme.palette.background.paper};
-    padding: 9px 15px;
-    gap: 20px;
     width: 100%;
 `;
+
 export const LabelWrapper = styled.div`
     display: flex;
     color: #797979;
     font-size: 12px;
     font-weight: 500;
+    padding: 9px 15px;
 `;
 export const InputWrapper = styled.div`
     display: flex;
-    flex-direction: row;
-
+    flex-direction: column;
+    justify-content: space-between;
     color: ${({ theme }) => theme.palette.text.primary};
     font-size: 18px;
     font-weight: 600;
 `;
 
+export const Wrapper = styled.div`
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    z-index: 1;
+    border-radius: 10px;
+    border: 1px solid ${({ theme }) => theme.palette.divider};
+    background: ${({ theme }) => theme.palette.background.paper};
+    width: 100%;
+    height: 100%;
+`;
+
 export const SelectTrigger = styled.div`
     display: flex;
+    width: 100%;
+    flex: 1 1 auto;
+`;
+
+export const TriggerContent = styled.div`
+    width: 100%;
+    display: flex;
+    padding: 0 15px;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
 `;
 
 export const SelectWrapper = styled.div`

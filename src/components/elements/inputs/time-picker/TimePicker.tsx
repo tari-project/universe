@@ -1,5 +1,5 @@
 import { BaseSelect } from './BaseSelect.tsx';
-import { LabelWrapper, Wrapper } from './styles.ts';
+import { Container, LabelWrapper, Wrapper } from './styles.ts';
 import { TimeParts } from './types.ts';
 
 interface TimePickerProps {
@@ -9,9 +9,11 @@ interface TimePickerProps {
 
 export const TimePicker = ({ label, initialTime }: TimePickerProps) => {
     return (
-        <Wrapper>
-            {label && <LabelWrapper>{label}</LabelWrapper>}
-            <BaseSelect initialTime={initialTime} />
-        </Wrapper>
+        <Container>
+            <Wrapper>
+                {label && <LabelWrapper>{label}</LabelWrapper>}
+                <BaseSelect initialTime={initialTime} />
+            </Wrapper>
+        </Container>
     );
 };

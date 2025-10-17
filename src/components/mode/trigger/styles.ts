@@ -11,8 +11,8 @@ export const TriggerCTA = styled.button<Props>`
     display: flex;
     flex: 1 1 auto;
     position: relative;
-    width: 100%;
-    align-items: center;
+    //width: 100%;
+    //align-items: center;
     justify-content: space-between;
 `;
 
@@ -20,7 +20,6 @@ export const TriggerContent = styled.div<Props>`
     flex: 1 1 auto;
     height: 45px;
     padding: 9px 15px;
-
     border-radius: 70px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     background: rgba(240, 241, 240, 0.75);
@@ -90,7 +89,6 @@ export const SecondaryTriggerContent = styled.div<Props>`
     border-radius: 10px;
     border: 1px solid ${({ theme }) => theme.palette.divider};
     padding: 9px 15px;
-    gap: 20px;
     width: 100%;
     height: 100%;
     backdrop-filter: blur(5px);
@@ -102,8 +100,12 @@ export const SecondaryTriggerContent = styled.div<Props>`
             background: rgba(240, 241, 240, 1);
         `};
 
+    ${Content} {
+        flex: 1 1 auto;
+    }
     ${Label} {
         font-size: 12px;
+        line-height: 1.2;
     }
 
     ${SelectedItem} {
