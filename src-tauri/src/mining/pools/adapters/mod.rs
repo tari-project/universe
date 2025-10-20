@@ -21,10 +21,14 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::mining::pools::{
-    adapters::{lucky_pool::LuckyPoolAdapter, support_xmr_pool::SupportXmrPoolAdapter},
+    adapters::{
+        kryptex_pool::KryptexPoolAdapter, lucky_pool::LuckyPoolAdapter,
+        support_xmr_pool::SupportXmrPoolAdapter,
+    },
     PoolStatus,
 };
 
+pub mod kryptex_pool;
 pub mod lucky_pool;
 pub mod support_xmr_pool;
 
@@ -37,27 +41,31 @@ pub(crate) trait PoolApiAdapter: Clone {
 #[derive(Clone, Debug)]
 pub enum PoolApiAdapters {
     LuckyPool(LuckyPoolAdapter),
-    SupportXmrPool(SupportXmrPoolAdapter),
+    SupportXmr(SupportXmrPoolAdapter),
+    Kryptex(KryptexPoolAdapter),
 }
 
 impl PoolApiAdapter for PoolApiAdapters {
     fn name(&self) -> &str {
         match self {
             PoolApiAdapters::LuckyPool(adapter) => adapter.name(),
-            PoolApiAdapters::SupportXmrPool(adapter) => adapter.name(),
+            PoolApiAdapters::SupportXmr(adapter) => adapter.name(),
+            PoolApiAdapters::Kryptex(adapter) => adapter.name(),
         }
     }
 
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, anyhow::Error> {
         match self {
             PoolApiAdapters::LuckyPool(adapter) => adapter.convert_api_data(data),
-            PoolApiAdapters::SupportXmrPool(adapter) => adapter.convert_api_data(data),
+            PoolApiAdapters::SupportXmr(adapter) => adapter.convert_api_data(data),
+            PoolApiAdapters::Kryptex(adapter) => adapter.convert_api_data(data),
         }
     }
     async fn request_pool_status(&self, address: String) -> Result<PoolStatus, anyhow::Error> {
         match self {
             PoolApiAdapters::LuckyPool(adapter) => adapter.request_pool_status(address).await,
-            PoolApiAdapters::SupportXmrPool(adapter) => adapter.request_pool_status(address).await,
+            PoolApiAdapters::SupportXmr(adapter) => adapter.request_pool_status(address).await,
+            PoolApiAdapters::Kryptex(adapter) => adapter.request_pool_status(address).await,
         }
     }
 }

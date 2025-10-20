@@ -1,13 +1,13 @@
 {
   "bubbles": {
-    "active-miners": "active miners",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
-    "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "active-miners": "活跃矿工",
+    "ago": "前",
+    "block": "区块",
+    "got-rewarded": "获得奖励",
+    "miners": "矿工",
+    "pool": "矿池",
+    "solved": "已解决",
+    "solving": "正在解决"
   },
   "connection-to-node-lost": "与矿工的连接丢失。请等待矿机重新连接或重启矿机.",
   "cpu-power": "CPU 功率",
@@ -27,6 +27,15 @@
     "stop-mining": "停止挖矿",
     "waiting-for-idle": "等待空闲"
   },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
+  },
   "orphan-chain-tooltip": {
     "heading": "尝试以下操作：",
     "step_1": "检查您的互联网连接",
@@ -38,7 +47,7 @@
   },
   "pool": {
     "accepted_shares": "已接受份额",
-    "balance": "Total earnings",
+    "balance": "总收益",
     "min_payout": "最低支付",
     "unpaid": "未支付"
   },

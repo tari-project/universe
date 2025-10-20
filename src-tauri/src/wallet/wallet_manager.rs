@@ -24,6 +24,7 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::internal_wallet::InternalWallet;
 use crate::node::node_manager::{NodeManager, NodeManagerError};
+use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
@@ -38,7 +39,7 @@ use crate::wallet::wallet_types::{
 };
 use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
-use log::info;
+use log::{error, info};
 use sha2::digest::typenum::Min;
 use std::cmp;
 use std::collections::HashMap;
@@ -340,6 +341,25 @@ impl WalletManager {
             .get("minotari")
             .map(|(view_private_key, _)| view_private_key.to_hex())
             .unwrap_or_default()
+    }
+    
+     pub async fn on_app_exit(&self) {
+        match self
+            .watcher
+            .read()
+            .await
+            .adapter
+            .ensure_no_hanging_processes_are_running()
+            .await
+        {
+            Ok(_) => {
+                info!(target: LOG_TARGET, "WalletManager::on_app_exit completed successfully");
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "WalletManager::on_app_exit failed: {}", e);
+            }
+        }
+    }
     }
 
     pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {

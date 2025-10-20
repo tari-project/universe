@@ -282,6 +282,9 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             })
             .await?;
 
+        let _unused = HardwareStatusMonitor::current()
+            .decide_if_gpu_mining_is_recommended()
+            .await;
         GpuManager::write().await.load_saved_miner().await?;
 
         Ok(())

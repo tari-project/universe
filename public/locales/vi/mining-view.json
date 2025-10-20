@@ -1,4 +1,14 @@
 {
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "Mất kết nối với miner. Vui lòng chờ miner kết nối lại hoặc khởi động lại miner.",
   "cpu-power": "Sức mạnh CPU",
   "current-block-time": "Thời gian block hiện tại",
@@ -15,6 +25,15 @@
     "starting-mining": "Đang bắt đầu đào",
     "stop-mining": "Dừng đào",
     "waiting-for-idle": "Đang chờ rảnh"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
   },
   "orphan-chain-tooltip": {
     "heading": "Bạn có thể thử:",

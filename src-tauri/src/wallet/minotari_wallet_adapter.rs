@@ -78,7 +78,6 @@ pub struct MinotariWalletAdapter {
     connect_with_local_node: bool,
     pub(crate) view_private_key: String,
     pub(crate) spend_key: String,
-    pub(crate) tcp_listener_port: u16,
     pub(crate) grpc_port: u16,
     pub(crate) state_broadcast: watch::Sender<Option<WalletState>>,
     pub(crate) wallet_birthday: Option<u16>,
@@ -87,14 +86,12 @@ pub struct MinotariWalletAdapter {
 
 impl MinotariWalletAdapter {
     pub fn new(state_broadcast: watch::Sender<Option<WalletState>>) -> Self {
-        let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
             use_tor: false,
             connect_with_local_node: false,
             view_private_key: "".to_string(),
             spend_key: "".to_string(),
-            tcp_listener_port,
             grpc_port,
             state_broadcast,
             wallet_birthday: None,
@@ -393,19 +390,6 @@ impl ProcessAdapter for MinotariWalletAdapter {
                 args.push("-p".to_string());
                 args.push("wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string());
             }
-            args.push("-p".to_string());
-            args.push("wallet.p2p.transport.type=tcp".to_string());
-            args.push("-p".to_string());
-            args.push(format!(
-                "wallet.p2p.public_addresses=/ip4/127.0.0.1/tcp/{}",
-                self.tcp_listener_port
-            ));
-            args.push("-p".to_string());
-            args.push(format!(
-                "wallet.p2p.transport.tcp.listener_address=/ip4/0.0.0.0/tcp/{}",
-                self.tcp_listener_port
-            ));
-
             args.push("-p".to_string());
             let network = Network::get_current_or_user_setting_or_default();
             match network {

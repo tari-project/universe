@@ -4,7 +4,7 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "1.6.1"
+version = "1.6.2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -120,6 +120,7 @@ tari_ootle_wallet_sdk = { git = "https://github.com/tari-project/tari-ootle", br
 tari_ootle_wallet_sdk_services = { git = "https://github.com/tari-project/tari-ootle", branch = "development", optional = true }
 tari_ootle_wallet_storage_sqlite = { git = "https://github.com/tari-project/tari-ootle", branch = "development", optional = true }
 tari_ootle_common_types = { git = "https://github.com/tari-project/tari-ootle", branch = "development", optional = true }
+uuid = "1.18.1"
 
 [target.'cfg(windows)'.dependencies]
 planif = "1.0.0"

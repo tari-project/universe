@@ -40,11 +40,14 @@ use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
-    mining::gpu::{
-        consts::{EngineType, GpuConnectionType, GpuMinerStatus},
-        interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
-        manager::GpuManager,
-        miners::{load_file_content, save_file_content, GpuCommonInformation},
+    mining::{
+        gpu::{
+            consts::{EngineType, GpuMinerStatus},
+            interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+            manager::GpuManager,
+            miners::{load_file_content, save_file_content, GpuCommonInformation},
+        },
+        GpuConnectionType,
     },
     process_adapter::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
@@ -146,8 +149,8 @@ impl GpuMinerInterfaceTrait for GlytexGpuMiner {
         self.tari_address = Some(tari_address.to_string());
         Ok(())
     }
-    async fn load_worker_name(&mut self, worker_name: &str) -> Result<(), anyhow::Error> {
-        self.worker_name = Some(worker_name.to_string());
+    async fn load_worker_name(&mut self, worker_name: Option<&str>) -> Result<(), anyhow::Error> {
+        self.worker_name = worker_name.map(|name| name.to_string());
         Ok(())
     }
     async fn load_intensity_percentage(

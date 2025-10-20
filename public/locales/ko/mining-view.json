@@ -1,13 +1,13 @@
 {
   "bubbles": {
-    "active-miners": "active miners",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
-    "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "active-miners": "활성 채굴자",
+    "ago": "전",
+    "block": "블록",
+    "got-rewarded": "보상을 받았습니다",
+    "miners": "채굴자",
+    "pool": "풀",
+    "solved": "해결됨",
+    "solving": "해결 중"
   },
   "connection-to-node-lost": "마이너와의 연결이 끊어졌습니다. 마이너가 다시 연결되거나 재시작될 때까지 기다려주세요.",
   "cpu-power": "CPU 전력",
@@ -27,6 +27,15 @@
     "stop-mining": "채굴 중지",
     "waiting-for-idle": "유휴 상태 대기 중"
   },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
+  },
   "orphan-chain-tooltip": {
     "heading": "시도할 것들:",
     "step_1": "인터넷 연결을 확인하세요",
@@ -38,7 +47,7 @@
   },
   "pool": {
     "accepted_shares": "수락된 공유",
-    "balance": "Total earnings",
+    "balance": "총 수익",
     "min_payout": "최소 지급액",
     "unpaid": "미지급"
   },

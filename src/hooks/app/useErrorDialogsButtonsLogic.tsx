@@ -28,7 +28,7 @@ export const useErrorDialogsButtonsLogic = () => {
     const handleRestart = useCallback(async () => {
         try {
             setIsExiting(true);
-            await invoke('restart_application', { shouldStopMiners: true });
+            await invoke('restart_application');
         } catch (e) {
             console.error('Error restarting application| handleRestart in CriticalProblemDialog: ', e);
         }

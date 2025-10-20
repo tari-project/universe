@@ -37,7 +37,7 @@ use crate::{
     tasks_tracker::TaskTrackerUtil,
 };
 
-static LOG_TARGET: &str = "tari::mining::pools::pools_manager";
+static LOG_TARGET: &str = "tari::universe::mining::pools::pools_manager";
 
 #[derive(Clone)]
 struct TaskState {
@@ -46,7 +46,8 @@ struct TaskState {
     pub tracking_duration: Duration,
     pub pool_statuses: Arc<RwLock<HashMap<String, PoolStatus>>>,
     pub is_mining_active: bool,
-    pub pool_stats_event_callback: Arc<dyn Fn(HashMap<String, PoolStatus>) + Send + Sync + 'static>,
+    pub pool_stats_event_callback:
+        Arc<dyn Fn(HashMap<String, PoolStatus>, PoolStatus) + Send + Sync + 'static>,
 }
 
 impl TaskState {
@@ -55,7 +56,9 @@ impl TaskState {
         cached_mining_address: String,
         pool_statuses: Arc<RwLock<HashMap<String, PoolStatus>>>,
         is_mining_active: bool,
-        pool_stats_event_callback: Arc<dyn Fn(HashMap<String, PoolStatus>) + Send + Sync + 'static>,
+        pool_stats_event_callback: Arc<
+            dyn Fn(HashMap<String, PoolStatus>, PoolStatus) + Send + Sync + 'static,
+        >,
     ) -> Self {
         Self {
             pool_adapter,
@@ -94,14 +97,15 @@ pub struct PoolManager {
     task_tracker: Arc<TaskTrackerUtil>,
     // Communication channels
     task_sender: Option<mpsc::UnboundedSender<PoolManagerThreadCommands>>,
-    pool_stats_event_callback: Arc<dyn Fn(HashMap<String, PoolStatus>) + Send + Sync + 'static>,
+    pool_stats_event_callback:
+        Arc<dyn Fn(HashMap<String, PoolStatus>, PoolStatus) + Send + Sync + 'static>,
 }
 
 impl PoolManager {
     pub fn new(
         pool_adapter: PoolApiAdapters,
         task_tracker: Arc<TaskTrackerUtil>,
-        callback: impl Fn(HashMap<String, PoolStatus>) + Send + Sync + 'static,
+        callback: impl Fn(HashMap<String, PoolStatus>, PoolStatus) + Send + Sync + 'static,
     ) -> Self {
         Self {
             pool_adapter,
@@ -123,7 +127,7 @@ impl PoolManager {
                     {
                         let mut statuses = self.pool_stats.write().await;
                         statuses.insert(self.pool_adapter.name().to_string(), status.clone());
-                        (self.pool_stats_event_callback)(statuses.clone());
+                        (self.pool_stats_event_callback)(statuses.clone(), status.clone());
                     }
                     info!(target: LOG_TARGET, "Updated pool status: {status:?}");
                 }
@@ -164,7 +168,12 @@ impl PoolManager {
             if let Err(e) = sender.send(PoolManagerThreadCommands::UpdatePoolAdapter(adapter)) {
                 warn!(target: LOG_TARGET, "Failed to send pool update to task: {e}");
             }
-            (self.pool_stats_event_callback)(self.pool_stats.read().await.clone());
+            let pool_stats = self.pool_stats.read().await.clone();
+            let current_status = pool_stats
+                .get(self.pool_adapter.name())
+                .cloned()
+                .unwrap_or_default();
+            (self.pool_stats_event_callback)(pool_stats, current_status);
         }
     }
 
@@ -193,7 +202,12 @@ impl PoolManager {
             )) {
                 warn!(target: LOG_TARGET, "Failed to send mining address update to task: {e}");
             }
-            (self.pool_stats_event_callback)(self.pool_stats.read().await.clone());
+            let pool_stats = self.pool_stats.read().await.clone();
+            let current_status = pool_stats
+                .get(self.pool_adapter.name())
+                .cloned()
+                .unwrap_or_default();
+            (self.pool_stats_event_callback)(pool_stats, current_status);
         }
     }
 
@@ -206,7 +220,12 @@ impl PoolManager {
             if let Err(e) = sender.send(PoolManagerThreadCommands::UpdateMiningStatus(is_active)) {
                 warn!(target: LOG_TARGET, "Failed to send mining status update to task: {e}");
             }
-            (self.pool_stats_event_callback)(self.pool_stats.read().await.clone());
+            let pool_stats = self.pool_stats.read().await.clone();
+            let current_status = pool_stats
+                .get(self.pool_adapter.name())
+                .cloned()
+                .unwrap_or_default();
+            (self.pool_stats_event_callback)(pool_stats, current_status);
         }
     }
 
@@ -340,7 +359,7 @@ impl PoolManager {
                 {
                     let mut statuses = task_state.pool_statuses.write().await;
                     statuses.insert(task_state.pool_adapter.name().to_string(), status.clone());
-                    (task_state.pool_stats_event_callback)(statuses.clone());
+                    (task_state.pool_stats_event_callback)(statuses.clone(), status.clone());
                 }
                 info!(target: LOG_TARGET, "Updated pool status: {status:?}");
             }

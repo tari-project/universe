@@ -20,6 +20,62 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use serde::{Deserialize, Serialize};
+
 pub mod cpu;
 pub mod gpu;
 pub mod pools;
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+pub enum MinerControlsState {
+    Initiated,
+    Started,
+    Stopped,
+    Restarting,
+    Idle,
+}
+
+#[derive(Clone, Serialize, PartialEq, Eq, Deserialize, Debug)]
+pub enum GpuConnectionType {
+    Node { node_grpc_address: String },
+    Pool { pool_url: String },
+}
+
+impl Default for GpuConnectionType {
+    fn default() -> Self {
+        GpuConnectionType::Pool {
+            pool_url: String::new(),
+        }
+    }
+}
+
+impl GpuConnectionType {
+    pub fn is_pool(&self) -> bool {
+        matches!(self, GpuConnectionType::Pool { .. })
+    }
+}
+#[derive(Clone, Serialize, PartialEq, Eq, Deserialize, Debug)]
+pub enum CpuConnectionType {
+    LocalMMProxy {
+        local_proxy_url: String,
+    },
+    Pool {
+        pool_url: String,
+        worker_name: Option<String>,
+    },
+}
+
+impl Default for CpuConnectionType {
+    fn default() -> Self {
+        CpuConnectionType::Pool {
+            pool_url: String::new(),
+            worker_name: None,
+        }
+    }
+}
+
+impl CpuConnectionType {
+    pub fn is_pool(&self) -> bool {
+        matches!(self, CpuConnectionType::Pool { .. })
+    }
+}

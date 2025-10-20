@@ -48,6 +48,8 @@ const configMininigInitialState: ConfigMining = {
     mining_modes: {},
     selected_mining_mode: 'Eco',
     gpu_devices_settings: {},
+    is_gpu_mining_recommended: true,
+    eco_alert_needed: false,
 };
 
 const configUIInitialState: UIConfigStoreState = {
@@ -69,10 +71,10 @@ const configPoolsInitialState: ConfigPools = {
     created_at: '',
     cpu_pool_enabled: false,
     gpu_pool_enabled: false,
-    available_cpu_pools: undefined,
-    available_gpu_pools: undefined,
-    selected_cpu_pool: undefined,
-    selected_gpu_pool: undefined,
+    cpu_pools: undefined,
+    gpu_pools: undefined,
+    current_cpu_pool: undefined,
+    current_gpu_pool: undefined,
 };
 
 const configBEInMemoryInitialState: ConfigBackendInMemory = {

@@ -26,14 +26,15 @@ use crate::events::{
     InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload, WalletStatusUpdatePayload,
 };
 use crate::internal_wallet::TariAddressType;
+use crate::mining::cpu::CpuMinerStatus;
 use crate::mining::gpu::consts::{GpuMiner, GpuMinerStatus, GpuMinerType};
 use crate::mining::gpu::miners::GpuCommonInformation;
 use crate::mining::pools::PoolStatus;
+use crate::mining::MinerControlsState;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
 use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
 use crate::{
-    commands::CpuMinerStatus,
     configs::{
         config_core::ConfigCoreContent, config_mining::ConfigMiningContent,
         config_ui::ConfigUIContent, config_wallet::ConfigWalletContent,
@@ -738,6 +739,71 @@ impl EventsEmitter {
         };
         if let Err(e) = Self::get_app_handle().await.emit(BACKEND_STATE_UPDATE, evt) {
             error!(target: LOG_TARGET, "Failed to emit WalletStatusUpdate event: {e:?}");
+        }
+    }
+
+    pub async fn emit_update_cpu_miner_state(state: MinerControlsState) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::UpdateCpuMinerControlsState,
+                payload: state,
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit UpdateCpuMinerState event: {e:?}");
+        }
+    }
+
+    pub async fn emit_update_gpu_miner_state(state: MinerControlsState) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::UpdateGpuMinerControlsState,
+                payload: state,
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit UpdateGpuMinerState event: {e:?}");
+        }
+    }
+
+    pub async fn emit_open_settings() {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::OpenSettings,
+                payload: (),
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit OpenSettings event: {e:?}");
+        }
+    }
+
+    pub async fn emit_systray_app_shutdown_requested() {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::SystrayAppShutdownRequested,
+                payload: (),
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit SystrayAppShutdownRequested event: {e:?}");
+        }
+    }
+
+    pub async fn emit_show_eco_alert() {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::ShowEcoAlert,
+                payload: (),
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit ShowEcoAlert event: {e:?}");
         }
     }
 }
