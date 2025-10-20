@@ -827,6 +827,15 @@ impl SetupManager {
         Ok(())
     }
 
+    pub async fn turn_on_gpu_pool_feature(&self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Turning on GPU Pool feature");
+        ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, true).await?;
+        // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
+        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+
+        Ok(())
+    }
+
     /// Used in handle_unhealthy for xmrig miner
     /// Should be triggered after x amount of time passed of xmrig being unhealthy
     /// It will make only difference in case of pool connection issues as we do not use other cpu miner
