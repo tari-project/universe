@@ -19,8 +19,9 @@ export const LoadingWrapper = styled(m.div)<{ $backgroundImage: string }>`
     background-repeat: no-repeat;
     background-image: url(${({ $backgroundImage }) => $backgroundImage});
 
-    box-shadow: 0px 0px 10px 0px rgba(104, 153, 55, 0.35);
+    box-shadow: 0 0 10px 0 rgba(104, 153, 55, 0.35);
 
     pointer-events: none;
     color: #fff;
+    z-index: 4;
 `;

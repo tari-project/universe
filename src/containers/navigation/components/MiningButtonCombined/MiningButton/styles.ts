@@ -23,7 +23,7 @@ export const ButtonWrapper = styled(m.div)<{ $selectedMode: string; $disabled: b
     background-repeat: no-repeat;
 
     padding: 0 6px 0 9px;
-
+    z-index: 2;
     transition:
         background 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87),
         box-shadow 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
@@ -79,7 +79,7 @@ export const HitBox = styled.button`
     width: 100%;
     height: 100%;
     position: relative;
-    z-index: 1;
+    z-index: 2;
 
     transition: opacity 0.3s cubic-bezier(0.39, 0.3, 0.2, 0.87);
 

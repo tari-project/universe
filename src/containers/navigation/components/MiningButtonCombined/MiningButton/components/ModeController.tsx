@@ -23,7 +23,9 @@ export default function ModeController() {
     });
 
     const click = useClick(context);
-    const dismiss = useDismiss(context);
+    const dismiss = useDismiss(context, {
+        outsidePress: false,
+    });
     const role = useRole(context, { role: 'tooltip' });
 
     const { getFloatingProps } = useInteractions([click, dismiss, role]);
@@ -48,7 +50,7 @@ export default function ModeController() {
             <RefWrapper ref={refs.setReference}>
                 <MiningMode open={modesOpen} />
             </RefWrapper>
-            <AnimatePresence>
+            <AnimatePresence initial={!showEcoAlert}>
                 {showEcoAlert && (
                     <RefWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
                         <m.div initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
