@@ -20,11 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use winreg::{enums::{HKEY_CURRENT_USER}, RegKey, HKEY};
+use winreg::{enums::HKEY_CURRENT_USER, RegKey, HKEY};
 
-use crate::system_dependencies::windows::registry::{
-    WindowsRegistryReader,
-};
+use crate::system_dependencies::windows::registry::WindowsRegistryReader;
 
 pub struct WindowsRegistryTasktratIconEntry {
     pub executable_path: String,
@@ -55,8 +53,7 @@ impl WindowsRegistryReader for WindowsRegistryTasktrayIconResolver {
                 if let Ok(subkey) = tasktray_icon_path.open_subkey(subkey_name) {
                     let executable_path: Result<String, std::io::Error> =
                         subkey.get_value("ExecutablePath");
-                    let is_promoted: Result<u32, std::io::Error> =
-                        subkey.get_value("isPromoted");
+                    let is_promoted: Result<u32, std::io::Error> = subkey.get_value("isPromoted");
 
                     if let Ok(executable_path) = executable_path {
                         let is_promoted = is_promoted.ok().map(|v| v != 0);
@@ -82,20 +79,21 @@ impl WindowsRegistryReader for WindowsRegistryTasktrayIconResolver {
 }
 
 impl WindowsRegistryTasktrayIconResolver {
-    pub async fn set_icon_promoted(executable_path: &str, promote: bool) -> Result<(), anyhow::Error> {
+    pub async fn set_icon_promoted(
+        executable_path: &str,
+        promote: bool,
+    ) -> Result<(), anyhow::Error> {
         let hkcu_key = RegKey::predef(WindowsRegistryTasktrayIconResolver::get_registry_root());
         let tasktray_icon_path = hkcu_key.open_subkey_with_flags(
             WindowsRegistryTasktrayIconResolver::get_registry_path(),
             winreg::enums::KEY_ALL_ACCESS,
-
         )?;
 
         for subkey_name in tasktray_icon_path.enum_keys() {
             if let Ok(subkey_name) = &subkey_name {
-                if let Ok(subkey) = tasktray_icon_path.open_subkey_with_flags(
-                    subkey_name,
-                    winreg::enums::KEY_ALL_ACCESS,
-                ) {
+                if let Ok(subkey) = tasktray_icon_path
+                    .open_subkey_with_flags(subkey_name, winreg::enums::KEY_ALL_ACCESS)
+                {
                     let current_executable_path: Result<String, std::io::Error> =
                         subkey.get_value("ExecutablePath");
 
