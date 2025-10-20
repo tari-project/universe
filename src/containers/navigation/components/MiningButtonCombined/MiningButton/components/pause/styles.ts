@@ -14,7 +14,7 @@ export const Options = styled(m.div)`
     background: ${({ theme }) => theme.palette.background.tooltip};
     box-shadow: 0 10px 50px 0 rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(12px);
-    z-index: 2;
+    z-index: 5;
 `;
 
 export const OptionWrapper = styled(m.button)`
