@@ -57,7 +57,7 @@ export const MiningMode = ({ variant = 'primary', open = false }: MiningModeProp
                     });
                 },
                 padding: {
-                    bottom: 20,
+                    bottom: 10,
                 },
             }),
         ],

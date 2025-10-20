@@ -67,7 +67,7 @@ export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
                     });
                 },
                 padding: {
-                    bottom: 20,
+                    bottom: 10,
                 },
             }),
         ],

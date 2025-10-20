@@ -15,6 +15,7 @@ export const StyledTextButton = styled.button<ExtendedButtonStyleProps>`
             font-size: ${$size === 'small' ? '12px' : $size === 'large' ? '16px' : theme.typography.h6.fontSize};
             padding: ${$size === 'small' ? '4px 6px' : $size === 'large' ? `12px ${PADDING}` : `10px ${PADDING}`};
             opacity: 1;
+            border-bottom: 2px solid transparent;
             &:hover {
                 opacity: 0.7;
             }
