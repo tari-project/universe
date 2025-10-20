@@ -47,6 +47,7 @@
   "gpu-miners": "GPU Miners",
   "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "जीपीयू माइनिंग",
+  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
   "gpu-unavailable": "⚠️ जीपीयू अक्षम है क्योंकि आपका हार्डवेयर इसे समर्थन नहीं करता",
   "hardware-status": "हार्डवेयर स्थिति",
   "idle-timeout": {
@@ -147,6 +148,8 @@
   "should-use-system-language": "सिस्टम भाषा का उपयोग करें",
   "stable-version-note": "एप्लिकेशन के पूर्व-रिलीज़ संस्करण को बंद करके, आप स्थिर रिलीज़ पर लौट आएंगे, जो विश्वसनीयता और स्थिरता को प्राथमिकता देता है। जबकि आप नवीनतम सुविधाओं और संवर्द्धनों को याद कर सकते हैं।",
   "stats-server-port": "सांख्यिकी सर्वर पोर्ट",
+  "sync-complete": "Synced",
+  "sync-incomplete": "Syncing...",
   "sync-status": "Sync Status",
   "tabs": {
     "airdrop": "Bonus XTM",

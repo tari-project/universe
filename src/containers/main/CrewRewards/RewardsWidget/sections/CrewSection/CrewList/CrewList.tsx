@@ -4,12 +4,13 @@ import { Inside, ListGroup, MessageButton, MessageText, MessageWrapper, OuterWra
 import { useTranslation } from 'react-i18next';
 import type { CrewMember, MinRequirements, ReferrerProgressResponse } from '@app/store/useAirdropStore';
 import { transformCrewMemberToEntry } from '@app/containers/main/CrewRewards/crewTransformers';
-import CrewEntrySkeleton from './CrewEntrySkeleton/CrewEntrySkeleton';
 import PaginationControls from './PaginationControls/PaginationControls';
+import CrewEmpty from './CrewEmpty/CrewEmpty';
 
 interface Props {
     members: CrewMember[];
     membersToNudge: ReferrerProgressResponse['membersToNudge'];
+    totals?: ReferrerProgressResponse['totals'];
     minRequirements?: MinRequirements;
     isLoading: boolean;
     isFiltered?: boolean;
@@ -24,16 +25,20 @@ interface Props {
     hasPrevPage?: boolean;
     onNextPage?: () => void;
     onPrevPage?: () => void;
+    activeFilter?: 'active' | 'inactive';
+    onFilterChange: (status: 'active' | 'inactive') => void;
+    noMembers: boolean;
 }
 
 export default function CrewList({
     members,
     membersToNudge,
+    totals,
     minRequirements,
     isLoading,
     error,
     onRefresh,
-    isFiltered = false,
+    isFiltered = true,
     // Pagination props
     currentPage = 1,
     totalPages = 1,
@@ -43,21 +48,14 @@ export default function CrewList({
     hasPrevPage = false,
     onNextPage,
     onPrevPage,
+    activeFilter,
+    onFilterChange,
+    noMembers,
 }: Props) {
     const { t } = useTranslation();
 
     if (isLoading) {
-        return (
-            <OuterWrapper>
-                <Wrapper>
-                    <Inside>
-                        {[...Array(5)].map((_, i) => (
-                            <CrewEntrySkeleton key={i} />
-                        ))}
-                    </Inside>
-                </Wrapper>
-            </OuterWrapper>
-        );
+        return null;
     }
 
     if (error || !members) {
@@ -93,15 +91,36 @@ export default function CrewList({
 
     const isEmpty = transformedEntries.length === 0 && membersToNudge.length === 0;
 
+    if (noMembers)
+        return (
+            <OuterWrapper>
+                <Wrapper>
+                    <Inside>
+                        <CrewEmpty noMembers={true} onFilterChange={onFilterChange} />
+                    </Inside>
+                </Wrapper>
+            </OuterWrapper>
+        );
+
     if (isFiltered) {
         return (
             <OuterWrapper>
                 <Wrapper>
                     <Inside>
                         {isEmpty ? (
-                            <MessageWrapper>
-                                <MessageText>{'No crew members found'}</MessageText>
-                            </MessageWrapper>
+                            <>
+                                {totals?.inactive === 0 || activeFilter === 'inactive' ? (
+                                    <MessageWrapper>
+                                        <MessageText>{'No friends found'}</MessageText>
+                                    </MessageWrapper>
+                                ) : (
+                                    <CrewEmpty
+                                        inactiveCount={totals?.inactive || 0}
+                                        onFilterChange={onFilterChange}
+                                        noMembers={noMembers}
+                                    />
+                                )}
+                            </>
                         ) : (
                             <>
                                 <ListGroup>
@@ -160,7 +179,11 @@ export default function CrewList({
                                     <CrewDivider text={t('airdrop:crewRewards.crewStatus.inProgress')} />
                                     <ListGroup>
                                         {inProgressList.map((item) => (
-                                            <CrewEntry key={item.id} entry={item} />
+                                            <CrewEntry
+                                                key={item.id}
+                                                entry={item}
+                                                minDaysRequired={minRequirements?.totalDaysRequired}
+                                            />
                                         ))}
                                     </ListGroup>
                                 </>

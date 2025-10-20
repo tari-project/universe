@@ -20,29 +20,66 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use super::trait_config::{ConfigContentImpl, ConfigImpl};
+use crate::events_emitter::EventsEmitter;
 use crate::mining::gpu::consts::{EngineType, GpuMinerType};
 use getset::{Getters, Setters};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, sync::LazyLock, time::SystemTime};
+use std::time::Duration;
+use std::{collections::HashMap, fmt::Display, sync::LazyLock, time::SystemTime};
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use super::trait_config::{ConfigContentImpl, ConfigImpl};
-
+pub const MINING_CONFIG_VERSION: u32 = 1;
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
     LazyLock::new(|| RwLock::new(ConfigMining::new()));
 
-pub const MINING_CONFIG_VERSION: i32 = 1;
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
 pub enum MiningModeType {
+    #[default]
     Eco,
     Turbo,
     Ludicrous,
     Custom,
     User,
 }
+
+impl Display for MiningModeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mode_str = match self {
+            MiningModeType::Eco => "Eco",
+            MiningModeType::Turbo => "Turbo",
+            MiningModeType::Ludicrous => "Ludicrous",
+            MiningModeType::Custom => "Custom",
+            MiningModeType::User => "User",
+        };
+        write!(f, "{mode_str}")
+    }
+}
+
+impl From<&str> for MiningModeType {
+    fn from(s: &str) -> Self {
+        match s.to_lowercase().as_str() {
+            "eco" => MiningModeType::Eco,
+            "turbo" => MiningModeType::Turbo,
+            "ludicrous" => MiningModeType::Ludicrous,
+            "custom" => MiningModeType::Custom,
+            "user" => MiningModeType::User,
+            _ => {
+                warn!("Unknown mining mode type: {s}, defaulting to Eco");
+                MiningModeType::Eco
+            }
+        }
+    }
+}
+
+impl From<String> for MiningModeType {
+    fn from(s: String) -> Self {
+        Self::from(s.as_str())
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MiningMode {
     pub mode_type: MiningModeType,
@@ -84,7 +121,7 @@ impl GpuDevicesSettings {
 #[getset(get = "pub", set = "pub")]
 #[allow(clippy::struct_excessive_bools)]
 pub struct ConfigMiningContent {
-    was_config_migrated: bool,
+    version_counter: u32,
     created_at: SystemTime,
     selected_mining_mode: String,
     mining_modes: HashMap<String, MiningMode>,
@@ -96,14 +133,15 @@ pub struct ConfigMiningContent {
     squad_override: Option<String>,
     gpu_miner_type: GpuMinerType,
     is_lolminer_tested: bool,
-    version: i32,
+    is_gpu_mining_recommended: bool,
+    eco_alert_needed: bool,
+    mode_mining_times: HashMap<String, Duration>, // we only need Eco for now, but we can add to this if needed
 }
 
 impl Default for ConfigMiningContent {
     fn default() -> Self {
         Self {
-            version: 0,
-            was_config_migrated: false,
+            version_counter: MINING_CONFIG_VERSION,
             created_at: SystemTime::now(),
             selected_mining_mode: "Eco".to_string(),
             mine_on_app_start: true,
@@ -156,6 +194,9 @@ impl Default for ConfigMiningContent {
             gpu_devices_settings: GpuDevicesSettings::new(),
             squad_override: None,
             is_lolminer_tested: false,
+            is_gpu_mining_recommended: true,
+            eco_alert_needed: true,
+            mode_mining_times: HashMap::from([("Eco".to_string(), Duration::new(0, 0))]),
         }
     }
 }
@@ -205,6 +246,20 @@ impl ConfigMiningContent {
         }
     }
 
+    pub fn get_excluded_devices(&self) -> Vec<u32> {
+        self.gpu_devices_settings
+            .0
+            .iter()
+            .filter_map(|(&device_id, settings)| {
+                if settings.is_excluded {
+                    Some(device_id)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
     pub fn get_selected_gpu_usage_percentage(&self) -> u32 {
         match self.mining_modes.get(&self.selected_mining_mode) {
             Some(mode) => mode.gpu_usage_percentage,
@@ -229,6 +284,36 @@ impl ConfigMining {
         Self::_check_for_migration()
             .await
             .expect("Could not check for migration");
+    }
+
+    pub async fn update_mining_times(
+        mode: MiningModeType,
+        duration: u64,
+    ) -> Result<(), anyhow::Error> {
+        let mut mode_mining_times = Self::content().await.mode_mining_times;
+
+        mode_mining_times
+            .entry(mode.to_string())
+            .and_modify(|t| *t = Duration::from_secs(t.as_secs() + duration));
+
+        Self::update_field(
+            ConfigMiningContent::set_mode_mining_times,
+            mode_mining_times.clone(),
+        )
+        .await?;
+
+        if mode.to_string() == "Eco" && Self::content().await.eco_alert_needed {
+            let secs = mode_mining_times
+                .get("Eco")
+                .unwrap_or(&Duration::new(0, 0))
+                .as_secs();
+            let threshold = 3600 * 12; // 12 hours in seconds
+            if secs >= threshold {
+                EventsEmitter::emit_show_eco_alert().await;
+            }
+        }
+
+        Ok(())
     }
 
     async fn _migrate() -> Result<(), anyhow::Error> {
@@ -266,11 +351,15 @@ impl ConfigMining {
     }
 
     async fn _check_for_migration() -> Result<(), anyhow::Error> {
-        let current_version = Self::content().await.version;
+        let current_version = Self::content().await.version_counter;
         if current_version < MINING_CONFIG_VERSION {
             info!("Mining config needs migration v{current_version:?} => v{MINING_CONFIG_VERSION}");
             Self::_migrate().await?;
-            Self::update_field(ConfigMiningContent::set_version, MINING_CONFIG_VERSION).await?;
+            Self::update_field(
+                ConfigMiningContent::set_version_counter,
+                MINING_CONFIG_VERSION,
+            )
+            .await?;
             return Ok(());
         }
         Ok(())

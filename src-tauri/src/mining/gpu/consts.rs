@@ -24,7 +24,10 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
+use crate::{
+    configs::pools::gpu_pools::GpuPool,
+    utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
+};
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Default)]
 pub enum EngineType {
@@ -62,20 +65,6 @@ pub(crate) struct GpuMinerStatus {
     pub estimated_earnings: u64,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum GpuConnectionType {
-    Node { node_grpc_address: String },
-    Pool { pool_url: String },
-}
-
-impl Default for GpuConnectionType {
-    fn default() -> Self {
-        GpuConnectionType::Pool {
-            pool_url: String::new(),
-        }
-    }
-}
-
 #[derive(Eq, Hash, PartialEq, Clone, Deserialize, Serialize, Debug)]
 pub enum GpuMinerType {
     Glytex,
@@ -88,23 +77,16 @@ impl GpuMinerType {
         match self {
             GpuMinerType::Glytex => vec![
                 GpuMinerFeature::SoloMining,
-                GpuMinerFeature::DeviceInformation,
                 GpuMinerFeature::DeviceExclusion,
                 GpuMinerFeature::MiningIntensity,
                 GpuMinerFeature::EngineSelection,
             ],
             GpuMinerType::Graxil => vec![
                 GpuMinerFeature::PoolMining,
-                GpuMinerFeature::DeviceInformation,
                 GpuMinerFeature::DeviceExclusion,
                 GpuMinerFeature::MiningIntensity,
             ],
-            GpuMinerType::LolMiner => vec![
-                GpuMinerFeature::PoolMining,
-                GpuMinerFeature::DeviceInformation,
-                GpuMinerFeature::DeviceExclusion,
-                GpuMinerFeature::MiningIntensity,
-            ],
+            GpuMinerType::LolMiner => vec![GpuMinerFeature::PoolMining],
         }
     }
 
@@ -134,6 +116,30 @@ impl GpuMinerType {
         }
     }
 
+    pub fn supported_pools(&self) -> Vec<GpuPool> {
+        match self {
+            GpuMinerType::Glytex => vec![],
+            GpuMinerType::Graxil => vec![
+                GpuPool::LuckyPoolSHA3X,
+                GpuPool::SupportXTMPoolSHA3X,
+                GpuPool::KryptexPoolSHA3X,
+            ],
+            GpuMinerType::LolMiner => vec![GpuPool::KryptexPoolC29, GpuPool::LuckyPoolC29],
+        }
+    }
+
+    pub fn is_pool_supported(&self, pool: &GpuPool) -> bool {
+        self.supported_pools().contains(pool)
+    }
+
+    pub fn default_pool(&self) -> Option<GpuPool> {
+        match self {
+            GpuMinerType::Glytex => None,
+            GpuMinerType::Graxil => Some(GpuPool::LuckyPoolSHA3X),
+            GpuMinerType::LolMiner => Some(GpuPool::LuckyPoolC29),
+        }
+    }
+
     pub fn is_supported_on_current_platform(&self) -> bool {
         let current_os = PlatformUtils::detect_current_os();
         self.supported_platforms().contains(&current_os)
@@ -141,6 +147,10 @@ impl GpuMinerType {
     pub fn is_pool_mining_supported(&self) -> bool {
         self.get_expected_features()
             .contains(&GpuMinerFeature::PoolMining)
+    }
+    pub fn is_solo_mining_supported(&self) -> bool {
+        self.get_expected_features()
+            .contains(&GpuMinerFeature::SoloMining)
     }
 }
 
@@ -155,7 +165,7 @@ impl std::fmt::Display for GpuMinerType {
     }
 }
 
-#[derive(Eq, Hash, PartialEq, Clone, Serialize)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Serialize, Deserialize)]
 pub enum GpuMiningAlgorithm {
     SHA3X,
     C29,
@@ -168,10 +178,6 @@ pub enum GpuMinerFeature {
     /// Support for mining in a pool
     PoolMining,
     /// Mining stats per GPU
-    DeviceInformation,
-    /// Gpu parameters like power limit, core clock, memory clock
-    #[allow(dead_code)]
-    DeviceParameters,
     /// Exclude specific GPU devices from mining
     DeviceExclusion,
     /// Control mining intensity
@@ -183,16 +189,29 @@ pub enum GpuMinerFeature {
 #[derive(Clone, Serialize)]
 pub struct GpuMiner {
     pub miner_type: GpuMinerType,
+    pub is_healthy: bool,
+    pub last_error: Option<String>,
     pub features: Vec<GpuMinerFeature>,
     pub supported_algorithms: Vec<GpuMiningAlgorithm>,
 }
 
 impl GpuMiner {
-    pub fn new(miner_type: GpuMinerType) -> Self {
+    pub fn new(miner_type: GpuMinerType, is_healthy: bool, last_error: Option<String>) -> Self {
         Self {
             miner_type: miner_type.clone(),
             features: miner_type.get_expected_features(),
             supported_algorithms: miner_type.supported_algorithms(),
+            is_healthy,
+            last_error,
         }
     }
 }
+
+/// Defines priority of miners to be used when multiple miners are available
+/// The first miner in the list has the highest priority
+/// Used for selecting default or fallback miner
+pub const MINERS_PRIORITY: &[GpuMinerType] = &[
+    GpuMinerType::LolMiner,
+    GpuMinerType::Graxil,
+    GpuMinerType::Glytex,
+];

@@ -1,11 +1,11 @@
 {
-  "all-activity": "All activity",
+  "all-activity": "すべてのアクティビティ",
   "confirmation-message": "トランザクションが送信されました！\nいくつかのブロックをマイニングした後、履歴に表示されます。",
   "empty-tx": "トランザクションが見つかりません",
   "history": {
     "available-balance": "利用可能",
     "label-rewards": "私の報酬",
-    "my-balance": "My Balance",
+    "my-balance": "私の残高",
     "sync-with-phone": "電話と同期",
     "transaction-details": "トランザクションの詳細",
     "view-details": "詳細を表示"
@@ -20,32 +20,33 @@
     "tooltip-emoji-id-text2": "Yatサポートが近日登場！",
     "tooltip-emoji-id-title": "絵文字ID"
   },
-  "rewards": "Rewards",
+  "rewards": "報酬",
   "security": {
     "keychain": {
-      "enable": "Enable Keychain Access",
-      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+      "enable": "キーチェーンアクセスを有効にする",
+      "warning": "この操作にはキーチェーンアクセスが必要です。\nもう一度試して、「許可」を選択してください。"
     },
     "pin": {
-      "create": "Create PIN",
-      "create-confirm": "Confirm PIN",
-      "creation-subtitle": "Set a secure PIN code to protect your wallet on this device.\nYour PIN stays private—it’s never stored or shared with Tari Universe.",
-      "creation-subtitle-confirm": "Enter your PIN again to confirm it is correct.",
-      "creation-title": "Create your Wallet PIN",
-      "creation-title-confirm": "Confirm your PIN",
-      "enter": "Enter your PIN",
-      "enter-new": "Enter a new PIN",
-      "enter-skip": "Skip for now",
-      "error-match": "That’s not quite right. Try again or create a new PIN.",
-      "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
-      "forgot": "Forgot PIN"
+      "create": "PINを作成",
+      "create-confirm": "PINを確認",
+      "creation-subtitle": "このデバイスでウォレットを保護するために安全なPINコードを設定してください。\nPINはプライベートに保たれ、Tari Universeに保存または共有されることはありません。",
+      "creation-subtitle-confirm": "PINが正しいことを確認するためにもう一度入力してください。",
+      "creation-title": "ウォレットPINを作成",
+      "creation-title-confirm": "PINを確認",
+      "enter": "PINを入力",
+      "enter-new": "新しいPINを入力",
+      "enter-skip": "今はスキップ",
+      "error-match": "それは正しくありません。もう一度試すか、新しいPINを作成してください。",
+      "explainer": "このPINを忘れた場合、ウォレットへのアクセスを回復する唯一の方法は、シードフレーズから復元することです。",
+      "forgot": "PINを忘れた"
     },
     "reminder": {
-      "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
-      "maybe-later": "Maybe later",
-      "start-now": "Start now",
-      "title": "Protect your Tari"
-    }
+      "description": "まだウォレットを保護していません。シードフレーズをバックアップすることで、トークンを安全に保ち、あなただけがアクセスできるようにします。\n今すぐ行いましょう—ほんの一瞬で終わります",
+      "maybe-later": "後で",
+      "start-now": "今すぐ開始",
+      "title": "Tariを保護する"
+    },
+    "seedwords-empty": "別のTariアドレスを復元するためにシードワードを追加"
   },
   "send": {
     "balance": "残高",
@@ -98,7 +99,7 @@
     "balance": "残高",
     "block-hash": "ブロックハッシュ",
     "buy-tari": "Tariを購入",
-    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
+    "buy-tari-subtitle": "これらのサポートされている取引所からTariを購入します。",
     "buy-tari-wxtm": "Tari (wXTM) を購入",
     "completed": "完了",
     "connect-not-supported": "WalletConnectコネクタが見つかりません。",
@@ -146,14 +147,14 @@
     "your-xtm-is-on-the-way": "XTMが送金中です！"
   },
   "sync-message": {
-    "completed": "Any moment now",
-    "line1": "Sync in progress. ",
-    "line2": " remaining",
+    "completed": "今すぐ",
+    "line1": "同期中です。",
+    "line2": " 残り",
     "line3": "until your wallet balance is displayed",
-    "tooltip-description": "This was your last synced balance, we'll update it once the wallet is ready.",
-    "tooltip-description-mining": "This was your last synced balance, we'll update it once the wallet is ready. But don’t worry, you’re actively mining and earning XTM.",
-    "tooltip-title": "Why the delay?",
-    "top-line": "You are now mining Tari XTM"
+    "tooltip-description": "これは最後に同期された残高です。ウォレットが準備でき次第、更新します。",
+    "tooltip-description-mining": "これは最後に同期された残高です。ウォレットが準備でき次第、更新します。しかし心配しないでください、あなたは積極的にマイニングしてXTMを稼いでいます。",
+    "tooltip-title": "なぜ遅れているのですか？",
+    "top-line": "現在、Tari XTMをマイニングしています"
   },
   "tabs": {
     "history": "履歴",
@@ -161,16 +162,17 @@
     "send": "送信"
   },
   "tari": "Tari",
-  "transactions": "Transactions",
+  "transactions": "取引",
   "wallet-connected": "ウォレット接続済み",
-  "wallet-is-scanning": "<strong>Wallet is loading...</strong>",
-  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> {{scanned}} / {{total}}",
+  "wallet-is-scanning": "<strong>ウォレットを読み込み中...</strong>",
+  "wallet-scanning-with-progress": "<strong>ウォレットを読み込み中 {{percentage}}%</strong> {{scanned}} / {{total}}",
   "xc": {
-    "buy-tari": "Buy Tari from an exchange",
-    "buy-tari-subtitle": "Available on selected exchanges.",
-    "mine-directly-to": "Mine directly to an exchange",
-    "mine-directly-to-exchange": "{{exchangeName}}",
-    "mining-here": "Mining here",
-    "or": "or"
+    "address-eth": "ETHアドレスを交換",
+    "buy-tari": "取引所からTariを購入",
+    "buy-tari-subtitle": "選択された取引所で利用可能です。",
+    "mine-directly-to": "取引所に直接マイニング",
+    "mine-directly-to-exchange": "{{exchangeName}} に直接マイニング",
+    "mining-here": "ここでマイニング",
+    "or": "または"
   }
 }

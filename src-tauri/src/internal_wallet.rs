@@ -163,7 +163,7 @@ impl InternalWallet {
         app_handle: &AppHandle,
         wallet_config: &ConfigWalletContent,
     ) -> Result<bool, anyhow::Error> {
-        if *wallet_config.version() < WALLET_VERSION {
+        if *wallet_config.version_counter() < WALLET_VERSION {
             log::info!(target: LOG_TARGET, "Wallet config version is outdated, migration needed");
             return Ok(false);
         }
@@ -173,7 +173,8 @@ impl InternalWallet {
             && wallet_config.selected_external_tari_address().is_none()
         {
             log::error!(target: LOG_TARGET, "No Tari wallets found");
-            return Err(anyhow!("No Tari wallets found"));
+            // In case of no wallets found, return falls to trigger migration or new wallet creation
+            return Ok(false);
         }
         // An owned tari wallet id found
 
@@ -218,6 +219,7 @@ impl InternalWallet {
         )
         .await?;
         let wallet_config = ConfigWallet::content().await;
+
         let internal_wallet =
             if InternalWallet::validate_wallet_config_for_seed(app_handle, &wallet_config).await? {
                 InternalWallet::load_latest_version(app_handle, wallet_config).await?
@@ -293,9 +295,6 @@ impl InternalWallet {
         } else {
             // External(Seedless)
         }
-
-        let mut cpu_config = state.cpu_miner_config.write().await;
-        cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
 
         ConfigUI::handle_wallet_type_update(self.tari_address_type.clone()).await?;
         EventsEmitter::emit_selected_tari_address_changed(
@@ -621,13 +620,13 @@ impl InternalWallet {
         if monero_address.is_empty() {
             panic!(
                 "Unexpected! Monero address should be accessible for v{:?}",
-                *wallet_config.version()
+                *wallet_config.version_counter()
             );
         }
         if (*wallet_config.tari_wallets()).is_empty() {
             panic!(
                 "Unexpected! Tari wallets field should be defined in the config for v{:?}",
-                *wallet_config.version()
+                *wallet_config.version_counter()
             );
         }
 
@@ -830,7 +829,9 @@ impl InternalWallet {
                         }
                         Err(e) => {
                             // Only display once
+                            #[cfg(target_os = "macos")]
                             EventsEmitter::emit_show_keyring_dialog().await;
+
                             return Err(anyhow!("Failed to get tari seed from keyring: {e}"));
                         }
                     }
@@ -890,7 +891,9 @@ impl InternalWallet {
                         cred.encrypted_seed
                     }
                     Err(e) => {
+                        #[cfg(target_os = "macos")]
                         EventsEmitter::emit_show_keyring_dialog().await;
+
                         return Err(anyhow!("Failed to get monero seed from keyring: {e}"));
                     }
                 }
@@ -1015,7 +1018,6 @@ where
             Err(CredentialError::Keyring(_)) => {
                 use tauri::Listener;
                 use tokio::sync::oneshot;
-
                 EventsEmitter::emit_show_keyring_dialog().await;
                 let (tx, rx) = oneshot::channel();
                 _app_handle.once("keyring-dialog-response", |_event| {

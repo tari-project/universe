@@ -16,9 +16,11 @@ import {
 } from '@app/store/actions/uiStoreActions';
 import {
     handleAvailableMinersChanged,
-    handleGpuMinerFallback,
+    handleCpuMinerControlsStateChanged,
+    handleGpuMinerControlsStateChanged,
     handleSelectedMinerChanged,
     setAvailableEngines,
+    setShowEcoAlert,
 } from '@app/store/actions/miningStoreActions';
 import {
     handleRestartingPhases,
@@ -28,6 +30,8 @@ import {
     setCriticalError,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
+    setIsSettingsOpen,
+    handleSystrayAppShutdownRequested,
 } from '@app/store/actions/appStateStoreActions';
 import {
     handleBaseNodeStatusUpdate,
@@ -61,6 +65,7 @@ import {
     handlePinLocked,
     handleSeedBackedUp,
     handleSelectedTariAddressChange,
+    setIsWalletLoading,
 } from '@app/store/actions/walletStoreActions';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
@@ -234,8 +239,23 @@ const useTauriEventsListener = () => {
                         case 'SeedBackedUp':
                             handleSeedBackedUp(event.payload);
                             break;
-                        case 'GpuMinerFallback':
-                            handleGpuMinerFallback(event.payload);
+                        case 'WalletStatusUpdate':
+                            setIsWalletLoading(event.payload?.loading);
+                            break;
+                        case 'UpdateCpuMinerControlsState':
+                            handleCpuMinerControlsStateChanged(event.payload);
+                            break;
+                        case 'UpdateGpuMinerControlsState':
+                            handleGpuMinerControlsStateChanged(event.payload);
+                            break;
+                        case 'OpenSettings':
+                            setIsSettingsOpen(true);
+                            break;
+                        case 'SystrayAppShutdownRequested':
+                            handleSystrayAppShutdownRequested();
+                            break;
+                        case 'ShowEcoAlert':
+                            setShowEcoAlert(true);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

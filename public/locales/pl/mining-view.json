@@ -1,13 +1,13 @@
 {
   "bubbles": {
-    "active-miners": "active miners",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
-    "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "active-miners": "aktywni kopacze",
+    "ago": "temu",
+    "block": "blok",
+    "got-rewarded": "otrzymał nagrodę",
+    "miners": "kopacze",
+    "pool": "Pula",
+    "solved": "rozwiązano",
+    "solving": "jest rozwiązywany"
   },
   "connection-to-node-lost": "Połączenie z węzłem kopania zostało utracone. Poczekaj, aż wznowi połącznie lub uruchom go ponownie.",
   "cpu-power": "Moc CPU",
@@ -27,6 +27,15 @@
     "stop-mining": "Zatrzymaj kopanie",
     "waiting-for-idle": "Oczekiwanie na bezczynność"
   },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
+  },
   "orphan-chain-tooltip": {
     "heading": "Rzeczy do wypróbowania:",
     "step_1": "Sprawdź swoje połączenie internetowe",
@@ -38,7 +47,7 @@
   },
   "pool": {
     "accepted_shares": "Zaakceptowane udziały",
-    "balance": "Total earnings",
+    "balance": "Całkowite zarobki",
     "min_payout": "Minimalna wypłata",
     "unpaid": "Niezapłacone"
   },

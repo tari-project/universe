@@ -1,5 +1,5 @@
 import { useUIStore } from '@app/store/useUIStore';
-import { AdminButton, ButtonGroup, CategoryLabel } from '../styles';
+import { AdminButton, ButtonGroup } from '../styles';
 
 import { setConnectionStatus } from '@app/store/actions/uiStoreActions.ts';
 import { setShowUniversalModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
@@ -22,7 +22,6 @@ export function OtherUIGroup() {
 
     return (
         <>
-            <CategoryLabel>{`Other UI`}</CategoryLabel>
             <ButtonGroup>
                 <AdminButton onClick={shiftConnectionStatus}>{`Change connection status`}</AdminButton>
                 <AdminButton

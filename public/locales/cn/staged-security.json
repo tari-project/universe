@@ -1,6 +1,12 @@
 {
   "common": {
+    "all-done": "您已完成！",
     "got-it": "知道了"
+  },
+  "complete": {
+    "continue": "继续到 Tari Universe",
+    "happy-mining": "挖矿愉快！",
+    "secured": "您的钱包现已安全备份——做得好！\n您的 Tari 代币是安全的，无论何时需要它们，即使您更换或丢失设备。"
   },
   "completedTip": {
     "text": "您可以在设置中再次找到您的种子短语",
@@ -8,10 +14,10 @@
   },
   "intro": {
     "balance": "您的钱包有 <span>{{balance}}</span> XTM",
-    "button": "Secure my wallet",
-    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
+    "button": "保护我的钱包",
+    "subtitle": "您现在拥有了您的第一个 Tari 代币。让我们通过两个简单步骤快速保护您的钱包。",
     "text": "当您开始挖矿时，Tari Universe会自动为您设置一个钱包。通过将种子短语存放在安全的地方，确保您始终可以访问您的钱包。",
-    "title": "Let’s secure your wallet.",
+    "title": "让我们保护您的钱包。",
     "warning": "强烈推荐"
   },
   "reminderTip": {
@@ -19,31 +25,32 @@
     "title": "在设置中快速备份您的种子短语"
   },
   "seedPhrase": {
-    "button": "Verify seed phrase",
+    "button": "验证种子短语",
     "checkbox": "我明白如果我丢失了恢复种子短语，我将无法恢复我的钱包。",
     "copied": "已复制！",
     "copy": "复制到剪贴板",
     "text": "您将需要此代码来恢复您的钱包。",
     "title": "写下您的种子短语并将其安全存放"
   },
-  "skip": "Skip for now",
+  "skip": "暂时跳过",
   "steps": {
-    "complete-false": "Incomplete",
-    "complete-true": "Complete",
-    "step": "Step {{stepNumber}}",
-    "subtitle-pin": "Prevents unauthorized wallet access",
-    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
-    "title-pin": "Set a secure PIN",
-    "title-seeds": "Back up your Seed Phrase"
+    "chip": "步骤 {{step}} / {{total}}",
+    "complete-false": "未完成",
+    "complete-true": "完成",
+    "step": "步骤 {{stepNumber}}",
+    "subtitle-pin": "防止未经授权的钱包访问",
+    "subtitle-seeds": "确保您在丢失设备时可以恢复资金",
+    "title-pin": "设置安全 PIN",
+    "title-seeds": "备份您的种子短语"
   },
   "verifySeed": {
-    "button": "Confirm seed phrase",
+    "button": "确认种子短语",
     "placeholder": "按正确顺序点击下面的单词",
     "text": "为了确保您正确记录了种子短语，请按正确的顺序选择单词。",
     "title": "验证您的种子短语"
   },
   "warning": {
-    "title": "Secure your wallet",
-    "steps": "Steps"
+    "steps": "步骤",
+    "title": "保护您的钱包"
   }
 }

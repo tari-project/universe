@@ -38,6 +38,7 @@
     "waiting-for-wallet": "Đang chờ ví",
     "wallet-started": "Ví đã khởi động"
   },
+  "updated-downloaded": "Update downloaded: Restarting Tari Universe",
   "would-you-like-to-install": "Bạn có muốn cài đặt Tari Universe {{version}} ngay không?",
   "yes": "Có"
 }

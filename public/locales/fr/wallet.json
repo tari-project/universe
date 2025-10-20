@@ -1,11 +1,11 @@
 {
-  "all-activity": "All activity",
+  "all-activity": "Toute l\"activité",
   "confirmation-message": "Votre transaction a été soumise !\nElle apparaîtra dans votre historique après le minage de quelques blocs.",
   "empty-tx": "Aucune transaction trouvée",
   "history": {
     "available-balance": "Disponible",
     "label-rewards": "Mes récompenses",
-    "my-balance": "My Balance",
+    "my-balance": "Mon solde",
     "sync-with-phone": "Synchroniser avec le téléphone",
     "transaction-details": "Détails de la transaction",
     "view-details": "Voir les détails"
@@ -20,32 +20,33 @@
     "tooltip-emoji-id-text2": "Support Yat bientôt disponible !",
     "tooltip-emoji-id-title": "ID Emoji"
   },
-  "rewards": "Rewards",
+  "rewards": "Récompenses",
   "security": {
     "keychain": {
-      "enable": "Enable Keychain Access",
-      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+      "enable": "Activer l\"accès au trousseau",
+      "warning": "L\"accès au trousseau est requis pour cette opération.\nVeuillez réessayer et sélectionner « autoriser »."
     },
     "pin": {
-      "create": "Create PIN",
-      "create-confirm": "Confirm PIN",
-      "creation-subtitle": "Set a secure PIN code to protect your wallet on this device.\nYour PIN stays private—it’s never stored or shared with Tari Universe.",
-      "creation-subtitle-confirm": "Enter your PIN again to confirm it is correct.",
-      "creation-title": "Create your Wallet PIN",
-      "creation-title-confirm": "Confirm your PIN",
-      "enter": "Enter your PIN",
-      "enter-new": "Enter a new PIN",
-      "enter-skip": "Skip for now",
-      "error-match": "That’s not quite right. Try again or create a new PIN.",
-      "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
-      "forgot": "Forgot PIN"
+      "create": "Créer un PIN",
+      "create-confirm": "Confirmer le PIN",
+      "creation-subtitle": "Définissez un code PIN sécurisé pour protéger votre portefeuille sur cet appareil.\nVotre PIN reste privé—il n\"est jamais stocké ou partagé avec Tari Universe.",
+      "creation-subtitle-confirm": "Entrez à nouveau votre PIN pour confirmer qu\"il est correct.",
+      "creation-title": "Créez votre PIN de portefeuille",
+      "creation-title-confirm": "Confirmez votre PIN",
+      "enter": "Entrez votre PIN",
+      "enter-new": "Entrez un nouveau PIN",
+      "enter-skip": "Passer pour l\"instant",
+      "error-match": "Ce n\"est pas tout à fait correct. Réessayez ou créez un nouveau PIN.",
+      "explainer": "Si vous oubliez ce PIN, le seul moyen de retrouver l\"accès à votre portefeuille est de le restaurer à partir de votre phrase de récupération.",
+      "forgot": "PIN oublié"
     },
     "reminder": {
-      "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
-      "maybe-later": "Maybe later",
-      "start-now": "Start now",
-      "title": "Protect your Tari"
-    }
+      "description": "Vous n\"avez pas encore sécurisé votre portefeuille. Sauvegarder votre phrase de récupération garde vos jetons en sécurité et assure que vous seul pouvez y accéder.\nFaisons-le maintenant—cela ne prendra qu\"un instant",
+      "maybe-later": "Peut-être plus tard",
+      "start-now": "Commencer maintenant",
+      "title": "Protégez votre Tari"
+    },
+    "seedwords-empty": "Ajoutez des mots de récupération pour restaurer une autre adresse Tari"
   },
   "send": {
     "balance": "Solde",
@@ -98,7 +99,7 @@
     "balance": "Solde",
     "block-hash": "Hash du bloc",
     "buy-tari": "Acheter Tari",
-    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
+    "buy-tari-subtitle": "Achetez Tari sur l\"une de ces plateformes d\"échange prises en charge.",
     "buy-tari-wxtm": "Acheter Tari (wXTM)",
     "completed": "Terminé",
     "connect-not-supported": "Connecteur WalletConnect non trouvé.",
@@ -146,14 +147,14 @@
     "your-xtm-is-on-the-way": "Votre XTM est en route !"
   },
   "sync-message": {
-    "completed": "Any moment now",
-    "line1": "Sync in progress. ",
-    "line2": " remaining",
+    "completed": "D\"un moment à l\"autre",
+    "line1": "Synchronisation en cours.",
+    "line2": " restant",
     "line3": "until your wallet balance is displayed",
-    "tooltip-description": "This was your last synced balance, we'll update it once the wallet is ready.",
-    "tooltip-description-mining": "This was your last synced balance, we'll update it once the wallet is ready. But don’t worry, you’re actively mining and earning XTM.",
-    "tooltip-title": "Why the delay?",
-    "top-line": "You are now mining Tari XTM"
+    "tooltip-description": "C\"était votre dernier solde synchronisé, nous le mettrons à jour une fois le portefeuille prêt.",
+    "tooltip-description-mining": "C\"était votre dernier solde synchronisé, nous le mettrons à jour une fois le portefeuille prêt. Mais ne vous inquiétez pas, vous minez activement et gagnez des XTM.",
+    "tooltip-title": "Pourquoi le retard ?",
+    "top-line": "Vous minez maintenant Tari XTM"
   },
   "tabs": {
     "history": "Historique",
@@ -163,14 +164,15 @@
   "tari": "Tari",
   "transactions": "Transactions",
   "wallet-connected": "Portefeuille connecté",
-  "wallet-is-scanning": "<strong>Wallet is loading...</strong>",
-  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> {{scanned}} / {{total}}",
+  "wallet-is-scanning": "<strong>Chargement du portefeuille...</strong>",
+  "wallet-scanning-with-progress": "<strong>Chargement du portefeuille {{percentage}}%</strong> {{scanned}} / {{total}}",
   "xc": {
-    "buy-tari": "Buy Tari from an exchange",
-    "buy-tari-subtitle": "Available on selected exchanges.",
-    "mine-directly-to": "Mine directly to an exchange",
-    "mine-directly-to-exchange": "{{exchangeName}}",
-    "mining-here": "Mining here",
-    "or": "or"
+    "address-eth": "Adresse d\"échange ETH",
+    "buy-tari": "Acheter Tari sur une plateforme d\"échange",
+    "buy-tari-subtitle": "Disponible sur certaines plateformes d\"échange.",
+    "mine-directly-to": "Miner directement vers une plateforme d\"échange",
+    "mine-directly-to-exchange": "Miner directement vers {{exchangeName}}",
+    "mining-here": "Minage ici",
+    "or": "ou"
   }
 }

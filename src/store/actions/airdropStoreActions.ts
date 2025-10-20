@@ -55,7 +55,7 @@ const clearState: AirdropStoreState = {
     flareAnimationType: undefined,
     uiSendRecvEnabled: true,
     crewQueryParams: {
-        status: 'all',
+        status: 'active',
         page: 1,
         limit: 20,
     },

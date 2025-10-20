@@ -71,7 +71,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     const handleConfirmed = useCallback(async () => {
         if (!isValid || !newSeedWords) return;
 
-        importSeedWords(newSeedWords);
+        await importSeedWords(newSeedWords);
         setShowConfirm(false);
         setIsEditView(false);
     }, [isValid, newSeedWords]);

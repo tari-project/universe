@@ -1,13 +1,13 @@
 {
   "bubbles": {
-    "active-miners": "active miners",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
-    "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "active-miners": "アクティブなマイナー",
+    "ago": "前",
+    "block": "ブロック",
+    "got-rewarded": "報酬を受け取りました",
+    "miners": "マイナー",
+    "pool": "プール",
+    "solved": "解決済み",
+    "solving": "解決中"
   },
   "connection-to-node-lost": "マイナーへの接続が失われました。マイナーが再接続するか、再起動するのをお待ちください。",
   "cpu-power": "CPUパワー",
@@ -27,6 +27,15 @@
     "stop-mining": "マイニングを停止",
     "waiting-for-idle": "アイドル待機中"
   },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
+  },
   "orphan-chain-tooltip": {
     "heading": "試すべきこと:",
     "step_1": "インターネット接続を確認",
@@ -38,7 +47,7 @@
   },
   "pool": {
     "accepted_shares": "受け入れられたシェア",
-    "balance": "Total earnings",
+    "balance": "総収益",
     "min_payout": "最低支払い額",
     "unpaid": "未払い"
   },

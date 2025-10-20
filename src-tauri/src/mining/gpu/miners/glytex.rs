@@ -20,7 +20,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{fs::read_dir, time::Duration};
+use std::{
+    fs::read_dir,
+    sync::atomic::{AtomicBool, Ordering},
+    time::Duration,
+};
 
 use axum::async_trait;
 use log::{info, warn};
@@ -36,13 +40,18 @@ use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
-    mining::gpu::{
-        consts::{EngineType, GpuConnectionType, GpuMinerStatus},
-        interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
-        miners::{load_file_content, GpuCommonInformation},
+    mining::{
+        gpu::{
+            consts::{EngineType, GpuMinerStatus},
+            interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+            manager::GpuManager,
+            miners::{load_file_content, save_file_content, GpuCommonInformation},
+        },
+        GpuConnectionType,
     },
     process_adapter::{
-        HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+        HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
+        StatusMonitor,
     },
     process_utils, APPLICATION_FOLDER_ID,
 };
@@ -91,6 +100,7 @@ pub struct GlytexGpuMiner {
     pub selected_engine: Option<EngineType>,
     pub gpu_status_sender: Sender<GpuMinerStatus>,
     pub gpu_devices: Vec<GpuCommonInformation>,
+    pub excluded_devices: Vec<u32>,
 }
 
 impl GlytexGpuMiner {
@@ -103,17 +113,44 @@ impl GlytexGpuMiner {
             selected_engine: None,
             gpu_status_sender,
             gpu_devices: vec![],
+            excluded_devices: vec![],
         }
     }
 }
 
 impl GpuMinerInterfaceTrait for GlytexGpuMiner {
+    async fn load_excluded_devices(
+        &mut self,
+        excluded_devices: Vec<u32>,
+    ) -> Result<(), anyhow::Error> {
+        self.excluded_devices = excluded_devices;
+
+        let selected_engine = self.selected_engine.clone().unwrap_or(EngineType::OpenCL);
+        let config_path =
+            dirs::config_dir().ok_or_else(|| anyhow::anyhow!("Failed to get config directory"))?;
+
+        let config_dir = config_path.join(APPLICATION_FOLDER_ID);
+
+        let gpu_engine_statuses_path = config_dir.join("gpuminer").join("engine_statuses");
+
+        let gpu_status_file_name = format!("{selected_engine}_gpu_status.json");
+        let gpu_status_file_path = gpu_engine_statuses_path.join(gpu_status_file_name);
+        let mut gpu_status_file =
+            load_file_content::<GlytexGpuDevices>(&gpu_status_file_path).await?;
+        for device in &mut gpu_status_file.gpu_devices.iter_mut() {
+            device.settings.is_excluded = self.excluded_devices.contains(&device.device_index);
+        }
+        save_file_content::<GlytexGpuDevices>(&gpu_status_file_path, &gpu_status_file).await?;
+
+        Ok(())
+    }
+
     async fn load_tari_address(&mut self, tari_address: &str) -> Result<(), anyhow::Error> {
         self.tari_address = Some(tari_address.to_string());
         Ok(())
     }
-    async fn load_worker_name(&mut self, worker_name: &str) -> Result<(), anyhow::Error> {
-        self.worker_name = Some(worker_name.to_string());
+    async fn load_worker_name(&mut self, worker_name: Option<&str>) -> Result<(), anyhow::Error> {
+        self.worker_name = worker_name.map(|name| name.to_string());
         Ok(())
     }
     async fn load_intensity_percentage(
@@ -380,26 +417,57 @@ pub struct GlytexGpuMinerStatusMonitor {
     gpu_status_sender: Sender<GpuMinerStatus>,
 }
 
+// This is a flag to indicate if the fallback to other miner has already been triggered
+// We want to avoid triggering it multiple times per session
+static WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED: AtomicBool = AtomicBool::new(false);
+
 #[async_trait]
 impl StatusMonitor for GlytexGpuMinerStatusMonitor {
-    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+    async fn handle_unhealthy(
+        &self,
+        duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        info!(target: LOG_TARGET, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 3)) // Fallback after 3 minutes of unhealthiness
+            && !WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.load(Ordering::SeqCst)
+        {
+            match GpuManager::write().await.handle_unhealthy_miner().await {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
+                    WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.store(true, Ordering::SeqCst);
+                    return Ok(HandleUnhealthyResult::Stop);
+                }
+                Err(error) => {
+                    warn!(target: LOG_TARGET, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {error} | Continuing to monitor.");
+                    return Ok(HandleUnhealthyResult::Continue);
+                }
+            }
+        } else {
+            return Ok(HandleUnhealthyResult::Continue);
+        }
+    }
+
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(inner) => inner,
             Err(_) => {
                 warn!(target: LOG_TARGET, "Timeout error in GpuMinerAdapter check_health");
                 let _ = self.gpu_status_sender.send(GpuMinerStatus::default());
-                return HealthStatus::Warning;
+                return HealthStatus::Unhealthy;
             }
         };
 
         match status {
             Ok(status) => {
                 let _ = self.gpu_status_sender.send(status.clone());
-                // GPU returns 0 for first 10 seconds until it has an average
-                if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
+                if status.hash_rate > 0.0 {
+                    if !GpuManager::read().await.is_current_miner_healthy().await {
+                        info!(target: LOG_TARGET, "Marking current miner as healthy again");
+                        let _unused = GpuManager::write().await.handle_healthy_miner().await;
+                    }
                     HealthStatus::Healthy
                 } else {
-                    HealthStatus::Warning
+                    HealthStatus::Unhealthy
                 }
             }
             Err(_) => {

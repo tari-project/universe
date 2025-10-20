@@ -1,13 +1,13 @@
 {
   "bubbles": {
-    "active-miners": "active miners",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
+    "active-miners": "aktive Miner",
+    "ago": "vor",
+    "block": "Block",
+    "got-rewarded": "wurde belohnt",
+    "miners": "Miner",
     "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "solved": "gelöst",
+    "solving": "wird gelöst"
   },
   "connection-to-node-lost": "Verbindung zum Miner verloren. Bitte warte, bis der Miner sich wieder verbindet, oder starte den Miner neu.",
   "cpu-power": "CPU-Leistung",
@@ -26,6 +26,15 @@
     "stop-mining": "Mining stoppen",
     "waiting-for-idle": "Warten auf Leerlauf"
   },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
+  },
   "orphan-chain-tooltip": {
     "heading": "Dinge, die du versuchen kannst:",
     "step_1": "Überprüfe deine Internetverbindung",
@@ -37,7 +46,7 @@
   },
   "pool": {
     "accepted_shares": "Akzeptierte Anteile",
-    "balance": "Total earnings",
+    "balance": "Gesamteinnahmen",
     "min_payout": "Mindestzahlung",
     "unpaid": "Unbezahlt"
   },

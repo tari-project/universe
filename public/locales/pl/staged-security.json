@@ -1,6 +1,12 @@
 {
   "common": {
+    "all-done": "Wszystko gotowe!",
     "got-it": "Rozumiem"
+  },
+  "complete": {
+    "continue": "Kontynuuj do Tari Universe",
+    "happy-mining": "Szczęśliwego kopania!",
+    "secured": "Twój portfel jest teraz bezpiecznie zarchiwizowany—świetna robota!\nTwoje tokeny Tari są bezpieczne i gotowe, gdy tylko ich potrzebujesz, nawet jeśli zmienisz lub zgubisz urządzenie."
   },
   "completedTip": {
     "text": "Twoja fraza seed może być ponownie znaleziona w ustawieniach",
@@ -8,10 +14,10 @@
   },
   "intro": {
     "balance": "Twój portfel ma <span>{{balance}}</span> XTM",
-    "button": "Secure my wallet",
-    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
+    "button": "Zabezpiecz mój portfel",
+    "subtitle": "Masz teraz swoje pierwsze tokeny Tari. Szybko zabezpieczmy twój portfel w dwóch prostych krokach.",
     "text": "Tari Universe automatycznie zakłada portfel, gdy zaczynasz kopać. Upewnij się, że zawsze masz dostęp do swojego portfela, przechowując frazę seed w bezpiecznym miejscu.",
-    "title": "Let’s secure your wallet.",
+    "title": "Zabezpieczmy twój portfel.",
     "warning": "Wysoce zalecane"
   },
   "reminderTip": {
@@ -19,31 +25,32 @@
     "title": "Szybko zrób kopię zapasową frazy seed w ustawieniach"
   },
   "seedPhrase": {
-    "button": "Verify seed phrase",
+    "button": "Zweryfikuj frazę kluczową",
     "checkbox": "Rozumiem, że jeśli zgubię swoją frazę seed, nie będę mógł przywrócić portfela.",
     "copied": "Skopiowano!",
     "copy": "Kopiuj do schowka",
     "text": "Będziesz potrzebować tego kodu, aby przywrócić swój portfel.",
     "title": "Zapisz swoją frazę seed i przechowuj ją w bezpiecznym miejscu"
   },
-  "skip": "Skip for now",
+  "skip": "Pomiń na razie",
   "steps": {
-    "complete-false": "Incomplete",
-    "complete-true": "Complete",
-    "step": "Step {{stepNumber}}",
-    "subtitle-pin": "Prevents unauthorized wallet access",
-    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
-    "title-pin": "Set a secure PIN",
-    "title-seeds": "Back up your Seed Phrase"
+    "chip": "Krok {{step}} z {{total}}",
+    "complete-false": "Niekompletne",
+    "complete-true": "Zakończono",
+    "step": "Krok {{stepNumber}}",
+    "subtitle-pin": "Zapobiega nieautoryzowanemu dostępowi do portfela",
+    "subtitle-seeds": "Zapewnia możliwość odzyskania środków w przypadku utraty urządzenia",
+    "title-pin": "Ustaw bezpieczny PIN",
+    "title-seeds": "Zrób kopię zapasową frazy kluczowej"
   },
   "verifySeed": {
-    "button": "Confirm seed phrase",
+    "button": "Potwierdź frazę kluczową",
     "placeholder": "Kliknij poniższe słowa w odpowiedniej kolejności",
     "text": "Aby upewnić się, że poprawnie zapisałeś swoją frazę seed, wybierz słowa w odpowiedniej kolejności.",
     "title": "Zweryfikuj swoją frazę seed"
   },
   "warning": {
-    "title": "Secure your wallet",
-    "steps": "Steps"
+    "steps": "Kroki",
+    "title": "Zabezpiecz swój portfel"
   }
 }

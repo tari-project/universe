@@ -1,6 +1,12 @@
 {
   "common": {
+    "all-done": "Anda sudah selesai!",
     "got-it": "Mengerti"
+  },
+  "complete": {
+    "continue": "Lanjutkan ke Tari Universe",
+    "happy-mining": "Selamat menambang!",
+    "secured": "Dompet Anda sekarang dicadangkan dengan aman—kerja bagus!\nToken Tari Anda aman dan siap kapan pun Anda membutuhkannya, bahkan jika Anda mengganti atau kehilangan perangkat Anda."
   },
   "completedTip": {
     "text": "Frasa pemulihan Anda dapat ditemukan kembali di pengaturan Anda",
@@ -8,10 +14,10 @@
   },
   "intro": {
     "balance": "Dompet Anda memiliki <span>{{balance}}</span> XTM",
-    "button": "Secure my wallet",
-    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
+    "button": "Amankan dompet saya",
+    "subtitle": "Anda sekarang memiliki token Tari pertama Anda. Mari kita lindungi dompet Anda dengan cepat dalam dua langkah mudah.",
     "text": "Tari Universe secara otomatis menyiapkan dompet untuk Anda saat Anda mulai menambang. Pastikan Anda selalu memiliki akses ke dompet Anda dengan menyimpan frasa pemulihan Anda di tempat yang aman.",
-    "title": "Let’s secure your wallet.",
+    "title": "Mari amankan dompet Anda.",
     "warning": "Sangat disarankan"
   },
   "reminderTip": {
@@ -19,31 +25,32 @@
     "title": "Segera cadangkan frasa pemulihan Anda di pengaturan"
   },
   "seedPhrase": {
-    "button": "Verify seed phrase",
+    "button": "Verifikasi frasa seed",
     "checkbox": "Saya mengerti bahwa jika saya kehilangan frasa pemulihan saya, saya tidak akan dapat memulihkan dompet saya.",
     "copied": "Tersalin!",
     "copy": "Salin ke papan klip",
     "text": "Anda akan membutuhkan kode ini lagi untuk memulihkan dompet Anda.",
     "title": "Tuliskan frasa pemulihan Anda dan simpan di tempat yang aman"
   },
-  "skip": "Skip for now",
+  "skip": "Lewati untuk saat ini",
   "steps": {
-    "complete-false": "Incomplete",
-    "complete-true": "Complete",
-    "step": "Step {{stepNumber}}",
-    "subtitle-pin": "Prevents unauthorized wallet access",
-    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
-    "title-pin": "Set a secure PIN",
-    "title-seeds": "Back up your Seed Phrase"
+    "chip": "Langkah {{step}} dari {{total}}",
+    "complete-false": "Tidak Lengkap",
+    "complete-true": "Selesai",
+    "step": "Langkah {{stepNumber}}",
+    "subtitle-pin": "Mencegah akses dompet yang tidak sah",
+    "subtitle-seeds": "Memastikan Anda dapat memulihkan dana jika kehilangan perangkat Anda",
+    "title-pin": "Tetapkan PIN yang aman",
+    "title-seeds": "Cadangkan Frasa Seed Anda"
   },
   "verifySeed": {
-    "button": "Confirm seed phrase",
+    "button": "Konfirmasi frasa seed",
     "placeholder": "Klik kata-kata di bawah ini dalam urutan yang benar",
     "text": "Untuk memastikan Anda menuliskan frasa pemulihan Anda dengan benar, silakan pilih kata-kata dalam urutan yang benar.",
     "title": "Verifikasi frasa pemulihan Anda"
   },
   "warning": {
-    "title": "Secure your wallet",
-    "steps": "Steps"
+    "steps": "Langkah",
+    "title": "Amankan dompet Anda"
   }
 }

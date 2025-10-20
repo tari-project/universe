@@ -1,11 +1,11 @@
 {
-  "all-activity": "All activity",
+  "all-activity": "Semua aktivitas",
   "confirmation-message": "Transaksi Anda telah dikirim!\nIni akan muncul dalam riwayat Anda setelah menambang beberapa blok.",
   "empty-tx": "Tidak ada transaksi ditemukan",
   "history": {
     "available-balance": "Tersedia",
     "label-rewards": "Hadiah saya",
-    "my-balance": "My Balance",
+    "my-balance": "Saldo Saya",
     "sync-with-phone": "Sinkronkan dengan Ponsel",
     "transaction-details": "Detail Transaksi",
     "view-details": "Lihat detail"
@@ -20,32 +20,33 @@
     "tooltip-emoji-id-text2": "Dukungan Yat segera hadir!",
     "tooltip-emoji-id-title": "ID Emoji"
   },
-  "rewards": "Rewards",
+  "rewards": "Hadiah",
   "security": {
     "keychain": {
-      "enable": "Enable Keychain Access",
-      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+      "enable": "Aktifkan Akses Keychain",
+      "warning": "Akses keychain diperlukan untuk operasi ini.\nSilakan coba lagi dan pilih “izinkan”."
     },
     "pin": {
-      "create": "Create PIN",
-      "create-confirm": "Confirm PIN",
-      "creation-subtitle": "Set a secure PIN code to protect your wallet on this device.\nYour PIN stays private—it’s never stored or shared with Tari Universe.",
-      "creation-subtitle-confirm": "Enter your PIN again to confirm it is correct.",
-      "creation-title": "Create your Wallet PIN",
-      "creation-title-confirm": "Confirm your PIN",
-      "enter": "Enter your PIN",
-      "enter-new": "Enter a new PIN",
-      "enter-skip": "Skip for now",
-      "error-match": "That’s not quite right. Try again or create a new PIN.",
-      "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
-      "forgot": "Forgot PIN"
+      "create": "Buat PIN",
+      "create-confirm": "Konfirmasi PIN",
+      "creation-subtitle": "Tetapkan kode PIN yang aman untuk melindungi dompet Anda di perangkat ini.\nPIN Anda tetap pribadi—tidak pernah disimpan atau dibagikan dengan Tari Universe.",
+      "creation-subtitle-confirm": "Masukkan PIN Anda lagi untuk mengonfirmasi bahwa itu benar.",
+      "creation-title": "Buat PIN Dompet Anda",
+      "creation-title-confirm": "Konfirmasi PIN Anda",
+      "enter": "Masukkan PIN Anda",
+      "enter-new": "Masukkan PIN baru",
+      "enter-skip": "Lewati untuk saat ini",
+      "error-match": "Itu tidak benar. Coba lagi atau buat PIN baru.",
+      "explainer": "Jika Anda lupa PIN ini, satu-satunya cara untuk mendapatkan kembali akses ke dompet Anda adalah dengan memulihkannya dari frasa seed Anda.",
+      "forgot": "Lupa PIN"
     },
     "reminder": {
-      "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
-      "maybe-later": "Maybe later",
-      "start-now": "Start now",
-      "title": "Protect your Tari"
-    }
+      "description": "Anda belum mengamankan dompet Anda. Mencadangkan frasa seed Anda menjaga token Anda tetap aman dan memastikan hanya Anda yang dapat mengaksesnya.\nMari kita lakukan sekarang—hanya butuh sebentar",
+      "maybe-later": "Mungkin nanti",
+      "start-now": "Mulai sekarang",
+      "title": "Lindungi Tari Anda"
+    },
+    "seedwords-empty": "Tambahkan kata-kata seed untuk memulihkan Alamat Tari lain"
   },
   "send": {
     "balance": "Saldo",
@@ -98,7 +99,7 @@
     "balance": "Saldo",
     "block-hash": "Hash Blok",
     "buy-tari": "Beli Tari",
-    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
+    "buy-tari-subtitle": "Beli Tari dari salah satu bursa yang didukung ini.",
     "buy-tari-wxtm": "Beli Tari (wXTM)",
     "completed": "Selesai",
     "connect-not-supported": "Konektor WalletConnect tidak ditemukan.",
@@ -146,14 +147,14 @@
     "your-xtm-is-on-the-way": "XTM Anda sedang dalam perjalanan!"
   },
   "sync-message": {
-    "completed": "Any moment now",
-    "line1": "Sync in progress. ",
-    "line2": " remaining",
+    "completed": "Kapan saja sekarang",
+    "line1": "Sinkronisasi sedang berlangsung.",
+    "line2": " tersisa",
     "line3": "until your wallet balance is displayed",
-    "tooltip-description": "This was your last synced balance, we'll update it once the wallet is ready.",
-    "tooltip-description-mining": "This was your last synced balance, we'll update it once the wallet is ready. But don’t worry, you’re actively mining and earning XTM.",
-    "tooltip-title": "Why the delay?",
-    "top-line": "You are now mining Tari XTM"
+    "tooltip-description": "Ini adalah saldo terakhir yang tersinkronisasi, kami akan memperbaruinya setelah dompet siap.",
+    "tooltip-description-mining": "Ini adalah saldo terakhir yang tersinkronisasi, kami akan memperbaruinya setelah dompet siap. Tapi jangan khawatir, Anda sedang aktif menambang dan mendapatkan XTM.",
+    "tooltip-title": "Mengapa ada penundaan?",
+    "top-line": "Anda sekarang menambang Tari XTM"
   },
   "tabs": {
     "history": "Riwayat",
@@ -161,16 +162,17 @@
     "send": "Kirim"
   },
   "tari": "Tari",
-  "transactions": "Transactions",
+  "transactions": "Transaksi",
   "wallet-connected": "Dompet Terhubung",
-  "wallet-is-scanning": "<strong>Wallet is loading...</strong>",
-  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> {{scanned}} / {{total}}",
+  "wallet-is-scanning": "<strong>Dompet sedang memuat...</strong>",
+  "wallet-scanning-with-progress": "<strong>Dompet sedang memuat {{percentage}}%</strong> {{scanned}} / {{total}}",
   "xc": {
-    "buy-tari": "Buy Tari from an exchange",
-    "buy-tari-subtitle": "Available on selected exchanges.",
-    "mine-directly-to": "Mine directly to an exchange",
-    "mine-directly-to-exchange": "{{exchangeName}}",
-    "mining-here": "Mining here",
-    "or": "or"
+    "address-eth": "Alamat ETH Bursa",
+    "buy-tari": "Beli Tari dari bursa",
+    "buy-tari-subtitle": "Tersedia di bursa terpilih.",
+    "mine-directly-to": "Menambang langsung ke bursa",
+    "mine-directly-to-exchange": "Menambang langsung ke {{exchangeName}}",
+    "mining-here": "Menambang di sini",
+    "or": "atau"
   }
 }

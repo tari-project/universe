@@ -1,11 +1,11 @@
 {
-  "all-activity": "All activity",
+  "all-activity": "Вся активность",
   "confirmation-message": "Ваша транзакция отправлена!\nОна появится в Вашей истории после добычи нескольких блоков.",
   "empty-tx": "Транзакции не найдены",
   "history": {
     "available-balance": "Доступно",
     "label-rewards": "Мои награды",
-    "my-balance": "My Balance",
+    "my-balance": "Мой баланс",
     "sync-with-phone": "Синхронизировать с телефоном",
     "transaction-details": "Детали транзакции",
     "view-details": "Просмотреть детали"
@@ -20,32 +20,33 @@
     "tooltip-emoji-id-text2": "Поддержка Yat скоро появится!",
     "tooltip-emoji-id-title": "Emoji ID"
   },
-  "rewards": "Rewards",
+  "rewards": "Награды",
   "security": {
     "keychain": {
-      "enable": "Enable Keychain Access",
-      "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
+      "enable": "Включить доступ к связке ключей",
+      "warning": "Для этой операции требуется доступ к связке ключей.\nПожалуйста, попробуйте снова и выберите «разрешить»."
     },
     "pin": {
-      "create": "Create PIN",
-      "create-confirm": "Confirm PIN",
-      "creation-subtitle": "Set a secure PIN code to protect your wallet on this device.\nYour PIN stays private—it’s never stored or shared with Tari Universe.",
-      "creation-subtitle-confirm": "Enter your PIN again to confirm it is correct.",
-      "creation-title": "Create your Wallet PIN",
-      "creation-title-confirm": "Confirm your PIN",
-      "enter": "Enter your PIN",
-      "enter-new": "Enter a new PIN",
-      "enter-skip": "Skip for now",
-      "error-match": "That’s not quite right. Try again or create a new PIN.",
-      "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
-      "forgot": "Forgot PIN"
+      "create": "Создать PIN",
+      "create-confirm": "Подтвердите PIN",
+      "creation-subtitle": "Установите надежный PIN-код для защиты вашего кошелька на этом устройстве.\nВаш PIN-код остается конфиденциальным — он никогда не сохраняется и не передается в Tari Universe.",
+      "creation-subtitle-confirm": "Введите ваш PIN еще раз, чтобы подтвердить его правильность.",
+      "creation-title": "Создайте PIN вашего кошелька",
+      "creation-title-confirm": "Подтвердите ваш PIN",
+      "enter": "Введите ваш PIN",
+      "enter-new": "Введите новый PIN",
+      "enter-skip": "Пропустить пока",
+      "error-match": "Это не совсем правильно. Попробуйте снова или создайте новый PIN.",
+      "explainer": "Если вы забудете этот PIN, единственный способ восстановить доступ к вашему кошельку — это восстановить его с помощью вашей фразы для восстановления.",
+      "forgot": "Забыли PIN"
     },
     "reminder": {
-      "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\\nLet's do it now—it'll only take a moment",
-      "maybe-later": "Maybe later",
-      "start-now": "Start now",
-      "title": "Protect your Tari"
-    }
+      "description": "Вы еще не защитили свой кошелек. Резервное копирование вашей фразы для восстановления сохраняет ваши токены в безопасности и гарантирует, что только вы можете получить к ним доступ.\nДавайте сделаем это сейчас — это займет всего минуту",
+      "maybe-later": "Может быть позже",
+      "start-now": "Начать сейчас",
+      "title": "Защитите ваш Tari"
+    },
+    "seedwords-empty": "Добавьте слова для восстановления другого адреса Tari"
   },
   "send": {
     "balance": "Баланс",
@@ -98,7 +99,7 @@
     "balance": "Баланс",
     "block-hash": "Хэш блока",
     "buy-tari": "Купить Tari",
-    "buy-tari-subtitle": "Buy Tari from any of these supported exchanges.",
+    "buy-tari-subtitle": "Купите Tari на любой из поддерживаемых бирж.",
     "buy-tari-wxtm": "Купить Tari (wXTM)",
     "completed": "Завершено",
     "connect-not-supported": "Коннектор WalletConnect не найден.",
@@ -146,14 +147,14 @@
     "your-xtm-is-on-the-way": "Ваши XTM уже в пути!"
   },
   "sync-message": {
-    "completed": "Any moment now",
-    "line1": "Sync in progress. ",
-    "line2": " remaining",
+    "completed": "В любой момент",
+    "line1": "Синхронизация в процессе.",
+    "line2": " осталось",
     "line3": "until your wallet balance is displayed",
-    "tooltip-description": "This was your last synced balance, we'll update it once the wallet is ready.",
-    "tooltip-description-mining": "This was your last synced balance, we'll update it once the wallet is ready. But don’t worry, you’re actively mining and earning XTM.",
-    "tooltip-title": "Why the delay?",
-    "top-line": "You are now mining Tari XTM"
+    "tooltip-description": "Это был ваш последний синхронизированный баланс, мы обновим его, как только кошелек будет готов.",
+    "tooltip-description-mining": "Это был ваш последний синхронизированный баланс, мы обновим его, как только кошелек будет готов. Но не волнуйтесь, вы активно майните и зарабатываете XTM.",
+    "tooltip-title": "Почему задержка?",
+    "top-line": "Вы сейчас майните Tari XTM"
   },
   "tabs": {
     "history": "История",
@@ -161,16 +162,17 @@
     "send": "Отправить"
   },
   "tari": "Tari",
-  "transactions": "Transactions",
+  "transactions": "Транзакции",
   "wallet-connected": "Кошелек подключен",
-  "wallet-is-scanning": "<strong>Wallet is loading...</strong>",
-  "wallet-scanning-with-progress": "<strong>Wallet is loading {{percentage}}%</strong> {{scanned}} / {{total}}",
+  "wallet-is-scanning": "<strong>Кошелек загружается...</strong>",
+  "wallet-scanning-with-progress": "<strong>Кошелек загружается {{percentage}}%</strong> {{scanned}} / {{total}}",
   "xc": {
-    "buy-tari": "Buy Tari from an exchange",
-    "buy-tari-subtitle": "Available on selected exchanges.",
-    "mine-directly-to": "Mine directly to an exchange",
-    "mine-directly-to-exchange": "{{exchangeName}}",
-    "mining-here": "Mining here",
-    "or": "or"
+    "address-eth": "Адрес обмена ETH",
+    "buy-tari": "Купить Tari на бирже",
+    "buy-tari-subtitle": "Доступно на выбранных биржах.",
+    "mine-directly-to": "Майните напрямую на биржу",
+    "mine-directly-to-exchange": "Майните напрямую на {{exchangeName}}",
+    "mining-here": "Майнинг здесь",
+    "or": "или"
   }
 }

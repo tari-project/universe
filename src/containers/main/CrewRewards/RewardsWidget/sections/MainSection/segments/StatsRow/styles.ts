@@ -14,12 +14,6 @@ export const ActiveMinersWrapper = styled.div`
     gap: 10px;
 `;
 
-export const PhotosRow = styled.div`
-    display: flex;
-    align-items: center;
-    position: relative;
-`;
-
 export const PhotoWrapper = styled.button<{ $isInviteButton?: boolean }>`
     width: 32px;
     height: 32px;
@@ -30,6 +24,10 @@ export const PhotoWrapper = styled.button<{ $isInviteButton?: boolean }>`
     position: relative;
 
     cursor: pointer;
+    transition:
+        opacity 0.2s ease-in-out,
+        transform 0.2s ease-in-out,
+        filter 0.2s ease-in-out;
 
     &:not(:first-child) {
         margin-left: -17px;
@@ -54,7 +52,9 @@ export const PhotoWrapper = styled.button<{ $isInviteButton?: boolean }>`
 
             transition:
                 color 0.2s ease-in-out,
-                background-color 0.2s ease-in-out;
+                background-color 0.2s ease-in-out,
+                filter 0.2s ease-in-out,
+                transform 0.2s ease-in-out;
 
             &:hover {
                 z-index: 4;
@@ -62,6 +62,27 @@ export const PhotoWrapper = styled.button<{ $isInviteButton?: boolean }>`
                 background-color: #656666;
             }
         `}
+
+    &:hover {
+        z-index: 4;
+
+        transform: scale(1) !important;
+        filter: blur(0px) !important;
+        filter: grayscale(0%) !important;
+    }
+`;
+
+export const PhotosRow = styled.div`
+    display: flex;
+    align-items: center;
+    position: relative;
+
+    &:hover {
+        ${PhotoWrapper} {
+            transform: scale(0.8);
+            filter: blur(2px) grayscale(100%);
+        }
+    }
 `;
 
 export const TextWrapper = styled.div`
@@ -120,4 +141,23 @@ export const InviteFriendsMessage = styled.div`
 export const LoadingPlaceholder = styled.div`
     width: 100%;
     height: 30px;
+`;
+
+export const OnlineIndicator = styled.div<{ $isOnline: boolean }>`
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #01a405;
+    flex-shrink: 0;
+    border: 2px solid #323333;
+
+    position: absolute;
+    top: -2px;
+    right: -2px;
+
+    ${({ $isOnline }) =>
+        !$isOnline &&
+        css`
+            background-color: #eb3d1e;
+        `}
 `;

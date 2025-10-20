@@ -164,6 +164,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             loop {
                 let unhealthy_timer = Instant::now();
                 select! {
+                      _ = inner_shutdown.wait() => {
+                          return child.stop().await;
+
+                      },
+                      _ = global_shutdown_signal.wait() => {
+                          return child.stop().await;
+                      }
                       _ = watch_timer.tick() => {
                         let status_monitor3 = status_monitor2.clone();
 
@@ -186,13 +193,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             return Ok(exit_code);
                         }
                     },
-                    _ = inner_shutdown.wait() => {
-                        return child.stop().await;
 
-                    },
-                    _ = global_shutdown_signal.wait() => {
-                        return child.stop().await;
-                    }
                 }
                 stats_broadcast.send_replace(stats.clone());
             }
@@ -334,7 +335,6 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             warn!(target: LOG_TARGET, "Restarting {name} after health check failure");
             *uptime = Instant::now();
             stats.num_restarts += 1;
-            stats.current_uptime = uptime.elapsed();
             match status_monitor3
                 .handle_unhealthy(*duration_since_last_healthy_status)
                 .await
@@ -361,11 +361,14 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             // unhealthy_timer.elapsed() resolves to around 10 seconds
             *duration_since_last_healthy_status += unhealthy_timer.elapsed();
         }
-    } else {
-        stats.current_uptime = uptime.elapsed();
+    }
+
+    if is_healthy {
         // Reset the duration once we have a healthy status
         *duration_since_last_healthy_status = Duration::from_secs(0);
     }
+
+    stats.current_uptime = uptime.elapsed();
 
     Ok(None)
 }

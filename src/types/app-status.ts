@@ -49,19 +49,6 @@ export interface TransactionInfo {
     payment_reference?: string;
 }
 
-export enum GpuVendor {
-    NVIDIA,
-    AMD,
-    Intel,
-    Unknown,
-}
-
-export enum GpuDeviceType {
-    Integrated,
-    Dedicated,
-    Unknown,
-}
-
 export interface GpuDevice {
     name: string;
     device_id: number;

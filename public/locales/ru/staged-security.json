@@ -1,6 +1,12 @@
 {
   "common": {
+    "all-done": "Вы все сделали!",
     "got-it": "Понял"
+  },
+  "complete": {
+    "continue": "Продолжить в Tari Universe",
+    "happy-mining": "Удачного майнинга!",
+    "secured": "Ваш кошелек теперь надежно защищен — отличная работа!\nВаши токены Tari в безопасности и готовы к использованию в любое время, даже если вы смените или потеряете устройство."
   },
   "completedTip": {
     "text": "Вашу seed-фразу можно снова найти в настройках",
@@ -8,10 +14,10 @@
   },
   "intro": {
     "balance": "Ваш кошелек содержит <span>{{balance}}</span> XTM",
-    "button": "Secure my wallet",
-    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
+    "button": "Защитить мой кошелек",
+    "subtitle": "Теперь у вас есть ваши первые токены Tari. Давайте быстро защитим ваш кошелек в два простых шага.",
     "text": "Tari Universe автоматически настраивает кошелек для Вас, когда Вы начинаете майнинг. Убедитесь, что у Вас всегда есть доступ к вашему кошельку, храня Вашу seed-фразу в безопасном месте.",
-    "title": "Let’s secure your wallet.",
+    "title": "Давайте защитим ваш кошелек.",
     "warning": "Настоятельно рекомендуется"
   },
   "reminderTip": {
@@ -19,31 +25,32 @@
     "title": "Быстро сделайте резервную копию Вашей seed-фразы в настройках"
   },
   "seedPhrase": {
-    "button": "Verify seed phrase",
+    "button": "Проверить фразу для восстановления",
     "checkbox": "Я понимаю, что если я потеряю свою seed-фразу для восстановления, я не смогу восстановить свой кошелек.",
     "copied": "Скопировано!",
     "copy": "Копировать в буфер обмена",
     "text": "Вам снова понадобится этот код для восстановления вашего кошелька.",
     "title": "Запишите вашу seed-фразу и храните её в безопасном месте"
   },
-  "skip": "Skip for now",
+  "skip": "Пропустить пока",
   "steps": {
-    "complete-false": "Incomplete",
-    "complete-true": "Complete",
-    "step": "Step {{stepNumber}}",
-    "subtitle-pin": "Prevents unauthorized wallet access",
-    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
-    "title-pin": "Set a secure PIN",
-    "title-seeds": "Back up your Seed Phrase"
+    "chip": "Шаг {{step}} из {{total}}",
+    "complete-false": "Не завершено",
+    "complete-true": "Завершено",
+    "step": "Шаг {{stepNumber}}",
+    "subtitle-pin": "Предотвращает несанкционированный доступ к кошельку",
+    "subtitle-seeds": "Гарантирует, что вы сможете восстановить средства, если потеряете устройство",
+    "title-pin": "Установите надежный PIN",
+    "title-seeds": "Сделайте резервную копию вашей фразы для восстановления"
   },
   "verifySeed": {
-    "button": "Confirm seed phrase",
+    "button": "Подтвердить фразу для восстановления",
     "placeholder": "Нажмите на слова ниже в правильном порядке",
     "text": "Чтобы убедиться, что Вы правильно записали Вашу seed-фразу, выберите слова в правильном порядке.",
     "title": "Проверьте Вашу seed-фразу"
   },
   "warning": {
-    "title": "Secure your wallet",
-    "steps": "Steps"
+    "steps": "Шаги",
+    "title": "Защитите ваш кошелек"
   }
 }

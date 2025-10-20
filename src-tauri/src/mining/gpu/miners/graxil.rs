@@ -41,20 +41,22 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
-    mining::gpu::{
-        consts::{GpuConnectionType, GpuMinerStatus},
-        interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
-        miners::{load_file_content, GpuCommonInformation, GpuDeviceType, GpuVendor},
-        utils::gpu_miner_sha_websocket::GpuMinerShaWebSocket,
+    mining::{
+        gpu::{
+            consts::GpuMinerStatus,
+            interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+            manager::GpuManager,
+            miners::{load_file_content, GpuCommonInformation, GpuDeviceType, GpuVendor},
+            utils::gpu_miner_sha_websocket::GpuMinerShaWebSocket,
+        },
+        GpuConnectionType,
     },
     port_allocator::PortAllocator,
     process_adapter::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
         StatusMonitor,
     },
-    process_utils,
-    setup::setup_manager::SetupManager,
-    APPLICATION_FOLDER_ID,
+    process_utils, APPLICATION_FOLDER_ID,
 };
 
 const LOG_TARGET: &str = "tari::universe::mining::gpu::miners::graxil";
@@ -84,6 +86,8 @@ pub struct GraxilGpuMiner {
     pub connection_type: Option<GpuConnectionType>,
     pub gpu_status_sender: Sender<GpuMinerStatus>,
     pub gpu_devices: Vec<GpuCommonInformation>,
+    pub raw_gpu_devices: Vec<GraxilGpuDeviceInformation>,
+    pub excluded_devices: Vec<u32>,
 }
 
 impl GraxilGpuMiner {
@@ -95,17 +99,31 @@ impl GraxilGpuMiner {
             connection_type: None,
             gpu_status_sender,
             gpu_devices: vec![],
+            raw_gpu_devices: vec![],
+            excluded_devices: vec![],
         }
+    }
+
+    pub fn get_raw_gpu_devices(&self) -> Vec<GraxilGpuDeviceInformation> {
+        self.raw_gpu_devices.clone()
     }
 }
 
 impl GpuMinerInterfaceTrait for GraxilGpuMiner {
+    async fn load_excluded_devices(
+        &mut self,
+        excluded_devices: Vec<u32>,
+    ) -> Result<(), anyhow::Error> {
+        self.excluded_devices = excluded_devices;
+        Ok(())
+    }
+
     async fn load_tari_address(&mut self, tari_address: &str) -> Result<(), anyhow::Error> {
         self.tari_address = Some(tari_address.to_string());
         Ok(())
     }
-    async fn load_worker_name(&mut self, worker_name: &str) -> Result<(), anyhow::Error> {
-        self.worker_name = Some(worker_name.to_string());
+    async fn load_worker_name(&mut self, worker_name: Option<&str>) -> Result<(), anyhow::Error> {
+        self.worker_name = worker_name.map(|name| name.to_string());
         Ok(())
     }
     async fn load_intensity_percentage(
@@ -161,6 +179,8 @@ impl GpuMinerInterfaceTrait for GraxilGpuMiner {
                 let gpu_status_file =
                     load_file_content::<GraxilGpuDeviceInformationFile>(&gpu_information_file_path)
                         .await?;
+                self.raw_gpu_devices = gpu_status_file.devices.clone();
+
                 let common_gpu_devices = gpu_status_file
                     .devices
                     .iter()
@@ -236,8 +256,13 @@ impl ProcessAdapter for GraxilGpuMiner {
         }
 
         if let Some(tari_address) = &self.tari_address {
+            let mut address = tari_address.clone();
+            if let Some(worker_name) = &self.worker_name {
+                address = format!("{}{}", tari_address, worker_name);
+            }
+
             args.push("--wallet".to_string());
-            args.push(tari_address.clone());
+            args.push(address.clone());
         } else {
             return Err(anyhow::anyhow!(
                 "Tari address must be set before starting the GraxilMiner"
@@ -248,15 +273,18 @@ impl ProcessAdapter for GraxilGpuMiner {
             args.push("--gpu-intensity".to_string());
             args.push(intensity.to_string());
         }
-        args.push("--worker".to_string());
-        args.push(
-            self.worker_name
-                .clone()
-                .unwrap_or_else(|| "tari-universe".to_string()),
-        );
 
         args.push("--log-dir".to_string());
         args.push(log_folder.to_string_lossy().to_string());
+
+        args.push("--excluded-devices".to_string());
+        args.push(
+            self.excluded_devices
+                .iter()
+                .map(|id| id.to_string())
+                .collect::<Vec<String>>()
+                .join(","),
+        );
 
         #[cfg(target_os = "windows")]
         add_firewall_rule("graxil.exe".to_string(), binary_version_path.clone())?;
@@ -292,7 +320,7 @@ impl ProcessAdapter for GraxilGpuMiner {
 
 // This is a flag to indicate if the fallback to solo mining has been triggered
 // We want to avoid triggering it multiple times per session
-static WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED: AtomicBool = AtomicBool::new(false);
+static WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED: AtomicBool = AtomicBool::new(false);
 
 #[derive(Clone)]
 pub struct GraxilGpuMinerStatusMonitor {
@@ -306,18 +334,14 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
         &self,
         duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
-        // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
         info!(target: LOG_TARGET, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
-        if duration_since_last_healthy_status.as_secs().gt(&(60 * 30))
-            && !WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.load(Ordering::SeqCst)
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 3)) // Fallback after 3 minutes of unhealthiness
+            && !WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.load(Ordering::SeqCst)
         {
-            match SetupManager::get_instance()
-                .turn_off_gpu_pool_feature()
-                .await
-            {
+            match GpuManager::write().await.handle_unhealthy_miner().await {
                 Ok(_) => {
                     info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
-                    WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.store(true, Ordering::SeqCst);
+                    WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.store(true, Ordering::SeqCst);
                     return Ok(HandleUnhealthyResult::Stop);
                 }
                 Err(error) => {
@@ -330,13 +354,13 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
         }
     }
 
-    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         info!(target: LOG_TARGET, "Checking health of ShaMiner");
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(inner) => inner,
             Err(_) => {
                 warn!(target: LOG_TARGET, "Timeout error in ShaMiner check_health");
-                return HealthStatus::Warning;
+                return HealthStatus::Unhealthy;
             }
         };
 
@@ -344,13 +368,20 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
             Ok(status) => {
                 info!(target: LOG_TARGET, "ShaMiner status: {status:?}");
                 let _ = self.gpu_status_sender.send(status.clone());
-                if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
+                if status.hash_rate > 0.0 {
+                    if !GpuManager::read().await.is_current_miner_healthy().await {
+                        info!(target: LOG_TARGET, "Marking current miner as healthy again");
+                        let _unused = GpuManager::write().await.handle_healthy_miner().await;
+                    }
                     HealthStatus::Healthy
                 } else {
-                    HealthStatus::Warning
+                    HealthStatus::Unhealthy
                 }
             }
-            Err(_) => HealthStatus::Unhealthy,
+            Err(_) => {
+                let _ = self.gpu_status_sender.send(GpuMinerStatus::default());
+                HealthStatus::Unhealthy
+            }
         }
     }
 }

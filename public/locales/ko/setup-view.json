@@ -38,6 +38,7 @@
     "waiting-for-wallet": "지갑 대기 중",
     "wallet-started": "지갑 시작됨"
   },
+  "updated-downloaded": "업데이트 다운로드 완료: Tari Universe 재시작 중",
   "would-you-like-to-install": "지금 Tari Universe {{version}}을(를) 설치하시겠습니까?",
   "yes": "예"
 }

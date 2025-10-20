@@ -25,13 +25,16 @@ use std::time::Duration;
 use axum::async_trait;
 
 use crate::{
-    mining::gpu::{
-        consts::{EngineType, GpuConnectionType},
-        miners::{
-            glytex::{GlytexGpuMiner, GlytexGpuMinerStatusMonitor},
-            graxil::{GraxilGpuMiner, GraxilGpuMinerStatusMonitor},
-            lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
+    mining::{
+        gpu::{
+            consts::EngineType,
+            miners::{
+                glytex::{GlytexGpuMiner, GlytexGpuMinerStatusMonitor},
+                graxil::{GraxilGpuMiner, GraxilGpuMinerStatusMonitor},
+                lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
+            },
         },
+        GpuConnectionType,
     },
     process_adapter::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor,
@@ -40,7 +43,7 @@ use crate::{
 
 pub trait GpuMinerInterfaceTrait: Send + Sync {
     async fn load_tari_address(&mut self, tari_address: &str) -> Result<(), anyhow::Error>;
-    async fn load_worker_name(&mut self, worker_name: &str) -> Result<(), anyhow::Error>;
+    async fn load_worker_name(&mut self, worker_name: Option<&str>) -> Result<(), anyhow::Error>;
     async fn load_intensity_percentage(
         &mut self,
         intensity_percentage: u32,
@@ -51,6 +54,12 @@ pub trait GpuMinerInterfaceTrait: Send + Sync {
     ) -> Result<(), anyhow::Error>;
     async fn detect_devices(&mut self) -> Result<(), anyhow::Error>;
     async fn load_gpu_engine(&mut self, _engine: EngineType) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
+    async fn load_excluded_devices(
+        &mut self,
+        _excluded_devices: Vec<u32>,
+    ) -> Result<(), anyhow::Error> {
         Ok(())
     }
 }
@@ -69,7 +78,7 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
             GpuMinerInterface::Glytex(miner) => miner.load_tari_address(tari_address).await,
         }
     }
-    async fn load_worker_name(&mut self, worker_name: &str) -> Result<(), anyhow::Error> {
+    async fn load_worker_name(&mut self, worker_name: Option<&str>) -> Result<(), anyhow::Error> {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.load_worker_name(worker_name).await,
             GpuMinerInterface::Graxil(miner) => miner.load_worker_name(worker_name).await,
@@ -116,6 +125,19 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
             GpuMinerInterface::LolMiner(miner) => miner.detect_devices().await,
             GpuMinerInterface::Graxil(miner) => miner.detect_devices().await,
             GpuMinerInterface::Glytex(miner) => miner.detect_devices().await,
+        }
+    }
+
+    async fn load_excluded_devices(
+        &mut self,
+        excluded_devices: Vec<u32>,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            GpuMinerInterface::LolMiner(miner) => {
+                miner.load_excluded_devices(excluded_devices).await
+            }
+            GpuMinerInterface::Graxil(miner) => miner.load_excluded_devices(excluded_devices).await,
+            GpuMinerInterface::Glytex(miner) => miner.load_excluded_devices(excluded_devices).await,
         }
     }
 }

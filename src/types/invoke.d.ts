@@ -54,7 +54,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'exit_application'): Promise<string>;
-    function invoke(param: 'restart_application', payload: { shouldStopMiners: boolean }): Promise<string>;
+    function invoke(param: 'restart_application'): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
     function invoke(
         param: 'get_transactions',
@@ -108,7 +108,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_app_in_memory_config'): Promise<ConfigBackendInMemory>;
     function invoke(
         param: 'select_exchange_miner',
-        payload: { exchange_miner: ExchangeMiner; mining_address: string }
+        payload: { exchangeMiner: ExchangeMiner; miningAddress: string }
     ): Promise<void>;
     function invoke(param: 'launch_builtin_tapplet'): Promise<ActiveTapplet>;
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
@@ -126,18 +126,14 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'save_wxtm_address', payload: { address: string; exchangeId: string }): Promise<void>;
     function invoke(param: 'change_cpu_pool', payload: { cpuPool: string }): Promise<void>;
     function invoke(param: 'change_gpu_pool', payload: { gpuPool: string }): Promise<void>;
-    function invoke(
-        param: 'update_selected_cpu_pool',
-        payload: { cpuPool: Record<string, BasePoolData> }
-    ): Promise<void>;
-    function invoke(
-        param: 'update_selected_gpu_pool',
-        payload: { gpuPool: Record<string, BasePoolData> }
-    ): Promise<void>;
-    function invoke(param: 'reset_gpu_pool_config', payload: { gpuPoolName: string }): Promise<void>;
-    function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolName: string }): Promise<void>;
+    function invoke(param: 'update_selected_cpu_pool', payload: { updated_config: BasePoolData }): Promise<void>;
+    function invoke(param: 'update_selected_gpu_pool', payload: { updated_config: BasePoolData }): Promise<void>;
+    function invoke(param: 'reset_gpu_pool_config', payload: { gpuPoolType: string }): Promise<void>;
+    function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolType: string }): Promise<void>;
     function invoke(param: 'restart_phases', payload: { phases: SetupPhase[] }): Promise<void>;
     function invoke(param: 'list_connected_peers'): Promise<string[]>;
     function invoke(param: 'switch_gpu_miner', payload: { gpuMinerType: GpuMinerType }): Promise<void>;
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
+    function invoke(param: 'set_mode_mining_time', payload: { mode: string; duration: number }): Promise<void>;
+    function invoke(param: 'set_eco_alert_needed'): Promise<void>;
 }

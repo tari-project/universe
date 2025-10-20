@@ -1,13 +1,13 @@
 {
   "bubbles": {
-    "active-miners": "active miners",
-    "ago": "ago",
-    "block": "block",
-    "got-rewarded": "got rewarded",
-    "miners": "miners",
-    "pool": "Pool",
-    "solved": "solved",
-    "solving": "is being solved"
+    "active-miners": "активные майнеры",
+    "ago": "назад",
+    "block": "блок",
+    "got-rewarded": "получил награду",
+    "miners": "майнеры",
+    "pool": "Пул",
+    "solved": "решено",
+    "solving": "решается"
   },
   "connection-to-node-lost": "Соединение с майнером потеряно. Пожалуйста, подождите, пока майнер переподключится, или перезапустите его.",
   "cpu-power": "CPU Мощность",
@@ -27,6 +27,15 @@
     "stop-mining": "Остановить майнинг",
     "waiting-for-idle": "Ожидание простоя"
   },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
+  },
   "orphan-chain-tooltip": {
     "heading": "Что можно попробовать:",
     "step_1": "Проверьте Ваше интернет-соединение",
@@ -38,7 +47,7 @@
   },
   "pool": {
     "accepted_shares": "Принятые шары",
-    "balance": "Total earnings",
+    "balance": "Общий заработок",
     "min_payout": "Минимальная выплата",
     "unpaid": "Не выплачено"
   },

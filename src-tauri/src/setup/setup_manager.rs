@@ -28,7 +28,7 @@ use super::listeners::{setup_listener, SetupFeature, SetupFeaturesList};
 use super::trait_setup_phase::SetupPhaseImpl;
 use super::utils::phase_builder::PhaseBuilder;
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
-use crate::commands::{start_cpu_mining, start_gpu_mining};
+use crate::commands::start_cpu_mining;
 use crate::configs::config_core::ConfigCoreContent;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
@@ -36,7 +36,9 @@ use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
+use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::consts::GpuMinerType;
+use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
@@ -46,6 +48,7 @@ use crate::setup::{
     phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
     phase_wallet::WalletSetupPhase,
 };
+use crate::systemtray_manager::SystemTrayManager;
 use crate::utils::platform_utils::PlatformUtils;
 use crate::{
     configs::{
@@ -249,6 +252,15 @@ impl SetupManager {
 
         drop(websocket_events_manager_guard);
 
+        GpuManager::write()
+            .await
+            .load_app_handle(app_handle.clone())
+            .await;
+        CpuManager::write()
+            .await
+            .load_app_handle(app_handle.clone())
+            .await;
+
         // Listen for websocket reconnection events to restart events manager
         let websocket_event_manager_clone = state.websocket_event_manager.clone();
         let websocket_manager_clone = state.websocket_manager.clone();
@@ -299,6 +311,12 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
+
+        // Initialize after configs are loaded as its reads mining mode from config
+        SystemTrayManager::write()
+            .await
+            .initialize_tray(&app_handle)
+            .await;
 
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {node_type:?}");
@@ -470,19 +488,6 @@ impl SetupManager {
             self.exchange_modal_status
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
-        }
-
-        // Check if we are on pool mining and we do not have mine on start selected
-        // In that case we want to send pool update so we won't display 0 balance
-        if !*ConfigMining::content().await.mine_on_app_start() {
-            if *ConfigPools::content().await.cpu_pool_enabled() {
-                info!(target: LOG_TARGET, "Requesting initial CPU pool status update");
-                CpuPoolManager::update_current_pool_status().await;
-            }
-            if *ConfigPools::content().await.gpu_pool_enabled() {
-                info!(target: LOG_TARGET, "Requesting initial GPU pool status update");
-                GpuPoolManager::update_current_pool_status().await;
-            }
         }
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
@@ -802,9 +807,6 @@ impl SetupManager {
     pub async fn turn_off_gpu_pool_feature(&self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Turning off GPU Pool feature");
 
-        let app_handle = self.app_handle().await;
-        let app_state = app_handle.state::<UniverseAppState>().clone();
-
         // We want to stop the stats watcher as its not needed when solo mining
         // Normal flow would monitor the status for extra hour but in case of disabling pool mining we want to stop it right away
         GpuPoolManager::stop_stats_watcher().await;
@@ -814,11 +816,6 @@ impl SetupManager {
         // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
         EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
 
-        // Start mining will now pickup that GPU Pool is turn off and will start glytex instead
-        start_gpu_mining(app_state.clone(), app_handle.clone())
-            .await
-            .map_err(anyhow::Error::msg)?;
-
         Ok(())
     }
 
@@ -827,9 +824,6 @@ impl SetupManager {
     /// It will make only difference in case of pool connection issues as we do not use other cpu miner
     pub async fn turn_off_cpu_pool_feature(&self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Turning off CPU Pool feature");
-        let app_handle = self.app_handle().await;
-        let app_state = app_handle.state::<UniverseAppState>().clone();
-
         // We want to stop the stats watcher as its not needed when solo mining
         // Normal flow would monitor the status for extra hour but in case of disabling pool mining we want to stop it right away
         CpuPoolManager::stop_stats_watcher().await;
@@ -842,9 +836,7 @@ impl SetupManager {
         // Solo mining will require mmproxy to be running
         self.restart_phases(vec![SetupPhase::CpuMining]).await;
 
-        start_cpu_mining(app_state.clone(), app_handle.clone())
-            .await
-            .map_err(anyhow::Error::msg)?;
+        start_cpu_mining().await.map_err(anyhow::Error::msg)?;
 
         Ok(())
     }

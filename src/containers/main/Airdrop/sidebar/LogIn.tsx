@@ -13,8 +13,8 @@ export default function LogIn() {
 
     const tooltipContent = authUrlCopied ? (
         <>
-            <Typography variant="h6">{`Could not open URL`}</Typography>
-            <Typography variant="p">{`It has been copied to your clipboard, please visit the link directly to log in`}</Typography>
+            <Typography variant="h6">{t('auth.url-error')}</Typography>
+            <Typography variant="p">{t('auth.url-error-copy')}</Typography>
         </>
     ) : (
         <>

@@ -47,6 +47,7 @@
   "gpu-miners": "GPU Miners",
   "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "GPU Mining",
+  "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
   "gpu-unavailable": "⚠️ GPU disabled because your hardware does not support it",
   "hardware-status": "Hardware status",
   "idle-timeout": {
@@ -147,6 +148,8 @@
   "should-use-system-language": "Use system language",
   "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
   "stats-server-port": "Stats server port",
+  "sync-complete": "Synced",
+  "sync-incomplete": "Syncing...",
   "sync-status": "Sync Status",
   "tabs": {
     "airdrop": "Bonus XTM",

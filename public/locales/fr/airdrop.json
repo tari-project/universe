@@ -1,7 +1,10 @@
 {
   "airdropGame": "Récompenses Testnet",
+  "auth": {
+    "url-error": "Impossible d\"ouvrir l\"URL",
+    "url-error-copy": "Il a été copié dans votre presse-papiers, veuillez visiter le lien directement pour vous connecter"
+  },
   "bonus-gems-earned": "Gemmes bonus gagnées",
-  "earnBonusXTM": "Bonus XTM",
   "claimGems": "Réclamer des gemmes",
   "claimModalFieldLabel": "Facultatif",
   "claimModalFieldPlaceholder": "Entre le code d'invitation",
@@ -15,58 +18,59 @@
   "copying": "Copie...",
   "crewRewards": {
     "actions": {
-      "claim": "Claim {{amount}} XTM",
-      "claimed": "Claimed",
-      "nudge": "Nudge"
+      "claim": "Réclamer {{amount}} XTM",
+      "claimed": "Réclamé",
+      "nudge": "Rappel"
     },
-    "activeMinersStat": "Active Miners",
-    "bonusXTMEarned": "Bonus XTM Earned",
-    "copied": "Copied!",
+    "activeMinersStat": "Mineurs actifs",
+    "bonusXTMEarned": "Bonus XTM Gagné",
+    "copied": "Copié !",
     "crewStatus": {
-      "completed": "Completed",
-      "inProgress": "In Progress",
-      "needsNudge": "Needs Nudge"
+      "completed": "Terminé",
+      "inProgress": "En cours",
+      "needsNudge": "Besoin de rappel"
     },
-    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
-    "errorLoadingData": "Error loading crew data. Please try again.",
+    "earnDescription": "Gagnez <strong>{{userReward}} XTM</strong> pour chaque <strong>{{daysRequired}} jours</strong> que votre ami mine. Votre ami gagnera également <strong>{{friendReward}} XTM</strong>.",
+    "errorLoadingData": "Erreur de chargement des données de l\"équipe. Veuillez réessayer.",
     "feedback": {
-      "nudgeSent": "Nudge sent!",
-      "rewardClaimed": "Reward claimed!"
+      "nudgeSent": "Rappel envoyé !",
+      "rewardClaimed": "Récompense réclamée !"
     },
     "filters": {
-      "active": "Active",
-      "all": "All",
-      "complete": "Complete",
-      "inactive": "Inactive"
+      "active": "Actif",
+      "all": "Tous",
+      "complete": "Complet",
+      "inactive": "Inactif"
     },
-    "inviteFriends": "Invite Friends",
-    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "inviteFriends": "Inviter des amis",
+    "inviteFriendsMessage": "Invitez des amis et commencez à gagner <strong>des bonus XTM !</strong>",
     "login": {
-      "bonusText": "Earn bonus rewards up to {{maxWeeks}} weeks per invite",
-      "description": "You earn <strong>{{userReward}} bonus XTM/week</strong> AND your friend earns <strong>{{friendReward}} bonus XTM/week</strong> when you and your friend both mine",
-      "loginButton": "Log in & Start Earning!",
-      "title": "Mine with friends. <strong>Earn together.</strong>"
+      "bonusText": "Gagnez des récompenses bonus jusqu\"à {{maxWeeks}} semaines par invitation",
+      "description": "Vous gagnez <strong>{{userReward}} bonus XTM/semaine</strong> ET votre ami gagne <strong>{{friendReward}} bonus XTM/semaine</strong> lorsque vous et votre ami minez tous les deux",
+      "loginButton": "Connectez-vous et commencez à gagner !",
+      "title": "Minez avec des amis. <strong>Gagnez ensemble.</strong>"
     },
-    "myCrew": "My Crew",
-    "of": "of",
+    "manageYourCrew": "Gérez votre équipe",
+    "myCrew": "Mon Équipe",
+    "of": "de",
     "streak": {
-      "day": "Day",
-      "dayStreak": "{{days}} Day Streak",
-      "daysToMinimum": "{{days}} more days to meet minimum requirements!",
-      "keepStreak": "Keep your streak to keep earning rewards!",
-      "loadingStreak": "Loading streak...",
-      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
-      "minimumRequirementsMet": "You've met the minimum requirements. Keep going!",
-      "multiDayStreak": "{{days}} Day Streak",
-      "oneDayStreak": "1 Day Streak",
-      "startMiningMessage": "Start mining to begin your streak and earn rewards!",
-      "startYourStreak": "Start Your Streak!",
-      "unlockBonusRewards": "Unlock your bonus rewards"
+      "day": "Jour",
+      "dayStreak": "Série de {{days}} jours",
+      "daysToMinimum": "Encore {{days}} jours pour atteindre les exigences minimales !",
+      "keepStreak": "Gardez votre série pour continuer à gagner des récompenses !",
+      "loadingStreak": "Chargement de la série...",
+      "mineConsecutiveDays": "Minez pendant au moins <strong>{{streakDaysRequired}} jours consécutifs</strong> chaque semaine pour gagner votre bonus XTM.",
+      "minimumRequirementsMet": "Vous avez atteint les exigences minimales. Continuez !",
+      "multiDayStreak": "Série de {{days}} jours",
+      "oneDayStreak": "Série de 1 jour",
+      "startMiningMessage": "Commencez à miner pour débuter votre série et gagner des récompenses !",
+      "startYourStreak": "Commencez votre série !",
+      "unlockBonusRewards": "Débloquez vos récompenses bonus"
     },
-    "title": "Rewards",
-    "manageYourCrew": "Manage your crew"
+    "title": "Récompenses"
   },
   "doLater": "Je ferai ça plus tard",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "Gemmes",
   "giftReferralCode": "Gagnez des XTM bonus pour chaque ami que vous invitez dans Tari Universe. Une fois qu'ils ont connecté leur compte et miné, vous commencerez à recevoir des récompenses.",
   "giftReferralCodeHeader": "Réclame les <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gemmes de ton code de parrainage.",

@@ -44,7 +44,7 @@ static LOG_TARGET: &str = "tari::universe::config_wallet";
 static INSTANCE: LazyLock<RwLock<ConfigWallet>> =
     LazyLock::new(|| RwLock::new(ConfigWallet::new()));
 
-pub const WALLET_VERSION: i32 = 2;
+pub const WALLET_VERSION: u32 = 2;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ExternalTariAddressBookRecord {
@@ -70,7 +70,7 @@ impl WalletId {
 #[allow(clippy::struct_excessive_bools)]
 pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
-    version: i32,
+    version_counter: u32,
     #[getset(get = "pub", set = "pub")]
     tari_wallets: Vec<WalletId>,
     #[getset(get = "pub")]
@@ -103,7 +103,7 @@ pub struct ConfigWalletContent {
 impl Default for ConfigWalletContent {
     fn default() -> Self {
         Self {
-            version: 0,
+            version_counter: WALLET_VERSION,
             tari_wallets: Vec::new(), // Owned wallets` ids
             monero_address: "".to_string(),
             monero_address_is_generated: false,
@@ -185,12 +185,13 @@ impl ConfigWallet {
 
     pub async fn migrate() -> Result<(), anyhow::Error> {
         let config = ConfigWallet::content().await;
-        let current_version = *config.version();
+        let current_version = *config.version_counter();
 
         if current_version < WALLET_VERSION {
             log::info!("Wallet Config needs migration {current_version:?} => {WALLET_VERSION}");
 
-            ConfigWallet::update_field(ConfigWalletContent::set_version, WALLET_VERSION).await?;
+            ConfigWallet::update_field(ConfigWalletContent::set_version_counter, WALLET_VERSION)
+                .await?;
 
             return Ok(());
         }

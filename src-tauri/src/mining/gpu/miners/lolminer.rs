@@ -19,7 +19,10 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-use std::time::Duration;
+use std::{
+    sync::atomic::{AtomicBool, Ordering},
+    time::Duration,
+};
 
 use axum::async_trait;
 use log::{info, warn};
@@ -38,14 +41,19 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
-    mining::gpu::{
-        consts::{GpuConnectionType, GpuMinerStatus},
-        interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
-        miners::GpuCommonInformation,
+    mining::{
+        gpu::{
+            consts::GpuMinerStatus,
+            interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
+            manager::GpuManager,
+            miners::GpuCommonInformation,
+        },
+        GpuConnectionType,
     },
     port_allocator::PortAllocator,
     process_adapter::{
-        HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
+        HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
+        StatusMonitor,
     },
     process_utils::launch_child_process,
     APPLICATION_FOLDER_ID,
@@ -81,8 +89,8 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         self.tari_address = Some(tari_address.to_string());
         Ok(())
     }
-    async fn load_worker_name(&mut self, worker_name: &str) -> Result<(), anyhow::Error> {
-        self.worker_name = Some(worker_name.to_string());
+    async fn load_worker_name(&mut self, worker_name: Option<&str>) -> Result<(), anyhow::Error> {
+        self.worker_name = worker_name.map(|name| name.to_string());
         Ok(())
     }
     async fn load_intensity_percentage(
@@ -194,8 +202,12 @@ impl ProcessAdapter for LolMinerGpuMiner {
         }
 
         if let Some(tari_address) = &self.tari_address {
+            let mut address = tari_address.clone();
+            if let Some(worker_name) = &self.worker_name {
+                address = format!("{}{}", tari_address, worker_name);
+            }
             args.push("--user".to_string());
-            args.push(tari_address.clone());
+            args.push(address);
         } else {
             return Err(anyhow::anyhow!(
                 "Tari address must be set before starting the LolminerGpuMiner"
@@ -257,26 +269,57 @@ pub struct LolMinerGpuMinerStatusMonitor {
     gpu_status_sender: Sender<GpuMinerStatus>,
 }
 
+// This is a flag to indicate if the fallback to other miner has already been triggered
+// We want to avoid triggering it multiple times per session
+static WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED: AtomicBool = AtomicBool::new(false);
+
 #[async_trait]
 impl StatusMonitor for LolMinerGpuMinerStatusMonitor {
-    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+    async fn handle_unhealthy(
+        &self,
+        duration_since_last_healthy_status: Duration,
+    ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        info!(target: LOG_TARGET, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        if duration_since_last_healthy_status.as_secs().gt(&(60 * 3)) // Fallback after 3 minutes of unhealthiness
+            && !WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.load(Ordering::SeqCst)
+        {
+            match GpuManager::write().await.handle_unhealthy_miner().await {
+                Ok(_) => {
+                    info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
+                    WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.store(true, Ordering::SeqCst);
+                    return Ok(HandleUnhealthyResult::Stop);
+                }
+                Err(error) => {
+                    warn!(target: LOG_TARGET, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {error} | Continuing to monitor.");
+                    return Ok(HandleUnhealthyResult::Continue);
+                }
+            }
+        } else {
+            return Ok(HandleUnhealthyResult::Continue);
+        }
+    }
+
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(inner) => inner,
             Err(_) => {
                 warn!(target: LOG_TARGET, "Timeout error in GpuMinerAdapter check_health");
                 let _ = self.gpu_status_sender.send(GpuMinerStatus::default());
-                return HealthStatus::Warning;
+                return HealthStatus::Unhealthy;
             }
         };
 
         match status {
             Ok(status) => {
                 let _ = self.gpu_status_sender.send(status.clone());
-                // GPU returns 0 for first 10 seconds until it has an average
-                if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
+                if status.hash_rate > 0.0 {
+                    if !GpuManager::read().await.is_current_miner_healthy().await {
+                        info!(target: LOG_TARGET, "Marking current miner as healthy again");
+                        let _unused = GpuManager::write().await.handle_healthy_miner().await;
+                    }
                     HealthStatus::Healthy
                 } else {
-                    HealthStatus::Warning
+                    HealthStatus::Unhealthy
                 }
             }
             Err(_) => {
@@ -355,6 +398,9 @@ fn extract_device_names(output_str: &str) -> Vec<String> {
     let mut device_names = Vec::new();
     let mut found_device = false;
 
+    let regex =
+        Regex::new(r"\x1b\[[0-9;]*m").expect("Failed to create regex for lolminer devices names");
+
     for line in lines {
         let trimmed = line.trim();
         // Check for any device marker (Device 0:, Device 1:, etc.)
@@ -364,13 +410,12 @@ fn extract_device_names(output_str: &str) -> Vec<String> {
         }
         if found_device && trimmed.starts_with("Name:") {
             // Regex to match ANSI escape codes
-            let re = Regex::new(r"\x1b\[[0-9;]*m")
-                .expect("Failed to create regex for lolminer devices names");
+
             // Extract the name after "Name:    "
             let parts: Vec<&str> = trimmed.splitn(2, ':').collect();
             if parts.len() == 2 {
                 let name = parts[1].trim().to_string();
-                let plain_name = re.replace_all(&name, "").to_string();
+                let plain_name = regex.replace_all(&name, "").to_string();
                 device_names.push(plain_name);
             }
             found_device = false; // Reset for next device

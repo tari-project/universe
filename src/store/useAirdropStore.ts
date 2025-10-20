@@ -184,6 +184,8 @@ export interface ReferrerProgressResponse {
         name: string;
         displayName: string;
         image: string;
+        isCurrentlyMining: boolean;
+        lastActivityDate: string;
     }[];
     membersToNudge: {
         id: string;
@@ -191,6 +193,11 @@ export interface ReferrerProgressResponse {
         displayName?: string;
         imageUrl?: string;
     }[];
+    rewardsConfig: {
+        referrerRewards: number;
+        referralRewards: number;
+        requirement: number;
+    };
 }
 
 export interface Reward {
@@ -241,7 +248,7 @@ const initialState: AirdropStoreState = {
     latestXSpaceEvent: null,
     uiSendRecvEnabled: true,
     crewQueryParams: {
-        status: 'all',
+        status: 'active',
         page: 1,
         limit: 20,
     },
