@@ -27,6 +27,7 @@ pub mod entry_gpu_drivers;
 pub mod entry_gpu_hardware;
 pub mod entry_khronos_software;
 pub mod entry_uninstall_software;
+pub mod entry_tasktray_icon;
 
 pub trait WindowsRegistryReader {
     type Entry;
@@ -51,4 +52,6 @@ pub enum WindowsRegistryRecordType {
     GpuHardware,
     // Gpu drivers information that is present in the system, checked via CurrentControlSet\Control\Class registry
     GpuDrivers,
+    // Task tray icon information that is present in the system, checked via Control Panel\NotifyIconSettings
+    TaskTrayIcon,
 }
