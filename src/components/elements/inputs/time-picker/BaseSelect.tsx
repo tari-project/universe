@@ -39,7 +39,12 @@ const defaultTime: TimeParts = {
     cycle: 'AM',
 };
 
-export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
+interface BaseSelectProps {
+    initialTime?: TimeParts;
+    onChange?: (time: TimeParts) => void;
+}
+
+export const BaseSelect = ({ initialTime, onChange }: BaseSelectProps) => {
     const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
     const modeColour = getModeColours(selectedMiningMode?.mode_type);
     const _initialTime = initialTime || defaultTime;
@@ -96,6 +101,10 @@ export const BaseSelect = ({ initialTime }: { initialTime?: TimeParts }) => {
     useEffect(() => {
         setTime({ hour, minute, cycle: AMPM });
     }, [hour, minute, AMPM]);
+
+    useEffect(() => {
+        onChange?.(time);
+    }, [time]);
 
     return (
         <InputWrapper>

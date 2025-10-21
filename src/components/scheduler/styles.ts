@@ -32,6 +32,7 @@ export const FormWrapper = styled.div`
 export const CTA = styled(Button)`
     height: min(80px, 10vh);
     font-size: 21px;
+    margin: 0 0 10px;
 `;
 
 export const CTAText = styled(Typography)`
