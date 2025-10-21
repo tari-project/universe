@@ -49,6 +49,7 @@ use crate::setup::{
     phase_wallet::WalletSetupPhase,
 };
 use crate::systemtray_manager::SystemTrayManager;
+use crate::utils::battery_status::BatteryStatus;
 use crate::utils::platform_utils::PlatformUtils;
 use crate::{
     configs::{
@@ -317,6 +318,8 @@ impl SetupManager {
             .await
             .initialize_tray(&app_handle)
             .await;
+
+        BatteryStatus::start_battery_listener().await;
 
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {node_type:?}");

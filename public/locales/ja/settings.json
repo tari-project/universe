@@ -100,6 +100,10 @@
     "load-qr-code": "QRコードを読み込む",
     "passphrase": "パスフレーズ"
   },
+  "pause-on-battery-mode": {
+    "description": "Pause mining when device is disconnected from charging",
+    "title": "Pause on Battery Mode"
+  },
   "pin": "ピン",
   "pool-configuration": "プール設定",
   "pool-mining": "プールマイニング",
