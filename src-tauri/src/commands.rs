@@ -1937,7 +1937,7 @@ pub async fn add_scheduler_between_event(
     end_time_minute: i64,
     end_time_period: TimePeriod,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET, "add_scheduler_between_event called with event_id: {event_id:?}, start_time_hour: {start_time_hour:?}, start_time_minute: {start_time_minute:?}, start_time_period: {start_time_period:?}, end_time_hour: {end_time_hour:?}, end_time_minute: {end_time_minute:?}, end_time_period: {end_time_period:?}");
+    info!(target: LOG_TARGET, "[ add_scheduler_between_event ] called with event_id: {event_id:?}, start_time_hour: {start_time_hour:?}, start_time_minute: {start_time_minute:?}, start_time_period: {start_time_period:?}, end_time_hour: {end_time_hour:?}, end_time_minute: {end_time_minute:?}, end_time_period: {end_time_period:?}");
 
     let event_timing = SchedulerEventTiming::parse_between_variant(
         start_time_hour,
@@ -1948,8 +1948,8 @@ pub async fn add_scheduler_between_event(
         end_time_period,
     )
     .map_err(|e| e.to_string())?;
-
-    let event_type = SchedulerEventType::ResumeMining;
+    let mining_mode = ConfigMining::get_selected_mining_mode_object().await;
+    let event_type = SchedulerEventType::Mine { mining_mode };
 
     EventScheduler::instance()
         .schedule_event(event_type, event_id, event_timing)

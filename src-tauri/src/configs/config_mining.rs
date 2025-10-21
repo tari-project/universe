@@ -286,6 +286,15 @@ impl ConfigMining {
             .expect("Could not check for migration");
     }
 
+    pub async fn get_selected_mining_mode_object() -> MiningMode {
+        let selected_mode = Self::content().await.selected_mining_mode.clone();
+        let modes = Self::content().await.mining_modes.clone();
+
+        let selected_mode_object: MiningMode = modes[&selected_mode].clone();
+
+        selected_mode_object
+    }
+
     pub async fn update_mining_times(
         mode: MiningModeType,
         duration: u64,

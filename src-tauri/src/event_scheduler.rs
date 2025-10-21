@@ -88,6 +88,7 @@ use tokio::{
     time::sleep,
 };
 
+use crate::events_emitter::EventsEmitter;
 use crate::{
     configs::{
         config_core::{ConfigCore, ConfigCoreContent},
@@ -706,6 +707,9 @@ impl EventScheduler {
             .unwrap_or_else(|e| {
                 error!(target: LOG_TARGET, "Failed to save persistent events to config: {}", e);
             });
+
+        // TODO - this is temporary - add proper config update evts
+        EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
     }
 
     /// Loads persistent events from the application configuration.

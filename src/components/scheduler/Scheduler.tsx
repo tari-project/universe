@@ -13,9 +13,8 @@ const INIT_START: TimeParts = { hour: '06', minute: '00', cycle: 'AM' };
 const INIT_END: TimeParts = { hour: '04', minute: '30', cycle: 'PM' };
 
 export default function Scheduler() {
-    const scheduler_events = useConfigCoreStore((s) => s.scheduler_events);
+    const _scheduler_events = useConfigCoreStore((s) => s.scheduler_events);
 
-    console.log(scheduler_events);
     const [startTime, setStartTime] = useState<TimeParts>(INIT_START);
     const [endTime, setEndTime] = useState<TimeParts>(INIT_END);
 
@@ -32,7 +31,7 @@ export default function Scheduler() {
             endTimeMinute: Number(endTime.minute),
             endTimePeriod: endTime.cycle,
         };
-
+        console.log(payload);
         invoke('add_scheduler_between_event', payload)
             .then(() => console.info('Saved!'))
             .catch(console.error);
