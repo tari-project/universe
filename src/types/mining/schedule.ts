@@ -14,10 +14,13 @@ export interface AddSchedulerEventInVariantPayload {
     timeValue: number;
     timeUnit: TimeUnit;
 }
+
 export interface AddSchedulerEventBetweenVariantPayload {
     eventId: string;
-    startTimeValue: number;
+    startTimeHour: number;
+    startTimeMinute: number;
     startTimePeriod: TimePeriod;
-    endTimeValue: number;
+    endTimeHour: number;
+    endTimeMinute: number;
     endTimePeriod: TimePeriod;
 }
