@@ -87,6 +87,7 @@ mod configs;
 mod consts;
 mod credential_manager;
 mod download_utils;
+mod event_scheduler;
 mod events;
 mod events_emitter;
 mod events_manager;
@@ -587,7 +588,13 @@ fn main() {
             commands::switch_gpu_miner,
             commands::set_feedback_fields,
             commands::set_mode_mining_time,
-            commands::set_eco_alert_needed
+            commands::set_eco_alert_needed,
+            // Scheduler commands
+            commands::add_scheduler_in_event,
+            commands::add_scheduler_between_event,
+            commands::remove_scheduler_event,
+            commands::pause_scheduler_event,
+            commands::resume_scheduler_event,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

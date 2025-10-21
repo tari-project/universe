@@ -162,6 +162,10 @@ jobs:
       - name: create empty dist dir
         run: |
           mkdir dist
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2.7.5
+        with:
+          workspaces: './src-tauri -> target'
 
       - name: install dependencies (linux)
         run: |

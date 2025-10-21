@@ -34,6 +34,7 @@ use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
+use crate::event_scheduler::EventScheduler;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
 use crate::mining::cpu::manager::CpuManager;
@@ -489,6 +490,13 @@ impl SetupManager {
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
         }
+
+        EventScheduler::instance()
+            .spawn_listener()
+            .await
+            .unwrap_or_else(|e| {
+                error!(target: LOG_TARGET, "Failed to start event scheduler listener: {e}");
+            });
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }

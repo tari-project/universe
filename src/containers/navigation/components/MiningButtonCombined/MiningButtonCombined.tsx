@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { Activity, useCallback } from 'react';
 import { ButtonWrapper } from './styles.ts';
 import { AnimatePresence } from 'motion/react';
 import LoadingButton from './LoadingButton/LoadingButton.tsx';
@@ -6,12 +6,14 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
-import { startMining, stopMining } from '@app/store/actions/miningStoreActions.ts';
-import type { ReactElement } from 'react';
+import { startMining } from '@app/store/actions/miningStoreActions.ts';
 import MiningButton from './MiningButton/MiningButton.tsx';
-import StopIcon from './icons/StopIcon.tsx';
 import PlayIcon from './icons/PlayIcon.tsx';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
+
+import MiningButtonPause from './MiningButton/components/pause/MiningButtonPause.tsx';
+import useResumeCountdown from '@app/containers/navigation/components/MiningButtonCombined/useResumeCountdown.ts';
+import ModeController from '@app/containers/navigation/components/MiningButtonCombined/MiningButton/components/ModeController.tsx';
 
 export default function MiningButtonCombined() {
     const gpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isGpuMiningModuleInitialized);
@@ -29,47 +31,49 @@ export default function MiningButtonCombined() {
     const isMiningUnlocked = gpuMiningModuleInitialized || cpuMiningModuleInitialized;
     const isMiningButtonDisabled =
         isMiningLoading || !isMiningControlsEnabled || !isMiningEnabled || !isMiningUnlocked || changingModes;
-    const isAppLoading = isMiningLoading;
+
+    const resumeTime = useResumeCountdown();
 
     const handleStartMining = useCallback(async () => {
         await startMining();
     }, []);
 
-    const handleStopMining = useCallback(async () => {
-        await stopMining();
-    }, []);
+    const controller = <ModeController />;
 
-    let button: ReactElement | null;
-
-    if (isAppLoading) {
-        button = <LoadingButton key="loading" />;
-    } else if (isMining) {
-        button = (
+    const pauseButton = (
+        <Activity mode={isMining ? 'visible' : 'hidden'} key="pause">
+            <MiningButtonPause isMining={isMining} isMiningButtonDisabled={isMiningButtonDisabled}>
+                {controller}
+            </MiningButtonPause>
+        </Activity>
+    );
+    const startButton = (
+        <Activity mode={!isMining ? 'visible' : 'hidden'} key="start">
             <MiningButton
-                key="stop"
-                buttonText="stop-mining"
-                onClick={handleStopMining}
-                disabled={isMiningButtonDisabled}
-                icon={<StopIcon />}
-                isMining={isMining}
-            />
-        );
-    } else {
-        button = (
-            <MiningButton
-                key="start"
-                buttonText="start-mining"
+                buttonText={resumeTime.displayString ? 'resume' : 'start'}
                 onClick={handleStartMining}
-                disabled={isMiningButtonDisabled}
+                disabled={isMiningButtonDisabled || isMiningLoading}
                 icon={<PlayIcon />}
                 isMining={isMining}
-            />
-        );
-    }
+                resumeTime={resumeTime}
+            >
+                {controller}
+            </MiningButton>
+        </Activity>
+    );
 
+    const loader = (
+        <Activity mode={isMiningLoading ? 'visible' : 'hidden'} key="loader">
+            <LoadingButton />
+        </Activity>
+    );
     return (
         <ButtonWrapper>
-            <AnimatePresence mode="popLayout">{button}</AnimatePresence>
+            <AnimatePresence mode="popLayout">
+                {loader}
+                {startButton}
+                {pauseButton}
+            </AnimatePresence>
         </ButtonWrapper>
     );
 }
