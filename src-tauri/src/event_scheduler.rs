@@ -435,12 +435,14 @@ impl SchedulerEventTiming {
     /// ```
     pub fn parse_between_variant(
         start_hour: i64,
+        start_minute: i64,
         start_period: TimePeriod,
         end_hour: i64,
+        end_minute: i64,
         end_period: TimePeriod,
     ) -> Result<Self, SchedulerError> {
-        let start_cron = Self::parse_cron(start_hour, start_period)?;
-        let end_cron = Self::parse_cron(end_hour, end_period)?;
+        let start_cron = Self::parse_cron(start_hour, start_minute, start_period)?;
+        let end_cron = Self::parse_cron(end_hour, end_minute, end_period)?;
         Ok(SchedulerEventTiming::Between(CronSchedule::new(
             &start_cron,
             &end_cron,
@@ -448,10 +450,16 @@ impl SchedulerEventTiming {
     }
 
     /// Converts 12-hour format time to a cron expression.
-    fn parse_cron(hour: i64, period: TimePeriod) -> Result<String, SchedulerError> {
+    fn parse_cron(hour: i64, minute: i64, period: TimePeriod) -> Result<String, SchedulerError> {
         if !(1..=12).contains(&hour) {
             return Err(SchedulerError::InvalidTimingFormat(
                 "Hour must be between 1 and 12".to_string(),
+            ));
+        }
+
+        if !(0..=59).contains(&minute) {
+            return Err(SchedulerError::InvalidTimingFormat(
+                "Minute must be between 0 and 59".to_string(),
             ));
         }
 
@@ -471,8 +479,8 @@ impl SchedulerEventTiming {
                 }
             }
         };
-        // Cron pattern for every day at the specified hour
-        Ok(format!("0 {} * * *", hour_24))
+        // Cron pattern for every day at the specified hour and minute
+        Ok(format!("{} {} * * *", minute, hour_24))
     }
 
     /// Checks if this timing represents a recurring event.
