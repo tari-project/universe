@@ -12,10 +12,9 @@ import { fetchExchangeContent } from '@app/hooks/exchanges/fetchExchangeContent.
 import { ConfigCore } from '@app/types/config/core.ts';
 
 import { NodeType } from '@app/types/mining/node.ts';
-import { AddSchedulerEventBetweenVariantPayload, SchedulerEvent, TimePeriod } from '@app/types/mining/schedule.ts';
+import { AddSchedulerEventBetweenVariantPayload, SchedulerEvent } from '@app/types/mining/schedule.ts';
 
 import { useConfigCoreStore as store } from '../../stores/config/useConfigCoreStore.ts';
-import timer from '@app/containers/main/ShellOfSecrets/SoSWidget/segments/Timer/Timer.tsx';
 
 export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     store.setState((c) => ({ ...c, ...coreConfig }));

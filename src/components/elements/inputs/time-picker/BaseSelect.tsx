@@ -31,8 +31,8 @@ import { TIME_PERIOD, TimeParts } from '@app/types/mining/schedule.ts';
 
 const fmtTimeUnit = (n: number): string => String(n).padStart(2, '0');
 
-const hourOptions = Array.from({ length: 12 }).map((_, i) => fmtTimeUnit(i + 1));
-const minuteOptions = Array.from({ length: 12 }).map((_, i) => fmtTimeUnit(i * 5));
+const hourOptions = Array.from({ length: 12 }).map((_, i) => i + 1);
+const minuteOptions = Array.from({ length: 12 }).map((_, i) => i * 5);
 
 const defaultTime: TimeParts = {
     hour: hourOptions[0],
@@ -85,13 +85,13 @@ export const BaseSelect = ({ initialTime, onChange }: BaseSelectProps) => {
 
     const { getReferenceProps, getFloatingProps, getItemProps } = useInteractions([dismiss, click, role]);
 
-    const handleSelect = (type: 'h' | 'm' | 'ap', label: string) => {
+    const handleSelect = (type: 'h' | 'm' | 'ap', label: number | string) => {
         switch (type) {
             case 'h':
-                setHour(label);
+                setHour(Number(label));
                 break;
             case 'm':
-                setMinute(label);
+                setMinute(Number(label));
                 break;
             case 'ap':
                 setAMPM(label as 'AM' | 'PM');
@@ -111,7 +111,7 @@ export const BaseSelect = ({ initialTime, onChange }: BaseSelectProps) => {
         <InputWrapper>
             <SelectTrigger tabIndex={0} ref={refs.setReference} {...getReferenceProps()}>
                 <TriggerContent>
-                    {`${time.hour}:${time.minute} ${time.timePeriod}`}
+                    {`${fmtTimeUnit(time.hour)}:${fmtTimeUnit(time.minute)} ${time.timePeriod}`}
                     <IconWrapper $isOpen={isOpen}>
                         <ChevronSVG />
                     </IconWrapper>
@@ -150,7 +150,7 @@ export const BaseSelect = ({ initialTime, onChange }: BaseSelectProps) => {
                                                     }}
                                                     onClick={() => handleSelect('h', value)}
                                                 >
-                                                    {value}
+                                                    {fmtTimeUnit(value)}
                                                 </StyledOption>
                                             )}
                                         />
@@ -182,7 +182,7 @@ export const BaseSelect = ({ initialTime, onChange }: BaseSelectProps) => {
                                                     }}
                                                     onClick={() => handleSelect('m', value)}
                                                 >
-                                                    {value}
+                                                    {fmtTimeUnit(value)}
                                                 </StyledOption>
                                             )}
                                         />

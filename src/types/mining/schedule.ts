@@ -5,8 +5,8 @@ export type TimePeriod = TimePeriodTuple[number];
 export type SchedulerEventType = 'ResumeMining' | 'Mine';
 
 export interface TimeParts {
-    hour: string;
-    minute: string;
+    hour: number;
+    minute: number;
     timePeriod: TimePeriod;
 }
 
