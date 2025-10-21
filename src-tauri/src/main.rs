@@ -195,7 +195,7 @@ fn main() {
     }
 
     let client = sentry::init((
-        "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
+        "https://70e065b9de2a94787f17fca4ae83b3ce@o4509670823428096.ingest.de.sentry.io/4509674716135504",
         sentry::ClientOptions {
             release: sentry::release_name!(),
             attach_stacktrace: true,
