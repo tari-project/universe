@@ -1,28 +1,4 @@
-import { NodeType } from '@app/store/useNodeStore';
 import { WalletUIMode } from './events-payloads';
-
-export interface ConfigCore {
-    created_at: string;
-    use_tor: boolean;
-    allow_telemetry: boolean;
-    allow_notifications: boolean;
-    last_binaries_update_timestamp?: string;
-    anon_id: string;
-    should_auto_launch: boolean;
-    mmproxy_use_monero_failover: boolean;
-    mmproxy_monero_nodes: string[];
-    auto_update: boolean;
-    pre_release: boolean;
-    last_changelog_version: string;
-    airdrop_tokens?: {
-        token: string;
-        refreshToken: string;
-    };
-    remote_base_node_address: string;
-    node_type?: NodeType;
-    exchange_id?: string;
-    scheduler_events?: Record<any, any>;
-}
 
 export interface ConfigWallet {
     created_at: string;

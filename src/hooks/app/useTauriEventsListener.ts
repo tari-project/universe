@@ -50,7 +50,6 @@ import {
 import { setBackgroundNodeState, setNodeStoreState, setTorEntryGuards } from '@app/store/useNodeStore';
 import {
     handleExchangeIdChanged,
-    handleConfigCoreLoaded,
     handleConfigMiningLoaded,
     handleConfigUILoaded,
     handleConfigWalletLoaded,
@@ -67,6 +66,7 @@ import {
     handleSelectedTariAddressChange,
     setIsWalletLoading,
 } from '@app/store/actions/walletStoreActions';
+import { handleConfigCoreLoaded } from '@app/store/actions/config/core.ts';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -128,7 +128,6 @@ const useTauriEventsListener = () => {
                             break;
                         }
                         case 'ConfigCoreLoaded':
-                            console.log(`ConfigCoreLoaded= `, event.payload);
                             await handleConfigCoreLoaded(event.payload);
                             break;
                         case 'ConfigWalletLoaded':

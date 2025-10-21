@@ -1,6 +1,13 @@
-export enum TimePeriod {
-    AM = 'AM',
-    PM = 'PM',
+export const TIME_PERIOD = ['AM', 'PM'] as const;
+type TimePeriodTuple = typeof TIME_PERIOD;
+export type TimePeriod = TimePeriodTuple[number];
+
+export type SchedulerEventType = 'ResumeMining' | 'Mine';
+
+export interface TimeParts {
+    hour: string;
+    minute: string;
+    timePeriod: TimePeriod;
 }
 
 export enum TimeUnit {
@@ -23,4 +30,22 @@ export interface AddSchedulerEventBetweenVariantPayload {
     endTimeHour: number;
     endTimeMinute: number;
     endTimePeriod: TimePeriod;
+}
+
+export type SchedulerEventTiming = 'In' | 'Between';
+
+export type Timing = Record<SchedulerEventTiming, BetweenTime>;
+
+export interface BetweenTime {
+    start_hour: number;
+    start_minute: number;
+    start_period: TimePeriod;
+    end_hour: number;
+    end_minute: number;
+    end_period: TimePeriod;
+}
+export interface SchedulerEvent {
+    id: string;
+    event_type: SchedulerEventType;
+    timing: Timing;
 }

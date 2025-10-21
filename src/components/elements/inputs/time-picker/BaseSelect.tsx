@@ -24,9 +24,10 @@ import {
 } from './styles.ts';
 
 import { ChevronSVG } from './chevron.tsx';
-import { CYCLE, TimeParts } from './types.ts';
+
 import { useConfigMiningStore } from '@app/store';
 import { getModeColours } from '@app/components/mode/helpers.ts';
+import { TIME_PERIOD, TimeParts } from '@app/types/mining/schedule.ts';
 
 const fmtTimeUnit = (n: number): string => String(n).padStart(2, '0');
 
@@ -36,7 +37,7 @@ const minuteOptions = Array.from({ length: 12 }).map((_, i) => fmtTimeUnit(i * 5
 const defaultTime: TimeParts = {
     hour: hourOptions[0],
     minute: minuteOptions[0],
-    cycle: 'AM',
+    timePeriod: 'AM',
 };
 
 interface BaseSelectProps {
@@ -52,7 +53,7 @@ export const BaseSelect = ({ initialTime, onChange }: BaseSelectProps) => {
     const [time, setTime] = useState<TimeParts>(_initialTime);
     const [hour, setHour] = useState<TimeParts['hour']>(_initialTime.hour);
     const [minute, setMinute] = useState<TimeParts['minute']>(_initialTime.minute);
-    const [AMPM, setAMPM] = useState<TimeParts['cycle']>(_initialTime.cycle);
+    const [AMPM, setAMPM] = useState<TimeParts['timePeriod']>(_initialTime.timePeriod);
 
     const [activeIndex, setActiveIndex] = useState(0);
 
@@ -99,7 +100,7 @@ export const BaseSelect = ({ initialTime, onChange }: BaseSelectProps) => {
     };
 
     useEffect(() => {
-        setTime({ hour, minute, cycle: AMPM });
+        setTime({ hour, minute, timePeriod: AMPM });
     }, [hour, minute, AMPM]);
 
     useEffect(() => {
@@ -110,7 +111,7 @@ export const BaseSelect = ({ initialTime, onChange }: BaseSelectProps) => {
         <InputWrapper>
             <SelectTrigger tabIndex={0} ref={refs.setReference} {...getReferenceProps()}>
                 <TriggerContent>
-                    {`${time.hour}:${time.minute} ${time.cycle}`}
+                    {`${time.hour}:${time.minute} ${time.timePeriod}`}
                     <IconWrapper $isOpen={isOpen}>
                         <ChevronSVG />
                     </IconWrapper>
@@ -189,9 +190,9 @@ export const BaseSelect = ({ initialTime, onChange }: BaseSelectProps) => {
                                 })}
                             </OptionListWrapper>
                             <OptionListWrapper>
-                                {CYCLE.map((value, _i) => {
+                                {TIME_PERIOD.map((value, _i) => {
                                     const i = _i + 24;
-                                    const selected = AMPM === CYCLE[_i];
+                                    const selected = AMPM === TIME_PERIOD[_i];
                                     return (
                                         <CompositeItem
                                             key={`am_${value}`}

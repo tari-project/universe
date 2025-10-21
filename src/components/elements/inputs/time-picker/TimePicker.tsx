@@ -1,6 +1,6 @@
 import { BaseSelect } from './BaseSelect.tsx';
 import { Container, LabelWrapper, Wrapper } from './styles.ts';
-import { TimeParts } from './types.ts';
+import { TimeParts } from '@app/types/mining/schedule.ts';
 
 interface TimePickerProps {
     label?: string;
