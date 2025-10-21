@@ -7,11 +7,15 @@ import { useState } from 'react';
 import { TimeParts } from '@app/components/elements/inputs/time-picker/types.ts';
 import { setShowScheduler } from '@app/store/stores/useModalStore.ts';
 import { invoke } from '@tauri-apps/api/core';
+import { useConfigCoreStore } from '@app/store';
 
 const INIT_START: TimeParts = { hour: '06', minute: '00', cycle: 'AM' };
 const INIT_END: TimeParts = { hour: '04', minute: '30', cycle: 'PM' };
 
 export default function Scheduler() {
+    const scheduler_events = useConfigCoreStore((s) => s.scheduler_events);
+
+    console.log(scheduler_events);
     const [startTime, setStartTime] = useState<TimeParts>(INIT_START);
     const [endTime, setEndTime] = useState<TimeParts>(INIT_END);
 
@@ -21,9 +25,11 @@ export default function Scheduler() {
 
         const payload = {
             eventId: 'mining_schedule',
-            startTimeValue: Number(startTime.hour),
+            startTimeHour: Number(startTime.hour),
+            startTimeMinute: Number(startTime.minute),
             startTimePeriod: startTime.cycle,
-            endTimeValue: Number(endTime.hour),
+            endTimeHour: Number(endTime.hour),
+            endTimeMinute: Number(endTime.minute),
             endTimePeriod: endTime.cycle,
         };
 

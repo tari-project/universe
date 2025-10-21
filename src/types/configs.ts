@@ -21,6 +21,7 @@ export interface ConfigCore {
     remote_base_node_address: string;
     node_type?: NodeType;
     exchange_id?: string;
+    scheduler_events?: Record<any, any>;
 }
 export interface ConfigWallet {
     created_at: string;
