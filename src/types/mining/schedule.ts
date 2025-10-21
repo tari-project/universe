@@ -34,7 +34,7 @@ export interface AddSchedulerEventBetweenVariantPayload {
 
 export type SchedulerEventTiming = 'In' | 'Between';
 
-export type Timing = Record<SchedulerEventTiming, BetweenTime>;
+export type Timing = Partial<Record<SchedulerEventTiming, BetweenTime>>;
 
 export interface BetweenTime {
     start_hour: number;

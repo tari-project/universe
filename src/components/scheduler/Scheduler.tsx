@@ -8,31 +8,37 @@ import { useState } from 'react';
 import { setShowScheduler } from '@app/store/stores/useModalStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { TimeParts } from '@app/types/mining/schedule.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
+import { setSchedulerEvents } from '@app/store/actions/config/core.ts';
 
 const INIT_START: TimeParts = { hour: '06', minute: '00', timePeriod: 'AM' };
 const INIT_END: TimeParts = { hour: '04', minute: '30', timePeriod: 'PM' };
 
 export default function Scheduler() {
+    const storedTimes = useConfigCoreStore((s) => s.scheduler_events);
+
+    console.log(JSON.stringify(storedTimes, null, 2));
+
     const [startTime, setStartTime] = useState<TimeParts>(INIT_START);
     const [endTime, setEndTime] = useState<TimeParts>(INIT_END);
 
-    function handleSave() {
+    async function handleSave() {
         console.info('Saving schedule');
-        //invoke
 
-        const payload = {
-            eventId: 'mining_schedule',
-            startTimeHour: Number(startTime.hour),
-            startTimeMinute: Number(startTime.minute),
-            startTimePeriod: startTime.timePeriod,
-            endTimeHour: Number(endTime.hour),
-            endTimeMinute: Number(endTime.minute),
-            endTimePeriod: endTime.timePeriod,
-        };
-
-        invoke('add_scheduler_between_event', payload)
-            .then(() => console.info('Saved!'))
-            .catch(console.error);
+        await setSchedulerEvents({
+            id: 'mining_schedule',
+            event_type: 'Mine',
+            timing: {
+                Between: {
+                    start_period: startTime.timePeriod,
+                    start_hour: Number(startTime.hour),
+                    start_minute: Number(startTime.minute),
+                    end_hour: Number(endTime.hour),
+                    end_minute: Number(endTime.minute),
+                    end_period: endTime.timePeriod,
+                },
+            },
+        });
     }
     return (
         <Wrapper>
