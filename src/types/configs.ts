@@ -23,6 +23,7 @@ export interface ConfigCore {
     exchange_id?: string;
     scheduler_events?: Record<any, any>;
 }
+
 export interface ConfigWallet {
     created_at: string;
     monero_address: string;

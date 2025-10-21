@@ -344,6 +344,37 @@ pub enum TimePeriod {
     PM,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct BetweenTimeVariantPayload {
+    pub start_hour: i64,
+    pub start_minute: i64,
+    pub start_period: TimePeriod,
+    pub end_hour: i64,
+    pub end_minute: i64,
+    pub end_period: TimePeriod,
+}
+
+impl BetweenTimeVariantPayload {
+    /// Converts the payload into a CronSchedule.
+    ///
+    /// ### Returns
+    /// * `Ok(CronSchedule)` - Schedule created successfully
+    /// * `Err(SchedulerError::InvalidCronPattern)` - If cron generation fails
+    pub fn to_cron_schedule(&self) -> Result<CronSchedule, SchedulerError> {
+        let start_cron = SchedulerEventTiming::parse_cron(
+            self.start_hour,
+            self.start_minute,
+            self.start_period.clone(),
+        )?;
+        let end_cron = SchedulerEventTiming::parse_cron(
+            self.end_hour,
+            self.end_minute,
+            self.end_period.clone(),
+        )?;
+        CronSchedule::new(&start_cron, &end_cron)
+    }
+}
+
 /// When a scheduled event should trigger.
 /// Either run once after a delay, or repeatedly during certain time windows.
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -353,7 +384,7 @@ pub enum SchedulerEventTiming {
     In(Duration),
     /// Run during recurring time windows (e.g., Between("0 22 * * *", "0 6 * * *") for 10PM to 6AM daily)
     /// The event keeps repeating according to the schedule.
-    Between(CronSchedule),
+    Between(BetweenTimeVariantPayload),
 }
 
 impl SchedulerEventTiming {
@@ -442,12 +473,17 @@ impl SchedulerEventTiming {
         end_minute: i64,
         end_period: TimePeriod,
     ) -> Result<Self, SchedulerError> {
-        let start_cron = Self::parse_cron(start_hour, start_minute, start_period)?;
-        let end_cron = Self::parse_cron(end_hour, end_minute, end_period)?;
-        Ok(SchedulerEventTiming::Between(CronSchedule::new(
-            &start_cron,
-            &end_cron,
-        )?))
+        let payload = BetweenTimeVariantPayload {
+            start_hour,
+            start_minute,
+            start_period,
+            end_hour,
+            end_minute,
+            end_period,
+        };
+        // Validate by trying to convert to CronSchedule
+        payload.to_cron_schedule()?;
+        Ok(SchedulerEventTiming::Between(payload))
     }
 
     /// Converts 12-hour format time to a cron expression.
@@ -1113,7 +1149,17 @@ impl EventScheduler {
                     .send(SchedulerMessage::TriggerEnterCallback { event_id });
             }),
 
-            SchedulerEventTiming::Between(cron_schedule) => {
+            SchedulerEventTiming::Between(between_time_variant_payload) => {
+                let cron_schedule =
+                    between_time_variant_payload
+                        .to_cron_schedule()
+                        .map_err(|e| {
+                            SchedulerError::InvalidTimingFormat(format!(
+                                "Failed to create cron schedule for Between timing: {}",
+                                e
+                            ))
+                        })?;
+
                 tokio::spawn(async move {
                     loop {
                         let local_now = Local::now();
