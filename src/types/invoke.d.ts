@@ -140,7 +140,7 @@ declare module '@tauri-apps/api/core' {
     // Scheduler commands
     function invoke(param: 'add_scheduler_in_event', payload: AddSchedulerEventInVariantPayload): Promise<void>;
     function invoke(
-        param: 'add_scheduler_between_event',
+        param: 'add_scheduler_between_events',
         payload: AddSchedulerEventBetweenVariantPayload
     ): Promise<void>;
     function invoke(param: 'remove_scheduler_event', payload: { eventId: string }): Promise<void>;
