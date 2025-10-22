@@ -318,14 +318,22 @@ impl CronSchedule {
     /// * `true` - Time is within the active period
     /// * `false` - Time is outside the active period
     pub fn is_time_in_range(&self, time: DateTime<Local>) -> bool {
-        if let (Some(prev_start), Some(next_end)) = (
-            self.start_time.find_previous_occurrence(&time, false).ok(),
-            self.end_time.find_next_occurrence(&time, false).ok(),
-        ) {
-            if prev_start <= time && time < next_end {
+        let prev_start = self.start_time.find_previous_occurrence(&time, true).ok();
+        let next_start = self.start_time.find_next_occurrence(&time, true).ok();
+        let next_end = self.end_time.find_next_occurrence(&time, true).ok();
+
+        if let (Some(prev_start), Some(next_start), Some(next_end)) =
+            (prev_start, next_start, next_end)
+        {
+            if time >= prev_start
+                && time < next_end
+                && time.day() < next_start.day()
+                && time.day() == prev_start.day()
+            {
                 return true;
             }
         }
+
         false
     }
 }
