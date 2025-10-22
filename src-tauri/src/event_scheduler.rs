@@ -71,7 +71,7 @@
 
 #![allow(dead_code, unused_variables, unused_must_use)]
 
-use chrono::{DateTime, Duration, Local};
+use chrono::{DateTime, Datelike, Duration, Local};
 use croner::{self, parser::CronParser, Cron};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -327,8 +327,8 @@ impl CronSchedule {
         {
             if time >= prev_start
                 && time < next_end
-                && time.day() < next_start.day()
-                && time.day() == prev_start.day()
+                && time.day0() < next_start.day0()
+                && time.day0() == prev_start.day0()
             {
                 return true;
             }
