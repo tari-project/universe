@@ -708,3 +708,21 @@ export const handleFeedbackFields = (feedbackType: PromptType, feedback_sent: bo
     setFeedbackConfigItems(feedback);
     useConfigUIStore.setState({ feedback });
 };
+
+export const toggleTaskTrayMode = async (enabled: boolean) => {
+    useConfigCoreStore.setState((c) => ({ ...c, tasktray_mode: enabled }));
+    invoke('toggle_tasktray_mode', { enabled }).catch((e) => {
+        console.error('Could not set task tray mode', e);
+        setError('Could not change task tray mode');
+        useConfigCoreStore.setState((c) => ({ ...c, tasktray_mode: !enabled }));
+    });
+};
+
+export const setTaskTrayInfoModalShown = async (shown: boolean) => {
+    useConfigUIStore.setState((c) => ({ ...c, task_tray_info_modal_shown: shown }));
+    invoke('set_task_tray_info_modal_shown', { shown }).catch((e) => {
+        console.error('Could not set task tray info modal shown', e);
+        setError('Could not change task tray info modal shown');
+        useConfigUIStore.setState((c) => ({ ...c, task_tray_info_modal_shown: !shown }));
+    });
+};

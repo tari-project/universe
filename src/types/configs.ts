@@ -21,6 +21,7 @@ export interface ConfigCore {
     remote_base_node_address: string;
     node_type?: NodeType;
     exchange_id?: string;
+    tasktray_mode: boolean;
 }
 export interface ConfigWallet {
     created_at: string;
@@ -42,6 +43,7 @@ export interface ConfigUI {
     wallet_ui_mode: WalletUIMode;
     was_staged_security_modal_shown: boolean;
     feedback?: FeedbackPrompts;
+    tasktray_info_modal_shown: boolean;
 }
 
 export interface FeedbackPrompt {

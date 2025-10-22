@@ -1635,6 +1635,15 @@ pub async fn restart_phases(phases: Vec<SetupPhase>) -> Result<(), InvokeError> 
 }
 
 #[tauri::command]
+pub async fn toggle_tasktray_mode(enabled: bool) -> Result<(), InvokeError> {
+    ConfigCore::update_field(ConfigCoreContent::set_tasktray_mode, enabled)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn set_node_type(
     mut node_type: NodeType,
     state: tauri::State<'_, UniverseAppState>,

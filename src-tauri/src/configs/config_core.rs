@@ -68,6 +68,7 @@ pub struct ConfigCoreContent {
     remote_base_node_address: String,
     node_type: NodeType,
     exchange_id: String,
+    tasktray_mode: bool,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -120,6 +121,7 @@ impl Default for ConfigCoreContent {
             remote_base_node_address,
             node_type: NodeType::default(),
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
+            tasktray_mode: true,
         }
     }
 }
