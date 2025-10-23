@@ -62,6 +62,7 @@ const AddressEditor = ({ initialAddress, onApply, rules, isWXTM }: AddressEditor
     const handleApply = useCallback(
         async (data: { address: string }) => {
             await onApply(data.address);
+            setEditing(false);
         },
         [onApply]
     );
