@@ -91,9 +91,9 @@ export const setAirdropTokensInConfig = (
 ) => {
     const airdropTokens = airdropTokensParam
         ? {
-              token: airdropTokensParam.token,
-              refresh_token: airdropTokensParam.refreshToken,
-          }
+            token: airdropTokensParam.token,
+            refresh_token: airdropTokensParam.refreshToken,
+        }
         : undefined;
 
     invoke('set_airdrop_tokens', { airdropTokens })
@@ -400,9 +400,6 @@ export const toggleCpuPool = async (enabled: boolean) => {
     const previousCpuPoolEnabledState = useConfigPoolsStore.getState().cpu_pool_enabled;
     useConfigPoolsStore.setState((c) => ({ ...c, cpu_pool_enabled: enabled }));
 
-    const isCpuMiningEnabled = useConfigMiningStore.getState().cpu_mining_enabled;
-    const anyMiningInitiated =
-        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
     const isCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
     const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
 
@@ -413,9 +410,8 @@ export const toggleCpuPool = async (enabled: boolean) => {
 
         await invoke('toggle_cpu_pool_mining', { enabled });
 
-        if (anyMiningInitiated && isCpuMiningEnabled) {
-            await startCpuMining();
-        }
+        // We do not resume mining as toggling cpu pool includes restarting cpu mining phase, so setup flow once it finished should start mining again if there was any mining initiated
+        // We do it that way because cpu miner in case of pool being turned off required mmproxy which is started by cpu_mining_phase and we need to be sure that we are starting mining back once it is ready
     } catch (e) {
         console.error('Could not toggle CPU pool mining', e);
         setError('Could not change CPU pool mining');
