@@ -35,7 +35,6 @@ use process_stats_collector::ProcessStatsCollectorBuilder;
 use node::remote_node_adapter::RemoteNodeAdapter;
 
 use setup::setup_manager::SetupManager;
-use sha2::digest::crypto_common::rand_core::block;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
 use tasks_tracker::TasksTrackers;
