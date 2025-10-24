@@ -13,7 +13,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { invoke } from '@tauri-apps/api/core';
 
 const CloseExperienceDialog = memo(function CloseExperienceDialog() {
-    const { t } = useTranslation(['common'], { useSuspense: false });
+    const { t } = useTranslation(['components'], { useSuspense: false });
     const isOpen = useUIStore((s) => s.showCloseInfoModal);
     const [dontAskAgain, setDontAskAgain] = useState(false);
 
@@ -68,10 +68,10 @@ const CloseExperienceDialog = memo(function CloseExperienceDialog() {
                     <ButtonSectionWrapper>
                         <ButtonsWrapper>
                             <Button fluid size="small" onClick={handleRunInBackground} backgroundColor="green">
-                                {t('close-experience-dialog.run-in-background', 'Run in Background')}
+                                {t('close-experience-dialog.run-in-background')}
                             </Button>
                             <Button fluid size="small" onClick={handleExitCompletely} backgroundColor="warning">
-                                {t('close-experience-dialog.exit-completely', 'Exit Completely')}
+                                {t('close-experience-dialog.exit-completely')}
                             </Button>
                         </ButtonsWrapper>
 
@@ -80,7 +80,7 @@ const CloseExperienceDialog = memo(function CloseExperienceDialog() {
                                 id="dont-ask-again-checkbox"
                                 checked={dontAskAgain}
                                 handleChange={handleDontAskAgainChange}
-                                labelText={t('close-experience-dialog.dont-ask-again', "Don't ask me again")}
+                                labelText={t('close-experience-dialog.dont-ask-again')}
                             />
                         </CheckboxWrapper>
                     </ButtonSectionWrapper>
