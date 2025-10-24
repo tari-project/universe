@@ -5,7 +5,7 @@ import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import { useTranslation } from 'react-i18next';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { SettingsGroup, SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
-import { useConfigCoreStore } from '@app/store/useAppConfigStore.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 
 export default function AppDataSettings() {
     const { t } = useTranslation('settings');

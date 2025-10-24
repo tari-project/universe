@@ -24,9 +24,10 @@ import {
     SystemDependency,
     WalletBalance,
 } from './app-status.ts';
-import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
+import { ConfigMining, ConfigPools, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 import { AppModuleState } from '@app/store/types/setup.ts';
+import { ConfigCore } from '@app/types/config/core.ts';
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
 export type BackendStateUpdateEvent =

@@ -4,7 +4,7 @@ export const CustomLevelsContent = styled.div`
     padding: 0 10px;
     display: flex;
     flex-direction: column;
-    width: min(720px, 60vw);
+    align-items: flex-end;
     gap: 8px;
 `;
 
@@ -23,14 +23,14 @@ export const CustomLevelsHeader = styled.div`
     align-items: center;
     font-size: 18px;
     font-weight: 600;
-    line-height: 1.4;
+    line-height: 1.2;
     padding: 0 10px 10px;
-    border-bottom: 1px solid #0000000d;
+    border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
 `;
 
 export const SuccessContainer = styled.div<{ $visible: boolean }>`
     overflow: hidden;
-    padding: 8px 10px;
+    padding: 8px;
     font-size: 12px;
     font-family: Poppins, sans-serif;
     color: #188750;

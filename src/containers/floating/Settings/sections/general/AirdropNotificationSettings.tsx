@@ -9,8 +9,8 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { setAllowNotifications } from '@app/store/actions/appConfigStoreActions.ts';
-import { useConfigCoreStore } from '@app/store/useAppConfigStore.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
+import { setAllowNotifications } from '@app/store/actions/config/core.ts';
 
 export default function AirdropNotificationsSettings() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
