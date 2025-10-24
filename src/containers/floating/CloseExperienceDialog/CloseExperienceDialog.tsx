@@ -61,24 +61,17 @@ const CloseExperienceDialog = memo(function CloseExperienceDialog() {
             <DialogContent>
                 <Wrapper>
                     <TextWrapper>
-                        <Typography variant="h3">
-                            {t('close-experience-title', 'Choose how to close Tari Universe')}
-                        </Typography>
-                        <Typography variant="p">
-                            {t(
-                                'close-experience-description',
-                                'You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.'
-                            )}
-                        </Typography>
+                        <Typography variant="h3">{t('close-experience-dialog.title')}</Typography>
+                        <Typography variant="p">{t('close-experience-dialog.description')}</Typography>
                     </TextWrapper>
 
                     <ButtonSectionWrapper>
                         <ButtonsWrapper>
                             <Button fluid size="small" onClick={handleRunInBackground} backgroundColor="green">
-                                {t('run-in-background', 'Run in Background')}
+                                {t('close-experience-dialog.run-in-background', 'Run in Background')}
                             </Button>
                             <Button fluid size="small" onClick={handleExitCompletely} backgroundColor="warning">
-                                {t('exit-completely', 'Exit Completely')}
+                                {t('close-experience-dialog.exit-completely', 'Exit Completely')}
                             </Button>
                         </ButtonsWrapper>
 
@@ -87,7 +80,7 @@ const CloseExperienceDialog = memo(function CloseExperienceDialog() {
                                 id="dont-ask-again-checkbox"
                                 checked={dontAskAgain}
                                 handleChange={handleDontAskAgainChange}
-                                labelText={t('dont-ask-again', "Don't ask me again")}
+                                labelText={t('close-experience-dialog.dont-ask-again', "Don't ask me again")}
                             />
                         </CheckboxWrapper>
                     </ButtonSectionWrapper>
