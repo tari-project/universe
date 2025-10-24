@@ -1636,6 +1636,7 @@ pub async fn restart_phases(phases: Vec<SetupPhase>) -> Result<(), InvokeError> 
 
 #[tauri::command]
 pub async fn toggle_tasktray_mode(enabled: bool) -> Result<(), InvokeError> {
+    info!(target: LOG_TARGET, "[toggle_tasktray_mode] called with enabled: {enabled:?}");
     ConfigCore::update_field(ConfigCoreContent::set_tasktray_mode, enabled)
         .await
         .map_err(InvokeError::from_anyhow)?;
@@ -1647,6 +1648,7 @@ pub async fn toggle_tasktray_mode(enabled: bool) -> Result<(), InvokeError> {
 pub async fn set_close_experience_selected(
     close_experience_selected: bool,
 ) -> Result<(), InvokeError> {
+    info!(target: LOG_TARGET, "[set_close_experience_selected] called with close_experience_selected: {close_experience_selected:?}");
     ConfigUI::update_field(
         ConfigUIContent::set_close_experience_selected,
         close_experience_selected,

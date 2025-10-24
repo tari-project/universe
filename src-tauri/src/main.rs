@@ -358,10 +358,10 @@ fn main() {
         .plugin(tauri_plugin_http::init())
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
                 block_on(async {
                     if *ConfigCore::content().await.tasktray_mode() {
                         info!(target: LOG_TARGET, "Close requested - hiding to tray");
-                        api.prevent_close();
                         if let Some(window) = window.get_webview_window("main") {
                             if window.is_visible().unwrap_or(false) {
                                 #[cfg(target_os = "macos")]

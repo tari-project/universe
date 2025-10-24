@@ -2,10 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { setShowCloseDialog, useUserFeedbackStore } from '@app/store/stores/userFeedbackStore.ts';
 import { checkMiningTime } from '@app/store/actions/miningStoreActions.ts';
-import { setIsShuttingDown, setShowCloseInfoModal } from '@app/store/actions/uiStoreActions.ts';
+import { setIsShuttingDown } from '@app/store/actions/uiStoreActions.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 import { fetchSurvey } from '@app/hooks/user/surveys/useFetchSurveyContent.ts';
-import { useUIStore } from '@app/store';
 
 export function useShutdownHandler() {
     const [canProceedWithShutdown, setCanProceedWithShutdown] = useState(false);
@@ -17,7 +16,6 @@ export function useShutdownHandler() {
     const wasLongTimeMiner = useUserFeedbackStore((s) => s.wasLongTimeMiner);
     const minimumMiningTimeForClose = useUserFeedbackStore((s) => s.closeMiningTimeMs);
     const earlyClosedDismissed = useUserFeedbackStore((s) => s.earlyClosedDismissed);
-    const isCloseInfoModalShown = useUIStore((s) => s.isCloseInfoModalShown);
 
     const handleShutdown = useCallback(async () => {
         console.info(`[handleShutdown] invoking exit_application`);
@@ -35,11 +33,6 @@ export function useShutdownHandler() {
     }, [minimumMiningTimeForClose]);
 
     const onShutdownCaught = useCallback(async () => {
-        if (!isCloseInfoModalShown) {
-            setShowCloseInfoModal(true);
-            return;
-        }
-
         setShutdownInitiated(true);
         if (wasFeedbackSent || wasLongTimeMiner) {
             setCanProceedWithShutdown(true);
@@ -62,7 +55,7 @@ export function useShutdownHandler() {
         } else {
             setCanProceedWithShutdown(true);
         }
-    }, [earlyClosedDismissed, isCloseInfoModalShown, validateMiningTime, wasFeedbackSent, wasLongTimeMiner]);
+    }, [earlyClosedDismissed, validateMiningTime, wasFeedbackSent, wasLongTimeMiner]);
 
     useEffect(() => {
         if (isEarlyClose) {
