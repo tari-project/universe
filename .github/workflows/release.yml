@@ -226,7 +226,7 @@ jobs:
             --output-format=json -i tauri.conf.json
 
       - name: Setup Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: lts/*
           cache: 'npm'
