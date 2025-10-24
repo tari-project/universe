@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { ConfigCore } from '@app/types/config/core.ts';
 
+export const SCHEDULER_EVENT_ID = 'mining_schedule';
+
 const initialState: ConfigCore = {
     airdrop_tokens: undefined,
     allow_notifications: true,

@@ -28,8 +28,7 @@ import { ChevronSVG } from './chevron.tsx';
 import { useConfigMiningStore } from '@app/store';
 import { getModeColours } from '@app/components/mode/helpers.ts';
 import { TIME_PERIOD, TimeParts } from '@app/types/mining/schedule.ts';
-
-const fmtTimeUnit = (n: number): string => String(n).padStart(2, '0');
+import { fmtTimeUnit } from '@app/utils';
 
 const hourOptions = Array.from({ length: 12 }).map((_, i) => i + 1);
 const minuteOptions = Array.from({ length: 12 }).map((_, i) => i * 5);

@@ -181,4 +181,6 @@ export const formatCountdown = (targetDate: string): string => {
     return `${days}D ${hours}H ${minutes}M`;
 };
 
+export const fmtTimeUnit = (n: number): string => String(n).padStart(2, '0');
+
 export { formatDecimalCompact, roundToTwoDecimals, removeDecimals, removeXTMCryptoDecimals, formatValue };

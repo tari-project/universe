@@ -1,17 +1,17 @@
-import { Typography } from '@app/components/elements/Typography.tsx';
-import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
-import { MiningMode } from '@app/components/mode/MiningMode.tsx';
-import { TimePicker } from '@app/components/elements/inputs/time-picker/TimePicker.tsx';
-import { ContentWrapper, CTA, CTAText, CurrentWrapper, FormWrapper, Text, Wrapper } from './styles.ts';
 import { useState } from 'react';
-
-import { setShowScheduler } from '@app/store/stores/useModalStore.ts';
 import { TimeParts } from '@app/types/mining/schedule.ts';
-import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
-import { removeSchedulerEvent, setSchedulerEvents } from '@app/store/actions/config/core.ts';
+import { SCHEDULER_EVENT_ID, useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 import { getParsedBetweenTime } from '@app/store/selectors/config/core.ts';
+import { setSchedulerEvents } from '@app/store/actions/config/core.ts';
+import { setShowScheduler } from '@app/store/stores/useModalStore.ts';
 
-const SCHEDULER_EVENT_ID = 'mining_schedule';
+import { MiningMode } from '../mode/MiningMode.tsx';
+import { TextButton } from '../elements/buttons/TextButton.tsx';
+import { TimePicker } from '../elements/inputs/time-picker/TimePicker.tsx';
+import { Typography } from '../elements/Typography.tsx';
+
+import { CurrentScheduleItem } from './schedule/CurrentScheduleItem.tsx';
+import { ContentWrapper, CTA, CTAText, FormWrapper, Text, TextWrapper, Wrapper } from './styles.ts';
 
 export default function Scheduler() {
     const storedTimes = useConfigCoreStore((s) => s.scheduler_events);
@@ -36,35 +36,20 @@ export default function Scheduler() {
         });
     }
 
-    const currentSchedule = storedTimes ? (
-        <CurrentWrapper>
-            <Text>{`Your current schedule: `}</Text>
-            <Text>
-                <strong>
-                    {start.hour}:{start.minute} {start.timePeriod}
-                </strong>
-                -
-                <strong>
-                    {end.hour}:{end.minute} {end.timePeriod}
-                </strong>
-            </Text>
-
-            <button onClick={() => removeSchedulerEvent(SCHEDULER_EVENT_ID)}>DELELE</button>
-        </CurrentWrapper>
-    ) : null;
-
     return (
         <Wrapper>
-            <ContentWrapper>
+            <TextWrapper>
                 <Typography variant="h1">{`Mining Schedule`}</Typography>
                 <Text variant="p">{`Set specific times to automatically start mining.`}</Text>
+            </TextWrapper>
+            <ContentWrapper>
                 <FormWrapper>
                     <TimePicker label={`Daily Start Time`} initialTime={startTime} handleOnChange={setStartTime} />
                     <TimePicker label={`Daily End Time`} initialTime={endTime} handleOnChange={setEndTime} />
                     <MiningMode variant="secondary" />
                 </FormWrapper>
+                <CurrentScheduleItem />
             </ContentWrapper>
-            {currentSchedule}
             <ContentWrapper>
                 <CTA variant="black" size="xlarge" fluid onClick={handleSave}>{`Save schedule`}</CTA>
                 <TextButton fluid onClick={() => setShowScheduler(false)}>
