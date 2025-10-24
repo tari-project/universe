@@ -35,6 +35,7 @@ use process_stats_collector::ProcessStatsCollectorBuilder;
 use node::remote_node_adapter::RemoteNodeAdapter;
 
 use setup::setup_manager::SetupManager;
+use sha2::digest::crypto_common::rand_core::block;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
 use tasks_tracker::TasksTrackers;
@@ -66,6 +67,8 @@ use tauri::AppHandle;
 
 use telemetry_manager::TelemetryManager;
 
+use crate::configs::config_core::ConfigCore;
+use crate::configs::trait_config::ConfigImpl;
 use crate::feedback::Feedback;
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::cpu::CpuMinerStatus;
@@ -355,24 +358,31 @@ fn main() {
         .plugin(tauri_plugin_http::init())
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                api.prevent_close();
-                if let Some(window) = window.get_webview_window("main") {
-                    if window.is_visible().unwrap_or(false) {
-                        #[cfg(target_os = "macos")]
-                        {
-                            AppHandle::hide(window.app_handle()).unwrap_or_else(|error| {
-                                error!(target: LOG_TARGET, "Failed to hide app: {error}");
-                            });
-                        }
+                block_on(async {
+                    if *ConfigCore::content().await.tasktray_mode() {
+                        info!(target: LOG_TARGET, "Close requested - hiding to tray");
+                        api.prevent_close();
+                        if let Some(window) = window.get_webview_window("main") {
+                            if window.is_visible().unwrap_or(false) {
+                                #[cfg(target_os = "macos")]
+                                {
+                                    AppHandle::hide(window.app_handle()).unwrap_or_else(|error| {
+                                        error!(target: LOG_TARGET, "Failed to hide app: {error}");
+                                    });
+                                }
 
-                        #[cfg(not(target_os = "macos"))]
-                        {
-                            window.minimize().unwrap_or_else(|error| {
-                                error!(target: LOG_TARGET, "Failed to minimize window: {error}");
-                            });
+                                #[cfg(not(target_os = "macos"))]
+                                {
+                                    window.hide().unwrap_or_else(|error| {
+                                        error!(target: LOG_TARGET, "Failed to hide window: {error}");
+                                    });
+                                }
+                            }
                         }
+                    } else {
+                        info!(target: LOG_TARGET, "Close requested - quitting");
                     }
-                }
+                })
             }
         })
         .setup(|app| {
@@ -588,7 +598,8 @@ fn main() {
             commands::set_feedback_fields,
             commands::set_mode_mining_time,
             commands::set_eco_alert_needed,
-            commands::toggle_tasktray_mode
+            commands::toggle_tasktray_mode,
+            commands::set_close_experience_selected
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

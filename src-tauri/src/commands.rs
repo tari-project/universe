@@ -1644,6 +1644,20 @@ pub async fn toggle_tasktray_mode(enabled: bool) -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
+pub async fn set_close_experience_selected(
+    close_experience_selected: bool,
+) -> Result<(), InvokeError> {
+    ConfigUI::update_field(
+        ConfigUIContent::set_close_experience_selected,
+        close_experience_selected,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn set_node_type(
     mut node_type: NodeType,
     state: tauri::State<'_, UniverseAppState>,

@@ -65,7 +65,7 @@ const configUIInitialState: UIConfigStoreState = {
     visual_mode: true,
     wallet_ui_mode: WalletUIMode.Standard,
     was_staged_security_modal_shown: false,
-    tasktray_info_modal_shown: false,
+    close_experience_selected: false,
 };
 
 const configPoolsInitialState: ConfigPools = {

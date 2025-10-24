@@ -718,11 +718,11 @@ export const toggleTaskTrayMode = async (enabled: boolean) => {
     });
 };
 
-export const setTaskTrayInfoModalShown = async (shown: boolean) => {
-    useConfigUIStore.setState((c) => ({ ...c, task_tray_info_modal_shown: shown }));
-    invoke('set_task_tray_info_modal_shown', { shown }).catch((e) => {
-        console.error('Could not set task tray info modal shown', e);
-        setError('Could not change task tray info modal shown');
-        useConfigUIStore.setState((c) => ({ ...c, task_tray_info_modal_shown: !shown }));
+export const setCloseExperienceSelected = async (shown: boolean) => {
+    useConfigUIStore.setState((c) => ({ ...c, close_experience_selected: shown }));
+    invoke('set_close_experience_selected', { shown }).catch((e) => {
+        console.error('Could not set close experience selected', e);
+        setError('Could not change close experience selected');
+        useConfigUIStore.setState((c) => ({ ...c, close_experience_selected: !shown }));
     });
 };

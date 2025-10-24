@@ -24,6 +24,8 @@ interface UIStoreState {
     showTapplet: boolean;
     isShuttingDown: boolean;
     seedlessUI: boolean;
+    isCloseInfoModalShown: boolean;
+    showCloseInfoModal: boolean;
 }
 const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -47,6 +49,8 @@ const initialState: UIStoreState = {
     showTapplet: false,
     isShuttingDown: false,
     seedlessUI: false,
+    isCloseInfoModalShown: false,
+    showCloseInfoModal: false,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({

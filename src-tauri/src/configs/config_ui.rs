@@ -89,7 +89,7 @@ pub struct ConfigUIContent {
     was_staged_security_modal_shown: bool, // TODO: Migrated to ConfigWallet, remove after some time
     wallet_ui_mode: WalletUIMode,
     feedback: HashMap<String, FeedbackPrompt>,
-    tasktray_info_modal_shown: bool,
+    close_experience_selected: bool,
 }
 
 impl Default for ConfigUIContent {
@@ -122,7 +122,7 @@ impl Default for ConfigUIContent {
                     },
                 ),
             ]),
-            tasktray_info_modal_shown: false,
+            close_experience_selected: false,
         }
     }
 }

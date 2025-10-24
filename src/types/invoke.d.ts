@@ -137,4 +137,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_mode_mining_time', payload: { mode: string; duration: number }): Promise<void>;
     function invoke(param: 'set_eco_alert_needed'): Promise<void>;
     function invoke(param: 'toggle_tasktray_mode', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'set_close_experience_selected', payload: { selected: boolean }): Promise<void>;
 }
