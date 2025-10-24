@@ -718,11 +718,11 @@ export const toggleTaskTrayMode = async (enabled: boolean) => {
     });
 };
 
-export const setCloseExperienceSelected = async (shown: boolean) => {
-    useConfigUIStore.setState((c) => ({ ...c, close_experience_selected: shown }));
-    invoke('set_close_experience_selected', { shown }).catch((e) => {
+export const setCloseExperienceSelected = async (selected: boolean) => {
+    useConfigUIStore.setState((c) => ({ ...c, close_experience_selected: selected }));
+    invoke('set_close_experience_selected', { selected }).catch((e) => {
         console.error('Could not set close experience selected', e);
         setError('Could not change close experience selected');
-        useConfigUIStore.setState((c) => ({ ...c, close_experience_selected: !shown }));
+        useConfigUIStore.setState((c) => ({ ...c, close_experience_selected: !selected }));
     });
 };

@@ -67,7 +67,9 @@ use tauri::AppHandle;
 
 use telemetry_manager::TelemetryManager;
 
+use crate::commands::WAS_SHUTDOWN_INFORMATION_DIALOG_SHOWN;
 use crate::configs::config_core::ConfigCore;
+use crate::configs::config_ui::ConfigUI;
 use crate::configs::trait_config::ConfigImpl;
 use crate::feedback::Feedback;
 use crate::mining::cpu::manager::CpuManager;
@@ -76,6 +78,7 @@ use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
+use crate::systemtray_manager::SystemTrayManager;
 use crate::tor_manager::TorManager;
 use crate::wallet::wallet_manager::WalletManager;
 use crate::wallet::wallet_types::WalletState;
@@ -360,27 +363,15 @@ fn main() {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 block_on(async {
-                    if *ConfigCore::content().await.tasktray_mode() {
-                        info!(target: LOG_TARGET, "Close requested - hiding to tray");
-                        if let Some(window) = window.get_webview_window("main") {
-                            if window.is_visible().unwrap_or(false) {
-                                #[cfg(target_os = "macos")]
-                                {
-                                    AppHandle::hide(window.app_handle()).unwrap_or_else(|error| {
-                                        error!(target: LOG_TARGET, "Failed to hide app: {error}");
-                                    });
-                                }
-
-                                #[cfg(not(target_os = "macos"))]
-                                {
-                                    window.hide().unwrap_or_else(|error| {
-                                        error!(target: LOG_TARGET, "Failed to hide window: {error}");
-                                    });
-                                }
-                            }
+                    if *ConfigUI::content().await.close_experience_selected()
+                        || WAS_SHUTDOWN_INFORMATION_DIALOG_SHOWN.load(Ordering::SeqCst)
+                    {
+                        if *ConfigCore::content().await.tasktray_mode() {
+                            info!(target: LOG_TARGET, "Close requested - hiding to tray");
+                            SystemTrayManager::hide_to_tray(window);
+                        } else {
+                            info!(target: LOG_TARGET, "Close requested - quitting");
                         }
-                    } else {
-                        info!(target: LOG_TARGET, "Close requested - quitting");
                     }
                 })
             }
@@ -599,7 +590,9 @@ fn main() {
             commands::set_mode_mining_time,
             commands::set_eco_alert_needed,
             commands::toggle_tasktray_mode,
-            commands::set_close_experience_selected
+            commands::set_close_experience_selected,
+            commands::hide_to_tray,
+            commands::mark_shutdown_information_dialog_as_shown
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

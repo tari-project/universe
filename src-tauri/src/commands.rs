@@ -234,6 +234,20 @@ pub async fn exit_application(
 }
 
 #[tauri::command]
+pub async fn hide_to_tray(window: tauri::Window) -> Result<(), String> {
+    SystemTrayManager::hide_to_tray(&window);
+    Ok(())
+}
+
+pub static WAS_SHUTDOWN_INFORMATION_DIALOG_SHOWN: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+#[tauri::command]
+pub async fn mark_shutdown_information_dialog_as_shown() {
+    WAS_SHUTDOWN_INFORMATION_DIALOG_SHOWN.store(true, Ordering::SeqCst);
+}
+
+#[tauri::command]
 pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
     let timer = Instant::now();
     let res_html = reqwest::get("https://bridges.torproject.org/bridges?transport=obfs4")
@@ -1645,16 +1659,11 @@ pub async fn toggle_tasktray_mode(enabled: bool) -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
-pub async fn set_close_experience_selected(
-    close_experience_selected: bool,
-) -> Result<(), InvokeError> {
-    info!(target: LOG_TARGET, "[set_close_experience_selected] called with close_experience_selected: {close_experience_selected:?}");
-    ConfigUI::update_field(
-        ConfigUIContent::set_close_experience_selected,
-        close_experience_selected,
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
+pub async fn set_close_experience_selected(selected: bool) -> Result<(), InvokeError> {
+    info!(target: LOG_TARGET, "[set_close_experience_selected] called with close_experience_selected: {selected:?}");
+    ConfigUI::update_field(ConfigUIContent::set_close_experience_selected, selected)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
 
     Ok(())
 }

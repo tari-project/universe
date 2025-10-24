@@ -614,4 +614,24 @@ impl SystemTrayManager {
             error!(target: LOG_TARGET, "Menu is not initialized");
         }
     }
+
+    pub fn hide_to_tray(window: &tauri::Window) {
+        if let Some(window) = window.get_webview_window("main") {
+            if window.is_visible().unwrap_or(false) {
+                #[cfg(target_os = "macos")]
+                {
+                    AppHandle::hide(window.app_handle()).unwrap_or_else(|error| {
+                        error!(target: LOG_TARGET, "Failed to hide app: {error}");
+                    });
+                }
+
+                #[cfg(not(target_os = "macos"))]
+                {
+                    window.hide().unwrap_or_else(|error| {
+                        error!(target: LOG_TARGET, "Failed to hide window: {error}");
+                    });
+                }
+            }
+        }
+    }
 }

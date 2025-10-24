@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useShutdownHandler } from '@app/hooks/app/useShutdownHandler.ts';
-import { useAppStateStore, useConfigUIStore, useUIStore } from '@app/store';
+import { useAppStateStore, useConfigCoreStore, useConfigUIStore, useUIStore } from '@app/store';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { setShowCloseInfoModal } from '@app/store/actions/uiStoreActions';
 
@@ -10,51 +10,35 @@ export function useShuttingDown() {
     const { onShutdownCaught, shutdownInitiated } = useShutdownHandler();
     const wasCloseDialogShown = useUIStore((s) => s.isCloseInfoModalShown);
     const wasCloseExperienceSelected = useConfigUIStore((s) => s.close_experience_selected);
+    const isTaskTrayMode = useConfigCoreStore((s) => s.tasktray_mode);
 
-    console.log('WasCloseDialogShown:', wasCloseDialogShown);
-    console.log('WasCloseExperienceSelected:', wasCloseExperienceSelected);
-
-    const handleCloseDialog = useCallback(() => {
+    const handleClose = useCallback(() => {
         if (!wasCloseDialogShown && !wasCloseExperienceSelected) {
-            console.info('[useShuttingDown] Showing close experience dialog');
             setShowCloseInfoModal(true);
+        } else if ((wasCloseDialogShown || wasCloseExperienceSelected) && !isTaskTrayMode) {
+            onShutdownCaught();
         }
-    }, [wasCloseDialogShown, wasCloseExperienceSelected]);
+    }, [wasCloseDialogShown, wasCloseExperienceSelected, isTaskTrayMode, onShutdownCaught]);
 
     useEffect(() => {
         const appWindow = getCurrentWindow();
         const listener = appWindow.onCloseRequested((event) => {
-            console.info('[useShuttingDown] onCloseRequested event caught');
             event.preventDefault(); // Prevent the default close behavior ( Quitting the app )
-            handleCloseDialog();
+            handleClose();
         });
         return () => {
             listener.then((unlisten) => unlisten());
         };
-    }, [handleCloseDialog]);
+    }, [handleClose]);
 
     useEffect(() => {
-        console.log('[useShuttingDown]', {
-            isShuttingDown,
-            shutdownInitiated,
-            isSystrayAppShutdownRequested,
-            wasCloseDialogShown,
-            wasCloseExperienceSelected,
-        });
         if (
             !isShuttingDown &&
             !shutdownInitiated &&
             isSystrayAppShutdownRequested &&
+            isTaskTrayMode &&
             (wasCloseDialogShown || wasCloseExperienceSelected)
         ) {
-            console.log('[useShuttingDown] Systray app shutdown requested, proceeding with shutdown');
-            console.log({
-                isShuttingDown,
-                shutdownInitiated,
-                isSystrayAppShutdownRequested,
-                wasCloseDialogShown,
-                wasCloseExperienceSelected,
-            });
             onShutdownCaught();
         }
     }, [

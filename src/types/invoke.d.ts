@@ -138,4 +138,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_eco_alert_needed'): Promise<void>;
     function invoke(param: 'toggle_tasktray_mode', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'set_close_experience_selected', payload: { selected: boolean }): Promise<void>;
+    function invoke(param: 'hide_to_tray'): Promise<void>;
+    function invoke(param: 'mark_shutdown_information_dialog_as_shown'): Promise<void>;
 }

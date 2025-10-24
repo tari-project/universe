@@ -10,20 +10,12 @@ import { useTranslation } from 'react-i18next';
 import { Wrapper, TextWrapper, ButtonSectionWrapper, ButtonsWrapper, CheckboxWrapper } from './styles.ts';
 import { setIsCloseInfoModalShown, setShowCloseInfoModal } from '@app/store/actions/uiStoreActions.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { invoke } from '@tauri-apps/api/core';
 
 const CloseExperienceDialog = memo(function CloseExperienceDialog() {
     const { t } = useTranslation(['common'], { useSuspense: false });
     const isOpen = useUIStore((s) => s.showCloseInfoModal);
     const [dontAskAgain, setDontAskAgain] = useState(false);
-
-    const handleClose = useCallback(() => {
-        setIsCloseInfoModalShown(true);
-
-        const appWindow = getCurrentWindow();
-        appWindow.close();
-
-        setShowCloseInfoModal(false);
-    }, []);
 
     const handleRunInBackground = useCallback(async () => {
         try {
@@ -31,28 +23,34 @@ const CloseExperienceDialog = memo(function CloseExperienceDialog() {
             if (dontAskAgain) {
                 await setCloseExperienceSelected(true);
             }
-            handleClose();
+            setIsCloseInfoModalShown(true);
+
+            await invoke('hide_to_tray');
+            await invoke('mark_shutdown_information_dialog_as_shown');
+            setShowCloseInfoModal(false);
         } catch (error) {
             console.error('Failed to set run in background mode:', error);
         }
-    }, [dontAskAgain, handleClose]);
+    }, [dontAskAgain]);
 
     const handleExitCompletely = useCallback(async () => {
-        console.info('Exit completely selected');
         try {
-            console.info('Exit completely selected');
             await toggleTaskTrayMode(false);
-            console.info('Toggled task tray mode to false');
+
             if (dontAskAgain) {
-                console.info('Setting close experience selected to true');
                 await setCloseExperienceSelected(true);
             }
-            console.info('Proceeding to close the dialog');
-            handleClose();
+            setIsCloseInfoModalShown(true);
+            await invoke('mark_shutdown_information_dialog_as_shown');
+
+            setShowCloseInfoModal(false);
+
+            const appWindow = getCurrentWindow();
+            appWindow.close();
         } catch (error) {
             console.error('Failed to set exit completely mode:', error);
         }
-    }, [dontAskAgain, handleClose]);
+    }, [dontAskAgain]);
 
     const handleDontAskAgainChange = useCallback((checked: boolean) => {
         setDontAskAgain(checked);
