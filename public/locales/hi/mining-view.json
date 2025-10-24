@@ -52,6 +52,17 @@
     "min_payout": "न्यूनतम भुगतान",
     "unpaid": "अवैतनिक"
   },
+  "schedule": {
+    "cta-save": "Save Schedule",
+    "current": "Your current schedule",
+    "mining-schedule": "Mining Schedule",
+    "mining-schedule-copy": "Set specific times to automatically start mining.",
+    "mining-schedule-setup": "Setup Mining Schedule",
+    "scheduled-to-mine": "Scheduled to mine at",
+    "scheduled-to-pause": "Scheduled to pause mining at",
+    "time-label-end": "Daily End Time",
+    "time-label-start": "Daily Start Time"
+  },
   "you-earn-rewards-separately": "आप CPU और GPU माइनिंग के लिए अलग-अलग पुरस्कार अर्जित करते हैं",
   "you-won-block": "आप <span>ब्लॉक #{{ blockHeight }}</span> के विजेता थे",
   "you-won-while-away": "<span>आपने {{ blocks }} जीते</span> जब आप दूर थे",

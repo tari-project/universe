@@ -12,8 +12,10 @@ import { Typography } from '../elements/Typography.tsx';
 
 import { CurrentScheduleItem } from './schedule/CurrentScheduleItem.tsx';
 import { ContentWrapper, CTA, CTAText, FormWrapper, Text, TextWrapper, Wrapper } from './styles.ts';
+import { useTranslation } from 'react-i18next';
 
 export default function Scheduler() {
+    const { t } = useTranslation(['mining-view', 'common']);
     const storedTimes = useConfigCoreStore((s) => s.scheduler_events);
     const { start, end } = getParsedBetweenTime(storedTimes, SCHEDULER_EVENT_ID);
     const [startTime, setStartTime] = useState<TimeParts>(start);
@@ -39,21 +41,31 @@ export default function Scheduler() {
     return (
         <Wrapper>
             <TextWrapper>
-                <Typography variant="h1">{`Mining Schedule`}</Typography>
-                <Text variant="p">{`Set specific times to automatically start mining.`}</Text>
+                <Typography variant="h1">{t('schedule.mining-schedule')}</Typography>
+                <Text variant="p">{t('schedule.mining-schedule-copy')}</Text>
             </TextWrapper>
             <ContentWrapper>
                 <FormWrapper>
-                    <TimePicker label={`Daily Start Time`} initialTime={startTime} handleOnChange={setStartTime} />
-                    <TimePicker label={`Daily End Time`} initialTime={endTime} handleOnChange={setEndTime} />
+                    <TimePicker
+                        label={t('schedule.time-label', { context: 'start' })}
+                        initialTime={startTime}
+                        handleOnChange={setStartTime}
+                    />
+                    <TimePicker
+                        label={t('schedule.time-label', { context: 'end' })}
+                        initialTime={endTime}
+                        handleOnChange={setEndTime}
+                    />
                     <MiningMode variant="secondary" />
                 </FormWrapper>
                 <CurrentScheduleItem />
             </ContentWrapper>
             <ContentWrapper>
-                <CTA variant="black" size="xlarge" fluid onClick={handleSave}>{`Save schedule`}</CTA>
+                <CTA variant="black" size="xlarge" fluid onClick={handleSave}>
+                    {t('schedule.cta-save')}
+                </CTA>
                 <TextButton fluid onClick={() => setShowScheduler(false)}>
-                    <CTAText>{`Cancel`}</CTAText>
+                    <CTAText>{t('common:cancel')}</CTAText>
                 </TextButton>
             </ContentWrapper>
         </Wrapper>

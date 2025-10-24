@@ -17,10 +17,12 @@ export const Content = styled(m.div)`
 export const TextWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    font-size: 13px;
+    font-size: 0.76rem;
     p {
         opacity: 0.5;
-        font-size: 11px;
+        font-size: 0.68rem;
+    }
+    strong {
+        font-weight: 600;
     }
 `;

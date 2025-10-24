@@ -1,5 +1,6 @@
 import { GpuMiningAlgorithm } from '@app/types/events-payloads';
 import i18n from 'i18next';
+import { TimeParts } from '@app/types/mining/schedule.ts';
 
 export enum FormatPreset {
     PERCENT = 'percent',
@@ -182,5 +183,7 @@ export const formatCountdown = (targetDate: string): string => {
 };
 
 export const fmtTimeUnit = (n: number): string => String(n).padStart(2, '0');
+export const fmtTimePartString = (t: TimeParts): string =>
+    `${fmtTimeUnit(t.hour)}:${fmtTimeUnit(t.minute)} ${t.timePeriod}`;
 
 export { formatDecimalCompact, roundToTwoDecimals, removeDecimals, removeXTMCryptoDecimals, formatValue };

@@ -58,6 +58,17 @@
     "min_payout": "Số tiền tối thiểu để trả",
     "unpaid": "Chưa thanh toán"
   },
+  "schedule": {
+    "cta-save": "Save Schedule",
+    "current": "Your current schedule",
+    "mining-schedule": "Mining Schedule",
+    "mining-schedule-copy": "Set specific times to automatically start mining.",
+    "mining-schedule-setup": "Setup Mining Schedule",
+    "scheduled-to-mine": "Scheduled to mine at",
+    "scheduled-to-pause": "Scheduled to pause mining at",
+    "time-label-end": "Daily End Time",
+    "time-label-start": "Daily Start Time"
+  },
   "you-earn-rewards-separately": "Bạn nhận phần thưởng đào CPU và GPU riêng biệt",
   "you-won-block": "Bạn là người thắng <span>block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Bạn đã thắng {{ blocks }}</span> khi bạn vắng mặt",

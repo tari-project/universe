@@ -52,6 +52,17 @@
     "min_payout": "最低支付",
     "unpaid": "未支付"
   },
+  "schedule": {
+    "cta-save": "Save Schedule",
+    "current": "Your current schedule",
+    "mining-schedule": "Mining Schedule",
+    "mining-schedule-copy": "Set specific times to automatically start mining.",
+    "mining-schedule-setup": "Setup Mining Schedule",
+    "scheduled-to-mine": "Scheduled to mine at",
+    "scheduled-to-pause": "Scheduled to pause mining at",
+    "time-label-end": "Daily End Time",
+    "time-label-start": "Daily Start Time"
+  },
   "you-earn-rewards-separately": "您分别为 CPU 和 GPU 挖矿获得奖励",
   "you-won-block": "您赢得了<span>区块 #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>您在离开时赢得了 {{ blocks }}</span>",
