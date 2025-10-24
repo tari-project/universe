@@ -57,6 +57,7 @@
   },
   "schedule": {
     "cta-save": "Save Schedule",
+    "cta-save-complete": "Saved!",
     "current": "Your current schedule",
     "mining-schedule": "Mining Schedule",
     "mining-schedule-copy": "Set specific times to automatically start mining.",

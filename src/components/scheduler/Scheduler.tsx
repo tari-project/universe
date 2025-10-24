@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { TimeParts } from '@app/types/mining/schedule.ts';
 import { SCHEDULER_EVENT_ID, useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 import { getParsedBetweenTime } from '@app/store/selectors/config/core.ts';
@@ -20,23 +20,36 @@ export default function Scheduler() {
     const { start, end } = getParsedBetweenTime(storedTimes, SCHEDULER_EVENT_ID);
     const [startTime, setStartTime] = useState<TimeParts>(start);
     const [endTime, setEndTime] = useState<TimeParts>(end);
+    const [saved, setSaved] = useState(false);
 
-    async function handleSave() {
-        await setSchedulerEvents({
-            id: SCHEDULER_EVENT_ID,
-            event_type: 'Mine',
-            timing: {
-                Between: {
-                    start_hour: Number(startTime.hour),
-                    start_minute: Number(startTime.minute),
-                    start_period: startTime.timePeriod,
-                    end_hour: Number(endTime.hour),
-                    end_minute: Number(endTime.minute),
-                    end_period: endTime.timePeriod,
+    const [isPending, startTransition] = useTransition();
+
+    function handleSave() {
+        startTransition(async () => {
+            await setSchedulerEvents({
+                id: SCHEDULER_EVENT_ID,
+                event_type: 'Mine',
+                timing: {
+                    Between: {
+                        start_hour: Number(startTime.hour),
+                        start_minute: Number(startTime.minute),
+                        start_period: startTime.timePeriod,
+                        end_hour: Number(endTime.hour),
+                        end_minute: Number(endTime.minute),
+                        end_period: endTime.timePeriod,
+                    },
                 },
-            },
+            });
+            setSaved(true);
         });
     }
+
+    useEffect(() => {
+        if (saved && !isPending) {
+            const savedTimeout = setTimeout(() => setSaved(false), 1000);
+            return () => clearTimeout(savedTimeout);
+        }
+    }, [saved, isPending]);
 
     return (
         <Wrapper>
@@ -61,8 +74,8 @@ export default function Scheduler() {
                 <CurrentScheduleItem />
             </ContentWrapper>
             <ContentWrapper>
-                <CTA variant="black" size="xlarge" fluid onClick={handleSave}>
-                    {t('schedule.cta-save')}
+                <CTA variant="black" size="xlarge" fluid onClick={handleSave} disabled={isPending}>
+                    {t('schedule.cta-save', { context: saved ? 'complete' : '' })}
                 </CTA>
                 <TextButton fluid onClick={() => setShowScheduler(false)}>
                     <CTAText>{t('common:cancel')}</CTAText>

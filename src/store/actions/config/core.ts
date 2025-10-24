@@ -135,11 +135,18 @@ export const setSchedulerEvents = async (newEvent: SchedulerEvent) => {
 
     const payload = parseTimingPayload(newEvent);
 
-    invoke('add_scheduler_between_event', payload).catch((e) => {
-        console.error('Could not add_scheduler_between_event', e);
-        setError('Could not add mining schedule.');
-        store.setState({ scheduler_events: initialState });
-    });
+    let saved = false;
+    invoke('add_scheduler_between_event', payload)
+        .then(() => {
+            saved = true;
+        })
+        .catch((e) => {
+            console.error('Could not add_scheduler_between_event', e);
+            setError('Could not add mining schedule.');
+            store.setState({ scheduler_events: initialState });
+            saved = false;
+        });
+    return saved;
 };
 export const setUseTor = async (useTor: boolean) => {
     store.setState((c) => ({ ...c, use_tor: useTor }));

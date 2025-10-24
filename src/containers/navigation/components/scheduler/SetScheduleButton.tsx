@@ -34,7 +34,9 @@ export default function SetScheduleButton() {
         </TimeWrapper>
     ) : null;
 
-    const toggleMarkup = hasSchedule ? <ToggleSwitch /> : null;
+    const toggleMarkup = hasSchedule ? (
+        <ToggleSwitch checked={hasSchedule} onChange={() => console.info('Toggled!')} />
+    ) : null;
 
     return (
         <StyledCTA onClick={() => setShowScheduler(true)} $hasSchedule={hasSchedule}>
