@@ -19,7 +19,7 @@ export interface ConfigCore {
     node_type?: NodeType;
     pre_release: boolean;
     remote_base_node_address: string;
-    scheduler_events?: Record<string, SchedulerEvent>;
+    scheduler_events?: Record<string, SchedulerEvent> | null;
     should_auto_launch: boolean;
     use_tor: boolean;
 }

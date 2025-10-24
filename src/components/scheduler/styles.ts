@@ -5,10 +5,10 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 export const Wrapper = styled.div`
     display: flex;
     width: clamp(45vw, 618px, 55vw);
-    padding: 0 20px;
+    padding: 0 20px 10px;
     flex-direction: column;
     justify-content: space-between;
-    height: max(340px, 35vh);
+    gap: 10px;
 `;
 
 export const ContentWrapper = styled.div`
@@ -37,4 +37,11 @@ export const CTA = styled(Button)`
 
 export const CTAText = styled(Typography)`
     font-weight: 600;
+`;
+
+export const CurrentWrapper = styled.div`
+    display: flex;
+    border: 1px solid ${({ theme }) => theme.palette.divider};
+    border-radius: 10px;
+    padding: 10px;
 `;

@@ -149,3 +149,13 @@ export const setUseTor = async (useTor: boolean) => {
         store.setState((c) => ({ ...c, use_tor: !useTor }));
     });
 };
+
+export const removeSchedulerEvent = async (eventId: string) => {
+    invoke('remove_scheduler_event', { eventId })
+        .then(() => {
+            store.setState({ scheduler_events: null });
+        })
+        .catch((e) => {
+            console.error(e);
+        });
+};

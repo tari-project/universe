@@ -17,6 +17,7 @@ const initialState: ConfigCore = {
     remote_base_node_address: '',
     should_auto_launch: false,
     use_tor: false,
+    scheduler_events: null,
 };
 export const useConfigCoreStore = create<ConfigCore>()(() => ({
     ...initialState,

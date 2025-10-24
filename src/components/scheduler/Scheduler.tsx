@@ -2,13 +2,13 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { MiningMode } from '@app/components/mode/MiningMode.tsx';
 import { TimePicker } from '@app/components/elements/inputs/time-picker/TimePicker.tsx';
-import { ContentWrapper, CTA, CTAText, FormWrapper, Text, Wrapper } from './styles.ts';
+import { ContentWrapper, CTA, CTAText, CurrentWrapper, FormWrapper, Text, Wrapper } from './styles.ts';
 import { useState } from 'react';
 
 import { setShowScheduler } from '@app/store/stores/useModalStore.ts';
 import { TimeParts } from '@app/types/mining/schedule.ts';
 import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
-import { setSchedulerEvents } from '@app/store/actions/config/core.ts';
+import { removeSchedulerEvent, setSchedulerEvents } from '@app/store/actions/config/core.ts';
 import { getParsedBetweenTime } from '@app/store/selectors/config/core.ts';
 
 const SCHEDULER_EVENT_ID = 'mining_schedule';
@@ -35,6 +35,24 @@ export default function Scheduler() {
             },
         });
     }
+
+    const currentSchedule = storedTimes ? (
+        <CurrentWrapper>
+            <Text>{`Your current schedule: `}</Text>
+            <Text>
+                <strong>
+                    {start.hour}:{start.minute} {start.timePeriod}
+                </strong>
+                -
+                <strong>
+                    {end.hour}:{end.minute} {end.timePeriod}
+                </strong>
+            </Text>
+
+            <button onClick={() => removeSchedulerEvent(SCHEDULER_EVENT_ID)}>DELELE</button>
+        </CurrentWrapper>
+    ) : null;
+
     return (
         <Wrapper>
             <ContentWrapper>
@@ -46,6 +64,7 @@ export default function Scheduler() {
                     <MiningMode variant="secondary" />
                 </FormWrapper>
             </ContentWrapper>
+            {currentSchedule}
             <ContentWrapper>
                 <CTA variant="black" size="xlarge" fluid onClick={handleSave}>{`Save schedule`}</CTA>
                 <TextButton fluid onClick={() => setShowScheduler(false)}>
