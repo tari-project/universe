@@ -28,12 +28,12 @@ use super::listeners::{setup_listener, SetupFeature, SetupFeaturesList};
 use super::trait_setup_phase::SetupPhaseImpl;
 use super::utils::phase_builder::PhaseBuilder;
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
-use crate::commands::start_cpu_mining;
 use crate::configs::config_core::ConfigCoreContent;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
+use crate::event_scheduler::EventScheduler;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
 use crate::mining::cpu::manager::CpuManager;
@@ -490,6 +490,13 @@ impl SetupManager {
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
         }
 
+        EventScheduler::instance()
+            .spawn_listener()
+            .await
+            .unwrap_or_else(|e| {
+                error!(target: LOG_TARGET, "Failed to start event scheduler listener: {e}");
+            });
+
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
 
@@ -844,8 +851,6 @@ impl SetupManager {
 
         // Solo mining will require mmproxy to be running
         self.restart_phases(vec![SetupPhase::CpuMining]).await;
-
-        start_cpu_mining().await.map_err(anyhow::Error::msg)?;
 
         Ok(())
     }

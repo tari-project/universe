@@ -511,6 +511,13 @@ impl SystemTrayManager {
         self.tray.replace(tray);
 
         self.start_tray_data_listener().await;
+
+        #[cfg(target_os = "windows")]
+        {
+            if let Err(e) = Self::set_tray_icon_promoted(true).await {
+                error!(target: LOG_TARGET, "Failed to promote tray icon: {e}");
+            }
+        }
     }
 
     async fn close_tari_universe_action(app: AppHandle) {
@@ -633,5 +640,25 @@ impl SystemTrayManager {
                 }
             }
         }
+    }
+
+    #[cfg(target_os = "windows")]
+    async fn set_tray_icon_promoted(promote: bool) -> Result<(), anyhow::Error> {
+        use crate::system_dependencies::windows::registry::{
+            entry_tasktray_icon::WindowsRegistryTasktrayIconResolver, WindowsRegistryReader,
+        };
+
+        let entries = WindowsRegistryTasktrayIconResolver::read_registry()?;
+        for entry in entries.iter().filter(|e| e.is_tari_icon()) {
+            if !entry.is_promoted() {
+                WindowsRegistryTasktrayIconResolver::set_icon_promoted(
+                    &entry.executable_path,
+                    promote,
+                )
+                .await?;
+            }
+        }
+
+        Ok(())
     }
 }

@@ -20,9 +20,11 @@
   "mining-button-text": {
     "cancel-mining": "Hủy đào",
     "changing-mode": "Đang chuyển chế độ",
-    "start-mining": "Bắt đầu đào",
     "started-auto-mining": "Đã tự động đào",
     "starting-mining": "Đang bắt đầu đào",
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Bắt đầu đào",
     "stop-mining": "Dừng đào",
     "waiting-for-idle": "Đang chờ rảnh"
   },
@@ -43,6 +45,10 @@
     "step_4": "Thử dùng Tor Bridge (trong Cài đặt)",
     "step_5": "Thử tắt Tor (trong Cài đặt)",
     "step_6": "Thử đặt lại ứng dụng (trong Cài đặt)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
     "accepted_shares": "Số share chấp nhận",

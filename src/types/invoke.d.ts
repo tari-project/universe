@@ -7,11 +7,12 @@ import {
     BaseNodeStatus,
 } from './app-status';
 import { Language } from '@app/i18initializer';
-import { PaperWalletDetails } from '@app/types/app-status.ts';
-import { displayMode } from '@app/store/types.ts';
-import { BasePoolData, ConfigBackendInMemory } from '@app/types/configs.ts';
+import { PaperWalletDetails } from './app-status.ts';
+import { displayMode } from '../store/types.ts';
+import { BasePoolData, ConfigBackendInMemory } from './configs.ts';
 import { ExchangeMiner } from './exchange';
-import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
+import { ActiveTapplet } from './tapplets/tapplet.types';
+import { AddSchedulerEventBetweenVariantPayload, AddSchedulerEventInVariantPayload } from './mining/schedule.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -140,4 +141,13 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_close_experience_selected', payload: { selected: boolean }): Promise<void>;
     function invoke(param: 'hide_to_tray'): Promise<void>;
     function invoke(param: 'mark_shutdown_information_dialog_as_shown'): Promise<void>;
+    // Scheduler commands
+    function invoke(param: 'add_scheduler_in_event', payload: AddSchedulerEventInVariantPayload): Promise<void>;
+    function invoke(
+        param: 'add_scheduler_between_events',
+        payload: AddSchedulerEventBetweenVariantPayload
+    ): Promise<void>;
+    function invoke(param: 'remove_scheduler_event', payload: { eventId: string }): Promise<void>;
+    function invoke(param: 'pause_scheduler_event', payload: { eventId: string }): Promise<void>;
+    function invoke(param: 'resume_scheduler_event', payload: { eventId: string }): Promise<void>;
 }

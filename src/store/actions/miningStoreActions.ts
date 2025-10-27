@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 
-import { SessionMiningTime, useMiningStore } from '../useMiningStore.ts';
+import { ResumeMiningTime, SessionMiningTime, useMiningStore } from '../useMiningStore.ts';
 import { setError } from './appStateStoreActions.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '../useAppConfigStore.ts';
@@ -12,6 +12,7 @@ import { GpuMiner, GpuMinerType, MinerControlsState } from '@app/types/events-pa
 import { MiningModeType } from '@app/types/configs.ts';
 import { useAirdropStore } from '@app/store';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
+import { TimeUnit } from '@app/types/mining/schedule.ts';
 
 export const restartMining = async () => {
     const isMining =
@@ -133,37 +134,70 @@ export const stopGpuMining = async () => {
     }
 };
 
-export const startMining = async () => {
-    console.info('Mining starting....');
+function handleStartSideEffects() {
+    handleSessionMiningTime({ startTimestamp: Date.now() });
+    setResumeDuration(undefined);
+}
 
+function handleStopSideEffects() {
+    handleSessionMiningTime({ stopTimestamp: Date.now() });
+}
+
+function handleEcoAlertCheck(diffSeconds?: number) {
     const eco_alert_needed = useConfigMiningStore.getState().eco_alert_needed;
-    if (eco_alert_needed) {
-        const storedTime = useConfigMiningStore.getState().mode_mining_times?.Eco.secs;
-        if (storedTime) {
-            handleEcoAlertCheck(storedTime);
-        }
+    const isEco = useConfigMiningStore.getState().getSelectedMiningMode()?.mode_type === MiningModeType.Eco;
+    if (!eco_alert_needed || !isEco) return;
+
+    let duration = diffSeconds;
+    if (!diffSeconds) {
+        duration = useConfigMiningStore.getState().mode_mining_times?.Eco.secs;
     }
 
+    void invoke('set_mode_mining_time', { mode: 'Eco', duration });
+}
+
+export const startMining = async () => {
+    console.info('Mining starting....');
+    handleEcoAlertCheck();
     try {
         await startCpuMining();
         await startGpuMining();
-        handleSessionMiningTime({ startTimestamp: Date.now() });
+        handleStartSideEffects();
     } catch (e) {
         console.error('Failed to start mining: ', e);
         setError(e as string);
     }
 };
+
 export const stopMining = async () => {
     console.info('Mining stopping...');
     try {
         await stopCpuMining();
         await stopGpuMining();
-        handleSessionMiningTime({ stopTimestamp: Date.now() });
+        handleStopSideEffects();
         console.info('Mining stopped.');
     } catch (e) {
         console.error('Failed to stop mining: ', e);
         setError(e as string);
     }
+};
+
+export const pauseMining = async (duration: number, isMinutes = false) => {
+    invoke('add_scheduler_in_event', {
+        eventId: 'pause_mining',
+        timeValue: duration,
+        timeUnit: isMinutes ? TimeUnit.Minutes : TimeUnit.Hours, // isMinutes is for admin testing
+    })
+        .then(() => {
+            stopMining();
+            const durationHours = isMinutes ? duration / 60 : duration;
+            setResumeDuration({ durationHours, timeStamp: Date.now() });
+        })
+        .catch((e) => console.error(e));
+};
+
+export const setResumeDuration = (selectedResumeDuration: ResumeMiningTime | undefined) => {
+    useMiningStore.setState({ selectedResumeDuration });
 };
 export const handleSelectedMinerChanged = (miner: GpuMinerType) => {
     useMiningStore.setState({ selectedMiner: miner });
@@ -196,13 +230,6 @@ export const switchSelectedMiner = async (newGpuMiner: GpuMinerType) => {
         console.error('Could not switch selected miner: ', e);
         setError(e as string);
     }
-};
-
-const handleEcoAlertCheck = (diffSeconds: number) => {
-    const isEco = useConfigMiningStore.getState().getSelectedMiningMode()?.mode_type === MiningModeType.Eco;
-    if (!isEco) return;
-
-    invoke('set_mode_mining_time', { mode: 'Eco', duration: diffSeconds });
 };
 
 export const handleSessionMiningTime = ({ startTimestamp, stopTimestamp }: SessionMiningTime) => {
@@ -247,11 +274,14 @@ export const handleCpuMinerControlsStateChanged = (state: MinerControlsState) =>
         case MinerControlsState.Idle:
             useMiningStore.setState({ isCpuMiningInitiated: false });
             break;
-        case MinerControlsState.Started:
+        case MinerControlsState.Started: {
             useMiningStore.setState({ isCpuMiningInitiated: true });
+            handleStartSideEffects();
             break;
+        }
         case MinerControlsState.Stopped:
             useMiningStore.setState({ isCpuMiningInitiated: false });
+            handleStopSideEffects();
             break;
     }
 };
@@ -263,9 +293,11 @@ export const handleGpuMinerControlsStateChanged = (state: MinerControlsState) =>
             break;
         case MinerControlsState.Started:
             useMiningStore.setState({ isGpuMiningInitiated: true });
+            handleStartSideEffects();
             break;
         case MinerControlsState.Stopped:
             useMiningStore.setState({ isGpuMiningInitiated: false });
+            handleStopSideEffects();
             break;
     }
 };

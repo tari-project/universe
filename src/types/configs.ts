@@ -23,6 +23,7 @@ export interface ConfigCore {
     exchange_id?: string;
     tasktray_mode: boolean;
 }
+
 export interface ConfigWallet {
     created_at: string;
     monero_address: string;
