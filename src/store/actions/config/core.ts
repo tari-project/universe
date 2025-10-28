@@ -173,14 +173,13 @@ export const toggleSchedulerEventPaused = async (eventId: string) => {
     const currentItems = store.getState().scheduler_events;
     const eventItem = currentItems?.[eventId];
     const isPaused = eventItem?.state === SchedulerEventState.Paused;
-
     if (!eventItem) return;
 
     if (isPaused) {
         return await invoke('resume_scheduler_event', { eventId })
             .then(() => {
                 const updatedItem = { ...eventItem, state: SchedulerEventState.Active };
-                store.setState({ scheduler_events: { ...currentItems, updatedItem } });
+                store.setState({ scheduler_events: { ...currentItems, [eventId]: updatedItem } });
             })
             .catch((e) => console.error(`Could not resume scheduler event [${eventId}]: `, e));
     }
@@ -188,7 +187,7 @@ export const toggleSchedulerEventPaused = async (eventId: string) => {
     return await invoke('pause_scheduler_event', { eventId })
         .then(() => {
             const updatedItem = { ...eventItem, state: SchedulerEventState.Paused };
-            store.setState({ scheduler_events: { ...currentItems, updatedItem } });
+            store.setState({ scheduler_events: { ...currentItems, [eventId]: updatedItem } });
         })
         .catch((e) => console.error(`Could not pause scheduler event [${eventId}]: `, e));
 };

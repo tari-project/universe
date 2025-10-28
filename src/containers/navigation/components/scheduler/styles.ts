@@ -1,22 +1,31 @@
 import styled from 'styled-components';
 
-export const StyledCTA = styled.button<{ $hasSchedule?: boolean }>`
+export const Wrapper = styled.div`
     display: flex;
     height: 30px;
+    border: 1px solid ${({ theme }) => theme.palette.divider};
+    color: ${({ theme }) => theme.palette.text.accent};
+    background: ${({ theme }) => theme.palette.background.paper};
+    border-radius: 10px;
+    align-items: center;
+`;
+
+export const StyledCTA = styled.button<{ $hasSchedule?: boolean }>`
+    display: flex;
     gap: 8px;
     justify-content: ${({ $hasSchedule }) => ($hasSchedule ? 'space-between' : 'center')};
     align-items: center;
     align-self: stretch;
     border-radius: 10px;
-    border: 1px solid ${({ theme }) => theme.palette.divider};
-    color: ${({ theme }) => theme.palette.text.accent};
-    background: ${({ theme }) => theme.palette.background.paper};
+    width: 100%;
     padding: 0 7px;
     font-size: 12px;
     font-weight: 500;
     line-height: 1.1;
     white-space: nowrap;
     letter-spacing: -0.4px;
+    position: relative;
+
     svg {
         display: flex;
     }

@@ -1,4 +1,4 @@
-import { CalendarWrapper, Content, StyledCTA, TimeWrapper } from './styles.ts';
+import { CalendarWrapper, Content, StyledCTA, TimeWrapper, Wrapper } from './styles.ts';
 import { CalendarSvg } from '@app/assets/icons/calendar.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { setShowScheduler } from '@app/store/stores/useModalStore.ts';
@@ -53,17 +53,18 @@ export default function SetScheduleButton() {
             disabled={isPending}
         />
     ) : null;
-
     return (
-        <StyledCTA onClick={() => setShowScheduler(true)} $hasSchedule={hasSchedule}>
-            <Content>
-                <CalendarWrapper>
-                    <CalendarSvg />
-                </CalendarWrapper>
-                {labelMarkup}
-                {timeMarkup}
-            </Content>
+        <Wrapper>
+            <StyledCTA onClick={() => setShowScheduler(true)} $hasSchedule={hasSchedule}>
+                <Content>
+                    <CalendarWrapper>
+                        <CalendarSvg />
+                    </CalendarWrapper>
+                    {labelMarkup}
+                    {timeMarkup}
+                </Content>
+            </StyledCTA>
             {toggleMarkup}
-        </StyledCTA>
+        </Wrapper>
     );
 }
