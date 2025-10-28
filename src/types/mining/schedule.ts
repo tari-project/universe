@@ -44,8 +44,17 @@ export interface BetweenTime {
     end_minute: number;
     end_period: TimePeriod;
 }
+
+export enum SchedulerEventState {
+    Active = 'Active',
+    Paused = 'Paused',
+    Triggered = 'Triggered',
+    Completed = 'Completed',
+}
+
 export interface SchedulerEvent {
     id: string;
     event_type: SchedulerEventType;
     timing: Timing;
+    state: SchedulerEventState;
 }

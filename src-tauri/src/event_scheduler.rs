@@ -544,6 +544,7 @@ pub struct ScheduledEventInfo {
     pub id: String,
     pub event_type: SchedulerEventType,
     pub timing: SchedulerEventTiming,
+    pub state: SchedulerEventState,
 }
 
 /// Defines the types of actions that can be scheduled.
@@ -740,6 +741,7 @@ impl EventScheduler {
                             id: id.clone(),
                             event_type: event.event_type.clone(),
                             timing: event.timing.clone(),
+                            state: event.state.clone(),
                         },
                     )
                 }),
