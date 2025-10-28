@@ -4,11 +4,14 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { setShowScheduler } from '@app/store/stores/useModalStore.ts';
 import { useTranslation } from 'react-i18next';
 import { SCHEDULER_EVENT_ID, useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
-import { getParsedBetweenTime } from '@app/store/selectors/config/core.ts';
+import { getParsedBetweenTime, getScheduleItem } from '@app/store/selectors/config/core.ts';
 import { useMiningMetricsStore } from '@app/store';
 import { fmtTimePartString } from '@app/utils';
 import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch.tsx';
 import { TbClockHour4Filled } from 'react-icons/tb';
+import { toggleSchedulerEventPaused } from '@app/store/actions/config/core.ts';
+import { useTransition } from 'react';
+import { SchedulerEventState } from '@app/types/mining/schedule.ts';
 
 export default function SetScheduleButton() {
     const { t } = useTranslation('mining-view');
@@ -17,6 +20,15 @@ export default function SetScheduleButton() {
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status?.is_mining);
 
     const { start, end } = getParsedBetweenTime(storedTimes, SCHEDULER_EVENT_ID);
+    const eventDetails = getScheduleItem(storedTimes, SCHEDULER_EVENT_ID);
+
+    const [isPending, startTransition] = useTransition();
+
+    function handlePauseToggle() {
+        startTransition(async () => {
+            await toggleSchedulerEventPaused(SCHEDULER_EVENT_ID);
+        });
+    }
 
     const isMining = cpuIsMining || gpuIsMining;
     const hasSchedule = storedTimes !== null && storedTimes && Object.keys(storedTimes)?.length > 0;
@@ -35,7 +47,11 @@ export default function SetScheduleButton() {
     ) : null;
 
     const toggleMarkup = hasSchedule ? (
-        <ToggleSwitch checked={hasSchedule} onChange={() => console.info('Toggled!')} />
+        <ToggleSwitch
+            checked={eventDetails?.state !== SchedulerEventState.Paused}
+            onChange={handlePauseToggle}
+            disabled={isPending}
+        />
     ) : null;
 
     return (

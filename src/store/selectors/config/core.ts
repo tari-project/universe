@@ -21,3 +21,5 @@ export const getParsedBetweenTime = (
         end: { hour: timing.end_hour, minute: timing.end_minute, timePeriod: timing.end_period },
     };
 };
+
+export const getScheduleItem = (events: ConfigCore['scheduler_events'], event_id: string) => events?.[event_id];
