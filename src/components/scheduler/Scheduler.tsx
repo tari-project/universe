@@ -1,5 +1,5 @@
 import { useEffect, useState, useTransition } from 'react';
-import { TimeParts } from '@app/types/mining/schedule.ts';
+import { SchedulerEventState, TimeParts } from '@app/types/mining/schedule.ts';
 import { SCHEDULER_EVENT_ID, useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 import { getParsedBetweenTime } from '@app/store/selectors/config/core.ts';
 import { setSchedulerEvents } from '@app/store/actions/config/core.ts';
@@ -39,6 +39,7 @@ export default function Scheduler() {
                         end_period: endTime.timePeriod,
                     },
                 },
+                state: SchedulerEventState.Active,
             });
             setSaved(true);
         });
