@@ -51,7 +51,7 @@ impl EventsManager {
             .is_feature_enabled(SetupFeature::SeedlessWallet)
         {
             info!(target: LOG_TARGET, "Firing new block height event but skipping wallet scan for seedless wallet feature");
-            EventsEmitter::emit_new_block_mined(block_height, None, None).await;
+            EventsEmitter::emit_new_block_mined(block_height, None).await;
 
             return;
         }
@@ -67,13 +67,10 @@ impl EventsManager {
                         EventsEmitter::emit_wallet_balance_update(balance.clone()).await;
                         // Check for coinbase transaction if there's pending balance
                         let coinbase_tx = if balance.pending_incoming_balance.gt(&MicroMinotari::zero()) {
-                            match wallet_manager.find_coinbase_transaction_for_block(block_height).await {
-                                Ok(tx) => tx,
-                                Err(e) => {
-                                    error!(target: LOG_TARGET, "Failed to get coinbase transaction: {e:?}");
-                                    None
-                                }
-                            }
+                            wallet_manager.find_coinbase_transaction_for_block(block_height).await.unwrap_or_else(|e| {
+                                error!(target: LOG_TARGET, "Failed to get coinbase transaction: {e:?}");
+                                None
+                            })
                         } else {
                             None
                         };
@@ -81,7 +78,6 @@ impl EventsManager {
                         EventsEmitter::emit_new_block_mined(
                             block_height,
                             coinbase_tx.clone(),
-                            Some(balance),
                         )
                         .await;
                         let allow_notifications = *ConfigCore::content().await.allow_notifications();
@@ -93,7 +89,6 @@ impl EventsManager {
                         EventsEmitter::emit_new_block_mined(
                             block_height,
                             None,
-                            None,
                         )
                         .await;
                     }
@@ -102,7 +97,6 @@ impl EventsManager {
                     error!(target: LOG_TARGET, "Error waiting for wallet scan: {e}");
                     EventsEmitter::emit_new_block_mined(
                         block_height,
-                        None,
                         None,
                     )
                     .await;

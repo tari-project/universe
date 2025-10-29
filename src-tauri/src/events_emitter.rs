@@ -473,7 +473,6 @@ impl EventsEmitter {
     pub async fn emit_new_block_mined(
         block_height: u64,
         coinbase_transaction: Option<TransactionInfo>,
-        balance: Option<WalletBalance>,
     ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
@@ -481,7 +480,6 @@ impl EventsEmitter {
             payload: NewBlockHeightPayload {
                 block_height,
                 coinbase_transaction,
-                balance,
             },
         };
         if let Err(e) = Self::get_app_handle()
