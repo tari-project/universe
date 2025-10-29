@@ -116,19 +116,26 @@ export const setExternalTariAddress = async (newAddress: string) => {
         });
 };
 
-export const setWalletBalance = async (balancePayload: WalletBalance) => {
+export const setWalletBalance = async (balance: WalletBalance) => {
     const currentBalance = useWalletStore.getState().balance;
-    const isEqual = deepEqual(balancePayload, currentBalance);
+    const currentCalculatedBalance = useWalletStore.getState().calculated_balance;
+    const isEqual = deepEqual(currentBalance, balance);
     if (isEqual) return;
-    const b = balancePayload;
-    const calculated_balance = b.available_balance + b.timelocked_balance + b.pending_incoming_balance;
+
+    console.log('==============================walletStoreActions.ts==============================');
+    console.log('CURRENT =', currentBalance);
+    console.log('PAYLOAD =', balance);
+    console.log('==================================================================================');
+    useWalletStore.setState({ balance });
+
+    const sum = balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
+    const calculated_balance = sum - balance.pending_outgoing_balance;
+
+    if (calculated_balance !== currentCalculatedBalance) {
+        useWalletStore.setState({ calculated_balance });
+    }
     await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
     await refreshTransactions();
-    useWalletStore.setState((c) => ({
-        ...c,
-        balance: b,
-        calculated_balance,
-    }));
 };
 
 export const setIsSwapping = (isSwapping: boolean) => {
