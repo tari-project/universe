@@ -636,7 +636,6 @@ fn main() {
                     target: LOG_TARGET,
                     "App shutdown request [ExitRequested] caught with code: {code:#?}"
                 );
-                let app_handle_clone = app_handle.clone();
                 if let Some(exit_code) = code {
                     if exit_code == RESTART_EXIT_CODE {
                         // RunEvent does not hold the exit code so we store it separately
