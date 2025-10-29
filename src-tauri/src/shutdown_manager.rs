@@ -211,6 +211,8 @@ impl ShutdownManager {
             Some(sequence.remove(0))
         };
 
+        drop(sequence); // release the lock
+
         if let Some(step) = &execution_step {
             match step {
                 ShutdownStep::ShutdownModeSelection => {
