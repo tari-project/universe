@@ -64,6 +64,7 @@ impl EventsManager {
             match wallet_manager.wait_for_scan_to_height(block_height, Some(Duration::from_secs(20))).await {
                 Ok(scanned_wallet_state) => {
                     if let Some(balance) = scanned_wallet_state.balance {
+                        EventsEmitter::emit_wallet_balance_update(balance.clone()).await;
                         // Check for coinbase transaction if there's pending balance
                         let coinbase_tx = if balance.pending_incoming_balance.gt(&MicroMinotari::zero()) {
                             match wallet_manager.find_coinbase_transaction_for_block(block_height).await {
