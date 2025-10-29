@@ -1,13 +1,14 @@
 /* eslint-disable i18next/no-literal-string */
+import { setShowFeedbackExitSurveyModal } from '@app/store/actions/uiStoreActions';
 import { AdminButton, ButtonGroup, ExtraContent } from '../styles';
 
 import {
     setMininimumMiningTimeMs,
-    setShowCloseDialog,
     setShowLongTimeDialog,
     useUserFeedbackStore,
 } from '@app/store/stores/userFeedbackStore.ts';
 import { useState } from 'react';
+import { useUIStore } from '@app/store';
 
 function convertToMinutes(ms: number) {
     return ms / 1000 / 60;
@@ -17,17 +18,20 @@ function convertToMs(minutes: number) {
 }
 export function FeedbackGroup() {
     const longMiningTimeMs = useUserFeedbackStore((s) => s.longMiningTimeMs);
-    const closeMiningTimeMs = useUserFeedbackStore((s) => s.closeMiningTimeMs);
-    const showCloseDialog = useUserFeedbackStore((s) => s.showCloseDialog);
+    // const closeMiningTimeMs = useUserFeedbackStore((s) => s.closeMiningTimeMs);
     const showLongTimeDialog = useUserFeedbackStore((s) => s.showLongTimeDialog);
+    const isFeedbackExitSurveyModalShown = useUIStore((s) => s.showFeedbackExitSurveyModal);
 
-    const [closeMin, setCloseMin] = useState(convertToMinutes(closeMiningTimeMs));
+    // const [closeMin, setCloseMin] = useState(convertToMinutes(closeMiningTimeMs));
     const [longMin, setLongMin] = useState(convertToMinutes(longMiningTimeMs));
 
     return (
         <>
             <ButtonGroup>
-                <AdminButton onClick={() => setShowCloseDialog(!showCloseDialog)} $isActive={showCloseDialog}>
+                <AdminButton
+                    onClick={() => setShowFeedbackExitSurveyModal(true)}
+                    $isActive={isFeedbackExitSurveyModalShown}
+                >
                     Early Close
                 </AdminButton>
                 <AdminButton onClick={() => setShowLongTimeDialog(!showLongTimeDialog)} $isActive={showLongTimeDialog}>
@@ -35,7 +39,7 @@ export function FeedbackGroup() {
                 </AdminButton>
             </ButtonGroup>
             <ExtraContent>
-                <label>
+                {/* <label>
                     CLOSE min time (minutes)
                     <input
                         name="close"
@@ -58,7 +62,7 @@ export function FeedbackGroup() {
                     >
                         save
                     </button>
-                </label>
+                </label> */}
 
                 <label>
                     LONG min time (minutes)

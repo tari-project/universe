@@ -20,12 +20,22 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{sync::LazyLock, time::Duration};
-use tauri::{AppHandle, Manager};
 use serde::{Deserialize, Serialize};
-use tokio::sync::{Mutex, RwLock, watch::{Receiver, Sender}};
+use std::sync::LazyLock;
+use tauri::{AppHandle, Manager, Window};
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex, RwLock,
+};
 
-use crate::{UniverseAppState, configs::{config_core::ConfigCore, config_ui::ConfigUI, trait_config::ConfigImpl}, events_emitter::EventsEmitter, mining::{cpu::manager::CpuManager, gpu::manager::GpuManager}, tasks_tracker::TasksTrackers};
+use crate::{
+    configs::{config_core::ConfigCore, config_ui::ConfigUI, trait_config::ConfigImpl},
+    events_emitter::EventsEmitter,
+    mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
+    systemtray_manager::SystemTrayManager,
+    tasks_tracker::TasksTrackers,
+    UniverseAppState,
+};
 
 static LOG_TARGET: &str = "universe::shutdown_manager";
 static INSTANCE: LazyLock<ShutdownManager> = LazyLock::new(ShutdownManager::new);
@@ -45,7 +55,9 @@ impl WaitForComplition {
     }
 
     pub fn set_as_complete(&self) {
-        self.sender.send(true).expect("Failed to send complete signal");
+        self.sender
+            .send(true)
+            .expect("Failed to send complete signal");
     }
 
     #[allow(dead_code)]
@@ -56,38 +68,16 @@ impl WaitForComplition {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
-pub enum FeedbackSurveyToShow {
-    None,
-    Short, // Shown when mining for less then an hour
-    Long, // Shown when mining for more then an hour
-}
-
-static SHORT_MINING_TIME_THRESHOLD: Duration = Duration::from_secs(60 * 60); // 1 hour
-static LONG_MINING_TIME_THRESHOLD: Duration = Duration::from_secs(3 * 60 * 60); // 3 hours
-
-impl FeedbackSurveyToShow {
-    pub fn from_session_mining_time(session_mining_time: Duration) -> Self {
-        if session_mining_time < SHORT_MINING_TIME_THRESHOLD {
-            FeedbackSurveyToShow::Short
-        } else if session_mining_time >= LONG_MINING_TIME_THRESHOLD {
-            FeedbackSurveyToShow::Long
-        } else {
-            FeedbackSurveyToShow::None
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum ShutdownMode {
-    Direct, // Shutdown after clicking X button in the window navigation bar
+    Direct,   // Shutdown after clicking X button in the window navigation bar
     Tasktray, // Shutdown after clicking "Quit" in the tasktray menu
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ShutdownStep {
     ShutdownModeSelection,
-    FeedbackSurvey(FeedbackSurveyToShow),
+    FeedbackSurvey,
     TaskTrayTriggeredShutdown,
     CleanupAndExit,
 }
@@ -118,61 +108,78 @@ impl ShutdownManager {
 
     // ================= Main shutdown manager logic ================= //
 
-    pub async fn initialize_shutdown_from_system_tray(&self, session_mining_time: Duration) {
+    pub async fn initialize_shutdown_from_system_tray(&self) {
         // If shutdown sequence is already initialized, just mark tasktray shutdown as completed
         if self.shutdown_sequence.read().await.is_empty() == false {
             self.mark_tasktray_shutdown_as_completed().await;
             return;
         }
 
-        let feedback_survey_type = FeedbackSurveyToShow::from_session_mining_time(session_mining_time);
         let was_feedback_sent = ConfigUI::content().await.was_feedback_sent();
 
         if !was_feedback_sent {
-            match feedback_survey_type {
-                FeedbackSurveyToShow::Short | FeedbackSurveyToShow::Long => {
-                    self.feedback_survey_notifier.write().await.replace(WaitForComplition::new());
-                    self.shutdown_sequence.write().await.push(ShutdownStep::FeedbackSurvey(feedback_survey_type));
-                },
-                FeedbackSurveyToShow::None => {},
-            }
+            self.feedback_survey_notifier
+                .write()
+                .await
+                .replace(WaitForComplition::new());
+            self.shutdown_sequence
+                .write()
+                .await
+                .push(ShutdownStep::FeedbackSurvey);
         }
 
-        self.shutdown_sequence.write().await.push(ShutdownStep::CleanupAndExit);
+        self.shutdown_sequence
+            .write()
+            .await
+            .push(ShutdownStep::CleanupAndExit);
 
         log::info!(target: LOG_TARGET, "Initialized shutdown sequence: {:?}", *self.shutdown_sequence.read().await);
 
         self.execute_shutdown_sequence().await;
     }
 
-    pub async fn initialize_shutdown_from_close_button(&self, session_mining_time: Duration) {
-        let feedback_survey_type = FeedbackSurveyToShow::from_session_mining_time(session_mining_time);
+    pub async fn initialize_shutdown_from_close_button(&self) {
         let was_feedback_survey_sent = ConfigUI::content().await.was_feedback_sent();
         let was_shutdown_dialog_shown = *ConfigUI::content().await.shutdown_mode_selected();
         let selected_shutdown_mode = ConfigCore::content().await.shutdown_mode().clone();
 
         if !was_shutdown_dialog_shown {
-            self.shudown_selection_notifier.write().await.replace(WaitForComplition::new());
-            self.shutdown_sequence.write().await.push(ShutdownStep::ShutdownModeSelection);
-
+            self.shudown_selection_notifier
+                .write()
+                .await
+                .replace(WaitForComplition::new());
+            self.shutdown_sequence
+                .write()
+                .await
+                .push(ShutdownStep::ShutdownModeSelection);
         } else if selected_shutdown_mode == ShutdownMode::Tasktray {
-            self.tasktray_shutdown_notifier.write().await.replace(WaitForComplition::new());
-            self.shutdown_sequence.write().await.push(ShutdownStep::TaskTrayTriggeredShutdown);
+            self.tasktray_shutdown_notifier
+                .write()
+                .await
+                .replace(WaitForComplition::new());
+            self.shutdown_sequence
+                .write()
+                .await
+                .push(ShutdownStep::TaskTrayTriggeredShutdown);
         } else {
             // Direct shutdown, no need to wait for tasktray action
         }
 
         if !was_feedback_survey_sent {
-            match feedback_survey_type {
-                FeedbackSurveyToShow::Short | FeedbackSurveyToShow::Long => {
-                    self.feedback_survey_notifier.write().await.replace(WaitForComplition::new());
-                    self.shutdown_sequence.write().await.push(ShutdownStep::FeedbackSurvey(feedback_survey_type));
-                },
-                FeedbackSurveyToShow::None => {},
-            }
+            self.feedback_survey_notifier
+                .write()
+                .await
+                .replace(WaitForComplition::new());
+            self.shutdown_sequence
+                .write()
+                .await
+                .push(ShutdownStep::FeedbackSurvey);
         }
 
-        self.shutdown_sequence.write().await.push(ShutdownStep::CleanupAndExit);
+        self.shutdown_sequence
+            .write()
+            .await
+            .push(ShutdownStep::CleanupAndExit);
 
         log::info!(target: LOG_TARGET, "Initialized shutdown sequence: {:?}", *self.shutdown_sequence.read().await);
 
@@ -202,16 +209,16 @@ impl ShutdownManager {
             match step {
                 ShutdownStep::ShutdownModeSelection => {
                     self.handle_shutdown_mode_selection().await;
-                },
-                ShutdownStep::FeedbackSurvey(feedback_survey_type) => {
-                    self.handle_feedback_survey(feedback_survey_type).await;
-                },
+                }
+                ShutdownStep::FeedbackSurvey => {
+                    self.handle_feedback_survey().await;
+                }
                 ShutdownStep::TaskTrayTriggeredShutdown => {
                     self.handle_tasktray_triggered_shutdown().await;
-                },
+                }
                 ShutdownStep::CleanupAndExit => {
                     self.cleanup_and_exit().await;
-                },
+                }
             }
         }
     }
@@ -225,22 +232,38 @@ impl ShutdownManager {
         }
 
         // if ShutdownMode is Tasktray, add TasktrayTriggeredShutdown step if not already present in the sequence
-        if ConfigCore::content().await.shutdown_mode() == &ShutdownMode::Tasktray && self.shutdown_sequence.read().await.iter().all(|step| *step != ShutdownStep::TaskTrayTriggeredShutdown) {
-           self.tasktray_shutdown_notifier.write().await.replace(WaitForComplition::new());
-           self.shutdown_sequence.write().await.insert(0, ShutdownStep::TaskTrayTriggeredShutdown);
+        if ConfigCore::content().await.shutdown_mode() == &ShutdownMode::Tasktray
+            && self
+                .shutdown_sequence
+                .read()
+                .await
+                .iter()
+                .all(|step| *step != ShutdownStep::TaskTrayTriggeredShutdown)
+        {
+            self.tasktray_shutdown_notifier
+                .write()
+                .await
+                .replace(WaitForComplition::new());
+            self.shutdown_sequence
+                .write()
+                .await
+                .insert(0, ShutdownStep::TaskTrayTriggeredShutdown);
         }
     }
 
-    async fn handle_feedback_survey(&self, feedback_survey_type: &FeedbackSurveyToShow) {
-        EventsEmitter::emit_feedback_requested(feedback_survey_type.clone()).await;
+    async fn handle_feedback_survey(&self) {
+        EventsEmitter::emit_feedback_requested().await;
         if let Some(notifier) = &*self.feedback_survey_notifier.read().await {
             let _ = notifier.wait_for_completion().await;
         }
     }
 
     async fn handle_tasktray_triggered_shutdown(&self) {
-        if let Some(notifier) = &*self.tasktray_shutdown_notifier.read().await {
-            let _ = notifier.wait_for_completion().await;
+        if let Some(app_handle) = &*self.app_handle.read().await {
+            SystemTrayManager::hide_to_tray(app_handle.get_webview_window("main"));
+            if let Some(notifier) = &*self.tasktray_shutdown_notifier.read().await {
+                let _ = notifier.wait_for_completion().await;
+            }
         }
     }
 
@@ -250,17 +273,17 @@ impl ShutdownManager {
         if let Some(app) = &*app_handle {
             let app_state = app.state::<UniverseAppState>();
 
-        let _unused = GpuManager::write().await.stop_mining().await;
-        let _unused = CpuManager::write().await.stop_mining().await;
+            let _unused = GpuManager::write().await.stop_mining().await;
+            let _unused = CpuManager::write().await.stop_mining().await;
 
-        TasksTrackers::current().stop_all_processes().await;
-        GpuManager::read().await.on_app_exit().await;
-        CpuManager::read().await.on_app_exit().await;
-        app_state.tor_manager.on_app_exit().await;
-        app_state.wallet_manager.on_app_exit().await;
-        app_state.node_manager.on_app_exit().await;
+            TasksTrackers::current().stop_all_processes().await;
+            GpuManager::read().await.on_app_exit().await;
+            CpuManager::read().await.on_app_exit().await;
+            app_state.tor_manager.on_app_exit().await;
+            app_state.wallet_manager.on_app_exit().await;
+            app_state.node_manager.on_app_exit().await;
 
-        app.exit(0);
+            app.exit(0);
         }
     }
 

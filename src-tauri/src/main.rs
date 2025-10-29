@@ -36,7 +36,7 @@ use node::remote_node_adapter::RemoteNodeAdapter;
 
 use setup::setup_manager::SetupManager;
 use std::fs::{remove_dir_all, remove_file};
-use std::{path::Path,time::Duration};
+use std::{path::Path, time::Duration};
 use tasks_tracker::TasksTrackers;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
@@ -73,10 +73,10 @@ use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
+use crate::shutdown_manager::ShutdownManager;
 use crate::tor_manager::TorManager;
 use crate::wallet::wallet_manager::WalletManager;
 use crate::wallet::wallet_types::WalletState;
-use crate::shutdown_manager::ShutdownManager;
 
 mod ab_test_selector;
 mod airdrop;
@@ -360,10 +360,12 @@ fn main() {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 block_on(async {
-                    ShutdownManager::instance().initialize_shutdown_from_close_button(Duration::from_secs(0)).await;
-            })
+                    ShutdownManager::instance()
+                        .initialize_shutdown_from_close_button()
+                        .await;
+                })
             }
-            })
+        })
         .setup(|app| {
             let config_path = app
                 .path()
@@ -579,6 +581,7 @@ fn main() {
             commands::set_eco_alert_needed,
             commands::mark_shutdown_selection_as_completed,
             commands::mark_feedback_as_completed,
+            commands::update_shutdown_mode_selection,
             // Scheduler commands
             commands::add_scheduler_in_event,
             commands::add_scheduler_between_event,

@@ -31,7 +31,6 @@ use crate::mining::gpu::consts::{GpuMiner, GpuMinerStatus, GpuMinerType};
 use crate::mining::gpu::miners::GpuCommonInformation;
 use crate::mining::pools::PoolStatus;
 use crate::mining::MinerControlsState;
-use crate::shutdown_manager::FeedbackSurveyToShow;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
 use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
@@ -782,19 +781,6 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_systray_app_shutdown_requested() {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        if let Err(e) = Self::get_app_handle().await.emit(
-            BACKEND_STATE_UPDATE,
-            Event {
-                event_type: EventType::SystrayAppShutdownRequested,
-                payload: (),
-            },
-        ) {
-            error!(target: LOG_TARGET, "Failed to emit SystrayAppShutdownRequested event: {e:?}");
-        }
-    }
-
     pub async fn emit_show_eco_alert() {
         let _ = FrontendReadyChannel::current().wait_for_ready().await;
         if let Err(e) = Self::get_app_handle().await.emit(
@@ -808,13 +794,13 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_feedback_requested(payload: FeedbackSurveyToShow) {
+    pub async fn emit_feedback_requested() {
         let _ = FrontendReadyChannel::current().wait_for_ready().await;
         if let Err(e) = Self::get_app_handle().await.emit(
             BACKEND_STATE_UPDATE,
             Event {
                 event_type: EventType::FeedbackSurveyRequested,
-                payload
+                payload: (),
             },
         ) {
             error!(target: LOG_TARGET, "Failed to emit FeedbackRequested event: {e:?}");

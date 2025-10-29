@@ -3,61 +3,45 @@ import { Typography } from '@app/components/elements/Typography';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Checkbox } from '@app/components/elements/inputs/Checkbox';
 import { useUIStore } from '@app/store/useUIStore';
-import { toggleTaskTrayMode, setCloseExperienceSelected } from '@app/store/actions/appConfigStoreActions';
+import { updateShutdownMode, markShutdownModeAsSelected } from '@app/store/actions/appConfigStoreActions';
 
 import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Wrapper, TextWrapper, ButtonSectionWrapper, ButtonsWrapper, CheckboxWrapper } from './styles.ts';
-import { setIsCloseInfoModalShown, setShowCloseInfoModal } from '@app/store/actions/uiStoreActions.ts';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { invoke } from '@tauri-apps/api/core';
+import { setShowShutdownSelectionModal } from '@app/store/actions/uiStoreActions.ts';
 
-const CloseExperienceDialog = memo(function CloseExperienceDialog() {
+import { ShutdownMode } from '@app/types/configs.ts';
+
+const ShutdownSelectionDialog = memo(function CloseExperienceDialog() {
     const { t } = useTranslation(['components'], { useSuspense: false });
-    const isOpen = useUIStore((s) => s.showCloseInfoModal);
+    const isShutdownSelectionModalOpen = useUIStore((s) => s.showShutdownSelectionModal);
     const [dontAskAgain, setDontAskAgain] = useState(false);
+
+    const handleClose = useCallback(async () => {
+        await markShutdownModeAsSelected(dontAskAgain);
+        setShowShutdownSelectionModal(false);
+    }, [dontAskAgain]);
 
     const handleRunInBackground = useCallback(async () => {
         try {
-            await toggleTaskTrayMode(true);
-            if (dontAskAgain) {
-                await setCloseExperienceSelected(true);
-            }
-            setIsCloseInfoModalShown(true);
-
-            await invoke('hide_to_tray');
-            await invoke('mark_shutdown_information_dialog_as_shown');
-            setShowCloseInfoModal(false);
+            await updateShutdownMode(ShutdownMode.Tasktray);
+            await handleClose();
         } catch (error) {
             console.error('Failed to set run in background mode:', error);
         }
-    }, [dontAskAgain]);
+    }, [handleClose]);
 
     const handleExitCompletely = useCallback(async () => {
         try {
-            await toggleTaskTrayMode(false);
-
-            if (dontAskAgain) {
-                await setCloseExperienceSelected(true);
-            }
-            setIsCloseInfoModalShown(true);
-            await invoke('mark_shutdown_information_dialog_as_shown');
-
-            setShowCloseInfoModal(false);
-
-            const appWindow = getCurrentWindow();
-            appWindow.close();
+            await updateShutdownMode(ShutdownMode.Direct);
+            await handleClose();
         } catch (error) {
             console.error('Failed to set exit completely mode:', error);
         }
-    }, [dontAskAgain]);
-
-    const handleDontAskAgainChange = useCallback((checked: boolean) => {
-        setDontAskAgain(checked);
-    }, []);
+    }, [handleClose]);
 
     return (
-        <Dialog open={isOpen}>
+        <Dialog open={isShutdownSelectionModalOpen}>
             <DialogContent>
                 <Wrapper>
                     <TextWrapper>
@@ -79,7 +63,7 @@ const CloseExperienceDialog = memo(function CloseExperienceDialog() {
                             <Checkbox
                                 id="dont-ask-again-checkbox"
                                 checked={dontAskAgain}
-                                handleChange={handleDontAskAgainChange}
+                                handleChange={setDontAskAgain}
                                 labelText={t('close-experience-dialog.dont-ask-again')}
                             />
                         </CheckboxWrapper>
@@ -90,4 +74,4 @@ const CloseExperienceDialog = memo(function CloseExperienceDialog() {
     );
 });
 
-export default CloseExperienceDialog;
+export default ShutdownSelectionDialog;

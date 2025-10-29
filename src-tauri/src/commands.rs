@@ -50,7 +50,7 @@ use crate::node::node_manager::NodeType;
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
-use crate::shutdown_manager::ShutdownManager;
+use crate::shutdown_manager::{ShutdownManager, ShutdownMode};
 use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
 use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
 use crate::tapplets::interface::ActiveTapplet;
@@ -2126,10 +2126,16 @@ pub async fn set_eco_alert_needed() -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
-pub async fn mark_shutdown_selection_as_completed() -> Result<(), InvokeError> {
+pub async fn mark_shutdown_selection_as_completed(dont_ask_again: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
-    ShutdownManager::instance().mark_shutdown_mode_selection_as_completed().await;
+    ConfigUI::update_field(ConfigUIContent::set_shutdown_mode_selected, dont_ask_again)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    ShutdownManager::instance()
+        .mark_shutdown_mode_selection_as_completed()
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "mark_shutdown_selection_as_completed took too long: {:?}", timer.elapsed());
@@ -2141,10 +2147,28 @@ pub async fn mark_shutdown_selection_as_completed() -> Result<(), InvokeError> {
 pub async fn mark_feedback_as_completed() -> Result<(), InvokeError> {
     let timer = Instant::now();
 
-    ShutdownManager::instance().mark_shutdown_mode_selection_as_completed().await;
+    ShutdownManager::instance()
+        .mark_feedback_survey_as_completed()
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "mark_feedback_as_completed took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_shutdown_mode_selection(
+    shutdown_mode: ShutdownMode,
+) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ConfigCore::update_field(ConfigCoreContent::set_shutdown_mode, shutdown_mode)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_shutdown_mode_selection took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }

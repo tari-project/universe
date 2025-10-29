@@ -4,7 +4,6 @@ import {
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
-    FeedbackSurveyToShow,
     GpuMiner,
     GpuMinerType,
     MinerControlsState,
@@ -236,7 +235,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'FeedbackSurveyRequested';
-          payload: FeedbackSurveyToShow;
+          payload: undefined;
       }
     | {
           event_type: 'ShutdownModeSelectionRequested';

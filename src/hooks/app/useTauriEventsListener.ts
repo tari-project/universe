@@ -12,6 +12,8 @@ import {
     setConnectionStatus,
     setDialogToShow,
     setShouldShowExchangeSpecificModal,
+    setShowFeedbackExitSurveyModal,
+    setShowShutdownSelectionModal,
     setSidebarOpen,
 } from '@app/store/actions/uiStoreActions';
 import {
@@ -258,8 +260,10 @@ const useTauriEventsListener = () => {
                             setShowEcoAlert(true);
                             break;
                         case 'FeedbackSurveyRequested':
+                            setShowFeedbackExitSurveyModal(true);
                             break;
                         case 'ShutdownModeSelectionRequested':
+                            setShowShutdownSelectionModal(true);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

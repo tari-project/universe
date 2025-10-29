@@ -12,7 +12,7 @@ import CloseExperienceDialog from './CloseExperienceDialog';
 import CreatePinDialog from './security/pin/CreatePinDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
 import CriticalProblemDialog from './CriticalProblemDialog/CriticalProblemDialog.tsx';
-import CloseUserFeedbackDialog from './user/surveys/CloseUserFeedbackDialog.tsx';
+import ExitFeedbackSurveyDialog from './user/surveys/ExitFeedbackSurveyDialog.tsx';
 import LongTimeUserFeedbackDialog from './user/surveys/LongTimeUserFeedbackDialog.tsx';
 
 import EXModal from './EXModal/EXModal.tsx';
@@ -63,7 +63,7 @@ const FloatingElements = () => {
             <CrewRewards />
             <SettingsModal />
             <FailedModuleInitializationDialog />
-            <CloseUserFeedbackDialog />
+            <ExitFeedbackSurveyDialog />
             <LongTimeUserFeedbackDialog />
         </FloatingTree>
     );

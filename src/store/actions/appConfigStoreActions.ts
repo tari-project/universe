@@ -29,6 +29,7 @@ import {
     GpuDeviceSettings,
     GpuPools,
     PromptType,
+    ShutdownMode,
 } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
@@ -705,20 +706,28 @@ export const handleFeedbackFields = (feedbackType: PromptType, feedback_sent: bo
     useConfigUIStore.setState({ feedback });
 };
 
-export const toggleTaskTrayMode = async (enabled: boolean) => {
-    useConfigCoreStore.setState((c) => ({ ...c, tasktray_mode: enabled }));
-    invoke('toggle_tasktray_mode', { enabled }).catch((e) => {
-        console.error('Could not set task tray mode', e);
-        setError('Could not change task tray mode');
-        useConfigCoreStore.setState((c) => ({ ...c, tasktray_mode: !enabled }));
+export const updateShutdownMode = async (shutdownMode: ShutdownMode) => {
+    useConfigCoreStore.setState((c) => ({ ...c, shutdown_mode: shutdownMode }));
+    invoke('set_shutdown_mode', { shutdownMode }).catch((e) => {
+        console.error('Could not set shutdown mode', e);
+        setError('Could not change shutdown mode');
+        const previousShutdownMode = useConfigCoreStore.getState().shutdown_mode;
+        useConfigCoreStore.setState((c) => ({ ...c, shutdown_mode: previousShutdownMode }));
     });
 };
 
-export const setCloseExperienceSelected = async (selected: boolean) => {
-    useConfigUIStore.setState((c) => ({ ...c, close_experience_selected: selected }));
-    invoke('set_close_experience_selected', { selected }).catch((e) => {
-        console.error('Could not set close experience selected', e);
-        setError('Could not change close experience selected');
-        useConfigUIStore.setState((c) => ({ ...c, close_experience_selected: !selected }));
+export const markShutdownModeAsSelected = async (dontAskAgain: boolean) => {
+    useConfigUIStore.setState((c) => ({ ...c, shutdown_mode_selected: true }));
+    invoke('mark_shutdown_selection_as_completed').catch((e) => {
+        console.error('Could not mark shutdown mode as selected', e);
+        setError('Could not mark shutdown mode as selected');
+        useConfigUIStore.setState((c) => ({ ...c, shutdown_mode_selected: false }));
+    });
+};
+
+export const markFeedbackSurveyAsCompleted = async () => {
+    invoke('mark_feedback_survey_as_completed').catch((e) => {
+        console.error('Could not mark feedback survey as completed', e);
+        setError('Could not mark feedback survey as completed');
     });
 };

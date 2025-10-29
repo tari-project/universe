@@ -28,7 +28,7 @@ use log::{error, info};
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::TrayIcon,
-    AppHandle, Manager, Wry,
+    AppHandle, Manager, WebviewWindow, Wry,
 };
 use tokio::sync::{mpsc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
@@ -36,10 +36,15 @@ use crate::{
     configs::{
         config_mining::{ConfigMining, MiningModeType},
         trait_config::ConfigImpl,
-    }, events_emitter::EventsEmitter, mining::{cpu::manager::CpuManager, gpu::manager::GpuManager}, shutdown_manager::ShutdownManager, tasks_tracker::TasksTrackers, utils::{
+    },
+    events_emitter::EventsEmitter,
+    mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
+    shutdown_manager::ShutdownManager,
+    tasks_tracker::TasksTrackers,
+    utils::{
         formatting_utils::{format_currency, format_hashrate},
         platform_utils::{CurrentOperatingSystem, PlatformUtils},
-    }
+    },
 };
 
 static INSTANCE: LazyLock<RwLock<SystemTrayManager>> =
@@ -518,7 +523,9 @@ impl SystemTrayManager {
 
     async fn close_tari_universe_action(app: AppHandle) {
         Self::open_tari_universe_action(app.clone()).await;
-        ShutdownManager::instance().initialize_shutdown_from_system_tray(Duration::from_secs(0)).await;
+        ShutdownManager::instance()
+            .initialize_shutdown_from_system_tray()
+            .await;
     }
 
     async fn open_tari_universe_action(app_handle: AppHandle) {
@@ -618,8 +625,8 @@ impl SystemTrayManager {
         }
     }
 
-    pub fn hide_to_tray(window: &tauri::Window) {
-        if let Some(window) = window.get_webview_window("main") {
+    pub fn hide_to_tray(window: Option<WebviewWindow>) {
+        if let Some(window) = window {
             if window.is_visible().unwrap_or(false) {
                 #[cfg(target_os = "macos")]
                 {
