@@ -22,14 +22,11 @@
 
 use log::info;
 use serde::{Deserialize, Serialize};
-use std::{sync::LazyLock, time::Duration};
+use std::sync::LazyLock;
 use tauri::{async_runtime::spawn, AppHandle, Manager};
-use tokio::{
-    sync::{
-        watch::{Receiver, Sender},
-        Mutex, RwLock,
-    },
-    time::sleep,
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex, RwLock,
 };
 
 use crate::{
@@ -196,13 +193,9 @@ impl ShutdownManager {
     }
 
     async fn execute_shutdown_sequence(&self) {
-        info!(target: LOG_TARGET, "========================================== Starting shutdown sequence ==========================================");
         spawn(async move {
             loop {
-                info!(target: LOG_TARGET, "Checking next shutdown step...");
-
                 if INSTANCE.shutdown_sequence.read().await.is_empty() {
-                    info!(target: LOG_TARGET, "========================================== Shutdown sequence completed ==========================================");
                     break;
                 }
                 INSTANCE.execute_shutdown_step().await;
@@ -219,23 +212,17 @@ impl ShutdownManager {
         };
 
         if let Some(step) = &execution_step {
-            info!(target: LOG_TARGET, "Executing shutdown step: {:?}", step);
-
             match step {
                 ShutdownStep::ShutdownModeSelection => {
-                    info!(target: LOG_TARGET, "Handling shutdown mode selection step");
                     self.handle_shutdown_mode_selection().await;
                 }
                 ShutdownStep::FeedbackSurvey => {
-                    info!(target: LOG_TARGET, "Handling feedback survey step");
                     self.handle_feedback_survey().await;
                 }
                 ShutdownStep::TaskTrayTriggeredShutdown => {
-                    info!(target: LOG_TARGET, "Handling tasktray triggered shutdown step");
                     self.handle_tasktray_triggered_shutdown().await;
                 }
                 ShutdownStep::Exit => {
-                    info!(target: LOG_TARGET, "Handling exit step");
                     self.exit().await;
                 }
             }
@@ -245,7 +232,6 @@ impl ShutdownManager {
     // ================ Handlers for each shutdown step ================= //
 
     async fn handle_shutdown_mode_selection(&self) {
-        info!(target: LOG_TARGET, "Emitting ShutdownModeSelectionRequested event");
         EventsEmitter::emit_shutdown_mode_selection_requested().await;
         if let Some(notifier) = &*self.shudown_selection_notifier.read().await {
             let _ = notifier.wait_for_completion().await;
@@ -272,7 +258,6 @@ impl ShutdownManager {
     }
 
     async fn handle_feedback_survey(&self) {
-        info!(target: LOG_TARGET, "Emitting FeedbackSurveyRequested event");
         EventsEmitter::emit_feedback_requested().await;
         if let Some(notifier) = &*self.feedback_survey_notifier.read().await {
             let _ = notifier.wait_for_completion().await;
@@ -280,7 +265,6 @@ impl ShutdownManager {
     }
 
     async fn handle_tasktray_triggered_shutdown(&self) {
-        info!(target: LOG_TARGET, "Hiding main window to system tray");
         if let Some(app_handle) = &*self.app_handle.read().await {
             SystemTrayManager::hide_to_tray(app_handle.get_webview_window("main"));
             if let Some(notifier) = &*self.tasktray_shutdown_notifier.read().await {
@@ -294,15 +278,9 @@ impl ShutdownManager {
         let app_handle = self.app_handle.read().await;
         if let Some(app) = &*app_handle {
             EventsEmitter::emit_shutting_down().await;
-            // sleep(Duration::from_secs(5)).await; // Give some time for the event to be processed
-
-            info!(target: LOG_TARGET, "Exit application command received, shutting down processes...");
 
             let _unused = GpuManager::write().await.stop_mining().await;
-            info!(target: LOG_TARGET, "GPU Mining stopped.");
-
             let _unused = CpuManager::write().await.stop_mining().await;
-            info!(target: LOG_TARGET, "CPU Mining stopped.");
 
             TasksTrackers::current().stop_all_processes().await;
             GpuManager::read().await.on_app_exit().await;
@@ -322,21 +300,18 @@ impl ShutdownManager {
 
     pub async fn mark_shutdown_mode_selection_as_completed(&self) {
         if let Some(notifier) = &*self.shudown_selection_notifier.read().await {
-            info!(target: LOG_TARGET, "Marking shutdown mode selection as completed");
             notifier.set_as_complete();
         }
     }
 
     pub async fn mark_feedback_survey_as_completed(&self) {
         if let Some(notifier) = &*self.feedback_survey_notifier.read().await {
-            info!(target: LOG_TARGET, "Marking feedback survey as completed");
             notifier.set_as_complete();
         }
     }
 
     pub async fn mark_tasktray_shutdown_as_completed(&self) {
         if let Some(notifier) = &*self.tasktray_shutdown_notifier.read().await {
-            info!(target: LOG_TARGET, "Marking tasktray shutdown as completed");
             notifier.set_as_complete();
         }
     }
