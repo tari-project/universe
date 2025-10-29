@@ -23,9 +23,8 @@
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::{sync::LazyLock, time::Duration};
-use tauri::{AppHandle, Manager};
+use tauri::{async_runtime::spawn, AppHandle, Manager};
 use tokio::{
-    spawn,
     sync::{
         watch::{Receiver, Sender},
         Mutex, RwLock,
@@ -197,14 +196,10 @@ impl ShutdownManager {
     }
 
     async fn execute_shutdown_sequence(&self) {
-        // let task_tracker = TasksTrackers::current().common.get_task_tracker().await;
-        // let shutdown_signal = TasksTrackers::current().common.get_signal().await;
-
+        info!(target: LOG_TARGET, "========================================== Starting shutdown sequence ==========================================");
         spawn(async move {
             loop {
-                // if shutdown_signal.is_triggered() {
-                //     break;
-                // }
+                info!(target: LOG_TARGET, "Checking next shutdown step...");
 
                 if INSTANCE.shutdown_sequence.read().await.is_empty() {
                     info!(target: LOG_TARGET, "========================================== Shutdown sequence completed ==========================================");
@@ -299,7 +294,7 @@ impl ShutdownManager {
         let app_handle = self.app_handle.read().await;
         if let Some(app) = &*app_handle {
             EventsEmitter::emit_shutting_down().await;
-            sleep(Duration::from_secs(5)).await; // Give some time for the event to be processed
+            // sleep(Duration::from_secs(5)).await; // Give some time for the event to be processed
 
             info!(target: LOG_TARGET, "Exit application command received, shutting down processes...");
 
