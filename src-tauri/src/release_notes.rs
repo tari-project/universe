@@ -98,10 +98,7 @@ impl ReleaseNotes {
         debug!(target: LOG_TARGET, "[read_release_notes_file]");
         let release_notes_path = ReleaseNotes::get_release_notes_path();
         debug!(target: LOG_TARGET, "[read_release_notes_file] Reading release notes from {release_notes_path}");
-        let content = std::fs::read_to_string(release_notes_path).map_err(|e| {
-            error!(target: LOG_TARGET, "Failed to read release notes file: {e}");
-            anyhow!("Failed to read release notes file")
-        })?;
+        let content = std::fs::read_to_string(release_notes_path)?;
 
         Ok(serde_json::from_str(&content)?)
     }
