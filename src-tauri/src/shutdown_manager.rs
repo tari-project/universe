@@ -36,8 +36,10 @@ use tokio::{
 use crate::{
     configs::{config_core::ConfigCore, config_ui::ConfigUI, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
+    mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
     systemtray_manager::SystemTrayManager,
     tasks_tracker::TasksTrackers,
+    UniverseAppState,
 };
 
 static LOG_TARGET: &str = "universe::shutdown_manager";
@@ -298,6 +300,25 @@ impl ShutdownManager {
         if let Some(app) = &*app_handle {
             EventsEmitter::emit_shutting_down().await;
             sleep(Duration::from_secs(5)).await; // Give some time for the event to be processed
+
+            info!(target: LOG_TARGET, "Exit application command received, shutting down processes...");
+
+            let _unused = GpuManager::write().await.stop_mining().await;
+            info!(target: LOG_TARGET, "GPU Mining stopped.");
+
+            let _unused = CpuManager::write().await.stop_mining().await;
+            info!(target: LOG_TARGET, "CPU Mining stopped.");
+
+            TasksTrackers::current().stop_all_processes().await;
+            GpuManager::read().await.on_app_exit().await;
+            CpuManager::read().await.on_app_exit().await;
+
+            let state = app.state::<UniverseAppState>();
+
+            state.tor_manager.on_app_exit().await;
+            state.wallet_manager.on_app_exit().await;
+            state.node_manager.on_app_exit().await;
+
             app.exit(0);
         }
     }

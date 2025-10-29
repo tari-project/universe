@@ -644,28 +644,6 @@ fn main() {
                     }
                 }
 
-                let closing_task = tauri::async_runtime::spawn(async move {
-                    let state = app_handle_clone.state::<UniverseAppState>();
-
-                    info!(target: LOG_TARGET, "Stopping all processes...");
-                    let _unused = GpuManager::write().await.stop_mining().await;
-                    info!(target: LOG_TARGET, "GPU mining stopped");
-                    let _unused = CpuManager::write().await.stop_mining().await;
-                    info!(target: LOG_TARGET, "CPU mining stopped");
-
-                    TasksTrackers::current().stop_all_processes().await;
-                    info!(target: LOG_TARGET, "All tracked processes stopped");
-                    GpuManager::read().await.on_app_exit().await;
-                    CpuManager::read().await.on_app_exit().await;
-                    state.tor_manager.on_app_exit().await;
-                    state.wallet_manager.on_app_exit().await;
-                    state.node_manager.on_app_exit().await;
-                });
-
-                block_on(closing_task).unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Could not join closing task: {e:?}");
-                });
-
                 info!(target: LOG_TARGET, "All processes stopped");
             }
             tauri::RunEvent::Exit => {
