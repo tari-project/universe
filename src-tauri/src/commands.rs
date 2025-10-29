@@ -2144,7 +2144,7 @@ pub async fn mark_shutdown_selection_as_completed(dont_ask_again: bool) -> Resul
 }
 
 #[tauri::command]
-pub async fn mark_feedback_as_completed() -> Result<(), InvokeError> {
+pub async fn mark_feedback_survey_as_completed() -> Result<(), InvokeError> {
     let timer = Instant::now();
 
     ShutdownManager::instance()
@@ -2152,7 +2152,7 @@ pub async fn mark_feedback_as_completed() -> Result<(), InvokeError> {
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "mark_feedback_as_completed took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, " mark_feedback_survey_as_completed took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }

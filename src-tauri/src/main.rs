@@ -580,7 +580,7 @@ fn main() {
             commands::set_mode_mining_time,
             commands::set_eco_alert_needed,
             commands::mark_shutdown_selection_as_completed,
-            commands::mark_feedback_as_completed,
+            commands::mark_feedback_survey_as_completed,
             commands::update_shutdown_mode_selection,
             // Scheduler commands
             commands::add_scheduler_in_event,
@@ -647,10 +647,14 @@ fn main() {
                 let closing_task = tauri::async_runtime::spawn(async move {
                     let state = app_handle_clone.state::<UniverseAppState>();
 
+                    info!(target: LOG_TARGET, "Stopping all processes...");
                     let _unused = GpuManager::write().await.stop_mining().await;
+                    info!(target: LOG_TARGET, "GPU mining stopped");
                     let _unused = CpuManager::write().await.stop_mining().await;
+                    info!(target: LOG_TARGET, "CPU mining stopped");
 
                     TasksTrackers::current().stop_all_processes().await;
+                    info!(target: LOG_TARGET, "All tracked processes stopped");
                     GpuManager::read().await.on_app_exit().await;
                     CpuManager::read().await.on_app_exit().await;
                     state.tor_manager.on_app_exit().await;

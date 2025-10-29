@@ -10,8 +10,8 @@ export default function ExitFeedbackSurveyDialog() {
     const isExitFeedbackSurveyModalOpen = useUIStore((s) => s.showFeedbackExitSurveyModal);
 
     function onClose() {
-        markFeedbackSurveyAsCompleted();
         setShowFeedbackExitSurveyModal(false);
+        markFeedbackSurveyAsCompleted();
     }
     return (
         <Dialog open={isExitFeedbackSurveyModalOpen} onOpenChange={onClose}>

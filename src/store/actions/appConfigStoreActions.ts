@@ -15,7 +15,7 @@ import {
 } from '../index.ts';
 import { restartMining, startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
-import { loadAnimation, setUITheme } from './uiStoreActions';
+import { loadAnimation, setShowFeedbackExitSurveyModal, setUITheme } from './uiStoreActions';
 import { displayMode } from '../types';
 import {
     BasePoolData,
@@ -708,7 +708,7 @@ export const handleFeedbackFields = (feedbackType: PromptType, feedback_sent: bo
 
 export const updateShutdownMode = async (shutdownMode: ShutdownMode) => {
     useConfigCoreStore.setState((c) => ({ ...c, shutdown_mode: shutdownMode }));
-    invoke('set_shutdown_mode', { shutdownMode }).catch((e) => {
+    invoke('update_shutdown_mode_selection', { shutdownMode }).catch((e) => {
         console.error('Could not set shutdown mode', e);
         setError('Could not change shutdown mode');
         const previousShutdownMode = useConfigCoreStore.getState().shutdown_mode;
@@ -726,6 +726,7 @@ export const markShutdownModeAsSelected = async (dontAskAgain: boolean) => {
 };
 
 export const markFeedbackSurveyAsCompleted = async () => {
+    // setShowFeedbackExitSurveyModal(false);
     invoke('mark_feedback_survey_as_completed').catch((e) => {
         console.error('Could not mark feedback survey as completed', e);
         setError('Could not mark feedback survey as completed');

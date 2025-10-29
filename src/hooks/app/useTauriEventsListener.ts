@@ -264,6 +264,7 @@ const useTauriEventsListener = () => {
                             setShowFeedbackExitSurveyModal(true);
                             break;
                         case 'ShutdownModeSelectionRequested':
+                            console.log('Received ShutdownModeSelectionRequested event');
                             setShowShutdownSelectionModal(true);
                             break;
                         case 'ShuttingDown':
