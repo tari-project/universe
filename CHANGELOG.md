@@ -1,3 +1,35 @@
+🚀 TARI UNIVERSE v1.6.5: The Invisible Garden - Part 3
+
+_October 23, 2025_
+
+Hey Tari fam,
+
+The big news: you can now pause mining for 2 hours, 8 hours, or until you manually restart. Plus we've made system tray more informative and fixed a bunch of setup issues.
+
+✨ WHAT'S NEW & FIXED
+
+- **Pause mining** – Need a break? Pause mining for 2 hours, 8 hours, or until manual restart. Mining auto-resumes when the time's up.
+- **Better system tray** – Share count now displays in the menu so you can track your progress without opening the app. The Tari icon now appears in your main taskbar for quick access.
+- **Smarter mining fallbacks** – If merge mining (solo) fails to start, the app automatically falls back to pool mining so you keep earning.
+- **More reliable setup** – GPU mining phase no longer times out during downloads (increased to 15 minutes). Binary extraction now retries with exponential backoff if antivirus briefly locks files.
+- **Tower animation fixes** – Fixed the issue where the tower animation would appear faded on startup when Visual Mode was disabled. Tower now properly displays and animates based on your settings.
+- **Better stats** – Fixed Kryptex threshold formatting. Improved hashrate display with proper decimals across all ranges.
+- **Under the hood** – Updated to Tari core v5.1.0, upgraded error tracking with new Sentry integration, updated dependencies, improved telemetry for better bug tracking.
+
+---
+
+🚀 TARI UNIVERSE v1.6.4: The Invisible Garden — Part 2
+
+_October 20, 2025_
+
+Hey Tari fam,
+
+Quick hotfix! We've resolved the issue where pool rewards would stop updating in the app. If you thought you weren't earning, don't worry—you were! Your rewards were accumulating the whole time, they just weren't displaying properly.
+
+Everything should now update smoothly. Thanks for your patience! 💜🐜
+
+---
+
 🚀 TARI UNIVERSE v1.6.3: The Invisible Garden
 
 _October 13, 2025_

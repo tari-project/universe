@@ -20,8 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::sync::atomic::AtomicBool;
-
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
@@ -41,6 +39,7 @@ use crate::{
 };
 use anyhow::Error;
 use log::warn;
+use std::sync::atomic::AtomicBool;
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::{

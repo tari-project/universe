@@ -87,6 +87,7 @@ mod configs;
 mod consts;
 mod credential_manager;
 mod download_utils;
+mod event_scheduler;
 mod events;
 mod events_emitter;
 mod events_manager;
@@ -195,7 +196,7 @@ fn main() {
     }
 
     let client = sentry::init((
-        "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
+        "https://70e065b9de2a94787f17fca4ae83b3ce@o4509670823428096.ingest.de.sentry.io/4509674716135504",
         sentry::ClientOptions {
             release: sentry::release_name!(),
             attach_stacktrace: true,
@@ -587,7 +588,13 @@ fn main() {
             commands::switch_gpu_miner,
             commands::set_feedback_fields,
             commands::set_mode_mining_time,
-            commands::set_eco_alert_needed
+            commands::set_eco_alert_needed,
+            // Scheduler commands
+            commands::add_scheduler_in_event,
+            commands::add_scheduler_between_event,
+            commands::remove_scheduler_event,
+            commands::pause_scheduler_event,
+            commands::resume_scheduler_event,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

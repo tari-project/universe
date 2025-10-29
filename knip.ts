@@ -9,6 +9,7 @@ const config: KnipConfig = {
         exports: 'warn',
         types: 'warn',
         duplicates: 'error',
+        enumMembers: 'off',
     },
     ignoreBinaries: ['commitlint'],
     ignoreDependencies: ['babel-plugin-styled-components', 'babel-plugin-react-compiler', '@tauri-apps/cli'], // needed by plugins

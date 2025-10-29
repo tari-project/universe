@@ -22,6 +22,7 @@ export interface ConfigCore {
     node_type?: NodeType;
     exchange_id?: string;
 }
+
 export interface ConfigWallet {
     created_at: string;
     monero_address: string;
