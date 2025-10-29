@@ -89,7 +89,7 @@ pub struct ConfigUIContent {
     was_staged_security_modal_shown: bool, // TODO: Migrated to ConfigWallet, remove after some time
     wallet_ui_mode: WalletUIMode,
     feedback: HashMap<String, FeedbackPrompt>,
-    close_experience_selected: bool,
+    shutdown_mode_selected: bool,
 }
 
 impl Default for ConfigUIContent {
@@ -122,7 +122,7 @@ impl Default for ConfigUIContent {
                     },
                 ),
             ]),
-            close_experience_selected: false,
+            shutdown_mode_selected: false,
         }
     }
 }
@@ -150,6 +150,9 @@ impl ConfigUIContent {
             feedback_item.last_dismissed = Some(SystemTime::now());
         }
         self
+    }
+    pub fn was_feedback_sent(&self) -> bool {
+        self.feedback.values().any(|item| item.feedback_sent)
     }
 }
 pub struct ConfigUI {

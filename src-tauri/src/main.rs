@@ -117,6 +117,7 @@ mod progress_trackers;
 mod release_notes;
 mod requests;
 mod setup;
+mod shutdown_manager;
 mod system_dependencies;
 mod systemtray_manager;
 mod tapplets;
@@ -362,18 +363,18 @@ fn main() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
-                block_on(async {
-                    if *ConfigUI::content().await.close_experience_selected()
-                        || WAS_SHUTDOWN_INFORMATION_DIALOG_SHOWN.load(Ordering::SeqCst)
-                    {
-                        if *ConfigCore::content().await.tasktray_mode() {
-                            info!(target: LOG_TARGET, "Close requested - hiding to tray");
-                            SystemTrayManager::hide_to_tray(window);
-                        } else {
-                            info!(target: LOG_TARGET, "Close requested - quitting");
-                        }
-                    }
-                })
+                // block_on(async {
+                //     if *ConfigUI::content().await.close_experience_selected()
+                //         || WAS_SHUTDOWN_INFORMATION_DIALOG_SHOWN.load(Ordering::SeqCst)
+                //     {
+                //         if *ConfigCore::content().await.tasktray_mode() {
+                //             info!(target: LOG_TARGET, "Close requested - hiding to tray");
+                //             SystemTrayManager::hide_to_tray(window);
+                //         } else {
+                //             info!(target: LOG_TARGET, "Close requested - quitting");
+                //         }
+                //     }
+                // })
             }
         })
         .setup(|app| {
