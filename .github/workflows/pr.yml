@@ -77,7 +77,7 @@ jobs:
             --output-dir ${{ runner.temp }}/i18n_logs
 
       - name: Artifact upload for i18n checks
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: i18n-logs
           path: ${{ runner.temp }}/i18n_logs

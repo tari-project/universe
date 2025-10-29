@@ -296,10 +296,24 @@ impl XmrigStatusMonitor {
 
         info!(target: LOG_TARGET, "Xmrig status: {:?}", body);
 
+        // body.hashrate.total is a vector of Option<f64> which elements are:
+        // index 0: 10 seconds avarage hashrate
+        // index 1: 60 seconds avarage hashrate
+        // index 2: 15 minutes avarage hashrate
+
+        let (ten_second_hash_rate, sixty_second_hash_rate, fifteen_minute_hash_rate) = (
+            body.hashrate.total.first().and_then(|v| *v),
+            body.hashrate.total.get(1).and_then(|v| *v),
+            body.hashrate.total.get(2).and_then(|v| *v),
+        );
+        let avarage_hash_rate = fifteen_minute_hash_rate
+            .or(sixty_second_hash_rate)
+            .or(ten_second_hash_rate);
+
         Ok(CpuMinerStatus {
             is_mining: true,
             estimated_earnings: 0,
-            hash_rate: body.hashrate.total.iter().copied().flatten().sum(),
+            hash_rate: avarage_hash_rate.unwrap_or(0.0),
             connection: CpuMinerConnectionStatus {
                 is_connected: body.connection.uptime > 0,
             },
