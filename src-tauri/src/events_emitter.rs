@@ -818,4 +818,17 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit ShutdownModeSelectionRequested event: {e:?}");
         }
     }
+
+    pub async fn emit_shutting_down() {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::ShuttingDown,
+                payload: (),
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit ShuttingDown event: {e:?}");
+        }
+    }
 }

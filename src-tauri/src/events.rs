@@ -89,6 +89,7 @@ pub enum EventType {
     // Shutdown
     ShutdownModeSelectionRequested,
     FeedbackSurveyRequested,
+    ShuttingDown,
 }
 
 #[derive(Clone, Debug, Serialize)]

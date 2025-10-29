@@ -1,1 +1,1 @@
-export { default } from './CloseExperienceDialog.tsx';
+export { default } from './ShutdownSelectionDialog.tsx';

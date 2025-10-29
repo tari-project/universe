@@ -22,7 +22,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
-use tauri::{AppHandle, Manager, Window};
+use tauri::{AppHandle, Manager};
 use tokio::sync::{
     watch::{Receiver, Sender},
     Mutex, RwLock,
@@ -31,10 +31,7 @@ use tokio::sync::{
 use crate::{
     configs::{config_core::ConfigCore, config_ui::ConfigUI, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
-    mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
     systemtray_manager::SystemTrayManager,
-    tasks_tracker::TasksTrackers,
-    UniverseAppState,
 };
 
 static LOG_TARGET: &str = "universe::shutdown_manager";
@@ -79,7 +76,7 @@ pub enum ShutdownStep {
     ShutdownModeSelection,
     FeedbackSurvey,
     TaskTrayTriggeredShutdown,
-    CleanupAndExit,
+    Exit,
 }
 
 pub struct ShutdownManager {
@@ -110,7 +107,7 @@ impl ShutdownManager {
 
     pub async fn initialize_shutdown_from_system_tray(&self) {
         // If shutdown sequence is already initialized, just mark tasktray shutdown as completed
-        if self.shutdown_sequence.read().await.is_empty() == false {
+        if !self.shutdown_sequence.read().await.is_empty() {
             self.mark_tasktray_shutdown_as_completed().await;
             return;
         }
@@ -131,7 +128,7 @@ impl ShutdownManager {
         self.shutdown_sequence
             .write()
             .await
-            .push(ShutdownStep::CleanupAndExit);
+            .push(ShutdownStep::Exit);
 
         log::info!(target: LOG_TARGET, "Initialized shutdown sequence: {:?}", *self.shutdown_sequence.read().await);
 
@@ -139,9 +136,14 @@ impl ShutdownManager {
     }
 
     pub async fn initialize_shutdown_from_close_button(&self) {
+        // Prevent re-initialization if already in shutdown sequence
+        if !self.shutdown_sequence.read().await.is_empty() {
+            return;
+        }
+
         let was_feedback_survey_sent = ConfigUI::content().await.was_feedback_sent();
         let was_shutdown_dialog_shown = *ConfigUI::content().await.shutdown_mode_selected();
-        let selected_shutdown_mode = ConfigCore::content().await.shutdown_mode().clone();
+        let selected_shutdown_mode = *ConfigCore::content().await.shutdown_mode();
 
         if !was_shutdown_dialog_shown {
             self.shudown_selection_notifier
@@ -179,7 +181,7 @@ impl ShutdownManager {
         self.shutdown_sequence
             .write()
             .await
-            .push(ShutdownStep::CleanupAndExit);
+            .push(ShutdownStep::Exit);
 
         log::info!(target: LOG_TARGET, "Initialized shutdown sequence: {:?}", *self.shutdown_sequence.read().await);
 
@@ -197,10 +199,10 @@ impl ShutdownManager {
 
     async fn execute_shutdown_step(&self) {
         let mut sequence = self.shutdown_sequence.write().await;
-        let execution_step = if !sequence.is_empty() {
-            Some(sequence.remove(0))
-        } else {
+        let execution_step = if sequence.is_empty() {
             None
+        } else {
+            Some(sequence.remove(0))
         };
 
         if let Some(step) = &execution_step {
@@ -216,8 +218,8 @@ impl ShutdownManager {
                 ShutdownStep::TaskTrayTriggeredShutdown => {
                     self.handle_tasktray_triggered_shutdown().await;
                 }
-                ShutdownStep::CleanupAndExit => {
-                    self.cleanup_and_exit().await;
+                ShutdownStep::Exit => {
+                    self.exit().await;
                 }
             }
         }
@@ -267,22 +269,10 @@ impl ShutdownManager {
         }
     }
 
-    async fn cleanup_and_exit(&self) {
+    async fn exit(&self) {
         let app_handle = self.app_handle.read().await;
-
         if let Some(app) = &*app_handle {
-            let app_state = app.state::<UniverseAppState>();
-
-            let _unused = GpuManager::write().await.stop_mining().await;
-            let _unused = CpuManager::write().await.stop_mining().await;
-
-            TasksTrackers::current().stop_all_processes().await;
-            GpuManager::read().await.on_app_exit().await;
-            CpuManager::read().await.on_app_exit().await;
-            app_state.tor_manager.on_app_exit().await;
-            app_state.wallet_manager.on_app_exit().await;
-            app_state.node_manager.on_app_exit().await;
-
+            EventsEmitter::emit_shutting_down().await;
             app.exit(0);
         }
     }

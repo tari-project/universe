@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { FeedbackPrompts } from '@app/types/configs.ts';
 
 interface UserFeedbackStoreState {
-    showCloseDialog: boolean;
     earlyClosedDismissed: boolean;
     showLongTimeDialog: boolean;
     closeMiningTimeMs: number;
@@ -16,7 +15,6 @@ const CLOSE_MINIMUM_MINING_TIME = ONE_HOUR_IN_MS * 24;
 const LONG_MINIMUM_MINING_TIME = ONE_HOUR_IN_MS * 48;
 
 const initialState: UserFeedbackStoreState = {
-    showCloseDialog: false,
     earlyClosedDismissed: false,
     showLongTimeDialog: false,
     closeMiningTimeMs: CLOSE_MINIMUM_MINING_TIME,
@@ -30,7 +28,6 @@ export const useUserFeedbackStore = create<UserFeedbackStoreState>()(() => ({
 }));
 export const setShowLongTimeDialog = (showLongTimeDialog: boolean) =>
     useUserFeedbackStore.setState({ showLongTimeDialog });
-export const setShowCloseDialog = (showCloseDialog: boolean) => useUserFeedbackStore.setState({ showCloseDialog });
 export const setEarlyClosedDismissed = (earlyClosedDismissed: boolean) =>
     useUserFeedbackStore.setState({ earlyClosedDismissed });
 

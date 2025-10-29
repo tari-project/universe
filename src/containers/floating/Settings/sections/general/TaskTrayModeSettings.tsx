@@ -1,5 +1,5 @@
 import { useConfigCoreStore } from '@app/store';
-import { toggleTaskTrayMode } from '@app/store/actions/appConfigStoreActions';
+import { updateShutdownMode } from '@app/store/actions/appConfigStoreActions';
 import { useTranslation } from 'react-i18next';
 import {
     SettingsGroup,
@@ -10,14 +10,15 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { Typography } from '@app/components/elements/Typography';
 import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
+import { ShutdownMode } from '@app/types/configs';
 
 export const TaskTrayModeSettings = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const taskTrayModeState = useConfigCoreStore((s) => s.tasktray_mode);
+    const shutdownModeState = useConfigCoreStore((s) => s.shutdown_mode);
 
     const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const enabled = e.target.checked;
-        toggleTaskTrayMode(enabled);
+        updateShutdownMode(enabled ? ShutdownMode.Tasktray : ShutdownMode.Direct);
     };
 
     return (
@@ -30,7 +31,7 @@ export const TaskTrayModeSettings = () => {
                     <Typography>{t('task-tray.description')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <ToggleSwitch checked={taskTrayModeState} onChange={onChange} />
+                    <ToggleSwitch checked={shutdownModeState === ShutdownMode.Tasktray} onChange={onChange} />
                 </SettingsGroupAction>
             </SettingsGroup>
         </SettingsGroupWrapper>

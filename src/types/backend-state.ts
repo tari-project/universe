@@ -240,4 +240,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ShutdownModeSelectionRequested';
           payload: undefined;
+      }
+    | {
+          event_type: 'ShuttingDown';
+          payload: undefined;
       };

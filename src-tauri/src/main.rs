@@ -36,7 +36,7 @@ use node::remote_node_adapter::RemoteNodeAdapter;
 
 use setup::setup_manager::SetupManager;
 use std::fs::{remove_dir_all, remove_file};
-use std::{path::Path, time::Duration};
+use std::path::Path;
 use tasks_tracker::TasksTrackers;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
@@ -621,6 +621,7 @@ fn main() {
                 let handle_clone = app_handle.clone();
                 let state = handle_clone.state::<UniverseAppState>();
 
+                block_on(ShutdownManager::instance().initialize_app_handle(handle_clone.clone()));
                 block_on(state.updates_manager.initial_try_update(&handle_clone));
 
                 tauri::async_runtime::spawn(async move {

@@ -718,7 +718,7 @@ export const updateShutdownMode = async (shutdownMode: ShutdownMode) => {
 
 export const markShutdownModeAsSelected = async (dontAskAgain: boolean) => {
     useConfigUIStore.setState((c) => ({ ...c, shutdown_mode_selected: true }));
-    invoke('mark_shutdown_selection_as_completed').catch((e) => {
+    invoke('mark_shutdown_selection_as_completed', { dontAskAgain }).catch((e) => {
         console.error('Could not mark shutdown mode as selected', e);
         setError('Could not mark shutdown mode as selected');
         useConfigUIStore.setState((c) => ({ ...c, shutdown_mode_selected: false }));

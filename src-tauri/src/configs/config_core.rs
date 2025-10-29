@@ -72,7 +72,7 @@ pub struct ConfigCoreContent {
     node_type: NodeType,
     exchange_id: String,
     scheduler_events: HashMap<String, ScheduledEventInfo>,
-    shutdown_mode: ShutdownMode
+    shutdown_mode: ShutdownMode,
 }
 
 fn default_monero_nodes() -> Vec<String> {

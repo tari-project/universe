@@ -11,6 +11,7 @@ import {
     handleConnectionStatusChanged,
     setConnectionStatus,
     setDialogToShow,
+    setIsShuttingDown,
     setShouldShowExchangeSpecificModal,
     setShowFeedbackExitSurveyModal,
     setShowShutdownSelectionModal,
@@ -264,6 +265,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShutdownModeSelectionRequested':
                             setShowShutdownSelectionModal(true);
+                            break;
+                        case 'ShuttingDown':
+                            setIsShuttingDown(true);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));
