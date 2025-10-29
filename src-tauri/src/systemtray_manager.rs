@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{fmt::Display, sync::LazyLock};
+use std::{fmt::Display, sync::LazyLock, time::Duration};
 
 use futures::executor::block_on;
 use log::{error, info};
@@ -36,14 +36,10 @@ use crate::{
     configs::{
         config_mining::{ConfigMining, MiningModeType},
         trait_config::ConfigImpl,
-    },
-    events_emitter::EventsEmitter,
-    mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
-    tasks_tracker::TasksTrackers,
-    utils::{
+    }, events_emitter::EventsEmitter, mining::{cpu::manager::CpuManager, gpu::manager::GpuManager}, shutdown_manager::ShutdownManager, tasks_tracker::TasksTrackers, utils::{
         formatting_utils::{format_currency, format_hashrate},
         platform_utils::{CurrentOperatingSystem, PlatformUtils},
-    },
+    }
 };
 
 static INSTANCE: LazyLock<RwLock<SystemTrayManager>> =
@@ -522,7 +518,7 @@ impl SystemTrayManager {
 
     async fn close_tari_universe_action(app: AppHandle) {
         Self::open_tari_universe_action(app.clone()).await;
-        EventsEmitter::emit_systray_app_shutdown_requested().await;
+        ShutdownManager::instance().initialize_shutdown_from_system_tray(Duration::from_secs(0)).await;
     }
 
     async fn open_tari_universe_action(app_handle: AppHandle) {

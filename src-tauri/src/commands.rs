@@ -50,6 +50,7 @@ use crate::node::node_manager::NodeType;
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
+use crate::shutdown_manager::ShutdownManager;
 use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
 use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
 use crate::tapplets::interface::ActiveTapplet;
@@ -234,20 +235,6 @@ pub async fn exit_application(
 
     app.exit(0);
     Ok(())
-}
-
-#[tauri::command]
-pub async fn hide_to_tray(window: tauri::Window) -> Result<(), String> {
-    SystemTrayManager::hide_to_tray(&window);
-    Ok(())
-}
-
-pub static WAS_SHUTDOWN_INFORMATION_DIALOG_SHOWN: std::sync::atomic::AtomicBool =
-    std::sync::atomic::AtomicBool::new(false);
-
-#[tauri::command]
-pub async fn mark_shutdown_information_dialog_as_shown() {
-    WAS_SHUTDOWN_INFORMATION_DIALOG_SHOWN.store(true, Ordering::SeqCst);
 }
 
 #[tauri::command]
@@ -1652,26 +1639,6 @@ pub async fn restart_phases(phases: Vec<SetupPhase>) -> Result<(), InvokeError> 
 }
 
 #[tauri::command]
-pub async fn toggle_tasktray_mode(_enabled: bool) -> Result<(), InvokeError> {
-    info!(target: LOG_TARGET, "[toggle_tasktray_mode] called with enabled: {enabled:?}");
-    // ConfigCore::update_field(ConfigCoreContent::set_tasktray_mode, enabled)
-    //     .await
-    //     .map_err(InvokeError::from_anyhow)?;
-
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn set_close_experience_selected(_selected: bool) -> Result<(), InvokeError> {
-    info!(target: LOG_TARGET, "[set_close_experience_selected] called with close_experience_selected: {selected:?}");
-    // ConfigUI::update_field(ConfigUIContent::set_close_experience_selected, selected)
-    //     .await
-    //     .map_err(InvokeError::from_anyhow)?;
-
-    Ok(())
-}
-
-#[tauri::command]
 pub async fn set_node_type(
     mut node_type: NodeType,
     state: tauri::State<'_, UniverseAppState>,
@@ -2154,6 +2121,30 @@ pub async fn set_eco_alert_needed() -> Result<(), InvokeError> {
         .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_eco_alert_needed took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mark_shutdown_selection_as_completed() -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ShutdownManager::instance().mark_shutdown_mode_selection_as_completed().await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "mark_shutdown_selection_as_completed took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mark_feedback_as_completed() -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ShutdownManager::instance().mark_shutdown_mode_selection_as_completed().await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "mark_feedback_as_completed took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }

@@ -257,6 +257,10 @@ const useTauriEventsListener = () => {
                         case 'ShowEcoAlert':
                             setShowEcoAlert(true);
                             break;
+                        case 'FeedbackSurveyRequested':
+                            break;
+                        case 'ShutdownModeSelectionRequested':
+                            break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));
                             break;

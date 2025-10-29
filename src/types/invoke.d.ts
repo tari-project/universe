@@ -137,10 +137,8 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
     function invoke(param: 'set_mode_mining_time', payload: { mode: string; duration: number }): Promise<void>;
     function invoke(param: 'set_eco_alert_needed'): Promise<void>;
-    function invoke(param: 'toggle_tasktray_mode', payload: { enabled: boolean }): Promise<void>;
-    function invoke(param: 'set_close_experience_selected', payload: { selected: boolean }): Promise<void>;
-    function invoke(param: 'hide_to_tray'): Promise<void>;
-    function invoke(param: 'mark_shutdown_information_dialog_as_shown'): Promise<void>;
+    function invoke(param: 'mark_shutdown_selection_as_completed'): Promise<void>;
+    function invoke(param: 'mark_feedback_as_completed'): Promise<void>;
     // Scheduler commands
     function invoke(param: 'add_scheduler_in_event', payload: AddSchedulerEventInVariantPayload): Promise<void>;
     function invoke(

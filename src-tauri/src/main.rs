@@ -36,7 +36,7 @@ use node::remote_node_adapter::RemoteNodeAdapter;
 
 use setup::setup_manager::SetupManager;
 use std::fs::{remove_dir_all, remove_file};
-use std::path::Path;
+use std::{path::Path,time::Duration};
 use tasks_tracker::TasksTrackers;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
@@ -66,10 +66,6 @@ use tauri::AppHandle;
 
 use telemetry_manager::TelemetryManager;
 
-use crate::commands::WAS_SHUTDOWN_INFORMATION_DIALOG_SHOWN;
-use crate::configs::config_core::ConfigCore;
-use crate::configs::config_ui::ConfigUI;
-use crate::configs::trait_config::ConfigImpl;
 use crate::feedback::Feedback;
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::cpu::CpuMinerStatus;
@@ -77,10 +73,10 @@ use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
-use crate::systemtray_manager::SystemTrayManager;
 use crate::tor_manager::TorManager;
 use crate::wallet::wallet_manager::WalletManager;
 use crate::wallet::wallet_types::WalletState;
+use crate::shutdown_manager::ShutdownManager;
 
 mod ab_test_selector;
 mod airdrop;
@@ -360,23 +356,14 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_http::init())
-        .on_window_event(|window, event| {
+        .on_window_event(|_window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
-                // block_on(async {
-                //     if *ConfigUI::content().await.close_experience_selected()
-                //         || WAS_SHUTDOWN_INFORMATION_DIALOG_SHOWN.load(Ordering::SeqCst)
-                //     {
-                //         if *ConfigCore::content().await.tasktray_mode() {
-                //             info!(target: LOG_TARGET, "Close requested - hiding to tray");
-                //             SystemTrayManager::hide_to_tray(window);
-                //         } else {
-                //             info!(target: LOG_TARGET, "Close requested - quitting");
-                //         }
-                //     }
-                // })
+                block_on(async {
+                    ShutdownManager::instance().initialize_shutdown_from_close_button(Duration::from_secs(0)).await;
+            })
             }
-        })
+            })
         .setup(|app| {
             let config_path = app
                 .path()
@@ -590,10 +577,8 @@ fn main() {
             commands::set_feedback_fields,
             commands::set_mode_mining_time,
             commands::set_eco_alert_needed,
-            commands::toggle_tasktray_mode,
-            commands::set_close_experience_selected,
-            commands::hide_to_tray,
-            commands::mark_shutdown_information_dialog_as_shown,
+            commands::mark_shutdown_selection_as_completed,
+            commands::mark_feedback_as_completed,
             // Scheduler commands
             commands::add_scheduler_in_event,
             commands::add_scheduler_between_event,

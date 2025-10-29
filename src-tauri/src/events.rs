@@ -87,6 +87,9 @@ pub enum EventType {
     OpenSettings,
     SystrayAppShutdownRequested,
     ShowEcoAlert,
+    // Shutdown
+    ShutdownModeSelectionRequested,
+    FeedbackSurveyRequested,
 }
 
 #[derive(Clone, Debug, Serialize)]

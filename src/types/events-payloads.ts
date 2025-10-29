@@ -130,3 +130,9 @@ export interface GpuMiner {
     is_healthy: boolean;
     last_error?: string;
 }
+
+export enum FeedbackSurveyToShow {
+    None = 'None',
+    Short = 'Short',
+    Long = 'Long',
+}
