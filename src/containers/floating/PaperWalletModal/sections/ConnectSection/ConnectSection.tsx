@@ -12,6 +12,7 @@ import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
 import { invoke } from '@tauri-apps/api/core';
 import LoadingSvg from '@app/components/svgs/LoadingSvg';
 import { useAirdropSetTokenToUuid } from '@app/hooks/airdrop/stateHelpers/useAirdropSetTokens';
+import { setError } from '@app/store';
 
 interface Props {
     setSection: (section: PaperWalletModalSectionType) => void;
@@ -43,6 +44,13 @@ export default function ConnectSection({ setSection }: Props) {
                     setSection('QRCode');
                 }
             } catch (e) {
+                const errorMessage = e as unknown as string;
+                if (
+                    !errorMessage.includes('User canceled the operation') &&
+                    !errorMessage.includes('PIN entry cancelled')
+                ) {
+                    setError(errorMessage);
+                }
                 console.error('Failed to get paper wallet details', e);
             }
         });
