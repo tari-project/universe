@@ -879,13 +879,22 @@ pub async fn send_feedback(
     app: tauri::AppHandle,
 ) -> Result<String, String> {
     let timer = Instant::now();
-    let app_log_dir = Some(app.path().app_log_dir().expect("Could not get log dir."));
+    let app_log_dir = app.path().app_log_dir().expect("Could not get log dir.");
+    let app_config_dir = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get app config dir.");
 
     let reference = state
         .feedback
         .read()
         .await
-        .send_feedback(feedback, include_logs, app_log_dir.clone())
+        .send_feedback(
+            feedback,
+            include_logs,
+            app_log_dir.clone(),
+            app_config_dir.clone(),
+        )
         .await
         .inspect_err(|e| error!("error at send_feedback {e:?}"))
         .map_err(|e| e.to_string())?;
