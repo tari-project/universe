@@ -92,9 +92,9 @@ export const setAirdropTokensInConfig = (
 ) => {
     const airdropTokens = airdropTokensParam
         ? {
-              token: airdropTokensParam.token,
-              refresh_token: airdropTokensParam.refreshToken,
-          }
+            token: airdropTokensParam.token,
+            refresh_token: airdropTokensParam.refreshToken,
+        }
         : undefined;
 
     invoke('set_airdrop_tokens', { airdropTokens })
@@ -707,11 +707,11 @@ export const handleFeedbackFields = (feedbackType: PromptType, feedback_sent: bo
 };
 
 export const updateShutdownMode = async (shutdownMode: ShutdownMode) => {
+    const previousShutdownMode = useConfigCoreStore.getState().shutdown_mode;
     useConfigCoreStore.setState((c) => ({ ...c, shutdown_mode: shutdownMode }));
     invoke('update_shutdown_mode_selection', { shutdownMode }).catch((e) => {
         console.error('Could not set shutdown mode', e);
         setError('Could not change shutdown mode');
-        const previousShutdownMode = useConfigCoreStore.getState().shutdown_mode;
         useConfigCoreStore.setState((c) => ({ ...c, shutdown_mode: previousShutdownMode }));
     });
 };
