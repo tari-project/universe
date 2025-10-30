@@ -17,6 +17,14 @@ export const fetchBridgeTransactionsHistory = async (
     OpenAPI.BASE = baseUrl;
     return await WrapTokenService.getUserTransactions(tari_address_base58)
         .then((response) => {
+            console.info(
+                '========================================================================================================================'
+            );
+            console.info('BRIDGE TXS = ');
+            console.info(response.transactions);
+            console.info(
+                '========================================================================================================================'
+            );
             return response.transactions;
         })
         .catch((error) => {
