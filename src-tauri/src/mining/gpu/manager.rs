@@ -59,10 +59,9 @@ use crate::{
     systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
     utils::math_utils::estimate_earning,
-    UniverseAppState,
+    UniverseAppState, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
 
-static LOG_TARGET: &str = "tari::universe::mining::gpu::manager";
 static INSTANCE: LazyLock<RwLock<GpuManager>> = LazyLock::new(|| RwLock::new(GpuManager::new()));
 
 pub struct GpuManager {
@@ -165,7 +164,7 @@ impl GpuManager {
         let mut selected_gpu_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
 
         if self.available_miners.contains_key(&selected_gpu_miner_type) {
-            info!(target: LOG_TARGET, "Loaded saved gpu miner: {selected_gpu_miner_type}");
+            info!(target: LOG_TARGET_APP_LOGIC, "Loaded saved gpu miner: {selected_gpu_miner_type}");
         } else if !self.available_miners.is_empty() {
             if let Some(fallback_miner_type) = MINERS_PRIORITY.iter().find(|miner_type| {
                 matches!(self.available_miners.get(miner_type), Some(m) if m.is_healthy)
@@ -227,7 +226,7 @@ impl GpuManager {
                 .cloned();
 
             if let Some(fallback_miner) = fallback_miner {
-                info!(target: LOG_TARGET, "Selected gpu miner does not support pool mining, switching to fallback miner: {fallback_miner}");
+                info!(target: LOG_TARGET_APP_LOGIC, "Selected gpu miner does not support pool mining, switching to fallback miner: {fallback_miner}");
                 self.switch_miner(fallback_miner).await?;
                 let current_pool_data = ConfigPools::content().await.current_gpu_pool().clone();
 
@@ -276,7 +275,7 @@ impl GpuManager {
                 .cloned();
 
             if let Some(fallback_miner) = fallback_miner {
-                info!(target: LOG_TARGET, "Selected gpu miner does not support solo mining, switching to fallback miner: {fallback_miner}");
+                info!(target: LOG_TARGET_APP_LOGIC, "Selected gpu miner does not support solo mining, switching to fallback miner: {fallback_miner}");
                 self.switch_miner(fallback_miner).await?;
                 self.process_watcher
                     .adapter
@@ -294,19 +293,19 @@ impl GpuManager {
 
     #[allow(clippy::too_many_arguments)]
     pub async fn start_mining(&mut self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Starting gpu miner: {}", self.selected_miner);
-        info!(target: LOG_TARGET, "Adapter miner type: {}", self.process_watcher.adapter.name());
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting gpu miner: {}", self.selected_miner);
+        info!(target: LOG_TARGET_APP_LOGIC, "Adapter miner type: {}", self.process_watcher.adapter.name());
 
         match self.start_mining_inner().await {
             Ok(_) => {
-                info!(target: LOG_TARGET, "Started gpu miner: {}", self.selected_miner);
+                info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner: {}", self.selected_miner);
                 EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Started).await;
                 SystemTrayManager::send_event(SystemTrayEvents::GpuMiningActivity(true)).await;
                 Ok(())
             }
             Err(e) => {
                 let err_msg = format!("Could not start GPU mining: {e}");
-                error!(target: LOG_TARGET, "{err_msg}", );
+                error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}", );
                 sentry::capture_message(&err_msg, sentry::Level::Error);
 
                 EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
@@ -400,7 +399,7 @@ impl GpuManager {
                 .load_excluded_devices(excluded_devices)
                 .await?;
 
-            info!(target: LOG_TARGET, "Starting gpu miner process watcher with binary: {:?}", binary);
+            info!(target: LOG_TARGET_APP_LOGIC, "Starting gpu miner process watcher with binary: {:?}", binary);
 
             self.process_watcher
                 .start(
@@ -413,15 +412,15 @@ impl GpuManager {
                 )
                 .await?;
 
-            info!(target: LOG_TARGET, "Started gpu miner process watcher");
+            info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner process watcher");
 
             if self.connection_type.is_pool() {
                 GpuPoolManager::start_stats_watcher().await;
-                info!(target: LOG_TARGET, "Started gpu miner pool watcher");
+                info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner pool watcher");
             }
             self.status_thread_shutdown = Shutdown::new();
             self.initialize_status_updates().await;
-            info!(target: LOG_TARGET, "Initialized gpu miner status updates");
+            info!(target: LOG_TARGET_APP_LOGIC, "Initialized gpu miner status updates");
         } else {
             return Err(anyhow::anyhow!("App handle is not set"));
         }
@@ -430,7 +429,7 @@ impl GpuManager {
     }
 
     pub async fn stop_mining(&mut self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Stopping gpu miner");
+        info!(target: LOG_TARGET_APP_LOGIC, "Stopping gpu miner");
         {
             let _res =
                 self.gpu_external_status_channel
@@ -442,32 +441,32 @@ impl GpuManager {
             self.status_thread_shutdown.trigger();
         }
 
-        info!(target: LOG_TARGET, "Stopped gpu miner process");
+        info!(target: LOG_TARGET_APP_LOGIC, "Stopped gpu miner process");
         // Mark mining as stopped in pool manager
         // It will handle stopping the stats watcher after 1 hour of grace period
         GpuPoolManager::handle_mining_status_change(false).await;
-        info!(target: LOG_TARGET, "Marked mining as stopped in pool manager");
+        info!(target: LOG_TARGET_APP_LOGIC, "Marked mining as stopped in pool manager");
         EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
         SystemTrayManager::send_event(SystemTrayEvents::GpuMiningActivity(false)).await;
-        info!(target: LOG_TARGET, "Stopped gpu miner");
+        info!(target: LOG_TARGET_APP_LOGIC, "Stopped gpu miner");
         Ok(())
     }
 
     pub async fn switch_miner(&mut self, new_miner: GpuMinerType) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Switching gpu miner to: {new_miner}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Switching gpu miner to: {new_miner}");
         if let Some(miner) = self.available_miners.get(&new_miner) {
-            info!(target: LOG_TARGET, "Found selected gpu miner in available miners");
+            info!(target: LOG_TARGET_APP_LOGIC, "Found selected gpu miner in available miners");
             let miner_type = miner.miner_type.clone();
             let mut adapter = self.resolve_miner_interface(&miner_type);
             adapter.detect_devices().await?;
             let miner_cloned = miner.clone();
-            info!(target: LOG_TARGET, "Resolved selected gpu miner interface");
+            info!(target: LOG_TARGET_APP_LOGIC, "Resolved selected gpu miner interface");
 
             self.stop_mining().await.ok();
 
             self.selected_miner = miner_type.clone();
             self.process_watcher.adapter = adapter;
-            info!(target: LOG_TARGET, "Set selected gpu miner interface in process watcher");
+            info!(target: LOG_TARGET_APP_LOGIC, "Set selected gpu miner interface in process watcher");
             EventsEmitter::emit_update_selected_gpu_miner(miner_cloned.miner_type).await;
             ConfigMining::update_field(ConfigMiningContent::set_gpu_miner_type, miner_type.clone())
                 .await?;
@@ -475,14 +474,14 @@ impl GpuManager {
         } else {
             return Err(anyhow::anyhow!("Selected gpu miner is not available"));
         }
-        info!(target: LOG_TARGET, "Switched gpu miner to: {new_miner}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Switched gpu miner to: {new_miner}");
         Ok(())
     }
 
     /// Will need to mark current seleceted miner as unhealthy and switch to another one based on priority
     /// If no other miners are available, we will just mark the current one as unhealthy and emit the status
     pub async fn handle_unhealthy_miner(&mut self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Handling unhealthy gpu miner");
+        info!(target: LOG_TARGET_APP_LOGIC, "Handling unhealthy gpu miner");
 
         // mark current miner as unhealthy
         if let Some(current_miner) = self.available_miners.get_mut(&self.selected_miner) {
@@ -505,7 +504,7 @@ impl GpuManager {
             .cloned();
 
         if let Some(fallback_miner) = fallback_miner {
-            info!(target: LOG_TARGET, "Switching to fallback gpu miner: {fallback_miner}");
+            info!(target: LOG_TARGET_APP_LOGIC, "Switching to fallback gpu miner: {fallback_miner}");
             TasksTrackers::current()
                 .gpu_mining_phase
                 .get_task_tracker()
@@ -513,15 +512,15 @@ impl GpuManager {
                 .spawn(async move {
                     GpuManager::write().await.switch_miner(fallback_miner).await.unwrap_or_else(
                         |e| {
-                            error!(target: LOG_TARGET, "Failed to switch to fallback gpu miner: {e}");
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to switch to fallback gpu miner: {e}");
                         },
                     );
                     GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                        error!(target: LOG_TARGET, "Failed to start mining with fallback gpu miner: {e}");
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to start mining with fallback gpu miner: {e}");
                     });
                 });
         } else {
-            error!(target: LOG_TARGET, "No healthy gpu miners left to switch to");
+            error!(target: LOG_TARGET_APP_LOGIC, "No healthy gpu miners left to switch to");
             //TODO Probably we will need to handle it better in the future, app modules maybe need to know that no miners are healthy ?
         }
 
@@ -569,10 +568,10 @@ impl GpuManager {
             match detection_result {
                 Ok(_) => {
                     successful_detection = true;
-                    info!(target: LOG_TARGET, "Devices detected with miner: {miner_type}");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Devices detected with miner: {miner_type}");
                 }
                 Err(e) => {
-                    error!(target: LOG_TARGET, "Device detection failed for miner {miner_type}: {e}");
+                    error!(target: LOG_TARGET_APP_LOGIC, "Device detection failed for miner {miner_type}: {e}");
                     unhealthy_miners.push(miner_type.clone());
                 }
             }
@@ -583,7 +582,7 @@ impl GpuManager {
                 miner.is_healthy = false;
                 miner.last_error = Some("Device detection failed".to_string());
             }
-            info!(target: LOG_TARGET, "Marked miner {miner_type} as unhealthy due to detection failure");
+            info!(target: LOG_TARGET_APP_LOGIC, "Marked miner {miner_type} as unhealthy due to detection failure");
         }
 
         if !successful_detection {
@@ -627,7 +626,7 @@ impl GpuManager {
             loop {
                 select! {
                     _ = internal_shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET, "Shutting down gpu miner status updates");
+                        info!(target: LOG_TARGET_STATUSES, "Shutting down gpu miner status updates");
                         EventsEmitter::emit_gpu_mining_update(GpuMinerStatus::default_with_algorithm(
                             last_known_status.algorithm.clone(),
                         )).await;
@@ -635,7 +634,7 @@ impl GpuManager {
                         break;
                     },
                     _ = global_shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET, "Shutting down gpu miner status updates");
+                        info!(target: LOG_TARGET_STATUSES, "Shutting down gpu miner status updates");
                         break;
                     },
                     updated_status = gpu_internal_status_reciever.changed() => {
@@ -649,7 +648,7 @@ impl GpuManager {
                             last_known_status = paresd_status.clone();
                             EventsEmitter::emit_gpu_mining_update(paresd_status.clone()).await;
 
-                            info!(target: LOG_TARGET, "Gpu hashrate: {}", paresd_status.hash_rate);
+                            info!(target: LOG_TARGET_STATUSES, "Gpu hashrate: {}", paresd_status.hash_rate);
                             SystemTrayManager::send_event(SystemTrayEvents::GpuHashrate(paresd_status.hash_rate)).await;
                         } else {
                             break;
@@ -695,10 +694,10 @@ impl GpuManager {
             .await
         {
             Ok(_) => {
-                info!(target: LOG_TARGET, "GpuManager::on_app_exit completed successfully");
+                info!(target: LOG_TARGET_APP_LOGIC, "GpuManager::on_app_exit completed successfully");
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "GpuManager::on_app_exit failed: {}", e);
+                error!(target: LOG_TARGET_APP_LOGIC, "GpuManager::on_app_exit failed: {}", e);
             }
         }
     }

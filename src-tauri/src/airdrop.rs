@@ -67,7 +67,7 @@ pub fn decode_jwt_claims(t: &str) -> Option<AirdropAccessToken> {
     match decode::<AirdropAccessToken>(t, &key, &validation) {
         Ok(data) => Some(data.claims),
         Err(e) => {
-            warn!(target: LOG_TARGET,"Error decoding access token: {e:?}");
+            warn!(target: LOG_TARGET_APP_LOGIC,"Error decoding access token: {e:?}");
             None
         }
     }

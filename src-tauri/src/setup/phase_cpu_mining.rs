@@ -35,7 +35,7 @@ use crate::{
         setup_manager::{SetupManager, SetupPhase},
     },
     tasks_tracker::TasksTrackers,
-    UniverseAppState,
+    UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 use anyhow::Error;
 use log::warn;
@@ -57,9 +57,6 @@ use super::{
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
-
-#[allow(dead_code)]
-static LOG_TARGET: &str = "tari::universe::phase_cpu_mining";
 
 // This is a flag to indicate if the fallback to other pool mining has already been triggered.
 // We want to avoid triggering it multiple times per session
@@ -239,7 +236,7 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
                     Err(error) => {
                         if !WAS_FALLBACK_TO_POOL_MINING_TRIGGERED.load(std::sync::atomic::Ordering::SeqCst)
                         {
-                            warn!(target: LOG_TARGET, "MM Proxy failed to start. Falling back to CPU Pool mining. Error: {}", error);
+                            warn!(target: LOG_TARGET_APP_LOGIC, "MM Proxy failed to start. Falling back to CPU Pool mining. Error: {}", error);
                             WAS_FALLBACK_TO_POOL_MINING_TRIGGERED
                                 .store(true, std::sync::atomic::Ordering::SeqCst);
                             // Has to be spawned as we are in the context setup phase
