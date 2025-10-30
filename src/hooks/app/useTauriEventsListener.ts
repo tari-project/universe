@@ -70,6 +70,7 @@ import {
     handleSelectedTariAddressChange,
     setIsWalletLoading,
 } from '@app/store/actions/walletStoreActions';
+import { handleFeedbackExitSurveyRequested } from '@app/store/stores/userFeedbackStore';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -261,7 +262,7 @@ const useTauriEventsListener = () => {
                             setShowEcoAlert(true);
                             break;
                         case 'FeedbackSurveyRequested':
-                            setShowFeedbackExitSurveyModal(true);
+                            handleFeedbackExitSurveyRequested();
                             break;
                         case 'ShutdownModeSelectionRequested':
                             setShowShutdownSelectionModal(true);
