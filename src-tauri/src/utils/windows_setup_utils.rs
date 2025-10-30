@@ -28,8 +28,6 @@ use std::process::Command;
 
 use crate::consts::PROCESS_CREATION_NO_WINDOW;
 
-const LOG_TARGET: &str = "tari::universe::setup_utils";
-
 fn check_netsh_rule_exists(rule_name: String) -> bool {
     let output = Command::new("netsh")
         .arg("advfirewall")
@@ -60,7 +58,7 @@ fn check_netsh_rule_exists(rule_name: String) -> bool {
 
 pub fn add_firewall_rule(binary_name: String, binary_path: PathBuf) -> io::Result<()> {
     if check_netsh_rule_exists(binary_name.clone()) {
-        info!(target: LOG_TARGET, "Firewall rule already exists.");
+        info!(target: LOG_TARGET_APP_LOGIC, "Firewall rule already exists.");
     } else {
         // Add a firewall rule to allow inbound connections
         let output = Command::new("netsh")
@@ -84,10 +82,10 @@ pub fn add_firewall_rule(binary_name: String, binary_path: PathBuf) -> io::Resul
             .output()?;
 
         if output.status.success() {
-            info!(target: LOG_TARGET, "Firewall rule added successfully.");
+            info!(target: LOG_TARGET_APP_LOGIC, "Firewall rule added successfully.");
         } else {
             io::stderr().write_all(&output.stderr)?;
-            error!(target: LOG_TARGET, "Failed to add firewall rule.");
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to add firewall rule.");
         }
     }
 

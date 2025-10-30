@@ -32,13 +32,12 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager};
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
-
-const LOG_TARGET: &str = "tari::universe::airdrop";
 
 const AIRDROP_WEBSOCKET_CRYPTO_KEY: &str = env!("AIRDROP_WEBSOCKET_CRYPTO_KEY");
 
@@ -83,7 +82,7 @@ pub fn decode_jwt_claims_without_exp(t: &str) -> Option<AirdropAccessToken> {
     match decode::<AirdropAccessToken>(t, &key, &validation) {
         Ok(data) => Some(data.claims),
         Err(e) => {
-            warn!(target: LOG_TARGET,"Error decoding access token without exp: {e:?}");
+            warn!(target: LOG_TARGET_APP_LOGIC,"Error decoding access token without exp: {e:?}");
             None
         }
     }
@@ -101,7 +100,7 @@ pub async fn validate_jwt(airdrop_access_token: Option<String>) -> Option<String
 
         if let Some(claims) = claims {
             if claims.exp < now_unix {
-                warn!(target: LOG_TARGET,"Access token has expired");
+                warn!(target: LOG_TARGET_APP_LOGIC,"Access token has expired");
                 None
             } else {
                 Some(t)
@@ -141,14 +140,14 @@ pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
             .send()
             .await
             .inspect_err(|e| {
-                error!(target: LOG_TARGET,"error at sending newly mined block to /miner/mined-block {e}");
+                error!(target: LOG_TARGET_APP_LOGIC,"error at sending newly mined block to /miner/mined-block {e}");
             })
         {
             let status = response.status();
             if status.is_success() {
-                info!(target:LOG_TARGET," successfully sent newly mined block data to /miner/mined-block");
+                info!(target:LOG_TARGET_APP_LOGIC," successfully sent newly mined block data to /miner/mined-block");
             } else {
-                error!(target:LOG_TARGET,"error at sending to /miner/mined-block {:?}",response.text().await);
+                error!(target:LOG_TARGET_APP_LOGIC,"error at sending to /miner/mined-block {:?}",response.text().await);
             }
         }
     });

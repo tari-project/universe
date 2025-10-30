@@ -128,7 +128,10 @@ mod wallet;
 mod websocket_events_manager;
 mod websocket_manager;
 
-const LOG_TARGET: &str = "tari::universe::main";
+pub static LOG_TARGET_DEFAULT: &str = "tari::universe"; // General logs
+pub static LOG_TARGET_STATUSES: &str = "tari::universe::statuses"; // Status updates, like hashrate, wallet sync, healthchecks
+pub static LOG_TARGET_APP_LOGIC: &str = "tari::universe::app_logic"; // App logic logs, like setup, Binary downloads, etc.
+
 const RESTART_EXIT_CODE: i32 = i32::MAX;
 const IGNORED_SENTRY_ERRORS: [&str; 2] = [
     "Failed to initialize gtk backend",

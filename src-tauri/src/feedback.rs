@@ -37,8 +37,7 @@ use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::utils::file_utils::{make_relative_path, path_as_string};
-
-const LOG_TARGET: &str = "tari::universe::feedback";
+use crate::LOG_TARGET_APP_LOGIC;
 
 pub struct Feedback {
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
@@ -136,7 +135,7 @@ impl Feedback {
                 .await?;
             let metadata = std::fs::metadata(&archive_file)?;
             let file_size = metadata.len();
-            info!(target: LOG_TARGET, "Uploading {} ({} bytes)", zip_filename.clone(), file_size);
+            info!(target: LOG_TARGET_APP_LOGIC, "Uploading {} ({} bytes)", zip_filename.clone(), file_size);
             let mut file = File::open(&archive_file)?;
             let mut file_contents = Vec::new();
             file.read_to_end(&mut file_contents)?;
@@ -166,10 +165,10 @@ impl Feedback {
             std::fs::remove_file(archive_file)?;
         }
         if response.status().is_success() {
-            info!(target: LOG_TARGET, "Feedback sent successfully");
+            info!(target: LOG_TARGET_APP_LOGIC, "Feedback sent successfully");
             Ok(response.text().await?)
         } else {
-            error!(target: LOG_TARGET, "Failed to upload file: {}", response.status());
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to upload file: {}", response.status());
             Err(anyhow::anyhow!(
                 "Failed to upload file: {}",
                 response.status()
