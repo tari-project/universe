@@ -13,7 +13,6 @@ import {
     setDialogToShow,
     setIsShuttingDown,
     setShouldShowExchangeSpecificModal,
-    setShowFeedbackExitSurveyModal,
     setShowShutdownSelectionModal,
     setSidebarOpen,
 } from '@app/store/actions/uiStoreActions';
