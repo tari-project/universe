@@ -20,12 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{sync::LazyLock, time::Duration};
-
+use anyhow::anyhow;
 use cfspeedtest::speedtest::{test_download, test_latency, test_upload};
 use cfspeedtest::OutputFormat;
 use log::error;
 use log::info;
+use std::{panic, sync::LazyLock, time::Duration};
 use tokio::sync::watch::{Receiver, Sender};
 use tokio::task::spawn_blocking;
 
@@ -95,42 +95,45 @@ impl NetworkStatus {
         let mut upload_speed = 0.0;
         let mut latency = 0.0;
 
-        match spawn_blocking(|| {
-            test_download(
-                &reqwest::blocking::Client::new(),
-                NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST,
-                OutputFormat::None,
-            )
-        })
-        .await
-        {
-            Ok(speed) => {
-                download_speed = speed;
-            }
-            Err(e) => {
-                error!(target: LOG_TARGET, "Failed to perform download speed test: {e:?}")
-            }
-        };
+        let client = reqwest::blocking::Client::new();
 
-        match spawn_blocking(|| {
-            test_upload(
-                &reqwest::blocking::Client::new(),
-                NETWORK_UPLOAD_SPEED_PAYLOAD_TEST,
-                OutputFormat::None,
-            )
-        })
-        .await
-        {
-            Ok(speed) => upload_speed = speed,
-            Err(e) => {
-                error!(target: LOG_TARGET, "Failed to perform upload speed test: {e:?}")
+        spawn_blocking(|| {
+            match panic::catch_unwind(|| {
+                test_download(
+                    &client,
+                    NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST,
+                    OutputFormat::None,
+                )
+            }) {
+                Ok(res) => download_speed = res,
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Failed to perform download speed test: {e:?}")
+                }
             }
-        };
+        })
+        .await?;
 
-        match spawn_blocking(|| test_latency(&reqwest::blocking::Client::new())).await {
+        spawn_blocking(|| {
+            match panic::catch_unwind(|| {
+                test_upload(
+                    &client,
+                    NETWORK_UPLOAD_SPEED_PAYLOAD_TEST,
+                    OutputFormat::None,
+                )
+            }) {
+                Ok(speed) => upload_speed = speed,
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Failed to perform upload speed test: {e:?}")
+                }
+            };
+        })
+        .await?;
+
+        spawn_blocking(|| match panic::catch_unwind(|| test_latency(&client)) {
             Ok(lat) => latency = lat,
             Err(e) => error!(target: LOG_TARGET, "Failed to perform latency test: {e:?}"),
-        }
+        })
+        .await?;
 
         Ok((download_speed, upload_speed, latency))
     }
