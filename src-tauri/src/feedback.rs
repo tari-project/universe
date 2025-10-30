@@ -56,6 +56,11 @@ impl Feedback {
     ) -> Result<zip::result::ZipResult<File>, Error> {
         let file_options = SimpleFileOptions::default();
 
+        let zip_file_name = archive_file
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| anyhow::anyhow!("Failed to get zip file name"))?;
+
         let file = File::create(archive_file)?;
         let zip_file_name = archive_file
             .file_name()
