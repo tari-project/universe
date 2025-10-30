@@ -22,7 +22,7 @@
 
 use log::info;
 use serde::{Deserialize, Serialize};
-use std::sync::LazyLock;
+use std::{ops::Index, sync::LazyLock};
 use tauri::{async_runtime::spawn, AppHandle, Manager};
 use tokio::sync::{
     watch::{Receiver, Sender},
@@ -102,16 +102,28 @@ impl ShutdownManager {
         }
     }
 
+    pub async fn is_shutdown_in_progress(&self) -> bool {
+        !self.shutdown_sequence.read().await.is_empty()
+    }
+
     pub async fn initialize_app_handle(&self, app_handle: tauri::AppHandle) {
         let mut handle = self.app_handle.write().await;
         *handle = Some(app_handle);
+    }
+
+    pub async fn is_in_task_tray_shutdown_step(&self) -> bool {
+        let sequence = self.shutdown_sequence.read().await;
+        info!(target: LOG_TARGET, "Current shutdown sequence: {:?}", *sequence);
+        sequence
+            .iter()
+            .any(|step| *step == ShutdownStep::TaskTrayTriggeredShutdown)
     }
 
     // ================= Main shutdown manager logic ================= //
 
     pub async fn initialize_shutdown_from_system_tray(&self) {
         // If shutdown sequence is already initialized, just mark tasktray shutdown as completed
-        if !self.shutdown_sequence.read().await.is_empty() {
+        if self.is_shutdown_in_progress().await {
             self.mark_tasktray_shutdown_as_completed().await;
             return;
         }
@@ -141,7 +153,7 @@ impl ShutdownManager {
 
     pub async fn initialize_shutdown_from_close_button(&self) {
         // Prevent re-initialization if already in shutdown sequence
-        if !self.shutdown_sequence.read().await.is_empty() {
+        if self.is_shutdown_in_progress().await {
             return;
         }
 
@@ -204,16 +216,15 @@ impl ShutdownManager {
     }
 
     async fn execute_shutdown_step(&self) {
-        let mut sequence = self.shutdown_sequence.write().await;
+        let sequence = self.shutdown_sequence.read().await;
         let execution_step = if sequence.is_empty() {
             None
         } else {
-            Some(sequence.remove(0))
+            Some(sequence.index(0).clone())
         };
+        drop(sequence); // Release read lock before proceeding
 
-        drop(sequence); // release the lock
-
-        if let Some(step) = &execution_step {
+        if let Some(step) = execution_step {
             match step {
                 ShutdownStep::ShutdownModeSelection => {
                     self.handle_shutdown_mode_selection().await;
@@ -228,6 +239,9 @@ impl ShutdownManager {
                     self.exit().await;
                 }
             }
+
+            // Using retain instead of remove as sometimes we push new step at the beginning of the sequence
+            self.shutdown_sequence.write().await.retain(|s| *s != step);
         }
     }
 

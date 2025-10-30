@@ -74,6 +74,7 @@ use crate::mining::gpu::manager::GpuManager;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
 use crate::shutdown_manager::ShutdownManager;
+use crate::systemtray_manager::SystemTrayManager;
 use crate::tor_manager::TorManager;
 use crate::wallet::wallet_manager::WalletManager;
 use crate::wallet::wallet_types::WalletState;
@@ -356,10 +357,17 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_http::init())
-        .on_window_event(|_window, event| {
+        .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 block_on(async {
+                    if ShutdownManager::instance()
+                        .is_in_task_tray_shutdown_step()
+                        .await
+                    {
+                        // When in task tray mode, we await for the quit from tasktray menu and close button should just minimize to tray instead in that case
+                        SystemTrayManager::hide_to_tray(window.get_webview_window("main"));
+                    }
                     ShutdownManager::instance()
                         .initialize_shutdown_from_close_button()
                         .await;
