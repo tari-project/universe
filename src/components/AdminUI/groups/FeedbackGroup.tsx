@@ -18,11 +18,11 @@ function convertToMs(minutes: number) {
 }
 export function FeedbackGroup() {
     const longMiningTimeMs = useUserFeedbackStore((s) => s.longMiningTimeMs);
-    // const closeMiningTimeMs = useUserFeedbackStore((s) => s.closeMiningTimeMs);
+    const closeMiningTimeMs = useUserFeedbackStore((s) => s.closeMiningTimeMs);
     const showLongTimeDialog = useUserFeedbackStore((s) => s.showLongTimeDialog);
     const isFeedbackExitSurveyModalShown = useUIStore((s) => s.showFeedbackExitSurveyModal);
 
-    // const [closeMin, setCloseMin] = useState(convertToMinutes(closeMiningTimeMs));
+    const [closeMin, setCloseMin] = useState(convertToMinutes(closeMiningTimeMs));
     const [longMin, setLongMin] = useState(convertToMinutes(longMiningTimeMs));
 
     return (
@@ -39,7 +39,7 @@ export function FeedbackGroup() {
                 </AdminButton>
             </ButtonGroup>
             <ExtraContent>
-                {/* <label>
+                <label>
                     CLOSE min time (minutes)
                     <input
                         name="close"
@@ -62,7 +62,7 @@ export function FeedbackGroup() {
                     >
                         save
                     </button>
-                </label> */}
+                </label>
 
                 <label>
                     LONG min time (minutes)
