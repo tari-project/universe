@@ -1,3 +1,4 @@
+use crate::LOG_TARGET_APP_LOGIC;
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -40,8 +41,6 @@ static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(BinaryResolver::new);
 // Lock to prevent concurrent downloads of tari suite binaries (MergeMiningProxy, MinotariNode, Wallet)
 // that all come from the same zip file and would conflict when downloading in parallel
 static TARI_SUITE_DOWNLOAD_LOCK: LazyLock<AsyncMutex<()>> = LazyLock::new(|| AsyncMutex::new(()));
-
-static LOG_TARGET: &str = "tari::universe::binary_resolver";
 
 #[derive(Debug)]
 pub enum BinaryResolveError {
@@ -257,7 +256,7 @@ impl BinaryResolver {
         };
 
         if binary_path.exists() {
-            debug!(target: LOG_TARGET, "Binary found at: {}", binary_path.display());
+            debug!(target: LOG_TARGET_APP_LOGIC, "Binary found at: {}", binary_path.display());
             return Ok(binary_path);
         }
 

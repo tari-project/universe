@@ -30,7 +30,7 @@ use crate::{
         listeners::{AppModule, AppModuleStatus},
         setup_manager::{PhaseStatus, SetupPhase},
     },
-    EventsEmitter,
+    EventsEmitter, LOG_TARGET_APP_LOGIC,
 };
 
 use log::info;
@@ -42,7 +42,6 @@ use super::{
     SetupFeature, SetupFeaturesList,
 };
 
-static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_unlock_cpu_mining";
 static INSTANCE: LazyLock<ListenerUnlockCpuMining> = LazyLock::new(ListenerUnlockCpuMining::new);
 
 pub struct ListenerUnlockCpuMining {
@@ -99,13 +98,13 @@ impl UnlockConditionsListenerTrait for ListenerUnlockCpuMining {
         *self.features_list.lock().await = features;
     }
     async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync> {
-        info!(target: LOG_TARGET, "Selecting strategy for CpuMining Module");
+        info!(target: LOG_TARGET_APP_LOGIC, "Selecting strategy for CpuMining Module");
         let features = self.features_list.lock().await.clone();
         if features.is_feature_enabled(SetupFeature::CpuPool) {
-            info!(target: LOG_TARGET, "Using CpuPoolStrategy");
+            info!(target: LOG_TARGET_APP_LOGIC, "Using CpuPoolStrategy");
             Box::new(CpuPoolStrategy)
         } else {
-            info!(target: LOG_TARGET, "Using DefaultStrategy");
+            info!(target: LOG_TARGET_APP_LOGIC, "Using DefaultStrategy");
             Box::new(DefaultStrategy)
         }
     }

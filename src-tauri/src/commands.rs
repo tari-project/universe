@@ -60,7 +60,7 @@ use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::wallet_manager::WalletManagerError;
 use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
-use crate::{airdrop, UniverseAppState};
+use crate::{airdrop, UniverseAppState, LOG_TARGET_APP_LOGIC};
 
 use base64::prelude::*;
 use log::{debug, error, info, warn};
@@ -85,7 +85,6 @@ use tauri::Manager;
 use urlencoding::encode;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
-const LOG_TARGET: &str = "tari::universe::commands";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
 
 #[derive(Debug, Serialize)]
@@ -128,11 +127,11 @@ pub async fn select_exchange_miner(
 
     match InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address)).await {
         Ok(_) => {
-            log::info!(target: LOG_TARGET, "Internal wallet initialized successfully after \"select_exchange_miner\"");
+            log::info!(target: LOG_TARGET_APP_LOGIC, "Internal wallet initialized successfully after \"select_exchange_miner\"");
         }
         Err(e) => {
             // Handle this critical error
-            error!(target: LOG_TARGET, "Error loading internal wallet: {e:?}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Error loading internal wallet: {e:?}");
         }
     }
 
@@ -200,7 +199,7 @@ pub async fn download_and_start_installer(id: String) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
+        warn!(target: LOG_TARGET_APP_LOGIC,
             "download_and_start_installer took too long: {:?}",
             timer.elapsed()
         );
@@ -217,13 +216,13 @@ pub async fn exit_application(
     // When exit is called from here I can see that it triggers the RunEvent::Exit without triggering the RunEvent::ExitRequested before
     // Cleaning up processes in RunEvent::Exit is not reliable as it does not always get triggered properly so we doing it here
 
-    info!(target: LOG_TARGET, "Exit application command received, shutting down processes...");
+    info!(target: LOG_TARGET_APP_LOGIC, "Exit application command received, shutting down processes...");
 
     let _unused = GpuManager::write().await.stop_mining().await;
-    info!(target: LOG_TARGET, "GPU Mining stopped.");
+    info!(target: LOG_TARGET_APP_LOGIC, "GPU Mining stopped.");
 
     let _unused = CpuManager::write().await.stop_mining().await;
-    info!(target: LOG_TARGET, "CPU Mining stopped.");
+    info!(target: LOG_TARGET_APP_LOGIC, "CPU Mining stopped.");
 
     TasksTrackers::current().stop_all_processes().await;
     GpuManager::read().await.on_app_exit().await;
@@ -251,9 +250,9 @@ pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         .find_iter(&res_html)
         .map(|m| m.as_str().trim_end_matches(" <br/>").to_string())
         .collect();
-    info!(target: LOG_TARGET, "Fetched default bridges: {bridges:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "Fetched default bridges: {bridges:?}");
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
     }
     Ok(bridges)
 }
@@ -267,7 +266,7 @@ pub async fn get_app_in_memory_config(
     let timer = Instant::now();
     let res = state.in_memory_config.read().await.clone();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
+        warn!(target: LOG_TARGET_APP_LOGIC,
             "get_app_in_memory_config took too long: {:?}",
             timer.elapsed()
         );
@@ -312,7 +311,7 @@ pub async fn get_applications_versions(
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
+        warn!(target: LOG_TARGET_APP_LOGIC,
             "get_applications_versions took too long: {:?}",
             timer.elapsed()
         );
@@ -372,12 +371,12 @@ pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<S
         .map_err(|e| e.to_string())?;
 
     let result = monero_seed.seed_words().map_err(|e| {
-        log::error!(target: LOG_TARGET, "get_monero_seed_words: error getting seed words: {e:?}");
+        log::error!(target: LOG_TARGET_APP_LOGIC, "get_monero_seed_words: error getting seed words: {e:?}");
         e.to_string()
     });
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_monero_seed_words took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "get_monero_seed_words took too long: {:?}", timer.elapsed());
     }
     result
 }
@@ -396,7 +395,7 @@ pub async fn get_paper_wallet_details(
         .clone()
         .and_then(|state| state.balance);
 
-    warn!(target: LOG_TARGET, "auth_uuid {auth_uuid:?}");
+    warn!(target: LOG_TARGET_APP_LOGIC, "auth_uuid {auth_uuid:?}");
     let anon_id = ConfigCore::content().await.anon_id().clone();
 
     let pin_password = PinManager::get_validated_pin_if_defined(&app_handle)
@@ -438,7 +437,7 @@ pub async fn get_paper_wallet_details(
     }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_paper_wallet_details took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "get_paper_wallet_details took too long: {:?}", timer.elapsed());
     };
     Ok(PaperWalletConfig {
         qr_link: link,
@@ -465,13 +464,13 @@ pub async fn get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>,
         match seed_words.get_word(i) {
             Ok(word) => res.push(word.clone()),
             Err(error) => {
-                error!(target: LOG_TARGET, "Could not get seed word: {error:?}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Could not get seed word: {error:?}");
             }
         }
     }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "get_seed_words took too long: {:?}", timer.elapsed());
     }
     Ok(res)
 }
@@ -499,7 +498,7 @@ pub async fn set_external_tari_address(
         .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_tari_address took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_tari_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -522,7 +521,7 @@ pub async fn confirm_exchange_address(
         .await
         .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_exchange_address took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_exchange_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -536,7 +535,7 @@ pub async fn get_tor_config(
     let timer = Instant::now();
     let tor_config = state.tor_manager.get_tor_config().await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_tor_config took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "get_tor_config took too long: {:?}", timer.elapsed());
     }
     Ok(tor_config)
 }
@@ -549,7 +548,7 @@ pub async fn get_airdrop_tokens(
     let timer = Instant::now();
     let airdrop_access_token = ConfigCore::content().await.airdrop_tokens().clone();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_airdrop_tokens took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "get_airdrop_tokens took too long: {:?}", timer.elapsed());
     }
     Ok(airdrop_access_token)
 }
@@ -568,13 +567,13 @@ pub async fn get_transactions(
         .await
         .unwrap_or_else(|e| {
             if !matches!(e, WalletManagerError::WalletNotStarted) {
-                warn!(target: LOG_TARGET, "Error getting transactions: {e}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Error getting transactions: {e}");
             }
             vec![]
         });
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_transactions took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "get_transactions took too long: {:?}", timer.elapsed());
     }
 
     Ok(transactions)
@@ -597,7 +596,7 @@ pub async fn forgot_pin(
     .map_err(|e| e.to_string())?;
 
     if extracted_wallet_details.tari_address != InternalWallet::tari_address().await {
-        error!(target: LOG_TARGET, "Seed words do not match current wallet address");
+        error!(target: LOG_TARGET_APP_LOGIC, "Seed words do not match current wallet address");
         return Err("Seed words do not match".to_string());
     }
 
@@ -605,7 +604,7 @@ pub async fn forgot_pin(
         .await
         .map_err(|e| e.to_string())?;
 
-    info!(target: LOG_TARGET, "PIN recovery completed successfully");
+    info!(target: LOG_TARGET_APP_LOGIC, "PIN recovery completed successfully");
     Ok(())
 }
 
@@ -630,10 +629,10 @@ pub async fn import_seed_words(
             .await
             .map_err(InvokeError::from_anyhow)?;
             EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
-            log::info!(target: LOG_TARGET, "Seed words imported successfully for wallet #{wallet_id:?}");
+            log::info!(target: LOG_TARGET_APP_LOGIC, "Seed words imported successfully for wallet #{wallet_id:?}");
         }
         Err(e) => {
-            error!(target: LOG_TARGET, "Error importing seed words by internal wallet: {e:?}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Error importing seed words by internal wallet: {e:?}");
             return Err(InvokeError::from_anyhow(e));
         }
     }
@@ -653,7 +652,7 @@ pub async fn import_seed_words(
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "import_seed_words took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "import_seed_words took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -685,7 +684,7 @@ pub async fn revert_to_internal_wallet(
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "revert_to_internal_wallet took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "revert_to_internal_wallet took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -705,7 +704,7 @@ pub fn log_web_message(level: String, message: Vec<String>) {
 pub fn open_log_dir(app: tauri::AppHandle) {
     let log_dir = app.path().app_log_dir().expect("Could not get log dir");
     if let Err(e) = open::that(log_dir) {
-        error!(target: LOG_TARGET, "Could not open log dir: {e:?}");
+        error!(target: LOG_TARGET_APP_LOGIC, "Could not open log dir: {e:?}");
     }
 }
 
@@ -719,13 +718,13 @@ async fn reset_app_configs(
         .join(Network::get_current().as_key_str());
 
     if reset_wallet {
-        log::info!(target: LOG_TARGET, "[reset_app_configs] Resetting with wallet.");
+        log::info!(target: LOG_TARGET_APP_LOGIC, "[reset_app_configs] Resetting with wallet.");
         remove_dir_all(&universe_app_configs_dir).map_err(|e| {
-            error!(target: LOG_TARGET, "[reset_app_configs] Could not remove {universe_app_configs_dir:?} directory: {e:?}");
+            error!(target: LOG_TARGET_APP_LOGIC, "[reset_app_configs] Could not remove {universe_app_configs_dir:?} directory: {e:?}");
             anyhow::anyhow!("Could not remove directory: {e}")
         })?;
     } else {
-        log::info!(target: LOG_TARGET, "[reset_app_configs] Resetting without wallet.");
+        log::info!(target: LOG_TARGET_APP_LOGIC, "[reset_app_configs] Resetting without wallet.");
         // remove all configs but not "config_wallet.json"
         let config_files = std::fs::read_dir(&universe_app_configs_dir)?;
         for entry in config_files {
@@ -751,7 +750,7 @@ pub async fn reset_settings(
         let _unused = PinManager::get_validated_pin_if_defined(&app_handle)
             .await
             .map_err(|e| e.to_string())?;
-        log::info!(target: LOG_TARGET, "[reset_settings] Pin successfully validated");
+        log::info!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Pin successfully validated");
     }
 
     let _unused = GpuManager::write().await.stop_mining().await;
@@ -782,7 +781,7 @@ pub async fn reset_settings(
         .collect();
 
     if valid_dir_paths.is_empty() {
-        error!(target: LOG_TARGET, "Could not get app directories for {valid_dir_paths:?}");
+        error!(target: LOG_TARGET_APP_LOGIC, "Could not get app directories for {valid_dir_paths:?}");
         return Err("Could not get app directories".to_string());
     }
     let mut folder_block_list = Vec::new();
@@ -790,7 +789,7 @@ pub async fn reset_settings(
 
     let mut files_block_list = Vec::new();
     if reset_wallet {
-        debug!(target: LOG_TARGET, "[reset_settings] Clearing all wallets");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Clearing all wallets");
         InternalWallet::clear_all_wallets()
             .await
             .map_err(|e| e.to_string())?;
@@ -839,7 +838,7 @@ pub async fn reset_settings(
                     }
 
                     remove_dir_all(path.clone()).map_err(|e| {
-                        error!(target: LOG_TARGET, "[reset_settings] Could not remove {path:?} directory: {e:?}");
+                        error!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Could not remove {path:?} directory: {e:?}");
                         format!("Could not remove directory: {e}")
                     })?;
                 } else {
@@ -850,7 +849,7 @@ pub async fn reset_settings(
                     }
 
                     remove_file(path.clone()).map_err(|e| {
-                        error!(target: LOG_TARGET, "[reset_settings] Could not remove {path:?} file: {e:?}");
+                        error!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Could not remove {path:?} file: {e:?}");
                         format!("Could not remove file: {e}")
                     })?;
                 }
@@ -858,7 +857,7 @@ pub async fn reset_settings(
         }
     }
 
-    info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
+    info!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Restarting the app");
     app_handle.restart()
 }
 
@@ -890,7 +889,7 @@ pub async fn send_feedback(
         .inspect_err(|e| error!("error at send_feedback {e:?}"))
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > Duration::from_secs(60) {
-        warn!(target: LOG_TARGET, "send_feedback took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "send_feedback took too long: {:?}", timer.elapsed());
     }
     Ok(reference)
 }
@@ -934,7 +933,7 @@ pub async fn set_auto_update(auto_update: bool) -> Result<(), InvokeError> {
         .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_auto_update took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_auto_update took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -949,7 +948,7 @@ pub async fn set_cpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
     SystemTrayManager::send_event(SystemTrayEvents::CpuMiningState(enabled)).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
+        warn!(target: LOG_TARGET_APP_LOGIC,
             "set_cpu_mining_enabled took too long: {:?}",
             timer.elapsed()
         );
@@ -960,14 +959,14 @@ pub async fn set_cpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
 #[tauri::command]
 pub async fn sign_ws_data(data: String) -> Result<SignWsDataResponse, String> {
     let key: ring::signature::Ed25519KeyPair = get_websocket_key().map_err(|e| {
-        warn!(target: LOG_TARGET,
+        warn!(target: LOG_TARGET_APP_LOGIC,
             "error ws key handling:{:?}",
             e.to_string()
         );
         "sign_ws_data: error ws key handling"
     })?;
     let pub_key = get_der_encode_pub_key(&key).map_err(|e| {
-        warn!(target: LOG_TARGET,
+        warn!(target: LOG_TARGET_APP_LOGIC,
             "error ws pub key handling:{:?}",
             e.to_string()
         );
@@ -995,7 +994,7 @@ pub async fn set_display_mode(display_mode: &str) -> Result<(), InvokeError> {
     }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_display_mode took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_display_mode took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1003,7 +1002,7 @@ pub async fn set_display_mode(display_mode: &str) -> Result<(), InvokeError> {
 #[tauri::command]
 pub async fn toggle_device_exclusion(device_index: u32, excluded: bool) -> Result<(), String> {
     if excluded {
-        info!(target: LOG_TARGET, "Excluding device {device_index}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Excluding device {device_index}");
         ConfigMining::update_field(
             ConfigMiningContent::enable_gpu_device_exclusion,
             device_index,
@@ -1011,7 +1010,7 @@ pub async fn toggle_device_exclusion(device_index: u32, excluded: bool) -> Resul
         .await
         .map_err(|e| e.to_string())?;
     } else {
-        info!(target: LOG_TARGET, "Including device {device_index}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Including device {device_index}");
         ConfigMining::update_field(
             ConfigMiningContent::disable_gpu_device_exclusion,
             device_index,
@@ -1034,7 +1033,7 @@ pub async fn set_gpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
     SystemTrayManager::send_event(SystemTrayEvents::GpuMiningState(enabled)).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
+        warn!(target: LOG_TARGET_APP_LOGIC,
             "set_gpu_mining_enabled took too long: {:?}",
             timer.elapsed()
         );
@@ -1054,7 +1053,7 @@ pub async fn set_mine_on_app_start(mine_on_app_start: bool) -> Result<(), Invoke
     .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_mine_on_app_start took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_mine_on_app_start took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1063,7 +1062,7 @@ pub async fn set_mine_on_app_start(mine_on_app_start: bool) -> Result<(), Invoke
 #[tauri::command]
 pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[select_mining_mode] called with mode: {mode:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "[select_mining_mode] called with mode: {mode:?}");
 
     ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone())
         .await
@@ -1081,7 +1080,7 @@ pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
     .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "select_mining_mode took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "select_mining_mode took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1092,7 +1091,7 @@ pub async fn update_custom_mining_mode(
     custom_gpu_usage: u32,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[update_custom_mining_mode] called with custom_cpu_usage: {custom_cpu_usage:?}, custom_gpu_usage: {custom_gpu_usage:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "[update_custom_mining_mode] called with custom_cpu_usage: {custom_cpu_usage:?}, custom_gpu_usage: {custom_gpu_usage:?}");
 
     ConfigMining::update_field(
         ConfigMiningContent::update_custom_mode_cpu_usage,
@@ -1109,7 +1108,7 @@ pub async fn update_custom_mining_mode(
     .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "update_custom_mining_mode took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "update_custom_mining_mode took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1129,7 +1128,7 @@ pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeErro
         .restart_phases_from_queue()
         .await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_monero_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1140,7 +1139,7 @@ pub async fn set_monerod_config(
     monero_nodes: Vec<String>,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_monerod_config] called with use_monero_fail: {use_monero_fail:?}, monero_nodes: {monero_nodes:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "[set_monerod_config] called with use_monero_fail: {use_monero_fail:?}, monero_nodes: {monero_nodes:?}");
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_mmproxy_monero_nodes,
         monero_nodes.clone(),
@@ -1162,7 +1161,7 @@ pub async fn set_monerod_config(
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_monerod_config took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_monerod_config took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1220,7 +1219,7 @@ pub async fn set_tor_config(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<TorConfig, String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_tor_config] called with config: {config:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "[set_tor_config] called with config: {config:?}");
     let tor_config = state
         .tor_manager
         .set_tor_config(config)
@@ -1232,7 +1231,7 @@ pub async fn set_tor_config(
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_tor_config took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_tor_config took too long: {:?}", timer.elapsed());
     }
     Ok(tor_config)
 }
@@ -1264,7 +1263,7 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
     }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_use_tor took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_use_tor took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1278,7 +1277,7 @@ pub async fn set_visual_mode(enabled: bool) -> Result<(), InvokeError> {
         .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
+        warn!(target: LOG_TARGET_APP_LOGIC,
             "set_visual_mode took too long: {:?}",
             timer.elapsed()
         );
@@ -1306,7 +1305,7 @@ pub async fn set_airdrop_tokens(airdrop_tokens: Option<AirdropTokens>) -> Result
         .await
         .map_err(InvokeError::from_anyhow)?;
 
-    info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{user_id_changed:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "New Airdrop tokens saved, user id changed:{user_id_changed:?}");
     if user_id_changed {
         // If the user id changed, we need to restart the cpu mining phases to ensure that the new telemetry_id ( unique_string value )is used
         SetupManager::get_instance()
@@ -1327,7 +1326,7 @@ pub async fn start_cpu_mining() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "start_cpu_mining took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "start_cpu_mining took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1343,7 +1342,7 @@ pub async fn start_gpu_mining() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "start_gpu_mining took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "start_gpu_mining took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1360,7 +1359,7 @@ pub async fn stop_cpu_mining() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "stop_cpu_mining took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1376,7 +1375,7 @@ pub async fn stop_gpu_mining() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "stop_cpu_mining took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "stop_cpu_mining took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1399,7 +1398,7 @@ pub async fn switch_gpu_miner(gpu_miner_type: GpuMinerType) -> Result<(), String
         .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "switch_gpu_miner took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "switch_gpu_miner took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1422,7 +1421,7 @@ pub async fn toggle_cpu_pool_mining(enabled: bool) -> Result<(), String> {
     }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "toggle_cpu_pool_mining took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "toggle_cpu_pool_mining took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1445,7 +1444,7 @@ pub async fn toggle_gpu_pool_mining(enabled: bool) -> Result<(), String> {
     }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "toggle_gpu_pool_mining took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "toggle_gpu_pool_mining took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1469,7 +1468,7 @@ pub async fn set_pre_release(
         .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_pre_release took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_pre_release took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1487,7 +1486,7 @@ pub async fn proceed_with_update(
         .await
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1495,7 +1494,7 @@ pub async fn proceed_with_update(
 #[tauri::command]
 pub async fn start_mining_status(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "start_mining_status called");
+    info!(target: LOG_TARGET_APP_LOGIC, "start_mining_status called");
     state
         .mining_status_manager
         .write()
@@ -1504,14 +1503,14 @@ pub async fn start_mining_status(state: tauri::State<'_, UniverseAppState>) -> R
         .await
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "start_mining_status_sending took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "start_mining_status_sending took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
 
 #[tauri::command]
 pub async fn stop_mining_status(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
-    info!(target: LOG_TARGET, "stop_mining_status called");
+    info!(target: LOG_TARGET_APP_LOGIC, "stop_mining_status called");
     let timer = Instant::now();
     state
         .mining_status_manager
@@ -1520,7 +1519,7 @@ pub async fn stop_mining_status(state: tauri::State<'_, UniverseAppState>) -> Re
         .stop_polling()
         .await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "stop_mining_status_sending took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "stop_mining_status_sending took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1530,7 +1529,7 @@ pub async fn set_selected_engine(
     _state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
-    info!(target: LOG_TARGET, "set_selected_engine called with engine: {selected_engine:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "set_selected_engine called with engine: {selected_engine:?}");
     let timer = Instant::now();
 
     let engine_type = EngineType::from_string(selected_engine).map_err(InvokeError::from_anyhow)?;
@@ -1540,7 +1539,7 @@ pub async fn set_selected_engine(
         .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1572,7 +1571,7 @@ pub async fn send_one_sided_to_stealth_address(
     payment_id: Option<String>,
 ) -> Result<(), String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
+    info!(target: LOG_TARGET_APP_LOGIC, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
     state
         .wallet_manager
         .send_one_sided_to_stealth_address(amount, destination, payment_id, &app_handle)
@@ -1585,7 +1584,7 @@ pub async fn send_one_sided_to_stealth_address(
     }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1652,21 +1651,21 @@ pub async fn set_node_type(
     }
 
     let prev_node_type = state.node_manager.get_node_type().await;
-    info!(target: LOG_TARGET, "[set_node_type] from {prev_node_type:?} to: {node_type:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "[set_node_type] from {prev_node_type:?} to: {node_type:?}");
 
     let is_current_local = matches!(prev_node_type, NodeType::Local | NodeType::LocalAfterRemote);
     if is_current_local && node_type != NodeType::Remote {
-        info!(target: LOG_TARGET, "[set_node_type] Local node is already running, no restart needed for node_type: {node_type:?}");
+        info!(target: LOG_TARGET_APP_LOGIC, "[set_node_type] Local node is already running, no restart needed for node_type: {node_type:?}");
         ConfigCore::update_field(ConfigCoreContent::set_node_type, node_type.clone())
             .await
             .map_err(InvokeError::from_anyhow)?;
 
         if node_type == NodeType::RemoteUntilLocal {
-            info!(target: LOG_TARGET, "[set_node_type] Converting RemoteUntilLocal to LocalAfterRemote since local node is running");
+            info!(target: LOG_TARGET_APP_LOGIC, "[set_node_type] Converting RemoteUntilLocal to LocalAfterRemote since local node is running");
             node_type = NodeType::LocalAfterRemote
         }
     } else {
-        info!(target: LOG_TARGET, "[set_node_type] Restarting required phases for node_type: {node_type:?}");
+        info!(target: LOG_TARGET_APP_LOGIC, "[set_node_type] Restarting required phases for node_type: {node_type:?}");
         ConfigCore::update_field_requires_restart(
             ConfigCoreContent::set_node_type,
             node_type.clone(),
@@ -1689,7 +1688,7 @@ pub async fn set_node_type(
 #[tauri::command]
 pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[change_cpu_pool] called with cpu_pool: {cpu_pool:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "[change_cpu_pool] called with cpu_pool: {cpu_pool:?}");
 
     ConfigPools::update_field(
         ConfigPoolsContent::set_current_cpu_pool,
@@ -1703,7 +1702,7 @@ pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
     CpuPoolManager::handle_new_selected_pool(cpu_pool_content).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "change_cpu_pool took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "change_cpu_pool took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1711,7 +1710,7 @@ pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
 #[tauri::command]
 pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[change_gpu_pool] called with gpu_pool: {gpu_pool:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "[change_gpu_pool] called with gpu_pool: {gpu_pool:?}");
 
     ConfigPools::update_field(
         ConfigPoolsContent::set_current_gpu_pool,
@@ -1725,7 +1724,7 @@ pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
     GpuPoolManager::handle_new_selected_pool(gpu_pool_content).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "change_gpu_pool took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "change_gpu_pool took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1735,7 +1734,7 @@ pub async fn update_selected_gpu_pool_config(
     updated_config: BasePoolData<GpuPool>,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[update_selected_gpu_pool_config] called with updated_config: {updated_config:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "[update_selected_gpu_pool_config] called with updated_config: {updated_config:?}");
 
     ConfigPools::update_field(
         ConfigPoolsContent::update_current_gpu_config,
@@ -1745,7 +1744,7 @@ pub async fn update_selected_gpu_pool_config(
     .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "update_selected_gpu_pool_config took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "update_selected_gpu_pool_config took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1756,7 +1755,7 @@ pub async fn update_selected_cpu_pool_config(
     updated_config: BasePoolData<CpuPool>,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[update_selected_cpu_pool_config] called with updated_config: {updated_config:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "[update_selected_cpu_pool_config] called with updated_config: {updated_config:?}");
 
     ConfigPools::update_field(
         ConfigPoolsContent::update_current_cpu_config,
@@ -1766,7 +1765,7 @@ pub async fn update_selected_cpu_pool_config(
     .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "update_selected_cpu_pool_config took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "update_selected_cpu_pool_config took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -1775,7 +1774,7 @@ pub async fn update_selected_cpu_pool_config(
 #[tauri::command]
 pub async fn reset_gpu_pool_config(gpu_pool_type: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[reset_pool_gpu_pool_config] called with gpu_pool_name: {gpu_pool_type:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "[reset_pool_gpu_pool_config] called with gpu_pool_name: {gpu_pool_type:?}");
 
     let gpu_pool = GpuPool::from_string(&gpu_pool_type).map_err(InvokeError::from_anyhow)?;
 
@@ -1789,7 +1788,7 @@ pub async fn reset_gpu_pool_config(gpu_pool_type: String) -> Result<(), InvokeEr
     GpuPoolManager::handle_new_selected_pool(gpu_pool.default_content()).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "reset_pool_gpu_pool_config took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "reset_pool_gpu_pool_config took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1797,7 +1796,7 @@ pub async fn reset_gpu_pool_config(gpu_pool_type: String) -> Result<(), InvokeEr
 #[tauri::command]
 pub async fn reset_cpu_pool_config(cpu_pool_type: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[reset_pool_cpu_pool_config] called with cpu_pool_name: {cpu_pool_type:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "[reset_pool_cpu_pool_config] called with cpu_pool_name: {cpu_pool_type:?}");
 
     let cpu_pool = CpuPool::from_string(&cpu_pool_type).map_err(InvokeError::from_anyhow)?;
 
@@ -1811,7 +1810,7 @@ pub async fn reset_cpu_pool_config(cpu_pool_type: String) -> Result<(), InvokeEr
     CpuPoolManager::handle_new_selected_pool(cpu_pool.default_content()).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "reset_pool_cpu_pool_config took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "reset_pool_cpu_pool_config took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -1821,7 +1820,7 @@ pub async fn create_pin(app_handle: tauri::AppHandle) -> Result<(), String> {
     InternalWallet::create_pin(&app_handle)
         .await
         .map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "PIN created successfully");
+    info!(target: LOG_TARGET_APP_LOGIC, "PIN created successfully");
 
     EventsEmitter::emit_pin_locked(true).await;
 
@@ -1858,7 +1857,7 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
     let (addr, _cancel_token) = match handle_start.await {
         Ok(result) => result.map_err(|e| e.to_string())?,
         Err(e) => {
-            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {e:?}");
+            error!(target: LOG_TARGET_APP_LOGIC, "❌ Error handling tapplet start: {e:?}");
             return Err(e.to_string());
         }
     };
@@ -1912,7 +1911,7 @@ pub async fn add_scheduler_in_event(
     time_value: i64,
     time_unit: TimeUnit,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET, "add_scheduler_in_event called with event_id: {event_id:?}, time_value: {time_value:?}, timer_unit: {time_unit:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "add_scheduler_in_event called with event_id: {event_id:?}, time_value: {time_value:?}, timer_unit: {time_unit:?}");
 
     let event_timing =
         SchedulerEventTiming::parse_in_variant(time_value, time_unit).map_err(|e| e.to_string())?;
@@ -1937,7 +1936,7 @@ pub async fn add_scheduler_between_event(
     end_time_minute: i64,
     end_time_period: TimePeriod,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET, "add_scheduler_between_event called with event_id: {event_id:?}, start_time_hour: {start_time_hour:?}, start_time_minute: {start_time_minute:?}, start_time_period: {start_time_period:?}, end_time_hour: {end_time_hour:?}, end_time_minute: {end_time_minute:?}, end_time_period: {end_time_period:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "add_scheduler_between_event called with event_id: {event_id:?}, start_time_hour: {start_time_hour:?}, start_time_minute: {start_time_minute:?}, start_time_period: {start_time_period:?}, end_time_hour: {end_time_hour:?}, end_time_minute: {end_time_minute:?}, end_time_period: {end_time_period:?}");
 
     let event_timing = SchedulerEventTiming::parse_between_variant(
         start_time_hour,
@@ -1961,7 +1960,7 @@ pub async fn add_scheduler_between_event(
 
 #[tauri::command]
 pub async fn remove_scheduler_event(event_id: String) -> Result<(), String> {
-    info!(target: LOG_TARGET, "remove_scheduler_event called with event_id: {event_id:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "remove_scheduler_event called with event_id: {event_id:?}");
 
     EventScheduler::instance()
         .remove_event(event_id)
@@ -1973,7 +1972,7 @@ pub async fn remove_scheduler_event(event_id: String) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn pause_scheduler_event(event_id: String) -> Result<(), String> {
-    info!(target: LOG_TARGET, "pause_scheduler_event called with event_id: {event_id:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "pause_scheduler_event called with event_id: {event_id:?}");
 
     EventScheduler::instance()
         .pause_event(event_id)
@@ -1985,7 +1984,7 @@ pub async fn pause_scheduler_event(event_id: String) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn resume_scheduler_event(event_id: String) -> Result<(), String> {
-    info!(target: LOG_TARGET, "resume_scheduler_event called with event_id: {event_id:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "resume_scheduler_event called with event_id: {event_id:?}");
 
     EventScheduler::instance()
         .resume_event(event_id)
@@ -2034,20 +2033,20 @@ pub async fn encode_payment_id_to_address(
     payment_id: String,
     tari_address: String,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET, "encode_payment_id_to_address called with payment_id: {payment_id:?}, tari_address: {tari_address:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "encode_payment_id_to_address called with payment_id: {payment_id:?}, tari_address: {tari_address:?}");
     let mut address_with_memo_field =
         DualAddress::from_base58(tari_address.as_str()).map_err(|e| {
-            error!(target: LOG_TARGET, "Failed to parse Tari address: {e}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to parse Tari address: {e}");
             e.to_string()
         })?;
     address_with_memo_field
         .add_memo_field_payment_id(payment_id.as_bytes().to_vec())
         .map_err(|e| {
-            error!(target: LOG_TARGET, "Failed to add payment ID to Tari address: {e}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to add payment ID to Tari address: {e}");
             e.to_string()
         })?;
     let address_base58 = address_with_memo_field.to_base58();
-    info!(target: LOG_TARGET, "Encoded Tari address with payment ID: {address_base58:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "Encoded Tari address with payment ID: {address_base58:?}");
 
     Ok(address_base58)
 }
@@ -2093,7 +2092,7 @@ pub async fn set_feedback_fields(feedback_type: String, was_sent: bool) -> Resul
             .map_err(InvokeError::from_anyhow)?;
     }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_feedback_fields took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_feedback_fields took too long: {:?}", timer.elapsed());
     }
 
     Ok(())
@@ -2107,7 +2106,7 @@ pub async fn set_mode_mining_time(mode: MiningModeType, duration: u64) -> Result
         .await
         .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_mode_mining_time took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_mode_mining_time took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -2119,7 +2118,7 @@ pub async fn set_eco_alert_needed() -> Result<(), InvokeError> {
         .await
         .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_eco_alert_needed took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_eco_alert_needed took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }

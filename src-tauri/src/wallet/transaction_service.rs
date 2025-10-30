@@ -23,6 +23,7 @@
 use crate::wallet::spend_wallet::SpendWallet;
 use crate::wallet::wallet_adapter::WalletAdapter;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
+use crate::LOG_TARGET_APP_LOGIC;
 use minotari_node_grpc_client::grpc::payment_recipient::PaymentType;
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{
@@ -33,8 +34,6 @@ use std::fs;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tauri::Manager;
-
-const LOG_TARGET: &str = "tari::universe::transaction_service";
 
 /// This struct encapsulates all functionality related to transactions
 pub struct TransactionService<'a> {
@@ -103,7 +102,7 @@ impl<'a> TransactionService<'a> {
         let wallet_txs_dir = get_transactions_directory(self.app_handle)?;
         if !wallet_txs_dir.exists() {
             std::fs::create_dir_all(&wallet_txs_dir).unwrap_or_else(|e| {
-                log::error!(target: LOG_TARGET, "Failed to create transactions directory: {e}");
+                log::error!(target: LOG_TARGET_APP_LOGIC, "Failed to create transactions directory: {e}");
             });
         }
 
@@ -220,7 +219,7 @@ impl<'a> TransactionService<'a> {
         let broadcast_signed_tx_res = res.into_inner();
         if broadcast_signed_tx_res.is_success {
             log::info!(
-                target: LOG_TARGET,
+                target: LOG_TARGET_APP_LOGIC,
                 "One-sided transaction broadcasted successfully | tx_id: {}",
                 broadcast_signed_tx_res.transaction_id
             );

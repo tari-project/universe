@@ -34,6 +34,7 @@ use crate::wallet::wallet_status_monitor::{WalletStatusMonitor, WalletStatusMoni
 use crate::wallet::wallet_types::{
     ConnectivityStatus, TransactionInfo, TransactionStatus, WalletBalance, WalletState,
 };
+use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use anyhow::Error;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
@@ -48,8 +49,6 @@ use tari_shutdown::Shutdown;
 use tari_transaction_components::tari_amount::MicroMinotari;
 use tari_transaction_components::transaction_components::memo_field::MemoField;
 use tokio::sync::watch;
-
-const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
 #[derive(Serialize, Deserialize, Default)]
 struct MinotariWalletMigrationInfo {
@@ -203,7 +202,7 @@ impl WalletAdapter {
             Err(e) => {
                 let cancel_res = tx_service.cancel_transaction(tx_id).await;
                 if let Err(cancel_err) = cancel_res {
-                    log::error!(target: LOG_TARGET, "Failed to cancel transaction after failed to sign one sided tx: {cancel_err}: {e}");
+                    log::error!(target: LOG_TARGET_APP_LOGIC, "Failed to cancel transaction after failed to sign one sided tx: {cancel_err}: {e}");
                 }
                 Err(e)
             }
@@ -229,7 +228,7 @@ impl WalletAdapter {
                     if let Some(state) = current_state {
                         // Case 1: Scan has reached or exceeded target height
                         if state.scanned_height >= block_height {
-                            info!(target: LOG_TARGET, "Wallet scan completed up to block height {block_height}");
+                            info!(target: LOG_TARGET_STATUSES, "Wallet scan completed up to block height {block_height}");
                             EventsEmitter::emit_wallet_status_updated(false, None).await;
                             return Ok(state);
                         }
@@ -239,7 +238,7 @@ impl WalletAdapter {
                                 if matches!(network.status, ConnectivityStatus::Online(3..)) {
                                     zero_scanned_height_count += 1;
                                     if zero_scanned_height_count >= 5 {
-                                        warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
+                                        warn!(target: LOG_TARGET_STATUSES, "Wallet scanned before gRPC service started");
                                         return Ok(state);
                                     }
                                 }
@@ -248,14 +247,14 @@ impl WalletAdapter {
                     }
                 },
                 _ = shutdown_signal.wait() => {
-                    log::info!(target: LOG_TARGET, "Shutdown signal received, stopping wait_for_scan_to_height");
+                    log::info!(target: LOG_TARGET_STATUSES, "Shutdown signal received, stopping wait_for_scan_to_height");
                     return Ok(WalletState::default());
                 }
                 _ = async {
                     tokio::time::sleep(timeout.unwrap_or(Duration::MAX)).await;
                 } => {
                     warn!(
-                        target: LOG_TARGET,
+                        target: LOG_TARGET_STATUSES,
                         "Timeout reached while waiting for wallet scan to complete. Current height: {}/{}",
                         state_receiver.borrow().as_ref().map(|s| s.scanned_height).unwrap_or(0),
                         block_height
@@ -290,7 +289,7 @@ impl ProcessAdapter for WalletAdapter {
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
-        info!(target: LOG_TARGET, "Starting read only wallet");
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting read only wallet");
 
         // Setup working directory using shared utility
         let working_dir = setup_working_directory(&data_dir, "wallet")?;
@@ -303,13 +302,13 @@ impl ProcessAdapter for WalletAdapter {
 
         if migration_info.version < 1 {
             if config_dir.exists() {
-                info!(target: LOG_TARGET, "Wallet migration v1: removing directory at {config_dir:?}");
+                info!(target: LOG_TARGET_APP_LOGIC, "Wallet migration v1: removing directory at {config_dir:?}");
                 let _unused = fs::remove_dir_all(config_dir).inspect_err(|e| {
-                    warn!(target: LOG_TARGET, "Wallet migration v1 Failed to remove directory: {e:?}");
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Wallet migration v1 Failed to remove directory: {e:?}");
                 });
             }
 
-            info!(target: LOG_TARGET, "Wallet migration v1 complete");
+            info!(target: LOG_TARGET_APP_LOGIC, "Wallet migration v1 complete");
             migration_info.version = 1;
         }
         migration_info.save(&migration_file)?;
@@ -353,7 +352,7 @@ impl ProcessAdapter for WalletAdapter {
                 args.push(wallet_birthday.to_string());
             }
             None => {
-                warn!(target: LOG_TARGET, "Wallet birthday not specified - wallet will scan from genesis block");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Wallet birthday not specified - wallet will scan from genesis block");
             }
         }
 
@@ -405,7 +404,7 @@ impl ProcessAdapter for WalletAdapter {
         }
 
         if let Err(e) = std::fs::remove_dir_all(peer_data_folder) {
-            warn!(target: LOG_TARGET, "Could not clear peer data folder: {e}");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Could not clear peer data folder: {e}");
         }
 
         #[cfg(target_os = "windows")]

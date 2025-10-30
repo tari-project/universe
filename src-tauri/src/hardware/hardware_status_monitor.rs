@@ -30,7 +30,7 @@ use crate::{
     events_emitter::EventsEmitter,
     hardware::{cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader},
     mining::gpu::{interface::GpuMinerInterfaceTrait, manager::GpuManager, miners::GpuDeviceType},
-    APPLICATION_FOLDER_ID,
+    APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC,
 };
 
 use super::{
@@ -48,8 +48,6 @@ use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use tokio::sync::RwLock;
-
-const LOG_TARGET: &str = "tari::universe::auto_launcher";
 
 static INSTANCE: LazyLock<HardwareStatusMonitor> = LazyLock::new(HardwareStatusMonitor::new);
 
@@ -90,7 +88,7 @@ impl HardwareVendor {
         } else if HardwareVendor::is_apple(&HardwareVendor::Apple, vendor) {
             HardwareVendor::Apple
         } else {
-            error!(target: LOG_TARGET, "Unsupported hardware vendor: {vendor:?}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Unsupported hardware vendor: {vendor:?}");
             HardwareVendor::Unknown
         }
     }
@@ -183,12 +181,12 @@ impl HardwareStatusMonitor {
             .join("gpuminer")
             .join("gpu_information_opencl.json");
         if file.exists() {
-            debug!(target: LOG_TARGET, "Loading gpu status from file: {file:?}");
+            debug!(target: LOG_TARGET_APP_LOGIC, "Loading gpu status from file: {file:?}");
             let content = tokio::fs::read_to_string(file).await?;
             let gpu_status: GpuStatusFileContent = serde_json::from_str(&content)?;
             Ok(gpu_status)
         } else {
-            warn!(target: LOG_TARGET, "Gpu status file not found: {file:?}");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Gpu status file not found: {file:?}");
             Ok(GpuStatusFileContent::default())
         }
     }
@@ -217,7 +215,7 @@ impl HardwareStatusMonitor {
         let mut platform_devices = Vec::new();
 
         for gpu_device in &gpu_status_file_content.devices {
-            debug!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.name);
+            debug!(target: LOG_TARGET_APP_LOGIC, "GPU device name: {:?}", gpu_device.name);
             let vendor = HardwareVendor::from_string(&gpu_device.name);
             let device_reader = self.select_reader_for_gpu_device(vendor.clone()).await;
             let platform_device = GpuDeviceProperties {
@@ -234,7 +232,7 @@ impl HardwareStatusMonitor {
                     parameters: None,
                     device_type: gpu_device.device_type.clone(),
                     // parameters: if device_reader.clone().get_is_reader_implemented() {
-                    //     debug!(target: LOG_TARGET, "Getting device parameters for: {:?}", gpu_device.device_name);
+                    //     debug!(target: LOG_TARGET_APP_LOGIC, "Getting device parameters for: {:?}", gpu_device.device_name);
                     //     device_reader.clone().get_device_parameters(None).await.ok()
                     // } else {
                     //     None
@@ -272,9 +270,9 @@ impl HardwareStatusMonitor {
         let mut cpu_devices = vec![];
 
         for cpu_device in system.cpus() {
-            debug!(target: LOG_TARGET, "CPU brand: {:?}", cpu_device.brand());
-            debug!(target: LOG_TARGET, "CPU vendor: {:?}", cpu_device.vendor_id());
-            debug!(target: LOG_TARGET, "CPU model: {:?}", cpu_device.name());
+            debug!(target: LOG_TARGET_APP_LOGIC, "CPU brand: {:?}", cpu_device.brand());
+            debug!(target: LOG_TARGET_APP_LOGIC, "CPU vendor: {:?}", cpu_device.vendor_id());
+            debug!(target: LOG_TARGET_APP_LOGIC, "CPU model: {:?}", cpu_device.name());
 
             let vendor = HardwareVendor::Intel;
             let device_reader = self.select_reader_for_cpu_device(vendor.clone()).await;
@@ -376,7 +374,7 @@ impl HardwareStatusMonitor {
             // TODO remove that extra detection step when miners will persist their state
             graxil_interface.detect_devices().await?;
             let raw_devices = graxil_interface.get_raw_gpu_devices();
-            info!(target: LOG_TARGET, "Raw detected GPU devices: {:?}", raw_devices);
+            info!(target: LOG_TARGET_APP_LOGIC, "Raw detected GPU devices: {:?}", raw_devices);
             for device in raw_devices {
                 if device.device_type == GpuDeviceType::Dedicated {
                     is_dedicated_gpu_found = true;
@@ -390,8 +388,8 @@ impl HardwareStatusMonitor {
             is_system_memory_above_16gb = true;
         }
 
-        info!(target: LOG_TARGET, "System total memory: {} MB", total_memory_mb);
-        info!(target: LOG_TARGET, "Is dedicated GPU found: {}", is_dedicated_gpu_found);
+        info!(target: LOG_TARGET_APP_LOGIC, "System total memory: {} MB", total_memory_mb);
+        info!(target: LOG_TARGET_APP_LOGIC, "Is dedicated GPU found: {}", is_dedicated_gpu_found);
 
         let is_gpu_mining_recommended = *ConfigMining::content().await.is_gpu_mining_recommended();
         let should_recommend_gpu_mining = is_dedicated_gpu_found || is_system_memory_above_16gb;

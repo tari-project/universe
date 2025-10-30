@@ -34,6 +34,7 @@ use crate::{
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
+    LOG_TARGET_APP_LOGIC,
 };
 use anyhow::Error;
 use log::error;
@@ -51,9 +52,6 @@ use super::{
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
-
-static LOG_TARGET: &str = "tari::universe::phase_gpu_mining";
-
 #[allow(dead_code)]
 #[derive(Clone, Default)]
 pub struct GpuMiningSetupPhaseAppConfiguration {
@@ -182,7 +180,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                     if graxil_initialization_result.is_ok() {
                         is_any_miner_succeeded = true;
                     }else {
-                        error!(target: LOG_TARGET, "Graxil initialization error: {:?}", graxil_err);
+                        error!(target: LOG_TARGET_APP_LOGIC, "Graxil initialization error: {:?}", graxil_err);
                     }
 
                     GpuManager::write()
@@ -206,7 +204,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                     if glytex_initialization_result.is_ok() {
                         is_any_miner_succeeded = true;
                     } else {
-                        error!(target: LOG_TARGET, "Glytex initialization error: {:?}", glytex_err);
+                        error!(target: LOG_TARGET_APP_LOGIC, "Glytex initialization error: {:?}", glytex_err);
                     }
 
                     GpuManager::write()
@@ -230,7 +228,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                     if lolminer_initialization_result.is_ok() {
                         is_any_miner_succeeded = true;
                     }else {
-                        error!(target: LOG_TARGET, "LolMiner initialization error: {:?}", lolminer_err);
+                        error!(target: LOG_TARGET_APP_LOGIC, "LolMiner initialization error: {:?}", lolminer_err);
                     }
 
                     GpuManager::write()
@@ -267,7 +265,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                             .add_gpu_drivers_as_dependencies()
                             .await
                         {
-                            error!(target: LOG_TARGET, "Failed to add GPU drivers as dependencies: {e}");
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to add GPU drivers as dependencies: {e}");
                             return Err(original_error);
                         }
 
@@ -275,7 +273,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                             .validate_dependencies()
                             .await
                         {
-                            error!(target: LOG_TARGET, "Failed to validate dependencies after adding GPU drivers: {e}");
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to validate dependencies after adding GPU drivers: {e}");
                             return Err(original_error);
                         }
 
@@ -287,7 +285,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                                 .add_khronos_opencl_as_dependency()
                                 .await
                             {
-                                error!(target: LOG_TARGET, "Failed to add Khronos OpenCL as dependency: {e}");
+                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to add Khronos OpenCL as dependency: {e}");
                                 return Err(first_retry_error);
                             }
 
@@ -295,7 +293,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                                 .validate_dependencies()
                                 .await
                             {
-                                error!(target: LOG_TARGET, "Failed to validate dependencies after adding Khronos OpenCL: {e}");
+                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to validate dependencies after adding Khronos OpenCL: {e}");
                                 return Err(first_retry_error);
                             }
 
@@ -305,7 +303,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
                     }
                     #[cfg(not(target_os = "windows"))]
                     {
-                        error!(target: LOG_TARGET, "Failed to detect GPU devices: {original_error}");
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to detect GPU devices: {original_error}");
                         return Err(original_error);
                     }
                 }

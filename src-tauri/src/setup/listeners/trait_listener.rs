@@ -30,6 +30,7 @@ use crate::{
         setup_manager::{PhaseStatus, SetupPhase},
     },
     tasks_tracker::TasksTrackers,
+    LOG_TARGET_APP_LOGIC,
 };
 
 use super::SetupFeaturesList;
@@ -41,8 +42,6 @@ use tokio::{
     },
     time::sleep,
 };
-
-static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_trait";
 
 #[derive(Clone)]
 pub struct UnlockConditionsStatusChannels(HashMap<SetupPhase, Receiver<PhaseStatus>>);
@@ -164,7 +163,7 @@ pub trait UnlockConditionsListenerTrait {
                             _ => {}
                         }
                     } else {
-                        warn!(target: LOG_TARGET, "Failed to check unlock conditions");
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to check unlock conditions");
                     }
                     sleep(Duration::from_secs(5)).await;
                 }
@@ -196,7 +195,7 @@ pub trait UnlockStrategyTrait {
     fn are_all_channels_loaded(&self, channels: &UnlockConditionsStatusChannels) -> bool {
         for phase in &self.required_channels() {
             if !channels.contains_key(phase) {
-                warn!(target: LOG_TARGET, "Missing channel for phase: {phase:?}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Missing channel for phase: {phase:?}");
                 return false;
             }
         }
@@ -242,7 +241,7 @@ pub trait UnlockStrategyTrait {
                     return true;
                 }
             } else {
-                warn!(target: LOG_TARGET, "Channel for phase {phase:?} not found");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Channel for phase {phase:?} not found");
                 return true;
             }
         }
