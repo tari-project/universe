@@ -8,7 +8,7 @@ import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
 import CrewRewards from '../main/CrewRewards/CrewRewards.tsx';
 
 import AutoUpdateDialog from './AutoUpdateDialog/AutoUpdateDialog.tsx';
-import CloseExperienceDialog from './ShutdownSelectionDialog/index.ts';
+import ShutdownSelectionDialog from './ShutdownSelectionDialog/index.ts';
 import CreatePinDialog from './security/pin/CreatePinDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
 import CriticalProblemDialog from './CriticalProblemDialog/CriticalProblemDialog.tsx';
@@ -39,7 +39,7 @@ const FloatingElements = () => {
             {environment === 'development' && <AdminUI />}
 
             <AutoUpdateDialog />
-            <CloseExperienceDialog />
+            <ShutdownSelectionDialog />
             <CriticalErrorDialog />
             <ExternalDependenciesDialog />
             <PaperWalletModal />
