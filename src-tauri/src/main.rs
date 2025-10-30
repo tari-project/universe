@@ -589,6 +589,7 @@ fn main() {
             commands::set_feedback_fields,
             commands::set_mode_mining_time,
             commands::set_eco_alert_needed,
+            commands::set_pause_on_battery_mode,
             // Scheduler commands
             commands::add_scheduler_in_event,
             commands::add_scheduler_between_event,

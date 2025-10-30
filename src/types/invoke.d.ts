@@ -9,7 +9,7 @@ import {
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from './app-status.ts';
 import { displayMode } from '../store/types.ts';
-import { BasePoolData, ConfigBackendInMemory } from './configs.ts';
+import { BasePoolData, ConfigBackendInMemory, PauseOnBatteryModeState } from './configs.ts';
 import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from './tapplets/tapplet.types';
 import { AddSchedulerEventBetweenVariantPayload, AddSchedulerEventInVariantPayload } from './mining/schedule.ts';
@@ -137,6 +137,10 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
     function invoke(param: 'set_mode_mining_time', payload: { mode: string; duration: number }): Promise<void>;
     function invoke(param: 'set_eco_alert_needed'): Promise<void>;
+    function invoke(
+        param: 'set_pause_on_battery_mode',
+        payload: { pauseOnBatteryMode: PauseOnBatteryModeState }
+    ): Promise<void>;
     // Scheduler commands
     function invoke(param: 'add_scheduler_in_event', payload: AddSchedulerEventInVariantPayload): Promise<void>;
     function invoke(
