@@ -57,13 +57,18 @@ impl Feedback {
     ) -> Result<zip::result::ZipResult<File>, Error> {
         let file_options = SimpleFileOptions::default();
 
+        let zip_file_name = archive_file
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| anyhow::anyhow!("Failed to get zip file name"))?;
+
         let file = File::create(archive_file)?;
+
         let mut zip = ZipWriter::new(file);
         let mut paths_queue: Vec<PathBuf> = vec![];
         paths_queue.push(directory.to_path_buf().clone());
 
         let mut buffer = Vec::new();
-
         let log_regex_filter = Regex::new(r"^(.*[0-9]*\.log|.*\.zip)$")
             .map_err(|e| anyhow!("Failed to create log file filter: {}", e))?;
 
@@ -78,7 +83,10 @@ impl Feedback {
                     .and_then(|name| name.to_str())
                     .ok_or_else(|| anyhow::anyhow!("Failed to get file name"))?;
 
-                if entry_metadata.is_file() && log_regex_filter.is_match(entry_file_name_as_str) {
+                if entry_metadata.is_file()
+                    && log_regex_filter.is_match(entry_file_name_as_str)
+                    && entry_file_name_as_str != zip_file_name
+                {
                     let mut f = File::open(&entry_path)?;
                     f.read_to_end(&mut buffer)?;
                     let relative_path = make_relative_path(directory, &entry_path);
