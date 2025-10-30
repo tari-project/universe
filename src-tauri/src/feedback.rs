@@ -39,7 +39,7 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::utils::file_utils::{make_relative_path, path_as_string};
 
 const LOG_TARGET: &str = "tari::universe::feedback";
-
+const MAX_FILE_SIZE: u64 = 100 * 1024 * 1024; // 100MB in bytes
 pub struct Feedback {
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
 }
@@ -49,11 +49,10 @@ impl Feedback {
         Self { in_memory_config }
     }
 
-    /// Build zip file
-    pub async fn zip_create_from_directory(
+    pub async fn zip_create_from_directories(
         &self,
         archive_file: &Path,
-        directory: &Path,
+        directories_and_filters: &[(PathBuf, Regex, String)],
     ) -> Result<zip::result::ZipResult<File>, Error> {
         let file_options = SimpleFileOptions::default();
 
@@ -63,42 +62,62 @@ impl Feedback {
             .ok_or_else(|| anyhow::anyhow!("Failed to get zip file name"))?;
 
         let file = File::create(archive_file)?;
+        let zip_file_name = archive_file
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| anyhow!("Failed to get archive file name"))?;
 
         let mut zip = ZipWriter::new(file);
-        let mut paths_queue: Vec<PathBuf> = vec![];
-        paths_queue.push(directory.to_path_buf().clone());
-
         let mut buffer = Vec::new();
-        let log_regex_filter = Regex::new(r"^(.*[0-9]*\.log|.*\.zip)$")
-            .map_err(|e| anyhow!("Failed to create log file filter: {}", e))?;
 
-        while let Some(next) = paths_queue.pop() {
-            let directory_entry_iterator = std::fs::read_dir(next)?;
+        for (directory, regex_filter, folder_name) in directories_and_filters {
+            if !directory.exists() {
+                continue; // Skip non-existent directories
+            }
 
-            for entry in directory_entry_iterator {
-                let entry_path = entry?.path();
-                let entry_metadata = std::fs::metadata(entry_path.clone())?;
-                let entry_file_name_as_str = entry_path
-                    .file_name()
-                    .and_then(|name| name.to_str())
-                    .ok_or_else(|| anyhow::anyhow!("Failed to get file name"))?;
+            let mut paths_queue: Vec<PathBuf> = vec![];
+            paths_queue.push(directory.to_path_buf());
 
-                if entry_metadata.is_file()
-                    && log_regex_filter.is_match(entry_file_name_as_str)
-                    && entry_file_name_as_str != zip_file_name
-                {
-                    let mut f = File::open(&entry_path)?;
-                    f.read_to_end(&mut buffer)?;
-                    let relative_path = make_relative_path(directory, &entry_path);
-                    zip.start_file(path_as_string(&relative_path), file_options)?;
-                    zip.write_all(buffer.as_ref())?;
-                    buffer.clear();
-                } else if entry_metadata.is_dir() {
-                    let relative_path = make_relative_path(directory, &entry_path);
-                    zip.add_directory(path_as_string(&relative_path), file_options)?;
-                    paths_queue.push(entry_path.clone());
-                } else {
-                    // Skip log files
+            while let Some(next) = paths_queue.pop() {
+                let directory_entry_iterator = std::fs::read_dir(next)?;
+
+                for entry in directory_entry_iterator {
+                    let entry_path = entry?.path();
+                    let entry_metadata = std::fs::metadata(entry_path.clone())?;
+                    let entry_file_name_as_str = entry_path
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .ok_or_else(|| anyhow::anyhow!("Failed to get file name"))?;
+
+                    if entry_metadata.is_file()
+                        && regex_filter.is_match(entry_file_name_as_str)
+                        && !entry_file_name_as_str.eq(zip_file_name)
+                    {
+                        // Skip files larger than 100MB
+                        if entry_metadata.len() > MAX_FILE_SIZE {
+                            info!(target: LOG_TARGET, "Skipping file {} (size: {} bytes) - exceeds 100MB limit", 
+                                  entry_file_name_as_str, entry_metadata.len());
+                            continue;
+                        }
+
+                        let mut f = File::open(&entry_path)?;
+                        f.read_to_end(&mut buffer)?;
+                        let relative_path = make_relative_path(directory, &entry_path);
+                        let prefixed_path =
+                            format!("{}/{}", folder_name, path_as_string(&relative_path));
+                        zip.start_file(prefixed_path, file_options)?;
+                        zip.write_all(buffer.as_ref())?;
+                        buffer.clear();
+                    } else if entry_metadata.is_dir() {
+                        let relative_path = make_relative_path(directory, &entry_path);
+                        let prefixed_path =
+                            format!("{}/{}", folder_name, path_as_string(&relative_path));
+                        zip.add_directory(prefixed_path, file_options)?;
+                        paths_queue.push(entry_path.clone());
+                    } else {
+                        info!(target: LOG_TARGET, "Skipping file {} - does not match filter",
+                              entry_file_name_as_str);
+                    }
                 }
             }
         }
@@ -106,12 +125,29 @@ impl Feedback {
         Ok(zip.finish())
     }
 
-    async fn archive_path(&self, logs_dir: &Path) -> Result<(PathBuf, String)> {
+    async fn archive_path(&self, logs_dir: &Path, config_dir: &Path) -> Result<(PathBuf, String)> {
         let anon_id = ConfigCore::content().await.anon_id().clone();
-        let zip_filename = format!("logs_{}.zip", anon_id.clone());
+        let zip_filename = format!("logs_config_{}.zip", anon_id.clone());
         let archive_file = logs_dir.join(zip_filename.clone());
+
+        // Create regex filters for different file types
+        let log_regex_filter = Regex::new(r"^(.*[0-9]*\.log|.*\.zip)$")
+            .map_err(|e| anyhow!("Failed to create log file filter: {}", e))?;
+        let config_regex_filter =
+            Regex::new(r"^(.*\.toml|.*\.json|.*\.yaml|.*\.yml|.*\.ini|.*\.conf|.*\.config)$")
+                .map_err(|e| anyhow!("Failed to create config file filter: {}", e))?;
+
+        let directories_and_filters = vec![
+            (logs_dir.to_path_buf(), log_regex_filter, "logs".to_string()),
+            (
+                config_dir.to_path_buf(),
+                config_regex_filter,
+                "configs".to_string(),
+            ),
+        ];
+
         let _unused = self
-            .zip_create_from_directory(&archive_file, logs_dir)
+            .zip_create_from_directories(&archive_file, &directories_and_filters)
             .await?;
         Ok((archive_file.to_path_buf(), zip_filename))
     }
@@ -119,7 +155,8 @@ impl Feedback {
         &self,
         feedback_message: String,
         include_logs: bool,
-        app_log_dir: Option<PathBuf>,
+        app_log_dir: PathBuf,
+        app_config_dir: PathBuf,
     ) -> Result<String> {
         if feedback_message.is_empty() {
             return Err(anyhow::anyhow!("Feedback not sent. No message provided"));
@@ -137,11 +174,8 @@ impl Feedback {
             .text("appId", anon_id.clone());
 
         let upload_zip_path = if include_logs {
-            let logs_dir = &app_log_dir.ok_or(anyhow::anyhow!("Missing log directory"))?;
-            let (archive_file, zip_filename) = self.archive_path(logs_dir).await?;
-            let _unused = self
-                .zip_create_from_directory(&archive_file, logs_dir)
-                .await?;
+            let (archive_file, zip_filename) =
+                self.archive_path(&app_log_dir, &app_config_dir).await?;
             let metadata = std::fs::metadata(&archive_file)?;
             let file_size = metadata.len();
             info!(target: LOG_TARGET, "Uploading {} ({} bytes)", zip_filename.clone(), file_size);
