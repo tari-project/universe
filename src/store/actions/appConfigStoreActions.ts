@@ -92,9 +92,9 @@ export const setAirdropTokensInConfig = (
 ) => {
     const airdropTokens = airdropTokensParam
         ? {
-            token: airdropTokensParam.token,
-            refresh_token: airdropTokensParam.refreshToken,
-        }
+              token: airdropTokensParam.token,
+              refresh_token: airdropTokensParam.refreshToken,
+          }
         : undefined;
 
     invoke('set_airdrop_tokens', { airdropTokens })
