@@ -9,19 +9,12 @@ export {
     setUserPoints,
 } from './airdropStoreActions.ts';
 export {
-    setAirdropTokensInConfig,
-    setAllowTelemetry,
     setApplicationLanguage,
-    setAutoUpdate,
     setGpuMiningEnabled,
     setMineOnAppStart,
     setMoneroAddress,
-    setMonerodConfig,
-    setPreRelease,
     setShouldAlwaysUseSystemLanguage,
-    setShouldAutoLaunch,
     setShowExperimentalSettings,
-    setUseTor,
     setVisualMode,
 } from './appConfigStoreActions.ts';
 

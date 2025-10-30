@@ -19,13 +19,14 @@ import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { setSeedlessUI, setShouldShowExchangeSpecificModal } from '@app/store/actions/uiStoreActions.ts';
 import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch.tsx';
-import { setAllowTelemetry, useConfigCoreStore } from '@app/store';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 import { convertEthAddressToTariAddress } from '@app/store/actions/bridgeApiActions.ts';
 import { isAddress } from 'ethers';
 import { useTranslation } from 'react-i18next';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
+import { setAllowTelemetry } from '@app/store/actions/config/core.ts';
 
 interface ConnectFormFields {
     address: string;

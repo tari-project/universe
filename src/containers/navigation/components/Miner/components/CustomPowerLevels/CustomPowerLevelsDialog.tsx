@@ -120,7 +120,6 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                     <SuccessContainer $visible={isChangingMode || saved}>
                         {t('custom-power-levels.saved')}
                     </SuccessContainer>
-
                     <IconButton onClick={handleClose}>
                         <IoClose size={18} />
                     </IconButton>
@@ -140,6 +139,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                 <CTAWrapper>
                     <Button
                         onClick={handleSubmit(onSubmit)}
+                        backgroundColor="greyscale"
                         disabled={
                             isChangingMode || (currentMode?.mode_type === MiningModeType.Custom && !formState.isDirty)
                         }

@@ -3,14 +3,9 @@ import { platform } from '@tauri-apps/plugin-os';
 import { isMainNet } from '@app/utils/network.ts';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import { SubmitSurveyRequest, SubmitSurveyResponse } from '@app/types/user/surveys.ts';
-import {
-    useAirdropStore,
-    useConfigCoreStore,
-    useConfigMiningStore,
-    useConfigPoolsStore,
-    useMiningMetricsStore,
-} from '@app/store';
+import { useAirdropStore, useConfigMiningStore, useConfigPoolsStore, useMiningMetricsStore } from '@app/store';
 import { GpuDevice } from '@app/types/app-status.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 
 const universeVersion = import.meta.env.VITE_TARI_UNIVERSE_VERSION;
 interface Args {

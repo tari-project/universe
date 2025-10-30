@@ -9,7 +9,8 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { NodeType, useNodeStore } from '@app/store/useNodeStore.ts';
+import { useNodeStore } from '@app/store/useNodeStore.ts';
+import { NodeType } from '@app/types/mining/node.ts';
 
 const getNodeType = (nodeType?: NodeType) => {
     if (!nodeType) return 'N/A';

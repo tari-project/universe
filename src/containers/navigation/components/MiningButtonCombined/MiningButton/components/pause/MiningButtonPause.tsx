@@ -7,7 +7,7 @@ import PauseIcon from '../../../icons/PauseIcon.tsx';
 
 import { IconWrapper, Options, OptionText, OptionWrapper, TimerAccent, TriggerWrapper } from './styles.ts';
 import { Trans } from 'react-i18next';
-import { TimerIcon } from './TimerIcon.tsx';
+import { TimerIcon } from '@app/assets/icons/TimerIcon.tsx';
 import { PauseOutlineIcon } from './PauseOutlineIcon.tsx';
 import { stopMining } from '@app/store';
 import { pauseMining, setResumeDuration } from '@app/store/actions/miningStoreActions.ts';

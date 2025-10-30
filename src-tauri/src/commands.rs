@@ -1958,7 +1958,8 @@ pub async fn add_scheduler_between_event(
     )
     .map_err(|e| e.to_string())?;
 
-    let event_type = SchedulerEventType::ResumeMining;
+    let mining_mode = ConfigMining::get_selected_mining_mode_object().await;
+    let event_type = SchedulerEventType::Mine { mining_mode };
 
     EventScheduler::instance()
         .schedule_event(event_type, event_id, event_timing)

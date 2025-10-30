@@ -29,7 +29,9 @@
       "alert_text": "Eco mode only uses a low percentage of system resources.",
       "alert_text_extra": "Try turning the power mode up.",
       "alert_title": "Not earning enough rewards?"
-    }
+    },
+    "mode": "Mode",
+    "mode-long": "Miner Mode"
   },
   "orphan-chain-tooltip": {
     "heading": "Things to try:",
@@ -49,6 +51,18 @@
     "balance": "Total earnings",
     "min_payout": "Minimum payout",
     "unpaid": "Unpaid"
+  },
+  "schedule": {
+    "cta-save": "Save Schedule",
+    "cta-save-complete": "Saved!",
+    "current": "Your current schedule",
+    "mining-schedule": "Mining Schedule",
+    "mining-schedule-copy": "Set specific times to automatically start mining.",
+    "mining-schedule-setup": "Setup Mining Schedule",
+    "scheduled-to-mine": "Scheduled to mine at",
+    "scheduled-to-pause": "Scheduled to pause mining at",
+    "time-label-end": "Daily End Time",
+    "time-label-start": "Daily Start Time"
   },
   "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
   "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",

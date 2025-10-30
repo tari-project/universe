@@ -11,11 +11,11 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { Select, SelectOption } from '@app/components/elements/inputs/Select.tsx';
-import { NodeType } from '@app/store/useNodeStore.ts';
-import { useConfigCoreStore } from '@app/store/useAppConfigStore.ts';
-import { setNodeType } from '@app/store/actions/appConfigStoreActions.ts';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { offset } from '@floating-ui/react';
+import { NodeType } from '@app/types/mining/node.ts';
+import { setNodeType } from '@app/store/actions/config/core.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 
 export default function NodeTypeConfiguration() {
     const { t } = useTranslation(['settings'], { useSuspense: false });

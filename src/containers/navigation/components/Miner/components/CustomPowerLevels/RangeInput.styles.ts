@@ -1,5 +1,13 @@
 import styled, { css } from 'styled-components';
 
+export const TopContent = styled.div`
+    width: 100%;
+    display: flex;
+    gap: 40px;
+    align-items: center;
+    justify-content: space-between;
+    height: 34px;
+`;
 export const RangeLabel = styled.label`
     display: flex;
     justify-content: space-between;
@@ -11,32 +19,34 @@ export const RangeLabel = styled.label`
 export const InputDescription = styled.div`
     display: flex;
     justify-content: flex-end;
-    font-size: 12px;
+    font-size: 13px;
+    line-height: 1;
     color: ${({ theme }) => theme.palette.text.accent};
     gap: 4px;
-    span {
-        font-weight: bold;
-    }
 `;
 
 export const WarningContainer = styled.div<{ $visible: boolean }>`
     overflow: hidden;
-    padding: 0 15px;
+    padding: 0 8px;
     font-size: 12px;
+    line-height: 1;
     font-family: Poppins, sans-serif;
     color: #ff0000;
-    border: 1px solid #ff0000;
-    border-radius: 5px;
-    background: rgba(255, 0, 0, 0.1);
+    border: 2px solid rgba(255, 0, 0, 0.65);
+    border-radius: 32px;
+    background: rgba(255, 0, 0, 0.05);
     height: 0;
     opacity: 0;
-    transition: all 0.3s ease-in-out;
+    text-align: center;
+    transition: all 0.2s ease-out;
+
+    font-weight: 500;
     ${({ $visible }) =>
         $visible &&
         css`
-            opacity: 0.7;
-            padding: 8px 15px;
-            max-height: 50px;
+            opacity: 0.8;
+            padding: 8px;
+            max-height: 100%;
             height: auto;
         `}
 `;

@@ -159,6 +159,11 @@ impl CpuManager {
             return Err(anyhow::anyhow!("CPU mining is disabled"));
         }
 
+        if self.process_watcher.is_running() {
+            info!(target: LOG_TARGET, "CPU miner is already running");
+            return Ok(());
+        }
+
         EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Initiated).await;
 
         if let Some(app_handle) = &self.app_handle {
