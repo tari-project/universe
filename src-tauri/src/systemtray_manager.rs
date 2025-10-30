@@ -57,6 +57,7 @@ pub enum SystemTrayDataItem {
     GpuMiningState { is_gpu_mining_turned_on: bool },
     Power { mode: String },
     PendingRewards { rewards: f64 },
+    ShareCount { count: u64 },
 }
 
 impl Display for SystemTrayDataItem {
@@ -104,6 +105,13 @@ impl Display for SystemTrayDataItem {
                     format_currency(*rewards / 1_000_000.0, "XTM")
                 )
             }
+            SystemTrayDataItem::ShareCount { count } => {
+                if count.eq(&0) {
+                    write!(f, "Share Count: N/A")
+                } else {
+                    write!(f, "Share Count: {}", count)
+                }
+            }
         }
     }
 }
@@ -117,6 +125,7 @@ impl SystemTrayDataItem {
             SystemTrayDataItem::GpuMiningState { .. } => "gpu_mining_state",
             SystemTrayDataItem::Power { .. } => "power",
             SystemTrayDataItem::PendingRewards { .. } => "pending_rewards",
+            SystemTrayDataItem::ShareCount { .. } => "share_count",
         }
     }
 }
@@ -164,6 +173,7 @@ pub struct SystemTrayData {
     pub is_gpu_mining_turned_on: bool,
     pub mining_mode: MiningModeType,
     pub pool_pending_rewards: f64,
+    pub pool_share_count: u64,
     pub is_mining: bool,
 }
 
@@ -174,8 +184,14 @@ pub enum SystemTrayEvents {
     CpuMiningState(bool),
     GpuMiningState(bool),
     MiningMode(MiningModeType),
-    CpuPoolPendingRewards(f64),
-    GpuPoolPendingRewards(f64),
+    CpuPoolStats {
+        pending_rewards: f64,
+        share_count: u64,
+    },
+    GpuPoolStats {
+        pending_rewards: f64,
+        share_count: u64,
+    },
     CpuMiningActivity(bool),
     GpuMiningActivity(bool),
 }
@@ -219,6 +235,7 @@ impl SystemTrayManager {
         };
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn start_tray_data_listener(&mut self) {
         // Create a new receiver since we need to move it into the task
         let (sender, mut receiver) = mpsc::unbounded_channel();
@@ -235,6 +252,8 @@ impl SystemTrayManager {
             let mut last_cpu_pool_pending_rewards = 0.0;
             let mut last_cpu_mining_activity = false;
             let mut last_gpu_mining_activity = false;
+            let mut last_gpu_pool_share_count = 0;
+            let mut last_cpu_pool_share_count = 0;
 
             loop {
                 tokio::select! {
@@ -276,22 +295,6 @@ impl SystemTrayManager {
                                         );
                                         Self::write().await.data.mining_mode = mode;
                                     },
-                                    SystemTrayEvents::CpuPoolPendingRewards(rewards) => {
-                                        last_cpu_pool_pending_rewards = rewards;
-                                        let total_rewards = last_cpu_pool_pending_rewards + last_gpu_pool_pending_rewards;
-                                        Self::write().await.update_menu_data_item(
-                                            SystemTrayDataItem::PendingRewards { rewards: total_rewards }
-                                        );
-                                        Self::write().await.data.pool_pending_rewards = total_rewards;
-                                    },
-                                    SystemTrayEvents::GpuPoolPendingRewards(rewards) => {
-                                        last_gpu_pool_pending_rewards = rewards;
-                                        let total_rewards = last_cpu_pool_pending_rewards + last_gpu_pool_pending_rewards;
-                                        Self::write().await.update_menu_data_item(
-                                            SystemTrayDataItem::PendingRewards { rewards: total_rewards }
-                                        );
-                                        Self::write().await.data.pool_pending_rewards = total_rewards;
-                                    },
                                     SystemTrayEvents::CpuMiningActivity(is_active) => {
                                         info!(target: LOG_TARGET, "Received CPU mining activity update: {}", is_active);
                                         last_cpu_mining_activity = is_active;
@@ -309,7 +312,35 @@ impl SystemTrayManager {
                                             SystemTrayActionItem::ToggleMining { is_mining }
                                         );
                                         Self::write().await.data.is_mining = is_mining;
-                                    }
+                                    },
+                                    SystemTrayEvents::CpuPoolStats { pending_rewards, share_count } => {
+                                        last_cpu_pool_pending_rewards = pending_rewards;
+                                        last_cpu_pool_share_count = share_count;
+                                        let total_pending_rewards = last_cpu_pool_pending_rewards + last_gpu_pool_pending_rewards;
+                                        let total_share_count = last_cpu_pool_share_count + last_gpu_pool_share_count;
+                                        Self::write().await.update_menu_data_item(
+                                            SystemTrayDataItem::PendingRewards { rewards: total_pending_rewards }
+                                        );
+                                        Self::write().await.update_menu_data_item(
+                                            SystemTrayDataItem::ShareCount { count: total_share_count }
+                                        );
+                                        Self::write().await.data.pool_pending_rewards = total_pending_rewards;
+                                        Self::write().await.data.pool_share_count = total_share_count;
+                                    },
+                                    SystemTrayEvents::GpuPoolStats { pending_rewards, share_count } => {
+                                        last_gpu_pool_pending_rewards = pending_rewards;
+                                        last_gpu_pool_share_count = share_count;
+                                        let total_pending_rewards = last_cpu_pool_pending_rewards + last_gpu_pool_pending_rewards;
+                                        let total_share_count = last_cpu_pool_share_count + last_gpu_pool_share_count;
+                                        Self::write().await.update_menu_data_item(
+                                            SystemTrayDataItem::PendingRewards { rewards: total_pending_rewards }
+                                        );
+                                        Self::write().await.update_menu_data_item(
+                                            SystemTrayDataItem::ShareCount { count: total_share_count }
+                                        );
+                                        Self::write().await.data.pool_pending_rewards = total_pending_rewards;
+                                        Self::write().await.data.pool_share_count = total_share_count;
+                                    },
                                 }
                             }
                             None => {
@@ -391,6 +422,9 @@ impl SystemTrayManager {
         let pool_pending_rewards = self
             .initialize_menu_data_item(SystemTrayDataItem::PendingRewards { rewards: 0.0 }, false);
 
+        let pool_share_count =
+            self.initialize_menu_data_item(SystemTrayDataItem::ShareCount { count: 0 }, false);
+
         // Action items
 
         let open_tari_universe =
@@ -417,6 +451,7 @@ impl SystemTrayManager {
                 &power,
                 &rewards_separator,
                 &pool_pending_rewards,
+                &pool_share_count,
                 &bottom_action_separator,
                 &settings,
                 &quit,
@@ -476,6 +511,13 @@ impl SystemTrayManager {
         self.tray.replace(tray);
 
         self.start_tray_data_listener().await;
+
+        #[cfg(target_os = "windows")]
+        {
+            if let Err(e) = Self::set_tray_icon_promoted(true).await {
+                error!(target: LOG_TARGET, "Failed to promote tray icon: {e}");
+            }
+        }
     }
 
     async fn close_tari_universe_action(app: AppHandle) {
@@ -578,5 +620,25 @@ impl SystemTrayManager {
         } else {
             error!(target: LOG_TARGET, "Menu is not initialized");
         }
+    }
+
+    #[cfg(target_os = "windows")]
+    async fn set_tray_icon_promoted(promote: bool) -> Result<(), anyhow::Error> {
+        use crate::system_dependencies::windows::registry::{
+            entry_tasktray_icon::WindowsRegistryTasktrayIconResolver, WindowsRegistryReader,
+        };
+
+        let entries = WindowsRegistryTasktrayIconResolver::read_registry()?;
+        for entry in entries.iter().filter(|e| e.is_tari_icon()) {
+            if !entry.is_promoted() {
+                WindowsRegistryTasktrayIconResolver::set_icon_promoted(
+                    &entry.executable_path,
+                    promote,
+                )
+                .await?;
+            }
+        }
+
+        Ok(())
     }
 }

@@ -101,9 +101,10 @@ impl PoolManagerInterfaceTrait<CpuPool> for CpuPoolManager {
         move |pool_statuses: HashMap<String, PoolStatus>, current_status: PoolStatus| {
             spawn(async move {
                 EventsEmitter::emit_cpu_pools_status_update(pool_statuses).await;
-                SystemTrayManager::send_event(SystemTrayEvents::CpuPoolPendingRewards(
-                    current_status.unpaid,
-                ))
+                SystemTrayManager::send_event(SystemTrayEvents::CpuPoolStats {
+                    pending_rewards: current_status.unpaid,
+                    share_count: current_status.accepted_shares,
+                })
                 .await;
             });
         }

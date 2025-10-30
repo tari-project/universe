@@ -8,6 +8,11 @@ export interface SessionMiningTime {
     durationMs?: number;
 }
 
+export interface ResumeMiningTime {
+    durationHours: number;
+    timeStamp: number;
+}
+
 export interface MiningStoreState {
     hashrateReady?: boolean;
     miningControlsEnabled: boolean;
@@ -25,6 +30,7 @@ export interface MiningStoreState {
     selectedMiner?: GpuMinerType;
     sessionMiningTime: SessionMiningTime;
     showEcoAlert: boolean;
+    selectedResumeDuration?: ResumeMiningTime;
 }
 
 const initialState: MiningStoreState = {

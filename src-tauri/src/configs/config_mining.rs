@@ -35,7 +35,7 @@ pub const MINING_CONFIG_VERSION: u32 = 1;
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
     LazyLock::new(|| RwLock::new(ConfigMining::new()));
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize, Default)]
 pub enum MiningModeType {
     #[default]
     Eco,
@@ -80,7 +80,7 @@ impl From<String> for MiningModeType {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct MiningMode {
     pub mode_type: MiningModeType,
     pub mode_name: String,

@@ -27,7 +27,7 @@ use crate::setup::listeners::AppModule;
 pub mod system_dependencies_manager;
 
 #[cfg(target_os = "windows")]
-mod windows;
+pub mod windows;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum UniversalDependencyStatus {

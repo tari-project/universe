@@ -7,11 +7,12 @@ import {
     BaseNodeStatus,
 } from './app-status';
 import { Language } from '@app/i18initializer';
-import { PaperWalletDetails } from '@app/types/app-status.ts';
-import { displayMode } from '@app/store/types.ts';
-import { BasePoolData, ConfigBackendInMemory, PauseOnBatteryModeState } from '@app/types/configs.ts';
+import { PaperWalletDetails } from './app-status.ts';
+import { displayMode } from '../store/types.ts';
+import { BasePoolData, ConfigBackendInMemory, PauseOnBatteryModeState } from './configs.ts';
 import { ExchangeMiner } from './exchange';
-import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
+import { ActiveTapplet } from './tapplets/tapplet.types';
+import { AddSchedulerEventBetweenVariantPayload, AddSchedulerEventInVariantPayload } from './mining/schedule.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -140,4 +141,13 @@ declare module '@tauri-apps/api/core' {
         param: 'set_pause_on_battery_mode',
         payload: { pauseOnBatteryMode: PauseOnBatteryModeState }
     ): Promise<void>;
+    // Scheduler commands
+    function invoke(param: 'add_scheduler_in_event', payload: AddSchedulerEventInVariantPayload): Promise<void>;
+    function invoke(
+        param: 'add_scheduler_between_events',
+        payload: AddSchedulerEventBetweenVariantPayload
+    ): Promise<void>;
+    function invoke(param: 'remove_scheduler_event', payload: { eventId: string }): Promise<void>;
+    function invoke(param: 'pause_scheduler_event', payload: { eventId: string }): Promise<void>;
+    function invoke(param: 'resume_scheduler_event', payload: { eventId: string }): Promise<void>;
 }

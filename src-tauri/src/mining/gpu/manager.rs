@@ -341,7 +341,7 @@ impl GpuManager {
 
             let global_shutdown_signal =
                 TasksTrackers::current().gpu_mining_phase.get_signal().await;
-            self.status_thread_shutdown = Shutdown::new();
+
             let task_tracker = TasksTrackers::current()
                 .gpu_mining_phase
                 .get_task_tracker()
@@ -419,7 +419,7 @@ impl GpuManager {
                 GpuPoolManager::start_stats_watcher().await;
                 info!(target: LOG_TARGET, "Started gpu miner pool watcher");
             }
-
+            self.status_thread_shutdown = Shutdown::new();
             self.initialize_status_updates().await;
             info!(target: LOG_TARGET, "Initialized gpu miner status updates");
         } else {
@@ -629,11 +629,6 @@ impl GpuManager {
 
         task_tracker.spawn(async move {
             loop {
-                if internal_shutdown_signal.is_triggered() || global_shutdown_signal.is_triggered() {
-                    info!(target: LOG_TARGET, "Shutting down gpu miner status updates from trigger");
-                    break;
-                }
-
                 select! {
                     _ = internal_shutdown_signal.wait() => {
                         info!(target: LOG_TARGET, "Shutting down gpu miner status updates");
