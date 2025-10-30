@@ -11,7 +11,6 @@ import { useDetectMode } from '../hooks/helpers/useDetectMode';
 import { fetchBackendInMemoryConfig } from '@app/store/actions/appConfigStoreActions.ts';
 import { fetchBridgeColdWalletAddress } from '@app/store/actions/bridgeApiActions';
 import { queryClient } from '@app/App/queryClient.ts';
-import { useShuttingDown } from '@app/hooks/app/useShuttingDown.ts';
 import useMiningTime from '@app/hooks/app/useMiningTime.ts';
 
 // This component is used to initialise the app and listen for any events that need to be listened to
@@ -35,6 +34,5 @@ export default function AppEffects() {
     useDetectMode();
     useDisableRefresh();
     useTauriEventsListener();
-    useShuttingDown();
     return null;
 }
