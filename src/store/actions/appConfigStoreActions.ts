@@ -15,7 +15,7 @@ import {
 } from '../index.ts';
 import { restartMining, startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
-import { loadAnimation, setShowFeedbackExitSurveyModal, setUITheme } from './uiStoreActions';
+import { loadAnimation, setUITheme } from './uiStoreActions';
 import { displayMode } from '../types';
 import {
     BasePoolData,

@@ -114,9 +114,7 @@ impl ShutdownManager {
     pub async fn is_in_task_tray_shutdown_step(&self) -> bool {
         let sequence = self.shutdown_sequence.read().await;
         info!(target: LOG_TARGET, "Current shutdown sequence: {:?}", *sequence);
-        sequence
-            .iter()
-            .any(|step| *step == ShutdownStep::TaskTrayTriggeredShutdown)
+        sequence.contains(&ShutdownStep::TaskTrayTriggeredShutdown)
     }
 
     // ================= Main shutdown manager logic ================= //
