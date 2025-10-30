@@ -92,9 +92,9 @@ export const setAirdropTokensInConfig = (
 ) => {
     const airdropTokens = airdropTokensParam
         ? {
-              token: airdropTokensParam.token,
-              refresh_token: airdropTokensParam.refreshToken,
-          }
+            token: airdropTokensParam.token,
+            refresh_token: airdropTokensParam.refreshToken,
+        }
         : undefined;
 
     invoke('set_airdrop_tokens', { airdropTokens })
@@ -726,7 +726,6 @@ export const markShutdownModeAsSelected = async (dontAskAgain: boolean) => {
 };
 
 export const markFeedbackSurveyAsCompleted = async () => {
-    // setShowFeedbackExitSurveyModal(false);
     invoke('mark_feedback_survey_as_completed').catch((e) => {
         console.error('Could not mark feedback survey as completed', e);
         setError('Could not mark feedback survey as completed');
