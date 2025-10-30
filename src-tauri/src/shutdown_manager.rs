@@ -41,12 +41,12 @@ use crate::{
 static LOG_TARGET: &str = "universe::shutdown_manager";
 static INSTANCE: LazyLock<ShutdownManager> = LazyLock::new(ShutdownManager::new);
 
-pub struct WaitForComplition {
+pub struct WaitForCompletion {
     sender: Sender<bool>,
     receiver: Mutex<Receiver<bool>>,
 }
 
-impl WaitForComplition {
+impl WaitForCompletion {
     pub fn new() -> Self {
         let (sender, receiver) = tokio::sync::watch::channel(false);
         Self {
@@ -86,9 +86,9 @@ pub enum ShutdownStep {
 pub struct ShutdownManager {
     app_handle: RwLock<Option<AppHandle>>,
     shutdown_sequence: RwLock<Vec<ShutdownStep>>,
-    shudown_selection_notifier: RwLock<Option<WaitForComplition>>,
-    feedback_survey_notifier: RwLock<Option<WaitForComplition>>,
-    tasktray_shutdown_notifier: RwLock<Option<WaitForComplition>>,
+    shutdown_selection_notifier: RwLock<Option<WaitForCompletion>>,
+    feedback_survey_notifier: RwLock<Option<WaitForCompletion>>,
+    tasktray_shutdown_notifier: RwLock<Option<WaitForCompletion>>,
 }
 
 impl ShutdownManager {
@@ -96,7 +96,7 @@ impl ShutdownManager {
         Self {
             app_handle: RwLock::new(None),
             shutdown_sequence: RwLock::new(Vec::new()),
-            shudown_selection_notifier: RwLock::new(None),
+            shutdown_selection_notifier: RwLock::new(None),
             feedback_survey_notifier: RwLock::new(None),
             tasktray_shutdown_notifier: RwLock::new(None),
         }
@@ -132,7 +132,7 @@ impl ShutdownManager {
             self.feedback_survey_notifier
                 .write()
                 .await
-                .replace(WaitForComplition::new());
+                .replace(WaitForCompletion::new());
             self.shutdown_sequence
                 .write()
                 .await
@@ -160,10 +160,10 @@ impl ShutdownManager {
         let selected_shutdown_mode = *ConfigCore::content().await.shutdown_mode();
 
         if !was_shutdown_dialog_shown {
-            self.shudown_selection_notifier
+            self.shutdown_selection_notifier
                 .write()
                 .await
-                .replace(WaitForComplition::new());
+                .replace(WaitForCompletion::new());
             self.shutdown_sequence
                 .write()
                 .await
@@ -172,7 +172,7 @@ impl ShutdownManager {
             self.tasktray_shutdown_notifier
                 .write()
                 .await
-                .replace(WaitForComplition::new());
+                .replace(WaitForCompletion::new());
             self.shutdown_sequence
                 .write()
                 .await
@@ -185,7 +185,7 @@ impl ShutdownManager {
             self.feedback_survey_notifier
                 .write()
                 .await
-                .replace(WaitForComplition::new());
+                .replace(WaitForCompletion::new());
             self.shutdown_sequence
                 .write()
                 .await
@@ -247,7 +247,7 @@ impl ShutdownManager {
 
     async fn handle_shutdown_mode_selection(&self) {
         EventsEmitter::emit_shutdown_mode_selection_requested().await;
-        if let Some(notifier) = &*self.shudown_selection_notifier.read().await {
+        if let Some(notifier) = &*self.shutdown_selection_notifier.read().await {
             let _ = notifier.wait_for_completion().await;
         }
 
@@ -263,7 +263,7 @@ impl ShutdownManager {
             self.tasktray_shutdown_notifier
                 .write()
                 .await
-                .replace(WaitForComplition::new());
+                .replace(WaitForCompletion::new());
             self.shutdown_sequence
                 .write()
                 .await
@@ -313,7 +313,7 @@ impl ShutdownManager {
     // ================= Notification methods for each step completion ================= //
 
     pub async fn mark_shutdown_mode_selection_as_completed(&self) {
-        if let Some(notifier) = &*self.shudown_selection_notifier.read().await {
+        if let Some(notifier) = &*self.shutdown_selection_notifier.read().await {
             notifier.set_as_complete();
         }
     }

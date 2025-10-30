@@ -595,7 +595,7 @@ fn main() {
             commands::add_scheduler_between_event,
             commands::remove_scheduler_event,
             commands::pause_scheduler_event,
-            commands::resume_scheduler_event
+            commands::resume_scheduler_event,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {
