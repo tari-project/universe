@@ -2,10 +2,10 @@ import styled from 'styled-components';
 
 export const Wrapper = styled.div`
     flex-direction: column;
-    padding: 10px;
+    padding: 10px 10px 0;
     display: flex;
-    gap: 28px;
-    width: clamp(300px, 44vw, 580px);
+    gap: 24px;
+    width: 500px;
 `;
 
 export const TextWrapper = styled.div`
@@ -15,14 +15,16 @@ export const TextWrapper = styled.div`
 
     p {
         color: ${({ theme }) => theme.palette.text.accent};
+        font-size: 14px;
+        letter-spacing: -0.21px;
     }
 `;
 
 export const ButtonSectionWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 16px;
     width: 100%;
+    gap: 18px;
 `;
 
 export const ButtonsWrapper = styled.div`
@@ -33,19 +35,17 @@ export const ButtonsWrapper = styled.div`
 
     button {
         font-weight: 600;
-        font-size: 14px;
-        color: #ffffff !important;
-        text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.3);
+        color: ${({ theme }) => theme.palette.text.primary};
     }
 `;
 
 export const CheckboxWrapper = styled.div`
     display: flex;
-    justify-content: center;
     width: 100%;
+    justify-content: center;
 
     span {
-        font-size: 14px !important;
-        font-weight: 500 !important;
+        font-size: 14px;
+        font-weight: 500;
     }
 `;
