@@ -164,6 +164,10 @@
     "wallet": "Dompet"
   },
   "tari-wallet-address": "Alamat Dompet Tari",
+  "task-tray": {
+    "description": "Tari universe will be minimized to task tray after closing",
+    "title": "Run app from task tray on close"
+  },
   "terms-and-conditions": "Syarat & Ketentuan",
   "theme": "Tema",
   "tor-bridges": "Jembatan Tor",
