@@ -1624,7 +1624,8 @@ pub fn validate_minotari_amount(
         .clone()
         .and_then(|state| state.balance);
 
-    let available_balance = balance.expect("Could not get balance").available_balance;
+    let available_balance = balance.unwrap().available_balance;
+
     match m_amount.cmp(&available_balance) {
         std::cmp::Ordering::Less => Ok(()),
         _ => Err(InvokeError::from("Insufficient balance".to_string())),

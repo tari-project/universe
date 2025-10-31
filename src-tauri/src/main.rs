@@ -61,9 +61,6 @@ use utils::logging_utils::setup_logging;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
-#[cfg(target_os = "macos")]
-use tauri::AppHandle;
-
 use telemetry_manager::TelemetryManager;
 
 use crate::feedback::Feedback;
