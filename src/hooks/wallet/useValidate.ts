@@ -19,7 +19,6 @@ export function useValidateTariAddress() {
             await invoke('validate_minotari_amount', { amount });
             return true;
         } catch (e) {
-            console.log(e);
             const error = e as Error;
             setValidationErrorMessage(error.message);
             return false;
