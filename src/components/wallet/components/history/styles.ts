@@ -14,7 +14,6 @@ export const HistoryListWrapper = styled(m.div)`
     mask-image: linear-gradient(to bottom, black 0px, black 10px, black calc(100% - 40px), transparent 100%);
     mask-position: bottom;
     mask-size: 50% 100%;
-
     @media (max-height: 815px) {
         height: 140px;
     }
