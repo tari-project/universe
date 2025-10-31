@@ -128,14 +128,12 @@ const useTauriEventsListener = () => {
                             break;
                         }
                         case 'ConfigCoreLoaded':
-                            console.log('ConfigCoreLoaded', event.payload);
                             await handleConfigCoreLoaded(event.payload);
                             break;
                         case 'ConfigWalletLoaded':
                             handleConfigWalletLoaded(event.payload);
                             break;
                         case 'ConfigMiningLoaded':
-                            console.info('ConfigMiningLoaded', event.payload);
                             handleConfigMiningLoaded(event.payload);
                             break;
                         case 'ConfigUILoaded':

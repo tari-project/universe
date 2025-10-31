@@ -1088,12 +1088,10 @@ impl EventScheduler {
                 });
                     }
                     SchedulerEventType::Mine { mining_mode } => {
-                        info!(target: LOG_TARGET, "Setting mining mode to {:?} for Mine event {:?}", mining_mode, event_id);
                         ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.clone()).await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
                 });
                         // TODO: Replace with emiting specific value only
-                        info!(target: LOG_TARGET, "ConfigMining updated, emitting mining_config_loaded event: content {:?}", ConfigMining::content().await.selected_mining_mode());
                         EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await)
                             .await;
                         GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
@@ -1215,18 +1213,15 @@ impl EventScheduler {
                         // If is in time range, eg. currently is 10AM and the range is 9AM - 11AM, then we skip sleep and trigger callback immediately
                         // If not in range, eg. currently is 2PM and the range is 9AM - 11AM, then we sleep until next start time
                         if !cron_schedule.is_time_in_range(local_now) {
-                            info!(target: LOG_TARGET, "Event ID {:?} is not in time range, waiting for next start time", event_id);
                             if let Some(next_start_wait_time) =
                                 cron_schedule.find_next_start_wait_time(local_now)
                             {
-                                info!(target: LOG_TARGET, "Event ID {:?} sleeping until next start time", event_id);
                                 sleep(next_start_wait_time).await;
                             } else {
                                 warn!(target: LOG_TARGET, "No next start time found for event with ID {:?}", event_id);
                                 break;
                             }
                         }
-                        info!(target: LOG_TARGET, "Event ID {:?} is now in time range, triggering enter callback", event_id);
 
                         let _unused =
                             INSTANCE
@@ -1239,7 +1234,6 @@ impl EventScheduler {
                         if let Some(next_end_wait_time) =
                             cron_schedule.find_next_end_wait_time(local_now)
                         {
-                            info!(target: LOG_TARGET, "Event ID {:?} waiting until end time", event_id);
                             sleep(next_end_wait_time).await;
                             let _unused = INSTANCE.message_sender.send(
                                 SchedulerMessage::TriggerExitCallback {

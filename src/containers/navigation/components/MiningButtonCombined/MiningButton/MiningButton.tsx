@@ -31,8 +31,6 @@ export default function MiningButton({
     const selectedMiningMode = useConfigMiningStore((s) => s.mining_modes[selectedMiningModeName]);
     const hasChip = !!resumeTime?.displayString;
 
-    console.log('MiningButton render', { isMining, selectedMiningModeName, selectedMiningMode });
-
     useEffect(() => {
         setShowBg(isMining);
     }, [isMining]);
