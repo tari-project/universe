@@ -41,7 +41,7 @@ export interface ConfigMining {
     mine_on_app_start: boolean;
     selected_mining_mode: string;
     gpu_mining_enabled: boolean;
-    mining_modes: MiningModes | Record<string, MiningMode>;
+    mining_modes: Record<string, MiningMode>;
     gpu_devices_settings: Record<number, GpuDeviceSettings>;
     cpu_mining_enabled: boolean;
     gpu_engine: string;

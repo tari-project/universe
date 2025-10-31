@@ -322,15 +322,25 @@ impl CronSchedule {
         let prev_start = self.start_time.find_previous_occurrence(&time, true).ok();
         let next_start = self.start_time.find_next_occurrence(&time, true).ok();
         let next_end = self.end_time.find_next_occurrence(&time, true).ok();
+        let prev_end = self.end_time.find_previous_occurrence(&time, true).ok();
 
-        if let (Some(prev_start), Some(next_start), Some(next_end)) =
-            (prev_start, next_start, next_end)
+        if let (Some(prev_start), Some(next_start), Some(next_end), Some(prev_end)) =
+            (prev_start, next_start, next_end, prev_end)
         {
-            if time >= prev_start
-                && time < next_end
-                && time.day0() < next_start.day0()
-                && time.day0() == prev_start.day0()
-            {
+            info!(target: LOG_TARGET, "Checking time range: prev_start={:?}, next_start={:?}, next_end={:?}, time={:?}", prev_start, next_start, next_end, time);
+
+            // If we want to be in range then previous start time must be before time and at the same day e.g. time=10AM, prev_start=9AM,
+            // but in case when range should start at 11AM then for time 10AM prev_start=11AM (previous day) so we need to check the if they are on the same day to prevent false positives
+            let is_start_range_meet = time.ge(&prev_start) && time.day0().eq(&prev_start.day0());
+
+            // If we want to be in range then next end time must be greater then time but can be on the next day e.g. time=6AM, next_end=2AM (next day)
+            // But there is also a case when the time is 10PM and range is 10AM to 9PM then so time is less then next_end so we need extra check to start when prev_end is on the previous day ( it tells us that we finished schedule for that day )
+            let is_end_range_meet = time.lt(&next_end) && prev_end.day0().lt(&time.day0());
+
+            // time 6AM, range is 5AM to 4AM
+
+            if is_start_range_meet && is_end_range_meet {
+                info!(target: LOG_TARGET, "Time {:?} is in range between {:?} and {:?}", time, prev_start, next_end);
                 return true;
             }
         }
@@ -920,6 +930,7 @@ impl EventScheduler {
         timing: SchedulerEventTiming,
     ) -> Result<String, SchedulerError> {
         if event_type.is_unique() {
+            info!(target: LOG_TARGET, "Ensuring uniqueness for event type {:?}", event_type);
             let to_remove: Vec<String> = events
                 .iter()
                 .filter(|(_, event)| event.event_type == event_type)
@@ -1077,11 +1088,14 @@ impl EventScheduler {
                 });
                     }
                     SchedulerEventType::Mine { mining_mode } => {
+                        info!(target: LOG_TARGET, "Setting mining mode to {:?} for Mine event {:?}", mining_mode, event_id);
                         ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.clone()).await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
                 });
                         // TODO: Replace with emiting specific value only
-                        EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await);
+                        info!(target: LOG_TARGET, "ConfigMining updated, emitting mining_config_loaded event: content {:?}", ConfigMining::content().await.selected_mining_mode());
+                        EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await)
+                            .await;
                         GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
                 });
@@ -1183,6 +1197,7 @@ impl EventScheduler {
             }),
 
             SchedulerEventTiming::Between(between_time_variant_payload) => {
+                info!(target: LOG_TARGET, "Creating scheduling task for 'Between' event ID {:?}", event_id);
                 let cron_schedule =
                     between_time_variant_payload
                         .to_cron_schedule()
@@ -1200,15 +1215,18 @@ impl EventScheduler {
                         // If is in time range, eg. currently is 10AM and the range is 9AM - 11AM, then we skip sleep and trigger callback immediately
                         // If not in range, eg. currently is 2PM and the range is 9AM - 11AM, then we sleep until next start time
                         if !cron_schedule.is_time_in_range(local_now) {
+                            info!(target: LOG_TARGET, "Event ID {:?} is not in time range, waiting for next start time", event_id);
                             if let Some(next_start_wait_time) =
                                 cron_schedule.find_next_start_wait_time(local_now)
                             {
+                                info!(target: LOG_TARGET, "Event ID {:?} sleeping until next start time", event_id);
                                 sleep(next_start_wait_time).await;
                             } else {
                                 warn!(target: LOG_TARGET, "No next start time found for event with ID {:?}", event_id);
                                 break;
                             }
                         }
+                        info!(target: LOG_TARGET, "Event ID {:?} is now in time range, triggering enter callback", event_id);
 
                         let _unused =
                             INSTANCE
@@ -1221,6 +1239,7 @@ impl EventScheduler {
                         if let Some(next_end_wait_time) =
                             cron_schedule.find_next_end_wait_time(local_now)
                         {
+                            info!(target: LOG_TARGET, "Event ID {:?} waiting until end time", event_id);
                             sleep(next_end_wait_time).await;
                             let _unused = INSTANCE.message_sender.send(
                                 SchedulerMessage::TriggerExitCallback {

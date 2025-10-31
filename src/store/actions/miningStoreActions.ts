@@ -185,8 +185,8 @@ export const stopMining = async () => {
 export const pauseMining = async (duration: number, isMinutes = false) => {
     invoke('add_scheduler_event', {
         eventId: 'pause_mining',
-        event_Time: { In: { time_value: duration, time_unit: isMinutes ? TimeUnit.Minutes : TimeUnit.Hours } },
-        event_Type: { ResumeMining: {} },
+        eventTime: { In: { time_value: duration, time_unit: isMinutes ? TimeUnit.Minutes : TimeUnit.Hours } },
+        eventType: 'ResumeMining',
     })
         .then(() => {
             stopMining();
@@ -307,4 +307,8 @@ export const setShowEcoAlert = (showEcoAlert: boolean) => {
     const canShow = ff?.includes(FEATURE_FLAGS.FE_UI_ECO_ALERT);
 
     useMiningStore.setState({ showEcoAlert: canShow && showEcoAlert });
+};
+
+export const setLastSelectedMiningModeNameForSchedulerEvent = (modeName: string) => {
+    useMiningStore.setState({ eventSchedulerLastSelectedMiningModeName: modeName });
 };

@@ -9,11 +9,19 @@ import {
     useConfigWalletStore,
     useMiningMetricsStore,
     useMiningStore,
+    useUIStore,
     useWalletStore,
 } from '../index.ts';
-import { restartMining, startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
+import {
+    restartMining,
+    setLastSelectedMiningModeNameForSchedulerEvent,
+    startCpuMining,
+    startGpuMining,
+    stopCpuMining,
+    stopGpuMining,
+} from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
-import { loadAnimation, setUITheme } from './uiStoreActions';
+import { loadAnimation, setUITheme, updateSetMiningModeAsSchedulerEventMode } from './uiStoreActions';
 import { displayMode } from '../types';
 import {
     BasePoolData,
@@ -154,6 +162,14 @@ export const setMineOnAppStart = async (mineOnAppStart: boolean) => {
 
 export const selectMiningMode = async (mode: string) => {
     console.info(`Changing mode to ${mode}...`);
+
+    const shouldSetMiningModeAsSchedulerEventMode = useUIStore.getState().setMiningModeAsSchedulerEventMode;
+
+    if (shouldSetMiningModeAsSchedulerEventMode) {
+        setLastSelectedMiningModeNameForSchedulerEvent(mode);
+        updateSetMiningModeAsSchedulerEventMode(false);
+        return;
+    }
 
     useMiningStore.setState((c) => ({ ...c, isChangingMode: true }));
 
