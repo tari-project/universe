@@ -94,6 +94,7 @@ use crate::{
         config_mining::{ConfigMining, ConfigMiningContent, MiningMode},
         trait_config::ConfigImpl,
     },
+    events_emitter::EventsEmitter,
     mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
     tasks_tracker::TasksTrackers,
 };
@@ -1060,6 +1061,8 @@ impl EventScheduler {
                         ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.mode_name.clone()).await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
                 });
+                        // TODO: Replace with emiting specific value only
+                        EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await);
                         GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
                 });
