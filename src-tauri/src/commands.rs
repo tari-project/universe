@@ -1624,7 +1624,11 @@ pub fn validate_minotari_amount(
         .clone()
         .and_then(|state| state.balance);
 
-    let available_balance = balance.unwrap().available_balance;
+    let mut available_balance = MicroMinotari::from(0);
+
+    if let Some(wallet_balance) = &balance {
+        available_balance = wallet_balance.available_balance
+    }
 
     match m_amount.cmp(&available_balance) {
         std::cmp::Ordering::Less => Ok(()),
