@@ -12,7 +12,12 @@ import { displayMode } from '../store/types.ts';
 import { BasePoolData, ConfigBackendInMemory } from './configs.ts';
 import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from './tapplets/tapplet.types';
-import { AddSchedulerEventBetweenVariantPayload, AddSchedulerEventInVariantPayload } from './mining/schedule.ts';
+import {
+    AddSchedulerEventBetweenVariantPayload,
+    AddSchedulerEventInVariantPayload,
+    SchedulerEventTiming,
+    SchedulerEventType,
+} from './mining/schedule.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -138,10 +143,9 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_mode_mining_time', payload: { mode: string; duration: number }): Promise<void>;
     function invoke(param: 'set_eco_alert_needed'): Promise<void>;
     // Scheduler commands
-    function invoke(param: 'add_scheduler_in_event', payload: AddSchedulerEventInVariantPayload): Promise<void>;
     function invoke(
-        param: 'add_scheduler_between_event',
-        payload: AddSchedulerEventBetweenVariantPayload
+        param: 'add_scheduler_event',
+        payload: { eventId: string; eventTime: SchedulerEventTiming; eventType: SchedulerEventType }
     ): Promise<void>;
     function invoke(param: 'remove_scheduler_event', payload: { eventId: string }): Promise<void>;
     function invoke(param: 'pause_scheduler_event', payload: { eventId: string }): Promise<void>;

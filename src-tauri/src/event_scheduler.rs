@@ -91,7 +91,7 @@ use tokio::{
 use crate::{
     configs::{
         config_core::{ConfigCore, ConfigCoreContent},
-        config_mining::{ConfigMining, ConfigMiningContent, MiningMode},
+        config_mining::{ConfigMining, ConfigMiningContent},
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
@@ -361,6 +361,22 @@ pub struct BetweenTimeVariantPayload {
     pub end_minute: i64,
     pub end_period: TimePeriod,
 }
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct InVariantPayload {
+    pub time_value: i64,
+    pub time_unit: TimeUnit,
+}
+
+impl InVariantPayload {
+    /// Converts the payload into a Duration.
+    ///
+    /// ### Returns
+    /// * `Ok(Duration)` - Duration created successfully
+    /// * `Err(SchedulerError::InvalidTimingFormat)` - If value is out of range
+    pub fn to_duration(&self) -> Result<Duration, SchedulerError> {
+        SchedulerEventTiming::parse_duration_unit(self.time_value, self.time_unit.clone())
+    }
+}
 
 impl BetweenTimeVariantPayload {
     /// Converts the payload into a CronSchedule.
@@ -389,7 +405,7 @@ impl BetweenTimeVariantPayload {
 pub enum SchedulerEventTiming {
     /// Run once after the specified time (e.g., In(2 hours))
     /// The event gets removed after it runs.
-    In(Duration),
+    In(InVariantPayload),
     /// Run during recurring time windows (e.g., Between("0 22 * * *", "0 6 * * *") for 10PM to 6AM daily)
     /// The event keeps repeating according to the schedule.
     Between(BetweenTimeVariantPayload),
@@ -449,8 +465,11 @@ impl SchedulerEventTiming {
     /// let timing = SchedulerEventTiming::parse_in_variant(2, TimeUnit::Hours)?;
     /// ```
     pub fn parse_in_variant(value: i64, unit: TimeUnit) -> Result<Self, SchedulerError> {
-        let duration = Self::parse_duration_unit(value, unit)?;
-        Ok(SchedulerEventTiming::In(duration))
+        let payload = InVariantPayload {
+            time_value: value,
+            time_unit: unit,
+        };
+        Ok(SchedulerEventTiming::In(payload))
     }
 
     /// Create a recurring time window timing.
@@ -560,7 +579,7 @@ pub enum SchedulerEventType {
     /// Multiple Mine events can exist with different mining modes.
     Mine {
         /// The specific mining mode configuration to use
-        mining_mode: MiningMode,
+        mining_mode: String,
     },
 }
 
@@ -588,7 +607,7 @@ impl Display for SchedulerEventType {
         match self {
             SchedulerEventType::ResumeMining => write!(f, "Pause Mining"),
             SchedulerEventType::Mine { mining_mode } => {
-                write!(f, "Mine ({})", mining_mode.mode_name)
+                write!(f, "Mine ({})", mining_mode)
             }
         }
     }
@@ -1058,7 +1077,7 @@ impl EventScheduler {
                 });
                     }
                     SchedulerEventType::Mine { mining_mode } => {
-                        ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.mode_name.clone()).await.unwrap_or_else(|e| {
+                        ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.clone()).await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
                 });
                         // TODO: Replace with emiting specific value only
@@ -1150,12 +1169,17 @@ impl EventScheduler {
         timing: SchedulerEventTiming,
     ) -> Result<tokio::task::JoinHandle<()>, SchedulerError> {
         let handle = match timing {
-            SchedulerEventTiming::In(duration) => tokio::spawn(async move {
-                sleep(duration.to_std().unwrap_or_default()).await;
+            SchedulerEventTiming::In(in_variant_payload) => tokio::spawn(async move {
+                let duration = in_variant_payload.to_duration();
+                if let Ok(duration) = duration {
+                    sleep(duration.to_std().unwrap_or_default()).await;
 
-                let _unused = INSTANCE
-                    .message_sender
-                    .send(SchedulerMessage::TriggerEnterCallback { event_id });
+                    let _unused = INSTANCE
+                        .message_sender
+                        .send(SchedulerMessage::TriggerEnterCallback { event_id });
+                } else {
+                    error!(target: LOG_TARGET, "Failed to parse duration for 'In' event {:?}", event_id);
+                }
             }),
 
             SchedulerEventTiming::Between(between_time_variant_payload) => {

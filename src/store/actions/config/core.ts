@@ -12,11 +12,7 @@ import { fetchExchangeContent } from '@app/hooks/exchanges/fetchExchangeContent.
 import { ConfigCore } from '@app/types/config/core.ts';
 
 import { NodeType } from '@app/types/mining/node.ts';
-import {
-    AddSchedulerEventBetweenVariantPayload,
-    SchedulerEvent,
-    SchedulerEventState,
-} from '@app/types/mining/schedule.ts';
+import { SchedulerEvent, SchedulerEventState } from '@app/types/mining/schedule.ts';
 
 import { useConfigCoreStore as store } from '../../stores/config/useConfigCoreStore.ts';
 
@@ -120,32 +116,22 @@ export const setShouldAutoLaunch = async (shouldAutoLaunch: boolean) => {
     });
 };
 
-function parseTimingPayload(content: SchedulerEvent): AddSchedulerEventBetweenVariantPayload {
-    const timing = content.timing.Between;
-    return {
-        eventId: content.id,
-        startTimeHour: timing?.start_hour || 0,
-        startTimeMinute: timing?.start_minute || 0,
-        startTimePeriod: timing?.start_period || 'AM',
-        endTimeHour: timing?.end_hour || 0,
-        endTimeMinute: timing?.end_minute || 0,
-        endTimePeriod: timing?.end_period || 'PM',
-    };
-}
 export const setSchedulerEvents = async (newEvent: SchedulerEvent) => {
     const initialState = store.getState().scheduler_events;
     const updated = { ...initialState, [newEvent.id]: newEvent };
     store.setState({ scheduler_events: updated });
 
-    const payload = parseTimingPayload(newEvent);
-
     let saved = false;
-    invoke('add_scheduler_between_event', payload)
+    invoke('add_scheduler_event', {
+        eventId: newEvent.id,
+        eventTime: newEvent.timing,
+        eventType: newEvent.event_type,
+    })
         .then(() => {
             saved = true;
         })
         .catch((e) => {
-            console.error('Could not add_scheduler_between_event', e);
+            console.error('Could not add_scheduler_event', e);
             setError('Could not add mining schedule.');
             store.setState({ scheduler_events: initialState });
             saved = false;

@@ -28,7 +28,7 @@ export default function Scheduler() {
         startTransition(async () => {
             await setSchedulerEvents({
                 id: SCHEDULER_EVENT_ID,
-                event_type: 'Mine',
+                event_type: { Mine: { mining_mode: 'Eco' } },
                 timing: {
                     Between: {
                         start_hour: Number(startTime.hour),

@@ -183,10 +183,10 @@ export const stopMining = async () => {
 };
 
 export const pauseMining = async (duration: number, isMinutes = false) => {
-    invoke('add_scheduler_in_event', {
+    invoke('add_scheduler_event', {
         eventId: 'pause_mining',
-        timeValue: duration,
-        timeUnit: isMinutes ? TimeUnit.Minutes : TimeUnit.Hours, // isMinutes is for admin testing
+        event_Time: { In: { time_value: duration, time_unit: isMinutes ? TimeUnit.Minutes : TimeUnit.Hours } },
+        event_Type: { ResumeMining: {} },
     })
         .then(() => {
             stopMining();
