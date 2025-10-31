@@ -232,4 +232,16 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ShowEcoAlert';
           payload: undefined;
+      }
+    | {
+          event_type: 'FeedbackSurveyRequested';
+          payload: undefined;
+      }
+    | {
+          event_type: 'ShutdownModeSelectionRequested';
+          payload: undefined;
+      }
+    | {
+          event_type: 'ShuttingDown';
+          payload: undefined;
       };

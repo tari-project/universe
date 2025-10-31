@@ -85,8 +85,11 @@ pub enum EventType {
     UpdateCpuMinerControlsState,
     UpdateGpuMinerControlsState,
     OpenSettings,
-    SystrayAppShutdownRequested,
     ShowEcoAlert,
+    // Shutdown
+    ShutdownModeSelectionRequested,
+    FeedbackSurveyRequested,
+    ShuttingDown,
 }
 
 #[derive(Clone, Debug, Serialize)]

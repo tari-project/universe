@@ -11,7 +11,9 @@ import {
     handleConnectionStatusChanged,
     setConnectionStatus,
     setDialogToShow,
+    setIsShuttingDown,
     setShouldShowExchangeSpecificModal,
+    setShowShutdownSelectionModal,
     setSidebarOpen,
 } from '@app/store/actions/uiStoreActions';
 import {
@@ -67,6 +69,7 @@ import {
     handleSelectedTariAddressChange,
     setIsWalletLoading,
 } from '@app/store/actions/walletStoreActions';
+import { handleFeedbackExitSurveyRequested } from '@app/store/stores/userFeedbackStore';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -256,6 +259,15 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShowEcoAlert':
                             setShowEcoAlert(true);
+                            break;
+                        case 'FeedbackSurveyRequested':
+                            handleFeedbackExitSurveyRequested();
+                            break;
+                        case 'ShutdownModeSelectionRequested':
+                            setShowShutdownSelectionModal(true);
+                            break;
+                        case 'ShuttingDown':
+                            setIsShuttingDown(true);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

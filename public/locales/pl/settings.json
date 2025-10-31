@@ -166,6 +166,10 @@
     "wallet": "Portfel"
   },
   "tari-wallet-address": "Adres portfela Tari",
+  "task-tray": {
+    "description": "Tari universe will be minimized to task tray after closing",
+    "title": "Run app from task tray on close"
+  },
   "terms-and-conditions": "Warunki i zasady",
   "theme": "Motyw",
   "tor-bridges": "Mosty Tor",

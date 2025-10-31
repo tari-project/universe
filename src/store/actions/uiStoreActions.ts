@@ -132,3 +132,9 @@ export const animationDarkBg = [
     { property: 'particlesOpacity', value: 0.95 },
     { property: 'particlesSize', value: 0.015 },
 ];
+
+export const setShowShutdownSelectionModal = (showShutdownSelectionModal: boolean) =>
+    useUIStore.setState({ showShutdownSelectionModal });
+
+export const setShowFeedbackExitSurveyModal = (showFeedbackExitSurveyModal: boolean) =>
+    useUIStore.setState({ showFeedbackExitSurveyModal });
