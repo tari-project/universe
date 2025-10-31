@@ -94,7 +94,7 @@ const useTauriEventsListener = () => {
                     handleLogUpdate(event);
                     switch (event.event_type) {
                         case 'UpdateAppModuleStatus':
-                            handleAppModulesUpdate(event.payload);
+                            await handleAppModulesUpdate(event.payload);
                             break;
                         case 'SetupProgressUpdate':
                             updateSetupProgress(event.payload);
@@ -148,7 +148,7 @@ const useTauriEventsListener = () => {
                             break;
                         case 'CloseSplashscreen':
                             //TODO find better place for this
-                            handleAppLoaded();
+                            await handleAppLoaded();
                             setSidebarOpen(true);
                             handleCloseSplashscreen();
                             break;

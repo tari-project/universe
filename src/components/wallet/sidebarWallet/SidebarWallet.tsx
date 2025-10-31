@@ -165,7 +165,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const standardWalletLoading = isStandardWalletUI && (isSyncing || walletIsLoading);
     return (
         <>
-            <AnimatePresence initial={false} mode="wait">
+            <AnimatePresence mode="wait">
                 {isSwapping ? (
                     <SwapsWrapper key="swap" variants={swapTransition} initial="hide" exit="hide" animate="show">
                         <Wrapper $swapsPanel>
