@@ -12,12 +12,7 @@ import { displayMode } from '../store/types.ts';
 import { BasePoolData, ConfigBackendInMemory } from './configs.ts';
 import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from './tapplets/tapplet.types';
-import {
-    AddSchedulerEventBetweenVariantPayload,
-    AddSchedulerEventInVariantPayload,
-    SchedulerEventTiming,
-    SchedulerEventType,
-} from './mining/schedule.ts';
+import { SchedulerEventTiming, SchedulerEventType } from './mining/schedule.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
