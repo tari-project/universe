@@ -590,8 +590,7 @@ fn main() {
             commands::set_mode_mining_time,
             commands::set_eco_alert_needed,
             // Scheduler commands
-            commands::add_scheduler_in_event,
-            commands::add_scheduler_between_event,
+            commands::add_scheduler_event,
             commands::remove_scheduler_event,
             commands::pause_scheduler_event,
             commands::resume_scheduler_event,

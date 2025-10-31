@@ -15,7 +15,7 @@ import {
     useTypeahead,
 } from '@floating-ui/react';
 
-import { MiningModes, MiningModeType } from '@app/types/configs.ts';
+import { MiningMode as MiningModeDataType, MiningModes, MiningModeType } from '@app/types/configs.ts';
 import { setCustomLevelsDialogOpen, setDialogToShow, useConfigMiningStore } from '@app/store';
 import { ModeDropdownMiningMode, Variant } from '@app/components/mode/types.ts';
 import { selectMiningMode } from '@app/store/actions/appConfigStoreActions.ts';
@@ -30,11 +30,22 @@ import { ListContainer, Option, OptionIcon, OptionText, Wrapper } from './styles
 interface MiningModeProps {
     variant?: Variant;
     open?: boolean;
+    handleSchedulerMiningModeCallback?: (modeName: string) => void;
+    schedulerSelectedMiningMode?: MiningModeDataType | undefined;
 }
 
-export const MiningMode = ({ variant = 'primary', open = false }: MiningModeProps) => {
+export const MiningMode = ({
+    variant = 'primary',
+    open = false,
+    handleSchedulerMiningModeCallback,
+    schedulerSelectedMiningMode,
+}: MiningModeProps) => {
     const { t } = useTranslation('mining-view');
-    const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
+    const storeSelectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
+    const selectedMiningMode = useMemo(
+        () => schedulerSelectedMiningMode || storeSelectedMiningMode,
+        [schedulerSelectedMiningMode, storeSelectedMiningMode]
+    );
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
 
     const [isOpen, setIsOpen] = useState(false);
@@ -113,6 +124,11 @@ export const MiningMode = ({ variant = 'primary', open = false }: MiningModeProp
 
     const handleSelectMode = useCallback(
         async (mode: ModeDropdownMiningMode) => {
+            if (handleSchedulerMiningModeCallback) {
+                // Call on the top to ensure next called selectMiningMode changes the scheduler value
+                handleSchedulerMiningModeCallback(mode.name);
+            }
+
             if (mode.mode_type === MiningModeType.Custom) {
                 setCustomLevelsDialogOpen(true);
                 setIsOpen(false);
@@ -127,6 +143,7 @@ export const MiningMode = ({ variant = 'primary', open = false }: MiningModeProp
                 setIsOpen(false);
                 return;
             }
+
             await selectMiningMode(mode.name);
             setIsOpen(false);
         },

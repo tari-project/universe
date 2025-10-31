@@ -1,4 +1,4 @@
-import { useEffect, useState, useTransition } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import { SchedulerEventState, TimeParts } from '@app/types/mining/schedule.ts';
 import { SCHEDULER_EVENT_ID, useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 import { getParsedBetweenTime } from '@app/store/selectors/config/core.ts';
@@ -13,6 +13,9 @@ import { Typography } from '../elements/Typography.tsx';
 import { CurrentScheduleItem } from './schedule/CurrentScheduleItem.tsx';
 import { ContentWrapper, CTA, CTAText, FormWrapper, Text, TextWrapper, Wrapper } from './styles.ts';
 import { useTranslation } from 'react-i18next';
+import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { updateSetMiningModeAsSchedulerEventMode } from '@app/store/actions/uiStoreActions.ts';
 
 export default function Scheduler() {
     const { t } = useTranslation(['mining-view', 'common']);
@@ -22,13 +25,19 @@ export default function Scheduler() {
     const [endTime, setEndTime] = useState<TimeParts>(end);
     const [saved, setSaved] = useState(false);
 
+    const schedulerEventMiningModeName = useMiningStore((s) => s.eventSchedulerLastSelectedMiningModeName);
+    const schedulerMiningMode = useConfigMiningStore((s) =>
+        schedulerEventMiningModeName ? s.mining_modes[schedulerEventMiningModeName] : undefined
+    );
+    const currentMiningMode = useConfigMiningStore((s) => s.selected_mining_mode);
+
     const [isPending, startTransition] = useTransition();
 
     function handleSave() {
         startTransition(async () => {
             await setSchedulerEvents({
                 id: SCHEDULER_EVENT_ID,
-                event_type: 'Mine',
+                event_type: { Mine: { mining_mode: schedulerEventMiningModeName || currentMiningMode } },
                 timing: {
                     Between: {
                         start_hour: Number(startTime.hour),
@@ -52,6 +61,10 @@ export default function Scheduler() {
         }
     }, [saved, isPending]);
 
+    const modeSelectionCallback = useCallback(() => {
+        updateSetMiningModeAsSchedulerEventMode(true);
+    }, []);
+
     return (
         <Wrapper>
             <TextWrapper>
@@ -70,7 +83,11 @@ export default function Scheduler() {
                         initialTime={endTime}
                         handleOnChange={setEndTime}
                     />
-                    <MiningMode variant="secondary" />
+                    <MiningMode
+                        variant="secondary"
+                        handleSchedulerMiningModeCallback={modeSelectionCallback}
+                        schedulerSelectedMiningMode={schedulerMiningMode}
+                    />
                 </FormWrapper>
                 <CurrentScheduleItem />
             </ContentWrapper>
