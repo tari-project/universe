@@ -244,4 +244,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ShuttingDown';
           payload: undefined;
+      }
+    | {
+          event_type: 'ShowBatteryAlert';
+          payload: undefined;
       };

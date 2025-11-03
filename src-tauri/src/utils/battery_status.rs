@@ -95,6 +95,7 @@ impl BatteryStatus {
             if GpuManager::read().await.is_running() || CpuManager::read().await.is_running() {
                 let _unused = GpuManager::write().await.stop_mining().await;
                 let _unused = CpuManager::write().await.stop_mining().await;
+                EventsEmitter::emit_show_battery_alert().await;
                 INSTANCE
                     .should_resume_mining_once_charging
                     .store(true, std::sync::atomic::Ordering::SeqCst);

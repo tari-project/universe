@@ -138,3 +138,5 @@ export const setShowShutdownSelectionModal = (showShutdownSelectionModal: boolea
 
 export const setShowFeedbackExitSurveyModal = (showFeedbackExitSurveyModal: boolean) =>
     useUIStore.setState({ showFeedbackExitSurveyModal });
+
+export const setShowBatteryAlert = (showBatteryAlert: boolean) => useUIStore.setState({ showBatteryAlert });

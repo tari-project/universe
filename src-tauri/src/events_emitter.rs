@@ -829,4 +829,17 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit ShuttingDown event: {e:?}");
         }
     }
+
+    pub async fn emit_show_battery_alert() {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::ShowBatteryAlert,
+                payload: (),
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit ShowBatteryAlert event: {e:?}");
+        }
+    }
 }

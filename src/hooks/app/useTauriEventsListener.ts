@@ -13,6 +13,7 @@ import {
     setDialogToShow,
     setIsShuttingDown,
     setShouldShowExchangeSpecificModal,
+    setShowBatteryAlert,
     setShowShutdownSelectionModal,
     setSidebarOpen,
 } from '@app/store/actions/uiStoreActions';
@@ -268,6 +269,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShuttingDown':
                             setIsShuttingDown(true);
+                            break;
+                        case 'ShowBatteryAlert':
+                            setShowBatteryAlert(true);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));
