@@ -36,3 +36,4 @@ pub mod rand_utils;
 pub mod system_status;
 #[cfg(windows)]
 pub mod windows_setup_utils;
+mod speed_test_utils;

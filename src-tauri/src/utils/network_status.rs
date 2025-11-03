@@ -20,15 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use cfspeedtest::speedtest::{test_download, test_latency, test_upload};
-use cfspeedtest::OutputFormat;
 use log::error;
 use log::info;
-use std::{panic, sync::LazyLock, time::Duration};
+use std::{sync::LazyLock, time::Duration};
 use tokio::sync::watch::{Receiver, Sender};
-use tokio::task::spawn_blocking;
 
 use crate::events_emitter::EventsEmitter;
+use crate::utils::speed_test_utils::{test_download, test_latency, test_upload};
 
 const LOG_TARGET: &str = "tari::universe::network_status";
 const SPEED_TEST_TIMEOUT: Duration = Duration::from_secs(60);
@@ -90,47 +88,9 @@ impl NetworkStatus {
     }
 
     pub async fn perform_speed_test(&self) -> Result<(f64, f64, f64), anyhow::Error> {
-        // TODO: `catch_unwind` has been added because this speedtest lib panics with baked-in .expect()
-        // TODO (cont.) see if they fix that in future updates OR if we can remove this dep at some point
-        let download_speed = spawn_blocking(|| {
-            panic::catch_unwind(|| {
-                test_download(
-                    &reqwest::blocking::Client::new(),
-                    NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST,
-                    OutputFormat::None,
-                )
-            })
-            .unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Failed to perform download speed test: {e:?}");
-                0.0
-            })
-        })
-        .await?;
-
-        let upload_speed = spawn_blocking(|| {
-            panic::catch_unwind(|| {
-                test_upload(
-                    &reqwest::blocking::Client::new(),
-                    NETWORK_UPLOAD_SPEED_PAYLOAD_TEST,
-                    OutputFormat::None,
-                )
-            })
-            .unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Failed to perform upload speed test: {e:?}");
-                0.0
-            })
-        })
-        .await?;
-
-        let latency = spawn_blocking(|| {
-            panic::catch_unwind(|| test_latency(&reqwest::blocking::Client::new())).unwrap_or_else(
-                |e| {
-                    error!(target: LOG_TARGET, "Failed to perform latency test: {e:?}");
-                    0.0
-                },
-            )
-        })
-        .await?;
+        let download_speed = test_download(NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST).await?;
+        let upload_speed = test_upload(NETWORK_UPLOAD_SPEED_PAYLOAD_TEST).await?;
+        let latency = test_latency().await?;
 
         Ok((download_speed, upload_speed, latency))
     }
