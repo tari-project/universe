@@ -5,6 +5,7 @@
     "is-live": "ist live"
   },
   "battery-alert-dialog": {
+    "auto-resume-info": "Mining will automatically resume when AC power is connected",
     "description": "We've noticed your device is running on battery power. To help preserve your battery life and ensure optimal performance, we've temporarily paused mining. Mining will automatically resume when your device is connected to a power source.",
     "title": "Mining Paused - Battery Mode Detected",
     "understood": "I Understand"

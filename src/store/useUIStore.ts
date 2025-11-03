@@ -52,7 +52,7 @@ const initialState: UIStoreState = {
     seedlessUI: false,
     showShutdownSelectionModal: false,
     showFeedbackExitSurveyModal: false,
-    showBatteryAlert: false,
+    showBatteryAlert: true,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({

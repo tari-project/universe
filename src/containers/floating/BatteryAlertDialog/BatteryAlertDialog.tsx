@@ -1,12 +1,21 @@
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
-import { Typography } from '@app/components/elements/Typography';
-import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { useUIStore } from '@app/store/useUIStore';
 import { setShowBatteryAlert } from '@app/store/actions/uiStoreActions';
 
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Wrapper, TextWrapper, ButtonWrapper } from './styles';
+import {
+    Wrapper,
+    ContentWrapper,
+    IconWrapper,
+    BatteryIcon,
+    Title,
+    Description,
+    InfoBox,
+    InfoIcon,
+    InfoLabel,
+    ActionButton,
+} from './styles';
 
 const BatteryAlertDialog = memo(function BatteryAlertDialog() {
     const { t } = useTranslation(['components'], { useSuspense: false });
@@ -20,16 +29,23 @@ const BatteryAlertDialog = memo(function BatteryAlertDialog() {
         <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent>
                 <Wrapper>
-                    <TextWrapper>
-                        <Typography variant="h3">{t('battery-alert-dialog.title')}</Typography>
-                        <Typography variant="p">{t('battery-alert-dialog.description')}</Typography>
-                    </TextWrapper>
+                    <IconWrapper>
+                        <BatteryIcon>🔋</BatteryIcon>
+                    </IconWrapper>
 
-                    <ButtonWrapper>
-                        <Button fluid size="small" onClick={handleClose}>
-                            {t('battery-alert-dialog.understood')}
-                        </Button>
-                    </ButtonWrapper>
+                    <ContentWrapper>
+                        <Title>{t('battery-alert-dialog.title')}</Title>
+                        <Description>{t('battery-alert-dialog.description')}</Description>
+
+                        <InfoBox>
+                            <InfoIcon>⚡</InfoIcon>
+                            <InfoLabel>{t('battery-alert-dialog.auto-resume-info')}</InfoLabel>
+                        </InfoBox>
+
+                        <ActionButton onClick={handleClose}>
+                            <span>{t('battery-alert-dialog.understood')}</span>
+                        </ActionButton>
+                    </ContentWrapper>
                 </Wrapper>
             </DialogContent>
         </Dialog>
