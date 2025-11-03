@@ -201,13 +201,27 @@ fn main() {
             release: sentry::release_name!(),
             attach_stacktrace: true,
             before_send: Some(Arc::new(|event| {
-                if event.logentry.as_ref().is_some_and(|entry| {
+
+                let is_in_ignored = event.logentry.as_ref().is_some_and(|entry| {
                     IGNORED_SENTRY_ERRORS.iter().any(|ignored| entry.message.starts_with(ignored))
-                }) {
+                });
+
+                // Did not add to IGNORED_SENTRY_ERRORS as the identifying error is nested within exception, not logentry
+                // TODO - check for updates in cfspeedtest and/or check if NETWORK_UPLOAD_SPEED_PAYLOAD_TEST should be lowered
+                let is_speed_test_timeout = event.exception.values.clone().into_iter().any(|ex| {
+                    ex.ty.contains("panic") && ex.value.as_ref().is_some_and(|val| {
+                        val.contains("speed.cloudflare.com") && val.contains("source: TimedOut")
+                    })
+                });
+
+
+                if is_in_ignored  || is_speed_test_timeout {
                     None
                 } else {
                     Some(event)
                 }
+
+
             })),
             ..Default::default()
         },

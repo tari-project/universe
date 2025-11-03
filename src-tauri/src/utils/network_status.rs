@@ -92,7 +92,6 @@ impl NetworkStatus {
     pub async fn perform_speed_test(&self) -> Result<(f64, f64, f64), anyhow::Error> {
         // TODO: `catch_unwind` has been added because this speedtest lib panics with baked-in .expect()
         // TODO (cont.) see if they fix that in future updates OR if we can remove this dep at some point
-
         let download_speed = spawn_blocking(|| {
             panic::catch_unwind(|| {
                 test_download(
