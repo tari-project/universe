@@ -56,7 +56,7 @@ impl Feedback {
     ) -> Result<zip::result::ZipResult<File>, Error> {
         let file_options = SimpleFileOptions::default();
 
-        let zip_file_name = archive_file
+        let _zip_file_name = archive_file
             .file_name()
             .and_then(|name| name.to_str())
             .ok_or_else(|| anyhow::anyhow!("Failed to get zip file name"))?;
@@ -95,7 +95,7 @@ impl Feedback {
                     {
                         // Skip files larger than 100MB
                         if entry_metadata.len() > MAX_FILE_SIZE {
-                            info!(target: LOG_TARGET, "Skipping file {} (size: {} bytes) - exceeds 100MB limit", 
+                            info!(target: LOG_TARGET, "Skipping file {} (size: {} bytes) - exceeds 100MB limit",
                                   entry_file_name_as_str, entry_metadata.len());
                             continue;
                         }
