@@ -88,11 +88,37 @@ impl NetworkStatus {
     }
 
     pub async fn perform_speed_test(&self) -> Result<(f64, f64, f64), anyhow::Error> {
-        let download_speed = test_download(NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST).await?;
+        let mut download_speed = 0.0;
+        let mut upload_speed = 0.0;
+        let mut latency = 0.0;
+
+        match test_download(NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST).await {
+            Ok(speed) => {
+                download_speed = speed;
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to perform download speed test: {e:?}")
+            }
+        };
+        match test_upload(NETWORK_UPLOAD_SPEED_PAYLOAD_TEST).await {
+            Ok(speed) => {
+                upload_speed = speed;
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to perform download speed test: {e:?}")
+            }
+        };
+        match test_latency().await {
+            Ok(speed) => {
+                latency = speed;
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to perform download speed test: {e:?}")
+            }
+        };
+
         info!(target: LOG_TARGET, "SPEED TEST download_speed = {download_speed:?}");
-        let upload_speed = test_upload(NETWORK_UPLOAD_SPEED_PAYLOAD_TEST).await?;
         info!(target: LOG_TARGET, "SPEED TEST upload_speed = {upload_speed:?}");
-        let latency = test_latency().await?;
         info!(target: LOG_TARGET, "SPEED TEST latency = {latency:?}");
 
         Ok((download_speed, upload_speed, latency))
