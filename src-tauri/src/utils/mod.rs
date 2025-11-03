@@ -33,7 +33,7 @@ pub mod network_status;
 pub mod platform_utils;
 pub mod rand_utils;
 
+mod speed_test_utils;
 pub mod system_status;
 #[cfg(windows)]
 pub mod windows_setup_utils;
-mod speed_test_utils;

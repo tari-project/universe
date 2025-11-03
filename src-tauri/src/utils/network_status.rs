@@ -89,8 +89,11 @@ impl NetworkStatus {
 
     pub async fn perform_speed_test(&self) -> Result<(f64, f64, f64), anyhow::Error> {
         let download_speed = test_download(NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST).await?;
+        info!(target: LOG_TARGET, "SPEED TEST download_speed = {download_speed:?}");
         let upload_speed = test_upload(NETWORK_UPLOAD_SPEED_PAYLOAD_TEST).await?;
+        info!(target: LOG_TARGET, "SPEED TEST upload_speed = {upload_speed:?}");
         let latency = test_latency().await?;
+        info!(target: LOG_TARGET, "SPEED TEST latency = {latency:?}");
 
         Ok((download_speed, upload_speed, latency))
     }
