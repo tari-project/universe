@@ -19,25 +19,23 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-use crate::LOG_TARGET;
-use anyhow::anyhow;
-use log::info;
-use regex::Regex;
 
-use reqwest::Client;
+use anyhow::anyhow;
+use regex::Regex;
+use reqwest::blocking::Client;
 use std::time::Instant;
 
 const BASE_URL: &str = "https://speed.cloudflare.com";
 const DOWNLOAD_URL: &str = "__down?bytes=";
 const UPLOAD_URL: &str = "__up";
 
-pub async fn test_latency() -> Result<f64, anyhow::Error> {
+pub fn test_latency() -> Result<f64, anyhow::Error> {
     let client = Client::new();
     let url = &format!("{}/{}{}", BASE_URL, DOWNLOAD_URL, 0);
     let builder = client.get(url);
 
     let start = Instant::now();
-    let res = builder.send().await?;
+    let res = builder.send()?;
     let duration = start.elapsed().as_secs_f64() * 1_000.0;
 
     let timing_header = match res.headers().get("Server-Timing") {
@@ -56,10 +54,6 @@ pub async fn test_latency() -> Result<f64, anyhow::Error> {
             .parse::<f64>()
             .unwrap_or(0.0);
     }
-
-    info!(target: LOG_TARGET, "SPEED TEST test_latency duration = {duration:?}");
-    info!(target: LOG_TARGET, "SPEED TEST cf_req_duration = {cf_req_duration:?}");
-
     let mut req_latency = duration - cf_req_duration;
     if req_latency < 0.0 {
         req_latency = 0.0
@@ -67,35 +61,34 @@ pub async fn test_latency() -> Result<f64, anyhow::Error> {
     Ok(req_latency)
 }
 
-pub async fn test_upload(payload_size_bytes: usize) -> Result<f64, anyhow::Error> {
+pub fn test_upload(payload_size_bytes: usize) -> Result<f64, anyhow::Error> {
     let client = Client::new();
     let url = &format!("{BASE_URL}/{UPLOAD_URL}");
     let payload: Vec<u8> = vec![1; payload_size_bytes];
     let builder = client.post(url).body(payload);
 
-    let start = Instant::now();
-    let res = builder.send().await?;
-    let duration = start.elapsed();
-    info!(target: LOG_TARGET, "SPEED TEST test_upload duration = {duration:?}");
-    let mbits = (payload_size_bytes as f64 * 8.0 / 1_000_000.0) / duration.as_secs_f64();
-    if res.status() != reqwest::StatusCode::OK {
-        return Err(anyhow!("Failed to send upload response"));
-    }
+    let mbits = {
+        let start = Instant::now();
+        let _res = builder.send()?;
+        let duration = start.elapsed().as_secs_f64();
+
+        (payload_size_bytes as f64 * 8.0 / 1_000_000.0) / duration
+    };
+
     Ok(mbits)
 }
 
-pub async fn test_download(payload_size_bytes: usize) -> Result<f64, anyhow::Error> {
+pub fn test_download(payload_size_bytes: usize) -> Result<f64, anyhow::Error> {
     let client = Client::new();
     let url = &format!("{BASE_URL}/{DOWNLOAD_URL}{payload_size_bytes}");
     let builder = client.get(url);
+    let mbits = {
+        let start = Instant::now();
+        let res = builder.send()?;
+        let _res_bytes = res.bytes();
+        let duration = start.elapsed().as_secs_f64();
 
-    let start = Instant::now();
-    let res = builder.send().await?;
-    let duration = start.elapsed();
-    info!(target: LOG_TARGET, "SPEED TEST test_download duration = {duration:?}");
-    let mbits = (payload_size_bytes as f64 * 8.0 / 1_000_000.0) / duration.as_secs_f64();
-    if res.status() != reqwest::StatusCode::OK {
-        return Err(anyhow!("Failed to send download response"));
-    }
+        (payload_size_bytes as f64 * 8.0 / 1_000_000.0) / duration
+    };
     Ok(mbits)
 }

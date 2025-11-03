@@ -24,6 +24,7 @@ use log::error;
 use log::info;
 use std::{sync::LazyLock, time::Duration};
 use tokio::sync::watch::{Receiver, Sender};
+use tokio::task::spawn_blocking;
 
 use crate::events_emitter::EventsEmitter;
 use crate::utils::speed_test_utils::{test_download, test_latency, test_upload};
@@ -92,34 +93,29 @@ impl NetworkStatus {
         let mut upload_speed = 0.0;
         let mut latency = 0.0;
 
-        match test_download(NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST).await {
+        match spawn_blocking(|| test_upload(NETWORK_UPLOAD_SPEED_PAYLOAD_TEST)).await {
             Ok(speed) => {
-                download_speed = speed;
+                upload_speed = speed.unwrap_or(0.0);
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to perform download speed test: {e:?}")
             }
         };
-        match test_upload(NETWORK_UPLOAD_SPEED_PAYLOAD_TEST).await {
+        match spawn_blocking(|| test_download(NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST)).await {
             Ok(speed) => {
-                upload_speed = speed;
-            }
-            Err(e) => {
-                error!(target: LOG_TARGET, "Failed to perform download speed test: {e:?}")
-            }
-        };
-        match test_latency().await {
-            Ok(speed) => {
-                latency = speed;
+                download_speed = speed.unwrap_or(0.0);
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to perform download speed test: {e:?}")
             }
         };
 
-        info!(target: LOG_TARGET, "SPEED TEST download_speed = {download_speed:?}");
-        info!(target: LOG_TARGET, "SPEED TEST upload_speed = {upload_speed:?}");
-        info!(target: LOG_TARGET, "SPEED TEST latency = {latency:?}");
+        match spawn_blocking(test_latency).await {
+            Ok(speed) => latency = speed.unwrap_or(0.0),
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to perform download speed test: {e:?}")
+            }
+        };
 
         Ok((download_speed, upload_speed, latency))
     }
