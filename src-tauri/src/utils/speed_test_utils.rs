@@ -49,7 +49,7 @@ pub fn test_latency() -> Result<f64, anyhow::Error> {
     if let Some(captures) = re.captures(timing_header.unwrap_or("0.0")) {
         cf_req_duration = captures
             .get(1)
-            .ok_or_else(|| anyhow!("No progress capture in tor bootstrap status"))?
+            .ok_or_else(|| anyhow!("Failed to parse request duration from header"))?
             .as_str()
             .parse::<f64>()
             .unwrap_or(0.0);
@@ -69,10 +69,14 @@ pub fn test_upload(payload_size_bytes: usize) -> Result<f64, anyhow::Error> {
 
     let mbits = {
         let start = Instant::now();
-        let _res = builder.send()?;
+        let res = builder.send()?;
         let duration = start.elapsed().as_secs_f64();
 
-        (payload_size_bytes as f64 * 8.0 / 1_000_000.0) / duration
+        if res.status().is_success() {
+            (payload_size_bytes as f64 * 8.0 / 1_000_000.0) / duration
+        } else {
+            return Err(anyhow!("Failed to perform upload test: {res:?}"));
+        }
     };
 
     Ok(mbits)
@@ -85,10 +89,19 @@ pub fn test_download(payload_size_bytes: usize) -> Result<f64, anyhow::Error> {
     let mbits = {
         let start = Instant::now();
         let res = builder.send()?;
-        let _res_bytes = res.bytes();
+
+        let status = res.status();
+
+        let _res_bytes = res.bytes()?;
         let duration = start.elapsed().as_secs_f64();
 
-        (payload_size_bytes as f64 * 8.0 / 1_000_000.0) / duration
+        if status.is_success() {
+            (payload_size_bytes as f64 * 8.0 / 1_000_000.0) / duration
+        } else {
+            return Err(anyhow!(
+                "Failed to perform download test, returned status: {status:?}"
+            ));
+        }
     };
     Ok(mbits)
 }
