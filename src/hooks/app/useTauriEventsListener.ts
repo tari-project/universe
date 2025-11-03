@@ -270,8 +270,8 @@ const useTauriEventsListener = () => {
                         case 'ShuttingDown':
                             setIsShuttingDown(true);
                             break;
-                        case 'ShowBatteryAlert':
-                            setShowBatteryAlert(true);
+                        case 'SetShowBatteryAlert':
+                            setShowBatteryAlert(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

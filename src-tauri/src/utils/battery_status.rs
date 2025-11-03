@@ -76,6 +76,7 @@ impl BatteryStatus {
             info!(target: LOG_TARGET, "Battery switched to charging state.");
             let _unused = GpuManager::write().await.start_mining().await;
             let _unused = CpuManager::write().await.start_mining().await;
+            EventsEmitter::emit_set_show_battery_alert(false).await;
         }
         INSTANCE
             .should_resume_mining_once_charging
@@ -95,7 +96,7 @@ impl BatteryStatus {
             if GpuManager::read().await.is_running() || CpuManager::read().await.is_running() {
                 let _unused = GpuManager::write().await.stop_mining().await;
                 let _unused = CpuManager::write().await.stop_mining().await;
-                EventsEmitter::emit_show_battery_alert().await;
+                EventsEmitter::emit_set_show_battery_alert(true).await;
                 INSTANCE
                     .should_resume_mining_once_charging
                     .store(true, std::sync::atomic::Ordering::SeqCst);

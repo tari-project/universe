@@ -246,6 +246,6 @@ export type BackendStateUpdateEvent =
           payload: undefined;
       }
     | {
-          event_type: 'ShowBatteryAlert';
-          payload: undefined;
+          event_type: 'SetShowBatteryAlert';
+          payload: boolean;
       };
