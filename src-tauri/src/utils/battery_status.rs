@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::sync::{atomic::AtomicBool, LazyLock};
+use std::sync::{atomic::AtomicBool, Arc, LazyLock};
 
 use log::info;
 use tokio::{sync::Mutex, task::JoinHandle};
@@ -127,10 +127,12 @@ impl BatteryStatus {
         let mut common_shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         if thread_lock.is_none() {
+            let last_battery_state = Arc::new(Mutex::new(battery::State::Unknown));
             let handle = common_task_tracker.spawn(async move {
                 loop {
                     // Used spawn_blocking to handle non-Send battery operations
-                    let _unused = tokio::task::spawn_blocking(|| {
+                    let last_battery_state_clone = Arc::clone(&last_battery_state);
+                    let _unused = tokio::task::spawn_blocking(move || {
                        let battery_manager = battery::Manager::new().expect("Failed to create battery manager");
                        if battery_manager.batteries().is_ok_and(|batteries| batteries.count() == 0) {
                             tokio::spawn(Self::no_batteries_found_handler());
@@ -156,15 +158,18 @@ impl BatteryStatus {
                                             all_discharging = false;
                                         }
                                 }
-                            }
                         }
 
-                        if all_charging {
+                        let mut state = last_battery_state_clone.blocking_lock();
+                        if all_charging && *state != battery::State::Charging {
                             tokio::spawn(Self::switched_to_charging_handler());
-                        } else if all_discharging {
+                            *state = battery::State::Charging;
+                        } else if all_discharging && *state != battery::State::Discharging {
                             tokio::spawn(Self::switched_to_discharging_handler());
+                            *state = battery::State::Discharging;
                         } else {
                             // Mixed states or unknown states, do nothing
+                        }
                         }
                     }).await;
                     tokio::select! {
