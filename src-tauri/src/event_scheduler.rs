@@ -71,7 +71,7 @@
 
 #![allow(dead_code, unused_variables, unused_must_use)]
 
-use chrono::{DateTime, Datelike, Duration, Local};
+use chrono::{DateTime, Duration, Local};
 use croner::{self, parser::CronParser, Cron};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -305,47 +305,6 @@ impl CronSchedule {
                 .unwrap_or_default()
                 .max(ZERO_DURATION)
         })
-    }
-
-    /// Checks if a time falls within this schedule's active period.
-    ///
-    /// Returns true if the time is between the most recent start time
-    /// and the next end time.
-    ///
-    /// ### Parameters
-    /// * `time` - Time to check
-    ///
-    /// ### Returns
-    /// * `true` - Time is within the active period
-    /// * `false` - Time is outside the active period
-    pub fn is_time_in_range(&self, time: DateTime<Local>) -> bool {
-        let prev_start = self.start_time.find_previous_occurrence(&time, true).ok();
-        let next_start = self.start_time.find_next_occurrence(&time, true).ok();
-        let next_end = self.end_time.find_next_occurrence(&time, true).ok();
-        let prev_end = self.end_time.find_previous_occurrence(&time, true).ok();
-
-        if let (Some(prev_start), Some(next_start), Some(next_end), Some(prev_end)) =
-            (prev_start, next_start, next_end, prev_end)
-        {
-            info!(target: LOG_TARGET, "Checking time range: prev_start={:?}, next_start={:?}, next_end={:?}, time={:?}", prev_start, next_start, next_end, time);
-
-            // If we want to be in range then previous start time must be before time and at the same day e.g. time=10AM, prev_start=9AM,
-            // but in case when range should start at 11AM then for time 10AM prev_start=11AM (previous day) so we need to check the if they are on the same day to prevent false positives
-            let is_start_range_meet = time.ge(&prev_start) && time.day0().eq(&prev_start.day0());
-
-            // If we want to be in range then next end time must be greater then time but can be on the next day e.g. time=6AM, next_end=2AM (next day)
-            // But there is also a case when the time is 10PM and range is 10AM to 9PM then so time is less then next_end so we need extra check to start when prev_end is on the previous day ( it tells us that we finished schedule for that day )
-            let is_end_range_meet = time.lt(&next_end) && prev_end.day0().lt(&time.day0());
-
-            // time 6AM, range is 5AM to 4AM
-
-            if is_start_range_meet && is_end_range_meet {
-                info!(target: LOG_TARGET, "Time {:?} is in range between {:?} and {:?}", time, prev_start, next_end);
-                return true;
-            }
-        }
-
-        false
     }
 }
 
@@ -1210,17 +1169,13 @@ impl EventScheduler {
                     loop {
                         let local_now = Local::now();
 
-                        // If is in time range, eg. currently is 10AM and the range is 9AM - 11AM, then we skip sleep and trigger callback immediately
-                        // If not in range, eg. currently is 2PM and the range is 9AM - 11AM, then we sleep until next start time
-                        if !cron_schedule.is_time_in_range(local_now) {
-                            if let Some(next_start_wait_time) =
-                                cron_schedule.find_next_start_wait_time(local_now)
-                            {
-                                sleep(next_start_wait_time).await;
-                            } else {
-                                warn!(target: LOG_TARGET, "No next start time found for event with ID {:?}", event_id);
-                                break;
-                            }
+                        if let Some(next_start_wait_time) =
+                            cron_schedule.find_next_start_wait_time(local_now)
+                        {
+                            sleep(next_start_wait_time).await;
+                        } else {
+                            warn!(target: LOG_TARGET, "No next start time found for event with ID {:?}", event_id);
+                            break;
                         }
 
                         let _unused =
