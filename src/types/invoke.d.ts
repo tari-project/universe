@@ -137,6 +137,9 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
     function invoke(param: 'set_mode_mining_time', payload: { mode: string; duration: number }): Promise<void>;
     function invoke(param: 'set_eco_alert_needed'): Promise<void>;
+    function invoke(param: 'mark_shutdown_selection_as_completed', payload: { dontAskAgain: boolean }): Promise<void>;
+    function invoke(param: 'mark_feedback_survey_as_completed'): Promise<void>;
+    function invoke(param: 'update_shutdown_mode_selection', payload: { shutdownMode: ShutdownMode }): Promise<void>;
     function invoke(
         param: 'set_pause_on_battery_mode',
         payload: { pauseOnBatteryMode: PauseOnBatteryModeState }

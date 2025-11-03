@@ -473,7 +473,6 @@ impl EventsEmitter {
     pub async fn emit_new_block_mined(
         block_height: u64,
         coinbase_transaction: Option<TransactionInfo>,
-        balance: Option<WalletBalance>,
     ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
@@ -481,7 +480,6 @@ impl EventsEmitter {
             payload: NewBlockHeightPayload {
                 block_height,
                 coinbase_transaction,
-                balance,
             },
         };
         if let Err(e) = Self::get_app_handle()
@@ -781,19 +779,6 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_systray_app_shutdown_requested() {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        if let Err(e) = Self::get_app_handle().await.emit(
-            BACKEND_STATE_UPDATE,
-            Event {
-                event_type: EventType::SystrayAppShutdownRequested,
-                payload: (),
-            },
-        ) {
-            error!(target: LOG_TARGET, "Failed to emit SystrayAppShutdownRequested event: {e:?}");
-        }
-    }
-
     pub async fn emit_show_eco_alert() {
         let _ = FrontendReadyChannel::current().wait_for_ready().await;
         if let Err(e) = Self::get_app_handle().await.emit(
@@ -804,6 +789,44 @@ impl EventsEmitter {
             },
         ) {
             error!(target: LOG_TARGET, "Failed to emit ShowEcoAlert event: {e:?}");
+        }
+    }
+
+    pub async fn emit_feedback_requested() {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::FeedbackSurveyRequested,
+                payload: (),
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit FeedbackRequested event: {e:?}");
+        }
+    }
+    pub async fn emit_shutdown_mode_selection_requested() {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::ShutdownModeSelectionRequested,
+                payload: (),
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit ShutdownModeSelectionRequested event: {e:?}");
+        }
+    }
+
+    pub async fn emit_shutting_down() {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::ShuttingDown,
+                payload: (),
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit ShuttingDown event: {e:?}");
         }
     }
 }

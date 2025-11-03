@@ -168,6 +168,10 @@
     "wallet": "지갑"
   },
   "tari-wallet-address": "Tari 지갑 주소",
+  "task-tray": {
+    "description": "Tari universe will be minimized to task tray after closing",
+    "title": "Run app from task tray on close"
+  },
   "terms-and-conditions": "이용 약관",
   "theme": "테마",
   "tor-bridges": "Tor 브리지",

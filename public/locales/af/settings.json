@@ -168,6 +168,10 @@
     "wallet": "Beursie"
   },
   "tari-wallet-address": "Tari Beursie Adres",
+  "task-tray": {
+    "description": "Tari universe will be minimized to task tray after closing",
+    "title": "Run app from task tray on close"
+  },
   "terms-and-conditions": "Bepalings & Voorwaardes",
   "theme": "Tema",
   "tor-bridges": "Tor Brûe",

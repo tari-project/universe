@@ -168,6 +168,10 @@
     "wallet": "钱包"
   },
   "tari-wallet-address": "Tari 钱包地址",
+  "task-tray": {
+    "description": "Tari universe will be minimized to task tray after closing",
+    "title": "Run app from task tray on close"
+  },
   "terms-and-conditions": "条款和条件",
   "theme": "主题",
   "tor-bridges": "Tor 桥接",

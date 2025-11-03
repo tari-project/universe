@@ -168,6 +168,10 @@
     "wallet": "Cüzdan"
   },
   "tari-wallet-address": "Tari Cüzdan Adresi",
+  "task-tray": {
+    "description": "Tari universe will be minimized to task tray after closing",
+    "title": "Run app from task tray on close"
+  },
   "terms-and-conditions": "Şartlar ve Koşullar",
   "theme": "Tema",
   "tor-bridges": "Tor Köprüleri",

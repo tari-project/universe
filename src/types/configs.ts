@@ -1,6 +1,11 @@
 import { NodeType } from '@app/store/useNodeStore';
 import { WalletUIMode } from './events-payloads';
 
+export enum ShutdownMode {
+    Direct = 'Direct',
+    Tasktray = 'Tasktray',
+}
+
 export interface ConfigCore {
     created_at: string;
     use_tor: boolean;
@@ -21,6 +26,7 @@ export interface ConfigCore {
     remote_base_node_address: string;
     node_type?: NodeType;
     exchange_id?: string;
+    shutdown_mode: ShutdownMode;
 }
 
 export interface ConfigWallet {
@@ -43,6 +49,7 @@ export interface ConfigUI {
     wallet_ui_mode: WalletUIMode;
     was_staged_security_modal_shown: boolean;
     feedback?: FeedbackPrompts;
+    shutdown_mode_selected: boolean;
 }
 
 export interface FeedbackPrompt {

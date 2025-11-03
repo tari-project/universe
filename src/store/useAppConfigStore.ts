@@ -7,6 +7,7 @@ import {
     ConfigPools,
     ConfigUI,
     ConfigWallet,
+    ShutdownMode,
     PauseOnBatteryModeState,
 } from '@app/types/configs';
 import { WalletUIMode } from '@app/types/events-payloads';
@@ -30,6 +31,7 @@ const configCoreInitialState: ConfigCore = {
     airdrop_tokens: undefined,
     last_binaries_update_timestamp: '',
     exchange_id: undefined,
+    shutdown_mode: ShutdownMode.Tasktray,
 };
 
 const configWalletInitialState: ConfigWallet = {
@@ -66,6 +68,7 @@ const configUIInitialState: UIConfigStoreState = {
     visual_mode: true,
     wallet_ui_mode: WalletUIMode.Standard,
     was_staged_security_modal_shown: false,
+    shutdown_mode_selected: false,
 };
 
 const configPoolsInitialState: ConfigPools = {

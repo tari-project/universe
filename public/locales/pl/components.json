@@ -4,6 +4,13 @@
     "body-copy-highlight": "Tari jest zupełnie nowe!",
     "is-live": "jest na żywo"
   },
+  "close-experience-dialog": {
+    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
+    "dont-ask-again": "Don't ask me again",
+    "exit-completely": "Exit Completely",
+    "run-in-background": "Run in Background",
+    "title": "Choose how to close Tari Universe"
+  },
   "field-error-message": {
     "integers-only": "Dozwolone są tylko liczby całkowite",
     "invalid": "Nieprawidłowe pole",

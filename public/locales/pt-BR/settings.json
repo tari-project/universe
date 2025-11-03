@@ -175,6 +175,10 @@
     "wallet": "Carteira"
   },
   "tari-wallet-address": "Endereço da Carteira Tari",
+  "task-tray": {
+    "description": "Tari universe will be minimized to task tray after closing",
+    "title": "Run app from task tray on close"
+  },
   "terms-and-conditions": "Termos e Condições",
   "theme": "Tema",
   "tor-bridges": "Pontes Tor",

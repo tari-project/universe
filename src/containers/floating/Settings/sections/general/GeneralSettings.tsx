@@ -11,6 +11,7 @@ import PreReleaseSettings from './PreReleaseSettings.tsx';
 import VisualMode from '@app/containers/main/Dashboard/components/VisualMode.tsx';
 
 import AirdropNotificationsSettings from './AirdropNotificationSettings.tsx';
+import { TaskTrayModeSettings } from './TaskTrayModeSettings.tsx';
 
 export const GeneralSettings = () => {
     return (
@@ -18,6 +19,7 @@ export const GeneralSettings = () => {
             <StartApplicationOnBootSettings />
             <AutoUpdate />
             <PreReleaseSettings />
+            <TaskTrayModeSettings />
             <AirdropPermissionSettings />
             <AirdropNotificationsSettings />
             <LanguageSettings />
