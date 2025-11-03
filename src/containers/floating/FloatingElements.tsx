@@ -8,10 +8,11 @@ import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
 import CrewRewards from '../main/CrewRewards/CrewRewards.tsx';
 
 import AutoUpdateDialog from './AutoUpdateDialog/AutoUpdateDialog.tsx';
+import ShutdownSelectionDialog from './ShutdownSelectionDialog/index.ts';
 import CreatePinDialog from './security/pin/CreatePinDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
 import CriticalProblemDialog from './CriticalProblemDialog/CriticalProblemDialog.tsx';
-import CloseUserFeedbackDialog from './user/surveys/CloseUserFeedbackDialog.tsx';
+import ExitFeedbackSurveyDialog from './user/surveys/ExitFeedbackSurveyDialog.tsx';
 import LongTimeUserFeedbackDialog from './user/surveys/LongTimeUserFeedbackDialog.tsx';
 
 import EXModal from './EXModal/EXModal.tsx';
@@ -39,6 +40,7 @@ const FloatingElements = () => {
             {environment === 'development' && <AdminUI />}
 
             <AutoUpdateDialog />
+            <ShutdownSelectionDialog />
             <CriticalErrorDialog />
             <ExternalDependenciesDialog />
             <PaperWalletModal />
@@ -62,7 +64,7 @@ const FloatingElements = () => {
             <CrewRewards />
             <SettingsModal />
             <FailedModuleInitializationDialog />
-            <CloseUserFeedbackDialog />
+            <ExitFeedbackSurveyDialog />
             <LongTimeUserFeedbackDialog />
             <SchedulerModal />
         </FloatingTree>

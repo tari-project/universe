@@ -93,13 +93,11 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     const isEmpty = !walletLoading && !transactions?.length;
     const emptyMarkup = isEmpty ? <EmptyText>{t('empty-tx')}</EmptyText> : null;
     return (
-        <>
-            <ListWrapper>
-                {emptyMarkup}
-                {listMarkup}
-                {/*added placeholder so the scroll can trigger fetch*/}
-                {!walletScanning?.is_scanning ? <PlaceholderItem ref={ref} $isLast /> : null}
-            </ListWrapper>
-        </>
+        <ListWrapper>
+            {emptyMarkup}
+            {listMarkup}
+            {/*added placeholder so the scroll can trigger fetch*/}
+            {!walletScanning?.is_scanning ? <PlaceholderItem ref={ref} $isLast /> : null}
+        </ListWrapper>
     );
 }

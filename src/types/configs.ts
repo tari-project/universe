@@ -20,6 +20,7 @@ export interface ConfigUI {
     wallet_ui_mode: WalletUIMode;
     was_staged_security_modal_shown: boolean;
     feedback?: FeedbackPrompts;
+    shutdown_mode_selected: boolean;
 }
 
 export interface FeedbackPrompt {

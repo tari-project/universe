@@ -609,3 +609,19 @@ export const handleFeedbackFields = (feedbackType: PromptType, feedback_sent: bo
     setFeedbackConfigItems(feedback);
     useConfigUIStore.setState({ feedback });
 };
+
+export const markShutdownModeAsSelected = async (dontAskAgain: boolean) => {
+    useConfigUIStore.setState((c) => ({ ...c, shutdown_mode_selected: true }));
+    invoke('mark_shutdown_selection_as_completed', { dontAskAgain }).catch((e) => {
+        console.error('Could not mark shutdown mode as selected', e);
+        setError('Could not mark shutdown mode as selected');
+        useConfigUIStore.setState((c) => ({ ...c, shutdown_mode_selected: false }));
+    });
+};
+
+export const markFeedbackSurveyAsCompleted = async () => {
+    invoke('mark_feedback_survey_as_completed').catch((e) => {
+        console.error('Could not mark feedback survey as completed', e);
+        setError('Could not mark feedback survey as completed');
+    });
+};

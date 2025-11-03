@@ -9,7 +9,7 @@ import { setCurrentExchangeMinerId } from '@app/store/useExchangeStore.ts';
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 import { fetchExchangeContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
-import { ConfigCore } from '@app/types/config/core.ts';
+import { ConfigCore, ShutdownMode } from '@app/types/config/core.ts';
 
 import { NodeType } from '@app/types/mining/node.ts';
 import { SchedulerEvent, SchedulerEventState } from '@app/types/mining/schedule.ts';
@@ -176,4 +176,14 @@ export const toggleSchedulerEventPaused = async (eventId: string) => {
             store.setState({ scheduler_events: { ...currentItems, [eventId]: updatedItem } });
         })
         .catch((e) => console.error(`Could not pause scheduler event [${eventId}]: `, e));
+};
+
+export const updateShutdownMode = async (shutdownMode: ShutdownMode) => {
+    const previousShutdownMode = store.getState().shutdown_mode;
+    store.setState((c) => ({ ...c, shutdown_mode: shutdownMode }));
+    invoke('update_shutdown_mode_selection', { shutdownMode }).catch((e) => {
+        console.error('Could not set shutdown mode', e);
+        setError('Could not change shutdown mode');
+        store.setState((c) => ({ ...c, shutdown_mode: previousShutdownMode }));
+    });
 };

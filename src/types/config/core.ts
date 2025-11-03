@@ -22,4 +22,9 @@ export interface ConfigCore {
     scheduler_events?: Record<string, SchedulerEvent> | null;
     should_auto_launch: boolean;
     use_tor: boolean;
+    shutdown_mode: ShutdownMode;
+}
+export enum ShutdownMode {
+    Direct = 'Direct',
+    Tasktray = 'Tasktray',
 }

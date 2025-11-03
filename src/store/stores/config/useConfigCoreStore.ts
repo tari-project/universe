@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ConfigCore } from '@app/types/config/core.ts';
+import { ConfigCore, ShutdownMode } from '@app/types/config/core.ts';
 
 export const SCHEDULER_EVENT_ID = 'mining_schedule';
 
@@ -20,6 +20,7 @@ const initialState: ConfigCore = {
     should_auto_launch: false,
     use_tor: false,
     scheduler_events: null,
+    shutdown_mode: ShutdownMode.Tasktray,
 };
 export const useConfigCoreStore = create<ConfigCore>()(() => ({
     ...initialState,

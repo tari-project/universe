@@ -133,6 +133,12 @@ export const animationDarkBg = [
     { property: 'particlesSize', value: 0.015 },
 ];
 
+export const setShowShutdownSelectionModal = (showShutdownSelectionModal: boolean) =>
+    useUIStore.setState({ showShutdownSelectionModal });
+
+export const setShowFeedbackExitSurveyModal = (showFeedbackExitSurveyModal: boolean) =>
+    useUIStore.setState({ showFeedbackExitSurveyModal });
+
 export const updateSetMiningModeAsSchedulerEventMode = (value: boolean) => {
     useUIStore.setState({ setMiningModeAsSchedulerEventMode: value });
 };

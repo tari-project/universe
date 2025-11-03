@@ -164,6 +164,10 @@
     "wallet": "वॉलेट"
   },
   "tari-wallet-address": "तारी वॉलेट पता",
+  "task-tray": {
+    "description": "Tari universe will be minimized to task tray after closing",
+    "title": "Run app from task tray on close"
+  },
   "terms-and-conditions": "नियम और शर्तें",
   "theme": "थीम",
   "tor-bridges": "टोर ब्रिज",
