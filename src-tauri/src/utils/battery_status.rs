@@ -153,7 +153,6 @@ impl BatteryStatus {
                             info!(target: LOG_TARGET, "Checking battery states: {:?}", batteries);
                             for mut battery in batteries.flatten() {
                                     info!(target: LOG_TARGET, "Battery '{}' state: {:?}", battery.vendor().unwrap_or("Unknown"), battery.state());
-                                    let _unused = battery.refresh();
                                     match battery.state() {
                                         battery::State::Charging | battery::State::Full => {
                                             all_discharging = false;
