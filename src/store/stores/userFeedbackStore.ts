@@ -1,8 +1,12 @@
 import { create } from 'zustand';
 import { FeedbackPrompts } from '@app/types/configs.ts';
+import { setShowFeedbackExitSurveyModal } from '../actions/uiStoreActions';
+import { checkMiningTime } from '../actions/miningStoreActions';
+import { markFeedbackSurveyAsCompleted } from '../actions/appConfigStoreActions';
+import { queryClient } from '@app/App/queryClient';
+import { fetchSurvey } from '@app/hooks/user/surveys/useFetchSurveyContent';
 
 interface UserFeedbackStoreState {
-    showCloseDialog: boolean;
     earlyClosedDismissed: boolean;
     showLongTimeDialog: boolean;
     closeMiningTimeMs: number;
@@ -16,7 +20,6 @@ const CLOSE_MINIMUM_MINING_TIME = ONE_HOUR_IN_MS * 24;
 const LONG_MINIMUM_MINING_TIME = ONE_HOUR_IN_MS * 48;
 
 const initialState: UserFeedbackStoreState = {
-    showCloseDialog: false,
     earlyClosedDismissed: false,
     showLongTimeDialog: false,
     closeMiningTimeMs: CLOSE_MINIMUM_MINING_TIME,
@@ -30,7 +33,6 @@ export const useUserFeedbackStore = create<UserFeedbackStoreState>()(() => ({
 }));
 export const setShowLongTimeDialog = (showLongTimeDialog: boolean) =>
     useUserFeedbackStore.setState({ showLongTimeDialog });
-export const setShowCloseDialog = (showCloseDialog: boolean) => useUserFeedbackStore.setState({ showCloseDialog });
 export const setEarlyClosedDismissed = (earlyClosedDismissed: boolean) =>
     useUserFeedbackStore.setState({ earlyClosedDismissed });
 
@@ -44,6 +46,29 @@ export const setFeedbackConfigItems = (feedbackConfig?: FeedbackPrompts) => {
     const wasFeedbackSent = longTimeMinerSent || earlyCloseSent;
 
     useUserFeedbackStore.setState({ wasFeedbackSent, wasLongTimeMiner });
+};
+
+export const handleFeedbackExitSurveyRequested = async () => {
+    const minimumMiningTimeForCloseSurvey = useUserFeedbackStore.getState().closeMiningTimeMs;
+    const currentMiningTimeMs = checkMiningTime();
+    const minimumTimeForSurveyNotMet = !currentMiningTimeMs || currentMiningTimeMs < minimumMiningTimeForCloseSurvey;
+    // User has to mine for at least the minimum time to be eligible for the survey
+    if (minimumTimeForSurveyNotMet) {
+        markFeedbackSurveyAsCompleted();
+        return;
+    }
+
+    // Fetch admin flag to see if survey is available
+    const feedbackQueryData = await queryClient.ensureQueryData({
+        queryKey: ['surveys', 'close'],
+        queryFn: async () => await fetchSurvey('close'),
+    });
+    if (!feedbackQueryData || feedbackQueryData?.slug !== 'close') {
+        markFeedbackSurveyAsCompleted();
+        return;
+    }
+
+    setShowFeedbackExitSurveyModal(true);
 };
 
 //admin

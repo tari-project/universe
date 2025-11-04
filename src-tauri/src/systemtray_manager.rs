@@ -28,7 +28,7 @@ use log::{error, info};
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::TrayIcon,
-    AppHandle, Manager, Wry,
+    AppHandle, Manager, WebviewWindow, Wry,
 };
 use tokio::sync::{mpsc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
@@ -39,6 +39,7 @@ use crate::{
     },
     events_emitter::EventsEmitter,
     mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
+    shutdown_manager::ShutdownManager,
     tasks_tracker::TasksTrackers,
     utils::{
         formatting_utils::{format_currency, format_hashrate},
@@ -520,7 +521,9 @@ impl SystemTrayManager {
 
     async fn close_tari_universe_action(app: AppHandle) {
         Self::open_tari_universe_action(app.clone()).await;
-        EventsEmitter::emit_systray_app_shutdown_requested().await;
+        ShutdownManager::instance()
+            .initialize_shutdown_from_system_tray()
+            .await;
     }
 
     async fn open_tari_universe_action(app_handle: AppHandle) {
@@ -617,6 +620,26 @@ impl SystemTrayManager {
             }
         } else {
             error!(target: LOG_TARGET_APP_LOGIC, "Menu is not initialized");
+        }
+    }
+
+    pub fn hide_to_tray(window: Option<WebviewWindow>) {
+        if let Some(window) = window {
+            if window.is_visible().unwrap_or(false) {
+                #[cfg(target_os = "macos")]
+                {
+                    AppHandle::hide(window.app_handle()).unwrap_or_else(|error| {
+                        error!(target: LOG_TARGET, "Failed to hide app: {error}");
+                    });
+                }
+
+                #[cfg(not(target_os = "macos"))]
+                {
+                    window.hide().unwrap_or_else(|error| {
+                        error!(target: LOG_TARGET, "Failed to hide window: {error}");
+                    });
+                }
+            }
         }
     }
 

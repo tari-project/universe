@@ -118,18 +118,18 @@ export const setExternalTariAddress = async (newAddress: string) => {
 
 export const setWalletBalance = async (balance: WalletBalance) => {
     const currentBalance = useWalletStore.getState().balance;
-    const currentCalculatedBalance = useWalletStore.getState().calculated_balance;
+    const isEqual = deepEqual(currentBalance, balance);
+
+    if (isEqual) return;
+
+    useWalletStore.setState({ balance });
+
     const calculated_balance =
         balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
-    const isEqual = calculated_balance === currentCalculatedBalance || deepEqual(balance, currentBalance);
-    if (isEqual) return;
+
+    useWalletStore.setState({ calculated_balance });
     await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
     await refreshTransactions();
-    useWalletStore.setState((c) => ({
-        ...c,
-        balance: { ...balance },
-        calculated_balance,
-    }));
 };
 
 export const setIsSwapping = (isSwapping: boolean) => {

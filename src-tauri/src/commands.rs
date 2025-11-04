@@ -50,6 +50,7 @@ use crate::node::node_manager::NodeType;
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
+use crate::shutdown_manager::{ShutdownManager, ShutdownMode};
 use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
 use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
 use crate::tapplets::interface::ActiveTapplet;
@@ -878,13 +879,22 @@ pub async fn send_feedback(
     app: tauri::AppHandle,
 ) -> Result<String, String> {
     let timer = Instant::now();
-    let app_log_dir = Some(app.path().app_log_dir().expect("Could not get log dir."));
+    let app_log_dir = app.path().app_log_dir().expect("Could not get log dir.");
+    let app_config_dir = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get app config dir.");
 
     let reference = state
         .feedback
         .read()
         .await
-        .send_feedback(feedback, include_logs, app_log_dir.clone())
+        .send_feedback(
+            feedback,
+            include_logs,
+            app_log_dir.clone(),
+            app_config_dir.clone(),
+        )
         .await
         .inspect_err(|e| error!("error at send_feedback {e:?}"))
         .map_err(|e| e.to_string())?;
@@ -1613,7 +1623,12 @@ pub fn validate_minotari_amount(
         .clone()
         .and_then(|state| state.balance);
 
-    let available_balance = balance.expect("Could not get balance").available_balance;
+    let mut available_balance = MicroMinotari::from(0);
+
+    if let Some(wallet_balance) = &balance {
+        available_balance = wallet_balance.available_balance
+    }
+
     match m_amount.cmp(&available_balance) {
         std::cmp::Ordering::Less => Ok(()),
         _ => Err(InvokeError::from("Insufficient balance".to_string())),
@@ -2119,6 +2134,54 @@ pub async fn set_eco_alert_needed() -> Result<(), InvokeError> {
         .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_eco_alert_needed took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mark_shutdown_selection_as_completed(dont_ask_again: bool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ConfigUI::update_field(ConfigUIContent::set_shutdown_mode_selected, dont_ask_again)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    ShutdownManager::instance()
+        .mark_shutdown_mode_selection_as_completed()
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "mark_shutdown_selection_as_completed took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mark_feedback_survey_as_completed() -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ShutdownManager::instance()
+        .mark_feedback_survey_as_completed()
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, " mark_feedback_survey_as_completed took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_shutdown_mode_selection(
+    shutdown_mode: ShutdownMode,
+) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ConfigCore::update_field(ConfigCoreContent::set_shutdown_mode, shutdown_mode)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_shutdown_mode_selection took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }

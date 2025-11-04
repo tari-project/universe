@@ -61,9 +61,6 @@ use utils::logging_utils::setup_logging;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
-#[cfg(target_os = "macos")]
-use tauri::AppHandle;
-
 use telemetry_manager::TelemetryManager;
 
 use crate::feedback::Feedback;
@@ -73,6 +70,8 @@ use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
+use crate::shutdown_manager::ShutdownManager;
+use crate::systemtray_manager::SystemTrayManager;
 use crate::tor_manager::TorManager;
 use crate::wallet::wallet_manager::WalletManager;
 use crate::wallet::wallet_types::WalletState;
@@ -112,6 +111,7 @@ mod progress_trackers;
 mod release_notes;
 mod requests;
 mod setup;
+mod shutdown_manager;
 mod system_dependencies;
 mod systemtray_manager;
 mod tapplets;
@@ -360,23 +360,18 @@ fn main() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
-                if let Some(window) = window.get_webview_window("main") {
-                    if window.is_visible().unwrap_or(false) {
-                        #[cfg(target_os = "macos")]
-                        {
-                            AppHandle::hide(window.app_handle()).unwrap_or_else(|error| {
-                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to hide app: {error}");
-                            });
-                        }
-
-                        #[cfg(not(target_os = "macos"))]
-                        {
-                            window.minimize().unwrap_or_else(|error| {
-                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to minimize window: {error}");
-                            });
-                        }
+                block_on(async {
+                    if ShutdownManager::instance()
+                        .is_in_task_tray_shutdown_step()
+                        .await
+                    {
+                        // When in task tray mode, we await for the quit from tasktray menu and close button should just minimize to tray instead in that case
+                        SystemTrayManager::hide_to_tray(window.get_webview_window("main"));
                     }
-                }
+                    ShutdownManager::instance()
+                        .initialize_shutdown_from_close_button()
+                        .await;
+                })
             }
         })
         .setup(|app| {
@@ -592,6 +587,9 @@ fn main() {
             commands::set_feedback_fields,
             commands::set_mode_mining_time,
             commands::set_eco_alert_needed,
+            commands::mark_shutdown_selection_as_completed,
+            commands::mark_feedback_survey_as_completed,
+            commands::update_shutdown_mode_selection,
             // Scheduler commands
             commands::add_scheduler_in_event,
             commands::add_scheduler_between_event,
@@ -633,6 +631,7 @@ fn main() {
                 let handle_clone = app_handle.clone();
                 let state = handle_clone.state::<UniverseAppState>();
 
+                block_on(ShutdownManager::instance().initialize_app_handle(handle_clone.clone()));
                 block_on(state.updates_manager.initial_try_update(&handle_clone));
 
                 tauri::async_runtime::spawn(async move {
@@ -647,31 +646,12 @@ fn main() {
                     target: LOG_TARGET_APP_LOGIC,
                     "App shutdown request [ExitRequested] caught with code: {code:#?}"
                 );
-                let app_handle_clone = app_handle.clone();
                 if let Some(exit_code) = code {
                     if exit_code == RESTART_EXIT_CODE {
                         // RunEvent does not hold the exit code so we store it separately
                         is_restart_requested.store(true, Ordering::SeqCst);
                     }
                 }
-
-                let closing_task = tauri::async_runtime::spawn(async move {
-                    let state = app_handle_clone.state::<UniverseAppState>();
-
-                    let _unused = GpuManager::write().await.stop_mining().await;
-                    let _unused = CpuManager::write().await.stop_mining().await;
-
-                    TasksTrackers::current().stop_all_processes().await;
-                    GpuManager::read().await.on_app_exit().await;
-                    CpuManager::read().await.on_app_exit().await;
-                    state.tor_manager.on_app_exit().await;
-                    state.wallet_manager.on_app_exit().await;
-                    state.node_manager.on_app_exit().await;
-                });
-
-                block_on(closing_task).unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Could not join closing task: {e:?}");
-                });
 
                 info!(target: LOG_TARGET_APP_LOGIC, "All processes stopped");
             }
