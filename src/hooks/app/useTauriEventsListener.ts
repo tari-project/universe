@@ -11,7 +11,9 @@ import {
     handleConnectionStatusChanged,
     setConnectionStatus,
     setDialogToShow,
+    setIsShuttingDown,
     setShouldShowExchangeSpecificModal,
+    setShowShutdownSelectionModal,
     setSidebarOpen,
 } from '@app/store/actions/uiStoreActions';
 import {
@@ -20,6 +22,7 @@ import {
     handleGpuMinerControlsStateChanged,
     handleSelectedMinerChanged,
     setAvailableEngines,
+    setShowEcoAlert,
 } from '@app/store/actions/miningStoreActions';
 import {
     handleRestartingPhases,
@@ -66,6 +69,7 @@ import {
     handleSelectedTariAddressChange,
     setIsWalletLoading,
 } from '@app/store/actions/walletStoreActions';
+import { handleFeedbackExitSurveyRequested } from '@app/store/stores/userFeedbackStore';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -90,7 +94,7 @@ const useTauriEventsListener = () => {
                     handleLogUpdate(event);
                     switch (event.event_type) {
                         case 'UpdateAppModuleStatus':
-                            handleAppModulesUpdate(event.payload);
+                            await handleAppModulesUpdate(event.payload);
                             break;
                         case 'SetupProgressUpdate':
                             updateSetupProgress(event.payload);
@@ -144,7 +148,7 @@ const useTauriEventsListener = () => {
                             break;
                         case 'CloseSplashscreen':
                             //TODO find better place for this
-                            handleAppLoaded();
+                            await handleAppLoaded();
                             setSidebarOpen(true);
                             handleCloseSplashscreen();
                             break;
@@ -252,6 +256,18 @@ const useTauriEventsListener = () => {
                             break;
                         case 'SystrayAppShutdownRequested':
                             handleSystrayAppShutdownRequested();
+                            break;
+                        case 'ShowEcoAlert':
+                            setShowEcoAlert(true);
+                            break;
+                        case 'FeedbackSurveyRequested':
+                            handleFeedbackExitSurveyRequested();
+                            break;
+                        case 'ShutdownModeSelectionRequested':
+                            setShowShutdownSelectionModal(true);
+                            break;
+                        case 'ShuttingDown':
+                            setIsShuttingDown(true);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

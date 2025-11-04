@@ -18,13 +18,18 @@
   "floor": "Stockwerk",
   "gpu-power": "GPU-Leistung",
   "mining-button-text": {
-    "cancel-mining": "Mining abbrechen",
-    "changing-mode": "Modus wird geändert",
-    "start-mining": "Mining starten",
-    "started-auto-mining": "Auto Mining gestartet",
-    "starting-mining": "Mining wird gestartet",
-    "stop-mining": "Mining stoppen",
-    "waiting-for-idle": "Warten auf Leerlauf"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Mining starten"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
   },
   "orphan-chain-tooltip": {
     "heading": "Dinge, die du versuchen kannst:",
@@ -34,6 +39,10 @@
     "step_4": "Versuche, eine Tor-Bridge zu verwenden (in den Einstellungen)",
     "step_5": "Versuche, Tor zu deaktivieren (in den Einstellungen)",
     "step_6": "Versuche einen App-Reset (in den Einstellungen)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
     "accepted_shares": "Akzeptierte Anteile",

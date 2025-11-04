@@ -18,14 +18,18 @@
   "floor": "地板",
   "gpu-power": "GPU 功率",
   "mining-button-text": {
-    "cancel-mining": "取消挖矿",
-    "changing-mode": "更改模式",
-    "pause-mining": "暂停挖矿",
-    "start-mining": "开始挖矿",
-    "started-auto-mining": "自动挖矿开始",
-    "starting-mining": "开始挖矿",
-    "stop-mining": "停止挖矿",
-    "waiting-for-idle": "等待空闲"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "开始挖矿"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
   },
   "orphan-chain-tooltip": {
     "heading": "尝试以下操作：",
@@ -35,6 +39,10 @@
     "step_4": "尝试使用 Tor 桥接（在设置中）",
     "step_5": "尝试禁用 Tor（在设置中）",
     "step_6": "尝试重置应用程序（在设置中）"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
     "accepted_shares": "已接受份额",

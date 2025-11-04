@@ -18,13 +18,18 @@
   "floor": "Floor",
   "gpu-power": "GPU Power",
   "mining-button-text": {
-    "cancel-mining": "Cancel Mining",
-    "changing-mode": "Changing mode",
-    "start-mining": "Start Mining",
-    "started-auto-mining": "Auto Mining Started",
-    "starting-mining": "Starting Mining",
-    "stop-mining": "Stop Mining",
-    "waiting-for-idle": "Waiting for Idle"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Start Mining"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
   },
   "orphan-chain-tooltip": {
     "heading": "Things to try:",
@@ -34,6 +39,10 @@
     "step_4": "Try using a Tor Bridge (in Settings)",
     "step_5": "Try disabling Tor (in Settings)",
     "step_6": "Try an app reset (in Settings)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
     "accepted_shares": "Accepted shares",

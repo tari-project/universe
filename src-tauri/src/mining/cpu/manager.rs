@@ -58,7 +58,7 @@ use crate::{
     UniverseAppState,
 };
 
-static LOG_TARGET: &str = "tari::mining::cpu::manager";
+static LOG_TARGET: &str = "tari::universe::mining::cpu::manager";
 static INSTANCE: LazyLock<RwLock<CpuManager>> = LazyLock::new(|| RwLock::new(CpuManager::new()));
 
 pub struct CpuManager {
@@ -227,13 +227,16 @@ impl CpuManager {
                 .await
                 .get_selected_cpu_usage_percentage();
 
-            self.process_watcher.adapter.cpu_threads =
-                Some(Self::determine_number_of_cores_to_use(cpu_usage_percentage).await);
-
             if cpu_usage_percentage <= 1 {
+                self.process_watcher.adapter.cpu_threads =
+                    Some(Self::determine_number_of_cores_to_use(10).await);
+
                 self.process_watcher.adapter.extra_options =
                     vec!["--randomx-mode=light".to_string()]
             } else {
+                self.process_watcher.adapter.cpu_threads =
+                    Some(Self::determine_number_of_cores_to_use(cpu_usage_percentage).await);
+
                 self.process_watcher.adapter.extra_options = vec!["--randomx-mode=fast".to_string()]
             }
 
@@ -291,9 +294,11 @@ impl CpuManager {
                 .cpu_external_status_channel
                 .send(CpuMinerStatus::default());
         }
+        info!(target: LOG_TARGET, "Stopped cpu miner process");
         // Mark mining as stopped in pool manager
         // It will handle stopping the stats watcher after 1 hour of grace period
         CpuPoolManager::handle_mining_status_change(false).await;
+        info!(target: LOG_TARGET, "Marked mining as stopped in pool manager");
         EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Stopped).await;
         SystemTrayManager::send_event(SystemTrayEvents::CpuMiningActivity(false)).await;
         info!(target: LOG_TARGET, "Stopped cpu miner");

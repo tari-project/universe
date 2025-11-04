@@ -31,7 +31,7 @@ use crate::{
     mining::gpu::miners::GpuCommonInformation,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
     setup::{listeners::AppModule, setup_manager::SetupPhase},
-    wallet::wallet_types::{TransactionInfo, WalletBalance},
+    wallet::wallet_types::TransactionInfo,
 };
 
 #[derive(Clone, Debug, Serialize)]
@@ -85,7 +85,11 @@ pub enum EventType {
     UpdateCpuMinerControlsState,
     UpdateGpuMinerControlsState,
     OpenSettings,
-    SystrayAppShutdownRequested,
+    ShowEcoAlert,
+    // Shutdown
+    ShutdownModeSelectionRequested,
+    FeedbackSurveyRequested,
+    ShuttingDown,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -144,7 +148,6 @@ pub struct Event<T, E> {
 pub struct NewBlockHeightPayload {
     pub block_height: u64,
     pub coinbase_transaction: Option<TransactionInfo>,
-    pub balance: Option<WalletBalance>,
 }
 
 #[derive(Debug, Serialize, Clone)]

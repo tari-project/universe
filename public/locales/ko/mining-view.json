@@ -18,14 +18,18 @@
   "floor": "최저값",
   "gpu-power": "GPU 전력",
   "mining-button-text": {
-    "cancel-mining": "채굴 취소",
-    "changing-mode": "모드 변경 중",
-    "pause-mining": "채굴 일시 중지",
-    "start-mining": "채굴 시작",
-    "started-auto-mining": "자동 채굴 시작됨",
-    "starting-mining": "채굴 시작 중",
-    "stop-mining": "채굴 중지",
-    "waiting-for-idle": "유휴 상태 대기 중"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "채굴 시작"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
   },
   "orphan-chain-tooltip": {
     "heading": "시도할 것들:",
@@ -35,6 +39,10 @@
     "step_4": "Tor 브리지를 사용해 보세요 (설정에서)",
     "step_5": "Tor를 비활성화해 보세요 (설정에서)",
     "step_6": "앱을 재설정해 보세요 (설정에서)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
     "accepted_shares": "수락된 공유",

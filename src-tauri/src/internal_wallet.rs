@@ -33,12 +33,12 @@ use tari_common_types::seeds::mnemonic::Mnemonic;
 use tari_common_types::seeds::seed_words::SeedWords;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_common_types::types::CompressedPublicKey;
+use tari_transaction_components::key_manager::memory_key_manager::create_memory_key_manager_from_seed;
 use tari_transaction_components::key_manager::tari_key_manager::TariKeyManager;
 use tari_transaction_components::key_manager::{
     KeyDigest, KeyManagerBranch, SecretTransactionKeyManagerInterface,
     TransactionKeyManagerInterface,
 };
-use tari_transaction_key_manager::create_memory_db_key_manager_from_seed;
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
@@ -771,7 +771,7 @@ impl InternalWallet {
             .key;
 
         let comms_pub_key = CompressedPublicKey::from_secret_key(&comms_key);
-        let tx_key_manager = create_memory_db_key_manager_from_seed(tari_cipher_seed, 64).await?;
+        let tx_key_manager = create_memory_key_manager_from_seed(tari_cipher_seed, 64).await?;
         let view_key = tx_key_manager.get_view_key().await?;
         let view_key_private = tx_key_manager.get_private_key(&view_key.key_id).await?;
         let view_key_public = view_key.pub_key;

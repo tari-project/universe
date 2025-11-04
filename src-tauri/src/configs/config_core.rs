@@ -23,6 +23,7 @@
 use getset::{Getters, Setters};
 use semver::Version;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::{sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
 use tauri::AppHandle;
@@ -30,7 +31,9 @@ use tokio::sync::RwLock;
 
 use crate::ab_test_selector::ABTestSelector;
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
+use crate::event_scheduler::ScheduledEventInfo;
 use crate::node::node_manager::NodeType;
+use crate::shutdown_manager::ShutdownMode;
 use crate::utils::rand_utils;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -68,6 +71,8 @@ pub struct ConfigCoreContent {
     remote_base_node_address: String,
     node_type: NodeType,
     exchange_id: String,
+    scheduler_events: HashMap<String, ScheduledEventInfo>,
+    shutdown_mode: ShutdownMode,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -120,6 +125,8 @@ impl Default for ConfigCoreContent {
             remote_base_node_address,
             node_type: NodeType::default(),
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
+            scheduler_events: HashMap::new(),
+            shutdown_mode: ShutdownMode::Tasktray,
         }
     }
 }

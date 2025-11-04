@@ -18,13 +18,18 @@
   "floor": "Étage",
   "gpu-power": "Puissance GPU",
   "mining-button-text": {
-    "cancel-mining": "Annuler le minage",
-    "changing-mode": "Changement de mode",
-    "start-mining": "Démarrer le minage",
-    "started-auto-mining": "Démarrage du minage automatique",
-    "starting-mining": "Minage en cours de démarrage",
-    "stop-mining": "Arrêtez le minage",
-    "waiting-for-idle": "En attente d'inactivité"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Démarrer le minage"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
   },
   "orphan-chain-tooltip": {
     "heading": "Choses à essayer :",
@@ -34,6 +39,10 @@
     "step_4": "Essayez d\"utiliser un pont Tor (dans les paramètres)",
     "step_5": "Essayez de désactiver Tor (dans les paramètres)",
     "step_6": "Essayez de réinitialiser l\"application (dans les paramètres)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
     "accepted_shares": "Parts acceptées",

@@ -10,6 +10,7 @@ import { setEarlyClosedDismissed } from '@app/store/stores/userFeedbackStore.ts'
 
 import { useTranslation } from 'react-i18next';
 import { handleFeedbackFields } from '@app/store/actions/appConfigStoreActions.ts';
+import { useEffect } from 'react';
 
 interface UserSurveyProps {
     type: SurveyType;
@@ -17,7 +18,7 @@ interface UserSurveyProps {
 }
 export default function UserSurvey({ type, onClose }: UserSurveyProps) {
     const { t } = useTranslation('user');
-    const { data: survey, isLoading } = useFetchSurveyContent(type);
+    const { data: survey, isLoading, isError } = useFetchSurveyContent(type);
     const loadingMarkup = isLoading && <LoadingDots />;
 
     const handleFeedback = (skipped: boolean) => {
@@ -35,6 +36,14 @@ export default function UserSurvey({ type, onClose }: UserSurveyProps) {
             }
         });
     };
+
+    useEffect(() => {
+        if (isError) {
+            // If Survey fetch fails, just close the dialog
+            console.error(`Error fetching survey content for type: ${type}`);
+            onClose();
+        }
+    }, [isError, type, onClose]);
 
     const handleSkip = () => handleFeedback(true);
     const handleSubmit = () => handleFeedback(false);

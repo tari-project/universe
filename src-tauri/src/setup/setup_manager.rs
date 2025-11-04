@@ -28,12 +28,12 @@ use super::listeners::{setup_listener, SetupFeature, SetupFeaturesList};
 use super::trait_setup_phase::SetupPhaseImpl;
 use super::utils::phase_builder::PhaseBuilder;
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
-use crate::commands::start_cpu_mining;
 use crate::configs::config_core::ConfigCoreContent;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
+use crate::event_scheduler::EventScheduler;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
 use crate::mining::cpu::manager::CpuManager;
@@ -490,6 +490,13 @@ impl SetupManager {
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
         }
 
+        EventScheduler::instance()
+            .spawn_listener()
+            .await
+            .unwrap_or_else(|e| {
+                error!(target: LOG_TARGET, "Failed to start event scheduler listener: {e}");
+            });
+
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
 
@@ -572,7 +579,7 @@ impl SetupManager {
         let app_handle = self.app_handle().await;
         let setup_features = self.features.read().await.clone();
         let gpu_mining_phase_setup = PhaseBuilder::new()
-            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .with_setup_timeout_duration(Duration::from_secs(60 * 15)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![self.core_phase_status.subscribe()])
             .build::<GpuMiningSetupPhase>(
                 app_handle.clone(),
@@ -819,6 +826,15 @@ impl SetupManager {
         Ok(())
     }
 
+    pub async fn turn_on_gpu_pool_feature(&self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Turning on GPU Pool feature");
+        ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, true).await?;
+        // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
+        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+
+        Ok(())
+    }
+
     /// Used in handle_unhealthy for xmrig miner
     /// Should be triggered after x amount of time passed of xmrig being unhealthy
     /// It will make only difference in case of pool connection issues as we do not use other cpu miner
@@ -836,7 +852,18 @@ impl SetupManager {
         // Solo mining will require mmproxy to be running
         self.restart_phases(vec![SetupPhase::CpuMining]).await;
 
-        start_cpu_mining().await.map_err(anyhow::Error::msg)?;
+        Ok(())
+    }
+
+    // Currently used in case when mmproxy fails to start
+    // It throws error in mmproxy_manager.wait_ready() which breaks cpu mining for solo mode
+    pub async fn turn_on_cpu_pool_feature(&self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Turning on CPU Pool feature");
+        ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, true).await?;
+        // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
+        EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+
+        self.restart_phases(vec![SetupPhase::CpuMining]).await;
 
         Ok(())
     }

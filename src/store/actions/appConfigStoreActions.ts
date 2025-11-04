@@ -15,7 +15,7 @@ import {
 } from '../index.ts';
 import { restartMining, startCpuMining, startGpuMining, stopCpuMining, stopGpuMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
-import { setUITheme } from './uiStoreActions';
+import { loadAnimation, setUITheme } from './uiStoreActions';
 import { displayMode } from '../types';
 import {
     BasePoolData,
@@ -29,6 +29,7 @@ import {
     GpuDeviceSettings,
     GpuPools,
     PromptType,
+    ShutdownMode,
 } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
@@ -73,6 +74,9 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
     } catch (e) {
         console.error('Could not set UI config:', e);
     }
+
+    console.info('Loading animation on startup after config UI is loaded.');
+    await loadAnimation();
 };
 export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
     useConfigMiningStore.setState((c) => ({ ...c, ...miningConfig }));
@@ -397,9 +401,6 @@ export const toggleCpuPool = async (enabled: boolean) => {
     const previousCpuPoolEnabledState = useConfigPoolsStore.getState().cpu_pool_enabled;
     useConfigPoolsStore.setState((c) => ({ ...c, cpu_pool_enabled: enabled }));
 
-    const isCpuMiningEnabled = useConfigMiningStore.getState().cpu_mining_enabled;
-    const anyMiningInitiated =
-        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
     const isCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
     const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
 
@@ -410,9 +411,8 @@ export const toggleCpuPool = async (enabled: boolean) => {
 
         await invoke('toggle_cpu_pool_mining', { enabled });
 
-        if (anyMiningInitiated && isCpuMiningEnabled) {
-            await startCpuMining();
-        }
+        // We do not resume mining as toggling cpu pool includes restarting cpu mining phase, so setup flow once it finished should start mining again if there was any mining initiated
+        // We do it that way because cpu miner in case of pool being turned off required mmproxy which is started by cpu_mining_phase and we need to be sure that we are starting mining back once it is ready
     } catch (e) {
         console.error('Could not toggle CPU pool mining', e);
         setError('Could not change CPU pool mining');
@@ -704,4 +704,30 @@ export const handleFeedbackFields = (feedbackType: PromptType, feedback_sent: bo
     const feedback = { ...current, ...updated };
     setFeedbackConfigItems(feedback);
     useConfigUIStore.setState({ feedback });
+};
+
+export const updateShutdownMode = async (shutdownMode: ShutdownMode) => {
+    const previousShutdownMode = useConfigCoreStore.getState().shutdown_mode;
+    useConfigCoreStore.setState((c) => ({ ...c, shutdown_mode: shutdownMode }));
+    invoke('update_shutdown_mode_selection', { shutdownMode }).catch((e) => {
+        console.error('Could not set shutdown mode', e);
+        setError('Could not change shutdown mode');
+        useConfigCoreStore.setState((c) => ({ ...c, shutdown_mode: previousShutdownMode }));
+    });
+};
+
+export const markShutdownModeAsSelected = async (dontAskAgain: boolean) => {
+    useConfigUIStore.setState((c) => ({ ...c, shutdown_mode_selected: true }));
+    invoke('mark_shutdown_selection_as_completed', { dontAskAgain }).catch((e) => {
+        console.error('Could not mark shutdown mode as selected', e);
+        setError('Could not mark shutdown mode as selected');
+        useConfigUIStore.setState((c) => ({ ...c, shutdown_mode_selected: false }));
+    });
+};
+
+export const markFeedbackSurveyAsCompleted = async () => {
+    invoke('mark_feedback_survey_as_completed').catch((e) => {
+        console.error('Could not mark feedback survey as completed', e);
+        setError('Could not mark feedback survey as completed');
+    });
 };

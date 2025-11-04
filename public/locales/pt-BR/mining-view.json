@@ -20,11 +20,22 @@
   "mining-button-text": {
     "cancel-mining": "Cancelar Mineração",
     "changing-mode": "Mudando modo",
-    "start-mining": "Iniciar Mineração",
     "started-auto-mining": "Mineração Automática Iniciada",
     "starting-mining": "Iniciando Mineração",
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Iniciar Mineração",
     "stop-mining": "Parar Mineração",
     "waiting-for-idle": "Aguardando Ociosidade"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    }
   },
   "orphan-chain-tooltip": {
     "heading": "Coisas para tentar:",
@@ -34,6 +45,10 @@
     "step_4": "Tente usar uma Ponte Tor (em Configurações)",
     "step_5": "Tente desabilitar o Tor (em Configurações)",
     "step_6": "Tente redefinir o aplicativo (em Configurações)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
   },
   "pool": {
     "accepted_shares": "Compartilhamentos aceitos",

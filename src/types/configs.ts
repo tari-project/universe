@@ -1,6 +1,11 @@
 import { NodeType } from '@app/store/useNodeStore';
 import { WalletUIMode } from './events-payloads';
 
+export enum ShutdownMode {
+    Direct = 'Direct',
+    Tasktray = 'Tasktray',
+}
+
 export interface ConfigCore {
     created_at: string;
     use_tor: boolean;
@@ -21,7 +26,9 @@ export interface ConfigCore {
     remote_base_node_address: string;
     node_type?: NodeType;
     exchange_id?: string;
+    shutdown_mode: ShutdownMode;
 }
+
 export interface ConfigWallet {
     created_at: string;
     monero_address: string;
@@ -42,6 +49,7 @@ export interface ConfigUI {
     wallet_ui_mode: WalletUIMode;
     was_staged_security_modal_shown: boolean;
     feedback?: FeedbackPrompts;
+    shutdown_mode_selected: boolean;
 }
 
 export interface FeedbackPrompt {
@@ -56,6 +64,7 @@ export type PromptType = 'long_time_miner' | 'early_close';
 export type FeedbackPrompts = Partial<Record<PromptType, FeedbackPrompt>>;
 
 export type MiningModes = Record<MiningModeType, MiningMode>;
+export type MiningModeTimes = Record<MiningModeType, { secs?: number; nanos?: number }>;
 
 export interface ConfigMining {
     created_at: string;
@@ -67,6 +76,8 @@ export interface ConfigMining {
     cpu_mining_enabled: boolean;
     gpu_engine: string;
     is_gpu_mining_recommended: boolean;
+    eco_alert_needed: boolean;
+    mode_mining_times?: MiningModeTimes;
 }
 
 export interface ConfigMiningSelectors {

@@ -8,6 +8,11 @@ export interface SessionMiningTime {
     durationMs?: number;
 }
 
+export interface ResumeMiningTime {
+    durationHours: number;
+    timeStamp: number;
+}
+
 export interface MiningStoreState {
     hashrateReady?: boolean;
     miningControlsEnabled: boolean;
@@ -24,6 +29,8 @@ export interface MiningStoreState {
     availableMiners?: Record<GpuMinerType, GpuMiner>;
     selectedMiner?: GpuMinerType;
     sessionMiningTime: SessionMiningTime;
+    showEcoAlert: boolean;
+    selectedResumeDuration?: ResumeMiningTime;
 }
 
 const initialState: MiningStoreState = {
@@ -36,13 +43,13 @@ const initialState: MiningStoreState = {
     wasMineOnAppStartExecuted: false,
     isChangingMode: false,
     isExcludingGpuDevices: false,
-    //TODO: replace with CpuMiningUnlocked and GpuMiningUnlocked from useSetupStore
     miningControlsEnabled: true,
     availableEngines: [],
     engine: undefined,
     network: undefined,
     availableMiners: undefined,
     selectedMiner: undefined,
+    showEcoAlert: false,
 };
 
 export const useMiningStore = create<MiningStoreState>()(() => ({

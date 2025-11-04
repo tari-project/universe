@@ -37,10 +37,10 @@ pub enum Binaries {
     MergeMiningProxy,
     MinotariNode,
     Wallet,
-    GpuMiner,
     Tor,
     BridgeTapplet,
-    GpuMinerSHA3X,
+    Glytex,
+    Graxil,
     LolMiner,
 }
 impl Binaries {
@@ -50,10 +50,10 @@ impl Binaries {
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
-            Binaries::GpuMiner => "glytex",
+            Binaries::Glytex => "glytex",
             Binaries::Tor => "tor",
             Binaries::BridgeTapplet => "bridge",
-            Binaries::GpuMinerSHA3X => "graxil",
+            Binaries::Graxil => "graxil",
             Binaries::LolMiner => "lolminer",
         }
     }
@@ -64,10 +64,10 @@ impl Binaries {
             "mmproxy" => Binaries::MergeMiningProxy,
             "minotari_node" => Binaries::MinotariNode,
             "wallet" => Binaries::Wallet,
-            "glytex" => Binaries::GpuMiner,
+            "glytex" => Binaries::Glytex,
             "tor" => Binaries::Tor,
             "bridge" => Binaries::BridgeTapplet,
-            "graxil" => Binaries::GpuMinerSHA3X,
+            "graxil" => Binaries::Graxil,
             "lolminer" => Binaries::LolMiner,
             _ => panic!("Unknown binary name: {name}"),
         }
@@ -101,7 +101,7 @@ impl Binaries {
                 let file_name = "minotari_console_wallet";
                 Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
-            Binaries::GpuMiner => {
+            Binaries::Glytex => {
                 let file_name = "glytex";
                 Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
@@ -113,7 +113,7 @@ impl Binaries {
                 let file_name = format!("bridge-{version}");
                 PathBuf::from(file_name).join("bridge")
             }
-            Binaries::GpuMinerSHA3X => {
+            Binaries::Graxil => {
                 let file_name = "graxil";
                 Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
@@ -136,7 +136,7 @@ impl Binaries {
     ) -> String {
         match self {
             Binaries::BridgeTapplet => format!("bridge-v{version}.zip"),
-            Binaries::GpuMiner => match platform {
+            Binaries::Glytex => match platform {
                 BinaryPlatformAssets::LinuxX64 => {
                     format!("glytex-opencl-linux-x86_64-{network}-{version}-{hash}.zip")
                 }
@@ -222,7 +222,7 @@ impl Binaries {
             },
 
             // TODO: Change to proper names once we have the binaries online
-            Binaries::GpuMinerSHA3X => match platform {
+            Binaries::Graxil => match platform {
                 BinaryPlatformAssets::LinuxX64 => {
                     format!("graxil-linux-x86_64-{version}-{hash}.zip")
                 }

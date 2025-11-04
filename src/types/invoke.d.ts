@@ -7,11 +7,12 @@ import {
     BaseNodeStatus,
 } from './app-status';
 import { Language } from '@app/i18initializer';
-import { PaperWalletDetails } from '@app/types/app-status.ts';
-import { displayMode } from '@app/store/types.ts';
-import { BasePoolData, ConfigBackendInMemory } from '@app/types/configs.ts';
+import { PaperWalletDetails } from './app-status.ts';
+import { displayMode } from '../store/types.ts';
+import { BasePoolData, ConfigBackendInMemory } from './configs.ts';
 import { ExchangeMiner } from './exchange';
-import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
+import { ActiveTapplet } from './tapplets/tapplet.types';
+import { AddSchedulerEventBetweenVariantPayload, AddSchedulerEventInVariantPayload } from './mining/schedule.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -54,7 +55,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'exit_application'): Promise<string>;
-    function invoke(param: 'restart_application', payload: { shouldStopMiners: boolean }): Promise<string>;
+    function invoke(param: 'restart_application'): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
     function invoke(
         param: 'get_transactions',
@@ -134,4 +135,18 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'list_connected_peers'): Promise<string[]>;
     function invoke(param: 'switch_gpu_miner', payload: { gpuMinerType: GpuMinerType }): Promise<void>;
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
+    function invoke(param: 'set_mode_mining_time', payload: { mode: string; duration: number }): Promise<void>;
+    function invoke(param: 'set_eco_alert_needed'): Promise<void>;
+    function invoke(param: 'mark_shutdown_selection_as_completed', payload: { dontAskAgain: boolean }): Promise<void>;
+    function invoke(param: 'mark_feedback_survey_as_completed'): Promise<void>;
+    function invoke(param: 'update_shutdown_mode_selection', payload: { shutdownMode: ShutdownMode }): Promise<void>;
+    // Scheduler commands
+    function invoke(param: 'add_scheduler_in_event', payload: AddSchedulerEventInVariantPayload): Promise<void>;
+    function invoke(
+        param: 'add_scheduler_between_events',
+        payload: AddSchedulerEventBetweenVariantPayload
+    ): Promise<void>;
+    function invoke(param: 'remove_scheduler_event', payload: { eventId: string }): Promise<void>;
+    function invoke(param: 'pause_scheduler_event', payload: { eventId: string }): Promise<void>;
+    function invoke(param: 'resume_scheduler_event', payload: { eventId: string }): Promise<void>;
 }

@@ -32,6 +32,9 @@ use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId}
 use crate::configs::pools::BasePoolData;
 use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
+use crate::event_scheduler::{
+    EventScheduler, SchedulerEventTiming, SchedulerEventType, TimePeriod, TimeUnit,
+};
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
@@ -47,6 +50,7 @@ use crate::node::node_manager::NodeType;
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
+use crate::shutdown_manager::{ShutdownManager, ShutdownMode};
 use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
 use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
 use crate::tapplets::interface::ActiveTapplet;
@@ -206,8 +210,28 @@ pub async fn download_and_start_installer(id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn exit_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
+pub async fn exit_application(
+    _window: tauri::Window,
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    // When exit is called from here I can see that it triggers the RunEvent::Exit without triggering the RunEvent::ExitRequested before
+    // Cleaning up processes in RunEvent::Exit is not reliable as it does not always get triggered properly so we doing it here
+
+    info!(target: LOG_TARGET, "Exit application command received, shutting down processes...");
+
+    let _unused = GpuManager::write().await.stop_mining().await;
+    info!(target: LOG_TARGET, "GPU Mining stopped.");
+
+    let _unused = CpuManager::write().await.stop_mining().await;
+    info!(target: LOG_TARGET, "CPU Mining stopped.");
+
     TasksTrackers::current().stop_all_processes().await;
+    GpuManager::read().await.on_app_exit().await;
+    CpuManager::read().await.on_app_exit().await;
+    state.tor_manager.on_app_exit().await;
+    state.wallet_manager.on_app_exit().await;
+    state.node_manager.on_app_exit().await;
 
     app.exit(0);
     Ok(())
@@ -283,7 +307,7 @@ pub async fn get_applications_versions(
         .get_binary_version(Binaries::MergeMiningProxy)
         .await;
     let wallet_version = binary_resolver.get_binary_version(Binaries::Wallet).await;
-    let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::GpuMiner).await;
+    let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::Glytex).await;
     let bridge_version = binary_resolver
         .get_binary_version(Binaries::BridgeTapplet)
         .await;
@@ -717,6 +741,7 @@ async fn reset_app_configs(
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 #[tauri::command]
 pub async fn reset_settings(
     reset_wallet: bool,
@@ -730,7 +755,10 @@ pub async fn reset_settings(
         log::info!(target: LOG_TARGET, "[reset_settings] Pin successfully validated");
     }
 
+    let _unused = GpuManager::write().await.stop_mining().await;
+    let _unused = CpuManager::write().await.stop_mining().await;
     TasksTrackers::current().stop_all_processes().await;
+
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
     let app_config_dir = app_handle.path().app_config_dir();
     let app_cache_dir = app_handle.path().app_cache_dir();
@@ -837,14 +865,9 @@ pub async fn reset_settings(
 
 #[tauri::command]
 pub async fn restart_application(
-    should_stop_miners: bool,
     _window: tauri::Window,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    if should_stop_miners {
-        TasksTrackers::current().stop_all_processes().await;
-    }
-
     app.restart();
 }
 
@@ -857,13 +880,22 @@ pub async fn send_feedback(
     app: tauri::AppHandle,
 ) -> Result<String, String> {
     let timer = Instant::now();
-    let app_log_dir = Some(app.path().app_log_dir().expect("Could not get log dir."));
+    let app_log_dir = app.path().app_log_dir().expect("Could not get log dir.");
+    let app_config_dir = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get app config dir.");
 
     let reference = state
         .feedback
         .read()
         .await
-        .send_feedback(feedback, include_logs, app_log_dir.clone())
+        .send_feedback(
+            feedback,
+            include_logs,
+            app_log_dir.clone(),
+            app_config_dir.clone(),
+        )
         .await
         .inspect_err(|e| error!("error at send_feedback {e:?}"))
         .map_err(|e| e.to_string())?;
@@ -1046,6 +1078,12 @@ pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
     ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone())
         .await
         .map_err(InvokeError::from_anyhow)?;
+
+    if mode != "Eco" {
+        ConfigMining::update_field(ConfigMiningContent::set_eco_alert_needed, false)
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+    }
 
     SystemTrayManager::send_event(SystemTrayEvents::MiningMode(MiningModeType::from(
         mode.clone(),
@@ -1381,13 +1419,17 @@ pub async fn switch_gpu_miner(gpu_miner_type: GpuMinerType) -> Result<(), String
 pub async fn toggle_cpu_pool_mining(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
 
-    ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, enabled)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    SetupManager::get_instance()
-        .restart_phases(vec![SetupPhase::CpuMining])
-        .await;
+    if enabled {
+        SetupManager::get_instance()
+            .turn_on_cpu_pool_feature()
+            .await
+            .map_err(|e| e.to_string())?;
+    } else {
+        SetupManager::get_instance()
+            .turn_off_cpu_pool_feature()
+            .await
+            .map_err(|e| e.to_string())?;
+    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "toggle_cpu_pool_mining took too long: {:?}", timer.elapsed());
@@ -1400,9 +1442,17 @@ pub async fn toggle_cpu_pool_mining(enabled: bool) -> Result<(), String> {
 pub async fn toggle_gpu_pool_mining(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
 
-    ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, enabled)
-        .await
-        .map_err(|e| e.to_string())?;
+    if enabled {
+        SetupManager::get_instance()
+            .turn_on_gpu_pool_feature()
+            .await
+            .map_err(|e| e.to_string())?;
+    } else {
+        SetupManager::get_instance()
+            .turn_off_gpu_pool_feature()
+            .await
+            .map_err(|e| e.to_string())?;
+    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "toggle_gpu_pool_mining took too long: {:?}", timer.elapsed());
@@ -1574,7 +1624,12 @@ pub fn validate_minotari_amount(
         .clone()
         .and_then(|state| state.balance);
 
-    let available_balance = balance.expect("Could not get balance").available_balance;
+    let mut available_balance = MicroMinotari::from(0);
+
+    if let Some(wallet_balance) = &balance {
+        available_balance = wallet_balance.available_balance
+    }
+
     match m_amount.cmp(&available_balance) {
         std::cmp::Ordering::Less => Ok(()),
         _ => Err(InvokeError::from("Insufficient balance".to_string())),
@@ -1865,6 +1920,96 @@ pub async fn list_connected_peers(
         .map_err(|e| e.to_string())
 }
 
+// ================ Event Scheduler Commands ==================
+#[tauri::command]
+pub async fn add_scheduler_in_event(
+    event_id: String,
+    time_value: i64,
+    time_unit: TimeUnit,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET, "add_scheduler_in_event called with event_id: {event_id:?}, time_value: {time_value:?}, timer_unit: {time_unit:?}");
+
+    let event_timing =
+        SchedulerEventTiming::parse_in_variant(time_value, time_unit).map_err(|e| e.to_string())?;
+
+    let event_type = SchedulerEventType::ResumeMining;
+
+    EventScheduler::instance()
+        .schedule_event(event_type, event_id, event_timing)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn add_scheduler_between_event(
+    event_id: String,
+    start_time_hour: i64,
+    start_time_minute: i64,
+    start_time_period: TimePeriod,
+    end_time_hour: i64,
+    end_time_minute: i64,
+    end_time_period: TimePeriod,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET, "add_scheduler_between_event called with event_id: {event_id:?}, start_time_hour: {start_time_hour:?}, start_time_minute: {start_time_minute:?}, start_time_period: {start_time_period:?}, end_time_hour: {end_time_hour:?}, end_time_minute: {end_time_minute:?}, end_time_period: {end_time_period:?}");
+
+    let event_timing = SchedulerEventTiming::parse_between_variant(
+        start_time_hour,
+        start_time_minute,
+        start_time_period,
+        end_time_hour,
+        end_time_minute,
+        end_time_period,
+    )
+    .map_err(|e| e.to_string())?;
+
+    let event_type = SchedulerEventType::ResumeMining;
+
+    EventScheduler::instance()
+        .schedule_event(event_type, event_id, event_timing)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn remove_scheduler_event(event_id: String) -> Result<(), String> {
+    info!(target: LOG_TARGET, "remove_scheduler_event called with event_id: {event_id:?}");
+
+    EventScheduler::instance()
+        .remove_event(event_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn pause_scheduler_event(event_id: String) -> Result<(), String> {
+    info!(target: LOG_TARGET, "pause_scheduler_event called with event_id: {event_id:?}");
+
+    EventScheduler::instance()
+        .pause_event(event_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn resume_scheduler_event(event_id: String) -> Result<(), String> {
+    info!(target: LOG_TARGET, "resume_scheduler_event called with event_id: {event_id:?}");
+
+    EventScheduler::instance()
+        .resume_event(event_id)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn refresh_wallet_history(
     state: tauri::State<'_, UniverseAppState>,
@@ -1987,5 +2132,78 @@ pub async fn send_otp_request(
     }
     
     info!(target: LOG_TARGET, "OTP request sent successfully");
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_mode_mining_time(mode: MiningModeType, duration: u64) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ConfigMining::update_mining_times(mode, duration)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_mode_mining_time took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_eco_alert_needed() -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    ConfigMining::update_field(ConfigMiningContent::set_eco_alert_needed, false)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_eco_alert_needed took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mark_shutdown_selection_as_completed(dont_ask_again: bool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ConfigUI::update_field(ConfigUIContent::set_shutdown_mode_selected, dont_ask_again)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    ShutdownManager::instance()
+        .mark_shutdown_mode_selection_as_completed()
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "mark_shutdown_selection_as_completed took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mark_feedback_survey_as_completed() -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ShutdownManager::instance()
+        .mark_feedback_survey_as_completed()
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, " mark_feedback_survey_as_completed took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_shutdown_mode_selection(
+    shutdown_mode: ShutdownMode,
+) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ConfigCore::update_field(ConfigCoreContent::set_shutdown_mode, shutdown_mode)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_shutdown_mode_selection took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
