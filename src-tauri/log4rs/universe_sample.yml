@@ -54,6 +54,38 @@ appenders:
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m} // {f}:{L}{n}"
 
+  app-logic:
+    kind: rolling_file
+    path: "{{log_dir}}/universe/log/app-logic.log"
+    policy:
+      kind: compound
+      trigger:
+        kind: size
+        limit: 2mb
+      roller:
+        kind: fixed_window
+        base: 1
+        count: 2
+        pattern: "{{log_dir}}/universe/log/app-logic.{}.log"
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m} // {f}:{L}{n}"
+
+  statuses:
+    kind: rolling_file
+    path: "{{log_dir}}/universe/log/statuses.log"
+    policy:
+      kind: compound
+      trigger:
+        kind: size
+        limit: 2mb
+      roller:
+        kind: fixed_window
+        base: 1
+        count: 2
+        pattern: "{{log_dir}}/universe/log/app-statuses.{}.log"
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m} // {f}:{L}{n}"
+
   # An appender named "other" that writes to a file with a custom pattern encoder
   other:
     kind: rolling_file
@@ -79,12 +111,20 @@ root:
     - stdout
 
 loggers:
-  # Route log events common to every application to all appenders
-  tari::universe:
+  tari::universe::app_logic:
     level: info
     appenders:
       - stdout
       - default
+      - app-logic
+    additive: false
+
+  tari::universe::statuses:
+    level: info
+    appenders:
+      - stdout
+      - default
+      - statuses
     additive: false
 
   tari::universe::web:
