@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { ConfigBackendInMemory } from '@app/types/configs.ts';
 import type { XSpaceEvent } from '@app/types/ws';
-import type { AirdropClaimState } from '@app/types/airdrop-claim';
+import type { AirdropClaimState, TrancheStatus, BalanceSummary } from '@app/types/airdrop-claim';
 
 export const GIFT_GEMS = 5000;
 
@@ -239,6 +239,10 @@ export interface AirdropStoreState {
     
     // Airdrop claim state
     claim?: AirdropClaimState;
+    
+    // Tranche state
+    trancheStatus?: TrancheStatus;
+    balanceSummary?: BalanceSummary;
 }
 
 const initialState: AirdropStoreState = {

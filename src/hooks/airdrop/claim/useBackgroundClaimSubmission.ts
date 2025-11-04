@@ -10,12 +10,12 @@ import type { ClaimRequest, ClaimResult, BackgroundClaimResult } from '@app/type
 interface ClaimSubmissionResponse {
     success: boolean;
     data?: {
-        claimTarget: 'xtm' | 'usd';
+        claimTarget: 'xtm';
         transactionId: string;
         amount: number;
-        usdtAmount: number;
         claimId: string;
         trackingId: string;
+        trancheId?: string;
     };
     error?: string;
 }
@@ -38,9 +38,9 @@ async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult> {
         success: true,
         transactionId: response.data.transactionId,
         amount: response.data.amount,
-        usdtAmount: response.data.usdtAmount,
         claimId: response.data.claimId,
         trackingId: response.data.trackingId,
+        trancheId: response.data.trancheId,
     };
 }
 
@@ -53,8 +53,9 @@ export function useBackgroundClaimSubmission() {
     const pendingClaimRef = useRef<{
         resolve: (value: BackgroundClaimResult) => void;
         reject: (reason: Error) => void;
-        claimTarget: 'xtm' | 'usd';
+        claimTarget: 'xtm';
         csrfToken: string;
+        trancheId?: string;
     } | null>(null);
 
     const claimMutation = useMutation({
@@ -83,7 +84,7 @@ export function useBackgroundClaimSubmission() {
     useEffect(() => {
         if (otpData?.otp && pendingClaimRef.current && walletAddress && !claimMutation.isPending) {
             const pendingClaim = pendingClaimRef.current;
-            const { claimTarget, csrfToken } = pendingClaim;
+            const { claimTarget, csrfToken, trancheId } = pendingClaim;
 
             console.log('OTP received, submitting claim with OTP:', otpData.otp);
 
@@ -95,6 +96,7 @@ export function useBackgroundClaimSubmission() {
                 walletAddress,
                 csrfToken,
                 otp: otpData.otp,
+                ...(trancheId && { trancheId }),
             };
 
             claimMutation.mutate(claimRequest, {
@@ -121,7 +123,7 @@ export function useBackgroundClaimSubmission() {
     }, [otpState.currentStep, otpState.error]);
 
     const performBackgroundClaim = useCallback(
-        async (claimTarget: 'xtm' | 'usd' = 'xtm'): Promise<BackgroundClaimResult> => {
+        async (claimTarget: 'xtm' = 'xtm', trancheId?: string): Promise<BackgroundClaimResult> => {
             try {
                 if (!walletAddress) {
                     throw new Error('Wallet address not available');
@@ -153,6 +155,7 @@ export function useBackgroundClaimSubmission() {
                         reject,
                         claimTarget,
                         csrfToken: csrfData.csrfToken,
+                        trancheId,
                     };
 
                     // Set up timeout (3 minutes to match OTP timeout)

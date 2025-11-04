@@ -17,12 +17,12 @@ import type {
 interface ClaimSubmissionResponse {
     success: boolean;
     data?: {
-        claimTarget: 'xtm' | 'usd';
+        claimTarget: 'xtm';
         transactionId: string;
         amount: number;
-        usdtAmount: number;
         claimId: string;
         trackingId: string;
+        trancheId?: string;
     };
     error?: string;
 }
@@ -47,9 +47,9 @@ async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult> {
         success: true,
         transactionId: response.data.transactionId,
         amount: response.data.amount,
-        usdtAmount: response.data.usdtAmount,
         claimId: response.data.claimId,
         trackingId: response.data.trackingId,
+        trancheId: response.data.trancheId,
     };
 }
 
@@ -168,7 +168,7 @@ export function useSimpleClaimSubmission() {
     });
 
     const performClaim = useCallback(
-        async (claimTarget: 'xtm' | 'usd' = 'xtm'): Promise<BackgroundClaimResult> => {
+        async (claimTarget: 'xtm' = 'xtm', trancheId?: string): Promise<BackgroundClaimResult> => {
             try {
                 setError(null);
 
@@ -227,6 +227,7 @@ export function useSimpleClaimSubmission() {
                     walletAddress,
                     csrfToken: csrfData.csrfToken,
                     otp,
+                    ...(trancheId && { trancheId }),
                 };
 
                 const result = await submitClaim(claimRequest);
