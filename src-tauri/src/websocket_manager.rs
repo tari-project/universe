@@ -121,7 +121,7 @@ impl WebsocketManager {
 
     pub fn set_app_handle(&mut self, app: AppHandle) {
         self.app = Some(app.clone());
-        log::info!(target: LOG_TARGET_APP_LOGIC "websocket manager app handle set");
+        log::info!(target: LOG_TARGET_APP_LOGIC, "websocket manager app handle set");
         let mut status_channel_rx = self.status_update_channel_rx.clone();
         let main_window = app
             .get_webview_window("main")
