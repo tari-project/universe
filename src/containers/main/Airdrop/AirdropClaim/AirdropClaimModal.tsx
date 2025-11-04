@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import GreenModal from '@app/components/GreenModal/GreenModal.tsx';
 import { useSimpleClaimSubmission } from '@app/hooks/airdrop/claim/useSimpleClaimSubmission';
 import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
+import { useCurrentMonthTranche } from '@app/hooks/airdrop/tranches';
+import { MonthlyTrancheClaimModal } from '@app/components/airdrop';
 import { useAirdropStore } from '@app/store';
 import { setClaimInProgress, setClaimResult } from '@app/store/actions/airdropStoreActions';
 import {
@@ -49,17 +51,23 @@ import {
 } from './styles';
 
 export default function AirdropClaimModal() {
-    const [selectedTarget, setSelectedTarget] = useState<'xtm' | 'usd'>('xtm');
+    const [selectedTarget, setSelectedTarget] = useState<'xtm'>('xtm');
     const claimState = useAirdropStore((state) => state.claim);
     const isLoggedIn = useAirdropStore((state) => state.userDetails?.user?.id);
     const { performClaim, isProcessing, currentStep, error } = useSimpleClaimSubmission();
     const { data: claimStatus, isLoading: isLoadingStatus } = useClaimStatus();
+    const { hasCurrentTranche } = useCurrentMonthTranche();
 
     const [showModal, setShowModal] = useState(true);
 
     const onClose = () => {
         console.log('onClose');
     };
+
+    // Use tranche modal if available, otherwise fall back to legacy modal
+    if (hasCurrentTranche) {
+        return <MonthlyTrancheClaimModal showModal={showModal} onClose={onClose} />;
+    }
 
     const handleClaim = async () => {
         if (!claimStatus?.hasClaim || isProcessing) {
