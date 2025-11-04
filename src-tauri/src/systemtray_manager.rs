@@ -629,14 +629,14 @@ impl SystemTrayManager {
                 #[cfg(target_os = "macos")]
                 {
                     AppHandle::hide(window.app_handle()).unwrap_or_else(|error| {
-                        error!(target: LOG_TARGET, "Failed to hide app: {error}");
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to hide app: {error}");
                     });
                 }
 
                 #[cfg(not(target_os = "macos"))]
                 {
                     window.hide().unwrap_or_else(|error| {
-                        error!(target: LOG_TARGET, "Failed to hide window: {error}");
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to hide window: {error}");
                     });
                 }
             }

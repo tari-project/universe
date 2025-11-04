@@ -35,10 +35,9 @@ use crate::{
     mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
     systemtray_manager::SystemTrayManager,
     tasks_tracker::TasksTrackers,
-    UniverseAppState,
+    UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 
-static LOG_TARGET: &str = "universe::shutdown_manager";
 static INSTANCE: LazyLock<ShutdownManager> = LazyLock::new(ShutdownManager::new);
 
 pub struct WaitForCompletion {
@@ -113,7 +112,7 @@ impl ShutdownManager {
 
     pub async fn is_in_task_tray_shutdown_step(&self) -> bool {
         let sequence = self.shutdown_sequence.read().await;
-        info!(target: LOG_TARGET, "Current shutdown sequence: {:?}", *sequence);
+        info!(target: LOG_TARGET_APP_LOGIC, "Current shutdown sequence: {:?}", *sequence);
         sequence.contains(&ShutdownStep::TaskTrayTriggeredShutdown)
     }
 
@@ -144,7 +143,7 @@ impl ShutdownManager {
             .await
             .push(ShutdownStep::Exit);
 
-        log::info!(target: LOG_TARGET, "Initialized shutdown sequence: {:?}", *self.shutdown_sequence.read().await);
+        log::info!(target: LOG_TARGET_APP_LOGIC, "Initialized shutdown sequence: {:?}", *self.shutdown_sequence.read().await);
 
         self.execute_shutdown_sequence().await;
     }
@@ -197,7 +196,7 @@ impl ShutdownManager {
             .await
             .push(ShutdownStep::Exit);
 
-        log::info!(target: LOG_TARGET, "Initialized shutdown sequence: {:?}", *self.shutdown_sequence.read().await);
+        log::info!(target: LOG_TARGET_APP_LOGIC, "Initialized shutdown sequence: {:?}", *self.shutdown_sequence.read().await);
 
         self.execute_shutdown_sequence().await;
     }
@@ -288,7 +287,7 @@ impl ShutdownManager {
     }
 
     async fn exit(&self) {
-        info!(target: LOG_TARGET, "Exiting application");
+        info!(target: LOG_TARGET_APP_LOGIC, "Exiting application");
         let app_handle = self.app_handle.read().await;
         if let Some(app) = &*app_handle {
             EventsEmitter::emit_shutting_down().await;

@@ -94,7 +94,7 @@ impl Feedback {
                     {
                         // Skip files larger than 100MB
                         if entry_metadata.len() > MAX_FILE_SIZE {
-                            info!(target: LOG_TARGET, "Skipping file {} (size: {} bytes) - exceeds 100MB limit",
+                            info!(target: LOG_TARGET_APP_LOGIC, "Skipping file {} (size: {} bytes) - exceeds 100MB limit",
                                   entry_file_name_as_str, entry_metadata.len());
                             continue;
                         }
@@ -114,7 +114,7 @@ impl Feedback {
                         zip.add_directory(prefixed_path, file_options)?;
                         paths_queue.push(entry_path.clone());
                     } else {
-                        info!(target: LOG_TARGET, "Skipping file {} - does not match filter",
+                        info!(target: LOG_TARGET_APP_LOGIC, "Skipping file {} - does not match filter",
                               entry_file_name_as_str);
                     }
                 }

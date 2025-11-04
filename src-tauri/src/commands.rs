@@ -2151,7 +2151,7 @@ pub async fn mark_shutdown_selection_as_completed(dont_ask_again: bool) -> Resul
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "mark_shutdown_selection_as_completed took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "mark_shutdown_selection_as_completed took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -2165,7 +2165,7 @@ pub async fn mark_feedback_survey_as_completed() -> Result<(), InvokeError> {
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, " mark_feedback_survey_as_completed took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, " mark_feedback_survey_as_completed took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
@@ -2181,7 +2181,7 @@ pub async fn update_shutdown_mode_selection(
         .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "update_shutdown_mode_selection took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "update_shutdown_mode_selection took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
