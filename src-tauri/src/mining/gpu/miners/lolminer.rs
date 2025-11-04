@@ -132,7 +132,7 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         }
 
         for device_name in extract_device_names(&output_str) {
-            info!("Lolminer detected device name: {device_name}");
+            info!(target: LOG_TARGET_APP_LOGIC,"Lolminer detected device name: {device_name}");
             #[allow(clippy::cast_possible_truncation)]
             let device_id = gpu_devices.len() as u32;
             gpu_devices.push(GpuCommonInformation {

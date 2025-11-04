@@ -187,7 +187,7 @@ impl ConfigWallet {
         let current_version = *config.version_counter();
 
         if current_version < WALLET_VERSION {
-            log::info!("Wallet Config needs migration {current_version:?} => {WALLET_VERSION}");
+            log::info!(target: LOG_TARGET_APP_LOGIC,"Wallet Config needs migration {current_version:?} => {WALLET_VERSION}");
 
             ConfigWallet::update_field(ConfigWalletContent::set_version_counter, WALLET_VERSION)
                 .await?;
@@ -196,7 +196,7 @@ impl ConfigWallet {
         }
 
         if *ConfigUI::content().await.was_staged_security_modal_shown() {
-            log::info!("Wallet Config needs 'set_was_staged_security_modal_shown' flag migration");
+            log::info!(target: LOG_TARGET_APP_LOGIC,"Wallet Config needs 'set_was_staged_security_modal_shown' flag migration");
             // Rename and move this flag here
             ConfigWallet::update_field(ConfigWalletContent::set_seed_backed_up, true).await?;
             // Clear this flag to prevent from re-migrating

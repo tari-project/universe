@@ -148,7 +148,7 @@ where
     if let Some(pin) = pin {
         Ok(pin.to_string())
     } else {
-        log::info!("PIN entry cancelled");
+        log::info!(target: LOG_TARGET_APP_LOGIC,"PIN entry cancelled");
         Err(anyhow::anyhow!("PIN entry cancelled"))
     }
 }
