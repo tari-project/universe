@@ -96,6 +96,7 @@ impl BatteryStatus {
         {
             info!(target: LOG_TARGET, "Battery switched to discharging state.");
             if GpuManager::read().await.is_running() || CpuManager::read().await.is_running() {
+                info!(target: LOG_TARGET, "Mining is running, pausing mining due to discharging battery.");
                 let _unused = GpuManager::write().await.stop_mining().await;
                 let _unused = CpuManager::write().await.stop_mining().await;
                 EventsEmitter::emit_set_show_battery_alert(true).await;
@@ -149,7 +150,9 @@ impl BatteryStatus {
                         let mut all_discharging = true;
 
                         if let Ok(batteries) = battery_manager.batteries() {
+                            info!(target: LOG_TARGET, "Checking battery states: {:?}", batteries);
                             for battery in batteries.flatten() {
+                                    info!(target: LOG_TARGET, "Battery '{}' state: {:?}", battery.vendor().unwrap_or("Unknown"), battery.state());
                                     match battery.state() {
                                         battery::State::Charging | battery::State::Full => {
                                             all_discharging = false;
@@ -164,6 +167,9 @@ impl BatteryStatus {
                                 }
                         }
 
+                        info!(target: LOG_TARGET, "All batteries charging: {}, All batteries discharging: {}", all_charging, all_discharging);
+                        info!(target: LOG_TARGET, "Last known battery state: {:?}", *last_battery_state_clone.blocking_lock());
+
                         let mut state = last_battery_state_clone.blocking_lock();
                         if all_charging && *state != battery::State::Charging {
                             tokio::spawn(Self::switched_to_charging_handler());
@@ -172,6 +178,7 @@ impl BatteryStatus {
                             tokio::spawn(Self::switched_to_discharging_handler());
                             *state = battery::State::Discharging;
                         } else {
+                            info!(target: LOG_TARGET, "No change in battery state detected.");
                             // Mixed states or unknown states, do nothing
                         }
                         }
