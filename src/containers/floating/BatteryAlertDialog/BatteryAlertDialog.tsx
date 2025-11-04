@@ -1,6 +1,8 @@
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { useUIStore } from '@app/store/useUIStore';
 import { setShowBatteryAlert } from '@app/store/actions/uiStoreActions';
+import batteryEmoji from '/assets/img/icons/emoji/battery.png';
+import yatHighVoltageEmoji from '/assets/img/icons/emoji/yat_high_voltage.png';
 
 import { memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,7 +32,9 @@ const BatteryAlertDialog = memo(function BatteryAlertDialog() {
             <DialogContent>
                 <Wrapper>
                     <IconWrapper>
-                        <BatteryIcon>🔋</BatteryIcon>
+                        <BatteryIcon>
+                            <img src={batteryEmoji} alt="Battery emoji" height={84} />
+                        </BatteryIcon>
                     </IconWrapper>
 
                     <ContentWrapper>
@@ -38,7 +42,9 @@ const BatteryAlertDialog = memo(function BatteryAlertDialog() {
                         <Description>{t('battery-alert-dialog.description')}</Description>
 
                         <InfoBox>
-                            <InfoIcon>⚡</InfoIcon>
+                            <InfoIcon>
+                                <img src={yatHighVoltageEmoji} alt="High voltage emoji" height={32} />
+                            </InfoIcon>
                             <InfoLabel>{t('battery-alert-dialog.auto-resume-info')}</InfoLabel>
                         </InfoBox>
 
