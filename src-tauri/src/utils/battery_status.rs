@@ -65,6 +65,7 @@ impl BatteryStatus {
     }
 
     async fn switched_to_charging_handler() {
+        info!(target: LOG_TARGET, "Handling switched to charging event.");
         if INSTANCE
             .should_resume_mining_once_charging
             .load(std::sync::atomic::Ordering::SeqCst)
@@ -84,6 +85,7 @@ impl BatteryStatus {
     }
 
     async fn switched_to_discharging_handler() {
+        info!(target: LOG_TARGET, "Handling switched to discharging event.");
         if ConfigMining::content()
             .await
             .pause_on_battery_mode()
