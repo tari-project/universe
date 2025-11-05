@@ -25,6 +25,16 @@
     "activeMinersStat": "Активные майнеры",
     "bonusXTMEarned": "Заработанный бонус XTM",
     "copied": "Скопировано!",
+    "crewEmpty": {
+      "description": "You have <strong>{{inactiveCount}}</strong> inactive friends. Give them a nudge or invite more.",
+      "descriptionSingular": "You have <strong>{{inactiveCount}}</strong> inactive friend. Give them a nudge or invite more.",
+      "descriptionZero": "Invite friends to start earning bonus rewards together!",
+      "nudgeButton": "Nudge your Friends",
+      "nudgeButtonSingular": "Nudge your Friend",
+      "title": "Your friends are slacking!",
+      "titleSingular": "Your friend is slacking!",
+      "titleZero": "Start building your crew!"
+    },
     "crewStatus": {
       "completed": "Завершено",
       "inProgress": "В процессе",
@@ -103,6 +113,37 @@
   "success": "Успех",
   "topTooltipText": "Зарабатывайте бонусные XTM, приглашая друзей.",
   "topTooltipTitle": "Награды тестовой сети",
+  "tranche": {
+    "claim-modal": {
+      "claim-button": "Claim",
+      "claiming": "Claiming...",
+      "description": "Your hard work (and Yats!) has paid off! Each month on the 12th, you'll receive a portion of your airdrop.",
+      "eyebrow": "This months' Airdrop reward",
+      "remaining-allocation": "Your remaining allocation is {{amount}} XTM",
+      "title": "Claim this month's reward.",
+      "waiting-verification": "Waiting for verification..."
+    },
+    "notifications": {
+      "claim-failed": "Claim Failed",
+      "claim-success": "Tranche Claimed Successfully",
+      "claim-success-message": "Successfully claimed {{amount}} XTM from tranche",
+      "new-tranche-available": "New Tranche Available",
+      "new-tranches-available": "{{count}} new {{plural}} ready to claim!"
+    },
+    "status": {
+      "available": "Available",
+      "claimed": "Claimed",
+      "error": "Failed to load tranche status",
+      "expired": "Expired",
+      "loading": "Loading tranche status...",
+      "next-available": "Next tranche available:",
+      "no-data": "No tranche data available",
+      "pending": "Pending",
+      "progress-title": "Airdrop Progress",
+      "total-allocation": "Total Allocation",
+      "tranches": "tranches"
+    }
+  },
   "unclaimedGems": "Неполученные гемы",
   "update-username": "Обновить имя пользователя",
   "username-error": "Имя пользователя должно содержать от 3 до 20 символов и включать только буквы, цифры, подчеркивания или дефисы",

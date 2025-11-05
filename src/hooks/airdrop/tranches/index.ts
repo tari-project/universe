@@ -6,7 +6,6 @@ export {
     KEY_TRANCHE_STATUS,
 } from './useTrancheStatus';
 
-export {
-    useTrancheClaimSubmission,
-    useSimpleTrancheClaimSubmission,
-} from './useTrancheClaimSubmission';
+export { useTrancheClaimSubmission, useSimpleTrancheClaimSubmission } from './useTrancheClaimSubmission';
+
+export { useTrancheAutoRefresh, useTrancheRefreshOnEvents } from './useTrancheAutoRefresh';

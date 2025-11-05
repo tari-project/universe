@@ -1,12 +1,12 @@
 import styled from 'styled-components';
-import { motion } from 'framer-motion';
+import * as m from 'motion/react-m';
 
-export const ModalWrapper = styled(motion.div)`
+export const ModalWrapper = styled(m.div)`
     position: relative;
     width: 625px;
     height: 521px;
     border-radius: 35px;
-    background: #FFFFFFBF;
+    background: #ffffffbf;
     backdrop-filter: blur(10px);
     display: flex;
     flex-direction: column;
@@ -75,16 +75,14 @@ export const ClaimContainer = styled.div`
     justify-content: center;
     margin: 0 auto 32px auto;
     position: relative;
-    
+
     /* Multi-layered background as specified */
-    background: 
-        linear-gradient(0deg, #FFFFFF, #FFFFFF),
-        linear-gradient(262.12deg, #333909 2.2%, #091D07 100.01%);
-    
+    background: linear-gradient(0deg, #ffffff, #ffffff), linear-gradient(262.12deg, #333909 2.2%, #091d07 100.01%);
+
     /* Alternative implementation if the above doesn't work */
-    background-color: #091D07;
-    background-image: linear-gradient(262.12deg, #333909 2.2%, #091D07 100.01%);
-    
+    background-color: #091d07;
+    background-image: linear-gradient(262.12deg, #333909 2.2%, #091d07 100.01%);
+
     /* Add subtle border for definition */
     border: 1px solid rgba(255, 255, 255, 0.1);
 `;
@@ -92,12 +90,8 @@ export const ClaimContainer = styled.div`
 export const EyebrowText = styled.div`
     font-size: 12px;
     font-weight: 500;
-    color: #FFFFFF;
-    text-transform: uppercase;
+    color: #ffffff;
     letter-spacing: 0.5px;
-    background: #FFFFFF1A;
-    padding: 6px 12px;
-    border-radius: 6px;
     display: inline-block;
     width: fit-content;
     margin-bottom: 8px;
@@ -106,15 +100,21 @@ export const EyebrowText = styled.div`
 export const TrancheAmount = styled.div`
     font-size: 48px;
     font-weight: 700;
-    color: #FFFFFF;
+    color: #ffffff;
     line-height: 1;
     margin: 8px 0;
 `;
 
 export const RemainingBalance = styled.div`
     font-size: 14px;
-    color: #FFFFFF;
-    opacity: 0.8;
+    font-weight: 500;
+    color: #ffffff;
+    background: #ffffff1a;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
     margin-top: auto;
 `;
 
@@ -124,7 +124,7 @@ export const ClaimButton = styled.button<{ $isLoading?: boolean }>`
     border-radius: 8px;
     border: none;
     background: #000000;
-    color: #FFFFFF;
+    color: #ffffff;
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
@@ -134,23 +134,25 @@ export const ClaimButton = styled.button<{ $isLoading?: boolean }>`
     gap: 8px;
     margin: 0 auto;
     transition: all 0.2s ease;
-    
+
     &:hover:not(:disabled) {
         background: #1a1a1a;
         transform: translateY(-1px);
     }
-    
+
     &:active:not(:disabled) {
         transform: translateY(0);
     }
-    
+
     &:disabled {
         opacity: 0.6;
         cursor: not-allowed;
         transform: none;
     }
-    
-    ${({ $isLoading }) => $isLoading && `
+
+    ${({ $isLoading }) =>
+        $isLoading &&
+        `
         background: #333333;
         cursor: wait;
     `}
@@ -160,12 +162,16 @@ export const LoadingSpinner = styled.div`
     width: 16px;
     height: 16px;
     border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid #FFFFFF;
+    border-top: 2px solid #ffffff;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    
+
     @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
     }
 `;

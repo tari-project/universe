@@ -1,4 +1,5 @@
 import { useAirdropStore } from '@app/store';
+import { openTrancheModal } from '@app/store/actions/airdropStoreActions';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { SidebarItem } from './components/SidebarItem';
 import { ActionImgWrapper, GemImg, GemImgLarge, TooltipWrapper } from './items.style';
@@ -20,8 +21,12 @@ export default function Gems() {
             <Typography variant="p">{t('gems')}</Typography>
         </>
     );
+    const handleClick = () => {
+        openTrancheModal();
+    };
+
     return (
-        <SidebarItem text={formattedCountCompact} tooltipContent={tooltipContent}>
+        <SidebarItem text={formattedCountCompact} tooltipContent={tooltipContent} onClick={handleClick}>
             <ActionImgWrapper>
                 <GemImgLarge src={gem} alt="gem image" />
             </ActionImgWrapper>

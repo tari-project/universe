@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useTrancheStatus, useBalanceSummary } from '@app/hooks/airdrop/tranches';
 import {
     Card,
@@ -26,6 +27,7 @@ interface TrancheStatusCardProps {
 }
 
 export function TrancheStatusCard({ className }: TrancheStatusCardProps) {
+    const { t } = useTranslation('airdrop', { useSuspense: false });
     const { data: trancheStatus, isLoading, error } = useTrancheStatus();
     const balanceSummary = useBalanceSummary();
 
@@ -34,7 +36,7 @@ export function TrancheStatusCard({ className }: TrancheStatusCardProps) {
             <Card className={className}>
                 <LoadingContainer>
                     <LoadingSpinner />
-                    <span>Loading tranche status...</span>
+                    <span>{t('tranche.status.loading')}</span>
                 </LoadingContainer>
             </Card>
         );
@@ -44,7 +46,7 @@ export function TrancheStatusCard({ className }: TrancheStatusCardProps) {
         return (
             <Card className={className}>
                 <ErrorContainer>
-                    <ErrorText>Failed to load tranche status</ErrorText>
+                    <ErrorText>{t('tranche.status.error')}</ErrorText>
                 </ErrorContainer>
             </Card>
         );
@@ -54,56 +56,58 @@ export function TrancheStatusCard({ className }: TrancheStatusCardProps) {
         return (
             <Card className={className}>
                 <ErrorContainer>
-                    <ErrorText>No tranche data available</ErrorText>
+                    <ErrorText>{t('tranche.status.no-data')}</ErrorText>
                 </ErrorContainer>
             </Card>
         );
     }
 
-    const progressPercentage = trancheStatus.totalTranches > 0 
-        ? (trancheStatus.claimedCount / trancheStatus.totalTranches) * 100 
-        : 0;
+    const progressPercentage =
+        trancheStatus.totalTranches > 0 ? (trancheStatus.claimedCount / trancheStatus.totalTranches) * 100 : 0;
 
-    const nextAvailableDate = trancheStatus.nextAvailable 
+    const nextAvailableDate = trancheStatus.nextAvailable
         ? new Date(trancheStatus.nextAvailable).toLocaleDateString('en-US', {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric'
-        })
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+          })
         : null;
 
     return (
         <Card className={className}>
             <CardHeader>
-                <CardTitle>Airdrop Progress</CardTitle>
+                <CardTitle>{t('tranche.status.progress-title')}</CardTitle>
             </CardHeader>
-            
+
             <CardContent>
                 <StatusGrid>
                     <StatusItem>
-                        <StatusLabel>Total Allocation</StatusLabel>
+                        <StatusLabel>{t('tranche.status.total-allocation')}</StatusLabel>
                         <StatusValue>{balanceSummary.totalXtm.toLocaleString()} XTM</StatusValue>
                     </StatusItem>
-                    
+
                     <StatusItem>
-                        <StatusLabel>Claimed</StatusLabel>
+                        <StatusLabel>{t('tranche.status.claimed')}</StatusLabel>
                         <StatusValue>{balanceSummary.totalClaimed.toLocaleString()} XTM</StatusValue>
                     </StatusItem>
-                    
+
                     <StatusItem>
-                        <StatusLabel>Pending</StatusLabel>
+                        <StatusLabel>{t('tranche.status.pending')}</StatusLabel>
                         <StatusValue>{balanceSummary.totalPending.toLocaleString()} XTM</StatusValue>
                     </StatusItem>
-                    
+
                     <StatusItem>
-                        <StatusLabel>Available</StatusLabel>
-                        <StatusValue>{trancheStatus.availableCount} tranches</StatusValue>
+                        <StatusLabel>{t('tranche.status.available')}</StatusLabel>
+                        <StatusValue>
+                            {trancheStatus.availableCount} {t('tranche.status.tranches')}
+                        </StatusValue>
                     </StatusItem>
                 </StatusGrid>
 
                 <ProgressSection>
                     <ProgressText>
-                        {trancheStatus.claimedCount} of {trancheStatus.totalTranches} tranches claimed
+                        {trancheStatus.claimedCount} of {trancheStatus.totalTranches} {t('tranche.status.tranches')}{' '}
+                        {t('tranche.status.claimed').toLowerCase()}
                     </ProgressText>
                     <ProgressBar>
                         <ProgressFill $percentage={progressPercentage} />
@@ -112,7 +116,7 @@ export function TrancheStatusCard({ className }: TrancheStatusCardProps) {
 
                 {trancheStatus.availableCount === 0 && nextAvailableDate && (
                     <NextTrancheSection>
-                        <NextTrancheLabel>Next tranche available:</NextTrancheLabel>
+                        <NextTrancheLabel>{t('tranche.status.next-available')}</NextTrancheLabel>
                         <NextTrancheDate>{nextAvailableDate}</NextTrancheDate>
                     </NextTrancheSection>
                 )}

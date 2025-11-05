@@ -25,6 +25,16 @@
     "activeMinersStat": "활성 채굴자",
     "bonusXTMEarned": "획득한 보너스 XTM",
     "copied": "복사됨!",
+    "crewEmpty": {
+      "description": "You have <strong>{{inactiveCount}}</strong> inactive friends. Give them a nudge or invite more.",
+      "descriptionSingular": "You have <strong>{{inactiveCount}}</strong> inactive friend. Give them a nudge or invite more.",
+      "descriptionZero": "Invite friends to start earning bonus rewards together!",
+      "nudgeButton": "Nudge your Friends",
+      "nudgeButtonSingular": "Nudge your Friend",
+      "title": "Your friends are slacking!",
+      "titleSingular": "Your friend is slacking!",
+      "titleZero": "Start building your crew!"
+    },
     "crewStatus": {
       "completed": "완료됨",
       "inProgress": "진행 중",
@@ -103,6 +113,37 @@
   "success": "성공",
   "topTooltipText": "친구를 추천하여 보너스 XTM을 받으세요.",
   "topTooltipTitle": "테스트넷 보상",
+  "tranche": {
+    "claim-modal": {
+      "claim-button": "Claim",
+      "claiming": "Claiming...",
+      "description": "Your hard work (and Yats!) has paid off! Each month on the 12th, you'll receive a portion of your airdrop.",
+      "eyebrow": "This months' Airdrop reward",
+      "remaining-allocation": "Your remaining allocation is {{amount}} XTM",
+      "title": "Claim this month's reward.",
+      "waiting-verification": "Waiting for verification..."
+    },
+    "notifications": {
+      "claim-failed": "Claim Failed",
+      "claim-success": "Tranche Claimed Successfully",
+      "claim-success-message": "Successfully claimed {{amount}} XTM from tranche",
+      "new-tranche-available": "New Tranche Available",
+      "new-tranches-available": "{{count}} new {{plural}} ready to claim!"
+    },
+    "status": {
+      "available": "Available",
+      "claimed": "Claimed",
+      "error": "Failed to load tranche status",
+      "expired": "Expired",
+      "loading": "Loading tranche status...",
+      "next-available": "Next tranche available:",
+      "no-data": "No tranche data available",
+      "pending": "Pending",
+      "progress-title": "Airdrop Progress",
+      "total-allocation": "Total Allocation",
+      "tranches": "tranches"
+    }
+  },
   "unclaimedGems": "미수령 보석",
   "update-username": "사용자 이름 업데이트",
   "username-error": "사용자 이름은 3-20자여야 하며 문자, 숫자, 밑줄 또는 하이픈만 포함해야 합니다",

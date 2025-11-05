@@ -236,13 +236,16 @@ export interface AirdropStoreState {
         page: number;
         limit: number;
     };
-    
+
     // Airdrop claim state
     claim?: AirdropClaimState;
-    
+
     // Tranche state
     trancheStatus?: TrancheStatus;
     balanceSummary?: BalanceSummary;
+    
+    // Modal state
+    showTrancheModal: boolean;
 }
 
 const initialState: AirdropStoreState = {
@@ -260,6 +263,7 @@ const initialState: AirdropStoreState = {
         page: 1,
         limit: 20,
     },
+    showTrancheModal: false,
 };
 
 export const useAirdropStore = create<AirdropStoreState>()(() => ({

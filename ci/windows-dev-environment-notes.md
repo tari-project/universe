@@ -1,32 +1,35 @@
-
 # Basic build environment setup guide for Windows using winget for quick developer package testing - neither definitive nor exhaustive
 
 Lots of info collected from - https://github.com/KhronosGroup/OpenCL-Guide/blob/main/chapters/getting_started_windows.md
 
-and ```for needed for developing Tauri apps.``` - https://v1.tauri.app/v1/guides/getting-started/prerequisites
+and `for needed for developing Tauri apps.` - https://v1.tauri.app/v1/guides/getting-started/prerequisites
 
-Need to have ```winget``` installed and working, which requires ```App Installer```, not only installed, but updated to the latest version.
+Need to have `winget` installed and working, which requires `App Installer`, not only installed, but updated to the latest version.
 
 Using Microsoft Edge, open the following URL:
 
 https://www.microsoft.com/p/app-installer/9nblggh4nns1#activetab=pivot:overviewtab
 
-then click the ```App Installer``` install button.
+then click the `App Installer` install button.
 
-Found that after installing and rebooting Windows and checking for ```App Installer``` updates and appling any outstanding updates. 
+Found that after installing and rebooting Windows and checking for `App Installer` updates and appling any outstanding updates.
 
-Check that ```winget``` is working, run in PowerShell.
+Check that `winget` is working, run in PowerShell.
+
 ```PowerShell
 winget list
 ```
-sample of output without ```App Installer``` installed
+
+sample of output without `App Installer` installed
+
 ```
 PS C:\Users\leet> winget list
   |
 PS C:\Users\leet>
 ```
 
-sample output where ```winget``` has not be run yet:
+sample output where `winget` has not be run yet:
+
 ```PowerShell
 PS C:\Users\leet> winget list
 Failed in attempting to update the source: winget
@@ -43,16 +46,19 @@ Clipchamp                                      Clipchamp.Clipchamp_yxz26nhyzhsrt
 Microsoft Edge                                 Microsoft Edge                                       130.0.2849.80
 Microsoft Edge WebView2 Runtime                Microsoft EdgeWebView                                130.0.2849.80
 ```
-please notice ```Failed when searching source; results will not be included: winget```, normally means that ```App Installer``` needs to be updated.
 
-sample output where ```App Installer``` is installed, but not updated to the latest:
+please notice `Failed when searching source; results will not be included: winget`, normally means that `App Installer` needs to be updated.
+
+sample output where `App Installer` is installed, but not updated to the latest:
+
 ```
 PS C:\Users\leet> winget list
 Failed in attempting to update the source: winget
 Failed when searching source; results will not be included: winget
 ```
 
-sample of output where ```winget``` is ready to be used for installing tools:
+sample of output where `winget` is ready to be used for installing tools:
+
 ```
 PS C:\Users\leet> winget list
 Name                                    Id                                       Version          Available      Source
@@ -68,13 +74,16 @@ Microsoft OneDrive                      Microsoft.OneDrive                      
 Clipchamp                               MSIX\Clipchamp.Clipchamp_2.2.8.0_neutra… 2.2.8.0
 ```
 
-Then we can start installing components that will be needed in Compiling ```Tari Universe Alpha``` locally
+Then we can start installing components that will be needed in Compiling `Tari Universe Alpha` locally
 
 # Install Visual Studio BuildTools 2022
+
 ```PowerShell
 winget install "Visual Studio BuildTools 2022"
 ```
+
 sample output would look something like:
+
 ```
 PS C:\Users\leet> winget install "Visual Studio BuildTools 2022"
 Found Visual Studio BuildTools 2022 [Microsoft.VisualStudio.2022.BuildTools] Version 17.11.5
@@ -88,10 +97,13 @@ Successfully installed
 ```
 
 # Install Visual Studio components for Windows 11
+
 ```PowerShell
 & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\setup.exe" install --passive --norestart --productId Microsoft.VisualStudio.Product.BuildTools --channelId VisualStudio.17.Release --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Redist.14.Latest --add Microsoft.VisualStudio.Component.Windows11SDK.26100 --add Microsoft.VisualStudio.Component.VC.CMake.Project --add Microsoft.VisualStudio.Component.VC.CoreBuildTools --add Microsoft.VisualStudio.Component.VC.CoreIde --add Microsoft.VisualStudio.Component.VC.Redist.14.Latest --add Microsoft.VisualStudio.ComponentGroup.NativeDesktop.Core
-````
+```
+
 sample of the begining of output:
+
 ```
 PS C:\Users\leet> & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\setup.exe" install --passive --norestart --productId Microsoft.VisualStudio.Product.BuildTools --channelId VisualStudio.17.Release --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Redist.14.Latest --add Microsoft.VisualStudio.Component.Windows11SDK.22000
 PS C:\Users\leet> [1d44:0001][2024-11-05T02:37:56] Saving the current locale (en-US) to user.json.
@@ -103,13 +115,17 @@ PS C:\Users\leet> [1d44:0001][2024-11-05T02:37:56] Saving the current locale (en
 [1d44:0005][2024-11-05T02:37:56] Telemetry session ID: 8c0666e6-122f-43a2-8400-3c9a47d5d8d1
 [1d44:0004][2024-11-05T02:37:56] Creating new ExperimentationService
 ```
+
 Visual Studio Installer should download and install components requested.
 
 # Install git - https://git-scm.com/downloads/win
+
 ```PowerShell
 winget install --id Git.Git -e --source winget
 ```
+
 sample output:
+
 ```
 PS C:\Users\leet> winget install --id Git.Git -e --source winget
 >>
@@ -124,10 +140,13 @@ Successfully installed
 ```
 
 # Install Windows chocolatey package manager, helps with easy installation of additional components
+
 ```PowerShell
 winget install --id chocolatey.chocolatey
 ```
+
 sample output:
+
 ```
 PS C:\Users\leet> winget install --id chocolatey.chocolatey
 Found Chocolatey [Chocolatey.Chocolatey] Version 2.3.0.0
@@ -142,10 +161,13 @@ Notes: The Chocolatey CLI MSI is intended for installation only! If upgrading fr
 ```
 
 # Install Protobuf with chocolatey
+
 ```PowerShell
 choco upgrade protoc -y
 ```
+
 sample output:
+
 ```
 PS C:\Users\leet> choco upgrade protoc -y
 Chocolatey v2.3.0
@@ -185,10 +207,13 @@ Chocolatey upgraded 3/3 packages.
 ```
 
 # Install rust
+
 ```PowerShell
 winget install --id Rustlang.Rustup
 ```
+
 sample ouput:
+
 ```
 PS C:\Users\leet\src\vcpkg> winget install --id Rustlang.Rustup
 Found Rustup: the Rust toolchain installer [Rustlang.Rustup] Version 1.27.1
@@ -202,10 +227,13 @@ Successfully installed
 ```
 
 # Install nodejs
+
 ```PowerShell
 winget install -e --id OpenJS.NodeJS
 ```
+
 sample output:
+
 ```
 PS C:\Users\leet> winget install -e --id OpenJS.NodeJS
   ████████████████████▍           1024 KB / 1.47 MB
@@ -221,12 +249,15 @@ Successfully installed
 ```
 
 # Get the Tari Universe code base
+
 ```PowerShell
 cd src
 git clone https://github.com/tari-project/universe.git
 cd universe
 ```
+
 sample output:
+
 ```
 PS C:\Users\leet\src> git clone https://github.com/tari-project/universe.git
 Cloning into 'universe'...
@@ -240,12 +271,15 @@ Updating files: 100% (684/684), done.
 ```
 
 # Install nodejs modules
+
 ```PowerShell
 cd src/universe
 npm.cmd --version
 npm.cmd install
 ```
+
 sample output:
+
 ```
 PS C:\Users\leet\src\universe> npm.cmd --version
 10.9.0
@@ -268,10 +302,13 @@ found 0 vulnerabilities
 ```
 
 # Install Cargo tools - tauri-cli
+
 ```Pow/universe
 cargo install tauri-cli --version "2.4.0"
 ```
+
 sample output:
+
 ```
 PS C:\Users\leet\src\universe> cargo install tauri-cli --version "2.4.0"
 >>
@@ -280,7 +317,9 @@ PS C:\Users\leet\src\universe> cargo install tauri-cli --version "2.4.0"
     Updating crates.io index
        Fetch [===========>                     ] 48 complete; 1 pending
 ```
+
 ...
+
 ```
    Compiling os_info v3.8.2
    Compiling itertools v0.13.0
@@ -292,20 +331,26 @@ PS C:\Users\leet\src\universe> cargo install tauri-cli --version "2.4.0"
   Installing C:\Users\leet\.cargo\bin\cargo-tauri.exe
    Installed package `tauri-cli v2.4.0` (executable `cargo-tauri.exe`)
 ```
+
 ```PowerShell
 cargo tauri --version
 ```
+
 sample output:
+
 ```
   tauri-cli 2.4.0
 ```
 
-# Build from source for ```Tari Universe Alpha```
+# Build from source for `Tari Universe Alpha`
+
 ```PowerShell
 cd src/universe
 cargo tauri build --bundles none
 ```
+
 sample output:
+
 ```
 PS C:\Users\leet\src\universe> cargo tauri build --bundles none
      Running beforeBuildCommand `npm run build`
@@ -379,7 +424,9 @@ warning: `tari-universe` (bin "tari-universe") generated 2 warnings
 ```
 
 # Troubleshooting:
-If you run into the following error, possible on first run or after a ```cargo clean```:
+
+If you run into the following error, possible on first run or after a `cargo clean`:
+
 ```
 error: failed to run custom build command for `randomx-rs v1.3.2 (https://github.com/tari-project/randomx-rs?branch=development#991f32d4)`
 
@@ -398,7 +445,9 @@ Caused by:
   program not found
   )
 ```
+
 or possible
+
 ```
    Compiling minotari_node_grpc_client v0.1.0 (https://github.com/tari-project/tari.git?branch=development#e61b5e2d)
    Compiling minotari_wallet_grpc_client v0.1.0 (https://github.com/tari-project/tari.git?branch=development#e61b5e2d)
@@ -484,11 +533,13 @@ error: could not compile `tari-universe` (bin "tari-universe") due to 1 previous
 ```
 
 # Environment setup solution
-Use the ```x64 Native Tools Command Prompt for VS 2022```, that should have been installed and setup when doing the ```Visual Studio``` install. This can be found from the StartMenu -> All apps -> Visual Studio -> x64 Native Tools Command Prompt for VS 2022
 
-This Command Prompt has environment and/or paths setup for the ```Visual Studio Tools```, like cmake, which is needed for ```randomx-rs```
+Use the `x64 Native Tools Command Prompt for VS 2022`, that should have been installed and setup when doing the `Visual Studio` install. This can be found from the StartMenu -> All apps -> Visual Studio -> x64 Native Tools Command Prompt for VS 2022
 
-sample output while using ```x64 Native Tools Command Prompt for VS 2022```:
+This Command Prompt has environment and/or paths setup for the `Visual Studio Tools`, like cmake, which is needed for `randomx-rs`
+
+sample output while using `x64 Native Tools Command Prompt for VS 2022`:
+
 ```
 **********************************************************************
 ** Visual Studio 2022 Developer Command Prompt v17.12.0
@@ -507,7 +558,9 @@ C:\Users\leet\src\universe\src-tauri>cargo build --release
    Compiling serde v1.0.214
    Compiling windows_x86_64_msvc v0.52.6
 ```
+
 sample output:
+
 ```
    Compiling sha1 v0.10.6
    Compiling constant_time_eq v0.3.1

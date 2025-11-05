@@ -35,7 +35,7 @@ export function TrancheBalanceSummary({ className, showTitle = true }: TrancheBa
     return (
         <SummaryContainer className={className}>
             {showTitle && <SummaryTitle>XTM Balance Summary</SummaryTitle>}
-            
+
             <TotalSection>
                 <TotalAmount>{balanceSummary.totalXtm.toLocaleString()} XTM</TotalAmount>
                 <TotalLabel>Total Allocation</TotalLabel>
@@ -43,24 +43,18 @@ export function TrancheBalanceSummary({ className, showTitle = true }: TrancheBa
 
             <BalanceGrid>
                 <BalanceItem>
-                    <BalanceAmount $type="claimed">
-                        {balanceSummary.totalClaimed.toLocaleString()}
-                    </BalanceAmount>
+                    <BalanceAmount $type="claimed">{balanceSummary.totalClaimed.toLocaleString()}</BalanceAmount>
                     <BalanceLabel>Claimed</BalanceLabel>
                 </BalanceItem>
-                
+
                 <BalanceItem>
-                    <BalanceAmount $type="pending">
-                        {balanceSummary.totalPending.toLocaleString()}
-                    </BalanceAmount>
+                    <BalanceAmount $type="pending">{balanceSummary.totalPending.toLocaleString()}</BalanceAmount>
                     <BalanceLabel>Pending</BalanceLabel>
                 </BalanceItem>
-                
+
                 {balanceSummary.totalExpired > 0 && (
                     <BalanceItem>
-                        <BalanceAmount $type="expired">
-                            {balanceSummary.totalExpired.toLocaleString()}
-                        </BalanceAmount>
+                        <BalanceAmount $type="expired">{balanceSummary.totalExpired.toLocaleString()}</BalanceAmount>
                         <BalanceLabel>Expired</BalanceLabel>
                     </BalanceItem>
                 )}

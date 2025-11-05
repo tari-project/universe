@@ -21,6 +21,8 @@ interface ClaimSubmissionResponse {
 }
 
 async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult> {
+    console.log('📝 Submitting claim with body:', JSON.stringify(claimRequest, null, 2));
+    
     const response = await handleAirdropRequest<ClaimSubmissionResponse>({
         path: '/tari/claim-airdrop',
         method: 'POST',
@@ -29,6 +31,8 @@ async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult> {
             'Content-Type': 'application/json',
         },
     });
+
+    console.log('📥 Claim response:', response);
 
     if (!response?.success || !response?.data) {
         throw new Error(response?.error || 'Failed to submit claim');
@@ -99,6 +103,8 @@ export function useBackgroundClaimSubmission() {
                 ...(trancheId && { trancheId }),
             };
 
+            console.log('🔍 Constructed ClaimRequest:', JSON.stringify(claimRequest, null, 2));
+
             claimMutation.mutate(claimRequest, {
                 onSuccess: (result) => {
                     pendingClaim.resolve({
@@ -130,6 +136,11 @@ export function useBackgroundClaimSubmission() {
                 }
 
                 // Step 1: Get CSRF token (if not already loaded)
+                console.log('🛡️ CSRF Check - csrfData:', csrfData);
+                console.log('🛡️ CSRF Check - isLoadingCsrf:', isLoadingCsrf);
+                console.log('🛡️ CSRF Check - csrfError:', csrfError);
+                console.log('🛡️ CSRF token value:', csrfData?.csrfToken ? `${csrfData.csrfToken.substring(0, 10)}...` : 'null');
+                
                 if (!csrfData?.csrfToken) {
                     if (csrfError) {
                         throw new Error('Failed to get CSRF token');

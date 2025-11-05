@@ -1,9 +1,9 @@
 import styled from 'styled-components';
 
 export const SummaryContainer = styled.div`
-    background: #FFFFFF;
+    background: #ffffff;
     border-radius: 12px;
-    border: 1px solid #E5E7EB;
+    border: 1px solid #e5e7eb;
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -13,28 +13,28 @@ export const SummaryContainer = styled.div`
 export const SummaryTitle = styled.h4`
     font-size: 16px;
     font-weight: 600;
-    color: #1F2937;
+    color: #1f2937;
     margin: 0;
 `;
 
 export const TotalSection = styled.div`
     text-align: center;
     padding: 16px;
-    background: linear-gradient(135deg, #F3F4F6, #E5E7EB);
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
     border-radius: 8px;
 `;
 
 export const TotalAmount = styled.div`
     font-size: 32px;
     font-weight: 700;
-    color: #1F2937;
+    color: #1f2937;
     margin-bottom: 4px;
 `;
 
 export const TotalLabel = styled.div`
     font-size: 12px;
     font-weight: 500;
-    color: #6B7280;
+    color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 `;
@@ -52,13 +52,13 @@ export const BalanceItem = styled.div`
     gap: 4px;
     padding: 12px;
     border-radius: 6px;
-    background: #F9FAFB;
+    background: #f9fafb;
 `;
 
 export const BalanceAmount = styled.div<{ $type: 'claimed' | 'pending' | 'expired' }>`
     font-size: 20px;
     font-weight: 600;
-    
+
     ${({ $type }) => {
         switch ($type) {
             case 'claimed':
@@ -76,7 +76,7 @@ export const BalanceAmount = styled.div<{ $type: 'claimed' | 'pending' | 'expire
 export const BalanceLabel = styled.div`
     font-size: 11px;
     font-weight: 500;
-    color: #6B7280;
+    color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.3px;
 `;
@@ -87,19 +87,23 @@ export const LoadingContainer = styled.div`
     justify-content: center;
     gap: 8px;
     padding: 20px;
-    color: #6B7280;
+    color: #6b7280;
 `;
 
 export const LoadingSpinner = styled.div`
     width: 16px;
     height: 16px;
-    border: 2px solid #E5E7EB;
-    border-top: 2px solid #3B82F6;
+    border: 2px solid #e5e7eb;
+    border-top: 2px solid #3b82f6;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    
+
     @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
     }
 `;

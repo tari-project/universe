@@ -60,6 +60,7 @@ const clearState: AirdropStoreState = {
         page: 1,
         limit: 20,
     },
+    showTrancheModal: false,
 };
 
 const getAirdropInMemoryConfig = async () => {
@@ -425,7 +426,7 @@ export const setTrancheStatus = (trancheStatus: TrancheStatus) => {
 export const updateTrancheStatus = (updates: Partial<TrancheStatus>) => {
     useAirdropStore.setState((state) => {
         if (!state.trancheStatus) return state;
-        
+
         const updatedStatus = { ...state.trancheStatus, ...updates };
         return {
             trancheStatus: updatedStatus,
@@ -449,16 +450,16 @@ export const clearTrancheData = () => {
 function calculateBalanceSummaryFromTranches(trancheStatus: TrancheStatus): BalanceSummary {
     const totalXtm = trancheStatus.tranches.reduce((sum, tranche) => sum + tranche.amount, 0);
     const totalClaimed = trancheStatus.tranches
-        .filter(tranche => tranche.claimed)
+        .filter((tranche) => tranche.claimed)
         .reduce((sum, tranche) => sum + tranche.amount, 0);
-    
+
     const now = new Date();
     const totalExpired = trancheStatus.tranches
-        .filter(tranche => !tranche.claimed && new Date(tranche.validTo) < now)
+        .filter((tranche) => !tranche.claimed && new Date(tranche.validTo) < now)
         .reduce((sum, tranche) => sum + tranche.amount, 0);
-    
+
     const totalPending = totalXtm - totalClaimed - totalExpired;
-    
+
     return {
         totalXtm,
         totalClaimed,
@@ -471,28 +472,41 @@ function calculateBalanceSummaryFromTranches(trancheStatus: TrancheStatus): Bala
 export const markTrancheAsClaimed = (trancheId: string, claimedAt: string, amount: number) => {
     useAirdropStore.setState((state) => {
         if (!state.trancheStatus) return state;
-        
-        const updatedTranches = state.trancheStatus.tranches.map(tranche => 
-            tranche.id === trancheId 
-                ? { 
-                    ...tranche, 
-                    claimed: true, 
-                    claimedAt, 
-                    canClaim: false 
-                } 
+
+        const updatedTranches = state.trancheStatus.tranches.map((tranche) =>
+            tranche.id === trancheId
+                ? {
+                      ...tranche,
+                      claimed: true,
+                      claimedAt,
+                      canClaim: false,
+                  }
                 : tranche
         );
-        
+
         const updatedStatus = {
             ...state.trancheStatus,
             tranches: updatedTranches,
             claimedCount: state.trancheStatus.claimedCount + 1,
             availableCount: Math.max(0, state.trancheStatus.availableCount - 1),
         };
-        
+
         return {
             trancheStatus: updatedStatus,
             balanceSummary: calculateBalanceSummaryFromTranches(updatedStatus),
         };
     });
+};
+
+// Modal state actions
+export const setShowTrancheModal = (show: boolean) => {
+    useAirdropStore.setState({ showTrancheModal: show });
+};
+
+export const openTrancheModal = () => {
+    setShowTrancheModal(true);
+};
+
+export const closeTrancheModal = () => {
+    setShowTrancheModal(false);
 };

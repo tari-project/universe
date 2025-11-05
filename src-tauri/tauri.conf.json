@@ -40,14 +40,8 @@
     },
     "app": {
         "security": {
-            "capabilities": [
-                "desktop-capability",
-                "default",
-                "migrated"
-            ],
-            "dangerousDisableAssetCspModification": [
-                "style-src"
-            ],
+            "capabilities": ["desktop-capability", "default", "migrated"],
+            "dangerousDisableAssetCspModification": ["style-src"],
             "csp": {
                 "default-src": "'self' tauri: https: http://localhost:* http://127.0.0.1:*",
                 "style-src": "'self' 'unsafe-inline'",
@@ -78,9 +72,7 @@
             },
             "assetProtocol": {
                 "enable": true,
-                "scope": [
-                    "**"
-                ]
+                "scope": ["**"]
             },
             "pattern": {
                 "use": "isolation",
@@ -116,9 +108,7 @@
     "plugins": {
         "updater": {
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK",
-            "endpoints": [
-                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"
-            ],
+            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"],
             "windows": {
                 "installMode": "passive"
             }
