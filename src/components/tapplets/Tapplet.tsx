@@ -15,7 +15,7 @@ export const Tapplet = ({ source }: TappletProps) => {
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);
     const appLanguage = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
-    const unwrapEnabled = useAirdropStore((s) => !!s.features?.includes(FEATURE_FLAGS.FE_UNWRAP));
+    const features = useAirdropStore((s) => s.features);
 
     const sendWindowSize = useCallback(() => {
         if (tappletRef.current) {
@@ -30,18 +30,21 @@ export const Tapplet = ({ source }: TappletProps) => {
         }
     }, [tappSigner]);
 
-    const openExternalLink = useCallback(async (event: MessageEvent) => {
-        if (!event.data.url || typeof event.data.url !== 'string') {
-            console.error('Invalid external tapplet URL');
-        }
-        const url = event.data.url;
-        console.info('Opening external tapplet URL:', url);
-        try {
-            await open(url);
-        } catch (e) {
-            setStoreError(`Open tapplet URL error: ${e}`, true);
-        }
-    }, []);
+    const openExternalLink = useCallback(
+        async (event: MessageEvent) => {
+            if (!event.data.url || typeof event.data.url !== 'string') {
+                console.error('Invalid external tapplet URL');
+            }
+            const url = event.data?.url;
+            console.info('Opening external tapplet URL:', url);
+            try {
+                await open(url);
+            } catch (e) {
+                setStoreError(`Open tapplet URL error: ${e}`, true);
+            }
+        },
+        [open, setStoreError]
+    );
 
     const runTappletTx = useCallback(
         async (event: MessageEvent) => {
@@ -58,11 +61,16 @@ export const Tapplet = ({ source }: TappletProps) => {
             );
         }
     }, [appLanguage]);
+
     const sendFeatures = useCallback(() => {
+        const unwrapFeature = !!features?.includes(FEATURE_FLAGS.FE_UNWRAP);
         if (tappletRef.current) {
-            tappletRef.current.contentWindow?.postMessage({ type: 'SET_FEATURES', payload: { unwrapEnabled } }, '*');
+            tappletRef.current.contentWindow?.postMessage(
+                { type: 'SET_FEATURES', payload: { unwrapEnabled: unwrapFeature } },
+                '*'
+            );
         }
-    }, [unwrapEnabled]);
+    }, [features]);
 
     const sendTheme = useCallback(() => {
         if (tappletRef.current) {
@@ -72,40 +80,39 @@ export const Tapplet = ({ source }: TappletProps) => {
 
     const handleMessage = useCallback(
         async (event: MessageEvent) => {
-            if (event.data.type === 'request-parent-size') {
-                sendWindowSize();
-            } else if (event.data.type === 'signer-call') {
-                await runTappletTx(event);
-            } else if (event.data.type === 'open-external-link') {
-                await openExternalLink(event);
-            } else if (event.data.type === 'GET_INIT_CONFIG') {
-                sendAppLanguage();
-                sendTheme();
-            } else if (event.data.type === 'ERROR') {
-                setStoreError(`${event.data.payload.message}`, true);
+            switch (event.data.type) {
+                case 'request-parent-size':
+                    sendWindowSize();
+                    break;
+                case 'signer-call':
+                    await runTappletTx(event);
+                    break;
+                case 'open-external-link':
+                    await openExternalLink(event);
+                    break;
+                case 'GET_INIT_CONFIG': {
+                    sendAppLanguage();
+                    sendTheme();
+                    sendFeatures();
+                    break;
+                }
+                case 'ERROR':
+                    setStoreError(`${event.data.payload.message}`, true);
+                    break;
             }
         },
-        [sendWindowSize, runTappletTx, openExternalLink, sendAppLanguage, sendTheme]
+        [sendWindowSize, runTappletTx, openExternalLink, sendAppLanguage, sendTheme, sendFeatures, setStoreError]
     );
 
-    useEffect(() => {
-        sendAppLanguage();
-    }, [sendAppLanguage]);
-
-    useEffect(() => {
-        sendTheme();
-    }, [sendTheme]);
-
-    useEffect(() => {
-        sendFeatures();
-    }, [sendFeatures]);
+    useEffect(() => sendAppLanguage(), [sendAppLanguage]);
+    useEffect(() => sendFeatures(), [sendFeatures]);
+    useEffect(() => sendTheme(), [sendTheme]);
 
     useEffect(() => {
         window.addEventListener('resize', sendWindowSize);
         window.addEventListener('message', handleMessage);
 
         sendWindowSize();
-
         return () => {
             window.removeEventListener('resize', sendWindowSize);
             window.removeEventListener('message', handleMessage);

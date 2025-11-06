@@ -8,19 +8,21 @@ import MiningView from './MiningView/MiningView.tsx';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
 
 export default function Dashboard() {
-    const activeTapplet = useTappletsStore((s) => s.activeTapplet);
+    useMiningStatesSync();
+
     const showTapplet = useUIStore((s) => s.showTapplet);
+    const activeTapplet = useTappletsStore((s) => s.activeTapplet);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
     const orphanChainUiDisabled = useAirdropStore((s) =>
         s.features?.includes(FEATURE_FLAGS.FF_UI_ORPHAN_CHAIN_DISABLED)
     );
 
-    useMiningStatesSync();
+    const renderTapplet = showTapplet && activeTapplet && activeTapplet?.source?.length > 0;
 
     return (
-        <DashboardContentContainer $tapplet={showTapplet}>
+        <DashboardContentContainer $tapplet={renderTapplet}>
             {connectionStatus !== 'connected' && !orphanChainUiDisabled ? <DisconnectWrapper /> : null}
-            {showTapplet && activeTapplet ? <Tapplet source={activeTapplet.source} /> : <MiningView />}
+            {renderTapplet ? <Tapplet source={activeTapplet.source} /> : <MiningView />}
         </DashboardContentContainer>
     );
 }
