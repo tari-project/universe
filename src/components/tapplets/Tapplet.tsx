@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
 import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { open } from '@tauri-apps/plugin-shell';
-import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/store';
+import { useConfigUIStore, useUIStore, setError as setStoreError, useAirdropStore } from '@app/store';
+import { FEATURE_FLAGS } from '@app/store/consts.ts';
 
 interface TappletProps {
     source: string;
@@ -14,6 +15,7 @@ export const Tapplet = ({ source }: TappletProps) => {
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);
     const appLanguage = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
+    const unwrapEnabled = useAirdropStore((s) => !!s.features?.includes(FEATURE_FLAGS.FE_UNWRAP));
 
     const sendWindowSize = useCallback(() => {
         if (tappletRef.current) {
@@ -56,6 +58,11 @@ export const Tapplet = ({ source }: TappletProps) => {
             );
         }
     }, [appLanguage]);
+    const sendFeatures = useCallback(() => {
+        if (tappletRef.current) {
+            tappletRef.current.contentWindow?.postMessage({ type: 'SET_FEATURES', payload: { unwrapEnabled } }, '*');
+        }
+    }, [unwrapEnabled]);
 
     const sendTheme = useCallback(() => {
         if (tappletRef.current) {
@@ -88,6 +95,10 @@ export const Tapplet = ({ source }: TappletProps) => {
     useEffect(() => {
         sendTheme();
     }, [sendTheme]);
+
+    useEffect(() => {
+        sendFeatures();
+    }, [sendFeatures]);
 
     useEffect(() => {
         window.addEventListener('resize', sendWindowSize);
