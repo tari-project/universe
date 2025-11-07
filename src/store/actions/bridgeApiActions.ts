@@ -13,7 +13,7 @@ export const fetchBridgeTransactionsHistory = async (
     tari_address_base58: string
 ): Promise<BackendBridgeTransaction[]> => {
     const baseUrl = useConfigBEInMemoryStore.getState().bridge_backend_api_url;
-    if (baseUrl?.includes('env var not defined')) return [];
+    if (baseUrl?.includes('env var not defined') || !tari_address_base58?.length) return [];
     OpenAPI.BASE = baseUrl;
     return await WrapTokenService.getUserTransactions(tari_address_base58)
         .then((response) => {
