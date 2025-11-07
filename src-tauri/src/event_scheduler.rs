@@ -1178,6 +1178,8 @@ impl EventScheduler {
                             break;
                         }
 
+                        let time_after_start_time = Local::now();
+
                         let _unused =
                             INSTANCE
                                 .message_sender
@@ -1187,7 +1189,7 @@ impl EventScheduler {
 
                         // Now wait until end time, eg. currently is 10AM and the range is 9AM - 11AM, then we wait until 11AM
                         if let Some(next_end_wait_time) =
-                            cron_schedule.find_next_end_wait_time(local_now)
+                            cron_schedule.find_next_end_wait_time(time_after_start_time)
                         {
                             sleep(next_end_wait_time).await;
                             let _unused = INSTANCE.message_sender.send(
