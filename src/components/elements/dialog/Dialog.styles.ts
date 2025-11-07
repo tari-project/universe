@@ -44,7 +44,7 @@ export const Vignette = styled(m.div)`
     position: absolute;
     inset: 0;
     z-index: 2;
-    background: radial-gradient(50% 50% at 50% 50%, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.6) 100%);
+    background: radial-gradient(50% 55% at 45% 50%, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.3) 100%);
     pointer-events: none;
 `;
 
