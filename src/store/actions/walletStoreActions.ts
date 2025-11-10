@@ -124,8 +124,16 @@ export const setWalletBalance = async (balance: WalletBalance) => {
 
     useWalletStore.setState({ balance });
 
+    // Calculate total balance correctly:
+    // - Add available (what you can spend now)
+    // - Add timelocked (locked but yours)
+    // - Add pending incoming (being received)
+    // - Subtract pending outgoing (being sent out)
     const calculated_balance =
-        balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
+        balance.available_balance +
+        balance.timelocked_balance +
+        balance.pending_incoming_balance -
+        balance.pending_outgoing_balance;
 
     useWalletStore.setState({ calculated_balance });
     await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
