@@ -915,6 +915,7 @@ impl EventScheduler {
             Self::create_scheduling_task(event_id.clone(), event_type, timing).await?;
         scheduled_event.task_handle = Some(task_handle);
         events.insert(event_id.clone(), scheduled_event);
+        Self::save_persistent_events_to_config(events).await;
 
         Ok(event_id)
     }
