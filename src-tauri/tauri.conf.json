@@ -40,14 +40,8 @@
     },
     "app": {
         "security": {
-            "capabilities": [
-                "desktop-capability",
-                "default",
-                "migrated"
-            ],
-            "dangerousDisableAssetCspModification": [
-                "style-src"
-            ],
+            "capabilities": ["desktop-capability", "default", "migrated"],
+            "dangerousDisableAssetCspModification": ["style-src"],
             "csp": {
                 "default-src": "'self' tauri: https: http://localhost:* http://127.0.0.1:*",
                 "style-src": "'self' 'unsafe-inline'",
@@ -98,16 +92,16 @@
             {
                 "title": "Tari Universe (Alpha) | Testnet",
                 "label": "main",
-                "width": 1300,
-                "height": 731,
-                "minWidth": 1144,
-                "minHeight": 660,
                 "resizable": true,
                 "fullscreen": false,
                 "transparent": false,
                 "visible": true,
                 "center": true,
-                "useHttpsScheme": true
+                "useHttpsScheme": true,
+                "width": 1280,
+                "height": 760,
+                "minWidth": 1152,
+                "minHeight": 684
             }
         ]
     },

@@ -52,7 +52,6 @@ import {
 import { setBackgroundNodeState, setNodeStoreState, setTorEntryGuards } from '@app/store/useNodeStore';
 import {
     handleExchangeIdChanged,
-    handleConfigCoreLoaded,
     handleConfigMiningLoaded,
     handleConfigUILoaded,
     handleConfigWalletLoaded,
@@ -69,6 +68,7 @@ import {
     handleSelectedTariAddressChange,
     setIsWalletLoading,
 } from '@app/store/actions/walletStoreActions';
+import { handleConfigCoreLoaded } from '@app/store/actions/config/core.ts';
 import { handleFeedbackExitSurveyRequested } from '@app/store/stores/userFeedbackStore';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
@@ -261,7 +261,7 @@ const useTauriEventsListener = () => {
                             setShowEcoAlert(true);
                             break;
                         case 'FeedbackSurveyRequested':
-                            handleFeedbackExitSurveyRequested();
+                            await handleFeedbackExitSurveyRequested();
                             break;
                         case 'ShutdownModeSelectionRequested':
                             setShowShutdownSelectionModal(true);
