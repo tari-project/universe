@@ -26,7 +26,8 @@ use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::sync::RwLock;
 use tokio_util::task::TaskTracker;
 
-static LOG_TARGET: &str = "tari::universe::tasks_tracker";
+use crate::LOG_TARGET_APP_LOGIC;
+
 static INSTANCE: LazyLock<TasksTrackers> = LazyLock::new(TasksTrackers::new);
 
 pub struct TaskTrackerUtil {
@@ -50,16 +51,16 @@ impl TaskTrackerUtil {
         self.task_tracker.read().await.clone()
     }
     pub async fn trigger_shutdown(&self) {
-        info!(target: LOG_TARGET, "Triggering shutdown for {} processes", self.name);
+        info!(target: LOG_TARGET_APP_LOGIC, "Triggering shutdown for {} processes", self.name);
         self.shutdown.write().await.trigger();
     }
 
     pub async fn wait_for_clousure(&self) {
-        info!(target: LOG_TARGET, "Triggering task close for {} processes", self.name);
+        info!(target: LOG_TARGET_APP_LOGIC, "Triggering task close for {} processes", self.name);
         self.task_tracker.read().await.close();
-        info!(target: LOG_TARGET, "Waiting for {} processes to finish | number of tasks: {}", self.name, self.task_tracker.read().await.len());
+        info!(target: LOG_TARGET_APP_LOGIC, "Waiting for {} processes to finish | number of tasks: {}", self.name, self.task_tracker.read().await.len());
         self.task_tracker.read().await.wait().await;
-        info!(target: LOG_TARGET, "{} processes have finished", self.name);
+        info!(target: LOG_TARGET_APP_LOGIC, "{} processes have finished", self.name);
     }
 
     pub async fn close(&self) {

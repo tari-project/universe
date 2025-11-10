@@ -56,10 +56,8 @@ use crate::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
         StatusMonitor,
     },
-    process_utils, APPLICATION_FOLDER_ID,
+    process_utils, APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
-
-const LOG_TARGET: &str = "tari::universe::mining::gpu::miners::graxil";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GraxilGpuDeviceInformation {
@@ -162,7 +160,7 @@ impl GpuMinerInterfaceTrait for GraxilGpuMiner {
             .get_binary_path(Binaries::Graxil)
             .await?;
 
-        info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpu_miner_binary.clone());
+        info!(target: LOG_TARGET_APP_LOGIC, "Gpu miner binary file path {:?}", gpu_miner_binary.clone());
         crate::download_utils::set_permissions(&gpu_miner_binary).await?;
         let child = process_utils::launch_child_process(
             &gpu_miner_binary,
@@ -172,7 +170,7 @@ impl GpuMinerInterfaceTrait for GraxilGpuMiner {
             false,
         )?;
         let output = child.wait_with_output().await?;
-        info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
+        info!(target: LOG_TARGET_APP_LOGIC, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
 
         match output.status.code() {
             Some(0) => {
@@ -334,18 +332,18 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
         &self,
         duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
-        info!(target: LOG_TARGET, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        info!(target: LOG_TARGET_STATUSES, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
         if duration_since_last_healthy_status.as_secs().gt(&(60 * 3)) // Fallback after 3 minutes of unhealthiness
             && !WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.load(Ordering::SeqCst)
         {
             match GpuManager::write().await.handle_unhealthy_miner().await {
                 Ok(_) => {
-                    info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
+                    info!(target: LOG_TARGET_STATUSES, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
                     WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.store(true, Ordering::SeqCst);
                     return Ok(HandleUnhealthyResult::Stop);
                 }
                 Err(error) => {
-                    warn!(target: LOG_TARGET, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {error} | Continuing to monitor.");
+                    warn!(target: LOG_TARGET_STATUSES, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {error} | Continuing to monitor.");
                     return Ok(HandleUnhealthyResult::Continue);
                 }
             }
@@ -355,11 +353,11 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
     }
 
     async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
-        info!(target: LOG_TARGET, "Checking health of ShaMiner");
+        info!(target: LOG_TARGET_STATUSES, "Checking health of ShaMiner");
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(inner) => inner,
             Err(_) => {
-                warn!(target: LOG_TARGET, "Timeout error in ShaMiner check_health");
+                warn!(target: LOG_TARGET_STATUSES, "Timeout error in ShaMiner check_health");
                 let _ = self
                     .gpu_status_sender
                     .send(GpuMinerStatus::default_with_algorithm(
@@ -371,11 +369,11 @@ impl StatusMonitor for GraxilGpuMinerStatusMonitor {
 
         match status {
             Ok(status) => {
-                info!(target: LOG_TARGET, "ShaMiner status: {status:?}");
+                info!(target: LOG_TARGET_STATUSES, "ShaMiner status: {status:?}");
                 let _ = self.gpu_status_sender.send(status.clone());
                 if status.hash_rate > 0.0 {
                     if !GpuManager::read().await.is_current_miner_healthy().await {
-                        info!(target: LOG_TARGET, "Marking current miner as healthy again");
+                        info!(target: LOG_TARGET_STATUSES, "Marking current miner as healthy again");
                         let _unused = GpuManager::write().await.handle_healthy_miner().await;
                     }
                     HealthStatus::Healthy

@@ -37,8 +37,7 @@ use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::utils::file_utils::{make_relative_path, path_as_string};
-
-const LOG_TARGET: &str = "tari::universe::feedback";
+use crate::LOG_TARGET_APP_LOGIC;
 const MAX_FILE_SIZE: u64 = 100 * 1024 * 1024; // 100MB in bytes
 pub struct Feedback {
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
@@ -95,7 +94,7 @@ impl Feedback {
                     {
                         // Skip files larger than 100MB
                         if entry_metadata.len() > MAX_FILE_SIZE {
-                            info!(target: LOG_TARGET, "Skipping file {} (size: {} bytes) - exceeds 100MB limit",
+                            info!(target: LOG_TARGET_APP_LOGIC, "Skipping file {} (size: {} bytes) - exceeds 100MB limit",
                                   entry_file_name_as_str, entry_metadata.len());
                             continue;
                         }
@@ -115,7 +114,7 @@ impl Feedback {
                         zip.add_directory(prefixed_path, file_options)?;
                         paths_queue.push(entry_path.clone());
                     } else {
-                        info!(target: LOG_TARGET, "Skipping file {} - does not match filter",
+                        info!(target: LOG_TARGET_APP_LOGIC, "Skipping file {} - does not match filter",
                               entry_file_name_as_str);
                     }
                 }
@@ -178,7 +177,7 @@ impl Feedback {
                 self.archive_path(&app_log_dir, &app_config_dir).await?;
             let metadata = std::fs::metadata(&archive_file)?;
             let file_size = metadata.len();
-            info!(target: LOG_TARGET, "Uploading {} ({} bytes)", zip_filename.clone(), file_size);
+            info!(target: LOG_TARGET_APP_LOGIC, "Uploading {} ({} bytes)", zip_filename.clone(), file_size);
             let mut file = File::open(&archive_file)?;
             let mut file_contents = Vec::new();
             file.read_to_end(&mut file_contents)?;
@@ -208,10 +207,10 @@ impl Feedback {
             std::fs::remove_file(archive_file)?;
         }
         if response.status().is_success() {
-            info!(target: LOG_TARGET, "Feedback sent successfully");
+            info!(target: LOG_TARGET_APP_LOGIC, "Feedback sent successfully");
             Ok(response.text().await?)
         } else {
-            error!(target: LOG_TARGET, "Failed to upload file: {}", response.status());
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to upload file: {}", response.status());
             Err(anyhow::anyhow!(
                 "Failed to upload file: {}",
                 response.status()

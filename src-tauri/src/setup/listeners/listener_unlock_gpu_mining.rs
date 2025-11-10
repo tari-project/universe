@@ -30,7 +30,7 @@ use crate::{
         listeners::{AppModule, AppModuleStatus},
         setup_manager::{PhaseStatus, SetupPhase},
     },
-    EventsEmitter,
+    EventsEmitter, LOG_TARGET_APP_LOGIC,
 };
 
 use log::info;
@@ -42,7 +42,6 @@ use super::{
     SetupFeature, SetupFeaturesList,
 };
 
-static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_unlock_gpu_mining";
 static INSTANCE: LazyLock<ListenerUnlockGpuMining> = LazyLock::new(ListenerUnlockGpuMining::new);
 
 pub struct ListenerUnlockGpuMining {
@@ -99,13 +98,13 @@ impl UnlockConditionsListenerTrait for ListenerUnlockGpuMining {
         *self.features_list.lock().await = features;
     }
     async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync> {
-        info!(target: LOG_TARGET, "Selecting strategy for GpuMining Module");
+        info!(target: LOG_TARGET_APP_LOGIC, "Selecting strategy for GpuMining Module");
         let features = self.features_list.lock().await.clone();
         if features.is_feature_enabled(SetupFeature::GpuPool) {
-            info!(target: LOG_TARGET, "Using GpuPoolStrategy");
+            info!(target: LOG_TARGET_APP_LOGIC, "Using GpuPoolStrategy");
             Box::new(GpuPoolStrategy)
         } else {
-            info!(target: LOG_TARGET, "Using DefaultStrategy");
+            info!(target: LOG_TARGET_APP_LOGIC, "Using DefaultStrategy");
             Box::new(DefaultStrategy)
         }
     }

@@ -22,7 +22,7 @@
 
 use crate::binaries::binaries_resolver::LatestVersionApiAdapter;
 use crate::requests::clients::http_file_client::HttpFileClient;
-use crate::APPLICATION_FOLDER_ID;
+use crate::{APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{error, info};
@@ -33,7 +33,6 @@ use tokio::io::AsyncReadExt;
 
 use super::binaries_resolver::BinaryDownloadInfo;
 
-pub const LOG_TARGET: &str = "tari::universe::adapter_tor";
 pub(crate) struct TorReleaseAdapter {}
 
 #[async_trait]
@@ -81,7 +80,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             Ok(checksum_path) => Ok(checksum_path),
             Err(_) => {
                 let checksum_fallback_url = format!("{}.asc", download_info.fallback_url);
-                info!(target: LOG_TARGET, "Fallback URL: {checksum_fallback_url}");
+                info!(target: LOG_TARGET_APP_LOGIC, "Fallback URL: {checksum_fallback_url}");
                 HttpFileClient::builder()
                     .build(checksum_fallback_url.clone(), directory.clone())?
                     .execute()
@@ -106,7 +105,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
 
         if !binary_folder_path.exists() {
             std::fs::create_dir_all(&binary_folder_path).unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Failed to create directory: {e}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to create directory: {e}");
             });
         };
 

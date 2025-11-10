@@ -24,6 +24,7 @@ use crate::ab_test_selector::ABTestSelector;
 use crate::node::node_manager::NodeType;
 use crate::node::utils::SyncProgressInfo;
 use crate::process_adapter::{HandleUnhealthyResult, HealthStatus, StatusMonitor};
+use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use minotari_node_grpc_client::grpc::{
@@ -52,8 +53,6 @@ use tokio::sync::watch;
 use tokio::time::timeout;
 
 use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
-
-const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
 #[async_trait]
 pub trait NodeAdapter {
@@ -192,7 +191,7 @@ impl NodeAdapterService {
                     metadata.best_block_height > 0 && sync_info.percentage >= 1.0
                 })
             {
-                info!(target: LOG_TARGET, "Initial sync achieved");
+                info!(target: LOG_TARGET_APP_LOGIC, "Initial sync achieved");
                 let tip_height = match tip_res.metadata {
                     Some(metadata) => metadata.best_block_height,
                     None => 0,
@@ -260,9 +259,9 @@ impl NodeAdapterService {
                 .any(|local_block| block_scan_block.1 == local_block.1)
             {
                 let local_block = local_blocks.iter().find(|b| b.0 == block_scan_block.0);
-                error!(target: LOG_TARGET, "Miner is stuck on orphan chain. Block at height: {} and hash: {} does not exist locally", block_scan_block.0, block_scan_block.1);
+                error!(target: LOG_TARGET_STATUSES, "Miner is stuck on orphan chain. Block at height: {} and hash: {} does not exist locally", block_scan_block.0, block_scan_block.1);
                 if let Some(local_block) = local_block {
-                    error!(target: LOG_TARGET, "Local block at height: {} and hash: {}", local_block.0, local_block.1);
+                    error!(target: LOG_TARGET_STATUSES, "Local block at height: {} and hash: {}", local_block.0, local_block.1);
                 }
                 return Ok(true);
             }
@@ -336,7 +335,7 @@ impl StatusMonitor for NodeStatusMonitor {
                                 .as_u64()
                                 > 3600
                         {
-                            warn!(target: LOG_TARGET, "Base node height has not changed in an hour");
+                            warn!(target: LOG_TARGET_STATUSES, "Base node height has not changed in an hour");
                             return HealthStatus::Unhealthy;
                         }
                     } else {
@@ -360,7 +359,7 @@ impl StatusMonitor for NodeStatusMonitor {
                 );
                 match self.node_service.get_identity().await {
                     Ok(identity) => {
-                        info!(target: LOG_TARGET, "{:?} Node checking base node identity success: {:?}", self.node_type, identity);
+                        info!(target: LOG_TARGET_STATUSES, "{:?} Node checking base node identity success: {:?}", self.node_type, identity);
                         return HealthStatus::Warning;
                     }
                     Err(e) => {

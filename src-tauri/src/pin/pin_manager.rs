@@ -29,9 +29,8 @@ use crate::{
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     pin::pin_locker::PinLocker,
+    LOG_TARGET_APP_LOGIC,
 };
-
-static LOG_TARGET: &str = "tari::universe::pin_manager";
 
 pub struct PinManager {}
 
@@ -77,27 +76,27 @@ impl PinManager {
         if wallet_config.tari_wallet_details().is_some() {
             match InternalWallet::get_tari_seed(Some(pin_password.clone())).await {
                 Ok(_unused) => {
-                    log::info!(target: LOG_TARGET, "Pin validated successfully against Tari Seed!");
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "Pin validated successfully against Tari Seed!");
                 }
                 Err(e) => {
                     pin_locker.register_failed_pin_attempt().await?;
-                    log::info!(target: LOG_TARGET, "Pin validation failed against Tari Seed!");
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "Pin validation failed against Tari Seed!");
                     return Err(e);
                 }
             }
         } else if *ConfigWallet::content().await.monero_address_is_generated() {
             match InternalWallet::get_monero_seed(Some(pin_password.clone())).await {
                 Ok(_unused) => {
-                    log::info!(target: LOG_TARGET, "Pin validated successfully against Monero Seed!");
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "Pin validated successfully against Monero Seed!");
                 }
                 Err(e) => {
                     pin_locker.register_failed_pin_attempt().await?;
-                    log::info!(target: LOG_TARGET, "Pin validation failed against Monero Seed!");
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "Pin validation failed against Monero Seed!");
                     return Err(e);
                 }
             }
         } else {
-            log::error!(target: LOG_TARGET, "Neither Tari Seed nor Monero Seed available to validate against.");
+            log::error!(target: LOG_TARGET_APP_LOGIC, "Neither Tari Seed nor Monero Seed available to validate against.");
             panic!("Neither Tari Seed nor Monero Seed available to validate against.");
             // Edge case, we can't actually validate the pin
             // because we don't have neither a Tari wallet nor a Monero wallet
@@ -149,7 +148,7 @@ where
     if let Some(pin) = pin {
         Ok(pin.to_string())
     } else {
-        log::info!("PIN entry cancelled");
+        log::info!(target: LOG_TARGET_APP_LOGIC,"PIN entry cancelled");
         Err(anyhow::anyhow!("PIN entry cancelled"))
     }
 }

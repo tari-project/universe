@@ -39,8 +39,7 @@ use crate::process_adapter::{
     StatusMonitor,
 };
 use crate::setup::setup_manager::SetupManager;
-
-const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
+use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 
 pub struct XmrigAdapter {
     pub connection_type: CpuConnectionType,
@@ -130,13 +129,13 @@ impl ProcessAdapter for XmrigAdapter {
                 args.push(format!("--log-file={}", &log_file));
             }
             None => {
-                warn!(target: LOG_TARGET, "Could not convert xmrig log file path to string");
-                warn!(target: LOG_TARGET, "Logs argument will not be added to xmrig");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Could not convert xmrig log file path to string");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Logs argument will not be added to xmrig");
             }
         };
 
         std::fs::create_dir_all(xmrig_log_file_parent).unwrap_or_else(|error| {
-            warn!(target: LOG_TARGET, "Could not create xmrig log file parent directory - {error}");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Could not create xmrig log file parent directory - {error}");
         });
 
         args.push(format!("--http-port={}", self.http_api_port));
@@ -200,7 +199,7 @@ impl StatusMonitor for XmrigStatusMonitor {
         duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
         // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
-        info!(target: LOG_TARGET, "Handling unhealthy status for Xmrig | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        info!(target: LOG_TARGET_STATUSES, "Handling unhealthy status for Xmrig | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
         if duration_since_last_healthy_status.as_secs().gt(&(60 * 30))
             && !WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.load(Ordering::SeqCst)
         {
@@ -209,12 +208,12 @@ impl StatusMonitor for XmrigStatusMonitor {
                 .await
             {
                 Ok(_) => {
-                    info!(target: LOG_TARGET, "XmrigAdapter: CPU Pool feature turned off due to prolonged unhealthiness.");
+                    info!(target: LOG_TARGET_STATUSES, "XmrigAdapter: CPU Pool feature turned off due to prolonged unhealthiness.");
                     WAS_FALLBACK_TO_SOLO_MINING_TRIGGERED.store(true, Ordering::SeqCst);
                     return Ok(HandleUnhealthyResult::Stop);
                 }
                 Err(error) => {
-                    warn!(target: LOG_TARGET, "XmrigAdapter: Failed to turn off CPU Pool feature: {error} | Continuing to monitor.");
+                    warn!(target: LOG_TARGET_STATUSES, "XmrigAdapter: Failed to turn off CPU Pool feature: {error} | Continuing to monitor.");
                     return Ok(HandleUnhealthyResult::Continue);
                 }
             }
@@ -230,20 +229,20 @@ impl StatusMonitor for XmrigStatusMonitor {
                     let _result = self.summary_broadcast.send(status.clone());
 
                     if status.hash_rate.le(&0.0) {
-                        warn!(target: LOG_TARGET, "Xmrig hash rate is 0");
+                        warn!(target: LOG_TARGET_STATUSES, "Xmrig hash rate is 0");
                         return HealthStatus::Unhealthy;
                     }
 
                     HealthStatus::Healthy
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to get xmrig summary: {e}");
+                    warn!(target: LOG_TARGET_STATUSES, "Failed to get xmrig summary: {e}");
                     let _result = self.summary_broadcast.send(CpuMinerStatus::default());
                     HealthStatus::Unhealthy
                 }
             },
             Err(_timeout_error) => {
-                warn!(target: LOG_TARGET, "Timeout while getting xmrig summary");
+                warn!(target: LOG_TARGET_STATUSES, "Timeout while getting xmrig summary");
                 let _result = self.summary_broadcast.send(CpuMinerStatus::default());
                 HealthStatus::Unhealthy
             }
@@ -278,7 +277,7 @@ impl XmrigStatusMonitor {
         {
             Ok(response) => response,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error in getting response from Xmrig status: {e}");
+                warn!(target: LOG_TARGET_STATUSES, "Error in getting response from Xmrig status: {e}");
                 if e.is_connect() {
                     return Ok(CpuMinerStatus::default());
                 }
@@ -289,12 +288,12 @@ impl XmrigStatusMonitor {
         let body: Summary = match serde_json::from_str(&text) {
             Ok(body) => body,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error decoding body from  in Xmrig status: {e}");
+                warn!(target: LOG_TARGET_STATUSES, "Error decoding body from  in Xmrig status: {e}");
                 return Ok(CpuMinerStatus::default());
             }
         };
 
-        info!(target: LOG_TARGET, "Xmrig status: {:?}", body);
+        info!(target: LOG_TARGET_STATUSES, "Xmrig status: {:?}", body);
 
         // body.hashrate.total is a vector of Option<f64> which elements are:
         // index 0: 10 seconds avarage hashrate

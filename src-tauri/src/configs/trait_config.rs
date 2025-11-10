@@ -34,14 +34,11 @@ use tokio::sync::RwLock;
 use crate::{
     events_emitter::EventsEmitter,
     setup::setup_manager::{SetupManager, SetupPhase},
-    UniverseAppState, APPLICATION_FOLDER_ID,
+    UniverseAppState, APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC,
 };
 
 #[allow(dead_code)]
 pub trait ConfigContentImpl: Clone + Default + Serialize + for<'de> Deserialize<'de> {}
-
-#[allow(dead_code)]
-static LOG_TARGET: &str = "config_trait";
 
 #[allow(dead_code)]
 pub trait ConfigImpl {
@@ -84,14 +81,14 @@ pub trait ConfigImpl {
     fn _load_or_create() -> Self::Config {
         match Self::_load_config() {
             Ok(config_content) => {
-                info!(target: LOG_TARGET, "[{}] [load_config] loaded config content", Self::_get_name());
+                info!(target: LOG_TARGET_APP_LOGIC, "[{}] [load_config] loaded config content", Self::_get_name());
                 config_content
             }
             Err(_) => {
-                debug!(target: LOG_TARGET, "[{}] [load_config] creating new config content", Self::_get_name());
+                debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [load_config] creating new config content", Self::_get_name());
                 let config_content = Self::Config::default();
                 let _unused = Self::_save_config(config_content.clone()).inspect_err(|error| {
-                    warn!(target: LOG_TARGET, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
+                    warn!(target: LOG_TARGET_APP_LOGIC, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
                 });
                 config_content
             }
@@ -126,13 +123,13 @@ pub trait ConfigImpl {
         F: FnOnce(&mut Self::Config, I) -> &mut Self::Config,
         Self: 'static,
     {
-        debug!(target: LOG_TARGET, "[{}] [update_field] with function: {:?} and value: {:?}", Self::_get_name(), std::any::type_name::<F>(), value);
+        debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] with function: {:?} and value: {:?}", Self::_get_name(), std::any::type_name::<F>(), value);
         setter_callback(
             Self::current().write().await._get_content_mut(),
             value.clone(),
         );
         Self::_save_config(Self::current().read().await._get_content().clone()).inspect_err(|error|
-            debug!(target: LOG_TARGET, "[{}] [update_field] error: {:?}", Self::_get_name(), error)
+            debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] error: {:?}", Self::_get_name(), error)
         )?;
         Self::current()
             .read()

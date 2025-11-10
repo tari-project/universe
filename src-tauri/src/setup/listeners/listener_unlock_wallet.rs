@@ -30,7 +30,7 @@ use crate::{
         listeners::{AppModule, AppModuleStatus},
         setup_manager::{PhaseStatus, SetupPhase},
     },
-    EventsEmitter,
+    EventsEmitter, LOG_TARGET_APP_LOGIC,
 };
 
 use log::info;
@@ -42,7 +42,6 @@ use super::{
     SetupFeature, SetupFeaturesList,
 };
 
-static LOG_TARGET: &str = "tari::universe::unlock_conditions::listener_unlock_wallet";
 static INSTANCE: LazyLock<ListenerUnlockWallet> = LazyLock::new(ListenerUnlockWallet::new);
 
 pub struct ListenerUnlockWallet {
@@ -99,13 +98,13 @@ impl UnlockConditionsListenerTrait for ListenerUnlockWallet {
         *self.features_list.lock().await = features;
     }
     async fn select_unlock_strategy(&self) -> Box<dyn UnlockStrategyTrait + Send + Sync> {
-        info!(target: LOG_TARGET, "Selecting strategy for Wallet Module");
+        info!(target: LOG_TARGET_APP_LOGIC, "Selecting strategy for Wallet Module");
         let features = self.features_list.lock().await.clone();
         if features.is_feature_enabled(SetupFeature::SeedlessWallet) {
-            info!(target: LOG_TARGET, "Using ExternalWalletAddressStrategy");
+            info!(target: LOG_TARGET_APP_LOGIC, "Using ExternalWalletAddressStrategy");
             Box::new(ExternalWalletAddressStrategy)
         } else {
-            info!(target: LOG_TARGET, "Using DefaultStrategy");
+            info!(target: LOG_TARGET_APP_LOGIC, "Using DefaultStrategy");
             Box::new(DefaultStrategy)
         }
     }
@@ -113,7 +112,7 @@ impl UnlockConditionsListenerTrait for ListenerUnlockWallet {
 
 impl ListenerUnlockWallet {
     async fn lock(&self) {
-        info!(target: LOG_TARGET, "Restarting Wallet Module");
+        info!(target: LOG_TARGET_APP_LOGIC, "Restarting Wallet Module");
         EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
             module: AppModule::Wallet,
             status: AppModuleStatus::NotInitialized.as_string(),

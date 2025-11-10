@@ -53,10 +53,9 @@ use crate::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,
         StatusMonitor,
     },
-    process_utils, APPLICATION_FOLDER_ID,
+    process_utils, APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
 
-const LOG_TARGET: &str = "tari::universe::mining::gpu::miners::glytex";
 const DEFAULT_GPU_THREADS: u32 = 8196;
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct GlytexGpuStatus {
@@ -204,7 +203,7 @@ impl GpuMinerInterfaceTrait for GlytexGpuMiner {
 
         match output.status.code() {
             Some(0) => {
-                info!(target: LOG_TARGET, "Glytex GPU miner detection completed successfully");
+                info!(target: LOG_TARGET_APP_LOGIC, "Glytex GPU miner detection completed successfully");
                 let gpu_status_file_name = format!("{selected_engine}_gpu_status.json");
                 let gpu_status_file_path = gpu_engine_statuses_path.join(gpu_status_file_name);
                 let gpu_status_file =
@@ -226,8 +225,8 @@ impl GpuMinerInterfaceTrait for GlytexGpuMiner {
                 let mut available_engines: Vec<String> = vec![];
 
                 for entry in read_dir(gpu_engine_statuses_path)? {
-                    info!(target: LOG_TARGET, "Reading engine status file");
-                    info!(target: LOG_TARGET, "Engine status file: {entry:?}");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Reading engine status file");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Engine status file: {entry:?}");
                     let entry = entry?;
                     let path = entry.path();
                     let file_name = path
@@ -239,15 +238,15 @@ impl GpuMinerInterfaceTrait for GlytexGpuMiner {
                     let sanitized_file_name = file_name.split("_").collect::<Vec<&str>>()[0];
                     let engine_type = EngineType::from_string(sanitized_file_name);
 
-                    info!(target: LOG_TARGET, "File name: {file_name:?}");
-                    info!(target: LOG_TARGET, "Sanitized file name: {sanitized_file_name:?}");
+                    info!(target: LOG_TARGET_APP_LOGIC, "File name: {file_name:?}");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Sanitized file name: {sanitized_file_name:?}");
 
                     match engine_type {
                         Ok(engine) => {
                             available_engines.push(engine.to_string());
                         }
                         Err(_) => {
-                            info!(target: LOG_TARGET, "Invalid engine type: {sanitized_file_name:?}");
+                            info!(target: LOG_TARGET_APP_LOGIC, "Invalid engine type: {sanitized_file_name:?}");
                         }
                     }
                 }
@@ -259,7 +258,7 @@ impl GpuMinerInterfaceTrait for GlytexGpuMiner {
                 .await;
             }
             _ => {
-                info!(target: LOG_TARGET, "Glytex GPU miner detection failed");
+                info!(target: LOG_TARGET_APP_LOGIC, "Glytex GPU miner detection failed");
             }
         };
         Ok(())
@@ -279,7 +278,7 @@ impl ProcessAdapter for GlytexGpuMiner {
         binary_version_path: std::path::PathBuf,
         _is_first_start: bool,
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
-        info!(target: LOG_TARGET, "Gpu miner spawn inner");
+        info!(target: LOG_TARGET_APP_LOGIC, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
 
         let http_api_port = 8080;
@@ -356,7 +355,7 @@ impl ProcessAdapter for GlytexGpuMiner {
             args.push(worker_name.clone());
         }
 
-        info!(target: LOG_TARGET, "Run Gpu miner with args: {:?}", args.join(" "));
+        info!(target: LOG_TARGET_APP_LOGIC, "Run Gpu miner with args: {:?}", args.join(" "));
         let mut envs = std::collections::HashMap::new();
         match Network::get_current_or_user_setting_or_default() {
             Network::Esmeralda => {
@@ -427,18 +426,18 @@ impl StatusMonitor for GlytexGpuMinerStatusMonitor {
         &self,
         duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
-        info!(target: LOG_TARGET, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        info!(target: LOG_TARGET_STATUSES, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
         if duration_since_last_healthy_status.as_secs().gt(&(60 * 3)) // Fallback after 3 minutes of unhealthiness
             && !WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.load(Ordering::SeqCst)
         {
             match GpuManager::write().await.handle_unhealthy_miner().await {
                 Ok(_) => {
-                    info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
+                    info!(target: LOG_TARGET_STATUSES, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
                     WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.store(true, Ordering::SeqCst);
                     return Ok(HandleUnhealthyResult::Stop);
                 }
                 Err(error) => {
-                    warn!(target: LOG_TARGET, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {error} | Continuing to monitor.");
+                    warn!(target: LOG_TARGET_STATUSES, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {error} | Continuing to monitor.");
                     return Ok(HandleUnhealthyResult::Continue);
                 }
             }
@@ -451,7 +450,7 @@ impl StatusMonitor for GlytexGpuMinerStatusMonitor {
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(inner) => inner,
             Err(_) => {
-                warn!(target: LOG_TARGET, "Timeout error in GpuMinerAdapter check_health");
+                warn!(target: LOG_TARGET_STATUSES, "Timeout error in GpuMinerAdapter check_health");
                 let _ = self
                     .gpu_status_sender
                     .send(GpuMinerStatus::default_with_algorithm(
@@ -466,7 +465,7 @@ impl StatusMonitor for GlytexGpuMinerStatusMonitor {
                 let _ = self.gpu_status_sender.send(status.clone());
                 if status.hash_rate > 0.0 {
                     if !GpuManager::read().await.is_current_miner_healthy().await {
-                        info!(target: LOG_TARGET, "Marking current miner as healthy again");
+                        info!(target: LOG_TARGET_STATUSES, "Marking current miner as healthy again");
                         let _unused = GpuManager::write().await.handle_healthy_miner().await;
                     }
                     HealthStatus::Healthy
@@ -497,7 +496,7 @@ impl GlytexGpuMinerStatusMonitor {
         {
             Ok(response) => response,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error in getting response from XtrGpuMiner status: {e}");
+                warn!(target: LOG_TARGET_STATUSES, "Error in getting response from XtrGpuMiner status: {e}");
                 if e.is_connect() {
                     return Ok(GpuMinerStatus {
                         is_mining: false,
@@ -518,7 +517,7 @@ impl GlytexGpuMinerStatusMonitor {
         let body: XtrGpuminerHttpApiStatus = match serde_json::from_str(&text) {
             Ok(body) => body,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error decoding body from  in XtrGpuMiner status: {e}");
+                warn!(target: LOG_TARGET_STATUSES, "Error decoding body from  in XtrGpuMiner status: {e}");
                 return Ok(GpuMinerStatus {
                     is_mining: false,
                     hash_rate: 0.0,

@@ -39,9 +39,9 @@ use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     tasks_tracker::TasksTrackers,
     utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
+    LOG_TARGET_APP_LOGIC,
 };
 use tokio::time::Duration;
-const LOG_TARGET: &str = "tari::universe::updates_manager";
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DownloadProgressPayload {
     pub event_type: String,
@@ -112,13 +112,13 @@ impl UpdatesManager {
                 loop {
                         select! {
                             _ = shutdown_signal.wait() => {
-                                info!(target: LOG_TARGET, "Shutdown signal received. Stopping periodic updates.");
+                                info!(target: LOG_TARGET_APP_LOGIC, "Shutdown signal received. Stopping periodic updates.");
                                 break;
                             }
                             _ = interval.tick() => {
-                                info!(target: LOG_TARGET, "Periodic update check triggered.");
+                                info!(target: LOG_TARGET_APP_LOGIC, "Periodic update check triggered.");
                                  if let Err(e) = self_clone.try_update(app_clone.clone(), false, false, Duration::from_secs(30)).await {
-                                    error!(target: LOG_TARGET, "Error checking for updates: {e:?}");
+                                    error!(target: LOG_TARGET_APP_LOGIC, "Error checking for updates: {e:?}");
                                 }
                             }
                         }
@@ -132,7 +132,9 @@ impl UpdatesManager {
         let _unused = self
             .try_update(app.clone(), false, false, Duration::from_secs(5))
             .await
-            .inspect_err(|e| log::error!(target: LOG_TARGET, "Initial Update failure: {e:?}"));
+            .inspect_err(
+                |e| log::error!(target: LOG_TARGET_APP_LOGIC, "Initial Update failure: {e:?}"),
+            );
     }
 
     pub async fn try_update(
@@ -151,22 +153,22 @@ impl UpdatesManager {
         match res {
             Ok(Some(update)) => {
                 let version = update.version.clone();
-                info!(target: LOG_TARGET, "try_update: Update available: {version:?}");
+                info!(target: LOG_TARGET_APP_LOGIC, "try_update: Update available: {version:?}");
                 *self.update.write().await = Some(update);
                 let is_auto_update = *ConfigCore::content().await.auto_update();
                 let is_screen_locked = *SystemStatus::current().get_sleep_mode_watcher().borrow();
 
                 if is_screen_locked && is_auto_update {
-                    info!(target: LOG_TARGET, "try_update: Screen is locked. Displaying notification");
+                    info!(target: LOG_TARGET_APP_LOGIC, "try_update: Screen is locked. Displaying notification");
                     let payload = CouldNotUpdatePayload::new(version);
                     drop(app.emit("updates_event", payload).inspect_err(|e| {
-                        warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with CouldNotUpdatePayload: {e}");
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to emit 'updates-event' with CouldNotUpdatePayload: {e}");
                     }));
                 } else if force {
-                    info!(target: LOG_TARGET, "try_update: Proceeding with force update");
+                    info!(target: LOG_TARGET_APP_LOGIC, "try_update: Proceeding with force update");
                     self.proceed_with_update(app.clone()).await?;
                 } else if is_auto_update {
-                    info!(target: LOG_TARGET, "try_update: Auto update is enabled. Proceeding with update");
+                    info!(target: LOG_TARGET_APP_LOGIC, "try_update: Auto update is enabled. Proceeding with update");
                     self.proceed_with_update(app.clone()).await?;
                 } else {
                     TasksTrackers::current()
@@ -176,23 +178,23 @@ impl UpdatesManager {
                         .spawn(async move {
                             // Spawn a task to wait for the frontend to be listening for a new update
                             let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-                            info!(target: LOG_TARGET, "try_update: Auto update is disabled. Prompting user to update");
+                            info!(target: LOG_TARGET_APP_LOGIC, "try_update: Auto update is disabled. Prompting user to update");
                             let payload = AskForUpdatePayload {
                                 event_type: "ask_for_update".to_string(),
                                 version,
                             };
                             drop(app.emit("updates_event", payload).inspect_err(|e| {
-                                warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with UpdateAvailablePayload: {e}");
+                                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to emit 'updates-event' with UpdateAvailablePayload: {e}");
                             }));
                             // proceed_with_update will be triggered by the user
                         });
                 }
             }
             Ok(None) => {
-                info!(target: LOG_TARGET, "No updates available");
+                info!(target: LOG_TARGET_APP_LOGIC, "No updates available");
             }
             Err(e) => {
-                log::warn!(target: LOG_TARGET, "Error checking for updates: {e:?}");
+                log::warn!(target: LOG_TARGET_APP_LOGIC, "Error checking for updates: {e:?}");
             }
         }
 
@@ -220,21 +222,21 @@ impl UpdatesManager {
         let builder = match builder.endpoints(vec![updates_url]) {
             Ok(b) => b,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to set update URL: {e}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to set update URL: {e}");
                 return Ok(None);
             }
         };
         let updater = match builder.build() {
             Ok(u) => u,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to build updater: {e}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to build updater: {e}");
                 return Ok(None);
             }
         };
         let update = match updater.check().await {
             Ok(u) => u,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to check for updates: {e}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to check for updates: {e}");
                 return Ok(None);
             }
         };
@@ -284,12 +286,12 @@ impl UpdatesManager {
                             content_length.unwrap_or(downloaded),
                         );
                         drop(app.emit("updates_event", payload).inspect_err(|e| {
-                            warn!(target: LOG_TARGET, "Failed to emit 'updates_event' event: {e}");
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to emit 'updates_event' event: {e}");
                         }));
                     }
                 },
                 || {
-                    info!(target: LOG_TARGET, "Latest version download finished");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Latest version download finished");
                 },
             )
             .await?;

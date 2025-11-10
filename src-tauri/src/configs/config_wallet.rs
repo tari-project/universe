@@ -33,13 +33,12 @@ use crate::{
     configs::config_ui::{ConfigUI, ConfigUIContent},
     internal_wallet::TariWalletDetails,
     pin::PinLockerState,
+    LOG_TARGET_APP_LOGIC,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static EXCHANGES_RECORD_NAME_FOR_EXTERNAL_ADDRESS_BOOK: &str = "Exchanges";
-
-static LOG_TARGET: &str = "tari::universe::config_wallet";
 
 static INSTANCE: LazyLock<RwLock<ConfigWallet>> =
     LazyLock::new(|| RwLock::new(ConfigWallet::new()));
@@ -188,7 +187,7 @@ impl ConfigWallet {
         let current_version = *config.version_counter();
 
         if current_version < WALLET_VERSION {
-            log::info!("Wallet Config needs migration {current_version:?} => {WALLET_VERSION}");
+            log::info!(target: LOG_TARGET_APP_LOGIC,"Wallet Config needs migration {current_version:?} => {WALLET_VERSION}");
 
             ConfigWallet::update_field(ConfigWalletContent::set_version_counter, WALLET_VERSION)
                 .await?;
@@ -197,7 +196,7 @@ impl ConfigWallet {
         }
 
         if *ConfigUI::content().await.was_staged_security_modal_shown() {
-            log::info!("Wallet Config needs 'set_was_staged_security_modal_shown' flag migration");
+            log::info!(target: LOG_TARGET_APP_LOGIC,"Wallet Config needs 'set_was_staged_security_modal_shown' flag migration");
             // Rename and move this flag here
             ConfigWallet::update_field(ConfigWalletContent::set_seed_backed_up, true).await?;
             // Clear this flag to prevent from re-migrating
@@ -239,21 +238,21 @@ impl ConfigImpl for ConfigWallet {
 
             match Self::_load_config() {
                 Ok(config_content) => {
-                    log::info!(target: LOG_TARGET, "[{}] [load_config] loaded config content", Self::_get_name());
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "[{}] [load_config] loaded config content", Self::_get_name());
                     config_content
                 }
                 Err(e) => {
-                    log::error!(target: LOG_TARGET, "[{}] [load_config] error occured when loading config content: {e:?}", Self::_get_name());
-                    log::info!(target: LOG_TARGET, "* Wallet Config: {config_content_serialized}");
+                    log::error!(target: LOG_TARGET_APP_LOGIC, "[{}] [load_config] error occured when loading config content: {e:?}", Self::_get_name());
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "* Wallet Config: {config_content_serialized}");
                     // Panic instead of creating default config
                     panic!("Failed to load wallet config: {e:?}");
                 }
             }
         } else {
-            log::debug!(target: LOG_TARGET, "[{}] [load_config] creating a new config content (file not found)", Self::_get_name());
+            log::debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [load_config] creating a new config content (file not found)", Self::_get_name());
             let config_content = Self::Config::default();
             let _unused = Self::_save_config(config_content.clone()).inspect_err(|error| {
-                log::warn!(target: LOG_TARGET, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
+                log::warn!(target: LOG_TARGET_APP_LOGIC, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
             });
             config_content
         }

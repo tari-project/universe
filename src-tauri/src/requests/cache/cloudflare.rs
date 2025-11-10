@@ -23,12 +23,13 @@
 use log::info;
 use reqwest::Response;
 
-use crate::requests::{
-    clients::http_client::HttpClient,
-    utils::{convert_content_length_to_mb, get_content_length_from_head_response},
+use crate::{
+    requests::{
+        clients::http_client::HttpClient,
+        utils::{convert_content_length_to_mb, get_content_length_from_head_response},
+    },
+    LOG_TARGET_APP_LOGIC,
 };
-
-const LOG_TARGET: &str = "tari::universe::requests::cache::cloudflare";
 
 pub enum CloudFlareCacheStatusHandlingOptions {
     Success,
@@ -111,7 +112,7 @@ pub struct CloudFlareCache;
 impl CloudFlareCache {
     fn get_cf_cache_status_from_head_response(response: &Response) -> CloudFlareCacheStatus {
         if response.status().is_server_error() || response.status().is_client_error() {
-            info!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, error");
+            info!(target: LOG_TARGET_APP_LOGIC, "get_cf_cache_status_from_head_response, error");
             return CloudFlareCacheStatus::Unknown;
         };
         let cache_status = CloudFlareCacheStatus::from_str(
@@ -145,14 +146,14 @@ impl CloudFlareCache {
 
             match cf_cache_status.resolve_handling_option() {
                 CloudFlareCacheStatusHandlingOptions::Retry => {
-                    info!(target: LOG_TARGET, "Cache status is {}, retrying. Try {}/{}.", cf_cache_status.to_str(), retries, MAX_RETRIES);
+                    info!(target: LOG_TARGET_APP_LOGIC, "Cache status is {}, retrying. Try {}/{}.", cf_cache_status.to_str(), retries, MAX_RETRIES);
                 }
                 CloudFlareCacheStatusHandlingOptions::Skip => {
-                    info!(target: LOG_TARGET, "Cache status is {}, skipping retry.", cf_cache_status.to_str());
+                    info!(target: LOG_TARGET_APP_LOGIC, "Cache status is {}, skipping retry.", cf_cache_status.to_str());
                     return Ok(());
                 }
                 CloudFlareCacheStatusHandlingOptions::Success => {
-                    info!(target: LOG_TARGET, "Cache hit with status: {}", cf_cache_status.to_str());
+                    info!(target: LOG_TARGET_APP_LOGIC, "Cache hit with status: {}", cf_cache_status.to_str());
                     return Ok(());
                 }
             }

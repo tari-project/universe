@@ -45,11 +45,11 @@ use crate::{
         formatting_utils::{format_currency, format_hashrate},
         platform_utils::{CurrentOperatingSystem, PlatformUtils},
     },
+    LOG_TARGET_APP_LOGIC,
 };
 
 static INSTANCE: LazyLock<RwLock<SystemTrayManager>> =
     LazyLock::new(|| RwLock::new(SystemTrayManager::new()));
-const LOG_TARGET: &str = "tari::universe::systemtray_manager";
 
 pub enum SystemTrayDataItem {
     CpuHashrate { hashrate: f64 },
@@ -231,7 +231,7 @@ impl SystemTrayManager {
         match INSTANCE.read().await.channel.send(event) {
             Ok(_) => {}
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to send system tray event: {e}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to send system tray event: {e}");
             }
         };
     }
@@ -247,7 +247,7 @@ impl SystemTrayManager {
         let task_tracker = TasksTrackers::current().common.get_task_tracker().await;
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
-        info!(target: LOG_TARGET, "Starting system tray data listener");
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting system tray data listener");
         task_tracker.spawn(async move {
             let mut last_gpu_pool_pending_rewards = 0.0;
             let mut last_cpu_pool_pending_rewards = 0.0;
@@ -259,7 +259,7 @@ impl SystemTrayManager {
             loop {
                 tokio::select! {
                     _ = shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET, "Shutting down system tray data listener");
+                        info!(target: LOG_TARGET_APP_LOGIC, "Shutting down system tray data listener");
                         break;
                     }
                     event = receiver.recv() => {
@@ -297,7 +297,6 @@ impl SystemTrayManager {
                                         Self::write().await.data.mining_mode = mode;
                                     },
                                     SystemTrayEvents::CpuMiningActivity(is_active) => {
-                                        info!(target: LOG_TARGET, "Received CPU mining activity update: {}", is_active);
                                         last_cpu_mining_activity = is_active;
                                         let is_mining = last_cpu_mining_activity || last_gpu_mining_activity;
                                         Self::write().await.update_menu_action_item(
@@ -306,7 +305,6 @@ impl SystemTrayManager {
                                         Self::write().await.data.is_mining = is_mining;
                                     },
                                     SystemTrayEvents::GpuMiningActivity(is_active) => {
-                                        info!(target: LOG_TARGET, "Received GPU mining activity update: {}", is_active);
                                         last_gpu_mining_activity = is_active;
                                         let is_mining = last_cpu_mining_activity || last_gpu_mining_activity;
                                         Self::write().await.update_menu_action_item(
@@ -345,7 +343,7 @@ impl SystemTrayManager {
                                 }
                             }
                             None => {
-                                info!(target: LOG_TARGET, "System tray data listener channel closed");
+                                info!(target: LOG_TARGET_APP_LOGIC, "System tray data listener channel closed");
                                 break;
                             }
                         }
@@ -382,7 +380,7 @@ impl SystemTrayManager {
     }
 
     async fn initialize_menu(&self) -> Result<Menu<Wry>, anyhow::Error> {
-        info!(target: LOG_TARGET, "Initializing system tray menu");
+        info!(target: LOG_TARGET_APP_LOGIC, "Initializing system tray menu");
 
         let app_handle = self.app_handle.clone().expect("App handle not initialized");
 
@@ -479,12 +477,12 @@ impl SystemTrayManager {
         match self.initialize_menu().await {
             Ok(menu) => {
                 tray.set_menu(Some(menu.clone())).unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to set system tray menu: {e}");
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to set system tray menu: {e}");
                 });
                 self.menu = Some(menu);
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to initialize system tray menu: {e}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to initialize system tray menu: {e}");
             }
         }
 
@@ -496,7 +494,7 @@ impl SystemTrayManager {
                 block_on(Self::open_settings_action(app.clone()));
             }
             "close" => {
-                info!(target: LOG_TARGET, "Quitting application from system tray");
+                info!(target: LOG_TARGET_APP_LOGIC, "Quitting application from system tray");
                 block_on(Self::close_tari_universe_action(app.clone()));
             }
             "mining_toggle" => {
@@ -505,7 +503,7 @@ impl SystemTrayManager {
                 });
             }
             _ => {
-                error!(target: LOG_TARGET, "menu item {:?} not handled", event.id);
+                error!(target: LOG_TARGET_APP_LOGIC, "menu item {:?} not handled", event.id);
             }
         });
 
@@ -516,7 +514,7 @@ impl SystemTrayManager {
         #[cfg(target_os = "windows")]
         {
             if let Err(e) = Self::set_tray_icon_promoted(true).await {
-                error!(target: LOG_TARGET, "Failed to promote tray icon: {e}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to promote tray icon: {e}");
             }
         }
     }
@@ -532,43 +530,43 @@ impl SystemTrayManager {
         let window = match app_handle.get_webview_window("main") {
             Some(window) => window,
             None => {
-                error!(target: LOG_TARGET, "Failed to get main window");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to get main window");
                 return;
             }
         };
 
         if !window.is_minimized().unwrap_or(false) && window.is_visible().unwrap_or(false) {
-            info!(target: LOG_TARGET, "Focusing window");
+            info!(target: LOG_TARGET_APP_LOGIC, "Focusing window");
             window.set_focus().unwrap_or_else(|error| {
-                error!(target: LOG_TARGET, "Failed to set focus on window: {error}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to set focus on window: {error}");
             });
             return;
         }
-        info!(target: LOG_TARGET, "Unminimizing window");
+        info!(target: LOG_TARGET_APP_LOGIC, "Unminimizing window");
         match PlatformUtils::detect_current_os() {
             CurrentOperatingSystem::Linux => {
                 window.hide().unwrap_or_else(
-                    |error| error!(target: LOG_TARGET, "Failed hide window: {error}"),
+                    |error| error!(target: LOG_TARGET_APP_LOGIC, "Failed hide window: {error}"),
                 );
                 window.unminimize().unwrap_or_else(
-                    |error| error!(target: LOG_TARGET, "Failed to unminimize window: {error}"),
+                    |error| error!(target: LOG_TARGET_APP_LOGIC, "Failed to unminimize window: {error}"),
                 );
                 window.show().unwrap_or_else(
-                    |error| error!(target: LOG_TARGET, "Failed to show window: {error}"),
+                    |error| error!(target: LOG_TARGET_APP_LOGIC, "Failed to show window: {error}"),
                 );
                 window.set_focus().unwrap_or_else(
-                    |error| error!(target: LOG_TARGET, "Failed to set focus on window: {error}"),
+                    |error| error!(target: LOG_TARGET_APP_LOGIC, "Failed to set focus on window: {error}"),
                 );
             }
             _ => {
                 window.show().unwrap_or_else(|error| {
-                    error!(target: LOG_TARGET, "Failed to show window: {error}");
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to show window: {error}");
                 });
                 window.unminimize().unwrap_or_else(|error| {
-                    error!(target: LOG_TARGET, "Failed to unminimize window: {error}");
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to unminimize window: {error}");
                 });
                 window.set_focus().unwrap_or_else(|error| {
-                    error!(target: LOG_TARGET, "Failed to set focus on window: {error}");
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to set focus on window: {error}");
                 });
             }
         }
@@ -594,16 +592,16 @@ impl SystemTrayManager {
             if let Some(menu_item) = menu.get(item.id()) {
                 if let Some(menu_item) = menu_item.as_menuitem() {
                     if let Err(e) = menu_item.set_text(item.to_string()) {
-                        error!(target: LOG_TARGET, "Failed to update menu field: {e}");
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to update menu field: {e}");
                     }
                 } else {
-                    error!(target: LOG_TARGET, "Failed to get menu item for {item}");
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item for {item}");
                 }
             } else {
-                error!(target: LOG_TARGET, "Failed to get menu item by id for {item}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item by id for {item}");
             }
         } else {
-            error!(target: LOG_TARGET, "Menu is not initialized");
+            error!(target: LOG_TARGET_APP_LOGIC, "Menu is not initialized");
         }
     }
 
@@ -612,16 +610,16 @@ impl SystemTrayManager {
             if let Some(menu_item) = menu.get(item.id()) {
                 if let Some(menu_item) = menu_item.as_menuitem() {
                     if let Err(e) = menu_item.set_text(item.to_string()) {
-                        error!(target: LOG_TARGET, "Failed to update menu field: {e}");
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to update menu field: {e}");
                     }
                 } else {
-                    error!(target: LOG_TARGET, "Failed to get menu item for {item}");
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item for {item}");
                 }
             } else {
-                error!(target: LOG_TARGET, "Failed to get menu item by id for {item}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item by id for {item}");
             }
         } else {
-            error!(target: LOG_TARGET, "Menu is not initialized");
+            error!(target: LOG_TARGET_APP_LOGIC, "Menu is not initialized");
         }
     }
 
@@ -631,14 +629,14 @@ impl SystemTrayManager {
                 #[cfg(target_os = "macos")]
                 {
                     AppHandle::hide(window.app_handle()).unwrap_or_else(|error| {
-                        error!(target: LOG_TARGET, "Failed to hide app: {error}");
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to hide app: {error}");
                     });
                 }
 
                 #[cfg(not(target_os = "macos"))]
                 {
                     window.hide().unwrap_or_else(|error| {
-                        error!(target: LOG_TARGET, "Failed to hide window: {error}");
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to hide window: {error}");
                     });
                 }
             }

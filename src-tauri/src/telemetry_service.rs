@@ -36,9 +36,8 @@ use crate::{
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
+    LOG_TARGET_APP_LOGIC,
 };
-
-const LOG_TARGET: &str = "tari::universe::telemetry_service";
 
 #[derive(Debug, Serialize, Clone)]
 pub struct TelemetryData {
@@ -127,10 +126,10 @@ impl TelemetryService {
                     telemetry_data = rx.recv() => {
                         if let Some(telemetry_data) = telemetry_data {
 
-                        debug!(target: LOG_TARGET, "Received telemetry event: {:?}", &telemetry_data);
+                        debug!(target: LOG_TARGET_APP_LOGIC, "Received telemetry event: {:?}", &telemetry_data);
                         let telemetry_collection_enabled = *ConfigCore::content().await.allow_telemetry();
                         if !telemetry_collection_enabled {
-                            debug!(target: LOG_TARGET, "TelemetryService::init telemetry collection is disabled. Dropping event.");
+                            debug!(target: LOG_TARGET_APP_LOGIC, "TelemetryService::init telemetry collection is disabled. Dropping event.");
                             continue;
                         }
                         let anon_id = ConfigCore::content().await.anon_id().clone();
@@ -139,18 +138,18 @@ impl TelemetryService {
                             telemetry_api_url.clone(),
                             system_info.clone(),
                             anon_id.clone(),
-                            in_memory_config_cloned_2 .clone()).await.inspect_err(|e| warn!(target: LOG_TARGET,"Could not send telemetry data. Error: {:?}", e));
+                            in_memory_config_cloned_2 .clone()).await.inspect_err(|e| warn!(target: LOG_TARGET_APP_LOGIC,"Could not send telemetry data. Error: {:?}", e));
                         } else {
-                            warn!(target: LOG_TARGET,"TelemetryService::init telemetry data is None");
+                            warn!(target: LOG_TARGET_APP_LOGIC,"TelemetryService::init telemetry data is None");
                             break;
                         }
                         },
                         _ = shutdown_signal.wait() => {
-                            info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
+                            info!(target: LOG_TARGET_APP_LOGIC,"TelemetryService::init has been cancelled");
                             break;
                         }
                         _ = cancellation_token.cancelled() => {
-                            info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
+                            info!(target: LOG_TARGET_APP_LOGIC,"TelemetryService::init has been cancelled");
                             break;
                         }
                 }
@@ -169,7 +168,7 @@ impl TelemetryService {
             event_value,
         };
         if (self.tx_channel.send(data).await).is_err() {
-            warn!(target: LOG_TARGET,"TelemetryService::send_telemetry_data Telemetry data sending failed");
+            warn!(target: LOG_TARGET_APP_LOGIC,"TelemetryService::send_telemetry_data Telemetry data sending failed");
             return Err(TelemetryServiceError::Other(anyhow::anyhow!(
                 "Telemetry data sending failed"
             )));
@@ -233,7 +232,7 @@ async fn send_telemetry_data(
     let response = request_builder.send().await?;
 
     if response.status() == 429 {
-        warn!(target: LOG_TARGET,"TelemetryService::send_telemetry_data Telemetry data rate limited by http {:?}", response.status());
+        warn!(target: LOG_TARGET_APP_LOGIC,"TelemetryService::send_telemetry_data Telemetry data rate limited by http {:?}", response.status());
         return Ok(());
     }
 
@@ -249,7 +248,7 @@ async fn send_telemetry_data(
         .into());
     }
 
-    debug!(target: LOG_TARGET,"TelemetryService::send_telemetry_data Telemetry data sent");
+    debug!(target: LOG_TARGET_APP_LOGIC,"TelemetryService::send_telemetry_data Telemetry data sent");
 
     Ok(())
 }

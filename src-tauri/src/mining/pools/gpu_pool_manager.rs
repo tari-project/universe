@@ -46,9 +46,9 @@ use crate::{
     setup::setup_manager::SetupManager,
     systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
+    LOG_TARGET_APP_LOGIC,
 };
 
-static LOG_TARGET: &str = "tari::universe::mining::pools::gpu_pool_manager";
 static INSTANCE: LazyLock<GpuPoolManager> = LazyLock::new(GpuPoolManager::new);
 
 pub struct GpuPoolManager {
@@ -105,7 +105,7 @@ impl GpuPoolManager {
         let current_pool_content = ConfigPools::content().await.current_gpu_pool().clone();
 
         if !miner.is_pool_mining_supported() {
-            info!(target: LOG_TARGET, "New GPU miner type '{miner:?}' does not support pool mining, disabling GPU pool feature");
+            info!(target: LOG_TARGET_APP_LOGIC, "New GPU miner type '{miner:?}' does not support pool mining, disabling GPU pool feature");
             let _unused = SetupManager::get_instance()
                 .turn_off_gpu_pool_feature()
                 .await;
@@ -119,9 +119,9 @@ impl GpuPoolManager {
         }
 
         if miner.is_pool_supported(&current_pool_content.pool_type) {
-            info!(target: LOG_TARGET, "Current selected GPU pool '{}' supports the new miner type '{miner:?}', no pool switch needed", current_pool_content.pool_name);
+            info!(target: LOG_TARGET_APP_LOGIC, "Current selected GPU pool '{}' supports the new miner type '{miner:?}', no pool switch needed", current_pool_content.pool_name);
         } else {
-            info!(target: LOG_TARGET, "Current selected GPU pool '{}' does not support the new miner type '{miner:?}', switching to default pool for that miner", current_pool_content.pool_name);
+            info!(target: LOG_TARGET_APP_LOGIC, "Current selected GPU pool '{}' does not support the new miner type '{miner:?}', switching to default pool for that miner", current_pool_content.pool_name);
             if let Some(default_miner_pool) = miner.default_pool() {
                 // LolMiner or Graxil
                 let _unused = ConfigPools::update_field(
