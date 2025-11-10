@@ -43,7 +43,7 @@ keyring = { version = "3.0.5", features = [
   "linux-native-sync-persistent",
   "windows-native",
 ] }
-libsqlite3-sys = { version = "0.25.1", features = [
+libsqlite3-sys = { version = "0.30.1", features = [
   "bundled",
 ] } # Required for tari_wallet
 log = "0.4.22"
@@ -73,6 +73,7 @@ serde_cbor = "0.11.2"
 serde_json = "1"
 serde_yaml = "0.9.10"
 sha2 = "0.10.8"
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite"] }
 sys-locale = "0.3.1"
 sysinfo = "0.31.2"
 tar = "0.4.26"
@@ -82,6 +83,8 @@ tari_transaction_components = { git = "https://github.com/tari-project/tari.git"
 tari_crypto = "0.22.1"
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v5.1.0" }
 tari_utilities = "0.8.0"
+minotari-wallet = { package = "minotari", path = "/home/bartek/Desktop/web/tari/minotari-cli" }
+# minotari-wallet = { package = "minotari", git = "https://github.com/tari-project/minotari-cli.git", branch = "main" }
 tauri = { version = "2", features = [
   "protocol-asset",
   "isolation",
@@ -122,7 +125,7 @@ winreg = "0.52.0"
 # needed for keymanager. TODO: Find a way of creating a keymanager without bundling sqlite
 chrono = "0.4.38"
 device_query = "2.1.0"
-libsqlite3-sys = { version = "0.25.1", features = ["bundled"] }
+# libsqlite3-sys = { version = "0.25.1", features = ["bundled"] }
 log = "0.4.22"
 nvml-wrapper = "0.10.0"
 rand = "0.8.5"
