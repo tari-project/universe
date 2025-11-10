@@ -22,7 +22,7 @@
 
 use std::sync::{atomic::AtomicBool, Arc, LazyLock};
 
-use log::info;
+use log::{error, info};
 use tokio::{sync::Mutex, task::JoinHandle};
 
 use crate::{
@@ -138,21 +138,23 @@ impl BatteryStatus {
                     // Used spawn_blocking to handle non-Send battery operations
                     let last_battery_state_clone = Arc::clone(&last_battery_state);
                     let _unused = tokio::task::spawn_blocking(move || {
-                       let battery_manager = starship_battery::Manager::new().expect("Failed to create battery manager");
+                       let battery_manager = match starship_battery::Manager::new() {
+                           Err(e) => {error!(target: LOG_TARGET, "Error initializing Battery Manager : {}", e); return;},
+                           Ok(manager) => manager
+                       };
+
                        if battery_manager.batteries().is_ok_and(|batteries| batteries.count() == 0) {
                             tokio::spawn(Self::no_batteries_found_handler());
                             return;
                        };
-
                         // If all batteries are charging the execute charging handler
                         // If all batteries are discharging then execute discharging handler
                         let mut all_charging = true;
                         let mut all_discharging = true;
 
                         if let Ok(batteries) = battery_manager.batteries() {
-                            info!(target: LOG_TARGET, "Checking battery states: {:?}", batteries);
                             for battery in batteries.flatten() {
-                                    info!(target: LOG_TARGET, "Battery '{}' state: {:?}", battery.vendor().unwrap_or("Unknown"), battery.state());
+                                    info!(target: LOG_TARGET, "Checking battery states | Battery Vendor '{}' state: {:?}", battery.vendor().unwrap_or("Unknown"), battery.state());
                                     match battery.state() {
                                         starship_battery::State::Charging | starship_battery::State::Full => {
                                             all_discharging = false;
@@ -167,11 +169,11 @@ impl BatteryStatus {
                                 }
                         }
 
-                        info!(target: LOG_TARGET, "All batteries charging: {}, All batteries discharging: {}", all_charging, all_discharging);
-                        info!(target: LOG_TARGET, "Last known battery state: {:?}", *last_battery_state_clone.blocking_lock());
 
                         let mut state = last_battery_state_clone.blocking_lock();
-                        if all_charging && *state != starship_battery::State::Charging {
+
+
+                            if all_charging && *state != starship_battery::State::Charging {
                             tokio::spawn(Self::switched_to_charging_handler());
                             *state = starship_battery::State::Charging;
                         } else if all_discharging && *state != starship_battery::State::Discharging {
