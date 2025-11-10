@@ -1166,7 +1166,12 @@ impl EventScheduler {
                             ))
                         })?;
 
+                let copied_cron_schedule = cron_schedule.clone();
+                let copied_event_id = event_id.clone();
+
                 tokio::spawn(async move {
+                    let cron_schedule = copied_cron_schedule.clone();
+                    let event_id = copied_event_id.clone();
                     loop {
                         let local_now = Local::now();
 
@@ -1179,18 +1184,21 @@ impl EventScheduler {
                             break;
                         }
 
-                        let time_after_start_time = Local::now();
-
                         let _unused =
                             INSTANCE
                                 .message_sender
                                 .send(SchedulerMessage::TriggerEnterCallback {
                                     event_id: event_id.clone(),
                                 });
-
+                    }
+                });
+                tokio::spawn(async move {
+                    let cron_schedule = cron_schedule.clone();
+                    loop {
+                        let local_now = Local::now();
                         // Now wait until end time, eg. currently is 10AM and the range is 9AM - 11AM, then we wait until 11AM
                         if let Some(next_end_wait_time) =
-                            cron_schedule.find_next_end_wait_time(time_after_start_time)
+                            cron_schedule.find_next_end_wait_time(local_now)
                         {
                             sleep(next_end_wait_time).await;
                             let _unused = INSTANCE.message_sender.send(
