@@ -25,7 +25,11 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     const walletIsLoading = useWalletStore((s) => s.isLoading);
     const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
 
-    // TODO clean up
+    // Wallet is considered loading if any of these conditions are true:
+    // - Importing seed words
+    // - Scanning blockchain for transactions
+    // - Fetching transaction history
+    // - Other wallet operations in progress
     const walletLoading = walletImporting || walletScanning?.is_scanning || isFetching || walletIsLoading;
 
     useEffect(() => {

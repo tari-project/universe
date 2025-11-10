@@ -10,7 +10,9 @@ export function useHandleWsUserIdEvent() {
                 setFlareAnimationType('FriendAccepted');
                 break;
             case WebsocketEventNames.CREW_NUDGE:
-                // TODO: handle this
+                // Crew nudge notification - could be used to show a gentle reminder
+                // Currently just logging, can implement UI notification if needed
+                console.info('Crew nudge received');
                 break;
             case WebsocketEventNames.USER_SCORE_UPDATE:
                 if (event.data.userPoints) {
