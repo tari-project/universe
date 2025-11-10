@@ -154,34 +154,6 @@ impl ConfigDatabaseListener {
         .await
     }
 
-    /// Remove cached state for a specific table and account
-    pub async fn remove_cached_state(account_id: i64, table_name: &str) -> Result<(), Error> {
-        let key = Self::make_key(account_id, table_name);
-
-        Self::update_field(
-            |config, key: String| {
-                config.cached_states.remove(&key);
-                config.last_updated = SystemTime::now();
-                config
-            },
-            key,
-        )
-        .await
-    }
-
-    /// Clear all cached states
-    pub async fn clear_all_states() -> Result<(), Error> {
-        Self::update_field(
-            |config, _: ()| {
-                config.cached_states.clear();
-                config.last_updated = SystemTime::now();
-                config
-            },
-            (),
-        )
-        .await
-    }
-
     fn make_key(account_id: i64, table_name: &str) -> String {
         format!("{}:{}", account_id, table_name)
     }
