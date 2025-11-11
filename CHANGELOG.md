@@ -1,41 +1,8 @@
-🚀 TARI UNIVERSE v1.6.8: The Bountiful Harvest Part 2
-
-_December 16, 2025_
-
-Hey Tari fam,
-
-Quick bug fix release to smooth out a couple of rough edges from the last update.
-
-✨ WHAT'S FIXED
-
-- 🎁 **Airdrop claiming, streamlined** – We've refined the airdrop flow to make claiming your rewards clearer and more intuitive.
-- 🕰️ **Wallet scanning back up to speed** – Fixed a bug that was slowing down wallet scanning. Your balance and transactions should now refresh much faster.
-
-Thank you for your patience and all the helpful bug reports! 💜🐢
-
----
-
-🚀 TARI UNIVERSE v1.6.7: The Bountiful Harvest
-
-_December 2, 2025_
-
-Hey Tari fam,
-
-The big news: airdrop claiming is here! We've also fixed pause on battery mode for laptop users, improved the bridge, and made it easier to troubleshoot issues when they arise.
-
-✨ WHAT'S NEW & FIXED
-
-- 🎁 **Airdrop claiming** – The moment you've been waiting for! You can now claim your airdrop rewards directly in Tari Universe every month starting today! Click on the parachute icon to log in. The claiming interface walks you through the process with clear status updates and countdown timers for each installment. For Linux users, we created a step-by-step guide to [claiming on a Windows VM here](https://airdrop.tari.com/linux-faq).
-- 🔋 **Pause on battery mode** – Laptop users, we prematurely announced this in the last update but it wasn't quite ready. Tari Universe now automatically pauses mining when you switch from wall power to battery, so you won't drain your laptop battery. A helpful dialog explains what's happening, and mining resumes automatically when you plug back in. (Turn off in Settings if you prefer)
-- ⚙️ **Settings access during errors** – When something goes wrong and you see a critical error, you can now still access Settings. This means you can check your seed words or adjust settings even when the app hits a snag.
-- 📋 **Transaction details, simplified** – No more triple-clicking to reveal hidden fields! All transaction details are now visible immediately with a scrollbar for longer content.
-- 🎛️ **Mode selector fix** – Fixed the annoying bug where switching from Custom mode required selecting your new mode twice.
-
----
-
-🚀 TARI UNIVERSE v1.6.6: Seasons of Soon
+🚀 TARI UNIVERSE v1.6.7: Seasons of Soon
 
 _November 11, 2025_
+
+🔄 Rolling out via auto-update
 
 Hey Tari fam,
 
@@ -52,37 +19,6 @@ This release makes mining Tari more convenient than ever before! We've also fixe
 
 ---
 
-🚀 TARI UNIVERSE v1.6.5: The Invisible Garden - Part 3
-
-_October 23, 2025_
-
-Hey Tari fam,
-
-The big news: you can now pause mining for 2 hours, 8 hours, or until you manually restart. Plus we've made system tray more informative and fixed a bunch of setup issues.
-
-✨ WHAT'S NEW & FIXED
-
-- **Pause mining** – Need a break? Pause mining for 2 hours, 8 hours, or until manual restart. Mining auto-resumes when the time's up.
-- **Better system tray** – Share count now displays in the menu so you can track your progress without opening the app. The Tari icon now appears in your main taskbar for quick access.
-- **Smarter mining fallbacks** – If merge mining (solo) fails to start, the app automatically falls back to pool mining so you keep earning.
-- **More reliable setup** – GPU mining phase no longer times out during downloads (increased to 15 minutes). Binary extraction now retries with exponential backoff if antivirus briefly locks files.
-- **Tower animation fixes** – Fixed the issue where the tower animation would appear faded on startup when Visual Mode was disabled. Tower now properly displays and animates based on your settings.
-- **Better stats** – Fixed Kryptex threshold formatting. Improved hashrate display with proper decimals across all ranges.
-- **Under the hood** – Updated to Tari core v5.1.0, upgraded error tracking with new Sentry integration, updated dependencies, improved telemetry for better bug tracking.
-
----
-
-🚀 TARI UNIVERSE v1.6.4: The Invisible Garden — Part 2
-
-_October 20, 2025_
-
-Hey Tari fam,
-
-Quick hotfix! We've resolved the issue where pool rewards would stop updating in the app. If you thought you weren't earning, don't worry—you were! Your rewards were accumulating the whole time, they just weren't displaying properly.
-
-Everything should now update smoothly. Thanks for your patience! 💜🐜
-
----
 🚀 TARI UNIVERSE v1.6.3: The Invisible Garden
 
 _October 13, 2025_
