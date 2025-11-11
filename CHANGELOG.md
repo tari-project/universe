@@ -1,3 +1,24 @@
+🚀 TARI UNIVERSE v1.6.7: Seasons of Soon
+
+_November 11, 2025_
+
+🔄 Rolling out via auto-update
+
+Hey Tari fam,
+
+This release makes mining Tari more convenient than ever before! We've also fixed hashrate display issues, improved wallet balance updates, and improved handling of config files and error messages.
+
+✨ WHAT'S NEW & FIXED
+
+- 🔋 **Pause on battery mode** – Laptop users, this one's for you! Tari Universe now automatically pauses mining when you switch from being plugged in to battery, so you won't drain your laptop battery. As soon as you plug back in, mining resumes right where you left off. (Turn off in Settings)
+- ⏰ **Schedule your mining** – Take complete control of when Tari Universe mines. Set a custom schedule (and mode!) e.g., every night ludicrous from 9 PM to 6 AM. Mine during off-peak hours or when you're not using your computer.
+- 🪟 **System tray improvements** – You now have full control over how Tari Universe behaves when you close it. Choose to minimize to the system tray instead of fully exiting, keep mining in the background, and get a clear dialog explaining your options. On Windows, the taskbar icon now behaves like other tray apps for a cleaner experience.
+- 📊 **Accurate hashrate display** – Your CPU mining hashrate was showing inflated numbers because we were accidentally adding rather than averaging. Now you'll see the real hashrate that matches what mining pools report.
+- 💰 **Wallet balance updates instantly** – We've heard from many of you that available balance would get stuck at zero after sending transactions, sometimes for 40+ minutes.
+- 🔐 **Better PIN error feedback** – When you enter an incorrect PIN during the "Sync with Phone" flow, you'll now see a clear error message instead of wondering what went wrong.
+
+---
+
 🚀 TARI UNIVERSE v1.6.5: The Invisible Garden - Part 3
 
 _October 23, 2025_
