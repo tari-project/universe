@@ -10,7 +10,8 @@ import {
     SettingsGroupAction,
 } from '../../components/SettingsGroup.styles';
 import ConfirmationDialog from '@app/components/dialogs/ConfirmationDialog';
-import { setPreRelease, useConfigCoreStore } from '@app/store';
+import { setPreRelease } from '@app/store/actions/config/core.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 
 export default function PreReleaseSettings() {
     const { t } = useTranslation('settings', { useSuspense: false });

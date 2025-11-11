@@ -8,19 +8,19 @@ import {
     type BonusTier,
     type CommunityMessage,
     type Reward,
-    setAirdropTokensInConfig,
     type UserDetails,
     type UserEntryPoints,
     type UserPoints,
     useAirdropStore,
     useConfigBEInMemoryStore,
-    useConfigCoreStore,
     useUIStore,
     useWalletStore,
 } from '@app/store';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import type { XSpaceEvent } from '@app/types/ws.ts';
 import { invoke } from '@tauri-apps/api/core';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
+import { setAirdropTokensInConfig } from '@app/store/actions/config/core.ts';
 
 interface TokenResponse {
     exp: number;

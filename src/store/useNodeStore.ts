@@ -2,12 +2,7 @@ import { create } from 'zustand';
 import { BackgroundNodeSyncUpdatePayload } from '@app/types/events-payloads';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import { BaseNodeStatus } from '@app/types/app-status';
-
-export type NodeType = 'Local' | 'Remote' | 'RemoteUntilLocal' | 'LocalAfterRemote';
-export interface NodeIdentity {
-    public_key: string;
-    public_addresses: string[];
-}
+import { NodeIdentity, NodeType } from '@app/types/mining/node.ts';
 
 interface NodeStoreState {
     node_type?: NodeType;

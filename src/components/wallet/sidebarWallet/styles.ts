@@ -16,7 +16,7 @@ export const WalletWrapper = styled(m.div)`
 export const Wrapper = styled.div<{ $swapsPanel?: boolean; $listHidden?: boolean }>`
     border-radius: 20px;
     background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
-    padding: 11px;
+    padding: 10px;
     display: flex;
     position: relative;
     flex-direction: column;
@@ -25,11 +25,10 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $listHidden?: boolean
     overflow-y: auto;
     width: 100%;
     gap: 8px;
-    height: 545px;
+    //height: 545px;
 
     @media (max-height: 815px) {
-        height: 425px;
-        padding: 10px;
+        //height: 425px;
 
         ${({ $swapsPanel, $listHidden }) =>
             ($swapsPanel || $listHidden) &&

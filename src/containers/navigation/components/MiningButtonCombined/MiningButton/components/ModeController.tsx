@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { AnimatePresence, m } from 'motion/react';
 import { offset, useClick, useDismiss, useFloating, useInteractions, useRole } from '@floating-ui/react';
 import styled from 'styled-components';
-import ModeDropdown from './ModeDropdown/ModeDropdown.tsx';
 import EcoAlert from './tooltip/EcoAlert.tsx';
 import { useMiningStore } from '@app/store';
 import { setShowEcoAlert } from '@app/store/actions/miningStoreActions.ts';
 import { selectMiningMode } from '@app/store/actions/appConfigStoreActions.ts';
 import { invoke } from '@tauri-apps/api/core';
+import { MiningMode } from '@app/components/mode/MiningMode.tsx';
 
 const RefWrapper = styled.div``;
 
@@ -48,7 +48,7 @@ export default function ModeController() {
     return (
         <>
             <RefWrapper ref={refs.setReference}>
-                <ModeDropdown open={modesOpen} />
+                <MiningMode open={modesOpen} />
             </RefWrapper>
             <AnimatePresence initial={!showEcoAlert}>
                 {showEcoAlert && (

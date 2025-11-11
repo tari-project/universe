@@ -1,6 +1,10 @@
-import { useConfigCoreStore } from '@app/store';
-import { updateShutdownMode } from '@app/store/actions/appConfigStoreActions';
 import { useTranslation } from 'react-i18next';
+
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
+import { updateShutdownMode } from '@app/store/actions/config/core.ts';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
+import { Typography } from '@app/components/elements/Typography';
+import { ShutdownMode } from '@app/types/config/core.ts';
 import {
     SettingsGroup,
     SettingsGroupAction,
@@ -8,9 +12,6 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
-import { Typography } from '@app/components/elements/Typography';
-import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
-import { ShutdownMode } from '@app/types/configs';
 
 export const TaskTrayModeSettings = () => {
     const { t } = useTranslation('settings', { useSuspense: false });

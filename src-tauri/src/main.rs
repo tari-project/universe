@@ -589,8 +589,7 @@ fn main() {
             commands::mark_feedback_survey_as_completed,
             commands::update_shutdown_mode_selection,
             // Scheduler commands
-            commands::add_scheduler_in_event,
-            commands::add_scheduler_between_event,
+            commands::add_scheduler_event,
             commands::remove_scheduler_event,
             commands::pause_scheduler_event,
             commands::resume_scheduler_event,

@@ -1,16 +1,17 @@
+import { memo, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { ShutdownMode } from '@app/types/config/core.ts';
+import { useUIStore } from '@app/store/useUIStore';
+import { markShutdownModeAsSelected } from '@app/store/actions/appConfigStoreActions';
+import { setShowShutdownSelectionModal } from '@app/store/actions/uiStoreActions.ts';
+import { updateShutdownMode } from '@app/store/actions/config/core.ts';
+
+import { Checkbox } from '@app/components/elements/inputs/Checkbox';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Typography } from '@app/components/elements/Typography';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
-import { Checkbox } from '@app/components/elements/inputs/Checkbox';
-import { useUIStore } from '@app/store/useUIStore';
-import { updateShutdownMode, markShutdownModeAsSelected } from '@app/store/actions/appConfigStoreActions';
-
-import { memo, useCallback, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Wrapper, TextWrapper, ButtonSectionWrapper, ButtonsWrapper, CheckboxWrapper } from './styles.ts';
-import { setShowShutdownSelectionModal } from '@app/store/actions/uiStoreActions.ts';
-
-import { ShutdownMode } from '@app/types/configs.ts';
 
 const ShutdownSelectionDialog = memo(function CloseExperienceDialog() {
     const { t } = useTranslation(['components'], { useSuspense: false });

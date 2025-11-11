@@ -24,6 +24,7 @@ interface UIStoreState {
     showTapplet: boolean;
     isShuttingDown: boolean;
     seedlessUI: boolean;
+    setMiningModeAsSchedulerEventMode: boolean;
     showShutdownSelectionModal: boolean;
     showFeedbackExitSurveyModal: boolean;
 }
@@ -49,6 +50,7 @@ const initialState: UIStoreState = {
     showTapplet: false,
     isShuttingDown: false,
     seedlessUI: false,
+    setMiningModeAsSchedulerEventMode: false,
     showShutdownSelectionModal: false,
     showFeedbackExitSurveyModal: false,
 };

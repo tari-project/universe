@@ -17,7 +17,8 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../../components/SettingsGroup.styles.ts';
-import { setMonerodConfig, useConfigCoreStore } from '@app/store';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
+import { setMonerodConfig } from '@app/store/actions/config/core.ts';
 
 interface FormValues {
     use_monero_fail: boolean;
