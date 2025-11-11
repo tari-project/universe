@@ -1,4 +1,4 @@
-🚀 TARI UNIVERSE v1.6.7: Seasons of Soon
+🚀 TARI UNIVERSE v1.6.6: Seasons of Soon
 
 _November 11, 2025_
 
