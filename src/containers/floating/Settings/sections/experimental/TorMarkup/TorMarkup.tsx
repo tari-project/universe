@@ -23,7 +23,8 @@ import { TorDebug } from './TorDebug';
 import { ErrorTypography, StyledInput, TorSettingsContainer } from './TorMarkup.styles';
 
 import { type } from '@tauri-apps/plugin-os';
-import { setUseTor, useConfigCoreStore } from '@app/store';
+import { setUseTor } from '@app/store/actions/config/core.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 
 interface EditedTorConfig {
     // it's also string here to prevent an empty value

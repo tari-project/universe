@@ -3,8 +3,10 @@ import { useCallback, useState } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
-import { setAllowTelemetry, setAuthUuid, useAirdropStore, useConfigCoreStore } from '@app/store';
+import { setAuthUuid, useAirdropStore } from '@app/store';
 import useFetchAirdropToken from '../stateHelpers/useFetchAirdropToken.ts';
+import { setAllowTelemetry } from '@app/store/actions/config/core.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 
 export function useAirdropAuth() {
     const { isCopied, copyToClipboard } = useCopyToClipboard();

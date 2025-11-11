@@ -27,7 +27,8 @@ export default function MiningButton({
 }: Props) {
     const [showBg, setShowBg] = useState(false);
     const { t } = useTranslation('mining-view');
-    const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
+    const selectedMiningModeName = useConfigMiningStore((s) => s.selected_mining_mode);
+    const selectedMiningMode = useConfigMiningStore((s) => s.mining_modes[selectedMiningModeName]);
     const hasChip = !!resumeTime?.displayString;
 
     useEffect(() => {
