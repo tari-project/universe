@@ -1,22 +1,11 @@
-import { create } from './create';
-import { backgroundType } from './types.ts';
+import { create } from 'zustand';
 import { Theme } from '@app/theme/types.ts';
-
-const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
-type DialogTypeTuple = typeof _DIALOG_TYPES;
-export type DialogType = DialogTypeTuple[number] | null;
-
-const sideBarWidth = 348;
-const sideBarPaddingBuffer = 20;
-export const sidebarTowerOffset = sideBarWidth + sideBarPaddingBuffer;
-export const TOWER_CANVAS_ID = 'tower-canvas';
-
-export type AdminShow = 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
+import { AdminShow, CONNECTION_STATUS, DialogType, sidebarTowerOffset, SidebarType } from '@app/store/types/ui.ts';
 
 interface UIStoreState {
     theme: Theme;
     preferredTheme: Theme;
-    background: backgroundType;
+    currentSidebar: SidebarType;
     latestVersion?: string;
     sidebarOpen: boolean;
     showExperimental: boolean;
@@ -24,6 +13,20 @@ interface UIStoreState {
     dialogToShow?: DialogType;
     isWebglNotSupported: boolean;
     adminShow?: AdminShow;
+    connectionStatus?: CONNECTION_STATUS;
+    isReconnecting?: boolean;
+    shouldShowExchangeSpecificModal: boolean;
+    showSplashscreen: boolean;
+    hideWalletBalance: boolean;
+    showResumeAppModal: boolean;
+    towerSidebarOffset: number;
+    towerInitalized: boolean;
+    showTapplet: boolean;
+    isShuttingDown: boolean;
+    seedlessUI: boolean;
+    setMiningModeAsSchedulerEventMode: boolean;
+    showShutdownSelectionModal: boolean;
+    showFeedbackExitSurveyModal: boolean;
 }
 const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -31,11 +34,25 @@ const initialState: UIStoreState = {
     isWebglNotSupported: false,
     theme: preferredTheme,
     preferredTheme,
-    background: 'onboarding',
     sidebarOpen: false,
+    currentSidebar: 'mining',
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
+    connectionStatus: 'connected',
+    isReconnecting: false,
+    showSplashscreen: true,
+    hideWalletBalance: false,
+    showResumeAppModal: false,
+    shouldShowExchangeSpecificModal: false,
+    towerSidebarOffset: sidebarTowerOffset,
+    towerInitalized: false,
+    showTapplet: false,
+    isShuttingDown: false,
+    seedlessUI: false,
+    setMiningModeAsSchedulerEventMode: false,
+    showShutdownSelectionModal: false,
+    showFeedbackExitSurveyModal: false,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({

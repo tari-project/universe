@@ -1,32 +1,33 @@
-import { BoxWrapper, CloseButton, Cover, Wrapper } from './styles';
+import { BoxWrapper, CloseButton } from './styles';
 
 import CloseIcon from './icons/CloseIcon';
+import { ReactNode } from 'react';
+import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 
-interface Props {
+interface GreenModalProps {
     onClose: () => void;
-    children: React.ReactNode;
-    boxWidth?: number;
+    children: ReactNode;
     padding?: number;
+    showModal: boolean;
 }
 
-export default function GreenModal({ children, boxWidth, padding, onClose }: Props) {
+export default function GreenModal({ children, showModal, padding, onClose }: GreenModalProps) {
     return (
-        <Wrapper>
-            <BoxWrapper
-                $boxWidth={boxWidth}
-                $padding={padding}
-                initial={{ opacity: 0, y: '100px' }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-            >
-                <CloseButton onClick={onClose}>
-                    <CloseIcon />
-                </CloseButton>
+        <Dialog open={showModal} onOpenChange={onClose}>
+            <DialogContent variant="wrapper">
+                <BoxWrapper
+                    $padding={padding}
+                    initial={{ opacity: 0, y: '100px' }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                >
+                    <CloseButton onClick={onClose}>
+                        <CloseIcon />
+                    </CloseButton>
 
-                {children}
-            </BoxWrapper>
-
-            <Cover onClick={onClose} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
-        </Wrapper>
+                    {children}
+                </BoxWrapper>
+            </DialogContent>
+        </Dialog>
     );
 }

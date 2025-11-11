@@ -1,0 +1,11 @@
+{
+  "auto-reconnect": "再接続を試みています：",
+  "connect-now": "今すぐ接続",
+  "disconnect-severe-subtitle": "Tariネットワークへの接続を試み続けます。問題が続く場合は、マイナーを再起動するか、Telegramでサポートに連絡してください。",
+  "disconnect-severe-title": "接続に問題が発生しています",
+  "disconnect-subtitle": "ネットワークへの再接続を試みている間、しばらくお待ちください。",
+  "disconnect-title": "おっと、Tariネットワークに接続されていません",
+  "go-to-telegram": "Telegramでサポートを受ける",
+  "reconnect-in-progress": "再接続中...",
+  "restart-app": "Tari Universeを再起動"
+}

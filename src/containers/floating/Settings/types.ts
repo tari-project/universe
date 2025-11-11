@@ -3,7 +3,7 @@ export const SETTINGS_TYPES = [
     'airdrop',
     'wallet',
     'mining',
-    'p2p',
+    'pools',
     'connections',
     'experimental',
     'releaseNotes',

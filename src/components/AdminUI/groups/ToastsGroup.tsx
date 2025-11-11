@@ -1,47 +1,56 @@
-/* eslint-disable i18next/no-literal-string */
-import { Button, ButtonGroup, CategoryLabel } from '../styles';
+import { AdminButton, ButtonGroup } from '../styles';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 
 export function ToastsGroup() {
-    const showBasicToast = () => {
+    const showSuccessToast = () => {
         addToast({
-            title: 'Changes saved',
-            text: 'All your changes have been saved to the cloud',
+            type: 'success',
+            title: 'Success!',
+            text: 'This is a success toast message',
         });
     };
 
     const showErrorToast = () => {
         addToast({
-            title: 'Connection failed',
-            text: 'Please check your internet connection and try again',
             type: 'error',
+            title: 'Error!',
+            text: 'This is an error toast message',
         });
     };
 
     const showWarningToast = () => {
         addToast({
-            title: 'Session expiring soon',
-            text: 'Your session will expire in 5 minutes. Please save your work.',
             type: 'warning',
+            title: 'Warning!',
+            text: 'This is a warning toast message',
         });
     };
 
-    const showSuccessToast = () => {
+    const showInfoToast = () => {
         addToast({
-            title: 'Profile updated',
-            text: 'Your changes have been synced across all devices',
-            type: 'success',
+            type: 'info',
+            title: 'Info',
+            text: 'This is an info toast message',
+        });
+    };
+
+    const showDefaultToast = () => {
+        addToast({
+            title: 'Default Toast',
+            text: 'This is a default toast message with a much longer description to test how the toast component handles longer text content. It should wrap properly and maintain good readability while showing multiple lines of text.',
         });
     };
 
     return (
         <>
-            <CategoryLabel>Toasts</CategoryLabel>
             <ButtonGroup>
-                <Button onClick={showBasicToast}>Basic Toast</Button>
-                <Button onClick={showErrorToast}>Error Toast</Button>
-                <Button onClick={showWarningToast}>Warning Toast</Button>
-                <Button onClick={showSuccessToast}>Success Toast</Button>
+                <AdminButton onClick={showSuccessToast}>{`Success Toast`}</AdminButton>
+                <AdminButton onClick={showErrorToast}>{`Error Toast`}</AdminButton>
+                <AdminButton onClick={showWarningToast}>{`Warning Toast`}</AdminButton>
+            </ButtonGroup>
+            <ButtonGroup>
+                <AdminButton onClick={showInfoToast}>{`Info Toast`}</AdminButton>
+                <AdminButton onClick={showDefaultToast}>{`Default Toast`}</AdminButton>
             </ButtonGroup>
         </>
     );

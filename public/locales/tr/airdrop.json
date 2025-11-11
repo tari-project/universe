@@ -1,43 +1,112 @@
 {
   "airdropGame": "Airdrop Oyunu",
+  "auth": {
+    "url-error": "URL açılamadı",
+    "url-error-copy": "Panonuza kopyalandı, lütfen giriş yapmak için bağlantıyı doğrudan ziyaret edin"
+  },
   "bonus-gems-earned": "Bonus taşlar kazanıldı",
   "claimGems": "Taşları Talep Et",
   "claimModalFieldLabel": "İsteğe Bağlı",
   "claimModalFieldPlaceholder": "Referans kodunu girin",
   "claimModalFinePrint": "<strong>Lütfen dikkat:</strong> mücevher talep etmek, Universe\"i geliştirebilmemiz için analitiği etkinleştirir",
-  "claimModalText": "Testnet sırasında madencilik yaparak ve arkadaşlarınızı davet ederek airdrop ödülünüzü artırın! Bir referans kodunuz var mı? Aşağıya girin ve siz ve arkadaşınız için ek <strong>{{gems}}</strong> taş kazanın!",
+  "claimModalText": "Madencilik yaparak ve arkadaşlarınızı davet ederek bonus XTM kazanın.",
   "claimModalTitle": "Testnet\"te Madencilik Yaparak Ödüller Kazanın",
   "claimReferralCode": "Referans kodunuzu talep edin <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> taş.",
   "claimReferralGifts": "Referans kodunuzu talep edin ve {{gems}} taş kazanın. Hesabınızı bağladığınızda taşlarınız verilecektir.",
+  "copied": "Kopyalandı!",
+  "copyFailed": "Kopyalama Başarısız",
+  "copying": "Kopyalanıyor...",
+  "crewRewards": {
+    "actions": {
+      "claim": "{{amount}} XTM talep et",
+      "claimed": "Talep Edildi",
+      "nudge": "Hatırlatma"
+    },
+    "activeMinersStat": "Aktif Madenciler",
+    "bonusXTMEarned": "Kazanılan Bonus XTM",
+    "copied": "Kopyalandı!",
+    "crewStatus": {
+      "completed": "Tamamlandı",
+      "inProgress": "Devam Ediyor",
+      "needsNudge": "Hatırlatma Gerekiyor"
+    },
+    "earnDescription": "Arkadaşınızın madencilik yaptığı her <strong>{{daysRequired}} gün</strong> için <strong>{{userReward}} XTM</strong> kazanın. Arkadaşınız da <strong>{{friendReward}} XTM</strong> kazanacak.",
+    "errorLoadingData": "Ekip verileri yüklenirken hata oluştu. Lütfen tekrar deneyin.",
+    "feedback": {
+      "nudgeSent": "Hatırlatma gönderildi!",
+      "rewardClaimed": "Ödül talep edildi!"
+    },
+    "filters": {
+      "active": "Aktif",
+      "all": "Tümü",
+      "complete": "Tamamlandı",
+      "inactive": "Pasif"
+    },
+    "inviteFriends": "Arkadaşları Davet Et",
+    "inviteFriendsMessage": "Arkadaşlarınızı davet edin ve <strong>bonus XTM</strong> kazanmaya başlayın!",
+    "login": {
+      "bonusText": "Her davet için {{maxWeeks}} haftaya kadar bonus ödüller kazanın",
+      "description": "Siz ve arkadaşınız madencilik yaptığınızda <strong>{{userReward}} bonus XTM/hafta</strong> kazanırsınız VE arkadaşınız <strong>{{friendReward}} bonus XTM/hafta</strong> kazanır",
+      "loginButton": "Giriş Yap & Kazanmaya Başla!",
+      "title": "Arkadaşlarınızla madencilik yapın. <strong>Birlikte kazanın.</strong>"
+    },
+    "manageYourCrew": "Ekibinizi yönetin",
+    "myCrew": "Ekibim",
+    "of": "üzerinden",
+    "streak": {
+      "day": "Gün",
+      "dayStreak": "{{days}} Günlük Seri",
+      "daysToMinimum": "Minimum gereksinimleri karşılamak için {{days}} gün daha!",
+      "keepStreak": "Ödüller kazanmaya devam etmek için serinizi koruyun!",
+      "loadingStreak": "Seri yükleniyor...",
+      "mineConsecutiveDays": "Bonus XTM kazanmak için her hafta en az <strong>{{streakDaysRequired}} ardışık gün</strong> madencilik yapın.",
+      "minimumRequirementsMet": "Minimum gereksinimleri karşıladınız. Devam edin!",
+      "multiDayStreak": "{{days}} Günlük Seri",
+      "oneDayStreak": "1 Günlük Seri",
+      "startMiningMessage": "Serinizi başlatmak ve ödüller kazanmak için madenciliğe başlayın!",
+      "startYourStreak": "Serinizi Başlatın!",
+      "unlockBonusRewards": "Bonus ödüllerinizi açın"
+    },
+    "title": "Ödüller"
+  },
   "doLater": "Bunu daha sonra yapacağım",
-  "giftReferralCode": "Tari Universe\"e davet ettiğiniz her arkadaş için {{gems}} taş kazanın. Onlar hesaplarını bağladığında taşlarınız verilecektir.",
+  "earnBonusXTM": "Bonus XTM",
+  "gems": "Taşlar",
+  "giftReferralCode": "Tari Universe'e davet ettiğiniz her arkadaş için bonus XTM kazanın. Hesaplarını bağlayıp madenciliğe başladıklarında ödül kazanmaya başlayacaksınız.",
   "giftReferralCodeHeader": "Referans kodunuzu talep edin <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> taş.",
+  "invite": "Davet Et",
+  "invite-friends-gems": "Davet bağlantınızı kullanan her arkadaşınız için bonus XTM kazanırsınız.",
   "inviteFriends": "Arkadaşları Davet Et",
   "inviteFriendsText": "Bağlantıyı kopyalayın ve paylaşın",
   "invitedAmount": "<span>{{count}}</span> arkadaş davet ettiniz",
-  "keep-mining-to-earn-rewards": "Daha fazla ödül kazanmak için madenciliğe devam edin!",
+  "joinAirdrop": "Airdrop\"a Katıl",
+  "joinAirdropButtonAriaLabel": "Airdrop\"a katıl ve taş kazan. Bağlantıyı kopyalamak için sağ tıklayın",
+  "keep-mining-to-earn-rewards": "Daha fazla XTM ödülü kazanmak için madenciliğe devam edin!",
   "linkCopied": "Bağlantı kopyalandı!",
+  "live": "canlı",
   "logged-in-as": "<strong>@{{twitter}}</strong> olarak giriş yapıldı",
+  "loggedInTitle": "Airdrop Ödülleri",
+  "loggedOutTitle": "Mücevher Kazanmak İçin Arkadaşlarını Davet Et",
   "loginButton": "Mücevherleri talep etmek için giriş yapın",
   "logout": "Çıkış",
   "nextTierBonus": "<strong>{{count}} arkadaş</strong> davet et ve {{bonusGems}} bonus taş kazan",
-  "update-username": "Kullanıcı adını güncelle",
-  "permission": {
-    "setup": "Tari Universe, deneyiminizi <strong>iyileştirmek</strong> için analizleri kullanmak istiyor.",
-    "text": "Tari Universe, deneyiminizi iyileştirmek ve sizi madencilik için mücevherlerle ödüllendirmek için analizleri kullanmak istiyor.",
-    "title": "Mücevherler kazanın ve Tari Universe'ü daha iyi hale getirin"
-  },
   "permissionNoGems": {
     "text": "Tari Universe, deneyiminizi iyileştirmek için analizleri kullanmak ister.",
     "title": "Tari Universe'ü daha iyi hale getirin"
   },
+  "push-notifications": {
+    "text": "Tari Universe, bağlı cihazlarınıza bildirim göndermek istiyor",
+    "title": "Tari Universe\"ün bildirim göndermesine izin ver"
+  },
   "referral": "Arkadaşlarını davet et",
-  "topTooltipText": "Mücevher toplayarak bir Tari Airdrop kazanın. Ne kadar çok mücevher kazanırsanız, airdrop\"unuz o kadar büyük olur.",
+  "rightClickToCopy": "Bağlantıyı kopyalamak için sağ tıklayın",
+  "success": "Başarılı",
+  "topTooltipText": "Arkadaşlarınızı davet ederek bonus XTM kazanın.",
   "topTooltipTitle": "Testnet Ödülleri",
   "unclaimedGems": "Talep Edilmemiş Taşlar",
+  "update-username": "Kullanıcı adını güncelle",
+  "username-error": "Kullanıcı adı 3-20 karakter olmalı ve sadece harf, rakam, alt çizgi veya tire içermelidir",
+  "username-update-success": "Kullanıcı adı başarıyla güncellendi",
   "you-reached-your-giftinh-goal": "Hediye verme hedefinize ulaştınız!",
-  "your-friend-accepted-gift": "Arkadaşlarınızdan biri hediyenizi kabul etti!",
-  "joinAirdrop": "Airdrop\"a Katıl",
-  "loggedInTitle": "Airdrop Ödülleri",
-  "loggedOutTitle": "Maden Kaz ve Arkadaşlarını Davet Et, Taş Kazan"
+  "your-friend-accepted-gift": "Arkadaşlarınızdan biri hediyenizi kabul etti!"
 }

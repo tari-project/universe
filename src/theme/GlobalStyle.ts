@@ -1,4 +1,5 @@
 import { createGlobalStyle } from 'styled-components';
+import { TOWER_CANVAS_ID } from '@app/store/types/ui.ts';
 
 export const GlobalReset = createGlobalStyle`
     *:focus {
@@ -18,8 +19,9 @@ export const GlobalReset = createGlobalStyle`
         font: inherit;
 
         &:focus-visible {
-            outline: 3px solid #c9eb00;
+            outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
             outline-offset: 2px;
+            transition: none;
         }
     }
 
@@ -42,8 +44,9 @@ export const GlobalReset = createGlobalStyle`
         }
 
         &:focus-visible {
-            outline: 3px solid #c9eb00;
+            outline: 2px solid ${({ theme }) => theme.palette.focusOutline};
             outline-offset: 2px;
+            transition: none;
         }
     }
 `;
@@ -65,6 +68,7 @@ export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
         width: 100%;
         box-sizing: border-box;
         position: relative;
+        overflow: hidden;
         transition:
                 color 0.2s ease,
                 background-color 0.2s ease,
@@ -80,6 +84,7 @@ export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
         font-weight: 400;
 
         color: ${({ theme }) => theme.palette.text.primary};
+        background-color: ${({ theme }) => theme.palette.background.main};
         
         * {
             box-sizing: border-box;
@@ -95,21 +100,17 @@ export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
 
     
     html {
-        background: ${({ theme }) => theme.palette.base};
+        background-color: ${({ theme }) => theme.palette.background.main};
     }
-    #tower-canvas {
+    #${TOWER_CANVAS_ID} {
         z-index: 0;
+        position: absolute;
         top: 0;
         left: 0;
         pointer-events: auto;
         width: 100vw;
         background: none;
+        transition: visibility .1s ease;
         visibility: ${({ $hideCanvas }) => (!$hideCanvas ? 'visible' : 'hidden')};
     }
-
-    #root {
-        z-index: 1;
-        pointer-events: none;
-    }
-
 `;

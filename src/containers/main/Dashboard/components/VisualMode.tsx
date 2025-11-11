@@ -1,9 +1,7 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { sidebarTowerOffset, TOWER_CANVAS_ID, useUIStore } from '@app/store/useUIStore';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch.tsx';
 import { Typography } from '@app/components/elements/Typography';
 import {
     SettingsGroup,
@@ -12,53 +10,23 @@ import {
     SettingsGroupAction,
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
-import { setVisualMode } from '@app/store';
-
-import { loadTowerAnimation, removeTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
+import { useConfigUIStore, useUIStore } from '@app/store';
+import { toggleVisualMode } from '@app/store/actions/uiStoreActions';
 
 const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
 }));
 
 function VisualMode() {
-    const visualMode = useAppConfigStore((s) => s.visual_mode);
-    const visualModeToggleLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
+    const visualMode = useConfigUIStore((s) => s.visual_mode);
+    const visualModeToggleLoading = useConfigUIStore((s) => s.visualModeToggleLoading);
     const isWebglNotSupported = useUIStore((s) => s.isWebglNotSupported);
     const { t } = useTranslation('settings', { useSuspense: false });
 
-    const handleDisable = useCallback(() => {
-        setVisualMode(false);
-        removeTowerAnimation({ canvasId: TOWER_CANVAS_ID })
-            .then(() => {
-                // Force garbage collection to clean up WebGL context
-                if (window.gc) {
-                    window.gc();
-                }
-            })
-            .catch((e) => {
-                console.error('Could not disable visual mode. Error at loadTowerAnimation:', e);
-                setVisualMode(true);
-            });
-    }, []);
-    const handleEnable = useCallback(() => {
-        loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset })
-            .then(() => {
-                setVisualMode(true);
-                setAnimationState('showVisual');
-            })
-            .catch((e) => {
-                console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
-                setVisualMode(false);
-            });
-    }, []);
-
     const handleSwitch = useCallback(() => {
-        if (visualMode) {
-            handleDisable();
-        } else {
-            handleEnable();
-        }
-    }, [handleDisable, handleEnable, visualMode]);
+        if (visualModeToggleLoading) return;
+        toggleVisualMode(!visualMode);
+    }, [visualMode, visualModeToggleLoading]);
 
     return (
         <SettingsGroupWrapper>
@@ -71,9 +39,10 @@ function VisualMode() {
                 </SettingsGroupContent>
                 <SettingsGroupAction style={{ alignItems: 'center' }}>
                     <ToggleSwitch
-                        disabled={visualModeToggleLoading || isWebglNotSupported}
+                        disabled={isWebglNotSupported}
                         checked={visualMode}
-                        onChange={() => handleSwitch()}
+                        onChange={handleSwitch}
+                        isLoading={visualModeToggleLoading}
                     />
                 </SettingsGroupAction>
             </SettingsGroup>

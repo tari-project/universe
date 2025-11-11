@@ -33,8 +33,7 @@ pub fn setup_logging(config_file: &Path, base_path: &Path, default: &str) -> Res
         if let Some(d) = config_file.parent() {
             fs::create_dir_all(d).map_err(|e| {
                 Error::msg(format!(
-                    "Could not create parent directory for log file: {:?}",
-                    e
+                    "Could not create parent directory for log file: {e:?}"
                 ))
             })?;
         };
@@ -50,9 +49,9 @@ pub fn setup_logging(config_file: &Path, base_path: &Path, default: &str) -> Res
 
     let contents = contents.replace("{{log_dir}}", &replace_str);
     let mut file = File::create(config_file)
-        .map_err(|e| Error::msg(format!("Could not create default log file: {}", e)))?;
+        .map_err(|e| Error::msg(format!("Could not create default log file: {e}")))?;
 
     file.write_all(contents.as_bytes())
-        .map_err(|e| Error::msg(format!("Could not write to file: {}", e)))?;
+        .map_err(|e| Error::msg(format!("Could not write to file: {e}")))?;
     Ok(contents)
 }

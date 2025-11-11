@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
+import { setAllowTelemetry } from '@app/store/actions/config/core.ts';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import {
     SettingsGroup,
@@ -10,11 +11,10 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { setAllowTelemetry } from '@app/store/actions/appConfigStoreActions.ts';
 
 export default function AirdropPermissionSettings() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
+    const allowTelemetry = useConfigCoreStore((s) => s.allow_telemetry);
 
     const handleChange = useCallback(async () => {
         await setAllowTelemetry(!allowTelemetry);
@@ -25,9 +25,9 @@ export default function AirdropPermissionSettings() {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Typography variant="h6">{t('permission.title')}</Typography>
+                        <Typography variant="h6">{`${t('permissionNoGems.title')}?`}</Typography>
                     </SettingsGroupTitle>
-                    <Typography>{t('permission.text')}</Typography>
+                    <Typography>{t('permissionNoGems.text')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch checked={allowTelemetry} onChange={handleChange} />

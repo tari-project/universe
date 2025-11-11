@@ -1,13 +1,18 @@
-import { useEffect } from 'react';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
-import { AirdropTokens, setAirdropTokens, setAuthUuid, setFlareAnimationType, useAirdropStore } from '@app/store';
+import {
+    type AirdropTokens,
+    setAirdropTokens,
+    setAuthUuid,
+    setFlareAnimationType,
+    useAirdropStore,
+    useConfigBEInMemoryStore,
+} from '@app/store';
 import { fetchAllUserData } from '@app/store/actions/airdropStoreActions.ts';
+import { useEffect } from 'react';
 
 export default function useFetchAirdropToken({ canListen = false }: { canListen?: boolean }) {
-    const { authUuid, apiUrl } = useAirdropStore((s) => ({
-        authUuid: s.authUuid,
-        apiUrl: s.backendInMemoryConfig?.airdropApiUrl,
-    }));
+    const apiUrl = useConfigBEInMemoryStore((s) => s.airdrop_api_url);
+    const authUuid = useAirdropStore((s) => s.authUuid);
 
     useEffect(() => {
         if (!canListen) return;
@@ -21,6 +26,7 @@ export default function useFetchAirdropToken({ canListen = false }: { canListen?
                             headers: {
                                 'Content-Type': 'application/json',
                             },
+                            publicRequest: true,
                         });
 
                         if (tokenResponse) {

@@ -1,6 +1,12 @@
 {
   "common": {
+    "all-done": "Vous avez terminé !",
     "got-it": "Compris"
+  },
+  "complete": {
+    "continue": "Continuer vers Tari Universe",
+    "happy-mining": "Bon minage !",
+    "secured": "Votre portefeuille est maintenant sauvegardé en toute sécurité—bravo !\nVos jetons Tari sont en sécurité et prêts à être utilisés quand vous en avez besoin, même si vous changez ou perdez votre appareil."
   },
   "completedTip": {
     "text": "Votre phrase de récupération peut être retrouvée dans vos paramètres",
@@ -8,27 +14,43 @@
   },
   "intro": {
     "balance": "Votre portefeuille contient <span>{{balance}}</span> XTM",
-    "button": "Sauvegarder la phrase de récupération",
+    "button": "Sécuriser mon portefeuille",
+    "subtitle": "Vous avez maintenant vos premiers jetons Tari. Protégeons rapidement votre portefeuille en deux étapes faciles.",
     "text": "Tari Universe configure automatiquement un portefeuille pour vous lorsque vous commencez à miner. Assurez-vous d\"avoir toujours accès à votre portefeuille en stockant votre phrase de récupération en lieu sûr.",
-    "title": "Protégez vos tokens en sauvegardant votre phrase de récupération",
-    "warning": "❗ Fortement recommandé"
+    "title": "Sécurisons votre portefeuille.",
+    "warning": "Fortement recommandé"
   },
   "reminderTip": {
     "text": "Il est fortement recommandé de sauvegarder votre phrase de récupération pour votre portefeuille unique",
     "title": "Sauvegardez rapidement votre phrase de récupération dans les paramètres"
   },
   "seedPhrase": {
-    "button": "VÉRIFIER LA PHRASE DE RÉCUPÉRATION",
+    "button": "Vérifier la phrase de récupération",
     "checkbox": "Je comprends que si je perds ma phrase de récupération, je ne pourrai pas restaurer mon portefeuille.",
     "copied": "Copié !",
     "copy": "Copier dans le presse-papiers",
     "text": "Vous aurez besoin de ce code pour restaurer votre portefeuille.",
     "title": "Notez votre phrase de récupération et conservez-la en lieu sûr"
   },
+  "skip": "Passer pour l\"instant",
+  "steps": {
+    "chip": "Étape {{step}} sur {{total}}",
+    "complete-false": "Incomplet",
+    "complete-true": "Complet",
+    "step": "Étape {{stepNumber}}",
+    "subtitle-pin": "Empêche l\"accès non autorisé au portefeuille",
+    "subtitle-seeds": "Assure que vous pouvez récupérer vos fonds si vous perdez votre appareil",
+    "title-pin": "Définir un PIN sécurisé",
+    "title-seeds": "Sauvegardez votre phrase de récupération"
+  },
   "verifySeed": {
-    "button": "CONFIRMER LA PHRASE DE RÉCUPÉRATION",
+    "button": "Confirmer la phrase de récupération",
     "placeholder": "Cliquez sur les mots ci-dessous dans le bon ordre",
     "text": "Pour vous assurer que vous avez bien noté votre phrase de récupération, veuillez sélectionner les mots dans le bon ordre.",
     "title": "Vérifiez votre phrase de récupération"
+  },
+  "warning": {
+    "steps": "Étapes",
+    "title": "Sécurisez votre portefeuille"
   }
 }

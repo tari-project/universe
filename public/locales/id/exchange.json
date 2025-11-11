@@ -1,0 +1,13 @@
+{
+  "earn": "Dapatkan hingga {{amount}}% dalam bonus XTM",
+  "help-find-address": "Bantu saya menemukan alamat {{ exchange }} saya",
+  "main-logo-title": "Musim\nSatu",
+  "paste-from-clipboard": "Tempel dari clipboard",
+  "season-one-reward": "Bonus musim satu",
+  "select": {
+    "modal-title": "Mulai menambang Tari (XTM) langsung ke dompet Anda di bursa yang didukung"
+  },
+  "selected-exchange-miner": "Anda menambang di sini",
+  "time-left": "Waktu tersisa",
+  "wallet-address": "Alamat Dompet"
+}

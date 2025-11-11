@@ -21,40 +21,187 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use serde::Serialize;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
+};
 
-use crate::gpu_status_file::GpuDevice;
+use crate::{
+    internal_wallet::TariAddressType,
+    mining::gpu::miners::GpuCommonInformation,
+    node::{node_adapter::NodeIdentity, node_manager::NodeType},
+    setup::{listeners::AppModule, setup_manager::SetupPhase},
+    wallet::wallet_types::TransactionInfo,
+};
 
-#[derive(Debug, Serialize, Clone)]
-pub struct SetupStatusEvent {
-    pub event_type: String,
+#[derive(Clone, Debug, Serialize)]
+pub enum EventType {
+    WalletBalanceUpdate,
+    BaseNodeUpdate,
+    GpuDevicesUpdate,
+    CpuPoolsStatsUpdate,
+    GpuPoolsStatsUpdate,
+    CpuMiningUpdate,
+    GpuMiningUpdate,
+    NewBlockHeight,
+    CloseSplashscreen,
+    DetectedDevices,
+    DetectedAvailableGpuEngines,
+    RestartingPhases,
+    AskForRestart,
+    ShowReleaseNotes,
+    CriticalProblem,
+    #[cfg(target_os = "windows")]
+    SystemDependenciesLoaded,
+    StuckOnOrphanChain,
+    NetworkStatus,
+    NodeTypeUpdate,
+    ConfigCoreLoaded,
+    ConfigUILoaded,
+    ConfigWalletLoaded,
+    ConfigMiningLoaded,
+    ConfigPoolsLoaded,
+    BackgroundNodeSyncUpdate,
+    InitWalletScanningProgress,
+    ConnectionStatus,
+    ExchangeIdChanged,
+    DisabledPhases,
+    ShouldShowExchangeMinerModal,
+    SelectedTariAddressChanged,
+    WalletUIModeChanged,
+    #[cfg(target_os = "macos")]
+    ShowKeyringDialog,
+    CreatePin,
+    EnterPin,
+    UpdateGpuDevicesSettings,
+    PinLocked,
+    SeedBackedUp,
+    SetupProgressUpdate,
+    UpdateTorEntryGuards,
+    UpdateAppModuleStatus,
+    UpdateSelectedMiner,
+    AvailableMiners,
+    WalletStatusUpdate,
+    UpdateCpuMinerControlsState,
+    UpdateGpuMinerControlsState,
+    OpenSettings,
+    ShowEcoAlert,
+    // Shutdown
+    ShutdownModeSelectionRequested,
+    FeedbackSurveyRequested,
+    ShuttingDown,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct UpdateAppModuleStatusPayload {
+    pub module: AppModule,
+    pub status: String,
+    pub error_messages: HashMap<SetupPhase, String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct ProgressTrackerUpdatePayload {
+    pub phase_title: String,
     pub title: String,
-    pub title_params: Option<HashMap<String, String>>,
     pub progress: f64,
+    pub title_params: Option<HashMap<String, String>>,
+    pub setup_phase: SetupPhase,
+    pub is_completed: bool,
+}
+
+impl Hash for ProgressTrackerUpdatePayload {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.title.hash(state);
+        self.progress.to_bits().hash(state);
+        if let Some(params) = &self.title_params {
+            params.hasher();
+        }
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct NetworkStatusPayload {
+    pub download_speed: f64,
+    pub upload_speed: f64,
+    pub latency: f64,
+    pub is_too_low: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct DetectedAvailableGpuEnginesPayload {
+    pub engines: Vec<String>,
+    pub selected_engine: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct DetectedDevicesPayload {
+    pub devices: Vec<GpuCommonInformation>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Event<T, E> {
+    pub event_type: E,
+    pub payload: T,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct NewBlockHeightPayload {
+    pub block_height: u64,
+    pub coinbase_transaction: Option<TransactionInfo>,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct ReleaseNotesHandlerEvent {
+pub struct ShowReleaseNotesPayload {
     pub release_notes: String,
     pub is_app_update_available: bool,
     pub should_show_dialog: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct ResumingAllProcessesPayload {
-    pub title: String,
-    pub stage_progress: u32,
-    pub stage_total: u32,
-    pub is_resuming: bool,
+pub struct CriticalProblemPayload {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub error_message: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct DetectedAvailableGpuEngines {
-    pub engines: Vec<String>,
-    pub selected_engine: String,
+pub struct NodeTypeUpdatePayload {
+    pub node_type: Option<NodeType>,
+    pub node_identity: Option<NodeIdentity>,
+    pub node_connection_address: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct InitWalletScanningProgressPayload {
+    pub scanned_height: u64,
+    pub total_height: u64,
+    pub progress: f64,
+}
+
+// TODO: Bring back connection status callback, was removed with removing setup screen and related logic
+#[allow(dead_code)]
+#[derive(Serialize, Clone, Debug)]
+pub enum ConnectionStatusPayload {
+    InProgress,
+    Succeed,
+    #[allow(dead_code)]
+    Failed,
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct DetectedDevices {
-    pub devices: Vec<GpuDevice>,
+pub struct DisabledPhasesPayload {
+    pub disabled_phases: Vec<SetupPhase>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct TariAddressUpdatePayload {
+    pub tari_address_base58: String,
+    pub tari_address_emoji: String,
+    pub tari_address_type: TariAddressType,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct WalletStatusUpdatePayload {
+    pub loading: bool,
+    pub unhealthy: Option<bool>,
 }

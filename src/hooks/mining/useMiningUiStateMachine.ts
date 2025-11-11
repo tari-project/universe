@@ -1,48 +1,96 @@
-import { useEffect } from 'react';
-import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { setAnimationState, getCurrentAnimationState, getTowerLogPrefix } from '@tari-project/tari-tower';
 
-import { useAppStateStore } from '@app/store/appStateStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { useBlockchainVisualisationStore } from '@app/store';
+import { useConfigUIStore, useUIStore } from '@app/store';
 
 export const useUiMiningStateMachine = () => {
-    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
+    const [shouldStop, setShouldStop] = useState(false);
+    const [shouldStart, setShouldStart] = useState(false);
+    const isMiningInitiated = useMiningStore((s) => s.isCpuMiningInitiated || s.isGpuMiningInitiated);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status?.is_mining);
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status?.is_mining);
-    const isResuming = useAppStateStore((state) => state.appResumePayload?.is_resuming);
-    const setupComplete = useAppStateStore((s) => s.setupComplete);
-    const visualMode = useAppConfigStore((s) => s.visual_mode);
-    const visualModeLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
-    const blockTime = useBlockchainVisualisationStore((s) => s.displayBlockTime);
-
-    const stateTrigger = animationStatus;
+    const visualMode = useConfigUIStore((s) => s.visual_mode);
+    const visualModeLoading = useConfigUIStore((s) => s.visualModeToggleLoading);
+    const towerInitalized = useUIStore((s) => s.towerInitalized);
+    const preventStop = isMiningInitiated || isChangingMode;
     const isMining = cpuIsMining || gpuIsMining;
-    const blockTimeTrigger = Number(blockTime?.seconds) % 5 === 0;
+
+    const noVisualMode = !visualMode || visualModeLoading;
+
+    const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+
+    function clearStopTimeout() {
+        if (timeoutIdRef.current) {
+            clearTimeout(timeoutIdRef.current);
+            timeoutIdRef.current = null;
+        }
+    }
+
+    const forceAnimationStop = useCallback(() => {
+        let retryCount = 0;
+        const maxRetries = 15;
+        const interval = 1000;
+
+        if (shouldStart) return;
+
+        const attemptStop = () => {
+            const animationStatus = getCurrentAnimationState();
+            if (animationStatus === 'NOT_STARTED') {
+                console.info(getTowerLogPrefix('info'), `Animation stopped: status=${animationStatus}`);
+                return;
+            }
+
+            if (retryCount >= maxRetries) {
+                console.info(
+                    getTowerLogPrefix('warn'),
+                    `Animation Stop failed after ${maxRetries} retries: status=${animationStatus}`
+                );
+                return;
+            }
+
+            setAnimationState('stop');
+            retryCount++;
+
+            timeoutIdRef.current = setTimeout(() => {
+                attemptStop();
+            }, interval);
+        };
+
+        timeoutIdRef.current = setTimeout(() => {
+            attemptStop();
+        }, interval);
+
+        return () => {
+            clearStopTimeout();
+        };
+    }, [shouldStart]);
 
     useEffect(() => {
-        if (!visualMode || visualModeLoading) return;
+        const state = getCurrentAnimationState();
+        const notStarted = state === 'NOT_STARTED';
+        if (isMining) {
+            setShouldStart(isMining && notStarted);
+        } else {
+            setShouldStop(!notStarted && !preventStop);
+        }
+    }, [isMining, preventStop]);
 
-        const notStarted = stateTrigger === 'not-started';
-        const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
-        const shouldStop = !isMining && !notStarted && !preventStop;
-        const shouldStartAnimation = isMining && notStarted && !isResuming;
+    useEffect(() => {
+        if (noVisualMode || !towerInitalized) return;
+
         if (shouldStop) {
-            setAnimationState('stop');
-        } else if (shouldStartAnimation) {
+            forceAnimationStop();
+            return;
+        }
+        if (shouldStart) {
             setAnimationState('start');
         }
-    }, [
-        blockTimeTrigger, // do not remove - needed to re-trigger these checks since `animationStatus` takes a while to come back updated
-        isChangingMode,
-        isMining,
-        isMiningInitiated,
-        isResuming,
-        setupComplete,
-        stateTrigger,
-        visualMode,
-        visualModeLoading,
-    ]);
+
+        return () => {
+            clearStopTimeout();
+        };
+    }, [towerInitalized, forceAnimationStop, noVisualMode, shouldStart, shouldStop]);
 };

@@ -1,12 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
-import { deepEqual } from '@app/utils/objectDeepEqual.ts';
-import { startMining } from './miningStoreActions.ts';
-import { useAppConfigStore } from '../useAppConfigStore.ts';
 import { useAppStateStore } from '../appStateStore.ts';
-import { setAnimationState } from '@tari-project/tari-tower';
-import { CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
+import { NetworkStatus, SystemDependency, SystemDependencyStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
-import { ResumingAllProcessesPayload } from '@app/hooks/app/useListenForAppResuming.ts';
+import { CriticalProblemPayload, SetupPhase, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
+import { setDialogToShow, useMiningStore, useUIStore } from '../index.ts';
+
+import { setIsReconnecting, setShowExternalDependenciesDialog, setShowResumeAppModal } from './uiStoreActions.ts';
+import { clearSetupProgress } from './setupStoreActions.ts';
 
 export const fetchApplicationsVersions = async () => {
     try {
@@ -33,20 +33,34 @@ export const fetchApplicationsVersionsWithRetry = async () => {
         }
     }
 };
-export const fetchExternalDependencies = async () => {
-    try {
-        const externalDependencies = await invoke('get_external_dependencies');
-        useAppStateStore.setState({ externalDependencies });
-    } catch (error) {
-        console.error('Error loading missing external dependencies', error);
+
+export const setIsStuckOnOrphanChain = (isStuckOnOrphanChain: boolean) =>
+    useAppStateStore.setState({ isStuckOnOrphanChain });
+export const loadSystemDependencies = (externalDependencies: SystemDependency[]) => {
+    // Show always dialog right away when there is vcredist dependency missing
+    // as it's required for the app to work properly
+    if (
+        externalDependencies.some(
+            (dep) => dep.status !== SystemDependencyStatus.Installed && dep.ui_info.display_name.includes('Visual C++')
+        )
+    ) {
+        setShowExternalDependenciesDialog(true);
+    }
+    useAppStateStore.setState({ systemDependencies: externalDependencies });
+};
+
+export const setCriticalError = (payload?: CriticalProblemPayload) =>
+    useAppStateStore.setState({ criticalError: payload });
+export const handleCriticalProblemEvent = (payload?: CriticalProblemPayload) => {
+    const connectionStatus = useUIStore.getState().connectionStatus;
+    if (connectionStatus === 'disconnected' || connectionStatus === 'disconnected-severe') {
+        // Assume reconnecting Failed
+        setIsReconnecting(false);
+    } else {
+        setCriticalProblem(payload);
     }
 };
-export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
-    useAppStateStore.setState({ externalDependencies });
-export const setAppResumePayload = (appResumePayload: ResumingAllProcessesPayload) =>
-    useAppStateStore.setState({ appResumePayload });
-export const setCriticalError = (criticalError: string | undefined) => useAppStateStore.setState({ criticalError });
-export const setCriticalProblem = (criticalProblem?: Partial<CriticalProblem>) =>
+export const setCriticalProblem = (criticalProblem?: Partial<CriticalProblemPayload>) =>
     useAppStateStore.setState({ criticalProblem });
 export const setError = (error: string | undefined, log = false) => {
     useAppStateStore.setState({ error });
@@ -60,38 +74,30 @@ export const setIsAppUpdateAvailable = (isAppUpdateAvailable: boolean) =>
 export const setIsSettingsOpen = (value: boolean) => useAppStateStore.setState({ isSettingsOpen: value });
 export const setIssueReference = (issueReference: string) => useAppStateStore.setState({ issueReference });
 export const setReleaseNotes = (releaseNotes: string) => useAppStateStore.setState({ releaseNotes });
-export const setSetupComplete = async () => {
-    // Proceed with auto mining when enabled
-    const mine_on_app_start = useAppConfigStore.getState().mine_on_app_start;
-    const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
-    const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
-    const visual_mode = useAppConfigStore.getState().visual_mode;
-    if (visual_mode) {
-        try {
-            setAnimationState('showVisual');
-        } catch (error) {
-            console.error('Failed to set animation state:', error);
-        }
-    }
-    if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-        await startMining();
-    }
-    useAppStateStore.setState({ setupComplete: true });
-};
-export const setSetupParams = (setupTitleParams: Record<string, string>) =>
-    useAppStateStore.setState((current) => {
-        const isEqual = deepEqual(current.setupTitleParams, setupTitleParams);
-        return { setupTitleParams: isEqual ? current.setupTitleParams : setupTitleParams };
-    });
-export const setSetupProgress = (setupProgress: number) => useAppStateStore.setState({ setupProgress });
-export const setSetupTitle = (setupTitle: string) => useAppStateStore.setState({ setupTitle });
-export const updateApplicationsVersions = async () => {
-    try {
-        await invoke('update_applications');
-        await fetchApplicationsVersions();
-    } catch (error) {
-        console.error('Error updating applications versions', error);
+
+export const setNetworkStatus = (networkStatus: NetworkStatus) => useAppStateStore.setState({ networkStatus });
+export const handleShowRelesaeNotes = (payload: ShowReleaseNotesPayload) => {
+    setReleaseNotes(payload.release_notes || '');
+    setIsAppUpdateAvailable(payload.is_app_update_available);
+    if (payload.should_show_dialog) {
+        setDialogToShow('releaseNotes');
     }
 };
 
-export const setNetworkStatus = (networkStatus: NetworkStatus) => useAppStateStore.setState({ networkStatus });
+export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
+    if (phasesToRestart.length === 0) {
+        return;
+    }
+
+    setDialogToShow(undefined);
+    setShowResumeAppModal(true);
+    useMiningStore.setState({ wasMineOnAppStartExecuted: false });
+
+    for (const phase of phasesToRestart) {
+        clearSetupProgress(phase);
+    }
+};
+
+export const handleSystrayAppShutdownRequested = () => {
+    useAppStateStore.setState({ isSystrayAppShutdownRequested: true });
+};

@@ -1,4 +1,4 @@
-# Tari Labs License
+# Tari Universe License
 
 **Enhanced Common Public Attribution License Version 1.0**
 

@@ -10,9 +10,12 @@
   "mining-schedules-description": "Zaplanuj swoją aktywność wydobywczą",
   "next-milestone": "Następny kamień milowy",
   "paper-wallet-button": "Synchronizuj z telefonem",
-  "paper-wallet-tooltip-message": "Śledź swoje XTM wszędzie, synchronizując portfel Universe z Tari Aurora.",
+  "paper-wallet-tooltip-message": "Śledź swoje XTM wszędzie, synchronizując portfel Universe z Tari Universe Mobile.",
   "paper-wallet-tooltip-title": "Synchronizuj z telefonem",
   "recent-wins": "Ostanie wygrane",
+  "reward": {
+    "stacked": "Zebrałeś"
+  },
   "rewards": "Nagrody",
   "setup-scheduler": "Ustawienia harmonogramu",
   "share": {

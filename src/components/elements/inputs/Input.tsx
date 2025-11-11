@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, ReactNode, useCallback, useState } from 'react';
+import { Ref, InputHTMLAttributes, ReactNode, useCallback, useState } from 'react';
 import { InputWrapper, StyledInput, StyledInputLabel } from './Input.styles.ts';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -6,9 +6,10 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     labelText?: string;
     endAdornment?: ReactNode;
     hasError?: boolean;
+    ref?: Ref<HTMLInputElement>;
 }
 
-export function Input({ labelText, endAdornment, hasError, ...props }: InputProps) {
+export const Input = ({ labelText, endAdornment, hasError, ref, ...props }: InputProps) => {
     const isNumber = props.type == 'number';
     const [value, setValue] = useState(isNumber ? 0 : '');
     const inputName = props.name || 'input-x';
@@ -35,9 +36,10 @@ export function Input({ labelText, endAdornment, hasError, ...props }: InputProp
                 onChange={handleChange}
                 value={value}
                 $hasError={hasError}
+                ref={ref}
                 {...props}
             />
             <div>{endAdornment}</div>
         </InputWrapper>
     );
-}
+};

@@ -1,4 +1,16 @@
 {
+  "banner": {
+    "body-copy": "Ağ önümüzdeki ~15 gün boyunca yerleşirken çatallar ve hash rate dalgalanmaları yaşayabilirsiniz.",
+    "body-copy-highlight": "Tari yepyeni!",
+    "is-live": "canlı"
+  },
+  "close-experience-dialog": {
+    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
+    "dont-ask-again": "Don't ask me again",
+    "exit-completely": "Exit Completely",
+    "run-in-background": "Run in Background",
+    "title": "Choose how to close Tari Universe"
+  },
   "field-error-message": {
     "integers-only": "Sadece Tamsayılara İzin Verilir",
     "invalid": "Alan geçersiz",
@@ -20,14 +32,19 @@
     "title": "Sürüm Notları"
   },
   "resume-app-modal": {
-    "title": "Tari Universe Devam Ediyor",
+    "finishing-resume": "Devam Etme Tamamlanıyor...",
     "resuming-all-processes": "Tüm işlemler devam ediyor...",
-    "resuming-tor": "Tor Devam Ediyor...",
+    "resuming-mm-proxy": "MM Proxy Devam Ediyor...",
     "resuming-node": "Düğüm Devam Ediyor...",
+    "resuming-tor": "Tor Devam Ediyor...",
     "resuming-wallet": "Cüzdan Devam Ediyor...",
     "syncing-node": "Düğüm Senkronize Ediliyor...",
-    "resuming-p2pool": "P2Pool Devam Ediyor...",
-    "resuming-mm-proxy": "MM Proxy Devam Ediyor...",
-    "finishing-resume": "Devam Etme Tamamlanıyor..."
+    "title": "Tari Universe Devam Ediyor"
+  },
+  "warmupDialog": {
+    "copy": "Bir iş kanıtı ağının doğuşu özeldir. İlk günlerde, ağın istikrar kazanması ve ritmini bulması için zamana ihtiyacı vardır. Buna \"ısınma aşaması\" diyoruz.\nTari ağının katkıda bulunanları ve erken destekçileri (borsalar ve altyapı ortakları gibi) ısınma aşamasının yaklaşık 15 gün sürmesini bekliyor. Bundan sonra, ağ daha istikrarlı bir duruma geçecektir.\nIsınma aşamasında bazı tuhaflıklar normaldir. Blok zamanı dalgalanmaları, geçici bağlantı kesilmeleri, senkronizasyon gecikmeleri veya ana zincire yeniden bağlanmanızı gerektiren kısa ömürlü çatallar görebilirsiniz.\nIsınma aşaması, madencilik yapmak için harika bir zamandır çünkü ödüller blok başına en yüksektir. Tari ağının ilk günlerinin sizin için ödüllendirici olmasını umuyoruz.\nOyunlar başlasın. Bloklar daima lehinize olsun!",
+    "subtitle": "Bu tam olarak ne anlama geliyor?",
+    "tag-line": "Tari Ana Ağına Hoş Geldiniz",
+    "title": "Isınma aşaması"
   }
 }

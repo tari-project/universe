@@ -1,9 +1,6 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api/core';
 
 import { Typography } from '@app/components/elements/Typography';
-import { useAppStateStore } from '@app/store/appStateStore';
 
 import {
     SettingsGroup,
@@ -11,26 +8,11 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../../components/SettingsGroup.styles.ts';
+import { useNodeStore } from '@app/store/useNodeStore.ts';
 
-export const TorDebug = ({ isMac }: { isMac?: boolean }) => {
+export const TorDebug = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const setupProgress = useAppStateStore((s) => s.setupProgress);
-    const [entryGuards, setEntryGuards] = useState<string[]>([]);
-
-    useEffect(() => {
-        if (!isMac) {
-            const fetchEntryGuards = async () => {
-                await invoke('get_tor_entry_guards').then((res) => {
-                    setEntryGuards(res.filter((e) => e.split(' ')[1] === 'up').map((e) => e.split(' ')[0]));
-                });
-            };
-
-            if (setupProgress >= 0.5) {
-                // Fetch entry guards after the tor is up
-                fetchEntryGuards();
-            }
-        }
-    }, [isMac, setupProgress]);
+    const torEntryGuards = useNodeStore((s) => s.tor_entry_guards);
 
     return (
         <SettingsGroupWrapper>
@@ -39,9 +21,9 @@ export const TorDebug = ({ isMac }: { isMac?: boolean }) => {
             </SettingsGroupTitle>
             <SettingsGroup>
                 <SettingsGroupContent style={{ fontSize: '11px' }}>
-                    {entryGuards?.length > 0 ? (
+                    {torEntryGuards?.length > 0 ? (
                         <ul>
-                            {entryGuards.map((eg) => (
+                            {torEntryGuards.map((eg) => (
                                 <li key={eg}>{eg}</li>
                             ))}
                         </ul>

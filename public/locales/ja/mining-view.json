@@ -1,21 +1,37 @@
 {
+  "bubbles": {
+    "active-miners": "アクティブなマイナー",
+    "ago": "前",
+    "block": "ブロック",
+    "got-rewarded": "報酬を受け取りました",
+    "miners": "マイナー",
+    "pool": "プール",
+    "solved": "解決済み",
+    "solving": "解決中"
+  },
   "connection-to-node-lost": "マイナーへの接続が失われました。マイナーが再接続するか、再起動するのをお待ちください。",
   "cpu-power": "CPUパワー",
   "current-block-time": "現在のブロック時間",
   "day": "day",
-  "estimated-day": "推定 tXTM/日",
+  "estimated-day": "推定 XTM/日",
   "estimated-earnings": "推定収益",
   "floor": "フロア",
   "gpu-power": "GPUパワー",
   "mining-button-text": {
-    "cancel-mining": "マイニングをキャンセル",
-    "changing-mode": "モードを変更中",
-    "pause-mining": "マイニングを一時停止",
-    "start-mining": "マイニングを開始",
-    "started-auto-mining": "自動マイニング開始",
-    "starting-mining": "マイニング開始",
-    "stop-mining": "マイニングを停止",
-    "waiting-for-idle": "アイドル待機中"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "マイニングを開始"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    },
+    "mode": "Mode",
+    "mode-long": "Miner Mode"
   },
   "orphan-chain-tooltip": {
     "heading": "試すべきこと:",
@@ -25,6 +41,28 @@
     "step_4": "Torブリッジを使用してみてください（設定で）",
     "step_5": "Torを無効にしてみてください（設定で）",
     "step_6": "アプリをリセットしてみてください（設定で）"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
+  },
+  "pool": {
+    "accepted_shares": "受け入れられたシェア",
+    "balance": "総収益",
+    "min_payout": "最低支払い額",
+    "unpaid": "未払い"
+  },
+  "schedule": {
+    "cta-save": "Save Schedule",
+    "cta-save-complete": "Saved!",
+    "current": "Your current schedule",
+    "mining-schedule": "Mining Schedule",
+    "mining-schedule-copy": "Set specific times to automatically start mining.",
+    "mining-schedule-setup": "Setup Mining Schedule",
+    "scheduled-to-mine": "Scheduled to mine at",
+    "scheduled-to-pause": "Scheduled to pause mining at",
+    "time-label-end": "Daily End Time",
+    "time-label-start": "Daily Start Time"
   },
   "you-earn-rewards-separately": "CPUとGPUのマイニングで別々に報酬を得ます",
   "you-won-block": "<span>ブロック #{{ blockHeight }}</span> の勝者です",

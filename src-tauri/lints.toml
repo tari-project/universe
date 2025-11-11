@@ -28,7 +28,6 @@ deny = [
   'clippy::inline_always',
   'let_underscore_drop',
   'clippy::let_unit_value',
-  'clippy::match_on_vec_items',
   'clippy::match_wild_err_arm',
   'clippy::needless_lifetimes',
   # In crypto code, it is fairly common to have similar names e.g. `owner_pk` and `owner_k`

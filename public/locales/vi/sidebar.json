@@ -1,0 +1,31 @@
+{
+  "auto-miner": "Đào tự động",
+  "auto-miner-description": "Đào tự động sẽ bật miner khi máy của bạn rảnh",
+  "block": "Block",
+  "hide-history": "Ẩn lịch sử",
+  "history-hide-button": "Ẩn lịch sử",
+  "history-show-button": "Lịch sử",
+  "lost-connection": "Mất kết nối với mạng Tari. Đang kết nối lại...",
+  "mining-schedules": "Lịch đào",
+  "mining-schedules-description": "Lên lịch hoạt động đào",
+  "next-milestone": "Cột mốc tiếp theo",
+  "paper-wallet-button": "Đồng bộ với điện thoại",
+  "paper-wallet-tooltip-message": "Theo dõi số dư XTM mọi nơi bằng cách đồng bộ Universe với Tari Universe Mobile.",
+  "paper-wallet-tooltip-title": "Đồng bộ với điện thoại",
+  "recent-wins": "Chiến thắng gần đây",
+  "reward": {
+    "stacked": "You stacked"
+  },
+  "rewards": "Phần thưởng",
+  "setup-scheduler": "Thiết lập lịch đào",
+  "share": {
+    "button-text": "KHOE & MỜI",
+    "copied": "Đã sao chép liên kết!",
+    "history-item-button": "Khoe & Mời",
+    "reward": "phần thưởng của tôi",
+    "title": "Tôi vừa đào được tari",
+    "winner-pill": "Người thắng block"
+  },
+  "show-history": "Hiện lịch sử",
+  "wallet-balance": "Số dư ví"
+}

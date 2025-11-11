@@ -1,0 +1,19 @@
+{
+  "version": "1.5.15",
+  "notes": "Tari Universe - See the assets to download this version and install",
+  "pub_date": "2025-09-04T15:51:00Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/b6165b35-0abb-4f40-b6ec-e8aeb629a401/1.5.15/Tari Universe-CoinEx.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGNONTFGYnRlNnVnSFh4Y0dzOHJMTUYxa3VvRXJkcEw3MG5xeWRpRk9EcnVZYjl6djNGaGd6QXdRdHV1c1l1cjljMklsNFJXOC8rR3VyWi9WV0RjQUFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU2OTk5Njg4CWZpbGU6VGFyaSBVbml2ZXJzZS1Db2luRXguYXBwLnRhci5negpFYWlZcmtjRmJZa1hpKzlBVzlKRG5CSEtUKzg0KzhxYnNuQ0VMRnFsL3U3bDhUb0hvem0vOVh4V2FyTnBoUHN4OHpZdytHemVETHZHLzRXUXkyQ3NBZz09Cg=="
+    },
+    "darwin-x86_64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/b6165b35-0abb-4f40-b6ec-e8aeb629a401/1.5.15/Tari Universe-CoinEx.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGNONTFGYnRlNnVnSFh4Y0dzOHJMTUYxa3VvRXJkcEw3MG5xeWRpRk9EcnVZYjl6djNGaGd6QXdRdHV1c1l1cjljMklsNFJXOC8rR3VyWi9WV0RjQUFVPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU2OTk5Njg4CWZpbGU6VGFyaSBVbml2ZXJzZS1Db2luRXguYXBwLnRhci5negpFYWlZcmtjRmJZa1hpKzlBVzlKRG5CSEtUKzg0KzhxYnNuQ0VMRnFsL3U3bDhUb0hvem0vOVh4V2FyTnBoUHN4OHpZdytHemVETHZHLzRXUXkyQ3NBZz09Cg=="
+    },
+    "windows-x86_64": {
+      "url": "https://cdn-universe.tari.com/tari-project/universe/exchanges/b6165b35-0abb-4f40-b6ec-e8aeb629a401/1.5.15/Tari Universe-CoinEx_1.5.15_x64_en-US.msi",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRbUtvKzlyYWhiOGQ2MUhpYjAyMUNhR29PaW42NFdmbTBEUEJsTnNjV01CdnIzTXhMeGFGcTVKMDNXZGNxQWVvRkJ1eVhzV3VRUjdxZjVaSWRFNnFIVS9vM0FqdFBnM2c0PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzU3MDAwMzIzCWZpbGU6VGFyaSBVbml2ZXJzZS1Db2luRXhfMS41LjE1X3g2NF9lbi1VUy5tc2kKcy9DUmRONmJQMjFIdnJicWJ3Z1pUV24yV1FyNTgzdjM4cElOZzZOaGQwc2RXUHlnNm1QWnVHQUtlcHdNc3FkNitkMGpvOStkbW1uaUtYTGFzY2JYQmc9PQo="
+    }
+  }
+}

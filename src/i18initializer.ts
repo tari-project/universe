@@ -16,6 +16,8 @@ export enum Language {
     RU = 'ru',
     FR = 'fr',
     DE = 'de', // German
+    VI = 'vi', // Vietnamese
+    PT_BR = 'pt-BR', // Brazilian Portuguese
 }
 
 // System can have various regional variations for language codes, so we resolve them
@@ -83,6 +85,13 @@ export const resolveI18nLanguage = (languageCode: string): Language => {
         case 'de-LI':
         case 'de-LU':
             return Language.DE;
+        case 'vi':
+        case 'vi-VN':
+            return Language.VI;
+        case 'pt':
+        case 'pt-BR':
+        case 'pt-PT':
+            return Language.PT_BR;
         default:
             return Language.EN;
     }
@@ -102,6 +111,8 @@ export const LanguageList: Record<Language, string> = {
     [Language.RU]: 'Русский', // Russian
     [Language.FR]: 'Français', // French
     [Language.DE]: 'Deutsch', // German
+    [Language.VI]: 'Tiếng Việt', // Vietnamese
+    [Language.PT_BR]: 'Português (Brasil)',
 };
 
 // Initialize i18n with new supported languages
@@ -109,6 +120,7 @@ i18n.use(HttpBackend)
     .use(LanguageDetector)
     .use(initReactI18next)
     .init({
+        // debug: process.env.NODE_ENV === 'development',
         lng: Language.EN,
         compatibilityJSON: 'v4',
         fallbackLng: Language.EN,
@@ -129,7 +141,13 @@ i18n.use(HttpBackend)
             Language.RU,
             Language.FR,
             Language.DE,
+            Language.VI,
+            Language.PT_BR,
         ],
         saveMissingTo: 'all',
         contextSeparator: '-',
+    })
+    .then(() => {
+        // eslint-disable-next-line no-console
+        console.log('i18n initialized');
     });

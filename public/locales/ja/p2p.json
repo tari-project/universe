@@ -1,4 +1,7 @@
 {
+  "connected-since": "接続開始",
+  "connections": "接続",
+  "established": "確立済み",
   "listener-addresses": "リスナーアドレス",
   "miners": "マイナー",
   "network-info": "ネットワーク情報",
@@ -7,8 +10,18 @@
   "p2pool-connection-info": "接続",
   "p2pool-connection-info-more": "接続の詳細",
   "p2pool-peers": "P2Pool ピア",
-  "p2pool-stats": "プールマイニングの統計",
+  "p2pool-stats": "P2pool統計",
+  "pending": "保留中",
   "randomx-stats": "RandomX 統計",
   "sha3-stats": "SHA3 統計",
+  "stats": {
+    "earned": "あなたは稼ぎました",
+    "tile-heading": "進行中の報酬",
+    "tile-heading-zero": "報酬は約30分後に開始",
+    "tile-disabled-heading": "{{unit}} は無効です",
+    "tile-loading": "プールが準備中です",
+    "tooltip-copy": "<strong>{{amount}}</strong>を最低限稼ぐまで「進行中」。支払いを送信してからウォレットの取引と残高に表示されるまでに遅延がある場合があります。",
+    "tooltip-tile-heading": "報酬のしきい値"
+  },
   "tribe": "トライブ"
 }

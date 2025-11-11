@@ -20,34 +20,48 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{future::Future, path::Path, pin::Pin, time::Duration};
+use std::{fs, future::Future, io::Write, path::Path, pin::Pin, time::Duration};
+
+use crate::process_adapter::ProcessStartupSpec;
 
 pub fn launch_child_process(
     file_path: &Path,
     current_dir: &Path,
     envs: Option<&std::collections::HashMap<String, String>>,
     args: &[String],
+    allow_output: bool,
 ) -> Result<tokio::process::Child, anyhow::Error> {
+    let stdout = if allow_output {
+        std::process::Stdio::piped()
+    } else {
+        std::process::Stdio::null()
+    };
+    let stderr = if allow_output {
+        std::process::Stdio::piped()
+    } else {
+        std::process::Stdio::null()
+    };
     #[cfg(not(target_os = "windows"))]
     {
         Ok(tokio::process::Command::new(file_path)
             .args(args)
             .current_dir(current_dir)
             .envs(envs.cloned().unwrap_or_default())
-            .stdout(std::process::Stdio::null()) // TODO: uncomment, only for testing
-            .stderr(std::process::Stdio::null()) // TODO: uncomment, only for testing
+            .stdout(stdout)
+            .stderr(stderr)
             .kill_on_drop(true)
             .spawn()?)
     }
     #[cfg(target_os = "windows")]
     {
         use crate::consts::PROCESS_CREATION_NO_WINDOW;
+
         Ok(tokio::process::Command::new(file_path)
             .args(args)
             .current_dir(current_dir)
             .envs(envs.cloned().unwrap_or_default())
-            .stdout(std::process::Stdio::null())
-            .stderr(std::process::Stdio::null())
+            .stdout(stdout)
+            .stderr(stderr)
             .kill_on_drop(true)
             .creation_flags(PROCESS_CREATION_NO_WINDOW)
             .spawn()?)
@@ -118,4 +132,14 @@ where
         "Max retries reached, {} failed without capturing error",
         operation_name
     ))
+}
+
+pub fn write_pid_file(spec: &ProcessStartupSpec, id: u32) -> Result<(), String> {
+    let mut file = fs::File::create(spec.data_dir.join(spec.pid_file_name.clone()))
+        .map_err(|e| format!("Failed to create PID file: {e}"))?;
+    file.write_all(id.to_string().as_bytes())
+        .map_err(|e| format!("Failed to write PID file: {e}"))?;
+    file.flush()
+        .map_err(|e| format!("Failed to flush PID file: {e}"))?;
+    Ok(())
 }

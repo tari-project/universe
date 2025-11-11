@@ -1,6 +1,12 @@
 {
   "common": {
+    "all-done": "Jy is klaar!",
     "got-it": "Verstaan"
+  },
+  "complete": {
+    "continue": "Gaan voort na Tari Universe",
+    "happy-mining": "Gelukkige mynbou!",
+    "secured": "Jou beursie is nou veilig gerugsteun—goeie werk!\nJou Tari tokens is veilig en gereed wanneer jy dit nodig het, selfs al verander of verloor jy jou toestel."
   },
   "completedTip": {
     "text": "Jou saadfrase kan weer in jou instellings gevind word",
@@ -8,9 +14,10 @@
   },
   "intro": {
     "balance": "Jou beursie het <span>{{balance}}</span> XTM",
-    "button": "Rugsteun saadfrase",
+    "button": "Beveilig my beursie",
+    "subtitle": "Jy het nou jou eerste Tari tokens. Kom ons beskerm vinnig jou beursie in twee maklike stappe.",
     "text": "Tari Universe stel outomaties \"n beursie vir jou op wanneer jy begin myn. Maak seker jy het altyd toegang tot jou beursie deur jou saadfrase op \"n veilige plek te stoor.",
-    "title": "Beskerm jou tokens deur jou saadfrase te rugsteun",
+    "title": "Kom ons beveilig jou beursie.",
     "warning": "Sterk aanbeveel"
   },
   "reminderTip": {
@@ -18,17 +25,32 @@
     "title": "Rugsteun vinnig jou saadfrase in instellings"
   },
   "seedPhrase": {
-    "button": "VERIFIEER SAADFRASE",
+    "button": "Verifieer saadfrase",
     "checkbox": "Ek verstaan dat as ek my herstel saadfrase verloor, ek nie my beursie sal kan herstel nie.",
     "copied": "Gekopieer!",
     "copy": "Kopieer na knipbord",
     "text": "Jy sal hierdie kode weer nodig hê om jou beursie te herstel.",
     "title": "Skryf jou saadfrase neer en stoor dit op \"n veilige plek"
   },
+  "skip": "Slaan oor vir nou",
+  "steps": {
+    "chip": "Stap {{step}} van {{total}}",
+    "complete-false": "Onvolledig",
+    "complete-true": "Voltooi",
+    "step": "Stap {{stepNumber}}",
+    "subtitle-pin": "Voorkom ongemagtigde beursietoegang",
+    "subtitle-seeds": "Verseker dat jy fondse kan herstel as jy jou toestel verloor",
+    "title-pin": "Stel \"n veilige PIN",
+    "title-seeds": "Rugsteun jou Saadfrase"
+  },
   "verifySeed": {
-    "button": "BEVESTIG SAADFRASE",
+    "button": "Bevestig saadfrase",
     "placeholder": "Klik die woorde hieronder in die korrekte volgorde",
     "text": "Om seker te maak jy het jou saadfrase korrek neergeskryf, kies asseblief die woorde in die korrekte volgorde.",
     "title": "Verifieer jou saadfrase"
+  },
+  "warning": {
+    "steps": "Stappe",
+    "title": "Beveilig jou beursie"
   }
 }

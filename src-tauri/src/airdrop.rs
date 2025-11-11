@@ -20,13 +20,27 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use anyhow::anyhow;
+use der::asn1::{BitString, ObjectIdentifier};
+use der::Encode;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
-use log::{info, warn};
+use log::{error, info, warn};
+use ring::signature::{Ed25519KeyPair, KeyPair};
+use ring_compat::pkcs8::spki::AlgorithmIdentifier;
+use ring_compat::pkcs8::SubjectPublicKeyInfo;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use tauri::{AppHandle, Manager};
 
-use crate::{mm_proxy_adapter::MergeMiningProxyConfig, UniverseAppState};
+use crate::{
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    tasks_tracker::TasksTrackers,
+    UniverseAppState,
+};
 
 const LOG_TARGET: &str = "tari::universe::airdrop";
+
+const AIRDROP_WEBSOCKET_CRYPTO_KEY: &str = env!("AIRDROP_WEBSOCKET_CRYPTO_KEY");
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AirdropAccessToken {
@@ -38,6 +52,14 @@ pub struct AirdropAccessToken {
     pub scope: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AirdropMinedBlockMessage {
+    pub wallet_view_key_hashed: String,
+    pub app_id: String,
+    pub block_height: u64,
+}
+
 pub fn decode_jwt_claims(t: &str) -> Option<AirdropAccessToken> {
     let key = DecodingKey::from_secret(&[]);
     let mut validation = Validation::new(Algorithm::HS256);
@@ -46,7 +68,7 @@ pub fn decode_jwt_claims(t: &str) -> Option<AirdropAccessToken> {
     match decode::<AirdropAccessToken>(t, &key, &validation) {
         Ok(data) => Some(data.claims),
         Err(e) => {
-            warn!(target: LOG_TARGET,"Error decoding access token: {:?}", e);
+            warn!(target: LOG_TARGET,"Error decoding access token: {e:?}");
             None
         }
     }
@@ -61,7 +83,7 @@ pub fn decode_jwt_claims_without_exp(t: &str) -> Option<AirdropAccessToken> {
     match decode::<AirdropAccessToken>(t, &key, &validation) {
         Ok(data) => Some(data.claims),
         Err(e) => {
-            warn!(target: LOG_TARGET,"Error decoding access token without exp: {:?}", e);
+            warn!(target: LOG_TARGET,"Error decoding access token without exp: {e:?}");
             None
         }
     }
@@ -90,29 +112,72 @@ pub async fn validate_jwt(airdrop_access_token: Option<String>) -> Option<String
     })
 }
 
-pub async fn restart_mm_proxy_with_new_telemetry_id(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    info!(target: LOG_TARGET, "Restarting mm_proxy");
-    let telemetry_id = state
-        .telemetry_manager
-        .read()
-        .await
-        .get_unique_string()
-        .await;
-    let mm_proxy_manager_config = state
-        .mm_proxy_manager
-        .config()
-        .await
-        .ok_or("mm proxy config could not be found")?;
-    let _unused = state
-        .mm_proxy_manager
-        .change_config(MergeMiningProxyConfig {
-            coinbase_extra: telemetry_id.clone(),
-            ..mm_proxy_manager_config
-        })
-        .await
-        .map_err(|e| e.to_string());
-    info!(target: LOG_TARGET, "mm_proxy restarted");
-    Ok(())
+pub async fn get_wallet_view_key_hashed(app: AppHandle) -> String {
+    let wallet_manager = app.state::<UniverseAppState>().wallet_manager.clone();
+    let view_private_key = wallet_manager.get_view_private_key().await;
+    hex::encode(Sha256::digest(view_private_key))
+}
+
+pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
+    TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
+        let app_in_config_memory = app.state::<UniverseAppState>().in_memory_config.clone();
+        let base_url = app_in_config_memory.read().await.airdrop_api_url.clone();
+        drop(app_in_config_memory);
+        let config = ConfigCore::content().await;
+        let app_id = config.anon_id().to_string();
+
+        let hashed_view_private_key = get_wallet_view_key_hashed(app.clone()).await;
+
+        let client = reqwest::Client::new();
+        let url = format!("{base_url}/miner/mined-block");
+        let message = AirdropMinedBlockMessage {
+            wallet_view_key_hashed: hashed_view_private_key,
+            app_id,
+            block_height
+        };
+        if let Ok(response) = client
+            .post(url)
+            .json(&message)
+            .send()
+            .await
+            .inspect_err(|e| {
+                error!(target: LOG_TARGET,"error at sending newly mined block to /miner/mined-block {e}");
+            })
+        {
+            let status = response.status();
+            if status.is_success() {
+                info!(target:LOG_TARGET," successfully sent newly mined block data to /miner/mined-block");
+            } else {
+                error!(target:LOG_TARGET,"error at sending to /miner/mined-block {:?}",response.text().await);
+            }
+        }
+    });
+}
+
+pub fn get_websocket_key() -> anyhow::Result<Ed25519KeyPair> {
+    let decoded_str = hex::decode(AIRDROP_WEBSOCKET_CRYPTO_KEY)?;
+    match Ed25519KeyPair::from_pkcs8_maybe_unchecked(&decoded_str) {
+        Ok(key) => Ok(key),
+        Err(e) => Err(anyhow!(e.to_string())),
+    }
+}
+
+pub fn get_der_encode_pub_key(key_pair: &Ed25519KeyPair) -> anyhow::Result<String> {
+    let pub_key_bytes = key_pair.public_key().as_ref();
+
+    let algorithm_identifier: AlgorithmIdentifier<()> = AlgorithmIdentifier {
+        oid: ObjectIdentifier::new("1.3.101.112").map_err(|e| anyhow::anyhow!(e.to_string()))?,
+        parameters: None, // No parameters for Ed25519
+    };
+
+    let subject_public_key =
+        BitString::from_bytes(pub_key_bytes).map_err(|e| anyhow::anyhow!(e.to_string()))?;
+
+    let spki = SubjectPublicKeyInfo {
+        algorithm: algorithm_identifier,
+        subject_public_key,
+    };
+
+    let der_encoded = spki.to_der().map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    Ok(hex::encode(der_encoded))
 }

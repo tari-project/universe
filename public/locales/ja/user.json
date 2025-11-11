@@ -1,0 +1,8 @@
+{
+  "feedback": {
+    "chip_text": "フィードバック",
+    "optional_label": "（任意）",
+    "submit_cta": "フィードバックを送信",
+    "text_placeholder": "他の詳細をここに追加"
+  }
+}

@@ -2,19 +2,17 @@ import { ContentWrapper, HeroImage, StoreWrapper, Text, Title, Wrapper } from '.
 import paperWalletImage from '../../images/paper-wallet-phone.png';
 import AppleStoreIcon from '../../icons/AppleStoreIcon';
 import GoogleStoreIcon from '../../icons/GoogleStoreIcon';
-import {
-    BlackButton,
-    // TextButton
-} from '../../styles';
+import { BlackButton } from '../../styles';
 import { PaperWalletModalSectionType } from '../../PaperWalletModal';
 import QRTooltip from './QRTooltip/QRTooltip';
 import qrTooltipImage from '../../images/qr-tooltip.png';
 import { useTranslation } from 'react-i18next';
-import { useCallback, useState } from 'react';
+import { useTransition } from 'react';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
 import { invoke } from '@tauri-apps/api/core';
 import LoadingSvg from '@app/components/svgs/LoadingSvg';
 import { useAirdropSetTokenToUuid } from '@app/hooks/airdrop/stateHelpers/useAirdropSetTokens';
+import { setError } from '@app/store';
 
 interface Props {
     setSection: (section: PaperWalletModalSectionType) => void;
@@ -22,43 +20,45 @@ interface Props {
 
 export default function ConnectSection({ setSection }: Props) {
     const { t } = useTranslation(['paper-wallet'], { useSuspense: false });
-    const [isLoading, setIsLoading] = useState(false);
+    const [isPending, startTransition] = useTransition();
+
     const { setQrCodeValue, setIdentificationCode } = usePaperWalletStore();
     const setTokenToUuid = useAirdropSetTokenToUuid();
-
-    // const handleTextButtonClick = () => {
-    //     console.log('Learn more about Tari Aurora');
-    // };
 
     const handleBlackButtonClick = () => {
         loadPaperWalletData();
     };
 
-    const loadPaperWalletData = useCallback(async () => {
-        setIsLoading(true);
+    const loadPaperWalletData = () => {
+        startTransition(async () => {
+            try {
+                const authUuid = await setTokenToUuid();
+                const r = await invoke('get_paper_wallet_details', { authUuid });
 
-        try {
-            const authUuid = await setTokenToUuid();
-            const r = await invoke('get_paper_wallet_details', { authUuid: authUuid });
+                if (r) {
+                    const url = r.qr_link;
+                    const password = r.password;
 
-            if (r) {
-                const url = r.qr_link;
-                const password = r.password;
-
-                setQrCodeValue(url);
-                setIdentificationCode(password);
-                setSection('QRCode');
+                    setQrCodeValue(url);
+                    setIdentificationCode(password);
+                    setSection('QRCode');
+                }
+            } catch (e) {
+                const errorMessage = e as unknown as string;
+                if (
+                    !errorMessage.includes('User canceled the operation') &&
+                    !errorMessage.includes('PIN entry cancelled')
+                ) {
+                    setError(errorMessage);
+                }
+                console.error('Failed to get paper wallet details', e);
             }
-        } catch (e) {
-            console.error('Failed to get paper wallet details', e);
-        }
-
-        setIsLoading(false);
-    }, [setIdentificationCode, setIsLoading, setQrCodeValue, setSection, setTokenToUuid]);
+        });
+    };
 
     return (
         <Wrapper>
-            <HeroImage src={paperWalletImage} alt="" />
+            <HeroImage src={paperWalletImage} alt="Wallet image" />
 
             <ContentWrapper>
                 <Title>{t('connect.title')}</Title>
@@ -71,11 +71,9 @@ export default function ConnectSection({ setSection }: Props) {
                     <QRTooltip trigger={<GoogleStoreIcon />} text={t('connect.scan')} codeImage={qrTooltipImage} />
                 </StoreWrapper>
 
-                <BlackButton onClick={handleBlackButtonClick} disabled={isLoading}>
-                    {isLoading ? <LoadingSvg /> : <span>{t('connect.blackButton')}</span>}
+                <BlackButton onClick={handleBlackButtonClick} disabled={isPending}>
+                    {isPending ? <LoadingSvg /> : <span>{t('connect.blackButton')}</span>}
                 </BlackButton>
-
-                {/* <TextButton onClick={handleTextButtonClick}>{t('connect.textButton')}</TextButton> */}
             </ContentWrapper>
         </Wrapper>
     );

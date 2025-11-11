@@ -1,20 +1,37 @@
 {
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
   "connection-to-node-lost": "Connection to miner lost. Please wait for the miner to reconnect or restart the miner.",
   "cpu-power": "CPU Power",
   "current-block-time": "Current block time",
   "day": "day",
-  "estimated-day": "Est tXTM/day",
+  "estimated-day": "Est XTM/day",
   "estimated-earnings": "Estimated earnings",
   "floor": "Floor",
   "gpu-power": "GPU Power",
   "mining-button-text": {
-    "cancel-mining": "Cancel Mining",
-    "changing-mode": "Changing mode",
-    "start-mining": "Start Mining",
-    "started-auto-mining": "Auto Mining Started",
-    "starting-mining": "Starting Mining",
-    "stop-mining": "Stop Mining",
-    "waiting-for-idle": "Waiting for Idle"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Start Mining"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    },
+    "mode": "Mode",
+    "mode-long": "Miner Mode"
   },
   "orphan-chain-tooltip": {
     "heading": "Things to try:",
@@ -24,6 +41,28 @@
     "step_4": "Try using a Tor Bridge (in Settings)",
     "step_5": "Try disabling Tor (in Settings)",
     "step_6": "Try an app reset (in Settings)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
+  },
+  "pool": {
+    "accepted_shares": "Accepted shares",
+    "balance": "Total earnings",
+    "min_payout": "Minimum payout",
+    "unpaid": "Unpaid"
+  },
+  "schedule": {
+    "cta-save": "Save Schedule",
+    "cta-save-complete": "Saved!",
+    "current": "Your current schedule",
+    "mining-schedule": "Mining Schedule",
+    "mining-schedule-copy": "Set specific times to automatically start mining.",
+    "mining-schedule-setup": "Setup Mining Schedule",
+    "scheduled-to-mine": "Scheduled to mine at",
+    "scheduled-to-pause": "Scheduled to pause mining at",
+    "time-label-end": "Daily End Time",
+    "time-label-start": "Daily Start Time"
   },
   "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
   "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",

@@ -1,0 +1,13 @@
+{
+  "earn": "Verdien tot {{amount}}% in bonus XTM",
+  "help-find-address": "Help my om my {{ exchange }} adres te vind",
+  "main-logo-title": "Seisoen\nEen",
+  "paste-from-clipboard": "Plak van knipbord",
+  "season-one-reward": "Seisoen een bonus",
+  "select": {
+    "modal-title": "Begin om Tari (XTM) direk na jou beursie op \"n ondersteunde uitruiling te myn"
+  },
+  "selected-exchange-miner": "Jy myn hier",
+  "time-left": "Tyd oor",
+  "wallet-address": "Beursie Adres"
+}

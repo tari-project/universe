@@ -1,7 +1,6 @@
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
 import {
     SettingsGroup,
     SettingsGroupAction,
@@ -9,11 +8,12 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
-import { setShouldAutoLaunch } from '@app/store';
+import { setShouldAutoLaunch } from '@app/store/actions/config/core.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 
 export default function StartApplicationOnBootSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-    const shouldAutoLaunch = useAppConfigStore((s) => s.should_auto_launch);
+    const shouldAutoLaunch = useConfigCoreStore((s) => s.should_auto_launch);
 
     return (
         <SettingsGroupWrapper>

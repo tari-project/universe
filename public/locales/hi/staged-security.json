@@ -1,6 +1,12 @@
 {
   "common": {
+    "all-done": "You’re all done!",
     "got-it": "समझ गया"
+  },
+  "complete": {
+    "continue": "Continue to Tari Universe",
+    "happy-mining": "Happy mining!",
+    "secured": "Your wallet is now securely backed up—great job!\nYour Tari tokens are safe and ready whenever you need them, even if you switch or lose your device."
   },
   "completedTip": {
     "text": "आपका सीड वाक्यांश आपके सेटिंग्स में फिर से पाया जा सकता है",
@@ -8,27 +14,43 @@
   },
   "intro": {
     "balance": "आपके वॉलेट में <span>{{balance}}</span> XTM है",
-    "button": "सीड वाक्यांश का बैकअप लें",
+    "button": "Secure my wallet",
+    "subtitle": "You now have your first Tari tokens. Let’s quickly protect your wallet in two easy steps.",
     "text": "जब आप माइनिंग शुरू करते हैं, तो तारी यूनिवर्स आपके लिए स्वचालित रूप से एक वॉलेट सेट करता है। सुनिश्चित करें कि आप हमेशा अपने वॉलेट तक पहुंच सकते हैं, अपने सीड वाक्यांश को सुरक्षित स्थान पर संग्रहीत करके।",
-    "title": "अपने सीड वाक्यांश का बैकअप लेकर अपने टोकन की सुरक्षा करें",
-    "warning": "❗ अत्यधिक अनुशंसित"
+    "title": "Let’s secure your wallet.",
+    "warning": "अत्यधिक अनुशंसित"
   },
   "reminderTip": {
     "text": "अपने अद्वितीय वॉलेट के लिए अपने सीड वाक्यांश का बैकअप लेना अत्यधिक अनुशंसित है",
     "title": "सेटिंग्स में अपने सीड वाक्यांश का जल्दी से बैकअप लें"
   },
   "seedPhrase": {
-    "button": "सीड वाक्यांश सत्यापित करें",
+    "button": "Verify seed phrase",
     "checkbox": "मैं समझता हूँ कि अगर मैंने अपना रिकवरी सीड वाक्यांश खो दिया तो मैं अपना वॉलेट पुनर्स्थापित नहीं कर पाऊंगा।",
     "copied": "कॉपी हो गया!",
     "copy": "क्लिपबोर्ड पर कॉपी करें",
     "text": "आपको अपना वॉलेट पुनर्स्थापित करने के लिए इस कोड की फिर से आवश्यकता होगी।",
     "title": "अपने सीड वाक्यांश को लिखें और इसे कहीं सुरक्षित रखें"
   },
+  "skip": "Skip for now",
+  "steps": {
+    "chip": "Step {{step}} of {{total}}",
+    "complete-false": "Incomplete",
+    "complete-true": "Complete",
+    "step": "Step {{stepNumber}}",
+    "subtitle-pin": "Prevents unauthorized wallet access",
+    "subtitle-seeds": "Ensures you can recover funds if you lose your device",
+    "title-pin": "Set a secure PIN",
+    "title-seeds": "Back up your Seed Phrase"
+  },
   "verifySeed": {
-    "button": "सीड वाक्यांश की पुष्टि करें",
+    "button": "Confirm seed phrase",
     "placeholder": "नीचे दिए गए शब्दों को सही क्रम में क्लिक करें",
     "text": "यह सुनिश्चित करने के लिए कि आपने अपना सीड वाक्यांश सही लिखा है, कृपया शब्दों को सही क्रम में चुनें।",
     "title": "अपने सीड वाक्यांश को सत्यापित करें"
+  },
+  "warning": {
+    "steps": "Steps",
+    "title": "Secure your wallet"
   }
 }

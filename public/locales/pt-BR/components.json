@@ -1,0 +1,51 @@
+{
+  "banner": {
+    "body-copy": "Você pode experimentar forks e flutuações na taxa de hash enquanto a rede se estabiliza nos próximos ~15 dias.",
+    "body-copy-highlight": "Tari é novidade!",
+    "is-live": "está ao vivo"
+  },
+  "close-experience-dialog": {
+    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
+    "dont-ask-again": "Don't ask me again",
+    "exit-completely": "Exit Completely",
+    "run-in-background": "Run in Background",
+    "title": "Choose how to close Tari Universe"
+  },
+  "field-error-message": {
+    "integers-only": "Apenas números inteiros permitidos",
+    "invalid": "Campo inválido",
+    "invalid-date": "Data inválida",
+    "invalid-email": "Digite um endereço de e-mail válido",
+    "invalid-url": "Deve ser um endereço URL válido",
+    "password-too-short": "A senha deve ter pelo menos 8 caracteres",
+    "required": "Campo obrigatório"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Cancelar",
+    "description": "O modo Ludicrous pode tornar seu sistema sem resposta. Por favor, confirme se deseja iniciar a mineração no modo Ludicrous ou o Tari Universe voltará para o modo Eco em",
+    "keepChanges": "Manter Alterações",
+    "seconds": "segundos",
+    "title": "Mudar para o Modo Ludicrous?"
+  },
+  "releaseNotesDialog": {
+    "close": "ENTENDIDO",
+    "title": "Notas de Lançamento"
+  },
+  "resume-app-modal": {
+    "finishing-resume": "Finalizando Retomada...",
+    "resuming-all-processes": "Retomando todos os processos...",
+    "resuming-mm-proxy": "Retomando MM Proxy...",
+    "resuming-node": "Retomando Nó...",
+    "resuming-p2pool": "Retomando P2Pool...",
+    "resuming-tor": "Retomando Tor...",
+    "resuming-wallet": "Retomando Carteira...",
+    "syncing-node": "Sincronizando Nó...",
+    "title": "Retomando Tari Universe"
+  },
+  "warmupDialog": {
+    "copy": "O nascimento de uma rede de prova de trabalho é especial. Nos primeiros dias, a rede precisa de tempo para se estabilizar e encontrar seu ritmo. Chamamos isso de \"fase de aquecimento.\"\nContribuidores e primeiros apoiadores da rede Tari (como exchanges e parceiros de infraestrutura) esperam que a fase de aquecimento dure cerca de 15 dias. Depois disso, a rede fará a transição para um estado mais estável.\nDurante a fase de aquecimento, algumas peculiaridades são normais. Você pode ver flutuações no tempo de bloco, desconexões temporárias, atrasos de sincronização ou até mesmo forks de curta duração que exigem que seu nó se reconecte à cadeia principal.\nA fase de aquecimento é um ótimo momento para minerar porque as recompensas são as mais altas por bloco. Esperamos que os primeiros dias da rede Tari sejam recompensadores para você.\nQue os jogos comecem. Que os blocos estejam sempre a seu favor!",
+    "subtitle": "O que isso significa exatamente?",
+    "tag-line": "Bem-vindo à Mainnet Tari",
+    "title": "Fase de aquecimento"
+  }
+}

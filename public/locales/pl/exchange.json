@@ -1,0 +1,13 @@
+{
+  "earn": "Zarabiaj do {{amount}}% w bonusie XTM",
+  "help-find-address": "Pomóż mi znaleźć mój adres {{ exchange }}",
+  "main-logo-title": "Sezon\nJeden",
+  "paste-from-clipboard": "Wklej ze schowka",
+  "season-one-reward": "Bonus za sezon pierwszy",
+  "select": {
+    "modal-title": "Rozpocznij kopanie Tari (XTM) bezpośrednio do swojego portfela na obsługiwanej giełdzie"
+  },
+  "selected-exchange-miner": "Kopiesz tutaj",
+  "time-left": "Pozostały czas",
+  "wallet-address": "Adres portfela"
+}

@@ -1,72 +1,57 @@
 /* eslint-disable i18next/no-literal-string */
-import { Button, ButtonGroup, CategoryLabel } from '../styles';
+import { AdminButton, ButtonGroup } from '../styles';
 
 import { useAppStateStore } from '@app/store/appStateStore';
-import {
-    setCriticalError,
-    setCriticalProblem,
-    setDialogToShow,
-    setShowExternalDependenciesDialog,
-} from '@app/store/actions';
+import { setCriticalProblem, setDialogToShow, setShowExternalDependenciesDialog } from '@app/store/actions';
 import { useUIStore } from '@app/store/useUIStore.ts';
+import { DialogType } from '@app/store/types/ui.ts';
 
 export function DialogsGroup() {
-    const criticalError = useAppStateStore((s) => s.criticalError);
-    const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const dialogToShow = useUIStore((s) => s.dialogToShow);
+    const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
+
+    function handleToggle(dialog: DialogType) {
+        setDialogToShow(dialogToShow === dialog ? undefined : dialog);
+    }
 
     return (
         <>
-            <CategoryLabel>Dialogs</CategoryLabel>
             <ButtonGroup>
-                <Button
-                    onClick={() => setCriticalError(criticalError ? undefined : 'This is a critical error')}
-                    $isActive={!!criticalError}
-                >
-                    Critical Error
-                </Button>
-                <Button
+                <AdminButton
                     onClick={() =>
                         setCriticalProblem(
                             criticalProblem
                                 ? undefined
                                 : {
-                                      title: 'This is a critical problem description',
-                                      description: 'This is a critical problem description',
+                                      title: 'Critical Problem - [Node phase]',
+                                      description:
+                                          "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
+                                      error_message:
+                                          'This is a critical problem error message: Some Modules failed to initialize.\n [Beep boop] You have a super duper problem 🤖.\n\n Stack trace: "/admin/ui/test/error.rs"\n            "/admin/ui/test/error.rs"\n            "/admin/ui/long_stack_test/error.rs"\n            "/admin/ui/test/error.rs"\n            "/admin/test/error.rs"',
                                   }
                         )
                     }
                     $isActive={!!criticalProblem}
                 >
                     Critical Problem
-                </Button>
-                <Button
-                    onClick={() => setDialogToShow(dialogToShow === 'autoUpdate' ? undefined : 'autoUpdate')}
-                    $isActive={dialogToShow === 'autoUpdate'}
-                >
-                    Auto Update Dialog
-                </Button>
-                <Button
+                </AdminButton>
+                <AdminButton onClick={() => handleToggle('autoUpdate')} $isActive={dialogToShow === 'autoUpdate'}>
+                    Auto Update
+                </AdminButton>
+                <AdminButton
                     onClick={() => setShowExternalDependenciesDialog(!showExternalDependenciesDialog)}
                     $isActive={showExternalDependenciesDialog}
                 >
-                    External Dependencies
-                </Button>
-                <Button
-                    onClick={() => setDialogToShow(dialogToShow === 'releaseNotes' ? undefined : 'releaseNotes')}
-                    $isActive={dialogToShow === 'releaseNotes'}
+                    External Deps
+                </AdminButton>
+
+                <AdminButton
+                    onClick={() => handleToggle('failedModuleInitialization')}
+                    $isActive={dialogToShow === 'failedModuleInitialization'}
                 >
-                    Release Notes
-                </Button>
-                <Button
-                    onClick={() =>
-                        setDialogToShow(dialogToShow === 'ludicrousConfirmation' ? undefined : 'ludicrousConfirmation')
-                    }
-                    $isActive={dialogToShow === 'ludicrousConfirmation'}
-                >
-                    Ludicrous Confirmation
-                </Button>
+                    Failed modules
+                </AdminButton>
             </ButtonGroup>
         </>
     );

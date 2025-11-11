@@ -1,0 +1,11 @@
+{
+  "auto-reconnect": "Yeniden bağlanmaya çalışılıyor:",
+  "connect-now": "Şimdi Bağlan",
+  "disconnect-severe-subtitle": "Sizi Tari ağına bağlamaya çalışmaya devam edeceğiz. Sorun devam ederse madencinizi yeniden başlatmayı veya Telegram\"da destek almayı deneyebilirsiniz.",
+  "disconnect-severe-title": "Bağlanmanızda sorun yaşıyoruz",
+  "disconnect-subtitle": "Ağa yeniden bağlanmaya çalışırken sabırlı olun.",
+  "disconnect-title": "Ah oh, Tari ağına bağlı değilsiniz",
+  "go-to-telegram": "Telegram\"da Yardım Al",
+  "reconnect-in-progress": "Yeniden bağlanılıyor...",
+  "restart-app": "Tari Universe\"i Yeniden Başlat"
+}

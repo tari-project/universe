@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
@@ -16,8 +16,8 @@ import { CircularProgress } from '../elements/CircularProgress';
 import { setDialogToShow } from '@app/store';
 
 export default function RestartDialog() {
+    const [isPending, startTransition] = useTransition();
     const { t } = useTranslation('settings', { useSuspense: false });
-    const [isRestarting, setIsRestarting] = useState(false);
     const dialogToShow = useUIStore((s) => s.dialogToShow);
 
     const showRestartModal = dialogToShow === 'restart';
@@ -27,15 +27,16 @@ export default function RestartDialog() {
         setDialogToShow(showRestartModal ? null : 'restart');
     }, [showRestartModal]);
 
-    const handleRestart = useCallback(async () => {
-        try {
-            setIsRestarting(true);
-            console.info('Restarting application.');
-            await invoke('restart_application', { shouldStopMiners: true });
-        } catch (error) {
-            console.error('Restart error: ', error);
-        }
-    }, []);
+    function handleRestart() {
+        startTransition(async () => {
+            try {
+                console.info('Restarting application.');
+                await invoke('trigger_phases_restart');
+            } catch (error) {
+                console.error('Restart error: ', error);
+            }
+        });
+    }
 
     return (
         <Dialog open={showRestartModal} onOpenChange={setShowRestartModal}>
@@ -55,7 +56,7 @@ export default function RestartDialog() {
                         </Stack>
 
                         <Stack direction="row" alignItems="center" justifyContent="space-between" gap={8}>
-                            {isRestarting ? (
+                            {isPending ? (
                                 <CircularProgress />
                             ) : (
                                 <>

@@ -1,0 +1,13 @@
+{
+  "earn": "최대 {{amount}}%의 보너스 XTM을 획득하세요",
+  "help-find-address": "{{ exchange }} 주소 찾기 도움",
+  "main-logo-title": "시즌\n1",
+  "paste-from-clipboard": "클립보드에서 붙여넣기",
+  "season-one-reward": "시즌 1 보너스",
+  "select": {
+    "modal-title": "지원되는 거래소에서 지갑으로 Tari (XTM) 직접 채굴 시작"
+  },
+  "selected-exchange-miner": "여기서 채굴 중입니다",
+  "time-left": "남은 시간",
+  "wallet-address": "지갑 주소"
+}

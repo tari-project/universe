@@ -1,4 +1,7 @@
 {
+  "connected-since": "Połączony od",
+  "connections": "połączenia",
+  "established": "Ustanowione",
   "listener-addresses": "Adresy nasłuchujące",
   "miners": "Górnicy",
   "network-info": "Informacje o sieci",
@@ -7,8 +10,18 @@
   "p2pool-connection-info": "Połączenie",
   "p2pool-connection-info-more": "Szczegóły połączenia",
   "p2pool-peers": "Rówieśnicy P2pool",
-  "p2pool-stats": "Statystyki kopania w puli",
+  "p2pool-stats": "Statystyki P2pool",
+  "pending": "Oczekujące",
   "randomx-stats": "Statystyki RandomX",
   "sha3-stats": "Statystyki SHA3",
+  "stats": {
+    "earned": "Zarobiłeś",
+    "tile-heading": "Nagrody w toku",
+    "tile-heading-zero": "Nagrody zaczynają się za ~30 minut",
+    "tile-disabled-heading": "{{unit}} jest wyłączony",
+    "tile-loading": "Pula się rozgrzewa",
+    "tooltip-copy": "„W toku” dopóki nie zarobisz minimum <strong>{{amount}}</strong>. Może wystąpić opóźnienie między wysłaniem wypłaty a jej wyświetleniem w transakcjach i saldzie portfela.",
+    "tooltip-tile-heading": "Próg nagród"
+  },
   "tribe": "Plemie"
 }

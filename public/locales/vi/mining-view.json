@@ -1,0 +1,77 @@
+{
+  "bubbles": {
+    "active-miners": "active miners",
+    "ago": "ago",
+    "block": "block",
+    "got-rewarded": "got rewarded",
+    "miners": "miners",
+    "pool": "Pool",
+    "solved": "solved",
+    "solving": "is being solved"
+  },
+  "connection-to-node-lost": "Mất kết nối với miner. Vui lòng chờ miner kết nối lại hoặc khởi động lại miner.",
+  "cpu-power": "Sức mạnh CPU",
+  "current-block-time": "Thời gian block hiện tại",
+  "day": "ngày",
+  "estimated-day": "Ước tính XTM/ngày",
+  "estimated-earnings": "Ước tính thu nhập",
+  "floor": "Sàn",
+  "gpu-power": "Sức mạnh GPU",
+  "mining-button-text": {
+    "cancel-mining": "Hủy đào",
+    "changing-mode": "Đang chuyển chế độ",
+    "started-auto-mining": "Đã tự động đào",
+    "starting-mining": "Đang bắt đầu đào",
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Bắt đầu đào",
+    "stop-mining": "Dừng đào",
+    "waiting-for-idle": "Đang chờ rảnh"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    },
+    "mode": "Mode",
+    "mode-long": "Miner Mode"
+  },
+  "orphan-chain-tooltip": {
+    "heading": "Bạn có thể thử:",
+    "step_1": "Kiểm tra kết nối Internet",
+    "step_2": "Chờ 30 phút",
+    "step_3": "Khởi động lại ứng dụng",
+    "step_4": "Thử dùng Tor Bridge (trong Cài đặt)",
+    "step_5": "Thử tắt Tor (trong Cài đặt)",
+    "step_6": "Thử đặt lại ứng dụng (trong Cài đặt)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
+  },
+  "pool": {
+    "accepted_shares": "Số share chấp nhận",
+    "balance": "Tổng thu nhập",
+    "min_payout": "Số tiền tối thiểu để trả",
+    "unpaid": "Chưa thanh toán"
+  },
+  "schedule": {
+    "cta-save": "Save Schedule",
+    "cta-save-complete": "Saved!",
+    "current": "Your current schedule",
+    "mining-schedule": "Mining Schedule",
+    "mining-schedule-copy": "Set specific times to automatically start mining.",
+    "mining-schedule-setup": "Setup Mining Schedule",
+    "scheduled-to-mine": "Scheduled to mine at",
+    "scheduled-to-pause": "Scheduled to pause mining at",
+    "time-label-end": "Daily End Time",
+    "time-label-start": "Daily Start Time"
+  },
+  "you-earn-rewards-separately": "Bạn nhận phần thưởng đào CPU và GPU riêng biệt",
+  "you-won-block": "Bạn là người thắng <span>block #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>Bạn đã thắng {{ blocks }}</span> khi bạn vắng mặt",
+  "your-reward-is": "Phần thưởng của bạn là"
+}

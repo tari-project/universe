@@ -20,8 +20,6 @@
 //  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 //  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import { colorsAlpha } from './colorsAlpha.ts';
-
 const success = {
     50: '#E6FAF6',
     100: '#a1d2c1',
@@ -100,13 +98,26 @@ const grey = {
     300: '#b6b7c3',
     400: '#8f91a1',
     500: '#717286',
-    600: '#4a4a5a',
+    600: '#242424',
     700: '#2E2E2E',
     800: '#212121',
     900: '#1B1B1B',
     950: '#0c0c0e',
 };
-
+const greyscale = {
+    50: '#FFFFFF',
+    100: '#E4E4E4',
+    150: '#CACACA',
+    200: '#AFAFAF',
+    300: '#959595',
+    400: '#7D7D7D',
+    500: '#606060',
+    600: '#313131',
+    700: '#2B2B2B',
+    800: '#111111',
+    900: '#080808',
+    950: '#000000',
+};
 const tariPurple = {
     50: '#F9F4FF',
     100: '#F2E5FF',
@@ -123,14 +134,14 @@ const tariPurple = {
 
 const teal = {
     50: '#F1FAF9',
-    100: '#DBF2F1',
+    100: '#daf5ed',
     200: '#BBE6E5',
     300: '#88D3D3',
     400: '#55B9BB',
     500: '#3A9DA0',
     600: '#338187',
-    700: '#2F686F',
-    800: '#2D575D',
+    700: '#266e5b',
+    800: '#2F686F',
     900: '#294A50',
     950: '#172F35',
 };
@@ -182,7 +193,7 @@ const green = {
     100: '#D6F5E1',
     200: '#B0EAC7',
     300: '#7CD9A7',
-    400: '#47C083',
+    400: '#10C671',
     500: '#229B62',
     600: '#168552',
     700: '#126A45',
@@ -202,7 +213,7 @@ const red = {
     700: '#B9291C',
     800: '#A2281D',
     900: '#7F251D',
-    950: '#450F0A',
+    950: '#310101',
 };
 
 const brightRed = {
@@ -219,19 +230,6 @@ const brightRed = {
     950: '#3a0000',
 };
 
-const ramp = {
-    1: '#1CCF31',
-    2: '#50CC27',
-    3: '#84C91E',
-    4: '#B8C614',
-    5: '#ECC30B',
-    6: '#F2A607',
-    7: '#F88903',
-    8: '#FF6C00',
-    9: '#FF4F00',
-    10: '#FF3300',
-};
-
 export const colors = {
     blue,
     orange,
@@ -242,17 +240,12 @@ export const colors = {
     gothic,
     tariPurple,
     grey,
+    greyscale,
     success,
     info,
     warning,
     error,
     brightGreen,
-};
-
-export const colorsAll = {
-    ...colorsAlpha,
-    ...colors,
-    ramp,
 };
 
 export type Colours = typeof colors;

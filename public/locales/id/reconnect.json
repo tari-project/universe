@@ -1,0 +1,11 @@
+{
+  "auto-reconnect": "Mencoba menghubungkan kembali dalam:",
+  "connect-now": "Hubungkan Sekarang",
+  "disconnect-severe-subtitle": "Kami akan terus mencoba menghubungkan Anda ke jaringan Tari. Anda juga dapat mencoba memulai ulang penambang Anda, atau menghubungi dukungan di Telegram jika masalah berlanjut.",
+  "disconnect-severe-title": "Kami mengalami kesulitan menghubungkan Anda",
+  "disconnect-subtitle": "Tunggu sebentar sementara kami mencoba menghubungkan Anda kembali ke jaringan.",
+  "disconnect-title": "Uh oh, Anda tidak terhubung ke jaringan Tari",
+  "go-to-telegram": "Dapatkan Bantuan di Telegram",
+  "reconnect-in-progress": "Menghubungkan kembali...",
+  "restart-app": "Mulai Ulang Tari Universe"
+}

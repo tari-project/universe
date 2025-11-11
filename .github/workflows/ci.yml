@@ -20,15 +20,19 @@ concurrency:
 
 permissions: {}
 
+env:
+  TARI_NETWORK: esmeralda
+
 jobs:
   cargo-checks:
     name: cargo checks (fmt, clippy, check)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: create empty dist dir
         run: |
           mkdir dist
+
       - name: install dependencies (linux)
         run: |
           sudo apt-get update
@@ -56,6 +60,7 @@ jobs:
       - name: cargo format
         working-directory: ./src-tauri
         run: |
+          rustup component add rustfmt
           cargo fmt --all -- --check
 
       - name: clippy lint
@@ -65,9 +70,12 @@ jobs:
           AIRDROP_API_BASE_URL: http://localhost:3004
           AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
           TELEMETRY_API_URL: http://localhost:3004
+          EXCHANGE_ID: universal
         run: |
+          rustup component add clippy
           cargo install cargo-lints
           cargo lints clippy --all-targets --all-features
+
       - name: cargo check
         working-directory: ./src-tauri
         run: |
@@ -77,7 +85,7 @@ jobs:
     name: machete
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2.7.5
         with:
@@ -93,7 +101,7 @@ jobs:
     name: tauri-build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: install dependencies (linux)
         run: |
           sudo apt-get update
@@ -111,20 +119,23 @@ jobs:
             opencl-headers \
             ocl-icd-opencl-dev
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: lts/*
           cache: 'npm'
+
       - name: Install dependencies (node)
         run: npm ci
+
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2.7.5
         with:
           workspaces: './src-tauri -> target'
+
       - name: cargo tauri build
         working-directory: ./src-tauri
         run: |
-          cargo install tauri-cli --version "2.4.0" --locked
+          cargo install tauri-cli
           cargo tauri --version
           cargo tauri build --ci --no-bundle
 
@@ -133,7 +144,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: install ripgrep
         run: |
           # https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb.sha256
@@ -142,3 +153,43 @@ jobs:
           rg --version || exit 1
       - name: run the license check
         run: ./scripts/file_license_check.sh
+
+  test:
+    name: "lil' testy tests"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: create empty dist dir
+        run: |
+          mkdir dist
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2.7.5
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: install dependencies (linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --assume-yes \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libprotobuf-dev \
+            protobuf-compiler
+
+      - name: install dependencies (linux/OpenCL)
+        run: |
+          sudo apt-get install --no-install-recommends --assume-yes \
+            opencl-headers \
+            ocl-icd-opencl-dev
+
+      - name: cargo test
+        working-directory: ./src-tauri
+        env:
+          AIRDROP_BASE_URL: http://localhost:4000
+          AIRDROP_API_BASE_URL: http://localhost:3004
+          AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
+          TELEMETRY_API_URL: http://localhost:3004
+          EXCHANGE_ID: universal
+        run: cargo test --locked --all-features --release

@@ -1,51 +1,121 @@
 {
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "Bonus gems earned",
   "claimGems": "Claim Gems",
   "claimModalFieldLabel": "Optional",
   "claimModalFieldPlaceholder": "Enter invite code",
   "claimModalFinePrint": "<strong>Please note:</strong> claiming gems turns on analytics so we can improve Universe",
-  "claimModalText": "Earn gems by mining and referring friends. The more gems you earn, the larger your Tari airdrop. Have a referral code? Enter it below and double your bonus from <strong>{{gems1}} gems</strong> to <strong>{{gems2}} gems!</strong>",
+  "claimModalText": "Earn bonus XTM by mining and referring friends.",
   "claimModalTitle": "EARN REWARDS FOR MINING ON TESTNET",
   "claimReferralCode": "Claim your referral code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gems.",
-  "claimReferralGifts": "Claim your referral code and earn {{gems}} gems. Once you connect your account, you’ll be awarded your gems.",
+  "claimReferralGifts": "Claim your referral code and earn {{gems}} gems. Once you connect your account, you'll be awarded your gems.",
+  "copied": "Copied!",
+  "copyFailed": "Copy Failed",
+  "copying": "Copying...",
+  "crewRewards": {
+    "actions": {
+      "claim": "Claim {{amount}} XTM",
+      "claimed": "Claimed",
+      "nudge": "Nudge"
+    },
+    "activeMinersStat": "Active Miners",
+    "bonusXTMEarned": "Bonus XTM Earned",
+    "copied": "Copied!",
+    "crewStatus": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "needsNudge": "Needs Nudge"
+    },
+    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
+    "errorLoadingData": "Error loading crew data. Please try again.",
+    "feedback": {
+      "nudgeSent": "Nudge sent!",
+      "rewardClaimed": "Reward claimed!"
+    },
+    "filters": {
+      "active": "Active",
+      "all": "All",
+      "complete": "Complete",
+      "inactive": "Inactive"
+    },
+    "inviteFriends": "Invite Friends",
+    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "login": {
+      "bonusText": "Earn bonus rewards up to {{maxWeeks}} weeks per invite",
+      "description": "You earn <strong>{{userReward}} bonus XTM/week</strong> AND your friend earns <strong>{{friendReward}} bonus XTM/week</strong> when you and your friend both mine",
+      "loginButton": "Log in & Start Earning!",
+      "title": "Mine with friends. <strong>Earn together.</strong>"
+    },
+    "manageYourCrew": "Manage your crew",
+    "myCrew": "Your Friends",
+    "of": "of",
+    "streak": {
+      "day": "Day",
+      "dayStreak": "{{days}} Day Streak",
+      "daysToMinimum": "{{days}} more days to meet minimum requirements!",
+      "keepStreak": "Keep your streak to keep earning rewards!",
+      "loadingStreak": "Loading streak...",
+      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
+      "minimumRequirementsMet": "You've met the minimum requirements. Keep going!",
+      "multiDayStreak": "{{days}} Day Streak",
+      "oneDayStreak": "1 Day Streak",
+      "startMiningMessage": "Start mining to begin your streak and earn rewards!",
+      "startYourStreak": "Start Your Streak!",
+      "unlockBonusRewards": "Unlock your bonus rewards"
+    },
+    "title": "Rewards",
+    "crewEmpty": {
+      "title": "Your friends are slacking!",
+      "titleSingular": "Your friend is slacking!",
+      "titleZero": "Start building your crew!",
+      "description": "You have <strong>{{inactiveCount}}</strong> inactive friends. Give them a nudge or invite more.",
+      "descriptionSingular": "You have <strong>{{inactiveCount}}</strong> inactive friend. Give them a nudge or invite more.",
+      "descriptionZero": "Invite friends to start earning bonus rewards together!",
+      "nudgeButton": "Nudge your Friends",
+      "nudgeButtonSingular": "Nudge your Friend"
+    }
+  },
   "doLater": "I'll do this later",
-  "giftReferralCode": "Earn {{gems}} gems for each friend you invite to Tari Universe. Once they connect their account, you’ll be awarded your gems.",
+  "earnBonusXTM": "Bonus XTM",
+  "gems": "Gems",
+  "giftReferralCode": "Earn bonus XTM for each friend you invite to Tari Universe. Once they connect their account and mine, you'll start earning rewards.",
   "giftReferralCodeHeader": "Claim your referral code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gems.",
+  "invite": "Invite",
+  "invite-friends-gems": "For every friend that uses your invite link, you earn bonus XTM.",
   "inviteFriends": "Invite Friends",
   "inviteFriendsText": "Copy link and share it",
-  "invitedAmount": "You’ve invited <span>{{count}}</span> friends",
-  "keep-mining-to-earn-rewards": "Keep mining to earn more rewards!",
+  "invitedAmount": "You've invited <span>{{count}}</span> friends",
+  "joinAirdrop": "Join Airdrop",
+  "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
+  "keep-mining-to-earn-rewards": "Keep mining to earn more XTM rewards!",
   "linkCopied": "Link copied!",
+  "live": "live",
   "logged-in-as": "Logged in as <strong>@{{twitter}}</strong>",
+  "loggedInTitle": "Airdrop Rewards",
+  "loggedOutTitle": "Invite Friends",
   "loginButton": "Log in to claim gems",
   "logout": "Logout",
   "nextTierBonus": "Invite <strong>{{count}} friends</strong> & earn {{bonusGems}} bonus gems",
-  "update-username": "Update username",
-  "permission": {
-    "setup": "Tari Universe would like to use analytics to <strong>improve your experience.</strong>",
-    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for mining.",
-    "title": "Earn Gems & make Tari Universe better"
-  },
   "permissionNoGems": {
     "text": "Tari Universe would like to use analytics to improve your experience.",
     "title": "Make Tari Universe better"
   },
+  "push-notifications": {
+    "text": "Tari Universe would like to be able to send you notifications to your connected devices",
+    "title": "Allow Tari Universe to send notifications  "
+  },
   "referral": "Invite a friend",
-  "topTooltipText": "Get a Tari Airdrop by collecting gems. The more gems you earn, the larger your airdrop.",
+  "rightClickToCopy": "Right-click to copy link",
+  "success": "Success",
+  "topTooltipText": "Earn bonus XTM by referring friends.",
   "topTooltipTitle": "Mine & Invite Friends to Earn Gems",
   "unclaimedGems": "Unclaimed Gems",
-  "you-reached-your-giftinh-goal": "You reached your gifting goal!",
-  "your-friend-accepted-gift": "One of your friends accepted your gift!",
-  "joinAirdrop": "Join Airdrop",
-  "loggedInTitle": "Airdrop Rewards",
-  "loggedOutTitle": "Mine & Invite Friends to Earn Gems",
-  "copying": "Copying...",
-  "copied": "Copied!",
-  "copyFailed": "Copy Failed",
-  "rightClickToCopy": "Right-click to copy link",
-  "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
-  "live":"live",
+  "update-username": "Update username",
   "username-error": "Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens",
   "username-update-success": "Username updated successfully",
-  "success": "Success"
+  "you-reached-your-giftinh-goal": "You reached your gifting goal!",
+  "your-friend-accepted-gift": "One of your friends accepted your gift!"
 }

@@ -1,19 +1,28 @@
 {
+  "actions": {
+    "earn-gems": "Bonus XTM kazan",
+    "earn-gems-copy": "Arkadaşlarınızı davet ederek bonus XTM kazanmak için sosyal hesabınızı bağlayın",
+    "earn-gems-cta": "X Hesabını Bağla",
+    "mode": "Modu Özelleştir",
+    "mode-copy": "Makinenizin ne kadar zor madencilik yapmasını istediğinizi özelleştirebileceğinizi biliyor muydunuz?"
+  },
   "could-not-auto-update": "Makine kilitli veya uyku modundayken Tari Universe\"i {{version}} sürümüne otomatik olarak güncelleyemedik.",
   "dont-worry": "Merak etmeyin, bir dahaki sefere bu kadar uzun sürmeyecek",
   "installing-latest-version": "Tari Universe\"in {{version}} sürümü yükleniyor",
   "new-tari-version-available": "Tari Universe'ün yeni sürümü var!",
   "no": "Hayır",
   "setting-up": "Tari doğruluk makinesi kuruluyor...",
+  "sync": {
+    "header": "Tari ağına bağlanılıyor",
+    "subheader": "Tari ağı ile senkronize ediliyor"
+  },
   "this-might-take-a-few-minutes": "Bu birkaç dakika sürebilir",
   "title": {
     "application-started": "Uygulamalar başladı",
-    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "xtrgpuminer'in en son sürümü kontrol ediliyor",
     "checking-latest-version-mmproxy": "mmproxy'nin son sürümü kontrol ediliyor",
     "checking-latest-version-node": "Düğümün en son sürümü kontrol ediliyor",
-    "checking-latest-version-sha-p2pool": "sha-p2pool'un en son sürümü kontrol ediliyor",
-    "checking-latest-version-tor": "Checking latest version of tor",
+    "checking-latest-version-tor": "Tor\"un en son sürümü kontrol ediliyor",
     "checking-latest-version-wallet": "Cüzdanın en son sürümü kontrol ediliyor",
     "checking-latest-version-xmrig": "xmrig'in en son sürümü kontrol ediliyor",
     "download-completed": "İndirme tamamlandı",
@@ -21,7 +30,6 @@
     "minotari-node-restarting": "Minotari düğüm verileri bozuldu, eski veriler temizleniyor",
     "preparing-for-initial-sync": "İlk senkronizasyon için hazırlanıyor {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Merge mining proxy'sini başlatılıyor",
-    "starting-p2pool": "P2Pool başlatılıyor",
     "starting-up": "Başlatılıyor",
     "waiting-for-block-sync": "Blok senkronize için bekleniyor. {{local_height}}/{{tip_height}} bloklar senkronize edildi",
     "waiting-for-header-sync": "Üstbilgi senkronizasyonu bekleniyor. {{local_height}}/{{tip_height}} üstbilgiler senkronize edildi",
@@ -30,6 +38,7 @@
     "waiting-for-wallet": "Cüzdan bekleniyor",
     "wallet-started": "Cüzdan başlatıldı"
   },
+  "updated-downloaded": "Güncelleme indirildi: Tari Universe yeniden başlatılıyor",
   "would-you-like-to-install": "Tari Universe'ü şimdi yüklemek ister misiniz {{version}} ?",
   "yes": "Evet"
 }

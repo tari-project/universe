@@ -1,0 +1,8 @@
+{
+  "feedback": {
+    "chip_text": "Geri Bildirim",
+    "optional_label": "(isteğe bağlı)",
+    "submit_cta": "Geri Bildirim Gönder",
+    "text_placeholder": "Buraya başka ayrıntılar ekleyin"
+  }
+}

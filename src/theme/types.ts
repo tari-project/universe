@@ -21,9 +21,9 @@ const _COLOUR_TYPES = [
 type ColourTuple = typeof _COLOUR_TYPES;
 type ColourKey = ColourTuple[number];
 
-type GraidentKey = 'setupBg' | 'radialBg' | 'miningButtonStarted' | 'miningButtonHover' | ColourKey;
-
+type StandardColour = Record<ColourKey, string>;
 type Colour = Partial<Record<ColourKey, string>>;
+type GraidentKey = 'setupBg' | 'radialBg' | 'miningButtonStarted' | 'miningButtonHover' | ColourKey;
 type Gradients = Partial<Record<GraidentKey, string>>;
 
 export interface ThemePalette {
@@ -38,7 +38,9 @@ interface Palette {
     base: string;
     contrast: string;
     contrastAlpha: string;
-    primary: Colour;
+    focusOutline: string;
+    focusOutlineAlpha: string;
+    primary: Omit<StandardColour, 'primary' | 'secondary' | 'default'>;
     secondary: Colour;
     success: Colour;
     warning: Colour;
@@ -52,6 +54,8 @@ interface Palette {
         paper: string;
         accent: string;
         main: string;
+        secondary: string;
+        tooltip: string;
     };
     action: {
         hover: Colour;

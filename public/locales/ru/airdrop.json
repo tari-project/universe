@@ -1,43 +1,112 @@
 {
   "airdropGame": "Игра Airdrop",
-  "bonus-gems-earned": "Получены бонусные камни",
+  "auth": {
+    "url-error": "Не удалось открыть URL",
+    "url-error-copy": "Он был скопирован в ваш буфер обмена, пожалуйста, перейдите по ссылке напрямую для входа"
+  },
+  "bonus-gems-earned": "Получены бонусные гемы",
   "claimGems": "Получить гемы",
   "claimModalFieldLabel": "Необязательно",
   "claimModalFieldPlaceholder": "Введите реферальный код",
-  "claimModalFinePrint": "<strong>Обратите внимание:</strong> получение камней включает аналитику, чтобы мы могли улучшить Universe",
-  "claimModalText": "Зарабатывайте гемы, майня и приглашая друзей, чтобы увеличить свою награду за airdrop в тестовой сети! У Вас есть реферальный код? Введите его ниже и получите дополнительные <strong>{{gems}}</strong> гемов для вас и вашего друга!",
+  "claimModalFinePrint": "<strong>Обратите внимание:</strong> получение гемов включает аналитику, чтобы мы могли улучшить Universe",
+  "claimModalText": "Зарабатывайте бонусные XTM, майня и приглашая друзей.",
   "claimModalTitle": "Зарабатывайте награды за майнинг в тестовой сети",
-  "claimReferralCode": "Получите ваш реферальный код <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> гемов.",
-  "claimReferralGifts": "Получите ваш реферальный код и заработайте {{gems}} гемов. Как только Вы подключите свой аккаунт, Вы получите свои гемы.",
+  "claimReferralCode": "Получите Ваш реферальный код <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> гемов.",
+  "claimReferralGifts": "Получите Ваш реферальный код и заработайте {{gems}} гемов. Как только Вы подключите свой аккаунт, Вы получите свои гемы.",
+  "copied": "Скопировано!",
+  "copyFailed": "Ошибка копирования",
+  "copying": "Копирование...",
+  "crewRewards": {
+    "actions": {
+      "claim": "Заявить {{amount}} XTM",
+      "claimed": "Заявлено",
+      "nudge": "Напомнить"
+    },
+    "activeMinersStat": "Активные майнеры",
+    "bonusXTMEarned": "Заработанный бонус XTM",
+    "copied": "Скопировано!",
+    "crewStatus": {
+      "completed": "Завершено",
+      "inProgress": "В процессе",
+      "needsNudge": "Требуется напоминание"
+    },
+    "earnDescription": "Зарабатывайте <strong>{{userReward}} XTM</strong> за каждые <strong>{{daysRequired}} дней</strong>, которые ваш друг майнит. Ваш друг также заработает <strong>{{friendReward}} XTM</strong>.",
+    "errorLoadingData": "Ошибка загрузки данных команды. Пожалуйста, попробуйте снова.",
+    "feedback": {
+      "nudgeSent": "Напоминание отправлено!",
+      "rewardClaimed": "Награда получена!"
+    },
+    "filters": {
+      "active": "Активные",
+      "all": "Все",
+      "complete": "Завершенные",
+      "inactive": "Неактивные"
+    },
+    "inviteFriends": "Пригласить друзей",
+    "inviteFriendsMessage": "Пригласите друзей и начните зарабатывать <strong>бонус XTM!</strong>",
+    "login": {
+      "bonusText": "Зарабатывайте бонусные награды до {{maxWeeks}} недель за каждое приглашение",
+      "description": "Вы зарабатываете <strong>{{userReward}} бонусных XTM/неделя</strong> И ваш друг зарабатывает <strong>{{friendReward}} бонусных XTM/неделя</strong>, когда вы и ваш друг оба майните",
+      "loginButton": "Войдите и начните зарабатывать!",
+      "title": "Майните с друзьями. <strong>Зарабатывайте вместе.</strong>"
+    },
+    "manageYourCrew": "Управляйте своей командой",
+    "myCrew": "Моя команда",
+    "of": "из",
+    "streak": {
+      "day": "День",
+      "dayStreak": "{{days}} дней подряд",
+      "daysToMinimum": "Еще {{days}} дней, чтобы соответствовать минимальным требованиям!",
+      "keepStreak": "Сохраняйте свою серию, чтобы продолжать зарабатывать награды!",
+      "loadingStreak": "Загрузка серии...",
+      "mineConsecutiveDays": "Майните не менее <strong>{{streakDaysRequired}} дней подряд</strong> каждую неделю, чтобы заработать свой бонус XTM.",
+      "minimumRequirementsMet": "Вы выполнили минимальные требования. Продолжайте!",
+      "multiDayStreak": "{{days}} дней подряд",
+      "oneDayStreak": "1 день подряд",
+      "startMiningMessage": "Начните майнинг, чтобы начать свою серию и зарабатывать награды!",
+      "startYourStreak": "Начните свою серию!",
+      "unlockBonusRewards": "Разблокируйте свои бонусные награды"
+    },
+    "title": "Награды"
+  },
   "doLater": "Я сделаю это позже",
-  "giftReferralCode": "Заработайте {{gems}} гемов за каждого друга, которого Вы пригласите в Tari Universe. Как только они подключат свой аккаунт, Вы получите свои гемы.",
-  "giftReferralCodeHeader": "Получите ваш реферальный код <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> гемов.",
+  "earnBonusXTM": "Бонус XTM",
+  "gems": "Гемы",
+  "giftReferralCode": "Зарабатывайте бонусные XTM за каждого друга, которого вы пригласите в Tari Universe. Как только они подключат свой аккаунт и начнут майнить, вы начнете получать награды.",
+  "giftReferralCodeHeader": "Получите Ваш реферальный код <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> гемов.",
+  "invite": "Пригласить",
+  "invite-friends-gems": "За каждого друга, который использует вашу реферальную ссылку, вы зарабатываете бонусные XTM.",
   "inviteFriends": "Пригласить друзей",
   "inviteFriendsText": "Скопируйте ссылку и поделитесь ею",
   "invitedAmount": "Вы пригласили <span>{{count}}</span> друзей",
-  "keep-mining-to-earn-rewards": "Продолжайте майнить, чтобы заработать больше наград!",
+  "joinAirdrop": "Присоединиться к Airdrop",
+  "joinAirdropButtonAriaLabel": "Присоединяйтесь к Airdrop и зарабатывайте гемы. Щелкните правой кнопкой мыши, чтобы скопировать ссылку",
+  "keep-mining-to-earn-rewards": "Продолжайте майнить, чтобы заработать больше XTM наград!",
   "linkCopied": "Ссылка скопирована!",
+  "live": "в реальном времени",
   "logged-in-as": "Вход выполнен как <strong>@{{twitter}}</strong>",
+  "loggedInTitle": "Награды Airdrop",
+  "loggedOutTitle": "Пригласите друзей, чтобы заработать драгоценные камни",
   "loginButton": "Войдите, чтобы получить гемы",
   "logout": "Выйти",
   "nextTierBonus": "Пригласите <strong>{{count}} друзей</strong> и получите {{bonusGems}} бонусных гемов",
-  "update-username": "Обновить имя пользователя",
-  "permission": {
-    "setup": "Tari Universe хотел бы использовать аналитику для <strong>улучшения Вашего опыта.</strong>",
-    "text": "Tari Universe хочет использовать аналитику для улучшения Вашего опыта и вознаграждать Вас гемами за майнинг.",
-    "title": "Зарабатывайте гемы и улучшайте Tari Universe"
-  },
   "permissionNoGems": {
     "text": "Tari Universe хочет использовать аналитику для улучшения Вашего опыта.",
     "title": "Сделайте Tari Universe лучше"
   },
+  "push-notifications": {
+    "text": "Tari Universe хотел бы иметь возможность отправлять Вам уведомления на Ваши подключенные устройства",
+    "title": "Разрешите Tari Universe отправлять уведомления  "
+  },
   "referral": "Пригласить друга",
-  "topTooltipText": "Получите Tari Airdrop, собирая драгоценные камни. Чем больше камней Вы заработаете, тем больше будет Ваш airdrop.",
-  "topTooltipTitle": "Награды Testnet",
+  "rightClickToCopy": "Щелкните правой кнопкой мыши, чтобы скопировать ссылку",
+  "success": "Успех",
+  "topTooltipText": "Зарабатывайте бонусные XTM, приглашая друзей.",
+  "topTooltipTitle": "Награды тестовой сети",
   "unclaimedGems": "Неполученные гемы",
+  "update-username": "Обновить имя пользователя",
+  "username-error": "Имя пользователя должно содержать от 3 до 20 символов и включать только буквы, цифры, подчеркивания или дефисы",
+  "username-update-success": "Имя пользователя успешно обновлено",
   "you-reached-your-giftinh-goal": "Вы достигли своей цели по подаркам!",
-  "your-friend-accepted-gift": "Один из Ваших друзей принял Ваш подарок!",
-  "joinAirdrop": "Присоединиться к Airdrop",
-  "loggedInTitle": "Награды Airdrop",
-  "loggedOutTitle": "Майните и приглашайте друзей, чтобы зарабатывать гемы"
+  "your-friend-accepted-gift": "Один из Ваших друзей принял Ваш подарок!"
 }

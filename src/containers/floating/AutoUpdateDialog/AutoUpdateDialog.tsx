@@ -3,15 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store/useUIStore';
 
 import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { Typography } from '@app/components/elements/Typography';
 
 import { UpdatedStatus } from './UpdatedStatus';
-import { ButtonsWrapper } from './AutoUpdateDialog.styles';
+import { ButtonSectionWrapper, ButtonsWrapper } from './AutoUpdateDialog.styles';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { setDialogToShow } from '@app/store';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 interface DownloadProgressPayload {
     event_type: 'download_progress';
@@ -100,29 +100,29 @@ const AutoUpdateDialog = memo(function AutoUpdateDialog() {
                 <Typography variant="h3">{t('new-tari-version-available')}</Typography>
                 <Typography variant="p">{t(subtitle, { version })}</Typography>
                 {isDownloading && <UpdatedStatus contentLength={contentLength} downloaded={downloaded} />}
-                {isDownloaded && <Typography variant="p">{`Update downloaded: Restarting Tari Universe`}</Typography>}
-                <ButtonsWrapper>
+                {isDownloaded && <Typography variant="p">{t('updated-downloaded')}</Typography>}
+                <ButtonSectionWrapper>
                     {!isDownloading && !couldNotUpdate && (
-                        <>
-                            <SquaredButton onClick={handleClose} color="warning">
+                        <ButtonsWrapper>
+                            <Button fluid size="small" onClick={handleClose} backgroundColor="warning">
                                 {t('no')}
-                            </SquaredButton>
-                            <SquaredButton onClick={handleUpdate} color="green">
+                            </Button>
+                            <Button fluid size="small" onClick={handleUpdate} backgroundColor="green">
                                 {t('yes')}
-                            </SquaredButton>
-                        </>
+                            </Button>
+                        </ButtonsWrapper>
                     )}
                     {couldNotUpdate && (
-                        <>
-                            <SquaredButton onClick={handleUpdate} color="green">
+                        <ButtonsWrapper>
+                            <Button fluid size="small" onClick={handleUpdate} backgroundColor="green">
                                 {t('update')}
-                            </SquaredButton>
-                            <SquaredButton onClick={handleClose} color="warning">
+                            </Button>
+                            <Button fluid size="small" onClick={handleClose} backgroundColor="warning">
                                 {t('close')}
-                            </SquaredButton>
-                        </>
+                            </Button>
+                        </ButtonsWrapper>
                     )}
-                </ButtonsWrapper>
+                </ButtonSectionWrapper>
             </DialogContent>
         </Dialog>
     );

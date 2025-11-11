@@ -1,4 +1,7 @@
 {
+  "connected-since": "Connecté depuis",
+  "connections": "connexions",
+  "established": "Établi",
   "listener-addresses": "Adresses des auditeurs",
   "miners": "Mineurs",
   "network-info": "Infos réseau",
@@ -7,8 +10,18 @@
   "p2pool-connection-info": "Connexion",
   "p2pool-connection-info-more": "Détails de la connexion",
   "p2pool-peers": "Pairs P2pool",
-  "p2pool-stats": "Statistiques de minage en pool",
+  "p2pool-stats": "Statistiques P2pool",
+  "pending": "En attente",
   "randomx-stats": "Statistiques RandomX",
   "sha3-stats": "Statistiques SHA3",
+  "stats": {
+    "earned": "Vous avez gagné",
+    "tile-heading": "Récompenses en cours",
+    "tile-heading-zero": "Les récompenses commencent dans ~30 minutes",
+    "tile-disabled-heading": "{{unit}} est désactivé",
+    "tile-loading": "Le pool se réchauffe",
+    "tooltip-copy": "« En cours » jusqu\"à ce que vous gagniez un minimum de <strong>{{amount}}</strong>. Il peut y avoir un délai entre l\"envoi de votre paiement et son affichage dans vos transactions et solde de portefeuille.",
+    "tooltip-tile-heading": "Seuil de récompenses"
+  },
   "tribe": "Tribu"
 }

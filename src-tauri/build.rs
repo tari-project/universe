@@ -23,6 +23,22 @@
 fn main() {
     // Allow the use of unstable features in tokio
     println!("cargo::rustc-check-cfg=cfg(tokio_unstable)");
+
+    // Use a default set of env vars
+    // This is project specific and doesn't work against our dependencies like tari_common.
+    // It's essentially duplicated work for lints etc that npm already injects when running tauri.
+    // TODO: Remove compile time env vars. TU should be network agnostic.
+    println!("cargo::rerun-if-changed=env.esme");
+    println!("cargo::rerun-if-changed=env.mainnet");
+    println!("cargo::rerun-if-env-changed=TARI_NETWORK");
+    println!("cargo::rerun-if-env-changed=TARI_TARGET_NETWORK");
+
+    let network = option_env!("TARI_NETWORK").unwrap_or("esmeralda");
+    let _ = dotenvy::from_path(format!("env.{network}")).ok();
+    for (key, value) in std::env::vars() {
+        println!("cargo::rustc-env={key}={value}");
+    }
+
     if cfg!(target_os = "windows") {
         let mut windows = tauri_build::WindowsAttributes::new();
         // Require Administrator permissions to handle Firewall prompts

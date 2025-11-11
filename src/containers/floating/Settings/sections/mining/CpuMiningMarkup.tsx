@@ -1,11 +1,9 @@
 import { useCallback } from 'react';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch.tsx';
 
 import { useTranslation } from 'react-i18next';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import {
     SettingsGroup,
     SettingsGroupAction,
@@ -13,12 +11,15 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { setCpuMiningEnabled } from '@app/store';
+import { setCpuMiningEnabled } from '@app/store/actions/appConfigStoreActions.ts';
+import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
 
 export default function CpuMiningSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-    const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
-    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
+    const isCpuMiningEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
+    const cpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isCpuMiningModuleInitialized);
 
     const handleCpuMiningEnabled = useCallback(async () => {
         await setCpuMiningEnabled(!isCpuMiningEnabled);
@@ -36,7 +37,7 @@ export default function CpuMiningSettings() {
                 <SettingsGroupAction>
                     <ToggleSwitch
                         checked={isCpuMiningEnabled}
-                        disabled={isSettingUp}
+                        disabled={!cpuMiningModuleInitialized}
                         onChange={handleCpuMiningEnabled}
                     />
                 </SettingsGroupAction>

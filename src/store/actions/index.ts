@@ -9,33 +9,19 @@ export {
     setUserPoints,
 } from './airdropStoreActions.ts';
 export {
-    fetchAppConfig,
-    setAirdropTokensInConfig,
-    setAllowTelemetry,
     setApplicationLanguage,
-    setAutoUpdate,
-    setCpuMiningEnabled,
-    setCustomStatsServerPort,
     setGpuMiningEnabled,
     setMineOnAppStart,
-    setMode,
     setMoneroAddress,
-    setMonerodConfig,
-    setP2poolEnabled,
-    setPreRelease,
     setShouldAlwaysUseSystemLanguage,
-    setShouldAutoLaunch,
     setShowExperimentalSettings,
-    setTheme,
-    setUseTor,
     setVisualMode,
 } from './appConfigStoreActions.ts';
 
 export {
     fetchApplicationsVersions,
     fetchApplicationsVersionsWithRetry,
-    fetchExternalDependencies,
-    loadExternalDependencies,
+    loadSystemDependencies as loadExternalDependencies,
     setCriticalError,
     setCriticalProblem,
     setError,
@@ -43,28 +29,25 @@ export {
     setIsSettingsOpen,
     setIssueReference,
     setReleaseNotes,
-    setSetupComplete,
-    setSetupParams,
-    setSetupProgress,
-    setSetupTitle,
-    updateApplicationsVersions,
 } from './appStateStoreActions.ts';
 
+export { setCpuMiningStatus, setGpuDevices, setGpuMiningStatus } from './miningMetricsStoreActions.ts';
+
 export {
-    changeMiningMode,
-    getMaxAvailableThreads,
-    pauseMining,
+    getMiningNetwork,
     setCustomLevelsDialogOpen,
     setMiningControlsEnabled,
-    setMiningNetwork,
     startMining,
     stopMining,
-    toggleDeviceExclusion,
 } from './miningStoreActions.ts';
+
 export {
-    setShowExternalDependenciesDialog,
-    setUITheme,
     setDialogToShow,
     setIsWebglNotSupported,
-    setAdminShow,
+    setShowExternalDependenciesDialog,
+    setUITheme,
 } from './uiStoreActions.ts';
+
+export { fetchTransactionsHistory, importSeedWords, setWalletBalance } from './walletStoreActions';
+
+export { handleBaseNodeStatusUpdate } from './nodeStoreActions.ts';

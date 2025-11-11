@@ -1,0 +1,8 @@
+{
+  "feedback": {
+    "chip_text": "反馈",
+    "optional_label": "（可选）",
+    "submit_cta": "发送反馈",
+    "text_placeholder": "在此添加其他详细信息"
+  }
+}

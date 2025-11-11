@@ -1,0 +1,13 @@
+{
+  "earn": "赚取高达 {{amount}}% 的奖励 XTM",
+  "help-find-address": "帮我找到我的 {{ exchange }} 地址",
+  "main-logo-title": "第一季",
+  "paste-from-clipboard": "从剪贴板粘贴",
+  "season-one-reward": "第一季奖励",
+  "select": {
+    "modal-title": "在支持的交易所上直接将 Tari (XTM) 挖矿到您的钱包"
+  },
+  "selected-exchange-miner": "您在这里挖矿",
+  "time-left": "剩余时间",
+  "wallet-address": "钱包地址"
+}

@@ -3,14 +3,11 @@ import styled from 'styled-components';
 export const Container = styled.div`
     width: 75vw;
     height: 70vh;
-
     display: flex;
     position: relative;
     align-items: stretch;
     overflow: hidden;
-
-    max-width: 1000px;
-
+    max-width: 1100px;
     @media (min-width: 1200px) {
         height: 80vh;
     }
@@ -24,9 +21,12 @@ export const HeaderContainer = styled.div`
     align-items: center;
     padding: 30px;
     text-transform: capitalize;
-    position: sticky;
-    top: 0;
-    z-index: 1;
+`;
+
+export const EndContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
 `;
 
 export const ContentContainer = styled.div`
@@ -34,8 +34,8 @@ export const ContentContainer = styled.div`
     max-width: min(450px, max-content);
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
     position: relative;
+    overflow: hidden;
 `;
 
 export const SectionWrapper = styled.div`
@@ -43,4 +43,5 @@ export const SectionWrapper = styled.div`
     display: flex;
     flex-direction: column;
     padding: 0 30px 20px;
+    overflow-y: auto;
 `;

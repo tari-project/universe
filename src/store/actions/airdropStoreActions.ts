@@ -1,21 +1,26 @@
-import { invoke } from '@tauri-apps/api/core';
 import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
-import {
-    AirdropStoreState,
-    AirdropTokens,
-    AnimationType,
-    BackendInMemoryConfig,
-    BonusTier,
-    setAirdropTokensInConfig,
-    useAirdropStore,
-    useAppConfigStore,
-    UserDetails,
-    UserEntryPoints,
-    UserPoints,
-} from '@app/store';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
-import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
-import { XSpaceEvent } from '@app/types/ws.ts';
+import {
+    type AirdropConfigBackendInMemory,
+    type AirdropStoreState,
+    type AirdropTokens,
+    type AnimationType,
+    type BonusTier,
+    type CommunityMessage,
+    type Reward,
+    type UserDetails,
+    type UserEntryPoints,
+    type UserPoints,
+    useAirdropStore,
+    useConfigBEInMemoryStore,
+    useUIStore,
+    useWalletStore,
+} from '@app/store';
+import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
+import type { XSpaceEvent } from '@app/types/ws.ts';
+import { invoke } from '@tauri-apps/api/core';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
+import { setAirdropTokensInConfig } from '@app/store/actions/config/core.ts';
 
 interface TokenResponse {
     exp: number;
@@ -33,9 +38,7 @@ function parseJwt(token: string): TokenResponse {
         window
             .atob(base64)
             .split('')
-            .map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            })
+            .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
             .join('')
     );
 
@@ -50,17 +53,29 @@ const clearState: AirdropStoreState = {
     userPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
+    uiSendRecvEnabled: true,
+    crewQueryParams: {
+        status: 'active',
+        page: 1,
+        limit: 20,
+    },
 };
 
-const fetchBackendInMemoryConfig = async () => {
-    let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
+const getAirdropInMemoryConfig = async () => {
+    let airdropInMemoryConfig: AirdropConfigBackendInMemory | undefined = useConfigBEInMemoryStore.getState();
+
+    if (!airdropInMemoryConfig) {
+        try {
+            airdropInMemoryConfig = await invoke('get_app_in_memory_config', {});
+        } catch (e) {
+            throw `get_app_in_memory_config error: ${e}`;
+        }
+    }
 
     try {
-        backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
-
         const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
-        const newState: AirdropStoreState = {
-            backendInMemoryConfig,
+        const newState: Partial<AirdropStoreState> = {
+            backendInMemoryConfig: airdropInMemoryConfig,
         };
 
         if (airdropTokens?.token) {
@@ -73,19 +88,18 @@ const fetchBackendInMemoryConfig = async () => {
 
         useAirdropStore.setState(newState);
     } catch (e) {
-        throw `get_app_in_memory_config error: ${e}`;
+        throw `get_airdrop_tokens error: ${e}`;
     }
 
-    if (!backendInMemoryConfig?.airdropUrl) {
+    if (!airdropInMemoryConfig?.airdrop_url?.length) {
         console.error('Error getting BE in memory config');
     }
-
-    return backendInMemoryConfig;
+    return airdropInMemoryConfig;
 };
 const getExistingTokens = async () => {
     const localStorageTokens = localStorage.getItem('airdrop-store');
     const parsedStorageTokens = localStorageTokens ? JSON.parse(localStorageTokens) : undefined;
-    const storedTokens = useAppConfigStore.getState().airdrop_tokens || parsedStorageTokens;
+    const storedTokens = useConfigCoreStore.getState().airdrop_tokens || parsedStorageTokens;
     if (storedTokens) {
         try {
             if (!storedTokens?.token || !storedTokens?.refreshToken) {
@@ -111,20 +125,28 @@ const getExistingTokens = async () => {
 export const airdropSetup = async () => {
     try {
         console.info('Fetching backend in memory config');
-        const beConfig = await fetchBackendInMemoryConfig();
-        console.info('Getting existing tokens');
-        await getExistingTokens();
-        if (beConfig?.airdropUrl) {
-            console.info('Refreshing airdrop tokens');
-            await handleRefreshAirdropTokens();
-            await fetchAllUserData();
+        const beConfig = await getAirdropInMemoryConfig();
+
+        if (beConfig) {
+            console.info('Getting existing tokens');
+            await getExistingTokens();
+            if (beConfig.airdrop_url) {
+                console.info('Refreshing airdrop tokens');
+                await handleRefreshAirdropTokens();
+                await fetchAllUserData();
+                if (useUIStore.getState().showSplashscreen) {
+                    handleCloseSplashscreen();
+                }
+            }
         }
     } catch (error) {
         console.error('Error in airdropSetup: ', error);
     }
 };
-export const handleAirdropLogout = async () => {
-    removeSocket();
+export const handleAirdropLogout = async (isUserLogout = false) => {
+    if (isUserLogout) {
+        console.info('User logout | removing airdrop tokens');
+    }
     await setAirdropTokens(undefined);
 };
 
@@ -141,13 +163,6 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             token: airdropTokens.token,
             refreshToken: airdropTokens.refreshToken,
         });
-
-        const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
-        const authToken = airdropTokens?.token;
-
-        if (airdropApiUrl && authToken) {
-            initialiseSocket(airdropApiUrl, authToken);
-        }
     } else {
         // User not connected
         useAirdropStore.setState((currentState) => ({
@@ -156,6 +171,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             syncedWithBackend: true,
             airdropTokens: undefined,
         }));
+
         try {
             setAirdropTokensInConfig(undefined);
         } catch (e) {
@@ -197,24 +213,128 @@ export const handleUsernameChange = async (username: string, onError?: (e: unkno
     });
 };
 
+export async function fetchFeatureFlag(featureName?: string) {
+    const path = featureName ? `/features/${featureName}` : '/features';
+    return await handleAirdropRequest<{
+        features?: string[];
+        access?: boolean;
+    } | null>({
+        publicRequest: true,
+        path,
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+export async function fetchFeatures() {
+    const response = await fetchFeatureFlag();
+    if (response?.features) {
+        const enabledFeatures = response.features;
+        useAirdropStore.setState({ features: enabledFeatures });
+    }
+    return response;
+}
+
+export async function fetchCommunityMessages() {
+    const response = await handleAirdropRequest<CommunityMessage[] | null>({
+        publicRequest: true,
+        path: '/miner/community-message',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response) {
+        useAirdropStore.setState({ communityMessages: response });
+    }
+
+    return response;
+}
+
+export async function fetchLatestXSpaceEvent() {
+    const response = await handleAirdropRequest<XSpaceEvent | null>({
+        publicRequest: true,
+        path: '/miner/x-space-events/latest',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response) {
+        useAirdropStore.setState({ latestXSpaceEvent: response });
+    }
+
+    return response;
+}
+
+export async function sendCrewNudge(message: string, userId: string) {
+    return await handleAirdropRequest<{ success: boolean } | null>({
+        path: '/crew/nudge',
+        method: 'POST',
+        body: {
+            message,
+            userId,
+        },
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+export async function claimCrewRewards(rewardId: string, memberId: string) {
+    const walletAddress = useWalletStore.getState().tari_address_base58;
+    if (!walletAddress) {
+        throw new Error('No wallet address found');
+    }
+    return await handleAirdropRequest<{
+        success: boolean;
+        claimedReward: Reward;
+    } | null>({
+        path: `/crew/rewards/${rewardId}/claim`,
+        method: 'POST',
+        body: {
+            rewardId,
+            memberId,
+            targetWalletAddress: walletAddress,
+        },
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+}
+
+export const setCrewQueryParams = (
+    params: Partial<{
+        status: 'all' | 'completed' | 'active' | 'inactive';
+        page: number;
+        limit: number;
+    }>
+) => {
+    useAirdropStore.setState((state) => ({
+        crewQueryParams: { ...state.crewQueryParams, ...params },
+    }));
+};
+
 export const fetchAllUserData = async () => {
     const fetchUserDetails = async () => {
         return await handleAirdropRequest<UserDetails>({
             path: '/user/details',
             method: 'GET',
-            onError: handleAirdropLogout,
+            onError: () => handleAirdropLogout(),
         })
             .then((data) => {
                 if (data?.user?.id) {
                     setUserDetails(data);
                     return data.user;
                 } else {
-                    console.error('Error fetching user details, logging out');
                     handleAirdropLogout();
                 }
             })
             .catch(() => {
-                console.error('Error fetching user details, logging out');
                 handleAirdropLogout();
             });
     };

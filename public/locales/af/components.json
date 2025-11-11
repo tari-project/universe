@@ -1,4 +1,16 @@
 {
+  "banner": {
+    "body-copy": "Jy mag vurkies en hash rate-fluktuasies ervaar terwyl die netwerk oor die volgende ~15 dae stabiliseer.",
+    "body-copy-highlight": "Tari is splinternuut!",
+    "is-live": "is regstreeks"
+  },
+  "close-experience-dialog": {
+    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
+    "dont-ask-again": "Don't ask me again",
+    "exit-completely": "Exit Completely",
+    "run-in-background": "Run in Background",
+    "title": "Choose how to close Tari Universe"
+  },
   "field-error-message": {
     "integers-only": "Slegs heelgetalle toegelaat",
     "invalid": "Veld ongeldig",
@@ -20,14 +32,19 @@
     "title": "Vrylatingsnotas"
   },
   "resume-app-modal": {
-    "title": "Hervat Tari Universe",
+    "finishing-resume": "Voltooi Hervat...",
     "resuming-all-processes": "Hervat alle prosesse...",
-    "resuming-tor": "Hervat Tor...",
+    "resuming-mm-proxy": "Hervat MM Proxy...",
     "resuming-node": "Hervat Node...",
+    "resuming-tor": "Hervat Tor...",
     "resuming-wallet": "Hervat Beursie...",
     "syncing-node": "Sinkroniseer Node...",
-    "resuming-p2pool": "Hervat P2Pool...",
-    "resuming-mm-proxy": "Hervat MM Proxy...",
-    "finishing-resume": "Voltooi Hervat..."
+    "title": "Hervat Tari Universe"
+  },
+  "warmupDialog": {
+    "copy": "Die geboorte van \"n bewys-van-werk netwerk is spesiaal. In die vroeë dae het die netwerk tyd nodig om te stabiliseer en sy ritme te vind. Ons noem dit die \"opwarmfase.\"\nBydraers en vroeë ondersteuners van die Tari-netwerk (soos uitruilings en infrastruktuurvennote) verwag dat die opwarmfase ongeveer 15 dae sal duur. Daarna sal die netwerk oorgaan na \"n meer stabiele toestand.\nGedurende die opwarmfase is sommige eienaardighede normaal. Jy mag bloktydfluktuasies, tydelike ontkoppelings, sinkroniseringsvertraginge, of selfs kortstondige vurkies sien wat vereis dat jou node weer aan die hoofketting koppel.\nDie opwarmfase is \"n goeie tyd om te myn omdat belonings die hoogste per blok is. Ons hoop die vroeë dae van die Tari-netwerk is belonend vir jou.\nLaat die speletjies begin. Mag die blokke vir altyd in jou guns wees!",
+    "subtitle": "Wat beteken dit presies?",
+    "tag-line": "Welkom by Tari Mainnet",
+    "title": "Opwarmfase"
   }
 }

@@ -1,0 +1,25 @@
+{
+  "connected-since": "Kết nối từ",
+  "connections": "kết nối",
+  "established": "Đã thiết lập",
+  "listener-addresses": "Địa chỉ lắng nghe",
+  "miners": "Thợ đào",
+  "network-info": "Thông tin mạng",
+  "p2pool-chain-tip": "Đỉnh chuỗi P2Pool",
+  "p2pool-connected": "Đã kết nối P2Pool",
+  "p2pool-connection-info": "Kết nối",
+  "p2pool-connection-info-more": "Chi tiết kết nối",
+  "p2pool-peers": "Đồng nghiệp P2pool",
+  "p2pool-stats": "Thống kê P2pool",
+  "pending": "Đang chờ",
+  "randomx-stats": "Thống kê RandomX",
+  "sha3-stats": "Thống kê SHA3",
+  "stats": {
+    "earned": "Bạn đã nhận",
+    "tile-heading": "Phần thưởng đang xử lý",
+    "tile-loading": "Pool đang khởi động",
+    "tooltip-copy": "Phần thưởng ở trạng thái \"Đang xử lý\" cho đến khi bạn đạt tối thiểu <strong>{{amount}}</strong>. Khi đạt ngưỡng, phần thưởng sẽ tự động chuyển vào ví Tari Universe của bạn. Có thể mất thêm 2 giờ để nhận được.",
+    "tooltip-tile-heading": "Ngưỡng phần thưởng"
+  },
+  "tribe": "Nhóm"
+}

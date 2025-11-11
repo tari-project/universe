@@ -1,21 +1,37 @@
 {
+  "bubbles": {
+    "active-miners": "aktywni kopacze",
+    "ago": "temu",
+    "block": "blok",
+    "got-rewarded": "otrzymał nagrodę",
+    "miners": "kopacze",
+    "pool": "Pula",
+    "solved": "rozwiązano",
+    "solving": "jest rozwiązywany"
+  },
   "connection-to-node-lost": "Połączenie z węzłem kopania zostało utracone. Poczekaj, aż wznowi połącznie lub uruchom go ponownie.",
   "cpu-power": "Moc CPU",
   "current-block-time": "Aktualny czas bloku",
   "day": "day",
-  "estimated-day": "Est tXTM/dzień",
+  "estimated-day": "Est XTM/dzień",
   "estimated-earnings": "Szacowane zarobki",
   "floor": "Poziom",
   "gpu-power": "Moc GPU",
   "mining-button-text": {
-    "cancel-mining": "Anuluj kopanie",
-    "changing-mode": "Zmiana trybu",
-    "pause-mining": "Wstrzymaj kopanie",
-    "start-mining": "Uruchom kopanie",
-    "started-auto-mining": "Automatyczne kopanie uruchomione",
-    "starting-mining": "Uruchamianie kopania",
-    "stop-mining": "Zatrzymaj kopanie",
-    "waiting-for-idle": "Oczekiwanie na bezczynność"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Uruchom kopanie"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    },
+    "mode": "Mode",
+    "mode-long": "Miner Mode"
   },
   "orphan-chain-tooltip": {
     "heading": "Rzeczy do wypróbowania:",
@@ -25,6 +41,28 @@
     "step_4": "Spróbuj użyć mostu Tor (w Ustawieniach)",
     "step_5": "Spróbuj wyłączyć Tor (w Ustawieniach)",
     "step_6": "Spróbuj zresetować aplikację (w Ustawieniach)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
+  },
+  "pool": {
+    "accepted_shares": "Zaakceptowane udziały",
+    "balance": "Całkowite zarobki",
+    "min_payout": "Minimalna wypłata",
+    "unpaid": "Niezapłacone"
+  },
+  "schedule": {
+    "cta-save": "Save Schedule",
+    "cta-save-complete": "Saved!",
+    "current": "Your current schedule",
+    "mining-schedule": "Mining Schedule",
+    "mining-schedule-copy": "Set specific times to automatically start mining.",
+    "mining-schedule-setup": "Setup Mining Schedule",
+    "scheduled-to-mine": "Scheduled to mine at",
+    "scheduled-to-pause": "Scheduled to pause mining at",
+    "time-label-end": "Daily End Time",
+    "time-label-start": "Daily Start Time"
   },
   "you-earn-rewards-separately": "Zarabiasz nagrody za kopanie CPU i GPU osobno",
   "you-won-block": "Byłeś zwycięzcą <span>bloku #{{ blockHeight }}</span>",

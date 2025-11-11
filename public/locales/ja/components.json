@@ -1,4 +1,16 @@
 {
+  "banner": {
+    "body-copy": "ネットワークが安定するまでの約15日間、フォークやハッシュレートの変動が発生する可能性があります。",
+    "body-copy-highlight": "Tariは全く新しいです！",
+    "is-live": "がライブです"
+  },
+  "close-experience-dialog": {
+    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
+    "dont-ask-again": "Don't ask me again",
+    "exit-completely": "Exit Completely",
+    "run-in-background": "Run in Background",
+    "title": "Choose how to close Tari Universe"
+  },
   "field-error-message": {
     "integers-only": "整数のみ許可されます",
     "invalid": "フィールドが無効です",
@@ -20,14 +32,19 @@
     "title": "リリースノート"
   },
   "resume-app-modal": {
-    "title": "Tari Universeを再開しています",
+    "finishing-resume": "再開を完了しています...",
     "resuming-all-processes": "すべてのプロセスを再開しています...",
-    "resuming-tor": "Torを再開しています...",
+    "resuming-mm-proxy": "MMプロキシを再開しています...",
     "resuming-node": "ノードを再開しています...",
+    "resuming-tor": "Torを再開しています...",
     "resuming-wallet": "ウォレットを再開しています...",
     "syncing-node": "ノードを同期しています...",
-    "resuming-p2pool": "P2Poolを再開しています...",
-    "resuming-mm-proxy": "MMプロキシを再開しています...",
-    "finishing-resume": "再開を完了しています..."
+    "title": "Tari Universeを再開しています"
+  },
+  "warmupDialog": {
+    "copy": "プルーフ・オブ・ワークネットワークの誕生は特別です。初期段階では、ネットワークが安定し、リズムを見つけるための時間が必要です。これを「ウォームアップフェーズ」と呼びます。\nTariネットワークの貢献者や初期サポーター（取引所やインフラパートナーなど）は、ウォームアップフェーズが約15日間続くと予想しています。その後、ネットワークはより安定した状態に移行します。\nウォームアップフェーズ中は、いくつかの癖が通常です。ブロック時間の変動、一時的な切断、同期の遅延、またはメインチェーンへの再接続を必要とする短命のフォークが発生することがあります。\nウォームアップフェーズは、報酬がブロックごとに最も高いので、マイニングに最適な時期です。Tariネットワークの初期の日々があなたにとって報われることを願っています。\nゲームを始めましょう。ブロックが永遠にあなたの味方でありますように！",
+    "subtitle": "これは具体的に何を意味しますか？",
+    "tag-line": "Tariメインネットへようこそ",
+    "title": "ウォームアップフェーズ"
   }
 }

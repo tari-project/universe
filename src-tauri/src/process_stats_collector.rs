@@ -33,8 +33,6 @@ pub(crate) struct ProcessStatsCollectorBuilder {
     mm_proxy_rx: Receiver<ProcessWatcherStats>,
     node_tx: Option<Sender<ProcessWatcherStats>>,
     node_rx: Receiver<ProcessWatcherStats>,
-    p2pool_tx: Option<Sender<ProcessWatcherStats>>,
-    p2pool_rx: Receiver<ProcessWatcherStats>,
     tor_tx: Option<Sender<ProcessWatcherStats>>,
     tor_rx: Receiver<ProcessWatcherStats>,
     wallet_tx: Option<Sender<ProcessWatcherStats>>,
@@ -50,7 +48,6 @@ impl ProcessStatsCollectorBuilder {
         let (mm_proxy_tx, mm_proxy_rx) =
             tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (node_tx, node_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
-        let (p2pool_tx, p2pool_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (tor_tx, tor_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (wallet_tx, wallet_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
 
@@ -63,8 +60,6 @@ impl ProcessStatsCollectorBuilder {
             mm_proxy_rx,
             node_tx: Some(node_tx),
             node_rx,
-            p2pool_tx: Some(p2pool_tx),
-            p2pool_rx,
             tor_tx: Some(tor_tx),
             tor_rx,
             wallet_tx: Some(wallet_tx),
@@ -96,12 +91,6 @@ impl ProcessStatsCollectorBuilder {
             .expect("Cannot take node more than once")
     }
 
-    pub fn take_p2pool(&mut self) -> Sender<ProcessWatcherStats> {
-        self.p2pool_tx
-            .take()
-            .expect("Cannot take p2pool more than once")
-    }
-
     pub fn take_tor(&mut self) -> Sender<ProcessWatcherStats> {
         self.tor_tx.take().expect("Cannot take tor more than once")
     }
@@ -118,7 +107,6 @@ impl ProcessStatsCollectorBuilder {
             gpu_miner_rx: self.gpu_miner_rx,
             mm_proxy_rx: self.mm_proxy_rx,
             node_rx: self.node_rx,
-            p2pool_rx: self.p2pool_rx,
             tor_rx: self.tor_rx,
             wallet_rx: self.wallet_rx,
         }
@@ -131,16 +119,11 @@ pub(crate) struct ProcessStatsCollector {
     gpu_miner_rx: Receiver<ProcessWatcherStats>,
     mm_proxy_rx: Receiver<ProcessWatcherStats>,
     node_rx: Receiver<ProcessWatcherStats>,
-    p2pool_rx: Receiver<ProcessWatcherStats>,
     tor_rx: Receiver<ProcessWatcherStats>,
     wallet_rx: Receiver<ProcessWatcherStats>,
 }
 
 impl ProcessStatsCollector {
-    pub fn get_p2pool_stats(&self) -> ProcessWatcherStats {
-        self.p2pool_rx.borrow().clone()
-    }
-
     pub fn get_cpu_miner_stats(&self) -> ProcessWatcherStats {
         self.cpu_miner_rx.borrow().clone()
     }
@@ -148,6 +131,7 @@ impl ProcessStatsCollector {
     pub fn get_gpu_miner_stats(&self) -> ProcessWatcherStats {
         self.gpu_miner_rx.borrow().clone()
     }
+
     pub fn get_mm_proxy_stats(&self) -> ProcessWatcherStats {
         self.mm_proxy_rx.borrow().clone()
     }

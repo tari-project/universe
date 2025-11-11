@@ -1,24 +1,40 @@
 {
+  "bubbles": {
+    "active-miners": "aktiewe myners",
+    "ago": "gelede",
+    "block": "blok",
+    "got-rewarded": "het beloning gekry",
+    "miners": "myners",
+    "pool": "Swembad",
+    "solved": "opgelos",
+    "solving": "word opgelos"
+  },
   "connection-to-node-lost": "Kontak met mynwerker verloor. Wag asseblief vir mynwerker om kontak te maak of begin weer.",
   "cpu-hashrate": "CPU Hashrate",
   "cpu-power": "CPU Krag",
   "current-block-time": "Huidige bloktyd",
   "day": "day",
-  "estimated-day": "Est tXTM/dag",
+  "estimated-day": "Est XTM/dag",
   "estimated-earnings": "Geskatte verdienste",
   "floor": "Vloer",
   "gpu-hashrate": "GPU Hashrate",
   "gpu-power": "GPU Krag",
   "gpu-usage": "GPU Usage",
   "mining-button-text": {
-    "cancel-mining": "Kanselleer myn",
-    "changing-mode": "Verander modus",
-    "pause-mining": "Onderbreek myn",
-    "start-mining": "Begin myn",
-    "started-auto-mining": "Outomatiese myn het begin",
-    "starting-mining": "Myn begin",
-    "stop-mining": "Stop Mynbou",
-    "waiting-for-idle": "Wag tot onaktief"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "Begin myn"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    },
+    "mode": "Mode",
+    "mode-long": "Miner Mode"
   },
   "orphan-chain-tooltip": {
     "heading": "Dinge om te probeer:",
@@ -28,6 +44,28 @@
     "step_4": "Probeer \"n Tor-brug gebruik (in Instellings)",
     "step_5": "Probeer Tor deaktiveer (in Instellings)",
     "step_6": "Probeer \"n toepassingherstel (in Instellings)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
+  },
+  "pool": {
+    "accepted_shares": "Aanvaarde aandele",
+    "balance": "Totale verdienste",
+    "min_payout": "Minimum uitbetaling",
+    "unpaid": "Onbetaald"
+  },
+  "schedule": {
+    "cta-save": "Save Schedule",
+    "cta-save-complete": "Saved!",
+    "current": "Your current schedule",
+    "mining-schedule": "Mining Schedule",
+    "mining-schedule-copy": "Set specific times to automatically start mining.",
+    "mining-schedule-setup": "Setup Mining Schedule",
+    "scheduled-to-mine": "Scheduled to mine at",
+    "scheduled-to-pause": "Scheduled to pause mining at",
+    "time-label-end": "Daily End Time",
+    "time-label-start": "Daily Start Time"
   },
   "you-earn-rewards-separately": "Jy verdien belonings vir die myn van CPU en GPU afsonderlik",
   "you-won-block": "Jy was die wenner van <span>blok #{{ blockHeight }}</span>",

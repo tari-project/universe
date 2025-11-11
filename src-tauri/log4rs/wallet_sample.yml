@@ -41,7 +41,7 @@ appenders:
       roller:
         kind: fixed_window
         base: 1
-        count: 5
+        count: 2
         pattern: "{{log_dir}}/wallet/log/network.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] [Thread:{I}] {l:5} {m}{n}"
@@ -58,7 +58,7 @@ appenders:
       roller:
         kind: fixed_window
         base: 1
-        count: 5
+        count: 2
         pattern: "{{log_dir}}/wallet/log/base_layer.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] [Thread:{I}] {l:5} {m}{n}"
@@ -75,7 +75,7 @@ appenders:
       roller:
         kind: fixed_window
         base: 1
-        count: 5
+        count: 2
         pattern: "{{log_dir}}/wallet/log/other.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] [Thread:{I}] {l:5} {m}{n}"
@@ -92,7 +92,7 @@ appenders:
       roller:
         kind: fixed_window
         base: 1
-        count: 5
+        count: 2
         pattern: "{{log_dir}}/wallet/log/contacts.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] [Thread:{I}] {l:5} {m}{n}"

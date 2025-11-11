@@ -1,17 +1,22 @@
+import { GpuMiningAlgorithm } from '@app/types/events-payloads';
 import i18n from 'i18next';
+import { TimeParts } from '@app/types/mining/schedule.ts';
 
 export enum FormatPreset {
     PERCENT = 'percent',
-    TXTM_COMPACT = 'txtm-compact',
-    TXTM_LONG = 'txtm-crypto',
+    XTM_DECIMALS = 'xtm-decimals',
+    XTM_COMPACT = 'xtm-compact',
+    XTM_LONG = 'xtm-crypto',
+    XTM_LONG_DEC = 'xtm-long',
     DECIMAL_COMPACT = 'decimal-compact',
+    COMPACT = 'compact',
 }
 
 const removeDecimals = (value: number, decimals: number) => {
     return value / Math.pow(10, decimals);
 };
 
-const removeTXTMCryptoDecimals = (value: number) => {
+const removeXTMCryptoDecimals = (value: number) => {
     return removeDecimals(value, 6);
 };
 
@@ -48,36 +53,66 @@ const roundCompactDecimals = (value: number, decimals = 6) => {
     return formattedValue * Math.pow(1000, unitIndex);
 };
 
+const SHARED_FORMAT_OPTIONS: Intl.NumberFormatOptions = {
+    maximumFractionDigits: 2,
+    notation: 'standard',
+    style: 'decimal',
+};
 const formatValue = (value: number, options: Intl.NumberFormatOptions = {}): string =>
-    Intl.NumberFormat(i18n.language, options).format(value);
+    Intl.NumberFormat(i18n.language, { ...SHARED_FORMAT_OPTIONS, ...options }).format(value);
 
-const formatPercent = (value = 0) => formatValue(value, { style: 'percent', maximumFractionDigits: 2 });
+const formatPercent = (value = 0) => formatValue(value, { style: 'percent' });
 
-const formatTXTMCompact = (value: number) =>
-    formatValue(removeTXTMCryptoDecimals(roundCompactDecimals(value)), {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+const formatXTMDecimals = (value: number) =>
+    formatValue(removeXTMCryptoDecimals(value), {
+        style: 'decimal',
+        minimumFractionDigits: value > 0 ? 6 : undefined,
+        maximumFractionDigits: undefined,
+    });
+
+const formatXTMCompact = (value: number) => {
+    const strippedValue = removeXTMCryptoDecimals(roundCompactDecimals(value));
+    const minimumFractionDigits = strippedValue > 1 && strippedValue % 1 === 0 ? 0 : 2;
+    const options: Intl.NumberFormatOptions = {
+        minimumFractionDigits,
         notation: 'compact',
-        style: 'decimal',
+    };
+    return formatValue(strippedValue, options);
+};
+
+const formatXTMLong = (value: number) => formatValue(removeXTMCryptoDecimals(roundToTwoDecimals(value)));
+
+const formatXTMLongDec = (value: number, maxFractionDigits = 4) =>
+    formatValue(removeXTMCryptoDecimals(value), {
+        maximumFractionDigits: maxFractionDigits,
+        minimumFractionDigits: 2,
     });
 
-const formatTXTMLong = (value: number) =>
-    formatValue(removeTXTMCryptoDecimals(roundToTwoDecimals(value)), {
-        maximumFractionDigits: 2,
-        notation: 'standard',
-        style: 'decimal',
-    });
-
-const formatDecimalCompact = (value: number) => formatValue(value, { maximumFractionDigits: 2, style: 'decimal' });
+const formatDecimalCompact = (value: number) => formatValue(value);
 
 export function formatNumber(value: number, preset: FormatPreset): string {
     switch (preset) {
+        case FormatPreset.COMPACT:
+            if (value < 10000) {
+                return formatDecimalCompact(value);
+            }
+            return formatValue(roundCompactDecimals(value), {
+                notation: 'compact',
+            });
         case FormatPreset.PERCENT:
             return formatPercent(value);
-        case FormatPreset.TXTM_COMPACT:
-            return formatTXTMCompact(value);
-        case FormatPreset.TXTM_LONG:
-            return formatTXTMLong(value);
+        case FormatPreset.XTM_COMPACT:
+            if (value / 1_000_000 < 0.01 && value > 0) {
+                return `< 0.01`;
+            }
+            return formatXTMCompact(value);
+        case FormatPreset.XTM_LONG:
+            return formatXTMLong(value);
+        case FormatPreset.XTM_LONG_DEC: {
+            return formatXTMLongDec(value);
+        }
+        case FormatPreset.XTM_DECIMALS:
+            return formatXTMDecimals(value);
         case FormatPreset.DECIMAL_COMPACT:
             return formatDecimalCompact(value);
         default:
@@ -86,18 +121,69 @@ export function formatNumber(value: number, preset: FormatPreset): string {
     }
 }
 
-export function formatHashrate(hashrate: number, joinUnit = true): string {
+interface Hashrate {
+    value: number;
+    unit: string;
+}
+
+export function formatHashrate(hashrate: number, joinUnit = true, algo = GpuMiningAlgorithm.SHA3X): Hashrate {
+    const unit = algo === GpuMiningAlgorithm.SHA3X ? 'H' : 'G';
+    const fixed = (val: number, dec = 2) => Number(val.toFixed(val >= 100 ? 1 : dec));
     if (hashrate < 1000) {
-        return joinUnit ? hashrate + ' H/s' : hashrate.toFixed(2);
-    } else if (hashrate < 1000000) {
-        return (hashrate / 1000).toFixed(2) + (joinUnit ? ' kH/s' : 'k');
-    } else if (hashrate < 1000000000) {
-        return (hashrate / 1000000).toFixed(2) + (joinUnit ? ' MH/s' : 'M');
-    } else if (hashrate < 1000000000000) {
-        return (hashrate / 1000000000).toFixed(2) + (joinUnit ? ' GH/s' : 'G');
-    } else if (hashrate < 1000000000000000) {
-        return (hashrate / 1000000000000).toFixed(2) + (joinUnit ? ' TH/s' : 'T');
+        return {
+            value: fixed(hashrate, 1),
+            unit: `${unit}/s`,
+        };
+    }
+    if (hashrate < 1000000) {
+        return {
+            value: fixed(hashrate / 1000),
+            unit: joinUnit ? ` k${unit}/s` : 'k',
+        };
+    }
+    if (hashrate < 1000000000) {
+        return {
+            value: fixed(hashrate / 1000000),
+            unit: joinUnit ? ` M${unit}/s` : 'M',
+        };
+    }
+    if (hashrate < 1000000000000) {
+        return {
+            value: fixed(hashrate / 1000000000),
+            unit: joinUnit ? ` G${unit}/s` : 'G',
+        };
+    }
+    if (hashrate < 1000000000000000) {
+        return {
+            value: fixed(hashrate / 1000000000000),
+            unit: joinUnit ? ` T${unit}/s` : 'T',
+        };
     } else {
-        return (hashrate / 1000000000000000).toFixed(2) + (joinUnit ? ' PH/s' : 'P');
+        return {
+            value: fixed(hashrate / 1000000000000000),
+            unit: joinUnit ? ` P${unit}/s` : 'P',
+        };
     }
 }
+
+export const formatCountdown = (targetDate: string): string => {
+    const now = new Date().getTime();
+    const target = new Date(targetDate).getTime();
+    const difference = target - now;
+
+    if (difference <= 0) {
+        return '0D 0H 0M';
+    }
+
+    const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+
+    return `${days}D ${hours}H ${minutes}M`;
+};
+
+export const fmtTimeUnit = (n: number): string => String(n).padStart(2, '0');
+export const fmtTimePartString = (t: TimeParts): string =>
+    `${fmtTimeUnit(t.hour)}:${fmtTimeUnit(t.minute)} ${t.timePeriod}`;
+
+export { formatDecimalCompact, roundToTwoDecimals, removeDecimals, removeXTMCryptoDecimals, formatValue };

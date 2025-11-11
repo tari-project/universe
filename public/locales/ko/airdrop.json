@@ -1,46 +1,112 @@
 {
   "airdropGame": "에어드롭 게임",
+  "auth": {
+    "url-error": "URL을 열 수 없습니다",
+    "url-error-copy": "클립보드에 복사되었습니다. 링크를 직접 방문하여 로그인하세요"
+  },
   "bonus-gems-earned": "보너스 젬 획득",
   "claimGems": "보석 받기",
   "claimModalFieldLabel": "선택 사항",
   "claimModalFieldPlaceholder": "추천 코드 입력",
   "claimModalFinePrint": "<strong>참고:</strong> 보석을 수령하면 분석 기능이 활성화되어 Universe를 개선할 수 있습니다",
-  "claimModalText": "테스트넷 동안 채굴하고 친구를 추천하여 에어드롭 보상을 늘리세요! 추천 코드가 있나요? 아래에 입력하고 추가로 <strong>{{gems}}</strong>개의 보석을 당신과 친구에게 받으세요!",
+  "claimModalText": "채굴하고 친구를 추천하여 보너스 XTM을 받으세요.",
   "claimModalTitle": "테스트넷에서 채굴하여 보상을 받으세요",
   "claimReferralCode": "추천 코드를 사용하여 <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> 보석을 받으세요.",
   "claimReferralGifts": "추천 코드를 사용하여 {{gems}}개의 보석을 받으세요. 계정을 연결하면 보석이 지급됩니다.",
+  "copied": "복사됨!",
+  "copyFailed": "복사 실패",
+  "copying": "복사 중...",
+  "crewRewards": {
+    "actions": {
+      "claim": "{{amount}} XTM 청구",
+      "claimed": "청구됨",
+      "nudge": "알림"
+    },
+    "activeMinersStat": "활성 채굴자",
+    "bonusXTMEarned": "획득한 보너스 XTM",
+    "copied": "복사됨!",
+    "crewStatus": {
+      "completed": "완료됨",
+      "inProgress": "진행 중",
+      "needsNudge": "알림 필요"
+    },
+    "earnDescription": "친구가 채굴하는 <strong>{{daysRequired}}일</strong>마다 <strong>{{userReward}} XTM</strong>을 획득하세요. 친구도 <strong>{{friendReward}} XTM</strong>을 획득합니다.",
+    "errorLoadingData": "팀 데이터 로딩 오류. 다시 시도하세요.",
+    "feedback": {
+      "nudgeSent": "알림이 전송되었습니다!",
+      "rewardClaimed": "보상이 청구되었습니다!"
+    },
+    "filters": {
+      "active": "활성",
+      "all": "모두",
+      "complete": "완료",
+      "inactive": "비활성"
+    },
+    "inviteFriends": "친구 초대",
+    "inviteFriendsMessage": "친구를 초대하고 <strong>보너스 XTM</strong>을 벌기 시작하세요!",
+    "login": {
+      "bonusText": "초대당 최대 {{maxWeeks}}주 동안 보너스 보상을 획득하세요",
+      "description": "당신과 친구가 모두 채굴할 때 <strong>{{userReward}} 보너스 XTM/주</strong>를 획득하고 친구도 <strong>{{friendReward}} 보너스 XTM/주</strong>를 획득합니다",
+      "loginButton": "로그인하고 벌기 시작!",
+      "title": "친구와 함께 채굴하세요. <strong>함께 벌기</strong>"
+    },
+    "manageYourCrew": "팀 관리",
+    "myCrew": "내 팀",
+    "of": "의",
+    "streak": {
+      "day": "일",
+      "dayStreak": "{{days}}일 연속",
+      "daysToMinimum": "최소 요구 사항을 충족하려면 {{days}}일 더 필요합니다!",
+      "keepStreak": "연속 기록을 유지하여 보상을 계속 받으세요!",
+      "loadingStreak": "연속 기록 로딩 중...",
+      "mineConsecutiveDays": "보너스 XTM을 얻으려면 매주 최소 <strong>{{streakDaysRequired}}일 연속</strong>으로 채굴하세요.",
+      "minimumRequirementsMet": "최소 요구 사항을 충족했습니다. 계속하세요!",
+      "multiDayStreak": "{{days}}일 연속",
+      "oneDayStreak": "1일 연속",
+      "startMiningMessage": "채굴을 시작하여 연속 기록을 시작하고 보상을 받으세요!",
+      "startYourStreak": "연속 기록 시작!",
+      "unlockBonusRewards": "보너스 보상 잠금 해제"
+    },
+    "title": "보상"
+  },
   "doLater": "나중에 할게요",
-  "giftReferralCode": "Tari Universe에 친구를 초대할 때마다 {{gems}}개의 보석을 받으세요. 그들이 계정을 연결하면 보석이 지급됩니다.",
+  "earnBonusXTM": "보너스 XTM",
+  "gems": "보석",
+  "giftReferralCode": "Tari Universe에 친구를 초대할 때마다 보너스 XTM을 받으세요. 그들이 계정을 연결하고 채굴하기 시작하면 보상을 받기 시작합니다.",
   "giftReferralCodeHeader": "추천 코드를 사용하여 <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> 보석을 받으세요.",
+  "invite": "초대",
+  "invite-friends-gems": "초대 링크를 사용하는 친구마다 보너스 XTM을 받습니다.",
   "inviteFriends": "친구 초대",
   "inviteFriendsText": "링크를 복사하여 공유하세요",
   "invitedAmount": "당신은 <span>{{count}}</span>명의 친구를 초대했습니다",
-  "keep-mining-to-earn-rewards": "더 많은 보상을 얻기 위해 계속 채굴하세요!",
+  "joinAirdrop": "에어드롭 참여",
+  "joinAirdropButtonAriaLabel": "에어드롭에 참여하고 보석을 획득하세요. 링크를 복사하려면 오른쪽 클릭",
+  "keep-mining-to-earn-rewards": "더 많은 XTM 보상을 얻기 위해 계속 채굴하세요!",
   "linkCopied": "링크가 복사되었습니다!",
+  "live": "실시간",
   "logged-in-as": "<strong>@{{twitter}}</strong>으로 로그인됨",
+  "loggedInTitle": "에어드롭 보상",
+  "loggedOutTitle": "친구를 초대하여 보석 획득",
   "loginButton": "로그인하여 보석 받기",
   "logout": "로그아웃",
   "nextTierBonus": "<strong>{{count}}명의 친구</strong>를 초대하고 {{bonusGems}}개의 보너스 보석을 받으세요",
-  "update-username": "사용자 이름 업데이트",
-  "permission": {
-    "setup": "타리 유니버스는 <strong>경험을 개선하기 위해</strong> 분석을 사용하고자 합니다.",
-    "text": "Tari Universe는 귀하의 경험을 개선하고 채굴에 대한 보상으로 보석을 제공하기 위해 분석을 사용하고자 합니다.",
-    "title": "보석을 얻고 Tari Universe를 더 좋게 만들기"
-  },
   "permissionNoGems": {
     "text": "Tari Universe는 귀하의 경험을 개선하기 위해 분석을 사용하고자 합니다.",
     "title": "Tari Universe를 더 좋게 만들기"
   },
+  "push-notifications": {
+    "text": "Tari Universe가 연결된 기기에 알림을 보내고자 합니다",
+    "title": "Tari Universe가 알림을 보내도록 허용"
+  },
   "referral": "친구 초대",
-  "topTooltipText": "보석을 모아 Tari 에어드롭을 받으세요. 더 많은 보석을 모을수록 더 큰 에어드롭을 받습니다.",
+  "rightClickToCopy": "링크를 복사하려면 오른쪽 클릭",
+  "success": "성공",
+  "topTooltipText": "친구를 추천하여 보너스 XTM을 받으세요.",
   "topTooltipTitle": "테스트넷 보상",
   "unclaimedGems": "미수령 보석",
-  "you-reached-your-giftinh-goal": "선물 목표에 도달했습니다!",
-  "your-friend-accepted-gift": "친구 중 한 명이 당신의 선물을 수락했습니다!",
-  "joinAirdrop": "에어드롭 참여",
-  "loggedInTitle": "에어드롭 보상",
-  "loggedOutTitle": "채굴하고 친구를 초대하여 보석 획득",
+  "update-username": "사용자 이름 업데이트",
   "username-error": "사용자 이름은 3-20자여야 하며 문자, 숫자, 밑줄 또는 하이픈만 포함해야 합니다",
   "username-update-success": "사용자 이름이 성공적으로 업데이트되었습니다",
-  "success": "성공"
+  "you-reached-your-giftinh-goal": "선물 목표에 도달했습니다!",
+  "your-friend-accepted-gift": "친구 중 한 명이 당신의 선물을 수락했습니다!"
 }

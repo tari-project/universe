@@ -46,7 +46,7 @@ impl NvidiaGpuReader {
                 Some(nvml)
             }
             Err(e) => {
-                error!("Failed to initialize Nvidia GPU reader: {}", e);
+                error!("Failed to initialize Nvidia GPU reader: {e}");
                 None
             }
         }

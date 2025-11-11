@@ -19,61 +19,82 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-use crate::ProgressTracker;
+use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::error;
-use regex::Regex;
-use semver::Version;
+use log::debug;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
-use std::time::Duration;
-use tari_common::configuration::Network;
-use tauri_plugin_sentry::sentry;
-use tokio::sync::watch::Receiver;
-use tokio::sync::RwLock;
-use tokio::time::timeout;
+use tokio::sync::Mutex as AsyncMutex;
 
+use super::adapter_bridge::BridgeTappletAdapter;
 use super::adapter_github::GithubReleasesAdapter;
 use super::adapter_tor::TorReleaseAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
 use super::binaries_manager::BinaryManager;
 use super::Binaries;
 
-static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
-    LazyLock::new(|| RwLock::new(BinaryResolver::new()));
+static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(BinaryResolver::new);
 
-#[derive(Debug, Clone)]
-pub struct VersionDownloadInfo {
-    pub(crate) version: Version,
-    pub(crate) assets: Vec<VersionAsset>,
+// Lock to prevent concurrent downloads of tari suite binaries (MergeMiningProxy, MinotariNode, Wallet)
+// that all come from the same zip file and would conflict when downloading in parallel
+static TARI_SUITE_DOWNLOAD_LOCK: LazyLock<AsyncMutex<()>> = LazyLock::new(|| AsyncMutex::new(()));
+
+static LOG_TARGET: &str = "tari::universe::binary_resolver";
+
+#[derive(Debug)]
+pub enum BinaryResolveError {
+    /// Binary files missing, likely due to antivirus quarantine
+    AntivirusIssue {
+        expected_path: PathBuf,
+        error: String,
+    },
+    /// Other error occurred
+    Other(Error),
 }
 
-#[derive(Debug, Clone)]
-pub struct VersionAsset {
-    pub(crate) url: String,
-    pub(crate) name: String,
+impl From<BinaryResolveError> for Error {
+    fn from(error: BinaryResolveError) -> Self {
+        match error {
+            BinaryResolveError::AntivirusIssue {
+                expected_path,
+                error,
+            } => {
+                anyhow!(
+                    "Binary missing due to antivirus: {} at {}",
+                    error,
+                    expected_path.display()
+                )
+            }
+            BinaryResolveError::Other(error) => error,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct BinaryDownloadInfo {
+    pub name: String,
+    pub main_url: String,
+    pub fallback_url: String,
 }
 
 #[async_trait]
 pub trait LatestVersionApiAdapter: Send + Sync + 'static {
-    async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error>;
-
+    async fn get_expected_checksum(
+        &self,
+        checksum_path: PathBuf,
+        asset_name: &str,
+    ) -> Result<String, Error>;
     async fn download_and_get_checksum_path(
         &self,
         directory: PathBuf,
-        download_info: VersionDownloadInfo,
-        progress_tracker: ProgressTracker,
+        download_info: BinaryDownloadInfo,
     ) -> Result<PathBuf, Error>;
 
     fn get_binary_folder(&self) -> Result<PathBuf, Error>;
-
-    fn find_version_for_platform(
-        &self,
-        version: &VersionDownloadInfo,
-    ) -> Result<VersionAsset, Error>;
+    fn get_base_main_download_url(&self, version: &str) -> String;
+    fn get_base_fallback_download_url(&self, version: &str) -> String;
 }
 
 pub struct BinaryResolver {
@@ -85,46 +106,63 @@ impl BinaryResolver {
     pub fn new() -> Self {
         let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
 
-        let mut gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
-
-        let mut gpu_miner_testnet_regex = Regex::new(r"opencl.*testnet").ok();
-
-        if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            gpu_miner_nextnet_regex = Regex::new(r"combined.*nextnet").ok();
-            gpu_miner_testnet_regex = Regex::new(r"combined.*testnet").ok();
-        }
-
-        let (tari_prerelease_prefix, gpuminer_specific_name) =
-            match Network::get_current_or_user_setting_or_default() {
-                Network::NextNet => ("rc", gpu_miner_nextnet_regex),
-                Network::Esmeralda => ("pre", gpu_miner_testnet_regex),
-                _ => panic!("Unsupported network"),
-            };
+        binary_manager.insert(
+            Binaries::BridgeTapplet,
+            BinaryManager::new(
+                Binaries::BridgeTapplet.name().to_string(),
+                None,
+                Box::new(BridgeTappletAdapter {
+                    repo: "wxtm-bridge-frontend".to_string(),
+                    owner: "tari-project".to_string(),
+                }),
+                false,
+            ),
+        );
 
         binary_manager.insert(
             Binaries::Xmrig,
             BinaryManager::new(
                 Binaries::Xmrig.name().to_string(),
-                // Some("xmrig-6.22.0".to_string()),
                 None,
                 Box::new(XmrigVersionApiAdapter {}),
-                None,
                 true,
             ),
         );
 
         binary_manager.insert(
-            Binaries::GpuMiner,
+            Binaries::Glytex,
             BinaryManager::new(
-                Binaries::GpuMiner.name().to_string(),
+                Binaries::Glytex.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
                     repo: "glytex".to_string(),
                     owner: "tari-project".to_string(),
-                    specific_name: gpuminer_specific_name,
                 }),
-                None,
                 true,
+            ),
+        );
+        binary_manager.insert(
+            Binaries::Graxil,
+            BinaryManager::new(
+                Binaries::Graxil.name().to_string(),
+                None,
+                Box::new(GithubReleasesAdapter {
+                    repo: "graxil".to_string(),
+                    owner: "tari-project".to_string(),
+                }),
+                false,
+            ),
+        );
+        binary_manager.insert(
+            Binaries::LolMiner,
+            BinaryManager::new(
+                Binaries::LolMiner.name().to_string(),
+                None,
+                Box::new(GithubReleasesAdapter {
+                    repo: "lolMiner-releases".to_string(),
+                    owner: "Lolliedieb".to_string(),
+                }),
+                false,
             ),
         );
 
@@ -136,9 +174,7 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
-                    specific_name: None,
                 }),
-                Some(tari_prerelease_prefix.to_string()),
                 true,
             ),
         );
@@ -151,9 +187,7 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
-                    specific_name: None,
                 }),
-                Some(tari_prerelease_prefix.to_string()),
                 true,
             ),
         );
@@ -166,24 +200,7 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
-                    specific_name: None,
                 }),
-                Some(tari_prerelease_prefix.to_string()),
-                true,
-            ),
-        );
-
-        binary_manager.insert(
-            Binaries::ShaP2pool,
-            BinaryManager::new(
-                Binaries::ShaP2pool.name().to_string(),
-                None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "sha-p2pool".to_string(),
-                    owner: "tari-project".to_string(),
-                    specific_name: None,
-                }),
-                None,
                 true,
             ),
         );
@@ -194,7 +211,6 @@ impl BinaryResolver {
                 Binaries::Tor.name().to_string(),
                 Some("tor".to_string()),
                 Box::new(TorReleaseAdapter {}),
-                None,
                 true,
             ),
         );
@@ -204,174 +220,106 @@ impl BinaryResolver {
         }
     }
 
-    pub fn current() -> &'static RwLock<BinaryResolver> {
+    pub fn current() -> &'static BinaryResolver {
         &INSTANCE
     }
 
-    pub fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
-        let manager = self
-            .managers
-            .get(&binary)
-            .ok_or_else(|| anyhow!("No latest version manager for this binary"))?;
+    async fn resolve_path_to_binary_files(
+        &self,
+        binary: Binaries,
+    ) -> Result<PathBuf, BinaryResolveError> {
+        let manager = self.managers.get(&binary).ok_or_else(|| {
+            BinaryResolveError::Other(anyhow!("No latest version manager for this binary"))
+        })?;
 
-        let version = manager
-            .get_used_version()
-            .ok_or_else(|| anyhow!("No version selected for binary {}", binary.name()))?;
+        let version = manager.get_selected_version();
 
-        let base_dir = manager.get_base_dir().map_err(|error| {
-            anyhow!(
+        let base_dir: PathBuf = manager.get_base_dir().map_err(|error| {
+            BinaryResolveError::Other(anyhow!(
                 "No base directory for binary {}, Error: {}",
                 binary.name(),
                 error
-            )
+            ))
         })?;
 
-        if let Some(sub_folder) = manager.binary_subfolder() {
-            return Ok(base_dir
-                .join(sub_folder)
-                .join(binary.binary_file_name(version)));
+        // For bridge tapplet, we return the base dir as it's a folder, not a binary file
+        // Skip the rest of the checks
+        if binary.eq(&Binaries::BridgeTapplet) {
+            return Ok(base_dir);
         }
-        Ok(base_dir.join(binary.binary_file_name(version)))
+
+        let binary_path = if let Some(sub_folder) = manager.binary_subfolder() {
+            base_dir
+                .join(sub_folder)
+                .join(binary.binary_file_name(version.clone()))
+        } else {
+            base_dir.join(binary.binary_file_name(version.clone()))
+        };
+
+        if binary_path.exists() {
+            debug!(target: LOG_TARGET, "Binary found at: {}", binary_path.display());
+            return Ok(binary_path);
+        }
+
+        Err(BinaryResolveError::AntivirusIssue {
+            expected_path: binary_path,
+            error: format!(
+                "Binary files for {} are missing from expected location. This is typically caused by antivirus software quarantining the files.",
+                binary.name()
+            ),
+        })
     }
 
-    pub async fn initialize_binary_timeout(
-        &mut self,
-        binary: Binaries,
-        progress_tracker: ProgressTracker,
-        should_check_for_update: bool,
-        timeout_channel: Receiver<String>,
-    ) -> Result<(), Error> {
-        match timeout(
-            Duration::from_secs(60 * 5),
-            self.initialize_binary(binary, progress_tracker.clone(), should_check_for_update),
-        )
-        .await
-        {
-            Err(_) => {
-                let last_msg = timeout_channel.borrow().clone();
-                error!(target: "tari::universe::main", "Setup took too long: {:?}", last_msg);
-                let error_msg = format!("Setup took too long: {}", last_msg);
-                sentry::capture_message(&error_msg, sentry::Level::Error);
-                Err(anyhow!(error_msg))
-            }
-            Ok(result) => result,
-        }
+    pub async fn get_binary_path(&self, binary: Binaries) -> Result<PathBuf, Error> {
+        self.resolve_path_to_binary_files(binary)
+            .await
+            .map_err(|e| e.into())
     }
 
     pub async fn initialize_binary(
-        &mut self,
+        &self,
         binary: Binaries,
-        progress_tracker: ProgressTracker,
-        should_check_for_update: bool,
+        progress_channel: Option<IncrementalProgressTracker>,
     ) -> Result<(), Error> {
         let manager = self
             .managers
-            .get_mut(&binary)
+            .get(&binary)
             .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
 
-        manager.read_local_versions().await;
-
-        if should_check_for_update {
-            // Will populate Vec of downloaded versions that meet the requirements
-            manager.check_for_updates().await;
+        if manager.check_if_files_for_version_exist() {
+            // If files already exist, we can skip the download
+            return Ok(());
         }
 
-        // Selects the highest version from the Vec of downloaded versions and local versions
-        let mut highest_version = manager.select_highest_version();
+        // These 3 binaries are downloaded as one zip so processing them in parallel would cause file conflicts
+        // To keep it safe, we lock the download for these binaries and then check again if files exist after acquiring the lock
+        let needs_tari_suite_lock = matches!(
+            binary,
+            Binaries::MergeMiningProxy | Binaries::MinotariNode | Binaries::Wallet
+        );
 
-        // This covers case when we do not check newest version and there is no local version
-        if !should_check_for_update && highest_version.is_none() {
-            manager.check_for_updates().await;
-            highest_version = manager.select_highest_version();
+        if needs_tari_suite_lock {
+            let _lock = TARI_SUITE_DOWNLOAD_LOCK.lock().await;
+
+            if manager.check_if_files_for_version_exist() {
+                return Ok(());
+            }
             manager
-                .download_selected_version(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(progress_channel.clone())
                 .await?;
-        }
-
-        // Check if the files exist after download
-        let check_if_files_exist =
-            manager.check_if_files_for_version_exist(highest_version.clone());
-        if !check_if_files_exist {
+        } else {
             manager
-                .download_selected_version(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(progress_channel.clone())
                 .await?;
-        }
-
-        // Throw error if files still do not exist
-        let check_if_files_exist =
-            manager.check_if_files_for_version_exist(highest_version.clone());
-        if !check_if_files_exist {
-            return Err(anyhow!("Failed to download binaries"));
-        }
-
-        match highest_version {
-            Some(version) => manager.set_used_version(version),
-            None => return Err(anyhow!("No version selected for binary {}", binary.name())),
         }
 
         Ok(())
     }
 
-    pub async fn update_binary(
-        &mut self,
-        binary: Binaries,
-        progress_tracker: ProgressTracker,
-    ) -> Result<(), Error> {
-        let manager = self
-            .managers
-            .get_mut(&binary)
-            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
-
-        manager.check_for_updates().await;
-        let highest_version = manager.select_highest_version();
-
-        progress_tracker
-            .send_last_action(format!(
-                "Checking if files exist before download: {} {}",
-                binary.name(),
-                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
-            ))
-            .await;
-
-        let check_if_files_exist =
-            manager.check_if_files_for_version_exist(highest_version.clone());
-        if !check_if_files_exist {
-            manager
-                .download_selected_version(highest_version.clone(), progress_tracker.clone())
-                .await?;
-        }
-
-        progress_tracker
-            .send_last_action(format!(
-                "Checking if files exist after download: {} {}",
-                binary.name(),
-                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
-            ))
-            .await;
-        let check_if_files_exist =
-            manager.check_if_files_for_version_exist(highest_version.clone());
-        if !check_if_files_exist {
-            return Err(anyhow!("Failed to download binaries"));
-        }
-
-        match highest_version {
-            Some(version) => manager.set_used_version(version),
-            None => return Err(anyhow!("No version selected for binary {}", binary.name())),
-        }
-
-        Ok(())
-    }
-
-    pub fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
+    pub async fn get_binary_version(&self, binary: Binaries) -> String {
         self.managers
             .get(&binary)
-            .and_then(|manager| manager.get_used_version())
-    }
-
-    pub async fn get_binary_version_string(&self, binary: Binaries) -> String {
-        let version = self.get_binary_version(binary);
-        version
-            .map(|v| v.to_string())
-            .unwrap_or_else(|| "Not Installed".to_string())
+            .unwrap_or_else(|| panic!("Couldn't find manager for binary: {}", binary.name()))
+            .get_selected_version()
     }
 }

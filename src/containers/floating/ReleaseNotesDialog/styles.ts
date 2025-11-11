@@ -3,6 +3,8 @@ import styled from 'styled-components';
 export const Wrapper = styled.div`
     width: 500px;
     padding: 0 15px;
+    display: flex;
+    flex-direction: column;
 `;
 
 export const Title = styled.div`

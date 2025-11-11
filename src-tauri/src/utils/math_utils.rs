@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use log::warn;
-use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_transaction_components::tari_amount::MicroMinotari;
 
 const BLOCKS_PER_DAY: u64 = 360; // both RandomX and SHA3 produce 360 blocks per day - 720 in total
 const LOG_TARGET: &str = "tari::universe::math_utils";

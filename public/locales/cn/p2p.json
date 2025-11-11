@@ -1,4 +1,7 @@
 {
+  "connected-since": "连接自",
+  "connections": "连接",
+  "established": "已建立",
   "listener-addresses": "监听地址",
   "miners": "矿工",
   "network-info": "网络信息",
@@ -7,8 +10,18 @@
   "p2pool-connection-info": "连接",
   "p2pool-connection-info-more": "连接详情",
   "p2pool-peers": "P2pool 节点",
-  "p2pool-stats": "矿池挖矿统计",
+  "p2pool-stats": "P2pool统计",
+  "pending": "待处理",
   "randomx-stats": "RandomX 统计",
   "sha3-stats": "SHA3 统计",
+  "stats": {
+    "earned": "您赚取了",
+    "tile-heading": "奖励进行中",
+    "tile-heading-zero": "奖励将在约 30 分钟后开始",
+    "tile-disabled-heading": "{{unit}} 已禁用",
+    "tile-loading": "矿池正在热身",
+    "tooltip-copy": "“进行中”直到您赚取至少 <strong>{{amount}}</strong>。从发送付款到显示在您的钱包交易和余额中可能会有延迟。",
+    "tooltip-tile-heading": "奖励门槛"
+  },
   "tribe": "部落"
 }

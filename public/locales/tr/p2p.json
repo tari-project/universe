@@ -1,4 +1,7 @@
 {
+  "connected-since": "Bağlantı tarihi",
+  "connections": "bağlantılar",
+  "established": "Kuruldu",
   "listener-addresses": "Dinleyici adresleri",
   "miners": "Madenciler",
   "network-info": "Ağ bilgisi",
@@ -7,8 +10,18 @@
   "p2pool-connection-info": "Bağlantı",
   "p2pool-connection-info-more": "Bağlantı detayları",
   "p2pool-peers": "P2pool eşleri",
-  "p2pool-stats": "Havuz madenciliği istatistikleri",
+  "p2pool-stats": "P2pool İstatistikleri",
+  "pending": "Beklemede",
   "randomx-stats": "RandomX İstatistikleri",
   "sha3-stats": "SHA3 İstatistikleri",
+  "stats": {
+    "earned": "Kazandınız",
+    "tile-heading": "Devam Eden Ödüller",
+    "tile-heading-zero": "Ödüller ~30 dakika içinde başlıyor",
+    "tile-disabled-heading": "{{unit}} devre dışı",
+    "tile-loading": "Havuz ısınıyor",
+    "tooltip-copy": "<strong>{{amount}}</strong> minimumunu kazanana kadar “Devam Ediyor”. Ödemenizi göndermeniz ile cüzdan işlemlerinizde ve bakiyenizde görünmesi arasında bir gecikme olabilir.",
+    "tooltip-tile-heading": "Ödül Eşiği"
+  },
   "tribe": "Kabile"
 }

@@ -1,4 +1,7 @@
 {
+  "connected-since": "Gekoppel sedert",
+  "connections": "verbindings",
+  "established": "Gevestig",
   "listener-addresses": "Luisteraaradresse",
   "miners": "Myners",
   "network-info": "Netwerkinligting",
@@ -7,8 +10,18 @@
   "p2pool-connection-info": "Verbinding",
   "p2pool-connection-info-more": "Verbindingsbesonderhede",
   "p2pool-peers": "P2pool eweknieë",
-  "p2pool-stats": "Poel mynbou statistieke",
+  "p2pool-stats": "P2pool statistieke",
+  "pending": "Hangende",
   "randomx-stats": "RandomX Statistieke",
   "sha3-stats": "SHA3 Statistieke",
+  "stats": {
+    "earned": "Jy het verdien",
+    "tile-heading": "Belonings in Proses",
+    "tile-heading-zero": "Belonings begin oor ~30 minute",
+    "tile-disabled-heading": "{{unit}} is gedeaktiveer",
+    "tile-loading": "Swembad is besig om op te warm",
+    "tooltip-copy": "“Aan die gang” totdat jy \"n minimum van <strong>{{amount}}</strong> verdien. Daar mag \"n vertraging wees tussen die stuur van jou uitbetaling en dit wat in jou beursie transaksies en balans vertoon word.",
+    "tooltip-tile-heading": "Beloningsdrempel"
+  },
   "tribe": "Stam"
 }

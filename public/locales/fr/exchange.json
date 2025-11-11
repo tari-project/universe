@@ -1,0 +1,13 @@
+{
+  "earn": "Gagnez jusqu\"à {{amount}}% en bonus XTM",
+  "help-find-address": "Aidez-moi à trouver mon adresse {{ exchange }}",
+  "main-logo-title": "Saison\nUn",
+  "paste-from-clipboard": "Coller depuis le presse-papiers",
+  "season-one-reward": "Bonus de la saison un",
+  "select": {
+    "modal-title": "Commencez à miner Tari (XTM) directement vers votre portefeuille sur une plateforme d\"échange prise en charge"
+  },
+  "selected-exchange-miner": "Vous minez ici",
+  "time-left": "Temps restant",
+  "wallet-address": "Adresse du portefeuille"
+}

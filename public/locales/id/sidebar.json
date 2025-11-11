@@ -10,9 +10,12 @@
   "mining-schedules-description": "Jadwalkan aktivitas penambangan Anda",
   "next-milestone": "Tonggak Berikutnya",
   "paper-wallet-button": "Sinkronkan dengan Ponsel",
-  "paper-wallet-tooltip-message": "Lacak XTM Anda di mana saja dengan menyinkronkan dompet Universe Anda ke Tari Aurora.",
+  "paper-wallet-tooltip-message": "Lacak XTM Anda di mana saja dengan menyinkronkan dompet Universe Anda ke Tari Universe Mobile.",
   "paper-wallet-tooltip-title": "Sinkronkan dengan Ponsel",
   "recent-wins": "Kemenangan terbaru",
+  "reward": {
+    "stacked": "Anda menumpuk"
+  },
   "rewards": "Hadiah",
   "setup-scheduler": "Atur Penjadwal",
   "share": {

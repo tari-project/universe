@@ -1,4 +1,7 @@
 {
+  "connected-since": "से जुड़ा हुआ",
+  "connections": "कनेक्शन",
+  "established": "स्थापित",
   "listener-addresses": "श्रोता पते",
   "miners": "माइनर्स",
   "network-info": "नेटवर्क जानकारी",
@@ -7,8 +10,18 @@
   "p2pool-connection-info": "कनेक्शन",
   "p2pool-connection-info-more": "कनेक्शन विवरण",
   "p2pool-peers": "P2pool सहकर्मी",
-  "p2pool-stats": "पूल माइनिंग आँकड़े",
+  "p2pool-stats": "P2pool आँकड़े",
+  "pending": "लंबित",
   "randomx-stats": "RandomX सांख्यिकी",
   "sha3-stats": "SHA3 सांख्यिकी",
+  "stats": {
+    "earned": "You earned",
+    "tile-heading": "इनाम प्रगति पर",
+    "tile-heading-zero": "Rewards start in ~30 mins",
+    "tile-disabled-heading": "{{unit}} is disabled",
+    "tile-loading": "पूल गर्म हो रहा है",
+    "tooltip-copy": "“In Progress” until you earn a minimum of <strong>{{amount}}</strong>. There may be a delay between sending your payout and it displaying in your wallet txs and balance.",
+    "tooltip-tile-heading": "इनाम सीमा"
+  },
   "tribe": "जनजाति"
 }

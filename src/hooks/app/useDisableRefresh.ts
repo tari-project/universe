@@ -13,6 +13,11 @@ export function useDisableRefresh() {
         };
 
         const contextmenuListener = function (event: MouseEvent) {
+            const target = event.target as HTMLElement;
+            const isInputType = target?.nodeName === 'INPUT' || target?.nodeName === 'TEXTAREA';
+            if (isInputType) {
+                return;
+            }
             event.preventDefault();
         };
 

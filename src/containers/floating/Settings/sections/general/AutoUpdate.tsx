@@ -1,4 +1,4 @@
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
 import { Typography } from '@app/components/elements/Typography';
 import {
     SettingsGroupWrapper,
@@ -7,13 +7,13 @@ import {
     SettingsGroup,
     SettingsGroupAction,
 } from '../../components/SettingsGroup.styles';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useTranslation } from 'react-i18next';
-import { setAutoUpdate } from '@app/store';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
+import { setAutoUpdate } from '@app/store/actions/config/core.ts';
 
 const AutoUpdate = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-    const autoUpdate = useAppConfigStore((s) => s.auto_update);
+    const autoUpdate = useConfigCoreStore((s) => s.auto_update);
 
     return (
         <SettingsGroupWrapper>

@@ -1,5 +1,5 @@
 {
-    "version": "0.9.839",
+    "version": "1.6.6",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -15,6 +15,11 @@
         "macOS": {
             "providerShortName": "Tari Labs, LLC"
         },
+        "linux": {
+            "appimage": {
+                "bundleMediaFramework": true
+            }
+        },
         "icon": [
             "icons/32x32.png",
             "icons/128x128.png",
@@ -27,7 +32,7 @@
             "icons/systray_icon.ico",
             "icons/systray_icon.png"
         ],
-        "copyright": "Copyright (c) 2024 Tari Labs, LLC",
+        "copyright": "Copyright (c) 2025 Tari Labs, LLC",
         "shortDescription": "Tari Universe is a mining app for Tari.",
         "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
         "publisher": "Tari Labs, LLC",
@@ -38,13 +43,19 @@
             "capabilities": ["desktop-capability", "default", "migrated"],
             "dangerousDisableAssetCspModification": ["style-src"],
             "csp": {
-                "default-src": "'self' tauri: https:",
+                "default-src": "'self' tauri: https: http://localhost:* http://127.0.0.1:*",
                 "style-src": "'self' 'unsafe-inline'",
                 "connect-src": [
                     "'self'",
                     "https:",
                     "wss://ut.tari.com",
+                    "wss://relay.walletconnect.org",
+                    "https://rpc.ankr.com/eth",
+                    "https://ethereum-sepolia-rpc.publicnode.com",
                     "tauri:",
+                    "tauri://localhost:*",
+                    "http://localhost:*",
+                    "http://127.0.0.1:*",
                     "ipc:",
                     "http://ipc.localhost",
                     "data:",
@@ -54,9 +65,14 @@
                 ],
                 "script-src": "'self' 'unsafe-eval'",
                 "worker-src": "'self' blob: https://cdn.npmjs.com/@tari-project/tari-tower",
-                "img-src": "'self' data: blob: base64: https://*.twimg.com https://cdn.npmjs.com/@tari-project/tari-tower",
+                "img-src": "'self' data: blob: base64: https://*.twimg.com https://cdn.npmjs.com/@tari-project/tari-tower http://127.0.0.1 http://127.0.0.1/ http://127.0.0.1:* http://localhost http://localhost/ http://localhost:* https://static.tari.com https://static.tari.com/* https://lh3.googleusercontent.com",
                 "object-src": "'self' data: blob:",
+                "media-src": "'self' data: blob: tauri: https:",
                 "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'"
+            },
+            "assetProtocol": {
+                "enable": true,
+                "scope": ["**"]
             },
             "pattern": {
                 "use": "isolation",
@@ -76,25 +92,23 @@
             {
                 "title": "Tari Universe (Alpha) | Testnet",
                 "label": "main",
-                "width": 1300,
-                "height": 731,
-                "minWidth": 1144,
-                "minHeight": 660,
                 "resizable": true,
                 "fullscreen": false,
                 "transparent": false,
                 "visible": true,
                 "center": true,
-                "useHttpsScheme": true
+                "useHttpsScheme": true,
+                "width": 1280,
+                "height": 760,
+                "minWidth": 1152,
+                "minHeight": 684
             }
         ]
     },
     "plugins": {
         "updater": {
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK",
-            "endpoints": [
-                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"
-            ],
+            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"],
             "windows": {
                 "installMode": "passive"
             }

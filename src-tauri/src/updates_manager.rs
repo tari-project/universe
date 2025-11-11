@@ -21,7 +21,10 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::sync::Arc;
-use tokio::time;
+use tokio::{
+    select,
+    time::{self, MissedTickBehavior},
+};
 
 use anyhow::anyhow;
 use log::{error, info, warn};
@@ -31,8 +34,12 @@ use tauri::{Emitter, Url};
 use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
-use crate::{app_config::AppConfig, utils::system_status::SystemStatus};
-use tari_shutdown::ShutdownSignal;
+use crate::{
+    app_in_memory_config::{DEFAULT_EXCHANGE_ID, EXCHANGE_ID},
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    tasks_tracker::TasksTrackers,
+    utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
+};
 use tokio::time::Duration;
 const LOG_TARGET: &str = "tari::universe::updates_manager";
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -75,38 +82,57 @@ pub struct AskForUpdatePayload {
 
 #[derive(Clone)]
 pub struct UpdatesManager {
-    config: Arc<RwLock<AppConfig>>,
     update: Arc<RwLock<Option<Update>>>,
-    app_shutdown: ShutdownSignal,
 }
 
 impl UpdatesManager {
-    pub fn new(config: Arc<RwLock<AppConfig>>, app_shutdown: ShutdownSignal) -> Self {
+    pub fn new() -> Self {
         Self {
-            config,
             update: Arc::new(RwLock::new(None)),
-            app_shutdown,
         }
     }
 
-    pub async fn init_periodic_updates(&self, app: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    pub async fn init_periodic_updates(&self, app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let app_clone = app.clone();
         let self_clone = self.clone();
-        tauri::async_runtime::spawn(async move {
-            let mut interval = time::interval(Duration::from_secs(3600));
-            loop {
-                if self_clone.app_shutdown.is_triggered() && self_clone.app_shutdown.is_triggered()
-                {
-                    break;
-                };
+
+        let mut interval = time::interval(Duration::from_secs(3600));
+        interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+
+        TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                // Skip the first tick immediately (we check for updates manually before setup)
                 interval.tick().await;
-                if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
-                    error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
-                }
-            }
-        });
+
+                loop {
+                        select! {
+                            _ = shutdown_signal.wait() => {
+                                info!(target: LOG_TARGET, "Shutdown signal received. Stopping periodic updates.");
+                                break;
+                            }
+                            _ = interval.tick() => {
+                                info!(target: LOG_TARGET, "Periodic update check triggered.");
+                                 if let Err(e) = self_clone.try_update(app_clone.clone(), false, false, Duration::from_secs(30)).await {
+                                    error!(target: LOG_TARGET, "Error checking for updates: {e:?}");
+                                }
+                            }
+                        }
+                    }
+                });
 
         Ok(())
+    }
+
+    pub async fn initial_try_update(&self, app: &tauri::AppHandle) {
+        let _unused = self
+            .try_update(app.clone(), false, false, Duration::from_secs(5))
+            .await
+            .inspect_err(|e| log::error!(target: LOG_TARGET, "Initial Update failure: {e:?}"));
     }
 
     pub async fn try_update(
@@ -114,21 +140,27 @@ impl UpdatesManager {
         app: tauri::AppHandle,
         force: bool,
         enable_downgrade: bool,
+        timeout_duration: Duration,
     ) -> Result<(), anyhow::Error> {
-        match self.check_for_update(app.clone(), enable_downgrade).await? {
-            Some(update) => {
-                let version = update.version.clone();
-                info!(target: LOG_TARGET, "try_update: Update available: {:?}", version);
-                *self.update.write().await = Some(update);
-                let is_auto_update = self.config.read().await.auto_update();
+        let res = tokio::time::timeout(
+            timeout_duration,
+            self.check_for_update(app.clone(), enable_downgrade),
+        )
+        .await?;
 
+        match res {
+            Ok(Some(update)) => {
+                let version = update.version.clone();
+                info!(target: LOG_TARGET, "try_update: Update available: {version:?}");
+                *self.update.write().await = Some(update);
+                let is_auto_update = *ConfigCore::content().await.auto_update();
                 let is_screen_locked = *SystemStatus::current().get_sleep_mode_watcher().borrow();
 
                 if is_screen_locked && is_auto_update {
                     info!(target: LOG_TARGET, "try_update: Screen is locked. Displaying notification");
                     let payload = CouldNotUpdatePayload::new(version);
                     drop(app.emit("updates_event", payload).inspect_err(|e| {
-                        warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with CouldNotUpdatePayload: {}", e);
+                        warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with CouldNotUpdatePayload: {e}");
                     }));
                 } else if force {
                     info!(target: LOG_TARGET, "try_update: Proceeding with force update");
@@ -137,19 +169,30 @@ impl UpdatesManager {
                     info!(target: LOG_TARGET, "try_update: Auto update is enabled. Proceeding with update");
                     self.proceed_with_update(app.clone()).await?;
                 } else {
-                    info!(target: LOG_TARGET, "try_update: Auto update is disabled. Prompting user to update");
-                    let payload = AskForUpdatePayload {
-                        event_type: "ask_for_update".to_string(),
-                        version,
-                    };
-                    drop(app.emit("updates_event", payload).inspect_err(|e| {
-                        warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with UpdateAvailablePayload: {}", e);
-                    }));
-                    // proceed_with_update will be trigger by the user
+                    TasksTrackers::current()
+                        .common
+                        .get_task_tracker()
+                        .await
+                        .spawn(async move {
+                            // Spawn a task to wait for the frontend to be listening for a new update
+                            let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+                            info!(target: LOG_TARGET, "try_update: Auto update is disabled. Prompting user to update");
+                            let payload = AskForUpdatePayload {
+                                event_type: "ask_for_update".to_string(),
+                                version,
+                            };
+                            drop(app.emit("updates_event", payload).inspect_err(|e| {
+                                warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with UpdateAvailablePayload: {e}");
+                            }));
+                            // proceed_with_update will be triggered by the user
+                        });
                 }
             }
-            None => {
+            Ok(None) => {
                 info!(target: LOG_TARGET, "No updates available");
+            }
+            Err(e) => {
+                log::warn!(target: LOG_TARGET, "Error checking for updates: {e:?}");
             }
         }
 
@@ -161,7 +204,7 @@ impl UpdatesManager {
         app: tauri::AppHandle,
         enable_downgrade: bool,
     ) -> Result<Option<Update>, anyhow::Error> {
-        let is_pre_release = self.config.read().await.pre_release();
+        let is_pre_release = *ConfigCore::content().await.pre_release();
         let updates_url = self.get_updates_url(is_pre_release);
 
         let builder = app
@@ -177,21 +220,21 @@ impl UpdatesManager {
         let builder = match builder.endpoints(vec![updates_url]) {
             Ok(b) => b,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to set update URL: {}", e);
+                warn!(target: LOG_TARGET, "Failed to set update URL: {e}");
                 return Ok(None);
             }
         };
         let updater = match builder.build() {
             Ok(u) => u,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to build updater: {}", e);
+                warn!(target: LOG_TARGET, "Failed to build updater: {e}");
                 return Ok(None);
             }
         };
         let update = match updater.check().await {
             Ok(u) => u,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to check for updates: {}", e);
+                warn!(target: LOG_TARGET, "Failed to check for updates: {e}");
                 return Ok(None);
             }
         };
@@ -205,8 +248,13 @@ impl UpdatesManager {
         } else {
             "latest"
         };
-
-        let update_url_string = format!("https://raw.githubusercontent.com/tari-project/universe/main/.updater/{updater_filename}.json");
+        let update_url_string = if EXCHANGE_ID.ne(DEFAULT_EXCHANGE_ID) {
+            format!(
+                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest-{EXCHANGE_ID}.json"
+            )
+        } else {
+            format!("https://raw.githubusercontent.com/tari-project/universe/main/.updater/{updater_filename}.json")
+        };
         Url::parse(&update_url_string).expect("Failed to parse update URL")
     }
 
@@ -228,11 +276,15 @@ impl UpdatesManager {
                     let now = std::time::Instant::now();
                     let is_last_chunk = content_length.map(|cl| downloaded >= cl).unwrap_or(false);
 
-                    if is_last_chunk || now.duration_since(last_emit) >= Duration::from_millis(100) {
+                    if is_last_chunk || now.duration_since(last_emit) >= Duration::from_millis(100)
+                    {
                         last_emit = std::time::Instant::now();
-                        let payload = DownloadProgressPayload::new(downloaded, content_length.unwrap_or(downloaded));
+                        let payload = DownloadProgressPayload::new(
+                            downloaded,
+                            content_length.unwrap_or(downloaded),
+                        );
                         drop(app.emit("updates_event", payload).inspect_err(|e| {
-                            warn!(target: LOG_TARGET, "Failed to emit 'updates_event' event: {}", e);
+                            warn!(target: LOG_TARGET, "Failed to emit 'updates_event' event: {e}");
                         }));
                     }
                 },

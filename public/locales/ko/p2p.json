@@ -1,4 +1,7 @@
 {
+  "connected-since": "연결된 시점",
+  "connections": "연결",
+  "established": "설립됨",
   "listener-addresses": "리스너 주소",
   "miners": "채굴자",
   "network-info": "네트워크 정보",
@@ -7,8 +10,18 @@
   "p2pool-connection-info": "연결",
   "p2pool-connection-info-more": "연결 세부 정보",
   "p2pool-peers": "P2pool 피어",
-  "p2pool-stats": "풀 채굴 통계",
+  "p2pool-stats": "P2pool 통계",
+  "pending": "대기 중",
   "randomx-stats": "RandomX 통계",
   "sha3-stats": "SHA3 통계",
+  "stats": {
+    "earned": "획득한 금액",
+    "tile-heading": "진행 중인 보상",
+    "tile-heading-zero": "보상은 약 30분 후 시작됩니다",
+    "tile-disabled-heading": "{{unit}}이(가) 비활성화되었습니다",
+    "tile-loading": "풀 준비 중",
+    "tooltip-copy": "최소 <strong>{{amount}}</strong>을 벌기 전까지 \"진행 중\"입니다. 지급이 완료되고 지갑 거래 및 잔액에 표시되기까지 지연이 있을 수 있습니다.",
+    "tooltip-tile-heading": "보상 기준"
+  },
   "tribe": "부족"
 }

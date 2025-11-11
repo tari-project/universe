@@ -1,77 +1,70 @@
-import { convertHexToRGBA } from '@app/utils/convertHex';
 import * as m from 'motion/react-m';
-import styled, { css } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 
-const Wrapper = styled.div<{ $variant?: 'primary' | 'small' | 'tiny' }>`
+type LinearProgressVariant = 'small' | 'large';
+
+const Wrapper = styled.div<{ $variant?: LinearProgressVariant }>`
     width: 100%;
-    background: ${({ theme, $variant }) =>
-        $variant !== 'primary' ? convertHexToRGBA(theme.palette.contrast, 0.1) : theme.palette.base};
+    background: ${({ theme }) => theme.palette.base};
     border-radius: 50px;
     overflow: hidden;
     align-items: center;
     display: flex;
     ${({ $variant }) => {
         switch ($variant) {
-            case 'tiny': {
-                return css`
-                    padding: 0;
-                    height: 4px;
-                `;
-            }
-            case 'small': {
-                return css`
-                    padding: 0;
-                    height: 5px;
-                `;
-            }
-            case 'primary':
-            default: {
+            case 'large': {
                 return css`
                     padding: 5px;
                     height: 20px;
+                `;
+            }
+            case 'small':
+            default: {
+                return css`
+                    padding: 0;
+                    height: 5px;
                 `;
             }
         }
     }};
 `;
 
-const BarSVG = styled.svg`
-    width: 100%;
-    height: 100%;
-    border-radius: 50px;
-`;
-const BarLine = styled(m.line)<{ $variant?: 'primary' | 'small' | 'tiny' }>`
-    stroke-width: ${({ $variant }) => ($variant === 'primary' ? '5px' : '10px')};
-    stroke: ${({ theme }) => theme.palette.contrast};
+const gradientAnimation = keyframes`
+  0% {
+    background-position: 200% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 `;
 
-export function LinearProgress({
-    value = 0,
-    variant = 'primary',
-    duration,
-    onAnimationComplete,
-}: {
+const ProgressBar = styled(m.div)<{ $width: number }>`
+    width: ${({ $width }) => `${$width}%`};
+    height: 100%;
+    border-radius: 50px;
+    overflow: hidden;
+    background: ${({ theme }) =>
+        theme.mode === 'light'
+            ? 'linear-gradient(90deg, #001F6E 0%, #85A3D4 50%, #001F6E 100%)'
+            : 'linear-gradient(90deg, #253659 0%, #435879 50%, #253659 100%)'};
+    background-size: 200% 200%;
+    animation: ${gradientAnimation} 3s linear infinite;
+    will-change: width;
+`;
+
+interface LinearProgressProps {
     value?: number;
-    variant?: 'primary' | 'small' | 'tiny';
-    duration?: number;
-    onAnimationComplete?: () => void;
-}) {
+    variant?: LinearProgressVariant;
+}
+
+export function LinearProgress({ value = 0, variant = 'small' }: LinearProgressProps) {
     return (
         <Wrapper $variant={variant}>
-            <BarSVG strokeLinecap="round">
-                <BarLine
-                    x1="0%"
-                    y1="50%"
-                    y2="50%"
-                    fill="transparent"
-                    strokeLinecap="round"
-                    $variant={variant}
-                    initial={{ x2: '0%' }}
-                    animate={{ x2: `${value}%` }}
-                    transition={{ duration: duration || 0.5, ease: 'linear' }}
-                    onAnimationComplete={onAnimationComplete}
-                />
-            </BarSVG>
+            <ProgressBar
+                animate={{ width: `${value}%` }}
+                transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+                $width={value}
+            />
         </Wrapper>
     );
 }

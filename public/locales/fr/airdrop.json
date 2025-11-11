@@ -1,46 +1,112 @@
 {
   "airdropGame": "Récompenses Testnet",
+  "auth": {
+    "url-error": "Impossible d\"ouvrir l\"URL",
+    "url-error-copy": "Il a été copié dans votre presse-papiers, veuillez visiter le lien directement pour vous connecter"
+  },
   "bonus-gems-earned": "Gemmes bonus gagnées",
   "claimGems": "Réclamer des gemmes",
   "claimModalFieldLabel": "Facultatif",
   "claimModalFieldPlaceholder": "Entre le code d'invitation",
-  "claimModalFinePrint": "<strong>Remarque :</strong> la réclamation de gemmes active les outils d'analyses afin que nous puissions améliorer Universe",
-  "claimModalText": "Gagne des gemmes en minant et en parrainant des amis. Plus tu gagnes de gemmes, plus ton airdrop Tari sera important. Tu as un code de parrainage ? Saisis-le ci-dessous et gagne des <strong>{{gems}} gemmes bonus !</strong>",
+  "claimModalFinePrint": "<strong>Remarque :</strong> la réclamation de gemmes active les outils d'analyses afin que nous puissions améliorer Universe",
+  "claimModalText": "Gagnez des XTM bonus en minant et en parrainant des amis.",
   "claimModalTitle": "GAGNEZ DES RÉCOMPENSES EN MINANT SUR TESTNET",
   "claimReferralCode": "Réclame les <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gemmes de ton code de parrainage.",
   "claimReferralGifts": "Réclame votre code de parrainage et gagne des {{gems}} gemmes. Une fois ton compte connecté, tu recevras tes gemmes.",
+  "copied": "Copié !",
+  "copyFailed": "Échec de la copie",
+  "copying": "Copie...",
+  "crewRewards": {
+    "actions": {
+      "claim": "Réclamer {{amount}} XTM",
+      "claimed": "Réclamé",
+      "nudge": "Rappel"
+    },
+    "activeMinersStat": "Mineurs actifs",
+    "bonusXTMEarned": "Bonus XTM Gagné",
+    "copied": "Copié !",
+    "crewStatus": {
+      "completed": "Terminé",
+      "inProgress": "En cours",
+      "needsNudge": "Besoin de rappel"
+    },
+    "earnDescription": "Gagnez <strong>{{userReward}} XTM</strong> pour chaque <strong>{{daysRequired}} jours</strong> que votre ami mine. Votre ami gagnera également <strong>{{friendReward}} XTM</strong>.",
+    "errorLoadingData": "Erreur de chargement des données de l\"équipe. Veuillez réessayer.",
+    "feedback": {
+      "nudgeSent": "Rappel envoyé !",
+      "rewardClaimed": "Récompense réclamée !"
+    },
+    "filters": {
+      "active": "Actif",
+      "all": "Tous",
+      "complete": "Complet",
+      "inactive": "Inactif"
+    },
+    "inviteFriends": "Inviter des amis",
+    "inviteFriendsMessage": "Invitez des amis et commencez à gagner <strong>des bonus XTM !</strong>",
+    "login": {
+      "bonusText": "Gagnez des récompenses bonus jusqu\"à {{maxWeeks}} semaines par invitation",
+      "description": "Vous gagnez <strong>{{userReward}} bonus XTM/semaine</strong> ET votre ami gagne <strong>{{friendReward}} bonus XTM/semaine</strong> lorsque vous et votre ami minez tous les deux",
+      "loginButton": "Connectez-vous et commencez à gagner !",
+      "title": "Minez avec des amis. <strong>Gagnez ensemble.</strong>"
+    },
+    "manageYourCrew": "Gérez votre équipe",
+    "myCrew": "Mon Équipe",
+    "of": "de",
+    "streak": {
+      "day": "Jour",
+      "dayStreak": "Série de {{days}} jours",
+      "daysToMinimum": "Encore {{days}} jours pour atteindre les exigences minimales !",
+      "keepStreak": "Gardez votre série pour continuer à gagner des récompenses !",
+      "loadingStreak": "Chargement de la série...",
+      "mineConsecutiveDays": "Minez pendant au moins <strong>{{streakDaysRequired}} jours consécutifs</strong> chaque semaine pour gagner votre bonus XTM.",
+      "minimumRequirementsMet": "Vous avez atteint les exigences minimales. Continuez !",
+      "multiDayStreak": "Série de {{days}} jours",
+      "oneDayStreak": "Série de 1 jour",
+      "startMiningMessage": "Commencez à miner pour débuter votre série et gagner des récompenses !",
+      "startYourStreak": "Commencez votre série !",
+      "unlockBonusRewards": "Débloquez vos récompenses bonus"
+    },
+    "title": "Récompenses"
+  },
   "doLater": "Je ferai ça plus tard",
-  "giftReferralCode": "Gagne {{gems}} gemmes pour chaque ami que tu invites à rejoindre le Tari Universe. Une fois qu'ils auront connecté leur compte, tu recevras tes gemmes.",
+  "earnBonusXTM": "Bonus XTM",
+  "gems": "Gemmes",
+  "giftReferralCode": "Gagnez des XTM bonus pour chaque ami que vous invitez dans Tari Universe. Une fois qu'ils ont connecté leur compte et miné, vous commencerez à recevoir des récompenses.",
   "giftReferralCodeHeader": "Réclame les <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gemmes de ton code de parrainage.",
+  "invite": "Inviter",
+  "invite-friends-gems": "Pour chaque ami qui utilise votre lien d'invitation, vous gagnez des XTM bonus.",
   "inviteFriends": "Inviter des amis",
   "inviteFriendsText": "Copier le lien et le partager",
   "invitedAmount": "Tu as invité <span>{{count}}</span> ami(s)",
-  "keep-mining-to-earn-rewards": "Continuez à miner pour gagner plus de récompenses !",
+  "joinAirdrop": "Rejoindre l\"Airdrop",
+  "joinAirdropButtonAriaLabel": "Rejoignez l\"Airdrop et gagnez des gemmes. Clic droit pour copier le lien",
+  "keep-mining-to-earn-rewards": "Continuez à miner pour gagner plus de récompenses XTM !",
   "linkCopied": "Lien copié !",
+  "live": "en direct",
   "logged-in-as": "Connecté en tant que <strong>@{{twitter}}</strong>",
+  "loggedInTitle": "Récompenses Airdrop",
+  "loggedOutTitle": "Invitez des amis pour gagner des gemmes",
   "loginButton": "Connecte-toi pour réclamer des gemmes",
   "logout": "Déconnexion",
   "nextTierBonus": "Invitez <strong>{{count}} ami(s)</strong> et gagnez {{bonusGems}} gemme(s) bonu(s)",
-  "update-username": "Mettre à jour votre nom d'utilisateur",
-  "permission": {
-    "setup": "Tari Universe souhaite utiliser des analyses pour <strong>améliorer votre expérience.</strong>",
-    "text": "Tari Universe aimerait utiliser des outils d'analyse pour améliorer ton expérience et te récompenser avec des gemmes pour le minage.",
-    "title": "Gagne des gemmes et améliore le Tari Universe"
-  },
   "permissionNoGems": {
     "text": "Tari Universe souhaite utiliser des outils d'analyse pour améliorer ton expérience.",
     "title": "Améliore le Tari Universe"
   },
+  "push-notifications": {
+    "text": "Tari Universe souhaite pouvoir vous envoyer des notifications sur vos appareils connectés",
+    "title": "Autoriser Tari Universe à envoyer des notifications"
+  },
   "referral": "Inviter un ami",
-  "topTooltipText": "Obtenez un Airdrop Tari en collectant des gemmes. Plus vous gagnez de gemmes, plus votre Airdrop est important.",
+  "rightClickToCopy": "Clic droit pour copier le lien",
+  "success": "Succès",
+  "topTooltipText": "Gagnez des XTM bonus en parrainant des amis.",
   "topTooltipTitle": "Récompenses du Testnet",
   "unclaimedGems": "Gemmes non réclamés",
+  "update-username": "Mettre à jour votre nom d'utilisateur",
+  "username-error": "Le nom d\"utilisateur doit comporter entre 3 et 20 caractères et ne contenir que des lettres, des chiffres, des underscores ou des tirets",
+  "username-update-success": "Nom d\"utilisateur mis à jour avec succès",
   "you-reached-your-giftinh-goal": "Vous avez atteint votre objectif de cadeau !",
-  "your-friend-accepted-gift": "Un de vos amis a accepté votre cadeau !",
-  "joinAirdrop": "Rejoindre l\"Airdrop",
-  "loggedInTitle": "Récompenses Airdrop",
-  "loggedOutTitle": "Miner & Inviter des amis pour gagner des gemmes",
-  "username-error": "Le nom d'utilisateur doit comporter entre 3 et 20 caractères et ne contenir que des lettres, des chiffres, des tirets bas ou des traits d'union",
-  "username-update-success": "Nom d'utilisateur mis à jour avec succès",
-  "success": "Succès"
+  "your-friend-accepted-gift": "Un de vos amis a accepté votre cadeau !"
 }

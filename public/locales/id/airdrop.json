@@ -1,46 +1,112 @@
 {
   "airdropGame": "Permainan Airdrop",
+  "auth": {
+    "url-error": "Tidak dapat membuka URL",
+    "url-error-copy": "Telah disalin ke clipboard Anda, silakan kunjungi tautan langsung untuk masuk"
+  },
   "bonus-gems-earned": "Permata bonus diperoleh",
   "claimGems": "Klaim Permata",
   "claimModalFieldLabel": "Opsional",
   "claimModalFieldPlaceholder": "Masukkan kode referensi",
   "claimModalFinePrint": "<strong>Harap diperhatikan:</strong> mengklaim permata mengaktifkan analitik sehingga kami dapat meningkatkan Universe",
-  "claimModalText": "Dapatkan permata dengan menambang dan merujuk teman untuk meningkatkan hadiah airdrop Anda selama testnet! Punya kode referensi? Masukkan di bawah ini dan dapatkan tambahan <strong>{{gems}}</strong> permata untuk Anda dan teman Anda!",
+  "claimModalText": "Dapatkan bonus XTM dengan menambang dan merujuk teman.",
   "claimModalTitle": "Dapatkan hadiah untuk Menambang di Testnet",
   "claimReferralCode": "Klaim kode referensi Anda <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> permata.",
   "claimReferralGifts": "Klaim kode referensi Anda dan dapatkan {{gems}} permata. Setelah Anda menghubungkan akun Anda, Anda akan mendapatkan permata Anda.",
+  "copied": "Disalin!",
+  "copyFailed": "Salin Gagal",
+  "copying": "Menyalin...",
+  "crewRewards": {
+    "actions": {
+      "claim": "Klaim {{amount}} XTM",
+      "claimed": "Diklaim",
+      "nudge": "Dorong"
+    },
+    "activeMinersStat": "Penambang Aktif",
+    "bonusXTMEarned": "Bonus XTM Diperoleh",
+    "copied": "Disalin!",
+    "crewStatus": {
+      "completed": "Selesai",
+      "inProgress": "Sedang Berlangsung",
+      "needsNudge": "Butuh Dorongan"
+    },
+    "earnDescription": "Dapatkan <strong>{{userReward}} XTM</strong> untuk setiap <strong>{{daysRequired}} hari</strong> teman Anda menambang. Teman Anda juga akan mendapatkan <strong>{{friendReward}} XTM</strong>.",
+    "errorLoadingData": "Kesalahan memuat data kru. Silakan coba lagi.",
+    "feedback": {
+      "nudgeSent": "Dorongan terkirim!",
+      "rewardClaimed": "Hadiah diklaim!"
+    },
+    "filters": {
+      "active": "Aktif",
+      "all": "Semua",
+      "complete": "Selesai",
+      "inactive": "Tidak Aktif"
+    },
+    "inviteFriends": "Undang Teman",
+    "inviteFriendsMessage": "Undang teman dan mulai mendapatkan <strong>bonus XTM!</strong>",
+    "login": {
+      "bonusText": "Dapatkan hadiah bonus hingga {{maxWeeks}} minggu per undangan",
+      "description": "Anda mendapatkan <strong>{{userReward}} bonus XTM/minggu</strong> DAN teman Anda mendapatkan <strong>{{friendReward}} bonus XTM/minggu</strong> ketika Anda dan teman Anda sama-sama menambang",
+      "loginButton": "Masuk & Mulai Mendapatkan!",
+      "title": "Menambang dengan teman. <strong>Dapatkan bersama.</strong>"
+    },
+    "manageYourCrew": "Kelola kru Anda",
+    "myCrew": "Kru Saya",
+    "of": "dari",
+    "streak": {
+      "day": "Hari",
+      "dayStreak": "Rentetan {{days}} Hari",
+      "daysToMinimum": "{{days}} hari lagi untuk memenuhi persyaratan minimum!",
+      "keepStreak": "Pertahankan rentetan Anda untuk terus mendapatkan hadiah!",
+      "loadingStreak": "Memuat rentetan...",
+      "mineConsecutiveDays": "Menambang setidaknya <strong>{{streakDaysRequired}} hari berturut-turut</strong> setiap minggu untuk mendapatkan bonus XTM Anda.",
+      "minimumRequirementsMet": "Anda telah memenuhi persyaratan minimum. Teruskan!",
+      "multiDayStreak": "Rentetan {{days}} Hari",
+      "oneDayStreak": "Rentetan 1 Hari",
+      "startMiningMessage": "Mulai menambang untuk memulai rentetan Anda dan mendapatkan hadiah!",
+      "startYourStreak": "Mulai Rentetan Anda!",
+      "unlockBonusRewards": "Buka hadiah bonus Anda"
+    },
+    "title": "Hadiah"
+  },
   "doLater": "Saya akan melakukannya nanti",
-  "giftReferralCode": "Dapatkan {{gems}} permata untuk setiap teman yang Anda undang ke Tari Universe. Setelah mereka menghubungkan akun mereka, Anda akan mendapatkan permata Anda.",
+  "earnBonusXTM": "Bonus XTM",
+  "gems": "Permata",
+  "giftReferralCode": "Dapatkan bonus XTM untuk setiap teman yang Anda undang ke Tari Universe. Setelah mereka menghubungkan akun dan mulai menambang, Anda akan mulai mendapatkan hadiah.",
   "giftReferralCodeHeader": "Klaim kode referensi Anda <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> permata.",
+  "invite": "Undang",
+  "invite-friends-gems": "Untuk setiap teman yang menggunakan tautan undangan Anda, Anda menerima bonus XTM.",
   "inviteFriends": "Undang Teman",
   "inviteFriendsText": "Salin tautan dan bagikan",
   "invitedAmount": "Anda telah mengundang <span>{{count}}</span> teman",
-  "keep-mining-to-earn-rewards": "Terus menambang untuk mendapatkan lebih banyak hadiah!",
+  "joinAirdrop": "Ikuti Airdrop",
+  "joinAirdropButtonAriaLabel": "Bergabung dengan Airdrop dan dapatkan permata. Klik kanan untuk menyalin tautan",
+  "keep-mining-to-earn-rewards": "Terus menambang untuk mendapatkan lebih banyak hadiah XTM!",
   "linkCopied": "Tautan disalin!",
+  "live": "langsung",
   "logged-in-as": "Masuk sebagai <strong>@{{twitter}}</strong>",
+  "loggedInTitle": "Hadiah Airdrop",
+  "loggedOutTitle": "Undang Teman untuk Mendapatkan Permata",
   "loginButton": "Masuk untuk mengklaim permata",
   "logout": "Keluar",
   "nextTierBonus": "Undang <strong>{{count}} teman</strong> & dapatkan {{bonusGems}} permata bonus",
-  "update-username": "Perbarui nama pengguna",
-  "permission": {
-    "setup": "Tari Universe ingin menggunakan analitik untuk <strong>meningkatkan pengalaman Anda.</strong>",
-    "text": "Tari Universe ingin menggunakan analitik untuk meningkatkan pengalaman Anda dan memberi Anda hadiah dengan permata untuk menambang.",
-    "title": "Dapatkan Permata & buat Tari Universe lebih baik"
-  },
   "permissionNoGems": {
     "text": "Tari Universe ingin menggunakan analitik untuk meningkatkan pengalaman Anda.",
     "title": "Buat Tari Universe lebih baik"
   },
+  "push-notifications": {
+    "text": "Tari Universe ingin dapat mengirimkan notifikasi ke perangkat Anda yang terhubung",
+    "title": "Izinkan Tari Universe mengirim notifikasi"
+  },
   "referral": "Undang teman",
-  "topTooltipText": "Dapatkan Airdrop Tari dengan mengumpulkan permata. Semakin banyak permata yang Anda kumpulkan, semakin besar airdrop Anda.",
+  "rightClickToCopy": "Klik kanan untuk menyalin tautan",
+  "success": "Berhasil",
+  "topTooltipText": "Dapatkan bonus XTM dengan merujuk teman.",
   "topTooltipTitle": "Hadiah Testnet",
   "unclaimedGems": "Permata yang Belum Diklaim",
-  "you-reached-your-giftinh-goal": "Anda mencapai tujuan pemberian hadiah Anda!",
-  "your-friend-accepted-gift": "Salah satu teman Anda menerima hadiah Anda!",
-  "joinAirdrop": "Ikuti Airdrop",
-  "loggedInTitle": "Hadiah Airdrop",
-  "loggedOutTitle": "Menambang & Undang Teman untuk Mendapatkan Permata",
+  "update-username": "Perbarui nama pengguna",
   "username-error": "Nama pengguna harus 3-20 karakter dan hanya berisi huruf, angka, garis bawah, atau tanda hubung",
   "username-update-success": "Nama pengguna berhasil diperbarui",
-  "success": "Berhasil"
+  "you-reached-your-giftinh-goal": "Anda mencapai tujuan pemberian hadiah Anda!",
+  "your-friend-accepted-gift": "Salah satu teman Anda menerima hadiah Anda!"
 }

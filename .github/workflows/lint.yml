@@ -1,13 +1,27 @@
+---
 name: Lint
-on: pull_request
+
+"on":
+  workflow_dispatch:
+  push:
+    branches:
+      - "ci-*"
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  merge_group:
+
+permissions: {}
 
 jobs:
   run-linters:
     name: Run linters
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
         with:
           cache: 'npm'
           node-version: lts/*

@@ -4,7 +4,7 @@ import { toastVariants } from './motion';
 import { removeToast, ToastType } from '../useToastStore';
 
 import { Wrapper, CloseButton, ToastContent, ProgressCircle, Title, Text } from './styles';
-import { useMotionValue } from 'motion/react';
+import { useMotionValue, useMotionValueEvent } from 'motion/react';
 
 interface ToastProps {
     id?: number | string;
@@ -20,10 +20,15 @@ export const Toast = ({ id, index, title, text, timeout = 4500, isHovered = fals
     const [show, setShow] = useState(false);
     const [positionVariant, setPositionVariant] = useState('hidden');
     const progress = useMotionValue(0);
-    const progressInterval = useRef<NodeJS.Timeout>();
+    const [progressValue, setProgressValue] = useState(0);
+    const progressInterval = useRef<NodeJS.Timeout>(undefined);
     const elapsedTimeRef = useRef<number>(0);
     const lastUpdateRef = useRef<number>(Date.now());
     const [finished, setFinished] = useState(false);
+
+    useMotionValueEvent(progress, 'change', (latest) => {
+        setProgressValue(latest);
+    });
 
     const handleHide = useCallback((id: number | string = 0) => {
         setShow(false);
@@ -88,13 +93,13 @@ export const Toast = ({ id, index, title, text, timeout = 4500, isHovered = fals
                 <Title>{title}</Title>
                 {text && <Text>{text}</Text>}
                 <CloseButton onClick={() => handleHide(id)} $type={type}>
-                    <ProgressCircle width="28" height="28" viewBox="0 0 28 28" $progress={progress.get()} $type={type}>
+                    <ProgressCircle width="28" height="28" viewBox="0 0 28 28" $progress={progressValue} $type={type}>
                         <circle
                             cx="14"
                             cy="14"
                             r="12"
                             strokeDasharray="75.398"
-                            strokeDashoffset={75.398 - (75.398 * Math.min(progress.get(), 100)) / 100}
+                            strokeDashoffset={75.398 - (75.398 * Math.min(progressValue, 100)) / 100}
                         />
                     </ProgressCircle>
                     <span>×</span>

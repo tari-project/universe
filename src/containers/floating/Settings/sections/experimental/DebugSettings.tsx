@@ -1,5 +1,8 @@
+import { useMemo } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import useBlockTime from '@app/hooks/mining/useBlockTime.ts';
+import { useNodeStore } from '@app/store';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { useTranslation } from 'react-i18next';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import {
     SettingsGroup,
@@ -7,19 +10,32 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
-import { useMemo } from 'react';
 
 export default function DebugSettings() {
-    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const lastBlockTime = useBlockchainVisualisationStore((state) => state.debugBlockTime);
+    const { t } = useTranslation('settings');
+
+    const isConnectedToTariNetwork = useNodeStore((s) => s.isNodeConnected);
+
+    const { currentTimeParts } = useBlockTime();
 
     const displayTime = useMemo(() => {
-        if (!lastBlockTime) return '-';
+        if (!currentTimeParts) return '-';
 
-        const { daysString, hoursString, minutes, seconds } = lastBlockTime;
+        const { daysString, hoursString, minutes, seconds } = currentTimeParts;
         return `${daysString} ${hoursString} : ${minutes} : ${seconds}`;
-    }, [lastBlockTime]);
+    }, [currentTimeParts]);
+
+    const displayText =
+        displayTime && isConnectedToTariNetwork ? (
+            <Trans
+                ns="settings"
+                i18nKey={'last-block-added-time'}
+                values={{ time: displayTime }}
+                components={{ strong: <strong /> }}
+            />
+        ) : (
+            t('waiting-for-data')
+        );
 
     return (
         <>
@@ -27,7 +43,7 @@ export default function DebugSettings() {
                 <SettingsGroup>
                     <SettingsGroupContent>
                         <SettingsGroupTitle>
-                            <Typography variant="h6">{t('debug-info', { ns: 'settings' })}</Typography>
+                            <Typography variant="h6">{t('debug-info')}</Typography>
                         </SettingsGroupTitle>
 
                         <Stack
@@ -36,8 +52,7 @@ export default function DebugSettings() {
                             alignItems="center"
                             style={{ width: '100%' }}
                         >
-                            <Typography variant="p">{t('last-block-added-time', { ns: 'settings' })}</Typography>
-                            <Typography>{displayTime}</Typography>
+                            <Typography variant="p">{displayText}</Typography>
                         </Stack>
                     </SettingsGroupContent>
                 </SettingsGroup>

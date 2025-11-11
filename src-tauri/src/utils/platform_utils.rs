@@ -20,9 +20,20 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#[cfg(target_os = "macos")]
+use super::macos_utils::is_app_in_applications_folder;
+#[cfg(target_os = "macos")]
+use crate::events::CriticalProblemPayload;
+#[cfg(target_os = "macos")]
+use crate::events_emitter::EventsEmitter;
+#[cfg(target_os = "macos")]
+use crate::tasks_tracker::TasksTrackers;
+
+#[allow(unused_imports)]
+use anyhow::anyhow;
 use std::fmt::Display;
 
-#[derive(Clone)]
+#[derive(Clone, Eq, PartialEq)]
 pub enum CurrentOperatingSystem {
     Windows,
     Linux,
@@ -51,5 +62,67 @@ impl PlatformUtils {
         } else {
             panic!("Unsupported OS");
         }
+    }
+
+    #[allow(unused_variables)]
+    pub async fn initialize_preqesities() -> Result<(), anyhow::Error> {
+        let current_os = PlatformUtils::detect_current_os();
+        match current_os {
+            CurrentOperatingSystem::Windows => {
+                #[cfg(target_os = "windows")]
+                PlatformUtils::initialize_windows_preqesities().await?;
+                Ok(())
+            }
+            CurrentOperatingSystem::Linux => {
+                #[cfg(target_os = "linux")]
+                PlatformUtils::initialize_linux_preqesities().await?;
+                Ok(())
+            }
+            CurrentOperatingSystem::MacOS => {
+                #[cfg(target_os = "macos")]
+                PlatformUtils::initialize_macos_preqesities().await?;
+                Ok(())
+            }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    async fn initialize_macos_preqesities() -> Result<(), anyhow::Error> {
+        if !cfg!(dev) && !is_app_in_applications_folder() {
+            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                title: Some("common:installation-problem".to_string()),
+                description: Some("common:not-installed-in-applications-directory".to_string()),
+                error_message: None,
+            })
+            .await;
+            TasksTrackers::current().stop_all_processes().await;
+            return Err(anyhow!(
+                "App is not installed in the Applications directory"
+            ));
+        }
+        Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    async fn initialize_windows_preqesities() -> Result<(), anyhow::Error> {
+        use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
+
+        // This loop prevents app from continuing until all initial dependencies are installed
+        loop {
+            if SystemDependenciesManager::get_instance()
+                .validate_dependencies()
+                .await?
+            {
+                return Ok(());
+            }
+            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+        }
+
+        Ok(())
+    }
+
+    #[cfg(target_os = "linux")]
+    async fn initialize_linux_preqesities() -> Result<(), anyhow::Error> {
+        Ok(())
     }
 }

@@ -1,0 +1,13 @@
+{
+  "earn": "最大{{amount}}%のボーナスXTMを獲得",
+  "help-find-address": "{{ exchange }}アドレスを見つけるのを手伝ってください",
+  "main-logo-title": "シーズン\nワン",
+  "paste-from-clipboard": "クリップボードから貼り付け",
+  "season-one-reward": "シーズン1ボーナス",
+  "select": {
+    "modal-title": "サポートされている取引所でウォレットに直接Tari（XTM）をマイニング開始"
+  },
+  "selected-exchange-miner": "ここでマイニングしています",
+  "time-left": "残り時間",
+  "wallet-address": "ウォレットアドレス"
+}

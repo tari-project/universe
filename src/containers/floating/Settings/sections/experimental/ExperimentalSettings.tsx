@@ -5,12 +5,10 @@ import DebugSettings from './DebugSettings.tsx';
 import ExperimentalWarning from './ExperimentalWarning.tsx';
 import { TorMarkup } from './TorMarkup';
 import MonerodMarkup from './MonerodMarkup';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import P2poolMarkup from './P2poolMarkup.tsx';
+import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 
 export const ExperimentalSettings = () => {
-    const showExperimental = useAppConfigStore((s) => s.show_experimental_settings);
-    const isP2poolEnabled = useAppConfigStore((s) => s.p2pool_enabled);
+    const showExperimental = useConfigUIStore((s) => s.show_experimental_settings);
 
     return (
         <>
@@ -22,7 +20,6 @@ export const ExperimentalSettings = () => {
                         <AppVersions />
                         <TorMarkup />
                         <MonerodMarkup />
-                        {isP2poolEnabled && <P2poolMarkup />}
                     </>
                 )}
             </AnimatePresence>

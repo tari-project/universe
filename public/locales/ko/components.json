@@ -1,4 +1,16 @@
 {
+  "banner": {
+    "body-copy": "네트워크가 안정화되는 다음 약 15일 동안 포크 및 해시레이트 변동이 발생할 수 있습니다.",
+    "body-copy-highlight": "타리는 완전히 새롭습니다!",
+    "is-live": "실시간"
+  },
+  "close-experience-dialog": {
+    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
+    "dont-ask-again": "Don't ask me again",
+    "exit-completely": "Exit Completely",
+    "run-in-background": "Run in Background",
+    "title": "Choose how to close Tari Universe"
+  },
   "field-error-message": {
     "integers-only": "정수만 허용됨",
     "invalid": "잘못된 필드",
@@ -20,14 +32,19 @@
     "title": "릴리스 노트"
   },
   "resume-app-modal": {
-    "title": "Tari Universe 재개 중",
+    "finishing-resume": "재개 완료 중...",
     "resuming-all-processes": "모든 프로세스 재개 중...",
-    "resuming-tor": "Tor 재개 중...",
+    "resuming-mm-proxy": "MM 프록시 재개 중...",
     "resuming-node": "노드 재개 중...",
+    "resuming-tor": "Tor 재개 중...",
     "resuming-wallet": "지갑 재개 중...",
     "syncing-node": "노드 동기화 중...",
-    "resuming-p2pool": "P2Pool 재개 중...",
-    "resuming-mm-proxy": "MM 프록시 재개 중...",
-    "finishing-resume": "재개 완료 중..."
+    "title": "Tari Universe 재개 중"
+  },
+  "warmupDialog": {
+    "copy": "작업 증명 네트워크의 탄생은 특별합니다. 초기에는 네트워크가 안정화되고 리듬을 찾는 데 시간이 필요합니다. 이를 \"워밍업 단계\"라고 부릅니다.\n타리 네트워크의 기여자와 초기 지지자들(거래소 및 인프라 파트너 등)은 워밍업 단계가 약 15일간 지속될 것으로 예상합니다. 그 후 네트워크는 더 안정적인 상태로 전환될 것입니다.\n워밍업 단계에서는 몇 가지 특이점이 정상입니다. 블록 시간 변동, 일시적인 연결 끊김, 동기화 지연 또는 메인 체인에 다시 연결해야 하는 단기 포크가 발생할 수 있습니다.\n워밍업 단계는 채굴하기에 좋은 시기입니다. 블록당 보상이 가장 높기 때문입니다. 타리 네트워크의 초기 시기가 여러분에게 보람되기를 바랍니다.\n게임을 시작합시다. 블록이 영원히 당신에게 유리하길 바랍니다!",
+    "subtitle": "이것이 정확히 무엇을 의미하나요?",
+    "tag-line": "타리 메인넷에 오신 것을 환영합니다",
+    "title": "워밍업 단계"
   }
 }

@@ -31,6 +31,8 @@ const lightPalette: ThemePalette = {
         base: '#fff',
         contrast: '#000000',
         contrastAlpha: colorsAlpha.darkAlpha[5],
+        focusOutline: c.tariPurple[500],
+        focusOutlineAlpha: 'rgba(159,66,255,0.2)',
         primary: {
             main: c.tariPurple[600],
             dark: c.tariPurple[700],
@@ -38,6 +40,8 @@ const lightPalette: ThemePalette = {
             shadow: colorsAlpha.tariPurpleAlpha[10],
             wisp: colorsAlpha.tariPurpleAlpha[5],
             contrast: '#FFFFFF',
+            accent: c.grey[700],
+            disabled: colorsAlpha.darkAlpha[5],
         },
         secondary: {
             main: c.grey[150],
@@ -47,12 +51,14 @@ const lightPalette: ThemePalette = {
         },
         divider: 'rgba(0,0,0,0.06)',
         text: {
+            default: c.greyscale[900],
             main: c.tariPurple[600],
             primary: '#000000',
             secondary: '#797979',
-            accent: 'rgba(0,0,0,0.7)',
+            accent: 'rgba(0,0,0,0.5)',
             disabled: c.grey[400],
             contrast: '#FFFFFF',
+            shadow: colorsAlpha.greyscaleAlpha[80],
         },
         background: {
             default: c.grey[50],
@@ -60,6 +66,8 @@ const lightPalette: ThemePalette = {
             paper: '#fff',
             accent: c.grey[100],
             splash: '#e5e5e5',
+            secondary: '#000000',
+            tooltip: '#fff',
         },
         success: {
             main: c.success[300],
@@ -83,7 +91,7 @@ const lightPalette: ThemePalette = {
         },
         action: {
             background: {
-                default: c.grey[50],
+                default: '#fdfdfd',
                 accent: c.grey[100],
                 contrast: c.brightGreen[500],
                 secondary: '#000',

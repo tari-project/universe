@@ -1,0 +1,11 @@
+{
+  "auto-reconnect": "다시 연결 시도 중:",
+  "connect-now": "지금 연결",
+  "disconnect-severe-subtitle": "타리 네트워크에 연결을 계속 시도하겠습니다. 문제가 지속되면 채굴기를 재시작하거나 텔레그램에서 지원을 요청할 수 있습니다.",
+  "disconnect-severe-title": "연결에 문제가 발생했습니다",
+  "disconnect-subtitle": "네트워크에 다시 연결하는 동안 잠시 기다려 주세요.",
+  "disconnect-title": "오, 타리 네트워크에 연결되지 않았습니다",
+  "go-to-telegram": "텔레그램에서 도움 받기",
+  "reconnect-in-progress": "다시 연결 중...",
+  "restart-app": "타리 유니버스 재시작"
+}

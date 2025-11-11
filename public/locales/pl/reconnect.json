@@ -1,0 +1,11 @@
+{
+  "auto-reconnect": "Próba ponownego połączenia za:",
+  "connect-now": "Połącz teraz",
+  "disconnect-severe-subtitle": "Będziemy nadal próbować połączyć Cię z siecią Tari. Możesz także spróbować ponownie uruchomić swój miner lub skontaktować się z pomocą na Telegramie, jeśli problem będzie się utrzymywał.",
+  "disconnect-severe-title": "Mamy problem z połączeniem Cię",
+  "disconnect-subtitle": "Proszę czekać, próbujemy ponownie połączyć Cię z siecią.",
+  "disconnect-title": "Ups, nie jesteś połączony z siecią Tari",
+  "go-to-telegram": "Uzyskaj pomoc na Telegramie",
+  "reconnect-in-progress": "Ponowne łączenie...",
+  "restart-app": "Uruchom ponownie Tari Universe"
+}

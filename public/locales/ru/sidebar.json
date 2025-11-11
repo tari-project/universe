@@ -10,9 +10,12 @@
   "mining-schedules-description": "Запланируйте вашу майнинговую активность",
   "next-milestone": "Следующий этап",
   "paper-wallet-button": "Синхронизировать с телефоном",
-  "paper-wallet-tooltip-message": "Отслеживайте свои XTM в любом месте, синхронизируя кошелек Universe с Tari Aurora.",
+  "paper-wallet-tooltip-message": "Отслеживайте свои XTM в любом месте, синхронизируя кошелек Universe с Tari Universe Mobile.",
   "paper-wallet-tooltip-title": "Синхронизировать с телефоном",
   "recent-wins": "Последние выигрыши",
+  "reward": {
+    "stacked": "Вы накопили"
+  },
   "rewards": "Награды",
   "setup-scheduler": "Настройка планировщика",
   "share": {

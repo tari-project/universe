@@ -37,7 +37,7 @@ impl PortAllocator {
     }
 
     fn get_address_with_0_port(&self) -> String {
-        format!("{}:0", ADDRESS)
+        format!("{ADDRESS}:0")
     }
 
     fn get_port(&self) -> Result<u16, Error> {
@@ -51,14 +51,14 @@ impl PortAllocator {
                 Ok(port)
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to bind to port: {:?}", e);
+                error!(target: LOG_TARGET, "Failed to bind to port: {e:?}");
                 Err(anyhow!("Failed to bind to port"))
             }
         }
     }
 
     fn check_if_port_is_free(&self, port: u16) -> bool {
-        TcpListener::bind(format!("{}:{}", ADDRESS, port)).is_ok()
+        TcpListener::bind(format!("{ADDRESS}:{port}")).is_ok()
     }
 
     fn asign_port_from_fallback_range(&self) -> u16 {
@@ -82,13 +82,13 @@ impl PortAllocator {
                 .unwrap_or_else(|_| self.asign_port_from_fallback_range());
             tries += 1;
             if tries >= MAX_RETRIES {
-                warn!(target: LOG_TARGET, "Failed to assign port after {} tries", MAX_RETRIES);
+                warn!(target: LOG_TARGET, "Failed to assign port after {MAX_RETRIES} tries");
                 info!(target: LOG_TARGET, "Assigning port from fallback range");
                 return self.asign_port_from_fallback_range();
             }
         }
 
-        info!(target: LOG_TARGET, "Assigned port: {}", port);
+        info!(target: LOG_TARGET, "Assigned port: {port}");
         port
     }
 }

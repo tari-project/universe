@@ -1,5 +1,4 @@
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch.tsx';
 import { Trans, useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography';
 import { IoAddCircleOutline, IoRemoveCircleOutline } from 'react-icons/io5';
@@ -18,7 +17,8 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../../components/SettingsGroup.styles.ts';
-import { setDialogToShow, setMonerodConfig } from '@app/store';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
+import { setMonerodConfig } from '@app/store/actions/config/core.ts';
 
 interface FormValues {
     use_monero_fail: boolean;
@@ -29,8 +29,8 @@ const node_url_regex = /^(https?:\/\/[a-zA-Z0-9.-]+(:\d{1,5})?)(\/.*)?$/;
 
 const MonerodMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const use_monero_fail = useAppConfigStore((s) => Boolean(s.mmproxy_use_monero_fail));
-    const monero_nodes = useAppConfigStore((s) => s.mmproxy_monero_nodes || []);
+    const use_monero_fail = useConfigCoreStore((s) => Boolean(s.mmproxy_use_monero_failover));
+    const monero_nodes = useConfigCoreStore((s) => s.mmproxy_monero_nodes || []);
 
     const {
         control,
@@ -56,9 +56,7 @@ const MonerodMarkup = () => {
         !errors.monero_nodes?.length;
 
     const onSave = async (formValues: FormValues) => {
-        setMonerodConfig(formValues.use_monero_fail, formValues.monero_nodes).then(() => {
-            setDialogToShow('restart');
-        });
+        await setMonerodConfig(formValues.use_monero_fail, formValues.monero_nodes);
     };
 
     return (
@@ -68,14 +66,15 @@ const MonerodMarkup = () => {
                     <SettingsGroupTitle>
                         <Typography variant="h6">
                             <Trans>{t('use-dynamic-fail-data')}</Trans>
-                            <b>&nbsp;({t('app-restart-required').toUpperCase()})</b>
                         </Typography>
                     </SettingsGroupTitle>
                     <Typography>{t('set-dynamic-fail-data')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     {isSaveButtonVisible ? (
-                        <Button onClick={handleSubmit(onSave)}>{t('save')}</Button>
+                        <Button size="smaller" onClick={handleSubmit(onSave)}>
+                            {t('save')}
+                        </Button>
                     ) : (
                         <Controller
                             name="use_monero_fail"

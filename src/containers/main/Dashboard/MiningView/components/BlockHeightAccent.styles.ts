@@ -10,6 +10,7 @@ export const AccentWrapper = styled(m.div)`
     justify-content: center;
     display: flex;
     top: 0;
+    user-select: none;
     right: -30px;
 `;
 

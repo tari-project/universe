@@ -6,31 +6,20 @@ export const Wrapper = styled('div')`
 `;
 
 export const Trigger = styled('div')`
+    height: 44px;
     cursor: pointer;
 `;
 
 export const Menu = styled(m.div)`
-    z-index: 2;
-    position: absolute;
-    top: 100%;
-    left: 50%;
-
-    transform: translateX(-50%);
-
-    margin-top: 7px;
-
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    gap: 8px;
-
-    padding: 22px;
-
-    border-radius: 15.306px;
-    background: #fff;
-    box-shadow: 0px 2.915px 24.782px 0px rgba(0, 0, 0, 0.25);
-
     width: 190px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 22px;
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 3px 25px 0 rgba(0, 0, 0, 0.25);
 `;
 
 export const Image = styled('img')`
@@ -41,7 +30,7 @@ export const Image = styled('img')`
 export const Text = styled('div')`
     color: #000;
     text-align: center;
-    font-size: 14.577px;
+    font-size: 15px;
     font-weight: 600;
     line-height: 99.7%;
 `;

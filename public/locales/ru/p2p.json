@@ -1,14 +1,27 @@
 {
+  "connected-since": "Подключен с",
+  "connections": "подключения",
+  "established": "Установлено",
   "listener-addresses": "Адрес слушателя",
   "miners": "Майнеры",
   "network-info": "Информация о сети",
-  "p2pool-chain-tip": "Совет цепи P2Pool",
+  "p2pool-chain-tip": "Вершина цепи P2Pool",
   "p2pool-connected": "P2Pool подключен",
   "p2pool-connection-info": "Подключение",
   "p2pool-connection-info-more": "Детали подключения",
   "p2pool-peers": "P2pool пиры",
-  "p2pool-stats": "Статистика майнинга в пуле",
+  "p2pool-stats": "P2pool статистика",
+  "pending": "В ожидании",
   "randomx-stats": "RandomX Статистика",
   "sha3-stats": "SHA3 Статистика",
+  "stats": {
+    "earned": "Вы заработали",
+    "tile-heading": "Вознаграждение в процессе",
+    "tile-heading-zero": "Награды начнутся через ~30 минут",
+    "tile-disabled-heading": "{{unit}} задизейблен",
+    "tile-loading": "Пул разогревается",
+    "tooltip-copy": "«В процессе» до тех пор, пока вы не заработаете минимум <strong>{{amount}}</strong>. Может быть задержка между отправкой вашего платежа и его отображением в ваших транзакциях и балансе кошелька.",
+    "tooltip-tile-heading": "Порог вознаграждения"
+  },
   "tribe": "Команда"
 }

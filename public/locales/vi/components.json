@@ -1,0 +1,50 @@
+{
+  "banner": {
+    "body-copy": "Bạn có thể gặp hiện tượng fork và biến động tốc độ đào khi mạng ổn định trong khoảng 15 ngày tới.",
+    "body-copy-highlight": "Tari vừa ra mắt!",
+    "is-live": "đã hoạt động"
+  },
+  "close-experience-dialog": {
+    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
+    "dont-ask-again": "Don't ask me again",
+    "exit-completely": "Exit Completely",
+    "run-in-background": "Run in Background",
+    "title": "Choose how to close Tari Universe"
+  },
+  "field-error-message": {
+    "integers-only": "Chỉ cho phép số nguyên",
+    "invalid": "Trường không hợp lệ",
+    "invalid-date": "Ngày không hợp lệ",
+    "invalid-email": "Nhập địa chỉ email hợp lệ",
+    "invalid-url": "Phải là địa chỉ URL hợp lệ",
+    "password-too-short": "Mật khẩu phải có ít nhất 8 ký tự",
+    "required": "Trường bắt buộc"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Hủy",
+    "description": "Chế độ Ludicrous có thể khiến hệ thống không phản hồi. Xác nhận bạn muốn bắt đầu đào ở chế độ Ludicrous hoặc Tari Universe sẽ chuyển về chế độ Eco sau",
+    "keepChanges": "Giữ thay đổi",
+    "seconds": "giây",
+    "title": "Chuyển sang chế độ Ludicrous?"
+  },
+  "releaseNotesDialog": {
+    "close": "Đã hiểu",
+    "title": "Ghi chú phát hành"
+  },
+  "resume-app-modal": {
+    "finishing-resume": "Hoàn tất khôi phục...",
+    "resuming-all-processes": "Đang khôi phục tất cả tiến trình...",
+    "resuming-mm-proxy": "Đang khôi phục MM Proxy...",
+    "resuming-node": "Đang khôi phục Node...",
+    "resuming-tor": "Đang khôi phục Tor...",
+    "resuming-wallet": "Đang khôi phục Ví...",
+    "syncing-node": "Đang đồng bộ Node...",
+    "title": "Khôi phục Tari Universe"
+  },
+  "warmupDialog": {
+    "copy": "Sự ra đời của một mạng proof-of-work là điều đặc biệt. Những ngày đầu, mạng cần thời gian để ổn định và tìm nhịp điệu. Chúng tôi gọi đây là \"giai đoạn khởi động.\"\nNhững người đóng góp và ủng hộ sớm của Tari (như sàn giao dịch, đối tác hạ tầng) dự đoán giai đoạn này kéo dài khoảng 15 ngày. Sau đó, mạng sẽ chuyển sang trạng thái ổn định hơn.\nTrong giai đoạn khởi động, một số hiện tượng bất thường là bình thường. Bạn có thể thấy thời gian block dao động, mất kết nối tạm thời, chậm đồng bộ hoặc thậm chí fork ngắn cần kết nối lại chuỗi chính.\nĐây là thời điểm tuyệt vời để đào vì phần thưởng mỗi block là cao nhất. Chúc bạn có trải nghiệm tuyệt vời cùng Tari.\nHãy bắt đầu. Chúc bạn luôn may mắn với các block!",
+    "subtitle": "Điều này nghĩa là gì?",
+    "tag-line": "Chào mừng đến với Tari Mainnet",
+    "title": "Giai đoạn khởi động"
+  }
+}

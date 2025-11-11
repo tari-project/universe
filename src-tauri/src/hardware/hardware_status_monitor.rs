@@ -23,7 +23,13 @@
 use std::{path::PathBuf, sync::LazyLock};
 
 use crate::{
+    configs::{
+        config_mining::{ConfigMining, ConfigMiningContent},
+        trait_config::ConfigImpl,
+    },
+    events_emitter::EventsEmitter,
     hardware::{cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader},
+    mining::gpu::{interface::GpuMinerInterfaceTrait, manager::GpuManager, miners::GpuDeviceType},
     APPLICATION_FOLDER_ID,
 };
 
@@ -38,7 +44,7 @@ use super::{
     },
 };
 use anyhow::Error;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use tokio::sync::RwLock;
@@ -47,7 +53,7 @@ const LOG_TARGET: &str = "tari::universe::auto_launcher";
 
 static INSTANCE: LazyLock<HardwareStatusMonitor> = LazyLock::new(HardwareStatusMonitor::new);
 
-#[derive(Debug, Serialize, Clone, Default)]
+#[derive(Debug, Serialize, Clone, Default, PartialEq)]
 pub enum HardwareVendor {
     Nvidia,
     Amd,
@@ -84,7 +90,7 @@ impl HardwareVendor {
         } else if HardwareVendor::is_apple(&HardwareVendor::Apple, vendor) {
             HardwareVendor::Apple
         } else {
-            error!(target: LOG_TARGET, "Unsupported hardware vendor: {:?}", vendor);
+            error!(target: LOG_TARGET, "Unsupported hardware vendor: {vendor:?}");
             HardwareVendor::Unknown
         }
     }
@@ -92,13 +98,20 @@ impl HardwareVendor {
 
 #[derive(Debug, Deserialize, Clone, Default)]
 struct GpuStatusFileContent {
-    gpu_devices: Vec<GpuStatusFileEntry>,
+    devices: Vec<GpuStatusFileEntry>,
 }
 
+#[allow(dead_code)] // These fields are used when passed to the front end.
 #[derive(Debug, Deserialize, Clone, Default)]
 struct GpuStatusFileEntry {
-    is_available: bool,
-    device_name: String,
+    name: String,
+    device_id: u32,
+    device_type: String,
+    platform_name: String,
+    vendor: String,
+    max_work_group_size: u32,
+    max_compute_units: u32,
+    global_mem_size: u64,
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
@@ -114,11 +127,19 @@ pub struct DeviceStatus {
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
-pub struct PublicDeviceProperties {
+pub struct PublicDeviceCpuProperties {
     pub vendor: HardwareVendor,
     pub name: String,
     pub status: DeviceStatus,
     pub parameters: Option<DeviceParameters>,
+}
+#[derive(Debug, Serialize, Clone, Default)]
+pub struct PublicDeviceGpuProperties {
+    pub vendor: HardwareVendor,
+    pub name: String,
+    pub status: DeviceStatus,
+    pub parameters: Option<DeviceParameters>,
+    pub device_type: String, // Dedicated or integrated
 }
 
 #[derive(Clone)]
@@ -132,12 +153,12 @@ pub struct PrivateGpuDeviceProperties {
 
 #[derive(Clone)]
 pub struct CpuDeviceProperties {
-    pub public_properties: PublicDeviceProperties,
+    pub public_properties: PublicDeviceCpuProperties,
     pub private_properties: PrivateCpuDeviceProperties,
 }
 #[derive(Clone)]
 pub struct GpuDeviceProperties {
-    pub public_properties: PublicDeviceProperties,
+    pub public_properties: PublicDeviceGpuProperties,
     pub private_properties: PrivateGpuDeviceProperties,
 }
 
@@ -158,14 +179,16 @@ impl HardwareStatusMonitor {
         &self,
         config_dir: PathBuf,
     ) -> Result<GpuStatusFileContent, Error> {
-        let file: PathBuf = config_dir.join("gpuminer").join("gpu_status.json");
+        let file: PathBuf = config_dir
+            .join("gpuminer")
+            .join("gpu_information_opencl.json");
         if file.exists() {
-            debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
+            debug!(target: LOG_TARGET, "Loading gpu status from file: {file:?}");
             let content = tokio::fs::read_to_string(file).await?;
             let gpu_status: GpuStatusFileContent = serde_json::from_str(&content)?;
             Ok(gpu_status)
         } else {
-            warn!(target: LOG_TARGET, "Gpu status file not found: {:?}", file);
+            warn!(target: LOG_TARGET, "Gpu status file not found: {file:?}");
             Ok(GpuStatusFileContent::default())
         }
     }
@@ -180,35 +203,36 @@ impl HardwareStatusMonitor {
             HardwareVendor::Intel => Box::new(IntelGpuReader::new()),
             HardwareVendor::Apple => Box::new(AppleGpuReader::new()),
             _ => {
-                warn!("Unsupported GPU vendor: {:?}", vendor);
+                warn!("Unsupported GPU vendor: {vendor:?}");
                 Box::new(DefaultGpuParametersReader)
             }
         }
     }
 
-    async fn initialize_gpu_devices(&self) -> Result<Vec<GpuDeviceProperties>, Error> {
+    pub async fn initialize_gpu_devices(&self) -> Result<(), Error> {
         let config_dir = dirs::config_dir()
             .expect("Could not get config dir")
             .join(APPLICATION_FOLDER_ID);
         let gpu_status_file_content = self.load_gpu_devices_from_status_file(config_dir).await?;
         let mut platform_devices = Vec::new();
 
-        for gpu_device in &gpu_status_file_content.gpu_devices {
-            debug!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.device_name);
-            let vendor = HardwareVendor::from_string(&gpu_device.device_name);
+        for gpu_device in &gpu_status_file_content.devices {
+            debug!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.name);
+            let vendor = HardwareVendor::from_string(&gpu_device.name);
             let device_reader = self.select_reader_for_gpu_device(vendor.clone()).await;
             let platform_device = GpuDeviceProperties {
                 private_properties: PrivateGpuDeviceProperties {
                     device_reader: device_reader.clone(),
                 },
-                public_properties: PublicDeviceProperties {
+                public_properties: PublicDeviceGpuProperties {
                     vendor: vendor.clone(),
-                    name: gpu_device.device_name.clone(),
+                    name: gpu_device.name.clone(),
                     status: DeviceStatus {
-                        is_available: gpu_device.is_available,
+                        is_available: true,
                         is_reader_implemented: device_reader.clone().get_is_reader_implemented(),
                     },
                     parameters: None,
+                    device_type: gpu_device.device_type.clone(),
                     // parameters: if device_reader.clone().get_is_reader_implemented() {
                     //     debug!(target: LOG_TARGET, "Getting device parameters for: {:?}", gpu_device.device_name);
                     //     device_reader.clone().get_device_parameters(None).await.ok()
@@ -221,7 +245,9 @@ impl HardwareStatusMonitor {
             platform_devices.push(platform_device);
         }
 
-        Ok(platform_devices)
+        *self.gpu_devices.write().await = platform_devices;
+
+        Ok(())
     }
 
     async fn select_reader_for_cpu_device(
@@ -233,13 +259,13 @@ impl HardwareStatusMonitor {
             HardwareVendor::Intel => Box::new(IntelCpuParametersReader::new()),
             HardwareVendor::Apple => Box::new(AppleCpuParametersReader::new()),
             _ => {
-                warn!("Unsupported GPU vendor: {:?}", vendor);
+                warn!("Unsupported GPU vendor: {vendor:?}");
                 Box::new(DefaultCpuParametersReader)
             }
         }
     }
 
-    async fn initialize_cpu_devices(&self) -> Result<Vec<CpuDeviceProperties>, Error> {
+    pub async fn initialize_cpu_devices(&self) -> Result<(), Error> {
         let system =
             System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
 
@@ -256,7 +282,7 @@ impl HardwareStatusMonitor {
                 private_properties: PrivateCpuDeviceProperties {
                     device_reader: device_reader.clone(),
                 },
-                public_properties: PublicDeviceProperties {
+                public_properties: PublicDeviceCpuProperties {
                     vendor: vendor.clone(),
                     name: cpu_device.brand().to_string(),
                     status: DeviceStatus {
@@ -275,22 +301,9 @@ impl HardwareStatusMonitor {
             cpu_devices.push(platform_device);
         }
 
-        Ok(cpu_devices)
-    }
+        *self.cpu_devices.write().await = cpu_devices;
 
-    pub async fn initialize(
-        &self,
-    ) -> Result<(Vec<GpuDeviceProperties>, Vec<CpuDeviceProperties>), Error> {
-        let gpu_devices = self.initialize_gpu_devices().await?;
-        let cpu_devices = self.initialize_cpu_devices().await?;
-
-        let mut gpu_devices_lock = self.gpu_devices.write().await;
-        let mut cpu_devices_lock = self.cpu_devices.write().await;
-
-        *gpu_devices_lock = gpu_devices.clone();
-        *cpu_devices_lock = cpu_devices.clone();
-
-        Ok((gpu_devices, cpu_devices))
+        Ok(())
     }
 
     #[allow(dead_code)]
@@ -305,13 +318,14 @@ impl HardwareStatusMonitor {
         Ok(cpu_devices.clone())
     }
 
-    pub async fn get_gpu_public_properties(&self) -> Result<Vec<PublicDeviceProperties>, Error> {
+    pub async fn get_gpu_public_properties(&self) -> Result<Vec<PublicDeviceGpuProperties>, Error> {
         let gpu_devices = self.gpu_devices.read().await;
 
         let mut platform_devices = Vec::new();
 
         for device in gpu_devices.iter() {
-            platform_devices.push(PublicDeviceProperties {
+            platform_devices.push(PublicDeviceGpuProperties {
+                device_type: device.public_properties.device_type.clone(),
                 vendor: device.public_properties.vendor.clone(),
                 name: device.public_properties.name.clone(),
                 status: device.public_properties.status.clone(),
@@ -327,13 +341,13 @@ impl HardwareStatusMonitor {
         Ok(platform_devices)
     }
 
-    pub async fn get_cpu_public_properties(&self) -> Result<Vec<PublicDeviceProperties>, Error> {
+    pub async fn get_cpu_public_properties(&self) -> Result<Vec<PublicDeviceCpuProperties>, Error> {
         let cpu_devices = self.cpu_devices.read().await;
 
         let mut platform_devices = Vec::new();
 
         for device in cpu_devices.iter() {
-            platform_devices.push(PublicDeviceProperties {
+            platform_devices.push(PublicDeviceCpuProperties {
                 vendor: device.public_properties.vendor.clone(),
                 name: device.public_properties.name.clone(),
                 status: device.public_properties.status.clone(),
@@ -347,6 +361,57 @@ impl HardwareStatusMonitor {
         }
 
         Ok(platform_devices)
+    }
+
+    // This method will decide if gpu mining is recommended by which we mean if it should be enabled by default in config mining
+    // It will have two steps verification:
+    // Checking raw_detected_devices in graxil which includes device_type ( INTEGRATED or DEDICATED )
+    // Checking system memory with sysinfo
+    // If there is at least one dedicated gpu and system memory is above 16GB we recommend enabling gpu mining
+    pub async fn decide_if_gpu_mining_is_recommended(&self) -> Result<(), Error> {
+        let mut is_dedicated_gpu_found = false;
+        let mut is_system_memory_above_16gb = false;
+
+        if let Ok(mut graxil_interface) = GpuManager::write().await.get_raw_graxil_miner() {
+            // TODO remove that extra detection step when miners will persist their state
+            graxil_interface.detect_devices().await?;
+            let raw_devices = graxil_interface.get_raw_gpu_devices();
+            info!(target: LOG_TARGET, "Raw detected GPU devices: {:?}", raw_devices);
+            for device in raw_devices {
+                if device.device_type == GpuDeviceType::Dedicated {
+                    is_dedicated_gpu_found = true;
+                }
+            }
+        }
+
+        let system = System::new_all();
+        let total_memory_mb = system.total_memory() / 1024; // Convert KB to MB
+        if total_memory_mb >= 16384 {
+            is_system_memory_above_16gb = true;
+        }
+
+        info!(target: LOG_TARGET, "System total memory: {} MB", total_memory_mb);
+        info!(target: LOG_TARGET, "Is dedicated GPU found: {}", is_dedicated_gpu_found);
+
+        let is_gpu_mining_recommended = *ConfigMining::content().await.is_gpu_mining_recommended();
+        let should_recommend_gpu_mining = is_dedicated_gpu_found || is_system_memory_above_16gb;
+
+        // is_gpu_mining_recommended is by default true on first run
+        // This check handles first time check and cases when something change on the machine which caused to gpu not work
+        // If there is change from recommended to not recommended we turn off gpu mining
+        if is_gpu_mining_recommended && !should_recommend_gpu_mining {
+            ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, false).await?;
+        }
+
+        // Always update the recommendation flag
+        ConfigMining::update_field(
+            ConfigMiningContent::set_is_gpu_mining_recommended,
+            should_recommend_gpu_mining,
+        )
+        .await?;
+        EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
+
+        Ok(())
     }
 
     pub fn current() -> &'static HardwareStatusMonitor {

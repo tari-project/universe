@@ -1,4 +1,16 @@
 {
+  "banner": {
+    "body-copy": "在接下来的约15天内，随着网络的稳定，您可能会遇到分叉和算力波动。",
+    "body-copy-highlight": "Tari是全新的！",
+    "is-live": "已上线"
+  },
+  "close-experience-dialog": {
+    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
+    "dont-ask-again": "Don't ask me again",
+    "exit-completely": "Exit Completely",
+    "run-in-background": "Run in Background",
+    "title": "Choose how to close Tari Universe"
+  },
   "field-error-message": {
     "integers-only": "只允许整数",
     "invalid": "字段无效",
@@ -20,14 +32,19 @@
     "title": "发布说明"
   },
   "resume-app-modal": {
-    "title": "恢复 Tari Universe",
+    "finishing-resume": "完成恢复...",
     "resuming-all-processes": "恢复所有进程...",
-    "resuming-tor": "恢复 Tor...",
+    "resuming-mm-proxy": "恢复 MM 代理...",
     "resuming-node": "恢复节点...",
+    "resuming-tor": "恢复 Tor...",
     "resuming-wallet": "恢复钱包...",
     "syncing-node": "同步节点...",
-    "resuming-p2pool": "恢复 P2Pool...",
-    "resuming-mm-proxy": "恢复 MM 代理...",
-    "finishing-resume": "完成恢复..."
+    "title": "恢复 Tari Universe"
+  },
+  "warmupDialog": {
+    "copy": "工作量证明网络的诞生是特别的。在早期，网络需要时间来稳定并找到其节奏。我们称之为“热身阶段”。\nTari网络的贡献者和早期支持者（如交易所和基础设施合作伙伴）预计热身阶段将持续约15天。之后，网络将过渡到更稳定的状态。\n在热身阶段，一些小问题是正常的。您可能会看到区块时间波动、临时断开连接、同步延迟，甚至是需要您的节点重新连接到主链的短暂分叉。\n热身阶段是挖矿的好时机，因为每个区块的奖励最高。我们希望Tari网络的早期阶段对您来说是有回报的。\n让游戏开始吧。愿区块永远对您有利！",
+    "subtitle": "这到底意味着什么？",
+    "tag-line": "欢迎来到Tari主网",
+    "title": "热身阶段"
   }
 }

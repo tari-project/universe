@@ -17,6 +17,15 @@
         "sentry:default",
         "process:allow-restart",
         "process:default",
-        "clipboard-manager:allow-write-text"
+        "clipboard-manager:allow-write-text",
+        "clipboard-manager:allow-read-text",
+        {
+            "identifier": "http:default",
+            "allow": [
+                {
+                    "url": ["http://localhost:*", "http://127.0.0.1:*"]
+                }
+            ]
+        }
     ]
 }

@@ -22,15 +22,20 @@
 
 use std::path::PathBuf;
 
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::error;
-use regex::Regex;
+use log::{error, info};
 use tari_common::configuration::Network;
+use tokio::{fs::File, io::AsyncReadExt};
 
-use crate::{github, progress_tracker::ProgressTracker, APPLICATION_FOLDER_ID};
+use crate::{
+    requests::{
+        clients::http_file_client::HttpFileClient, get_gh_download_url, get_mirror_download_url,
+    },
+    APPLICATION_FOLDER_ID,
+};
 
-use super::binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo};
+use super::binaries_resolver::{BinaryDownloadInfo, LatestVersionApiAdapter};
 
 const LOG_TARGET: &str = "tari::universe::adapter_xmrig";
 
@@ -38,27 +43,55 @@ pub struct XmrigVersionApiAdapter {}
 
 #[async_trait]
 impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
-    async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
-        let releases = github::list_releases("xmrig", "xmrig").await?;
-        Ok(releases.clone())
+    async fn get_expected_checksum(
+        &self,
+        checksum_path: PathBuf,
+        asset_name: &str,
+    ) -> Result<String, Error> {
+        let mut file_sha256 = File::open(checksum_path.clone()).await?;
+        let mut buffer_sha256 = Vec::new();
+        file_sha256.read_to_end(&mut buffer_sha256).await?;
+        let contents =
+            String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
+
+        let xmrig_hash = contents
+            .lines()
+            .find(|line| line.contains(asset_name))
+            .and_then(|line| line.split_whitespace().next())
+            .map(|hash| hash.to_string());
+
+        xmrig_hash.ok_or(anyhow!("No checksum was found for xmrig"))
     }
 
     async fn download_and_get_checksum_path(
         &self,
         directory: PathBuf,
-        download_info: VersionDownloadInfo,
-        _: ProgressTracker,
+        download_info: BinaryDownloadInfo,
     ) -> Result<PathBuf, Error> {
-        // When xmrig is downloaded checksum will be already in its folder so there is no need to download it
-        // directory parameter should point to folder where xmrig is extracted
-        // file with checksum should be in the same folder as xmrig
-        // file name is SHA256SUMS
-        // let platform = self.find_version_for_platform(version)?;
-        let checksum_path = directory
-            .join(format!("xmrig-{}", download_info.version))
-            .join("SHA256SUMS");
+        let checksum_url = match download_info.main_url.rfind('/') {
+            Some(pos) => format!("{}/{}", &download_info.main_url[..pos], "SHA256SUMS"),
+            None => download_info.main_url,
+        };
 
-        Ok(checksum_path)
+        match HttpFileClient::builder()
+            .with_cloudflare_cache_check()
+            .build(checksum_url.clone(), directory.clone())?
+            .execute()
+            .await
+        {
+            Ok(checksum_path) => Ok(checksum_path),
+            Err(_) => {
+                let checksum_fallback_url = match download_info.fallback_url.rfind('/') {
+                    Some(pos) => format!("{}/{}", &download_info.fallback_url[..pos], "SHA256SUMS"),
+                    None => download_info.fallback_url,
+                };
+                info!(target: LOG_TARGET, "Fallback URL: {checksum_fallback_url}");
+                HttpFileClient::builder()
+                    .build(checksum_fallback_url.clone(), directory.clone())?
+                    .execute()
+                    .await
+            }
+        }
     }
 
     fn get_binary_folder(&self) -> Result<PathBuf, Error> {
@@ -77,46 +110,19 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
 
         if !binary_folder_path.exists() {
             std::fs::create_dir_all(&binary_folder_path).unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Failed to create directory: {}", e);
+                error!(target: LOG_TARGET, "Failed to create directory: {e}");
             });
         };
 
         Ok(binary_folder_path)
     }
 
-    fn find_version_for_platform(
-        &self,
-        _version: &VersionDownloadInfo,
-    ) -> Result<VersionAsset, anyhow::Error> {
-        let mut name_suffix = "";
-        if cfg!(target_os = "windows") {
-            name_suffix = r".*msvc-win64\.zip";
-        }
-        if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
-            name_suffix = r".*macos-x64\.tar.gz";
-        }
-        if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            // the x64 seems to work better on the M1
-            name_suffix = r".*macos-arm64\.tar.gz";
-        }
-        if cfg!(target_os = "linux") {
-            name_suffix = r".*linux-static-x64\.tar.gz";
-        }
-        if cfg!(target_os = "freebsd") {
-            name_suffix = r".*freebsd-static-x64\.tar.gz";
-        }
-        if name_suffix.is_empty() {
-            panic!("Unsupported OS");
-        }
-
-        let name_sufix_regex = Regex::new(name_suffix)
-            .map_err(|error| anyhow::anyhow!("Failed to create regex: {}", error))?;
-
-        let platform = _version
-            .assets
-            .iter()
-            .find(|a| name_sufix_regex.is_match(&a.name))
-            .ok_or(anyhow::anyhow!("Failed to get platform asset"))?;
-        Ok(platform.clone())
+    fn get_base_main_download_url(&self, version: &str) -> String {
+        let base_url = get_mirror_download_url("xmrig", "xmrig");
+        format!("{base_url}/v{version}")
+    }
+    fn get_base_fallback_download_url(&self, version: &str) -> String {
+        let base_url = get_gh_download_url("xmrig", "xmrig");
+        format!("{base_url}/v{version}")
     }
 }

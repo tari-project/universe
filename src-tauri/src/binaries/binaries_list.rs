@@ -22,7 +22,14 @@
 
 use std::path::PathBuf;
 
-use semver::Version;
+use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
+
+pub enum BinaryPlatformAssets {
+    LinuxX64,
+    WindowsX64,
+    MacOSX64,
+    MacOSArm64,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Binaries {
@@ -30,11 +37,12 @@ pub enum Binaries {
     MergeMiningProxy,
     MinotariNode,
     Wallet,
-    ShaP2pool,
-    GpuMiner,
     Tor,
+    BridgeTapplet,
+    Glytex,
+    Graxil,
+    LolMiner,
 }
-
 impl Binaries {
     pub fn name(&self) -> &str {
         match self {
@@ -42,9 +50,11 @@ impl Binaries {
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
-            Binaries::ShaP2pool => "sha-p2pool",
-            Binaries::GpuMiner => "glytex",
+            Binaries::Glytex => "glytex",
             Binaries::Tor => "tor",
+            Binaries::BridgeTapplet => "bridge",
+            Binaries::Graxil => "graxil",
+            Binaries::LolMiner => "lolminer",
         }
     }
 
@@ -54,58 +64,187 @@ impl Binaries {
             "mmproxy" => Binaries::MergeMiningProxy,
             "minotari_node" => Binaries::MinotariNode,
             "wallet" => Binaries::Wallet,
-            "sha-p2pool" => Binaries::ShaP2pool,
-            "glytex" => Binaries::GpuMiner,
+            "glytex" => Binaries::Glytex,
             "tor" => Binaries::Tor,
-            _ => panic!("Unknown binary name: {}", name),
+            "bridge" => Binaries::BridgeTapplet,
+            "graxil" => Binaries::Graxil,
+            "lolminer" => Binaries::LolMiner,
+            _ => panic!("Unknown binary name: {name}"),
         }
     }
 
-    pub fn binary_file_name(self, version: Version) -> PathBuf {
-        match self {
+    fn append_exe_if_windows(path: &mut PathBuf) -> PathBuf {
+        if matches!(
+            PlatformUtils::detect_current_os(),
+            CurrentOperatingSystem::Windows
+        ) {
+            path.set_extension("exe");
+        }
+        path.clone()
+    }
+
+    pub fn binary_file_name(self, version: String) -> PathBuf {
+        let base_path = match self {
             Binaries::Xmrig => {
-                let file_name = format!("xmrig-{}", version);
-                PathBuf::from(file_name).join("xmrig")
+                let file_name = format!("xmrig-{version}");
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name).join("xmrig"))
             }
             Binaries::MergeMiningProxy => {
                 let file_name = "minotari_merge_mining_proxy";
-                PathBuf::from(file_name)
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
             Binaries::MinotariNode => {
                 let file_name = "minotari_node";
-                PathBuf::from(file_name)
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
             Binaries::Wallet => {
                 let file_name = "minotari_console_wallet";
-                PathBuf::from(file_name)
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
-            Binaries::ShaP2pool => {
-                let file_name = "sha_p2pool";
-                PathBuf::from(file_name)
-            }
-            Binaries::GpuMiner => {
+            Binaries::Glytex => {
                 let file_name = "glytex";
-                PathBuf::from(file_name)
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
             Binaries::Tor => {
                 let file_name = "tor";
-                PathBuf::from(file_name)
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
-        }
+            Binaries::BridgeTapplet => {
+                let file_name = format!("bridge-{version}");
+                PathBuf::from(file_name).join("bridge")
+            }
+            Binaries::Graxil => {
+                let file_name = "graxil";
+                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
+            }
+            Binaries::LolMiner => {
+                let file_name = "lolMiner";
+                Self::append_exe_if_windows(&mut PathBuf::from(version).join(file_name))
+            }
+        };
+
+        base_path
     }
 
-    #[allow(dead_code)]
-    pub fn iterator() -> impl Iterator<Item = Binaries> {
-        [
-            Binaries::Xmrig,
-            Binaries::MergeMiningProxy,
-            Binaries::MinotariNode,
-            Binaries::Wallet,
-            Binaries::ShaP2pool,
-            Binaries::GpuMiner,
-            Binaries::Tor,
-        ]
-        .iter()
-        .copied()
+    #[allow(clippy::too_many_lines)]
+    pub fn get_binary_platform_name(
+        self,
+        platform: BinaryPlatformAssets,
+        version: String,
+        network: String,
+        hash: String,
+    ) -> String {
+        match self {
+            Binaries::BridgeTapplet => format!("bridge-v{version}.zip"),
+            Binaries::Glytex => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("glytex-opencl-linux-x86_64-{network}-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("glytex-opencl-windows-x64-{network}-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("glytex-opencl-macos-x86_64-{network}-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("glytex-combined-macos-arm64-{network}-{version}-{hash}.zip")
+                }
+            },
+            Binaries::Xmrig => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("xmrig-{version}-linux-static-x64.tar.gz")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("xmrig-{version}-windows-x64.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("xmrig-{version}-macos-x64.tar.gz")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("xmrig-{version}-macos-arm64.tar.gz")
+                }
+            },
+            Binaries::Tor => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tor-expert-bundle-linux-x86_64-{version}.tar.gz")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tor-expert-bundle-windows-x86_64-{version}.tar.gz")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tor-expert-bundle-macos-x86_64-{version}.tar.gz")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tor-expert-bundle-macos-aarch64-{version}.tar.gz")
+                }
+            },
+            Binaries::MergeMiningProxy => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tari_suite-{version}-{network}-{hash}-linux-x86_64.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tari_suite-{version}-{network}-{hash}-windows-x64.exe.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tari_suite-{version}-{network}-{hash}-macos-x86_64.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tari_suite-{version}-{network}-{hash}-macos-arm64.zip")
+                }
+            },
+            Binaries::MinotariNode => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tari_suite-{version}-{network}-{hash}-linux-x86_64.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tari_suite-{version}-{network}-{hash}-windows-x64.exe.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tari_suite-{version}-{network}-{hash}-macos-x86_64.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tari_suite-{version}-{network}-{hash}-macos-arm64.zip")
+                }
+            },
+            Binaries::Wallet => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("tari_suite-{version}-{network}-{hash}-linux-x86_64.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("tari_suite-{version}-{network}-{hash}-windows-x64.exe.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("tari_suite-{version}-{network}-{hash}-macos-x86_64.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("tari_suite-{version}-{network}-{hash}-macos-arm64.zip")
+                }
+            },
+
+            // TODO: Change to proper names once we have the binaries online
+            Binaries::Graxil => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("graxil-linux-x86_64-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("graxil-windows-x64-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::MacOSX64 => {
+                    format!("graxil-macos-x86_64-{version}-{hash}.zip")
+                }
+                BinaryPlatformAssets::MacOSArm64 => {
+                    format!("graxil-macos-arm64-{version}-{hash}.zip")
+                }
+            },
+            Binaries::LolMiner => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("lolMiner_v{version}_Lin64.tar.gz")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("lolMiner_v{version}_Win64.zip")
+                }
+                _ => "Not available for this platform".to_string(),
+            },
+        }
     }
 }

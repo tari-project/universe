@@ -20,10 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+mod adapter_bridge;
 mod adapter_github;
 mod adapter_tor;
 mod adapter_xmrig;
 mod binaries_manager;
+#[cfg(target_os = "windows")]
+mod windows_defender;
 
 pub mod binaries_list;
 pub mod binaries_resolver;

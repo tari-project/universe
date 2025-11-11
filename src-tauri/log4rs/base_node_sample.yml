@@ -32,7 +32,7 @@ appenders:
       roller:
         kind: fixed_window
         base: 1
-        count: 5
+        count: 2
         pattern: "{{log_dir}}/base_node/log/network.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] [Thread:{I}] {l:5} {m} // {f}:{L}{n}"
@@ -48,7 +48,7 @@ appenders:
       roller:
         kind: fixed_window
         base: 1
-        count: 5
+        count: 2
         pattern: "{{log_dir}}/base_node/log/messages.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] [Thread:{I}] {l:5} {m} // {f}:{L}{n}"
@@ -65,7 +65,7 @@ appenders:
       roller:
         kind: fixed_window
         base: 1
-        count: 5
+        count: 2
         pattern: "{{log_dir}}/base_node/log/base_layer.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] [{X(node-public-key)},{X(node-id)}] {l:5} {m} // {f}:{L}{n}"
@@ -82,7 +82,7 @@ appenders:
       roller:
         kind: fixed_window
         base: 1
-        count: 5
+        count: 2
         pattern: "{{log_dir}}/base_node/log/grpc.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m} // {f}:{L}{n}"
@@ -99,7 +99,7 @@ appenders:
       roller:
         kind: fixed_window
         base: 1
-        count: 5
+        count: 2
         pattern: "{{log_dir}}/base_node/log/other.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] [Thread:{I}] {l:5} {m}{n} // {f}:{L} "
@@ -124,10 +124,12 @@ loggers:
     level: debug
     appenders:
       - grpc
+      - stdout
+    additive: false  
 
   # Route log events sent to the "core" logger to the "base_layer" appender
   c:
-    level: debug
+    level: info
     appenders:
       - base_layer
   minotari:

@@ -7,6 +7,7 @@ import packageInfo from '../../../../../../package.json';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '@app/store/appStateStore';
+import { isMainNet } from '@app/utils/network';
 
 const appVersion = packageInfo.version;
 const versionString = `v${appVersion}`;
@@ -69,7 +70,7 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
                     <TextWrapper>
                         <Title>{t('settings:tabs.releaseNotes')}</Title>
                         <Text>
-                            {t('tari-universe')} - {t('testnet')} {versionString}
+                            {t('tari-universe')} - {!isMainNet() && t('testnet')} {versionString}
                         </Text>
                     </TextWrapper>
 

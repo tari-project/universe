@@ -1,37 +1,29 @@
-import { ResumingAllProcessesPayload } from '@app/hooks/app/useListenForAppResuming.ts';
-import { ApplicationsVersions, CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status';
-import { create } from './create';
+import { create } from 'zustand';
+import { ApplicationsVersions, NetworkStatus, SystemDependency } from '@app/types/app-status';
+import { CriticalProblemPayload } from '@app/types/events-payloads';
 
 interface AppState {
     error?: string;
-    criticalProblem?: Partial<CriticalProblem>;
-    setupTitle: string;
-    setupTitleParams: Record<string, string>;
-    setupProgress: number;
+    criticalProblem?: Partial<CriticalProblemPayload>;
     isSettingsOpen: boolean;
-    criticalError?: string;
-    setupComplete: boolean;
-    externalDependencies: ExternalDependency[];
-    missingExternalDependencies?: ExternalDependency[];
+    criticalError?: Partial<CriticalProblemPayload>;
+    systemDependencies: SystemDependency[];
     issueReference?: string;
     applications_versions?: ApplicationsVersions;
     releaseNotes: string;
     isAppUpdateAvailable: boolean;
     networkStatus?: NetworkStatus;
-    appResumePayload?: ResumingAllProcessesPayload;
+    isStuckOnOrphanChain: boolean;
+    isSystrayAppShutdownRequested: boolean;
 }
 
 const initialstate: AppState = {
-    setupTitle: '',
-    setupTitleParams: {},
-    setupProgress: 0,
     isSettingsOpen: false,
-    setupComplete: false,
-    externalDependencies: [],
-    missingExternalDependencies: [],
+    systemDependencies: [],
     releaseNotes: '',
     isAppUpdateAvailable: false,
-    appResumePayload: undefined,
+    isStuckOnOrphanChain: false,
+    isSystrayAppShutdownRequested: false,
 };
 
 export const useAppStateStore = create<AppState>()(() => ({

@@ -27,7 +27,7 @@ use log::{error, info};
 use psp::monitor::{PowerMonitor, PowerState};
 use tokio::sync::watch;
 
-const LOG_TARGET: &str = "tari::universe::external_dependencies";
+const LOG_TARGET: &str = "tari::universe::system_status";
 
 static INSTANCE: LazyLock<SystemStatus> = LazyLock::new(SystemStatus::new);
 
@@ -49,7 +49,7 @@ impl SystemStatus {
     pub fn start_listener(&self) -> PowerMonitor {
         let power_monitor = PowerMonitor::new();
         let _unused = power_monitor.start_listening().inspect_err(|e| {
-            error!(target: LOG_TARGET, "Failed to start power monitor: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to start power monitor: {e:?}");
         });
 
         power_monitor
@@ -57,7 +57,7 @@ impl SystemStatus {
 
     pub fn receive_power_event(&self, power_monitor: &PowerMonitor) -> Result<(), Error> {
         if let Ok(event) = power_monitor.event_receiver().try_recv() {
-            info!(target: LOG_TARGET, "Power event: {:?}", event);
+            info!(target: LOG_TARGET, "Power event: {event:?}");
             match event {
                 PowerState::Suspend => {
                     info!(target: LOG_TARGET, "Suspend");

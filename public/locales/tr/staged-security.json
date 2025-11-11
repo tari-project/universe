@@ -1,6 +1,12 @@
 {
   "common": {
+    "all-done": "Hepsi tamam!",
     "got-it": "Anladım"
+  },
+  "complete": {
+    "continue": "Tari Universe\"e devam et",
+    "happy-mining": "Mutlu madencilikler!",
+    "secured": "Cüzdanınız şimdi güvenli bir şekilde yedeklendi—harika iş!\nTari tokenleriniz güvende ve cihazınızı değiştirseniz veya kaybetseniz bile ihtiyaç duyduğunuzda hazır."
   },
   "completedTip": {
     "text": "Seed kelimeleriniz ayarlarınızda tekrar bulunabilir",
@@ -8,9 +14,10 @@
   },
   "intro": {
     "balance": "Cüzdanınızda <span>{{balance}}</span> XTM var",
-    "button": "Seed kelimelerini yedekle",
+    "button": "Cüzdanımı güvence altına al",
+    "subtitle": "Artık ilk Tari tokenlerinize sahipsiniz. Cüzdanınızı iki kolay adımda hızlıca koruyalım.",
     "text": "Tari Universe, madenciliğe başladığınızda sizin için otomatik olarak bir cüzdan kurar. Seed kelimelerinizi güvenli bir yerde saklayarak cüzdanınıza her zaman erişiminiz olduğundan emin olun.",
-    "title": "Seed kelimelerinizi yedekleyerek token\"larınızı koruyun",
+    "title": "Cüzdanınızı güvence altına alalım.",
     "warning": "Şiddetle tavsiye edilir"
   },
   "reminderTip": {
@@ -18,17 +25,32 @@
     "title": "Ayarlarınızda seed kelimelerinizi hızlıca yedekleyin"
   },
   "seedPhrase": {
-    "button": "SEED KELİMELERİNİ DOĞRULA",
+    "button": "Seed cümlesini doğrula",
     "checkbox": "Kurtarma seed kelimelerimi kaybedersem cüzdanımı geri yükleyemeyeceğimi anlıyorum.",
     "copied": "Kopyalandı!",
     "copy": "Panoya kopyala",
     "text": "Cüzdanınızı geri yüklemek için bu koda tekrar ihtiyacınız olacak.",
     "title": "Seed kelimelerinizi yazın ve güvenli bir yerde saklayın"
   },
+  "skip": "Şimdilik atla",
+  "steps": {
+    "chip": "{{total}} adımın {{step}}\"i",
+    "complete-false": "Tamamlanmadı",
+    "complete-true": "Tamamlandı",
+    "step": "Adım {{stepNumber}}",
+    "subtitle-pin": "Yetkisiz cüzdan erişimini önler",
+    "subtitle-seeds": "Cihazınızı kaybederseniz fonlarınızı kurtarabileceğinizi garanti eder",
+    "title-pin": "Güvenli bir PIN ayarlayın",
+    "title-seeds": "Seed Cümlenizi Yedekleyin"
+  },
   "verifySeed": {
-    "button": "SEED KELİMELERİNİ ONAYLA",
+    "button": "Seed cümlesini onayla",
     "placeholder": "Aşağıdaki kelimelere doğru sırayla tıklayın",
     "text": "Seed kelimelerinizi doğru yazdığınızdan emin olmak için lütfen kelimeleri doğru sırayla seçin.",
     "title": "Seed kelimelerinizi doğrulayın"
+  },
+  "warning": {
+    "steps": "Adımlar",
+    "title": "Cüzdanınızı güvence altına alın"
   }
 }

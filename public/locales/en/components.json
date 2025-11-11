@@ -1,4 +1,16 @@
 {
+  "banner": {
+    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
+    "body-copy-highlight": "Tari is brand new!",
+    "is-live": "is live"
+  },
+  "close-experience-dialog": {
+    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
+    "dont-ask-again": "Don't ask me again",
+    "exit-completely": "Exit Completely",
+    "run-in-background": "Run in Background",
+    "title": "Choose how to close Tari Universe"
+  },
   "field-error-message": {
     "integers-only": "Only Integers Allowed",
     "invalid": "Field invalid",
@@ -20,14 +32,19 @@
     "title": "Release Notes"
   },
   "resume-app-modal": {
-    "title": "Resuming Tari Universe",
+    "finishing-resume": "Finishing Resume...",
     "resuming-all-processes": "Resuming all processes...",
-    "resuming-tor": "Resuming Tor...",
+    "resuming-mm-proxy": "Resuming MM Proxy...",
     "resuming-node": "Resuming Node...",
+    "resuming-tor": "Resuming Tor...",
     "resuming-wallet": "Resuming Wallet...",
     "syncing-node": "Syncing Node...",
-    "resuming-p2pool": "Resuming P2Pool...",
-    "resuming-mm-proxy": "Resuming MM Proxy...",
-    "finishing-resume": "Finishing Resume..."
+    "title": "Resuming Tari Universe"
+  },
+  "warmupDialog": {
+    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
+    "subtitle": "What does this mean exactly?",
+    "tag-line": "Welcome to Tari Mainnet",
+    "title": "Warm up phase"
   }
 }

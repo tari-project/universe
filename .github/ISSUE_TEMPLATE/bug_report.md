@@ -1,36 +1,43 @@
 ---
 name: Bug report
-about: Create a report to help us improve
+about: Report bugs to help us improve. For general support, please use Discord or Telegram.
 title: "[TITLE]"
 labels: 'bug-report'
 assignees: ''
-
 ---
 
+<!--
+IMPORTANT: This form is for reporting development-related bugs ONLY.
+For general queries or support, please use:
+- Discord: https://discord.gg/PnpxAGgr
+- Telegram: https://t.me/tariproject
+-->
+
 **Describe the bug**
-A clear and concise description of what the bug is.
+A clear and concise description of the bug.
 
 **To Reproduce**
 Steps to reproduce the behavior:
 1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
+2. Click on '...'
+3. Scroll down to '...'
 4. See error
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.
 
 **Screenshots**
-If applicable, add screenshots to help explain your problem.
+If applicable, add screenshots to illustrate the problem.
 
 **Desktop (please complete the following information):**
- - OS & Version: [e.g. iOS 10.2.1]
- - Browser & Version [e.g. chrome v71.0.12345]
+ - OS & Version: [e.g. macOS 14.4.1]
+ - Browser & Version: [e.g. Chrome 122.0.6261.128]
 
 **Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser & Version [e.g. stock browser v0.1.2]
+ - Device: [e.g. iPhone 15]
+ - OS: [e.g. iOS 17.4.1]
+ - Browser & Version: [e.g. Safari 17.0]
 
 **Additional context**
-Add any other context about the problem here.
+Any other context or information relevant to the issue.
+

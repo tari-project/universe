@@ -1,0 +1,13 @@
+# .github/ISSUE_TEMPLATE/config.yml
+blank_issues_enabled: false
+contact_links:
+  - name: Tari Community Discord
+    url: https://discord.gg/PnpxAGgr
+    about: Join our Discord server for general questions, discussions, and community support.
+  - name: Tari Project Telegram
+    url: https://t.me/tariproject
+    about: Chat with the Tari community on Telegram for immediate help and support.
+  - name: Tari Security Bug Bounty
+    url: https://hackerone.com/tari_labs
+    about: Report security vulnerabilities via our official HackerOne Bug Bounty programme.
+

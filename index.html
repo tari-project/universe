@@ -56,6 +56,7 @@
             type="font/woff2"
             crossorigin
         />
+        <link rel="preload" href="/assets/fonts/FugazOne/FugazOne-Regular.ttf" as="font" type="font/ttf" crossorigin />
 
         <title>Tari Universe | Testnet</title>
         <style>
@@ -173,13 +174,20 @@
                 font-style: normal;
                 font-display: swap;
             }
+            @font-face {
+                font-family: 'Fugaz One';
+                src: url('/assets/fonts/FugazOne/FugazOne-Regular.ttf') format('truetype');
+                font-weight: 400;
+                font-style: normal;
+                font-display: swap;
+            }
 
             /* Existing styles */
 
             html {
                 background: #fff;
                 @media (prefers-color-scheme: dark) {
-                    background: #000;
+                    background: #212121;
                 }
             }
 
@@ -188,10 +196,6 @@
             #root {
                 padding: 0;
                 margin: 0;
-            }
-            #tower-canvas {
-                position: absolute;
-                pointer-events: auto;
             }
         </style>
     </head>

@@ -1,12 +1,13 @@
-import { Column, MarkGroup, RulerMark, RulerMarkGroup, Wrapper } from './Ruler.styles.ts';
 import { useTheme } from 'styled-components';
 import { useLayoutEffect, useRef } from 'react';
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import { useMotionValue } from 'motion/react';
+import { useBlockTip } from '@app/hooks/mining/useBlockTip.ts';
+import { Column, MarkGroup, RulerMark, RulerMarkGroup, Wrapper } from './Ruler.styles.ts';
 
 export function Ruler() {
     const theme = useTheme();
-    const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
+    const { data, isLoading } = useBlockTip();
+    const height = data?.height ? Number(data?.height) : 0;
     const windowWidth = useMotionValue(window.innerWidth);
 
     const columnRef = useRef<HTMLDivElement>(null);
@@ -35,7 +36,7 @@ export function Ruler() {
         const renderNumber = heightSegment && heightSegment > diff;
 
         if (renderNumber && heightSegment) {
-            heightSegment -= diff;
+            heightSegment = heightSegment - diff * (i + 1);
         }
 
         const prevSegment = (heightSegment || 0) + diff;
@@ -67,6 +68,8 @@ export function Ruler() {
             window.removeEventListener('resize', handleResize);
         };
     }, [windowWidth]);
+
+    if (isLoading) return null;
 
     return (
         <Wrapper>

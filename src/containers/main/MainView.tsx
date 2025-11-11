@@ -1,15 +1,18 @@
-import { DashboardContainer } from '@app/theme/styles.ts';
-import { Dashboard } from '@app/containers/main/Dashboard';
-import SideBar from '@app/containers/main/SideBar/SideBar.tsx';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { Background, DashboardContainer, DashboardContent } from '@app/theme/styles.ts';
+import SidebarNavigation from '@app/containers/navigation/SidebarNavigation.tsx';
+import { Dashboard } from './Dashboard';
+import { useConfigUIStore } from '@app/store';
 
 export default function MainView() {
-    const visualMode = useAppConfigStore((s) => s.visual_mode);
+    const visualMode = useConfigUIStore((s) => s.visual_mode);
 
     return (
-        <DashboardContainer $visualModeOff={!visualMode}>
-            <SideBar />
-            <Dashboard />
+        <DashboardContainer>
+            {!visualMode && <Background />}
+            <DashboardContent>
+                <SidebarNavigation />
+                <Dashboard />
+            </DashboardContent>
         </DashboardContainer>
     );
 }

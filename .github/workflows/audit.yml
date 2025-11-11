@@ -1,0 +1,63 @@
+---
+name: Security audit - daily
+
+"on":
+  push:
+    branches:
+      - "main"
+      - "audit-*"
+    paths:
+      # Run if workflow changes
+      - ".github/workflows/audit.yml"
+      # Run on changed dependencies
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "**/package.json"
+      - "**/package-lock.json"
+  pull_request:
+    branches:
+      - "main"
+  # Rerun periodicly to pick up new advisories
+  schedule:
+    - cron: "43 05 * * *"
+  # Run manually
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "lts/*"
+          cache: "npm"
+
+      - name: Install dependencies (CI clean)
+        run: npm ci
+
+      - name: Run npm audit
+        run: |
+          echo "Running npm audit..."
+          npm audit --audit-level=high --json > audit-report.json || true
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v5
+        with:
+          name: npm-audit-report
+          path: audit-report.json
+
+      - name: Fail on high/critical vulnerabilities
+        run: |
+          if jq '.metadata.vulnerabilities.critical + .metadata.vulnerabilities.high' audit-report.json | grep -q '^[1-9]'; then
+            echo "❌ High/Critical vulnerabilities found!"
+            exit 1
+          else
+            echo "✅ No high/critical vulnerabilities."
+          fi

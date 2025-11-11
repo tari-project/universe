@@ -1,4 +1,16 @@
 {
+  "banner": {
+    "body-copy": "Vous pourriez rencontrer des forks et des fluctuations du taux de hachage alors que le réseau se stabilise au cours des ~15 prochains jours.",
+    "body-copy-highlight": "Tari est tout nouveau !",
+    "is-live": "est en direct"
+  },
+  "close-experience-dialog": {
+    "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
+    "dont-ask-again": "Don't ask me again",
+    "exit-completely": "Exit Completely",
+    "run-in-background": "Run in Background",
+    "title": "Choose how to close Tari Universe"
+  },
   "field-error-message": {
     "integers-only": "Seuls les entiers sont autorisés",
     "invalid": "Champ invalide",
@@ -20,14 +32,19 @@
     "title": "Notes de version"
   },
   "resume-app-modal": {
-    "title": "Reprise de l\"Univers Tari",
+    "finishing-resume": "Fin de la reprise...",
     "resuming-all-processes": "Reprise de tous les processus...",
-    "resuming-tor": "Reprise de Tor...",
+    "resuming-mm-proxy": "Reprise du proxy MM...",
     "resuming-node": "Reprise du nœud...",
+    "resuming-tor": "Reprise de Tor...",
     "resuming-wallet": "Reprise du portefeuille...",
     "syncing-node": "Synchronisation du nœud...",
-    "resuming-p2pool": "Reprise de P2Pool...",
-    "resuming-mm-proxy": "Reprise du proxy MM...",
-    "finishing-resume": "Fin de la reprise..."
+    "title": "Reprise de l\"Univers Tari"
+  },
+  "warmupDialog": {
+    "copy": "La naissance d\"un réseau de preuve de travail est spéciale. Au début, le réseau a besoin de temps pour se stabiliser et trouver son rythme. Nous appelons cela la \"phase de rodage.\"\nLes contributeurs et les premiers supporters du réseau Tari (comme les échanges et les partenaires d\"infrastructure) s\"attendent à ce que la phase de rodage dure environ 15 jours. Après cela, le réseau passera à un état plus stable.\nPendant la phase de rodage, certaines bizarreries sont normales. Vous pourriez voir des fluctuations du temps de bloc, des déconnexions temporaires, des retards de synchronisation, ou même des forks de courte durée qui nécessitent que votre nœud se reconnecte à la chaîne principale.\nLa phase de rodage est un excellent moment pour miner car les récompenses sont les plus élevées par bloc. Nous espérons que les premiers jours du réseau Tari seront enrichissants pour vous.\nQue les jeux commencent. Que les blocs soient toujours en votre faveur !",
+    "subtitle": "Qu\"est-ce que cela signifie exactement ?",
+    "tag-line": "Bienvenue sur le Mainnet de Tari",
+    "title": "Phase de rodage"
   }
 }

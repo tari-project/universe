@@ -1,21 +1,24 @@
 import styled from 'styled-components';
 
-export const Wrapper = styled('div')``;
+export const Wrapper = styled('div')`
+    position: relative;
+`;
 
 export const HeroImage = styled('img')`
     position: absolute;
-    top: -135px;
+    top: -140px;
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
-
+    width: 100%;
     @media (max-height: 800px) {
         width: 80%;
-        top: -60px;
+        top: -90px;
     }
 
     @media (max-height: 680px) {
         width: 70%;
+        top: -70px;
     }
 `;
 

@@ -19,7 +19,12 @@ const BASE_PATH = path.join(__dirname, '..', 'public', 'locales');
  */
 function mergeDeep(target, source) {
     for (const key in source) {
-        if (Object.prototype.hasOwnProperty.call(source, key)) {
+        if (
+            Object.prototype.hasOwnProperty.call(source, key) &&
+            key !== '__proto__' &&
+            key !== 'constructor' &&
+            key !== 'prototype'
+        ) {
             // If the property is an object, call mergeDeep recursively
             if (typeof source[key] === 'object' && source[key] !== null) {
                 // Create an empty object if the target key doesn't exist

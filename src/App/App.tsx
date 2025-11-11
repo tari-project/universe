@@ -1,54 +1,37 @@
-import { memo, useMemo } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LazyMotion, domAnimation, AnimatePresence } from 'motion/react';
+import { LazyMotion, domMax, AnimatePresence } from 'motion/react';
+import { QueryClientProvider } from '@tanstack/react-query';
 
-import { useIsAppReady } from '../hooks/app/isAppReady.ts';
-import { useShuttingDown } from '../hooks';
-
-import { useAppStateStore } from '../store/appStateStore';
 import { setError, setIsWebglNotSupported } from '../store/actions';
 import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
 import ThemeProvider from '../theme/ThemeProvider.tsx';
-import Splashscreen from '../containers/phase/Splashscreen/Splashscreen.tsx';
-import ShuttingDownScreen from '../containers/phase/ShuttingDownScreen/ShuttingDownScreen.tsx';
-import FloatingElements from '../containers/floating/FloatingElements.tsx';
-import MainView from '../containers/main/MainView.tsx';
-import Setup from '../containers/phase/Setup/Setup';
 
 import { AppContentContainer } from './App.styles.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
+import { queryClient } from './queryClient.ts';
 
-const CurrentAppSection = memo(function CurrentAppSection({
-    isAppReady,
-    isShuttingDown,
-}: {
-    isAppReady?: boolean;
+import Splashscreen from '../containers/phase/Splashscreen/Splashscreen.tsx';
+
+const ShuttingDownScreen = lazy(() => import('../containers/phase/ShuttingDownScreen/ShuttingDownScreen.tsx'));
+const FloatingElements = lazy(() => import('../containers/floating/FloatingElements.tsx'));
+const MainView = lazy(() => import('../containers/main/MainView.tsx'));
+
+interface CurrentAppSectionProps {
+    showSplashscreen?: boolean;
     isShuttingDown?: boolean;
-}) {
-    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
+}
 
+function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSectionProps) {
     const currentSection = useMemo(() => {
-        const showSetup = isSettingUp && !isShuttingDown && isAppReady;
-        const showMainView = !isSettingUp && !isShuttingDown && isAppReady;
-        if (!isAppReady) {
-            return (
-                <AppContentContainer key="splashscreen" initial="hidden">
-                    <Splashscreen />
-                </AppContentContainer>
-            );
-        }
-
-        if (showSetup) {
-            return (
-                <AppContentContainer key="setup" initial="hidden">
-                    <Setup />
-                </AppContentContainer>
-            );
-        }
+        const showMainView = !isShuttingDown && !showSplashscreen;
 
         if (showMainView) {
             return (
-                <AppContentContainer key="main" initial="dashboardInitial">
-                    <MainView />
+                <AppContentContainer key="main" initial="hidden">
+                    <Suspense fallback={<div />}>
+                        <MainView />
+                    </Suspense>
                 </AppContentContainer>
             );
         }
@@ -56,20 +39,27 @@ const CurrentAppSection = memo(function CurrentAppSection({
         if (isShuttingDown) {
             return (
                 <AppContentContainer key="shutdown" initial="hidden">
-                    <ShuttingDownScreen />
+                    <Suspense fallback={<div />}>
+                        <ShuttingDownScreen />
+                    </Suspense>
                 </AppContentContainer>
             );
         }
-    }, [isAppReady, isSettingUp, isShuttingDown]);
+        return (
+            <AppContentContainer key="splashscreen" initial="visible">
+                <Splashscreen />
+            </AppContentContainer>
+        );
+    }, [showSplashscreen, isShuttingDown]);
 
-    return <AnimatePresence>{currentSection}</AnimatePresence>;
-});
+    return <AnimatePresence mode="wait">{currentSection}</AnimatePresence>;
+}
 
 export default function App() {
-    const isAppReady = useIsAppReady();
-    const isShuttingDown = useShuttingDown();
+    const isShuttingDown = useUIStore((s) => s.isShuttingDown);
+    const showSplashscreen = useUIStore((s) => s.showSplashscreen);
 
-    const { t } = useTranslation('common', { useSuspense: false });
+    const { t } = useTranslation('common');
 
     if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
         console.error(`WebGL not supported by the browser - userAgent: ${navigator.userAgent}`);
@@ -77,13 +67,15 @@ export default function App() {
         setError(t('webgl-not-supported'));
     }
     return (
-        <ThemeProvider>
-            <GlobalReset />
-            <GlobalStyle $hideCanvas={!isAppReady || isShuttingDown} />
-            <LazyMotion features={domAnimation} strict>
-                <FloatingElements />
-                <CurrentAppSection isAppReady={isAppReady} isShuttingDown={isShuttingDown} />
-            </LazyMotion>
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+            <ThemeProvider>
+                <GlobalReset />
+                <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
+                <LazyMotion features={domMax} strict>
+                    <FloatingElements />
+                    <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
+                </LazyMotion>
+            </ThemeProvider>
+        </QueryClientProvider>
     );
 }

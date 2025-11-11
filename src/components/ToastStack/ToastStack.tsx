@@ -1,13 +1,11 @@
 import { memo, useCallback, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { Toast } from './Toast/Toast';
 import { useToastStore } from './useToastStore';
-import { useAppStateStore } from '@app/store/appStateStore';
+import { Toast } from './Toast/Toast';
 import { Inside, Wrapper } from './styles';
 
 const ToastStack = memo(function ToastStack() {
     const { toasts } = useToastStore();
-    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
     const [isHovered, setIsHovered] = useState(false);
 
     const handleMouseEnter = useCallback(() => {
@@ -22,7 +20,7 @@ const ToastStack = memo(function ToastStack() {
 
     return (
         <>
-            <Wrapper $isSettingUp={isSettingUp}>
+            <Wrapper>
                 <Inside onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
                     <AnimatePresence>
                         {reversedToasts.map(({ id, title, text, timeout, type }, index) => (

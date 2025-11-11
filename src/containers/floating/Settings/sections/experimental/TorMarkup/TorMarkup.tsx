@@ -1,9 +1,9 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { setError } from '@app/store/actions';
 
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch.tsx';
 
 import { Typography } from '@app/components/elements/Typography';
 import { TorConfig } from '@app/types/app-status';
@@ -23,7 +23,8 @@ import { TorDebug } from './TorDebug';
 import { ErrorTypography, StyledInput, TorSettingsContainer } from './TorMarkup.styles';
 
 import { type } from '@tauri-apps/plugin-os';
-import { setDialogToShow, setUseTor } from '@app/store';
+import { setUseTor } from '@app/store/actions/config/core.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 
 interface EditedTorConfig {
     // it's also string here to prevent an empty value
@@ -33,7 +34,6 @@ interface EditedTorConfig {
 }
 
 const hasBridgeError = (bridge: string) => {
-    // TODO: How should we validate the bridge? (IPv4, IPv6, different formats)
     return !bridge || bridge.trim().length === 0;
 };
 
@@ -43,7 +43,7 @@ const hasControlPortError = (cp: number) => {
 
 export const TorMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const defaultUseTor = useAppConfigStore((s) => s.use_tor);
+    const defaultUseTor = useConfigCoreStore((s) => s.use_tor);
     const [hasCheckedOs, setHasCheckedOs] = useState(false);
     const [defaultTorConfig, setDefaultTorConfig] = useState<TorConfig>();
     const [isMac, setIsMac] = useState(false);
@@ -59,6 +59,7 @@ export const TorMarkup = () => {
             setHasCheckedOs(true);
         }
     }, []);
+
     useEffect(() => {
         if (hasCheckedOs) return;
         checkPlatform();
@@ -98,7 +99,6 @@ export const TorMarkup = () => {
                 console.error('Update Tor config error:', error);
             }
         }
-        setDialogToShow('restart');
     }, [defaultTorConfig, defaultUseTor, editedConfig, editedUseTor]);
 
     const isSaveButtonVisible = useMemo(() => {
@@ -116,7 +116,12 @@ export const TorMarkup = () => {
         const updated_use_bridges = !editedConfig?.use_bridges;
         let bridges = editedConfig?.bridges || [];
         if (updated_use_bridges && Number(bridges?.length) < 2) {
-            bridges = await invoke('fetch_tor_bridges');
+            try {
+                bridges = await invoke('fetch_tor_bridges');
+            } catch (error) {
+                console.error('Fetch Tor bridges error:', error);
+                setError(t('errors.fetch-tor-bridges'));
+            }
         }
 
         setEditedConfig((prev) => ({
@@ -124,7 +129,7 @@ export const TorMarkup = () => {
             use_bridges: updated_use_bridges,
             bridges,
         }));
-    }, [editedConfig?.bridges, editedConfig?.use_bridges]);
+    }, [editedConfig?.bridges, editedConfig?.use_bridges, t]);
 
     const toggleRandomControlPort = useCallback(() => {
         setEditedConfig((prev) => ({
@@ -142,13 +147,16 @@ export const TorMarkup = () => {
                         <SettingsGroupTitle>
                             <Typography variant="h6">
                                 <Trans>Tor</Trans>
-                                <b>&nbsp;({t('app-restart-required').toUpperCase()})</b>
                             </Typography>
                         </SettingsGroupTitle>
                         <Typography>{t('setup-tor-settings')}</Typography>
                     </SettingsGroupContent>
                     <SettingsGroupAction style={{ alignItems: 'center' }}>
-                        {isSaveButtonVisible && <Button onClick={onSave}>{t('save')}</Button>}
+                        {isSaveButtonVisible && (
+                            <Button size="smaller" onClick={onSave}>
+                                {t('save')}
+                            </Button>
+                        )}
                         <ToggleSwitch checked={editedUseTor} onChange={() => setEditedUseTor((p) => !p)} />
                     </SettingsGroupAction>
                 </SettingsGroup>
@@ -164,7 +172,6 @@ export const TorMarkup = () => {
                             <Typography variant="h6">{t('control-port')}</Typography>
                             <ToggleSwitch
                                 label={t('use-random-control-port')}
-                                variant="gradient"
                                 checked={isRandomControlPort}
                                 onChange={toggleRandomControlPort}
                             />
@@ -201,7 +208,6 @@ export const TorMarkup = () => {
                             <Typography variant="h6">{t('tor-bridges')}</Typography>
                             <ToggleSwitch
                                 label={t('use-tor-bridges')}
-                                variant="gradient"
                                 checked={editedConfig.use_bridges}
                                 onChange={toggleUseBridges}
                             />
@@ -242,7 +248,7 @@ export const TorMarkup = () => {
                     </TorSettingsContainer>
                 ) : null}
             </SettingsGroupWrapper>
-            {defaultUseTor && hasCheckedOs && <TorDebug isMac={isMac} />}
+            {defaultUseTor && hasCheckedOs && <TorDebug />}
         </>
     );
 };

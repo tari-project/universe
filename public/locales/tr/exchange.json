@@ -1,0 +1,13 @@
+{
+  "earn": "Bonus XTM\"de {{amount}}%\"e kadar kazanın",
+  "help-find-address": "{{ exchange }} adresimi bulmama yardım et",
+  "main-logo-title": "Sezon\nBir",
+  "paste-from-clipboard": "Panodan yapıştır",
+  "season-one-reward": "Birinci sezon bonusu",
+  "select": {
+    "modal-title": "Desteklenen bir borsada cüzdanınıza doğrudan Tari (XTM) madenciliğine başlayın"
+  },
+  "selected-exchange-miner": "Burada madencilik yapıyorsunuz",
+  "time-left": "Kalan süre",
+  "wallet-address": "Cüzdan Adresi"
+}

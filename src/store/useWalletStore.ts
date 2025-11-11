@@ -1,85 +1,149 @@
-import { create } from './create';
-import { WalletAddress, TransactionInfo, WalletBalance } from '../types/app-status.ts';
-import { invoke } from '@tauri-apps/api/core';
-import { ALREADY_FETCHING } from '@app/App/sentryIgnore.ts';
+import { create } from 'zustand';
+import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 
-interface State {
+import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
+import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
+import { TariAddressType } from '@app/types/events-payloads.ts';
+import { useExchangeStore } from './useExchangeStore.ts';
+
+export interface BackendBridgeTransaction extends UserTransactionDTO {
+    sourceAddress?: string;
+    mined_in_block_height?: number;
+}
+
+export interface BridgeTransactionDetails {
+    status: UserTransactionDTO.status;
+    transactionHash?: string;
+    amountAfterFee: string;
+}
+export interface WalletTransactionDetails extends Partial<TransactionInfo> {
+    txId: number;
+    direction: number;
+    isCancelled: boolean;
+    status: number;
+    excessSig?: string;
+    message?: string;
+    paymentReference?: string;
+    destAddressEmoji?: string;
+}
+// combined type for transactions
+export interface CombinedBridgeWalletTransaction {
+    destinationAddress: string;
+    paymentId: string;
+    feeAmount: number;
+    createdAt: number;
+    tokenAmount: number;
+    mined_in_block_height?: number;
+    sourceAddress?: string;
+    walletTransactionDetails: WalletTransactionDetails;
+    bridgeTransactionDetails?: BridgeTransactionDetails;
+}
+
+export interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;
+    tari_address_type: TariAddressType;
+    exchange_wxtm_addresses: Record<string, string>;
     balance?: WalletBalance;
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
-    is_reward_history_loading: boolean;
-    has_more_coinbase_transactions: boolean;
+    tx_history_filter: TxHistoryFilter;
+    tx_history: TransactionInfo[];
+    // TODO: decide later for the best place to store this data
+    bridge_transactions: BackendBridgeTransaction[];
+    cold_wallet_address?: string;
     is_wallet_importing: boolean;
+    isLoading: boolean;
+    is_swapping?: boolean;
+    detailsItem?: CombinedBridgeWalletTransaction | null;
+    wallet_scanning: {
+        is_scanning: boolean;
+        scanned_height: number;
+        total_height: number;
+        progress: number;
+    };
+    is_pin_locked: boolean;
+    is_seed_backed_up: boolean;
 }
 
-interface Actions {
-    setWalletAddress: (wallet_address: WalletAddress) => void;
-    setWalletBalance: (wallet_balance: WalletBalance) => void;
-    importSeedWords: (seedWords: string[]) => Promise<void>;
-    fetchCoinbaseTransactions: (continuation: boolean, limit?: number) => Promise<TransactionInfo[]>;
-    refreshCoinbaseTransactions: () => Promise<TransactionInfo[]>;
+export interface WalletStoreSelectors {
+    getETHAddressOfCurrentExchange: () => string | undefined;
 }
 
-type WalletStoreState = State & Actions;
-
-const initialState: State = {
+export const initialState: WalletStoreState = {
     tari_address_base58: '',
     tari_address_emoji: '',
+    tari_address_type: TariAddressType.Internal,
     coinbase_transactions: [],
-    has_more_coinbase_transactions: true,
-    is_reward_history_loading: false,
+    exchange_wxtm_addresses: {},
+    tx_history_filter: 'all-activity',
+    tx_history: [],
+    bridge_transactions: [],
+    cold_wallet_address: undefined,
     is_wallet_importing: false,
+    isLoading: false,
+    wallet_scanning: {
+        is_scanning: true,
+        scanned_height: 0,
+        total_height: 0,
+        progress: 0,
+    },
+    is_pin_locked: false,
+    is_seed_backed_up: false,
 };
 
-export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
+// Configuration for memory management
+const MAX_TRANSACTIONS_IN_MEMORY = 1000; // Keep only the latest 1000 transactions
+const MAX_COINBASE_TRANSACTIONS_IN_MEMORY = 500; // Keep only the latest 500 coinbase transactions
+// const MAX_PENDING_TRANSACTIONS = 100; // Keep only the latest 100 pending transactions
+
+export const useWalletStore = create<WalletStoreState & WalletStoreSelectors>()((_, get) => ({
     ...initialState,
-    setWalletAddress: (wallet_address) => {
-        set({ ...wallet_address });
-    },
-    setWalletBalance: (balance) => {
-        const calculated_balance =
-            balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
-        set({ balance, calculated_balance });
-    },
-    fetchCoinbaseTransactions: async (continuation, limit) => {
-        if (useWalletStore.getState().is_reward_history_loading) {
-            return [];
-        }
-
-        try {
-            useWalletStore.setState({ is_reward_history_loading: true });
-
-            const fetchedTxs = await invoke('get_coinbase_transactions', { continuation, limit });
-            const coinbase_transactions = continuation
-                ? [...getState().coinbase_transactions, ...fetchedTxs]
-                : fetchedTxs;
-            const has_more_coinbase_transactions = fetchedTxs.length > 0 && (!limit || fetchedTxs.length === limit);
-            set({
-                has_more_coinbase_transactions,
-                coinbase_transactions,
-            });
-            return coinbase_transactions;
-        } catch (error) {
-            if (error !== ALREADY_FETCHING.HISTORY) {
-                console.error('Could not get transaction history: ', error);
-            }
-            return [];
-        } finally {
-            useWalletStore.setState({ is_reward_history_loading: false });
-        }
-    },
-    refreshCoinbaseTransactions: async () => {
-        const limit = getState().coinbase_transactions.length;
-        return getState().fetchCoinbaseTransactions(false, Math.max(limit, 20));
-    },
-    importSeedWords: async (seedWords: string[]) => {
-        try {
-            set({ is_wallet_importing: true });
-            await invoke('import_seed_words', { seedWords });
-        } catch (error) {
-            console.error('Could not import seed words: ', error);
-        }
+    getETHAddressOfCurrentExchange: () => {
+        const exchangeId = useExchangeStore.getState().currentExchangeMinerId;
+        return get().exchange_wxtm_addresses[exchangeId] || undefined;
     },
 }));
+
+// Helper function to prune large arrays
+const pruneTransactionArray = <T extends { timestamp?: number; tx_id?: number }>(array: T[], maxSize: number): T[] => {
+    if (array.length <= maxSize) return array;
+
+    // Sort by timestamp (newest first) or tx_id as fallback, then take the latest
+    return array
+        .sort((a, b) => {
+            const aTime = a.timestamp || a.tx_id || 0;
+            const bTime = b.timestamp || b.tx_id || 0;
+            return bTime - aTime;
+        })
+        .slice(0, maxSize);
+};
+
+export const updateWalletScanningProgress = (payload: {
+    scanned_height: number;
+    total_height: number;
+    progress: number;
+}) => {
+    const is_scanning = payload.scanned_height < payload.total_height;
+    useWalletStore.setState((c) => ({
+        ...c,
+        wallet_scanning: {
+            is_scanning,
+            ...payload,
+        },
+    }));
+};
+
+// New function to prune transaction arrays when they get too large
+export const pruneTransactionHistory = () => {
+    useWalletStore.setState((state) => ({
+        transactions: pruneTransactionArray(state.tx_history, MAX_TRANSACTIONS_IN_MEMORY),
+        coinbase_transactions: pruneTransactionArray(state.coinbase_transactions, MAX_COINBASE_TRANSACTIONS_IN_MEMORY),
+    }));
+};
+
+// Function to clear old transaction data (can be called periodically or on certain events)
+const _clearOldTransactionData = () => {
+    console.info('Clearing old transaction data to free memory');
+    pruneTransactionHistory();
+};

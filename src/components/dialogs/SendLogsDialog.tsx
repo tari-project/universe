@@ -1,27 +1,25 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-
 import { Stack } from '@app/components/elements/Stack.tsx';
-
 import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
 import { setDialogToShow } from '@app/store';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference: string) => void }) {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const [isPending, startTransition] = useTransition();
     const dialogToShow = useUIStore((s) => s.dialogToShow);
 
     const showLogsDialog = dialogToShow === 'logs';
 
     const [error, setError] = useState('');
     const [feedback, setFeedback] = useState('');
-    const [loading, setLoading] = useState(false);
 
     const setShowLogsDialog = useCallback(() => {
         if (showLogsDialog) {
@@ -31,15 +29,14 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
         }
     }, [showLogsDialog]);
 
-    const sendLogs = useCallback(() => {
-        setLoading(true);
+    const sendLogsActions = useCallback(async () => {
         setError('');
         if (!feedback) {
             setError(t('feedback-required', { ns: 'settings' }));
-            setLoading(false);
             return;
         }
-        invoke('send_feedback', { feedback, includeLogs: true })
+
+        await invoke('send_feedback', { feedback, includeLogs: true })
             .then((r) => {
                 setDialogToShow(null);
                 onSetReference?.(r);
@@ -47,45 +44,52 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
             .catch((error) => {
                 console.error('Error sending feedback: ', error);
                 setError(error.toString());
-            })
-            .finally(() => {
-                setLoading(false);
             });
     }, [feedback, onSetReference, t]);
 
     return (
         <Dialog open={showLogsDialog} onOpenChange={setShowLogsDialog}>
             <DialogContent>
-                <Stack direction="column" alignItems="center" justifyContent="space-between" gap={20}>
+                <Stack
+                    direction="column"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    gap={20}
+                    style={{ padding: 10 }}
+                >
                     <Typography variant="h3">{t('send-logs', { ns: 'settings' })}</Typography>
                     <TextArea
                         onChange={(e) => setFeedback(e.target.value)}
                         placeholder={t('your-feedback', { ns: 'settings' })}
                         minWidth="500px"
                         minHeight="200px"
+                        disabled={isPending}
                         value={feedback}
                     />
                     <Typography variant={'p'} color={'red'}>
                         {error}
                     </Typography>
                 </Stack>
-                <Stack direction="row">
-                    {loading ? (
-                        <CircularProgress />
-                    ) : (
-                        <Stack direction="row" gap={10}>
-                            <SquaredButton disabled={loading} onClick={setShowLogsDialog} color="grey">
-                                {t('cancel')}
-                            </SquaredButton>
-                            <SquaredButton
-                                disabled={loading || !feedback?.length || feedback?.trim() === ''}
-                                onClick={sendLogs}
-                                color="success"
-                            >
-                                {t('submit')}
-                            </SquaredButton>
-                        </Stack>
-                    )}
+                <Stack direction="row" alignItems="center" style={{ width: '100%' }}>
+                    <Stack direction="row" alignItems="center" gap={10} style={{ width: '80%' }}>
+                        <Button onClick={setShowLogsDialog} fluid>
+                            {t('cancel')}
+                        </Button>
+                        <Button
+                            onClick={() => {
+                                startTransition(async () => {
+                                    await sendLogsActions();
+                                });
+                            }}
+                            disabled={isPending || !feedback?.length || feedback?.trim() === ''}
+                            loader={<LoadingDots />}
+                            isLoading={isPending}
+                            variant="outlined"
+                            fluid
+                        >
+                            {t('submit')}
+                        </Button>
+                    </Stack>
                 </Stack>
             </DialogContent>
         </Dialog>

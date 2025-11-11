@@ -1,21 +1,37 @@
 {
+  "bubbles": {
+    "active-miners": "활성 채굴자",
+    "ago": "전",
+    "block": "블록",
+    "got-rewarded": "보상을 받았습니다",
+    "miners": "채굴자",
+    "pool": "풀",
+    "solved": "해결됨",
+    "solving": "해결 중"
+  },
   "connection-to-node-lost": "마이너와의 연결이 끊어졌습니다. 마이너가 다시 연결되거나 재시작될 때까지 기다려주세요.",
   "cpu-power": "CPU 전력",
   "current-block-time": "현재 블록 시간",
   "day": "day",
-  "estimated-day": "Est tXTM/일",
+  "estimated-day": "Est XTM/일",
   "estimated-earnings": "예상 수익",
   "floor": "최저값",
   "gpu-power": "GPU 전력",
   "mining-button-text": {
-    "cancel-mining": "채굴 취소",
-    "changing-mode": "모드 변경 중",
-    "pause-mining": "채굴 일시 중지",
-    "start-mining": "채굴 시작",
-    "started-auto-mining": "자동 채굴 시작됨",
-    "starting-mining": "채굴 시작 중",
-    "stop-mining": "채굴 중지",
-    "waiting-for-idle": "유휴 상태 대기 중"
+    "state-pause": "Pause Mining",
+    "state-resume": "Resume Mining",
+    "state-start": "채굴 시작"
+  },
+  "modes": {
+    "eco": {
+      "alert_cta-all": "See all modes",
+      "alert_cta-turbo": "Use Turbo️",
+      "alert_text": "Eco mode only uses a low percentage of system resources.",
+      "alert_text_extra": "Try turning the power mode up.",
+      "alert_title": "Not earning enough rewards?"
+    },
+    "mode": "Mode",
+    "mode-long": "Miner Mode"
   },
   "orphan-chain-tooltip": {
     "heading": "시도할 것들:",
@@ -25,6 +41,28 @@
     "step_4": "Tor 브리지를 사용해 보세요 (설정에서)",
     "step_5": "Tor를 비활성화해 보세요 (설정에서)",
     "step_6": "앱을 재설정해 보세요 (설정에서)"
+  },
+  "pause": {
+    "for-duration": "Pause for <strong>{{duration}}</strong>",
+    "until-restart": "Pause until I<strong> Restart</strong>"
+  },
+  "pool": {
+    "accepted_shares": "수락된 공유",
+    "balance": "총 수익",
+    "min_payout": "최소 지급액",
+    "unpaid": "미지급"
+  },
+  "schedule": {
+    "cta-save": "Save Schedule",
+    "cta-save-complete": "Saved!",
+    "current": "Your current schedule",
+    "mining-schedule": "Mining Schedule",
+    "mining-schedule-copy": "Set specific times to automatically start mining.",
+    "mining-schedule-setup": "Setup Mining Schedule",
+    "scheduled-to-mine": "Scheduled to mine at",
+    "scheduled-to-pause": "Scheduled to pause mining at",
+    "time-label-end": "Daily End Time",
+    "time-label-start": "Daily Start Time"
   },
   "you-earn-rewards-separately": "CPU와 GPU 채굴에 대해 각각 보상을 받습니다",
   "you-won-block": "당신은 <span>블록 #{{ blockHeight }}</span>의 승자였습니다",

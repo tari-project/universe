@@ -1,4 +1,7 @@
 {
+  "connected-since": "Terhubung sejak",
+  "connections": "koneksi",
+  "established": "Ditetapkan",
   "listener-addresses": "Alamat pendengar",
   "miners": "Penambang",
   "network-info": "Info jaringan",
@@ -7,8 +10,18 @@
   "p2pool-connection-info": "Koneksi",
   "p2pool-connection-info-more": "Detail koneksi",
   "p2pool-peers": "Rekan P2pool",
-  "p2pool-stats": "Statistik penambangan pool",
+  "p2pool-stats": "Statistik P2pool",
+  "pending": "Tertunda",
   "randomx-stats": "Statistik RandomX",
   "sha3-stats": "Statistik SHA3",
+  "stats": {
+    "earned": "Anda mendapatkan",
+    "tile-heading": "Hadiah Sedang Berlangsung",
+    "tile-heading-zero": "Hadiah dimulai dalam ~30 menit",
+    "tile-disabled-heading": "{{unit}} dinonaktifkan",
+    "tile-loading": "Pool sedang memanas",
+    "tooltip-copy": "“Sedang Berlangsung” hingga Anda mendapatkan minimal <strong>{{amount}}</strong>. Mungkin ada penundaan antara pengiriman pembayaran Anda dan penampilannya di transaksi dan saldo dompet Anda.",
+    "tooltip-tile-heading": "Ambang Hadiah"
+  },
   "tribe": "Suku"
 }

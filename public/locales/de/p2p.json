@@ -1,4 +1,7 @@
 {
+  "connected-since": "Verbunden seit",
+  "connections": "Verbindungen",
+  "established": "Etabliert",
   "listener-addresses": "Listener-Adressen",
   "miners": "Miner",
   "network-info": "Netzwerkinformationen",
@@ -7,8 +10,18 @@
   "p2pool-connection-info": "Verbindung",
   "p2pool-connection-info-more": "Verbindungsdetails",
   "p2pool-peers": "P2pool-Peers",
-  "p2pool-stats": "Pool-Mining-Statistiken",
+  "p2pool-stats": "P2pool-Statistiken",
+  "pending": "Ausstehend",
   "randomx-stats": "RandomX-Statistiken",
   "sha3-stats": "SHA3-Statistiken",
+  "stats": {
+    "earned": "Sie haben verdient",
+    "tile-heading": "Belohnungen in Bearbeitung",
+    "tile-heading-zero": "Belohnungen beginnen in ~30 Minuten",
+    "tile-disabled-heading": "{{unit}} ist deaktiviert",
+    "tile-loading": "Pool wird aufgewärmt",
+    "tooltip-copy": "„In Bearbeitung“, bis Sie ein Minimum von <strong>{{amount}}</strong> verdienen. Es kann eine Verzögerung zwischen dem Senden Ihrer Auszahlung und der Anzeige in Ihren Wallet-Transaktionen und dem Kontostand geben.",
+    "tooltip-tile-heading": "Belohnungsschwelle"
+  },
   "tribe": "Stamm"
 }

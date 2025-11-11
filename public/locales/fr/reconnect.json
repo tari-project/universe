@@ -1,0 +1,11 @@
+{
+  "auto-reconnect": "Tentative de reconnexion dans :",
+  "connect-now": "Connecter maintenant",
+  "disconnect-severe-subtitle": "Nous continuerons à essayer de vous connecter au réseau Tari. Vous pouvez également essayer de redémarrer votre mineur ou de demander de l\"aide sur Telegram si le problème persiste.",
+  "disconnect-severe-title": "Nous rencontrons des difficultés pour vous connecter",
+  "disconnect-subtitle": "Restez patient pendant que nous essayons de vous reconnecter au réseau.",
+  "disconnect-title": "Oh oh, vous n\"êtes pas connecté au réseau Tari",
+  "go-to-telegram": "Obtenir de l\"aide sur Telegram",
+  "reconnect-in-progress": "Reconnexion en cours...",
+  "restart-app": "Redémarrer Tari Universe"
+}
