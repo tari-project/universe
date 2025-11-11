@@ -138,3 +138,7 @@ export const setShowShutdownSelectionModal = (showShutdownSelectionModal: boolea
 
 export const setShowFeedbackExitSurveyModal = (showFeedbackExitSurveyModal: boolean) =>
     useUIStore.setState({ showFeedbackExitSurveyModal });
+
+export const updateSetMiningModeAsSchedulerEventMode = (value: boolean) => {
+    useUIStore.setState({ setMiningModeAsSchedulerEventMode: value });
+};

@@ -1,56 +1,51 @@
-import { useCallback, useState, useRef, useEffect, useMemo } from 'react';
-import ArrowDown from './icons/ArrowDown';
-import {
-    Eyebrow,
-    FloatingWrapper,
-    IconWrapper,
-    Menu,
-    Option,
-    OptionIcon,
-    OptionText,
-    SelectedValue,
-    TextGroup,
-    Trigger,
-    Wrapper,
-} from './styles';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
-import SelectedIcon from './icons/SelectedIcon';
-
+import { useTranslation } from 'react-i18next';
 import {
+    autoUpdate,
+    FloatingFocusManager,
     offset,
+    size,
     useClick,
     useDismiss,
     useFloating,
     useInteractions,
-    FloatingFocusManager,
     useListNavigation,
-    useTypeahead,
     useRole,
+    useTypeahead,
 } from '@floating-ui/react';
-import { useTranslation } from 'react-i18next';
-import { useConfigMiningStore } from '@app/store';
-import { setDialogToShow } from '@app/store/actions/uiStoreActions';
-import { setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions';
-import { MiningModes, MiningModeType } from '@app/types/configs';
-import { selectMiningMode } from '@app/store/actions/appConfigStoreActions';
+
+import { MiningMode as MiningModeDataType, MiningModes, MiningModeType } from '@app/types/configs.ts';
+import { setCustomLevelsDialogOpen, setDialogToShow, useConfigMiningStore } from '@app/store';
+import { ModeDropdownMiningMode, Variant } from '@app/components/mode/types.ts';
+import { selectMiningMode } from '@app/store/actions/appConfigStoreActions.ts';
+
+import SelectedIcon from '@app/assets/icons/SelectedIcon.tsx';
 
 import { getModeList } from './helpers.ts';
-interface Props {
-    disabled?: boolean;
-    loading?: boolean;
+import { List } from './dropdown/List.tsx';
+import { Trigger } from './trigger/Trigger.tsx';
+import { ListContainer, Option, OptionIcon, OptionText, Wrapper } from './styles.ts';
+
+interface MiningModeProps {
+    variant?: Variant;
     open?: boolean;
+    handleSchedulerMiningModeCallback?: (modeName: string) => void;
+    schedulerSelectedMiningMode?: MiningModeDataType | undefined;
 }
 
-interface ModeDropdownMiningMode {
-    sortingIndex?: string;
-    name: string;
-    mode_type: MiningModeType;
-    icon: string;
-}
-
-export default function ModeDropdown({ disabled, loading, open = false }: Props) {
+export const MiningMode = ({
+    variant = 'primary',
+    open = false,
+    handleSchedulerMiningModeCallback,
+    schedulerSelectedMiningMode,
+}: MiningModeProps) => {
     const { t } = useTranslation('mining-view');
-    const selectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
+    const storeSelectedMiningMode = useConfigMiningStore((s) => s.getSelectedMiningMode());
+    const selectedMiningMode = useMemo(
+        () => schedulerSelectedMiningMode || storeSelectedMiningMode,
+        [schedulerSelectedMiningMode, storeSelectedMiningMode]
+    );
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
 
     const [isOpen, setIsOpen] = useState(false);
@@ -61,7 +56,22 @@ export default function ModeDropdown({ disabled, loading, open = false }: Props)
         open: isOpen,
         onOpenChange: setIsOpen,
         placement: 'bottom-end',
-        middleware: [offset(8)],
+        whileElementsMounted: autoUpdate,
+        middleware: [
+            offset({ mainAxis: variant === 'primary' ? 10 : 5 }),
+            size({
+                apply({ elements, availableHeight }) {
+                    const refWidth = elements.reference.getBoundingClientRect().width;
+                    Object.assign(elements.floating.style, {
+                        maxHeight: `${availableHeight}px`,
+                        maxWidth: `${refWidth}px`,
+                    });
+                },
+                padding: {
+                    bottom: 10,
+                },
+            }),
+        ],
     });
 
     const modes: ModeDropdownMiningMode[] = useMemo(
@@ -114,6 +124,11 @@ export default function ModeDropdown({ disabled, loading, open = false }: Props)
 
     const handleSelectMode = useCallback(
         async (mode: ModeDropdownMiningMode) => {
+            if (handleSchedulerMiningModeCallback) {
+                // Call on the top to ensure next called selectMiningMode changes the scheduler value
+                handleSchedulerMiningModeCallback(mode.name);
+            }
+
             if (mode.mode_type === MiningModeType.Custom) {
                 setCustomLevelsDialogOpen(true);
                 setIsOpen(false);
@@ -128,6 +143,7 @@ export default function ModeDropdown({ disabled, loading, open = false }: Props)
                 setIsOpen(false);
                 return;
             }
+
             await selectMiningMode(mode.name);
             setIsOpen(false);
         },
@@ -141,40 +157,27 @@ export default function ModeDropdown({ disabled, loading, open = false }: Props)
             <Trigger
                 ref={refs.setReference}
                 {...getReferenceProps()}
-                $isOpen={isOpen}
-                disabled={disabled || loading}
-                aria-disabled={disabled || loading}
                 role="combobox"
                 aria-expanded={isOpen}
                 aria-haspopup="listbox"
-                tabIndex={disabled || loading ? -1 : 0}
+                label={t('modes.mode', { context: variant === 'secondary' && 'long' })}
+                variant={variant}
+                isOpen={isOpen}
+                selectedMode={selectedMiningMode?.mode_type || ('Eco' as MiningModeType)}
             >
-                <TextGroup>
-                    <Eyebrow>{t('mode')}</Eyebrow>
-                    <SelectedValue>
-                        {selectedMiningMode?.mode_name}
-                        <OptionIcon
-                            src={modes.find((mode) => mode.mode_type === selectedMiningMode?.mode_type)?.icon}
-                            alt=""
-                            aria-hidden="true"
-                            className="option-icon"
-                        />
-                    </SelectedValue>
-                </TextGroup>
-                <IconWrapper $isOpen={isOpen}>
-                    <ArrowDown />
-                </IconWrapper>
+                {selectedMiningMode?.mode_name}
+                <OptionIcon
+                    src={modes.find((mode) => mode.mode_type === selectedMiningMode?.mode_type)?.icon}
+                    alt=""
+                    aria-hidden="true"
+                    className="option-icon"
+                />
             </Trigger>
             <AnimatePresence>
-                {isOpen && !disabled && !loading && (
+                {isOpen && (
                     <FloatingFocusManager context={context} modal={true} initialFocus={activeIndex || 0}>
-                        <FloatingWrapper ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
-                            <Menu
-                                initial={{ opacity: 0, y: -5 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -5 }}
-                                role="listbox"
-                            >
+                        <ListContainer ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
+                            <List>
                                 {modes.map((mode, index) => {
                                     const isSelected = mode.name === selectedMiningMode?.mode_name;
                                     const isActive = activeIndex === index;
@@ -188,7 +191,7 @@ export default function ModeDropdown({ disabled, loading, open = false }: Props)
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' || e.key === ' ') {
                                                     e.preventDefault();
-                                                    handleSelectMode(mode);
+                                                    void handleSelectMode(mode);
                                                 }
                                             }}
                                             tabIndex={isActive ? 0 : -1}
@@ -197,9 +200,7 @@ export default function ModeDropdown({ disabled, loading, open = false }: Props)
                                             $isSelected={isSelected}
                                             $isActive={isActive}
                                             {...getItemProps({
-                                                onClick() {
-                                                    handleSelectMode(mode);
-                                                },
+                                                onClick: () => handleSelectMode(mode),
                                             })}
                                         >
                                             <OptionIcon
@@ -213,11 +214,11 @@ export default function ModeDropdown({ disabled, loading, open = false }: Props)
                                         </Option>
                                     );
                                 })}
-                            </Menu>
-                        </FloatingWrapper>
+                            </List>
+                        </ListContainer>
                     </FloatingFocusManager>
                 )}
             </AnimatePresence>
         </Wrapper>
     );
-}
+};

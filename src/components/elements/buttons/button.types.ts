@@ -37,6 +37,7 @@ export interface ExtendedButtonProps extends ButtonHTMLAttributes<HTMLButtonElem
     size?: ButtonSize;
     colorIntensity?: number;
     active?: boolean;
+    fluid?: boolean;
 }
 
 export interface ExtendedButtonStyleProps {
@@ -45,4 +46,5 @@ export interface ExtendedButtonStyleProps {
     $size?: ExtendedButtonProps['size'];
     $colorIntensity?: ExtendedButtonProps['colorIntensity'];
     $active?: boolean;
+    $fluid?: boolean;
 }
