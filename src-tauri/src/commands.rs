@@ -32,9 +32,7 @@ use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId}
 use crate::configs::pools::BasePoolData;
 use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
-use crate::event_scheduler::{
-    EventScheduler, SchedulerEventTiming, SchedulerEventType, TimePeriod, TimeUnit,
-};
+use crate::event_scheduler::{EventScheduler, SchedulerEventTiming, SchedulerEventType};
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
@@ -50,6 +48,7 @@ use crate::node::node_manager::NodeType;
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
+use crate::shutdown_manager::{ShutdownManager, ShutdownMode};
 use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
 use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
 use crate::tapplets::interface::ActiveTapplet;
@@ -879,13 +878,22 @@ pub async fn send_feedback(
     app: tauri::AppHandle,
 ) -> Result<String, String> {
     let timer = Instant::now();
-    let app_log_dir = Some(app.path().app_log_dir().expect("Could not get log dir."));
+    let app_log_dir = app.path().app_log_dir().expect("Could not get log dir.");
+    let app_config_dir = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get app config dir.");
 
     let reference = state
         .feedback
         .read()
         .await
-        .send_feedback(feedback, include_logs, app_log_dir.clone())
+        .send_feedback(
+            feedback,
+            include_logs,
+            app_log_dir.clone(),
+            app_config_dir.clone(),
+        )
         .await
         .inspect_err(|e| error!("error at send_feedback {e:?}"))
         .map_err(|e| e.to_string())?;
@@ -1614,7 +1622,12 @@ pub fn validate_minotari_amount(
         .clone()
         .and_then(|state| state.balance);
 
-    let available_balance = balance.expect("Could not get balance").available_balance;
+    let mut available_balance = MicroMinotari::from(0);
+
+    if let Some(wallet_balance) = &balance {
+        available_balance = wallet_balance.available_balance
+    }
+
     match m_amount.cmp(&available_balance) {
         std::cmp::Ordering::Less => Ok(()),
         _ => Err(InvokeError::from("Insufficient balance".to_string())),
@@ -1907,52 +1920,15 @@ pub async fn list_connected_peers(
 
 // ================ Event Scheduler Commands ==================
 #[tauri::command]
-pub async fn add_scheduler_in_event(
+pub async fn add_scheduler_event(
     event_id: String,
-    time_value: i64,
-    time_unit: TimeUnit,
+    event_time: SchedulerEventTiming,
+    event_type: SchedulerEventType,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET, "add_scheduler_in_event called with event_id: {event_id:?}, time_value: {time_value:?}, timer_unit: {time_unit:?}");
-
-    let event_timing =
-        SchedulerEventTiming::parse_in_variant(time_value, time_unit).map_err(|e| e.to_string())?;
-
-    let event_type = SchedulerEventType::ResumeMining;
+    info!(target: LOG_TARGET, "add_scheduler_event called with event_id: {event_id:?}, event_time: {event_time:?}, event_type: {event_type:?}");
 
     EventScheduler::instance()
-        .schedule_event(event_type, event_id, event_timing)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn add_scheduler_between_event(
-    event_id: String,
-    start_time_hour: i64,
-    start_time_minute: i64,
-    start_time_period: TimePeriod,
-    end_time_hour: i64,
-    end_time_minute: i64,
-    end_time_period: TimePeriod,
-) -> Result<(), String> {
-    info!(target: LOG_TARGET, "add_scheduler_between_event called with event_id: {event_id:?}, start_time_hour: {start_time_hour:?}, start_time_minute: {start_time_minute:?}, start_time_period: {start_time_period:?}, end_time_hour: {end_time_hour:?}, end_time_minute: {end_time_minute:?}, end_time_period: {end_time_period:?}");
-
-    let event_timing = SchedulerEventTiming::parse_between_variant(
-        start_time_hour,
-        start_time_minute,
-        start_time_period,
-        end_time_hour,
-        end_time_minute,
-        end_time_period,
-    )
-    .map_err(|e| e.to_string())?;
-
-    let event_type = SchedulerEventType::ResumeMining;
-
-    EventScheduler::instance()
-        .schedule_event(event_type, event_id, event_timing)
+        .schedule_event(event_type, event_id, event_time)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -2120,6 +2096,54 @@ pub async fn set_eco_alert_needed() -> Result<(), InvokeError> {
         .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_eco_alert_needed took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mark_shutdown_selection_as_completed(dont_ask_again: bool) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ConfigUI::update_field(ConfigUIContent::set_shutdown_mode_selected, dont_ask_again)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    ShutdownManager::instance()
+        .mark_shutdown_mode_selection_as_completed()
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "mark_shutdown_selection_as_completed took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mark_feedback_survey_as_completed() -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ShutdownManager::instance()
+        .mark_feedback_survey_as_completed()
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, " mark_feedback_survey_as_completed took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn update_shutdown_mode_selection(
+    shutdown_mode: ShutdownMode,
+) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ConfigCore::update_field(ConfigCoreContent::set_shutdown_mode, shutdown_mode)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_shutdown_mode_selection took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }

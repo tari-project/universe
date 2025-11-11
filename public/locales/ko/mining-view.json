@@ -29,7 +29,9 @@
       "alert_text": "Eco mode only uses a low percentage of system resources.",
       "alert_text_extra": "Try turning the power mode up.",
       "alert_title": "Not earning enough rewards?"
-    }
+    },
+    "mode": "Mode",
+    "mode-long": "Miner Mode"
   },
   "orphan-chain-tooltip": {
     "heading": "시도할 것들:",
@@ -49,6 +51,18 @@
     "balance": "총 수익",
     "min_payout": "최소 지급액",
     "unpaid": "미지급"
+  },
+  "schedule": {
+    "cta-save": "Save Schedule",
+    "cta-save-complete": "Saved!",
+    "current": "Your current schedule",
+    "mining-schedule": "Mining Schedule",
+    "mining-schedule-copy": "Set specific times to automatically start mining.",
+    "mining-schedule-setup": "Setup Mining Schedule",
+    "scheduled-to-mine": "Scheduled to mine at",
+    "scheduled-to-pause": "Scheduled to pause mining at",
+    "time-label-end": "Daily End Time",
+    "time-label-start": "Daily Start Time"
   },
   "you-earn-rewards-separately": "CPU와 GPU 채굴에 대해 각각 보상을 받습니다",
   "you-won-block": "당신은 <span>블록 #{{ blockHeight }}</span>의 승자였습니다",

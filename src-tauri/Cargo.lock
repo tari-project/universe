@@ -8415,7 +8415,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "1.6.4"
+version = "1.6.5"
 dependencies = [
  "anyhow",
  "async-trait",

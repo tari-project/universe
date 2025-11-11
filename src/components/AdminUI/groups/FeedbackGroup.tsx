@@ -1,13 +1,14 @@
 /* eslint-disable i18next/no-literal-string */
+import { setShowFeedbackExitSurveyModal } from '@app/store/actions/uiStoreActions';
 import { AdminButton, ButtonGroup, ExtraContent } from '../styles';
 
 import {
     setMininimumMiningTimeMs,
-    setShowCloseDialog,
     setShowLongTimeDialog,
     useUserFeedbackStore,
 } from '@app/store/stores/userFeedbackStore.ts';
 import { useState } from 'react';
+import { useUIStore } from '@app/store';
 
 function convertToMinutes(ms: number) {
     return ms / 1000 / 60;
@@ -18,8 +19,8 @@ function convertToMs(minutes: number) {
 export function FeedbackGroup() {
     const longMiningTimeMs = useUserFeedbackStore((s) => s.longMiningTimeMs);
     const closeMiningTimeMs = useUserFeedbackStore((s) => s.closeMiningTimeMs);
-    const showCloseDialog = useUserFeedbackStore((s) => s.showCloseDialog);
     const showLongTimeDialog = useUserFeedbackStore((s) => s.showLongTimeDialog);
+    const isFeedbackExitSurveyModalShown = useUIStore((s) => s.showFeedbackExitSurveyModal);
 
     const [closeMin, setCloseMin] = useState(convertToMinutes(closeMiningTimeMs));
     const [longMin, setLongMin] = useState(convertToMinutes(longMiningTimeMs));
@@ -27,7 +28,10 @@ export function FeedbackGroup() {
     return (
         <>
             <ButtonGroup>
-                <AdminButton onClick={() => setShowCloseDialog(!showCloseDialog)} $isActive={showCloseDialog}>
+                <AdminButton
+                    onClick={() => setShowFeedbackExitSurveyModal(true)}
+                    $isActive={isFeedbackExitSurveyModalShown}
+                >
                     Early Close
                 </AdminButton>
                 <AdminButton onClick={() => setShowLongTimeDialog(!showLongTimeDialog)} $isActive={showLongTimeDialog}>

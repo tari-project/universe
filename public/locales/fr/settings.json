@@ -164,6 +164,10 @@
     "wallet": "Portefeuille"
   },
   "tari-wallet-address": "Adresse du portefeuille Tari",
+  "task-tray": {
+    "description": "Tari universe will be minimized to task tray after closing",
+    "title": "Run app from task tray on close"
+  },
   "terms-and-conditions": "Conditions générales",
   "theme": "Thème",
   "tor-bridges": "Ponts Tor",
