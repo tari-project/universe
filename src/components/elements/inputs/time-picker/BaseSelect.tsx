@@ -104,7 +104,7 @@ export const BaseSelect = ({ initialTime, onChange }: BaseSelectProps) => {
 
     useEffect(() => {
         onChange?.(time);
-    }, [time]);
+    }, [onChange, time]);
 
     return (
         <InputWrapper>

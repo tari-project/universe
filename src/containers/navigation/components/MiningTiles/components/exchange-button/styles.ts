@@ -27,6 +27,10 @@ export const Button = styled.button`
     &:hover {
         background: ${({ theme }) => theme.palette.background.accent};
     }
+
+    @media (max-height: 652px) {
+        padding: 10px 15px;
+    }
 `;
 
 export const LogosWrapper = styled.div`
