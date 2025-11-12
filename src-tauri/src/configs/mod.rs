@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod config_core;
+pub mod config_database_listener;
 pub mod config_mining;
 pub mod config_pools;
 pub mod config_ui;
