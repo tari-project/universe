@@ -140,8 +140,8 @@ export const PerformanceMarker = styled.div<{ $red?: boolean }>`
 export const PowerLeveltemWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
     width: 100%;
     border-bottom: 1px solid ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.03)};
-    padding: 24px 0 16px 0;
+    padding: 4px 0 20px;
 `;

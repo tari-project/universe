@@ -1,37 +1,17 @@
 import { create } from 'zustand';
 import {
     ConfigBackendInMemory,
-    ConfigCore,
     ConfigMining,
     ConfigMiningSelectors,
     ConfigPools,
     ConfigUI,
     ConfigWallet,
-    ShutdownMode,
     PauseOnBatteryModeState,
 } from '@app/types/configs';
 import { WalletUIMode } from '@app/types/events-payloads';
 
 type UIConfigStoreState = Partial<ConfigUI> & {
     visualModeToggleLoading: boolean;
-};
-const configCoreInitialState: ConfigCore = {
-    created_at: '',
-    allow_telemetry: false,
-    allow_notifications: true,
-    anon_id: '',
-    auto_update: false,
-    last_changelog_version: '',
-    mmproxy_monero_nodes: [],
-    mmproxy_use_monero_failover: false,
-    pre_release: false,
-    remote_base_node_address: '',
-    should_auto_launch: false,
-    use_tor: false,
-    airdrop_tokens: undefined,
-    last_binaries_update_timestamp: '',
-    exchange_id: undefined,
-    shutdown_mode: ShutdownMode.Tasktray,
 };
 
 const configWalletInitialState: ConfigWallet = {
@@ -89,10 +69,6 @@ const configBEInMemoryInitialState: ConfigBackendInMemory = {
     exchange_id: '',
     bridge_backend_api_url: '',
 };
-
-export const useConfigCoreStore = create<ConfigCore>()(() => ({
-    ...configCoreInitialState,
-}));
 
 export const useConfigWalletStore = create<ConfigWallet>()(() => ({
     ...configWalletInitialState,

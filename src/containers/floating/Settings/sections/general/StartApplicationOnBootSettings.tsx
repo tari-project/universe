@@ -8,7 +8,8 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
-import { setShouldAutoLaunch, useConfigCoreStore } from '@app/store';
+import { setShouldAutoLaunch } from '@app/store/actions/config/core.ts';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 
 export default function StartApplicationOnBootSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });

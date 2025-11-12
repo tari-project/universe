@@ -323,6 +323,11 @@ impl GpuManager {
             return Err(anyhow::anyhow!("GPU mining is disabled"));
         }
 
+        if self.process_watcher.is_running() {
+            info!(target: LOG_TARGET, "GPU miner is already running");
+            return Ok(());
+        }
+
         EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Initiated).await;
 
         if let Some(app_handle) = self.app_handle.clone() {

@@ -12,7 +12,7 @@ import { displayMode } from '../store/types.ts';
 import { BasePoolData, ConfigBackendInMemory, PauseOnBatteryModeState } from './configs.ts';
 import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from './tapplets/tapplet.types';
-import { AddSchedulerEventBetweenVariantPayload, AddSchedulerEventInVariantPayload } from './mining/schedule.ts';
+import { SchedulerEventTiming, SchedulerEventType } from './mining/schedule.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -145,10 +145,9 @@ declare module '@tauri-apps/api/core' {
         payload: { pauseOnBatteryMode: PauseOnBatteryModeState }
     ): Promise<void>;
     // Scheduler commands
-    function invoke(param: 'add_scheduler_in_event', payload: AddSchedulerEventInVariantPayload): Promise<void>;
     function invoke(
-        param: 'add_scheduler_between_events',
-        payload: AddSchedulerEventBetweenVariantPayload
+        param: 'add_scheduler_event',
+        payload: { eventId: string; eventTime: SchedulerEventTiming; eventType: SchedulerEventType }
     ): Promise<void>;
     function invoke(param: 'remove_scheduler_event', payload: { eventId: string }): Promise<void>;
     function invoke(param: 'pause_scheduler_event', payload: { eventId: string }): Promise<void>;

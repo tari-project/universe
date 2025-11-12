@@ -1,33 +1,4 @@
-import { NodeType } from '@app/store/useNodeStore';
 import { WalletUIMode } from './events-payloads';
-
-export enum ShutdownMode {
-    Direct = 'Direct',
-    Tasktray = 'Tasktray',
-}
-
-export interface ConfigCore {
-    created_at: string;
-    use_tor: boolean;
-    allow_telemetry: boolean;
-    allow_notifications: boolean;
-    last_binaries_update_timestamp?: string;
-    anon_id: string;
-    should_auto_launch: boolean;
-    mmproxy_use_monero_failover: boolean;
-    mmproxy_monero_nodes: string[];
-    auto_update: boolean;
-    pre_release: boolean;
-    last_changelog_version: string;
-    airdrop_tokens?: {
-        token: string;
-        refreshToken: string;
-    };
-    remote_base_node_address: string;
-    node_type?: NodeType;
-    exchange_id?: string;
-    shutdown_mode: ShutdownMode;
-}
 
 export interface ConfigWallet {
     created_at: string;
@@ -76,7 +47,7 @@ export interface ConfigMining {
     mine_on_app_start: boolean;
     selected_mining_mode: string;
     gpu_mining_enabled: boolean;
-    mining_modes: MiningModes | Record<string, MiningMode>;
+    mining_modes: Record<string, MiningMode>;
     gpu_devices_settings: Record<number, GpuDeviceSettings>;
     cpu_mining_enabled: boolean;
     gpu_engine: string;
