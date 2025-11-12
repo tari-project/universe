@@ -10,9 +10,10 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { ErrorText, TextWrapper, Wrapper } from './styles.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { setIsSettingsOpen } from '@app/store';
 
 const CriticalProblemDialog = memo(function CriticalProblemDialog() {
-    const { t } = useTranslation(['setup-progresses', 'common'], { useSuspense: false });
+    const { t } = useTranslation(['setup-progresses', 'common', 'settings'], { useSuspense: false });
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const [isPending, startTransition] = useTransition();
 
@@ -50,15 +51,24 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
                             <CircularProgress />
                         ) : (
                             <Stack direction="row" gap={8} justifyContent="space-between" style={{ width: '100%' }}>
-                                <Button
-                                    backgroundColor="green"
-                                    size="smaller"
-                                    onClick={logsSubmissionId ? handleCopyLogsSubmissionId : handleFeedback}
-                                    isLoading={isPending}
-                                    loader={<LoadingDots />}
-                                >
-                                    {handleLogsButtonText}
-                                </Button>
+                                <Stack direction="row" gap={8} justifyContent="space-around">
+                                    <Button
+                                        size="smaller"
+                                        backgroundColor="info"
+                                        onClick={() => setIsSettingsOpen(true)}
+                                    >
+                                        {t('settings:settings')}
+                                    </Button>
+                                    <Button
+                                        backgroundColor="green"
+                                        size="smaller"
+                                        onClick={logsSubmissionId ? handleCopyLogsSubmissionId : handleFeedback}
+                                        isLoading={isPending}
+                                        loader={<LoadingDots />}
+                                    >
+                                        {handleLogsButtonText}
+                                    </Button>
+                                </Stack>
                                 <Stack direction="row" gap={8} justifyContent="space-around">
                                     <Button backgroundColor="error" size="smaller" onClick={handleClose}>
                                         {t('close-tari-universe')}
