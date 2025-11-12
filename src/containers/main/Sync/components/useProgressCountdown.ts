@@ -70,7 +70,7 @@ export const useProgressCountdown = (isCompact = false) => {
         } else {
             setCountdown(REMOTE_DEFAULT_ESTIMATE);
         }
-    }, [nodeType]);
+    }, [nodeSetupParams, nodeType]);
 
     useEffect(() => {
         const interval = setInterval(() => {

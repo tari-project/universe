@@ -182,16 +182,15 @@ export const stopMining = async () => {
     }
 };
 
-export const pauseMining = async (duration: number, isMinutes = false) => {
+export const pauseMining = async (duration: number) => {
     invoke('add_scheduler_event', {
         eventId: 'pause_mining',
-        eventTime: { In: { time_value: duration, time_unit: isMinutes ? TimeUnit.Minutes : TimeUnit.Hours } },
+        eventTime: { In: { time_value: duration, time_unit: TimeUnit.Hours } },
         eventType: 'ResumeMining',
     })
         .then(() => {
             stopMining();
-            const durationHours = isMinutes ? duration / 60 : duration;
-            setResumeDuration({ durationHours, timeStamp: Date.now() });
+            setResumeDuration({ durationHours: duration, timeStamp: Date.now() });
         })
         .catch((e) => console.error(e));
 };

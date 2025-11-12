@@ -24,7 +24,7 @@ export const WrapperGrid = styled.div`
     height: 100%;
     display: flex;
     flex-flow: column;
-    gap: 10px;
+    gap: 8px;
     justify-content: space-between;
 `;
 
@@ -35,13 +35,15 @@ export const GridAreaTop = styled.div`
     padding: 2px 0 0;
 `;
 
-export const GridAreaBottom = styled.div<{ $swapsOpen?: boolean }>`
+export const GridAreaBottom = styled.div<{ $swapsOpen?: boolean; $isLoading?: boolean }>`
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     position: relative;
     gap: 4px;
     overflow: hidden;
     overflow-y: auto;
+    height: ${({ $isLoading }) => ($isLoading ? 'auto' : '100%')};
     ${({ $swapsOpen }) =>
         $swapsOpen &&
         css`
