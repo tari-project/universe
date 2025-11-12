@@ -35,7 +35,7 @@ export const GridAreaTop = styled.div`
     padding: 2px 0 0;
 `;
 
-export const GridAreaBottom = styled.div<{ $swapsOpen?: boolean }>`
+export const GridAreaBottom = styled.div<{ $swapsOpen?: boolean; $isLoading?: boolean }>`
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -43,7 +43,7 @@ export const GridAreaBottom = styled.div<{ $swapsOpen?: boolean }>`
     gap: 4px;
     overflow: hidden;
     overflow-y: auto;
-    height: auto;
+    height: ${({ $isLoading }) => ($isLoading ? 'auto' : '100%')};
     ${({ $swapsOpen }) =>
         $swapsOpen &&
         css`
