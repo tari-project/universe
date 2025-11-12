@@ -39,12 +39,11 @@ export const GridAreaBottom = styled.div<{ $swapsOpen?: boolean }>`
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-
     position: relative;
     gap: 4px;
     overflow: hidden;
     overflow-y: auto;
-    height: 100%;
+    height: auto;
     ${({ $swapsOpen }) =>
         $swapsOpen &&
         css`
