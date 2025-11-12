@@ -30,21 +30,18 @@ export const Tapplet = ({ source }: TappletProps) => {
         }
     }, [tappSigner]);
 
-    const openExternalLink = useCallback(
-        async (event: MessageEvent) => {
-            if (!event.data.url || typeof event.data.url !== 'string') {
-                console.error('Invalid external tapplet URL');
-            }
-            const url = event.data?.url;
-            console.info('Opening external tapplet URL:', url);
-            try {
-                await open(url);
-            } catch (e) {
-                setStoreError(`Open tapplet URL error: ${e}`, true);
-            }
-        },
-        [open, setStoreError]
-    );
+    const openExternalLink = useCallback(async (event: MessageEvent) => {
+        if (!event.data.url || typeof event.data.url !== 'string') {
+            console.error('Invalid external tapplet URL');
+        }
+        const url = event.data?.url;
+        console.info('Opening external tapplet URL:', url);
+        try {
+            await open(url);
+        } catch (e) {
+            setStoreError(`Open tapplet URL error: ${e}`, true);
+        }
+    }, []);
 
     const runTappletTx = useCallback(
         async (event: MessageEvent) => {
@@ -101,7 +98,7 @@ export const Tapplet = ({ source }: TappletProps) => {
                     break;
             }
         },
-        [sendWindowSize, runTappletTx, openExternalLink, sendAppLanguage, sendTheme, sendFeatures, setStoreError]
+        [sendWindowSize, runTappletTx, openExternalLink, sendAppLanguage, sendTheme, sendFeatures]
     );
 
     useEffect(() => sendAppLanguage(), [sendAppLanguage]);
