@@ -201,9 +201,10 @@ fn main() {
             release: sentry::release_name!(),
             attach_stacktrace: true,
             before_send: Some(Arc::new(|event| {
-                if event.logentry.as_ref().is_some_and(|entry| {
+                let is_in_ignored = event.logentry.as_ref().is_some_and(|entry| {
                     IGNORED_SENTRY_ERRORS.iter().any(|ignored| entry.message.starts_with(ignored))
-                }) {
+                });
+                if is_in_ignored {
                     None
                 } else {
                     Some(event)
