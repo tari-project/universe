@@ -27,6 +27,7 @@ interface UIStoreState {
     setMiningModeAsSchedulerEventMode: boolean;
     showShutdownSelectionModal: boolean;
     showFeedbackExitSurveyModal: boolean;
+    showBatteryAlert: boolean;
 }
 const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -53,6 +54,7 @@ const initialState: UIStoreState = {
     setMiningModeAsSchedulerEventMode: false,
     showShutdownSelectionModal: false,
     showFeedbackExitSurveyModal: false,
+    showBatteryAlert: false,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({

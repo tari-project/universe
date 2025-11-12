@@ -25,7 +25,9 @@ use crate::app_in_memory_config::{AppInMemoryConfig, ExchangeMiner, DEFAULT_EXCH
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
-use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, MiningModeType};
+use crate::configs::config_mining::{
+    ConfigMining, ConfigMiningContent, MiningModeType, PauseOnBatteryModeState,
+};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
@@ -2053,6 +2055,23 @@ pub async fn set_security_warning_dismissed() -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_pause_on_battery_mode(
+    pause_on_battery_mode: PauseOnBatteryModeState,
+) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    ConfigMining::update_field(
+        ConfigMiningContent::set_pause_on_battery_mode,
+        pause_on_battery_mode,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_pause_on_battery_mode took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
 

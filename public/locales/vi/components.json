@@ -4,6 +4,12 @@
     "body-copy-highlight": "Tari vừa ra mắt!",
     "is-live": "đã hoạt động"
   },
+  "battery-alert-dialog": {
+    "auto-resume-info": "Mining will automatically resume when AC power is connected",
+    "description": "We've noticed your device is running on battery power. To help preserve your battery life and ensure optimal performance, we've temporarily paused mining. Mining will automatically resume when your device is connected to a power source.",
+    "title": "Mining Paused - Battery Mode Detected",
+    "understood": "I Understand"
+  },
   "close-experience-dialog": {
     "description": "You can either minimize the app to system tray to keep mining in the background, or exit completely to stop all processes.",
     "dont-ask-again": "Don't ask me again",

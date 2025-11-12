@@ -102,6 +102,10 @@
     "load-qr-code": "Załaduj kod QR",
     "passphrase": "Hasło"
   },
+  "pause-on-battery-mode": {
+    "description": "Pause mining when device is disconnected from charging",
+    "title": "Pause on Battery Mode"
+  },
   "pin": "Pin",
   "pool-configuration": "Konfiguracja puli",
   "pool-mining": "Kopanie w puli",
