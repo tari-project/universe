@@ -2030,9 +2030,9 @@ pub async fn refresh_wallet_history(
         .map_err(|e| e.to_string())?;
 
     // Trigger it manually to immediately update the UI
-    let node_status_watch_rx = state.node_status_watch_rx.clone();
-    let node_status = *node_status_watch_rx.borrow();
-    EventsEmitter::emit_init_wallet_scanning_progress(0, node_status.block_height, 0.0).await;
+    // let node_status_watch_rx = state.node_status_watch_rx.clone();
+    // let node_status = *node_status_watch_rx.borrow();
+    // EventsEmitter::emit_wallet_scanning_progress_update(0, node_status.block_height, 0.0).await;
 
     SetupManager::get_instance()
         .resume_phases(vec![SetupPhase::Wallet])

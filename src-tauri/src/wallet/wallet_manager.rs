@@ -247,6 +247,7 @@ impl WalletManager {
             })
     }
 
+    #[allow(dead_code)]
     pub async fn wait_for_scan_to_height(
         &self,
         block_height: u64,
@@ -302,6 +303,7 @@ impl WalletManager {
         res.map_err(WalletManagerError::UnknownError)
     }
 
+    #[allow(dead_code)]
     pub async fn find_coinbase_transaction_for_block(
         &self,
         block_height: u64,
@@ -322,6 +324,7 @@ impl WalletManager {
         Ok(matching_tx)
     }
 
+    #[allow(dead_code)]
     #[allow(clippy::too_many_lines)]
     pub async fn wait_for_initial_wallet_scan(
         &self,
@@ -330,7 +333,7 @@ impl WalletManager {
         if self.is_initial_scan_completed() {
             // TODO - need to change this so we can get scan progress?
             log::info!(target: LOG_TARGET, "Initial wallet scan already completed, skipping");
-            EventsEmitter::emit_wallet_status_updated(true, None).await;
+            // EventsEmitter::emit_wallet_status_updated(true, None).await;
             return Ok(());
         }
 
@@ -375,11 +378,11 @@ impl WalletManager {
 
                         if scanned_height > 0 && progress < 100.0 {
                             log::info!(target: LOG_TARGET, "Initial wallet scanning: {progress}% ({scanned_height}/{current_target_height})");
-                            EventsEmitter::emit_init_wallet_scanning_progress(
-                                scanned_height,
-                                current_target_height,
-                                progress,
-                            ).await;
+                            // EventsEmitter::emit_wallet_scanning_progress_update(
+                            //     scanned_height,
+                            //     current_target_height,
+                            //     progress,
+                            // ).await;
                         }
                     }
                 }
@@ -445,11 +448,11 @@ impl WalletManager {
                                     ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
 
                                     EventsEmitter::emit_wallet_balance_update(balance).await;
-                                    EventsEmitter::emit_init_wallet_scanning_progress(
-                                        current_target_height,
-                                        current_target_height,
-                                        100.0,
-                                    ).await;
+                                    // EventsEmitter::emit_wallet_scanning_progress_update(
+                                    //     current_target_height,
+                                    //     current_target_height,
+                                    //     100.0,
+                                    // ).await;
 
                                     wallet_manager.initial_scan_completed
                                         .store(true, std::sync::atomic::Ordering::Relaxed);
@@ -487,6 +490,7 @@ impl WalletManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     async fn validate_balance_after_scan(
         wallet_state_receiver: watch::Receiver<Option<WalletState>>,
     ) -> Result<(), WalletManagerError> {

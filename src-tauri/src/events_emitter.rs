@@ -23,7 +23,7 @@ use crate::configs::config_mining::GpuDevicesSettings;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
-    InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload, WalletStatusUpdatePayload,
+    UpdateAppModuleStatusPayload, WalletScanningProgressUpdatePayload,
 };
 use crate::internal_wallet::TariAddressType;
 use crate::mining::cpu::CpuMinerStatus;
@@ -532,18 +532,20 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_init_wallet_scanning_progress(
+    pub async fn emit_wallet_scanning_progress_update(
         scanned_height: u64,
         total_height: u64,
         progress: f64,
+        is_initial_scan_finished: bool,
     ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::InitWalletScanningProgress,
-            payload: InitWalletScanningProgressPayload {
+            event_type: EventType::WalletScanningProgressUpdate,
+            payload: WalletScanningProgressUpdatePayload {
                 scanned_height,
                 total_height,
                 progress,
+                is_initial_scan_finished,
             },
         };
         if let Err(e) = Self::get_app_handle()
@@ -728,18 +730,6 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit SeedBackedUp event: {e:?}");
         }
     }
-
-    pub async fn emit_wallet_status_updated(loading: bool, unhealthy: Option<bool>) {
-        let _ = FrontendReadyChannel::current().wait_for_ready().await;
-        let evt = Event {
-            event_type: EventType::WalletStatusUpdate,
-            payload: WalletStatusUpdatePayload { loading, unhealthy },
-        };
-        if let Err(e) = Self::get_app_handle().await.emit(BACKEND_STATE_UPDATE, evt) {
-            error!(target: LOG_TARGET, "Failed to emit WalletStatusUpdate event: {e:?}");
-        }
-    }
-
     pub async fn emit_update_cpu_miner_state(state: MinerControlsState) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         if let Err(e) = Self::get_app_handle().await.emit(

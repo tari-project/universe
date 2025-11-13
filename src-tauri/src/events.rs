@@ -36,7 +36,8 @@ use crate::{
 
 #[derive(Clone, Debug, Serialize)]
 pub enum EventType {
-    WalletBalanceUpdate,
+    WalletBalanceUpdate,          // ===================
+    WalletScanningProgressUpdate, // ===================
     BaseNodeUpdate,
     GpuDevicesUpdate,
     CpuPoolsStatsUpdate,
@@ -62,7 +63,6 @@ pub enum EventType {
     ConfigMiningLoaded,
     ConfigPoolsLoaded,
     BackgroundNodeSyncUpdate,
-    InitWalletScanningProgress,
     ConnectionStatus,
     ExchangeIdChanged,
     DisabledPhases,
@@ -81,7 +81,6 @@ pub enum EventType {
     UpdateAppModuleStatus,
     UpdateSelectedMiner,
     AvailableMiners,
-    WalletStatusUpdate,
     UpdateCpuMinerControlsState,
     UpdateGpuMinerControlsState,
     OpenSettings,
@@ -172,10 +171,11 @@ pub struct NodeTypeUpdatePayload {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct InitWalletScanningProgressPayload {
+pub struct WalletScanningProgressUpdatePayload {
     pub scanned_height: u64,
     pub total_height: u64,
     pub progress: f64,
+    pub is_initial_scan_finished: bool,
 }
 
 // TODO: Bring back connection status callback, was removed with removing setup screen and related logic
@@ -198,10 +198,4 @@ pub struct TariAddressUpdatePayload {
     pub tari_address_base58: String,
     pub tari_address_emoji: String,
     pub tari_address_type: TariAddressType,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct WalletStatusUpdatePayload {
-    pub loading: bool,
-    pub unhealthy: Option<bool>,
 }

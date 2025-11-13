@@ -20,19 +20,24 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use minotari_wallet::scan::{init_with_view_key, scan};
-use sqlx::sqlite::SqlitePool;
-use std::sync::{atomic::AtomicBool, LazyLock};
-use tari_common::configuration::Network;
-use tokio::sync::Mutex;
-
 use crate::{
-    database::utils::database_listener::{predefined_watchers, ConfigSyncStrategy, DatabaseListener},
-    internal_wallet::InternalWallet,
-    tasks_tracker::TasksTrackers,
-    APPLICATION_FOLDER_ID,
+    events_emitter::EventsEmitter, internal_wallet::InternalWallet, tasks_tracker::TasksTrackers,
+    wallet::wallet_types::WalletBalance, UniverseAppState, APPLICATION_FOLDER_ID,
 };
 use log::{error, info, warn};
+use minotari_wallet::{
+    db::{
+        ACCOUNT_CREATION_CHANNEL, BALANCE_CHANGE_CHANNEL, EVENT_CHANNEL, SCANNED_TIP_BLOCK_CHANNEL,
+    },
+    get_balance, init_db,
+    models::BalanceChange,
+    scan::{init_with_view_key, scan},
+};
+use std::sync::{atomic::AtomicBool, LazyLock};
+use tari_common::configuration::Network;
+use tari_transaction_components::MicroMinotari;
+use tauri::{AppHandle, Manager};
+use tokio::sync::RwLock;
 static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet_manager";
 static INSTANCE: LazyLock<MinotariWalletManager> = LazyLock::new(MinotariWalletManager::new);
 
@@ -40,42 +45,60 @@ static DEFAULT_GRPC_URL: &str = "https://rpc.tari.com";
 static DEFAULT_PASSWORD: &str = "test_password";
 static DEFAULT_ACCOUNT_ID: i64 = 1; // Default account ID for now
 
-// Structs for typed database rows
-#[derive(sqlx::FromRow, Debug)]
-struct OutputRow {
-    id: i64,
-    output_hash: Vec<u8>,
-    value: i64,
-    mined_in_block_height: i64,
-}
-
-#[derive(sqlx::FromRow, Debug)]
-struct InputRow {
-    id: i64,
-    output_id: i64,
-    mined_in_block_height: i64,
-}
-
-#[derive(sqlx::FromRow, Debug)]
-struct EventRow {
-    id: i64,
-    event_type: String,
-    description: String,
-}
-
 pub struct MinotariWalletManager {
-    was_blockchain_scanned: AtomicBool, // Starts as false, set to true once the blockchain has been scanned so we don't show scanning UI again when block height is updated
-    scanning_initiated: AtomicBool,
-    db_listener: Mutex<Option<DatabaseListener>>,
+    was_blockchain_scanned_to_current_height: AtomicBool, // Starts as false, set to true once the blockchain has been scanned so we don't show scanning UI again when block height is updated
+    scanning_initiated: AtomicBool, // To prevent multiple scanning initializations
+    app_handle: RwLock<Option<AppHandle>>, // Required to access node manager
+    // ============== |Cached Data| ==============
+    wallet_balance: RwLock<i64>,
 }
 
 impl MinotariWalletManager {
     pub fn new() -> Self {
         Self {
-            was_blockchain_scanned: AtomicBool::new(false),
+            was_blockchain_scanned_to_current_height: AtomicBool::new(false),
             scanning_initiated: AtomicBool::new(false),
-            db_listener: Mutex::new(None),
+            app_handle: RwLock::new(None),
+            wallet_balance: RwLock::new(0),
         }
+    }
+
+    pub async fn load_app_handle(app_handle: AppHandle) {
+        let mut handle_lock = INSTANCE.app_handle.write().await;
+        *handle_lock = Some(app_handle);
+    }
+
+    async fn calculate_balance_from_change(
+        balance_change: BalanceChange,
+    ) -> Result<i64, anyhow::Error> {
+        let mut current_balance = *INSTANCE.wallet_balance.read().await as u64;
+        current_balance = current_balance
+            .checked_add(balance_change.balance_credit)
+            .ok_or_else(|| anyhow::anyhow!("Balance overflow when applying balance change"))?;
+        current_balance = current_balance
+            .checked_sub(balance_change.balance_debit)
+            .ok_or_else(|| anyhow::anyhow!("Balance underflow when applying balance change"))?;
+        #[allow(clippy::cast_possible_wrap)]
+        let current_balance = current_balance as i64;
+        Ok(current_balance)
+    }
+
+    pub async fn initialize_wallet() -> Result<(), anyhow::Error> {
+        let sqlite_connection = init_db(Self::database_path().await?.as_str()).await?;
+        let mut conn = sqlite_connection.acquire().await?;
+
+        // ============== |Initialize Balance Data| ==============
+        let balance = get_balance(&mut *conn, DEFAULT_ACCOUNT_ID).await?;
+        {
+            let mut wallet_balance_lock = INSTANCE.wallet_balance.write().await;
+            if let (Some(credits), Some(debits)) = (balance.total_credits, balance.total_debits) {
+                *wallet_balance_lock = credits.saturating_sub(debits);
+            } else {
+                *wallet_balance_lock = 0;
+            }
+        }
+
+        Ok(())
     }
 
     pub async fn initialize_blockchain_scanning() -> Result<(), anyhow::Error> {
@@ -101,12 +124,18 @@ impl MinotariWalletManager {
             "Starting blockchain scan for Minotari wallet at database path: {}", database_path
         );
 
-        Self::start_database_listener().await?;
+        Self::listen_to_account_updates().await?;
+        Self::listen_to_balance_changes().await?;
+        Self::listen_to_events().await?;
+        Self::listen_to_scanned_tip_blocks().await?;
 
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
-        TasksTrackers::current().common.get_task_tracker().await.spawn(
-            async move {
+        TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
                 loop {
                     tokio::select! {
                         result = Self::execute_blockchain_scan() => {
@@ -116,7 +145,6 @@ impl MinotariWalletManager {
                                         target: LOG_TARGET,
                                         "Blockchain scan completed successfully."
                                     );
-                                    INSTANCE.was_blockchain_scanned.store(true, std::sync::atomic::Ordering::SeqCst);
                                 }
                                 Err(e) => {
                                     error!(
@@ -131,17 +159,12 @@ impl MinotariWalletManager {
                                 target: LOG_TARGET,
                                 "Shutdown signal received. Terminating blockchain scan."
                             );
-                            
-                            // Stop listener on shutdown
-                            if let Err(e) = Self::stop_database_listener().await {
-                                error!(target: LOG_TARGET, "Failed to stop database listener: {:?}", e);
-                            }
                             break;
                         }
                     }
                 }
-
             });
+
         Ok(())
     }
 
@@ -152,18 +175,18 @@ impl MinotariWalletManager {
             "Executing blockchain scan for Minotari wallet at database path: {}", database_path
         );
 
-                let scan_result = tokio::task::spawn_blocking(move || {
-                    tokio::runtime::Handle::current().block_on(        scan(
-            DEFAULT_PASSWORD,
-            DEFAULT_GRPC_URL,
-            database_path.as_str(),
-            None,
-            1000,
-            100,
-        ))
-                })
-                .await?;
-
+        
+        let scan_result = tokio::task::spawn_blocking(move || {
+            tokio::runtime::Handle::current().block_on(scan(
+                DEFAULT_PASSWORD,
+                DEFAULT_GRPC_URL,
+                database_path.as_str(),
+                None,
+                1000,
+                50, // do not go over 50 as it may cause timeouts in wallet scanning logic
+            ))
+        })
+        .await?;
 
         match scan_result {
             Ok(_) => {
@@ -183,162 +206,230 @@ impl MinotariWalletManager {
         Ok(())
     }
 
-    async fn start_database_listener() -> Result<(), anyhow::Error> {
-        let database_path = Self::database_path().await?;
-        let db_url = format!("sqlite:///{}", database_path);
-        let pool = SqlitePool::connect(&db_url).await?;
+    async fn listen_to_account_updates() -> Result<(), anyhow::Error> {
+        // use ACCOUT_CREATION_CHANNEL
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut account_creation_receiver = ACCOUNT_CREATION_CHANNEL.1.lock().await;
 
-        info!(
-            target: LOG_TARGET,
-            "Starting database listener for wallet monitoring"
-        );
-
-        let mut listener = DatabaseListener::new(pool.clone());
-
-        let tip_value = pool.clone();
-        let scanned_blocks_watcher =
-            predefined_watchers::scanned_tip_blocks_watcher(DEFAULT_ACCOUNT_ID)
-                .await
-                .with_callback(move || {
-                    let pool = tip_value.clone();
-                    Box::pin(async move {
-                        if let Err(e) =
-                            Self::log_scanned_tip_blocks(&pool, DEFAULT_ACCOUNT_ID).await
-                        {
-                            error!(target: LOG_TARGET, "Failed to log scanned tip blocks: {:?}", e);
+        TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                loop {
+                    tokio::select! {
+                        result = account_creation_receiver.recv() => {
+                            match result {
+                                Some(account) => {
+                                    info!(
+                                        target: LOG_TARGET,
+                                        "New account created: {:?}", account
+                                    );
+                                }
+                                None => {
+                                    warn!(
+                                        target: LOG_TARGET,
+                                        "Account creation channel closed."
+                                    );
+                                }
+                            }
                         }
-                    })
-                });
-        listener.add_watcher(scanned_blocks_watcher);
-
-        let outputs_watcher = predefined_watchers::typed_watcher(
-            "outputs",
-            DEFAULT_ACCOUNT_ID,
-            "SELECT MAX(id) FROM outputs WHERE account_id = ?",
-            std::time::Duration::from_secs(1),
-            ConfigSyncStrategy::default(),
-        )
-        .await
-        .with_typed_callback::<OutputRow>(
-            "SELECT id, output_hash, value, mined_in_block_height FROM outputs WHERE account_id = ? AND id > ? ORDER BY id".to_string(),
-            |output: OutputRow| {
-                Box::pin(async move {
-                    info!(
-                        target: LOG_TARGET,
-                        "💰 New Output - ID: {}, Hash: {}, Value: {}, Height: {}",
-                        output.id,
-                        hex::encode(&output.output_hash),
-                        output.value,
-                        output.mined_in_block_height
-                    );
-                })
-            },
-        );
-        listener.add_watcher(outputs_watcher);
-
-        let inputs_watcher = predefined_watchers::typed_watcher(
-            "inputs",
-            DEFAULT_ACCOUNT_ID,
-            "SELECT MAX(id) FROM inputs WHERE account_id = ?",
-            std::time::Duration::from_secs(1),
-            ConfigSyncStrategy::default(),
-        )
-        .await
-        .with_typed_callback::<InputRow>(
-            "SELECT id, output_id, mined_in_block_height FROM inputs WHERE account_id = ? AND id > ? ORDER BY id".to_string(),
-            |input: InputRow| {
-                Box::pin(async move {
-                    info!(
-                        target: LOG_TARGET,
-                        "📤 New Input - ID: {}, Output ID: {}, Height: {}",
-                        input.id,
-                        input.output_id,
-                        input.mined_in_block_height
-                    );
-                })
-            },
-        );
-        listener.add_watcher(inputs_watcher);
-
-        let events_watcher = predefined_watchers::typed_watcher(
-            "events",
-            DEFAULT_ACCOUNT_ID,
-            "SELECT MAX(id) FROM events WHERE account_id = ?",
-            std::time::Duration::from_secs(1),
-            ConfigSyncStrategy::default(),
-        )
-        .await
-        .with_typed_callback::<EventRow>(
-            "SELECT id, event_type, description FROM events WHERE account_id = ? AND id > ? ORDER BY id".to_string(),
-            |event: EventRow| {
-                Box::pin(async move {
-                    info!(
-                        target: LOG_TARGET,
-                        "📝 New Event - ID: {}, Type: {}, Description: {}",
-                        event.id,
-                        event.event_type,
-                        event.description
-                    );
-                })
-            },
-        );
-        listener.add_watcher(events_watcher);
-
-        // Start the listener
-        listener.start().await?;
-
-        // Store the listener in the instance
-        *INSTANCE.db_listener.lock().await = Some(listener);
-
-        info!(
-            target: LOG_TARGET,
-            "Database listener started successfully with {} watchers",
-            4
-        );
+                        _ = shutdown_signal.wait() => {
+                            info!(
+                                target: LOG_TARGET,
+                                "Shutdown signal received. Terminating account listener."
+                            );
+                            break;
+                        }
+                    }
+                }
+            });
 
         Ok(())
     }
 
-    async fn stop_database_listener() -> Result<(), anyhow::Error> {
-        let mut listener_guard = INSTANCE.db_listener.lock().await;
-        if let Some(mut listener) = listener_guard.take() {
-            info!(target: LOG_TARGET, "Stopping database listener");
-            listener.stop().await?;
-            info!(target: LOG_TARGET, "Database listener stopped");
-        }
+    async fn listen_to_balance_changes() -> Result<(), anyhow::Error> {
+        // use BALANCE_CHANGE_CHANNEL
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut balance_change_receiver = BALANCE_CHANGE_CHANNEL.1.lock().await;
+
+        TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                loop {
+                    tokio::select! {
+                        result = balance_change_receiver.recv() => {
+                            match result {
+                                Some(change) => {
+                                    info!(
+                                        target: LOG_TARGET,
+                                        "New balance change: {:?}", change
+                                    );
+                                    let new_balance = MinotariWalletManager::calculate_balance_from_change(change.clone()).await;
+                                    match new_balance {
+                                        Ok(balance) => {
+                                            {
+                                                let mut wallet_balance_lock = INSTANCE.wallet_balance.write().await;
+                                                *wallet_balance_lock = balance;
+                                                EventsEmitter::emit_wallet_balance_update(WalletBalance {available_balance: MicroMinotari(balance as u64), timelocked_balance: 0.into(), pending_incoming_balance: 0.into(), pending_outgoing_balance: 0.into()}).await;
+                                            }
+                                        }
+                                        Err(e) => {
+                                            error!(
+                                                target: LOG_TARGET,
+                                                "Failed to calculate new wallet balance from change {:?}: {:?}", change, e
+                                            );
+                                        }
+                                    }
+
+                                }
+                                None => {
+                                    warn!(
+                                        target: LOG_TARGET,
+                                        "Balance change channel closed."
+                                    );
+                                }
+                            }
+                        }
+                        _ = shutdown_signal.wait() => {
+                            info!(
+                                target: LOG_TARGET,
+                                "Shutdown signal received. Terminating balance change listener."
+                            );
+                            break;
+                        }
+                    }
+                }
+            });
+
         Ok(())
     }
 
-    async fn log_scanned_tip_blocks(
-        pool: &SqlitePool,
-        account_id: i64,
-    ) -> Result<(), anyhow::Error> {
-        use sqlx::Row;
+    async fn listen_to_events() -> Result<(), anyhow::Error> {
+        // use EVENT_CHANNEL
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut event_receiver = EVENT_CHANNEL.1.lock().await;
 
-        let result = sqlx::query(
-            r#"
-            SELECT height, hash
-            FROM scanned_tip_blocks
-            WHERE account_id = ?
-            ORDER BY height DESC
-            LIMIT 1
-            "#,
-        )
-        .bind(account_id)
-        .fetch_optional(pool)
-        .await?;
+        TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                loop {
+                    tokio::select! {
+                        result = event_receiver.recv() => {
+                            match result {
+                                Some(event) => {
+                                    info!(
+                                        target: LOG_TARGET,
+                                        "New wallet event: {:?}", event
+                                    );
+                                }
+                                None => {
+                                    warn!(
+                                        target: LOG_TARGET,
+                                        "Event channel closed."
+                                    );
+                                }
+                            }
+                        }
+                        _ = shutdown_signal.wait() => {
+                            info!(
+                                target: LOG_TARGET,
+                                "Shutdown signal received. Terminating event listener."
+                            );
+                            break;
+                        }
+                    }
+                }
+            });
 
-        if let Some(row) = result {
-            let height: i64 = row.get("height");
-            let hash: Vec<u8> = row.get("hash");
-            info!(
+        Ok(())
+    }
+
+    async fn listen_to_scanned_tip_blocks() -> Result<(), anyhow::Error> {
+        // use SCANNED_TIP_BLOCK_CHANNEL
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut scanned_tip_block_receiver = SCANNED_TIP_BLOCK_CHANNEL.1.lock().await;
+
+        if let Some(app_handle) = &*INSTANCE.app_handle.read().await {
+            let app_state = app_handle.state::<UniverseAppState>();
+            let node_status_watch_rx = app_state.node_status_watch_rx.clone();
+            let last_node_status = *node_status_watch_rx.borrow();
+
+            TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                loop {
+                    let last_registered_node_status_height = last_node_status.block_height;
+
+                    tokio::select! {
+                        result = scanned_tip_block_receiver.recv() => {
+                            match result {
+                                Some(block) => {
+                                    info!(
+                                        target: LOG_TARGET,
+                                        "New scanned tip block: {:?}", block
+                                    );
+                                    // percentage value of block.height / last_registered_node_status_height
+                                    let scanned_percentage = if last_registered_node_status_height > 0 {
+                                        (block.height as f64 / last_registered_node_status_height as f64) * 100.0
+                                    } else {
+                                        0.0
+                                    };
+                                    let scanned_percentage = scanned_percentage.min(100.0);
+
+
+
+                                    if last_registered_node_status_height > 0 &&
+                                        block.height as u64 >= last_registered_node_status_height &&
+                                        !INSTANCE.was_blockchain_scanned_to_current_height.load(std::sync::atomic::Ordering::SeqCst)
+                                    {
+                                        info!(
+                                            target: LOG_TARGET,
+                                            "Blockchain has been scanned up to the node's block height: {}. Marking scanning as complete.",
+                                            last_registered_node_status_height
+                                        );
+                                        INSTANCE.was_blockchain_scanned_to_current_height.store(true, std::sync::atomic::Ordering::SeqCst);
+                                        
+                                    }
+
+                                    EventsEmitter::emit_wallet_scanning_progress_update(
+                                        block.height as u64,
+                                        last_registered_node_status_height,
+                                        scanned_percentage,
+                                        INSTANCE.was_blockchain_scanned_to_current_height.load(std::sync::atomic::Ordering::SeqCst),
+                                    ).await;
+
+                                }
+                                None => {
+                                    warn!(
+                                        target: LOG_TARGET,
+                                        "Scanned tip block channel closed."
+                                    );
+                                }
+                            }
+                        }
+                        _ = shutdown_signal.wait() => {
+                            info!(
+                                target: LOG_TARGET,
+                                "Shutdown signal received. Terminating scanned tip block listener."
+                            );
+                            break;
+                        }
+                    }
+                }
+            });
+        } else {
+            warn!(
                 target: LOG_TARGET,
-                "📊 Scanned Tip Block - Height: {}, Hash: {}",
-                height,
-                hex::encode(&hash)
+                "App handle not set in MinotariWalletManager. Cannot access node manager for blockchain scanning."
             );
         }
-
         Ok(())
     }
 
@@ -358,7 +449,7 @@ impl MinotariWalletManager {
 
             Ok(())
         } else {
-            return Err(anyhow::anyhow!("Tari wallet details not found"));
+            Err(anyhow::anyhow!("Tari wallet details not found"))
         }
     }
 

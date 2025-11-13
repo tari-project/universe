@@ -29,7 +29,6 @@ use super::trait_setup_phase::SetupPhaseImpl;
 use super::utils::phase_builder::PhaseBuilder;
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::configs::config_core::ConfigCoreContent;
-use crate::configs::config_database_listener::ConfigDatabaseListener;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::WalletUIMode;
@@ -312,7 +311,6 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
-        ConfigDatabaseListener::initialize(app_handle.clone()).await;
 
         // Initialize after configs are loaded as its reads mining mode from config
         SystemTrayManager::write()

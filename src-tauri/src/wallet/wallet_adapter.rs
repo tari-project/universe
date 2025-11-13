@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::events_emitter::EventsEmitter;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec};
 use crate::process_adapter_utils::setup_working_directory;
@@ -210,6 +209,7 @@ impl WalletAdapter {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn wait_for_scan_to_height(
         &self,
         block_height: u64,
@@ -230,7 +230,7 @@ impl WalletAdapter {
                         // Case 1: Scan has reached or exceeded target height
                         if state.scanned_height >= block_height {
                             info!(target: LOG_TARGET, "Wallet scan completed up to block height {block_height}");
-                            EventsEmitter::emit_wallet_status_updated(false, None).await;
+                            // EventsEmitter::emit_wallet_status_updated(false, None).await;
                             return Ok(state);
                         }
                         // Case 2: Wallet is at height 0 but is connected - likely means scan finished already
