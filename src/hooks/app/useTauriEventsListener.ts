@@ -203,7 +203,7 @@ const useTauriEventsListener = () => {
                         case 'BackgroundNodeSyncUpdate':
                             setBackgroundNodeState(event.payload);
                             break;
-                        case 'InitWalletScanningProgress':
+                        case 'WalletScanningProgressUpdate':
                             updateWalletScanningProgress(event.payload);
                             break;
                         case 'ConnectionStatus':
@@ -241,9 +241,6 @@ const useTauriEventsListener = () => {
                             break;
                         case 'SeedBackedUp':
                             handleSeedBackedUp(event.payload);
-                            break;
-                        case 'WalletStatusUpdate':
-                            setIsWalletLoading(event.payload?.loading);
                             break;
                         case 'UpdateCpuMinerControlsState':
                             handleCpuMinerControlsStateChanged(event.payload);

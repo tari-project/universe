@@ -3,7 +3,7 @@ import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
-import { TariAddressType } from '@app/types/events-payloads.ts';
+import { TariAddressType, WalletScanningProgressUpdatePayload } from '@app/types/events-payloads.ts';
 import { useExchangeStore } from './useExchangeStore.ts';
 
 export interface BackendBridgeTransaction extends UserTransactionDTO {
@@ -61,6 +61,7 @@ export interface WalletStoreState {
         scanned_height: number;
         total_height: number;
         progress: number;
+        is_initial_scan_finished: boolean;
     };
     is_pin_locked: boolean;
     is_seed_backed_up: boolean;
@@ -87,6 +88,7 @@ export const initialState: WalletStoreState = {
         scanned_height: 0,
         total_height: 0,
         progress: 0,
+        is_initial_scan_finished: false,
     },
     is_pin_locked: false,
     is_seed_backed_up: false,
@@ -119,11 +121,7 @@ const pruneTransactionArray = <T extends { timestamp?: number; tx_id?: number }>
         .slice(0, maxSize);
 };
 
-export const updateWalletScanningProgress = (payload: {
-    scanned_height: number;
-    total_height: number;
-    progress: number;
-}) => {
+export const updateWalletScanningProgress = (payload: WalletScanningProgressUpdatePayload) => {
     const is_scanning = payload.scanned_height < payload.total_height;
     useWalletStore.setState((c) => ({
         ...c,

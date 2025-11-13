@@ -13,6 +13,7 @@ import {
     SetupPhase,
     ShowReleaseNotesPayload,
     TariAddressUpdatePayload,
+    WalletScanningProgressUpdatePayload,
     WalletUIMode,
 } from './events-payloads.ts';
 import {
@@ -135,12 +136,8 @@ export type BackendStateUpdateEvent =
           payload: BackgroundNodeSyncUpdatePayload;
       }
     | {
-          event_type: 'InitWalletScanningProgress';
-          payload: {
-              scanned_height: number;
-              total_height: number;
-              progress: number;
-          };
+          event_type: 'WalletScanningProgressUpdate';
+          payload: WalletScanningProgressUpdatePayload;
       }
     | {
           event_type: 'ConnectionStatus';
@@ -205,13 +202,6 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'AvailableMiners';
           payload: Record<GpuMinerType, GpuMiner>;
-      }
-    | {
-          event_type: 'WalletStatusUpdate';
-          payload: {
-              loading: boolean;
-              unhealthy?: boolean;
-          };
       }
     | {
           event_type: 'UpdateCpuMinerControlsState';
