@@ -20,6 +20,7 @@ import {
     BaseNodeStatus,
     CpuMinerStatus,
     GpuMinerStatus,
+    MinotariWalletTransaction,
     NetworkStatus,
     PoolStats,
     SystemDependency,
@@ -234,4 +235,12 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ShuttingDown';
           payload: undefined;
+      }
+    | {
+          event_type: 'WalletTransactionsFound';
+          payload: MinotariWalletTransaction[];
+      }
+    | {
+          event_type: 'WalletTransactionUpdated';
+          payload: MinotariWalletTransaction;
       };

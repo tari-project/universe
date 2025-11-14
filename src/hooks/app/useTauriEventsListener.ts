@@ -64,6 +64,8 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { setCpuPoolStats, setGpuPoolStats } from '@app/store/actions/miningPoolsStoreActions';
 import {
+    handleMinotariWalletTransactionsFound,
+    handleMinotariWalletTransactionUpdated,
     handlePinLocked,
     handleSeedBackedUp,
     handleSelectedTariAddressChange,
@@ -265,6 +267,12 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShuttingDown':
                             setIsShuttingDown(true);
+                            break;
+                        case 'WalletTransactionUpdated':
+                            handleMinotariWalletTransactionUpdated(event.payload);
+                            break;
+                        case 'WalletTransactionsFound':
+                            handleMinotariWalletTransactionsFound(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

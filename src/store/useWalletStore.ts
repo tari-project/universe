@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
+import { MinotariWalletTransaction, TransactionInfo, WalletBalance } from '../types/app-status.ts';
 
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
@@ -49,6 +49,7 @@ export interface WalletStoreState {
     coinbase_transactions: TransactionInfo[];
     tx_history_filter: TxHistoryFilter;
     tx_history: TransactionInfo[];
+    minotari_wallet_transactions: MinotariWalletTransaction[];
     // TODO: decide later for the best place to store this data
     bridge_transactions: BackendBridgeTransaction[];
     cold_wallet_address?: string;
@@ -77,6 +78,7 @@ export const initialState: WalletStoreState = {
     exchange_wxtm_addresses: {},
     tx_history_filter: 'all-activity',
     tx_history: [],
+    minotari_wallet_transactions: [],
     bridge_transactions: [],
     cold_wallet_address: undefined,
     is_wallet_importing: false,

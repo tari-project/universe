@@ -38,6 +38,8 @@ use crate::{
 pub enum EventType {
     WalletBalanceUpdate,          // ===================
     WalletScanningProgressUpdate, // ===================
+    WalletTransactionsFound,
+    WalletTransactionUpdated,
     BaseNodeUpdate,
     GpuDevicesUpdate,
     CpuPoolsStatsUpdate,

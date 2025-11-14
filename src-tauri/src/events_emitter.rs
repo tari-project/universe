@@ -33,6 +33,7 @@ use crate::mining::pools::PoolStatus;
 use crate::mining::MinerControlsState;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
+use crate::wallet::minotari_wallet_types::MinotariWalletTransaction;
 use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
 use crate::{
     configs::{
@@ -817,6 +818,32 @@ impl EventsEmitter {
             },
         ) {
             error!(target: LOG_TARGET, "Failed to emit ShuttingDown event: {e:?}");
+        }
+    }
+
+    pub async fn emit_wallet_transactions_found(payload: Vec<MinotariWalletTransaction>) {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::WalletTransactionsFound,
+                payload,
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit WalletTransactionsFound event: {e:?}");
+        }
+    }
+
+    pub async fn emit_wallet_transaction_updated(payload: MinotariWalletTransaction) {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::WalletTransactionUpdated,
+                payload,
+            },
+        ) {
+            error!(target: LOG_TARGET, "Failed to emit WalletTransactionUpdated event: {e:?}");
         }
     }
 }

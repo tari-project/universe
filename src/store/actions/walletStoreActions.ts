@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
+import { MinotariWalletTransaction, TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { CombinedBridgeWalletTransaction, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
@@ -36,20 +36,20 @@ const filterToBitflag = (filter: TxHistoryFilter): number => {
     }
 };
 
-export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'all-activity' }: TxArgs) => {
-    const bitflag = filterToBitflag(filter);
-    try {
-        const transactions = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
-        if (filter === 'rewards') {
-            setCoinbaseTransactions({ newTxs: transactions, offset });
-        }
+// export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'all-activity' }: TxArgs) => {
+//     const bitflag = filterToBitflag(filter);
+//     try {
+//         const transactions = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
+//         if (filter === 'rewards') {
+//             setCoinbaseTransactions({ newTxs: transactions, offset });
+//         }
 
-        return transactions;
-    } catch (error) {
-        console.error(`Could not get transaction history for rewards: `, error);
-        return [] as TransactionInfo[];
-    }
-};
+//         return transactions;
+//     } catch (error) {
+//         console.error(`Could not get transaction history for rewards: `, error);
+//         return [] as TransactionInfo[];
+//     }
+// };
 
 export const setCoinbaseTransactions = ({ newTxs, offset = 0 }: { newTxs: TransactionInfo[]; offset?: number }) => {
     const currentTxs = useWalletStore.getState().coinbase_transactions;
@@ -181,4 +181,30 @@ export const handleSeedBackedUp = (is_seed_backed_up: boolean) => {
         ...c,
         is_seed_backed_up,
     }));
+};
+
+export const handleMinotariWalletTransactionsFound = (payload: MinotariWalletTransaction[]) => {
+    const currentTransactions = useWalletStore.getState().minotari_wallet_transactions;
+    const mergedTransactions = [...currentTransactions];
+    mergedTransactions.concat(payload);
+    useWalletStore.setState((c) => ({
+        ...c,
+        minotari_wallet_transactions: mergedTransactions,
+    }));
+};
+
+export const handleMinotariWalletTransactionUpdated = (payload: MinotariWalletTransaction) => {
+    const currentTransactions = useWalletStore.getState().minotari_wallet_transactions;
+    const transactionIndex = currentTransactions.findIndex((tx) => tx.id === payload.id);
+
+    let transactionToUpdate = currentTransactions.find((tx) => tx.id === payload.id);
+    if (transactionToUpdate) {
+        transactionToUpdate = payload;
+        const updatedTransactions = [...currentTransactions];
+        updatedTransactions[transactionIndex] = transactionToUpdate;
+        useWalletStore.setState((c) => ({
+            ...c,
+            minotari_wallet_transactions: updatedTransactions,
+        }));
+    }
 };

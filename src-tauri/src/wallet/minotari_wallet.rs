@@ -35,7 +35,7 @@ use minotari_wallet::{
 use sqlx::{Sqlite, pool::PoolConnection};
 use std::{path::PathBuf, sync::{LazyLock, atomic::AtomicBool}};
 use tari_common::configuration::Network;
-use tari_transaction_components::MicroMinotari;
+use tari_transaction_components::{MicroMinotari, transaction_components::WalletOutput};
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet_manager";
@@ -187,11 +187,12 @@ impl MinotariWalletManager {
                     get_output_details_for_balance_change_by_id(conn, output_id).await 
                 {
                     if let (Some(status), Some(wallet_output_json_str)) = (status, wallet_output_json) {
-                        if let Ok(wallet_output) = serde_json::from_str(&wallet_output_json_str) {
+                        if let Ok(wallet_output) = serde_json::from_str::<WalletOutput>(&wallet_output_json_str) {
                             received_output_details = Some(MinotariWalletOutputDetails {
                                 confirmed_height,
                                 status,
-                                wallet_output_json: wallet_output,
+                                output_type: wallet_output.features().output_type,
+                                coinbase_extra: wallet_output.features().coinbase_extra.to_string(),
                             });
                         }
                     }
@@ -208,11 +209,12 @@ impl MinotariWalletManager {
                         get_output_details_for_balance_change_by_id(conn, output_id).await 
                     {
                         if let (Some(status), Some(wallet_output_json_str)) = (status, wallet_output_json) {
-                            if let Ok(wallet_output) = serde_json::from_str(&wallet_output_json_str) {
+                            if let Ok(wallet_output) = serde_json::from_str::<WalletOutput>(&wallet_output_json_str) {
                                 spent_output_details = Some(MinotariWalletOutputDetails {
                                     confirmed_height,
                                     status,
-                                    wallet_output_json: wallet_output,
+                                    output_type: wallet_output.features().output_type,
+                                    coinbase_extra: wallet_output.features().coinbase_extra.to_string(),
                                 });
                             }
                         }
@@ -247,17 +249,27 @@ impl MinotariWalletManager {
                 // Add to existing transaction
                 if let Some(transaction) = transactions_lock.last_mut() {
                     transaction.operations.push(details);
+                    transaction.credit_balance += balance_change.balance_credit;
+                    transaction.debit_balance += balance_change.balance_debit;
+                    transaction.transaction_balance += balance_change.balance_credit - balance_change.balance_debit;
+                    transaction.is_negative = transaction.debit_balance > transaction.credit_balance;
+                    EventsEmitter::emit_wallet_transaction_updated(transaction.clone()).await;
                 }
             } else {
                                                 info!(target: LOG_TARGET, "Heeeere2");
                 // First transaction
                 let new_transaction = MinotariWalletTransaction {
+                    id: uuid::Uuid::new_v4().to_string(),
                     account_id: balance_change.account_id,
                     operations: vec![details],
                     mined_height: balance_change.effective_height,
                     effective_date: balance_change.effective_date,
+                    transaction_balance: balance_change.balance_credit + balance_change.balance_debit, // One of theses fields will be zero at the initialization
+                    credit_balance: balance_change.balance_credit,
+                    debit_balance: balance_change.balance_debit,
+                    is_negative: balance_change.balance_debit > balance_change.balance_credit,
                 };
-                transactions_lock.push(new_transaction);
+                transactions_lock.push(new_transaction.clone());
                 
                 info!(
                     target: LOG_TARGET,
@@ -268,17 +280,23 @@ impl MinotariWalletManager {
                     balance_change.balance_debit,
                     balance_change.description
                 );
+                EventsEmitter::emit_wallet_transactions_found(vec![new_transaction]).await;
             }
             }else {
                                 info!(target: LOG_TARGET, "Heeeere2");
                 // First transaction
                 let new_transaction = MinotariWalletTransaction {
+                    id: uuid::Uuid::new_v4().to_string(),
                     account_id: balance_change.account_id,
                     operations: vec![details],
                     mined_height: balance_change.effective_height,
                     effective_date: balance_change.effective_date,
+                    transaction_balance: balance_change.balance_credit + balance_change.balance_debit,
+                    credit_balance: balance_change.balance_credit,
+                    debit_balance: balance_change.balance_debit,
+                    is_negative: balance_change.balance_debit > balance_change.balance_credit,
                 };
-                transactions_lock.push(new_transaction);
+                transactions_lock.push(new_transaction.clone());
                 
                 info!(
                     target: LOG_TARGET,
@@ -289,6 +307,7 @@ impl MinotariWalletManager {
                     balance_change.balance_debit,
                     balance_change.description
                 );
+                    EventsEmitter::emit_wallet_transactions_found(vec![new_transaction]).await;
             }
 
             info!(

@@ -23,29 +23,20 @@
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec};
 use crate::process_adapter_utils::setup_working_directory;
-use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::wallet::transaction_service::TransactionService;
-use crate::wallet::wallet_status_monitor::{WalletStatusMonitor, WalletStatusMonitorError};
-use crate::wallet::wallet_types::{
-    ConnectivityStatus, TransactionInfo, TransactionStatus, WalletBalance, WalletState,
-};
+use crate::wallet::wallet_status_monitor::WalletStatusMonitor;
+use crate::wallet::wallet_types::WalletState;
 use anyhow::Error;
 use log::{info, warn};
-use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
-use minotari_node_grpc_client::grpc::{GetAllCompletedTransactionsRequest, GetBalanceRequest};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_shutdown::Shutdown;
-use tari_transaction_components::tari_amount::MicroMinotari;
-use tari_transaction_components::transaction_components::memo_field::MemoField;
 use tokio::sync::watch;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
@@ -104,82 +95,6 @@ impl WalletAdapter {
 
     pub fn connect_with_local_node(&mut self, connect_with_local_node: bool) {
         self.connect_with_local_node = connect_with_local_node;
-    }
-
-    pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {
-        let mut client = WalletClient::connect(self.wallet_grpc_address())
-            .await
-            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-        let res = client
-            .get_balance(GetBalanceRequest { payment_id: None })
-            .await?;
-        let balance = res.into_inner();
-
-        Ok(WalletBalance::from_response(balance))
-    }
-
-    pub async fn get_transactions(
-        &self,
-        offset: Option<u32>,
-        limit: Option<u32>,
-        status: Option<u32>,
-        current_block_height: u64,
-    ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
-        let mut client = WalletClient::connect(self.wallet_grpc_address())
-            .await
-            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-        // TODO: This needs to be upgraded to the streaming API https://github.com/tari-project/tari/pull/7366/
-        #[allow(deprecated)]
-        let res = client
-            .get_all_completed_transactions(GetAllCompletedTransactionsRequest {
-                offset: u64::from(offset.unwrap_or(0)),
-                limit: u64::from(limit.unwrap_or(0)),
-                status_bitflag: u64::from(status.unwrap_or(0)),
-            })
-            .await
-            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-
-        let transactions = res
-            .into_inner()
-            .transactions
-            .into_iter()
-            .map(|tx| {
-                let confirmations = if current_block_height > 0
-                    && tx.mined_in_block_height <= current_block_height
-                {
-                    current_block_height - tx.mined_in_block_height
-                } else {
-                    0
-                };
-                let payment_reference = if confirmations >= 5 {
-                    match tx.direction {
-                        1 => tx.payment_references_received.last().map(hex::encode),
-                        2 => tx.payment_references_sent.last().map(hex::encode),
-                        _ => None,
-                    }
-                } else {
-                    None
-                };
-
-                Ok(TransactionInfo {
-                    tx_id: tx.tx_id.to_string(),
-                    source_address: TariAddress::from_bytes(&tx.source_address)?.to_base58(),
-                    dest_address: TariAddress::from_bytes(&tx.dest_address)?.to_base58(),
-                    status: TransactionStatus::from(tx.status),
-                    amount: MicroMinotari(tx.amount),
-                    is_cancelled: tx.is_cancelled,
-                    direction: tx.direction,
-                    excess_sig: tx.excess_sig,
-                    fee: tx.fee,
-                    timestamp: tx.timestamp,
-                    payment_id: MemoField::stringify_bytes(&tx.user_payment_id),
-                    mined_in_block_height: tx.mined_in_block_height,
-                    payment_reference,
-                })
-            })
-            .collect::<Result<Vec<_>, TariAddressError>>()?;
-
-        Ok(transactions)
     }
 
     pub async fn send_one_sided_to_stealth_address(

@@ -556,32 +556,6 @@ pub async fn get_airdrop_tokens(
 }
 
 #[tauri::command]
-pub async fn get_transactions(
-    state: tauri::State<'_, UniverseAppState>,
-    offset: Option<u32>,
-    limit: Option<u32>,
-    status_bitflag: Option<u32>,
-) -> Result<Vec<TransactionInfo>, String> {
-    let timer = Instant::now();
-    let transactions = state
-        .wallet_manager
-        .get_transactions(offset, limit, status_bitflag)
-        .await
-        .unwrap_or_else(|e| {
-            if !matches!(e, WalletManagerError::WalletNotStarted) {
-                warn!(target: LOG_TARGET, "Error getting transactions: {e}");
-            }
-            vec![]
-        });
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_transactions took too long: {:?}", timer.elapsed());
-    }
-
-    Ok(transactions)
-}
-
-#[tauri::command]
 pub async fn forgot_pin(
     seed_words: Vec<String>,
     app_handle: tauri::AppHandle,
@@ -1589,10 +1563,10 @@ pub async fn send_one_sided_to_stealth_address(
         .await
         .map_err(|e| e.to_string())?;
 
-    let balance = state.wallet_manager.get_balance().await;
-    if let Ok(balance) = balance {
-        EventsEmitter::emit_wallet_balance_update(balance).await;
-    }
+    // let balance = state.wallet_manager.get_balance().await;
+    // if let Ok(balance) = balance {
+    //     EventsEmitter::emit_wallet_balance_update(balance).await;
+    // }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
