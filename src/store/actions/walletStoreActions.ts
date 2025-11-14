@@ -185,8 +185,14 @@ export const handleSeedBackedUp = (is_seed_backed_up: boolean) => {
 
 export const handleMinotariWalletTransactionsFound = (payload: MinotariWalletTransaction[]) => {
     const currentTransactions = useWalletStore.getState().minotari_wallet_transactions;
-    const mergedTransactions = [...currentTransactions];
-    mergedTransactions.concat(payload);
+    console.log('Current Minotari Wallet Transactions:', currentTransactions);
+    console.log('New Minotari Wallet Transactions Payload:', payload);
+    const copiedCurrentTransactions = [...currentTransactions];
+    const filteredIncomingTransactions = payload.filter((newTx) => {
+        return !copiedCurrentTransactions.some((existingTx) => existingTx.id === newTx.id);
+    });
+    const mergedTransactions = copiedCurrentTransactions.concat(filteredIncomingTransactions);
+    console.log('Merged Minotari Wallet Transactions:', mergedTransactions);
     useWalletStore.setState((c) => ({
         ...c,
         minotari_wallet_transactions: mergedTransactions,

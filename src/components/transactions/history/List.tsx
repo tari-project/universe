@@ -12,6 +12,7 @@ import { PlaceholderItem } from './ListItem.styles.ts';
 import { EmptyText, ListItemWrapper, ListWrapper } from './List.styles.ts';
 import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { MinotariHistoryListItem } from './minotariWallet/MinotariHistoryItem.tsx';
 
 interface ListProps {
     setIsScrolled: (isScrolled: boolean) => void;
@@ -22,10 +23,14 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const walletImporting = useWalletStore((s) => s.is_wallet_importing);
-    const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
+    // const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
+    const minotariWalletTransactions = useWalletStore((s) => s.minotari_wallet_transactions);
+
+    // console.log('Minotari Wallet Transactions:', minotariWalletTransactions);
 
     // TODO clean up
-    const walletLoading = walletImporting || !walletScanning?.is_initial_scan_finished || isFetching;
+    // const walletLoading = walletImporting || !walletScanning?.is_initial_scan_finished || isFetching;
+    const walletLoading = walletImporting || !walletScanning?.is_initial_scan_finished;
 
     useEffect(() => {
         const el = targetRef?.current;
@@ -35,11 +40,11 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
         return () => el.removeEventListener('scroll', onScroll);
     }, [targetRef, setIsScrolled]);
 
-    const { ref } = useInView({
-        initialInView: false,
-        onChange: () => hasNextPage && !isFetching && fetchNextPage({ cancelRefetch: false }),
-    });
-    const transactions = data?.pages.flatMap((page) => page) || [];
+    // const { ref } = useInView({
+    //     initialInView: false,
+    //     onChange: () => hasNextPage && !isFetching && fetchNextPage({ cancelRefetch: false }),
+    // });
+    // const transactions = data?.pages.flatMap((page) => page) || [];
 
     const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
         if (!transaction || !transaction.walletTransactionDetails) {
@@ -60,43 +65,44 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     }, []);
 
     // Calculate how many placeholder items we need to add
-    const transactionsCount = transactions?.length || 0;
+    const transactionsCount = minotariWalletTransactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
     const listMarkup = (
         <ListItemWrapper>
-            {transactions?.map((tx, i) => {
-                const txId = tx.walletTransactionDetails?.txId || tx.paymentId;
-                const hash = tx.bridgeTransactionDetails?.transactionHash;
-                const hasNoId = !txId && !hash?.length;
-
-                const itemKey = `ListItem_${txId}-${hash}-${hasNoId ? i : ''}`;
-                return (
-                    <HistoryListItem
-                        key={itemKey}
-                        item={tx}
-                        index={i}
-                        itemIsNew={false}
-                        setDetailsItem={handleDetailsChange}
-                    />
-                );
+            {minotariWalletTransactions?.map((tx, i) => {
+                // const txId = tx.walletTransactionDetails?.txId || tx.paymentId;
+                // const hash = tx.bridgeTransactionDetails?.transactionHash;
+                // const hasNoId = !txId && !hash?.length;
+                // const itemKey = `ListItem_${txId}-${hash}-${hasNoId ? i : ''}`;
+                // return (
+                //     <HistoryListItem
+                //         key={itemKey}
+                //         item={tx}
+                //         index={i}
+                //         itemIsNew={false}
+                //         setDetailsItem={handleDetailsChange}
+                //     />
+                // );
+                return <MinotariHistoryListItem transaction={tx} key={tx.id} index={i} itemIsNew={false} />;
             })}
 
             {/* fill the list with placeholders if there are less than 4 entries */}
             {Array.from({ length: placeholdersNeeded }).map((_, index) => (
                 <PlaceholderItem key={`placeholder-${index}`} />
             ))}
-            {isFetchingNextPage || isFetching ? <LoadingDots /> : null}
+            {/* {isFetchingNextPage || isFetching ? <LoadingDots /> : null} */}
         </ListItemWrapper>
     );
 
-    const isEmpty = !walletLoading && !transactions?.length;
+    // const isEmpty = !walletLoading && !transactions?.length;
+    const isEmpty = !minotariWalletTransactions?.length;
     const emptyMarkup = isEmpty ? <EmptyText>{t('empty-tx')}</EmptyText> : null;
     return (
         <ListWrapper>
             {emptyMarkup}
             {listMarkup}
             {/*added placeholder so the scroll can trigger fetch*/}
-            {walletScanning?.is_initial_scan_finished ? <PlaceholderItem ref={ref} $isLast /> : null}
+            {walletScanning?.is_initial_scan_finished ? <PlaceholderItem $isLast /> : null}
         </ListWrapper>
     );
 }

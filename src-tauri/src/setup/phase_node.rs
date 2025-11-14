@@ -34,6 +34,7 @@ use crate::{
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
+    wallet::minotari_wallet::MinotariWalletManager,
     UniverseAppState,
 };
 use anyhow::Error;
@@ -289,7 +290,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     tokio::select! {
                 _ = node_status_watch_rx.changed() => {
                     let node_status = *node_status_watch_rx.borrow();
-                    let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
+                    let initial_sync_finished = MinotariWalletManager::is_initial_scan_completed().await;
                     let node_synced = node_status.is_synced;
 
                     if node_status.block_height > latest_updated_block_height && initial_sync_finished && node_synced {

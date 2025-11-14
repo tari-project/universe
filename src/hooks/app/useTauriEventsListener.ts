@@ -269,9 +269,11 @@ const useTauriEventsListener = () => {
                             setIsShuttingDown(true);
                             break;
                         case 'WalletTransactionUpdated':
+                            console.log('WalletTransactionUpdated updated', event.payload);
                             handleMinotariWalletTransactionUpdated(event.payload);
                             break;
                         case 'WalletTransactionsFound':
+                            console.log('WalletTransactionsFound found', event.payload);
                             handleMinotariWalletTransactionsFound(event.payload);
                             break;
                         default:

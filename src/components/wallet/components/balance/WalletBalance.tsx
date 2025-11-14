@@ -52,7 +52,7 @@ export const WalletBalance = () => {
     const isScanning = !scanData.is_initial_scan_finished;
     const scanProgress = Math.floor(scanData.progress * 10) / 10;
 
-    const balance = removeXTMCryptoDecimals(roundToTwoDecimals((isScanning ? cached : total) || 0));
+    const balance = removeXTMCryptoDecimals(roundToTwoDecimals(total || 0));
     const balanceMismatch = removeXTMCryptoDecimals(roundToTwoDecimals(available || 0)) != balance;
 
     const displayText = hideBalance ? '*******' : formatNumber(available || 0, FormatPreset.XTM_LONG);

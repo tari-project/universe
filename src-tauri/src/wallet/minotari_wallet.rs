@@ -67,6 +67,11 @@ impl MinotariWalletManager {
         }
     }
 
+    pub async fn is_initial_scan_completed() -> bool {
+        INSTANCE.was_blockchain_scanned_to_current_height
+            .load(std::sync::atomic::Ordering::SeqCst)
+    }
+
     fn get_cached_transactions_path() -> Result<PathBuf, anyhow::Error> {
         let cache_directory_path =
             dirs::cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
@@ -348,9 +353,13 @@ impl MinotariWalletManager {
             }
         }
 
+        EventsEmitter::emit_wallet_balance_update(WalletBalance {available_balance: MicroMinotari(*INSTANCE.wallet_balance.read().await as u64), timelocked_balance: 0.into(), pending_incoming_balance: 0.into(), pending_outgoing_balance: 0.into()}).await;
         // ============== |Load Cached Transactions| ==============
         INSTANCE.load_transactions_from_cache().await?;
-
+        EventsEmitter::emit_wallet_transactions_found(
+            INSTANCE.transactions.read().await.clone(),
+        ).await;
+        
         INSTANCE.database_connection.write().await.replace(conn);
 
         Ok(())
