@@ -57,8 +57,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const isWalletModuleFailed = walletModule?.status === AppModuleStatus.Failed;
 
     const isConnectedToTariNetwork = useNodeStore((s) => s.isNodeConnected);
-    const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
-    const walletIsLoading = useWalletStore((s) => s.isLoading);
+    const isInitialWalletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_finished);
 
     const targetRef = useRef<HTMLDivElement>(null) as RefObject<HTMLDivElement>;
     const [isScrolled, setIsScrolled] = useState(false);
@@ -75,7 +74,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
         return () => el.removeEventListener('scroll', onScroll);
     }, []);
 
-    const isSyncing = !isConnectedToTariNetwork || isWalletScanning;
+    const isSyncing = !isConnectedToTariNetwork || isInitialWalletScanning;
     const isSwapping = useWalletStore((s) => s.is_swapping);
     const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
 
@@ -162,7 +161,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
         );
     }
 
-    const standardWalletLoading = isStandardWalletUI && (isSyncing || walletIsLoading);
+    const standardWalletLoading = isStandardWalletUI && isSyncing;
     return (
         <>
             <AnimatePresence mode="wait">
@@ -175,8 +174,9 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     </SwapsWrapper>
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
-                        <Wrapper $listHidden={!isStandardWalletUI || isSyncing || walletIsLoading}>
-                            {standardWalletLoading ? <SyncLoading>{syncMarkup}</SyncLoading> : walletMarkup}
+                        <Wrapper $listHidden={!isStandardWalletUI || isSyncing}>
+                            {/* {standardWalletLoading ? <SyncLoading>{syncMarkup}</SyncLoading> : walletMarkup} */}
+                            {walletMarkup}
                             <BuyTariButton onClick={() => setIsSwapping(true)}>
                                 <span>{`${t('swap.buy-tari')} (XTM)`}</span>
                             </BuyTariButton>

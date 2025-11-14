@@ -138,12 +138,13 @@ export async function processNewBlock(payload: { block_height: number; coinbase_
 export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
     useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: payload }));
     await refreshTransactions();
-    const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;
+    const isWalletScanned = useWalletStore.getState().wallet_scanning?.is_initial_scan_finished;
     if (!isWalletScanned) {
         updateWalletScanningProgress({
             progress: 1,
             scanned_height: payload.block_height,
             total_height: payload.block_height,
+            is_initial_scan_finished: false,
         });
     }
 };

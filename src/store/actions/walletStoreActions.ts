@@ -65,7 +65,7 @@ export const importSeedWords = async (seedWords: string[]) => {
         tx_history: [],
         bridge_transactions: [],
         wallet_scanning: {
-            is_scanning: true,
+            is_initial_scan_finished: false,
             scanned_height: 0,
             total_height: 0,
             progress: 0,

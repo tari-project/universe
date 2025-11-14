@@ -208,68 +208,6 @@ impl WalletAdapter {
             }
         }
     }
-
-    #[allow(dead_code)]
-    pub async fn wait_for_scan_to_height(
-        &self,
-        block_height: u64,
-        timeout: Option<Duration>,
-    ) -> Result<WalletState, WalletStatusMonitorError> {
-        let mut state_receiver = self.state_broadcast.subscribe();
-        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
-        let mut zero_scanned_height_count = 0;
-        loop {
-            tokio::select! {
-                result = state_receiver.changed() => {
-                    if result.is_err() {
-                        return Err(WalletStatusMonitorError::WalletNotStarted);
-                    }
-
-                    let current_state = state_receiver.borrow().clone();
-                    if let Some(state) = current_state {
-                        // Case 1: Scan has reached or exceeded target height
-                        if state.scanned_height >= block_height {
-                            info!(target: LOG_TARGET, "Wallet scan completed up to block height {block_height}");
-                            // EventsEmitter::emit_wallet_status_updated(false, None).await;
-                            return Ok(state);
-                        }
-                        // Case 2: Wallet is at height 0 but is connected - likely means scan finished already
-                        if state.scanned_height == 0 {
-                            if let Some(network) = &state.network {
-                                if matches!(network.status, ConnectivityStatus::Online(3..)) {
-                                    zero_scanned_height_count += 1;
-                                    if zero_scanned_height_count >= 5 {
-                                        warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
-                                        return Ok(state);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                _ = shutdown_signal.wait() => {
-                    log::info!(target: LOG_TARGET, "Shutdown signal received, stopping wait_for_scan_to_height");
-                    return Ok(WalletState::default());
-                }
-                _ = async {
-                    tokio::time::sleep(timeout.unwrap_or(Duration::MAX)).await;
-                } => {
-                    warn!(
-                        target: LOG_TARGET,
-                        "Timeout reached while waiting for wallet scan to complete. Current height: {}/{}",
-                        state_receiver.borrow().as_ref().map(|s| s.scanned_height).unwrap_or(0),
-                        block_height
-                    );
-                    // Return current state if available, otherwise error
-                    return state_receiver
-                        .borrow()
-                        .clone()
-                        .ok_or(WalletStatusMonitorError::WalletNotStarted);
-                }
-            }
-        }
-    }
-
     pub fn wallet_grpc_address(&self) -> String {
         format!("http://127.0.0.1:{}", self.grpc_port)
     }
