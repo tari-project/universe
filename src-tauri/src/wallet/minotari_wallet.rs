@@ -107,13 +107,7 @@ static DEFAULT_ACCOUNT_ID: i64 = 1; // Default account ID for now
 
 // Blockchain scanning constants
 const SCAN_BATCH_SIZE: u64 = 1000;
-const MAX_CONCURRENT_REQUESTS: LazyLock<u64> = LazyLock::new(|| {
-    let network = Network::get_current_or_user_setting_or_default();
-    match network {
-        Network::MainNet => 50,
-        _ => 500,
-    }
-});
+const MAX_CONCURRENT_REQUESTS: u64 = 50;
 
 // Connection health check constants
 const CONNECTION_HEALTH_CHECK_INTERVAL_SECS: u64 = 60;
@@ -510,7 +504,7 @@ impl MinotariWalletManager {
                     last_transaction.debit_balance += balance_change.balance_debit;
                     last_transaction.transaction_balance = last_transaction
                         .credit_balance
-                        .saturating_add(last_transaction.debit_balance);
+                        .saturating_sub(last_transaction.debit_balance);
                     last_transaction.is_negative =
                         last_transaction.debit_balance > last_transaction.credit_balance;
 
@@ -699,7 +693,7 @@ impl MinotariWalletManager {
                 &database_path,
                 None,
                 SCAN_BATCH_SIZE,
-                *MAX_CONCURRENT_REQUESTS,
+                MAX_CONCURRENT_REQUESTS,
             ))
         })
         .await?;

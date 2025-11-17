@@ -22,7 +22,12 @@ export const formatEffectiveDate = (effectiveDate: string): string => {
 };
 
 export const resolveTransactionType = (txType: MinotariWalletTransaction): TransactionType => {
-    const isMined = txType.operations.some((op) => op.spent_output_details?.output_type === OutputType.Coinbase);
+    const isMined = txType.operations.some((op) => {
+        return (
+            op.recieved_output_details?.output_type == OutputType.Coinbase ||
+            op.spent_output_details?.output_type == OutputType.Coinbase
+        );
+    });
     if (isMined) {
         return 'mined';
     }
@@ -34,6 +39,9 @@ export const resolveTransactionType = (txType: MinotariWalletTransaction): Trans
 
 export const resolveTransactionTitle = (transaction: MinotariWalletTransaction): string => {
     const itemType = resolveTransactionType(transaction);
+
+    console.info('Resolved transaction type:', itemType);
+    console.info('Transaction details:', transaction);
 
     // Check for memo in any of the operations
     const txMessage = transaction.operations.find((op) => op.memo_parsed)?.memo_parsed;

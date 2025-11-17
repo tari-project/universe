@@ -89,7 +89,15 @@ export const WalletBalance = () => {
         </LoadingText>
     );
 
-    const bottomMarkup = !isLoading ? <Typography>{balanceText}</Typography> : loadingMarkup;
+    // const bottomMarkup = !isLoading ? <Typography>{balanceText}</Typography> : loadingMarkup;
+    let bottomMarkup;
+    if (scanData.total_height === 0 && isScanning) {
+        bottomMarkup = <></>;
+    } else if (isLoading) {
+        bottomMarkup = loadingMarkup;
+    } else {
+        bottomMarkup = <Typography>{balanceText}</Typography>;
+    }
 
     const progressMarkup = isLoading && !walletModuleFailed && (
         <ScanProgressWrapper>

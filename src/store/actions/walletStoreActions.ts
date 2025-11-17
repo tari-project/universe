@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { MinotariWalletTransaction, TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
+import { MinotariWalletTransaction, WalletBalance } from '@app/types/app-status.ts';
 import { CombinedBridgeWalletTransaction, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
@@ -25,43 +25,10 @@ export interface TxArgs {
     limit?: number;
 }
 
-const filterToBitflag = (filter: TxHistoryFilter): number => {
-    switch (filter) {
-        case 'transactions':
-            return NON_COINBASE_BITFLAG;
-        case 'rewards':
-            return COINBASE_BITFLAG;
-        default:
-            return COINBASE_BITFLAG | NON_COINBASE_BITFLAG;
-    }
-};
-
-// export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'all-activity' }: TxArgs) => {
-//     const bitflag = filterToBitflag(filter);
-//     try {
-//         const transactions = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
-//         if (filter === 'rewards') {
-//             setCoinbaseTransactions({ newTxs: transactions, offset });
-//         }
-
-//         return transactions;
-//     } catch (error) {
-//         console.error(`Could not get transaction history for rewards: `, error);
-//         return [] as TransactionInfo[];
-//     }
-// };
-
-export const setCoinbaseTransactions = ({ newTxs, offset = 0 }: { newTxs: TransactionInfo[]; offset?: number }) => {
-    const currentTxs = useWalletStore.getState().coinbase_transactions;
-    const coinbase_transactions = offset > 0 ? [...currentTxs, ...newTxs] : newTxs;
-    useWalletStore.setState((c) => ({ ...c, coinbase_transactions: coinbase_transactions }));
-};
-
 export const importSeedWords = async (seedWords: string[]) => {
     useWalletStore.setState((c) => ({
         ...c,
         is_wallet_importing: true,
-        coinbase_transactions: [],
         tx_history: [],
         bridge_transactions: [],
         wallet_scanning: {

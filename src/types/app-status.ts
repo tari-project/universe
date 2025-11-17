@@ -1,4 +1,5 @@
 import { AppModule } from '@app/store/types/setup';
+import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 
 export interface TorConfig {
     control_port: number;
@@ -88,6 +89,10 @@ export interface MinotariWalletTransaction {
     memo_parsed?: string;
     is_negative: boolean;
     operations: MinotariWalletDetails[];
+    bridge_transaction_details?: {
+        status: UserTransactionDTO.status;
+        transactionHash?: string;
+    };
 }
 
 export interface TransactionInfo {

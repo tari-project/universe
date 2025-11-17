@@ -46,7 +46,6 @@ export interface WalletStoreState {
     exchange_wxtm_addresses: Record<string, string>;
     balance?: WalletBalance;
     calculated_balance?: number;
-    coinbase_transactions: TransactionInfo[];
     tx_history_filter: TxHistoryFilter;
     tx_history: TransactionInfo[];
     minotari_wallet_transactions: MinotariWalletTransaction[];
@@ -75,7 +74,6 @@ export const initialState: WalletStoreState = {
     tari_address_base58: '',
     tari_address_emoji: '',
     tari_address_type: TariAddressType.Internal,
-    coinbase_transactions: [],
     exchange_wxtm_addresses: {},
     tx_history_filter: 'all-activity',
     tx_history: [],
@@ -132,8 +130,7 @@ export const updateWalletScanningProgress = (payload: WalletScanningProgressUpda
 // New function to prune transaction arrays when they get too large
 export const pruneTransactionHistory = () => {
     useWalletStore.setState((state) => ({
-        transactions: pruneTransactionArray(state.tx_history, MAX_TRANSACTIONS_IN_MEMORY),
-        coinbase_transactions: pruneTransactionArray(state.coinbase_transactions, MAX_COINBASE_TRANSACTIONS_IN_MEMORY),
+        tx_history: pruneTransactionArray(state.tx_history, MAX_TRANSACTIONS_IN_MEMORY),
     }));
 };
 
