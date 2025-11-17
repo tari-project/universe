@@ -11,9 +11,11 @@ export const WalletWrapper = styled(m.div)`
     flex-direction: column;
     display: flex;
     position: relative;
+    height: 100%;
+    justify-content: flex-end;
 `;
 
-export const Wrapper = styled.div<{ $swapsPanel?: boolean; $listHidden?: boolean }>`
+export const Wrapper = styled.div`
     border-radius: 20px;
     background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
     padding: 10px;
@@ -21,35 +23,11 @@ export const Wrapper = styled.div<{ $swapsPanel?: boolean; $listHidden?: boolean
     position: relative;
     flex-direction: column;
     overflow: hidden;
-    max-height: 100%;
     overflow-y: auto;
     width: 100%;
     gap: 8px;
-    //height: 545px;
-
-    @media (max-height: 815px) {
-        //height: 425px;
-
-        ${({ $swapsPanel, $listHidden }) =>
-            ($swapsPanel || $listHidden) &&
-            css`
-                height: auto;
-            `};
-    }
-    @media (max-height: 690px) {
-        height: 360px;
-        ${({ $swapsPanel, $listHidden }) =>
-            ($swapsPanel || $listHidden) &&
-            css`
-                height: auto;
-            `};
-    }
-
-    ${({ $swapsPanel, $listHidden }) =>
-        ($swapsPanel || $listHidden) &&
-        css`
-            height: auto;
-        `};
+    height: auto;
+    min-height: 100%;
 `;
 
 export const DetailsCard = styled(m.div)<{ $isScrolled: boolean }>`
@@ -66,16 +44,16 @@ export const DetailsCard = styled(m.div)<{ $isScrolled: boolean }>`
     will-change: height;
     height: 170px;
 
-    @media (max-height: 700px) {
-        height: 140px;
+    @media (max-height: 652px) {
+        height: 130px;
+        padding: 10px;
     }
 
     ${({ $isScrolled }) =>
         $isScrolled &&
         css`
             height: 100px;
-
-            @media (max-height: 700px) {
+            @media (max-height: 652px) {
                 height: 100px;
             }
         `}
@@ -107,6 +85,9 @@ export const DetailsCardBottomContent = styled.div`
     display: flex;
     flex-direction: column;
     gap: 8px;
+    @media (max-height: 652px) {
+        gap: 4px;
+    }
 `;
 export const DetailsCardContent = styled.div`
     justify-content: space-between;
