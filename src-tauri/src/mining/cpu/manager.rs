@@ -167,18 +167,9 @@ impl CpuManager {
         EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Initiated).await;
 
         if let Some(app_handle) = &self.app_handle {
-            let base_path = app_handle
-                .path()
-                .app_local_data_dir()
-                .expect("Could not get data dir");
-            let config_path = app_handle
-                .path()
-                .app_config_dir()
-                .expect("Could not get config dir");
-            let log_path = app_handle
-                .path()
-                .app_log_dir()
-                .expect("Could not get log dir");
+            let base_path = app_handle.path().app_local_data_dir()?;
+            let config_path = app_handle.path().app_config_dir()?;
+            let log_path = app_handle.path().app_log_dir()?;
 
             let global_shutdown_signal =
                 TasksTrackers::current().cpu_mining_phase.get_signal().await;
