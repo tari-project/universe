@@ -147,7 +147,7 @@ export const MiningMode = ({
             await selectMiningMode(mode.name);
             setIsOpen(false);
         },
-        [selectedMiningMode]
+        [handleSchedulerMiningModeCallback, selectedMiningMode?.mode_type]
     );
 
     useEffect(() => setIsOpen(open), [open]);
