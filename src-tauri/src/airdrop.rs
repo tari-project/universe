@@ -52,6 +52,7 @@ pub struct AirdropAccessToken {
     pub scope: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AirdropMinedBlockMessage {
@@ -118,6 +119,7 @@ pub async fn get_wallet_view_key_hashed(app: AppHandle) -> String {
     hex::encode(Sha256::digest(view_private_key))
 }
 
+#[allow(dead_code)]
 pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
     TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
         let app_in_config_memory = app.state::<UniverseAppState>().in_memory_config.clone();

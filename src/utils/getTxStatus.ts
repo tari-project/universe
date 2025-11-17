@@ -1,7 +1,7 @@
 import i18n from 'i18next';
 
 import { TransactionDirection, TransactionStatus } from '@app/types/transactions.ts';
-import { TransationType } from '@app/components/transactions/types.ts';
+import { TransactionType } from '@app/components/transactions/types.ts';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 import { CombinedBridgeWalletTransaction } from '@app/store';
 
@@ -35,7 +35,7 @@ const txStates = {
     ],
 };
 
-export function getTxTypeByStatus(transaction: CombinedBridgeWalletTransaction): TransationType {
+export function getTxTypeByStatus(transaction: CombinedBridgeWalletTransaction): TransactionType {
     if (txTypes.mined.includes(transaction.walletTransactionDetails.status)) {
         return 'mined';
     }

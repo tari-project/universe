@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
+import { MinotariWalletTransaction, TransactionInfo, WalletBalance } from '../types/app-status.ts';
 
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
-import { TariAddressType } from '@app/types/events-payloads.ts';
+import { TariAddressType, WalletScanningProgressUpdatePayload } from '@app/types/events-payloads.ts';
 import { useExchangeStore } from './useExchangeStore.ts';
 
 export interface BackendBridgeTransaction extends UserTransactionDTO {
@@ -49,18 +49,19 @@ export interface WalletStoreState {
     coinbase_transactions: TransactionInfo[];
     tx_history_filter: TxHistoryFilter;
     tx_history: TransactionInfo[];
+    minotari_wallet_transactions: MinotariWalletTransaction[];
     // TODO: decide later for the best place to store this data
     bridge_transactions: BackendBridgeTransaction[];
     cold_wallet_address?: string;
     is_wallet_importing: boolean;
-    isLoading: boolean;
     is_swapping?: boolean;
     detailsItem?: CombinedBridgeWalletTransaction | null;
+    minotariDetailsItem?: MinotariWalletTransaction | null;
     wallet_scanning: {
-        is_scanning: boolean;
         scanned_height: number;
         total_height: number;
         progress: number;
+        is_initial_scan_finished: boolean;
     };
     is_pin_locked: boolean;
     is_seed_backed_up: boolean;
@@ -78,15 +79,15 @@ export const initialState: WalletStoreState = {
     exchange_wxtm_addresses: {},
     tx_history_filter: 'all-activity',
     tx_history: [],
+    minotari_wallet_transactions: [],
     bridge_transactions: [],
     cold_wallet_address: undefined,
     is_wallet_importing: false,
-    isLoading: false,
     wallet_scanning: {
-        is_scanning: true,
         scanned_height: 0,
         total_height: 0,
         progress: 0,
+        is_initial_scan_finished: false,
     },
     is_pin_locked: false,
     is_seed_backed_up: false,
@@ -119,16 +120,10 @@ const pruneTransactionArray = <T extends { timestamp?: number; tx_id?: number }>
         .slice(0, maxSize);
 };
 
-export const updateWalletScanningProgress = (payload: {
-    scanned_height: number;
-    total_height: number;
-    progress: number;
-}) => {
-    const is_scanning = payload.scanned_height < payload.total_height;
+export const updateWalletScanningProgress = (payload: WalletScanningProgressUpdatePayload) => {
     useWalletStore.setState((c) => ({
         ...c,
         wallet_scanning: {
-            is_scanning,
             ...payload,
         },
     }));

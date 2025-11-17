@@ -13,12 +13,14 @@ import {
     SetupPhase,
     ShowReleaseNotesPayload,
     TariAddressUpdatePayload,
+    WalletScanningProgressUpdatePayload,
     WalletUIMode,
 } from './events-payloads.ts';
 import {
     BaseNodeStatus,
     CpuMinerStatus,
     GpuMinerStatus,
+    MinotariWalletTransaction,
     NetworkStatus,
     PoolStats,
     SystemDependency,
@@ -136,12 +138,8 @@ export type BackendStateUpdateEvent =
           payload: BackgroundNodeSyncUpdatePayload;
       }
     | {
-          event_type: 'InitWalletScanningProgress';
-          payload: {
-              scanned_height: number;
-              total_height: number;
-              progress: number;
-          };
+          event_type: 'WalletScanningProgressUpdate';
+          payload: WalletScanningProgressUpdatePayload;
       }
     | {
           event_type: 'ConnectionStatus';
@@ -208,13 +206,6 @@ export type BackendStateUpdateEvent =
           payload: Record<GpuMinerType, GpuMiner>;
       }
     | {
-          event_type: 'WalletStatusUpdate';
-          payload: {
-              loading: boolean;
-              unhealthy?: boolean;
-          };
-      }
-    | {
           event_type: 'UpdateCpuMinerControlsState';
           payload: MinerControlsState;
       }
@@ -245,4 +236,12 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ShuttingDown';
           payload: undefined;
+      }
+    | {
+          event_type: 'WalletTransactionsFound';
+          payload: MinotariWalletTransaction[];
+      }
+    | {
+          event_type: 'WalletTransactionUpdated';
+          payload: MinotariWalletTransaction;
       };

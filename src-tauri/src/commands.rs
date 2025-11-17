@@ -57,8 +57,7 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet::wallet_manager::WalletManagerError;
-use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
+use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{airdrop, UniverseAppState};
 
 use base64::prelude::*;
@@ -551,32 +550,6 @@ pub async fn get_airdrop_tokens(
         warn!(target: LOG_TARGET, "get_airdrop_tokens took too long: {:?}", timer.elapsed());
     }
     Ok(airdrop_access_token)
-}
-
-#[tauri::command]
-pub async fn get_transactions(
-    state: tauri::State<'_, UniverseAppState>,
-    offset: Option<u32>,
-    limit: Option<u32>,
-    status_bitflag: Option<u32>,
-) -> Result<Vec<TransactionInfo>, String> {
-    let timer = Instant::now();
-    let transactions = state
-        .wallet_manager
-        .get_transactions(offset, limit, status_bitflag)
-        .await
-        .unwrap_or_else(|e| {
-            if !matches!(e, WalletManagerError::WalletNotStarted) {
-                warn!(target: LOG_TARGET, "Error getting transactions: {e}");
-            }
-            vec![]
-        });
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_transactions took too long: {:?}", timer.elapsed());
-    }
-
-    Ok(transactions)
 }
 
 #[tauri::command]
@@ -1587,10 +1560,10 @@ pub async fn send_one_sided_to_stealth_address(
         .await
         .map_err(|e| e.to_string())?;
 
-    let balance = state.wallet_manager.get_balance().await;
-    if let Ok(balance) = balance {
-        EventsEmitter::emit_wallet_balance_update(balance).await;
-    }
+    // let balance = state.wallet_manager.get_balance().await;
+    // if let Ok(balance) = balance {
+    //     EventsEmitter::emit_wallet_balance_update(balance).await;
+    // }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
@@ -1991,9 +1964,9 @@ pub async fn refresh_wallet_history(
         .map_err(|e| e.to_string())?;
 
     // Trigger it manually to immediately update the UI
-    let node_status_watch_rx = state.node_status_watch_rx.clone();
-    let node_status = *node_status_watch_rx.borrow();
-    EventsEmitter::emit_init_wallet_scanning_progress(0, node_status.block_height, 0.0).await;
+    // let node_status_watch_rx = state.node_status_watch_rx.clone();
+    // let node_status = *node_status_watch_rx.borrow();
+    // EventsEmitter::emit_wallet_scanning_progress_update(0, node_status.block_height, 0.0).await;
 
     SetupManager::get_instance()
         .resume_phases(vec![SetupPhase::Wallet])

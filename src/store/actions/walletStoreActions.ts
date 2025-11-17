@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
+import { MinotariWalletTransaction, TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { CombinedBridgeWalletTransaction, useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
@@ -36,20 +36,20 @@ const filterToBitflag = (filter: TxHistoryFilter): number => {
     }
 };
 
-export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'all-activity' }: TxArgs) => {
-    const bitflag = filterToBitflag(filter);
-    try {
-        const transactions = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
-        if (filter === 'rewards') {
-            setCoinbaseTransactions({ newTxs: transactions, offset });
-        }
+// export const fetchTransactionsHistory = async ({ offset = 0, limit, filter = 'all-activity' }: TxArgs) => {
+//     const bitflag = filterToBitflag(filter);
+//     try {
+//         const transactions = await invoke('get_transactions', { offset, limit, statusBitflag: bitflag });
+//         if (filter === 'rewards') {
+//             setCoinbaseTransactions({ newTxs: transactions, offset });
+//         }
 
-        return transactions;
-    } catch (error) {
-        console.error(`Could not get transaction history for rewards: `, error);
-        return [] as TransactionInfo[];
-    }
-};
+//         return transactions;
+//     } catch (error) {
+//         console.error(`Could not get transaction history for rewards: `, error);
+//         return [] as TransactionInfo[];
+//     }
+// };
 
 export const setCoinbaseTransactions = ({ newTxs, offset = 0 }: { newTxs: TransactionInfo[]; offset?: number }) => {
     const currentTxs = useWalletStore.getState().coinbase_transactions;
@@ -65,7 +65,7 @@ export const importSeedWords = async (seedWords: string[]) => {
         tx_history: [],
         bridge_transactions: [],
         wallet_scanning: {
-            is_scanning: true,
+            is_initial_scan_finished: false,
             scanned_height: 0,
             total_height: 0,
             progress: 0,
@@ -146,6 +146,9 @@ export const setTxHistoryFilter = (filter: TxHistoryFilter) => {
 export const setDetailsItem = (detailsItem: CombinedBridgeWalletTransaction | null) =>
     useWalletStore.setState((c) => ({ ...c, detailsItem }));
 
+export const setMinotariDetailsItem = (minotariDetailsItem: MinotariWalletTransaction | null) =>
+    useWalletStore.setState((c) => ({ ...c, minotariDetailsItem }));
+
 export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayload) => {
     const { tari_address_base58, tari_address_emoji, tari_address_type } = payload;
     useWalletStore.setState((c) => ({
@@ -181,4 +184,36 @@ export const handleSeedBackedUp = (is_seed_backed_up: boolean) => {
         ...c,
         is_seed_backed_up,
     }));
+};
+
+export const handleMinotariWalletTransactionsFound = (payload: MinotariWalletTransaction[]) => {
+    const currentTransactions = useWalletStore.getState().minotari_wallet_transactions;
+    console.log('Current Minotari Wallet Transactions:', currentTransactions);
+    console.log('New Minotari Wallet Transactions Payload:', payload);
+    const copiedCurrentTransactions = [...currentTransactions];
+    const filteredIncomingTransactions = payload.filter((newTx) => {
+        return !copiedCurrentTransactions.some((existingTx) => existingTx.id === newTx.id);
+    });
+    const mergedTransactions = filteredIncomingTransactions.concat(copiedCurrentTransactions);
+    console.log('Merged Minotari Wallet Transactions:', mergedTransactions);
+    useWalletStore.setState((c) => ({
+        ...c,
+        minotari_wallet_transactions: mergedTransactions,
+    }));
+};
+
+export const handleMinotariWalletTransactionUpdated = (payload: MinotariWalletTransaction) => {
+    const currentTransactions = useWalletStore.getState().minotari_wallet_transactions;
+    const transactionIndex = currentTransactions.findIndex((tx) => tx.id === payload.id);
+
+    let transactionToUpdate = currentTransactions.find((tx) => tx.id === payload.id);
+    if (transactionToUpdate) {
+        transactionToUpdate = payload;
+        const updatedTransactions = [...currentTransactions];
+        updatedTransactions[transactionIndex] = transactionToUpdate;
+        useWalletStore.setState((c) => ({
+            ...c,
+            minotari_wallet_transactions: updatedTransactions,
+        }));
+    }
 };

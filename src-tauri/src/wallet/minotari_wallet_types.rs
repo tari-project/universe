@@ -1,0 +1,41 @@
+use chrono::NaiveDateTime;
+use minotari_wallet::models::OutputStatus;
+use serde::{Deserialize, Serialize};
+use tari_transaction_components::transaction_components::OutputType;
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct MinotariWalletOutputDetails {
+    pub confirmed_height: Option<u64>,
+    pub status: OutputStatus,
+    pub output_type: OutputType,
+    pub coinbase_extra: String,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct MinotariWalletDetails {
+    pub description: String,
+    pub balance_credit: u64,
+    pub balance_debit: u64,
+    pub claimed_recipient_address: String,
+    pub claimed_sender_address: String,
+    pub memo_parsed: Option<String>,
+    pub memo_hex: Option<String>,
+    pub claimed_fee: u64,
+    pub claimed_amount: Option<u64>,
+    pub recieved_output_details: Option<MinotariWalletOutputDetails>,
+    pub spent_output_details: Option<MinotariWalletOutputDetails>,
+}
+
+#[derive(Clone, Deserialize, Serialize)]
+pub struct MinotariWalletTransaction {
+    pub id: String,
+    pub account_id: i64,
+    pub mined_height: u64,
+    pub effective_date: NaiveDateTime,
+    pub debit_balance: u64,
+    pub credit_balance: u64,
+    pub transaction_balance: u64,
+    pub is_negative: bool,
+    pub memo_parsed: Option<String>,
+    pub operations: Vec<MinotariWalletDetails>,
+}

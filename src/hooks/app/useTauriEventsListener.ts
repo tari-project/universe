@@ -63,6 +63,8 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { setCpuPoolStats, setGpuPoolStats } from '@app/store/actions/miningPoolsStoreActions';
 import {
+    handleMinotariWalletTransactionsFound,
+    handleMinotariWalletTransactionUpdated,
     handlePinLocked,
     handleSeedBackedUp,
     handleSelectedTariAddressChange,
@@ -203,7 +205,7 @@ const useTauriEventsListener = () => {
                         case 'BackgroundNodeSyncUpdate':
                             setBackgroundNodeState(event.payload);
                             break;
-                        case 'InitWalletScanningProgress':
+                        case 'WalletScanningProgressUpdate':
                             updateWalletScanningProgress(event.payload);
                             break;
                         case 'ConnectionStatus':
@@ -242,9 +244,6 @@ const useTauriEventsListener = () => {
                         case 'SeedBackedUp':
                             handleSeedBackedUp(event.payload);
                             break;
-                        case 'WalletStatusUpdate':
-                            setIsWalletLoading(event.payload?.loading);
-                            break;
                         case 'UpdateCpuMinerControlsState':
                             handleCpuMinerControlsStateChanged(event.payload);
                             break;
@@ -268,6 +267,14 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShuttingDown':
                             setIsShuttingDown(true);
+                            break;
+                        case 'WalletTransactionUpdated':
+                            console.log('WalletTransactionUpdated updated', event.payload);
+                            handleMinotariWalletTransactionUpdated(event.payload);
+                            break;
+                        case 'WalletTransactionsFound':
+                            console.log('WalletTransactionsFound found', event.payload);
+                            handleMinotariWalletTransactionsFound(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

@@ -1,7 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { queryClient } from '@app/App/queryClient.ts';
 import { useConfigBEInMemoryStore, useConfigUIStore, useWalletStore } from '@app/store';
-import { fetchTransactionsHistory } from '@app/store/actions/walletStoreActions';
 import { fetchBridgeTransactionsHistory } from '@app/store/actions/bridgeApiActions.ts';
 import { mergeTransactionLists, shouldRefetchBridgeItems } from './helpers.ts';
 
@@ -11,17 +10,17 @@ async function baseQuery({ pageParam, filter, walletAddress }) {
     const limit = 20;
     const offset = limit * (pageParam as number);
     try {
-        const walletTransactions = await fetchTransactionsHistory({ offset, limit, filter });
-        let bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress);
-        let mergedList = mergeTransactionLists({ walletTransactions, bridgeTransactions });
-        const shouldRefetch = shouldRefetchBridgeItems({ walletTransactions: mergedList, bridgeTransactions });
+        // const walletTransactions = await fetchTransactionsHistory({ offset, limit, filter });
+        // let bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress);
+        // let mergedList = mergeTransactionLists({ walletTransactions, bridgeTransactions });
+        // const shouldRefetch = shouldRefetchBridgeItems({ walletTransactions: mergedList, bridgeTransactions });
 
-        if (shouldRefetch) {
-            bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress);
-            mergedList = mergeTransactionLists({ walletTransactions, bridgeTransactions });
-        }
+        // if (shouldRefetch) {
+        //     bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress);
+        //     mergedList = mergeTransactionLists({ walletTransactions, bridgeTransactions });
+        // }
 
-        return mergedList;
+        return [];
     } catch (error) {
         console.error(error);
         throw error;
