@@ -144,6 +144,7 @@ export const MiningMode = ({
             await selectMiningMode(mode.name);
             handleOpenChange(false);
         },
+
         [handleOpenChange, handleSchedulerMiningModeCallback, selectedMiningMode?.mode_type]
     );
 
