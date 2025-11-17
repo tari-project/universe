@@ -1,37 +1,45 @@
 {
+  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
   "any_moment_now": "Any moment now",
+  "app-modules": {
+    "cpu-mining": "CPU Mining",
+    "gpu-mining": "GPU Mining",
+    "wallet": "Wallet"
+  },
   "awaiting-exchange-selection": "Awaiting user exchange selection",
   "block-sync": "Syncing blocks",
   "calculating_time": "Calculating time remaining...",
   "calculating_time-compact": "Calculating time...",
+  "critical-initialization-failure": "Critical initialization failure",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "Failed to complete step",
   "header-sync": "Syncing headers",
   "local-node-sync": "Tari Universe is still syncing. This won’t affect your mining experience.",
+  "module-initialization-issues": "Some Modules failed to initialize",
   "network-peers": "Connecting to network peers",
   "phase-title": {
     "setup-core": "Setting up the Tari App",
     "setup-core-compact": "Syncing app",
     "setup-hardware": "Setting up the Hardware",
     "setup-hardware-compact": "Setting up hardware",
-    "setup-node": "Setting up the Tari Node",
-    "setup-node-compact": "Syncing node",
     "setup-mining": "Setting up extra utilities",
     "setup-mining-compact": "Setting up utilities",
+    "setup-node": "Setting up the Tari Node",
+    "setup-node-compact": "Syncing node",
     "setup-wallet": "Setting up the Wallet",
     "setup-wallet-compact": "Syncing wallet"
-  },
-  "critical-initialization-failure": "Critical initialization failure",
-  "failed-to-complete-step": "Failed to complete step",
-  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
-  "module-initialization-issues": "Some Modules failed to initialize",
-  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
-  "app-modules": {
-    "cpu-mining": "CPU Mining",
-    "gpu-mining": "GPU Mining",
-    "wallet": "Wallet"
   },
   "remaining": "remaining",
   "second_remaining": "second remaining",
   "seconds_remaining": "seconds remaining",
+  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
   "title": {
     "binaries-cpu-miner": "Preparing CPU Miner Binary",
     "binaries-cpu-miner-download": "Preparing CPU Miner Binary | Downloading: {{ progress }}%",

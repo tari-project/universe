@@ -1,38 +1,46 @@
 {
+  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
   "any_moment_now": "Sắp xong rồi",
+  "app-modules": {
+    "cpu-mining": "CPU Mining",
+    "gpu-mining": "GPU Mining",
+    "wallet": "Wallet"
+  },
   "awaiting-exchange-selection": "Đang chờ bạn chọn sàn giao dịch",
   "block-sync": "Đang đồng bộ block",
   "calculating_time": "Đang tính toán thời gian còn lại...",
   "calculating_time-compact": "Calculating time...",
+  "critical-initialization-failure": "Critical initialization failure",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "Failed to complete step",
   "header-sync": "Đang đồng bộ header",
   "local-node-sync": "Tari Universe vẫn đang đồng bộ. Điều này không ảnh hưởng đến quá trình đào.",
+  "module-initialization-issues": "Some Modules failed to initialize",
   "network-peers": "Đang kết nối với các node mạng",
   "phase-title": {
     "setup-core": "Đang thiết lập ứng dụng Tari",
     "setup-core-compact": "Syncing app",
     "setup-hardware": "Đang thiết lập phần cứng",
     "setup-hardware-compact": "Setting up hardware",
-    "setup-node": "Đang thiết lập node Tari",
-    "setup-node-compact": "Syncing node",
     "setup-mining": "Setting up extra utilities",
     "setup-mining-compact": "Setting up utilities",
+    "setup-node": "Đang thiết lập node Tari",
+    "setup-node-compact": "Syncing node",
     "setup-unknown": "Đang thiết lập tiện ích bổ sung",
     "setup-wallet": "Đang thiết lập ví",
     "setup-wallet-compact": "Syncing wallet"
   },
-  "critical-initialization-failure": "Critical initialization failure",
-  "failed-to-complete-step": "Failed to complete step",
-  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
-  "module-initialization-issues": "Some Modules failed to initialize",
-  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
-  "app-modules": {
-    "cpu-mining": "CPU Mining",
-    "gpu-mining": "GPU Mining",
-    "wallet": "Wallet"
-  },
   "remaining": "còn lại",
   "second_remaining": "giây còn lại",
   "seconds_remaining": "giây còn lại",
+  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
   "title": {
     "binaries-cpu-miner": "Đang chuẩn bị file nhị phân CPU Miner",
     "binaries-cpu-miner-download": "Preparing CPU Miner Binary | Downloading: {{ progress }}%",
