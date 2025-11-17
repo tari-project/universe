@@ -10,10 +10,12 @@ import prettierPluginConfig from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 
 import tsParser from '@typescript-eslint/parser';
+import { defineConfig } from 'eslint/config';
 
-export default [
+export default defineConfig([
     react.configs.flat.recommended,
     react.configs.flat['jsx-runtime'],
+    hooksPlugin.configs.recommended,
     eslint.configs.recommended,
     ...tseslint.configs.recommended,
     ...tseslint.configs.stylistic,
@@ -54,4 +56,4 @@ export default [
         },
     },
     reactCompiler.configs.recommended,
-];
+]);

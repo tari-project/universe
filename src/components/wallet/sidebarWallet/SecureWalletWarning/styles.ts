@@ -31,6 +31,10 @@ export const SecureWalletWarningButton = styled.button`
     &:hover {
         background: rgba(255, 255, 255, 0.08);
     }
+
+    @media (max-height: 652px) {
+        padding: 4px 6px;
+    }
 `;
 
 export const LeftTextGroup = styled.div`

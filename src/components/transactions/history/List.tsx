@@ -1,5 +1,5 @@
 import { useCallback, useEffect, RefObject } from 'react';
-import { useInView } from 'react-intersection-observer';
+import { useOnInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -36,9 +36,10 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
         return () => el.removeEventListener('scroll', onScroll);
     }, [targetRef, setIsScrolled]);
 
-    const { ref } = useInView({
-        initialInView: false,
-        onChange: () => hasNextPage && !isFetching && fetchNextPage({ cancelRefetch: false }),
+    const ref = useOnInView((inView) => {
+        if (inView && hasNextPage && !isFetching) {
+            void fetchNextPage({ cancelRefetch: false });
+        }
     });
     const transactions = data?.pages.flatMap((page) => page) || [];
 
