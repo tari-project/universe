@@ -107,7 +107,13 @@ static DEFAULT_ACCOUNT_ID: i64 = 1; // Default account ID for now
 
 // Blockchain scanning constants
 const SCAN_BATCH_SIZE: u64 = 1000;
-const MAX_CONCURRENT_REQUESTS: u64 = 50;
+const MAX_CONCURRENT_REQUESTS: LazyLock<u64> = LazyLock::new(|| {
+    let network = Network::get_current_or_user_setting_or_default();
+    match network {
+        Network::MainNet => 50,
+        _ => 500,
+    }
+});
 
 // Connection health check constants
 const CONNECTION_HEALTH_CHECK_INTERVAL_SECS: u64 = 60;
@@ -693,7 +699,7 @@ impl MinotariWalletManager {
                 &database_path,
                 None,
                 SCAN_BATCH_SIZE,
-                MAX_CONCURRENT_REQUESTS,
+                *MAX_CONCURRENT_REQUESTS,
             ))
         })
         .await?;
@@ -810,7 +816,6 @@ impl MinotariWalletManager {
         if let Some(app_handle) = &*INSTANCE.app_handle.read().await {
             let app_state = app_handle.state::<UniverseAppState>();
             let node_status_watch_rx = app_state.node_status_watch_rx.clone();
-            let last_node_status = *node_status_watch_rx.borrow();
 
             TasksTrackers::current()
             .wallet_phase
@@ -818,16 +823,16 @@ impl MinotariWalletManager {
             .await
             .spawn(async move {
                 loop {
-                    let last_registered_node_status_height = last_node_status.block_height;
+                    let last_registered_node_status_height = node_status_watch_rx.borrow().block_height;
 
                     tokio::select! {
                         result = scanned_tip_block_receiver.recv() => {
                             match result {
                                 Some(block) => {
-                                    info!(
-                                        target: LOG_TARGET,
-                                        "New scanned tip block: {:?}", block
-                                    );
+                                    // info!(
+                                    //     target: LOG_TARGET,
+                                    //     "New scanned tip block: {:?}", block
+                                    // );
                                     // percentage value of block.height / last_registered_node_status_height
                                     let scanned_percentage = if last_registered_node_status_height > 0 {
                                         (block.height as f64 / last_registered_node_status_height as f64) * 100.0
