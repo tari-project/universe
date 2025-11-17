@@ -7,6 +7,7 @@ interface ListProps {
 export const List = ({ children }: ListProps) => {
     return (
         <OptionsList
+            key="mode_dropdown_list"
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}

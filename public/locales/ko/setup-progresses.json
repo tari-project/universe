@@ -1,37 +1,45 @@
 {
+  "all-modules-failed-description": "모든 모듈이 초기화에 실패했습니다. 현재 상태에서는 앱이 작동할 수 없습니다. 앱을 다시 시작하거나 지원팀에 문의하세요.",
   "any_moment_now": "곧",
+  "app-modules": {
+    "cpu-mining": "CPU 채굴",
+    "gpu-mining": "GPU 채굴",
+    "wallet": "지갑"
+  },
   "awaiting-exchange-selection": "사용자 거래소 선택 대기 중",
   "block-sync": "블록 동기화 중",
   "calculating_time": "남은 시간 계산 중...",
   "calculating_time-compact": "시간 계산 중...",
+  "critical-initialization-failure": "중대한 초기화 실패",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "단계를 완료하지 못했습니다",
   "header-sync": "헤더 동기화 중",
   "local-node-sync": "타리 유니버스가 여전히 동기화 중입니다. 이는 채굴 경험에 영향을 미치지 않습니다.",
+  "module-initialization-issues": "일부 모듈이 초기화에 실패했습니다",
   "network-peers": "네트워크 피어에 연결 중",
   "phase-title": {
     "setup-core": "Tari 앱 설정 중",
     "setup-core-compact": "앱 동기화 중",
     "setup-hardware": "하드웨어 설정 중",
     "setup-hardware-compact": "하드웨어 설정 중",
-    "setup-node": "Tari 노드 설정 중",
-    "setup-node-compact": "노드 동기화 중",
     "setup-mining": "추가 유틸리티 설정 중",
     "setup-mining-compact": "유틸리티 설정 중",
+    "setup-node": "Tari 노드 설정 중",
+    "setup-node-compact": "노드 동기화 중",
     "setup-wallet": "지갑 설정 중",
     "setup-wallet-compact": "지갑 동기화 중"
-  },
-  "critical-initialization-failure": "중대한 초기화 실패",
-  "failed-to-complete-step": "단계를 완료하지 못했습니다",
-  "all-modules-failed-description": "모든 모듈이 초기화에 실패했습니다. 현재 상태에서는 앱이 작동할 수 없습니다. 앱을 다시 시작하거나 지원팀에 문의하세요.",
-  "module-initialization-issues": "일부 모듈이 초기화에 실패했습니다",
-  "some-modules-failed-description": "앱은 계속 작동할 수 있지만 일부 기능은 사용할 수 없습니다. 실패한 모듈을 다시 시작하거나 문제가 지속되면 지원팀에 문의하세요.",
-  "app-modules": {
-    "cpu-mining": "CPU 채굴",
-    "gpu-mining": "GPU 채굴",
-    "wallet": "지갑"
   },
   "remaining": "남음",
   "second_remaining": "남은 초",
   "seconds_remaining": "남은 초",
+  "some-modules-failed-description": "앱은 계속 작동할 수 있지만 일부 기능은 사용할 수 없습니다. 실패한 모듈을 다시 시작하거나 문제가 지속되면 지원팀에 문의하세요.",
   "title": {
     "binaries-cpu-miner": "CPU 채굴기 바이너리 준비 중",
     "binaries-cpu-miner-download": "CPU 채굴기 바이너리 준비 중 | 다운로드 중: {{ progress }}%",

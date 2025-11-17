@@ -156,7 +156,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
         return (
             <AnimatePresence initial={false} mode="wait">
                 <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
-                    <Wrapper $listHidden>{walletMarkup}</Wrapper>
+                    <Wrapper>{walletMarkup}</Wrapper>
                 </WalletWrapper>
             </AnimatePresence>
         );
@@ -168,14 +168,14 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
             <AnimatePresence mode="wait">
                 {isSwapping ? (
                     <SwapsWrapper key="swap" variants={swapTransition} initial="hide" exit="hide" animate="show">
-                        <Wrapper $swapsPanel>
+                        <Wrapper>
                             <Swap />
                             <ExchangesUrls />
                         </Wrapper>
                     </SwapsWrapper>
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
-                        <Wrapper $listHidden={!isStandardWalletUI || isSyncing || walletIsLoading}>
+                        <Wrapper>
                             {standardWalletLoading ? <SyncLoading>{syncMarkup}</SyncLoading> : walletMarkup}
                             <BuyTariButton onClick={() => setIsSwapping(true)}>
                                 <span>{`${t('swap.buy-tari')} (XTM)`}</span>
