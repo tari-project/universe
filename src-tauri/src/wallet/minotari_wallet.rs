@@ -495,26 +495,43 @@ impl MinotariWalletManager {
         let mut wallet_state = INSTANCE.wallet_state.write().await;
 
         // Check if we should append to existing transaction or create new one
-        let transaction_to_emit =
-            if let Some(last_transaction) = wallet_state.transactions.last_mut() {
-                if Self::belongs_to_same_transaction(last_transaction, &balance_change) {
-                    // Add to existing transaction
-                    last_transaction.operations.push(details.clone());
-                    last_transaction.credit_balance += balance_change.balance_credit;
-                    last_transaction.debit_balance += balance_change.balance_debit;
-                    last_transaction.transaction_balance = last_transaction
-                        .credit_balance
-                        .saturating_sub(last_transaction.debit_balance);
-                    last_transaction.is_negative =
-                        last_transaction.debit_balance > last_transaction.credit_balance;
+        let transaction_to_emit = if let Some(last_transaction) =
+            wallet_state.transactions.last_mut()
+        {
+            if Self::belongs_to_same_transaction(last_transaction, &balance_change) {
+                info!(
+                    target: LOG_TARGET,
+                    "Appending to existing transaction at height: {}", balance_change.effective_height
+                );
+                info!(
+                    target: LOG_TARGET,
+                    "Existing Transaction Before Append - Credit: {}, Debit: {}",
+                    last_transaction.credit_balance,
+                    last_transaction.debit_balance,
+                );
+                info!(
+                    target: LOG_TARGET,
+                    "Appending Details - Credit: {}, Debit: {}",
+                    balance_change.balance_credit,
+                    balance_change.balance_debit,
+                );
+                // Add to existing transaction
+                last_transaction.operations.push(details.clone());
+                last_transaction.credit_balance += balance_change.balance_credit;
+                last_transaction.debit_balance += balance_change.balance_debit;
+                last_transaction.transaction_balance = last_transaction
+                    .credit_balance
+                    .abs_diff(last_transaction.debit_balance);
+                last_transaction.is_negative =
+                    last_transaction.debit_balance > last_transaction.credit_balance;
 
-                    Some(last_transaction.clone())
-                } else {
-                    None
-                }
+                Some(last_transaction.clone())
             } else {
                 None
-            };
+            }
+        } else {
+            None
+        };
 
         if let Some(transaction) = transaction_to_emit {
             drop(wallet_state);
