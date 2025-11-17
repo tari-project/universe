@@ -21,99 +21,125 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
-    APPLICATION_FOLDER_ID, UniverseAppState, events_emitter::EventsEmitter, internal_wallet::InternalWallet, tasks_tracker::TasksTrackers, wallet::{minotari_wallet_types::MinotariWalletTransaction, wallet_types::WalletBalance}
+    events_emitter::EventsEmitter,
+    internal_wallet::InternalWallet,
+    tasks_tracker::TasksTrackers,
+    wallet::{minotari_wallet_types::MinotariWalletTransaction, wallet_types::WalletBalance},
+    UniverseAppState, APPLICATION_FOLDER_ID,
 };
 use log::{error, info, warn};
 use minotari_wallet::{
     db::{
-        ACCOUNT_CREATION_CHANNEL, BALANCE_CHANGE_CHANNEL, EVENT_CHANNEL, SCANNED_TIP_BLOCK_CHANNEL, get_input_details_for_balance_change_by_id, get_output_details_for_balance_change_by_id
+        get_all_balance_changes_by_account_id, get_input_details_for_balance_change_by_id,
+        get_output_details_for_balance_change_by_id, ACCOUNT_CREATION_CHANNEL,
+        BALANCE_CHANGE_CHANNEL, SCANNED_TIP_BLOCK_CHANNEL,
     },
     get_balance, init_db,
     models::BalanceChange,
     scan::{init_with_view_key, scan},
 };
-use sqlx::{Sqlite, pool::PoolConnection};
-use std::{path::PathBuf, sync::{LazyLock, atomic::AtomicBool}};
+use sqlx::{Pool, Sqlite};
+use std::{
+    sync::{atomic::AtomicBool, LazyLock},
+    time::{SystemTime, UNIX_EPOCH},
+};
 use tari_common::configuration::Network;
-use tari_transaction_components::{MicroMinotari, transaction_components::WalletOutput};
+use tari_transaction_components::{transaction_components::WalletOutput, MicroMinotari};
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet_manager";
+
+#[derive(Clone)]
+struct WalletState {
+    balance: i64,
+    last_known_good_balance: i64,
+    last_balance_update: u64, // Unix timestamp
+    transactions: Vec<MinotariWalletTransaction>,
+}
+
+impl WalletState {
+    fn new() -> Self {
+        Self {
+            balance: 0,
+            last_known_good_balance: 0,
+            last_balance_update: 0,
+            transactions: Vec::new(),
+        }
+    }
+
+    fn update_balance(&mut self, new_balance: i64) {
+        self.last_known_good_balance = self.balance;
+        self.balance = new_balance;
+        self.last_balance_update = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+    }
+
+    fn rollback_balance(&mut self) {
+        warn!(
+            target: LOG_TARGET,
+            "Rolling back balance from {} to last known good: {}",
+            self.balance,
+            self.last_known_good_balance
+        );
+        self.balance = self.last_known_good_balance;
+    }
+}
+
 static INSTANCE: LazyLock<MinotariWalletManager> = LazyLock::new(MinotariWalletManager::new);
 
-static DEFAULT_GRPC_URL: &str = "https://rpc.tari.com";
+// static DEFAULT_GRPC_URL: &str = "https://rpc.tari.com";
+static DEFAULT_GRPC_URL: LazyLock<String> = LazyLock::new(|| {
+    let network = Network::get_current_or_user_setting_or_default();
+    let http_api_url = match network {
+        Network::MainNet => "https://rpc.tari.com",
+        Network::StageNet => "https://rpc.stagenet.tari.com",
+        Network::NextNet => "https://rpc.nextnet.tari.com",
+        Network::LocalNet => "https://rpc.localnet.tari.com",
+        Network::Igor => "https://rpc.igor.tari.com",
+        Network::Esmeralda => "https://rpc.esmeralda.tari.com",
+    };
+    http_api_url.to_string()
+});
 static DEFAULT_PASSWORD: &str = "test_password";
 static DEFAULT_ACCOUNT_ID: i64 = 1; // Default account ID for now
 
+// Blockchain scanning constants
+const SCAN_BATCH_SIZE: u64 = 1000;
+const MAX_CONCURRENT_REQUESTS: u64 = 50;
+
+// Connection health check constants
+const CONNECTION_HEALTH_CHECK_INTERVAL_SECS: u64 = 60;
+const CONNECTION_RETRY_MAX_ATTEMPTS: usize = 3;
+const CONNECTION_RETRY_DELAY_MS: u64 = 1000;
+
 pub struct MinotariWalletManager {
-    database_connection: RwLock<Option<PoolConnection<Sqlite>>>,
-    was_blockchain_scanned_to_current_height: AtomicBool, // Starts as false, set to true once the blockchain has been scanned so we don't show scanning UI again when block height is updated
-    scanning_initiated: AtomicBool, // To prevent multiple scanning initializations
-    app_handle: RwLock<Option<AppHandle>>, // Required to access node manager
-    // ============== |Data| ==============
-    wallet_balance: RwLock<i64>,
-    transactions: RwLock<Vec<MinotariWalletTransaction>>,
+    database_pool: RwLock<Option<Pool<Sqlite>>>,
+    was_blockchain_scanned_to_current_height: AtomicBool,
+    scanning_initiated: AtomicBool,
+    app_handle: RwLock<Option<AppHandle>>,
+    // ============== |Unified Wallet State| ==============
+    wallet_state: RwLock<WalletState>,
+    owner_tari_address: RwLock<Option<String>>,
 }
 
 impl MinotariWalletManager {
     pub fn new() -> Self {
         Self {
-            database_connection: RwLock::new(None),
+            database_pool: RwLock::new(None),
             was_blockchain_scanned_to_current_height: AtomicBool::new(false),
             scanning_initiated: AtomicBool::new(false),
             app_handle: RwLock::new(None),
-            wallet_balance: RwLock::new(0),
-            transactions: RwLock::new(Vec::new()),
+            wallet_state: RwLock::new(WalletState::new()),
+            owner_tari_address: RwLock::new(None),
         }
     }
 
     pub async fn is_initial_scan_completed() -> bool {
-        INSTANCE.was_blockchain_scanned_to_current_height
+        INSTANCE
+            .was_blockchain_scanned_to_current_height
             .load(std::sync::atomic::Ordering::SeqCst)
-    }
-
-    fn get_cached_transactions_path() -> Result<PathBuf, anyhow::Error> {
-        let cache_directory_path =
-            dirs::cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
-        let cache_directory_path = cache_directory_path
-            .join(APPLICATION_FOLDER_ID)
-            .join("minotari-wallet")
-            .join(
-                Network::get_current_or_user_setting_or_default()
-                    .to_string()
-                    .to_lowercase(),
-            )
-            .join("transactions_cache.json");
-        Ok(cache_directory_path)
-    }
-
-    async fn save_transactions_to_cache(transactions: &Vec<MinotariWalletTransaction>) -> Result<(), anyhow::Error> {
-        let cache_path = Self::get_cached_transactions_path()?;
-        let serialized = serde_json::to_string(transactions)?;
-        tokio::fs::create_dir_all(
-            cache_path
-                .parent()
-                .ok_or_else(|| anyhow::anyhow!("Failed to get parent directory of cache path"))?,
-        )
-        .await?;
-        tokio::fs::write(cache_path, serialized).await?;
-        Ok(())
-    }
-
-    async fn load_transactions_from_cache(&self) -> Result<(), anyhow::Error> {
-        let cache_path = Self::get_cached_transactions_path()?;
-        if tokio::fs::metadata(&cache_path).await.is_ok() {
-            let data = tokio::fs::read_to_string(cache_path).await?;
-            let deserialized: Vec<MinotariWalletTransaction> = serde_json::from_str(&data)?;
-            let mut transactions_lock = self.transactions.write().await;
-            *transactions_lock = deserialized;
-            info!(
-                target: LOG_TARGET,
-                "================ Loaded {} transactions from cache.",
-                transactions_lock.len()
-            );
-        }
-        Ok(())
     }
 
     pub async fn load_app_handle(app_handle: AppHandle) {
@@ -121,246 +147,468 @@ impl MinotariWalletManager {
         *handle_lock = Some(app_handle);
     }
 
+    /// Initialize and cache the owner Tari address
+    async fn init_owner_address() -> Result<(), anyhow::Error> {
+        let address = InternalWallet::tari_address().await.to_base58();
+        let mut owner_address_lock = INSTANCE.owner_tari_address.write().await;
+        *owner_address_lock = Some(address);
+        Ok(())
+    }
+
+    /// Get cached owner address or fetch if not cached
+    async fn get_owner_address() -> String {
+        let owner_address_lock = INSTANCE.owner_tari_address.read().await;
+        if let Some(address) = owner_address_lock.as_ref() {
+            return address.clone();
+        }
+        drop(owner_address_lock);
+
+        // Not cached, initialize it
+        let _unused = Self::init_owner_address().await;
+        INSTANCE
+            .owner_tari_address
+            .read()
+            .await
+            .as_ref()
+            .cloned()
+            .unwrap_or_else(|| {
+                error!(target: LOG_TARGET, "Failed to get owner Tari address");
+                String::new()
+            })
+    }
+
+    /// Acquire database connection with retry logic
+    async fn get_db_connection() -> Result<sqlx::pool::PoolConnection<Sqlite>, anyhow::Error> {
+        let pool_lock = INSTANCE.database_pool.read().await;
+        let pool = pool_lock
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Database pool not initialized"))?;
+
+        for attempt in 1..=CONNECTION_RETRY_MAX_ATTEMPTS {
+            match pool.acquire().await {
+                Ok(conn) => {
+                    log::debug!(target: LOG_TARGET, "Database connection acquired");
+                    return Ok(conn);
+                }
+                Err(e) => {
+                    warn!(
+                        target: LOG_TARGET,
+                        "Failed to acquire database connection (attempt {}/{}): {}",
+                        attempt, CONNECTION_RETRY_MAX_ATTEMPTS, e
+                    );
+                    if attempt < CONNECTION_RETRY_MAX_ATTEMPTS {
+                        tokio::time::sleep(tokio::time::Duration::from_millis(
+                            CONNECTION_RETRY_DELAY_MS,
+                        ))
+                        .await;
+                    } else {
+                        return Err(anyhow::anyhow!(
+                            "Failed to acquire database connection after {} attempts",
+                            CONNECTION_RETRY_MAX_ATTEMPTS
+                        ));
+                    }
+                }
+            }
+        }
+
+        Err(anyhow::anyhow!("Failed to acquire database connection"))
+    }
+
+    /// Periodic database health check
+    async fn start_connection_health_check() {
+        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+
+        TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                let mut interval = tokio::time::interval(
+                    tokio::time::Duration::from_secs(CONNECTION_HEALTH_CHECK_INTERVAL_SECS)
+                );
+                loop {
+                    tokio::select! {
+                        _ = interval.tick() => {
+                            match Self::get_db_connection().await {
+                                Ok(_) => {
+                                    log::debug!(target: LOG_TARGET, "Database connection health check passed");
+                                }
+                                Err(e) => {
+                                    error!(
+                                        target: LOG_TARGET,
+                                        "Database connection health check failed: {}", e
+                                    );
+                                    // Log connection status issue
+                                    warn!(target: LOG_TARGET, "Database connection unhealthy: {}", e);
+                                }
+                            }
+                        }
+                        _ = shutdown_signal.wait() => {
+                            info!(target: LOG_TARGET, "Shutdown signal received. Terminating health check.");
+                            break;
+                        }
+                    }
+                }
+            });
+    }
+
+    /// Helper method to check if a balance change belongs to the same transaction
+    fn belongs_to_same_transaction(
+        transaction: &MinotariWalletTransaction,
+        balance_change: &BalanceChange,
+    ) -> bool {
+        transaction.mined_height == balance_change.effective_height
+            && transaction.effective_date == balance_change.effective_date
+            && transaction.account_id == balance_change.account_id
+    }
+
+    /// Helper method to create and emit a new transaction
+    async fn create_and_emit_new_transaction(
+        balance_change: &BalanceChange,
+        details: crate::wallet::minotari_wallet_types::MinotariWalletDetails,
+        transactions_lock: &mut Vec<MinotariWalletTransaction>,
+    ) {
+        let new_transaction = MinotariWalletTransaction {
+            id: uuid::Uuid::new_v4().to_string(),
+            account_id: balance_change.account_id,
+            operations: vec![details],
+            mined_height: balance_change.effective_height,
+            effective_date: balance_change.effective_date,
+            transaction_balance: balance_change
+                .balance_credit
+                .saturating_add(balance_change.balance_debit),
+            credit_balance: balance_change.balance_credit,
+            debit_balance: balance_change.balance_debit,
+            is_negative: balance_change.balance_debit > balance_change.balance_credit,
+            memo_parsed: balance_change.memo_parsed.clone(),
+        };
+
+        transactions_lock.push(new_transaction.clone());
+
+        info!(
+            target: LOG_TARGET,
+            "💸 New Transaction - Height: {}, Date: {}, Credit: {}, Debit: {}, Description: {}",
+            balance_change.effective_height,
+            balance_change.effective_date,
+            balance_change.balance_credit,
+            balance_change.balance_debit,
+            balance_change.description
+        );
+
+        EventsEmitter::emit_wallet_transactions_found(vec![new_transaction]).await;
+    }
+
     async fn calculate_balance_from_change(
-        balance_change: BalanceChange,
+        current_balance: i64,
+        balance_change: &BalanceChange,
     ) -> Result<i64, anyhow::Error> {
-        
-        let mut current_balance = *INSTANCE.wallet_balance.read().await as u64;
-        current_balance = current_balance
+        let mut new_balance = current_balance as u64;
+        new_balance = new_balance
             .checked_add(balance_change.balance_credit)
             .ok_or_else(|| anyhow::anyhow!("Balance overflow when applying balance change"))?;
-        current_balance = current_balance
+        new_balance = new_balance
             .checked_sub(balance_change.balance_debit)
             .ok_or_else(|| anyhow::anyhow!("Balance underflow when applying balance change"))?;
         #[allow(clippy::cast_possible_wrap)]
-        let current_balance = current_balance as i64;
-        Ok(current_balance)
+        Ok(new_balance as i64)
     }
 
-    async fn process_balance_change(
-        balance_change: BalanceChange,
-    )  {
-        let new_balance = Self::calculate_balance_from_change(balance_change).await;
-        if let Ok(new_balance) = new_balance {
-            let mut wallet_balance_lock = INSTANCE.wallet_balance.write().await;
-            *wallet_balance_lock = new_balance;
-            EventsEmitter::emit_wallet_balance_update(WalletBalance {available_balance: MicroMinotari(new_balance as u64), timelocked_balance: 0.into(), pending_incoming_balance: 0.into(), pending_outgoing_balance: 0.into()}).await;
-        }else {
-            error!(
-                target: LOG_TARGET,
-                "Failed to calculate new wallet balance after balance change: {:?}", new_balance.err()
-            );
+    async fn process_balance_change(balance_change: BalanceChange) {
+        let mut wallet_state = INSTANCE.wallet_state.write().await;
+
+        match Self::calculate_balance_from_change(wallet_state.balance, &balance_change).await {
+            Ok(new_balance) => {
+                wallet_state.update_balance(new_balance);
+
+                let balance_to_emit = new_balance;
+                drop(wallet_state);
+
+                EventsEmitter::emit_wallet_balance_update(WalletBalance {
+                    available_balance: MicroMinotari(balance_to_emit as u64),
+                    timelocked_balance: 0.into(),
+                    pending_incoming_balance: 0.into(),
+                    pending_outgoing_balance: 0.into(),
+                })
+                .await;
+            }
+            Err(e) => {
+                error!(
+                    target: LOG_TARGET,
+                    "Failed to calculate new wallet balance after balance change: {}. Using last known good balance.", e
+                );
+                wallet_state.rollback_balance();
+
+                // Emit last known good balance
+                let balance_to_emit = wallet_state.balance;
+                drop(wallet_state);
+
+                EventsEmitter::emit_wallet_balance_update(WalletBalance {
+                    available_balance: MicroMinotari(balance_to_emit as u64),
+                    timelocked_balance: 0.into(),
+                    pending_incoming_balance: 0.into(),
+                    pending_outgoing_balance: 0.into(),
+                })
+                .await;
+            }
         }
     }
 
-    // Starts with comparing mined_height and effective_date to determine if the records are for the same transaction
-    // Then proccess the details, for input transaction fetch the input details to get output id and then fetch output id for it
-    // for output transaction fetch the output details directly
-    // Finally construct MinotariWalletTransaction and add it to the transactions list and log the details
-    async fn process_wallet_transaction(
-        balance_change: BalanceChange,
-    )  {
-        info!(
-            target: LOG_TARGET,
-            "Processing wallet transaction for balance change: {:?}", balance_change
-        );
-        use crate::wallet::minotari_wallet_types::{MinotariWalletDetails, MinotariWalletOutputDetails};
-        
-        let mut database_lock = INSTANCE.database_connection.write().await;
-        info!(
-            target: LOG_TARGET,
-            "Acquired database connection lock for processing wallet transaction"
-        );
-        let mut transactions_lock = INSTANCE.transactions.write().await;
-        info!(
-            target: LOG_TARGET,
-            "Acquired transactions lock for processing wallet transaction"
-        );
-        if let Some(conn) = database_lock.as_mut() {
-            info!(
-                target: LOG_TARGET,
-                "Database connection available for processing wallet transaction"
-            );
-            
-            // Fetch output and input details
-            let mut received_output_details = None;
-            let mut spent_output_details = None;
-            
-            // If there's an output associated with this balance change (credit)
-            if let Some(output_id) = balance_change.caused_by_output_id {
-                if let Ok((confirmed_height, status, wallet_output_json)) = 
-                    get_output_details_for_balance_change_by_id(conn, output_id).await 
-                {
-                    if let (Some(status), Some(wallet_output_json_str)) = (status, wallet_output_json) {
-                        if let Ok(wallet_output) = serde_json::from_str::<WalletOutput>(&wallet_output_json_str) {
-                            received_output_details = Some(MinotariWalletOutputDetails {
-                                confirmed_height,
-                                status,
-                                output_type: wallet_output.features().output_type,
-                                coinbase_extra: wallet_output.features().coinbase_extra.to_string(),
-                            });
-                        }
-                    }
-                }
-            }
-            // If there's an input associated with this balance change (debit)
-            if let Some(input_id) = balance_change.caused_by_input_id {
-                // First get the output_id from the input
-                if let Ok(Some(output_id)) = 
-                    get_input_details_for_balance_change_by_id(conn, input_id).await 
-                {
-                    // Then fetch the output details for that output_id
-                    if let Ok((confirmed_height, status, wallet_output_json)) = 
-                        get_output_details_for_balance_change_by_id(conn, output_id).await 
+    async fn fetch_balance_change_details(
+        conn: &mut sqlx::pool::PoolConnection<Sqlite>,
+        balance_change: &BalanceChange,
+    ) -> (
+        Option<crate::wallet::minotari_wallet_types::MinotariWalletOutputDetails>,
+        Option<crate::wallet::minotari_wallet_types::MinotariWalletOutputDetails>,
+    ) {
+        use crate::wallet::minotari_wallet_types::MinotariWalletOutputDetails;
+
+        let mut received_output_details: Option<MinotariWalletOutputDetails> = None;
+        let mut spent_output_details: Option<MinotariWalletOutputDetails> = None;
+
+        // If there's an output associated with this balance change (credit)
+        if let Some(output_id) = balance_change.caused_by_output_id {
+            match get_output_details_for_balance_change_by_id(conn, output_id).await {
+                Ok((confirmed_height, status, wallet_output_json)) => {
+                    if let (Some(status), Some(wallet_output_json_str)) =
+                        (status, wallet_output_json)
                     {
-                        if let (Some(status), Some(wallet_output_json_str)) = (status, wallet_output_json) {
-                            if let Ok(wallet_output) = serde_json::from_str::<WalletOutput>(&wallet_output_json_str) {
-                                spent_output_details = Some(MinotariWalletOutputDetails {
+                        match serde_json::from_str::<WalletOutput>(&wallet_output_json_str) {
+                            Ok(wallet_output) => {
+                                received_output_details = Some(MinotariWalletOutputDetails {
                                     confirmed_height,
                                     status,
                                     output_type: wallet_output.features().output_type,
-                                    coinbase_extra: wallet_output.features().coinbase_extra.to_string(),
+                                    coinbase_extra: wallet_output
+                                        .features()
+                                        .coinbase_extra
+                                        .to_string(),
                                 });
                             }
+                            Err(e) => warn!(
+                                target: LOG_TARGET,
+                                "Failed to parse wallet output JSON for output {}: {}", output_id, e
+                            ),
                         }
                     }
                 }
+                Err(e) => warn!(
+                    target: LOG_TARGET,
+                    "Failed to fetch output details for output {}: {}", output_id, e
+                ),
             }
-            let owner_tari_address = InternalWallet::tari_address().await.to_base58();
-            let details = MinotariWalletDetails {
-                description: balance_change.description.clone(),
-                balance_credit: balance_change.balance_credit,
-                balance_debit: balance_change.balance_debit,
-                claimed_recipient_address: balance_change.claimed_recipient_address.unwrap_or(owner_tari_address.clone()), 
-                claimed_sender_address: balance_change.claimed_sender_address.unwrap_or(owner_tari_address),
-                memo_parsed: balance_change.memo_parsed.clone(),          
-                memo_hex: balance_change.memo_hex.clone(),
-                claimed_fee: balance_change.claimed_fee.unwrap_or(0),
-                claimed_amount: balance_change.claimed_amount,
-                recieved_output_details: received_output_details,
-                spent_output_details,
-            };
-            
-            let last_transaction = transactions_lock.last();
+        }
 
-            if let Some(last_transaction) = last_transaction {
-                info!(target: LOG_TARGET, "Heeeere");
-                            // Check if this balance change belongs to the same transaction
-            let same_transaction = last_transaction.mined_height == balance_change.effective_height &&
-                last_transaction.effective_date == balance_change.effective_date && last_transaction.account_id == balance_change.account_id;
-            
-            if same_transaction {
-                                info!(target: LOG_TARGET, "Heeeere1");
-                // Add to existing transaction
-                if let Some(transaction) = transactions_lock.last_mut() {
-                    transaction.operations.push(details);
-                    transaction.credit_balance += balance_change.balance_credit;
-                    transaction.debit_balance += balance_change.balance_debit;
-                    transaction.transaction_balance += balance_change.balance_credit - balance_change.balance_debit;
-                    transaction.is_negative = transaction.debit_balance > transaction.credit_balance;
-                    EventsEmitter::emit_wallet_transaction_updated(transaction.clone()).await;
+        // If there's an input associated with this balance change (debit)
+        if let Some(input_id) = balance_change.caused_by_input_id {
+            match get_input_details_for_balance_change_by_id(conn, input_id).await {
+                Ok(Some(output_id)) => {
+                    match get_output_details_for_balance_change_by_id(conn, output_id).await {
+                        Ok((confirmed_height, status, wallet_output_json)) => {
+                            if let (Some(status), Some(wallet_output_json_str)) =
+                                (status, wallet_output_json)
+                            {
+                                match serde_json::from_str::<WalletOutput>(&wallet_output_json_str)
+                                {
+                                    Ok(wallet_output) => {
+                                        spent_output_details = Some(MinotariWalletOutputDetails {
+                                            confirmed_height,
+                                            status,
+                                            output_type: wallet_output.features().output_type,
+                                            coinbase_extra: wallet_output
+                                                .features()
+                                                .coinbase_extra
+                                                .to_string(),
+                                        });
+                                    }
+                                    Err(e) => warn!(
+                                        target: LOG_TARGET,
+                                        "Failed to parse wallet output JSON for spent output {}: {}", output_id, e
+                                    ),
+                                }
+                            }
+                        }
+                        Err(e) => warn!(
+                            target: LOG_TARGET,
+                            "Failed to fetch output details for spent output via input {}: {}", input_id, e
+                        ),
+                    }
+                }
+                Ok(None) => warn!(
+                    target: LOG_TARGET,
+                    "No output_id found for input {}", input_id
+                ),
+                Err(e) => warn!(
+                    target: LOG_TARGET,
+                    "Failed to fetch input details for input {}: {}", input_id, e
+                ),
+            }
+        }
+
+        (received_output_details, spent_output_details)
+    }
+
+    async fn process_wallet_transaction(balance_change: BalanceChange) {
+        use crate::wallet::minotari_wallet_types::MinotariWalletDetails;
+
+        log::debug!(
+            target: LOG_TARGET,
+            "Processing wallet transaction for balance change at height: {}", balance_change.effective_height
+        );
+
+        let mut conn = match Self::get_db_connection().await {
+            Ok(conn) => conn,
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to get database connection: {}", e);
+                return;
+            }
+        };
+
+        let (received_output_details, spent_output_details) =
+            Self::fetch_balance_change_details(&mut conn, &balance_change).await;
+
+        // Drop connection to allow other operations
+        drop(conn);
+
+        let owner_tari_address = Self::get_owner_address().await;
+        let details = MinotariWalletDetails {
+            description: balance_change.description.clone(),
+            balance_credit: balance_change.balance_credit,
+            balance_debit: balance_change.balance_debit,
+            claimed_recipient_address: balance_change
+                .claimed_recipient_address
+                .as_ref()
+                .cloned()
+                .unwrap_or_else(|| owner_tari_address.clone()),
+            claimed_sender_address: balance_change
+                .claimed_sender_address
+                .as_ref()
+                .cloned()
+                .unwrap_or(owner_tari_address),
+            memo_parsed: balance_change.memo_parsed.clone(),
+            memo_hex: balance_change.memo_hex.clone(),
+            claimed_fee: balance_change.claimed_fee.unwrap_or(0),
+            claimed_amount: balance_change.claimed_amount,
+            recieved_output_details: received_output_details,
+            spent_output_details,
+        };
+
+        let mut wallet_state = INSTANCE.wallet_state.write().await;
+
+        // Check if we should append to existing transaction or create new one
+        let transaction_to_emit =
+            if let Some(last_transaction) = wallet_state.transactions.last_mut() {
+                if Self::belongs_to_same_transaction(last_transaction, &balance_change) {
+                    // Add to existing transaction
+                    last_transaction.operations.push(details.clone());
+                    last_transaction.credit_balance += balance_change.balance_credit;
+                    last_transaction.debit_balance += balance_change.balance_debit;
+                    last_transaction.transaction_balance = last_transaction
+                        .credit_balance
+                        .saturating_add(last_transaction.debit_balance);
+                    last_transaction.is_negative =
+                        last_transaction.debit_balance > last_transaction.credit_balance;
+
+                    Some(last_transaction.clone())
+                } else {
+                    None
                 }
             } else {
-                                                info!(target: LOG_TARGET, "Heeeere2");
-                // First transaction
-                let new_transaction = MinotariWalletTransaction {
-                    id: uuid::Uuid::new_v4().to_string(),
-                    account_id: balance_change.account_id,
-                    operations: vec![details],
-                    mined_height: balance_change.effective_height,
-                    effective_date: balance_change.effective_date,
-                    transaction_balance: balance_change.balance_credit + balance_change.balance_debit, // One of theses fields will be zero at the initialization
-                    credit_balance: balance_change.balance_credit,
-                    debit_balance: balance_change.balance_debit,
-                    is_negative: balance_change.balance_debit > balance_change.balance_credit,
-                };
-                transactions_lock.push(new_transaction.clone());
-                
-                info!(
-                    target: LOG_TARGET,
-                    "💸 New Transaction - Height: {},Date: {}, Credit: {}, Debit: {}, Description: {}",
-                    balance_change.effective_height,
-                    balance_change.effective_date,
-                    balance_change.balance_credit,
-                    balance_change.balance_debit,
-                    balance_change.description
-                );
-                EventsEmitter::emit_wallet_transactions_found(vec![new_transaction]).await;
-            }
-            }else {
-                                info!(target: LOG_TARGET, "Heeeere2");
-                // First transaction
-                let new_transaction = MinotariWalletTransaction {
-                    id: uuid::Uuid::new_v4().to_string(),
-                    account_id: balance_change.account_id,
-                    operations: vec![details],
-                    mined_height: balance_change.effective_height,
-                    effective_date: balance_change.effective_date,
-                    transaction_balance: balance_change.balance_credit + balance_change.balance_debit,
-                    credit_balance: balance_change.balance_credit,
-                    debit_balance: balance_change.balance_debit,
-                    is_negative: balance_change.balance_debit > balance_change.balance_credit,
-                };
-                transactions_lock.push(new_transaction.clone());
-                
-                info!(
-                    target: LOG_TARGET,
-                    "💸 New Transaction - Height: {},Date: {}, Credit: {}, Debit: {}, Description: {}",
-                    balance_change.effective_height,
-                    balance_change.effective_date,
-                    balance_change.balance_credit,
-                    balance_change.balance_debit,
-                    balance_change.description
-                );
-                    EventsEmitter::emit_wallet_transactions_found(vec![new_transaction]).await;
-            }
+                None
+            };
 
-            info!(
-                target: LOG_TARGET,
-                "Saving {} transactions to cache",
-                transactions_lock.len()
-            );
-            Self::save_transactions_to_cache(&transactions_lock).await.unwrap_or_else(|e| {
-                error!(
-                    target: LOG_TARGET,
-                    "Failed to save transactions to cache: {:?}", e
-                );
-            });
-                        info!(
-                target: LOG_TARGET,
-                "Saved transactions to cache"
-            );
-        } else {
-            error!(
-                target: LOG_TARGET,
-                "Database connection not available for processing wallet transaction"
-            );
+        if let Some(transaction) = transaction_to_emit {
+            drop(wallet_state);
+            EventsEmitter::emit_wallet_transaction_updated(transaction).await;
+            return;
         }
+
+        Self::create_and_emit_new_transaction(
+            &balance_change,
+            details,
+            &mut wallet_state.transactions,
+        )
+        .await;
+        drop(wallet_state);
     }
 
     pub async fn initialize_wallet() -> Result<(), anyhow::Error> {
-        let sqlite_connection = init_db(Self::database_path().await?.as_str()).await?;
-        let mut conn = sqlite_connection.acquire().await?;
+        let database_path = Self::database_path().await?;
+        let pool = init_db(&database_path).await?;
 
-        // ============== |Initialize Balance Data| ==============
-        let balance = get_balance(&mut *conn, DEFAULT_ACCOUNT_ID).await?;
+        // Store the pool
         {
-            let mut wallet_balance_lock = INSTANCE.wallet_balance.write().await;
-            if let (Some(credits), Some(debits)) = (balance.total_credits, balance.total_debits) {
-                *wallet_balance_lock = credits.saturating_sub(debits);
-            } else {
-                *wallet_balance_lock = 0;
-            }
+            let mut pool_lock = INSTANCE.database_pool.write().await;
+            *pool_lock = Some(pool);
         }
 
-        EventsEmitter::emit_wallet_balance_update(WalletBalance {available_balance: MicroMinotari(*INSTANCE.wallet_balance.read().await as u64), timelocked_balance: 0.into(), pending_incoming_balance: 0.into(), pending_outgoing_balance: 0.into()}).await;
-        // ============== |Load Cached Transactions| ==============
-        INSTANCE.load_transactions_from_cache().await?;
-        EventsEmitter::emit_wallet_transactions_found(
-            INSTANCE.transactions.read().await.clone(),
-        ).await;
-        
-        INSTANCE.database_connection.write().await.replace(conn);
+        // Initialize owner address cache
+        Self::init_owner_address().await?;
+
+        // Start connection health check
+        Self::start_connection_health_check().await;
+
+        let mut conn = Self::get_db_connection().await?;
+
+        // ============== |Initialize Balance Data| ==============
+        let balance = get_balance(&mut conn, DEFAULT_ACCOUNT_ID).await?;
+        let initial_balance =
+            if let (Some(credits), Some(debits)) = (balance.total_credits, balance.total_debits) {
+                credits.saturating_sub(debits)
+            } else {
+                0
+            };
+
+        {
+            let mut wallet_state = INSTANCE.wallet_state.write().await;
+            wallet_state.update_balance(initial_balance);
+        }
+
+        EventsEmitter::emit_wallet_balance_update(WalletBalance {
+            available_balance: MicroMinotari(initial_balance as u64),
+            timelocked_balance: 0.into(),
+            pending_incoming_balance: 0.into(),
+            pending_outgoing_balance: 0.into(),
+        })
+        .await;
+
+        // ============== |Fetch and Process All Balance Changes| ==============
+        info!(
+            target: LOG_TARGET,
+            "Fetching all balance changes for account ID: {}", DEFAULT_ACCOUNT_ID
+        );
+
+        let balance_changes =
+            get_all_balance_changes_by_account_id(&mut conn, DEFAULT_ACCOUNT_ID).await?;
+        info!(
+            target: LOG_TARGET,
+            "Fetched {} balance changes from database", balance_changes.len()
+        );
+
+        // Drop connection before processing
+        drop(conn);
+
+        // Process all balance changes to rebuild transactions
+        for balance_change in balance_changes {
+            Self::process_wallet_transaction(balance_change).await;
+        }
+
+        let (transaction_count, transactions_to_emit) = {
+            let mut wallet_state = INSTANCE.wallet_state.write().await;
+            let count = wallet_state.transactions.len();
+
+            // Reverse transactions so newest appear first
+            wallet_state.transactions.reverse();
+            let transactions = wallet_state.transactions.clone();
+
+            (count, transactions)
+        };
+
+        info!(
+            target: LOG_TARGET,
+            "Processed all balance changes. Total transactions: {}", transaction_count
+        );
+
+        EventsEmitter::emit_wallet_transactions_found(transactions_to_emit).await;
 
         Ok(())
     }
@@ -390,13 +638,12 @@ impl MinotariWalletManager {
 
         Self::listen_to_account_updates().await?;
         Self::listen_to_balance_changes().await?;
-        Self::listen_to_events().await?;
         Self::listen_to_scanned_tip_blocks().await?;
 
-        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
 
         TasksTrackers::current()
-            .common
+            .wallet_phase
             .get_task_tracker()
             .await
             .spawn(async move {
@@ -439,15 +686,14 @@ impl MinotariWalletManager {
             "Executing blockchain scan for Minotari wallet at database path: {}", database_path
         );
 
-        
         let scan_result = tokio::task::spawn_blocking(move || {
             tokio::runtime::Handle::current().block_on(scan(
                 DEFAULT_PASSWORD,
-                DEFAULT_GRPC_URL,
-                database_path.as_str(),
+                DEFAULT_GRPC_URL.as_str(),
+                &database_path,
                 None,
-                1000,
-                50, // do not go over 50 as it may cause timeouts in wallet scanning logic
+                SCAN_BATCH_SIZE,
+                MAX_CONCURRENT_REQUESTS,
             ))
         })
         .await?;
@@ -471,12 +717,11 @@ impl MinotariWalletManager {
     }
 
     async fn listen_to_account_updates() -> Result<(), anyhow::Error> {
-        // use ACCOUT_CREATION_CHANNEL
-        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
         let mut account_creation_receiver = ACCOUNT_CREATION_CHANNEL.1.lock().await;
 
         TasksTrackers::current()
-            .common
+            .wallet_phase
             .get_task_tracker()
             .await
             .spawn(async move {
@@ -513,11 +758,11 @@ impl MinotariWalletManager {
     }
 
     async fn listen_to_balance_changes() -> Result<(), anyhow::Error> {
-        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
         let mut balance_change_receiver = BALANCE_CHANGE_CHANNEL.1.lock().await;
 
         TasksTrackers::current()
-            .common
+            .wallet_phase
             .get_task_tracker()
             .await
             .spawn(async move {
@@ -558,51 +803,8 @@ impl MinotariWalletManager {
         Ok(())
     }
 
-    async fn listen_to_events() -> Result<(), anyhow::Error> {
-        // use EVENT_CHANNEL
-        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-        let mut event_receiver = EVENT_CHANNEL.1.lock().await;
-
-        TasksTrackers::current()
-            .common
-            .get_task_tracker()
-            .await
-            .spawn(async move {
-                loop {
-                    tokio::select! {
-                        result = event_receiver.recv() => {
-                            match result {
-                                Some(event) => {
-                                    info!(
-                                        target: LOG_TARGET,
-                                        "New wallet event: {:?}", event
-                                    );
-                                }
-                                None => {
-                                    warn!(
-                                        target: LOG_TARGET,
-                                        "Event channel closed."
-                                    );
-                                }
-                            }
-                        }
-                        _ = shutdown_signal.wait() => {
-                            info!(
-                                target: LOG_TARGET,
-                                "Shutdown signal received. Terminating event listener."
-                            );
-                            break;
-                        }
-                    }
-                }
-            });
-
-        Ok(())
-    }
-
     async fn listen_to_scanned_tip_blocks() -> Result<(), anyhow::Error> {
-        // use SCANNED_TIP_BLOCK_CHANNEL
-        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
         let mut scanned_tip_block_receiver = SCANNED_TIP_BLOCK_CHANNEL.1.lock().await;
 
         if let Some(app_handle) = &*INSTANCE.app_handle.read().await {
@@ -611,7 +813,7 @@ impl MinotariWalletManager {
             let last_node_status = *node_status_watch_rx.borrow();
 
             TasksTrackers::current()
-            .common
+            .wallet_phase
             .get_task_tracker()
             .await
             .spawn(async move {
@@ -637,7 +839,7 @@ impl MinotariWalletManager {
 
 
                                     if last_registered_node_status_height > 0 &&
-                                        block.height as u64 >= last_registered_node_status_height &&
+                                        block.height >= last_registered_node_status_height &&
                                         !INSTANCE.was_blockchain_scanned_to_current_height.load(std::sync::atomic::Ordering::SeqCst)
                                     {
                                         info!(
@@ -646,11 +848,10 @@ impl MinotariWalletManager {
                                             last_registered_node_status_height
                                         );
                                         INSTANCE.was_blockchain_scanned_to_current_height.store(true, std::sync::atomic::Ordering::SeqCst);
-                                        
                                     }
 
                                     EventsEmitter::emit_wallet_scanning_progress_update(
-                                        block.height as u64,
+                                        block.height,
                                         last_registered_node_status_height,
                                         scanned_percentage,
                                         INSTANCE.was_blockchain_scanned_to_current_height.load(std::sync::atomic::Ordering::SeqCst),

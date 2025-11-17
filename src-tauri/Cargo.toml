@@ -83,6 +83,8 @@ tari_transaction_components = { git = "https://github.com/tari-project/tari.git"
 tari_crypto = "0.22.1"
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v5.1.0" }
 tari_utilities = "0.8.0"
+# # TODO Update to main repository when the changes are merged
+# minotari-wallet = { package = "minotari", git = "https://github.com/Misieq01/minotari-cli.git", branch = "feat/TU-integration-adjustments" }
 minotari-wallet = { package = "minotari", path = "/home/bartek/Desktop/web/tari/minotari-cli" }
 # minotari-wallet = { package = "minotari", git = "https://github.com/tari-project/minotari-cli.git", branch = "main" }
 tauri = { version = "2", features = [

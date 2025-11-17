@@ -17,15 +17,16 @@ import { useUIStore } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
-import { getTxTitle, getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
 import { TransactionDirection } from '@app/types/transactions.ts';
 import { MinotariWalletTransaction } from '@app/types/app-status.ts';
 import MinotariHoverItem from './MinotariHoverItem.tsx';
+import { formatEffectiveDate, resolveTransactionTitle, resolveTransactionType } from './helpers.ts';
 
 export interface HistoryListItemProps {
     transaction: MinotariWalletTransaction;
     index: number;
     itemIsNew?: boolean;
+    setDetailsItem?: (item: MinotariWalletTransaction) => void;
 }
 
 export interface BaseItemProps {
@@ -86,33 +87,46 @@ const MinotariHistoryListItem = memo(function MinotariListItem({
     transaction,
     index,
     itemIsNew = false,
+    setDetailsItem,
 }: HistoryListItemProps) {
     const { t } = useTranslation('wallet');
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
 
     const ref = useRef<HTMLDivElement>(null);
 
-    // const itemType = getTxTypeByStatus(item);
-
-    // const isMined = itemType === 'mined';
+    const itemType = resolveTransactionType(transaction);
+    const isMined = itemType === 'mined';
 
     const [hovering, setHovering] = useState(false);
 
-    // const itemTitle = getTxTitle(item);
+    const itemTitle = resolveTransactionTitle(transaction);
     const earningsFormatted = hideWalletBalance
         ? `***`
         : formatNumber(transaction.transaction_balance, FormatPreset.XTM_COMPACT).toLowerCase();
 
     const baseItem = (
         <BaseItem
-            title={'Placeholder Title'}
-            time={transaction.effective_date}
+            title={itemTitle}
+            time={formatEffectiveDate(transaction.effective_date)}
             value={earningsFormatted}
             direction={transaction.is_negative ? TransactionDirection.Outbound : TransactionDirection.Inbound}
             chip={itemIsNew ? t('new') : ''}
             hideWalletBalance={hideWalletBalance}
         />
     );
+
+    const detailsButton = !isMined ? (
+        <Button
+            size="smaller"
+            variant="outlined"
+            onClick={(e) => {
+                e.stopPropagation();
+                setDetailsItem?.(transaction);
+            }}
+        >
+            {t(`history.view-details`)}
+        </Button>
+    ) : null;
 
     return (
         <ItemWrapper
@@ -122,7 +136,9 @@ const MinotariHistoryListItem = memo(function MinotariListItem({
             onMouseEnter={() => setHovering(true)}
             onMouseLeave={() => setHovering(false)}
         >
-            <AnimatePresence>{hovering && <MinotariHoverItem transaction={transaction} />}</AnimatePresence>
+            <AnimatePresence>
+                {hovering && <MinotariHoverItem transaction={transaction} button={detailsButton} />}
+            </AnimatePresence>
             {baseItem}
         </ItemWrapper>
     );

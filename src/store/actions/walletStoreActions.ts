@@ -146,6 +146,9 @@ export const setTxHistoryFilter = (filter: TxHistoryFilter) => {
 export const setDetailsItem = (detailsItem: CombinedBridgeWalletTransaction | null) =>
     useWalletStore.setState((c) => ({ ...c, detailsItem }));
 
+export const setMinotariDetailsItem = (minotariDetailsItem: MinotariWalletTransaction | null) =>
+    useWalletStore.setState((c) => ({ ...c, minotariDetailsItem }));
+
 export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayload) => {
     const { tari_address_base58, tari_address_emoji, tari_address_type } = payload;
     useWalletStore.setState((c) => ({
@@ -191,7 +194,7 @@ export const handleMinotariWalletTransactionsFound = (payload: MinotariWalletTra
     const filteredIncomingTransactions = payload.filter((newTx) => {
         return !copiedCurrentTransactions.some((existingTx) => existingTx.id === newTx.id);
     });
-    const mergedTransactions = copiedCurrentTransactions.concat(filteredIncomingTransactions);
+    const mergedTransactions = filteredIncomingTransactions.concat(copiedCurrentTransactions);
     console.log('Merged Minotari Wallet Transactions:', mergedTransactions);
     useWalletStore.setState((c) => ({
         ...c,

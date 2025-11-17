@@ -3,7 +3,6 @@ use minotari_wallet::models::OutputStatus;
 use serde::{Deserialize, Serialize};
 use tari_transaction_components::transaction_components::OutputType;
 
-pub struct MinotariWalletBalance(i64);
 #[derive(Clone, Deserialize, Serialize)]
 pub struct MinotariWalletOutputDetails {
     pub confirmed_height: Option<u64>,
@@ -37,5 +36,6 @@ pub struct MinotariWalletTransaction {
     pub credit_balance: u64,
     pub transaction_balance: u64,
     pub is_negative: bool,
+    pub memo_parsed: Option<String>,
     pub operations: Vec<MinotariWalletDetails>,
 }

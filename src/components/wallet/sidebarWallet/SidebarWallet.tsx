@@ -27,7 +27,13 @@ import { open } from '@tauri-apps/plugin-shell';
 
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 import { TransactionDetails } from '@app/components/transactions/history/details/TransactionDetails.tsx';
-import { setDetailsItem, setIsSwapping, setTxHistoryFilter } from '@app/store/actions/walletStoreActions.ts';
+import { MinotariTransactionDetails } from '@app/components/transactions/history/details/MinotariTransactionDetails.tsx';
+import {
+    setDetailsItem,
+    setIsSwapping,
+    setTxHistoryFilter,
+    setMinotariDetailsItem,
+} from '@app/store/actions/walletStoreActions.ts';
 
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
@@ -50,6 +56,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const { t } = useTranslation('wallet');
     const { data: xcData } = useFetchExchangeBranding();
     const detailsItem = useWalletStore((s) => s.detailsItem);
+    const minotariDetailsItem = useWalletStore((s) => s.minotariDetailsItem);
     const filter = useWalletStore((s) => s.tx_history_filter);
 
     // Wallet module state
@@ -189,6 +196,13 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     item={detailsItem}
                     expanded={Boolean(detailsItem)}
                     handleClose={() => setDetailsItem(null)}
+                />
+            )}
+            {minotariDetailsItem && (
+                <MinotariTransactionDetails
+                    transaction={minotariDetailsItem}
+                    expanded={Boolean(minotariDetailsItem)}
+                    handleClose={() => setMinotariDetailsItem(null)}
                 />
             )}
         </>

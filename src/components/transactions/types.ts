@@ -1,7 +1,7 @@
 import { CombinedBridgeWalletTransaction } from '@app/store';
 import { TransactionDirection } from '@app/types/transactions.ts';
 
-export type TransationType = 'mined' | 'sent' | 'received' | 'unknown';
+export type TransactionType = 'mined' | 'sent' | 'received' | 'unknown';
 
 export interface HistoryListItemProps {
     item: CombinedBridgeWalletTransaction;

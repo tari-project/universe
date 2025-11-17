@@ -85,6 +85,7 @@ export interface MinotariWalletTransaction {
     debit_balance: number;
     credit_balance: number;
     transaction_balance: number;
+    memo_parsed?: string;
     is_negative: boolean;
     operations: MinotariWalletDetails[];
 }

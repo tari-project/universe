@@ -20,9 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
-use crate::configs::trait_config::ConfigImpl;
-use crate::events_emitter::EventsEmitter;
 use crate::internal_wallet::InternalWallet;
 use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_adapter::ProcessAdapter;
@@ -30,8 +27,7 @@ use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::wallet::wallet_adapter::WalletAdapter;
-use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
-use crate::wallet::wallet_types::{TransactionInfo, TransactionStatus, WalletBalance, WalletState};
+use crate::wallet::wallet_types::WalletState;
 use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
 use log::{error, info};
@@ -252,6 +248,7 @@ impl WalletManager {
         res.map_err(WalletManagerError::UnknownError)
     }
 
+    #[allow(dead_code)]
     pub async fn stop(&self) -> Result<i32, WalletManagerError> {
         // Reset the initial scan flag
         self.initial_scan_completed
@@ -263,10 +260,12 @@ impl WalletManager {
             .await
             .map_err(WalletManagerError::UnknownError)
     }
+    #[allow(dead_code)]
     pub async fn is_running(&self) -> bool {
         let process_watcher = self.watcher.read().await;
         process_watcher.is_running()
     }
+    #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)
