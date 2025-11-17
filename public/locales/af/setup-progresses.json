@@ -1,37 +1,45 @@
 {
+  "all-modules-failed-description": "Alle modules het misluk om te inisialiseer. App kan nie in huidige toestand werk nie. Herbegin asseblief die app of kontak ondersteuning.",
   "any_moment_now": "Enige oomblik nou",
+  "app-modules": {
+    "cpu-mining": "CPU Mynbou",
+    "gpu-mining": "GPU Mynbou",
+    "wallet": "Beursie"
+  },
   "awaiting-exchange-selection": "Wag op gebruiker se uitruilkeuse",
   "block-sync": "Blokke sinkroniseer",
   "calculating_time": "Bereken oorblywende tyd...",
   "calculating_time-compact": "Bereken tyd...",
+  "critical-initialization-failure": "Kritieke inisialisering mislukking",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "Misluk om stap te voltooi",
   "header-sync": "Koptekste sinkroniseer",
   "local-node-sync": "Tari Universe sinkroniseer steeds. Dit sal nie jou mynervaring beïnvloed nie.",
+  "module-initialization-issues": "Sommige modules het misluk om te inisialiseer",
   "network-peers": "Koppel aan netwerkmaats",
   "phase-title": {
     "setup-core": "Stel die Tari Toep op",
     "setup-core-compact": "Sinchroniseer app",
     "setup-hardware": "Stel die Hardeware op",
     "setup-hardware-compact": "Stel hardeware op",
-    "setup-node": "Stel die Tari Node op",
-    "setup-node-compact": "Sinchroniseer node",
     "setup-mining": "Stel ekstra nutsmiddels op",
     "setup-mining-compact": "Stel nutsgoed op",
+    "setup-node": "Stel die Tari Node op",
+    "setup-node-compact": "Sinchroniseer node",
     "setup-wallet": "Stel die Beursie op",
     "setup-wallet-compact": "Sinchroniseer beursie"
-  },
-  "critical-initialization-failure": "Kritieke inisialisering mislukking",
-  "failed-to-complete-step": "Misluk om stap te voltooi",
-  "all-modules-failed-description": "Alle modules het misluk om te inisialiseer. App kan nie in huidige toestand werk nie. Herbegin asseblief die app of kontak ondersteuning.",
-  "module-initialization-issues": "Sommige modules het misluk om te inisialiseer",
-  "some-modules-failed-description": "App kan voortgaan om te werk, maar sommige funksies mag nie beskikbaar wees nie. Herbegin asseblief mislukte modules, of kontak ondersteuning as die probleem voortduur.",
-  "app-modules": {
-    "cpu-mining": "CPU Mynbou",
-    "gpu-mining": "GPU Mynbou",
-    "wallet": "Beursie"
   },
   "remaining": "oorblywend",
   "second_remaining": "sekonde oor",
   "seconds_remaining": "sekondes oor",
+  "some-modules-failed-description": "App kan voortgaan om te werk, maar sommige funksies mag nie beskikbaar wees nie. Herbegin asseblief mislukte modules, of kontak ondersteuning as die probleem voortduur.",
   "title": {
     "binaries-cpu-miner": "Bereiding van CPU Mynwerker Binêr",
     "binaries-cpu-miner-download": "Bereiding van CPU Mynwerker Binêr | Laai af: {{ progress }}%",

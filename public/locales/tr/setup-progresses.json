@@ -1,37 +1,45 @@
 {
+  "all-modules-failed-description": "Tüm modüller başlatılamadı. Uygulama mevcut durumda çalışamaz. Lütfen uygulamayı yeniden başlatın veya destekle iletişime geçin.",
   "any_moment_now": "Her an şimdi",
+  "app-modules": {
+    "cpu-mining": "CPU Madenciliği",
+    "gpu-mining": "GPU Madenciliği",
+    "wallet": "Cüzdan"
+  },
   "awaiting-exchange-selection": "Kullanıcı borsa seçimi bekleniyor",
   "block-sync": "Bloklar senkronize ediliyor",
   "calculating_time": "Kalan süre hesaplanıyor...",
   "calculating_time-compact": "Zaman hesaplanıyor...",
+  "critical-initialization-failure": "Kritik başlatma hatası",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "Adım tamamlanamadı",
   "header-sync": "Başlıklar senkronize ediliyor",
   "local-node-sync": "Tari Universe hala senkronize ediliyor. Bu, madencilik deneyiminizi etkilemeyecek.",
+  "module-initialization-issues": "Bazı modüller başlatılamadı",
   "network-peers": "Ağ eşlerine bağlanılıyor",
   "phase-title": {
     "setup-core": "Tari Uygulaması Kuruluyor",
     "setup-core-compact": "Uygulama senkronize ediliyor",
     "setup-hardware": "Donanım Kuruluyor",
     "setup-hardware-compact": "Donanım ayarlanıyor",
-    "setup-node": "Tari Düğümü Kuruluyor",
-    "setup-node-compact": "Düğüm senkronize ediliyor",
     "setup-mining": "Ekstra araçlar kuruluyor",
     "setup-mining-compact": "Araçlar ayarlanıyor",
+    "setup-node": "Tari Düğümü Kuruluyor",
+    "setup-node-compact": "Düğüm senkronize ediliyor",
     "setup-wallet": "Cüzdan Kuruluyor",
     "setup-wallet-compact": "Cüzdan senkronize ediliyor"
-  },
-  "critical-initialization-failure": "Kritik başlatma hatası",
-  "failed-to-complete-step": "Adım tamamlanamadı",
-  "all-modules-failed-description": "Tüm modüller başlatılamadı. Uygulama mevcut durumda çalışamaz. Lütfen uygulamayı yeniden başlatın veya destekle iletişime geçin.",
-  "module-initialization-issues": "Bazı modüller başlatılamadı",
-  "some-modules-failed-description": "Uygulama çalışmaya devam edebilir, ancak bazı özellikler kullanılamayabilir. Lütfen başarısız modülleri yeniden başlatın veya sorun devam ederse destekle iletişime geçin.",
-  "app-modules": {
-    "cpu-mining": "CPU Madenciliği",
-    "gpu-mining": "GPU Madenciliği",
-    "wallet": "Cüzdan"
   },
   "remaining": "kalan",
   "second_remaining": "kalan saniye",
   "seconds_remaining": "kalan saniye",
+  "some-modules-failed-description": "Uygulama çalışmaya devam edebilir, ancak bazı özellikler kullanılamayabilir. Lütfen başarısız modülleri yeniden başlatın veya sorun devam ederse destekle iletişime geçin.",
   "title": {
     "binaries-cpu-miner": "CPU Madenci İkili Dosyası Hazırlanıyor",
     "binaries-cpu-miner-download": "CPU Madenci İkili Dosyası Hazırlanıyor | İndiriliyor: {{ progress }}%",

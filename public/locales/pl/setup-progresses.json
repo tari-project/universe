@@ -1,37 +1,45 @@
 {
+  "all-modules-failed-description": "Wszystkie moduły nie zainicjowały się. Aplikacja nie może działać w obecnym stanie. Proszę zrestartować aplikację lub skontaktować się z pomocą techniczną.",
   "any_moment_now": "W każdej chwili",
+  "app-modules": {
+    "cpu-mining": "Kopanie CPU",
+    "gpu-mining": "Kopanie GPU",
+    "wallet": "Portfel"
+  },
   "awaiting-exchange-selection": "Oczekiwanie na wybór giełdy przez użytkownika",
   "block-sync": "Synchronizacja bloków",
   "calculating_time": "Obliczanie pozostałego czasu...",
   "calculating_time-compact": "Obliczanie czasu...",
+  "critical-initialization-failure": "Krytyczny błąd inicjalizacji",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "Nie udało się ukończyć kroku",
   "header-sync": "Synchronizacja nagłówków",
   "local-node-sync": "Tari Universe nadal się synchronizuje. To nie wpłynie na Twoje doświadczenie w kopaniu.",
+  "module-initialization-issues": "Niektóre moduły nie zainicjowały się",
   "network-peers": "Łączenie z węzłami sieci",
   "phase-title": {
     "setup-core": "Konfiguracja Aplikacji Tari",
     "setup-core-compact": "Synchronizowanie aplikacji",
     "setup-hardware": "Konfiguracja Sprzętu",
     "setup-hardware-compact": "Konfigurowanie sprzętu",
-    "setup-node": "Konfiguracja Węzła Tari",
-    "setup-node-compact": "Synchronizowanie węzła",
     "setup-mining": "Konfiguracja dodatkowych narzędzi",
     "setup-mining-compact": "Konfigurowanie narzędzi",
+    "setup-node": "Konfiguracja Węzła Tari",
+    "setup-node-compact": "Synchronizowanie węzła",
     "setup-wallet": "Konfiguracja Portfela",
     "setup-wallet-compact": "Synchronizowanie portfela"
-  },
-  "critical-initialization-failure": "Krytyczny błąd inicjalizacji",
-  "failed-to-complete-step": "Nie udało się ukończyć kroku",
-  "all-modules-failed-description": "Wszystkie moduły nie zainicjowały się. Aplikacja nie może działać w obecnym stanie. Proszę zrestartować aplikację lub skontaktować się z pomocą techniczną.",
-  "module-initialization-issues": "Niektóre moduły nie zainicjowały się",
-  "some-modules-failed-description": "Aplikacja może nadal działać, ale niektóre funkcje mogą być niedostępne. Proszę zrestartować nieudane moduły lub skontaktować się z pomocą techniczną, jeśli problem będzie się powtarzał.",
-  "app-modules": {
-    "cpu-mining": "Kopanie CPU",
-    "gpu-mining": "Kopanie GPU",
-    "wallet": "Portfel"
   },
   "remaining": "pozostało",
   "second_remaining": "pozostała sekunda",
   "seconds_remaining": "pozostało sekund",
+  "some-modules-failed-description": "Aplikacja może nadal działać, ale niektóre funkcje mogą być niedostępne. Proszę zrestartować nieudane moduły lub skontaktować się z pomocą techniczną, jeśli problem będzie się powtarzał.",
   "title": {
     "binaries-cpu-miner": "Przygotowywanie Pliku Wykonywalnego Koparki CPU",
     "binaries-cpu-miner-download": "Przygotowywanie binariów kopacza CPU | Pobieranie: {{ progress }}%",

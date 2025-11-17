@@ -255,8 +255,8 @@ impl ProcessInstanceTrait for ProcessInstance {
 
                     if should_emit_critial_error {
                         EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                            title: Some("No space left on device".to_string()),
-                            description: Some("Please clear out old files".to_string()),
+                            title: Some("error.title.space".to_string()),
+                            description: Some("error.description.space".to_string()),
                             error_message: Some(error_msg),
                         }).await;
                     }

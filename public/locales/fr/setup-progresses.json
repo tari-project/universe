@@ -1,37 +1,45 @@
 {
+  "all-modules-failed-description": "Tous les modules ont échoué à s\"initialiser. L\"application ne peut pas fonctionner dans l\"état actuel. Veuillez redémarrer l\"application ou contacter le support.",
   "any_moment_now": "D\"un moment à l\"autre",
+  "app-modules": {
+    "cpu-mining": "Minage CPU",
+    "gpu-mining": "Minage GPU",
+    "wallet": "Portefeuille"
+  },
   "awaiting-exchange-selection": "En attente de la sélection de la plateforme d\"échange par l\"utilisateur",
   "block-sync": "Synchronisation des blocs",
   "calculating_time": "Calcul du temps restant...",
   "calculating_time-compact": "Calcul du temps...",
+  "critical-initialization-failure": "Échec critique de l\"initialisation",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "Échec de l\"étape",
   "header-sync": "Synchronisation des en-têtes",
   "local-node-sync": "Tari Universe est toujours en cours de synchronisation. Cela n\"affectera pas votre expérience de minage.",
+  "module-initialization-issues": "Certains modules n\"ont pas pu s\"initialiser",
   "network-peers": "Connexion aux pairs du réseau",
   "phase-title": {
     "setup-core": "Configuration de l\"application Tari",
     "setup-core-compact": "Synchronisation de l\"application",
     "setup-hardware": "Configuration du matériel",
     "setup-hardware-compact": "Configuration du matériel",
-    "setup-node": "Configuration du nœud Tari",
-    "setup-node-compact": "Synchronisation du nœud",
     "setup-mining": "Configuration des utilitaires supplémentaires",
     "setup-mining-compact": "Configuration des utilitaires",
+    "setup-node": "Configuration du nœud Tari",
+    "setup-node-compact": "Synchronisation du nœud",
     "setup-wallet": "Configuration du portefeuille",
     "setup-wallet-compact": "Synchronisation du portefeuille"
-  },
-  "critical-initialization-failure": "Échec critique de l\"initialisation",
-  "failed-to-complete-step": "Échec de l\"étape",
-  "all-modules-failed-description": "Tous les modules ont échoué à s\"initialiser. L\"application ne peut pas fonctionner dans l\"état actuel. Veuillez redémarrer l\"application ou contacter le support.",
-  "module-initialization-issues": "Certains modules n\"ont pas pu s\"initialiser",
-  "some-modules-failed-description": "L\"application peut continuer à fonctionner, mais certaines fonctionnalités peuvent ne pas être disponibles. Veuillez redémarrer les modules échoués ou contacter le support si le problème persiste.",
-  "app-modules": {
-    "cpu-mining": "Minage CPU",
-    "gpu-mining": "Minage GPU",
-    "wallet": "Portefeuille"
   },
   "remaining": "restant",
   "second_remaining": "seconde restante",
   "seconds_remaining": "secondes restantes",
+  "some-modules-failed-description": "L\"application peut continuer à fonctionner, mais certaines fonctionnalités peuvent ne pas être disponibles. Veuillez redémarrer les modules échoués ou contacter le support si le problème persiste.",
   "title": {
     "binaries-cpu-miner": "Préparation du binaire du mineur CPU",
     "binaries-cpu-miner-download": "Préparation du binaire du mineur CPU | Téléchargement : {{ progress }}%",

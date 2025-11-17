@@ -1,37 +1,45 @@
 {
+  "all-modules-failed-description": "Semua modul gagal diinisialisasi. Aplikasi tidak dapat berfungsi dalam keadaan saat ini. Silakan mulai ulang aplikasi atau hubungi dukungan.",
   "any_moment_now": "Sebentar lagi",
+  "app-modules": {
+    "cpu-mining": "Penambangan CPU",
+    "gpu-mining": "Penambangan GPU",
+    "wallet": "Dompet"
+  },
   "awaiting-exchange-selection": "Menunggu pemilihan bursa pengguna",
   "block-sync": "Menyinkronkan blok",
   "calculating_time": "Menghitung waktu yang tersisa...",
   "calculating_time-compact": "Menghitung waktu...",
+  "critical-initialization-failure": "Kegagalan inisialisasi kritis",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "Gagal menyelesaikan langkah",
   "header-sync": "Menyinkronkan header",
   "local-node-sync": "Tari Universe masih menyinkronkan. Ini tidak akan mempengaruhi pengalaman menambang Anda.",
+  "module-initialization-issues": "Beberapa Modul gagal diinisialisasi",
   "network-peers": "Menghubungkan ke rekan jaringan",
   "phase-title": {
     "setup-core": "Menyiapkan Aplikasi Tari",
     "setup-core-compact": "Sinkronisasi aplikasi",
     "setup-hardware": "Menyiapkan Perangkat Keras",
     "setup-hardware-compact": "Menyiapkan perangkat keras",
-    "setup-node": "Menyiapkan Node Tari",
-    "setup-node-compact": "Sinkronisasi node",
     "setup-mining": "Menyiapkan utilitas tambahan",
     "setup-mining-compact": "Menyiapkan utilitas",
+    "setup-node": "Menyiapkan Node Tari",
+    "setup-node-compact": "Sinkronisasi node",
     "setup-wallet": "Menyiapkan Dompet",
     "setup-wallet-compact": "Sinkronisasi dompet"
-  },
-  "critical-initialization-failure": "Kegagalan inisialisasi kritis",
-  "failed-to-complete-step": "Gagal menyelesaikan langkah",
-  "all-modules-failed-description": "Semua modul gagal diinisialisasi. Aplikasi tidak dapat berfungsi dalam keadaan saat ini. Silakan mulai ulang aplikasi atau hubungi dukungan.",
-  "module-initialization-issues": "Beberapa Modul gagal diinisialisasi",
-  "some-modules-failed-description": "Aplikasi dapat terus berfungsi, tetapi beberapa fitur mungkin tidak tersedia. Silakan mulai ulang modul yang gagal, atau hubungi dukungan jika masalah berlanjut.",
-  "app-modules": {
-    "cpu-mining": "Penambangan CPU",
-    "gpu-mining": "Penambangan GPU",
-    "wallet": "Dompet"
   },
   "remaining": "tersisa",
   "second_remaining": "detik tersisa",
   "seconds_remaining": "detik tersisa",
+  "some-modules-failed-description": "Aplikasi dapat terus berfungsi, tetapi beberapa fitur mungkin tidak tersedia. Silakan mulai ulang modul yang gagal, atau hubungi dukungan jika masalah berlanjut.",
   "title": {
     "binaries-cpu-miner": "Menyiapkan Binary Penambang CPU",
     "binaries-cpu-miner-download": "Mempersiapkan Biner Penambang CPU | Mengunduh: {{ progress }}%",
