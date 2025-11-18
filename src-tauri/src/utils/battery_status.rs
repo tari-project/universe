@@ -23,7 +23,6 @@ extern crate starship_battery as battery;
 use std::sync::{atomic::AtomicBool, Arc, LazyLock};
 
 use log::{error, info};
-use tauri::async_runtime::handle;
 use tokio::{sync::Mutex, task::JoinHandle};
 
 use crate::{
