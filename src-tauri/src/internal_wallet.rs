@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::anyhow;
+use log::info;
 use monero_address_creator::network::Mainnet;
 use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
@@ -100,6 +101,7 @@ impl InternalWallet {
 
     async fn set_current(new_internal_wallet: InternalWallet) -> Result<(), anyhow::Error> {
         if INSTANCE.get().is_some() {
+            info!("WHICH current fails?, set_current is_some?");
             // INSTANCE has been initialized
             let mut internal_wallet_guard = InternalWallet::current().write().await;
             *internal_wallet_guard = new_internal_wallet;
@@ -112,6 +114,7 @@ impl InternalWallet {
     }
 
     pub async fn is_internal() -> bool {
+        info!("WHICH current fails?, is_internal()");
         let internal_wallet_guard = InternalWallet::current().read().await;
         matches!(
             internal_wallet_guard.tari_address_type,
@@ -316,6 +319,7 @@ impl InternalWallet {
     // ** Getters
 
     pub async fn tari_address() -> TariAddress {
+        info!("WHICH current fails?, tari_address()");
         let internal_wallet_guard = InternalWallet::current().read().await;
         internal_wallet_guard.extract_tari_address().clone()
     }
@@ -330,6 +334,7 @@ impl InternalWallet {
     }
 
     pub async fn tari_wallet_details() -> Option<TariWalletDetails> {
+        info!("WHICH current fails?, tari_wallet_details()");
         let internal_wallet_guard = InternalWallet::current().read().await;
         internal_wallet_guard.tari_wallet_details.clone()
     }
@@ -392,6 +397,7 @@ impl InternalWallet {
         ConfigWallet::update_field(ConfigWalletContent::add_tari_wallet, wallet_details.clone())
             .await?;
 
+        info!("WHICH current fails?, add_tari_wallet()");
         // Modify the instance directly due to circular usage in initialze_seed
         if INSTANCE.get().is_some() {
             let mut internal_wallet_guard = InternalWallet::current().write().await;
@@ -496,7 +502,7 @@ impl InternalWallet {
             encrypted_tari_seed
         };
         PinManager::set_pin_locked().await?;
-
+        info!("WHICH current fails?, recover_forgotten_pin()");
         if InternalWallet::is_initialized() {
             let mut internal_wallet_guard = InternalWallet::current().write().await;
             internal_wallet_guard.encrypted_monero_seed = Hidden::hide(encrypted_monero_seed);
@@ -524,6 +530,7 @@ impl InternalWallet {
                 false,
             )
             .await?;
+            info!("WHICH current fails?, create_pin(), is_initialized()");
             if InternalWallet::is_initialized() {
                 let mut internal_wallet_guard = InternalWallet::current().write().await;
                 internal_wallet_guard.encrypted_monero_seed =
@@ -554,7 +561,7 @@ impl InternalWallet {
             encrypted_tari_seed
         };
         PinManager::set_pin_locked().await?;
-
+        info!("WHICH current fails?, tari_wallet_details(), is_initialized(), after set locked");
         if InternalWallet::is_initialized() {
             let mut internal_wallet_guard = InternalWallet::current().write().await;
             internal_wallet_guard.encrypted_monero_seed = Hidden::hide(encrypted_monero_seed);
@@ -800,6 +807,7 @@ impl InternalWallet {
         pin_password: Option<SafePassword>,
     ) -> Result<CipherSeed, anyhow::Error> {
         let encrypted_tari_seed = {
+            info!("WHICH current fails?, get_tari_seed() encrypted");
             let state_result = if InternalWallet::is_initialized() {
                 let internal_wallet = InternalWallet::current().read().await;
                 internal_wallet.encrypted_tari_seed.reveal().clone()
@@ -821,6 +829,8 @@ impl InternalWallet {
 
                     match result {
                         Ok(cred) => {
+                            info!("WHICH current fails?, get_tari_seed() in match res");
+
                             // Update store if not yet set to store
                             let mut internal_wallet_guard = InternalWallet::current().write().await;
                             internal_wallet_guard.encrypted_tari_seed =
@@ -863,6 +873,7 @@ impl InternalWallet {
                 "Can't retrieve seed words from an imported monero address!"
             ));
         }
+        info!("WHICH current fails?, get_monero_seed()");
 
         let state_result = if InternalWallet::is_initialized() {
             let internal_wallet = InternalWallet::current().read().await;
@@ -882,6 +893,8 @@ impl InternalWallet {
                     .await
                 {
                     Ok(cred) => {
+                        info!("WHICH current fails?, get_monero_seed() in Ok");
+
                         // Update store if not yet set
                         if InternalWallet::is_initialized() {
                             let mut internal_wallet_guard = InternalWallet::current().write().await;
@@ -920,6 +933,7 @@ impl InternalWallet {
             monero_address.clone(),
         )
         .await?;
+        info!("WHICH current fails?, set_external_monero_address()");
 
         if INSTANCE.get().is_some() {
             let mut internal_wallet_guard = InternalWallet::current().write().await;
@@ -973,6 +987,7 @@ async fn handle_critical_problem(
     extracted_wallet_details: Option<&TariWalletDetails>,
 ) {
     let state_wallet_details = InternalWallet::tari_wallet_details().await;
+    info!("WHICH current fails?, handle_critical_problem()");
     log::error!(
         target: LOG_TARGET,
         "Unexpected {}! {} --- State: {:?} | Extracted from seed: {:?}",
