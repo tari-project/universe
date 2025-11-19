@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::anyhow;
-use log::info;
 use monero_address_creator::network::Mainnet;
 use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
