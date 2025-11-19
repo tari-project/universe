@@ -23,6 +23,7 @@
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 use crate::events_emitter::EventsEmitter;
 use crate::mining::gpu::consts::{EngineType, GpuMinerType};
+use crate::LOG_TARGET_APP_LOGIC;
 use getset::{Getters, Setters};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
@@ -371,7 +372,7 @@ impl ConfigMining {
     async fn _check_for_migration() -> Result<(), anyhow::Error> {
         let current_version = Self::content().await.version_counter;
         if current_version < MINING_CONFIG_VERSION {
-            info!("Mining config needs migration v{current_version:?} => v{MINING_CONFIG_VERSION}");
+            info!(target: LOG_TARGET_APP_LOGIC, "Mining config needs migration v{current_version:?} => v{MINING_CONFIG_VERSION}");
             Self::_migrate().await?;
             Self::update_field(
                 ConfigMiningContent::set_version_counter,

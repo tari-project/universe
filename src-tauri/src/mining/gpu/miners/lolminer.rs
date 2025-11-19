@@ -56,10 +56,8 @@ use crate::{
         StatusMonitor,
     },
     process_utils::launch_child_process,
-    APPLICATION_FOLDER_ID,
+    APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
-
-const LOG_TARGET: &str = "tari::universe::mining::gpu::miners::lolminer";
 
 #[derive(Default)]
 pub struct LolMinerGpuMiner {
@@ -134,7 +132,7 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         }
 
         for device_name in extract_device_names(&output_str) {
-            info!("Lolminer detected device name: {device_name}");
+            info!(target: LOG_TARGET_APP_LOGIC,"Lolminer detected device name: {device_name}");
             #[allow(clippy::cast_possible_truncation)]
             let device_id = gpu_devices.len() as u32;
             gpu_devices.push(GpuCommonInformation {
@@ -215,7 +213,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
         }
 
         info!(
-            target: LOG_TARGET,
+            target: LOG_TARGET_APP_LOGIC,
             "Lol miner logs destination: {}",
             log_folder.to_string_lossy()
         );
@@ -229,7 +227,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
         add_firewall_rule("lolMiner.exe".to_string(), binary_version_path.clone())?;
 
         info!(
-            target: LOG_TARGET,
+            target: LOG_TARGET_APP_LOGIC,
             "Binary file path: {}",
             binary_version_path.display()
         );
@@ -279,18 +277,18 @@ impl StatusMonitor for LolMinerGpuMinerStatusMonitor {
         &self,
         duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
-        info!(target: LOG_TARGET, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
+        info!(target: LOG_TARGET_STATUSES, "Handling unhealthy status for GpuMinerShaAdapter | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
         if duration_since_last_healthy_status.as_secs().gt(&(60 * 3)) // Fallback after 3 minutes of unhealthiness
             && !WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.load(Ordering::SeqCst)
         {
             match GpuManager::write().await.handle_unhealthy_miner().await {
                 Ok(_) => {
-                    info!(target: LOG_TARGET, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
+                    info!(target: LOG_TARGET_STATUSES, "GpuMinerShaAdapter: GPU Pool feature turned off due to prolonged unhealthiness.");
                     WAS_FALLBACK_TO_OTHER_MINER_TRIGGERED.store(true, Ordering::SeqCst);
                     return Ok(HandleUnhealthyResult::Stop);
                 }
                 Err(error) => {
-                    warn!(target: LOG_TARGET, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {error} | Continuing to monitor.");
+                    warn!(target: LOG_TARGET_STATUSES, "GpuMinerShaAdapter: Failed to turn off GPU Pool feature: {error} | Continuing to monitor.");
                     return Ok(HandleUnhealthyResult::Continue);
                 }
             }
@@ -303,7 +301,7 @@ impl StatusMonitor for LolMinerGpuMinerStatusMonitor {
         let status = match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(inner) => inner,
             Err(_) => {
-                warn!(target: LOG_TARGET, "Timeout error in GpuMinerAdapter check_health");
+                warn!(target: LOG_TARGET_STATUSES, "Timeout error in GpuMinerAdapter check_health");
                 let _ = self
                     .gpu_status_sender
                     .send(GpuMinerStatus::default_with_algorithm(
@@ -318,7 +316,7 @@ impl StatusMonitor for LolMinerGpuMinerStatusMonitor {
                 let _ = self.gpu_status_sender.send(status.clone());
                 if status.hash_rate > 0.0 {
                     if !GpuManager::read().await.is_current_miner_healthy().await {
-                        info!(target: LOG_TARGET, "Marking current miner as healthy again");
+                        info!(target: LOG_TARGET_STATUSES, "Marking current miner as healthy again");
                         let _unused = GpuManager::write().await.handle_healthy_miner().await;
                     }
                     HealthStatus::Healthy
@@ -346,7 +344,7 @@ impl LolMinerGpuMinerStatusMonitor {
         let response = match client.get(url).send().await {
             Ok(response) => response,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error in getting response from LolMiner status: {e}");
+                warn!(target: LOG_TARGET_STATUSES, "Error in getting response from LolMiner status: {e}");
                 if e.is_connect() {
                     return Ok(GpuMinerStatus {
                         is_mining: false,
@@ -367,7 +365,7 @@ impl LolMinerGpuMinerStatusMonitor {
         let body: LolMinerHttpApiStatus = match serde_json::from_str(&text) {
             Ok(body) => body,
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error decoding body from  in LolMiner status: {e}");
+                warn!(target: LOG_TARGET_STATUSES, "Error decoding body from  in LolMiner status: {e}");
                 return Ok(GpuMinerStatus {
                     is_mining: false,
                     hash_rate: 0.0,

@@ -26,7 +26,7 @@ use crate::{
     requests::{
         clients::http_file_client::HttpFileClient, get_gh_download_url, get_mirror_download_url,
     },
-    APPLICATION_FOLDER_ID,
+    APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC,
 };
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -36,8 +36,6 @@ use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};
 
 use super::binaries_resolver::{BinaryDownloadInfo, LatestVersionApiAdapter};
-
-const LOG_TARGET: &str = "tari::universe::tapplet_bridge";
 
 pub struct BridgeTappletAdapter {
     pub repo: String,
@@ -86,7 +84,7 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
             Ok(checksum_path) => Ok(checksum_path),
             Err(_) => {
                 let checksum_fallback_url = format!("{}.sha256", download_info.fallback_url);
-                info!(target: LOG_TARGET, "Fallback URL: {checksum_fallback_url}");
+                info!(target: LOG_TARGET_APP_LOGIC, "Fallback URL: {checksum_fallback_url}");
                 HttpFileClient::builder()
                     .build(checksum_fallback_url.clone(), directory.clone())?
                     .execute()
@@ -111,7 +109,7 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
 
         if !tapplet_folder_path.exists() {
             std::fs::create_dir_all(&tapplet_folder_path).unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Failed to create directory: {e}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to create directory: {e}");
             });
         };
 

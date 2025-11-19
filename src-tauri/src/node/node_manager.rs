@@ -50,9 +50,7 @@ use crate::process_watcher::ProcessWatcherStats;
 use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
-use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter};
-
-const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
+use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter, LOG_TARGET_APP_LOGIC};
 
 #[derive(Debug, thiserror::Error)]
 pub enum NodeManagerError {
@@ -328,7 +326,7 @@ impl NodeManager {
                             while !migration_completed {
                                 tokio::select! {
                                     _ = shutdown_signal.wait() => {
-                                        info!(target: LOG_TARGET, "Node migration interrupted");
+                                        info!(target: LOG_TARGET_APP_LOGIC, "Node migration interrupted");
                                         break;
                                     }
                                     _ = tokio::time::sleep(Duration::from_millis(2000)) => {
@@ -337,7 +335,7 @@ impl NodeManager {
                                             if let Ok(status) = current_service.get_network_state().await {
                                                 match status.readiness_status {
                                                     ReadinessStatus::Migration(progress) => {
-                                                        info!(target: LOG_TARGET, "Database migration in progress: {:.1}% ({}/{})",
+                                                        info!(target: LOG_TARGET_APP_LOGIC, "Database migration in progress: {:.1}% ({}/{})",
                                                             progress.progress_percentage, progress.current_block, progress.total_blocks);
 
                                                         let mut params = HashMap::new();
@@ -351,16 +349,16 @@ impl NodeManager {
                                                         }
 
                                                         if progress.progress_percentage >= 100.0 {
-                                                            info!(target: LOG_TARGET, "Database migration completed");
+                                                            info!(target: LOG_TARGET_APP_LOGIC, "Database migration completed");
                                                             migration_completed = true;
                                                         }
                                                     }
                                                     ReadinessStatus::State(state) => match state {
                                                         100 => {
-                                                            info!(target: LOG_TARGET, "Node is ready, no migration needed");
+                                                            info!(target: LOG_TARGET_APP_LOGIC, "Node is ready, no migration needed");
                                                             migration_completed = true;
                                                         }
-                                                        _ => info!(target: LOG_TARGET, "Received other state: {state}")
+                                                        _ => info!(target: LOG_TARGET_APP_LOGIC, "Received other state: {state}")
                                                     }
                                                 }
                                             }
@@ -370,7 +368,7 @@ impl NodeManager {
                             }
                         });
             let _unused = migration_handle.await;
-            info!(target: LOG_TARGET, "Migration monitoring completed");
+            info!(target: LOG_TARGET_APP_LOGIC, "Migration monitoring completed");
         }
         Ok(())
     }
@@ -448,10 +446,10 @@ impl NodeManager {
                 .await
             {
                 Ok(_) => {
-                    info!(target: LOG_TARGET, "LocalNodeAdapter::on_app_exit completed successfully");
+                    info!(target: LOG_TARGET_APP_LOGIC, "LocalNodeAdapter::on_app_exit completed successfully");
                 }
                 Err(e) => {
-                    error!(target: LOG_TARGET, "LocalNodeAdapter::on_app_exit failed: {}", e);
+                    error!(target: LOG_TARGET_APP_LOGIC, "LocalNodeAdapter::on_app_exit failed: {}", e);
                 }
             }
         }
@@ -467,10 +465,10 @@ impl NodeManager {
                 .await
             {
                 Ok(_) => {
-                    info!(target: LOG_TARGET, "RemoteNodeAdapter::on_app_exit completed successfully");
+                    info!(target: LOG_TARGET_APP_LOGIC, "RemoteNodeAdapter::on_app_exit completed successfully");
                 }
                 Err(e) => {
-                    error!(target: LOG_TARGET, "RemoteNodeAdapter::on_app_exit failed: {}", e);
+                    error!(target: LOG_TARGET_APP_LOGIC, "RemoteNodeAdapter::on_app_exit failed: {}", e);
                 }
             }
         }
@@ -495,7 +493,7 @@ impl NodeManager {
         let base_node_status_rx = self.base_node_watch_tx.subscribe();
         let base_node_status = *base_node_status_rx.borrow();
         if !base_node_status.is_synced {
-            info!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
+            info!(target: LOG_TARGET_APP_LOGIC, "Node is not synced, skipping orphan chain check");
             return Ok(false);
         }
 
@@ -642,7 +640,7 @@ pub async fn start_status_forwarding_thread(
         loop {
             tokio::select! {
                 _ = shutdown_signal.wait() => {
-                    info!(target: LOG_TARGET, "Shutdown signal received, stopping status forwarding thread");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Shutdown signal received, stopping status forwarding thread");
                     break;
                 }
                 // Local node status update received
@@ -658,10 +656,10 @@ pub async fn start_status_forwarding_thread(
                         };
 
                         if base_node_watch_tx.send(status).is_err() {
-                            error!(target: LOG_TARGET, "Failed to forward local BaseNodeStatus via base_node_watch_tx");
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to forward local BaseNodeStatus via base_node_watch_tx");
                         }
                         if should_log {
-                            info!(target: LOG_TARGET, "Forwarded Local BaseNodeStatus: {status:?}");
+                            info!(target: LOG_TARGET_APP_LOGIC, "Forwarded Local BaseNodeStatus: {status:?}");
                             last_local_status = Some(status);
                         }
                     }
@@ -679,10 +677,10 @@ pub async fn start_status_forwarding_thread(
                         };
 
                         if base_node_watch_tx.send(status).is_err() {
-                            error!(target: LOG_TARGET, "Failed to forward remote BaseNodeStatus via base_node_watch_tx");
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to forward remote BaseNodeStatus via base_node_watch_tx");
                         }
                         if should_log {
-                            info!(target: LOG_TARGET, "Forwarded Remote BaseNodeStatus: {status:?}");
+                            info!(target: LOG_TARGET_APP_LOGIC, "Forwarded Remote BaseNodeStatus: {status:?}");
                             last_remote_status = Some(status);
                         }
                     }
@@ -721,13 +719,13 @@ where
                     // NODE: Temporary solution to process payrefs in TU v1.2.9
                     if retries > 420 {
                         warn!(
-                            target: LOG_TARGET,
+                            target: LOG_TARGET_APP_LOGIC,
                             "Max retries exceeded for {node_type} node identity readiness. Stopping watcher. Error: {err}"
                         );
                         return stop_watcher_on_error(node_watcher, err).await;
                     }
                     warn!(
-                        target: LOG_TARGET,
+                        target: LOG_TARGET_APP_LOGIC,
                         "[ensure_node_identity_reachable] {node_type} node did not return identity, retrying in 1 second... | {err}"
                     );
                     retries += 1;
@@ -735,7 +733,7 @@ where
             }
         } else {
             error!(
-                target: LOG_TARGET,
+                target: LOG_TARGET_APP_LOGIC,
                 "{node_type} node service is unavailable - ensure_node_identity_reachable skipped"
             );
             break;
@@ -756,7 +754,7 @@ async fn monitor_local_node_sync_and_switch(
 ) {
     select! {
         _ = shutdown_signal.wait() => {
-            info!(target: LOG_TARGET, "Shutdown signal received, stopping local node watcher");
+            info!(target: LOG_TARGET_APP_LOGIC, "Shutdown signal received, stopping local node watcher");
         }
         _ = async {
             let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
@@ -772,20 +770,20 @@ async fn monitor_local_node_sync_and_switch(
                         Ok(synced_height) => {
                             let remote_node_height = node_manager.remote_node_watch_rx.borrow().block_height;
                             if synced_height + 50 < remote_node_height {
-                                warn!(target: LOG_TARGET, "Sync completed but local node is behind remote node by more than 50 blocks. Attempting to sync again");
+                                warn!(target: LOG_TARGET_APP_LOGIC, "Sync completed but local node is behind remote node by more than 50 blocks. Attempting to sync again");
                                 sleep(Duration::from_secs(3)).await; // Wait for 3 seconds before retrying to ensure the node has time to enter syncing state again
                                 continue;
                             }
                             sleep(Duration::from_secs(30)).await; // Wait 30 secs to not interfere with the setup when node already synced
-                            info!(target: LOG_TARGET, "Local node synced, switching node type...");
+                            info!(target: LOG_TARGET_APP_LOGIC, "Local node synced, switching node type...");
                             switch_to_local(node_manager.clone(), node_type.clone()).await;
                             break;
                         }
                         Err(NodeStatusMonitorError::NodeNotStarted) => {
-                            info!(target: LOG_TARGET, "Local node not started, waiting...");
+                            info!(target: LOG_TARGET_APP_LOGIC, "Local node not started, waiting...");
                         }
                         Err(e) => {
-                            error!(target: LOG_TARGET, "NodeManagerError: {}", NodeManagerError::UnknownError(e.into()));
+                            error!(target: LOG_TARGET_APP_LOGIC, "NodeManagerError: {}", NodeManagerError::UnknownError(e.into()));
                         }
                     };
                 }
@@ -808,7 +806,7 @@ async fn switch_to_local(node_manager: NodeManager, node_type: Arc<RwLock<NodeTy
             *current_adapter = Box::new(local_node_watcher.adapter.clone());
         }
     }
-    info!(target: LOG_TARGET, "Local Node successfully switched");
+    info!(target: LOG_TARGET_APP_LOGIC, "Local Node successfully switched");
 
     {
         SetupManager::get_instance()
@@ -817,7 +815,7 @@ async fn switch_to_local(node_manager: NodeManager, node_type: Arc<RwLock<NodeTy
         let mut remote_node_watcher = node_manager.remote_node_watcher.write().await;
         if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
             if let Err(e) = remote_node_watcher.stop().await {
-                error!(target: LOG_TARGET, "Failed to stop remote node watcher: {e}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to stop remote node watcher: {e}");
             }
         }
     }

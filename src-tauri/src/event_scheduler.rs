@@ -97,11 +97,11 @@ use crate::{
     events_emitter::EventsEmitter,
     mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
     tasks_tracker::TasksTrackers,
+    LOG_TARGET_APP_LOGIC,
 };
 
 static ZERO_DURATION: std::time::Duration = std::time::Duration::from_secs(0);
 
-static LOG_TARGET: &str = "tari::universe::event_scheduler";
 static INSTANCE: LazyLock<EventScheduler> = LazyLock::new(EventScheduler::new);
 static EVENT_ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 
@@ -739,7 +739,7 @@ impl EventScheduler {
         ConfigCore::update_field(ConfigCoreContent::set_scheduler_events, persistent_events)
             .await
             .unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Failed to save persistent events to config: {}", e);
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to save persistent events to config: {}", e);
             });
     }
 
@@ -797,13 +797,13 @@ impl EventScheduler {
         let task_tracker = TasksTrackers::current().common.get_task_tracker().await;
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
-        info!(target: LOG_TARGET, "Starting Event Scheduler Listener");
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting Event Scheduler Listener");
 
         task_tracker.spawn(async move {
             let mut internal_events: HashMap<String, ScheduledEvent> = HashMap::new();
             for (id, event) in persistent_events_from_config {
                 Self::handle_add_event(&mut internal_events, event.event_type.clone(), id.clone(), event.timing.clone()).await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to reschedule persistent event {:?}: {}", id, e);
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to reschedule persistent event {:?}: {}", id, e);
                     e.to_string()
                 });
             }
@@ -813,7 +813,7 @@ impl EventScheduler {
             loop {
                 tokio::select! {
                     _ = shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET, "Event Scheduler Listener received shutdown signal");
+                        info!(target: LOG_TARGET_APP_LOGIC, "Event Scheduler Listener received shutdown signal");
 
                         Self::save_persistent_events_to_config(&internal_events).await;
                         for (_, mut event) in internal_events.drain() {
@@ -854,7 +854,7 @@ impl EventScheduler {
                             }
 
                             None => {
-                                warn!(target: LOG_TARGET, "Message channel closed, stopping scheduler");
+                                warn!(target: LOG_TARGET_APP_LOGIC, "Message channel closed, stopping scheduler");
                                 break;
                             }
                         }
@@ -862,7 +862,7 @@ impl EventScheduler {
                 }
             }
 
-            info!(target: LOG_TARGET, "Event Scheduler Listener stopped");
+            info!(target: LOG_TARGET_APP_LOGIC, "Event Scheduler Listener stopped");
         });
 
         Ok(())
@@ -889,7 +889,7 @@ impl EventScheduler {
         timing: SchedulerEventTiming,
     ) -> Result<String, SchedulerError> {
         if event_type.is_unique() {
-            info!(target: LOG_TARGET, "Ensuring uniqueness for event type {:?}", event_type);
+            info!(target: LOG_TARGET_APP_LOGIC, "Ensuring uniqueness for event type {:?}", event_type);
             let to_remove: Vec<String> = events
                 .iter()
                 .filter(|(_, event)| event.event_type == event_type)
@@ -898,7 +898,7 @@ impl EventScheduler {
 
             for id in to_remove {
                 if let Err(e) = Self::handle_remove_event(events, id.clone()) {
-                    warn!(target: LOG_TARGET, "Failed to remove duplicate event {:?}: {}", id, e);
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove duplicate event {:?}: {}", id, e);
                 }
             }
         }
@@ -936,12 +936,12 @@ impl EventScheduler {
         events: &mut HashMap<String, ScheduledEvent>,
         event_id: String,
     ) -> Result<(), SchedulerError> {
-        info!(target: LOG_TARGET, "Removing event with ID {:?}", event_id);
+        info!(target: LOG_TARGET_APP_LOGIC, "Removing event with ID {:?}", event_id);
         if let Some(mut event) = events.remove(&event_id) {
             if let Some(handle) = event.task_handle.take() {
                 handle.abort();
             }
-            info!(target: LOG_TARGET, "Removed event with ID {:?}", event_id);
+            info!(target: LOG_TARGET_APP_LOGIC, "Removed event with ID {:?}", event_id);
             Ok(())
         } else {
             Err(SchedulerError::EventNotFound(event_id))
@@ -974,7 +974,7 @@ impl EventScheduler {
                 handle.abort();
             }
 
-            info!(target: LOG_TARGET, "Paused event with ID {:?}", event_id);
+            info!(target: LOG_TARGET_APP_LOGIC, "Paused event with ID {:?}", event_id);
             Ok(())
         } else {
             Err(SchedulerError::EventNotFound(event_id))
@@ -1013,7 +1013,7 @@ impl EventScheduler {
 
             event.task_handle = Some(task_handle);
 
-            info!(target: LOG_TARGET, "Resumed event with ID {:?}", event_id);
+            info!(target: LOG_TARGET_APP_LOGIC, "Resumed event with ID {:?}", event_id);
             Ok(())
         } else {
             Err(SchedulerError::EventNotFound(event_id))
@@ -1041,24 +1041,24 @@ impl EventScheduler {
                 match event.event_type.clone() {
                     SchedulerEventType::ResumeMining => {
                         GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to start GPU mining during PauseMining event {:?}: {}", event_id, e);
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during PauseMining event {:?}: {}", event_id, e);
                 });
                         CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to start CPU mining during PauseMining event {:?}: {}", event_id, e);
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during PauseMining event {:?}: {}", event_id, e);
                 });
                     }
                     SchedulerEventType::Mine { mining_mode } => {
                         ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.clone()).await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
                 });
                         // TODO: Replace with emiting specific value only
                         EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await)
                             .await;
                         GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
                 });
                         CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
                 });
                     }
                 }
@@ -1088,10 +1088,10 @@ impl EventScheduler {
                 SchedulerEventType::ResumeMining => {}
                 SchedulerEventType::Mine { mining_mode } => {
                     GpuManager::write().await.stop_mining().await.unwrap_or_else(|e| {
-                        error!(target: LOG_TARGET, "Failed to stop mining during cleanup of event {:?}: {}", event_id, e);
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to stop mining during cleanup of event {:?}: {}", event_id, e);
                     });
                     CpuManager::write().await.stop_mining().await.unwrap_or_else(|e| {
-                        error!(target: LOG_TARGET, "Failed to stop mining during cleanup of event {:?}: {}", event_id, e);
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to stop mining during cleanup of event {:?}: {}", event_id, e);
                     });
                 }
             }
@@ -1113,9 +1113,9 @@ impl EventScheduler {
     ) {
         if let Some(event) = events.get(&event_id) {
             if let SchedulerEventTiming::In(_) = event.timing {
-                info!(target: LOG_TARGET, "Cleaning up schedule for event ID {:?}", event_id);
+                info!(target: LOG_TARGET_APP_LOGIC, "Cleaning up schedule for event ID {:?}", event_id);
                 if let Err(e) = Self::handle_remove_event(events, event_id.clone()) {
-                    error!(target: LOG_TARGET, "Failed to clean up scheduled event {:?}: {}", event_id, e);
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up scheduled event {:?}: {}", event_id, e);
                 }
             }
         }
@@ -1150,12 +1150,12 @@ impl EventScheduler {
                         .message_sender
                         .send(SchedulerMessage::TriggerEnterCallback { event_id });
                 } else {
-                    error!(target: LOG_TARGET, "Failed to parse duration for 'In' event {:?}", event_id);
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to parse duration for 'In' event {:?}", event_id);
                 }
             }),
 
             SchedulerEventTiming::Between(between_time_variant_payload) => {
-                info!(target: LOG_TARGET, "Creating scheduling task for 'Between' event ID {:?}", event_id);
+                info!(target: LOG_TARGET_APP_LOGIC, "Creating scheduling task for 'Between' event ID {:?}", event_id);
                 let cron_schedule =
                     between_time_variant_payload
                         .to_cron_schedule()
@@ -1180,7 +1180,7 @@ impl EventScheduler {
                         {
                             sleep(next_start_wait_time).await;
                         } else {
-                            warn!(target: LOG_TARGET, "No next start time found for event with ID {:?}", event_id);
+                            warn!(target: LOG_TARGET_APP_LOGIC, "No next start time found for event with ID {:?}", event_id);
                             break;
                         }
 

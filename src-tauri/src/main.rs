@@ -128,7 +128,10 @@ mod wallet;
 mod websocket_events_manager;
 mod websocket_manager;
 
-const LOG_TARGET: &str = "tari::universe::main";
+pub static LOG_TARGET_DEFAULT: &str = "tari::universe"; // General logs
+pub static LOG_TARGET_STATUSES: &str = "tari::universe::statuses"; // Status updates, like hashrate, wallet sync, healthchecks
+pub static LOG_TARGET_APP_LOGIC: &str = "tari::universe::app_logic"; // App logic logs, like setup, Binary downloads, etc.
+
 const RESTART_EXIT_CODE: i32 = i32::MAX;
 const IGNORED_SENTRY_ERRORS: [&str; 2] = [
     "Failed to initialize gtk backend",
@@ -341,14 +344,14 @@ fn main() {
                 Some(w) => {
                     let _unused = w.show().map_err(|err| {
                         error!(
-                            target: LOG_TARGET,
+                            target: LOG_TARGET_APP_LOGIC,
                             "Couldn't show the main window {err:?}"
                         )
                     });
                     let _unused = w.set_focus();
                 }
                 None => {
-                    error!(target: LOG_TARGET, "Could not find main window");
+                    error!(target: LOG_TARGET_APP_LOGIC, "Could not find main window");
                 }
             };
         }))
@@ -405,7 +408,7 @@ fn main() {
                     if let Some(backup_path) = matches.args.get("import-backup") {
                         if let Some(backup_path) = backup_path.value.as_str() {
                             info!(
-                                target: LOG_TARGET,
+                                target: LOG_TARGET_APP_LOGIC,
                                 "Trying to copy backup to existing db: {backup_path:?}"
                             );
                             let backup_path = Path::new(backup_path);
@@ -423,29 +426,29 @@ fn main() {
                                     .join("base_node")
                                     .join("db");
 
-                                info!(target: LOG_TARGET, "Existing db path: {existing_db:?}");
+                                info!(target: LOG_TARGET_APP_LOGIC, "Existing db path: {existing_db:?}");
                                 let _unused = fs::remove_dir_all(&existing_db).inspect_err(|e| {
                                     warn!(
-                                        target: LOG_TARGET,
+                                        target: LOG_TARGET_APP_LOGIC,
                                         "Could not remove existing db when importing backup: {e:?}"
                                     )
                                 });
                                 let _unused = fs::create_dir_all(&existing_db).inspect_err(|e| {
                                     error!(
-                                        target: LOG_TARGET,
+                                        target: LOG_TARGET_APP_LOGIC,
                                         "Could not create existing db when importing backup: {e:?}"
                                     )
                                 });
                                 let _unused = fs::copy(backup_path, existing_db.join("data.mdb"))
                                     .inspect_err(|e| {
                                         error!(
-                                            target: LOG_TARGET,
+                                            target: LOG_TARGET_APP_LOGIC,
                                             "Could not copy backup to existing db: {e:?}"
                                         )
                                     });
                             } else {
                                 warn!(
-                                    target: LOG_TARGET,
+                                    target: LOG_TARGET_APP_LOGIC,
                                     "Backup file does not exist: {backup_path:?}"
                                 );
                             }
@@ -453,7 +456,7 @@ fn main() {
                     }
                 }
                 Err(e) => {
-                    error!(target: LOG_TARGET, "Could not get cli matches: {e:?}");
+                    error!(target: LOG_TARGET_APP_LOGIC, "Could not get cli matches: {e:?}");
                     return Err(Box::new(e));
                 }
             };
@@ -474,7 +477,7 @@ fn main() {
                 if node_peer_db.exists() {
                     if let Err(e) = remove_dir_all(node_peer_db) {
                         warn!(
-                            target: LOG_TARGET,
+                            target: LOG_TARGET_APP_LOGIC,
                             "Could not clear peer data folder: {e}"
                         );
                     }
@@ -483,7 +486,7 @@ fn main() {
                 if wallet_peer_db.exists() {
                     if let Err(e) = remove_dir_all(wallet_peer_db) {
                         warn!(
-                            target: LOG_TARGET,
+                            target: LOG_TARGET_APP_LOGIC,
                             "Could not clear peer data folder: {e}"
                         );
                     }
@@ -491,7 +494,7 @@ fn main() {
 
                 remove_file(tcp_tor_toggled_file).map_err(|e| {
                     error!(
-                        target: LOG_TARGET,
+                        target: LOG_TARGET_APP_LOGIC,
                         "Could not remove tcp_tor_toggled file: {e}"
                     );
                     e.to_string()
@@ -598,14 +601,14 @@ fn main() {
         .build(tauri::generate_context!())
         .inspect_err(|e| {
             error!(
-                target: LOG_TARGET,
+                target: LOG_TARGET_APP_LOGIC,
                 "Error while building tauri application: {e:?}"
             )
         })
         .expect("error while running tauri application");
 
     info!(
-        target: LOG_TARGET,
+        target: LOG_TARGET_APP_LOGIC,
         "Starting Tari Universe version: {}",
         app.package_info().version
     );
@@ -619,11 +622,13 @@ fn main() {
         // We can only receive system events from the event loop so this needs to be here
         let _unused = SystemStatus::current()
             .receive_power_event(&power_monitor)
-            .inspect_err(|e| error!(target: LOG_TARGET, "Could not receive power event: {e:?}"));
+            .inspect_err(
+                |e| error!(target: LOG_TARGET_APP_LOGIC, "Could not receive power event: {e:?}"),
+            );
 
         match event {
             tauri::RunEvent::Ready => {
-                info!(target: LOG_TARGET, "RunEvent Ready");
+                info!(target: LOG_TARGET_APP_LOGIC, "RunEvent Ready");
                 let handle_clone = app_handle.clone();
                 let state = handle_clone.state::<UniverseAppState>();
 
@@ -639,7 +644,7 @@ fn main() {
             }
             tauri::RunEvent::ExitRequested { api: _, code, .. } => {
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_APP_LOGIC,
                     "App shutdown request [ExitRequested] caught with code: {code:#?}"
                 );
                 if let Some(exit_code) = code {
@@ -649,17 +654,17 @@ fn main() {
                     }
                 }
 
-                info!(target: LOG_TARGET, "All processes stopped");
+                info!(target: LOG_TARGET_APP_LOGIC, "All processes stopped");
             }
             tauri::RunEvent::Exit => {
-                info!(target: LOG_TARGET, "App shutdown [Exit] caught");
+                info!(target: LOG_TARGET_APP_LOGIC, "App shutdown [Exit] caught");
                 if is_restart_requested_clone.load(Ordering::SeqCst) {
                     app_handle.cleanup_before_exit();
                     let env = app_handle.env();
                     tauri::process::restart(&env); // this will call exit(0) so we'll not return to the event loop
                 }
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_APP_LOGIC,
                     "Tari Universe v{} shut down successfully",
                     app_handle.package_info().version
                 );

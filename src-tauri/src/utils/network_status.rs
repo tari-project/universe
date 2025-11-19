@@ -28,8 +28,8 @@ use tokio::task::spawn_blocking;
 
 use crate::events_emitter::EventsEmitter;
 use crate::utils::speed_test_utils::{test_download, test_latency, test_upload};
+use crate::LOG_TARGET_APP_LOGIC;
 
-const LOG_TARGET: &str = "tari::universe::network_status";
 const SPEED_TEST_TIMEOUT: Duration = Duration::from_secs(60);
 // Mb values
 const MINIMAL_NETWORK_DOWNLOAD_SPEED: f64 = 1.5;
@@ -63,7 +63,7 @@ impl NetworkStatus {
 
     pub async fn handle_test_results(&self, download_speed: f64, upload_speed: f64, latency: f64) {
         info!(
-            target: LOG_TARGET,
+            target: LOG_TARGET_APP_LOGIC,
             "Network speed test results: download_speed: {download_speed:.2} MB/s, upload_speed: {upload_speed:.2} MB/s, latency: {latency:.2} ms"
         );
         let is_bandwidth_too_low = self.is_bandwidth_too_low(download_speed, upload_speed);
@@ -72,7 +72,7 @@ impl NetworkStatus {
             .sender
             .send((download_speed, upload_speed, latency))
             .inspect_err(|e| {
-                error!(target: LOG_TARGET, "Failed to send network speeds: {e:?}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to send network speeds: {e:?}");
             });
 
         EventsEmitter::emit_network_status(
@@ -98,7 +98,7 @@ impl NetworkStatus {
                 upload_speed = speed.unwrap_or(0.0);
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to perform upload speed test: {e:?}")
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to perform upload speed test: {e:?}")
             }
         };
         match spawn_blocking(|| test_download(NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST)).await {
@@ -106,14 +106,14 @@ impl NetworkStatus {
                 download_speed = speed.unwrap_or(0.0);
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to perform download speed test: {e:?}")
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to perform download speed test: {e:?}")
             }
         };
 
         match spawn_blocking(test_latency).await {
             Ok(speed) => latency = speed.unwrap_or(0.0),
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to perform latency test: {e:?}")
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to perform latency test: {e:?}")
             }
         };
 
@@ -128,7 +128,7 @@ impl NetworkStatus {
                 Ok(())
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to perform network speed test: {e:?}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to perform network speed test: {e:?}");
                 Err(e)
             }
         }
@@ -136,14 +136,14 @@ impl NetworkStatus {
 
     pub async fn run_speed_test_with_timeout(&self) {
         match tokio::time::timeout(SPEED_TEST_TIMEOUT, self.run_speed_test_once()).await {
-            Ok(Ok(_)) => info!(target: LOG_TARGET, "Network speed test completed"),
+            Ok(Ok(_)) => info!(target: LOG_TARGET_APP_LOGIC, "Network speed test completed"),
             Ok(Err(error_message)) => {
                 let error_message =
                     format!("Failed to perform network speed test: {error_message:?}");
-                error!(target: LOG_TARGET, "Failed to perform network speed test: {error_message:?}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to perform network speed test: {error_message:?}");
             }
             Err(_) => {
-                error!(target: LOG_TARGET, "Network speed test timed out");
+                error!(target: LOG_TARGET_APP_LOGIC, "Network speed test timed out");
             }
         }
     }
@@ -152,7 +152,7 @@ impl NetworkStatus {
         match reqwest::get("https://www.google.com").await {
             Ok(response) => {
                 if response.status().is_success() {
-                    info!(target: LOG_TARGET, "Successfully pinged Google server");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Successfully pinged Google server");
                     Ok(())
                 } else {
                     Err(anyhow::anyhow!(
@@ -162,7 +162,7 @@ impl NetworkStatus {
                 }
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to ping Google server: {e:?}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to ping Google server: {e:?}");
                 Err(e.into())
             }
         }
@@ -172,16 +172,16 @@ impl NetworkStatus {
         match tokio::time::timeout(Duration::from_secs(5), Self::ping_google_server()).await {
             Ok(result) => match result {
                 Ok(_) => {
-                    info!(target: LOG_TARGET, "Internet connection is available");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Internet connection is available");
                     true
                 }
                 Err(e) => {
-                    error!(target: LOG_TARGET, "No internet connection: {e:?}");
+                    error!(target: LOG_TARGET_APP_LOGIC, "No internet connection: {e:?}");
                     false
                 }
             },
             Err(_) => {
-                error!(target: LOG_TARGET, "Ping to Google server timed out");
+                error!(target: LOG_TARGET_APP_LOGIC, "Ping to Google server timed out");
                 false
             }
         }

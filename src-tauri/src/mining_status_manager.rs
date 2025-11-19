@@ -40,9 +40,8 @@ use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     mining::cpu::CpuMinerStatus,
     tasks_tracker::TasksTrackers,
-    BaseNodeStatus, GpuMinerStatus,
+    BaseNodeStatus, GpuMinerStatus, LOG_TARGET_APP_LOGIC,
 };
-const LOG_TARGET: &str = "tari::universe::mining_status_manger";
 static INTERVAL_DURATION: std::time::Duration = Duration::from_secs(15);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -88,15 +87,15 @@ impl MiningStatusManager {
     }
 
     pub async fn stop_polling(&self) {
-        info!(target:LOG_TARGET,"stop mining_status_manager");
+        info!(target:LOG_TARGET_APP_LOGIC,"stop mining_status_manager");
 
         match self.close_channel_tx.send(true) {
             Ok(_) => {}
             Err(_) => {
-                info!(target: LOG_TARGET,"mining_status_manager has already been closed.");
+                info!(target: LOG_TARGET_APP_LOGIC,"mining_status_manager has already been closed.");
             }
         };
-        info!(target: LOG_TARGET,"stopped emitting messages from mining_status_manger");
+        info!(target: LOG_TARGET_APP_LOGIC,"stopped emitting messages from mining_status_manger");
     }
 
     pub async fn start_polling(&mut self) -> Result<(), anyhow::Error> {
@@ -143,18 +142,18 @@ impl MiningStatusManager {
                                     }){
                                         let status = response.status();
                                         if !status.is_success(){
-                                            error!(target:LOG_TARGET,"error at sending mining status {:?}",response.text().await);
+                                            error!(target:LOG_TARGET_APP_LOGIC,"error at sending mining status {:?}",response.text().await);
                                         }
                                     }
                                 }
                             }
                         }
                         _ = shutdown_signal.wait() => {
-                            info!(target:LOG_TARGET,"websocket events manager closed");
+                            info!(target:LOG_TARGET_APP_LOGIC,"websocket events manager closed");
                             return;
                         }
                         _ = wait_for_close_signal(close_channel_tx.subscribe(),is_started.clone()) => {
-                            info!(target:LOG_TARGET,"websocket events manager closed");
+                            info!(target:LOG_TARGET_APP_LOGIC,"websocket events manager closed");
                             return;
                         }
                     }
@@ -220,10 +219,10 @@ async fn wait_for_close_signal(
             let mut is_started_guard = is_started.lock().await;
             *is_started_guard = false;
             drop(is_started_guard);
-            info!(target:LOG_TARGET,"received mining_status_manger stop signal");
+            info!(target:LOG_TARGET_APP_LOGIC,"received mining_status_manger stop signal");
         }
         Err(_) => {
-            info!(target:LOG_TARGET,"received mining_status_manger stop signal");
+            info!(target:LOG_TARGET_APP_LOGIC,"received mining_status_manger stop signal");
         }
     }
 }
