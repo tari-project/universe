@@ -1,37 +1,45 @@
 {
+  "all-modules-failed-description": "すべてのモジュールの初期化に失敗しました。アプリは現在の状態では動作できません。アプリを再起動するか、サポートに連絡してください。",
   "any_moment_now": "今すぐにでも",
+  "app-modules": {
+    "cpu-mining": "CPUマイニング",
+    "gpu-mining": "GPUマイニング",
+    "wallet": "ウォレット"
+  },
   "awaiting-exchange-selection": "ユーザーの取引所選択を待っています",
   "block-sync": "ブロックを同期中",
   "calculating_time": "残り時間を計算中...",
   "calculating_time-compact": "時間を計算中...",
+  "critical-initialization-failure": "重大な初期化エラー",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "ステップの完了に失敗しました",
   "header-sync": "ヘッダーを同期中",
   "local-node-sync": "Tari Universeはまだ同期中です。これはマイニング体験に影響しません。",
+  "module-initialization-issues": "一部のモジュールの初期化に失敗しました",
   "network-peers": "ネットワークピアに接続中",
   "phase-title": {
     "setup-core": "Tariアプリを設定中",
     "setup-core-compact": "アプリを同期中",
     "setup-hardware": "ハードウェアを設定中",
     "setup-hardware-compact": "ハードウェアの設定中",
-    "setup-node": "Tariノードを設定中",
-    "setup-node-compact": "ノードを同期中",
     "setup-mining": "追加ユーティリティを設定中",
     "setup-mining-compact": "ユーティリティの設定中",
+    "setup-node": "Tariノードを設定中",
+    "setup-node-compact": "ノードを同期中",
     "setup-wallet": "ウォレットを設定中",
     "setup-wallet-compact": "ウォレットを同期中"
-  },
-  "critical-initialization-failure": "重大な初期化エラー",
-  "failed-to-complete-step": "ステップの完了に失敗しました",
-  "all-modules-failed-description": "すべてのモジュールの初期化に失敗しました。アプリは現在の状態では動作できません。アプリを再起動するか、サポートに連絡してください。",
-  "module-initialization-issues": "一部のモジュールの初期化に失敗しました",
-  "some-modules-failed-description": "アプリは動作を続けることができますが、一部の機能が利用できない場合があります。失敗したモジュールを再起動するか、問題が続く場合はサポートに連絡してください。",
-  "app-modules": {
-    "cpu-mining": "CPUマイニング",
-    "gpu-mining": "GPUマイニング",
-    "wallet": "ウォレット"
   },
   "remaining": "残り",
   "second_remaining": "残り秒数",
   "seconds_remaining": "残り秒数",
+  "some-modules-failed-description": "アプリは動作を続けることができますが、一部の機能が利用できない場合があります。失敗したモジュールを再起動するか、問題が続く場合はサポートに連絡してください。",
   "title": {
     "binaries-cpu-miner": "CPUマイナーバイナリを準備中",
     "binaries-cpu-miner-download": "CPUマイナーバイナリの準備中 | ダウンロード中: {{ progress }}%",

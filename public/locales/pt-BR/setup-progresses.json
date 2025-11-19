@@ -1,11 +1,28 @@
 {
+  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
   "any_moment_now": "A qualquer momento",
+  "app-modules": {
+    "cpu-mining": "CPU Mining",
+    "gpu-mining": "GPU Mining",
+    "wallet": "Wallet"
+  },
   "awaiting-exchange-selection": "Aguardando seleção de exchange do usuário",
   "block-sync": "Sincronizando blocos",
   "calculating_time": "Calculando tempo restante...",
   "calculating_time-compact": "Calculando tempo...",
+  "critical-initialization-failure": "Critical initialization failure",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "Failed to complete step",
   "header-sync": "Sincronizando cabeçalhos",
   "local-node-sync": "O Tari Universe ainda está sincronizando. Isso não afetará sua experiência de mineração.",
+  "module-initialization-issues": "Some Modules failed to initialize",
   "network-peers": "Conectando-se a pares da rede",
   "phase-core-critical-problem-description": "A configuração principal é crítica para o aplicativo. Tente reiniciar o aplicativo. Se o problema persistir, entre em contato com o suporte.",
   "phase-core-critical-problem-title": "Falha na Configuração Principal",
@@ -24,6 +41,8 @@
     "setup-local-node-compact": "Sincronizando nó",
     "setup-mining": "Configurando utilitários extras",
     "setup-mining-compact": "Configurando utilitários",
+    "setup-node": "Setting up the Tari Node",
+    "setup-node-compact": "Syncing node",
     "setup-wallet": "Configurando a Carteira",
     "setup-wallet-compact": "Sincronizando carteira"
   },
@@ -32,6 +51,7 @@
   "remaining": "restante",
   "second_remaining": "segundo restante",
   "seconds_remaining": "segundos restantes",
+  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
   "title": {
     "binaries-cpu-miner": "Preparando Binário do Minerador de CPU",
     "binaries-cpu-miner-download": "Preparando Binário do Minerador de CPU | Baixando: {{ progress }}%",
@@ -50,6 +70,8 @@
     "detect-gpu": "Detectando GPUs",
     "done": "Concluído",
     "initialize-application-modules": "Inicializando Pré-requisitos da Plataforma",
+    "initialize-cpu-hardware": "Initialize CPU Hardware",
+    "initialize-gpu-hardware": "Initialize GPU Hardware",
     "initialize-spending-wallet": "Inicializando Carteira de Gastos",
     "migrating-database": "Migrando Banco de Dados da versão {{current_db_version}} para {{target_db_version}} progresso: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Iniciando Proxy de Mineração de Fusão",

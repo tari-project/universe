@@ -1,37 +1,45 @@
 {
+  "all-modules-failed-description": "所有模块初始化失败。应用程序无法在当前状态下工作。请重新启动应用程序或联系支持。",
   "any_moment_now": "随时",
+  "app-modules": {
+    "cpu-mining": "CPU 挖矿",
+    "gpu-mining": "GPU 挖矿",
+    "wallet": "钱包"
+  },
   "awaiting-exchange-selection": "等待用户选择交易所",
   "block-sync": "同步区块",
   "calculating_time": "计算剩余时间...",
   "calculating_time-compact": "计算时间...",
+  "critical-initialization-failure": "关键初始化失败",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "未能完成步骤",
   "header-sync": "同步头部",
   "local-node-sync": "Tari Universe仍在同步。这不会影响您的挖矿体验。",
+  "module-initialization-issues": "某些模块初始化失败",
   "network-peers": "连接到网络节点",
   "phase-title": {
     "setup-core": "设置 Tari 应用程序",
     "setup-core-compact": "同步应用程序",
     "setup-hardware": "设置硬件",
     "setup-hardware-compact": "设置硬件",
-    "setup-node": "设置 Tari 节点",
-    "setup-node-compact": "同步节点",
     "setup-mining": "设置额外工具",
     "setup-mining-compact": "设置工具",
+    "setup-node": "设置 Tari 节点",
+    "setup-node-compact": "同步节点",
     "setup-wallet": "设置钱包",
     "setup-wallet-compact": "同步钱包"
-  },
-  "critical-initialization-failure": "关键初始化失败",
-  "failed-to-complete-step": "未能完成步骤",
-  "all-modules-failed-description": "所有模块初始化失败。应用程序无法在当前状态下工作。请重新启动应用程序或联系支持。",
-  "module-initialization-issues": "某些模块初始化失败",
-  "some-modules-failed-description": "应用程序可以继续工作，但某些功能可能不可用。请重新启动失败的模块，或在问题持续时联系支持。",
-  "app-modules": {
-    "cpu-mining": "CPU 挖矿",
-    "gpu-mining": "GPU 挖矿",
-    "wallet": "钱包"
   },
   "remaining": "剩余",
   "second_remaining": "剩余秒数",
   "seconds_remaining": "剩余秒数",
+  "some-modules-failed-description": "应用程序可以继续工作，但某些功能可能不可用。请重新启动失败的模块，或在问题持续时联系支持。",
   "title": {
     "binaries-cpu-miner": "准备 CPU 挖矿二进制文件",
     "binaries-cpu-miner-download": "准备 CPU 矿工二进制文件 | 下载中：{{ progress }}%",
