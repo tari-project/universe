@@ -1,11 +1,4 @@
-import {
-    ApplicationsVersions,
-    TorConfig,
-    TransactionInfo,
-    BridgeEnvs,
-    TariAddressVariants,
-    BaseNodeStatus,
-} from './app-status';
+import { ApplicationsVersions, TorConfig, BridgeEnvs, TariAddressVariants, BaseNodeStatus } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from './app-status.ts';
 import { displayMode } from '../store/types.ts';

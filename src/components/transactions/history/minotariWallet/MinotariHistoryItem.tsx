@@ -48,10 +48,6 @@ const BaseItem = memo(function BaseItem({
     onClick,
     hideWalletBalance,
 }: BaseItemProps) {
-    // note re. isPositiveValue:
-    // amounts in the tx response are always positive numbers but
-    // if the transaction is Outbound, the value is negative
-
     const isPositiveValue = direction === TransactionDirection.Inbound;
     const displayTitle = title.length > 26 ? truncateMiddle(title, 8) : title;
     return (
@@ -115,19 +111,7 @@ const MinotariHistoryListItem = memo(function MinotariListItem({
         />
     );
 
-    // const detailsButton = !isMined ? (
-    //     <Button
-    //         size="smaller"
-    //         variant="outlined"
-    //         onClick={(e) => {
-    //             e.stopPropagation();
-    //             setDetailsItem?.(transaction);
-    //         }}
-    //     >
-    //         {t(`history.view-details`)}
-    //     </Button>
-    // ) : null;
-    const detailsButton = (
+    const detailsButton = !isMined ? (
         <Button
             size="smaller"
             variant="outlined"
@@ -138,7 +122,7 @@ const MinotariHistoryListItem = memo(function MinotariListItem({
         >
             {t(`history.view-details`)}
         </Button>
-    );
+    ) : null;
 
     return (
         <ItemWrapper

@@ -5,7 +5,6 @@ import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 
 import gemImage from '@app/assets/images/gem.png';
-import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore.ts';
 import { ReplaySVG } from '@app/assets/icons/replay.tsx';
 import {
     ButtonWrapper,
@@ -16,7 +15,6 @@ import {
     ReplayButton,
 } from './MinotariHistoryItem.styles.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
-import { CombinedBridgeWalletTransaction } from '@app/store/useWalletStore.ts';
 import { MinotariWalletTransaction } from '@app/types/app-status.ts';
 
 interface Props {
@@ -35,7 +33,7 @@ const MinotariHoverItem = memo(function ItemHover({ transaction, button }: Props
 
     const handleShareClick = () => {
         setShowModal(true);
-        // setItemData(item);
+        setItemData(transaction);
     };
     const isLoggedIn = !!airdropTokens;
     const showShareButton = sharingEnabled && isLoggedIn;

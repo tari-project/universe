@@ -1,15 +1,12 @@
 import { useCallback, useEffect, RefObject, useState, useRef, useMemo } from 'react';
-import { useInView } from 'react-intersection-observer';
+
 import { useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api/core';
 
-import { CombinedBridgeWalletTransaction, useWalletStore } from '@app/store';
+import { useWalletStore } from '@app/store';
 
-import { HistoryListItem } from './ListItem.tsx';
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { EmptyText, ListItemWrapper, ListWrapper } from './List.styles.ts';
-import { setDetailsItem, setMinotariDetailsItem } from '@app/store/actions/walletStoreActions.ts';
-import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { setMinotariDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import { MinotariHistoryListItem } from './minotariWallet/MinotariHistoryItem.tsx';
 import { MinotariWalletTransaction, OutputType } from '@app/types/app-status.ts';
 
@@ -21,7 +18,6 @@ interface ListProps {
 export function List({ setIsScrolled, targetRef }: ListProps) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
-    const walletImporting = useWalletStore((s) => s.is_wallet_importing);
     const minotariWalletTransactions = useWalletStore((s) => s.minotari_wallet_transactions);
     const transactionsFilter = useWalletStore((s) => s.tx_history_filter);
 
@@ -43,12 +39,6 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
                 return minotariWalletTransactions;
         }
     }, [minotariWalletTransactions, transactionsFilter]);
-
-    // console.log('Minotari Wallet Transactions:', minotariWalletTransactions);
-
-    // TODO clean up
-    // const walletLoading = walletImporting || !walletScanning?.is_initial_scan_finished || isFetching;
-    const walletLoading = walletImporting || !walletScanning?.is_initial_scan_finished;
 
     // Track seen transaction IDs to show "new" indicator for new transactions
     const [seenTransactionIds, setSeenTransactionIds] = useState<Set<string>>(new Set());
@@ -82,24 +72,6 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
         return () => clearTimeout(timer);
     }, [walletTransactions, seenTransactionIds]);
 
-    const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
-        if (!transaction || !transaction.walletTransactionDetails) {
-            setDetailsItem(null);
-            return;
-        }
-        const dest_address_emoji = await invoke('parse_tari_address', { address: transaction.destinationAddress })
-            .then((result) => result?.emoji_string)
-            .catch(() => undefined);
-
-        setDetailsItem({
-            ...transaction,
-            walletTransactionDetails: {
-                ...transaction.walletTransactionDetails,
-                destAddressEmoji: dest_address_emoji,
-            },
-        });
-    }, []);
-
     const handleMinotariDetailsChange = useCallback((transaction: MinotariWalletTransaction) => {
         setMinotariDetailsItem(transaction);
     }, []);
@@ -111,19 +83,6 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
         <ListItemWrapper>
             {walletTransactions?.map((tx, i) => {
                 const isNewTransaction = !seenTransactionIds.has(tx.id);
-                // const txId = tx.walletTransactionDetails?.txId || tx.paymentId;
-                // const hash = tx.bridgeTransactionDetails?.transactionHash;
-                // const hasNoId = !txId && !hash?.length;
-                // const itemKey = `ListItem_${txId}-${hash}-${hasNoId ? i : ''}`;
-                // return (
-                //     <HistoryListItem
-                //         key={itemKey}
-                //         item={tx}
-                //         index={i}
-                //         itemIsNew={false}
-                //         setDetailsItem={handleDetailsChange}
-                //     />
-                // );
                 return (
                     <MinotariHistoryListItem
                         transaction={tx}
@@ -139,11 +98,9 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
             {Array.from({ length: placeholdersNeeded }).map((_, index) => (
                 <PlaceholderItem key={`placeholder-${index}`} />
             ))}
-            {/* {isFetchingNextPage || isFetching ? <LoadingDots /> : null} */}
         </ListItemWrapper>
     );
 
-    // const isEmpty = !walletLoading && !transactions?.length;
     const isEmpty = !minotariWalletTransactions?.length;
     const emptyMarkup = isEmpty ? <EmptyText>{t('empty-tx')}</EmptyText> : null;
     return (
