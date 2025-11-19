@@ -1,37 +1,45 @@
 {
+  "all-modules-failed-description": "Alle Module konnten nicht initialisiert werden. Die App kann im aktuellen Zustand nicht arbeiten. Bitte starten Sie die App neu oder kontaktieren Sie den Support.",
   "any_moment_now": "Jeden Moment",
+  "app-modules": {
+    "cpu-mining": "CPU-Mining",
+    "gpu-mining": "GPU-Mining",
+    "wallet": "Wallet"
+  },
   "awaiting-exchange-selection": "Warten auf die Auswahl der Börse durch den Benutzer",
   "block-sync": "Blöcke synchronisieren",
   "calculating_time": "Verbleibende Zeit berechnen...",
   "calculating_time-compact": "Zeit berechnen...",
+  "critical-initialization-failure": "Kritischer Initialisierungsfehler",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "Schritt konnte nicht abgeschlossen werden",
   "header-sync": "Header synchronisieren",
   "local-node-sync": "Tari Universe synchronisiert noch. Dies wird Ihr Mining-Erlebnis nicht beeinträchtigen.",
+  "module-initialization-issues": "Einige Module konnten nicht initialisiert werden",
   "network-peers": "Verbindung zu Netzwerk-Peers herstellen",
   "phase-title": {
     "setup-core": "Tari-App wird eingerichtet",
     "setup-core-compact": "App synchronisieren",
     "setup-hardware": "Hardware wird eingerichtet",
     "setup-hardware-compact": "Hardware einrichten",
-    "setup-node": "Tari-Knoten wird eingerichtet",
-    "setup-node-compact": "Knoten synchronisieren",
     "setup-mining": "Zusätzliche Dienstprogramme werden eingerichtet",
     "setup-mining-compact": "Einrichten von Dienstprogrammen",
+    "setup-node": "Tari-Knoten wird eingerichtet",
+    "setup-node-compact": "Knoten synchronisieren",
     "setup-wallet": "Wallet wird eingerichtet",
     "setup-wallet-compact": "Wallet synchronisieren"
-  },
-  "critical-initialization-failure": "Kritischer Initialisierungsfehler",
-  "failed-to-complete-step": "Schritt konnte nicht abgeschlossen werden",
-  "all-modules-failed-description": "Alle Module konnten nicht initialisiert werden. Die App kann im aktuellen Zustand nicht arbeiten. Bitte starten Sie die App neu oder kontaktieren Sie den Support.",
-  "module-initialization-issues": "Einige Module konnten nicht initialisiert werden",
-  "some-modules-failed-description": "Die App kann weiterarbeiten, aber einige Funktionen sind möglicherweise nicht verfügbar. Bitte starten Sie fehlgeschlagene Module neu oder kontaktieren Sie den Support, wenn das Problem weiterhin besteht.",
-  "app-modules": {
-    "cpu-mining": "CPU-Mining",
-    "gpu-mining": "GPU-Mining",
-    "wallet": "Wallet"
   },
   "remaining": "verbleibend",
   "second_remaining": "verbleibende Sekunde",
   "seconds_remaining": "verbleibende Sekunden",
+  "some-modules-failed-description": "Die App kann weiterarbeiten, aber einige Funktionen sind möglicherweise nicht verfügbar. Bitte starten Sie fehlgeschlagene Module neu oder kontaktieren Sie den Support, wenn das Problem weiterhin besteht.",
   "title": {
     "binaries-cpu-miner": "CPU-Miner-Binärdatei wird vorbereitet",
     "binaries-cpu-miner-download": "CPU-Miner-Binärdatei vorbereiten | Herunterladen: {{ progress }}%",
