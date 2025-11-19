@@ -8,7 +8,6 @@ import { MinotariWalletTransaction, TransactionInfo } from '@app/types/app-statu
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 import { CombinedBridgeWalletTransaction, updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
-import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 const appWindow = getCurrentWindow();
 interface LatestBlockPayload {
@@ -69,11 +68,8 @@ const handleWin = async (transaction: MinotariWalletTransaction, canAnimate: boo
             setMiningControlsEnabled(true);
         }
         useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings }));
-        await refreshTransactions();
         useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings: undefined, latestBlockPayload: undefined }));
     } else {
-        await refreshTransactions();
-
         useBlockchainVisualisationStore.setState((curr) => ({
             ...curr,
             recapIds: [...curr.recapIds, transaction.id],
@@ -88,7 +84,6 @@ const handleFail = async (canAnimate: boolean) => {
     if (canAnimate && visualModeEnabled) {
         setMiningControlsEnabled(false);
         setAnimationState('fail');
-        await refreshTransactions();
         setMiningControlsEnabled(true);
     }
     useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: undefined }));
@@ -130,14 +125,11 @@ export async function processNewBlock(payload: { block_height: number; transacti
         } else {
             await handleFail(canAnimate);
         }
-    } else {
-        await refreshTransactions();
     }
 }
 
 export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
     useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: payload }));
-    await refreshTransactions();
     const isWalletScanned = useWalletStore.getState().wallet_scanning?.is_initial_scan_finished;
     if (!isWalletScanned) {
         updateWalletScanningProgress({

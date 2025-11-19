@@ -115,7 +115,19 @@ const MinotariHistoryListItem = memo(function MinotariListItem({
         />
     );
 
-    const detailsButton = !isMined ? (
+    // const detailsButton = !isMined ? (
+    //     <Button
+    //         size="smaller"
+    //         variant="outlined"
+    //         onClick={(e) => {
+    //             e.stopPropagation();
+    //             setDetailsItem?.(transaction);
+    //         }}
+    //     >
+    //         {t(`history.view-details`)}
+    //     </Button>
+    // ) : null;
+    const detailsButton = (
         <Button
             size="smaller"
             variant="outlined"
@@ -126,7 +138,7 @@ const MinotariHistoryListItem = memo(function MinotariListItem({
         >
             {t(`history.view-details`)}
         </Button>
-    ) : null;
+    );
 
     return (
         <ItemWrapper

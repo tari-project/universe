@@ -23,10 +23,7 @@ export const formatEffectiveDate = (effectiveDate: string): string => {
 
 export const resolveTransactionType = (txType: MinotariWalletTransaction): TransactionType => {
     const isMined = txType.operations.some((op) => {
-        return (
-            op.recieved_output_details?.output_type == OutputType.Coinbase ||
-            op.spent_output_details?.output_type == OutputType.Coinbase
-        );
+        return op.recieved_output_details?.output_type == OutputType.Coinbase;
     });
     if (isMined) {
         return 'mined';

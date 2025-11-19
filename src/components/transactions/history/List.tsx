@@ -1,11 +1,9 @@
-import { useCallback, useEffect, RefObject, useState, useRef } from 'react';
+import { useCallback, useEffect, RefObject, useState, useRef, useMemo } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
 import { CombinedBridgeWalletTransaction, useWalletStore } from '@app/store';
-
-import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 import { HistoryListItem } from './ListItem.tsx';
 import { PlaceholderItem } from './ListItem.styles.ts';
@@ -13,7 +11,7 @@ import { EmptyText, ListItemWrapper, ListWrapper } from './List.styles.ts';
 import { setDetailsItem, setMinotariDetailsItem } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { MinotariHistoryListItem } from './minotariWallet/MinotariHistoryItem.tsx';
-import { MinotariWalletTransaction } from '@app/types/app-status.ts';
+import { MinotariWalletTransaction, OutputType } from '@app/types/app-status.ts';
 
 interface ListProps {
     setIsScrolled: (isScrolled: boolean) => void;
@@ -24,8 +22,27 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const walletImporting = useWalletStore((s) => s.is_wallet_importing);
-    // const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
     const minotariWalletTransactions = useWalletStore((s) => s.minotari_wallet_transactions);
+    const transactionsFilter = useWalletStore((s) => s.tx_history_filter);
+
+    const walletTransactions = useMemo(() => {
+        if (!minotariWalletTransactions) return [];
+
+        switch (transactionsFilter) {
+            case 'all-activity':
+                return minotariWalletTransactions;
+            case 'rewards':
+                return minotariWalletTransactions.filter((tx) =>
+                    tx.operations.some((op) => op.recieved_output_details?.output_type === OutputType.Coinbase)
+                );
+            case 'transactions':
+                return minotariWalletTransactions.filter((tx) =>
+                    tx.operations.every((op) => op.recieved_output_details?.output_type !== OutputType.Coinbase)
+                );
+            default:
+                return minotariWalletTransactions;
+        }
+    }, [minotariWalletTransactions, transactionsFilter]);
 
     // console.log('Minotari Wallet Transactions:', minotariWalletTransactions);
 
@@ -39,20 +56,18 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
 
     // Mark all transactions as seen on initial load (so they don't show as "new")
     useEffect(() => {
-        if (isInitialLoad.current && minotariWalletTransactions && minotariWalletTransactions.length > 0) {
-            const initialIds = new Set(minotariWalletTransactions.map((tx) => tx.id));
+        if (isInitialLoad.current && walletTransactions && walletTransactions.length > 0) {
+            const initialIds = new Set(walletTransactions.map((tx) => tx.id));
             setSeenTransactionIds(initialIds);
             isInitialLoad.current = false;
         }
-    }, [minotariWalletTransactions]);
+    }, [walletTransactions]);
 
     // Mark new transactions as seen after 30 seconds
     useEffect(() => {
-        if (!minotariWalletTransactions || isInitialLoad.current) return;
+        if (!walletTransactions || isInitialLoad.current) return;
 
-        const newTransactionIds = minotariWalletTransactions
-            .filter((tx) => !seenTransactionIds.has(tx.id))
-            .map((tx) => tx.id);
+        const newTransactionIds = walletTransactions.filter((tx) => !seenTransactionIds.has(tx.id)).map((tx) => tx.id);
 
         if (newTransactionIds.length === 0) return;
 
@@ -65,21 +80,7 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
         }, 30000); // 30 seconds
 
         return () => clearTimeout(timer);
-    }, [minotariWalletTransactions, seenTransactionIds]);
-
-    useEffect(() => {
-        const el = targetRef?.current;
-        if (!el) return;
-        const onScroll = () => setIsScrolled(el.scrollTop > 1);
-        el.addEventListener('scroll', onScroll);
-        return () => el.removeEventListener('scroll', onScroll);
-    }, [targetRef, setIsScrolled]);
-
-    // const { ref } = useInView({
-    //     initialInView: false,
-    //     onChange: () => hasNextPage && !isFetching && fetchNextPage({ cancelRefetch: false }),
-    // });
-    // const transactions = data?.pages.flatMap((page) => page) || [];
+    }, [walletTransactions, seenTransactionIds]);
 
     const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
         if (!transaction || !transaction.walletTransactionDetails) {
@@ -104,11 +105,11 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     }, []);
 
     // Calculate how many placeholder items we need to add
-    const transactionsCount = minotariWalletTransactions?.length || 0;
+    const transactionsCount = walletTransactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
     const listMarkup = (
         <ListItemWrapper>
-            {minotariWalletTransactions?.map((tx, i) => {
+            {walletTransactions?.map((tx, i) => {
                 const isNewTransaction = !seenTransactionIds.has(tx.id);
                 // const txId = tx.walletTransactionDetails?.txId || tx.paymentId;
                 // const hash = tx.bridgeTransactionDetails?.transactionHash;

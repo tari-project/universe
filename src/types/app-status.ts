@@ -69,7 +69,9 @@ export interface MinotariWalletDetails {
     balance_credit: number;
     balance_debit: number;
     claimed_recipient_address: string;
+    claimed_recipient_address_emoji: string;
     claimed_sender_address: string;
+    claimed_sender_address_emoji: string;
     memo_parsed?: string;
     memo_hex?: string;
     claimed_fee: number;

@@ -26,18 +26,6 @@ function formatMicroTari(value: number): ReactNode {
 export function getMinotariListEntries(transaction: MinotariWalletTransaction): StatusListEntry[] {
     const entries: StatusListEntry[] = [];
 
-    // Transaction ID
-    entries.push({
-        label: i18n.t('wallet:send.transaction-id'),
-        value: transaction.id,
-    });
-
-    // Account ID
-    entries.push({
-        label: 'Account ID',
-        value: transaction.account_id.toString(),
-    });
-
     // Mined Height (Block Height)
     entries.push({
         label: 'Block Height',
@@ -64,6 +52,34 @@ export function getMinotariListEntries(transaction: MinotariWalletTransaction): 
         ),
         valueRight: `${formatNumber(Number(transaction.transaction_balance), FormatPreset.DECIMAL_COMPACT)} µXTM`,
     });
+
+    // Bridge Transaction Details (if exists)
+    if (transaction.bridge_transaction_details) {
+        const bridgeDetails = transaction.bridge_transaction_details;
+
+        // ETH Destination Address (from first operation's recipient address)
+        const ethAddress = transaction.operations[0]?.claimed_recipient_address;
+        if (ethAddress) {
+            entries.push({
+                label: 'Destination Address [ ETH ]',
+                value: ethAddress,
+            });
+        }
+
+        // Status
+        entries.push({
+            label: i18n.t('common:status'),
+            value: bridgeDetails.status,
+        });
+
+        // Transaction Hash
+        if (bridgeDetails.transactionHash) {
+            entries.push({
+                label: 'Transaction Hash',
+                value: bridgeDetails.transactionHash,
+            });
+        }
+    }
 
     // Memo (if exists)
     const memoOperation = transaction.operations.find((op) => op.memo_parsed);
@@ -136,11 +152,27 @@ export function getOperationDetails(operation: MinotariWalletDetails, index: num
         value: operation.claimed_recipient_address,
     });
 
+    // Recipient Address Emoji (if available)
+    if (operation.claimed_recipient_address_emoji) {
+        entries.push({
+            label: 'Recipient Address (Emoji)',
+            value: <EmojiAddressWrapper>{operation.claimed_recipient_address_emoji}</EmojiAddressWrapper>,
+        });
+    }
+
     // Sender Address
     entries.push({
         label: 'Sender Address',
         value: operation.claimed_sender_address,
     });
+
+    // Sender Address Emoji (if available)
+    if (operation.claimed_sender_address_emoji) {
+        entries.push({
+            label: 'Sender Address (Emoji)',
+            value: <EmojiAddressWrapper>{operation.claimed_sender_address_emoji}</EmojiAddressWrapper>,
+        });
+    }
 
     // Memo
     if (operation.memo_parsed) {
