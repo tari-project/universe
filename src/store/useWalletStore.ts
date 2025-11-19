@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { MinotariWalletTransaction, TransactionInfo, WalletBalance } from '../types/app-status.ts';
+import { WalletTransaction, WalletBalance } from '../types/app-status.ts';
 
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
@@ -16,28 +16,6 @@ export interface BridgeTransactionDetails {
     transactionHash?: string;
     amountAfterFee: string;
 }
-export interface WalletTransactionDetails extends Partial<TransactionInfo> {
-    txId: number;
-    direction: number;
-    isCancelled: boolean;
-    status: number;
-    excessSig?: string;
-    message?: string;
-    paymentReference?: string;
-    destAddressEmoji?: string;
-}
-// combined type for transactions
-export interface CombinedBridgeWalletTransaction {
-    destinationAddress: string;
-    paymentId: string;
-    feeAmount: number;
-    createdAt: number;
-    tokenAmount: number;
-    mined_in_block_height?: number;
-    sourceAddress?: string;
-    walletTransactionDetails: WalletTransactionDetails;
-    bridgeTransactionDetails?: BridgeTransactionDetails;
-}
 
 export interface WalletStoreState {
     tari_address_base58: string;
@@ -46,16 +24,15 @@ export interface WalletStoreState {
     exchange_wxtm_addresses: Record<string, string>;
     balance?: WalletBalance;
     calculated_balance?: number;
-    tx_history_filter: TxHistoryFilter;
-    tx_history: TransactionInfo[];
-    minotari_wallet_transactions: MinotariWalletTransaction[];
-    // TODO: decide later for the best place to store this data
+    transaction_history_filter: TxHistoryFilter;
+    wallet_transactions: WalletTransaction[];
+    // ========= Bridge related data ==========
     bridge_transactions: BackendBridgeTransaction[];
     cold_wallet_address?: string;
+    // ========================================
     is_wallet_importing: boolean;
     is_swapping?: boolean;
-    detailsItem?: CombinedBridgeWalletTransaction | null;
-    minotariDetailsItem?: MinotariWalletTransaction | null;
+    selectedTransactionDetails?: WalletTransaction | null;
     wallet_scanning: {
         scanned_height: number;
         total_height: number;
@@ -75,9 +52,8 @@ export const initialState: WalletStoreState = {
     tari_address_emoji: '',
     tari_address_type: TariAddressType.Internal,
     exchange_wxtm_addresses: {},
-    tx_history_filter: 'all-activity',
-    tx_history: [],
-    minotari_wallet_transactions: [],
+    transaction_history_filter: 'all-activity',
+    wallet_transactions: [],
     bridge_transactions: [],
     cold_wallet_address: undefined,
     is_wallet_importing: false,

@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import NumberFlow, { type Format } from '@number-flow/react';
 import { Trans, useTranslation } from 'react-i18next';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
-import { useConfigWalletStore, useNodeStore, useUIStore, useWalletStore } from '@app/store';
+import { useNodeStore, useUIStore, useWalletStore } from '@app/store';
 
 import { roundToTwoDecimals, removeXTMCryptoDecimals, formatNumber, FormatPreset, formatValue } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -44,7 +44,6 @@ export const WalletBalance = () => {
 
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const isConnected = useNodeStore((s) => s.isNodeConnected);
-    const cached = useConfigWalletStore((s) => s.last_known_balance);
     const available = useWalletStore((s) => s.balance?.available_balance);
     const total = useWalletStore((s) => s.calculated_balance);
     const scanData = useWalletStore((s) => s.wallet_scanning);

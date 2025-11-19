@@ -64,13 +64,12 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { setCpuPoolStats, setGpuPoolStats } from '@app/store/actions/miningPoolsStoreActions';
 import {
-    handleMinotariWalletTransactionsFound,
-    handleMinotariWalletTransactionUpdated,
+    handleWalletTransactionsFound,
+    handleWalletTransactionUpdated,
     handlePinLocked,
     handleSeedBackedUp,
     handleSelectedTariAddressChange,
     handleWalletTransactionsCleared,
-    setIsWalletLoading,
 } from '@app/store/actions/walletStoreActions';
 import { handleFeedbackExitSurveyRequested } from '@app/store/stores/userFeedbackStore';
 
@@ -270,15 +269,12 @@ const useTauriEventsListener = () => {
                             setIsShuttingDown(true);
                             break;
                         case 'WalletTransactionUpdated':
-                            console.log('WalletTransactionUpdated updated', event.payload);
-                            handleMinotariWalletTransactionUpdated(event.payload);
+                            handleWalletTransactionUpdated(event.payload);
                             break;
                         case 'WalletTransactionsFound':
-                            console.log('WalletTransactionsFound found', event.payload);
-                            handleMinotariWalletTransactionsFound(event.payload);
+                            handleWalletTransactionsFound(event.payload);
                             break;
                         case 'WalletTransactionsCleared':
-                            console.log('WalletTransactionsCleared event received');
                             handleWalletTransactionsCleared();
                             break;
                         default:

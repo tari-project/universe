@@ -6,7 +6,7 @@ import { OutputType } from '@app/types/app-status';
 
 export default function useEarningsRecap() {
     const recapIds = useBlockchainVisualisationStore((s) => s.recapIds);
-    const transactions = useWalletStore((s) => s.minotari_wallet_transactions);
+    const transactions = useWalletStore((s) => s.wallet_transactions);
     const coinbase_transactions = useMemo(() => {
         return transactions.filter((tx) =>
             tx.operations.some((op) => op.recieved_output_details?.output_type === OutputType.Coinbase)

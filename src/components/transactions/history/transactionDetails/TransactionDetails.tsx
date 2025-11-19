@@ -6,21 +6,17 @@ import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { AccordionItem } from '@app/components/transactions/components/AccordionItem/AccordionItem.tsx';
-import { MinotariWalletTransaction } from '@app/types/app-status.ts';
-import {
-    getMinotariListEntries,
-    getOperationDetails,
-    getOutputDetails,
-} from '../minotariWallet/getMinotariListEntries.tsx';
+import { WalletTransaction } from '@app/types/app-status.ts';
+import { getTransactionListEntries, getOperationDetails, getOutputDetails } from './getTransactionListEntries.tsx';
 import { Wrapper, OperationsSection, OperationsTitle } from './styles.ts';
 
-interface MinotariTransactionDetailsProps {
-    transaction: MinotariWalletTransaction;
+interface TransactionDetailsProps {
+    transaction: WalletTransaction;
     expanded: boolean;
     handleClose: () => void;
 }
 
-export const MinotariTransactionDetails = ({ transaction, expanded, handleClose }: MinotariTransactionDetailsProps) => {
+export const TransactionDetails = ({ transaction, expanded, handleClose }: TransactionDetailsProps) => {
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const { t } = useTranslation('wallet');
 
@@ -39,7 +35,7 @@ export const MinotariTransactionDetails = ({ transaction, expanded, handleClose 
         });
     };
 
-    const mainEntries = getMinotariListEntries(transaction);
+    const mainEntries = getTransactionListEntries(transaction);
     const copyIcon = !isCopied ? <IoCopyOutline size={12} /> : <IoCheckmarkOutline size={12} />;
 
     return (

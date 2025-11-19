@@ -113,7 +113,7 @@ static DEFAULT_ACCOUNT_ID: i64 = 1; // Default account ID for now
 
 // Blockchain scanning constants
 const SCAN_BATCH_SIZE: u64 = 1000;
-const MAX_CONCURRENT_REQUESTS: LazyLock<u64> = LazyLock::new(|| {
+static MAX_CONCURRENT_REQUESTS: LazyLock<u64> = LazyLock::new(|| {
     let network = Network::get_current_or_user_setting_or_default();
     match network {
         Network::MainNet => 50,
@@ -345,7 +345,7 @@ impl MinotariWalletManager {
         let is_incoming_transaction_a_coinbase_one = details
             .recieved_output_details
             .as_ref()
-            .map_or(false, |output| {
+            .is_some_and(|output| {
                 output.output_type
                     == tari_transaction_components::transaction_components::OutputType::Coinbase
             });

@@ -20,11 +20,11 @@ import {
     BaseNodeStatus,
     CpuMinerStatus,
     GpuMinerStatus,
-    MinotariWalletTransaction,
     NetworkStatus,
     PoolStats,
     SystemDependency,
     WalletBalance,
+    WalletTransaction,
 } from './app-status.ts';
 import { ConfigCore, ConfigMining, ConfigPools, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
@@ -238,11 +238,11 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'WalletTransactionsFound';
-          payload: MinotariWalletTransaction[];
+          payload: WalletTransaction[];
       }
     | {
           event_type: 'WalletTransactionUpdated';
-          payload: MinotariWalletTransaction;
+          payload: WalletTransaction;
       }
     | {
           event_type: 'WalletTransactionsCleared';

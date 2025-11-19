@@ -4,9 +4,9 @@ import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 import { setAnimationState } from '@tari-project/tari-tower';
-import { MinotariWalletTransaction, TransactionInfo } from '@app/types/app-status.ts';
+import { WalletTransaction, TransactionInfo } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
-import { CombinedBridgeWalletTransaction, updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
+import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 
 const appWindow = getCurrentWindow();
@@ -24,7 +24,7 @@ interface State {
     recapCount?: number;
     rewardCount?: number;
     recapIds: string[];
-    replayItem?: CombinedBridgeWalletTransaction;
+    replayItem?: WalletTransaction;
     latestBlockPayload?: LatestBlockPayload;
 }
 
@@ -52,7 +52,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setRewardCount: (rewardCount) => set({ rewardCount }),
 }));
 
-const handleWin = async (transaction: MinotariWalletTransaction, canAnimate: boolean) => {
+const handleWin = async (transaction: WalletTransaction, canAnimate: boolean) => {
     const blockHeight = Number(transaction?.mined_height);
     const earnings = transaction.transaction_balance;
 
@@ -96,8 +96,8 @@ export const handleWinRecap = (recapData: Recap) => {
     setMiningControlsEnabled(true);
     useBlockchainVisualisationStore.setState((c) => ({ ...c, recapData, recapCount: recapData.count }));
 };
-export const handleWinReplay = (txItem: CombinedBridgeWalletTransaction) => {
-    const earnings = txItem.tokenAmount;
+export const handleWinReplay = (txItem: WalletTransaction) => {
+    const earnings = txItem.transaction_balance;
     const successTier = getSuccessTier(earnings);
     useBlockchainVisualisationStore.setState((c) => ({ ...c, replayItem: txItem }));
     setAnimationState(successTier, true);
@@ -115,7 +115,7 @@ export const handleReplayComplete = () => {
     }
 };
 
-export async function processNewBlock(payload: { block_height: number; transaction?: MinotariWalletTransaction }) {
+export async function processNewBlock(payload: { block_height: number; transaction?: WalletTransaction }) {
     if (useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;

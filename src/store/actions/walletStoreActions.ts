@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
-import { MinotariWalletTransaction, WalletBalance } from '@app/types/app-status.ts';
-import { BackendBridgeTransaction, CombinedBridgeWalletTransaction, useWalletStore } from '../useWalletStore';
+import { WalletTransaction, WalletBalance } from '@app/types/app-status.ts';
+import { useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
 
@@ -105,14 +105,11 @@ export const setIsWalletLoading = (isLoading: boolean) => {
 };
 
 export const setTxHistoryFilter = (filter: TxHistoryFilter) => {
-    useWalletStore.setState((c) => ({ ...c, tx_history_filter: filter }));
+    useWalletStore.setState((c) => ({ ...c, transaction_history_filter: filter }));
 };
 
-export const setDetailsItem = (detailsItem: CombinedBridgeWalletTransaction | null) =>
-    useWalletStore.setState((c) => ({ ...c, detailsItem }));
-
-export const setMinotariDetailsItem = (minotariDetailsItem: MinotariWalletTransaction | null) =>
-    useWalletStore.setState((c) => ({ ...c, minotariDetailsItem }));
+export const setDetailsItemTransaction = (detailsItemTransaction: WalletTransaction | null) =>
+    useWalletStore.setState((c) => ({ ...c, selectedTransactionDetails: detailsItemTransaction }));
 
 export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayload) => {
     const { tari_address_base58, tari_address_emoji, tari_address_type } = payload;
@@ -151,12 +148,11 @@ export const handleSeedBackedUp = (is_seed_backed_up: boolean) => {
     }));
 };
 
-function shouldFetchBridgeItems(incomingWalletTrasactions: MinotariWalletTransaction[]): boolean {
+function shouldFetchBridgeItems(incomingWalletTransactions: WalletTransaction[]): boolean {
     const bridgeWalletTransactions = useWalletStore.getState().bridge_transactions;
-    console.log('Bridge Wallet Transactions from Store:', bridgeWalletTransactions);
     const coldWalletAddress = useWalletStore.getState().cold_wallet_address;
 
-    const isThereANewBridgeTransaction = incomingWalletTrasactions.some(
+    const isThereANewBridgeTransaction = incomingWalletTransactions.some(
         (tx) =>
             tx.operations.some((op) => op.claimed_recipient_address === coldWalletAddress) &&
             !bridgeWalletTransactions?.some(
@@ -168,35 +164,33 @@ function shouldFetchBridgeItems(incomingWalletTrasactions: MinotariWalletTransac
     return isThereANewBridgeTransaction;
 }
 
-const solveBridgeTransactionDetails = async (minotariTxs: MinotariWalletTransaction[]): Promise<void> => {
-    if (shouldFetchBridgeItems(minotariTxs)) {
+const solveBridgeTransactionDetails = async (walletTxs: WalletTransaction[]): Promise<void> => {
+    if (shouldFetchBridgeItems(walletTxs)) {
         const walletAddress = useWalletStore((state) => state.tari_address_base58);
         const bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress);
         bridgeTransactions.forEach((bridgeTx) => {
-            minotariTxs.map((minotariTx) => {
+            walletTxs.map((walletTx) => {
                 if (
-                    bridgeTx.paymentId === minotariTx.memo_parsed ||
-                    (Number(bridgeTx.tokenAmount) === minotariTx.transaction_balance &&
+                    bridgeTx.paymentId === walletTx.memo_parsed ||
+                    (Number(bridgeTx.tokenAmount) === walletTx.transaction_balance &&
                         bridgeTx.destinationAddress === useWalletStore.getState().cold_wallet_address)
                 ) {
                     return {
-                        ...minotariTx,
+                        ...walletTx,
                         bridge_transaction_details: {
                             status: bridgeTx.status,
                             transactionHash: bridgeTx.transactionHash,
                         },
                     };
                 }
-                return minotariTx;
+                return walletTx;
             });
         });
     }
 };
 
-export const handleMinotariWalletTransactionsFound = async (payload: MinotariWalletTransaction[]) => {
-    const currentTransactions = useWalletStore.getState().minotari_wallet_transactions;
-    console.log('Current Minotari Wallet Transactions:', currentTransactions);
-    console.log('New Minotari Wallet Transactions Payload:', payload);
+export const handleWalletTransactionsFound = async (payload: WalletTransaction[]) => {
+    const currentTransactions = useWalletStore.getState().wallet_transactions;
     const copiedCurrentTransactions = [...currentTransactions];
     const filteredIncomingTransactions = payload.filter((newTx) => {
         return !copiedCurrentTransactions.some((existingTx) => existingTx.id === newTx.id);
@@ -205,15 +199,14 @@ export const handleMinotariWalletTransactionsFound = async (payload: MinotariWal
     await solveBridgeTransactionDetails(filteredIncomingTransactions);
 
     const mergedTransactions = filteredIncomingTransactions.concat(copiedCurrentTransactions);
-    console.log('Merged Minotari Wallet Transactions:', mergedTransactions);
     useWalletStore.setState((c) => ({
         ...c,
-        minotari_wallet_transactions: mergedTransactions,
+        wallet_transactions: mergedTransactions,
     }));
 };
 
-export const handleMinotariWalletTransactionUpdated = (payload: MinotariWalletTransaction) => {
-    const currentTransactions = useWalletStore.getState().minotari_wallet_transactions;
+export const handleWalletTransactionUpdated = (payload: WalletTransaction) => {
+    const currentTransactions = useWalletStore.getState().wallet_transactions;
     const transactionIndex = currentTransactions.findIndex((tx) => tx.id === payload.id);
 
     let transactionToUpdate = currentTransactions.find((tx) => tx.id === payload.id);
@@ -223,15 +216,14 @@ export const handleMinotariWalletTransactionUpdated = (payload: MinotariWalletTr
         updatedTransactions[transactionIndex] = transactionToUpdate;
         useWalletStore.setState((c) => ({
             ...c,
-            minotari_wallet_transactions: updatedTransactions,
+            wallet_transactions: updatedTransactions,
         }));
     }
 };
 
 export const handleWalletTransactionsCleared = () => {
-    console.log('Clearing all wallet transactions from store');
     useWalletStore.setState((c) => ({
         ...c,
-        minotari_wallet_transactions: [],
+        wallet_transactions: [],
     }));
 };

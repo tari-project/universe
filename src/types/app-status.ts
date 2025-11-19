@@ -57,14 +57,14 @@ export enum OutputType {
     /// Output containing a validator node exit
     ValidatorNodeExit = 7,
 }
-export interface MinotariWalletOutputDetails {
+export interface WalletOutputDetails {
     confirmed_height?: number;
     status: OutputStatus;
     output_type: OutputType;
     coinbase_extra?: string;
 }
 
-export interface MinotariWalletDetails {
+export interface WalletDetails {
     description: string;
     balance_credit: number;
     balance_debit: number;
@@ -76,11 +76,11 @@ export interface MinotariWalletDetails {
     memo_hex?: string;
     claimed_fee: number;
     claimed_amount?: number;
-    recieved_output_details?: MinotariWalletOutputDetails;
-    spent_output_details?: MinotariWalletOutputDetails;
+    recieved_output_details?: WalletOutputDetails;
+    spent_output_details?: WalletOutputDetails;
 }
 
-export interface MinotariWalletTransaction {
+export interface WalletTransaction {
     id: string;
     account_id: number;
     mined_height: number;
@@ -90,7 +90,7 @@ export interface MinotariWalletTransaction {
     transaction_balance: number;
     memo_parsed?: string;
     is_negative: boolean;
-    operations: MinotariWalletDetails[];
+    operations: WalletDetails[];
     bridge_transaction_details?: {
         status: UserTransactionDTO.status;
         transactionHash?: string;

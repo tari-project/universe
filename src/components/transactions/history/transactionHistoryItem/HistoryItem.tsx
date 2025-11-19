@@ -12,21 +12,21 @@ import {
     TitleWrapper,
     ValueChangeWrapper,
     ValueWrapper,
-} from './MinotariHistoryItem.styles.ts';
+} from './HistoryItem.styles.ts';
 import { useUIStore } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 import { TransactionDirection } from '@app/types/transactions.ts';
-import { MinotariWalletTransaction } from '@app/types/app-status.ts';
-import MinotariHoverItem from './MinotariHoverItem.tsx';
-import { formatEffectiveDate, resolveTransactionTitle, resolveTransactionType } from './helpers.ts';
+import { WalletTransaction } from '@app/types/app-status.ts';
+import HoverItem from './HoverItem.tsx';
+import { formatEffectiveDate, resolveTransactionTitle, resolveTransactionType } from '../helpers.ts';
 
 export interface HistoryListItemProps {
-    transaction: MinotariWalletTransaction;
+    transaction: WalletTransaction;
     index: number;
     itemIsNew?: boolean;
-    setDetailsItem?: (item: MinotariWalletTransaction) => void;
+    setDetailsItem?: (item: WalletTransaction) => void;
 }
 
 export interface BaseItemProps {
@@ -79,7 +79,7 @@ const BaseItem = memo(function BaseItem({
     );
 });
 
-const MinotariHistoryListItem = memo(function MinotariListItem({
+const HistoryListItem = memo(function HistoryListItem({
     transaction,
     index,
     itemIsNew = false,
@@ -133,11 +133,11 @@ const MinotariHistoryListItem = memo(function MinotariListItem({
             onMouseLeave={() => setHovering(false)}
         >
             <AnimatePresence>
-                {hovering && <MinotariHoverItem transaction={transaction} button={detailsButton} />}
+                {hovering && <HoverItem transaction={transaction} button={detailsButton} />}
             </AnimatePresence>
             {baseItem}
         </ItemWrapper>
     );
 });
 
-export { MinotariHistoryListItem };
+export { HistoryListItem };

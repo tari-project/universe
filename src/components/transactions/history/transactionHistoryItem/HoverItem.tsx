@@ -6,23 +6,17 @@ import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 
 import gemImage from '@app/assets/images/gem.png';
 import { ReplaySVG } from '@app/assets/icons/replay.tsx';
-import {
-    ButtonWrapper,
-    FlexButton,
-    GemImage,
-    GemPill,
-    HoverWrapper,
-    ReplayButton,
-} from './MinotariHistoryItem.styles.ts';
+import { ButtonWrapper, FlexButton, GemImage, GemPill, HoverWrapper, ReplayButton } from './HistoryItem.styles.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
-import { MinotariWalletTransaction } from '@app/types/app-status.ts';
+import { WalletTransaction } from '@app/types/app-status.ts';
+import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore.ts';
 
 interface Props {
-    transaction: MinotariWalletTransaction;
+    transaction: WalletTransaction;
     button?: React.ReactNode;
 }
 
-const MinotariHoverItem = memo(function ItemHover({ transaction, button }: Props) {
+const HoverItem = memo(function ItemHover({ transaction, button }: Props) {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const sharingEnabled = useConfigUIStore((s) => s.sharing_enabled);
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
@@ -53,7 +47,7 @@ const MinotariHoverItem = memo(function ItemHover({ transaction, button }: Props
                                 </GemPill>
                             </FlexButton>
                         )}
-                        <ReplayButton onClick={() => console.info('Replay not implemented yet')}>
+                        <ReplayButton onClick={() => handleWinReplay(transaction)}>
                             <ReplaySVG />
                         </ReplayButton>
                     </>
@@ -63,4 +57,4 @@ const MinotariHoverItem = memo(function ItemHover({ transaction, button }: Props
     );
 });
 
-export default MinotariHoverItem;
+export default HoverItem;

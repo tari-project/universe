@@ -1,14 +1,14 @@
-import { MinotariWalletTransaction } from '@app/types/app-status';
+import { WalletTransaction } from '@app/types/app-status';
 import { create } from 'zustand';
 
 interface State {
     showModal: boolean;
-    item: MinotariWalletTransaction | null;
+    item: WalletTransaction | null;
 }
 
 interface Actions {
     setShowModal: (showModal: boolean) => void;
-    setItemData: (item: MinotariWalletTransaction | null) => void;
+    setItemData: (item: WalletTransaction | null) => void;
 }
 
 const initialState: State = {

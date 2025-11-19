@@ -105,8 +105,6 @@ export const updateAppModule = (state: AppModuleState) => {
 export const handleWalletModuleUpdateSideEffects = async (state: AppModuleState) => {
     switch (state.status) {
         case AppModuleStatus.Initialized: {
-            const tx_history_filter = useWalletStore.getState().tx_history_filter;
-            // await fetchTransactionsHistory({ offset: 0, limit: 20, filter: tx_history_filter });
             break;
         }
         case AppModuleStatus.Failed:
