@@ -1,6 +1,7 @@
 import { useCallback, useEffect, RefObject, useState, useRef, useMemo } from 'react';
 
 import { useTranslation } from 'react-i18next';
+import { VList } from 'virtua';
 
 import { useWalletStore } from '@app/store';
 
@@ -16,6 +17,8 @@ interface ListProps {
 }
 
 export function List({ setIsScrolled, targetRef }: ListProps) {
+    console.log('Rendering Minotari Wallet Transaction List');
+
     const { t } = useTranslation('wallet');
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const minotariWalletTransactions = useWalletStore((s) => s.minotari_wallet_transactions);
@@ -79,36 +82,37 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
     // Calculate how many placeholder items we need to add
     const transactionsCount = walletTransactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
-    const listMarkup = (
-        <ListItemWrapper>
-            {walletTransactions?.map((tx, i) => {
-                const isNewTransaction = !seenTransactionIds.has(tx.id);
-                return (
-                    <MinotariHistoryListItem
-                        transaction={tx}
-                        key={tx.id}
-                        index={i}
-                        itemIsNew={isNewTransaction}
-                        setDetailsItem={handleMinotariDetailsChange}
-                    />
-                );
-            })}
-
-            {/* fill the list with placeholders if there are less than 4 entries */}
-            {Array.from({ length: placeholdersNeeded }).map((_, index) => (
-                <PlaceholderItem key={`placeholder-${index}`} />
-            ))}
-        </ListItemWrapper>
-    );
 
     const isEmpty = !minotariWalletTransactions?.length;
     const emptyMarkup = isEmpty ? <EmptyText>{t('empty-tx')}</EmptyText> : null;
+
     return (
         <ListWrapper>
             {emptyMarkup}
-            {listMarkup}
-            {/*added placeholder so the scroll can trigger fetch*/}
-            {walletScanning?.is_initial_scan_finished ? <PlaceholderItem $isLast /> : null}
+            <VList style={{ height: '100%', width: '100%' }}>
+                <ListItemWrapper>
+                    {walletTransactions?.map((tx, i) => {
+                        const isNewTransaction = !seenTransactionIds.has(tx.id);
+                        return (
+                            <MinotariHistoryListItem
+                                transaction={tx}
+                                key={tx.id}
+                                index={i}
+                                itemIsNew={isNewTransaction}
+                                setDetailsItem={handleMinotariDetailsChange}
+                            />
+                        );
+                    })}
+
+                    {/* fill the list with placeholders if there are less than 4 entries */}
+                    {Array.from({ length: placeholdersNeeded }).map((_, index) => (
+                        <PlaceholderItem key={`placeholder-${index}`} />
+                    ))}
+
+                    {/*added placeholder so the scroll can trigger fetch*/}
+                    {walletScanning?.is_initial_scan_finished ? <PlaceholderItem $isLast /> : null}
+                </ListItemWrapper>
+            </VList>
         </ListWrapper>
     );
 }
