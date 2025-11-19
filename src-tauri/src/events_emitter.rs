@@ -839,7 +839,7 @@ impl EventsEmitter {
                 payload,
             },
         ) {
-            error!(target: LOG_TARGET, "Failed to emit ShowBatteryAlert event: {e:?}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit ShowBatteryAlert event: {e:?}");
         }
     }
 }

@@ -2069,7 +2069,7 @@ pub async fn set_pause_on_battery_mode(
     .await
     .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_pause_on_battery_mode took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_pause_on_battery_mode took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
