@@ -889,7 +889,7 @@ impl EventScheduler {
         timing: SchedulerEventTiming,
     ) -> Result<String, SchedulerError> {
         if event_type.is_unique() {
-            info!(target: LOG_TARGET, "Ensuring uniqueness for event type {:?}", event_type);
+            info!(target: LOG_TARGET_APP_LOGIC, "Ensuring uniqueness for event type {:?}", event_type);
             let to_remove: Vec<String> = events
                 .iter()
                 .filter(|(_, event)| event.event_type == event_type)
@@ -1150,12 +1150,12 @@ impl EventScheduler {
                         .message_sender
                         .send(SchedulerMessage::TriggerEnterCallback { event_id });
                 } else {
-                    error!(target: LOG_TARGET, "Failed to parse duration for 'In' event {:?}", event_id);
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to parse duration for 'In' event {:?}", event_id);
                 }
             }),
 
             SchedulerEventTiming::Between(between_time_variant_payload) => {
-                info!(target: LOG_TARGET, "Creating scheduling task for 'Between' event ID {:?}", event_id);
+                info!(target: LOG_TARGET_APP_LOGIC, "Creating scheduling task for 'Between' event ID {:?}", event_id);
                 let cron_schedule =
                     between_time_variant_payload
                         .to_cron_schedule()

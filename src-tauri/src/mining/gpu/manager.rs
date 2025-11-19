@@ -323,7 +323,7 @@ impl GpuManager {
         }
 
         if self.process_watcher.is_running() {
-            info!(target: LOG_TARGET, "GPU miner is already running");
+            info!(target: LOG_TARGET_APP_LOGIC, "GPU miner is already running");
             return Ok(());
         }
 

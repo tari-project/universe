@@ -1924,7 +1924,7 @@ pub async fn add_scheduler_event(
     event_time: SchedulerEventTiming,
     event_type: SchedulerEventType,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET, "add_scheduler_event called with event_id: {event_id:?}, event_time: {event_time:?}, event_type: {event_type:?}");
+    info!(target: LOG_TARGET_APP_LOGIC, "add_scheduler_event called with event_id: {event_id:?}, event_time: {event_time:?}, event_type: {event_type:?}");
 
     EventScheduler::instance()
         .schedule_event(event_type, event_id, event_time)

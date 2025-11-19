@@ -98,7 +98,7 @@ impl NetworkStatus {
                 upload_speed = speed.unwrap_or(0.0);
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to perform upload speed test: {e:?}")
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to perform upload speed test: {e:?}")
             }
         };
         match spawn_blocking(|| test_download(NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST)).await {
