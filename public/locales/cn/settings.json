@@ -100,6 +100,10 @@
     "load-qr-code": "加载二维码",
     "passphrase": "密码短语"
   },
+  "pause-on-battery-mode": {
+    "description": "Pause mining when device is disconnected from charging",
+    "title": "Pause on Battery Mode"
+  },
   "pin": "PIN",
   "pool-configuration": "矿池配置",
   "pool-mining": "矿池挖矿",

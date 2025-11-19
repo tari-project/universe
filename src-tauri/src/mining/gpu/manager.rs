@@ -425,6 +425,10 @@ impl GpuManager {
         Ok(())
     }
 
+    pub fn is_running(&self) -> bool {
+        self.process_watcher.is_running()
+    }
+
     pub async fn stop_mining(&mut self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Stopping gpu miner");
         {

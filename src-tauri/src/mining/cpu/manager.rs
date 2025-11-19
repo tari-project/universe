@@ -257,6 +257,10 @@ impl CpuManager {
         Ok(())
     }
 
+    pub fn is_running(&self) -> bool {
+        self.process_watcher.is_running()
+    }
+
     async fn determine_number_of_cores_to_use(cpu_usage_percentage: u32) -> u32 {
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
