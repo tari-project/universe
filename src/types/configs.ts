@@ -37,6 +37,11 @@ export type FeedbackPrompts = Partial<Record<PromptType, FeedbackPrompt>>;
 export type MiningModes = Record<MiningModeType, MiningMode>;
 export type MiningModeTimes = Record<MiningModeType, { secs?: number; nanos?: number }>;
 
+export enum PauseOnBatteryModeState {
+    Enabled = 'Enabled',
+    Disabled = 'Disabled',
+    NotSupported = 'NotSupported',
+}
 export interface ConfigMining {
     created_at: string;
     mine_on_app_start: boolean;
@@ -49,6 +54,7 @@ export interface ConfigMining {
     is_gpu_mining_recommended: boolean;
     eco_alert_needed: boolean;
     mode_mining_times?: MiningModeTimes;
+    pause_on_battery_mode: PauseOnBatteryModeState;
 }
 
 export interface ConfigMiningSelectors {

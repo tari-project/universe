@@ -38,9 +38,13 @@ use tokio::task::JoinHandle;
 use tokio_util::task::TaskTracker;
 
 use crate::download_utils::set_permissions;
+use crate::events::CriticalProblemPayload;
+use crate::events_emitter::EventsEmitter;
 use crate::process_killer::kill_process;
 use crate::process_utils::{launch_child_process, write_pid_file};
 use crate::LOG_TARGET_APP_LOGIC;
+
+const SPACE_ERROR_MESSAGE: &str = "No space left on device";
 
 pub(crate) trait ProcessAdapter {
     type StatusMonitor: StatusMonitor;
@@ -247,7 +251,15 @@ impl ProcessInstanceTrait for ProcessInstance {
                 if let Err(e) = pid_file_res {
                     let error_msg = format!("Failed to write PID file: {e}");
                     error!(target: LOG_TARGET_APP_LOGIC, "{error_msg}");
-                    sentry::capture_message(&error_msg, sentry::Level::Error);
+                    let should_emit_critial_error = e.contains(SPACE_ERROR_MESSAGE) || e.contains("os error 28");
+
+                    if should_emit_critial_error {
+                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                            title: Some("error.title.space".to_string()),
+                            description: Some("error.description.space".to_string()),
+                            error_message: Some(error_msg),
+                        }).await;
+                    }
                 }
             }
             let exit_code;
@@ -270,7 +282,7 @@ impl ProcessInstanceTrait for ProcessInstance {
                         }
                     }
                 },
-            };
+            }
             info!(target: LOG_TARGET_APP_LOGIC, "Stopping {} process with exit code: {}", spec.name, exit_code);
 
             if let Err(error) = fs::remove_file(spec.data_dir.join(spec.pid_file_name)) {

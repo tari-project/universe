@@ -112,6 +112,7 @@ xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
 zip = "2.2.0"
 uuid = "1.18.1"
 croner = "3.0.0"
+starship-battery = "0.10.3"
 
 [target.'cfg(windows)'.dependencies]
 planif = "1.0.0"

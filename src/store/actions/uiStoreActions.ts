@@ -142,3 +142,5 @@ export const setShowFeedbackExitSurveyModal = (showFeedbackExitSurveyModal: bool
 export const updateSetMiningModeAsSchedulerEventMode = (value: boolean) => {
     useUIStore.setState({ setMiningModeAsSchedulerEventMode: value });
 };
+
+export const setShowBatteryAlert = (showBatteryAlert: boolean) => useUIStore.setState({ showBatteryAlert });

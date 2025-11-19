@@ -591,6 +591,7 @@ fn main() {
             commands::mark_shutdown_selection_as_completed,
             commands::mark_feedback_survey_as_completed,
             commands::update_shutdown_mode_selection,
+            commands::set_pause_on_battery_mode,
             // Scheduler commands
             commands::add_scheduler_event,
             commands::remove_scheduler_event,
