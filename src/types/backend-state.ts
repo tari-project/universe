@@ -243,4 +243,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'WalletTransactionUpdated';
           payload: MinotariWalletTransaction;
+      }
+    | {
+          event_type: 'WalletTransactionsCleared';
+          payload: undefined;
       };

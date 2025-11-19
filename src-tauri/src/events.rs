@@ -40,6 +40,7 @@ pub enum EventType {
     WalletScanningProgressUpdate, // ===================
     WalletTransactionsFound,
     WalletTransactionUpdated,
+    WalletTransactionsCleared,
     BaseNodeUpdate,
     GpuDevicesUpdate,
     CpuPoolsStatsUpdate,

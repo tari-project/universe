@@ -62,6 +62,7 @@ use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::pin::PinManager;
 use crate::utils::{cryptography, rand_utils};
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::UniverseAppState;
 
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
@@ -295,6 +296,11 @@ impl InternalWallet {
         } else {
             // External(Seedless)
         }
+
+        MinotariWalletManager::handle_side_effects_after_wallet_import(
+            self.tari_address_type.clone(),
+        )
+        .await?;
 
         ConfigUI::handle_wallet_type_update(self.tari_address_type.clone()).await?;
         EventsEmitter::emit_selected_tari_address_changed(

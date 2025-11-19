@@ -22,7 +22,7 @@
 
 use crate::{
     events_emitter::EventsEmitter,
-    internal_wallet::InternalWallet,
+    internal_wallet::{InternalWallet, TariAddressType},
     tasks_tracker::TasksTrackers,
     wallet::{
         minotari_wallet_types::{
@@ -51,8 +51,7 @@ use std::{
 };
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
-use tari_transaction_components::{transaction_components::WalletOutput, MicroMinotari};
-use tari_utilities::message_format::MessageFormat;
+use tari_transaction_components::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::{sync::RwLock, time::sleep};
 static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet_manager";
@@ -97,7 +96,6 @@ impl WalletState {
 
 static INSTANCE: LazyLock<MinotariWalletManager> = LazyLock::new(MinotariWalletManager::new);
 
-// static DEFAULT_GRPC_URL: &str = "https://rpc.tari.com";
 static DEFAULT_GRPC_URL: LazyLock<String> = LazyLock::new(|| {
     let network = Network::get_current_or_user_setting_or_default();
     let http_api_url = match network {
@@ -169,6 +167,72 @@ impl MinotariWalletManager {
         let mut owner_address_lock = INSTANCE.owner_tari_address.write().await;
         *owner_address_lock = Some(address);
         Ok(())
+    }
+
+    pub async fn update_owner_address(new_address: &str) -> Result<(), anyhow::Error> {
+        let mut owner_address_lock = INSTANCE.owner_tari_address.write().await;
+        *owner_address_lock = Some(new_address.to_string());
+        Ok(())
+    }
+
+    pub async fn handle_side_effects_after_wallet_import(
+        tari_wallet_type: TariAddressType,
+    ) -> Result<(), anyhow::Error> {
+        info!(
+            target: LOG_TARGET,
+            "Handling side effects after wallet import for wallet type: {:?}", tari_wallet_type
+        );
+
+        match tari_wallet_type {
+            TariAddressType::External => {
+                Self::clear_wallet_state().await;
+
+                info!(
+                    target: LOG_TARGET,
+                    "External wallet import completed. Transactions and balance cleared."
+                );
+
+                Ok(())
+            }
+            TariAddressType::Internal => {
+                let new_address = InternalWallet::tari_address().await.to_base58();
+                Self::update_owner_address(&new_address).await?;
+                Self::clear_wallet_state().await;
+
+                info!(
+                    target: LOG_TARGET,
+                    "Internal wallet import completed. Owner address updated to: {}. Transactions and balance cleared.",
+                    new_address
+                );
+
+                Ok(())
+            }
+        }
+    }
+
+    /// Clear the in-memory wallet state (transactions and balance)
+    async fn clear_wallet_state() {
+        let mut wallet_state = INSTANCE.wallet_state.write().await;
+        wallet_state.transactions.clear();
+        wallet_state.balance = 0;
+        wallet_state.last_known_good_balance = 0;
+        wallet_state.last_balance_update = 0;
+        drop(wallet_state);
+
+        info!(
+            target: LOG_TARGET,
+            "In-memory wallet state cleared: transactions and balance reset to 0"
+        );
+
+        // Emit events to clear frontend state
+        EventsEmitter::emit_wallet_transactions_cleared().await;
+        EventsEmitter::emit_wallet_balance_update(WalletBalance {
+            available_balance: MicroMinotari(0),
+            timelocked_balance: 0.into(),
+            pending_incoming_balance: 0.into(),
+            pending_outgoing_balance: 0.into(),
+        })
+        .await;
     }
 
     /// Get cached owner address or fetch if not cached
@@ -658,10 +722,6 @@ impl MinotariWalletManager {
         .await;
 
         // ============== |Fetch and Process All Balance Changes| ==============
-        info!(
-            target: LOG_TARGET,
-            "Fetching all balance changes for account ID: {}", DEFAULT_ACCOUNT_ID
-        );
 
         let balance_changes =
             get_all_balance_changes_by_account_id(&mut conn, DEFAULT_ACCOUNT_ID).await?;
@@ -794,13 +854,14 @@ impl MinotariWalletManager {
 
     async fn execute_blockchain_scan() -> Result<(), anyhow::Error> {
         let database_path = Self::database_path().await?;
+        let tari_address = Self::get_owner_address().await;
 
         let scan_result = tokio::task::spawn_blocking(move || {
             tokio::runtime::Handle::current().block_on(scan(
                 DEFAULT_PASSWORD,
                 DEFAULT_GRPC_URL.as_str(),
                 &database_path,
-                None,
+                Some(tari_address.as_str()),
                 SCAN_BATCH_SIZE,
                 *MAX_CONCURRENT_REQUESTS,
             ))
@@ -1030,6 +1091,7 @@ impl MinotariWalletManager {
         let tari_wallet_details = InternalWallet::tari_wallet_details().await;
         if let Some(details) = tari_wallet_details {
             let database_path = Self::database_path().await?;
+            let tari_address = Self::get_owner_address().await;
 
             init_with_view_key(
                 &details.view_private_key_hex,
@@ -1037,6 +1099,7 @@ impl MinotariWalletManager {
                 DEFAULT_PASSWORD,
                 database_path.as_str(),
                 details.wallet_birthday,
+                Some(tari_address.as_str()),
             )
             .await?;
 

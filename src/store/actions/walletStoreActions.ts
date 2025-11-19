@@ -227,3 +227,11 @@ export const handleMinotariWalletTransactionUpdated = (payload: MinotariWalletTr
         }));
     }
 };
+
+export const handleWalletTransactionsCleared = () => {
+    console.log('Clearing all wallet transactions from store');
+    useWalletStore.setState((c) => ({
+        ...c,
+        minotari_wallet_transactions: [],
+    }));
+};
