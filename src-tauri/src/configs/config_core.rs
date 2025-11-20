@@ -44,7 +44,7 @@ pub struct AirdropTokens {
     pub refresh_token: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Serialize, Eq, Hash, Deserialize)]
 pub enum CustomDirectory {
     ChainData,
     Config,
