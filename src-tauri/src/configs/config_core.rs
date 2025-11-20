@@ -44,6 +44,13 @@ pub struct AirdropTokens {
     pub refresh_token: String,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize, Eq, Hash)]
+pub enum CustomDirectory {
+    ChainData,
+    Config,
+    Logs,
+}
+
 pub const CORE_CONFIG_VERSION: u32 = 0;
 static INSTANCE: LazyLock<RwLock<ConfigCore>> = LazyLock::new(|| RwLock::new(ConfigCore::new()));
 #[allow(clippy::struct_excessive_bools)]
@@ -73,6 +80,7 @@ pub struct ConfigCoreContent {
     exchange_id: String,
     scheduler_events: HashMap<String, ScheduledEventInfo>,
     shutdown_mode: ShutdownMode,
+    directories: HashMap<CustomDirectory, String>,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -127,6 +135,7 @@ impl Default for ConfigCoreContent {
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
             scheduler_events: HashMap::new(),
             shutdown_mode: ShutdownMode::Tasktray,
+            directories: HashMap::new(),
         }
     }
 }
@@ -152,6 +161,18 @@ impl ConfigCore {
             config.content.version_counter = 1;
             let _unused = Self::_save_config(config._get_content().clone());
         };
+    }
+
+    pub async fn update_directories(
+        directory: CustomDirectory,
+        path: String,
+    ) -> Result<(), anyhow::Error> {
+        let mut dirs = Self::content().await.directories;
+
+        dirs.entry(directory).or_insert(path);
+        Self::update_field(ConfigCoreContent::set_directories, dirs.clone()).await?;
+
+        Ok(())
     }
 }
 
