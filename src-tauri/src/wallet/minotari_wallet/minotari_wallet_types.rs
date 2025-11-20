@@ -101,7 +101,7 @@ impl Display for MinotariWalletDetails {
     }
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct MinotariWalletTransaction {
     pub id: String,
     pub account_id: i64,

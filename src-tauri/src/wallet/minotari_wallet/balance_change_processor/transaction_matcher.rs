@@ -20,10 +20,43 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod minotari_wallet;
-pub mod spend_wallet;
-pub mod transaction_service;
-pub mod wallet_adapter;
-pub mod wallet_manager;
-pub mod wallet_status_monitor;
-pub mod wallet_types;
+use crate::wallet::minotari_wallet::minotari_wallet_types::{
+    MinotariWalletDetails, MinotariWalletTransaction,
+};
+use minotari_wallet::models::BalanceChange;
+use tari_transaction_components::transaction_components::OutputType;
+
+pub struct TransactionMatcher;
+
+impl TransactionMatcher {
+    pub fn find_mergeable_transaction<'a>(
+        transactions: &'a mut Vec<MinotariWalletTransaction>,
+        balance_change: &BalanceChange,
+        details: &MinotariWalletDetails,
+    ) -> Option<&'a mut MinotariWalletTransaction> {
+        let is_not_coinbase = !details
+            .recieved_output_details
+            .as_ref()
+            .is_some_and(|output| output.output_type == OutputType::Coinbase);
+
+        if !is_not_coinbase {
+            return None;
+        }
+
+        transactions.iter_mut().rev().find(|transaction| {
+            let metadata_matches = transaction.mined_height == balance_change.effective_height
+                && transaction.effective_date == balance_change.effective_date
+                && transaction.account_id == balance_change.account_id;
+
+            let has_non_coinbase_operation = transaction.operations.iter().any(|op| {
+                if let Some(received_details) = &op.recieved_output_details {
+                    received_details.output_type != OutputType::Coinbase
+                } else {
+                    true
+                }
+            });
+
+            metadata_matches && has_non_coinbase_operation
+        })
+    }
+}

@@ -32,7 +32,7 @@ export const importSeedWords = async (seedWords: string[]) => {
         tx_history: [],
         bridge_transactions: [],
         wallet_scanning: {
-            is_initial_scan_finished: false,
+            are_there_more_blocks_to_scan: false,
             scanned_height: 0,
             total_height: 0,
             progress: 0,
@@ -152,24 +152,55 @@ function shouldFetchBridgeItems(incomingWalletTransactions: WalletTransaction[])
     const bridgeWalletTransactions = useWalletStore.getState().bridge_transactions;
     const coldWalletAddress = useWalletStore.getState().cold_wallet_address;
 
+    console.log('Checking for new bridge transactions...');
+    console.log('Incoming wallet transactions:', incomingWalletTransactions);
+    console.log('Existing bridge wallet transactions:', bridgeWalletTransactions);
+    console.log('Cold wallet address:', coldWalletAddress);
+
     const isThereANewBridgeTransaction = incomingWalletTransactions.some(
         (tx) =>
             tx.operations.some((op) => op.claimed_recipient_address === coldWalletAddress) &&
-            !bridgeWalletTransactions?.some(
-                (bridgeTx) =>
-                    bridgeTx.paymentId === tx.memo_parsed && Number(bridgeTx.tokenAmount) === tx.transaction_balance
-            )
+            (bridgeWalletTransactions.length === 0 ||
+                !bridgeWalletTransactions?.some(
+                    (bridgeTx) =>
+                        bridgeTx.paymentId === tx.memo_parsed && Number(bridgeTx.tokenAmount) === tx.transaction_balance
+                ))
     );
 
     return isThereANewBridgeTransaction;
 }
 
-const solveBridgeTransactionDetails = async (walletTxs: WalletTransaction[]): Promise<void> => {
+const solveSingleBridgeTransactionDetail = async (walletTx: WalletTransaction): Promise<WalletTransaction> => {
+    let processedTransaction: WalletTransaction = { ...walletTx };
+    if (shouldFetchBridgeItems([walletTx])) {
+        const walletAddress = useWalletStore((state) => state.tari_address_base58);
+        const bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress);
+        bridgeTransactions.forEach((bridgeTx) => {
+            if (
+                bridgeTx.paymentId === walletTx.memo_parsed ||
+                (Number(bridgeTx.tokenAmount) === walletTx.transaction_balance &&
+                    bridgeTx.destinationAddress === useWalletStore.getState().cold_wallet_address)
+            ) {
+                processedTransaction = {
+                    ...walletTx,
+                    bridge_transaction_details: {
+                        status: bridgeTx.status,
+                        transactionHash: bridgeTx.transactionHash,
+                    },
+                };
+            }
+        });
+    }
+    return processedTransaction;
+};
+
+const solveBridgeTransactionDetails = async (walletTxs: WalletTransaction[]): Promise<WalletTransaction[]> => {
+    const processedTransactions: WalletTransaction[] = [...walletTxs];
     if (shouldFetchBridgeItems(walletTxs)) {
         const walletAddress = useWalletStore((state) => state.tari_address_base58);
         const bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress);
         bridgeTransactions.forEach((bridgeTx) => {
-            walletTxs.map((walletTx) => {
+            processedTransactions.map((walletTx) => {
                 if (
                     bridgeTx.paymentId === walletTx.memo_parsed ||
                     (Number(bridgeTx.tokenAmount) === walletTx.transaction_balance &&
@@ -187,6 +218,7 @@ const solveBridgeTransactionDetails = async (walletTxs: WalletTransaction[]): Pr
             });
         });
     }
+    return processedTransactions;
 };
 
 export const handleWalletTransactionsFound = async (payload: WalletTransaction[]) => {
@@ -196,22 +228,23 @@ export const handleWalletTransactionsFound = async (payload: WalletTransaction[]
         return !copiedCurrentTransactions.some((existingTx) => existingTx.id === newTx.id);
     });
 
-    await solveBridgeTransactionDetails(filteredIncomingTransactions);
+    const processedTransactions = await solveBridgeTransactionDetails(filteredIncomingTransactions);
 
-    const mergedTransactions = filteredIncomingTransactions.concat(copiedCurrentTransactions);
+    const mergedTransactions = processedTransactions.concat(copiedCurrentTransactions);
     useWalletStore.setState((c) => ({
         ...c,
         wallet_transactions: mergedTransactions,
     }));
 };
 
-export const handleWalletTransactionUpdated = (payload: WalletTransaction) => {
+export const handleWalletTransactionUpdated = async (payload: WalletTransaction) => {
     const currentTransactions = useWalletStore.getState().wallet_transactions;
     const transactionIndex = currentTransactions.findIndex((tx) => tx.id === payload.id);
 
     let transactionToUpdate = currentTransactions.find((tx) => tx.id === payload.id);
     if (transactionToUpdate) {
         transactionToUpdate = payload;
+        // transactionToUpdate = await solveSingleBridgeTransactionDetail(payload);
         const updatedTransactions = [...currentTransactions];
         updatedTransactions[transactionIndex] = transactionToUpdate;
         useWalletStore.setState((c) => ({

@@ -9,7 +9,7 @@ interface WalletActionsProps {
 }
 export default function WalletActions({ section, setSection }: WalletActionsProps) {
     const { t } = useTranslation(['wallet', 'sidebar']);
-    const isScanning = useWalletStore((s) => !s.wallet_scanning.is_initial_scan_finished);
+    const isScanning = useWalletStore((s) => !s.wallet_scanning.are_there_more_blocks_to_scan);
 
     return (
         <NavWrapper>

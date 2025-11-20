@@ -55,7 +55,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const isWalletModuleFailed = walletModule?.status === AppModuleStatus.Failed;
 
     const isConnectedToTariNetwork = useNodeStore((s) => s.isNodeConnected);
-    const isInitialWalletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_finished);
+    const isInitialWalletScanning = useWalletStore((s) => !s.wallet_scanning?.are_there_more_blocks_to_scan);
 
     const targetRef = useRef<HTMLDivElement>(null) as RefObject<HTMLDivElement>;
     const [isScrolled, setIsScrolled] = useState(false);

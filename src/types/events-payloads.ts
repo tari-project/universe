@@ -29,7 +29,7 @@ export interface WalletScanningProgressUpdatePayload {
     scanned_height: number;
     total_height: number;
     progress: number;
-    is_initial_scan_finished: boolean;
+    are_there_more_blocks_to_scan: boolean;
 }
 export interface NewBlockHeightPayload {
     block_height: number;

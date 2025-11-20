@@ -103,7 +103,7 @@ export function List() {
                     ))}
 
                     {/*added placeholder so the scroll can trigger fetch*/}
-                    {walletScanning?.is_initial_scan_finished ? <PlaceholderItem $isLast /> : null}
+                    {walletScanning?.are_there_more_blocks_to_scan ? <PlaceholderItem $isLast /> : null}
                 </ListItemWrapper>
             </VList>
         </ListWrapper>

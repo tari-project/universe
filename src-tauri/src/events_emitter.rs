@@ -33,7 +33,7 @@ use crate::mining::pools::PoolStatus;
 use crate::mining::MinerControlsState;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
-use crate::wallet::minotari_wallet_types::MinotariWalletTransaction;
+use crate::wallet::minotari_wallet::minotari_wallet_types::MinotariWalletTransaction;
 use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
 use crate::{
     configs::{
@@ -537,7 +537,7 @@ impl EventsEmitter {
         scanned_height: u64,
         total_height: u64,
         progress: f64,
-        is_initial_scan_finished: bool,
+        are_there_more_blocks_to_scan: bool,
     ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
@@ -546,7 +546,7 @@ impl EventsEmitter {
                 scanned_height,
                 total_height,
                 progress,
-                is_initial_scan_finished,
+                are_there_more_blocks_to_scan,
             },
         };
         if let Err(e) = Self::get_app_handle()

@@ -37,7 +37,7 @@ export interface WalletStoreState {
         scanned_height: number;
         total_height: number;
         progress: number;
-        is_initial_scan_finished: boolean;
+        are_there_more_blocks_to_scan: boolean;
     };
     is_pin_locked: boolean;
     is_seed_backed_up: boolean;
@@ -61,7 +61,7 @@ export const initialState: WalletStoreState = {
         scanned_height: 0,
         total_height: 0,
         progress: 0,
-        is_initial_scan_finished: false,
+        are_there_more_blocks_to_scan: false,
     },
     is_pin_locked: false,
     is_seed_backed_up: false,
