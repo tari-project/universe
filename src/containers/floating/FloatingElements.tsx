@@ -7,6 +7,7 @@ import { CustomPowerLevelsDialogContainer } from '../navigation/components/Miner
 import CrewRewards from '../main/CrewRewards/CrewRewards.tsx';
 
 import AutoUpdateDialog from './AutoUpdateDialog/AutoUpdateDialog.tsx';
+import BatteryAlertDialog from './BatteryAlertDialog/index.ts';
 import ShutdownSelectionDialog from './ShutdownSelectionDialog/index.ts';
 import CreatePinDialog from './security/pin/CreatePinDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
@@ -30,6 +31,7 @@ import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 import UniversalEXSelectorModal from './UniversalEXSelectorModal/UniversalEXSelectorModal.tsx';
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
 import AirdropClaimModal from '../main/Airdrop/AirdropClaim/AirdropClaimModal.tsx';
+import SchedulerModal from './scheduler/SchedulerModal.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -39,6 +41,7 @@ const FloatingElements = () => {
             {environment === 'development' && <AdminUI />}
 
             <AutoUpdateDialog />
+            <BatteryAlertDialog />
             <ShutdownSelectionDialog />
             <CriticalErrorDialog />
             <ExternalDependenciesDialog />
@@ -65,6 +68,7 @@ const FloatingElements = () => {
             <FailedModuleInitializationDialog />
             <ExitFeedbackSurveyDialog />
             <LongTimeUserFeedbackDialog />
+            <SchedulerModal />
         </FloatingTree>
     );
 };

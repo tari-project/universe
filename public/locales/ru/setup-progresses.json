@@ -1,37 +1,45 @@
 {
+  "all-modules-failed-description": "Все модули не удалось инициализировать. Приложение не может работать в текущем состоянии. Пожалуйста, перезапустите приложение или свяжитесь с поддержкой.",
   "any_moment_now": "В любой момент",
+  "app-modules": {
+    "cpu-mining": "Майнинг на CPU",
+    "gpu-mining": "Майнинг на GPU",
+    "wallet": "Кошелек"
+  },
   "awaiting-exchange-selection": "Ожидание выбора биржи пользователем",
   "block-sync": "Синхронизация блоков",
   "calculating_time": "Расчет оставшегося времени...",
   "calculating_time-compact": "Расчет времени...",
+  "critical-initialization-failure": "Критическая ошибка инициализации",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "Не удалось завершить шаг",
   "header-sync": "Синхронизация заголовков",
   "local-node-sync": "Tari Universe все еще синхронизируется. Это не повлияет на Ваш процесс майнинга.",
+  "module-initialization-issues": "Некоторые модули не удалось инициализировать",
   "network-peers": "Подключение к сетевым пирам",
   "phase-title": {
     "setup-core": "Настройка приложения Tari",
     "setup-core-compact": "Синхронизация приложения",
     "setup-hardware": "Настройка оборудования",
     "setup-hardware-compact": "Настройка оборудования",
-    "setup-node": "Настройка узла Tari",
-    "setup-node-compact": "Синхронизация узла",
     "setup-mining": "Настройка дополнительных утилит",
     "setup-mining-compact": "Настройка утилит",
+    "setup-node": "Настройка узла Tari",
+    "setup-node-compact": "Синхронизация узла",
     "setup-wallet": "Настройка кошелька",
     "setup-wallet-compact": "Синхронизация кошелька"
-  },
-  "critical-initialization-failure": "Критическая ошибка инициализации",
-  "failed-to-complete-step": "Не удалось завершить шаг",
-  "all-modules-failed-description": "Все модули не удалось инициализировать. Приложение не может работать в текущем состоянии. Пожалуйста, перезапустите приложение или свяжитесь с поддержкой.",
-  "module-initialization-issues": "Некоторые модули не удалось инициализировать",
-  "some-modules-failed-description": "Приложение может продолжать работать, но некоторые функции могут быть недоступны. Пожалуйста, перезапустите неудачные модули или свяжитесь с поддержкой, если проблема сохраняется.",
-  "app-modules": {
-    "cpu-mining": "Майнинг на CPU",
-    "gpu-mining": "Майнинг на GPU",
-    "wallet": "Кошелек"
   },
   "remaining": "осталось",
   "second_remaining": "осталась секунда",
   "seconds_remaining": "осталось секунд",
+  "some-modules-failed-description": "Приложение может продолжать работать, но некоторые функции могут быть недоступны. Пожалуйста, перезапустите неудачные модули или свяжитесь с поддержкой, если проблема сохраняется.",
   "title": {
     "binaries-cpu-miner": "Подготовка бинарного файла майнера для CPU",
     "binaries-cpu-miner-download": "Подготовка бинарного файла майнера на CPU | Загрузка: {{ progress }}%",

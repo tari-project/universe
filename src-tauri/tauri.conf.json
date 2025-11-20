@@ -1,5 +1,5 @@
 {
-    "version": "1.6.5",
+    "version": "1.6.6",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -92,16 +92,16 @@
             {
                 "title": "Tari Universe (Alpha) | Testnet",
                 "label": "main",
-                "width": 1300,
-                "height": 731,
-                "minWidth": 1144,
-                "minHeight": 660,
                 "resizable": true,
                 "fullscreen": false,
                 "transparent": false,
                 "visible": true,
                 "center": true,
-                "useHttpsScheme": true
+                "useHttpsScheme": true,
+                "width": 1280,
+                "height": 760,
+                "minWidth": 1152,
+                "minHeight": 684
             }
         ]
     },

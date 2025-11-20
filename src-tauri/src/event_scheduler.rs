@@ -91,9 +91,10 @@ use tokio::{
 use crate::{
     configs::{
         config_core::{ConfigCore, ConfigCoreContent},
-        config_mining::{ConfigMining, ConfigMiningContent, MiningMode},
+        config_mining::{ConfigMining, ConfigMiningContent},
         trait_config::ConfigImpl,
     },
+    events_emitter::EventsEmitter,
     mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
     tasks_tracker::TasksTrackers,
 };
@@ -305,29 +306,6 @@ impl CronSchedule {
                 .max(ZERO_DURATION)
         })
     }
-
-    /// Checks if a time falls within this schedule's active period.
-    ///
-    /// Returns true if the time is between the most recent start time
-    /// and the next end time.
-    ///
-    /// ### Parameters
-    /// * `time` - Time to check
-    ///
-    /// ### Returns
-    /// * `true` - Time is within the active period
-    /// * `false` - Time is outside the active period
-    pub fn is_time_in_range(&self, time: DateTime<Local>) -> bool {
-        if let (Some(prev_start), Some(next_end)) = (
-            self.start_time.find_previous_occurrence(&time, false).ok(),
-            self.end_time.find_next_occurrence(&time, false).ok(),
-        ) {
-            if prev_start <= time && time < next_end {
-                return true;
-            }
-        }
-        false
-    }
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -351,6 +329,22 @@ pub struct BetweenTimeVariantPayload {
     pub end_hour: i64,
     pub end_minute: i64,
     pub end_period: TimePeriod,
+}
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct InVariantPayload {
+    pub time_value: i64,
+    pub time_unit: TimeUnit,
+}
+
+impl InVariantPayload {
+    /// Converts the payload into a Duration.
+    ///
+    /// ### Returns
+    /// * `Ok(Duration)` - Duration created successfully
+    /// * `Err(SchedulerError::InvalidTimingFormat)` - If value is out of range
+    pub fn to_duration(&self) -> Result<Duration, SchedulerError> {
+        SchedulerEventTiming::parse_duration_unit(self.time_value, self.time_unit.clone())
+    }
 }
 
 impl BetweenTimeVariantPayload {
@@ -380,7 +374,7 @@ impl BetweenTimeVariantPayload {
 pub enum SchedulerEventTiming {
     /// Run once after the specified time (e.g., In(2 hours))
     /// The event gets removed after it runs.
-    In(Duration),
+    In(InVariantPayload),
     /// Run during recurring time windows (e.g., Between("0 22 * * *", "0 6 * * *") for 10PM to 6AM daily)
     /// The event keeps repeating according to the schedule.
     Between(BetweenTimeVariantPayload),
@@ -440,8 +434,11 @@ impl SchedulerEventTiming {
     /// let timing = SchedulerEventTiming::parse_in_variant(2, TimeUnit::Hours)?;
     /// ```
     pub fn parse_in_variant(value: i64, unit: TimeUnit) -> Result<Self, SchedulerError> {
-        let duration = Self::parse_duration_unit(value, unit)?;
-        Ok(SchedulerEventTiming::In(duration))
+        let payload = InVariantPayload {
+            time_value: value,
+            time_unit: unit,
+        };
+        Ok(SchedulerEventTiming::In(payload))
     }
 
     /// Create a recurring time window timing.
@@ -536,6 +533,7 @@ pub struct ScheduledEventInfo {
     pub id: String,
     pub event_type: SchedulerEventType,
     pub timing: SchedulerEventTiming,
+    pub state: SchedulerEventState,
 }
 
 /// Defines the types of actions that can be scheduled.
@@ -550,7 +548,7 @@ pub enum SchedulerEventType {
     /// Multiple Mine events can exist with different mining modes.
     Mine {
         /// The specific mining mode configuration to use
-        mining_mode: MiningMode,
+        mining_mode: String,
     },
 }
 
@@ -578,7 +576,7 @@ impl Display for SchedulerEventType {
         match self {
             SchedulerEventType::ResumeMining => write!(f, "Pause Mining"),
             SchedulerEventType::Mine { mining_mode } => {
-                write!(f, "Mine ({})", mining_mode.mode_name)
+                write!(f, "Mine ({})", mining_mode)
             }
         }
     }
@@ -732,6 +730,7 @@ impl EventScheduler {
                             id: id.clone(),
                             event_type: event.event_type.clone(),
                             timing: event.timing.clone(),
+                            state: event.state.clone(),
                         },
                     )
                 }),
@@ -890,6 +889,7 @@ impl EventScheduler {
         timing: SchedulerEventTiming,
     ) -> Result<String, SchedulerError> {
         if event_type.is_unique() {
+            info!(target: LOG_TARGET, "Ensuring uniqueness for event type {:?}", event_type);
             let to_remove: Vec<String> = events
                 .iter()
                 .filter(|(_, event)| event.event_type == event_type)
@@ -915,6 +915,7 @@ impl EventScheduler {
             Self::create_scheduling_task(event_id.clone(), event_type, timing).await?;
         scheduled_event.task_handle = Some(task_handle);
         events.insert(event_id.clone(), scheduled_event);
+        Self::save_persistent_events_to_config(events).await;
 
         Ok(event_id)
     }
@@ -1047,9 +1048,12 @@ impl EventScheduler {
                 });
                     }
                     SchedulerEventType::Mine { mining_mode } => {
-                        ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.mode_name.clone()).await.unwrap_or_else(|e| {
+                        ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.clone()).await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
                 });
+                        // TODO: Replace with emiting specific value only
+                        EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await)
+                            .await;
                         GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                     error!(target: LOG_TARGET, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
                 });
@@ -1137,15 +1141,21 @@ impl EventScheduler {
         timing: SchedulerEventTiming,
     ) -> Result<tokio::task::JoinHandle<()>, SchedulerError> {
         let handle = match timing {
-            SchedulerEventTiming::In(duration) => tokio::spawn(async move {
-                sleep(duration.to_std().unwrap_or_default()).await;
+            SchedulerEventTiming::In(in_variant_payload) => tokio::spawn(async move {
+                let duration = in_variant_payload.to_duration();
+                if let Ok(duration) = duration {
+                    sleep(duration.to_std().unwrap_or_default()).await;
 
-                let _unused = INSTANCE
-                    .message_sender
-                    .send(SchedulerMessage::TriggerEnterCallback { event_id });
+                    let _unused = INSTANCE
+                        .message_sender
+                        .send(SchedulerMessage::TriggerEnterCallback { event_id });
+                } else {
+                    error!(target: LOG_TARGET, "Failed to parse duration for 'In' event {:?}", event_id);
+                }
             }),
 
             SchedulerEventTiming::Between(between_time_variant_payload) => {
+                info!(target: LOG_TARGET, "Creating scheduling task for 'Between' event ID {:?}", event_id);
                 let cron_schedule =
                     between_time_variant_payload
                         .to_cron_schedule()
@@ -1156,21 +1166,22 @@ impl EventScheduler {
                             ))
                         })?;
 
+                let copied_cron_schedule = cron_schedule.clone();
+                let copied_event_id = event_id.clone();
+
                 tokio::spawn(async move {
+                    let cron_schedule = copied_cron_schedule.clone();
+                    let event_id = copied_event_id.clone();
                     loop {
                         let local_now = Local::now();
 
-                        // If is in time range, eg. currently is 10AM and the range is 9AM - 11AM, then we skip sleep and trigger callback immediately
-                        // If not in range, eg. currently is 2PM and the range is 9AM - 11AM, then we sleep until next start time
-                        if !cron_schedule.is_time_in_range(local_now) {
-                            if let Some(next_start_wait_time) =
-                                cron_schedule.find_next_start_wait_time(local_now)
-                            {
-                                sleep(next_start_wait_time).await;
-                            } else {
-                                warn!(target: LOG_TARGET, "No next start time found for event with ID {:?}", event_id);
-                                break;
-                            }
+                        if let Some(next_start_wait_time) =
+                            cron_schedule.find_next_start_wait_time(local_now)
+                        {
+                            sleep(next_start_wait_time).await;
+                        } else {
+                            warn!(target: LOG_TARGET, "No next start time found for event with ID {:?}", event_id);
+                            break;
                         }
 
                         let _unused =
@@ -1179,7 +1190,12 @@ impl EventScheduler {
                                 .send(SchedulerMessage::TriggerEnterCallback {
                                     event_id: event_id.clone(),
                                 });
-
+                    }
+                });
+                tokio::spawn(async move {
+                    let cron_schedule = cron_schedule.clone();
+                    loop {
+                        let local_now = Local::now();
                         // Now wait until end time, eg. currently is 10AM and the range is 9AM - 11AM, then we wait until 11AM
                         if let Some(next_end_wait_time) =
                             cron_schedule.find_next_end_wait_time(local_now)

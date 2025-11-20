@@ -159,6 +159,11 @@ impl CpuManager {
             return Err(anyhow::anyhow!("CPU mining is disabled"));
         }
 
+        if self.process_watcher.is_running() {
+            info!(target: LOG_TARGET, "CPU miner is already running");
+            return Ok(());
+        }
+
         EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Initiated).await;
 
         if let Some(app_handle) = &self.app_handle {
@@ -259,6 +264,10 @@ impl CpuManager {
         }
 
         Ok(())
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.process_watcher.is_running()
     }
 
     async fn determine_number_of_cores_to_use(cpu_usage_percentage: u32) -> u32 {

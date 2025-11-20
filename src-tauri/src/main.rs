@@ -202,9 +202,10 @@ fn main() {
             release: sentry::release_name!(),
             attach_stacktrace: true,
             before_send: Some(Arc::new(|event| {
-                if event.logentry.as_ref().is_some_and(|entry| {
+                let is_in_ignored = event.logentry.as_ref().is_some_and(|entry| {
                     IGNORED_SENTRY_ERRORS.iter().any(|ignored| entry.message.starts_with(ignored))
-                }) {
+                });
+                if is_in_ignored {
                     None
                 } else {
                     Some(event)
@@ -589,9 +590,9 @@ fn main() {
             commands::mark_shutdown_selection_as_completed,
             commands::mark_feedback_survey_as_completed,
             commands::update_shutdown_mode_selection,
+            commands::set_pause_on_battery_mode,
             // Scheduler commands
-            commands::add_scheduler_in_event,
-            commands::add_scheduler_between_event,
+            commands::add_scheduler_event,
             commands::remove_scheduler_event,
             commands::pause_scheduler_event,
             commands::resume_scheduler_event,
