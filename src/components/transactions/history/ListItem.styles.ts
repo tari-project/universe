@@ -9,6 +9,7 @@ export const ItemWrapper = styled(m.div)`
     width: 100%;
     border-radius: 10px;
     padding: 6px 0;
+    justify-content: flex-end;
     flex-direction: column;
     overflow: hidden;
     position: relative;
@@ -18,18 +19,33 @@ export const ItemWrapper = styled(m.div)`
 
 export const HoverWrapper = styled(m.div)`
     position: absolute;
-    inset: 0;
+    inset: 0 auto;
     z-index: 4;
+    pointer-events: none;
     transition: background-color 1s ease;
     height: 100%;
-
+    display: flex;
+    right: 0;
+    width: max-content;
+    justify-content: flex-end;
     background: linear-gradient(
         90deg,
         transparent 0%,
-        transparent 32%,
-        ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)} 38%,
+        transparent 10%,
+        ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)} 35%,
         ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)} 100%
     );
+`;
+export const ButtonWrapper = styled(m.div)`
+    position: relative;
+    align-items: center;
+    right: 0;
+    display: flex;
+    flex-direction: row;
+    padding: 0 10px 0 max(50px, 40%);
+    justify-content: flex-end;
+    height: 100%;
+    gap: 4px;
 `;
 
 export const ContentWrapper = styled.div`
@@ -104,7 +120,8 @@ export const Chip = styled.div`
 
 export const CurrencyText = styled(Typography).attrs({ variant: 'p' })`
     display: flex;
-    font-size: 11px;
+    font-size: 0.66rem;
+    letter-spacing: -0.4px;
     font-weight: 500;
     color: ${({ theme }) => theme.palette.text.secondary};
 `;
@@ -137,17 +154,6 @@ export const ReplayButton = styled.button`
         top: 50%;
         transform: translateY(-50%);
     }
-`;
-
-export const ButtonWrapper = styled(m.div)`
-    position: relative;
-    align-items: center;
-    display: flex;
-    flex-direction: row;
-    padding: 0 10px;
-    justify-content: flex-end;
-    height: 100%;
-    gap: 6px;
 `;
 
 export const FlexButton = styled.button`
