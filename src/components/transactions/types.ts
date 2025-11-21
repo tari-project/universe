@@ -7,13 +7,3 @@ export interface HistoryListItemProps {
     index: number;
     setDetailsItem?: (item: CombinedBridgeWalletTransaction | null) => void;
 }
-
-export interface BaseItemProps {
-    title: string;
-    isPositive?: boolean;
-    time: string;
-    value: string;
-    chip?: string;
-    onClick?: () => void;
-    hideWalletBalance?: boolean;
-}
