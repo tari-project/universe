@@ -134,9 +134,9 @@ export interface ConfigBackendInMemory {
 }
 
 export enum CustomDirectory {
-    ChainData,
-    Config,
-    Logs,
+    ChainData = 'ChainData',
+    Config = 'Config',
+    Logs = 'Logs',
 }
 
 export interface UpdateCustomDirectory {
