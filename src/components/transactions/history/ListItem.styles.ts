@@ -146,6 +146,7 @@ export const FlexButton = styled.button`
     position: relative;
     color: ${({ theme }) => theme.colors.greyscale[950]};
     font-size: 12px;
+    white-space: nowrap;
     font-weight: 600;
     line-height: 1;
     cursor: pointer;
