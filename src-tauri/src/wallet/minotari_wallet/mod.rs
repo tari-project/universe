@@ -49,7 +49,7 @@ use minotari_wallet::{
 };
 use std::{
     sync::{atomic::AtomicBool, LazyLock},
-    time::Duration,
+    time::{Duration, Instant},
 };
 use tari_common::configuration::Network;
 use tauri::{AppHandle, Manager};
@@ -91,6 +91,8 @@ pub struct MinotariWalletManager {
     // ============== |Unified Wallet State| ==============
     last_scanned_height: RwLock<u64>,
     owner_tari_address: RwLock<Option<String>>, // Cached currently used Tari address for reducing number of lookups
+    last_progress_emit: RwLock<Option<Instant>>,
+    pending_height: RwLock<Option<u64>>,
 }
 
 impl MinotariWalletManager {
@@ -106,6 +108,8 @@ impl MinotariWalletManager {
 
             owner_tari_address: RwLock::new(None),
             last_scanned_height: RwLock::new(0),
+            last_progress_emit: RwLock::new(None),
+            pending_height: RwLock::new(None),
         }
     }
 
@@ -356,58 +360,81 @@ impl MinotariWalletManager {
     async fn on_scanned_tip_block(block: minotari_wallet::models::ScannedTipBlock) {
         {
             let last_scanned_height_lock = INSTANCE.last_scanned_height.read().await;
-            // info!(
-            //     target: LOG_TARGET,
-            //     "Received scanned tip block height: {}. Last scanned height: {}",
-            //     block.height,
-            //     *last_scanned_height_lock
-            // );
             if block.height <= *last_scanned_height_lock {
                 return;
             }
         }
 
-        if let Some(app_handle) = &*INSTANCE.app_handle.read().await {
-            let app_state: tauri::State<'_, UniverseAppState> =
-                app_handle.state::<UniverseAppState>();
-            let node_status_watch_rx = app_state.node_status_watch_rx.clone();
-            let last_registered_node_status_height = node_status_watch_rx.borrow().block_height;
+        {
+            let mut last_scanned_height_lock = INSTANCE.last_scanned_height.write().await;
+            *last_scanned_height_lock = block.height;
+        }
 
-            // Calculate scanning percentage
-            let scanned_percentage = if last_registered_node_status_height > 0 {
-                (block.height as f64 / last_registered_node_status_height as f64) * 100.0
-            } else {
-                0.0
-            };
-            let scanned_percentage = scanned_percentage.min(100.0);
+        {
+            let mut pending = INSTANCE.pending_height.write().await;
+            *pending = Some(block.height);
+        }
 
-            info!(
-                target: LOG_TARGET,
-                "Scanned tip block height: {}. Node reported height: {}. Scanned percentage: {:.2}%",
-                block.height,
-                last_registered_node_status_height,
-                scanned_percentage
-            );
-
-            EventsEmitter::emit_wallet_scanning_progress_update(
-                block.height,
-                last_registered_node_status_height,
-                scanned_percentage,
-                INSTANCE
-                    .are_there_more_blocks_to_scan
-                    .load(std::sync::atomic::Ordering::SeqCst),
-            )
-            .await;
-
-            {
-                let mut last_scanned_height_lock = INSTANCE.last_scanned_height.write().await;
-                *last_scanned_height_lock = block.height;
+        let now = Instant::now();
+        let should_emit = {
+            let last_emit = INSTANCE.last_progress_emit.read().await;
+            match *last_emit {
+                Some(t) => now.duration_since(t) >= Duration::from_secs(1),
+                None => true,
             }
+        };
+
+        if !should_emit {
+            return;
+        }
+
+        let app_handle = match &*INSTANCE.app_handle.read().await {
+            Some(h) => h.clone(),
+            None => {
+                warn!(
+                    target: LOG_TARGET,
+                    "App handle not set in MinotariWalletManager. Cannot access node manager for blockchain scanning."
+                );
+                return;
+            }
+        };
+
+        let app_state: tauri::State<'_, UniverseAppState> = app_handle.state::<UniverseAppState>();
+        let node_status_watch_rx = app_state.node_status_watch_rx.clone();
+        let tip_height = node_status_watch_rx.borrow().block_height;
+
+        let progress = if tip_height > 0 {
+            ((block.height as f64 / tip_height as f64) * 100.0).min(100.0)
         } else {
-            warn!(
-                target: LOG_TARGET,
-                "App handle not set in MinotariWalletManager. Cannot access node manager for blockchain scanning."
-            );
+            0.0
+        };
+
+        info!(
+            target: LOG_TARGET,
+            "Scanned tip block height: {}. Node reported height: {}. Scanned percentage: {:.2}%",
+            block.height,
+            tip_height,
+            progress
+        );
+
+        EventsEmitter::emit_wallet_scanning_progress_update(
+            block.height,
+            tip_height,
+            progress,
+            INSTANCE
+                .are_there_more_blocks_to_scan
+                .load(std::sync::atomic::Ordering::SeqCst),
+        )
+        .await;
+
+        {
+            let mut last_emit = INSTANCE.last_progress_emit.write().await;
+            *last_emit = Some(now);
+        }
+
+        {
+            let mut pending = INSTANCE.pending_height.write().await;
+            *pending = None;
         }
     }
 
@@ -517,14 +544,21 @@ impl MinotariWalletManager {
                         target: LOG_TARGET,
                         "Blockchain scan completed. No more blocks to scan."
                     );
-                    let last_scanned_height = *INSTANCE.last_scanned_height.read().await;
+
+                    let height = match *INSTANCE.pending_height.read().await {
+                        Some(h) => h,
+                        None => *INSTANCE.last_scanned_height.read().await,
+                    };
+
                     EventsEmitter::emit_wallet_scanning_progress_update(
-                        last_scanned_height,
-                        last_scanned_height,
-                        100.0,
-                        false,
+                        height, height, 100.0, false,
                     )
                     .await;
+
+                    {
+                        let mut pending = INSTANCE.pending_height.write().await;
+                        *pending = None;
+                    }
                 }
             }
             Err(e) => {
