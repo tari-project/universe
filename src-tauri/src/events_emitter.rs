@@ -834,19 +834,6 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_wallet_transaction_updated(payload: MinotariWalletTransaction) {
-        let _ = FrontendReadyChannel::current().wait_for_ready().await;
-        if let Err(e) = Self::get_app_handle().await.emit(
-            BACKEND_STATE_UPDATE,
-            Event {
-                event_type: EventType::WalletTransactionUpdated,
-                payload,
-            },
-        ) {
-            error!(target: LOG_TARGET, "Failed to emit WalletTransactionUpdated event: {e:?}");
-        }
-    }
-
     pub async fn emit_wallet_transactions_cleared() {
         let _ = FrontendReadyChannel::current().wait_for_ready().await;
         if let Err(e) = Self::get_app_handle().await.emit(

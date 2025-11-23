@@ -241,10 +241,6 @@ export type BackendStateUpdateEvent =
           payload: WalletTransaction[];
       }
     | {
-          event_type: 'WalletTransactionUpdated';
-          payload: WalletTransaction;
-      }
-    | {
           event_type: 'WalletTransactionsCleared';
           payload: undefined;
       };

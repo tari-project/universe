@@ -62,7 +62,7 @@ use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::pin::PinManager;
 use crate::utils::{cryptography, rand_utils};
-use crate::wallet::minotari_wallet::minotari_wallet::MinotariWalletManager;
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::UniverseAppState;
 
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
@@ -947,7 +947,7 @@ impl InternalWallet {
 
 // ** Utils **
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[repr(u8)]
 pub enum TariAddressType {
     Internal = 0,

@@ -35,6 +35,10 @@ const TRANSACTION_DISPLAY_ORDER = [
     'mined_height',
     'effective_date',
     'transaction_balance',
+    'claimed_recipient_address',
+    'claimed_recipient_address_emoji',
+    'claimed_sender_address',
+    'claimed_sender_address_emoji',
     'eth_destination_address', // Bridge-specific
     'bridge_status',
     'bridge_transaction_hash',
@@ -49,13 +53,13 @@ const OPERATION_DISPLAY_ORDER = [
     'claimed_amount',
     'claimed_fee',
     'claimed_recipient_address',
-    'claimed_recipient_address_emoji',
     'claimed_sender_address',
-    'claimed_sender_address_emoji',
     'memo',
+    'confirmed_height',
+    'status',
+    'output_type',
+    'coinbase_extra',
 ];
-
-const OUTPUT_DISPLAY_ORDER = ['confirmed_height', 'status', 'output_type', 'coinbase_extra'];
 
 // ============================================================================
 // Field Value Handlers - Transaction Level
@@ -79,11 +83,12 @@ const transactionFieldHandlers: Record<string, TransactionFieldHandler> = {
     transaction_balance: (transaction) => {
         const balancePreset =
             transaction.transaction_balance.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
+        const isNegative = transaction.internal_transaction_type === 'Sent';
         return {
             label: 'Amount',
             value: (
                 <>
-                    {transaction.is_negative ? '-' : '+'}
+                    {isNegative ? '-' : '+'}
                     {formatNumber(Number(transaction.transaction_balance), balancePreset)}
                     <span>{` XTM`}</span>
                 </>
@@ -93,7 +98,7 @@ const transactionFieldHandlers: Record<string, TransactionFieldHandler> = {
     },
 
     eth_destination_address: (transaction) => {
-        const ethAddress = transaction.operations[0]?.claimed_recipient_address;
+        const ethAddress = transaction.claimed_recipient_address;
         if (!transaction.bridge_transaction_details || !ethAddress) return null;
 
         return {
@@ -121,13 +126,44 @@ const transactionFieldHandlers: Record<string, TransactionFieldHandler> = {
         };
     },
 
+    claimed_recipient_address: (transaction) => {
+        if (!transaction.claimed_recipient_address) return null;
+        return {
+            label: 'Recipient Address',
+            value: transaction.claimed_recipient_address,
+        };
+    },
+
+    claimed_recipient_address_emoji: (transaction) => {
+        if (!transaction.claimed_recipient_address_emoji) return null;
+        return {
+            label: 'Recipient Address (Emoji)',
+            value: <EmojiAddressWrapper>{transaction.claimed_recipient_address_emoji}</EmojiAddressWrapper>,
+        };
+    },
+
+    claimed_sender_address: (transaction) => {
+        if (!transaction.claimed_sender_address) return null;
+        return {
+            label: 'Sender Address',
+            value: transaction.claimed_sender_address,
+        };
+    },
+
+    claimed_sender_address_emoji: (transaction) => {
+        if (!transaction.claimed_sender_address_emoji) return null;
+        return {
+            label: 'Sender Address (Emoji)',
+            value: <EmojiAddressWrapper>{transaction.claimed_sender_address_emoji}</EmojiAddressWrapper>,
+        };
+    },
+
     memo: (transaction) => {
-        const memoOperation = transaction.operations.find((op) => op.memo_parsed);
-        if (!memoOperation?.memo_parsed) return null;
+        if (!transaction.memo_parsed) return null;
 
         return {
             label: 'Memo',
-            value: memoOperation.memo_parsed,
+            value: transaction.memo_parsed,
         };
     },
 };
@@ -191,29 +227,19 @@ const operationFieldHandlers: Record<string, OperationFieldHandler> = {
         };
     },
 
-    claimed_recipient_address: (operation) => ({
-        label: 'Recipient Address',
-        value: operation.claimed_recipient_address,
-    }),
-
-    claimed_recipient_address_emoji: (operation) => {
-        if (!operation.claimed_recipient_address_emoji) return null;
+    claimed_recipient_address: (operation) => {
+        if (!operation.claimed_recipient_address) return null;
         return {
-            label: 'Recipient Address (Emoji)',
-            value: <EmojiAddressWrapper>{operation.claimed_recipient_address_emoji}</EmojiAddressWrapper>,
+            label: 'Recipient Address',
+            value: operation.claimed_recipient_address,
         };
     },
 
-    claimed_sender_address: (operation) => ({
-        label: 'Sender Address',
-        value: operation.claimed_sender_address,
-    }),
-
-    claimed_sender_address_emoji: (operation) => {
-        if (!operation.claimed_sender_address_emoji) return null;
+    claimed_sender_address: (operation) => {
+        if (!operation.claimed_sender_address) return null;
         return {
-            label: 'Sender Address (Emoji)',
-            value: <EmojiAddressWrapper>{operation.claimed_sender_address_emoji}</EmojiAddressWrapper>,
+            label: 'Sender Address',
+            value: operation.claimed_sender_address,
         };
     },
 
@@ -224,43 +250,33 @@ const operationFieldHandlers: Record<string, OperationFieldHandler> = {
             value: operation.memo_parsed,
         };
     },
-};
 
-// ============================================================================
-// Field Value Handlers - Output Level
-// ============================================================================
-
-type OutputFieldHandler = (
-    outputDetails: NonNullable<WalletDetails['recieved_output_details']>
-) => (Partial<StatusListEntry> & { value: ReactNode }) | null;
-
-const outputFieldHandlers: Record<string, OutputFieldHandler> = {
-    confirmed_height: (outputDetails) => {
-        if (!outputDetails.confirmed_height) return null;
+    confirmed_height: (operation) => {
+        if (!operation.confirmed_height) return null;
         return {
             label: 'Confirmed Height',
-            value: outputDetails.confirmed_height.toString(),
+            value: operation.confirmed_height.toString(),
         };
     },
 
-    status: (outputDetails) => ({
+    status: (operation) => ({
         label: 'Status',
-        value: outputDetails.status,
+        value: operation.status,
     }),
 
-    output_type: (outputDetails) => {
-        const outputTypeLabel = OutputType[outputDetails.output_type] || 'Unknown';
+    output_type: (operation) => {
+        const outputTypeLabel = OutputType[operation.output_type] || 'Unknown';
         return {
             label: 'Output Type',
             value: outputTypeLabel,
         };
     },
 
-    coinbase_extra: (outputDetails) => {
-        if (outputDetails.output_type !== OutputType.Coinbase || !outputDetails.coinbase_extra) return null;
+    coinbase_extra: (operation) => {
+        if (operation.output_type !== OutputType.Coinbase || !operation.coinbase_extra) return null;
         return {
             label: 'Coinbase Extra',
-            value: outputDetails.coinbase_extra,
+            value: operation.coinbase_extra,
         };
     },
 };
@@ -300,30 +316,6 @@ export function getOperationDetails(operation: WalletDetails, index: number): St
         if (!handler) continue;
 
         const result = handler(operation, index);
-        if (!result) continue;
-
-        const { value, label, ...rest } = result;
-        entries.push({
-            label: label || capitalizeKey(fieldKey),
-            value,
-            ...rest,
-        });
-    }
-
-    return entries;
-}
-
-export function getOutputDetails(
-    outputDetails: NonNullable<WalletDetails['recieved_output_details']>
-): StatusListEntry[] {
-    const entries: StatusListEntry[] = [];
-
-    // Process fields in the defined display order
-    for (const fieldKey of OUTPUT_DISPLAY_ORDER) {
-        const handler = outputFieldHandlers[fieldKey];
-        if (!handler) continue;
-
-        const result = handler(outputDetails);
         if (!result) continue;
 
         const { value, label, ...rest } = result;

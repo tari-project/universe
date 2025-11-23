@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod address_resolver;
 mod balance_calculator;
 pub mod errors;
 mod output_details_repository;
@@ -28,82 +27,181 @@ mod transaction_builder;
 mod transaction_matcher;
 pub mod types;
 
-use crate::{events_emitter::EventsEmitter, wallet::wallet_types::WalletBalance};
+use crate::{
+    events_emitter::EventsEmitter,
+    wallet::{
+        minotari_wallet::balance_change_processor::types::{
+            BalanceChangeProcessorEmitStrategy, BalanceChangeProcessorStoredTransactions,
+            MinotariWalletBalance,
+        },
+        wallet_types::WalletBalance,
+    },
+};
 use log::{error, info};
-use minotari_wallet::models::BalanceChange;
+use minotari_wallet::{db::AccountBalance, models::BalanceChange};
+use sqlx::pool::PoolConnection;
 use tari_transaction_components::MicroMinotari;
 
-use address_resolver::AddressResolver;
 use balance_calculator::BalanceCalculator;
 use errors::ProcessingError;
 use output_details_repository::OutputDetailsRepository;
 use transaction_builder::TransactionBuilder;
 use transaction_matcher::TransactionMatcher;
-use types::WalletStateData;
 
 static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet::balance_change_processor";
-
-pub struct BalanceChangeProcessor;
+pub struct BalanceChangeProcessor {
+    pub currently_processed_block_height: u64,
+    pub has_more_blocks_to_process: bool,
+    pub emit_strategy: BalanceChangeProcessorEmitStrategy,
+    pub stored_transactions: BalanceChangeProcessorStoredTransactions,
+    pub current_balance: MinotariWalletBalance,
+}
 
 impl BalanceChangeProcessor {
-    pub async fn process_balance_change(
-        balance_change: &BalanceChange,
-        wallet_state: &mut WalletStateData,
+    pub fn new(emit_strategy: BalanceChangeProcessorEmitStrategy) -> Self {
+        Self {
+            has_more_blocks_to_process: true,
+            currently_processed_block_height: 0,
+            emit_strategy,
+            stored_transactions: BalanceChangeProcessorStoredTransactions::default(),
+            current_balance: MinotariWalletBalance::new(0),
+        }
+    }
+
+    fn update_currently_processed_block_height(&mut self, height: u64) {
+        self.currently_processed_block_height = height;
+    }
+
+    pub fn update_has_more_blocks_to_process(&mut self, has_more: bool) {
+        self.has_more_blocks_to_process = has_more;
+    }
+
+    pub async fn clear_stored_transactions(&mut self) {
+        self.stored_transactions.clear();
+        EventsEmitter::emit_wallet_transactions_cleared().await;
+    }
+
+    pub async fn clear_current_balance(&mut self) {
+        self.current_balance.update(0);
+        EventsEmitter::emit_wallet_balance_update(WalletBalance {
+            available_balance: MicroMinotari(0),
+            timelocked_balance: 0.into(),
+            pending_incoming_balance: 0.into(),
+            pending_outgoing_balance: 0.into(),
+        })
+        .await;
+    }
+
+    pub fn update_emit_strategy(&mut self, strategy: BalanceChangeProcessorEmitStrategy) {
+        self.emit_strategy = strategy;
+    }
+
+    pub async fn initialize_balance_from_account_balance(
+        &mut self,
+        account_balance: AccountBalance,
     ) {
-        match BalanceCalculator::calculate_new_balance(wallet_state.balance(), balance_change) {
+        if let (Some(credits), Some(debits)) =
+            (account_balance.total_credits, account_balance.total_debits)
+        {
+            match BalanceCalculator::calculate_new_balance(0, credits as u64, debits as u64) {
+                Ok(new_balance) => {
+                    self.current_balance.update(new_balance);
+                    Self::emit_balance_update(new_balance).await;
+                }
+                Err(e) => {
+                    error!(
+                        target: LOG_TARGET,
+                        "Failed to initialize wallet balance from account balance: {}. Setting balance to 0", e
+                    );
+                    self.current_balance.update(0);
+                }
+            }
+        }
+    }
+
+    pub async fn process_balance_change(&mut self, balance_change: &BalanceChange) {
+        match BalanceCalculator::calculate_new_balance(
+            self.current_balance.balance(),
+            balance_change.balance_credit,
+            balance_change.balance_debit,
+        ) {
             Ok(new_balance) => {
-                wallet_state.update_balance(new_balance);
+                self.current_balance.update(new_balance);
                 Self::emit_balance_update(new_balance).await;
             }
             Err(e) => {
                 error!(
                     target: LOG_TARGET,
-                    "Failed to calculate new wallet balance after balance change: {}. Using last known good balance.", e
+                    "Failed to calculate new wallet balance after balance change: {}. Staying with the old balance of {}", e, self.current_balance.balance()
                 );
-                wallet_state.rollback_balance();
-                Self::emit_balance_update(wallet_state.balance()).await;
             }
         }
     }
 
-    pub async fn process_wallet_transaction(
-        balance_change: BalanceChange,
-        wallet_state: &mut WalletStateData,
-        get_db_connection: impl std::future::Future<
-            Output = Result<sqlx::pool::PoolConnection<sqlx::Sqlite>, anyhow::Error>,
-        >,
-        owner_tari_address: &str,
+    pub async fn initial_transaction_processing(
+        &mut self,
+        balance_changes: Vec<BalanceChange>,
+        database_connection: &mut PoolConnection<sqlx::Sqlite>,
     ) -> Result<(), ProcessingError> {
+        for balance_change in balance_changes {
+            self.process_wallet_transaction(
+                balance_change,
+                database_connection,
+                true, // during initial processing we assume there are more blocks to process
+            )
+            .await?;
+        }
+
+        self.stored_transactions.emit().await;
+        self.emit_strategy = BalanceChangeProcessorEmitStrategy::PerBlock;
+        Ok(())
+    }
+
+    pub async fn process_wallet_transaction(
+        &mut self,
+        balance_change: BalanceChange,
+        database_connection: &mut PoolConnection<sqlx::Sqlite>,
+        has_more_blocks: bool,
+    ) -> Result<(), ProcessingError> {
+        if self.emit_strategy == BalanceChangeProcessorEmitStrategy::PerBlock
+            && self.currently_processed_block_height != balance_change.effective_height
+        {
+            self.stored_transactions.emit().await;
+        };
+
+        self.update_currently_processed_block_height(balance_change.effective_height);
+        self.update_has_more_blocks_to_process(has_more_blocks);
+
         info!(
             target: LOG_TARGET,
             "Processing wallet transaction for balance change at height: {}", balance_change.effective_height
         );
 
-        let mut conn = get_db_connection.await.map_err(|e| {
-            error!(target: LOG_TARGET, "Failed to get database connection: {}", e);
-            ProcessingError::Repository(errors::RepositoryError::DatabaseError(
-                sqlx::Error::PoolClosed,
-            ))
-        })?;
-
         let output_details =
-            OutputDetailsRepository::fetch_all_details(&mut conn, &balance_change).await?;
+            OutputDetailsRepository::fetch_all_details(database_connection, &balance_change)
+                .await?;
 
-        drop(conn);
+        let input_details = output_details
+            .input
+            .clone()
+            .map(|details| TransactionBuilder::create_input_details(&balance_change, details));
 
-        let addresses = AddressResolver::resolve_addresses(&balance_change, owner_tari_address)?;
+        let output_details = output_details
+            .output
+            .clone()
+            .map(|details| TransactionBuilder::create_output_details(&balance_change, details));
 
-        let wallet_details = AddressResolver::create_wallet_details(
-            &balance_change,
-            addresses,
-            output_details.received,
-            output_details.spent,
-        );
+        let transaction_details = input_details.as_ref().or(output_details.as_ref()).ok_or(
+            ProcessingError::MissingOutputDetails(
+                balance_change.account_id,
+                balance_change.effective_height,
+            ),
+        )?;
 
         if let Some(mergeable_transaction) = TransactionMatcher::find_mergeable_transaction(
-            wallet_state.transactions_mut(),
+            self.stored_transactions.transactions_mut(),
             &balance_change,
-            &wallet_details,
+            transaction_details,
         ) {
             info!(
                 target: LOG_TARGET,
@@ -112,43 +210,41 @@ impl BalanceChangeProcessor {
 
             TransactionBuilder::merge_operation_into_transaction(
                 mergeable_transaction,
-                &balance_change,
-                wallet_details,
+                input_details.as_ref(),
+                output_details.as_ref(),
             );
 
-            Self::emit_transaction_updated(mergeable_transaction.clone()).await;
-            return Ok(());
+            return Ok(()); // Merged into existing, no new transaction
         }
 
-        let new_transaction =
-            TransactionBuilder::build_from_balance_change(&balance_change, wallet_details);
+        let new_transaction = TransactionBuilder::build_from_balance_change_and_details(
+            &balance_change,
+            transaction_details,
+        );
 
-        wallet_state.add_transaction(new_transaction.clone())?;
+        self.stored_transactions
+            .add_transaction(new_transaction.clone());
 
-        Self::emit_transaction_created(new_transaction).await;
+        info!(
+            target: LOG_TARGET,
+            "Current length of stored transactions: {}", self.stored_transactions.count()
+        );
 
-        Ok(())
+        // No matter which strategy is selected we want to emit stored transactions when all blocks are processed
+        if !self.has_more_blocks_to_process {
+            self.stored_transactions.emit().await;
+        }
+
+        Ok(()) // Return the new transaction
     }
 
-    async fn emit_balance_update(balance: i64) {
+    async fn emit_balance_update(balance: u64) {
         EventsEmitter::emit_wallet_balance_update(WalletBalance {
-            available_balance: MicroMinotari(balance as u64),
+            available_balance: MicroMinotari(balance),
             timelocked_balance: 0.into(),
             pending_incoming_balance: 0.into(),
             pending_outgoing_balance: 0.into(),
         })
         .await;
-    }
-
-    async fn emit_transaction_created(
-        transaction: crate::wallet::minotari_wallet::minotari_wallet_types::MinotariWalletTransaction,
-    ) {
-        EventsEmitter::emit_wallet_transactions_found(vec![transaction]).await;
-    }
-
-    async fn emit_transaction_updated(
-        transaction: crate::wallet::minotari_wallet::minotari_wallet_types::MinotariWalletTransaction,
-    ) {
-        EventsEmitter::emit_wallet_transaction_updated(transaction).await;
     }
 }

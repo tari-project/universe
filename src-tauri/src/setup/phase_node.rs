@@ -34,7 +34,7 @@ use crate::{
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
-    wallet::minotari_wallet::minotari_wallet::MinotariWalletManager,
+    wallet::minotari_wallet::MinotariWalletManager,
     UniverseAppState,
 };
 use anyhow::Error;

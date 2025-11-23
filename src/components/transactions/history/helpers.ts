@@ -1,5 +1,5 @@
 import i18n from 'i18next';
-import { WalletTransaction, OutputType } from '@app/types/app-status';
+import { WalletTransaction, OutputType, InternalTransactionType } from '@app/types/app-status';
 import { TransactionType } from '../types';
 import { useConfigUIStore } from '@app/store';
 
@@ -22,13 +22,13 @@ export const formatEffectiveDate = (effectiveDate: string): string => {
 };
 
 export const resolveTransactionType = (txType: WalletTransaction): TransactionType => {
-    const isMined = txType.operations.some((op) => {
-        return op.recieved_output_details?.output_type == OutputType.Coinbase;
+    const isMined = txType.outputs.some((output) => {
+        return output.output_type == OutputType.Coinbase;
     });
     if (isMined) {
         return 'mined';
     }
-    if (txType.is_negative) {
+    if (txType.internal_transaction_type === InternalTransactionType.Sent) {
         return 'sent';
     }
     return 'received';
@@ -41,8 +41,8 @@ export const resolveTransactionTitle = (transaction: WalletTransaction): string 
         return 'Bridge XTM to WXTM';
     }
 
-    // Check for memo in any of the operations
-    const txMessage = transaction.operations.find((op) => op.memo_parsed)?.memo_parsed;
+    // Check for memo in transaction
+    const txMessage = transaction.memo_parsed;
 
     const typeTitle = i18n.t(`common:${itemType}`);
 

@@ -111,16 +111,16 @@ impl OutputDetailsRepository {
         conn: &mut sqlx::pool::PoolConnection<Sqlite>,
         balance_change: &BalanceChange,
     ) -> Result<OutputDetailsPair, RepositoryError> {
-        let received = match balance_change.caused_by_output_id {
+        let output = match balance_change.caused_by_output_id {
             Some(id) => Self::fetch_received_output_details(conn, id).await?,
             None => None,
         };
 
-        let spent = match balance_change.caused_by_input_id {
+        let input = match balance_change.caused_by_input_id {
             Some(id) => Self::fetch_spent_output_details_by_input(conn, id).await?,
             None => None,
         };
 
-        Ok(OutputDetailsPair { received, spent })
+        Ok(OutputDetailsPair { input, output })
     }
 }

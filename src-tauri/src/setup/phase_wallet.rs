@@ -26,7 +26,7 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 use crate::wallet::{
-    minotari_wallet::minotari_wallet::MinotariWalletManager,
+    minotari_wallet::MinotariWalletManager,
     wallet_manager::{WalletManagerError, STOP_ON_ERROR_CODES},
 };
 use crate::{

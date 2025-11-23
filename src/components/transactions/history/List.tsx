@@ -17,6 +17,8 @@ export function List() {
     const walletTransactionsAll = useWalletStore((s) => s.wallet_transactions);
     const transactionsFilter = useWalletStore((s) => s.transaction_history_filter);
 
+    console.log('Rendering Transaction History List with filter:', walletTransactionsAll, transactionsFilter);
+
     const walletTransactions = useMemo(() => {
         if (!walletTransactionsAll) return [];
 
@@ -25,11 +27,11 @@ export function List() {
                 return walletTransactionsAll;
             case 'rewards':
                 return walletTransactionsAll.filter((tx) =>
-                    tx.operations.some((op) => op.recieved_output_details?.output_type === OutputType.Coinbase)
+                    tx.outputs.some((output) => output.output_type === OutputType.Coinbase)
                 );
             case 'transactions':
                 return walletTransactionsAll.filter((tx) =>
-                    tx.operations.every((op) => op.recieved_output_details?.output_type !== OutputType.Coinbase)
+                    tx.outputs.every((output) => output.output_type !== OutputType.Coinbase)
                 );
             default:
                 return walletTransactionsAll;
@@ -89,7 +91,7 @@ export function List() {
                         return (
                             <HistoryListItem
                                 transaction={tx}
-                                key={tx.id}
+                                key={i}
                                 index={i}
                                 itemIsNew={isNewTransaction}
                                 setDetailsItem={handleDetailsChange}

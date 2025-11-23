@@ -39,6 +39,17 @@ export enum OutputStatus {
     Spent = 'Spent',
 }
 
+export enum InternalTransactionType {
+    Sent = 'Sent',
+    Received = 'Received',
+    Coinbase = 'Coinbase',
+}
+
+export enum TranactionDetailsType {
+    Input = 'Input',
+    Output = 'Output',
+}
+
 export enum OutputType {
     /// A standard output.
     Standard = 0,
@@ -57,27 +68,22 @@ export enum OutputType {
     /// Output containing a validator node exit
     ValidatorNodeExit = 7,
 }
-export interface WalletOutputDetails {
-    confirmed_height?: number;
-    status: OutputStatus;
-    output_type: OutputType;
-    coinbase_extra?: string;
-}
 
 export interface WalletDetails {
     description: string;
     balance_credit: number;
     balance_debit: number;
-    claimed_recipient_address: string;
-    claimed_recipient_address_emoji: string;
-    claimed_sender_address: string;
-    claimed_sender_address_emoji: string;
+    claimed_recipient_address?: string;
+    claimed_sender_address?: string;
     memo_parsed?: string;
     memo_hex?: string;
     claimed_fee: number;
     claimed_amount?: number;
-    recieved_output_details?: WalletOutputDetails;
-    spent_output_details?: WalletOutputDetails;
+    confirmed_height?: number;
+    status: OutputStatus;
+    output_type: OutputType;
+    coinbase_extra: string;
+    details_type: TranactionDetailsType;
 }
 
 export interface WalletTransaction {
@@ -88,9 +94,14 @@ export interface WalletTransaction {
     debit_balance: number;
     credit_balance: number;
     transaction_balance: number;
+    claimed_recipient_address?: string;
+    claimed_recipient_address_emoji?: string;
+    claimed_sender_address?: string;
+    claimed_sender_address_emoji?: string;
+    internal_transaction_type: InternalTransactionType;
     memo_parsed?: string;
-    is_negative: boolean;
-    operations: WalletDetails[];
+    inputs: WalletDetails[];
+    outputs: WalletDetails[];
     bridge_transaction_details?: {
         status: UserTransactionDTO.status;
         transactionHash?: string;

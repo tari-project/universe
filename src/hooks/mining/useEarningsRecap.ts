@@ -8,9 +8,7 @@ export default function useEarningsRecap() {
     const recapIds = useBlockchainVisualisationStore((s) => s.recapIds);
     const transactions = useWalletStore((s) => s.wallet_transactions);
     const coinbase_transactions = useMemo(() => {
-        return transactions.filter((tx) =>
-            tx.operations.some((op) => op.recieved_output_details?.output_type === OutputType.Coinbase)
-        );
+        return transactions.filter((tx) => tx.outputs.some((output) => output.output_type === OutputType.Coinbase));
     }, [transactions]);
 
     const getMissedEarnings = useCallback(() => {

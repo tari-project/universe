@@ -30,23 +30,17 @@ pub enum ProcessingError {
     #[error("Repository error: {0}")]
     Repository(#[from] RepositoryError),
 
-    #[error("Address resolution error: {0}")]
-    AddressResolution(#[from] AddressResolutionError),
-
-    #[error("Transaction building error: {0}")]
-    TransactionBuilding(#[from] TransactionBuildingError),
-
-    #[error("Wallet state error: {0}")]
-    WalletState(#[from] WalletStateError),
+    #[error("Missing output details for account ID {0} at height {1}")]
+    MissingOutputDetails(i64, u64),
 }
 
 #[derive(Debug, Error)]
 pub enum BalanceCalculationError {
     #[error("Balance overflow: cannot add {credit} to {current}")]
-    Overflow { current: i64, credit: u64 },
+    Overflow { current: u64, credit: u64 },
 
     #[error("Balance underflow: cannot subtract {debit} from {current}")]
-    Underflow { current: i64, debit: u64 },
+    Underflow { current: u64, debit: u64 },
 }
 
 #[derive(Debug, Error)]
@@ -60,28 +54,4 @@ pub enum RepositoryError {
         #[source]
         source: serde_json::Error,
     },
-}
-
-#[derive(Debug, Error)]
-pub enum AddressResolutionError {
-    #[error("Failed to parse recipient address: {0}")]
-    RecipientParseError(String),
-
-    #[error("Failed to parse sender address: {0}")]
-    SenderParseError(String),
-}
-
-#[derive(Debug, Error)]
-pub enum TransactionBuildingError {
-    #[error("Invalid transaction amounts: credit={credit}, debit={debit}")]
-    InvalidAmounts { credit: u64, debit: u64 },
-}
-
-#[derive(Debug, Error)]
-pub enum WalletStateError {
-    #[error("Duplicate transaction ID: {transaction_id}")]
-    DuplicateTransaction { transaction_id: String },
-
-    #[error("Transaction not found: {transaction_id}")]
-    TransactionNotFound { transaction_id: String },
 }

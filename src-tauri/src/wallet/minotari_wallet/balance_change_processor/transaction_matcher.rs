@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::wallet::minotari_wallet::minotari_wallet_types::{
-    MinotariWalletDetails, MinotariWalletTransaction,
+    InternalTransactionType, MinotariWalletDetails, MinotariWalletTransaction,
 };
 use minotari_wallet::models::BalanceChange;
 use tari_transaction_components::transaction_components::OutputType;
@@ -30,33 +30,50 @@ pub struct TransactionMatcher;
 
 impl TransactionMatcher {
     pub fn find_mergeable_transaction<'a>(
-        transactions: &'a mut Vec<MinotariWalletTransaction>,
+        transactions: &'a mut [MinotariWalletTransaction],
         balance_change: &BalanceChange,
-        details: &MinotariWalletDetails,
+        transaction_details: &MinotariWalletDetails,
     ) -> Option<&'a mut MinotariWalletTransaction> {
-        let is_not_coinbase = !details
-            .recieved_output_details
-            .as_ref()
-            .is_some_and(|output| output.output_type == OutputType::Coinbase);
-
-        if !is_not_coinbase {
+        // Check if there are any transactions to merge with
+        if transactions.is_empty() {
             return None;
         }
 
-        transactions.iter_mut().rev().find(|transaction| {
-            let metadata_matches = transaction.mined_height == balance_change.effective_height
+        // If it is a coinbase output, we do not merge it as it should be its own transaction
+        if transaction_details.output_type == OutputType::Coinbase
+            && transaction_details.balance_credit > 0
+        {
+            return None;
+        };
+
+        // Check if there are any non coinbase operations in existing transactions
+        if transactions.iter().all(|transaction| {
+            transaction
+                .internal_transaction_type
+                .eq(&InternalTransactionType::Coinbase)
+        }) {
+            return None;
+        };
+
+        // Find matching transaction by metadata which means:
+        // - mined height
+        // - effective date
+        // - account id
+        // - If claimed sender address exists both in transaction and balance change then they must be equal
+        // - If claimed recipient address exists both in transaction and balance change then they must be equal
+
+        transactions.iter_mut().find(|transaction| {
+            transaction.mined_height == balance_change.effective_height
                 && transaction.effective_date == balance_change.effective_date
-                && transaction.account_id == balance_change.account_id;
-
-            let has_non_coinbase_operation = transaction.operations.iter().any(|op| {
-                if let Some(received_details) = &op.recieved_output_details {
-                    received_details.output_type != OutputType::Coinbase
-                } else {
-                    true
-                }
-            });
-
-            metadata_matches && has_non_coinbase_operation
+                && transaction.account_id == balance_change.account_id
+            // && (transaction_details.memo_parsed.is_none()
+            //     || transaction_details.memo_parsed == transaction.memo_parsed)
+            // && (transaction_details.claimed_sender_address.is_none()
+            //     || transaction_details.claimed_sender_address.clone()
+            //         == transaction.claimed_sender_address.clone())
+            // && (transaction_details.claimed_recipient_address.is_none()
+            //     || transaction_details.claimed_recipient_address.clone()
+            //         == transaction.claimed_recipient_address.clone())
         })
     }
 }
