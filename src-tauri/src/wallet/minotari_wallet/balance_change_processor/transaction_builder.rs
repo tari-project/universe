@@ -55,6 +55,7 @@ impl TransactionBuilder {
             output_type: extra_details.output_type,
             coinbase_extra: extra_details.coinbase_extra,
             details_type: TranactionDetailsType::Input,
+            transaction_token_amount: None,
         }
     }
 
@@ -77,6 +78,7 @@ impl TransactionBuilder {
             output_type: extra_details.output_type,
             coinbase_extra: extra_details.coinbase_extra,
             details_type: TranactionDetailsType::Output,
+            transaction_token_amount: extra_details.transaction_token_amount,
         }
     }
 

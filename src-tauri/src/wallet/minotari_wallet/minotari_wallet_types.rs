@@ -25,22 +25,23 @@ use std::fmt::{Display, Formatter};
 use chrono::NaiveDateTime;
 use minotari_wallet::models::OutputStatus;
 use serde::{Deserialize, Serialize};
-use tari_transaction_components::transaction_components::{OutputFeatures, OutputType};
+use tari_transaction_components::transaction_components::{MemoField, OutputFeatures, OutputType};
 
 use crate::wallet::minotari_wallet::balance_change_processor::types::TranactionDetailsType;
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde()]
-pub struct WalletOutputFeaturesOnly {
+pub struct WalletOutputFeaturesAndMemoOnly {
     pub features: OutputFeatures,
+    pub payment_id: MemoField,
 }
 
-impl Display for WalletOutputFeaturesOnly {
+impl Display for WalletOutputFeaturesAndMemoOnly {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "WalletOutputFeaturesOnly {{ features: {:?} }}",
-            self.features
+            "WalletOutputFeaturesAndMemoOnly {{ features: {:?}, payment_id: {:?} }}",
+            self.features, self.payment_id
         )
     }
 }
@@ -50,6 +51,7 @@ pub struct MinotariWalletOutputDetails {
     pub status: OutputStatus,
     pub output_type: OutputType,
     pub coinbase_extra: String,
+    pub transaction_token_amount: Option<u64>, // Present only when payment_id => MemoField::TransactionInfo
 }
 
 impl Display for MinotariWalletOutputDetails {
@@ -80,6 +82,7 @@ pub struct MinotariWalletDetails {
     pub output_type: OutputType,
     pub coinbase_extra: String,
     pub details_type: TranactionDetailsType,
+    pub transaction_token_amount: Option<u64>,
 }
 
 impl Display for MinotariWalletDetails {

@@ -21,14 +21,15 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::wallet::minotari_wallet::minotari_wallet_types::{
-    MinotariWalletOutputDetails, WalletOutputFeaturesOnly,
+    MinotariWalletOutputDetails, WalletOutputFeaturesAndMemoOnly,
 };
-use log::warn;
+use log::{info, warn};
 use minotari_wallet::{
     db::{get_input_details_for_balance_change_by_id, get_output_details_for_balance_change_by_id},
     models::{BalanceChange, OutputStatus},
 };
 use sqlx::Sqlite;
+use tari_transaction_components::transaction_components::MemoField;
 
 use super::{errors::RepositoryError, types::OutputDetailsPair};
 
@@ -87,20 +88,26 @@ impl OutputDetailsRepository {
     ) -> Result<Option<MinotariWalletOutputDetails>, RepositoryError> {
         match (status, wallet_output_json) {
             (Some(status), Some(json_str)) => {
-                let wallet_output: WalletOutputFeaturesOnly =
-                    serde_json::from_str(&json_str).map_err(|source| {
-                        warn!(
-                            target: LOG_TARGET,
-                            "Failed to parse wallet output JSON for output {}: {}", output_id, source
-                        );
-                        RepositoryError::JsonParseFailed { output_id, source }
-                    })?;
+                let wallet_output: WalletOutputFeaturesAndMemoOnly = serde_json::from_str(
+                    &json_str,
+                )
+                .map_err(|source| {
+                    warn!(
+                        target: LOG_TARGET,
+                        "Failed to parse wallet output JSON for output {}: {}", output_id, source
+                    );
+                    RepositoryError::JsonParseFailed { output_id, source }
+                })?;
+
+                let transaction_token_amount =
+                    wallet_output.payment_id.get_amount().map(|amt| amt.0);
 
                 Ok(Some(MinotariWalletOutputDetails {
                     confirmed_height,
                     status,
                     output_type: wallet_output.features.output_type,
                     coinbase_extra: wallet_output.features.coinbase_extra.to_string(),
+                    transaction_token_amount,
                 }))
             }
             _ => Ok(None),

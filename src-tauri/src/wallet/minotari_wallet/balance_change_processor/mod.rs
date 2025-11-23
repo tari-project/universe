@@ -22,6 +22,7 @@
 
 mod balance_calculator;
 pub mod errors;
+mod input_matcher;
 mod output_details_repository;
 mod transaction_builder;
 mod transaction_matcher;
@@ -30,9 +31,12 @@ pub mod types;
 use crate::{
     events_emitter::EventsEmitter,
     wallet::{
-        minotari_wallet::balance_change_processor::types::{
-            BalanceChangeProcessorEmitStrategy, BalanceChangeProcessorStoredTransactions,
-            MinotariWalletBalance,
+        minotari_wallet::{
+            balance_change_processor::types::{
+                BalanceChangeProcessorEmitStrategy, BalanceChangeProcessorStoredTransactions,
+                MinotariWalletBalance,
+            },
+            minotari_wallet_types::MinotariWalletDetails,
         },
         wallet_types::WalletBalance,
     },
@@ -44,6 +48,7 @@ use tari_transaction_components::MicroMinotari;
 
 use balance_calculator::BalanceCalculator;
 use errors::ProcessingError;
+use input_matcher::InputMatcher;
 use output_details_repository::OutputDetailsRepository;
 use transaction_builder::TransactionBuilder;
 use transaction_matcher::TransactionMatcher;
@@ -54,6 +59,7 @@ pub struct BalanceChangeProcessor {
     pub has_more_blocks_to_process: bool,
     pub emit_strategy: BalanceChangeProcessorEmitStrategy,
     pub stored_transactions: BalanceChangeProcessorStoredTransactions,
+    pub stored_inputs: Vec<MinotariWalletDetails>,
     pub current_balance: MinotariWalletBalance,
 }
 
@@ -64,6 +70,7 @@ impl BalanceChangeProcessor {
             currently_processed_block_height: 0,
             emit_strategy,
             stored_transactions: BalanceChangeProcessorStoredTransactions::default(),
+            stored_inputs: Vec::new(),
             current_balance: MinotariWalletBalance::new(0),
         }
     }
@@ -152,6 +159,7 @@ impl BalanceChangeProcessor {
             .await?;
         }
 
+        self.process_stored_inputs().await;
         self.stored_transactions.emit().await;
         self.emit_strategy = BalanceChangeProcessorEmitStrategy::PerBlock;
         Ok(())
@@ -166,6 +174,7 @@ impl BalanceChangeProcessor {
         if self.emit_strategy == BalanceChangeProcessorEmitStrategy::PerBlock
             && self.currently_processed_block_height != balance_change.effective_height
         {
+            self.process_stored_inputs().await;
             self.stored_transactions.emit().await;
         };
 
@@ -198,44 +207,60 @@ impl BalanceChangeProcessor {
             ),
         )?;
 
-        if let Some(mergeable_transaction) = TransactionMatcher::find_mergeable_transaction(
-            self.stored_transactions.transactions_mut(),
-            &balance_change,
-            transaction_details,
-        ) {
-            info!(
-                target: LOG_TARGET,
-                "Merging with existing transaction at height: {}", balance_change.effective_height
-            );
-
-            TransactionBuilder::merge_operation_into_transaction(
-                mergeable_transaction,
-                input_details.as_ref(),
-                output_details.as_ref(),
-            );
-
-            return Ok(()); // Merged into existing, no new transaction
+        if let Some(input_details) = &input_details {
+            self.stored_inputs.push(input_details.clone());
         }
 
-        let new_transaction = TransactionBuilder::build_from_balance_change_and_details(
-            &balance_change,
-            transaction_details,
-        );
+        if output_details.is_some() {
+            if let Some(mergeable_transaction) = TransactionMatcher::find_mergeable_transaction(
+                self.stored_transactions.transactions_mut(),
+                &balance_change,
+                transaction_details,
+            ) {
+                info!(
+                    target: LOG_TARGET,
+                    "Merging with existing transaction at height: {}", balance_change.effective_height
+                );
 
-        self.stored_transactions
-            .add_transaction(new_transaction.clone());
+                TransactionBuilder::merge_operation_into_transaction(
+                    mergeable_transaction,
+                    input_details.as_ref(),
+                    output_details.as_ref(),
+                );
 
-        info!(
-            target: LOG_TARGET,
-            "Current length of stored transactions: {}", self.stored_transactions.count()
-        );
+                return Ok(()); // Merged into existing, no new transaction
+            }
+
+            let new_transaction = TransactionBuilder::build_from_balance_change_and_details(
+                &balance_change,
+                transaction_details,
+            );
+
+            info!(
+                target: LOG_TARGET,
+                "Creating new transaction for balance change at height: {}, with token amount: {:?}",
+                balance_change.effective_height,
+                transaction_details.transaction_token_amount
+            );
+
+            self.stored_transactions
+                .add_transaction(new_transaction.clone());
+        }
 
         // No matter which strategy is selected we want to emit stored transactions when all blocks are processed
         if !self.has_more_blocks_to_process {
+            self.process_stored_inputs().await;
             self.stored_transactions.emit().await;
         }
 
         Ok(()) // Return the new transaction
+    }
+
+    async fn process_stored_inputs(&mut self) {
+        InputMatcher::match_inputs_to_transactions(
+            &mut self.stored_inputs,
+            self.stored_transactions.transactions_mut(),
+        );
     }
 
     async fn emit_balance_update(balance: u64) {

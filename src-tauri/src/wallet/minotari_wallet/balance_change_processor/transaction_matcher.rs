@@ -66,14 +66,14 @@ impl TransactionMatcher {
             transaction.mined_height == balance_change.effective_height
                 && transaction.effective_date == balance_change.effective_date
                 && transaction.account_id == balance_change.account_id
-            // && (transaction_details.memo_parsed.is_none()
-            //     || transaction_details.memo_parsed == transaction.memo_parsed)
-            // && (transaction_details.claimed_sender_address.is_none()
-            //     || transaction_details.claimed_sender_address.clone()
-            //         == transaction.claimed_sender_address.clone())
-            // && (transaction_details.claimed_recipient_address.is_none()
-            //     || transaction_details.claimed_recipient_address.clone()
-            //         == transaction.claimed_recipient_address.clone())
+                && (transaction_details.memo_parsed.is_none()
+                    || transaction_details.memo_parsed == transaction.memo_parsed)
+                && (transaction_details.claimed_sender_address.is_none()
+                    || transaction_details.claimed_sender_address.clone()
+                        == transaction.claimed_sender_address.clone())
+                && (transaction_details.claimed_recipient_address.is_none()
+                    || transaction_details.claimed_recipient_address.clone()
+                        == transaction.claimed_recipient_address.clone())
         })
     }
 }
