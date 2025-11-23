@@ -139,14 +139,7 @@ impl InputMatcher {
 
         inputs_debit_sum
             .checked_sub(transaction_credit)
-            .map(|diff| {
-                let abs_diff = if diff > outputs_token_sum {
-                    diff - outputs_token_sum
-                } else {
-                    outputs_token_sum - diff
-                };
-                abs_diff <= TOLERANCE
-            })
+            .map(|diff| diff.abs_diff(outputs_token_sum) <= TOLERANCE)
             .unwrap_or(false)
     }
 
@@ -163,6 +156,9 @@ impl InputMatcher {
             } else if non_coinbase_idx < non_coinbase_transactions.len() {
                 final_transactions.push(non_coinbase_transactions[non_coinbase_idx].clone());
                 non_coinbase_idx += 1;
+            } else {
+                // This case should not happen, but just in case, we push the original transaction
+                final_transactions.push(transaction.clone());
             }
         }
 

@@ -53,9 +53,6 @@ impl BalanceChangeProcessorStoredTransactions {
     pub fn clear(&mut self) {
         self.0.clear();
     }
-    pub fn count(&self) -> usize {
-        self.0.len()
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

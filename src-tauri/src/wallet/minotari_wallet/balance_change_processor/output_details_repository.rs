@@ -23,13 +23,12 @@
 use crate::wallet::minotari_wallet::minotari_wallet_types::{
     MinotariWalletOutputDetails, WalletOutputFeaturesAndMemoOnly,
 };
-use log::{info, warn};
+use log::warn;
 use minotari_wallet::{
     db::{get_input_details_for_balance_change_by_id, get_output_details_for_balance_change_by_id},
     models::{BalanceChange, OutputStatus},
 };
 use sqlx::Sqlite;
-use tari_transaction_components::transaction_components::MemoField;
 
 use super::{errors::RepositoryError, types::OutputDetailsPair};
 

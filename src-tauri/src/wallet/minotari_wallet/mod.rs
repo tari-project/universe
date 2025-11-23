@@ -480,10 +480,9 @@ impl MinotariWalletManager {
         let database_path = MinotariWalletDatabaseManager::database_path()?;
         let tari_address = Self::get_owner_address().await;
 
-        if INSTANCE
+        if !INSTANCE
             .are_there_more_blocks_to_scan
             .load(std::sync::atomic::Ordering::SeqCst)
-            == false
         {
             info!(
                 target: LOG_TARGET,
