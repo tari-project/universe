@@ -4857,6 +4857,7 @@ dependencies = [
 [[package]]
 name = "minotari"
 version = "0.1.0"
+source = "git+https://github.com/Misieq01/minotari-cli.git?branch=feat%2FTU-integration-adjustments#91a180bb7979cef1979d0a2dda34de61d6b630a0"
 dependencies = [
  "anyhow",
  "axum 0.8.6",
