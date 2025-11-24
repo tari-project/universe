@@ -3,6 +3,7 @@
 ## While running Tari Universe
 
 ### Base Node
+
 First log after waking up indicates broken communication pipe used by node to connect to other peers.
 
 ```
@@ -22,6 +23,7 @@ This is probably caused by other peers that marked this node as offline but node
 ```
 
 ### Networking
+
 Remote nodes mark this node as offline and close the socket, causing message transmission failures.
 
 ```
@@ -41,7 +43,6 @@ Most connections to other peers are closed due to TTL timeout, causing the conne
 ## Further Investigations
 
 Additional tests should describe the behavior of the node syncing after waking up from sleep mode. Specifically, how nodes recover from lost connections to other peers and possible troubleshooting steps.
-
 
 ## Running xmrig miner on laptop on battery power
 

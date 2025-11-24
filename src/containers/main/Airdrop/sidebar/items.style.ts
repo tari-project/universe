@@ -14,6 +14,7 @@ export const ActionImgWrapper = styled.div`
     align-items: center;
     justify-content: center;
     flex-direction: column;
+    svg,
     img {
         max-width: 100%;
         display: flex;
@@ -64,4 +65,33 @@ export const TooltipWrapper = styled.div`
     justify-content: center;
     align-items: center;
     gap: 6px;
+`;
+
+export const NextRewardWrapper = styled.div`
+    display: flex;
+    width: 100%;
+    padding: 8px;
+    margin: 4px 0;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+    align-self: stretch;
+    border-radius: 10px;
+    background-color: ${({ theme }) => theme.palette.background.accent};
+`;
+
+export const RewardTooltipContent = styled.div`
+    display: flex;
+    gap: 6px;
+    flex-direction: column;
+    align-items: flex-start;
+`;
+
+export const RewardTooltipItems = styled.div`
+    display: flex;
+    flex-direction: column;
+    color: ${({ theme }) => theme.palette.text.accent};
+    align-items: flex-start;
+    gap: 2px;
 `;

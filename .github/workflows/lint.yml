@@ -1,11 +1,11 @@
 ---
 name: Lint
 
-"on":
+'on':
   workflow_dispatch:
   push:
     branches:
-      - "ci-*"
+      - 'ci-*'
   pull_request:
     types:
       - opened

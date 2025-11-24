@@ -2094,6 +2094,27 @@ pub async fn set_feedback_fields(feedback_type: String, was_sent: bool) -> Resul
 }
 
 #[tauri::command]
+pub async fn send_otp_request(
+    csrf_token: String,
+    wallet_address: String,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    use crate::airdrop_claim::create_otp_request_message;
+
+    info!(target: LOG_TARGET_APP_LOGIC, "Sending OTP request for wallet: {}", wallet_address);
+
+    let otp_message = create_otp_request_message(csrf_token, wallet_address).await?;
+
+    if let Err(e) = state.websocket_message_tx.send(otp_message).await {
+        error!(target: LOG_TARGET_APP_LOGIC, "Failed to send OTP request via websocket: {}", e);
+        return Err(format!("Failed to send OTP request: {}", e));
+    }
+
+    info!(target: LOG_TARGET_APP_LOGIC, "OTP request sent successfully");
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn set_mode_mining_time(mode: MiningModeType, duration: u64) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
