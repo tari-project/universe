@@ -148,12 +148,12 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         if (parts) {
             const { days, hours, minutes } = parts || {};
             setCountdown({ days, hours, minutes });
+            initialCountdownRef.current = true;
         }
     }, [getCountdownParts]);
 
     useEffect(() => {
         if (countdown || initialCountdownRef.current) return;
-        initialCountdownRef.current = true;
         updateCountdown();
     }, [countdown, updateCountdown]);
 
