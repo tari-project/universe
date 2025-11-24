@@ -9,6 +9,7 @@ export const ItemWrapper = styled(m.div)`
     width: 100%;
     border-radius: 10px;
     padding: 6px 0;
+    justify-content: flex-end;
     flex-direction: column;
     overflow: hidden;
     position: relative;
@@ -18,18 +19,33 @@ export const ItemWrapper = styled(m.div)`
 
 export const HoverWrapper = styled(m.div)`
     position: absolute;
-    inset: 0;
+    inset: 0 auto;
     z-index: 4;
+    pointer-events: none;
     transition: background-color 1s ease;
     height: 100%;
-
+    display: flex;
+    right: 0;
+    width: max-content;
+    justify-content: flex-end;
     background: linear-gradient(
         90deg,
         transparent 0%,
-        transparent 32%,
-        ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)} 38%,
+        transparent 10%,
+        ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)} 35%,
         ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)} 100%
     );
+`;
+export const ButtonWrapper = styled(m.div)`
+    position: relative;
+    align-items: center;
+    right: 0;
+    display: flex;
+    flex-direction: row;
+    padding: 0 10px 0 max(50px, 40%);
+    justify-content: flex-end;
+    height: 100%;
+    gap: 4px;
 `;
 
 export const ContentWrapper = styled.div`
@@ -76,35 +92,11 @@ export const ValueWrapper = styled.div`
     justify-content: flex-end;
     align-items: baseline;
 `;
-export const Chip = styled.div`
-    display: flex;
-    align-self: center;
-    justify-content: center;
-    align-items: center;
-
-    text-transform: uppercase;
-    border-radius: 50px;
-    background-color: ${({ theme }) => theme.colors.green[700]};
-
-    height: 14px;
-    padding: 0 7px;
-
-    color: #fff;
-    text-align: center;
-    font-family: Poppins, sans-serif;
-    font-size: 8px;
-    font-style: normal;
-    font-weight: 700;
-    line-height: normal;
-
-    span {
-        height: 10px;
-    }
-`;
 
 export const CurrencyText = styled(Typography).attrs({ variant: 'p' })`
     display: flex;
-    font-size: 11px;
+    font-size: 0.66rem;
+    letter-spacing: -0.4px;
     font-weight: 500;
     color: ${({ theme }) => theme.palette.text.secondary};
 `;
@@ -139,17 +131,6 @@ export const ReplayButton = styled.button`
     }
 `;
 
-export const ButtonWrapper = styled(m.div)`
-    position: relative;
-    align-items: center;
-    display: flex;
-    flex-direction: row;
-    padding: 0 10px;
-    justify-content: flex-end;
-    height: 100%;
-    gap: 6px;
-`;
-
 export const FlexButton = styled.button`
     display: flex;
     height: 31px;
@@ -165,6 +146,7 @@ export const FlexButton = styled.button`
     position: relative;
     color: ${({ theme }) => theme.colors.greyscale[950]};
     font-size: 12px;
+    white-space: nowrap;
     font-weight: 600;
     line-height: 1;
     cursor: pointer;
