@@ -72,6 +72,7 @@ async function waitForWebSocketOTP(csrfToken: string, walletAddress: string): Pr
         const setupListenerAndSendRequest = async () => {
             try {
                 // Set up WebSocket listener for OTP response
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 unlisten = await listen('ws-rx', (event: any) => {
                     try {
                         const payload = event.payload;

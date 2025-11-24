@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest';
-import { useWalletStore } from '@app/store';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 import { useBackgroundClaimSubmission } from '../claim/useBackgroundClaimSubmission';
 import { KEY_CSRF_TOKEN } from '../claim/useCsrfToken';
@@ -64,20 +63,20 @@ export function useTrancheClaimSubmission() {
 
     const submitTrancheClaimWithOtp = useCallback(
         async (trancheId: string): Promise<TrancheClaimResult> => {
-            console.log('🚀 submitTrancheClaimWithOtp called with trancheId:', trancheId);
-            
+            console.info('🚀 submitTrancheClaimWithOtp called with trancheId:', trancheId);
+
             try {
                 // Invalidate CSRF token to force fresh fetch
-                console.log('🛡️ Invalidating CSRF token cache for fresh fetch');
-                queryClient.invalidateQueries({ queryKey: [KEY_CSRF_TOKEN] });
-                
+                console.info('🛡️ Invalidating CSRF token cache for fresh fetch');
+                await queryClient.invalidateQueries({ queryKey: [KEY_CSRF_TOKEN] });
+
                 // Wait a bit for the fresh CSRF token to be fetched
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                console.log('🚀 Calling performBackgroundClaim with xtm and trancheId:', trancheId);
+                await new Promise((resolve) => setTimeout(resolve, 500));
+
+                console.info('🚀 Calling performBackgroundClaim with xtm and trancheId:', trancheId);
                 const result = await performBackgroundClaim('xtm', trancheId);
-                console.log('🚀 performBackgroundClaim result:', result);
-                
+                console.info('🚀 performBackgroundClaim result:', result);
+
                 if (result.success) {
                     addToast({
                         type: 'success',

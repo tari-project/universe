@@ -29,7 +29,7 @@ export function AirdropDashboard() {
 
     return (
         <div className="airdrop-dashboard">
-            <h2>Your Airdrop Progress</h2>
+            <h2>{`Your Airdrop Progress`}</h2>
 
             {/* Balance summary at the top */}
             <TrancheBalanceSummary />
@@ -40,11 +40,9 @@ export function AirdropDashboard() {
             {/* Show some key metrics */}
             {trancheStatus && (
                 <div className="quick-stats">
-                    <p>Available to claim: {trancheStatus.availableCount} tranches</p>
-                    <p>
-                        Total progress: {trancheStatus.claimedCount}/{trancheStatus.totalTranches}
-                    </p>
-                    {balanceSummary && <p>Pending balance: {balanceSummary.totalPending.toLocaleString()} XTM</p>}
+                    <p>{`Available to claim: ${trancheStatus.availableCount} tranches`}</p>
+                    <p>{`Total progress: ${trancheStatus.claimedCount}/${trancheStatus.totalTranches}`}</p>
+                    {balanceSummary && <p>{`Pending balance: ${balanceSummary.totalPending.toLocaleString()} XTM`}</p>}
                 </div>
             )}
         </div>
@@ -59,7 +57,7 @@ export function TrancheClaimButton() {
     if (!hasCurrentTranche) {
         return (
             <button disabled className="claim-button disabled">
-                No tranches available
+                {`No tranches available`}
             </button>
         );
     }
@@ -67,7 +65,7 @@ export function TrancheClaimButton() {
     return (
         <>
             <button onClick={() => setShowModal(true)} className="claim-button available">
-                Claim {currentTranche?.amount.toLocaleString()} XTM
+                {`Claim ${currentTranche?.amount.toLocaleString()} XTM`}
             </button>
 
             <MonthlyTrancheClaimModal showModal={showModal} onClose={() => setShowModal(false)} />
@@ -81,7 +79,7 @@ export function useClaimEventHandling() {
 
     React.useEffect(() => {
         const handleClaimSuccess = () => {
-            console.log('Claim successful, refreshing tranche data');
+            console.info('Claim successful, refreshing tranche data');
             refreshTranches();
         };
 
@@ -104,7 +102,7 @@ export function AirdropSection() {
         enabled: true,
         notifyOnNewTranches: true,
         onRefreshSuccess: () => {
-            console.log('Tranche data updated');
+            console.info('Tranche data updated');
         },
         onRefreshError: (error) => {
             console.error('Failed to refresh tranche data:', error);
@@ -119,7 +117,7 @@ export function AirdropSection() {
             {/* Show balance summary if we have data */}
             {balanceSummary && (
                 <div className="balance-overview">
-                    <h3>Your XTM Allocation</h3>
+                    <h3>{`Your XTM Allocation`}</h3>
                     <TrancheBalanceSummary showTitle={false} />
                 </div>
             )}
@@ -127,7 +125,7 @@ export function AirdropSection() {
             {/* Show claim button if tranche is available */}
             {hasCurrentTranche && (
                 <div className="claim-section">
-                    <h3>Ready to Claim</h3>
+                    <h3>{`Ready to Claim`}</h3>
                     <TrancheClaimButton />
                 </div>
             )}

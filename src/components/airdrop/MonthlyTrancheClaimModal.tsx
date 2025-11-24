@@ -39,19 +39,19 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         submitTrancheClaimWithOtp,
         isLoading: trancheLoading,
         canClaim: trancheCanClaim,
-        otpState,
+        otpState: _otpState,
     } = useTrancheClaimSubmission();
 
     // Legacy claim system hooks (fallback)
-    const { data: claimStatus, isLoading: claimStatusLoading } = useClaimStatus();
-    const { performClaim, isProcessing: legacyProcessing, error: legacyError } = useSimpleClaimSubmission();
+    const { data: claimStatus, isLoading: _claimStatusLoading } = useClaimStatus();
+    const { performClaim, isProcessing: legacyProcessing, error: _legacyError } = useSimpleClaimSubmission();
 
     // Auto-refresh tranche data while modal is open
     const { refreshTranches } = useTrancheAutoRefresh({
         enabled: showModal,
         notifyOnNewTranches: false, // Don't show notifications in modal
         onRefreshSuccess: () => {
-            console.log('Tranche data refreshed in modal');
+            console.info('Tranche data refreshed in modal');
         },
     });
 
@@ -59,14 +59,14 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
     // Get tranche data for display decisions
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
-    
+
     // Determine which system to use and data to display
     const isTrancheMode = hasCurrentTranche;
     const isLegacyMode = !isTrancheMode && claimStatus?.hasClaim;
-    const hasFutureTranche = trancheStatus?.tranches.some(t => !t.claimed && new Date(t.validFrom) > new Date());
-    const lastClaimedTranche = trancheStatus?.tranches.find(t => t.claimed);
-    const futureTranche = trancheStatus?.tranches.find(t => !t.claimed && new Date(t.validFrom) > new Date());
-    
+    const hasFutureTranche = trancheStatus?.tranches.some((t) => !t.claimed && new Date(t.validFrom) > new Date());
+    const lastClaimedTranche = trancheStatus?.tranches.find((t) => t.claimed);
+    const futureTranche = trancheStatus?.tranches.find((t) => !t.claimed && new Date(t.validFrom) > new Date());
+
     // Always use tranche-style display, but functionality depends on data availability
     const hasAnyClaimData = isTrancheMode || isLegacyMode || trancheStatus;
 
@@ -75,9 +75,9 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         if (isTrancheMode) {
             if (!currentTranche || !trancheCanClaim) return;
 
-            console.log('🎯 Starting tranche claim for:', currentTranche.id);
-            console.log('🎯 Current tranche:', currentTranche);
-            console.log('🎯 Balance summary:', balanceSummary);
+            console.info('🎯 Starting tranche claim for:', currentTranche.id);
+            console.info('🎯 Current tranche:', currentTranche);
+            console.info('🎯 Balance summary:', balanceSummary);
 
             try {
                 setIsClaimingOptimistic(true);
@@ -160,32 +160,32 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     }
 
     // Determine what to display based on availability
-    const displayAmount = isTrancheMode 
-        ? currentTranche?.amount 
-        : hasFutureTranche 
-        ? futureTranche?.amount
-        : lastClaimedTranche?.amount || claimStatus?.amount;
+    const displayAmount = isTrancheMode
+        ? currentTranche?.amount
+        : hasFutureTranche
+          ? futureTranche?.amount
+          : lastClaimedTranche?.amount || claimStatus?.amount;
 
     // Update messaging based on tranche availability
-    const displayTitle = isTrancheMode 
+    const displayTitle = isTrancheMode
         ? t('tranche.claim-modal.title')
-        : hasFutureTranche 
-        ? "Next month's reward"
-        : "Your airdrop status";
-        
+        : hasFutureTranche
+          ? "Next month's reward"
+          : 'Your airdrop status';
+
     const displayDescription = isTrancheMode
         ? t('tranche.claim-modal.description')
         : hasFutureTranche
-        ? "Your next tranche will be available soon!"
-        : "Here's your airdrop progress and claimed rewards.";
-        
-    const displayEyebrow = isTrancheMode 
+          ? 'Your next tranche will be available soon!'
+          : "Here's your airdrop progress and claimed rewards.";
+
+    const displayEyebrow = isTrancheMode
         ? t('tranche.claim-modal.eyebrow')
         : hasFutureTranche
-        ? "Next month's Airdrop reward"
-        : lastClaimedTranche
-        ? "Last claimed reward"
-        : "Your Airdrop reward";
+          ? "Next month's Airdrop reward"
+          : lastClaimedTranche
+            ? 'Last claimed reward'
+            : 'Your Airdrop reward';
 
     // Calculate remaining balance: total from claimStatus minus claimed and expired tranches
     const calculateRemainingBalance = () => {
@@ -261,11 +261,11 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                         </ClaimButton>
                     ) : hasFutureTranche ? (
                         <ClaimButton disabled={true} $isLoading={false}>
-                            Available in {countdown}
+                            {`Available in ${countdown}`}
                         </ClaimButton>
                     ) : (
                         <ClaimButton disabled={true} $isLoading={false}>
-                            No active claims
+                            {`No active claims`}
                         </ClaimButton>
                     )}
                 </ModalWrapper>

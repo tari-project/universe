@@ -31,9 +31,9 @@ export function SidebarItem({ children, text, hoverContent, tooltipContent, onCl
     const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus]);
 
     return (
-        <ActionWrapper 
-            ref={refs.setReference} 
-            {...getReferenceProps()} 
+        <ActionWrapper
+            ref={refs.setReference}
+            {...getReferenceProps()}
             tabIndex={0}
             onClick={onClick}
             style={{ cursor: onClick ? 'pointer' : 'default' }}

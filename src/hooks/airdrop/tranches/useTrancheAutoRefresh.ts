@@ -96,7 +96,7 @@ export function useTrancheAutoRefresh({
         }
 
         lastAvailableCountRef.current = currentAvailableCount;
-    }, [trancheStatus?.availableCount, notifyOnNewTranches]);
+    }, [trancheStatus?.availableCount, notifyOnNewTranches, trancheStatus, t]);
 
     // Smart interval logic based on tranche timing
     const getRefreshInterval = useCallback(() => {
@@ -171,7 +171,7 @@ export function useTrancheAutoRefresh({
         if (!enabled || !isLoggedIn) return;
 
         const handleFocus = () => {
-            console.log('App focused, refreshing tranche data');
+            console.info('App focused, refreshing tranche data');
             refreshTranches();
         };
 
@@ -214,7 +214,7 @@ export function useTrancheRefreshOnEvents(events: string[] = ['claim-success', '
 
     useEffect(() => {
         const handleEvent = (event: CustomEvent) => {
-            console.log(`Tranche refresh triggered by event: ${event.type}`);
+            console.info(`Tranche refresh triggered by event: ${event.type}`);
             refreshTranches();
         };
 

@@ -21,8 +21,8 @@ interface ClaimSubmissionResponse {
 }
 
 async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult> {
-    console.log('📝 Submitting claim with body:', JSON.stringify(claimRequest, null, 2));
-    
+    console.info('📝 Submitting claim with body:', JSON.stringify(claimRequest, null, 2));
+
     const response = await handleAirdropRequest<ClaimSubmissionResponse>({
         path: '/tari/claim-airdrop',
         method: 'POST',
@@ -32,7 +32,7 @@ async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult> {
         },
     });
 
-    console.log('📥 Claim response:', response);
+    console.info('📥 Claim response:', response);
 
     if (!response?.success || !response?.data) {
         throw new Error(response?.error || 'Failed to submit claim');
@@ -90,7 +90,7 @@ export function useBackgroundClaimSubmission() {
             const pendingClaim = pendingClaimRef.current;
             const { claimTarget, csrfToken, trancheId } = pendingClaim;
 
-            console.log('OTP received, submitting claim with OTP:', otpData.otp);
+            console.info('OTP received, submitting claim with OTP:', otpData.otp);
 
             // Clear the pending claim immediately to prevent multiple submissions
             pendingClaimRef.current = null;
@@ -103,7 +103,7 @@ export function useBackgroundClaimSubmission() {
                 ...(trancheId && { trancheId }),
             };
 
-            console.log('🔍 Constructed ClaimRequest:', JSON.stringify(claimRequest, null, 2));
+            console.info('🔍 Constructed ClaimRequest:', JSON.stringify(claimRequest, null, 2));
 
             claimMutation.mutate(claimRequest, {
                 onSuccess: (result) => {
@@ -118,7 +118,7 @@ export function useBackgroundClaimSubmission() {
                 },
             });
         }
-    }, [otpData?.otp, walletAddress]);
+    }, [claimMutation, otpData?.otp, walletAddress]);
 
     // Effect to handle OTP errors
     useEffect(() => {
@@ -136,11 +136,14 @@ export function useBackgroundClaimSubmission() {
                 }
 
                 // Step 1: Get CSRF token (if not already loaded)
-                console.log('🛡️ CSRF Check - csrfData:', csrfData);
-                console.log('🛡️ CSRF Check - isLoadingCsrf:', isLoadingCsrf);
-                console.log('🛡️ CSRF Check - csrfError:', csrfError);
-                console.log('🛡️ CSRF token value:', csrfData?.csrfToken ? `${csrfData.csrfToken.substring(0, 10)}...` : 'null');
-                
+                console.info('🛡️ CSRF Check - csrfData:', csrfData);
+                console.info('🛡️ CSRF Check - isLoadingCsrf:', isLoadingCsrf);
+                console.info('🛡️ CSRF Check - csrfError:', csrfError);
+                console.info(
+                    '🛡️ CSRF token value:',
+                    csrfData?.csrfToken ? `${csrfData.csrfToken.substring(0, 10)}...` : 'null'
+                );
+
                 if (!csrfData?.csrfToken) {
                     if (csrfError) {
                         throw new Error('Failed to get CSRF token');

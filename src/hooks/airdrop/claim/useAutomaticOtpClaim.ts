@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAirdropStore, useWalletStore } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import type { OtpResponse, OtpErrorResponse, AutomaticClaimState } from '@app/types/airdrop-claim';
+import type { AutomaticClaimState, OtpErrorResponse, OtpResponse } from '@app/types/airdrop-claim';
 
 // interface OtpWebSocketResponse {
 //     event: string;
@@ -106,9 +106,8 @@ export function useAutomaticOtpClaim() {
 
             // Set up WebSocket listener for OTP response
             try {
-                const unlisten = await listen('ws-rx', handleWebSocketMessage);
-                unlistenRef.current = unlisten;
-            } catch (error) {
+                unlistenRef.current = await listen('ws-rx', handleWebSocketMessage);
+            } catch (_) {
                 throw new Error('Failed to set up WebSocket listener');
             }
 

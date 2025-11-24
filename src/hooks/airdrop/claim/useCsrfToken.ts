@@ -6,8 +6,8 @@ import { useAirdropStore } from '@app/store';
 export const KEY_CSRF_TOKEN = 'csrf_token';
 
 async function fetchCsrfToken(): Promise<CsrfTokenResponse> {
-    console.log('🛡️ Fetching CSRF token...');
-    
+    console.info('🛡️ Fetching CSRF token...');
+
     const response = await handleAirdropRequest<CsrfTokenResponse>({
         path: '/tari/airdrop/csrf-token',
         method: 'POST',
@@ -15,8 +15,6 @@ async function fetchCsrfToken(): Promise<CsrfTokenResponse> {
             'Content-Type': 'application/json',
         },
     });
-
-    console.log('🛡️ CSRF token response:', response);
 
     if (!response?.success || !response?.csrfToken) {
         throw new Error('Failed to fetch CSRF token');

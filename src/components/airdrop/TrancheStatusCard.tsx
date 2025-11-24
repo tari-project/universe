@@ -106,8 +106,8 @@ export function TrancheStatusCard({ className }: TrancheStatusCardProps) {
 
                 <ProgressSection>
                     <ProgressText>
-                        {trancheStatus.claimedCount} of {trancheStatus.totalTranches} {t('tranche.status.tranches')}{' '}
-                        {t('tranche.status.claimed').toLowerCase()}
+                        {`${trancheStatus.claimedCount} of ${trancheStatus.totalTranches} ${t('tranche.status.tranches')} 
+                        ${t('tranche.status.claimed').toLowerCase()}`}
                     </ProgressText>
                     <ProgressBar>
                         <ProgressFill $percentage={progressPercentage} />

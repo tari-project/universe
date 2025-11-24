@@ -243,7 +243,7 @@ export interface AirdropStoreState {
     // Tranche state
     trancheStatus?: TrancheStatus;
     balanceSummary?: BalanceSummary;
-    
+
     // Modal state
     showTrancheModal: boolean;
 }

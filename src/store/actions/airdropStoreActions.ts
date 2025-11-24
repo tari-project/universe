@@ -395,7 +395,7 @@ export const setClaimInProgress = (isInProgress: boolean) => {
 };
 
 export const setClaimResult = (result: BackgroundClaimResult) => {
-    useAirdropStore.setState((state) => ({
+    useAirdropStore.setState((_state) => ({
         claim: {
             isClaimInProgress: false,
             lastClaimResult: result,
@@ -416,7 +416,7 @@ export const clearClaimState = () => {
 
 // Tranche state actions
 export const setTrancheStatus = (trancheStatus: TrancheStatus) => {
-    useAirdropStore.setState((state) => ({
+    useAirdropStore.setState((_state) => ({
         trancheStatus,
         // Calculate balance summary from tranche data
         balanceSummary: calculateBalanceSummaryFromTranches(trancheStatus),
@@ -470,6 +470,7 @@ function calculateBalanceSummaryFromTranches(trancheStatus: TrancheStatus): Bala
 
 // Action to mark a tranche as claimed (optimistic update)
 export const markTrancheAsClaimed = (trancheId: string, claimedAt: string, amount: number) => {
+    const _amount = amount;
     useAirdropStore.setState((state) => {
         if (!state.trancheStatus) return state;
 
