@@ -1,4 +1,5 @@
 import { useBalanceSummary } from '@app/hooks/airdrop/tranches';
+import { useTranslation } from 'react-i18next';
 import {
     SummaryContainer,
     SummaryTitle,
@@ -19,6 +20,7 @@ interface TrancheBalanceSummaryProps {
 }
 
 export function TrancheBalanceSummary({ className, showTitle = true }: TrancheBalanceSummaryProps) {
+    const { t } = useTranslation('airdrop');
     const balanceSummary = useBalanceSummary();
 
     if (!balanceSummary) {
@@ -34,28 +36,28 @@ export function TrancheBalanceSummary({ className, showTitle = true }: TrancheBa
 
     return (
         <SummaryContainer className={className}>
-            {showTitle && <SummaryTitle>XTM Balance Summary</SummaryTitle>}
+            {showTitle && <SummaryTitle>{t('tranche.status.balance-summary')}</SummaryTitle>}
 
             <TotalSection>
                 <TotalAmount>{balanceSummary.totalXtm.toLocaleString()} XTM</TotalAmount>
-                <TotalLabel>Total Allocation</TotalLabel>
+                <TotalLabel>{t('tranche.status.total-allocation')}</TotalLabel>
             </TotalSection>
 
             <BalanceGrid>
                 <BalanceItem>
                     <BalanceAmount $type="claimed">{balanceSummary.totalClaimed.toLocaleString()}</BalanceAmount>
-                    <BalanceLabel>Claimed</BalanceLabel>
+                    <BalanceLabel>{t('tranche.status.claimed')}</BalanceLabel>
                 </BalanceItem>
 
                 <BalanceItem>
                     <BalanceAmount $type="pending">{balanceSummary.totalPending.toLocaleString()}</BalanceAmount>
-                    <BalanceLabel>Pending</BalanceLabel>
+                    <BalanceLabel>{t('tranche.status.pending')}</BalanceLabel>
                 </BalanceItem>
 
                 {balanceSummary.totalExpired > 0 && (
                     <BalanceItem>
                         <BalanceAmount $type="expired">{balanceSummary.totalExpired.toLocaleString()}</BalanceAmount>
-                        <BalanceLabel>Expired</BalanceLabel>
+                        <BalanceLabel>{t('tranche.status.expired')}</BalanceLabel>
                     </BalanceItem>
                 )}
             </BalanceGrid>

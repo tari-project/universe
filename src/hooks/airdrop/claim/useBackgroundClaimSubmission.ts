@@ -22,7 +22,7 @@ interface ClaimSubmissionResponse {
 
 async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult> {
     console.log('📝 Submitting claim with body:', JSON.stringify(claimRequest, null, 2));
-    
+
     const response = await handleAirdropRequest<ClaimSubmissionResponse>({
         path: '/tari/claim-airdrop',
         method: 'POST',
@@ -139,8 +139,11 @@ export function useBackgroundClaimSubmission() {
                 console.log('🛡️ CSRF Check - csrfData:', csrfData);
                 console.log('🛡️ CSRF Check - isLoadingCsrf:', isLoadingCsrf);
                 console.log('🛡️ CSRF Check - csrfError:', csrfError);
-                console.log('🛡️ CSRF token value:', csrfData?.csrfToken ? `${csrfData.csrfToken.substring(0, 10)}...` : 'null');
-                
+                console.log(
+                    '🛡️ CSRF token value:',
+                    csrfData?.csrfToken ? `${csrfData.csrfToken.substring(0, 10)}...` : 'null'
+                );
+
                 if (!csrfData?.csrfToken) {
                     if (csrfError) {
                         throw new Error('Failed to get CSRF token');

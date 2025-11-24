@@ -65,10 +65,10 @@ export const ModalBody = styled.p`
 
 export const ClaimContainer = styled.div`
     width: 535px;
-    height: 192px;
+    min-height: 192px;
     border-radius: 15px;
-    gap: 20px;
-    padding: 30px;
+    gap: 16px;
+    padding: 24px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -106,16 +106,20 @@ export const TrancheAmount = styled.div`
 `;
 
 export const RemainingBalance = styled.div`
-    font-size: 14px;
+    font-size: 12px;
     font-weight: 500;
     color: #ffffff;
     background: #ffffff1a;
-    padding: 8px 16px;
+    padding: 6px 12px;
     border-radius: 6px;
     text-align: center;
     width: 100%;
     box-sizing: border-box;
-    margin-top: auto;
+    margin: 2px 0;
+
+    &:last-child {
+        margin-top: auto;
+    }
 `;
 
 export const ClaimButton = styled.button<{ $isLoading?: boolean }>`
@@ -174,4 +178,34 @@ export const LoadingSpinner = styled.div`
             transform: rotate(360deg);
         }
     }
+`;
+
+/* Countdown Components */
+export const CountdownContainer = styled.div`
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 8px 0;
+`;
+
+export const CountdownSquare = styled.div`
+    width: 44px;
+    height: 44px;
+    background: #ffffff;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000000;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: monospace;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+export const CountdownWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
 `;

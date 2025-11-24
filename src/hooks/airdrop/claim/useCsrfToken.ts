@@ -7,7 +7,7 @@ export const KEY_CSRF_TOKEN = 'csrf_token';
 
 async function fetchCsrfToken(): Promise<CsrfTokenResponse> {
     console.log('🛡️ Fetching CSRF token...');
-    
+
     const response = await handleAirdropRequest<CsrfTokenResponse>({
         path: '/tari/airdrop/csrf-token',
         method: 'POST',
