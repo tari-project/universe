@@ -53,13 +53,15 @@ pub struct OtpRequestMessage {
 
 impl OtpRequest {
     pub async fn new(csrf_token: String, wallet_address: String) -> Self {
-        let timestamp = SystemTime::now()
+        let _timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis() as u64;
-        
+            .unwrap_or_default()
+            .as_millis();
+
+        let timestamp = u64::try_from(_timestamp).unwrap_or_default();
+
         let nonce = format!("{}-{}", timestamp, uuid::Uuid::new_v4());
-        
+
         let app_id = ConfigCore::content().await.anon_id().clone();
 
         Self {
@@ -80,15 +82,13 @@ impl OtpRequest {
 
     pub async fn sign(&self) -> Result<OtpRequestMessage, String> {
         let message_to_sign = self.to_sign_string();
-        
+
         match sign_ws_data(message_to_sign).await {
-            Ok(SignWsDataResponse { signature, pub_key }) => {
-                Ok(OtpRequestMessage {
-                    request: self.clone(),
-                    signature,
-                    pub_key,
-                })
-            }
+            Ok(SignWsDataResponse { signature, pub_key }) => Ok(OtpRequestMessage {
+                request: self.clone(),
+                signature,
+                pub_key,
+            }),
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to sign OTP request: {}", e);
                 Err(format!("Failed to sign OTP request: {}", e))
@@ -102,10 +102,10 @@ pub async fn create_otp_request_message(
     wallet_address: String,
 ) -> Result<WebsocketMessage, String> {
     info!(target: LOG_TARGET, "Creating OTP request for wallet: {}", wallet_address);
-    
+
     let otp_request = OtpRequest::new(csrf_token, wallet_address).await;
     let signed_message = otp_request.sign().await?;
-    
+
     let websocket_message = WebsocketMessage {
         event: "request-otp".to_string(),
         data: Some(serde_json::to_value(signed_message).map_err(|e| {
@@ -115,7 +115,7 @@ pub async fn create_otp_request_message(
         signature: None,
         pub_key: None,
     };
-    
+
     info!(target: LOG_TARGET, "OTP request message created successfully");
     Ok(websocket_message)
 }
