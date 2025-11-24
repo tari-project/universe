@@ -12,8 +12,9 @@ export default function AirdropClaimModal() {
     };
 
     const claimEnabled = features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
+    const killswitchEngaged = features?.includes(FEATURE_FLAGS.FF_AD_KS);
 
-    if (!claimEnabled) {
+    if (killswitchEngaged || !claimEnabled) {
         return null;
     }
 

@@ -66,3 +66,16 @@ export const TooltipWrapper = styled.div`
     align-items: center;
     gap: 6px;
 `;
+
+export const NextRewardWrapper = styled.div`
+    display: flex;
+    width: 100%;
+    padding: 10px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 3px;
+    align-self: stretch;
+    border-radius: 10px;
+    background-color: ${({ theme }) => theme.palette.background.accent};
+`;

@@ -2,7 +2,7 @@ import { useAirdropStore } from '@app/store';
 import { openTrancheModal } from '@app/store/actions/airdropStoreActions';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { SidebarItem } from './components/SidebarItem';
-import { ActionImgWrapper } from './items.style';
+import { ActionImgWrapper, NextRewardWrapper } from './items.style';
 import { ParachuteSVG } from '@app/assets/icons/ParachuteSVG';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
@@ -24,17 +24,19 @@ export default function Gems() {
     const features = useAirdropStore((s) => s.features);
     const formattedCountCompact = formatNumber(gemCount, FormatPreset.COMPACT);
 
+    const killswitchEngaged = features?.includes(FEATURE_FLAGS.FF_AD_KS);
+    const claimEnabled = features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
+
     // Airdrop data hooks (same as modal)
     const balanceSummary = useBalanceSummary();
     const { currentTranche } = useCurrentMonthTranche();
     const { data: claimStatus, isLoading: claimStatusLoading } = useClaimStatus();
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
-
     // State for countdown
     const [countdown, setCountdown] = useState<CountdownTime | null>(null);
-
     // Find next available tranche
     const futureTranche = trancheStatus?.tranches.find((t) => !t.claimed && new Date(t.validFrom) > new Date());
+
     // Optimized countdown effect - update less frequently when time is far out
     useEffect(() => {
         if (!futureTranche) {
@@ -112,8 +114,9 @@ export default function Gems() {
     const { total: totalAirdropAmount, claimed: totalClaimedAmount, pending: totalPendingAmount } = totalValues;
 
     // Memoize tooltip content to prevent unnecessary rerenders
-    const tooltipContent = useMemo(
-        () => (
+    const tooltipContent = useMemo(() => {
+        if (killswitchEngaged) return null;
+        return (
             <div style={{ textAlign: 'left' }}>
                 <Typography variant="h6" style={{ marginBottom: '8px' }}>
                     {t('loggedInTitle')}
@@ -139,12 +142,12 @@ export default function Gems() {
 
                         {nextRewardAmount && !isNaN(nextRewardAmount) && (
                             <>
-                                <Typography variant="p" style={{ marginBottom: '4px', fontWeight: 'bold' }}>
-                                    {t('tranche.status.next-reward')}
-                                </Typography>
-                                <Typography variant="h6" style={{ marginBottom: countdown ? '4px' : '8px' }}>
-                                    {formatAmount(nextRewardAmount)} XTM
-                                </Typography>
+                                <NextRewardWrapper>
+                                    <Typography variant="p" style={{ fontWeight: 'bold' }}>
+                                        {t('tranche.status.next-reward')}
+                                    </Typography>
+                                    <Typography variant="h6">{formatAmount(nextRewardAmount)} XTM</Typography>
+                                </NextRewardWrapper>
                                 {countdown && (
                                     <Typography variant="p" style={{ marginBottom: '8px', color: '#666' }}>
                                         {t('tranche.status.available-in')} {formatCountdown(countdown)}
@@ -159,28 +162,25 @@ export default function Gems() {
                     </Typography>
                 )}
             </div>
-        ),
-        [
-            t,
-            claimStatusLoading,
-            totalAirdropAmount,
-            totalClaimedAmount,
-            formatAmount,
-            totalPendingAmount,
-            nextRewardAmount,
-            countdown,
-            formatCountdown,
-        ]
-    );
+        );
+    }, [
+        killswitchEngaged,
+        t,
+        claimStatusLoading,
+        totalAirdropAmount,
+        totalClaimedAmount,
+        formatAmount,
+        totalPendingAmount,
+        nextRewardAmount,
+        countdown,
+        formatCountdown,
+    ]);
 
     const handleClick = useCallback(() => {
         openTrancheModal();
     }, []);
 
-    const killswitchOn = features?.includes(FEATURE_FLAGS.FF_AD_KS);
-    const claimEnabled = features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
-
-    const canClaim = !killswitchOn && claimEnabled;
+    const canClaim = !killswitchEngaged && claimEnabled;
 
     return (
         <SidebarItem
