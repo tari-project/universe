@@ -18,7 +18,6 @@ import {
     RemainingBalance,
     ClaimButton,
     CloseButton,
-    LoadingSpinner,
 } from './MonthlyTrancheClaimModal.styles';
 import CloseIcon from '@app/components/GreenModal/icons/CloseIcon';
 
@@ -243,23 +242,12 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                     </ClaimContainer>
 
                     {isTrancheMode ? (
-                        <ClaimButton
-                            size="xxl"
-                            fluid
-                            onClick={handleClaim}
-                            disabled={!canClaimNow || isAnyLoading}
-                            $isLoading={isAnyLoading}
-                        >
-                            {isAnyLoading ? (
-                                <>
-                                    <LoadingSpinner />
-                                    {isOtpWaiting
-                                        ? t('tranche.claim-modal.waiting-verification')
-                                        : t('tranche.claim-modal.claiming')}
-                                </>
-                            ) : (
-                                t('tranche.claim-modal.claim-button')
-                            )}
+                        <ClaimButton size="xxl" fluid onClick={handleClaim} disabled={!canClaimNow || isAnyLoading}>
+                            {!isAnyLoading
+                                ? t('tranche.claim-modal.claim-button')
+                                : isOtpWaiting
+                                  ? t('tranche.claim-modal.waiting-verification')
+                                  : t('tranche.claim-modal.claiming')}
                         </ClaimButton>
                     ) : hasFutureTranche ? (
                         <ClaimButton disabled={true} $isLoading={false}>

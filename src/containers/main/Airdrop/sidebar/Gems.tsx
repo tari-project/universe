@@ -6,10 +6,12 @@ import { ActionImgWrapper, GemImg, GemImgLarge, TooltipWrapper } from './items.s
 import gem from '@app/assets/images/gem.png';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
+import { FEATURE_FLAGS } from '@app/store/consts.ts';
 
 export default function Gems() {
     const { t } = useTranslation('airdrop');
     const gemCount = useAirdropStore((s) => s.userPoints?.base?.gems || s.userDetails?.user?.rank?.gems || 0);
+    const features = useAirdropStore((s) => s.features);
     const formattedCountCompact = formatNumber(gemCount, FormatPreset.COMPACT);
     const formattedCount = formatNumber(gemCount, FormatPreset.DECIMAL_COMPACT);
     const tooltipContent = (
@@ -25,8 +27,14 @@ export default function Gems() {
         openTrancheModal();
     };
 
+    const ctaEnabled = features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
+
     return (
-        <SidebarItem text={formattedCountCompact} tooltipContent={tooltipContent} onClick={handleClick}>
+        <SidebarItem
+            text={formattedCountCompact}
+            tooltipContent={tooltipContent}
+            onClick={ctaEnabled ? handleClick : undefined}
+        >
             <ActionImgWrapper>
                 <GemImgLarge src={gem} alt="gem image" />
             </ActionImgWrapper>
