@@ -78,9 +78,25 @@ export function useTrancheAutoRefresh({
 
         const currentAvailableCount = trancheStatus.availableCount;
 
+        console.log('📊 Tranche availability check:');
+        console.log('  - currentAvailableCount:', currentAvailableCount);
+        console.log('  - lastAvailableCountRef.current:', lastAvailableCountRef.current);
+        console.log(
+            '  - tranches:',
+            trancheStatus.tranches.map((t) => ({
+                id: t.id,
+                claimed: t.claimed,
+                canClaim: t.canClaim,
+                validFrom: t.validFrom,
+                validTo: t.validTo,
+            }))
+        );
+
         // If we have more available tranches than before, notify the user and auto-open modal
         if (lastAvailableCountRef.current > 0 && currentAvailableCount > lastAvailableCountRef.current) {
             const newTrancheCount = currentAvailableCount - lastAvailableCountRef.current;
+
+            console.log('🎉 New tranches detected!', newTrancheCount);
 
             const plural = newTrancheCount === 1 ? 'tranche is' : 'tranches are';
 
@@ -95,8 +111,14 @@ export function useTrancheAutoRefresh({
             openTrancheModal();
         }
 
+        // If this is the initial load and we have available tranches, auto-open modal
+        if (lastAvailableCountRef.current === 0 && currentAvailableCount > 0) {
+            console.log('🎉 Initial load with available tranches detected, auto-opening modal');
+            openTrancheModal();
+        }
+
         lastAvailableCountRef.current = currentAvailableCount;
-    }, [trancheStatus?.availableCount, notifyOnNewTranches, trancheStatus, t]);
+    }, [trancheStatus?.availableCount, notifyOnNewTranches]);
 
     // Smart interval logic based on tranche timing
     const getRefreshInterval = useCallback(() => {
@@ -171,7 +193,8 @@ export function useTrancheAutoRefresh({
         if (!enabled || !isLoggedIn) return;
 
         const handleFocus = () => {
-            console.info('App focused, refreshing tranche data');
+            console.log('🔄 App focused, refreshing tranche data');
+            console.log('🔄 Current tranche status before refresh:', trancheStatus);
             refreshTranches();
         };
 

@@ -162,3 +162,33 @@ export const LoadingSpinner = styled.div`
         }
     }
 `;
+
+/* Countdown Components */
+export const CountdownContainer = styled.div`
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 8px 0;
+`;
+
+export const CountdownSquare = styled.div`
+    width: 44px;
+    height: 44px;
+    background: #ffffff;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000000;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: monospace;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+`;
+
+export const CountdownWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+`;

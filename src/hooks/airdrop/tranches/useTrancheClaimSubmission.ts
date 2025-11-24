@@ -67,15 +67,15 @@ export function useTrancheClaimSubmission() {
 
             try {
                 // Invalidate CSRF token to force fresh fetch
-                console.info('🛡️ Invalidating CSRF token cache for fresh fetch');
-                await queryClient.invalidateQueries({ queryKey: [KEY_CSRF_TOKEN] });
+                console.debug('Invalidating CSRF token cache for fresh fetch');
+                queryClient.invalidateQueries({ queryKey: [KEY_CSRF_TOKEN] });
 
                 // Wait a bit for the fresh CSRF token to be fetched
                 await new Promise((resolve) => setTimeout(resolve, 500));
 
-                console.info('🚀 Calling performBackgroundClaim with xtm and trancheId:', trancheId);
+                console.debug('Calling performBackgroundClaim with xtm and trancheId:', trancheId);
                 const result = await performBackgroundClaim('xtm', trancheId);
-                console.info('🚀 performBackgroundClaim result:', result);
+                console.debug('performBackgroundClaim result:', result);
 
                 if (result.success) {
                     addToast({

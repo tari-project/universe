@@ -143,7 +143,6 @@ export function useBackgroundClaimSubmission() {
                     '🛡️ CSRF token value:',
                     csrfData?.csrfToken ? `${csrfData.csrfToken.substring(0, 10)}...` : 'null'
                 );
-
                 if (!csrfData?.csrfToken) {
                     if (csrfError) {
                         throw new Error('Failed to get CSRF token');
