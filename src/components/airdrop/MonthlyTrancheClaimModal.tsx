@@ -18,7 +18,6 @@ import {
     RemainingBalance,
     ClaimButton,
     CloseButton,
-    LoadingSpinner,
     CountdownContainer,
     CountdownSquare,
     CountdownWrapper,
@@ -76,7 +75,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const hasFutureTranche = trancheStatus?.tranches.some((t) => !t.claimed && new Date(t.validFrom) > new Date());
     const lastClaimedTranche = trancheStatus?.tranches.find((t) => t.claimed);
     const futureTranche = trancheStatus?.tranches.find((t) => !t.claimed && new Date(t.validFrom) > new Date());
-console.debug('Modal state check:', {
+    console.debug('Modal state check:', {
         hasCurrentTranche,
         hasFutureTranche,
         lastClaimedTranche,

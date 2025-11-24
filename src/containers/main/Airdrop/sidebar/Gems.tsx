@@ -75,7 +75,7 @@ export default function Gems() {
 
     // Memoize format countdown function
     const formatCountdown = useCallback((countdown: CountdownTime) => {
-        const parts = [];
+        const parts: string[] = [];
         if (countdown.days > 0) parts.push(`${countdown.days}D`);
         if (countdown.days > 0 || countdown.hours > 0) parts.push(`${countdown.hours}H`);
         parts.push(`${countdown.minutes}M`);
@@ -166,6 +166,7 @@ export default function Gems() {
             claimStatusLoading,
             totalAirdropAmount,
             totalClaimedAmount,
+            formatAmount,
             totalPendingAmount,
             nextRewardAmount,
             countdown,
