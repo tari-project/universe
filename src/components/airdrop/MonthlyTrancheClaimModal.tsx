@@ -17,12 +17,10 @@ import {
     TrancheAmount,
     RemainingBalance,
     ClaimButton,
-    CloseButton,
     CountdownContainer,
     CountdownSquare,
     CountdownWrapper,
 } from './MonthlyTrancheClaimModal.styles';
-import CloseIcon from '@app/components/GreenModal/icons/CloseIcon';
 
 interface MonthlyTrancheClaimModalProps {
     showModal: boolean;
@@ -252,10 +250,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         <Dialog open={showModal} onOpenChange={onClose}>
             <DialogContent variant="wrapper">
                 <ModalWrapper initial={{ opacity: 0, y: '100px' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                    <CloseButton onClick={onClose}>
-                        <CloseIcon />
-                    </CloseButton>
-
                     <ModalHeader>
                         <ModalTitle variant="h2">{displayTitle}</ModalTitle>
                     </ModalHeader>
@@ -264,7 +258,9 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
                     <ClaimContainer>
                         <EyebrowText>{displayEyebrow}</EyebrowText>
-                        <TrancheAmount>{formatAmount(displayAmount)} XTM</TrancheAmount>
+                        <TrancheAmount>
+                            {formatAmount(displayAmount)} <span>XTM</span>
+                        </TrancheAmount>
 
                         {/* Show claimed rewards if available */}
                         {balanceSummary && balanceSummary.totalClaimed > 0 && (

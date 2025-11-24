@@ -35,7 +35,6 @@ export default function Gems() {
 
     // Find next available tranche
     const futureTranche = trancheStatus?.tranches.find((t) => !t.claimed && new Date(t.validFrom) > new Date());
-
     // Optimized countdown effect - update less frequently when time is far out
     useEffect(() => {
         if (!futureTranche) {
@@ -185,7 +184,7 @@ export default function Gems() {
 
     return (
         <SidebarItem
-            text={canClaim ? '' : formattedCountCompact}
+            text={formattedCountCompact}
             tooltipContent={tooltipContent}
             onClick={canClaim ? handleClick : undefined}
         >

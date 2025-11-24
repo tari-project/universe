@@ -11,37 +11,9 @@ export const ModalWrapper = styled(m.div)`
     display: flex;
     flex-direction: column;
     padding: 40px;
-    max-width: 625px;
+    width: clamp(620px, 55vw, 825px);
     overflow: hidden;
     gap: 20px;
-`;
-
-export const CloseButton = styled.button`
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 32px;
-    height: 32px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.2s ease;
-    z-index: 10;
-
-    &:hover {
-        background: rgba(0, 0, 0, 0.1);
-    }
-
-    svg {
-        width: 16px;
-        height: 16px;
-        opacity: 0.7;
-    }
 `;
 
 export const ModalHeader = styled.div`
@@ -63,9 +35,9 @@ export const ModalBody = styled(Typography).attrs({ variant: 'p' })`
 `;
 
 export const ClaimContainer = styled.div`
-    width: 535px;
+    width: 100%;
     border-radius: 15px;
-    gap: 20px;
+    gap: 10px;
     padding: 30px;
 
     display: flex;
@@ -92,11 +64,19 @@ export const EyebrowText = styled.div`
 `;
 
 export const TrancheAmount = styled.div`
-    font-size: 48px;
-    font-weight: 700;
     color: #ffffff;
     line-height: 1;
-    margin: 8px 0;
+    font-size: clamp(38px, 0.6rem + 2.5vw, 52px);
+    font-weight: 600;
+    letter-spacing: -1.56px;
+    overflow-wrap: anywhere;
+    span {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 28px;
+        font-style: normal;
+        font-weight: 600;
+        letter-spacing: -0.84px;
+    }
 `;
 
 export const RemainingBalance = styled.div`
