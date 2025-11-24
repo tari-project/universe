@@ -72,15 +72,7 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
                 const hasNoId = !txId && !hash?.length;
 
                 const itemKey = `ListItem_${txId}-${hash}-${hasNoId ? i : ''}`;
-                return (
-                    <HistoryListItem
-                        key={itemKey}
-                        item={tx}
-                        index={i}
-                        itemIsNew={false}
-                        setDetailsItem={handleDetailsChange}
-                    />
-                );
+                return <HistoryListItem key={itemKey} item={tx} index={i} setDetailsItem={handleDetailsChange} />;
             })}
 
             {/* fill the list with placeholders if there are less than 4 entries */}
