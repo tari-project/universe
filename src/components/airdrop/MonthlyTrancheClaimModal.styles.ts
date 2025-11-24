@@ -1,18 +1,19 @@
 import styled from 'styled-components';
 import * as m from 'motion/react-m';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const ModalWrapper = styled(m.div)`
     position: relative;
-    width: 625px;
-    height: 521px;
     border-radius: 35px;
     background: #ffffffbf;
     backdrop-filter: blur(10px);
     display: flex;
     flex-direction: column;
     padding: 40px;
-    box-sizing: border-box;
+    max-width: 625px;
     overflow: hidden;
+    gap: 20px;
 `;
 
 export const CloseButton = styled.button`
@@ -44,37 +45,32 @@ export const CloseButton = styled.button`
 `;
 
 export const ModalHeader = styled.div`
-    margin-bottom: 24px;
+    display: flex;
 `;
 
-export const ModalTitle = styled.h2`
-    font-size: 32px;
-    font-weight: 600;
+export const ModalTitle = styled(Typography)`
+    font-size: clamp(36px, 2rem + 0.5vh, 42px);
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: -1.9px;
     color: #1a1a1a;
-    margin: 0;
-    line-height: 1.2;
 `;
 
-export const ModalBody = styled.p`
+export const ModalBody = styled(Typography).attrs({ variant: 'p' })`
     font-size: 16px;
     color: #666666;
-    line-height: 1.5;
-    margin: 0 0 40px 0;
-    max-width: 480px;
+    line-height: 1.1;
 `;
 
 export const ClaimContainer = styled.div`
     width: 535px;
-    height: 192px;
     border-radius: 15px;
     gap: 20px;
     padding: 30px;
-    box-sizing: border-box;
+
     display: flex;
     flex-direction: column;
     justify-content: center;
-    margin: 0 auto 32px auto;
-    position: relative;
 
     /* Multi-layered background as specified */
     background: linear-gradient(0deg, #ffffff, #ffffff), linear-gradient(262.12deg, #333909 2.2%, #091d07 100.01%);
@@ -88,13 +84,11 @@ export const ClaimContainer = styled.div`
 `;
 
 export const EyebrowText = styled.div`
-    font-size: 12px;
-    font-weight: 500;
-    color: #ffffff;
-    letter-spacing: 0.5px;
-    display: inline-block;
-    width: fit-content;
-    margin-bottom: 8px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.48px;
 `;
 
 export const TrancheAmount = styled.div`
@@ -109,30 +103,23 @@ export const RemainingBalance = styled.div`
     font-size: 14px;
     font-weight: 500;
     color: #ffffff;
-    background: #ffffff1a;
     padding: 8px 16px;
-    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    border-radius: 10px;
     text-align: center;
     width: 100%;
-    box-sizing: border-box;
-    margin-top: auto;
 `;
 
-export const ClaimButton = styled.button<{ $isLoading?: boolean }>`
-    width: 200px;
-    height: 48px;
-    border-radius: 8px;
-    border: none;
+export const ClaimButton = styled(Button)<{ $isLoading?: boolean }>`
     background: #000000;
     color: #ffffff;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin: 0 auto;
+    font-size: 21px;
+    font-weight: 600;
     transition: all 0.2s ease;
 
     &:hover:not(:disabled) {

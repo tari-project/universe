@@ -231,7 +231,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                     </CloseButton>
 
                     <ModalHeader>
-                        <ModalTitle>{displayTitle}</ModalTitle>
+                        <ModalTitle variant="h2">{displayTitle}</ModalTitle>
                     </ModalHeader>
 
                     <ModalBody>{displayDescription}</ModalBody>
@@ -244,6 +244,8 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
                     {isTrancheMode ? (
                         <ClaimButton
+                            size="xxl"
+                            fluid
                             onClick={handleClaim}
                             disabled={!canClaimNow || isAnyLoading}
                             $isLoading={isAnyLoading}

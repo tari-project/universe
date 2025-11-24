@@ -96,6 +96,7 @@ export function useClaimEventHandling() {
 export function AirdropSection() {
     const { hasCurrentTranche } = useCurrentMonthTranche();
     const balanceSummary = useBalanceSummary();
+    console.log(hasCurrentTranche);
 
     // Enable global auto-refresh
     useTrancheAutoRefresh({
