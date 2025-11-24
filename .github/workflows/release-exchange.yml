@@ -39,7 +39,7 @@ jobs:
       EXCHANGES_NAMES: ${{ steps.read-exchanges.outputs.EXCHANGES_NAMES }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Read exchanges
         id: read-exchanges
         run: |
@@ -82,7 +82,7 @@ jobs:
             args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platforms.platform }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Builds - Install dependencies (windows) [yq]
         if: ${{ startsWith(runner.os,'Windows') }}
         run: |
@@ -471,7 +471,7 @@ jobs:
         exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_NAMES) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Download artifact
         uses: actions/download-artifact@v6
@@ -620,7 +620,7 @@ jobs:
         exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_NAMES) }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install unzip if missing
         run: |
