@@ -177,7 +177,7 @@ export function useTrancheAutoRefresh({
         setupInterval();
 
         // Update interval when tranche status changes
-        const timeoutId = setTimeout(setupInterval, 1000);
+        const timeoutId = setTimeout(setupInterval, 1000 * 10);
 
         return () => {
             if (intervalRef.current) {
@@ -193,8 +193,6 @@ export function useTrancheAutoRefresh({
         if (!enabled || !isLoggedIn) return;
 
         const handleFocus = () => {
-            console.debug('🔄 App focused, refreshing tranche data');
-            console.debug('🔄 Current tranche status before refresh:', trancheStatus);
             refreshTranches();
         };
 

@@ -1,25 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-import { useCurrentMonthTranche, useBalanceSummary, useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches';
+import { useBalanceSummary, useCurrentMonthTranche, useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches';
 import { useTrancheClaimSubmission } from '@app/hooks/airdrop/tranches/useTrancheClaimSubmission';
 import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
 import { useSimpleClaimSubmission } from '@app/hooks/airdrop/claim/useSimpleClaimSubmission';
 import { useAirdropStore } from '@app/store';
 import { setClaimInProgress, setClaimResult } from '@app/store/actions/airdropStoreActions';
 import {
-    ModalWrapper,
-    ModalHeader,
-    ModalTitle,
-    ModalBody,
-    ClaimContainer,
-    EyebrowText,
-    TrancheAmount,
-    RemainingBalance,
     ClaimButton,
+    ClaimContainer,
     CountdownContainer,
     CountdownSquare,
     CountdownWrapper,
+    EyebrowText,
+    ModalBody,
+    ModalHeader,
+    ModalTitle,
+    ModalWrapper,
+    RemainingBalance,
+    TrancheAmount,
 } from './MonthlyTrancheClaimModal.styles';
 
 interface MonthlyTrancheClaimModalProps {
@@ -31,12 +31,12 @@ interface CountdownTime {
     days: number;
     hours: number;
     minutes: number;
-    seconds: number;
 }
 
 export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheClaimModalProps) {
     const { t } = useTranslation('airdrop', { useSuspense: false });
     const [isClaimingOptimistic, setIsClaimingOptimistic] = useState(false);
+    const initialCountdownRef = useRef(false);
     const [countdown, setCountdown] = useState<CountdownTime | null>(null);
 
     // Tranche system hooks
@@ -73,14 +73,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const hasFutureTranche = trancheStatus?.tranches.some((t) => !t.claimed && new Date(t.validFrom) > new Date());
     const lastClaimedTranche = trancheStatus?.tranches.find((t) => t.claimed);
     const futureTranche = trancheStatus?.tranches.find((t) => !t.claimed && new Date(t.validFrom) > new Date());
-    console.debug('Modal state check:', {
-        hasCurrentTranche,
-        hasFutureTranche,
-        lastClaimedTranche,
-        futureTranche,
-        isTrancheMode,
-        isLegacyMode,
-    });
+
     // Always use tranche-style display, but functionality depends on data availability
     const hasAnyClaimData = isTrancheMode || isLegacyMode || trancheStatus;
 
@@ -88,8 +81,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const handleClaim = async () => {
         if (isTrancheMode) {
             if (!currentTranche || !trancheCanClaim) return;
-
-            console.debug('Starting tranche claim:', { trancheId: currentTranche.id, currentTranche, balanceSummary });
 
             try {
                 setIsClaimingOptimistic(true);
@@ -131,35 +122,47 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         }
     }, [showModal]);
 
+    const getCountdownParts = useCallback(() => {
+        if (!futureTranche) return null;
+
+        const now = new Date().getTime();
+        const futureTime = new Date(futureTranche.validFrom).getTime();
+        const timeDiff = futureTime - now;
+
+        if (timeDiff <= 0) {
+            setCountdown(null);
+            console.debug('Future tranche should now be available, refreshing data');
+            void refreshTranches(); // Refresh to get updated data
+            return;
+        }
+
+        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+
+        return { days, hours, minutes };
+    }, [futureTranche, refreshTranches]);
+
+    const updateCountdown = useCallback(() => {
+        const parts = getCountdownParts();
+        if (parts) {
+            const { days, hours, minutes } = parts || {};
+            setCountdown({ days, hours, minutes });
+        }
+    }, [getCountdownParts]);
+
+    useEffect(() => {
+        if (countdown || initialCountdownRef.current) return;
+        initialCountdownRef.current = true;
+        updateCountdown();
+    }, [countdown, updateCountdown]);
+
     // Countdown effect for future tranches
     useEffect(() => {
-        if (!futureTranche) return;
-
-        const updateCountdown = () => {
-            const now = new Date().getTime();
-            const futureTime = new Date(futureTranche.validFrom).getTime();
-            const timeDiff = futureTime - now;
-
-            if (timeDiff <= 0) {
-                setCountdown(null);
-                console.debug('Future tranche should now be available, refreshing data');
-                refreshTranches(); // Refresh to get updated data
-                return;
-            }
-
-            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-            setCountdown({ days, hours, minutes, seconds });
-        };
-
-        updateCountdown();
-        const interval = setInterval(updateCountdown, 1000);
+        const interval = setInterval(updateCountdown, 1000 * 55);
 
         return () => clearInterval(interval);
-    }, [futureTranche, refreshTranches]);
+    }, [updateCountdown]);
 
     // Don't show modal if no claim data available at all
     if (!hasAnyClaimData) {
@@ -200,26 +203,11 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
         const totalOriginalAmount = claimStatus.amount;
 
-        console.debug('Balance calculation:', {
-            totalOriginalAmount,
-            isTrancheMode,
-            balanceSummary,
-            trancheStatus,
-        });
-
         // Always try to subtract claimed and expired if we have tranche data
         if (balanceSummary) {
             const claimedAndExpired = balanceSummary.totalClaimed + balanceSummary.totalExpired;
-            const remaining = totalOriginalAmount - claimedAndExpired;
 
-            console.debug('Balance calculation with summary:', {
-                totalClaimed: balanceSummary.totalClaimed,
-                totalExpired: balanceSummary.totalExpired,
-                claimedAndExpired,
-                remaining,
-            });
-
-            return remaining;
+            return totalOriginalAmount - claimedAndExpired;
         }
 
         // Fallback: show original amount if no tranche data
@@ -302,7 +290,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                                         <CountdownSquare>{countdown.hours}H</CountdownSquare>
                                     )}
                                     <CountdownSquare>{countdown.minutes}M</CountdownSquare>
-                                    <CountdownSquare>{countdown.seconds}S</CountdownSquare>
                                 </CountdownContainer>
                             )}
                         </CountdownWrapper>

@@ -90,8 +90,6 @@ export function useBackgroundClaimSubmission() {
             const pendingClaim = pendingClaimRef.current;
             const { claimTarget, csrfToken, trancheId } = pendingClaim;
 
-            console.info('OTP received, submitting claim with OTP:', otpData.otp);
-
             // Clear the pending claim immediately to prevent multiple submissions
             pendingClaimRef.current = null;
 
@@ -136,13 +134,7 @@ export function useBackgroundClaimSubmission() {
                 }
 
                 // Step 1: Get CSRF token (if not already loaded)
-                console.info('🛡️ CSRF Check - csrfData:', csrfData);
-                console.info('🛡️ CSRF Check - isLoadingCsrf:', isLoadingCsrf);
-                console.info('🛡️ CSRF Check - csrfError:', csrfError);
-                console.info(
-                    '🛡️ CSRF token value:',
-                    csrfData?.csrfToken ? `${csrfData.csrfToken.substring(0, 10)}...` : 'null'
-                );
+
                 if (!csrfData?.csrfToken) {
                     if (csrfError) {
                         throw new Error('Failed to get CSRF token');
