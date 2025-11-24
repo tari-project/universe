@@ -278,7 +278,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                     </ClaimContainer>
 
                     {isTrancheMode ? (
-                        <ClaimButton size="xxl" fluid onClick={handleClaim} disabled={!canClaimNow || isAnyLoading}>
+                        <ClaimButton onClick={handleClaim} disabled={!canClaimNow || isAnyLoading}>
                             {!isAnyLoading
                                 ? t('tranche.claim-modal.claim-button')
                                 : isOtpWaiting

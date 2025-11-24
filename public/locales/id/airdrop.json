@@ -132,15 +132,23 @@
     },
     "status": {
       "available": "Available",
+      "available-in": "Available in",
+      "balance-summary": "XTM Balance Summary",
       "claimed": "Claimed",
       "error": "Failed to load tranche status",
       "expired": "Expired",
       "loading": "Loading tranche status...",
       "next-available": "Next tranche available:",
+      "next-reward": "Next reward",
+      "no-active-claims": "No active claims",
       "no-data": "No tranche data available",
+      "overall-rewards": "Your overall Airdrop rewards are",
       "pending": "Pending",
       "progress-title": "Airdrop Progress",
+      "total-airdrop": "Total airdrop amount",
       "total-allocation": "Total Allocation",
+      "total-claimed": "Total claimed",
+      "total-due": "Total amount due",
       "tranches": "tranches"
     }
   },

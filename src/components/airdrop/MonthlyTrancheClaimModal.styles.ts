@@ -111,7 +111,10 @@ export const RemainingBalance = styled.div`
     width: 100%;
 `;
 
-export const ClaimButton = styled(Button)<{ $isLoading?: boolean }>`
+export const ClaimButton = styled(Button).attrs({
+    size: 'xxl',
+    fluid: true,
+})<{ $isLoading?: boolean }>`
     background: #000000;
     color: #ffffff;
     display: flex;
@@ -143,24 +146,6 @@ export const ClaimButton = styled(Button)<{ $isLoading?: boolean }>`
         background: #333333;
         cursor: wait;
     `}
-`;
-
-export const LoadingSpinner = styled.div`
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top: 2px solid #ffffff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(360deg);
-        }
-    }
 `;
 
 /* Countdown Components */
