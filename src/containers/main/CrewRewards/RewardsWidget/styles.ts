@@ -27,7 +27,7 @@ export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolea
     border-radius: 13px;
     background: #323333;
 
-    box-shadow: 0px 4px 25px 0px rgba(0, 0, 0, 0.25)
+    box-shadow: 0 4px 25px 0 rgba(0, 0, 0, 0.25)
         ${({ theme }) => (theme.mode === 'dark' ? '' : ', 0px 0px 3px 2px rgba(242, 216, 255, 0.2) inset')};
 
     display: flex;
@@ -38,8 +38,7 @@ export const WidgetWrapper = styled('div')<{ $isOpen: boolean; $isLogin?: boolea
 
     width: ${({ $isLogin }) => ($isLogin ? '344px' : '411px')};
     height: 100%;
-    padding: 20px;
-    padding-bottom: 0px;
+    padding: 20px 20px 0;
 
     max-height: 115px;
 

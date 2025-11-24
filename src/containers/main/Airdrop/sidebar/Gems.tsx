@@ -178,13 +178,16 @@ export default function Gems() {
         openTrancheModal();
     }, []);
 
-    const ctaEnabled = features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
+    const killswitchOn = features?.includes(FEATURE_FLAGS.FF_AD_KS);
+    const claimEnabled = features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
+
+    const canClaim = !killswitchOn && claimEnabled;
 
     return (
         <SidebarItem
-            text={formattedCountCompact}
+            text={canClaim ? '' : formattedCountCompact}
             tooltipContent={tooltipContent}
-            onClick={ctaEnabled ? handleClick : undefined}
+            onClick={canClaim ? handleClick : undefined}
         >
             <ActionImgWrapper>
                 <ParachuteSVG />

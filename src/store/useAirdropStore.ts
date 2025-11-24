@@ -35,6 +35,7 @@ export interface User {
     name: string;
     role: string;
     image_url: string;
+    profileimageurl?: string;
     rank: {
         gems: number;
         shells: number;
