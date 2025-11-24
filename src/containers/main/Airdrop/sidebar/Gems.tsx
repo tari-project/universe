@@ -2,7 +2,7 @@ import { useAirdropStore } from '@app/store';
 import { openTrancheModal } from '@app/store/actions/airdropStoreActions';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { SidebarItem } from './components/SidebarItem';
-import { ActionImgWrapper, NextRewardWrapper } from './items.style';
+import { ActionImgWrapper, NextRewardWrapper, RewardTooltipContent, RewardTooltipItems } from './items.style';
 import { ParachuteSVG } from '@app/assets/icons/ParachuteSVG';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
@@ -117,10 +117,8 @@ export default function Gems() {
     const tooltipContent = useMemo(() => {
         if (killswitchEngaged) return null;
         return (
-            <div style={{ textAlign: 'left' }}>
-                <Typography variant="h6" style={{ marginBottom: '8px' }}>
-                    {t('loggedInTitle')}
-                </Typography>
+            <RewardTooltipContent>
+                <Typography variant="h6">{t('loggedInTitle')}</Typography>
 
                 {claimStatusLoading ? (
                     <Typography variant="p" style={{ color: '#666' }}>
@@ -128,17 +126,19 @@ export default function Gems() {
                     </Typography>
                 ) : totalAirdropAmount > 0 || totalClaimedAmount > 0 ? (
                     <>
-                        <Typography variant="p" style={{ marginBottom: '4px', color: '#666' }}>
-                            {t('tranche.status.total-airdrop')}: {formatAmount(totalAirdropAmount)} XTM
-                        </Typography>
+                        <RewardTooltipItems>
+                            <Typography variant="p">
+                                {t('tranche.status.total-airdrop')}: {formatAmount(totalAirdropAmount)} XTM
+                            </Typography>
 
-                        <Typography variant="p" style={{ marginBottom: '4px', color: '#666' }}>
-                            {t('tranche.status.total-claimed')}: {formatAmount(totalClaimedAmount)} XTM
-                        </Typography>
+                            <Typography variant="p">
+                                {t('tranche.status.total-claimed')}: {formatAmount(totalClaimedAmount)} XTM
+                            </Typography>
 
-                        <Typography variant="p" style={{ marginBottom: '12px', color: '#666' }}>
-                            {t('tranche.status.total-due')}: {formatAmount(totalPendingAmount)} XTM
-                        </Typography>
+                            <Typography variant="p">
+                                {t('tranche.status.total-due')}: {formatAmount(totalPendingAmount)} XTM
+                            </Typography>
+                        </RewardTooltipItems>
 
                         {nextRewardAmount && !isNaN(nextRewardAmount) && (
                             <>
@@ -149,7 +149,7 @@ export default function Gems() {
                                     <Typography variant="h6">{formatAmount(nextRewardAmount)} XTM</Typography>
                                 </NextRewardWrapper>
                                 {countdown && (
-                                    <Typography variant="p" style={{ marginBottom: '8px', color: '#666' }}>
+                                    <Typography variant="p">
                                         {t('tranche.status.available-in')} {formatCountdown(countdown)}
                                     </Typography>
                                 )}
@@ -161,7 +161,7 @@ export default function Gems() {
                         {t('tranche.status.no-data')}
                     </Typography>
                 )}
-            </div>
+            </RewardTooltipContent>
         );
     }, [
         killswitchEngaged,

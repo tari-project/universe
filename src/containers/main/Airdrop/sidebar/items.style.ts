@@ -79,3 +79,18 @@ export const NextRewardWrapper = styled.div`
     border-radius: 10px;
     background-color: ${({ theme }) => theme.palette.background.accent};
 `;
+
+export const RewardTooltipContent = styled.div`
+    display: flex;
+    gap: 6px;
+    flex-direction: column;
+    align-items: flex-start;
+`;
+
+export const RewardTooltipItems = styled.div`
+    display: flex;
+    flex-direction: column;
+    color: ${({ theme }) => theme.palette.text.accent};
+    align-items: flex-start;
+    gap: 2px;
+`;
