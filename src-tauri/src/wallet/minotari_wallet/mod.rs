@@ -24,6 +24,7 @@ pub mod balance_change_processor;
 pub mod database_listeners;
 pub mod database_manager;
 pub mod minotari_wallet_types;
+pub mod transaction;
 
 use crate::{
     events_emitter::EventsEmitter,
@@ -34,6 +35,7 @@ use crate::{
             types::BalanceChangeProcessorEmitStrategy, BalanceChangeProcessor,
         },
         database_manager::{MinotariWalletDatabaseManager, DEFAULT_ACCOUNT_ID},
+        transaction::TransactionManager,
     },
     UniverseAppState,
 };
@@ -46,14 +48,17 @@ use minotari_wallet::{
     get_balance,
     models::BalanceChange,
     scan::{init_with_view_key, scan},
+    transactions::one_sided_transaction::Recipient,
 };
 use std::{
     sync::{atomic::AtomicBool, LazyLock},
     time::{Duration, Instant},
 };
 use tari_common::configuration::Network;
+use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Manager};
 use tokio::{sync::RwLock, time::sleep};
+use uuid::Uuid;
 static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet_manager";
 
 static INSTANCE: LazyLock<MinotariWalletManager> = LazyLock::new(MinotariWalletManager::new);
@@ -85,6 +90,7 @@ static MAX_CONCURRENT_REQUESTS: LazyLock<u64> = LazyLock::new(|| {
 pub struct MinotariWalletManager {
     database_manager: MinotariWalletDatabaseManager,
     balance_change_processor: RwLock<BalanceChangeProcessor>,
+    transaction_manager: RwLock<TransactionManager>,
     are_there_more_blocks_to_scan: AtomicBool,
     scanning_initiated: AtomicBool,
     app_handle: RwLock<Option<AppHandle>>,
@@ -102,6 +108,7 @@ impl MinotariWalletManager {
             balance_change_processor: RwLock::new(BalanceChangeProcessor::new(
                 BalanceChangeProcessorEmitStrategy::FullyProcessed,
             )),
+            transaction_manager: RwLock::new(TransactionManager::new()),
             are_there_more_blocks_to_scan: AtomicBool::new(true),
             scanning_initiated: AtomicBool::new(false),
             app_handle: RwLock::new(None),
@@ -138,6 +145,64 @@ impl MinotariWalletManager {
     pub async fn update_owner_address(new_address: &str) -> Result<(), anyhow::Error> {
         let mut owner_address_lock = INSTANCE.owner_tari_address.write().await;
         *owner_address_lock = Some(new_address.to_string());
+        Ok(())
+    }
+
+    pub async fn send_one_sided_transaction(
+        address: String,
+        amount: u64,
+        payment_id: Option<String>,
+    ) -> Result<(), anyhow::Error> {
+        let transaction_manager = INSTANCE.transaction_manager.read().await;
+        let tari_address = Self::get_owner_address().await;
+
+        // Args
+        let pool = &INSTANCE.database_manager.get_pool().await?;
+        let password = DEFAULT_PASSWORD.to_string();
+        let account = INSTANCE
+            .database_manager
+            .get_account_by_name(&tari_address)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("Account not found for address: {}", tari_address))?;
+        let idempotency_key = Some(Uuid::new_v4().to_string());
+        let seconds_to_lock = 10;
+
+        let receipent: Recipient = Recipient {
+            address: TariAddress::from_base58(&address)?,
+            amount: amount.into(),
+            payment_id,
+        };
+
+        let unsigned_one_sided_transaction = transaction_manager
+            .create_one_sided_transaction(
+                pool,
+                password,
+                account,
+                vec![receipent],
+                idempotency_key,
+                seconds_to_lock,
+            )
+            .await?;
+
+        let signed_transaction = transaction_manager
+            .sign_one_sided_transaction(
+                INSTANCE
+                    .app_handle
+                    .read()
+                    .await
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("App handle not set"))?,
+                unsigned_one_sided_transaction,
+            )
+            .await?;
+
+        // logs result of signed transaction
+        info!(
+            target: LOG_TARGET,
+            "Signed one-sided transaction created successfully: {:?}",
+            signed_transaction
+        );
+
         Ok(())
     }
 
@@ -338,6 +403,9 @@ impl MinotariWalletManager {
         // );
 
         // EventsEmitter::emit_wallet_transactions_found(transactions_to_emit).await;
+
+        // TODO: Testing line for sending one-sided transaction
+        // Self::send_one_sided_transaction("f2AESYMetKt4h76tF4GWK7obQVCYdnu3NicBT2KES2kLPe3rwfVngaMvSd37XhhdPFSDbW7nwfRPaisNKovJmWrd3Pq".to_string(), 1000000, Some("test-payment-id".to_string())).await?;
 
         Ok(())
     }

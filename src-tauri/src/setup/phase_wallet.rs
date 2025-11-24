@@ -239,9 +239,9 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let app_handle_clone = self.get_app_handle().clone();
         progress_stepper
             .complete_step(SetupStep::MinotariWallet, || async {
+                MinotariWalletManager::load_app_handle(app_handle_clone).await;
                 if InternalWallet::is_internal().await {
                 MinotariWalletManager::initialize_wallet().await?;
-                MinotariWalletManager::load_app_handle(app_handle_clone).await;
                 info!(target: LOG_TARGET, "============================ Setting up Minotari Wallet");
                 let _unused = MinotariWalletManager::import_view_key().await;
                 info!(target: LOG_TARGET, "============================ Scanning blocks for Minotari Wallet");

@@ -77,9 +77,13 @@ sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite"] }
 sys-locale = "0.3.1"
 sysinfo = "0.31.2"
 tar = "0.4.26"
-tari_common = { git = "https://github.com/tari-project/tari.git", tag = "v5.1.0" }
-tari_common_types = { git = "https://github.com/tari-project/tari.git", tag = "v5.1.0" }
-tari_transaction_components = { git = "https://github.com/tari-project/tari.git", tag = "v5.1.0" }
+# TODO: Switch back to main repository when the changes are merged
+tari_common = { git = "https://github.com/swvheerden/tari/", rev = "19f8b9731663c2f93a99e69bf49ac47bbb8a4eed" }
+tari_common_types = { git = "https://github.com/swvheerden/tari/", rev = "19f8b9731663c2f93a99e69bf49ac47bbb8a4eed" }
+tari_transaction_components = { git = "https://github.com/swvheerden/tari/", rev = "19f8b9731663c2f93a99e69bf49ac47bbb8a4eed" }
+# tari_common = { git = "https://github.com/tari-project/tari.git", tag = "v5.1.0" }
+# tari_common_types = { git = "https://github.com/tari-project/tari.git", tag = "v5.1.0" }
+# tari_transaction_components = { git = "https://github.com/tari-project/tari.git", tag = "v5.1.0" }
 tari_crypto = "0.22.1"
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v5.1.0" }
 tari_utilities = "0.8.0"

@@ -32,12 +32,10 @@ use tari_common_types::seeds::cipher_seed::CipherSeed;
 use tari_common_types::seeds::mnemonic::Mnemonic;
 use tari_common_types::seeds::seed_words::SeedWords;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
-use tari_common_types::types::CompressedPublicKey;
-use tari_transaction_components::key_manager::memory_key_manager::create_memory_key_manager_from_seed;
-use tari_transaction_components::key_manager::tari_key_manager::TariKeyManager;
+use tari_transaction_components::key_manager::wallet_types::{SeedWordsWallet, WalletType};
+use tari_transaction_components::key_manager::KeyManager;
 use tari_transaction_components::key_manager::{
-    KeyDigest, KeyManagerBranch, SecretTransactionKeyManagerInterface,
-    TransactionKeyManagerInterface,
+    SecretTransactionKeyManagerInterface, TransactionKeyManagerInterface,
 };
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
@@ -254,7 +252,7 @@ impl InternalWallet {
                     }
                 } else {
                     // Create new wallet
-                    let tari_seed = CipherSeed::new();
+                    let tari_seed = CipherSeed::random();
                     let (tari_wallet_details, tari_seed_binary) =
                         InternalWallet::add_tari_wallet(app_handle, tari_seed, None).await?;
 
@@ -760,32 +758,56 @@ impl InternalWallet {
         Ok((tari_wallet_details.id, tari_seed_binary, monero_seed_binary))
     }
 
+    pub async fn get_key_manager(app_handle: &AppHandle) -> Result<KeyManager, anyhow::Error> {
+        let tari_wallet_details = Self::tari_wallet_details().await;
+
+        if let Some(details) = tari_wallet_details {
+            let tari_seed_binary =
+                match InternalWallet::get_credentials(app_handle, details.id.clone(), true).await {
+                    Ok(cred) => cred.encrypted_seed,
+                    Err(e) => {
+                        panic!("Failed to get credentials: {e}")
+                    }
+                };
+            let tari_cipher_seed = CipherSeed::from_binary(&tari_seed_binary)
+                .expect("Could not convert Tari Seed to binary");
+
+            let seed_words_wallet = SeedWordsWallet::construct_new(tari_cipher_seed.clone())
+                .map_err(|e| anyhow!(e.to_string()))?;
+
+            let tx_key_manager = KeyManager::new(WalletType::SeedWords(seed_words_wallet))
+                .map_err(|e| anyhow!(e.to_string()))?;
+
+            Ok(tx_key_manager)
+        } else {
+            Err(anyhow!(
+                "Seedless Wallet does not support Key Manager extraction"
+            ))
+        }
+    }
+
     pub async fn get_tari_wallet_details(
         wallet_id: WalletId,
         tari_cipher_seed: CipherSeed,
     ) -> Result<TariWalletDetails, anyhow::Error> {
         let wallet_birthday = tari_cipher_seed.birthday();
 
-        let comms_key_manager = TariKeyManager::<KeyDigest>::from(
-            tari_cipher_seed.clone(),
-            KeyManagerBranch::Comms.get_branch_key(),
-            0,
-        );
-        let comms_key = comms_key_manager
-            .derive_key(0)
-            .map_err(|e| anyhow!(e.to_string()))?
-            .key;
+        let seed_words_wallet = SeedWordsWallet::construct_new(tari_cipher_seed.clone())
+            .map_err(|e| anyhow!(e.to_string()))?;
 
-        let comms_pub_key = CompressedPublicKey::from_secret_key(&comms_key);
-        let tx_key_manager = create_memory_key_manager_from_seed(tari_cipher_seed, 64).await?;
-        let view_key = tx_key_manager.get_view_key().await?;
-        let view_key_private = tx_key_manager.get_private_key(&view_key.key_id).await?;
+        let tx_key_manager = KeyManager::new(WalletType::SeedWords(seed_words_wallet))
+            .map_err(|e| anyhow!(e.to_string()))?;
+        let view_key = tx_key_manager.get_view_key();
+        let view_key_private = tx_key_manager
+            .get_private_key(&view_key.key_id)
+            .map_err(|e| anyhow!(e.to_string()))?;
         let view_key_public = view_key.pub_key;
+        let spend_key = tx_key_manager.get_spend_key().pub_key;
 
         let network = Network::default();
         let tari_address = TariAddress::new_dual_address(
             view_key_public.clone(),
-            comms_pub_key.clone(),
+            spend_key.clone(),
             network,
             TariAddressFeatures::create_one_sided_only(),
             None,
@@ -796,7 +818,7 @@ impl InternalWallet {
             id: wallet_id,
             tari_address,
             wallet_birthday,
-            spend_public_key_hex: comms_pub_key.to_hex(),
+            spend_public_key_hex: spend_key.to_hex(),
             view_private_key_hex: view_key_private.to_hex(),
         })
     }

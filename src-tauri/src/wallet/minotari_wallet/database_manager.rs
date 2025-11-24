@@ -74,6 +74,14 @@ impl MinotariWalletDatabaseManager {
         }
     }
 
+    pub async fn get_pool(&self) -> Result<Pool<Sqlite>, anyhow::Error> {
+        let pool_lock = self.database_pool.read().await;
+        let pool = pool_lock
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Database pool not initialized"))?;
+        Ok(pool.clone())
+    }
+
     pub async fn get_connection(
         &self,
     ) -> Result<sqlx::pool::PoolConnection<Sqlite>, anyhow::Error> {
@@ -152,6 +160,15 @@ impl MinotariWalletDatabaseManager {
                     }
                 }
             });
+    }
+
+    pub async fn get_account_by_name(
+        &self,
+        friendly_name: &str,
+    ) -> Result<Option<minotari_wallet::db::AccountRow>, anyhow::Error> {
+        let mut conn = self.get_connection().await?;
+        let account = minotari_wallet::db::get_account_by_name(&mut conn, friendly_name).await?;
+        Ok(account)
     }
 }
 
