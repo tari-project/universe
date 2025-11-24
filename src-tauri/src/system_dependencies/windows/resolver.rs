@@ -31,6 +31,7 @@ use crate::system_dependencies::windows::dependencies::WindowsSystemDependency;
 use crate::system_dependencies::windows::registry::entry_cpu_hardware::WindowsRegistryCpuEntry;
 use crate::system_dependencies::windows::registry::WindowsRegistryRequirementChecker;
 use crate::system_dependencies::UniversalDependencyStatus;
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
     hardware::hardware_status_monitor::HardwareVendor,
     system_dependencies::{
@@ -45,8 +46,6 @@ use crate::{
         UniversalSystemDependency,
     },
 };
-
-const LOG_TARGET: &str = "tari::universe::system_dependencies::windows::resolver";
 
 pub struct WindowsDependenciesResolver {
     dependencies: RwLock<Vec<WindowsSystemDependency>>,
@@ -204,7 +203,7 @@ impl WindowsDependenciesResolver {
         if let Some(dependency) = dependencies.iter().find(|d| d.universal_data.id == id) {
             if dependency.universal_data.status == UniversalDependencyStatus::Installed {
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_APP_LOGIC,
                     "Dependency '{}' is already installed.", dependency.universal_data.ui_info.display_name
                 );
                 return Ok(());
@@ -231,7 +230,7 @@ impl WindowsDependenciesResolver {
             }
 
             info!(
-                target: LOG_TARGET,
+                target: LOG_TARGET_APP_LOGIC,
                 "Dependency '{}' installed successfully.",
                 dependency.universal_data.ui_info.display_name
             );

@@ -38,10 +38,13 @@ use tokio::task::JoinHandle;
 use tokio_util::task::TaskTracker;
 
 use crate::download_utils::set_permissions;
+use crate::events::CriticalProblemPayload;
+use crate::events_emitter::EventsEmitter;
 use crate::process_killer::kill_process;
 use crate::process_utils::{launch_child_process, write_pid_file};
+use crate::LOG_TARGET_APP_LOGIC;
 
-const LOG_TARGET: &str = "tari::universe::process_adapter";
+const SPACE_ERROR_MESSAGE: &str = "No space left on device";
 
 pub(crate) trait ProcessAdapter {
     type StatusMonitor: StatusMonitor;
@@ -101,7 +104,7 @@ pub(crate) trait ProcessAdapter {
         if let Some(process) = Self::find_process_pid_by_name(binary_name) {
             let parsed_id =
                 i32::try_from(process).expect("Failed to parse process ID from u32 to i32");
-            warn!(target: LOG_TARGET, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
+            warn!(target: LOG_TARGET_APP_LOGIC, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
             kill_process(parsed_id).await?;
         }
         Ok(())
@@ -112,25 +115,25 @@ pub(crate) trait ProcessAdapter {
         base_folder: PathBuf,
         binary_path: &Path,
     ) -> Result<(), Error> {
-        info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
+        info!(target: LOG_TARGET_APP_LOGIC, "Killing previous instances of {}", self.name());
         let binary_name = binary_path
             .file_name()
             .expect("binary path must have a file name");
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {
             Ok(pid) => match pid.trim().parse::<i32>() {
                 Ok(pid) => {
-                    warn!(target: LOG_TARGET, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
+                    warn!(target: LOG_TARGET_APP_LOGIC, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
                     kill_process(pid).await?;
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
+                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
                     let pid_by_name = Self::find_process_pid_by_name(binary_name);
                     if let Some(process) = pid_by_name {
                         let parsed_id = i32::try_from(process)
                             .expect("Failed to parse process ID from u32 to i32");
                         kill_process(parsed_id).await?;
                     } else {
-                        warn!(target: LOG_TARGET, "No process found with name {}", binary_name.to_str().unwrap_or_default());
+                        warn!(target: LOG_TARGET_APP_LOGIC, "No process found with name {}", binary_name.to_str().unwrap_or_default());
                     }
                 }
             },
@@ -139,7 +142,7 @@ pub(crate) trait ProcessAdapter {
                     .join(self.pid_file_name())
                     .try_exists()
                 {
-                    warn!(target: LOG_TARGET, "{} pid file exists, but the error occurred while killing: {}", self.name(), e);
+                    warn!(target: LOG_TARGET_APP_LOGIC, "{} pid file exists, but the error occurred while killing: {}", self.name(), e);
                 }
             }
         }
@@ -213,28 +216,28 @@ impl ProcessInstanceTrait for ProcessInstance {
 
     async fn start(&mut self, task_tracker: TaskTracker) -> Result<(), anyhow::Error> {
         if self.handle.is_some() {
-            warn!(target: LOG_TARGET, "Process is already running");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Process is already running");
             return Ok(());
         }
-        info!(target: LOG_TARGET, "Starting {} process with args: {}", self.startup_spec.name, self.startup_spec.args.join(" "));
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting {} process with args: {}", self.startup_spec.name, self.startup_spec.args.join(" "));
         let spec = self.startup_spec.clone();
         // Reset the shutdown each time.
         self.shutdown = Shutdown::new();
         let shutdown_signal = self.shutdown.to_signal();
 
         if shutdown_signal.is_terminated() || shutdown_signal.is_triggered() {
-            warn!(target: LOG_TARGET, "Shutdown signal is triggered. Not starting process");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Shutdown signal is triggered. Not starting process");
             return Ok(());
         };
 
         self.handle = Some(task_tracker.spawn(async move {
             if let Err(e) = set_permissions(&spec.file_path).await {
-                error!(target: LOG_TARGET, "{e}");
+                error!(target: LOG_TARGET_APP_LOGIC, "{e}");
                 sentry::capture_message(&e.to_string(), sentry::Level::Error);
                 return Err(e);
             }
             // start
-            info!(target: LOG_TARGET, "Launching process for: {}", spec.name);
+            info!(target: LOG_TARGET_APP_LOGIC, "Launching process for: {}", spec.name);
             let mut child = launch_child_process(
                 &spec.file_path,
                 spec.data_dir.as_path(),
@@ -247,8 +250,16 @@ impl ProcessInstanceTrait for ProcessInstance {
                 let pid_file_res = write_pid_file(&spec, id);
                 if let Err(e) = pid_file_res {
                     let error_msg = format!("Failed to write PID file: {e}");
-                    error!(target: LOG_TARGET, "{error_msg}");
-                    sentry::capture_message(&error_msg, sentry::Level::Error);
+                    error!(target: LOG_TARGET_APP_LOGIC, "{error_msg}");
+                    let should_emit_critial_error = e.contains(SPACE_ERROR_MESSAGE) || e.contains("os error 28");
+
+                    if should_emit_critial_error {
+                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                            title: Some("error.title.space".to_string()),
+                            description: Some("error.description.space".to_string()),
+                            error_message: Some(error_msg),
+                        }).await;
+                    }
                 }
             }
             let exit_code;
@@ -266,16 +277,16 @@ impl ProcessInstanceTrait for ProcessInstance {
                             exit_code = res.code().unwrap_or(0)
                             },
                         Err(e) => {
-                            warn!(target: LOG_TARGET, "Error in process instance {}:  {}", spec.name, e);
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Error in process instance {}:  {}", spec.name, e);
                             return Err(e.into());
                         }
                     }
                 },
-            };
-            info!(target: LOG_TARGET, "Stopping {} process with exit code: {}", spec.name, exit_code);
+            }
+            info!(target: LOG_TARGET_APP_LOGIC, "Stopping {} process with exit code: {}", spec.name, exit_code);
 
             if let Err(error) = fs::remove_file(spec.data_dir.join(spec.pid_file_name)) {
-                warn!(target: LOG_TARGET, "Could not clear {}'s pid file: {:?}", spec.name, error);
+                warn!(target: LOG_TARGET_APP_LOGIC, "Could not clear {}'s pid file: {:?}", spec.name, error);
             }
 
             Ok(exit_code)
@@ -288,16 +299,16 @@ impl ProcessInstanceTrait for ProcessInstance {
         _task_tracker: TaskTracker,
     ) -> Result<(i32, Vec<String>, Vec<String>), anyhow::Error> {
         if self.handle.is_some() {
-            warn!(target: LOG_TARGET, "Process is already running");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Process is already running");
             return Ok((0, vec![], vec![]));
         }
-        info!(target: LOG_TARGET, "Starting {} process with args: {}", self.startup_spec.name, self.startup_spec.args.join(" "));
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting {} process with args: {}", self.startup_spec.name, self.startup_spec.args.join(" "));
         let spec = self.startup_spec.clone();
         self.shutdown = Shutdown::new();
         let shutdown_signal = self.shutdown.to_signal();
 
         if shutdown_signal.is_terminated() || shutdown_signal.is_triggered() {
-            warn!(target: LOG_TARGET, "Shutdown signal is triggered. Not starting process");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Shutdown signal is triggered. Not starting process");
             return Ok((0, vec![], vec![]));
         };
 
@@ -326,10 +337,10 @@ impl ProcessInstanceTrait for ProcessInstance {
             .map(|line| line.to_string())
             .collect();
 
-        info!(target: LOG_TARGET, "Stopping {} process with exit code: {}", spec.name, exit_code);
+        info!(target: LOG_TARGET_APP_LOGIC, "Stopping {} process with exit code: {}", spec.name, exit_code);
 
         if let Err(error) = fs::remove_file(spec.data_dir.join(spec.pid_file_name)) {
-            warn!(target: LOG_TARGET, "Could not clear {}'s pid file: {:?}", spec.name, error);
+            warn!(target: LOG_TARGET_APP_LOGIC, "Could not clear {}'s pid file: {:?}", spec.name, error);
         }
 
         Ok((exit_code, stdout_lines, stderr_lines))
@@ -369,13 +380,13 @@ impl Drop for ProcessInstance {
                 let spec_name = self.startup_spec.name.clone();
                 current_handle.spawn(async move {
                     if let Err(e) = handle.await {
-                        warn!(target: LOG_TARGET, "Error during process cleanup for {spec_name}: {e}");
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Error during process cleanup for {spec_name}: {e}");
                     }
                 });
             } else {
                 // We're not in a tokio context, we need to use block_on
                 // This is the fallback case - log it as it might indicate a design issue
-                warn!(target: LOG_TARGET, "Process {} dropped outside tokio context, using block_on for cleanup", self.startup_spec.name);
+                warn!(target: LOG_TARGET_APP_LOGIC, "Process {} dropped outside tokio context, using block_on for cleanup", self.startup_spec.name);
 
                 // Use a timeout to prevent indefinite blocking
                 if let Ok(rt) = tokio::runtime::Handle::try_current() {
@@ -384,12 +395,12 @@ impl Drop for ProcessInstance {
                             Duration::from_secs(5),
                             handle
                         ).await {
-                            warn!(target: LOG_TARGET, "Timeout or error during emergency process cleanup: {e}");
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Timeout or error during emergency process cleanup: {e}");
                         }
                     });
                 } else {
                     // Last resort: detach the handle and let the OS clean up
-                    warn!(target: LOG_TARGET, "Cannot properly clean up process {}, detaching handle", self.startup_spec.name);
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Cannot properly clean up process {}, detaching handle", self.startup_spec.name);
                     std::mem::forget(handle);
                 }
             }

@@ -36,8 +36,7 @@ use crate::process_adapter::{HealthStatus, StatusMonitor};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
-
-const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";
+use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 
 #[derive(Clone)]
 pub(crate) struct StartConfig {
@@ -115,7 +114,7 @@ impl MmProxyManager {
             use_monero_fail: config.use_monero_fail,
         };
         process_watcher.adapter.config = Some(new_config.clone());
-        info!(target: LOG_TARGET, "Starting mmproxy");
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting mmproxy");
         process_watcher
             .start(
                 config.base_path,
@@ -142,14 +141,14 @@ impl MmProxyManager {
                         .await
                         == HealthStatus::Healthy
                     {
-                        info!(target: LOG_TARGET, "MM proxy is healthy");
+                        info!(target: LOG_TARGET_STATUSES, "MM proxy is healthy");
                         return Ok(());
                     } else {
-                        info!(target: LOG_TARGET, "Waiting for mmproxy to be healthy... {}/90", i + 1);
+                        info!(target: LOG_TARGET_STATUSES, "Waiting for mmproxy to be healthy... {}/90", i + 1);
                     }
                 }
             }
-            info!(target: LOG_TARGET, "Waiting for mmproxy to start... {}/90", i + 1);
+            info!(target: LOG_TARGET_STATUSES, "Waiting for mmproxy to start... {}/90", i + 1);
             sleep(std::time::Duration::from_secs(1)).await;
         }
         Err(anyhow!("MM proxy did not start in 90sec"))

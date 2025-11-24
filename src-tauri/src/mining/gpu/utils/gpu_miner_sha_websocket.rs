@@ -26,9 +26,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use tungstenite::{connect, Message};
 
-use crate::{mining::gpu::miners::GpuVendor, tasks_tracker::TasksTrackers};
-
-const LOG_TARGET: &str = "tari::universe::gpu_miner_sha_adapter";
+use crate::{mining::gpu::miners::GpuVendor, tasks_tracker::TasksTrackers, LOG_TARGET_STATUSES};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 
@@ -141,12 +139,12 @@ impl GpuMinerShaWebSocket {
 
     pub async fn connect(self) {
         if self.socket_listener_thread.lock().await.is_some() {
-            debug!(target: LOG_TARGET, "WebSocket listener is already running");
+            debug!(target: LOG_TARGET_STATUSES, "WebSocket listener is already running");
             return;
         }
 
         if let Ok((mut socket, response)) = connect(format!("ws://localhost:{}/ws", self.port)) {
-            info!(target: LOG_TARGET, "Connected to WebSocket server: {response:?}" );
+            info!(target: LOG_TARGET_STATUSES, "Connected to WebSocket server: {response:?}" );
 
             let shutdown_signal = TasksTrackers::current().gpu_mining_phase.get_signal().await;
 
@@ -160,7 +158,7 @@ impl GpuMinerShaWebSocket {
                 .spawn(async move {
                     loop {
                         if shutdown_signal.is_triggered() {
-                            info!(target: LOG_TARGET, "Shutdown signal received, stopping WebSocket listener");
+                            info!(target: LOG_TARGET_STATUSES, "Shutdown signal received, stopping WebSocket listener");
                             break;
                         }
 
@@ -180,9 +178,9 @@ impl GpuMinerShaWebSocket {
                                             }
                                             Err(e) => {
                                             if !last_message.lock().await.is_none() {
-                                                info!(target: LOG_TARGET, "Received message: {text}");
+                                                info!(target: LOG_TARGET_STATUSES, "Received message: {text}");
                                             }
-                                                warn!(target: LOG_TARGET, "Failed to parse message: {e}");
+                                                warn!(target: LOG_TARGET_STATUSES, "Failed to parse message: {e}");
                                                 *last_message.lock().await = None;
                                             }
                                         }
@@ -196,7 +194,7 @@ impl GpuMinerShaWebSocket {
                                 }
                             }
                             Err(e) => {
-                                warn!(target: LOG_TARGET, "Error reading message: {e}");
+                                warn!(target: LOG_TARGET_STATUSES, "Error reading message: {e}");
                                 *last_message.lock().await = None;
                                 break;
                             }
@@ -208,7 +206,7 @@ impl GpuMinerShaWebSocket {
 
             *self.socket_listener_thread.lock().await = Some(thread);
         } else {
-            warn!(target: LOG_TARGET, "Failed to connect to WebSocket server at ws://localhost:{}/ws", self.port);
+            warn!(target: LOG_TARGET_STATUSES, "Failed to connect to WebSocket server at ws://localhost:{}/ws", self.port);
         }
     }
 }

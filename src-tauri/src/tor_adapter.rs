@@ -44,8 +44,7 @@ use crate::{
     },
     utils::file_utils::convert_to_string,
 };
-
-const LOG_TARGET: &str = "tari::universe::tor_adapter";
+use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 
 pub(crate) struct TorAdapter {
     socks_port: u16,
@@ -74,11 +73,11 @@ impl TorAdapter {
         self.config_file = Some(file.clone());
 
         if file.exists() {
-            debug!(target: LOG_TARGET, "Loading tor config from file: {file:?}");
+            debug!(target: LOG_TARGET_APP_LOGIC, "Loading tor config from file: {file:?}");
             let config = tokio::fs::read_to_string(&file).await?;
             self.apply_loaded_config(config);
         } else {
-            info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
+            info!(target: LOG_TARGET_APP_LOGIC, "App config does not exist or is corrupt. Creating new one");
         }
 
         self.update_config_file().await?;
@@ -102,7 +101,7 @@ impl TorAdapter {
             .ok_or_else(|| anyhow!("Tor config file not set"))?;
 
         let config = serde_json::to_string(&self.config)?;
-        debug!(target: LOG_TARGET, "Updating tor config file: {:?} {:?}", file, self.config.clone());
+        debug!(target: LOG_TARGET_APP_LOGIC, "Updating tor config file: {:?} {:?}", file, self.config.clone());
         tokio::fs::write(file, config).await?;
 
         Ok(())
@@ -166,7 +165,7 @@ impl TorAdapter {
         let mut response = String::new();
         reader.read_line(&mut response).await?;
         if !response.starts_with("250 OK") {
-            error!(target: LOG_TARGET, "Tor AUTHENTICATE failed for: {control_port_address:?}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Tor AUTHENTICATE failed for: {control_port_address:?}");
             return Err(Error::msg("Authentication failed"));
         }
 
@@ -192,7 +191,7 @@ impl TorAdapter {
 
             Ok(entry_guards)
         } else {
-            error!(target: LOG_TARGET, "Tor GETINFO entry-guards with response: {response:?}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Tor GETINFO entry-guards with response: {response:?}");
             Err(Error::msg("Failed to get entry guards"))
         }
     }
@@ -213,7 +212,7 @@ impl ProcessAdapter for TorAdapter {
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
-        info!(target: LOG_TARGET, "Starting tor");
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting tor");
         let working_dir: PathBuf = data_dir.join("tor-data");
         std::fs::create_dir_all(&working_dir)?;
 
@@ -232,12 +231,12 @@ impl ProcessAdapter for TorAdapter {
             control_port = PortAllocator::new().assign_port_with_fallback();
         }
         if is_first_start {
-            info!(target: LOG_TARGET, "Clearing tor data directory on first start");
+            info!(target: LOG_TARGET_APP_LOGIC, "Clearing tor data directory on first start");
             if std::fs::exists(data_dir.join("tor-data"))? {
                 match std::fs::remove_dir_all(data_dir.join("tor-data")) {
-                    Ok(_) => info!(target: LOG_TARGET, "Removed tor data directory"),
+                    Ok(_) => info!(target: LOG_TARGET_APP_LOGIC, "Removed tor data directory"),
                     Err(e) => {
-                        warn!(target: LOG_TARGET, "Failed to remove tor data directory: {e}");
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove tor data directory: {e}");
                     }
                 }
             }
@@ -332,16 +331,16 @@ impl StatusMonitor for TorStatusMonitor {
                 if status.is_bootstrapped && status.network_liveness {
                     HealthStatus::Healthy
                 } else {
-                    warn!(target: LOG_TARGET, "Tor Healthcheck status: {status:?}");
+                    warn!(target: LOG_TARGET_STATUSES, "Tor Healthcheck status: {status:?}");
                     HealthStatus::Warning
                 }
             }
             Ok(Err(e)) => {
-                warn!(target: LOG_TARGET, "Failed to get Tor Healthcheck status: {e}");
+                warn!(target: LOG_TARGET_STATUSES, "Failed to get Tor Healthcheck status: {e}");
                 HealthStatus::Unhealthy
             }
             Err(_) => {
-                warn!(target: LOG_TARGET, "Tor Healthcheck timeout");
+                warn!(target: LOG_TARGET_STATUSES, "Tor Healthcheck timeout");
                 HealthStatus::Unhealthy
             }
         }
@@ -380,6 +379,8 @@ impl Default for TorConfig {
 
 #[cfg(target_os = "linux")]
 fn get_libevent_envs(_binary_version_path: &std::path::Path) -> Option<HashMap<String, String>> {
+    use crate::LOG_TARGET_APP_LOGIC;
+
     let mut tor_bundle_path = _binary_version_path.to_path_buf();
     tor_bundle_path.pop();
     let mut envs = HashMap::new();
@@ -387,7 +388,7 @@ fn get_libevent_envs(_binary_version_path: &std::path::Path) -> Option<HashMap<S
         "LD_PRELOAD".to_string(),
         format!("{}/libevent-2.1.so.7", tor_bundle_path.display()),
     );
-    log::warn!(target: LOG_TARGET, "Using LD_PRELOAD for libevent-2.1.so.7.");
+    log::warn!(target: LOG_TARGET_APP_LOGIC, "Using LD_PRELOAD for libevent-2.1.so.7.");
     Some(envs)
 }
 

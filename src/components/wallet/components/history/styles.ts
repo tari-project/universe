@@ -15,9 +15,9 @@ export const HistoryListWrapper = styled(m.div)`
     mask-position: bottom;
     mask-size: 50% 100%;
     @media (max-height: 815px) {
-        height: 140px;
+        height: 120px;
     }
-    @media (max-height: 690px) {
+    @media (max-height: 650px) {
         height: 100px;
     }
 `;

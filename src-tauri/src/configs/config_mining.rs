@@ -23,6 +23,7 @@
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 use crate::events_emitter::EventsEmitter;
 use crate::mining::gpu::consts::{EngineType, GpuMinerType};
+use crate::LOG_TARGET_APP_LOGIC;
 use getset::{Getters, Setters};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
@@ -113,6 +114,21 @@ impl GpuDevicesSettings {
         }
     }
 }
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum PauseOnBatteryModeState {
+    Enabled,
+    Disabled,
+    NotSupported,
+}
+
+impl PauseOnBatteryModeState {
+    pub fn is_not_supported(&self) -> bool {
+        matches!(self, PauseOnBatteryModeState::NotSupported)
+    }
+    pub fn is_enabled(&self) -> bool {
+        matches!(self, PauseOnBatteryModeState::Enabled)
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -132,8 +148,10 @@ pub struct ConfigMiningContent {
     gpu_devices_settings: GpuDevicesSettings,
     squad_override: Option<String>,
     gpu_miner_type: GpuMinerType,
+    pause_on_battery_mode: PauseOnBatteryModeState,
     is_lolminer_tested: bool,
     is_gpu_mining_recommended: bool,
+
     eco_alert_needed: bool,
     mode_mining_times: HashMap<String, Duration>, // we only need Eco for now, but we can add to this if needed
 }
@@ -192,6 +210,7 @@ impl Default for ConfigMiningContent {
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
             gpu_devices_settings: GpuDevicesSettings::new(),
+            pause_on_battery_mode: PauseOnBatteryModeState::Enabled,
             squad_override: None,
             is_lolminer_tested: false,
             is_gpu_mining_recommended: true,
@@ -353,7 +372,7 @@ impl ConfigMining {
     async fn _check_for_migration() -> Result<(), anyhow::Error> {
         let current_version = Self::content().await.version_counter;
         if current_version < MINING_CONFIG_VERSION {
-            info!("Mining config needs migration v{current_version:?} => v{MINING_CONFIG_VERSION}");
+            info!(target: LOG_TARGET_APP_LOGIC, "Mining config needs migration v{current_version:?} => v{MINING_CONFIG_VERSION}");
             Self::_migrate().await?;
             Self::update_field(
                 ConfigMiningContent::set_version_counter,

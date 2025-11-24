@@ -1,37 +1,45 @@
 {
+  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
   "any_moment_now": "किसी भी क्षण",
+  "app-modules": {
+    "cpu-mining": "CPU Mining",
+    "gpu-mining": "GPU Mining",
+    "wallet": "Wallet"
+  },
   "awaiting-exchange-selection": "Awaiting user exchange selection",
   "block-sync": "ब्लॉक्स सिंक कर रहा है",
   "calculating_time": "शेष समय की गणना कर रहा है...",
   "calculating_time-compact": "Calculating time...",
+  "critical-initialization-failure": "Critical initialization failure",
+  "error": {
+    "description": {
+      "space": "Please clear out space on your device. Tari Universe cannot create the needed PID files due to space limitations."
+    },
+    "title": {
+      "space": "No space left on device"
+    }
+  },
+  "failed-to-complete-step": "Failed to complete step",
   "header-sync": "हेडर सिंक कर रहा है",
   "local-node-sync": "तारी यूनिवर्स अभी भी सिंक कर रहा है। यह आपके खनन अनुभव को प्रभावित नहीं करेगा।",
+  "module-initialization-issues": "Some Modules failed to initialize",
   "network-peers": "नेटवर्क साथियों से कनेक्ट हो रहा है",
   "phase-title": {
     "setup-core": "तारी ऐप सेट कर रहे हैं",
     "setup-core-compact": "Syncing app",
     "setup-hardware": "हार्डवेयर सेट कर रहे हैं",
     "setup-hardware-compact": "Setting up hardware",
-    "setup-node": "तारी नोड सेट कर रहे हैं",
-    "setup-node-compact": "Syncing node",
     "setup-mining": "अतिरिक्त उपयोगिताएँ सेट कर रहे हैं",
     "setup-mining-compact": "Setting up utilities",
+    "setup-node": "तारी नोड सेट कर रहे हैं",
+    "setup-node-compact": "Syncing node",
     "setup-wallet": "वॉलेट सेट कर रहे हैं",
     "setup-wallet-compact": "Syncing wallet"
-  },
-  "critical-initialization-failure": "Critical initialization failure",
-  "failed-to-complete-step": "Failed to complete step",
-  "all-modules-failed-description": "All modules failed to initialize. App can't work in current state. Please restart the app or contact support.",
-  "module-initialization-issues": "Some Modules failed to initialize",
-  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
-  "app-modules": {
-    "cpu-mining": "CPU Mining",
-    "gpu-mining": "GPU Mining",
-    "wallet": "Wallet"
   },
   "remaining": "शेष",
   "second_remaining": "सेकंड शेष",
   "seconds_remaining": "सेकंड शेष",
+  "some-modules-failed-description": "App can continue to work, but some features may not be available. Please restart failed modules, or contact support if the issue persists.",
   "title": {
     "binaries-cpu-miner": "सीपीयू माइनर बाइनरी तैयार कर रहे हैं",
     "binaries-cpu-miner-download": "Preparing CPU Miner Binary | Downloading: {{ progress }}%",

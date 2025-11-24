@@ -119,6 +119,15 @@ export class TappletSigner {
         }
     }
 
+    public async getNetwork(): Promise<string | undefined> {
+        try {
+            const network = await invoke('get_network');
+            return network as string;
+        } catch (error) {
+            setStoreError(`Error getting Tari network: ${error}`);
+        }
+    }
+
     public async getBackendBridgeTxs(): Promise<BackendBridgeTransaction[]> {
         const bridgeTxs = useWalletStore.getState().bridge_transactions;
         return bridgeTxs;

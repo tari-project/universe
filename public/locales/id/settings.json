@@ -100,6 +100,10 @@
     "load-qr-code": "Muat Kode QR",
     "passphrase": "Kata Sandi"
   },
+  "pause-on-battery-mode": {
+    "description": "Pause mining when device is disconnected from charging",
+    "title": "Pause on Battery Mode"
+  },
   "pin": "Pin",
   "pool-configuration": "Konfigurasi Pool",
   "pool-mining": "Penambangan Pool",

@@ -36,8 +36,6 @@ use crate::system_dependencies::UniversalSystemDependency;
 #[cfg(target_os = "windows")]
 use crate::tasks_tracker::TasksTrackers;
 
-#[allow(dead_code)]
-const LOG_TARGET: &str = "tari::universe::system_dependencies::manager";
 static INSTANCE: LazyLock<SystemDependenciesManager> =
     LazyLock::new(SystemDependenciesManager::new);
 

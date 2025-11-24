@@ -43,10 +43,9 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events::ShowReleaseNotesPayload,
-    EventsEmitter, UniverseAppState, APPLICATION_FOLDER_ID,
+    EventsEmitter, UniverseAppState, APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC,
 };
 
-const LOG_TARGET: &str = "tari::universe::release_notes";
 const CHANGELOG_URL: &str = "https://cdn-universe.tari.com/tari-project/universe/CHANGELOG.md";
 const RELEASE_NOTES_FILE_NAME: &str = "CHANGELOG.json";
 const TIME_BETWEEN_FETCHES: Duration = Duration::from_secs(60 * 60); // 1 hour
@@ -95,16 +94,16 @@ impl ReleaseNotes {
     }
 
     fn read_release_notes_file() -> Result<ReleaseNotesFile, Error> {
-        debug!(target: LOG_TARGET, "[read_release_notes_file]");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[read_release_notes_file]");
         let release_notes_path = ReleaseNotes::get_release_notes_path();
-        debug!(target: LOG_TARGET, "[read_release_notes_file] Reading release notes from {release_notes_path}");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[read_release_notes_file] Reading release notes from {release_notes_path}");
         let content = std::fs::read_to_string(release_notes_path)?;
 
         Ok(serde_json::from_str(&content)?)
     }
 
     fn save_release_notes_file(&self, content: &str, e_tag: String) -> Result<(), Error> {
-        debug!(target: LOG_TARGET, "[save_release_notes_file]");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[save_release_notes_file]");
         let release_notes_path = ReleaseNotes::get_release_notes_path();
         let version = ReleaseNotes::get_latest_version_from_changelog(content)
             .unwrap_or_else(|| "Unknown".to_string());
@@ -114,11 +113,11 @@ impl ReleaseNotes {
             e_tag,
             timestamp: SystemTime::now(),
         };
-        debug!(target: LOG_TARGET, "[save_release_notes_file] Saving release notes to {release_notes_path}");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[save_release_notes_file] Saving release notes to {release_notes_path}");
         let content = serde_json::to_string(&content_to_save)?;
-        debug!(target: LOG_TARGET, "[save_release_notes_file] Content: {content}");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[save_release_notes_file] Content: {content}");
         std::fs::write(release_notes_path, content).map_err(|e| {
-            error!(target: LOG_TARGET, "Failed to save release notes file: {e}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to save release notes file: {e}");
             anyhow!("Failed to save release notes file")
         })?;
 
@@ -126,7 +125,7 @@ impl ReleaseNotes {
     }
 
     fn build_retry_reqwest_client() -> ClientWithMiddleware {
-        debug!(target: LOG_TARGET, "[build_retry_reqwest_client]");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[build_retry_reqwest_client]");
         let retry_policy = ExponentialBackoff::builder().build_with_max_retries(5);
 
         ClientBuilder::new(Client::new())
@@ -135,53 +134,53 @@ impl ReleaseNotes {
     }
 
     pub fn get_etag_from_response(response: &Response) -> Result<String, Error> {
-        debug!(target: LOG_TARGET, "[get_etag_from_response]");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[get_etag_from_response]");
         let etag = response.headers().get("etag").ok_or_else(|| {
-            warn!(target: LOG_TARGET, "Failed to get ETag header");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to get ETag header");
             anyhow!("Failed to get ETag header")
         })?;
         let etag_str = etag.to_str().map_err(|e| {
-            warn!(target: LOG_TARGET, "Failed to convert ETag header to string: {e}");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to convert ETag header to string: {e}");
             anyhow!("Failed to convert ETag header to string")
         })?;
         Ok(etag_str.to_string())
     }
 
     async fn fetch_release_notes_header(&self) -> Result<String, Error> {
-        debug!(target: LOG_TARGET, "[fetch_release_notes_header]");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[fetch_release_notes_header]");
         let client = ReleaseNotes::build_retry_reqwest_client();
 
-        debug!(target: LOG_TARGET, "[fetch_release_notes_header] Fetching release notes header from {CHANGELOG_URL}");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[fetch_release_notes_header] Fetching release notes header from {CHANGELOG_URL}");
         let response = client.head(CHANGELOG_URL).send().await?;
         if response.status().is_success() {
-            debug!(target: LOG_TARGET, "[fetch_release_notes_header] Successfully fetched release notes header");
+            debug!(target: LOG_TARGET_APP_LOGIC, "[fetch_release_notes_header] Successfully fetched release notes header");
             let e_tag = ReleaseNotes::get_etag_from_response(&response)?;
             Ok(e_tag)
         } else {
-            warn!(target: LOG_TARGET, "Failed to fetch release notes header: {}", response.status());
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to fetch release notes header: {}", response.status());
             Err(anyhow!("Failed to fetch release notes header"))
         }
     }
 
     async fn fetch_release_notes(&self) -> Result<(String, String), Error> {
-        debug!(target: LOG_TARGET, "[fetch_release_notes]");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[fetch_release_notes]");
         let client = ReleaseNotes::build_retry_reqwest_client();
 
-        debug!(target: LOG_TARGET, "[fetch_release_notes] Fetching release notes from {CHANGELOG_URL}");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[fetch_release_notes] Fetching release notes from {CHANGELOG_URL}");
         let response = client.get(CHANGELOG_URL).send().await?;
         if response.status().is_success() {
-            debug!(target: LOG_TARGET, "[fetch_release_notes] Successfully fetched release notes");
+            debug!(target: LOG_TARGET_APP_LOGIC, "[fetch_release_notes] Successfully fetched release notes");
             let e_tag = ReleaseNotes::get_etag_from_response(&response)?;
             let body = &response.text().await?;
             Ok((body.clone(), e_tag))
         } else {
-            warn!(target: LOG_TARGET, "[fetch_release_notes] Failed to fetch release notes: {}", response.status());
+            warn!(target: LOG_TARGET_APP_LOGIC, "[fetch_release_notes] Failed to fetch release notes: {}", response.status());
             Err(anyhow!("Failed to fetch release notes"))
         }
     }
 
     async fn handle_fetching_and_saving(&self) -> Result<ReleaseNotesFile, Error> {
-        debug!(target: LOG_TARGET, "[handle_fetching_and_saving]");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[handle_fetching_and_saving]");
         let (release_notes, e_tag) = self.fetch_release_notes().await?;
         self.save_release_notes_file(&release_notes, e_tag.clone())?;
         let version = ReleaseNotes::get_latest_version_from_changelog(&release_notes)
@@ -194,25 +193,25 @@ impl ReleaseNotes {
             timestamp: SystemTime::now(),
         };
 
-        debug!(target: LOG_TARGET, "[handle_fetching_and_saving] Saving release notes to struct");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[handle_fetching_and_saving] Saving release notes to struct");
         self.release_notes_file
             .write()
             .await
             .replace(new_release_notes.clone());
 
-        debug!(target: LOG_TARGET, "[handle_fetching_and_saving] Returning release notes");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[handle_fetching_and_saving] Returning release notes");
 
         Ok(new_release_notes)
     }
 
     pub async fn get_release_notes(&self) -> Result<ReleaseNotesFile, Error> {
-        debug!(target: LOG_TARGET, "[get_release_notes]");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[get_release_notes]");
 
-        debug!(target: LOG_TARGET, "[get_release_notes] Getting release notes file lock");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[get_release_notes] Getting release notes file lock");
         let release_notes_file_lock = self.release_notes_file.read().await;
         let file = release_notes_file_lock.deref().clone();
         drop(release_notes_file_lock);
-        debug!(target: LOG_TARGET, "[get_release_notes] Releasing release notes file lock");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[get_release_notes] Releasing release notes file lock");
 
         if let Some(release_notes_file) = file {
             let did_expire = SystemTime::now()
@@ -221,27 +220,27 @@ impl ReleaseNotes {
                 .unwrap_or(true);
 
             if !did_expire {
-                debug!(target: LOG_TARGET, "[get_release_notes] Using cached release notes");
+                debug!(target: LOG_TARGET_APP_LOGIC, "[get_release_notes] Using cached release notes");
                 return Ok(release_notes_file.clone());
             };
 
             match self.fetch_release_notes_header().await {
                 Ok(e_tag) => {
                     if e_tag == release_notes_file.e_tag {
-                        debug!(target: LOG_TARGET, "[get_release_notes] Found matching ETag, using cached release notes");
+                        debug!(target: LOG_TARGET_APP_LOGIC, "[get_release_notes] Found matching ETag, using cached release notes");
                         Ok(release_notes_file.clone())
                     } else {
-                        debug!(target: LOG_TARGET, "[get_release_notes] Found different ETag, fetching release notes");
+                        debug!(target: LOG_TARGET_APP_LOGIC, "[get_release_notes] Found different ETag, fetching release notes");
                         self.handle_fetching_and_saving().await
                     }
                 }
                 Err(_) => {
-                    debug!(target: LOG_TARGET, "[get_release_notes] Server not responding, using cached release notes");
+                    debug!(target: LOG_TARGET_APP_LOGIC, "[get_release_notes] Server not responding, using cached release notes");
                     Ok(release_notes_file.clone())
                 }
             }
         } else {
-            debug!(target: LOG_TARGET, "[get_release_notes] Didn't find cached release notes, fetching");
+            debug!(target: LOG_TARGET_APP_LOGIC, "[get_release_notes] Didn't find cached release notes, fetching");
             self.handle_fetching_and_saving().await
         }
     }
@@ -251,7 +250,7 @@ impl ReleaseNotes {
         state: UniverseAppState,
         app: AppHandle,
     ) -> Result<(), Error> {
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit]");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[handle_release_notes_event_emit]");
 
         let last_release_notes_version_shown =
             ConfigCore::content().await.last_changelog_version().clone();
@@ -260,16 +259,16 @@ impl ReleaseNotes {
         let release_notes_version = Version::parse(&release_notes.version)?;
         let current_app_version = app.package_info().version.clone();
 
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Release notes version: {release_notes_version}");
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Last release notes version shown: {last_release_notes_version_shown}");
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Current app version: {current_app_version}");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[handle_release_notes_event_emit] Release notes version: {release_notes_version}");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[handle_release_notes_event_emit] Last release notes version shown: {last_release_notes_version_shown}");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[handle_release_notes_event_emit] Current app version: {current_app_version}");
 
         let was_release_notes_updated = release_notes_version.gt(&last_release_notes_version_shown);
         let is_app_on_latest_release_notes_version_or_higher =
             current_app_version.ge(&release_notes_version);
 
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Was release notes updated: {was_release_notes_updated}");
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app on latest release notes version or higher: {is_app_on_latest_release_notes_version_or_higher}");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[handle_release_notes_event_emit] Was release notes updated: {was_release_notes_updated}");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[handle_release_notes_event_emit] Is app on latest release notes version or higher: {is_app_on_latest_release_notes_version_or_higher}");
 
         let should_show_release_notes =
             was_release_notes_updated && is_app_on_latest_release_notes_version_or_higher;
@@ -281,7 +280,7 @@ impl ReleaseNotes {
             .map(|update| update.is_some())
             .unwrap_or(false);
 
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app update available: {is_app_update_available}");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[handle_release_notes_event_emit] Is app update available: {is_app_update_available}");
 
         EventsEmitter::emit_show_release_notes(ShowReleaseNotesPayload {
             release_notes: release_notes.content,
@@ -289,10 +288,10 @@ impl ReleaseNotes {
             should_show_dialog: should_show_release_notes,
         })
         .await;
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Emitted release notes event");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[handle_release_notes_event_emit] Emitted release notes event");
 
         if should_show_release_notes {
-            debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Setting last changelog version to {}", release_notes.version);
+            debug!(target: LOG_TARGET_APP_LOGIC, "[handle_release_notes_event_emit] Setting last changelog version to {}", release_notes.version);
             ConfigCore::update_field(
                 ConfigCoreContent::set_last_changelog_version,
                 release_notes_version,
@@ -300,7 +299,7 @@ impl ReleaseNotes {
             .await?;
         }
 
-        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Done");
+        debug!(target: LOG_TARGET_APP_LOGIC, "[handle_release_notes_event_emit] Done");
         Ok(())
     }
 }
