@@ -70,11 +70,12 @@ export const TooltipWrapper = styled.div`
 export const NextRewardWrapper = styled.div`
     display: flex;
     width: 100%;
-    padding: 10px;
+    padding: 8px;
+    margin: 4px 0;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    gap: 3px;
+    gap: 2px;
     align-self: stretch;
     border-radius: 10px;
     background-color: ${({ theme }) => theme.palette.background.accent};

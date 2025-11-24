@@ -40,7 +40,6 @@ export default function Gems() {
     // Optimized countdown effect - update less frequently when time is far out
     useEffect(() => {
         if (!futureTranche) {
-            setCountdown(null);
             return;
         }
 
@@ -80,7 +79,7 @@ export default function Gems() {
         if (countdown.days > 0) parts.push(`${countdown.days}D`);
         if (countdown.days > 0 || countdown.hours > 0) parts.push(`${countdown.hours}H`);
         parts.push(`${countdown.minutes}M`);
-        parts.push(`${countdown.seconds}S`);
+        if (countdown.days < 0 && countdown.hours < 0) parts.push(`${countdown.seconds}S`);
         return parts.join(' ');
     }, []);
 
