@@ -26,8 +26,8 @@ use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::LOG_TARGET_APP_LOGIC;
 use crate::consts::PROCESS_CREATION_NO_WINDOW;
+use crate::LOG_TARGET_APP_LOGIC;
 
 fn check_netsh_rule_exists(rule_name: String) -> bool {
     let output = Command::new("netsh")

@@ -10,25 +10,29 @@ interface ClaimStatusResponse {
     data: ClaimStatus;
 }
 
-async function fetchClaimStatus(): Promise<ClaimStatus> {
-    const response = await handleAirdropRequest<ClaimStatusResponse>({
-        path: '/tari/airdrop/status',
-        method: 'GET',
-    });
+async function fetchClaimStatus(): Promise<ClaimStatus | undefined> {
+    try {
+        const response = await handleAirdropRequest<ClaimStatusResponse>({
+            path: '/tari/airdrop/status',
+            method: 'GET',
+        });
 
-    if (!response?.success || !response?.data) {
-        throw new Error('Failed to fetch claim status');
+        if (!response?.success || !response?.data) {
+            return;
+        }
+
+        return response.data;
+    } catch (e) {
+        console.error('Failed to fetch claim status', e);
     }
-
-    return response.data;
 }
 
 export function useClaimStatus(enabled = true) {
-    const user = useAirdropStore((state) => state.userDetails?.user?.id);
+    const userId = useAirdropStore((state) => state.userDetails?.user?.id);
     return useQuery({
-        queryKey: [KEY_CLAIM_STATUS, user],
+        queryKey: [KEY_CLAIM_STATUS, userId],
         queryFn: fetchClaimStatus,
-        enabled: !!user && enabled,
+        enabled: !!userId?.length && enabled,
         staleTime: 30 * 1000, // 30 seconds
         gcTime: 2 * 60 * 1000, // 2 minutes
         retry: 2,

@@ -6,7 +6,7 @@ export enum FEATURE_FLAGS {
     FE_UNWRAP = 'unwrap-enabled',
     FF_AD_AVAILABLE = 'airdrop-available',
     FF_AD_KS = 'airdrop-kill-switch',
-    FF_AD_CLAIM_ENABLED = 'airdrop-claim-enabled',
+    FF_AD_CLAIM_ENABLED = 'airdrop-xtm-claim-enabled',
 }
 
 export const BRIDGE_TAPPLET_ID = 0;
