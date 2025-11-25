@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAirdropStore, useWalletStore } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { useAirdropStore, useWalletStore } from '@app/store';
 import type { AutomaticClaimState, OtpErrorResponse, OtpResponse } from '@app/types/airdrop-claim';
 
-// interface OtpWebSocketResponse {
-//     event: string;
-//     data: OtpResponse | OtpErrorResponse;
-// }
+interface OtpWebSocketPayload {
+    event: string;
+    data: OtpResponse | OtpErrorResponse | string;
+}
+
+interface WSEvent {
+    payload: OtpWebSocketPayload;
+}
 
 export function useAutomaticOtpClaim() {
     const [state, setState] = useState<AutomaticClaimState>({
@@ -35,8 +39,7 @@ export function useAutomaticOtpClaim() {
     }, []);
 
     const handleWebSocketMessage = useCallback(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (event: any) => {
+        (event: WSEvent) => {
             try {
                 const payload = event.payload;
                 // Handle both string and object data
