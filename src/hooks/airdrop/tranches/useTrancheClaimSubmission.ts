@@ -62,7 +62,7 @@ export function useTrancheClaimSubmission() {
     const { performBackgroundClaim, isProcessing, error, reset } = useBackgroundClaimSubmission();
 
     const submitTrancheClaimWithOtp = useCallback(
-        async (trancheId: string): Promise<TrancheClaimResult> => {
+        async (trancheId: string): Promise<TrancheClaimResult | undefined> => {
             console.info('🚀 submitTrancheClaimWithOtp called with trancheId:', trancheId);
 
             try {
@@ -75,9 +75,8 @@ export function useTrancheClaimSubmission() {
 
                 console.debug('Calling performBackgroundClaim with xtm and trancheId:', trancheId);
                 const result = await performBackgroundClaim('xtm', trancheId);
-                console.debug('performBackgroundClaim result:', result);
 
-                if (result.success) {
+                if (result?.success) {
                     addToast({
                         type: 'success',
                         title: t('tranche.notifications.claim-success'),
@@ -97,7 +96,7 @@ export function useTrancheClaimSubmission() {
                         trancheId,
                     };
                 } else {
-                    throw new Error(result.error || 'Claim failed');
+                    console.error(result?.error || 'Claim failed');
                 }
             } catch (error) {
                 addToast({

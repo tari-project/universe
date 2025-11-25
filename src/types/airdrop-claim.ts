@@ -1,16 +1,3 @@
-export interface OtpRequest {
-    csrfToken: string;
-    appId: string;
-    walletAddress: string;
-    timestamp: number;
-    nonce: string;
-}
-
-export interface OtpRequestMessage extends OtpRequest {
-    signature: string;
-    pubKey: string;
-}
-
 export interface OtpResponse {
     otp: string;
     expiresAt: number;
