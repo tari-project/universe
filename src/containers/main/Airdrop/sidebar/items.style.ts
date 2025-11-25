@@ -21,10 +21,6 @@ export const ActionImgWrapper = styled.div`
     }
 `;
 
-export const GemImg = styled.img`
-    width: 18px;
-`;
-
 export const GemImgLarge = styled.img`
     width: 30px;
     transform: scaleX(-1);
@@ -60,13 +56,6 @@ export const TooltipAction = styled.div`
     }
 `;
 
-export const TooltipWrapper = styled.div`
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
-`;
-
 export const NextRewardWrapper = styled.div`
     display: flex;
     width: 100%;
@@ -94,4 +83,15 @@ export const RewardTooltipItems = styled.div`
     color: ${({ theme }) => theme.palette.text.accent};
     align-items: flex-start;
     gap: 2px;
+`;
+
+export const GemImg = styled.img`
+    width: 18px;
+`;
+
+export const TooltipWrapper = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
 `;

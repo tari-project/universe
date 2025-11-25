@@ -228,27 +228,3 @@ export function useTrancheAutoRefresh({
         currentInterval: getRefreshInterval(),
     };
 }
-
-// Hook for components that need to refresh tranches on specific events
-export function useTrancheRefreshOnEvents(events: string[] = ['claim-success', 'claim-error']) {
-    const { refreshTranches } = useTrancheAutoRefresh({ enabled: false });
-
-    useEffect(() => {
-        const handleEvent = (event: CustomEvent) => {
-            console.info(`Tranche refresh triggered by event: ${event.type}`);
-            refreshTranches();
-        };
-
-        events.forEach((eventName) => {
-            window.addEventListener(eventName, handleEvent as EventListener);
-        });
-
-        return () => {
-            events.forEach((eventName) => {
-                window.removeEventListener(eventName, handleEvent as EventListener);
-            });
-        };
-    }, [events, refreshTranches]);
-
-    return { refreshTranches };
-}

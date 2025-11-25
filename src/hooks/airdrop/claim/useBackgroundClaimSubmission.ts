@@ -20,32 +20,37 @@ interface ClaimSubmissionResponse {
     error?: string;
 }
 
-async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult> {
-    console.info('📝 Submitting claim with body:', JSON.stringify(claimRequest, null, 2));
+async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult | undefined> {
+    try {
+        console.info('📝 Submitting claim with body:', JSON.stringify(claimRequest, null, 2));
 
-    const response = await handleAirdropRequest<ClaimSubmissionResponse>({
-        path: '/tari/claim-airdrop',
-        method: 'POST',
-        body: claimRequest as unknown as Record<string, unknown>,
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
+        const response = await handleAirdropRequest<ClaimSubmissionResponse>({
+            path: '/tari/claim-airdrop',
+            method: 'POST',
+            body: claimRequest as unknown as Record<string, unknown>,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
 
-    console.info('📥 Claim response:', response);
+        console.info('📥 Claim response:', response);
 
-    if (!response?.success || !response?.data) {
-        throw new Error(response?.error || 'Failed to submit claim');
+        if (!response?.success || !response?.data) {
+            console.error(response?.error || 'Failed to submit claim');
+            return;
+        }
+
+        return {
+            success: true,
+            transactionId: response.data.transactionId,
+            amount: response.data.amount,
+            claimId: response.data.claimId,
+            trackingId: response.data.trackingId,
+            trancheId: response.data.trancheId,
+        };
+    } catch (e) {
+        console.error('Failed to submit claim', e);
     }
-
-    return {
-        success: true,
-        transactionId: response.data.transactionId,
-        amount: response.data.amount,
-        claimId: response.data.claimId,
-        trackingId: response.data.trackingId,
-        trancheId: response.data.trancheId,
-    };
 }
 
 export function useBackgroundClaimSubmission() {
@@ -67,9 +72,9 @@ export function useBackgroundClaimSubmission() {
         onSuccess: (result) => {
             addToast({
                 title: 'Airdrop Claimed Successfully!',
-                text: `Amount: ${result.amount} XTM • Transaction ID: ${result.transactionId}`,
+                text: `Amount: ${result?.amount} XTM • Transaction ID: ${result?.transactionId}`,
                 type: 'success',
-                timeout: 10000,
+                timeout: 5000,
             });
             resetOtp();
         },
@@ -84,39 +89,44 @@ export function useBackgroundClaimSubmission() {
         },
     });
 
+    const handleClaim = useCallback(() => {
+        const pendingClaim = pendingClaimRef.current;
+        if (!pendingClaim || !otpData?.otp) return;
+        const { claimTarget, csrfToken, trancheId } = pendingClaim;
+
+        // Clear the pending claim immediately to prevent multiple submissions
+        pendingClaimRef.current = null;
+
+        const claimRequest: ClaimRequest = {
+            claimTarget,
+            walletAddress,
+            csrfToken,
+            otp: otpData.otp,
+            ...(trancheId && { trancheId }),
+        };
+
+        console.info('🔍 Constructed ClaimRequest:', JSON.stringify(claimRequest, null, 2));
+
+        claimMutation.mutate(claimRequest, {
+            onSuccess: (result) => {
+                pendingClaim.resolve({
+                    success: true,
+                    transactionId: result?.transactionId,
+                    amount: result?.amount,
+                });
+            },
+            onError: (error: Error) => {
+                pendingClaim.reject(error);
+            },
+        });
+    }, [claimMutation, otpData?.otp, walletAddress]);
+
     // Effect to watch for OTP data and submit claim automatically
     useEffect(() => {
-        if (otpData?.otp && pendingClaimRef.current && walletAddress && !claimMutation.isPending) {
-            const pendingClaim = pendingClaimRef.current;
-            const { claimTarget, csrfToken, trancheId } = pendingClaim;
-
-            // Clear the pending claim immediately to prevent multiple submissions
-            pendingClaimRef.current = null;
-
-            const claimRequest: ClaimRequest = {
-                claimTarget,
-                walletAddress,
-                csrfToken,
-                otp: otpData.otp,
-                ...(trancheId && { trancheId }),
-            };
-
-            console.info('🔍 Constructed ClaimRequest:', JSON.stringify(claimRequest, null, 2));
-
-            claimMutation.mutate(claimRequest, {
-                onSuccess: (result) => {
-                    pendingClaim.resolve({
-                        success: true,
-                        transactionId: result.transactionId,
-                        amount: result.amount,
-                    });
-                },
-                onError: (error: Error) => {
-                    pendingClaim.reject(error);
-                },
-            });
+        if (otpData?.otp && walletAddress && !claimMutation.isPending) {
+            handleClaim();
         }
-    }, [claimMutation, otpData?.otp, walletAddress]);
+    }, [claimMutation.isPending, handleClaim, otpData?.otp, walletAddress]);
 
     // Effect to handle OTP errors
     useEffect(() => {
@@ -127,22 +137,23 @@ export function useBackgroundClaimSubmission() {
     }, [otpState.currentStep, otpState.error]);
 
     const performBackgroundClaim = useCallback(
-        async (claimTarget: 'xtm' = 'xtm', trancheId?: string): Promise<BackgroundClaimResult> => {
+        async (claimTarget: 'xtm' = 'xtm', trancheId?: string): Promise<BackgroundClaimResult | undefined> => {
             try {
                 if (!walletAddress) {
-                    throw new Error('Wallet address not available');
+                    console.error('Wallet address not available');
                 }
 
                 // Step 1: Get CSRF token (if not already loaded)
 
                 if (!csrfData?.csrfToken) {
                     if (csrfError) {
-                        throw new Error('Failed to get CSRF token');
+                        console.error('Failed to get CSRF token');
                     }
                     if (isLoadingCsrf) {
-                        throw new Error('CSRF token still loading');
+                        console.error('CSRF token still loading');
                     }
-                    throw new Error('CSRF token not available');
+                    console.error('CSRF token not available');
+                    return;
                 }
 
                 // Clear any existing pending claim and reset OTP state

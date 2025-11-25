@@ -1,7 +1,7 @@
-import { MonthlyTrancheClaimModal } from '@app/components/airdrop';
 import { useAirdropStore } from '@app/store';
-import { closeTrancheModal } from '@app/store/actions/airdropStoreActions';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
+import { closeTrancheModal } from '@app/store/actions/airdropStoreActions';
+import { MonthlyTrancheClaimModal } from '@app/components/airdrop/MonthlyTrancheClaimModal.tsx';
 
 export default function AirdropClaimModal() {
     const features = useAirdropStore((s) => s.features);

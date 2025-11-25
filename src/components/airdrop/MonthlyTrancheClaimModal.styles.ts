@@ -6,14 +6,14 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 export const ModalWrapper = styled(m.div)`
     position: relative;
     border-radius: 35px;
-    background: #ffffffbf;
-    backdrop-filter: blur(10px);
+    background: ${({ theme }) => (theme.mode === 'light' ? `rgba(255, 255, 255, 0.8)` : `rgba(30, 30, 30, 0.52)`)};
+    backdrop-filter: blur(80px);
     display: flex;
     flex-direction: column;
     padding: 40px;
     width: clamp(620px, 55vw, 825px);
     overflow: hidden;
-    gap: 20px;
+    gap: 14px;
 `;
 
 export const ModalHeader = styled.div`
@@ -23,36 +23,28 @@ export const ModalHeader = styled.div`
 export const ModalTitle = styled(Typography)`
     font-size: clamp(36px, 2rem + 0.5vh, 42px);
     font-weight: 500;
-    line-height: 1.1;
+    line-height: 1;
     letter-spacing: -1.9px;
-    color: #1a1a1a;
 `;
 
 export const ModalBody = styled(Typography).attrs({ variant: 'p' })`
     font-size: 16px;
-    color: #666666;
+    color: ${({ theme }) => theme.palette.text.primary};
+    opacity: 0.8;
     line-height: 1.1;
 `;
 
 export const ClaimContainer = styled.div`
     width: 100%;
-    border-radius: 15px;
+    border-radius: max(15px, 2%);
     gap: 10px;
     padding: 30px;
-
     display: flex;
     flex-direction: column;
     justify-content: center;
-
-    /* Multi-layered background as specified */
-    background: linear-gradient(0deg, #ffffff, #ffffff), linear-gradient(262.12deg, #333909 2.2%, #091d07 100.01%);
-
-    /* Alternative implementation if the above doesn't work */
-    background-color: #091d07;
-    background-image: linear-gradient(262.12deg, #333909 2.2%, #091d07 100.01%);
-
-    /* Add subtle border for definition */
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    background: linear-gradient(262.12deg, rgba(51, 57, 9, 0.4) 2.2%, rgba(9, 29, 7, 0.95) 90%), #091d07;
+    box-shadow: 0 2px 12px 2px rgba(0, 0, 0, 0.23);
 `;
 
 export const EyebrowText = styled.div`
@@ -137,10 +129,10 @@ export const CountdownContainer = styled.div`
 `;
 
 export const CountdownSquare = styled.div`
-    width: 44px;
-    height: 44px;
-    background: #ffffff;
-    border-radius: 6px;
+    width: 32px;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 5px;
     display: flex;
     align-items: center;
     justify-content: center;

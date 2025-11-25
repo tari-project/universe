@@ -10,17 +10,22 @@ interface TrancheStatusResponse {
     data: TrancheStatus;
 }
 
-async function fetchTrancheStatus(): Promise<TrancheStatus> {
-    const response = await handleAirdropRequest<TrancheStatusResponse>({
-        path: '/tari/airdrop/tranches/status',
-        method: 'GET',
-    });
+async function fetchTrancheStatus(): Promise<TrancheStatus | undefined> {
+    try {
+        const response = await handleAirdropRequest<TrancheStatusResponse>({
+            path: '/tari/airdrop/tranches/status',
+            method: 'GET',
+        });
 
-    if (!response?.success || !response?.data) {
-        throw new Error('Failed to fetch tranche status');
+        if (!response?.success || !response?.data) {
+            console.error('Failed to fetch tranche status');
+            return;
+        }
+
+        return response.data;
+    } catch (e) {
+        console.error('Failed to fetch tranche status', e);
     }
-
-    return response.data;
 }
 
 export function useTrancheStatus(enabled = true) {
@@ -91,7 +96,6 @@ export function useBalanceSummary(): BalanceSummary | null {
 // Helper hook to get available tranches
 export function useAvailableTranches() {
     const { data: trancheStatus, ...rest } = useTrancheStatus();
-
     const availableTranches = trancheStatus?.tranches.filter((tranche) => tranche.canClaim) || [];
 
     return {
@@ -105,7 +109,6 @@ export function useAvailableTranches() {
 // Helper hook to get current month's available tranche
 export function useCurrentMonthTranche() {
     const { availableTranches } = useAvailableTranches();
-
     // For monthly tranches, we typically want the earliest available one
     const currentTranche = availableTranches.length > 0 ? availableTranches[0] : null;
 
