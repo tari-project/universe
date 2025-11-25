@@ -84,3 +84,14 @@ export const RewardTooltipItems = styled.div`
     align-items: flex-start;
     gap: 2px;
 `;
+
+export const GemImg = styled.img`
+    width: 18px;
+`;
+
+export const TooltipWrapper = styled.div`
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+`;
