@@ -404,16 +404,6 @@ export const setClaimResult = (result: BackgroundClaimResult) => {
     }));
 };
 
-export const clearClaimState = () => {
-    useAirdropStore.setState({
-        claim: {
-            isClaimInProgress: false,
-            lastClaimResult: null,
-            lastClaimTimestamp: null,
-        },
-    });
-};
-
 // Tranche state actions
 export const setTrancheStatus = (trancheStatus: TrancheStatus) => {
     useAirdropStore.setState((_state) => ({
@@ -421,29 +411,6 @@ export const setTrancheStatus = (trancheStatus: TrancheStatus) => {
         // Calculate balance summary from tranche data
         balanceSummary: calculateBalanceSummaryFromTranches(trancheStatus),
     }));
-};
-
-export const updateTrancheStatus = (updates: Partial<TrancheStatus>) => {
-    useAirdropStore.setState((state) => {
-        if (!state.trancheStatus) return state;
-
-        const updatedStatus = { ...state.trancheStatus, ...updates };
-        return {
-            trancheStatus: updatedStatus,
-            balanceSummary: calculateBalanceSummaryFromTranches(updatedStatus),
-        };
-    });
-};
-
-export const setBalanceSummary = (balanceSummary: BalanceSummary) => {
-    useAirdropStore.setState({ balanceSummary });
-};
-
-export const clearTrancheData = () => {
-    useAirdropStore.setState({
-        trancheStatus: undefined,
-        balanceSummary: undefined,
-    });
 };
 
 // Helper function to calculate balance summary from tranche data
@@ -467,37 +434,6 @@ function calculateBalanceSummaryFromTranches(trancheStatus: TrancheStatus): Bala
         totalExpired,
     };
 }
-
-// Action to mark a tranche as claimed (optimistic update)
-export const markTrancheAsClaimed = (trancheId: string, claimedAt: string, amount: number) => {
-    const _amount = amount;
-    useAirdropStore.setState((state) => {
-        if (!state.trancheStatus) return state;
-
-        const updatedTranches = state.trancheStatus.tranches.map((tranche) =>
-            tranche.id === trancheId
-                ? {
-                      ...tranche,
-                      claimed: true,
-                      claimedAt,
-                      canClaim: false,
-                  }
-                : tranche
-        );
-
-        const updatedStatus = {
-            ...state.trancheStatus,
-            tranches: updatedTranches,
-            claimedCount: state.trancheStatus.claimedCount + 1,
-            availableCount: Math.max(0, state.trancheStatus.availableCount - 1),
-        };
-
-        return {
-            trancheStatus: updatedStatus,
-            balanceSummary: calculateBalanceSummaryFromTranches(updatedStatus),
-        };
-    });
-};
 
 // Modal state actions
 export const setShowTrancheModal = (show: boolean) => {

@@ -85,10 +85,6 @@ export interface BalanceSummary {
     totalExpired: number;
 }
 
-export interface TrancheClaimRequest extends Omit<ClaimRequest, 'trancheId'> {
-    trancheId: string;
-}
-
 export interface TrancheClaimResult extends ClaimResult {
     trancheId: string;
 }
