@@ -226,6 +226,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     };
 
     const remainingAmount = calculateRemainingBalance();
+
     const displayRemainingBalance =
         remainingAmount !== null
             ? t('tranche.claim-modal.remaining-allocation', { amount: formatAmount(remainingAmount) })
@@ -276,7 +277,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                                 <CountdownContainer>
                                     <div
                                         style={{
-                                            color: '#000000',
                                             fontSize: '14px',
                                             fontWeight: '600',
                                             display: 'flex',

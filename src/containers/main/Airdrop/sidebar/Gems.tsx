@@ -184,7 +184,7 @@ export default function Gems() {
 
     return (
         <SidebarItem
-            text={formattedCountCompact}
+            text={canClaim ? undefined : formattedCountCompact}
             tooltipContent={tooltipContent}
             onClick={canClaim ? handleClick : undefined}
         >
