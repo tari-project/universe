@@ -21,10 +21,6 @@ export const ActionImgWrapper = styled.div`
     }
 `;
 
-export const GemImg = styled.img`
-    width: 18px;
-`;
-
 export const GemImgLarge = styled.img`
     width: 30px;
     transform: scaleX(-1);
@@ -58,13 +54,6 @@ export const TooltipAction = styled.div`
             text-decoration: underline;
         }
     }
-`;
-
-export const TooltipWrapper = styled.div`
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
 `;
 
 export const NextRewardWrapper = styled.div`

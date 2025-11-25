@@ -7,9 +7,10 @@ import { ParachuteSVG } from '@app/assets/icons/ParachuteSVG';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
-import { useBalanceSummary, useCurrentMonthTranche } from '@app/hooks/airdrop/tranches';
+
 import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useBalanceSummary, useCurrentMonthTranche } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
 
 interface CountdownTime {
     days: number;

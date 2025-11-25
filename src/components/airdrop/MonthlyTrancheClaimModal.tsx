@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
-import { useBalanceSummary, useCurrentMonthTranche, useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches';
 import { useTrancheClaimSubmission } from '@app/hooks/airdrop/tranches/useTrancheClaimSubmission';
 import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
 import { useSimpleClaimSubmission } from '@app/hooks/airdrop/claim/useSimpleClaimSubmission';
@@ -21,6 +20,8 @@ import {
     RemainingBalance,
     TrancheAmount,
 } from './MonthlyTrancheClaimModal.styles';
+import { useBalanceSummary, useCurrentMonthTranche } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
+import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
 
 interface MonthlyTrancheClaimModalProps {
     showModal: boolean;
