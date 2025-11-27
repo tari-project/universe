@@ -6,6 +6,7 @@ import { addToast } from '@app/components/ToastStack/useToastStore';
 import { useCsrfToken } from './useCsrfToken';
 import { useAutomaticOtpClaim } from './useAutomaticOtpClaim';
 import type { ClaimRequest, ClaimResult, BackgroundClaimResult } from '@app/types/airdrop-claim';
+import { useTranslation } from 'react-i18next';
 
 interface ClaimSubmissionResponse {
     success: boolean;
@@ -54,6 +55,7 @@ async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult | un
 }
 
 export function useBackgroundClaimSubmission() {
+    const { t } = useTranslation('airdrop');
     const walletAddress = useWalletStore((s) => s.tari_address_base58);
     const { data: csrfData, isLoading: isLoadingCsrf, error: csrfError } = useCsrfToken();
     const { requestOtp, otpData, state: otpState, reset: resetOtp } = useAutomaticOtpClaim();
@@ -71,10 +73,9 @@ export function useBackgroundClaimSubmission() {
         mutationFn: submitClaim,
         onSuccess: (result) => {
             addToast({
-                title: 'Airdrop Claimed Successfully!',
-                text: `Amount: ${result?.amount} XTM • Transaction ID: ${result?.transactionId}`,
+                title: t('tranche.notifications.claim-success', { amount: result?.amount }),
                 type: 'success',
-                timeout: 5000,
+                timeout: 4000,
             });
             resetOtp();
         },

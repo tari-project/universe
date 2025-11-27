@@ -131,7 +131,7 @@
     },
     "notifications": {
       "claim-failed": "Claim Failed",
-      "claim-success": "Tranche Claimed Successfully",
+      "claim-success": "Success! You claimed {{amount}} XTM.",
       "claim-success-message": "Successfully claimed {{amount}} XTM from tranche",
       "new-tranche-available": "New Tranche Available",
       "new-tranches-available": "{{count}} new {{plural}} ready to claim!"

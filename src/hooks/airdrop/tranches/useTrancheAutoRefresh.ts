@@ -27,19 +27,17 @@ export function useTrancheAutoRefresh({
     const queryClient = useQueryClient();
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const lastAvailableCountRef = useRef<number>(0);
-
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
     const userDetails = useAirdropStore((state) => state.userDetails);
     const isLoggedIn = !!userDetails?.user?.id;
 
-    // Manual refresh function
     const refreshTranches = useCallback(async () => {
         try {
             const success = await handleTrancheRefresh();
 
             if (success) {
                 // Invalidate React Query cache to trigger re-fetch
-                queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
+                await queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
                 onRefreshSuccess?.();
                 return true;
             } else {
@@ -52,14 +50,12 @@ export function useTrancheAutoRefresh({
             return false;
         }
     }, [queryClient, onRefreshSuccess, onRefreshError]);
-
-    // Full refresh including tokens and tranches
     const refreshAll = useCallback(async () => {
         try {
             const result = await handleFullAirdropRefresh();
 
             if (result.tranchesRefreshed) {
-                queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
+                await queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
             }
 
             onRefreshSuccess?.();
@@ -155,7 +151,7 @@ export function useTrancheAutoRefresh({
             const interval = getRefreshInterval();
 
             intervalRef.current = setInterval(() => {
-                refreshTranches();
+                void refreshTranches();
             }, interval);
         };
 
@@ -172,19 +168,17 @@ export function useTrancheAutoRefresh({
             }
             clearTimeout(timeoutId);
         };
-    }, [enabled, isLoggedIn, getRefreshInterval, refreshTranches]);
+    }, [enabled, getRefreshInterval, isLoggedIn, refreshTranches]);
 
     // Refresh on app focus
     useEffect(() => {
         if (!enabled || !isLoggedIn) return;
 
-        const handleFocus = () => {
-            refreshTranches();
-        };
+        const handleFocus = () => refreshTranches();
 
         const handleVisibilityChange = () => {
             if (!document.hidden) {
-                handleFocus();
+                void handleFocus();
             }
         };
 
@@ -195,7 +189,7 @@ export function useTrancheAutoRefresh({
             window.removeEventListener('focus', handleFocus);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [enabled, isLoggedIn, refreshTranches, trancheStatus]);
+    }, [enabled, isLoggedIn, refreshTranches]);
 
     // Cleanup on unmount
     useEffect(() => {

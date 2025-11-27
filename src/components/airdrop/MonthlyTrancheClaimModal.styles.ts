@@ -37,7 +37,7 @@ export const ModalBody = styled(Typography).attrs({ variant: 'p' })`
 export const ClaimContainer = styled.div`
     width: 100%;
     border-radius: 15px;
-    gap: 10px;
+    gap: 20px;
     padding: 30px;
     display: flex;
     flex-direction: column;
@@ -72,6 +72,12 @@ export const TrancheAmount = styled.div`
     }
 `;
 
+export const ClaimItems = styled.div`
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+`;
 export const RemainingBalance = styled.div`
     padding: 8px 16px;
     background: rgba(255, 255, 255, 0.1);

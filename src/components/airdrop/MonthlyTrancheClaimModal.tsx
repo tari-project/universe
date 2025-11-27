@@ -9,6 +9,7 @@ import { setClaimInProgress, setClaimResult } from '@app/store/actions/airdropSt
 import {
     ClaimButton,
     ClaimContainer,
+    ClaimItems,
     CountdownContainer,
     CountdownSquare,
     CountdownWrapper,
@@ -24,14 +25,14 @@ import { useBalanceSummary, useCurrentMonthTranche } from '@app/hooks/airdrop/tr
 import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
 import { formatNumber, FormatPreset } from '@app/utils';
 
-interface MonthlyTrancheClaimModalProps {
-    showModal: boolean;
-    onClose: () => void;
-}
 interface CountdownTime {
     days: number;
     hours: number;
     minutes: number;
+}
+interface MonthlyTrancheClaimModalProps {
+    showModal: boolean;
+    onClose: () => void;
 }
 
 export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheClaimModalProps) {
@@ -40,7 +41,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const initialCountdownRef = useRef(false);
     const [countdown, setCountdown] = useState<CountdownTime | null>(null);
 
-    // Tranche system hooks
     const { currentTranche, hasCurrentTranche } = useCurrentMonthTranche();
     const balanceSummary = useBalanceSummary();
     const {
@@ -58,9 +58,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const { refreshTranches } = useTrancheAutoRefresh({
         enabled: showModal,
         notifyOnNewTranches: false, // Don't show notifications in modal
-        onRefreshSuccess: () => {
-            console.debug('Tranche data refreshed in modal');
-        },
     });
 
     const claim = useAirdropStore((state) => state.claim);
@@ -224,21 +221,29 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
     const remainingAmount = calculateRemainingBalance();
 
-    const displayRemainingBalance =
-        remainingAmount !== null ? (
-            <Trans
-                ns="airdrop"
-                i18nKey={'tranche.claim-modal.remaining-allocation'}
-                values={{
-                    amount: formatAmount(remainingAmount),
-                }}
-                components={{ span: <span /> }}
-            />
-        ) : null;
-
     const isAnyLoading = trancheLoading || legacyProcessing || isClaimingOptimistic || claim?.isClaimInProgress;
     const isOtpWaiting = isTrancheMode ? false : false; // OTP handling is now internal to performBackgroundClaim
     const canClaimNow = isTrancheMode ? trancheCanClaim : claimStatus?.hasClaim && !legacyProcessing;
+
+    const claimedMarkup =
+        balanceSummary && balanceSummary.totalClaimed > 0 ? (
+            <RemainingBalance>
+                {t('tranche.status.total-claimed')}: <span>{formatAmount(balanceSummary.totalClaimed)} XTM</span>
+            </RemainingBalance>
+        ) : null;
+    const remainingMarkup =
+        remainingAmount !== null ? (
+            <RemainingBalance>
+                <Trans
+                    ns="airdrop"
+                    i18nKey={'tranche.claim-modal.remaining-allocation'}
+                    values={{
+                        amount: formatAmount(remainingAmount),
+                    }}
+                    components={{ span: <span /> }}
+                />
+            </RemainingBalance>
+        ) : null;
 
     return (
         <Dialog open={showModal} onOpenChange={onClose}>
@@ -255,17 +260,10 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                         <TrancheAmount>
                             {formatAmount(displayAmount)} <span>XTM</span>
                         </TrancheAmount>
-
-                        {/* Show claimed rewards if available */}
-                        {balanceSummary && balanceSummary.totalClaimed > 0 && (
-                            <RemainingBalance>
-                                {t('tranche.status.total-claimed')}:{' '}
-                                <span>{formatAmount(balanceSummary.totalClaimed)} XTM</span>
-                            </RemainingBalance>
-                        )}
-
-                        {/* Show remaining allocation */}
-                        {displayRemainingBalance && <RemainingBalance>{displayRemainingBalance}</RemainingBalance>}
+                        <ClaimItems>
+                            {claimedMarkup}
+                            {remainingMarkup}
+                        </ClaimItems>
                     </ClaimContainer>
 
                     {isTrancheMode ? (
