@@ -7,15 +7,6 @@ import { KEY_CSRF_TOKEN } from '../claim/useCsrfToken';
 import type { TrancheClaimResult } from '@app/types/airdrop-claim';
 import { KEY_TRANCHE_STATUS } from './useTrancheStatus';
 
-// Helper function to format numbers with proper rounding
-const formatAmount = (amount: number | undefined | null): string => {
-    if (amount === undefined || amount === null) return '0';
-
-    // Round to 2 decimals if needed, otherwise show as integer
-    const rounded = Math.round(amount * 100) / 100;
-    return rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2);
-};
-
 export function useTrancheClaimSubmission() {
     const { t } = useTranslation('airdrop', { useSuspense: false });
     const queryClient = useQueryClient();
@@ -30,7 +21,7 @@ export function useTrancheClaimSubmission() {
             try {
                 // Invalidate CSRF token to force fresh fetch
                 console.debug('Invalidating CSRF token cache for fresh fetch');
-                queryClient.invalidateQueries({ queryKey: [KEY_CSRF_TOKEN] });
+                await queryClient.invalidateQueries({ queryKey: [KEY_CSRF_TOKEN] });
 
                 // Wait a bit for the fresh CSRF token to be fetched
                 await new Promise((resolve) => setTimeout(resolve, 500));
@@ -39,13 +30,6 @@ export function useTrancheClaimSubmission() {
                 const result = await performBackgroundClaim('xtm', trancheId);
 
                 if (result?.success) {
-                    addToast({
-                        type: 'success',
-                        title: t('tranche.notifications.claim-success'),
-                        text: t('tranche.notifications.claim-success-message', { amount: formatAmount(result.amount) }),
-                        timeout: 5000,
-                    });
-
                     // Invalidate tranche status to refresh the data
                     queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
 

@@ -11,10 +11,13 @@ import { FEATURE_FLAGS } from '@app/store/consts.ts';
 import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
 import { useMemo, useCallback } from 'react';
 import { useBalanceSummary } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
+import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
 
 export default function Claim() {
     const { t } = useTranslation('airdrop');
     const features = useAirdropStore((s) => s.features);
+
+    useTrancheAutoRefresh();
 
     const killswitchEngaged = features?.includes(FEATURE_FLAGS.FF_AD_KS);
     const claimEnabled = features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
@@ -92,14 +95,10 @@ export default function Claim() {
         totalPendingAmount,
     ]);
 
-    const handleClick = useCallback(() => {
-        openTrancheModal();
-    }, []);
-
     const canClaim = !killswitchEngaged && claimEnabled && claimAvailable;
 
     return (
-        <SidebarItem tooltipContent={tooltipContent} onClick={canClaim ? handleClick : undefined}>
+        <SidebarItem tooltipContent={tooltipContent} onClick={canClaim ? openTrancheModal : undefined}>
             <ActionImgWrapper>
                 <ParachuteSVG />
             </ActionImgWrapper>
