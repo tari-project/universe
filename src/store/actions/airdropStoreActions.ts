@@ -7,14 +7,12 @@ import {
     type AnimationType,
     type BonusTier,
     type CommunityMessage,
-    type Reward,
     type UserDetails,
     type UserEntryPoints,
     type UserPoints,
     useAirdropStore,
     useConfigBEInMemoryStore,
     useUIStore,
-    useWalletStore,
 } from '@app/store';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import type { XSpaceEvent } from '@app/types/ws.ts';
@@ -272,54 +270,6 @@ export async function fetchLatestXSpaceEvent() {
 
     return response;
 }
-
-export async function sendCrewNudge(message: string, userId: string) {
-    return await handleAirdropRequest<{ success: boolean } | null>({
-        path: '/crew/nudge',
-        method: 'POST',
-        body: {
-            message,
-            userId,
-        },
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-}
-
-export async function claimCrewRewards(rewardId: string, memberId: string) {
-    const walletAddress = useWalletStore.getState().tari_address_base58;
-    if (!walletAddress) {
-        throw new Error('No wallet address found');
-    }
-    return await handleAirdropRequest<{
-        success: boolean;
-        claimedReward: Reward;
-    } | null>({
-        path: `/crew/rewards/${rewardId}/claim`,
-        method: 'POST',
-        body: {
-            rewardId,
-            memberId,
-            targetWalletAddress: walletAddress,
-        },
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-}
-
-export const setCrewQueryParams = (
-    params: Partial<{
-        status: 'all' | 'completed' | 'active' | 'inactive';
-        page: number;
-        limit: number;
-    }>
-) => {
-    useAirdropStore.setState((state) => ({
-        crewQueryParams: { ...state.crewQueryParams, ...params },
-    }));
-};
 
 export const fetchAllUserData = async () => {
     const fetchUserDetails = async () => {

@@ -135,13 +135,6 @@ export interface CrewMember {
     rewards: CrewMemberReward[];
 }
 
-export interface PaginationInfo {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-}
-
 export interface ReferrerProgress {
     currentStreak: number;
     longestStreak: number;
@@ -167,39 +160,6 @@ export interface MinRequirements {
     minShares: number;
     minHashes: number;
     minAmtPaid: bigint;
-}
-
-export interface MembersResponse {
-    members: CrewMember[];
-    pagination: PaginationInfo;
-    filters: {
-        status: 'all' | 'completed' | 'active' | 'inactive';
-    };
-}
-
-export interface ReferrerProgressResponse {
-    referrerProgress: ReferrerProgress;
-    totals: CrewMembersTotals;
-    memberImages: string[];
-    minRequirements: MinRequirements;
-    members: {
-        name: string;
-        displayName: string;
-        image: string;
-        isCurrentlyMining: boolean;
-        lastActivityDate: string;
-    }[];
-    membersToNudge: {
-        id: string;
-        name: string;
-        displayName?: string;
-        imageUrl?: string;
-    }[];
-    rewardsConfig: {
-        referrerRewards: number;
-        referralRewards: number;
-        requirement: number;
-    };
 }
 
 export interface Reward {
