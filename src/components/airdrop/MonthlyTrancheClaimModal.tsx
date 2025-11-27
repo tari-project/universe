@@ -179,10 +179,8 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
     // Update messaging based on tranche availability
     const displayTitle = isTrancheMode
-        ? t('tranche.claim-modal.title')
-        : hasFutureTranche
-          ? "Next month's reward"
-          : 'Your airdrop status';
+        ? t('tranche.claim-modal.title', { context: hasFutureTranche ? 'future' : '' })
+        : 'Your airdrop status';
 
     const displayDescription = isTrancheMode
         ? t('tranche.claim-modal.description')
@@ -191,12 +189,10 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
           : "Here's your airdrop progress and claimed rewards.";
 
     const displayEyebrow = isTrancheMode
-        ? t('tranche.claim-modal.eyebrow')
-        : hasFutureTranche
-          ? "Next month's Airdrop reward"
-          : lastClaimedTranche
-            ? 'Last claimed reward'
-            : 'Your Airdrop reward';
+        ? t('tranche.claim-modal.eyebrow', { context: hasFutureTranche ? 'future' : '' })
+        : lastClaimedTranche
+          ? 'Last claimed reward'
+          : 'Your Airdrop reward';
 
     // Calculate remaining balance: total from claimStatus minus claimed and expired tranches
     const calculateRemainingBalance = () => {
