@@ -80,8 +80,8 @@ export function useBackgroundClaimSubmission() {
                     timeout: 4000,
                 });
             }
-            resetOtp();
             closeTrancheModal();
+            resetOtp();
         },
         onError: (error: Error) => {
             addToast({
@@ -111,7 +111,6 @@ export function useBackgroundClaimSubmission() {
         };
 
         console.info('🔍 Constructed ClaimRequest:', JSON.stringify(claimRequest, null, 2));
-
         claimMutation.mutate(claimRequest, {
             onSuccess: (result) => {
                 pendingClaim.resolve({
