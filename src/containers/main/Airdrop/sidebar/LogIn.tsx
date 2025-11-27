@@ -1,13 +1,17 @@
 import { useTranslation } from 'react-i18next';
-
+import { ParachuteSVG } from '@app/assets/icons/ParachuteSVG';
 import { useAirdropAuth } from '@app/hooks/airdrop/utils/useAirdropAuth.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { SidebarItem } from './components/SidebarItem';
 
 import { ActionImgWrapper, GemImgLarge } from './items.style';
 import gem from '@app/assets/images/gem.png';
+import { useAirdropStore } from '@app/store';
+import { FEATURE_FLAGS as FF } from '@app/store/consts.ts';
 
 export default function LogIn() {
+    const ff = useAirdropStore((s) => s.features);
+    const claimEnabled = !ff?.includes(FF.FF_AD_KS) && ff?.includes(FF.FF_AD_CLAIM_ENABLED);
     const { t } = useTranslation('airdrop');
     const { handleAuth, authUrlCopied } = useAirdropAuth();
 
@@ -27,7 +31,7 @@ export default function LogIn() {
         <button onClick={() => handleAuth()} style={{ borderRadius: 10 }}>
             <SidebarItem text={t('earnBonusXTM')} tooltipContent={tooltipContent}>
                 <ActionImgWrapper style={{ marginBottom: '-4px' }}>
-                    <GemImgLarge src={gem} alt="gem ico" />
+                    {claimEnabled ? <ParachuteSVG /> : <GemImgLarge src={gem} alt="gem ico" />}
                 </ActionImgWrapper>
             </SidebarItem>
         </button>

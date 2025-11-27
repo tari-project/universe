@@ -43,7 +43,7 @@ export function useTrancheAutoRefresh({
                 onRefreshSuccess?.();
                 return true;
             } else {
-                throw new Error('Failed to refresh tranche status');
+                console.error('Failed to refresh tranche status');
             }
         } catch (error) {
             const errorObj = error instanceof Error ? error : new Error('Unknown error');
@@ -77,20 +77,6 @@ export function useTrancheAutoRefresh({
         if (!trancheStatus || !notifyOnNewTranches) return;
 
         const currentAvailableCount = trancheStatus.availableCount;
-
-        console.debug('📊 Tranche availability check:');
-        console.debug('  - currentAvailableCount:', currentAvailableCount);
-        console.debug('  - lastAvailableCountRef.current:', lastAvailableCountRef.current);
-        console.debug(
-            '  - tranches:',
-            trancheStatus.tranches.map((t) => ({
-                id: t.id,
-                claimed: t.claimed,
-                canClaim: t.canClaim,
-                validFrom: t.validFrom,
-                validTo: t.validTo,
-            }))
-        );
 
         // If we have more available tranches than before, notify the user and auto-open modal
         if (lastAvailableCountRef.current > 0 && currentAvailableCount > lastAvailableCountRef.current) {
