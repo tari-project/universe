@@ -118,7 +118,7 @@
       "claiming": "Claiming...",
       "description": "Your hard work (and Yats!) has paid off! Each month on the 12th, you'll receive a portion of your airdrop.",
       "eyebrow": "This month's Airdrop reward",
-      "remaining-allocation": "Your remaining allocation is {{amount}} XTM",
+      "remaining-allocation": "Your remaining allocation is <span>{{amount}}</span> XTM",
       "title": "Claim this month's reward.",
       "waiting-verification": "Waiting for verification..."
     },
@@ -136,6 +136,7 @@
       "claimed": "Claimed",
       "error": "Failed to load tranche status",
       "expired": "Expired",
+      "ineligible": "You are not eligible to claim",
       "loading": "Loading tranche status...",
       "next-available": "Next tranche available:",
       "next-reward": "Next reward",

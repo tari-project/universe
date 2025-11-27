@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { useTrancheClaimSubmission } from '@app/hooks/airdrop/tranches/useTrancheClaimSubmission';
 import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
@@ -230,9 +230,16 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const remainingAmount = calculateRemainingBalance();
 
     const displayRemainingBalance =
-        remainingAmount !== null
-            ? t('tranche.claim-modal.remaining-allocation', { amount: formatAmount(remainingAmount) })
-            : null;
+        remainingAmount !== null ? (
+            <Trans
+                ns="airdrop"
+                i18nKey={'tranche.claim-modal.remaining-allocation'}
+                values={{
+                    amount: formatAmount(remainingAmount),
+                }}
+                components={{ span: <span /> }}
+            />
+        ) : null;
 
     const isAnyLoading = trancheLoading || legacyProcessing || isClaimingOptimistic || claim?.isClaimInProgress;
     const isOtpWaiting = isTrancheMode ? false : false; // OTP handling is now internal to performBackgroundClaim

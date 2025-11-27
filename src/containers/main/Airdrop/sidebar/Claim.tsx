@@ -53,9 +53,19 @@ export default function Claim() {
 
     const { total: totalAirdropAmount, claimed: totalClaimedAmount, pending: totalPendingAmount } = totalValues;
 
+    const isIneligible = !claimStatusLoading && (!totalAirdropAmount || totalAirdropAmount === 0);
+
     // Memoize tooltip content to prevent unnecessary rerenders
     const tooltipContent = useMemo(() => {
         if (killswitchEngaged) return null;
+
+        if (isIneligible) {
+            return (
+                <RewardTooltipContent>
+                    <Typography variant="h6">{t('tranche.status.ineligible')}</Typography>
+                </RewardTooltipContent>
+            );
+        }
         return (
             <RewardTooltipContent>
                 <Typography variant="h6">{t('loggedInTitle')}</Typography>
@@ -93,9 +103,10 @@ export default function Claim() {
         totalAirdropAmount,
         totalClaimedAmount,
         totalPendingAmount,
+        isIneligible,
     ]);
 
-    const canClaim = !killswitchEngaged && claimEnabled && claimAvailable;
+    const canClaim = !killswitchEngaged && claimEnabled && claimAvailable && !isIneligible;
 
     return (
         <SidebarItem tooltipContent={tooltipContent} onClick={canClaim ? openTrancheModal : undefined}>

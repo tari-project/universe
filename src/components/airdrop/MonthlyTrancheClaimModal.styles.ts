@@ -43,7 +43,8 @@ export const ClaimContainer = styled.div`
     flex-direction: column;
     justify-content: center;
     backdrop-filter: blur(20px);
-    background: linear-gradient(262.12deg, rgba(51, 57, 9, 0.4) 2.2%, #091d07 50%), #091d07;
+    background: linear-gradient(262deg, #333909 2.2%, #091d07 100.01%), #333909;
+
     box-shadow: 0 2px 12px 2px rgba(0, 0, 0, 0.23);
 `;
 
