@@ -142,10 +142,10 @@ export const ClaimButton = styled(Button).attrs({
 export const CountdownContainer = styled.div`
     display: grid;
     justify-content: center;
-    min-width: fit-content;
+    min-width: min-content;
     gap: 8px;
-    grid-template-columns: repeat(3, minmax(30px, 1fr));
-    grid-template-rows: 2fr;
+    grid-template-columns: repeat(auto-fit, minmax(30px, 1fr));
+    grid-auto-flow: column;
     padding: 0 4px;
 `;
 

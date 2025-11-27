@@ -7,6 +7,7 @@ import { useCsrfToken } from './useCsrfToken';
 import { useAutomaticOtpClaim } from './useAutomaticOtpClaim';
 import type { ClaimRequest, ClaimResult, BackgroundClaimResult } from '@app/types/airdrop-claim';
 import { useTranslation } from 'react-i18next';
+import { closeTrancheModal } from '@app/store/actions/airdropStoreActions.ts';
 
 interface ClaimSubmissionResponse {
     success: boolean;
@@ -72,12 +73,15 @@ export function useBackgroundClaimSubmission() {
     const claimMutation = useMutation({
         mutationFn: submitClaim,
         onSuccess: (result) => {
-            addToast({
-                title: t('tranche.notifications.claim-success', { amount: result?.amount }),
-                type: 'success',
-                timeout: 4000,
-            });
+            if (result?.amount) {
+                addToast({
+                    title: t('tranche.notifications.claim-success', { amount: result?.amount }),
+                    type: 'success',
+                    timeout: 4000,
+                });
+            }
             resetOtp();
+            closeTrancheModal();
         },
         onError: (error: Error) => {
             addToast({

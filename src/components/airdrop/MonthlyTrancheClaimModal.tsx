@@ -174,17 +174,17 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
     // Update messaging based on tranche availability
     const displayTitle = isTrancheMode
-        ? t('tranche.claim-modal.title', { context: hasFutureTranche ? 'future' : '' })
+        ? t('tranche.claim-modal.title', { context: !currentTranche && hasFutureTranche ? 'future' : '' })
         : 'Your airdrop status';
 
     const displayDescription = isTrancheMode
         ? t('tranche.claim-modal.description', { emojis: `💜🐢` })
-        : hasFutureTranche
+        : !currentTranche && hasFutureTranche
           ? 'Your next tranche will be available soon!'
           : "Here's your airdrop progress and claimed rewards.";
 
     const displayEyebrow = isTrancheMode
-        ? t('tranche.claim-modal.eyebrow', { context: hasFutureTranche ? 'future' : '' })
+        ? t('tranche.claim-modal.eyebrow', { context: !currentTranche && hasFutureTranche ? 'future' : '' })
         : lastClaimedTranche
           ? 'Last claimed reward'
           : 'Your Airdrop reward';
