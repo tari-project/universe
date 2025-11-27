@@ -134,9 +134,11 @@
     },
     "status": {
       "available": "Available",
-      "available-in": "Available in",
+      "available-in": "Next claim window opens in",
       "balance-summary": "XTM Balance Summary",
       "claimed": "Claimed",
+      "closes-prefix": "Claim window closes in:",
+      "closes-suffix": ". Unclaimed tokens will be forfeited.",
       "error": "Failed to load tranche status",
       "expired": "Expired",
       "ineligible": "You are not eligible to claim",
