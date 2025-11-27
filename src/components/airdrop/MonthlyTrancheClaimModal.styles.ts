@@ -36,14 +36,14 @@ export const ModalBody = styled(Typography).attrs({ variant: 'p' })`
 
 export const ClaimContainer = styled.div`
     width: 100%;
-    border-radius: max(15px, 2%);
+    border-radius: 15px;
     gap: 10px;
     padding: 30px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     backdrop-filter: blur(20px);
-    background: linear-gradient(262.12deg, rgba(51, 57, 9, 0.4) 2.2%, rgba(9, 29, 7, 0.95) 90%), #091d07;
+    background: linear-gradient(262.12deg, rgba(51, 57, 9, 0.4) 2.2%, #091d07 50%), #091d07;
     box-shadow: 0 2px 12px 2px rgba(0, 0, 0, 0.23);
 `;
 
@@ -72,15 +72,23 @@ export const TrancheAmount = styled.div`
 `;
 
 export const RemainingBalance = styled.div`
-    font-size: 14px;
-    font-weight: 500;
-    color: #ffffff;
     padding: 8px 16px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(5px);
     border-radius: 10px;
     text-align: center;
     width: 100%;
+
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.3;
+    letter-spacing: -0.48px;
+
+    span {
+        font-weight: 600;
+        color: #ffffff;
+    }
 `;
 
 export const ClaimButton = styled(Button).attrs({

@@ -22,6 +22,7 @@ import {
 } from './MonthlyTrancheClaimModal.styles';
 import { useBalanceSummary, useCurrentMonthTranche } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
 import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
+import { formatNumber, FormatPreset } from '@app/utils';
 
 interface MonthlyTrancheClaimModalProps {
     showModal: boolean;
@@ -222,7 +223,8 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
         // Round to 2 decimals if needed, otherwise show as integer
         const rounded = Math.round(amount * 100) / 100;
-        return rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2);
+
+        return formatNumber(rounded * 1_000_000, FormatPreset.XTM_LONG);
     };
 
     const remainingAmount = calculateRemainingBalance();
@@ -255,7 +257,8 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                         {/* Show claimed rewards if available */}
                         {balanceSummary && balanceSummary.totalClaimed > 0 && (
                             <RemainingBalance>
-                                {t('tranche.status.total-claimed')}: {formatAmount(balanceSummary.totalClaimed)} XTM
+                                {t('tranche.status.total-claimed')}:{' '}
+                                <span>{formatAmount(balanceSummary.totalClaimed)} XTM</span>
                             </RemainingBalance>
                         )}
 
