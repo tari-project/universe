@@ -49,7 +49,7 @@ export default function Claim() {
         const formatAmount = (amount: number | undefined | null): string => {
             if (amount === undefined || amount === null || isNaN(amount)) return '0';
             const rounded = Math.round(amount * 100) / 100;
-            return formatNumber(rounded, FormatPreset.XTM_LONG_DEC);
+            return formatNumber(rounded * 1_000_000, FormatPreset.XTM_LONG_DEC);
         };
         if (isIneligible) {
             return (

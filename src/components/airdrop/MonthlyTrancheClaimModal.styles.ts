@@ -11,9 +11,9 @@ export const ModalWrapper = styled(m.div)`
     display: flex;
     flex-direction: column;
     padding: 40px;
-    width: clamp(620px, 55vw, 825px);
+    width: clamp(620px, 63vw, 825px);
     overflow: hidden;
-    gap: 14px;
+    gap: 20px;
 `;
 
 export const ModalHeader = styled.div`
@@ -23,7 +23,7 @@ export const ModalHeader = styled.div`
 export const ModalTitle = styled(Typography)`
     font-size: clamp(36px, 2rem + 0.5vh, 42px);
     font-weight: 500;
-    line-height: 1;
+    line-height: 1.1;
     letter-spacing: -1.9px;
 `;
 
@@ -32,9 +32,12 @@ export const ModalBody = styled(Typography).attrs({ variant: 'p' })`
     color: ${({ theme }) => theme.palette.text.primary};
     opacity: 0.8;
     line-height: 1.1;
+    font-weight: 400;
+    letter-spacing: -0.45px;
 `;
 
 export const ClaimContainer = styled.div`
+    margin-top: 8px;
     width: 100%;
     border-radius: 15px;
     gap: 20px;
@@ -45,7 +48,7 @@ export const ClaimContainer = styled.div`
     backdrop-filter: blur(20px);
     background: linear-gradient(262deg, #333909 2.2%, #091d07 100.01%), #333909;
 
-    box-shadow: 0 2px 12px 2px rgba(0, 0, 0, 0.23);
+    box-shadow: 0 1px 18px 1px rgba(0, 0, 0, 0.2);
 `;
 
 export const EyebrowText = styled.div`
@@ -137,17 +140,19 @@ export const ClaimButton = styled(Button).attrs({
 
 /* Countdown Components */
 export const CountdownContainer = styled.div`
-    display: flex;
+    display: grid;
     justify-content: center;
+    min-width: fit-content;
     gap: 8px;
-    margin: 8px 0;
+    grid-template-columns: repeat(3, minmax(30px, 1fr));
+    grid-template-rows: 2fr;
+    padding: 0 4px;
 `;
 
 export const CountdownSquare = styled.div`
-    width: 32px;
-    height: 26px;
+    line-height: 1;
     background: rgba(255, 255, 255, 0.85);
-    border-radius: 5px;
+    border-radius: 7px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -155,12 +160,14 @@ export const CountdownSquare = styled.div`
     font-size: 12px;
     font-weight: 600;
     font-family: monospace;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 8px 3px;
+    box-shadow: 0 0 7px 0 rgba(0, 0, 0, 0.13);
 `;
 
 export const CountdownWrapper = styled.div`
     display: flex;
-    flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 4px;
+    width: 100%;
 `;
