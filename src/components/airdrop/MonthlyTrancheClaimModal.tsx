@@ -28,7 +28,6 @@ interface MonthlyTrancheClaimModalProps {
     showModal: boolean;
     onClose: () => void;
 }
-
 interface CountdownTime {
     days: number;
     hours: number;

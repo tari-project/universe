@@ -117,8 +117,8 @@
       "claim-button": "Claim",
       "claiming": "Claiming...",
       "description": "Your hard work (and Yats!) has paid off! Each month on the 12th, you'll receive a portion of your airdrop.",
-      "eyebrow": "This month's Airdrop reward",
-      "remaining-allocation": "Your remaining allocation is <span>{{amount}}</span> XTM",
+      "eyebrow": "Available airdrop",
+      "remaining-allocation": "Total remaining: <span>{{amount}} XTM</span>",
       "title": "Claim this month's reward.",
       "waiting-verification": "Waiting for verification..."
     },
