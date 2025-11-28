@@ -40,7 +40,8 @@ export default function Claim() {
         return { total: totalOriginalAmount, claimed: 0, pending: totalOriginalAmount };
     }, [balanceSummary, claimStatus?.amount]);
     const { total: totalAirdropAmount, claimed: totalClaimedAmount, pending: totalPendingAmount } = totalValues;
-    const isIneligible = !claimStatusLoading && (!totalAirdropAmount || totalAirdropAmount === 0);
+    const isIneligible =
+        !claimStatusLoading && (!totalAirdropAmount || totalAirdropAmount === 0 || claimStatus?.claimTarget !== 'xtm');
     useTrancheAutoRefresh({ enabled: !killswitchEngaged && !isIneligible });
 
     const tooltipContent = useMemo(() => {
