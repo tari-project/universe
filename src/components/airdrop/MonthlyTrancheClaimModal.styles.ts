@@ -31,6 +31,7 @@ export const ModalBody = styled(Typography).attrs({ variant: 'p' })`
     font-size: 16px;
     color: ${({ theme }) => theme.palette.text.primary};
     opacity: 0.8;
+    display: flex;
     line-height: 1.1;
     font-weight: 400;
     letter-spacing: -0.45px;
@@ -140,12 +141,11 @@ export const ClaimButton = styled(Button).attrs({
 
 /* Countdown Components */
 export const CountdownContainer = styled.div`
-    display: grid;
+    display: flex;
     justify-content: center;
-    min-width: min-content;
+    align-items: center;
     gap: 8px;
-    grid-template-columns: repeat(auto-fit, minmax(30px, 1fr));
-    grid-auto-flow: column;
+    min-width: fit-content;
     padding: 0 4px;
 `;
 
@@ -157,10 +157,11 @@ export const CountdownSquare = styled.div`
     align-items: center;
     justify-content: center;
     color: #000000;
+    flex: 1 0 max(32px, 33%);
     font-size: 12px;
     font-weight: 600;
     font-family: monospace;
-    padding: 8px 3px;
+    padding: 8px 4px;
     box-shadow: 0 0 7px 0 rgba(0, 0, 0, 0.13);
 `;
 
@@ -168,6 +169,6 @@ export const CountdownWrapper = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 8px;
     width: 100%;
 `;

@@ -245,7 +245,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
     const countdownMarkup = useMemo(() => {
         if (!countdown) return null;
-        const isCurrent = !!currentTranche;
+        const isCurrent = !currentTranche;
 
         return (
             <CountdownWrapper>
