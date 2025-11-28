@@ -41,5 +41,6 @@ export function useClaimStatus(enabled = true) {
             // Only poll if we have a claim available
             return query.state.data?.hasClaim ? 30 * 1000 : false;
         },
+        refetchOnWindowFocus: true,
     });
 }

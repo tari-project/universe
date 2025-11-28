@@ -11,9 +11,9 @@ export const ModalWrapper = styled(m.div)`
     display: flex;
     flex-direction: column;
     padding: 40px;
-    width: clamp(620px, 55vw, 825px);
+    width: clamp(620px, 63vw, 825px);
     overflow: hidden;
-    gap: 14px;
+    gap: 20px;
 `;
 
 export const ModalHeader = styled.div`
@@ -23,7 +23,7 @@ export const ModalHeader = styled.div`
 export const ModalTitle = styled(Typography)`
     font-size: clamp(36px, 2rem + 0.5vh, 42px);
     font-weight: 500;
-    line-height: 1;
+    line-height: 1.1;
     letter-spacing: -1.9px;
 `;
 
@@ -31,20 +31,25 @@ export const ModalBody = styled(Typography).attrs({ variant: 'p' })`
     font-size: 16px;
     color: ${({ theme }) => theme.palette.text.primary};
     opacity: 0.8;
+    display: flex;
     line-height: 1.1;
+    font-weight: 400;
+    letter-spacing: -0.45px;
 `;
 
 export const ClaimContainer = styled.div`
+    margin-top: 8px;
     width: 100%;
-    border-radius: max(15px, 2%);
-    gap: 10px;
+    border-radius: 15px;
+    gap: 20px;
     padding: 30px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     backdrop-filter: blur(20px);
-    background: linear-gradient(262.12deg, rgba(51, 57, 9, 0.4) 2.2%, rgba(9, 29, 7, 0.95) 90%), #091d07;
-    box-shadow: 0 2px 12px 2px rgba(0, 0, 0, 0.23);
+    background: linear-gradient(262deg, #333909 2.2%, #091d07 100.01%), #333909;
+
+    box-shadow: 0 1px 18px 1px rgba(0, 0, 0, 0.2);
 `;
 
 export const EyebrowText = styled.div`
@@ -71,16 +76,30 @@ export const TrancheAmount = styled.div`
     }
 `;
 
+export const ClaimItems = styled.div`
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+`;
 export const RemainingBalance = styled.div`
-    font-size: 14px;
-    font-weight: 500;
-    color: #ffffff;
     padding: 8px 16px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(5px);
     border-radius: 10px;
     text-align: center;
     width: 100%;
+
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.3;
+    letter-spacing: -0.48px;
+
+    span {
+        font-weight: 600;
+        color: #ffffff;
+    }
 `;
 
 export const ClaimButton = styled(Button).attrs({
@@ -124,28 +143,32 @@ export const ClaimButton = styled(Button).attrs({
 export const CountdownContainer = styled.div`
     display: flex;
     justify-content: center;
+    align-items: center;
     gap: 8px;
-    margin: 8px 0;
+    min-width: fit-content;
+    padding: 0 4px;
 `;
 
 export const CountdownSquare = styled.div`
-    width: 32px;
-    height: 26px;
+    line-height: 1;
     background: rgba(255, 255, 255, 0.85);
-    border-radius: 5px;
+    border-radius: 7px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: #000000;
+    flex: 1 0 max(32px, 33%);
     font-size: 12px;
     font-weight: 600;
     font-family: monospace;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 8px 4px;
+    box-shadow: 0 0 7px 0 rgba(0, 0, 0, 0.13);
 `;
 
 export const CountdownWrapper = styled.div`
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 4px;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
 `;

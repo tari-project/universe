@@ -4,7 +4,6 @@ import AdminUI from '../../components/AdminUI/AdminUI.tsx';
 import ToastStack from '../../components/ToastStack/ToastStack.tsx';
 import XCLinkModal from '../../components/exchanges/LinkModal/LinkModal.tsx';
 import { CustomPowerLevelsDialogContainer } from '../navigation/components/Miner/components/CustomPowerLevels/CustomPowerLevelsDialogContainer.tsx';
-import CrewRewards from '../main/CrewRewards/CrewRewards.tsx';
 
 import AutoUpdateDialog from './AutoUpdateDialog/AutoUpdateDialog.tsx';
 import BatteryAlertDialog from './BatteryAlertDialog/index.ts';
@@ -62,7 +61,6 @@ const FloatingElements = () => {
             <SeedPhrase />
             <CreatePinDialog />
             <EnterPinDialog />
-            <CrewRewards />
             <SettingsModal />
             <AirdropClaimModal />
             <FailedModuleInitializationDialog />
