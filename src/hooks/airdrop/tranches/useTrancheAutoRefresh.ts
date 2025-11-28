@@ -27,23 +27,21 @@ export function useTrancheAutoRefresh({
     const queryClient = useQueryClient();
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const lastAvailableCountRef = useRef<number>(0);
-
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
     const userDetails = useAirdropStore((state) => state.userDetails);
     const isLoggedIn = !!userDetails?.user?.id;
 
-    // Manual refresh function
     const refreshTranches = useCallback(async () => {
         try {
             const success = await handleTrancheRefresh();
 
             if (success) {
                 // Invalidate React Query cache to trigger re-fetch
-                queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
+                await queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
                 onRefreshSuccess?.();
                 return true;
             } else {
-                throw new Error('Failed to refresh tranche status');
+                console.error('Failed to refresh tranche status');
             }
         } catch (error) {
             const errorObj = error instanceof Error ? error : new Error('Unknown error');
@@ -52,14 +50,12 @@ export function useTrancheAutoRefresh({
             return false;
         }
     }, [queryClient, onRefreshSuccess, onRefreshError]);
-
-    // Full refresh including tokens and tranches
     const refreshAll = useCallback(async () => {
         try {
             const result = await handleFullAirdropRefresh();
 
             if (result.tranchesRefreshed) {
-                queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
+                await queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
             }
 
             onRefreshSuccess?.();
@@ -77,20 +73,6 @@ export function useTrancheAutoRefresh({
         if (!trancheStatus || !notifyOnNewTranches) return;
 
         const currentAvailableCount = trancheStatus.availableCount;
-
-        console.debug('📊 Tranche availability check:');
-        console.debug('  - currentAvailableCount:', currentAvailableCount);
-        console.debug('  - lastAvailableCountRef.current:', lastAvailableCountRef.current);
-        console.debug(
-            '  - tranches:',
-            trancheStatus.tranches.map((t) => ({
-                id: t.id,
-                claimed: t.claimed,
-                canClaim: t.canClaim,
-                validFrom: t.validFrom,
-                validTo: t.validTo,
-            }))
-        );
 
         // If we have more available tranches than before, notify the user and auto-open modal
         if (lastAvailableCountRef.current > 0 && currentAvailableCount > lastAvailableCountRef.current) {
@@ -169,7 +151,7 @@ export function useTrancheAutoRefresh({
             const interval = getRefreshInterval();
 
             intervalRef.current = setInterval(() => {
-                refreshTranches();
+                void refreshTranches();
             }, interval);
         };
 
@@ -186,19 +168,17 @@ export function useTrancheAutoRefresh({
             }
             clearTimeout(timeoutId);
         };
-    }, [enabled, isLoggedIn, getRefreshInterval, refreshTranches]);
+    }, [enabled, getRefreshInterval, isLoggedIn, refreshTranches]);
 
     // Refresh on app focus
     useEffect(() => {
         if (!enabled || !isLoggedIn) return;
 
-        const handleFocus = () => {
-            refreshTranches();
-        };
+        const handleFocus = () => refreshTranches();
 
         const handleVisibilityChange = () => {
             if (!document.hidden) {
-                handleFocus();
+                void handleFocus();
             }
         };
 
@@ -209,7 +189,7 @@ export function useTrancheAutoRefresh({
             window.removeEventListener('focus', handleFocus);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [enabled, isLoggedIn, refreshTranches, trancheStatus]);
+    }, [enabled, isLoggedIn, refreshTranches]);
 
     // Cleanup on unmount
     useEffect(() => {

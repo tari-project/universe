@@ -6,6 +6,8 @@ import { addToast } from '@app/components/ToastStack/useToastStore';
 import { useCsrfToken } from './useCsrfToken';
 import { useAutomaticOtpClaim } from './useAutomaticOtpClaim';
 import type { ClaimRequest, ClaimResult, BackgroundClaimResult } from '@app/types/airdrop-claim';
+import { useTranslation } from 'react-i18next';
+import { closeTrancheModal } from '@app/store/actions/airdropStoreActions.ts';
 
 interface ClaimSubmissionResponse {
     success: boolean;
@@ -54,6 +56,7 @@ async function submitClaim(claimRequest: ClaimRequest): Promise<ClaimResult | un
 }
 
 export function useBackgroundClaimSubmission() {
+    const { t } = useTranslation('airdrop');
     const walletAddress = useWalletStore((s) => s.tari_address_base58);
     const { data: csrfData, isLoading: isLoadingCsrf, error: csrfError } = useCsrfToken();
     const { requestOtp, otpData, state: otpState, reset: resetOtp } = useAutomaticOtpClaim();
@@ -70,12 +73,14 @@ export function useBackgroundClaimSubmission() {
     const claimMutation = useMutation({
         mutationFn: submitClaim,
         onSuccess: (result) => {
-            addToast({
-                title: 'Airdrop Claimed Successfully!',
-                text: `Amount: ${result?.amount} XTM • Transaction ID: ${result?.transactionId}`,
-                type: 'success',
-                timeout: 5000,
-            });
+            if (result?.amount) {
+                addToast({
+                    title: t('tranche.notifications.claim-success', { amount: result?.amount }),
+                    type: 'success',
+                    timeout: 4000,
+                });
+            }
+            closeTrancheModal();
             resetOtp();
         },
         onError: (error: Error) => {
@@ -106,7 +111,6 @@ export function useBackgroundClaimSubmission() {
         };
 
         console.info('🔍 Constructed ClaimRequest:', JSON.stringify(claimRequest, null, 2));
-
         claimMutation.mutate(claimRequest, {
             onSuccess: (result) => {
                 pendingClaim.resolve({

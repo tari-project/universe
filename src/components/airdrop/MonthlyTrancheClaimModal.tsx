@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { useTrancheClaimSubmission } from '@app/hooks/airdrop/tranches/useTrancheClaimSubmission';
 import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
@@ -9,6 +9,7 @@ import { setClaimInProgress, setClaimResult } from '@app/store/actions/airdropSt
 import {
     ClaimButton,
     ClaimContainer,
+    ClaimItems,
     CountdownContainer,
     CountdownSquare,
     CountdownWrapper,
@@ -22,16 +23,16 @@ import {
 } from './MonthlyTrancheClaimModal.styles';
 import { useBalanceSummary, useCurrentMonthTranche } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
 import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
-
-interface MonthlyTrancheClaimModalProps {
-    showModal: boolean;
-    onClose: () => void;
-}
+import { formatNumber, FormatPreset } from '@app/utils';
 
 interface CountdownTime {
     days: number;
     hours: number;
     minutes: number;
+}
+interface MonthlyTrancheClaimModalProps {
+    showModal: boolean;
+    onClose: () => void;
 }
 
 export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheClaimModalProps) {
@@ -40,7 +41,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const initialCountdownRef = useRef(false);
     const [countdown, setCountdown] = useState<CountdownTime | null>(null);
 
-    // Tranche system hooks
     const { currentTranche, hasCurrentTranche } = useCurrentMonthTranche();
     const balanceSummary = useBalanceSummary();
     const {
@@ -58,9 +58,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const { refreshTranches } = useTrancheAutoRefresh({
         enabled: showModal,
         notifyOnNewTranches: false, // Don't show notifications in modal
-        onRefreshSuccess: () => {
-            console.debug('Tranche data refreshed in modal');
-        },
     });
 
     const claim = useAirdropStore((state) => state.claim);
@@ -124,10 +121,13 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     }, [showModal]);
 
     const getCountdownParts = useCallback(() => {
-        if (!futureTranche) return null;
-
+        const tranche = currentTranche || futureTranche;
+        if (!tranche) return null;
         const now = new Date().getTime();
-        const futureTime = new Date(futureTranche.validFrom).getTime();
+        const validUntil = new Date(tranche.validTo).getTime();
+        const validFrom = new Date(tranche.validFrom).getTime();
+
+        const futureTime = currentTranche && validUntil ? validUntil : validFrom;
         const timeDiff = futureTime - now;
 
         if (timeDiff <= 0) {
@@ -142,7 +142,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
 
         return { days, hours, minutes };
-    }, [futureTranche, refreshTranches]);
+    }, [currentTranche, futureTranche, refreshTranches]);
 
     const updateCountdown = useCallback(() => {
         const parts = getCountdownParts();
@@ -165,11 +165,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         return () => clearInterval(interval);
     }, [updateCountdown]);
 
-    // Don't show modal if no claim data available at all
-    if (!hasAnyClaimData) {
-        return null;
-    }
-
     // Determine what to display based on availability
     const displayAmount = isTrancheMode
         ? currentTranche?.amount
@@ -179,24 +174,20 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
     // Update messaging based on tranche availability
     const displayTitle = isTrancheMode
-        ? t('tranche.claim-modal.title')
-        : hasFutureTranche
-          ? "Next month's reward"
-          : 'Your airdrop status';
+        ? t('tranche.claim-modal.title', { context: !currentTranche && hasFutureTranche ? 'future' : '' })
+        : 'Your airdrop status';
 
     const displayDescription = isTrancheMode
-        ? t('tranche.claim-modal.description')
-        : hasFutureTranche
+        ? t('tranche.claim-modal.description', { emojis: `💜🐢` })
+        : !currentTranche && hasFutureTranche
           ? 'Your next tranche will be available soon!'
           : "Here's your airdrop progress and claimed rewards.";
 
     const displayEyebrow = isTrancheMode
-        ? t('tranche.claim-modal.eyebrow')
-        : hasFutureTranche
-          ? "Next month's Airdrop reward"
-          : lastClaimedTranche
-            ? 'Last claimed reward'
-            : 'Your Airdrop reward';
+        ? t('tranche.claim-modal.eyebrow', { context: !currentTranche && hasFutureTranche ? 'future' : '' })
+        : lastClaimedTranche
+          ? 'Last claimed reward'
+          : 'Your Airdrop reward';
 
     // Calculate remaining balance: total from claimStatus minus claimed and expired tranches
     const calculateRemainingBalance = () => {
@@ -222,20 +213,60 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
         // Round to 2 decimals if needed, otherwise show as integer
         const rounded = Math.round(amount * 100) / 100;
-        return rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2);
+
+        return formatNumber(rounded * 1_000_000, FormatPreset.XTM_LONG);
     };
 
     const remainingAmount = calculateRemainingBalance();
-
-    const displayRemainingBalance =
-        remainingAmount !== null
-            ? t('tranche.claim-modal.remaining-allocation', { amount: formatAmount(remainingAmount) })
-            : null;
 
     const isAnyLoading = trancheLoading || legacyProcessing || isClaimingOptimistic || claim?.isClaimInProgress;
     const isOtpWaiting = isTrancheMode ? false : false; // OTP handling is now internal to performBackgroundClaim
     const canClaimNow = isTrancheMode ? trancheCanClaim : claimStatus?.hasClaim && !legacyProcessing;
 
+    const claimedMarkup =
+        balanceSummary && balanceSummary.totalClaimed > 0 ? (
+            <RemainingBalance>
+                {t('tranche.status.total-claimed')}: <span>{formatAmount(balanceSummary.totalClaimed)} XTM</span>
+            </RemainingBalance>
+        ) : null;
+    const remainingMarkup =
+        remainingAmount !== null ? (
+            <RemainingBalance>
+                <Trans
+                    ns="airdrop"
+                    i18nKey={'tranche.claim-modal.remaining-allocation'}
+                    values={{
+                        amount: formatAmount(remainingAmount),
+                    }}
+                    components={{ span: <span /> }}
+                />
+            </RemainingBalance>
+        ) : null;
+
+    const countdownMarkup = useMemo(() => {
+        if (!countdown) return null;
+        const isCurrent = !currentTranche;
+
+        return (
+            <CountdownWrapper>
+                <ModalBody>
+                    {isCurrent ? t('tranche.status.closes-prefix') : t('tranche.status.available-in')}
+                </ModalBody>
+                <CountdownContainer>
+                    {countdown.days > 0 && <CountdownSquare>{countdown.days}D</CountdownSquare>}
+                    {(countdown.days > 0 || countdown.hours > 0) && (
+                        <CountdownSquare>{countdown.hours}H</CountdownSquare>
+                    )}
+                    <CountdownSquare>{countdown.minutes}M</CountdownSquare>
+                </CountdownContainer>
+                {isCurrent && <ModalBody>{t('tranche.status.closes-suffix')}</ModalBody>}
+            </CountdownWrapper>
+        );
+    }, [countdown, currentTranche, t]);
+    // Don't show modal if no claim data available at all
+    if (!hasAnyClaimData) {
+        return null;
+    }
     return (
         <Dialog open={showModal} onOpenChange={onClose}>
             <DialogContent variant="wrapper">
@@ -251,49 +282,25 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                         <TrancheAmount>
                             {formatAmount(displayAmount)} <span>XTM</span>
                         </TrancheAmount>
-
-                        {/* Show claimed rewards if available */}
-                        {balanceSummary && balanceSummary.totalClaimed > 0 && (
-                            <RemainingBalance>
-                                {t('tranche.status.total-claimed')}: {formatAmount(balanceSummary.totalClaimed)} XTM
-                            </RemainingBalance>
-                        )}
-
-                        {/* Show remaining allocation */}
-                        {displayRemainingBalance && <RemainingBalance>{displayRemainingBalance}</RemainingBalance>}
+                        <ClaimItems>
+                            {claimedMarkup}
+                            {remainingMarkup}
+                        </ClaimItems>
                     </ClaimContainer>
 
                     {isTrancheMode ? (
-                        <ClaimButton onClick={handleClaim} disabled={!canClaimNow || isAnyLoading}>
-                            {!isAnyLoading
-                                ? t('tranche.claim-modal.claim-button')
-                                : isOtpWaiting
-                                  ? t('tranche.claim-modal.waiting-verification')
-                                  : t('tranche.claim-modal.claiming')}
-                        </ClaimButton>
+                        <>
+                            {countdownMarkup}
+                            <ClaimButton onClick={handleClaim} disabled={!canClaimNow || isAnyLoading}>
+                                {!isAnyLoading
+                                    ? t('tranche.claim-modal.claim-button')
+                                    : isOtpWaiting
+                                      ? t('tranche.claim-modal.waiting-verification')
+                                      : t('tranche.claim-modal.claiming')}
+                            </ClaimButton>
+                        </>
                     ) : hasFutureTranche ? (
-                        <CountdownWrapper>
-                            {countdown && (
-                                <CountdownContainer>
-                                    <div
-                                        style={{
-                                            fontSize: '14px',
-                                            fontWeight: '600',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            marginRight: '8px',
-                                        }}
-                                    >
-                                        {t('tranche.status.available-in')}:
-                                    </div>
-                                    {countdown.days > 0 && <CountdownSquare>{countdown.days}D</CountdownSquare>}
-                                    {(countdown.days > 0 || countdown.hours > 0) && (
-                                        <CountdownSquare>{countdown.hours}H</CountdownSquare>
-                                    )}
-                                    <CountdownSquare>{countdown.minutes}M</CountdownSquare>
-                                </CountdownContainer>
-                            )}
-                        </CountdownWrapper>
+                        countdownMarkup
                     ) : (
                         <ClaimButton disabled={true} $isLoading={false}>
                             {t('tranche.status.no-active-claims')}
