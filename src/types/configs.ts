@@ -132,3 +132,14 @@ export interface ConfigBackendInMemory {
     exchange_id: string;
     bridge_backend_api_url: string;
 }
+
+export enum CustomDirectory {
+    ChainData = 'ChainData',
+    Config = 'Config',
+    Logs = 'Logs',
+}
+
+export interface UpdateCustomDirectory {
+    directoryType: CustomDirectory;
+    path: string;
+}
