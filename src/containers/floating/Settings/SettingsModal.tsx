@@ -51,7 +51,8 @@ const SettingsModal = memo(function SettingsModal() {
     }
 
     const sectionTitle = t(`tabs.${activeSection}`);
-    const title = activeSection === 'releaseNotes' ? sectionTitle : `${sectionTitle} ${t('settings')}`;
+    const omitSettingsSuffix = activeSection === 'releaseNotes' || activeSection === 'airdrop';
+    const title = omitSettingsSuffix ? sectionTitle : `${sectionTitle} ${t('settings')}`;
 
     return (
         <Dialog open={isSettingsOpen} onOpenChange={onOpenChange}>

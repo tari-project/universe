@@ -28,14 +28,14 @@ export default function LogIn() {
         </>
     );
     const oldMarkup = (
-        <SidebarItem text={t('earnBonusXTM')} tooltipContent={tooltipContent}>
+        <SidebarItem text={t('earnBonusXTM')} tooltipContent={tooltipContent} isWrapped>
             <ActionImgWrapper style={{ marginBottom: '-4px' }}>
                 <GemImgLarge src={gem} alt="gem ico" />
             </ActionImgWrapper>
         </SidebarItem>
     );
     const claimMarkup = (
-        <SidebarItem>
+        <SidebarItem isWrapped>
             <ActionImgWrapper style={{ marginBottom: '-4px' }}>
                 {claimEnabled ? <ParachuteSVG /> : <GemImgLarge src={gem} alt="gem ico" />}
             </ActionImgWrapper>
