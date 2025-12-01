@@ -1,19 +1,14 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { useTrancheClaimSubmission } from '@app/hooks/airdrop/tranches/useTrancheClaimSubmission';
-import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
-import { useSimpleClaimSubmission } from '@app/hooks/airdrop/claim/useSimpleClaimSubmission';
 import { useAirdropStore } from '@app/store';
 import { ClaimButton, ModalBody, ModalHeader, ModalTitle, ModalWrapper } from './MonthlyTrancheClaimModal.styles';
 import { useCurrentMonthTranche } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
 import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
+import ClaimDetails from '@app/components/airdrop/ClaimDetails.tsx';
+import Countdown from '@app/components/airdrop/Countdown.tsx';
 
-interface CountdownTime {
-    days: number;
-    hours: number;
-    minutes: number;
-}
 interface MonthlyTrancheClaimModalProps {
     showModal: boolean;
     onClose: () => void;
@@ -22,8 +17,9 @@ interface MonthlyTrancheClaimModalProps {
 export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheClaimModalProps) {
     const { t } = useTranslation('airdrop');
     const [isClaimingOptimistic, setIsClaimingOptimistic] = useState(false);
-    const initialCountdownRef = useRef(false);
-    const [countdown, setCountdown] = useState<CountdownTime | null>(null);
+
+    const claim = useAirdropStore((state) => state.claim);
+    const trancheStatus = useAirdropStore((state) => state.trancheStatus);
 
     const { currentTranche } = useCurrentMonthTranche();
     const {
@@ -33,30 +29,21 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         otpState: _otpState,
     } = useTrancheClaimSubmission();
 
-    // Legacy claim system hooks (fallback)
-    const { data: claimStatus, isLoading: _claimStatusLoading } = useClaimStatus();
-    const { performClaim, isProcessing: legacyProcessing, error: _legacyError } = useSimpleClaimSubmission();
-
-    // Auto-refresh tranche data while modal is open
     const { refreshTranches } = useTrancheAutoRefresh({
         enabled: showModal,
         notifyOnNewTranches: false, // Don't show notifications in modal
     });
 
-    const claim = useAirdropStore((state) => state.claim);
+    const futureTranches = trancheStatus?.tranches
+        .filter((t) => !t.claimed && new Date(t.validTo) > new Date())
+        ?.sort((a, b) => new Date(a.validTo).getTime() - new Date(b.validTo).getTime());
 
-    // Get tranche data for display decisions
-    const trancheStatus = useAirdropStore((state) => state.trancheStatus);
-
-    // Determine which system to use and data to display
-
-    const hasFutureTranche = trancheStatus?.tranches.some((t) => !t.claimed && new Date(t.validFrom) > new Date());
-    const futureTranche = trancheStatus?.tranches.find((t) => !t.claimed && new Date(t.validFrom) > new Date());
+    const nextTranche = futureTranches?.find((t) => t.id !== currentTranche?.id && new Date(t.validFrom) > new Date());
     const lastClaimedTranche = trancheStatus?.tranches.find((t) => t.claimed);
 
-    const hasAnyClaimData = !!trancheStatus;
+    const isFuture = !currentTranche || !!nextTranche;
+    const isCurrentUnclaimed = Boolean(currentTranche && !currentTranche.claimed);
 
-    // Handle claim submission
     const handleClaim = async () => {
         if (!currentTranche || !trancheCanClaim) return;
 
@@ -77,68 +64,21 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         }
     }, [showModal]);
 
-    const getCountdownParts = useCallback(() => {
-        const tranche = currentTranche || futureTranche;
-        if (!tranche) return null;
-        const now = new Date().getTime();
-        const validUntil = new Date(tranche.validTo).getTime();
-        const validFrom = new Date(tranche.validFrom).getTime();
-
-        const futureTime = currentTranche && validUntil ? validUntil : validFrom;
-        const timeDiff = futureTime - now;
-
-        if (timeDiff <= 0) {
-            setCountdown(null);
-            console.debug('Future tranche should now be available, refreshing data');
-            void refreshTranches(); // Refresh to get updated data
-            return;
-        }
-
-        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-
-        return { days, hours, minutes };
-    }, [currentTranche, futureTranche, refreshTranches]);
-
-    const updateCountdown = useCallback(() => {
-        const parts = getCountdownParts();
-        if (parts) {
-            const { days, hours, minutes } = parts || {};
-            setCountdown({ days, hours, minutes });
-            initialCountdownRef.current = true;
-        }
-    }, [getCountdownParts]);
-
-    useEffect(() => {
-        if (countdown || initialCountdownRef.current) return;
-        updateCountdown();
-    }, [countdown, updateCountdown]);
-
-    // Countdown effect for future tranches
-    useEffect(() => {
-        const interval = setInterval(updateCountdown, 1000 * 55);
-
-        return () => clearInterval(interval);
-    }, [updateCountdown]);
-
-    // Update messaging based on tranche availability
-    const displayTitle = t('tranche.claim-modal.title', {
-        context: !currentTranche && hasFutureTranche ? 'future' : '',
-    });
-
-    const isAnyLoading = trancheLoading || legacyProcessing || isClaimingOptimistic || claim?.isClaimInProgress;
-    const canClaimNow = trancheCanClaim && claimStatus?.hasClaim;
+    const displayTitle = t('tranche.claim-modal.title', { context: isFuture ? 'future' : '' });
+    const isAnyLoading = trancheLoading || isClaimingOptimistic || claim?.isClaimInProgress;
+    const displayAmount = nextTranche ? nextTranche?.amount : currentTranche?.amount || lastClaimedTranche?.amount;
 
     const claimMarkup = (
-        <ClaimButton onClick={handleClaim} disabled={!canClaimNow || isAnyLoading}>
+        <ClaimButton onClick={handleClaim} disabled={!trancheCanClaim || isAnyLoading}>
             {!isAnyLoading ? t('tranche.claim-modal.claim-button') : t('tranche.claim-modal.claiming')}
         </ClaimButton>
     );
 
     const displayDescription = t('tranche.claim-modal.description', { emojis: `💜🐢` });
 
-    if (!hasAnyClaimData) {
+    const countdownTime = isCurrentUnclaimed ? currentTranche?.validTo : nextTranche?.validFrom;
+
+    if (!trancheStatus) {
         return null;
     }
     return (
@@ -149,7 +89,12 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                         <ModalTitle variant="h2">{displayTitle}</ModalTitle>
                     </ModalHeader>
                     <ModalBody>{displayDescription}</ModalBody>
-
+                    <ClaimDetails displayAmount={displayAmount} isFutureTranche={false} />
+                    <Countdown
+                        isCurrent={isCurrentUnclaimed}
+                        futureTime={countdownTime}
+                        onEndReached={refreshTranches}
+                    />
                     {claimMarkup}
                 </ModalWrapper>
             </DialogContent>

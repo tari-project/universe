@@ -1,4 +1,5 @@
 import { formatNumber, FormatPreset } from '@app/utils';
+import { BalanceSummary } from '@app/types/airdrop-claim.ts';
 
 export const formatAmount = (amount: number | undefined | null): string => {
     if (amount === undefined || amount === null) return '0';
@@ -10,15 +11,12 @@ export const formatAmount = (amount: number | undefined | null): string => {
 };
 
 // Calculate remaining balance: total from claimStatus minus claimed and expired tranches
-export const calculateRemainingBalance = () => {
-    if (!claimStatus?.amount) return null;
-
-    const totalOriginalAmount = claimStatus.amount;
+export const calculateRemainingBalance = (balanceSummary: BalanceSummary | null, totalOriginalAmount?: number) => {
+    if (!totalOriginalAmount) return null;
 
     // Always try to subtract claimed and expired if we have tranche data
     if (balanceSummary) {
         const claimedAndExpired = balanceSummary.totalClaimed + balanceSummary.totalExpired;
-
         return totalOriginalAmount - claimedAndExpired;
     }
 
