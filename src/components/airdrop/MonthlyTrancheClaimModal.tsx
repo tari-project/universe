@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { useTrancheClaimSubmission } from '@app/hooks/airdrop/tranches/useTrancheClaimSubmission';
@@ -10,9 +10,6 @@ import {
     ClaimButton,
     ClaimContainer,
     ClaimItems,
-    CountdownContainer,
-    CountdownSquare,
-    CountdownWrapper,
     EyebrowText,
     ModalBody,
     ModalHeader,
@@ -243,27 +240,21 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
             </RemainingBalance>
         ) : null;
 
-    const countdownMarkup = useMemo(() => {
-        if (!countdown) return null;
-        const isCurrent = !currentTranche;
+    const trancheMarkup = isTrancheMode && (
+        <ClaimButton onClick={handleClaim} disabled={!canClaimNow || isAnyLoading}>
+            {!isAnyLoading
+                ? t('tranche.claim-modal.claim-button')
+                : isOtpWaiting
+                  ? t('tranche.claim-modal.waiting-verification')
+                  : t('tranche.claim-modal.claiming')}
+        </ClaimButton>
+    );
+    const nonTrancheMarkup = !isTrancheMode && !hasFutureTranche && (
+        <ClaimButton disabled={true} $isLoading={false}>
+            {t('tranche.status.no-active-claims')}
+        </ClaimButton>
+    );
 
-        return (
-            <CountdownWrapper>
-                <ModalBody>
-                    {isCurrent ? t('tranche.status.closes-prefix') : t('tranche.status.available-in')}
-                </ModalBody>
-                <CountdownContainer>
-                    {countdown.days > 0 && <CountdownSquare>{countdown.days}D</CountdownSquare>}
-                    {(countdown.days > 0 || countdown.hours > 0) && (
-                        <CountdownSquare>{countdown.hours}H</CountdownSquare>
-                    )}
-                    <CountdownSquare>{countdown.minutes}M</CountdownSquare>
-                </CountdownContainer>
-                {isCurrent && <ModalBody>{t('tranche.status.closes-suffix')}</ModalBody>}
-            </CountdownWrapper>
-        );
-    }, [countdown, currentTranche, t]);
-    // Don't show modal if no claim data available at all
     if (!hasAnyClaimData) {
         return null;
     }
@@ -274,9 +265,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                     <ModalHeader>
                         <ModalTitle variant="h2">{displayTitle}</ModalTitle>
                     </ModalHeader>
-
                     <ModalBody>{displayDescription}</ModalBody>
-
                     <ClaimContainer>
                         <EyebrowText>{displayEyebrow}</EyebrowText>
                         <TrancheAmount>
@@ -288,24 +277,8 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                         </ClaimItems>
                     </ClaimContainer>
 
-                    {isTrancheMode ? (
-                        <>
-                            {countdownMarkup}
-                            <ClaimButton onClick={handleClaim} disabled={!canClaimNow || isAnyLoading}>
-                                {!isAnyLoading
-                                    ? t('tranche.claim-modal.claim-button')
-                                    : isOtpWaiting
-                                      ? t('tranche.claim-modal.waiting-verification')
-                                      : t('tranche.claim-modal.claiming')}
-                            </ClaimButton>
-                        </>
-                    ) : hasFutureTranche ? (
-                        countdownMarkup
-                    ) : (
-                        <ClaimButton disabled={true} $isLoading={false}>
-                            {t('tranche.status.no-active-claims')}
-                        </ClaimButton>
-                    )}
+                    {trancheMarkup}
+                    {nonTrancheMarkup}
                 </ModalWrapper>
             </DialogContent>
         </Dialog>
