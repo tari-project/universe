@@ -75,7 +75,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     );
 
     const displayDescription = t('tranche.claim-modal.description', { emojis: `💜🐢` });
-
     const countdownTime = isCurrentUnclaimed ? currentTranche?.validTo : nextTranche?.validFrom;
 
     if (!trancheStatus) {
