@@ -41,7 +41,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const nextTranche = futureTranches?.find((t) => t.id !== currentTranche?.id && new Date(t.validFrom) > new Date());
     const lastClaimedTranche = trancheStatus?.tranches.find((t) => t.claimed);
 
-    const isFuture = !currentTranche || !!nextTranche;
+    const isFuture = !currentTranche && !!nextTranche;
     const isCurrentUnclaimed = Boolean(currentTranche && !currentTranche.claimed);
 
     const handleClaim = async () => {
