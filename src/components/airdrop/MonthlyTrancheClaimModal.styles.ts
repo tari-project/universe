@@ -13,7 +13,7 @@ export const ModalWrapper = styled(m.div)`
     padding: 40px;
     width: clamp(620px, 63vw, 825px);
     overflow: hidden;
-    gap: 20px;
+    gap: 24px;
 `;
 
 export const ModalHeader = styled.div`

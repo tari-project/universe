@@ -142,7 +142,7 @@
       "balance-summary": "XTM Balance Summary",
       "claimed": "Claimed",
       "closes-prefix": "Claim window closes in",
-      "closes-suffix": "Unclaimed tokens will be forfeited",
+      "closes-suffix": "Unclaimed tokens will be forfeited.",
       "error": "Failed to load tranche status",
       "expired": "Expired",
       "ineligible": "You are not eligible to claim",

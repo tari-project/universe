@@ -46,7 +46,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
     const handleClaim = async () => {
         if (!currentTranche || !trancheCanClaim) return;
-
         try {
             setIsClaimingOptimistic(true);
             await submitTrancheClaimWithOtp(currentTranche.id);
@@ -68,12 +67,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const isAnyLoading = trancheLoading || isClaimingOptimistic || claim?.isClaimInProgress;
     const displayAmount = nextTranche ? nextTranche?.amount : currentTranche?.amount || lastClaimedTranche?.amount;
 
-    const claimMarkup = (
-        <ClaimButton onClick={handleClaim} disabled={!trancheCanClaim || isAnyLoading}>
-            {!isAnyLoading ? t('tranche.claim-modal.claim-button') : t('tranche.claim-modal.claiming')}
-        </ClaimButton>
-    );
-
     const displayDescription = t('tranche.claim-modal.description', { emojis: `💜🐢` });
     const countdownTime = isCurrentUnclaimed ? currentTranche?.validTo : nextTranche?.validFrom;
 
@@ -94,7 +87,9 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                         futureTime={countdownTime}
                         onEndReached={refreshTranches}
                     />
-                    {claimMarkup}
+                    <ClaimButton onClick={handleClaim} disabled={!trancheCanClaim || isAnyLoading}>
+                        {!isAnyLoading ? t('tranche.claim-modal.claim-button') : t('tranche.claim-modal.claiming')}
+                    </ClaimButton>
                 </ModalWrapper>
             </DialogContent>
         </Dialog>
