@@ -17,13 +17,13 @@ export const EyebrowText = styled.div`
     color: #fff;
     font-size: 16px;
     font-weight: 600;
-    line-height: 1.2;
+    line-height: 1;
     letter-spacing: -0.48px;
 `;
 export const TrancheAmount = styled.div`
     color: #ffffff;
     line-height: 1;
-    font-size: clamp(40px, 0.8rem + 2.8vw, 52px);
+    font-size: clamp(40px, 0.8rem + 2.6vw, 52px);
     font-weight: 600;
     letter-spacing: -1.56px;
     overflow-wrap: anywhere;

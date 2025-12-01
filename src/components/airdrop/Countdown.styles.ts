@@ -5,20 +5,22 @@ export const CountdownWrapper = styled.div`
     display: flex;
     align-items: stretch;
     justify-content: center;
+    align-self: center;
     gap: 6px;
     width: 100%;
-    min-height: 26px;
+    min-height: 28px;
     flex-wrap: wrap;
     padding: 0 10px;
 `;
 export const CountdownContainer = styled.div`
     display: flex;
-    flex: 1 0 10%;
+    flex: 1 1 10%;
+    max-width: 110px;
 `;
 
 export const Grid = styled.div`
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(26px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(28px, 1fr));
     gap: 6px;
     width: 100%;
     height: 100%;
@@ -44,8 +46,8 @@ export const CountdownSquare = styled.div`
 export const CountdownText = styled(Typography).attrs({ variant: 'p' })`
     display: flex;
     font-size: 16px;
-    line-height: 26px;
+    line-height: 28px;
     font-weight: 500;
-    opacity: 0.8;
+    opacity: 0.85;
     letter-spacing: -0.3px;
 `;

@@ -66,7 +66,7 @@ export default function Countdown({ isCurrent = false, futureTime, onEndReached 
     return countdown ? (
         <CountdownWrapper>
             <CountdownText>
-                {isCurrent ? t('tranche.status.closes-prefix') : t('tranche.status.available-in')}
+                {isCurrent ? t('tranche.status.closes-prefix') : t('tranche.status.available-in')}:
             </CountdownText>
             <CountdownContainer>
                 <Grid>
