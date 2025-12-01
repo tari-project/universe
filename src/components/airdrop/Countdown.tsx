@@ -77,7 +77,7 @@ export default function Countdown({ isCurrent = false, futureTime, onEndReached 
                     <CountdownSquare>{countdown.minutes}M</CountdownSquare>
                 </Grid>
             </CountdownContainer>
-            {isCurrent && <CountdownText>{t('tranche.status.closes-suffix')}.</CountdownText>}
+            {isCurrent && <CountdownText>{t('tranche.status.closes-suffix')}</CountdownText>}
         </CountdownWrapper>
     ) : null;
 }

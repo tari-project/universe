@@ -11,7 +11,7 @@ export const ModalWrapper = styled(m.div)`
     display: flex;
     flex-direction: column;
     padding: 40px;
-    width: clamp(620px, 63vw, 825px);
+    width: clamp(600px, 58vw, 825px);
     overflow: hidden;
     gap: 24px;
 `;
@@ -32,9 +32,9 @@ export const ModalBody = styled(Typography).attrs({ variant: 'p' })`
     color: ${({ theme }) => theme.palette.text.primary};
     opacity: 0.8;
     display: flex;
-    line-height: 1.1;
+    line-height: 1.2;
     font-weight: 400;
-    letter-spacing: -0.45px;
+    letter-spacing: -0.28px;
 `;
 
 export const ClaimButton = styled(Button).attrs({

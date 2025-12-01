@@ -11,7 +11,6 @@ export const ClaimContainer = styled.div`
     justify-content: center;
     backdrop-filter: blur(20px);
     background: linear-gradient(262deg, #333909 2.2%, #091d07 100.01%), #333909;
-
     box-shadow: 0 1px 18px 1px rgba(0, 0, 0, 0.2);
 `;
 export const EyebrowText = styled.div`
@@ -24,7 +23,7 @@ export const EyebrowText = styled.div`
 export const TrancheAmount = styled.div`
     color: #ffffff;
     line-height: 1;
-    font-size: clamp(38px, 0.6rem + 2.5vw, 52px);
+    font-size: clamp(40px, 0.8rem + 2.8vw, 52px);
     font-weight: 600;
     letter-spacing: -1.56px;
     overflow-wrap: anywhere;
@@ -43,7 +42,6 @@ export const ClaimItems = styled.div`
     gap: 8px;
 `;
 export const RemainingBalance = styled.div`
-    padding: 8px 16px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(5px);
     border-radius: 10px;
@@ -53,11 +51,17 @@ export const RemainingBalance = styled.div`
     color: rgba(255, 255, 255, 0.5);
     font-size: 16px;
     font-weight: 400;
-    line-height: 1.3;
     letter-spacing: -0.48px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    gap: 4px;
 
     span {
+        display: flex;
         font-weight: 600;
         color: #ffffff;
+        letter-spacing: -0.01px;
     }
 `;
