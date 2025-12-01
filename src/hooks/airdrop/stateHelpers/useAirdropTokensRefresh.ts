@@ -73,7 +73,7 @@ async function fetchTrancheStatus(): Promise<TrancheStatus | undefined> {
     }
 
     try {
-        const response = await fetch(`${airdropApiUrl}/tari//airdrop/tranches/status`, {
+        const response = await fetch(`${airdropApiUrl}/tari/airdrop/tranches/status`, {
             method: 'GET',
             headers: {
                 ...defaultHeaders,
