@@ -16,7 +16,7 @@ import {
 } from '@app/store';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import type { XSpaceEvent } from '@app/types/ws.ts';
-import type { BackgroundClaimResult, TrancheStatus, BalanceSummary } from '@app/types/airdrop-claim.ts';
+import type { TrancheStatus, BalanceSummary } from '@app/types/airdrop-claim.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 import { setAirdropTokensInConfig } from '@app/store/actions/config/core.ts';
@@ -331,27 +331,6 @@ export const fetchAllUserData = async () => {
     if (authToken) {
         await fetchData();
     }
-};
-
-// AIRDROP CLAIM ACTIONS
-export const setClaimInProgress = (isInProgress: boolean) => {
-    useAirdropStore.setState((state) => ({
-        claim: {
-            isClaimInProgress: isInProgress,
-            lastClaimResult: state.claim?.lastClaimResult || null,
-            lastClaimTimestamp: isInProgress ? Date.now() : state.claim?.lastClaimTimestamp || null,
-        },
-    }));
-};
-
-export const setClaimResult = (result: BackgroundClaimResult) => {
-    useAirdropStore.setState((_state) => ({
-        claim: {
-            isClaimInProgress: false,
-            lastClaimResult: result,
-            lastClaimTimestamp: Date.now(),
-        },
-    }));
 };
 
 // Tranche state actions
