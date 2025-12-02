@@ -35,7 +35,7 @@ export default function LogIn() {
         </SidebarItem>
     );
     const claimMarkup = (
-        <SidebarItem isWrapped>
+        <SidebarItem isWrapped text={t('login')}>
             <ActionImgWrapper style={{ marginBottom: '-4px' }}>
                 {claimEnabled ? <ParachuteSVG /> : <GemImgLarge src={gem} alt="gem ico" />}
             </ActionImgWrapper>

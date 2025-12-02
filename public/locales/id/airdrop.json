@@ -97,6 +97,7 @@
   "logged-in-as": "Masuk sebagai <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Hadiah Airdrop",
   "loggedOutTitle": "Undang Teman untuk Mendapatkan Permata",
+  "login": "Log in",
   "loginButton": "Masuk untuk mengklaim permata",
   "logout": "Keluar",
   "nextTierBonus": "Undang <strong>{{count}} teman</strong> & dapatkan {{bonusGems}} permata bonus",
