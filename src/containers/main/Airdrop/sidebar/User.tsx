@@ -5,12 +5,35 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { Trans, useTranslation } from 'react-i18next';
 import { handleAirdropLogout } from '@app/store';
 import Avatar from '@app/components/elements/Avatar/Avatar';
+import { useEffect, useState } from 'react';
 
 export default function User() {
     const { t } = useTranslation('airdrop');
     const userDetails = useAirdropStore((s) => s.userDetails);
 
+    const [img, setImg] = useState<string | undefined>();
+
     const profileimageurl = userDetails?.user?.image_url;
+
+    useEffect(() => {
+        if (img?.length || !profileimageurl) return;
+        async function testImage(url: string) {
+            fetch(url)
+                .then((r) => {
+                    if (r.ok) {
+                        setImg(url);
+                    } else {
+                        setImg(undefined);
+                    }
+                })
+                .catch((_) => {
+                    setImg(undefined);
+                });
+        }
+
+        void testImage(profileimageurl);
+    }, [img?.length, profileimageurl]);
+
     const name = userDetails?.user?.name;
 
     const tooltipContent = (
@@ -30,9 +53,10 @@ export default function User() {
             </TooltipAction>
         </>
     );
+
     return (
         <SidebarItem tooltipContent={tooltipContent}>
-            <Avatar image={profileimageurl} username={name} size={38} />
+            <Avatar image={img} username={name} size={38} />
         </SidebarItem>
     );
 }

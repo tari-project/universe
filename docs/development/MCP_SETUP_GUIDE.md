@@ -1,6 +1,7 @@
 # MCP Server Setup Guide for Tari Universe Development
 
 ## **What is MCP?**
+
 Model Context Protocol (MCP) allows AI agents to interact with external tools and services. Your colleague's setup includes powerful automation tools perfect for our E2E testing strategy.
 
 ## **Why Doesn't Amp Include GitHub MCP by Default?**
@@ -8,11 +9,13 @@ Model Context Protocol (MCP) allows AI agents to interact with external tools an
 Amp follows a **"curated tools"** philosophy:
 
 ### **Amp's Built-In Philosophy:**
+
 - ✅ **Ships with essential coding tools** (file operations, web browsing, mermaid diagrams)
 - ❌ **Doesn't include specialized integrations** that not everyone needs
 - 🎯 **Focuses on high-performance, high-quality tools** to avoid model degradation
 
 ### **Why External MCP Servers Make Sense:**
+
 1. **API Keys Required** - GitHub needs personal access tokens
 2. **User Choice** - Not everyone uses GitHub (some use GitLab, Bitbucket, etc.)
 3. **Rapid Evolution** - MCP ecosystem changes faster than Amp releases
@@ -20,6 +23,7 @@ Amp follows a **"curated tools"** philosophy:
 5. **Performance** - Too many tools can reduce model performance
 
 ### **Amp's Recommendation:**
+
 > "Use MCP servers that expose a small number of high-level tools with high-quality descriptions. Disable MCP tools you aren't using."
 
 **Translation:** Amp wants you to intentionally choose the integrations you actually need, rather than bloating the system with everything.
@@ -34,29 +38,27 @@ Create/edit your Amp configuration file:
 
 ```json
 {
-  "amp.mcpServers": {
-    "playwright": {
-      "command": "playwright-mcp-server",
-      "args": ["--headless"],
-      "env": {},
-      "_target": "global"
+    "amp.mcpServers": {
+        "playwright": {
+            "command": "playwright-mcp-server",
+            "args": ["--headless"],
+            "env": {},
+            "_target": "global"
+        },
+        "github": {
+            "command": "github-mcp-server",
+            "args": ["stdio", "--toolsets", "repos,issues,pull_requests"],
+            "env": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "your_github_token_here"
+            },
+            "_target": "global"
+        },
+        "indexer": {
+            "command": "mcp-code-indexer",
+            "_target": "global"
+        }
     },
-    "github": {
-      "command": "github-mcp-server",
-      "args": ["stdio", "--toolsets", "repos,issues,pull_requests"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "your_github_token_here"
-      },
-      "_target": "global"
-    },
-    "indexer": {
-      "command": "mcp-code-indexer",
-      "_target": "global"
-    }
-  },
-  "amp.permissions": [
-    { "tool": "*", "action": "allow" }
-  ]
+    "amp.permissions": [{ "tool": "*", "action": "allow" }]
 }
 ```
 
@@ -89,25 +91,26 @@ npm install -g @executeautomation/playwright-mcp-server
 ### **3. VSCode Integration (via MCP Extension)**
 
 Install the MCP extension in VSCode:
+
 1. Search for "MCP" or "Model Context Protocol" in extensions
 2. Install the official MCP extension
 3. Configure in VSCode settings.json:
 
 ```json
 {
-  "mcp.servers": {
-    "playwright": {
-      "command": "@executeautomation/playwright-mcp-server", 
-      "args": ["--headless"]
-    },
-    "github": {
-      "command": "~/mcp/github-mcp-server/cmd/github-mcp-server/github-mcp-server",
-      "args": ["stdio", "--toolsets", "repos,issues,pull_requests"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "your_token_here"
-      }
+    "mcp.servers": {
+        "playwright": {
+            "command": "@executeautomation/playwright-mcp-server",
+            "args": ["--headless"]
+        },
+        "github": {
+            "command": "~/mcp/github-mcp-server/cmd/github-mcp-server/github-mcp-server",
+            "args": ["stdio", "--toolsets", "repos,issues,pull_requests"],
+            "env": {
+                "GITHUB_PERSONAL_ACCESS_TOKEN": "your_token_here"
+            }
+        }
     }
-  }
 }
 ```
 
@@ -128,12 +131,13 @@ await mcpPlaywright.selectOption('[data-testid="language-selector"]', 'es');
 const spanishText = await mcpPlaywright.textContent('[data-testid="wallet-balance"]');
 ```
 
-### **GitHub MCP Integration** *(Optional - Not needed for MVP)*
+### **GitHub MCP Integration** _(Optional - Not needed for MVP)_
 
 Could be useful for:
+
 - Creating test result issues automatically
 - Updating QA reports in the repo
-- Managing test case documentation  
+- Managing test case documentation
 - Tracking regression patterns
 
 **But honestly - do we need this for E2E testing? Probably not initially.**
@@ -141,6 +145,7 @@ Could be useful for:
 ### **Code Indexer MCP**
 
 Helps with:
+
 - Understanding codebase structure for test targeting
 - Finding components that need testing
 - Analyzing code changes for test impact
@@ -150,6 +155,7 @@ Helps with:
 ### **1. Verify Amp Integration**
 
 In Amp, try using MCP tools:
+
 ```
 Can you use the playwright MCP server to navigate to localhost:1420 and take a screenshot?
 ```
@@ -164,20 +170,23 @@ playwright-mcp-server --headless
 ## **Benefits for Tari Universe Testing**
 
 ### **AI-Driven Test Creation**
+
 ```
-"Generate a Playwright test that changes language from English to French 
+"Generate a Playwright test that changes language from English to French
 and verifies the mining status text changes appropriately"
 ```
 
 ### **Automated Issue Reporting**
+
 ```
-"Use GitHub MCP to create an issue for the language translation bug 
+"Use GitHub MCP to create an issue for the language translation bug
 found in the Spanish locale testing"
 ```
 
-### **Dynamic Test Maintenance** 
+### **Dynamic Test Maintenance**
+
 ```
-"Use code indexer to find all components with data-testid attributes 
+"Use code indexer to find all components with data-testid attributes
 and generate comprehensive UI tests"
 ```
 

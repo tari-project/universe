@@ -25,6 +25,16 @@
     "activeMinersStat": "Aktywni kopacze",
     "bonusXTMEarned": "Zarobiony bonus XTM",
     "copied": "Skopiowano!",
+    "crewEmpty": {
+      "description": "You have <strong>{{inactiveCount}}</strong> inactive friends. Give them a nudge or invite more.",
+      "descriptionSingular": "You have <strong>{{inactiveCount}}</strong> inactive friend. Give them a nudge or invite more.",
+      "descriptionZero": "Invite friends to start earning bonus rewards together!",
+      "nudgeButton": "Nudge your Friends",
+      "nudgeButtonSingular": "Nudge your Friend",
+      "title": "Your friends are slacking!",
+      "titleSingular": "Your friend is slacking!",
+      "titleZero": "Start building your crew!"
+    },
     "crewStatus": {
       "completed": "Zakończone",
       "inProgress": "W toku",
@@ -103,6 +113,50 @@
   "success": "Sukces",
   "topTooltipText": "Zarabiaj bonus XTM polecając znajomych.",
   "topTooltipTitle": "Nagrody Testnet",
+  "tranche": {
+    "claim-modal": {
+      "claim-button": "Claim",
+      "claiming": "Claiming...",
+      "description": "Thank you for being a part of the Tari community. Tari exists for one reason: you {{emojis}}",
+      "eyebrow": "Available airdrop",
+      "eyebrow-future": "Next month’s Airdrop",
+      "remaining-allocation": "Total remaining: <span>{{amount}} XTM</span>",
+      "title": "It’s time to claim your airdrop",
+      "title-future": "Airdrop details",
+      "waiting-verification": "Waiting for verification..."
+    },
+    "notifications": {
+      "claim-failed": "Claim Failed",
+      "claim-success": "Success! You claimed {{amount}} XTM.",
+      "claim-success-message": "Successfully claimed {{amount}} XTM from tranche",
+      "new-tranche-available": "New Tranche Available",
+      "new-tranches-available": "{{count}} new {{plural}} ready to claim!"
+    },
+    "status": {
+      "available": "Available",
+      "available-in": "Next claim window opens in",
+      "balance-summary": "XTM Balance Summary",
+      "claimed": "Claimed",
+      "closes-prefix": "Claim window closes in",
+      "closes-suffix": "Unclaimed tokens will be forfeited.",
+      "error": "Failed to load tranche status",
+      "expired": "Expired",
+      "ineligible": "You are not eligible to claim",
+      "loading": "Loading tranche status...",
+      "next-available": "Next tranche available:",
+      "next-reward": "Next reward",
+      "no-active-claims": "No active claims",
+      "no-data": "No tranche data available",
+      "overall-rewards": "Your overall Airdrop rewards are",
+      "pending": "Pending",
+      "progress-title": "Airdrop Progress",
+      "total-airdrop": "Total airdrop amount",
+      "total-allocation": "Total Allocation",
+      "total-claimed": "Total claimed",
+      "total-due": "Total amount due",
+      "tranches": "tranches"
+    }
+  },
   "unclaimedGems": "Nieodebrane klejnoty",
   "update-username": "Zaktualizuj nazwę użytkownika",
   "username-error": "Nazwa użytkownika musi mieć od 3 do 20 znaków i zawierać tylko litery, cyfry, podkreślenia lub myślniki",

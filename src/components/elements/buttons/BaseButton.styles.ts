@@ -177,6 +177,11 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                     height: min(8.5vh, 60px);
                     width: ${$fluid ? '100%' : 'min-content'};
                 `;
+            case 'xxl':
+                return css`
+                    height: min(10vh, 80px);
+                    width: ${$fluid ? '100%' : 'min-content'};
+                `;
             case 'medium':
             default:
                 return css`

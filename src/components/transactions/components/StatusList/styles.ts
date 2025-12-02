@@ -11,12 +11,15 @@ export const Entry = styled.div`
     display: flex;
     flex-direction: column;
     gap: 3px;
-
-    padding: 15px 0;
+    padding: 12px 0;
     border-bottom: ${({ theme }) => `1px solid ${theme.colorsAlpha.greyscaleAlpha[20]}`};
 
     &:first-child {
         padding-top: 0;
+    }
+    &:last-child {
+        border-bottom: none;
+        padding-bottom: 18px;
     }
 `;
 
@@ -31,11 +34,11 @@ export const Label = styled.div`
 `;
 
 export const Value = styled.div<{ $status?: SendStatus }>`
-    font-size: 14px;
+    font-size: clamp(13px, calc(0.8rem + 0.1vw), 16px);
     font-style: normal;
     font-weight: 500;
-    line-height: 122%;
-    letter-spacing: -0.42px;
+    line-height: 1.22;
+    letter-spacing: -0.3px;
 
     display: flex;
     align-items: center;

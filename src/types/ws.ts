@@ -25,15 +25,6 @@ interface QuestCompletedEvent {
     };
 }
 
-export interface CrewMember {
-    imageUrl: string | null;
-    id: string;
-    name: string;
-    profileImageUrl: string | null;
-    lastHandshakeAt: Date | null;
-    active?: boolean;
-}
-
 interface ReferralInstallRewardEvent {
     name: WebsocketEventNames.REFERRAL_INSTALL_REWARD;
 }

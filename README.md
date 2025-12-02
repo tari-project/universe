@@ -25,24 +25,30 @@ The Tari Universe ecosystem includes:
 After downloading the binaries:
 
 #### On Windows
+
 Double-click the installer and follow the prompts.
 
 #### On macOS
+
 Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
+
 Install the `.deb` package:
+
 ```bash
 sudo dpkg -i tari-universe_*.deb
 ```
 
 Or run the `.AppImage`:
+
 ```bash
 chmod +x Tari-Universe-*.AppImage
 ./Tari-Universe-*.AppImage
 ```
 
 ### Run
+
 Launch Tari Universe from your applications menu or desktop shortcut.
 
 ## Building from source
@@ -50,12 +56,14 @@ Launch Tari Universe from your applications menu or desktop shortcut.
 ### Install development packages
 
 #### macOS
+
 ```bash
 brew update
 brew install git node cmake protobuf openssl npm
 ```
 
 #### Ubuntu/Debian
+
 ```bash
 sudo apt-get update
 sudo apt-get install -y git nodejs npm build-essential \
@@ -65,19 +73,23 @@ sudo apt-get install -y git nodejs npm build-essential \
 ```
 
 #### Windows
+
 Install Visual Studio Build Tools 2022 with C++ workload, then:
+
 ```powershell
 # Install dependencies via chocolatey or vcpkg
 choco install git nodejs protoc
 ```
 
 ### Install Rust
+
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.cargo/env
 ```
 
 ### Install Tauri CLI
+
 ```bash
 cargo install tauri-cli --locked
 ```
@@ -94,8 +106,9 @@ npm run tauri build
 ### Output
 
 Built applications will be in `src-tauri/target/release/bundle/`:
+
 - **Linux**: `.deb` and `.AppImage` files
-- **Windows**: `.msi` installer  
+- **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
 
 ## Contributing
@@ -103,6 +116,7 @@ Built applications will be in `src-tauri/target/release/bundle/`:
 ### Code Quality
 
 The project uses comprehensive linting tools to maintain code quality:
+
 - **Frontend**: ESLint with TypeScript, React, and Prettier integration
 - **Backend**: Clippy for Rust with custom lint rules
 
@@ -123,6 +137,7 @@ cargo fmt             # Format Rust code
 ### IDE Integration
 
 For the best development experience, install:
+
 - **ESLint extension** for automatic JavaScript/TypeScript linting
 - **rust-analyzer extension** for Rust development
 - **Prettier extension** for code formatting
@@ -132,6 +147,7 @@ Most linting issues can be auto-fixed by your IDE or the lint commands above.
 ## Configuration
 
 Configuration files are stored at:
+
 - **Linux**: `~/.config/tari-universe/`
 - **Windows**: `%APPDATA%\tari-universe\`
 - **macOS**: `~/Library/Application Support/tari-universe/`
@@ -139,11 +155,13 @@ Configuration files are stored at:
 ## Troubleshooting
 
 **Application won't start:**
+
 - Check that your system meets minimum requirements
 - Verify firewall isn't blocking the application
 - Try running as administrator (Windows) or with appropriate permissions
 
 **Build issues:**
+
 - Ensure all dependencies are installed
 - Check that Rust toolchain is up to date
 - On Windows, use the Visual Studio Developer Command Prompt

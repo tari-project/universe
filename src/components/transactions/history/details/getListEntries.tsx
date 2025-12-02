@@ -1,6 +1,6 @@
 import i18n from 'i18next';
-import { formatTimeStamp } from '@app/components/transactions/history/helpers.ts';
 import { ReactNode } from 'react';
+import { formatTimeStamp } from '@app/components/transactions/history/helpers.ts';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { getExplorerUrl, Network } from '@app/utils/network.ts';
@@ -8,18 +8,7 @@ import { CombinedBridgeWalletTransaction, useNodeStore, useMiningStore } from '@
 import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
 import { EmojiAddressWrapper } from '@app/components/transactions/history/details/styles.ts';
 
-type CombinedTransactionKey = keyof CombinedBridgeWalletTransaction;
-
 const network = useMiningStore.getState().network;
-
-const MAIN_HIDDEN_KEYS: CombinedTransactionKey[] = ['paymentId'];
-const WALLET_DETAILS_HIDDEN_KEYS: (keyof CombinedBridgeWalletTransaction['walletTransactionDetails'])[] = [
-    'excessSig',
-    'txId',
-];
-const BRIDGE_DETAILS_HIDDEN_KEYS: (keyof CombinedBridgeWalletTransaction['bridgeTransactionDetails'])[] = [];
-const HIDDEN_KEYS: string[] = [...MAIN_HIDDEN_KEYS, ...WALLET_DETAILS_HIDDEN_KEYS, ...BRIDGE_DETAILS_HIDDEN_KEYS];
-
 const keyTranslations: Record<string, string> = {
     sourceAddress: 'wallet:receive.label-address',
     destinationAddress: 'wallet:send.destination-address',
@@ -221,18 +210,10 @@ const unifiedValueHandlers: Record<
     bridgeTransactionDetails: () => null,
 };
 
-function shouldShowField(key: string, showHidden: boolean): boolean {
-    return !(!showHidden && HIDDEN_KEYS.includes(key));
-}
-
 function parseUnifiedTransactionValue(
     key: string,
-    transaction: CombinedBridgeWalletTransaction,
-    showHidden = false
+    transaction: CombinedBridgeWalletTransaction
 ): (Partial<StatusListEntry> & { value: ReactNode }) | null {
-    // Check visibility first
-    if (!shouldShowField(key, showHidden)) return null;
-
     // Use unified handler if available
     const handler = unifiedValueHandlers[key];
     if (handler) {
@@ -246,13 +227,12 @@ function parseUnifiedTransactionValue(
     return { value: String(value) };
 }
 
-export function getListEntries(item: CombinedBridgeWalletTransaction, showHidden = false): StatusListEntry[] {
+export function getListEntries(item: CombinedBridgeWalletTransaction): StatusListEntry[] {
     const displayOrder = getUnifiedDisplayOrder(item);
-
     const unifiedEntries: StatusListEntry[] = [];
 
     for (const key of displayOrder) {
-        const result = parseUnifiedTransactionValue(key, item, showHidden);
+        const result = parseUnifiedTransactionValue(key, item);
 
         // Skip null results (e.g., missing bridge details for regular transactions, or hidden fields)
         if (!result) continue;

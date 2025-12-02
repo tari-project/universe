@@ -31,7 +31,14 @@ export default function useAirdropWebsocket() {
     useEffect(() => {
         const unlistenPromise = listen<unknown>('ws-rx', (event) => {
             const payload: WebsocketEventType = event.payload as WebsocketEventType;
-            const data = JSON.parse(payload?.data as string);
+            // Handle both string and object data
+            let data;
+            try {
+                data = typeof payload?.data === 'string' ? JSON.parse(payload.data) : payload?.data;
+            } catch (error) {
+                console.error('Failed to parse WebSocket data:', error);
+                return;
+            }
             switch (payload.event) {
                 case GLOBAL_EVENT_NAME: {
                     globalEventHandler(data as WebsocketGlobalEvent);

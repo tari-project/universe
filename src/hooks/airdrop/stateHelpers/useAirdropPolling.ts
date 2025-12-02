@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef } from 'react';
 const DEBOUNCE_DELAY = 1000; // 1 second delay
 
 export const useAirdropPolling = () => {
+    const initialFetched = useRef(false);
     const pollingEnabled = useAirdropStore((s) => s.features?.includes(FEATURE_FLAGS.FF_POLLING));
     const airdropTimeoutRef = useRef<NodeJS.Timeout>(undefined);
     const featureFlagTimeoutRef = useRef<NodeJS.Timeout>(undefined);
@@ -77,4 +78,12 @@ export const useAirdropPolling = () => {
             }
         };
     }, [fetchAirdropDataDebounced, fetchFeatureFlags, pollingEnabled]);
+
+    useEffect(() => {
+        if (initialFetched.current) return;
+
+        fetchFeatureFlags().then(() => {
+            initialFetched.current = true;
+        });
+    }, [fetchFeatureFlags]);
 };

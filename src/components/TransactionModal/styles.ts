@@ -3,7 +3,7 @@ import styled from 'styled-components';
 export const BoxWrapper = styled.div`
     width: 100%;
     height: 100%;
-    max-width: 500px;
+    max-width: clamp(480px, 48vw, 680px);
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -27,12 +27,11 @@ export const TopWrapper = styled.div`
     justify-content: space-between;
     align-items: center;
     width: 100%;
-
+    padding: 5px 0 10px 0;
     ${({ theme }) => theme.palette.base};
 `;
 
 export const Title = styled.div`
-    font-family: Poppins, sans-serif;
     font-size: 18px;
     font-weight: 600;
     line-height: 1.2;

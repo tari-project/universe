@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { ConfigBackendInMemory } from '@app/types/configs.ts';
 import type { XSpaceEvent } from '@app/types/ws';
+import type { AirdropClaimState, TrancheStatus, BalanceSummary } from '@app/types/airdrop-claim';
 
 export const GIFT_GEMS = 5000;
 
@@ -34,6 +35,7 @@ export interface User {
     name: string;
     role: string;
     image_url: string;
+    profileimageurl?: string;
     rank: {
         gems: number;
         shells: number;
@@ -133,13 +135,6 @@ export interface CrewMember {
     rewards: CrewMemberReward[];
 }
 
-export interface PaginationInfo {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-}
-
 export interface ReferrerProgress {
     currentStreak: number;
     longestStreak: number;
@@ -165,39 +160,6 @@ export interface MinRequirements {
     minShares: number;
     minHashes: number;
     minAmtPaid: bigint;
-}
-
-export interface MembersResponse {
-    members: CrewMember[];
-    pagination: PaginationInfo;
-    filters: {
-        status: 'all' | 'completed' | 'active' | 'inactive';
-    };
-}
-
-export interface ReferrerProgressResponse {
-    referrerProgress: ReferrerProgress;
-    totals: CrewMembersTotals;
-    memberImages: string[];
-    minRequirements: MinRequirements;
-    members: {
-        name: string;
-        displayName: string;
-        image: string;
-        isCurrentlyMining: boolean;
-        lastActivityDate: string;
-    }[];
-    membersToNudge: {
-        id: string;
-        name: string;
-        displayName?: string;
-        imageUrl?: string;
-    }[];
-    rewardsConfig: {
-        referrerRewards: number;
-        referralRewards: number;
-        requirement: number;
-    };
 }
 
 export interface Reward {
@@ -235,6 +197,16 @@ export interface AirdropStoreState {
         page: number;
         limit: number;
     };
+
+    // Airdrop claim state
+    claim?: AirdropClaimState;
+
+    // Tranche state
+    trancheStatus?: TrancheStatus;
+    balanceSummary?: BalanceSummary;
+
+    // Modal state
+    showTrancheModal: boolean;
 }
 
 const initialState: AirdropStoreState = {
@@ -252,6 +224,7 @@ const initialState: AirdropStoreState = {
         page: 1,
         limit: 20,
     },
+    showTrancheModal: false,
 };
 
 export const useAirdropStore = create<AirdropStoreState>()(() => ({
