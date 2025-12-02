@@ -34,7 +34,7 @@ export const ActionWrapper = styled.div`
 export const ActionText = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.primary};
     font-size: 10px;
-    line-height: 0.95;
+    line-height: 1;
     font-weight: 600;
     text-transform: uppercase;
     text-align: center;

@@ -97,6 +97,7 @@
   "logged-in-as": "Zalogowany jako <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Nagrody Airdrop",
   "loggedOutTitle": "Zaproś znajomych, aby zdobyć klejnoty",
+  "login": "Log in",
   "loginButton": "Zaloguj się, aby odebrać klejnoty",
   "logout": "Wyloguj się",
   "nextTierBonus": "Zaproś <strong>{{count}} znajomych</strong> i zdobądź {{bonusGems}} dodatkowych klejnotów",

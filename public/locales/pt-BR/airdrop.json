@@ -96,6 +96,7 @@
   "logged-in-as": "Logado como <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Recompensas do Airdrop",
   "loggedOutTitle": "Convide Amigos para Ganhar Gemas",
+  "login": "Log in",
   "loginButton": "Entrar para reivindicar gemas",
   "logout": "Sair",
   "nextTierBonus": "Convide <strong>{{count}} amigos</strong> e ganhe {{bonusGems}} gemas bônus",
