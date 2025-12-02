@@ -36,10 +36,9 @@ export const ActionText = styled(Typography)<{ $isWrapped?: boolean }>`
     font-size: 10px;
     line-height: 1;
     font-weight: 600;
-    text-transform: uppercase;
+    text-transform: ${({ $isWrapped }) => ($isWrapped ? `capitalize` : 'uppercase')};
     text-align: center;
     padding: 0 0 6px;
-    margin-top: ${({ $isWrapped }) => ($isWrapped ? `8px` : 0)};
 `;
 
 export const ActionHoveredWrapper = styled.div`
