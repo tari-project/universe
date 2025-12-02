@@ -1,8 +1,24 @@
+🚀 TARI UNIVERSE v1.6.7: The Bountiful Harvest
+
+_December 2, 2025_
+
+Hey Tari fam,
+
+The big news: airdrop claiming is here! We've also fixed pause on battery mode for laptop users, improved the bridge, and made it easier to troubleshoot issues when they arise.
+
+✨ WHAT'S NEW & FIXED
+
+- 🎁 **Airdrop claiming** – The moment you've been waiting for! You can now claim your airdrop rewards directly in Tari Universe every month starting today! Click on the parachute icon to log in. The claiming interface walks you through the process with clear status updates and countdown timers for each installment. For Linux users, we created a step-by-step guide to [claiming on a Windows VM here](https://airdrop.tari.com/linux-faq).
+- 🔋 **Pause on battery mode** – Laptop users, we prematurely announced this in the last update but it wasn't quite ready. Tari Universe now automatically pauses mining when you switch from wall power to battery, so you won't drain your laptop battery. A helpful dialog explains what's happening, and mining resumes automatically when you plug back in. (Turn off in Settings if you prefer)
+- ⚙️ **Settings access during errors** – When something goes wrong and you see a critical error, you can now still access Settings. This means you can check your seed words or adjust settings even when the app hits a snag.
+- 📋 **Transaction details, simplified** – No more triple-clicking to reveal hidden fields! All transaction details are now visible immediately with a scrollbar for longer content.
+- 🎛️ **Mode selector fix** – Fixed the annoying bug where switching from Custom mode required selecting your new mode twice.
+
+---
+
 🚀 TARI UNIVERSE v1.6.6: Seasons of Soon
 
 _November 11, 2025_
-
-🔄 Rolling out via auto-update
 
 Hey Tari fam,
 
@@ -50,7 +66,6 @@ Quick hotfix! We've resolved the issue where pool rewards would stop updating in
 Everything should now update smoothly. Thanks for your patience! 💜🐜
 
 ---
-
 🚀 TARI UNIVERSE v1.6.3: The Invisible Garden
 
 _October 13, 2025_
