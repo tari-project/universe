@@ -29,41 +29,53 @@
 use anyhow::anyhow;
 use minotari_wallet::{
     db::AccountRow,
-    transactions::one_sided_transaction::{OneSidedTransaction, Recipient},
+    transactions::{manager::TransactionSender, one_sided_transaction::Recipient},
+    DisplayedTransaction,
 };
 use sqlx::SqlitePool;
 use tari_common::configuration::Network;
-use tari_transaction_components::offline_signing::{
-    models::{PrepareOneSidedTransactionForSigningResult, SignedOneSidedTransactionResult},
-    offline_signer::OfflineSigner,
+use tari_transaction_components::{
+    offline_signing::{
+        models::{PrepareOneSidedTransactionForSigningResult, SignedOneSidedTransactionResult},
+        sign_locked_transaction,
+    },
+    test_helpers::{create_consensus_constants, create_consensus_manager},
 };
 use tauri::AppHandle;
 
-use crate::internal_wallet::InternalWallet;
+use crate::{
+    internal_wallet::InternalWallet,
+    wallet::minotari_wallet::{DEFAULT_GRPC_URL, DEFAULT_PASSWORD},
+};
 
-pub struct TransactionManager {}
+pub struct TransactionManager {
+    transaction_sender: TransactionSender,
+}
 
 impl TransactionManager {
-    pub fn new() -> Self {
-        Self {}
+    pub async fn new(pool: SqlitePool, sender_address: String) -> Result<Self, anyhow::Error> {
+        let network = Network::get_current_or_user_setting_or_default();
+        let transaction_sender =
+            TransactionSender::new(pool, sender_address, DEFAULT_PASSWORD.to_string(), network)
+                .await?;
+
+        Ok(Self { transaction_sender })
     }
 
     pub async fn create_one_sided_transaction(
-        &self,
-        pool: &SqlitePool,
-        password: String,
-        account: AccountRow,
-        recipients: Vec<Recipient>,
-        idempotency_key: Option<String>,
-        seconds_to_lock: u64,
+        &mut self,
+        recipient: Recipient,
     ) -> Result<PrepareOneSidedTransactionForSigningResult, anyhow::Error> {
-        let network = Network::get_current_or_user_setting_or_default();
+        let idempotency_key = uuid::Uuid::new_v4().to_string();
+        let seconds_to_lock = 86400; // 24 hours
 
-        let one_sided_tx = OneSidedTransaction::new(pool.clone(), network, password.clone());
-        one_sided_tx
-            .create_unsigned_transaction(account, recipients, idempotency_key, seconds_to_lock)
+        let prepared_one_sided_transaction = self
+            .transaction_sender
+            .start_new_transaction(idempotency_key, recipient, seconds_to_lock)
             .await
-            .map_err(|e| anyhow!("Failed to create unsigned transaction: {}", e))
+            .map_err(|e| anyhow!("Failed to create unsigned transaction: {}", e))?;
+
+        Ok(prepared_one_sided_transaction)
     }
 
     pub async fn sign_one_sided_transaction(
@@ -71,12 +83,32 @@ impl TransactionManager {
         app_handle: &AppHandle,
         unsigned_tx: PrepareOneSidedTransactionForSigningResult,
     ) -> Result<SignedOneSidedTransactionResult, anyhow::Error> {
+        println!("Signing one-sided transaction...");
         let key_manager = InternalWallet::get_key_manager(app_handle).await?;
-        let mut signer = OfflineSigner::new(key_manager);
+        let network = Network::get_current_or_user_setting_or_default();
+        let rules = create_consensus_manager();
 
-        let signed_tx = signer
-            .sign_locked_transaction(unsigned_tx)
-            .map_err(|e| anyhow!("Failed to sign one-sided transaction: {}", e))?;
-        Ok(signed_tx)
+        let signed_transaction = sign_locked_transaction(
+            &key_manager,
+            rules.consensus_constants(0).clone(),
+            network,
+            unsigned_tx,
+        )
+        .map_err(|e| anyhow!("Failed to sign one-sided transaction: {}", e))?;
+
+        Ok(signed_transaction)
+    }
+
+    pub async fn finalize_one_sided_transaction(
+        &mut self,
+        signed_transaction: SignedOneSidedTransactionResult,
+    ) -> Result<DisplayedTransaction, anyhow::Error> {
+        println!("Finalizing one-sided transaction...");
+        let displayed_transaction = self
+            .transaction_sender
+            .finalize_transaction_and_broadcast(signed_transaction, DEFAULT_GRPC_URL.clone())
+            .await?;
+
+        Ok(displayed_transaction)
     }
 }

@@ -2,13 +2,13 @@ import { handleWinRecap, useBlockchainVisualisationStore } from '@app/store/useB
 import { useCallback, useEffect, useMemo } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
-import { OutputType } from '@app/types/app-status';
 
 export default function useEarningsRecap() {
     const recapIds = useBlockchainVisualisationStore((s) => s.recapIds);
     const transactions = useWalletStore((s) => s.wallet_transactions);
     const coinbase_transactions = useMemo(() => {
-        return transactions.filter((tx) => tx.outputs.some((output) => output.output_type === OutputType.Coinbase));
+        // Filter by coinbase source from DisplayedTransaction
+        return transactions.filter((tx) => tx.source === 'coinbase');
     }, [transactions]);
 
     const getMissedEarnings = useCallback(() => {
@@ -16,7 +16,7 @@ export default function useEarningsRecap() {
             const missedWins = coinbase_transactions.filter((tx) => recapIds.includes(tx.id));
             const count = missedWins.length;
             if (count > 0) {
-                const totalEarnings = missedWins.reduce((earnings, cur) => earnings + cur.transaction_balance, 0);
+                const totalEarnings = missedWins.reduce((earnings, cur) => earnings + cur.amount, 0);
                 handleWinRecap({ count, totalEarnings });
             }
         }

@@ -6,12 +6,12 @@ import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { AccordionItem } from '@app/components/transactions/components/AccordionItem/AccordionItem.tsx';
-import { WalletTransaction } from '@app/types/app-status.ts';
-import { getTransactionListEntries, getOperationDetails } from './getTransactionListEntries.tsx';
+import { DisplayedTransaction, TransactionInput, TransactionOutput } from '@app/types/app-status.ts';
+import { getTransactionListEntries, getInputDetails, getOutputDetails } from './getTransactionListEntries.tsx';
 import { Wrapper, OperationsSection, OperationsTitle } from './styles.ts';
 
 interface TransactionDetailsProps {
-    transaction: WalletTransaction;
+    transaction: DisplayedTransaction;
     expanded: boolean;
     handleClose: () => void;
 }
@@ -38,8 +38,10 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
     const mainEntries = getTransactionListEntries(transaction);
     const copyIcon = !isCopied ? <IoCopyOutline size={12} /> : <IoCheckmarkOutline size={12} />;
 
-    // Combine inputs and outputs for display
-    const allDetails = [...transaction.inputs, ...transaction.outputs];
+    // Get inputs and outputs from details
+    const inputs = transaction.details.inputs || [];
+    const outputs = transaction.details.outputs || [];
+    const hasDetails = inputs.length > 0 || outputs.length > 0;
 
     return (
         <TransactionModal show={expanded} title={t(`history.transaction-details`)} handleClose={handleClose}>
@@ -48,35 +50,41 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
                 <StatusList entries={mainEntries} />
 
                 {/* Operations section */}
-                {allDetails.length > 0 && (
+                {hasDetails && (
                     <OperationsSection>
-                        <OperationsTitle>{`Details (${allDetails.length})`}</OperationsTitle>
+                        <OperationsTitle>{`Details (${inputs.length + outputs.length})`}</OperationsTitle>
 
-                        {allDetails.map((detail, index) => {
-                            const operationEntries = getOperationDetails(detail, index);
-
-                            // Create a better subtitle showing both credit and debit if both exist
-                            let subtitle: string | undefined = undefined;
-                            if (detail.balance_credit > 0 && detail.balance_debit > 0) {
-                                subtitle = `Credit: ${detail.balance_credit} µXTM • Debit: ${detail.balance_debit} µXTM`;
-                            } else if (detail.balance_credit > 0) {
-                                subtitle = `Credit: ${detail.balance_credit} µXTM`;
-                            } else if (detail.balance_debit > 0) {
-                                subtitle = `Debit: ${detail.balance_debit} µXTM`;
-                            }
+                        {/* Render inputs */}
+                        {inputs.map((input: TransactionInput, index: number) => {
+                            const operationEntries = getInputDetails(input);
+                            const subtitle = `Amount: ${input.amount} µXTM`;
 
                             return (
                                 <AccordionItem
-                                    key={`detail-${index}`}
-                                    title={detail.description || `Detail #${index + 1}`}
+                                    key={`input-${index}`}
+                                    title={`Input #${index + 1}`}
                                     subtitle={subtitle}
                                     isOpen={openOperations.has(index)}
                                     onToggle={() => toggleOperation(index)}
-                                    content={
-                                        <>
-                                            <StatusList entries={operationEntries} />
-                                        </>
-                                    }
+                                    content={<StatusList entries={operationEntries} />}
+                                />
+                            );
+                        })}
+
+                        {/* Render outputs */}
+                        {outputs.map((output: TransactionOutput, index: number) => {
+                            const operationEntries = getOutputDetails(output);
+                            const subtitle = `Amount: ${output.amount} µXTM • ${output.output_type}`;
+                            const outputIndex = inputs.length + index;
+
+                            return (
+                                <AccordionItem
+                                    key={`output-${index}`}
+                                    title={output.is_change ? `Change Output #${index + 1}` : `Output #${index + 1}`}
+                                    subtitle={subtitle}
+                                    isOpen={openOperations.has(outputIndex)}
+                                    onToggle={() => toggleOperation(outputIndex)}
+                                    content={<StatusList entries={operationEntries} />}
                                 />
                             );
                         })}

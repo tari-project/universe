@@ -1,14 +1,14 @@
-import { WalletTransaction } from '@app/types/app-status';
+import { DisplayedTransaction } from '@app/types/app-status';
 import { create } from 'zustand';
 
 interface State {
     showModal: boolean;
-    item: WalletTransaction | null;
+    item: DisplayedTransaction | null;
 }
 
 interface Actions {
     setShowModal: (showModal: boolean) => void;
-    setItemData: (item: WalletTransaction | null) => void;
+    setItemData: (item: DisplayedTransaction | null) => void;
 }
 
 const initialState: State = {

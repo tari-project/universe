@@ -20,10 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod balance_change_processor;
-pub mod database_listeners;
+pub mod balance_tracker;
 pub mod database_manager;
-pub mod minotari_wallet_types;
 pub mod transaction;
 
 use crate::{
@@ -31,15 +29,13 @@ use crate::{
     internal_wallet::{InternalWallet, TariAddressType},
     tasks_tracker::TasksTrackers,
     wallet::minotari_wallet::{
-        balance_change_processor::{
-            types::BalanceChangeProcessorEmitStrategy, BalanceChangeProcessor,
-        },
+        balance_tracker::BalanceTracker,
         database_manager::{MinotariWalletDatabaseManager, DEFAULT_ACCOUNT_ID},
         transaction::TransactionManager,
     },
     UniverseAppState,
 };
-use log::{error, info, warn};
+use log::{error, info};
 use minotari_wallet::{
     db::{
         get_all_balance_changes_by_account_id, get_latest_scanned_tip_block_by_account,
@@ -47,18 +43,24 @@ use minotari_wallet::{
     },
     get_balance,
     models::BalanceChange,
-    scan::{init_with_view_key, scan},
+    scan::init_with_view_key,
     transactions::one_sided_transaction::Recipient,
+    BlockProcessedEvent, DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
+    TransactionHistoryService,
 };
 use std::{
-    sync::{atomic::AtomicBool, LazyLock},
-    time::{Duration, Instant},
+    collections::HashMap,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        LazyLock,
+    },
+    time::Duration,
 };
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Manager};
-use tokio::{sync::RwLock, time::sleep};
-use uuid::Uuid;
+use tokio::sync::RwLock;
+use tokio_util::sync::CancellationToken;
 static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet_manager";
 
 static INSTANCE: LazyLock<MinotariWalletManager> = LazyLock::new(MinotariWalletManager::new);
@@ -79,54 +81,43 @@ static DEFAULT_PASSWORD: &str = "test_password";
 
 // Blockchain scanning constants
 const SCAN_BATCH_SIZE: u64 = 1000;
-static MAX_CONCURRENT_REQUESTS: LazyLock<u64> = LazyLock::new(|| {
-    let network = Network::get_current_or_user_setting_or_default();
-    match network {
-        Network::MainNet => 50,
-        _ => 100,
-    }
-});
+const SCAN_POLL_INTERVAL_SECS: u64 = 30;
 
 pub struct MinotariWalletManager {
     database_manager: MinotariWalletDatabaseManager,
-    balance_change_processor: RwLock<BalanceChangeProcessor>,
-    transaction_manager: RwLock<TransactionManager>,
-    are_there_more_blocks_to_scan: AtomicBool,
-    scanning_initiated: AtomicBool,
     app_handle: RwLock<Option<AppHandle>>,
+    cancel_token: RwLock<Option<CancellationToken>>,
     // ============== |Unified Wallet State| ==============
     last_scanned_height: RwLock<u64>,
-    owner_tari_address: RwLock<Option<String>>, // Cached currently used Tari address for reducing number of lookups
-    last_progress_emit: RwLock<Option<Instant>>,
-    pending_height: RwLock<Option<u64>>,
+    owner_tari_address: RwLock<Option<String>>,
+    /// Indicates if initial sync is complete (first Completed event received)
+    initial_sync_complete: AtomicBool,
+    /// Stores pending transactions by their sent_output_hashes for matching with scanned transactions
+    /// Key: comma-separated sorted output hashes, Value: DisplayedTransaction
+    pending_transactions: RwLock<HashMap<String, DisplayedTransaction>>,
 }
 
 impl MinotariWalletManager {
     pub fn new() -> Self {
         Self {
             database_manager: MinotariWalletDatabaseManager::new(),
-            balance_change_processor: RwLock::new(BalanceChangeProcessor::new(
-                BalanceChangeProcessorEmitStrategy::FullyProcessed,
-            )),
-            transaction_manager: RwLock::new(TransactionManager::new()),
-            are_there_more_blocks_to_scan: AtomicBool::new(true),
-            scanning_initiated: AtomicBool::new(false),
             app_handle: RwLock::new(None),
-
+            cancel_token: RwLock::new(None),
             owner_tari_address: RwLock::new(None),
             last_scanned_height: RwLock::new(0),
-            last_progress_emit: RwLock::new(None),
-            pending_height: RwLock::new(None),
+            initial_sync_complete: AtomicBool::new(false),
+            pending_transactions: RwLock::new(HashMap::new()),
         }
     }
 
+    /// Returns true if wallet is currently performing initial sync (catching up to chain tip).
+    /// Returns false once the first sync completes and we're just polling for new blocks.
     pub async fn is_syncing() -> bool {
-        INSTANCE
-            .scanning_initiated
-            .load(std::sync::atomic::Ordering::SeqCst)
-            && INSTANCE
-                .are_there_more_blocks_to_scan
-                .load(std::sync::atomic::Ordering::SeqCst)
+        let scan_running = INSTANCE.cancel_token.read().await.is_some();
+        let initial_complete = INSTANCE.initial_sync_complete.load(Ordering::SeqCst);
+
+        // We're syncing if scan is running AND initial sync hasn't completed yet
+        scan_running && !initial_complete
     }
 
     pub async fn load_app_handle(app_handle: AppHandle) {
@@ -152,37 +143,33 @@ impl MinotariWalletManager {
         address: String,
         amount: u64,
         payment_id: Option<String>,
-    ) -> Result<(), anyhow::Error> {
-        let transaction_manager = INSTANCE.transaction_manager.read().await;
+    ) -> Result<DisplayedTransaction, anyhow::Error> {
+        println!(
+            "Sending one-sided transaction to address: {}, amount: {}",
+            address, amount
+        );
         let tari_address = Self::get_owner_address().await;
+        let mut transaction_manager = TransactionManager::new(
+            INSTANCE.database_manager.get_pool().await?,
+            Self::get_owner_address().await,
+        )
+        .await?;
 
-        // Args
-        let pool = &INSTANCE.database_manager.get_pool().await?;
-        let password = DEFAULT_PASSWORD.to_string();
-        let account = INSTANCE
-            .database_manager
-            .get_account_by_name(&tari_address)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("Account not found for address: {}", tari_address))?;
-        let idempotency_key = Some(Uuid::new_v4().to_string());
-        let seconds_to_lock = 10;
-
-        let receipent: Recipient = Recipient {
+        let recipient: Recipient = Recipient {
             address: TariAddress::from_base58(&address)?,
             amount: amount.into(),
             payment_id,
         };
 
+        println!(
+            "Creating one-sided transaction from {} to {} for amount {}",
+            tari_address, address, amount
+        );
         let unsigned_one_sided_transaction = transaction_manager
-            .create_one_sided_transaction(
-                pool,
-                password,
-                account,
-                vec![receipent],
-                idempotency_key,
-                seconds_to_lock,
-            )
+            .create_one_sided_transaction(recipient)
             .await?;
+
+        println!("Signing one-sided transaction...");
 
         let signed_transaction = transaction_manager
             .sign_one_sided_transaction(
@@ -196,14 +183,67 @@ impl MinotariWalletManager {
             )
             .await?;
 
-        // logs result of signed transaction
+        println!("Finalizing and broadcasting one-sided transaction...");
+
+        let displayed_transaction = transaction_manager
+            .finalize_one_sided_transaction(signed_transaction)
+            .await?;
+
+        // Store as pending transaction for later matching with scanned transactions
+        Self::store_pending_transaction(&displayed_transaction).await;
+
+        // Emit to frontend immediately so user sees the pending transaction
+        EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()]).await;
+
+        println!("One-sided transaction sent successfully.");
+        Ok(displayed_transaction)
+    }
+
+    /// Create a key from output hashes for pending transaction lookup
+    fn create_pending_tx_key(output_hashes: &[String]) -> String {
+        let mut sorted_hashes = output_hashes.to_vec();
+        sorted_hashes.sort();
+        sorted_hashes.join(",")
+    }
+
+    /// Store a pending transaction for later matching with scanned transactions
+    async fn store_pending_transaction(tx: &DisplayedTransaction) {
+        if tx.details.sent_output_hashes.is_empty() {
+            return;
+        }
+        let key = Self::create_pending_tx_key(&tx.details.sent_output_hashes);
+        let mut pending = INSTANCE.pending_transactions.write().await;
+        pending.insert(key, tx.clone());
         info!(
             target: LOG_TARGET,
-            "Signed one-sided transaction created successfully: {:?}",
-            signed_transaction
+            "Stored pending transaction with id: {}", tx.id
         );
+    }
 
-        Ok(())
+    /// Try to find and remove a pending transaction that matches the given output hashes
+    /// Returns the pending transaction if found
+    async fn match_and_remove_pending_transaction(
+        output_hashes: &[String],
+    ) -> Option<DisplayedTransaction> {
+        if output_hashes.is_empty() {
+            return None;
+        }
+        let key = Self::create_pending_tx_key(output_hashes);
+        let mut pending = INSTANCE.pending_transactions.write().await;
+        let result = pending.remove(&key);
+        if result.is_some() {
+            info!(
+                target: LOG_TARGET,
+                "Matched and removed pending transaction with key: {}", key
+            );
+        }
+        result
+    }
+
+    /// Clear all pending transactions (e.g., on wallet import)
+    async fn clear_pending_transactions() {
+        let mut pending = INSTANCE.pending_transactions.write().await;
+        pending.clear();
     }
 
     pub async fn handle_side_effects_after_wallet_import(
@@ -218,27 +258,21 @@ impl MinotariWalletManager {
             let new_address = InternalWallet::tari_address().await.to_base58();
             Self::update_owner_address(&new_address).await?;
         }
+
+        // Clear balance tracker
+        BalanceTracker::current().clear().await;
+
+        // Clear pending transactions since we're starting fresh with new wallet
+        Self::clear_pending_transactions().await;
+
+        // Reset initial sync state since we're starting fresh with new wallet
         INSTANCE
-            .balance_change_processor
-            .write()
-            .await
-            .clear_stored_transactions()
-            .await;
-        INSTANCE
-            .balance_change_processor
-            .write()
-            .await
-            .clear_current_balance()
-            .await;
-        INSTANCE
-            .balance_change_processor
-            .write()
-            .await
-            .update_emit_strategy(BalanceChangeProcessorEmitStrategy::FullyProcessed);
+            .initial_sync_complete
+            .store(false, Ordering::SeqCst);
 
         info!(
             target: LOG_TARGET,
-            "Wallet import side effects handled. Transactions and balance cleared."
+            "Wallet import side effects handled. Transactions, balance, and pending transactions cleared."
         );
         Ok(())
     }
@@ -297,33 +331,6 @@ impl MinotariWalletManager {
             .map_err(|e| e.into())
     }
 
-    async fn process_balance_change(balance_change: BalanceChange) {
-        INSTANCE
-            .balance_change_processor
-            .write()
-            .await
-            .process_balance_change(&balance_change)
-            .await;
-    }
-
-    async fn process_wallet_transaction(balance_change: BalanceChange) -> Result<(), String> {
-        INSTANCE
-            .balance_change_processor
-            .write()
-            .await
-            .process_wallet_transaction(
-                balance_change,
-                &mut Self::get_db_connection().await.map_err(|e| e.to_string())?,
-                INSTANCE
-                    .are_there_more_blocks_to_scan
-                    .load(std::sync::atomic::Ordering::SeqCst),
-            )
-            .await
-            .map_err(|e| e.to_string())?;
-
-        Ok(())
-    }
-
     pub async fn initialize_wallet() -> Result<(), anyhow::Error> {
         let database_path = MinotariWalletDatabaseManager::database_path()?;
 
@@ -352,294 +359,312 @@ impl MinotariWalletManager {
 
         // ============== |Initialize Balance Data| ==============
         let balance = Self::get_account_balance(DEFAULT_ACCOUNT_ID).await?;
-        INSTANCE
-            .balance_change_processor
-            .write()
-            .await
-            .initialize_balance_from_account_balance(balance)
+        BalanceTracker::current()
+            .initialize_from_account_balance(balance)
             .await;
+
         // ============== |Fetch and Process All Balance Changes| ==============
 
-        let balance_changes = Self::get_all_balance_changes(DEFAULT_ACCOUNT_ID).await?;
-        info!(
-            target: LOG_TARGET,
-            "Fetched {} balance changes from database", balance_changes.len()
-        );
+        // Use TransactionHistoryService to load and process transaction history
+        let db_pool = INSTANCE.database_manager.get_pool().await?;
+        let history_service = TransactionHistoryService::new(db_pool);
 
-        // for balance_change in &balance_changes {
-        //     info!(
-        //         target: LOG_TARGET,
-        //         "Balance Change - Height: {}, Date: {}, Credit: {}, Debit: {}, Description: {}",
-        //         balance_change.effective_height,
-        //         balance_change.effective_date,
-        //         balance_change.balance_credit,
-        //         balance_change.balance_debit,
-        //         balance_change.description
-        //     );
-        // }
-        let database_connection = &mut Self::get_db_connection().await?;
-
-        INSTANCE
-            .balance_change_processor
-            .write()
+        match history_service
+            .load_all_transactions(DEFAULT_ACCOUNT_ID)
             .await
-            .initial_transaction_processing(balance_changes, database_connection)
-            .await?;
+        {
+            Ok(transactions) => {
+                info!(
+                    target: LOG_TARGET,
+                    "Loaded {} transactions from history via TransactionHistoryService", transactions.len()
+                );
 
-        // let (transaction_count, transactions_to_emit) = {
-        //     let mut wallet_state = INSTANCE.wallet_state.write().await;
-        //     let count = wallet_state.transactions.len();
-
-        //     // Reverse transactions so newest appear first
-        //     wallet_state.transactions.reverse();
-        //     let transactions = wallet_state.transactions.clone();
-
-        //     (count, transactions)
-        // };
-
-        // info!(
-        //     target: LOG_TARGET,
-        //     "Processed all balance changes. Total transactions: {}", transaction_count
-        // );
-
-        // EventsEmitter::emit_wallet_transactions_found(transactions_to_emit).await;
-
-        // TODO: Testing line for sending one-sided transaction
-        // Self::send_one_sided_transaction("f2AESYMetKt4h76tF4GWK7obQVCYdnu3NicBT2KES2kLPe3rwfVngaMvSd37XhhdPFSDbW7nwfRPaisNKovJmWrd3Pq".to_string(), 1000000, Some("test-payment-id".to_string())).await?;
+                // Emit transactions to frontend
+                EventsEmitter::emit_wallet_transactions_found(transactions).await;
+            }
+            Err(e) => {
+                error!(
+                    target: LOG_TARGET,
+                    "Failed to load transaction history: {:?}", e
+                );
+            }
+        }
 
         Ok(())
     }
 
-    /// Temporary callback function for balance changes
-    async fn on_balance_change(change: minotari_wallet::models::BalanceChange) {
-        Self::process_wallet_transaction(change.clone())
-            .await
-            .unwrap_or_else(|e| {
-                error!(
-                    target: LOG_TARGET,
-                    "Failed to process wallet transaction for balance change: {}",
-                    e
-                );
-            });
-        Self::process_balance_change(change).await;
-    }
-
-    /// Temporary callback function for scanned tip blocks
-    async fn on_scanned_tip_block(block: minotari_wallet::models::ScannedTipBlock) {
-        {
-            let last_scanned_height_lock = INSTANCE.last_scanned_height.read().await;
-            if block.height <= *last_scanned_height_lock {
-                return;
-            }
-        }
-
-        {
-            let mut last_scanned_height_lock = INSTANCE.last_scanned_height.write().await;
-            *last_scanned_height_lock = block.height;
-        }
-
-        {
-            let mut pending = INSTANCE.pending_height.write().await;
-            *pending = Some(block.height);
-        }
-
-        let now = Instant::now();
-        let should_emit = {
-            let last_emit = INSTANCE.last_progress_emit.read().await;
-            match *last_emit {
-                Some(t) => now.duration_since(t) >= Duration::from_secs(1),
-                None => true,
-            }
-        };
-
-        if !should_emit {
-            return;
-        }
-
-        let app_handle = match &*INSTANCE.app_handle.read().await {
-            Some(h) => h.clone(),
-            None => {
-                warn!(
-                    target: LOG_TARGET,
-                    "App handle not set in MinotariWalletManager. Cannot access node manager for blockchain scanning."
-                );
-                return;
-            }
-        };
-
-        let app_state: tauri::State<'_, UniverseAppState> = app_handle.state::<UniverseAppState>();
-        let node_status_watch_rx = app_state.node_status_watch_rx.clone();
-        let tip_height = node_status_watch_rx.borrow().block_height;
-
-        let progress = if tip_height > 0 {
-            ((block.height as f64 / tip_height as f64) * 100.0).min(100.0)
-        } else {
-            0.0
-        };
-
-        info!(
-            target: LOG_TARGET,
-            "Scanned tip block height: {}. Node reported height: {}. Scanned percentage: {:.2}%",
-            block.height,
-            tip_height,
-            progress
-        );
-
-        EventsEmitter::emit_wallet_scanning_progress_update(
-            block.height,
-            tip_height,
-            progress,
-            INSTANCE
-                .are_there_more_blocks_to_scan
-                .load(std::sync::atomic::Ordering::SeqCst),
-        )
-        .await;
-
-        {
-            let mut last_emit = INSTANCE.last_progress_emit.write().await;
-            *last_emit = Some(now);
-        }
-
-        {
-            let mut pending = INSTANCE.pending_height.write().await;
-            *pending = None;
-        }
-    }
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Blockchain Scanning
+    // ─────────────────────────────────────────────────────────────────────────────
 
     pub async fn initialize_blockchain_scanning() -> Result<(), anyhow::Error> {
-        let database_path = MinotariWalletDatabaseManager::database_path()?;
-
-        if INSTANCE
-            .scanning_initiated
-            .load(std::sync::atomic::Ordering::SeqCst)
-        {
+        // Check if already running
+        if INSTANCE.cancel_token.read().await.is_some() {
             info!(
                 target: LOG_TARGET,
-                "Blockchain scanning has already been initiated, skipping initialization."
+                "Blockchain scanning already running, skipping initialization."
             );
             return Ok(());
         }
 
-        INSTANCE
-            .scanning_initiated
-            .store(true, std::sync::atomic::Ordering::SeqCst);
+        let database_path = MinotariWalletDatabaseManager::database_path()?;
+        let tari_address = Self::get_owner_address().await;
 
         info!(
             target: LOG_TARGET,
             "Starting blockchain scan for Minotari wallet at database path: {}", database_path
         );
 
-        database_listeners::listen_to_balance_changes(Self::on_balance_change).await?;
-        database_listeners::listen_to_scanned_tip_blocks(Self::on_scanned_tip_block).await?;
+        // Create cancellation token
+        let cancel_token = CancellationToken::new();
+        *INSTANCE.cancel_token.write().await = Some(cancel_token.clone());
 
+        // Get shutdown signal for graceful termination
         let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+        let cancel_token_for_shutdown = cancel_token.clone();
+        let cancel_token_for_scan = cancel_token.clone();
 
+        // Spawn the scan via spawn_blocking since the Scanner future is !Send
+        // We create the Scanner inside spawn_blocking to avoid Send issues
+        let database_path_clone = database_path.clone();
+        let tari_address_clone = tari_address.clone();
+        tokio::task::spawn_blocking(move || {
+            tokio::runtime::Handle::current().block_on(async move {
+                // Build the scanner with continuous mode inside the blocking task
+                let (event_rx, scan_future) = Scanner::new(
+                    DEFAULT_PASSWORD,
+                    DEFAULT_GRPC_URL.as_str(),
+                    &database_path_clone,
+                    SCAN_BATCH_SIZE,
+                )
+                .account(&tari_address_clone)
+                .mode(ScanMode::Continuous {
+                    poll_interval: Duration::from_secs(SCAN_POLL_INTERVAL_SECS),
+                })
+                .cancel_token(cancel_token_for_scan.clone())
+                .run_with_events();
+
+                // Process events and run scan concurrently
+                tokio::select! {
+                    _ = Self::process_scan_events(event_rx) => {
+                        info!(target: LOG_TARGET, "Scan event processing completed.");
+                    }
+                    result = scan_future => {
+                        match result {
+                            Ok(_) => {
+                                info!(target: LOG_TARGET, "Blockchain scan completed successfully.");
+                            }
+                            Err(e) => {
+                                error!(target: LOG_TARGET, "Blockchain scan failed: {:?}", e);
+                            }
+                        }
+                    }
+                }
+
+                // Ensure token is cancelled when done
+                cancel_token_for_scan.cancel();
+            });
+        });
+
+        // Spawn shutdown listener task
         TasksTrackers::current()
             .wallet_phase
             .get_task_tracker()
             .await
             .spawn(async move {
-                loop {
-                    tokio::select! {
-                        result = Self::execute_blockchain_scan() => {
-                            match result {
-                                Ok(_) => {
-                                    info!(
-                                        target: LOG_TARGET,
-                                        "Blockchain scan completed successfully."
-                                    );
-                                }
-                                Err(e) => {
-                                    error!(
-                                        target: LOG_TARGET,
-                                        "Blockchain scan failed: {:?}", e
-                                    );
-                                }
-                            }
-                        }
-                        _ = shutdown_signal.wait() => {
-                            info!(
-                                target: LOG_TARGET,
-                                "Shutdown signal received. Terminating blockchain scan."
-                            );
-                            break;
-                        }
-                    }
-                }
+                shutdown_signal.wait().await;
+                info!(target: LOG_TARGET, "Shutdown signal received. Cancelling scan.");
+                cancel_token_for_shutdown.cancel();
+                *INSTANCE.cancel_token.write().await = None;
             });
 
         Ok(())
     }
 
-    async fn execute_blockchain_scan() -> Result<(), anyhow::Error> {
-        let database_path = MinotariWalletDatabaseManager::database_path()?;
-        let tari_address = Self::get_owner_address().await;
-
-        if !INSTANCE
-            .are_there_more_blocks_to_scan
-            .load(std::sync::atomic::Ordering::SeqCst)
-        {
-            info!(
-                target: LOG_TARGET,
-                "No more blocks to scan. Waiting with next blockchain scan."
-            );
-            sleep(Duration::from_secs(30)).await;
+    pub async fn stop_scanning() {
+        if let Some(token) = INSTANCE.cancel_token.write().await.take() {
+            token.cancel();
+            // Reset initial sync state when scanning is stopped
+            INSTANCE
+                .initial_sync_complete
+                .store(false, Ordering::SeqCst);
+            info!(target: LOG_TARGET, "Blockchain scanning stopped.");
         }
+    }
 
-        let scan_result = tokio::task::spawn_blocking(move || {
-            tokio::runtime::Handle::current().block_on(scan(
-                DEFAULT_PASSWORD,
-                DEFAULT_GRPC_URL.as_str(),
-                &database_path,
-                Some(tari_address.as_str()),
-                SCAN_BATCH_SIZE,
-                *MAX_CONCURRENT_REQUESTS,
-            ))
-        })
-        .await?;
-
-        match scan_result {
-            Ok((_events, more_blocks)) => {
-                info!(
-                    target: LOG_TARGET,
-                    "Blockchain scan executed successfully."
-                );
-                INSTANCE
-                    .are_there_more_blocks_to_scan
-                    .store(more_blocks, std::sync::atomic::Ordering::SeqCst);
-                if !more_blocks {
+    async fn process_scan_events(mut rx: tokio::sync::mpsc::UnboundedReceiver<ProcessingEvent>) {
+        while let Some(event) = rx.recv().await {
+            match event {
+                ProcessingEvent::ScanStatus(status) => {
+                    Self::handle_status_event(status).await;
+                }
+                ProcessingEvent::BlockProcessed(block_event) => {
+                    info!(target: LOG_TARGET, "Block processed event: height {}", block_event.height);
+                }
+                ProcessingEvent::TransactionsReady(transactions_event) => {
+                    let transaction_count = transactions_event.transactions.len();
                     info!(
                         target: LOG_TARGET,
-                        "Blockchain scan completed. No more blocks to scan."
+                        "TransactionsReady event received with {} transactions",
+                        transaction_count
                     );
 
-                    let height = match *INSTANCE.pending_height.read().await {
-                        Some(h) => h,
-                        None => *INSTANCE.last_scanned_height.read().await,
-                    };
+                    // Process transactions - check each for pending transaction match
+                    let mut transactions_to_emit = Vec::new();
+                    for tx in transactions_event.transactions {
+                        // Check if this scanned transaction matches any pending transaction
+                        if let Some(_pending_tx) = Self::match_and_remove_pending_transaction(
+                            &tx.details.sent_output_hashes,
+                        )
+                        .await
+                        {
+                            // Emit update event - the scanned transaction replaces the pending one
+                            info!(
+                                target: LOG_TARGET,
+                                "Found matching pending transaction for scanned tx: {}",
+                                tx.id
+                            );
+                            EventsEmitter::emit_wallet_transaction_updated(tx.clone()).await;
+                        }
+                        transactions_to_emit.push(tx);
+                    }
 
-                    EventsEmitter::emit_wallet_scanning_progress_update(
-                        height, height, 100.0, false,
-                    )
-                    .await;
+                    // Update balance based on new transactions
+                    if !transactions_to_emit.is_empty() {
+                        BalanceTracker::current()
+                            .update_from_transactions(&transactions_to_emit)
+                            .await;
 
-                    {
-                        let mut pending = INSTANCE.pending_height.write().await;
-                        *pending = None;
+                        // Emit all transactions to frontend
+                        EventsEmitter::emit_wallet_transactions_found(transactions_to_emit).await;
                     }
                 }
             }
-            Err(e) => {
-                warn!(
-                    target: LOG_TARGET,
-                    "Blockchain scan execution failed: {:?}", e
-                );
-            }
-        };
-
-        Ok(())
+        }
     }
 
+    /// Get the current chain tip height from node status
+    fn get_chain_tip_height() -> u64 {
+        let app_handle = match INSTANCE.app_handle.try_read() {
+            Ok(guard) => match guard.as_ref() {
+                Some(h) => h.clone(),
+                None => return 0,
+            },
+            Err(_) => return 0,
+        };
+
+        let app_state: tauri::State<'_, UniverseAppState> = app_handle.state::<UniverseAppState>();
+        let height = app_state.node_status_watch_rx.borrow().block_height;
+        height
+    }
+
+    async fn handle_status_event(event: ScanStatusEvent) {
+        match event {
+            ScanStatusEvent::Started {
+                account_id,
+                from_height,
+            } => {
+                info!(
+                    target: LOG_TARGET,
+                    "Scan started for account {} from height {}", account_id, from_height
+                );
+            }
+            ScanStatusEvent::Progress {
+                current_height,
+                blocks_scanned,
+                ..
+            } => {
+                info!(
+                    target: LOG_TARGET,
+                    "Scan progress event: current height {}, blocks scanned {}",
+                    current_height, blocks_scanned
+                );
+
+                // Update last scanned height
+                {
+                    let mut height = INSTANCE.last_scanned_height.write().await;
+                    *height = current_height;
+                }
+
+                // Get chain tip from node status for accurate progress
+                let tip_height = Self::get_chain_tip_height();
+                let progress = if tip_height > 0 {
+                    ((current_height as f64 / tip_height as f64) * 100.0).min(100.0)
+                } else {
+                    0.0
+                };
+
+                EventsEmitter::emit_wallet_scanning_progress_update(
+                    current_height,
+                    tip_height,
+                    progress,
+                    true, // is_syncing
+                )
+                .await;
+
+                info!(
+                    target: LOG_TARGET,
+                    "Scan progress: height {}/{}, {:.1}%, {} blocks scanned",
+                    current_height, tip_height, progress, blocks_scanned
+                );
+            }
+            ScanStatusEvent::Completed {
+                final_height,
+                total_blocks_scanned,
+                ..
+            } => {
+                info!(
+                    target: LOG_TARGET,
+                    "Scan completed at height {}, total blocks scanned {}",
+                    final_height, total_blocks_scanned
+                );
+                {
+                    let mut height = INSTANCE.last_scanned_height.write().await;
+                    *height = final_height;
+                }
+
+                // Mark initial sync as complete
+                INSTANCE.initial_sync_complete.store(true, Ordering::SeqCst);
+
+                let tip_height = Self::get_chain_tip_height();
+                EventsEmitter::emit_wallet_scanning_progress_update(
+                    final_height,
+                    if tip_height > 0 {
+                        tip_height
+                    } else {
+                        final_height
+                    },
+                    100.0,
+                    false,
+                )
+                .await;
+
+                info!(
+                    target: LOG_TARGET,
+                    "Scan completed at height {}, {} total blocks scanned",
+                    final_height, total_blocks_scanned
+                );
+            }
+            ScanStatusEvent::Waiting { resume_in, .. } => {
+                info!(
+                    target: LOG_TARGET,
+                    "Scan waiting, will resume in {:?}", resume_in
+                );
+            }
+            ScanStatusEvent::MoreBlocksAvailable {
+                last_scanned_height,
+                ..
+            } => {
+                info!(
+                    target: LOG_TARGET,
+                    "More blocks available after height {}", last_scanned_height
+                );
+            }
+            ScanStatusEvent::Paused { reason, .. } => {
+                info!(target: LOG_TARGET, "Scan paused: {:?}", reason);
+            }
+        }
+    }
     pub async fn import_view_key() -> Result<(), anyhow::Error> {
         let tari_wallet_details = InternalWallet::tari_wallet_details().await;
         if let Some(details) = tari_wallet_details {

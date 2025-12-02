@@ -7,7 +7,7 @@ import { useWalletStore } from '@app/store';
 
 import { EmptyText, ListItemWrapper, ListWrapper } from './List.styles.ts';
 import { setDetailsItemTransaction } from '@app/store/actions/walletStoreActions.ts';
-import { WalletTransaction, OutputType } from '@app/types/app-status.ts';
+import { DisplayedTransaction } from '@app/types/app-status.ts';
 import { HistoryListItem } from './transactionHistoryItem/HistoryItem.tsx';
 import { PlaceholderItem } from './transactionHistoryItem/HistoryItem.styles.ts';
 
@@ -26,13 +26,11 @@ export function List() {
             case 'all-activity':
                 return walletTransactionsAll;
             case 'rewards':
-                return walletTransactionsAll.filter((tx) =>
-                    tx.outputs.some((output) => output.output_type === OutputType.Coinbase)
-                );
+                // Filter by coinbase source
+                return walletTransactionsAll.filter((tx) => tx.source === 'coinbase');
             case 'transactions':
-                return walletTransactionsAll.filter((tx) =>
-                    tx.outputs.every((output) => output.output_type !== OutputType.Coinbase)
-                );
+                // Filter by non-coinbase source (transfers, one-sided, etc.)
+                return walletTransactionsAll.filter((tx) => tx.source !== 'coinbase');
             default:
                 return walletTransactionsAll;
         }
@@ -70,7 +68,7 @@ export function List() {
         return () => clearTimeout(timer);
     }, [walletTransactions, seenTransactionIds]);
 
-    const handleDetailsChange = useCallback((transaction: WalletTransaction) => {
+    const handleDetailsChange = useCallback((transaction: DisplayedTransaction) => {
         setDetailsItemTransaction(transaction);
     }, []);
 

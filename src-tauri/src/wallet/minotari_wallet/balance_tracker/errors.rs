@@ -23,35 +23,9 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum ProcessingError {
-    #[error("Balance calculation error: {0}")]
-    BalanceCalculation(#[from] BalanceCalculationError),
-
-    #[error("Repository error: {0}")]
-    Repository(#[from] RepositoryError),
-
-    #[error("Missing output details for account ID {0} at height {1}")]
-    MissingOutputDetails(i64, u64),
-}
-
-#[derive(Debug, Error)]
 pub enum BalanceCalculationError {
-    #[error("Balance overflow: cannot add {credit} to {current}")]
+    #[error("Balance overflow: current={current}, credit={credit}")]
     Overflow { current: u64, credit: u64 },
-
-    #[error("Balance underflow: cannot subtract {debit} from {current}")]
+    #[error("Balance underflow: current={current}, debit={debit}")]
     Underflow { current: u64, debit: u64 },
-}
-
-#[derive(Debug, Error)]
-pub enum RepositoryError {
-    #[error("Database query failed: {0}")]
-    DatabaseError(#[from] sqlx::Error),
-
-    #[error("Failed to parse output JSON for output {output_id}: {source}")]
-    JsonParseFailed {
-        output_id: i64,
-        #[source]
-        source: serde_json::Error,
-    },
 }

@@ -35,7 +35,7 @@ export default function Earnings() {
     const replayItem = useBlockchainVisualisationStore((s) => s.replayItem);
     const earnings = useBlockchainVisualisationStore((s) => s.earnings);
     const recapData = useBlockchainVisualisationStore((s) => s.recapData);
-    const displayEarnings = replayItem?.transaction_balance || recapData?.totalEarnings || earnings;
+    const displayEarnings = replayItem?.amount || recapData?.totalEarnings || earnings;
     const [value, setValue] = useState(0);
     const [show, setShow] = useState(false);
 
@@ -71,13 +71,13 @@ export default function Earnings() {
     ) : null;
 
     const replayText =
-        replayItem?.transaction_balance && replayItem.mined_height ? (
+        replayItem?.amount && replayItem.blockchain.block_height ? (
             <RecapText>
                 <Trans
                     ns="mining-view"
                     i18nKey={'you-won-block'}
                     values={{
-                        blockHeight: replayItem.mined_height,
+                        blockHeight: replayItem.blockchain.block_height,
                     }}
                     components={{ span: <span /> }}
                 />

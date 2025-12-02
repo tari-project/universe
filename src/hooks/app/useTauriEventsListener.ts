@@ -69,6 +69,7 @@ import {
     handleSeedBackedUp,
     handleSelectedTariAddressChange,
     handleWalletTransactionsCleared,
+    handleWalletTransactionUpdated,
 } from '@app/store/actions/walletStoreActions';
 import { handleFeedbackExitSurveyRequested } from '@app/store/stores/userFeedbackStore';
 
@@ -273,6 +274,10 @@ const useTauriEventsListener = () => {
                         break;
                     case 'WalletTransactionsCleared':
                         handleWalletTransactionsCleared();
+                        break;
+                    case 'WalletTransactionUpdated':
+                        console.log('WalletTransactionUpdated event received', event.payload);
+                        handleWalletTransactionUpdated(event.payload);
                         break;
                     default:
                         console.warn('Unknown event', JSON.stringify(event));

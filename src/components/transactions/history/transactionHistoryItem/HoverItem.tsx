@@ -8,11 +8,11 @@ import gemImage from '@app/assets/images/gem.png';
 import { ReplaySVG } from '@app/assets/icons/replay.tsx';
 import { ButtonWrapper, FlexButton, GemImage, GemPill, HoverWrapper, ReplayButton } from './HistoryItem.styles.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
-import { WalletTransaction } from '@app/types/app-status.ts';
+import { DisplayedTransaction } from '@app/types/app-status.ts';
 import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore.ts';
 
 interface Props {
-    transaction: WalletTransaction;
+    transaction: DisplayedTransaction;
     button?: React.ReactNode;
 }
 

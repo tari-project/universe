@@ -17,21 +17,21 @@ import { useUIStore } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
-import { TransactionDirection } from '@app/types/transactions.ts';
-import { WalletTransaction, InternalTransactionType } from '@app/types/app-status.ts';
+import { TransactionDirection as UITransactionDirection } from '@app/types/transactions.ts';
+import { DisplayedTransaction } from '@app/types/app-status.ts';
 import HoverItem from './HoverItem.tsx';
 import { formatEffectiveDate, resolveTransactionTitle, resolveTransactionType } from '../helpers.ts';
 
 export interface HistoryListItemProps {
-    transaction: WalletTransaction;
+    transaction: DisplayedTransaction;
     index: number;
     itemIsNew?: boolean;
-    setDetailsItem?: (item: WalletTransaction) => void;
+    setDetailsItem?: (item: DisplayedTransaction) => void;
 }
 
 export interface BaseItemProps {
     title: string;
-    direction: TransactionDirection;
+    direction: UITransactionDirection;
     time: string;
     value: string;
     chip?: string;
@@ -48,7 +48,7 @@ const BaseItem = memo(function BaseItem({
     onClick,
     hideWalletBalance,
 }: BaseItemProps) {
-    const isPositiveValue = direction === TransactionDirection.Inbound;
+    const isPositiveValue = direction === UITransactionDirection.Inbound;
     const displayTitle = title.length > 26 ? truncateMiddle(title, 8) : title;
     return (
         <ContentWrapper onClick={onClick}>
@@ -98,17 +98,15 @@ const HistoryListItem = memo(function HistoryListItem({
     const itemTitle = resolveTransactionTitle(transaction);
     const earningsFormatted = hideWalletBalance
         ? `***`
-        : formatNumber(transaction.transaction_balance, FormatPreset.XTM_COMPACT).toLowerCase();
+        : formatNumber(transaction.amount, FormatPreset.XTM_COMPACT).toLowerCase();
 
     const baseItem = (
         <BaseItem
             title={itemTitle}
-            time={formatEffectiveDate(transaction.effective_date)}
+            time={formatEffectiveDate(transaction.blockchain.timestamp)}
             value={earningsFormatted}
             direction={
-                transaction.internal_transaction_type === 'Sent'
-                    ? TransactionDirection.Outbound
-                    : TransactionDirection.Inbound
+                transaction.direction === 'outgoing' ? UITransactionDirection.Outbound : UITransactionDirection.Inbound
             }
             chip={itemIsNew ? t('new') : ''}
             hideWalletBalance={hideWalletBalance}
