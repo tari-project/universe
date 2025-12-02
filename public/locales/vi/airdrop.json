@@ -96,6 +96,7 @@
   "logged-in-as": "Đăng nhập với <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Phần thưởng Airdrop",
   "loggedOutTitle": "Mời bạn bè để nhận Gems",
+  "login": "Log in",
   "loginButton": "Đăng nhập để nhận gem",
   "logout": "Đăng xuất",
   "nextTierBonus": "Mời <strong>{{count}} bạn</strong> & nhận {{bonusGems}} gem thưởng",
