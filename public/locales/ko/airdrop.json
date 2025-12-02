@@ -97,6 +97,7 @@
   "logged-in-as": "<strong>@{{twitter}}</strong>으로 로그인됨",
   "loggedInTitle": "에어드롭 보상",
   "loggedOutTitle": "친구를 초대하여 보석 획득",
+  "login": "Log in",
   "loginButton": "로그인하여 보석 받기",
   "logout": "로그아웃",
   "nextTierBonus": "<strong>{{count}}명의 친구</strong>를 초대하고 {{bonusGems}}개의 보너스 보석을 받으세요",
