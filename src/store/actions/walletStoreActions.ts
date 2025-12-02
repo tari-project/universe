@@ -32,7 +32,7 @@ export const importSeedWords = async (seedWords: string[]) => {
         tx_history: [],
         bridge_transactions: [],
         wallet_scanning: {
-            are_there_more_blocks_to_scan: false,
+            is_initial_scan_complete: false,
             scanned_height: 0,
             total_height: 0,
             progress: 0,
@@ -201,7 +201,8 @@ export const handleWalletTransactionsFound = async (payload: DisplayedTransactio
 
     const processedTransactions = await solveBridgeTransactionDetails(filteredIncomingTransactions);
 
-    const mergedTransactions = copiedCurrentTransactions.concat(processedTransactions);
+    // Prepend new transactions so they appear at the top of the list
+    const mergedTransactions = processedTransactions.concat(copiedCurrentTransactions);
     useWalletStore.setState((c) => ({
         ...c,
         wallet_transactions: mergedTransactions,

@@ -130,13 +130,13 @@ export async function processNewBlock(payload: { block_height: number; transacti
 
 export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
     useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: payload }));
-    const isWalletScanned = useWalletStore.getState().wallet_scanning?.are_there_more_blocks_to_scan;
-    if (!isWalletScanned) {
+    const isWalletScanned = useWalletStore.getState().wallet_scanning?.is_initial_scan_complete;
+    if (isWalletScanned) {
         updateWalletScanningProgress({
             progress: 1,
             scanned_height: payload.block_height,
             total_height: payload.block_height,
-            are_there_more_blocks_to_scan: false,
+            is_initial_scan_complete: true,
         });
     }
 };

@@ -29,7 +29,7 @@ export function SendForm({ isBack }: Props) {
     const availableBalance = useWalletStore((s) => s.balance?.available_balance);
 
     const numericAvailableBalance = Number(Math.floor((availableBalance || 0) / 1_000_000).toFixed(2));
-    const isInitialWalletScanning = useWalletStore((s) => !s.wallet_scanning?.are_there_more_blocks_to_scan);
+    const isInitialWalletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);
 
     const { control, formState, setError, setValue, clearErrors, getValues } = useFormContext<SendInputs>();
     const { isSubmitting, errors } = formState;

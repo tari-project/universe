@@ -48,7 +48,7 @@ export const WalletBalance = () => {
     const total = useWalletStore((s) => s.calculated_balance);
     const scanData = useWalletStore((s) => s.wallet_scanning);
 
-    const isScanning = scanData.are_there_more_blocks_to_scan;
+    const isScanning = !scanData.is_initial_scan_complete;
     const scanProgress = Math.floor(scanData.progress * 10) / 10;
 
     const balance = removeXTMCryptoDecimals(roundToTwoDecimals(total || 0));

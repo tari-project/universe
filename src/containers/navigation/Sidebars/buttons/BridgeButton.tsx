@@ -9,7 +9,7 @@ import { useWalletStore } from '@app/store/useWalletStore.ts';
 const BridgeButton = memo(function BridgeButton() {
     const showTapplet = useUIStore((s) => s.showTapplet);
     const setActiveTappById = useTappletsStore((s) => s.setActiveTappById);
-    const isWalletScanning = useWalletStore((s) => !s.wallet_scanning?.are_there_more_blocks_to_scan);
+    const isWalletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);
 
     function handleToggleOpen() {
         if (isWalletScanning) return;

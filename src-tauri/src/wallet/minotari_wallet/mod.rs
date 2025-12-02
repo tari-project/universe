@@ -594,11 +594,15 @@ impl MinotariWalletManager {
                     0.0
                 };
 
+                // Use the stored value - once initial scan is complete, it stays true
+                let is_initial_scan_complete =
+                    INSTANCE.initial_sync_complete.load(Ordering::SeqCst);
+
                 EventsEmitter::emit_wallet_scanning_progress_update(
                     current_height,
                     tip_height,
                     progress,
-                    true, // is_syncing
+                    is_initial_scan_complete,
                 )
                 .await;
 
@@ -635,7 +639,7 @@ impl MinotariWalletManager {
                         final_height
                     },
                     100.0,
-                    false,
+                    true, // is_initial_scan_complete
                 )
                 .await;
 

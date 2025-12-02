@@ -101,9 +101,6 @@ export function List() {
                     {Array.from({ length: placeholdersNeeded }).map((_, index) => (
                         <PlaceholderItem key={`placeholder-${index}`} />
                     ))}
-
-                    {/*added placeholder so the scroll can trigger fetch*/}
-                    {walletScanning?.are_there_more_blocks_to_scan ? <PlaceholderItem $isLast /> : null}
                 </ListItemWrapper>
             </VList>
         </ListWrapper>

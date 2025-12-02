@@ -537,7 +537,7 @@ impl EventsEmitter {
         scanned_height: u64,
         total_height: u64,
         progress: f64,
-        are_there_more_blocks_to_scan: bool,
+        is_initial_scan_complete: bool,
     ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
@@ -546,7 +546,7 @@ impl EventsEmitter {
                 scanned_height,
                 total_height,
                 progress,
-                are_there_more_blocks_to_scan,
+                is_initial_scan_complete,
             },
         };
         if let Err(e) = Self::get_app_handle()

@@ -178,7 +178,7 @@ pub struct WalletScanningProgressUpdatePayload {
     pub scanned_height: u64,
     pub total_height: u64,
     pub progress: f64,
-    pub are_there_more_blocks_to_scan: bool,
+    pub is_initial_scan_complete: bool,
 }
 
 // TODO: Bring back connection status callback, was removed with removing setup screen and related logic
