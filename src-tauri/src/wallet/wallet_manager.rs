@@ -214,40 +214,6 @@ impl WalletManager {
         Ok(())
     }
 
-    pub async fn send_one_sided_to_stealth_address(
-        &self,
-        amount_str: String,
-        destination: String,
-        payment_id: Option<String>,
-        app_handle: &tauri::AppHandle,
-    ) -> Result<(), WalletManagerError> {
-        let process_watcher = self.watcher.read().await;
-        if !process_watcher.is_running() {
-            return Err(WalletManagerError::WalletNotStarted);
-        }
-
-        // TODO: check if node is synced?
-        self.node_manager.wait_ready().await?;
-
-        let minotari_amount = Minotari::from_str(&amount_str)
-            .map_err(|e| WalletManagerError::UnknownError(e.into()))?;
-        let micro_minotari_amount = MicroMinotari::from(minotari_amount);
-        let amount = micro_minotari_amount.as_u64();
-
-        // Payment ID can't be an empty string
-        let payment_id = match payment_id {
-            Some(s) if s.is_empty() => None,
-            _ => payment_id,
-        };
-
-        let res = process_watcher
-            .adapter
-            .send_one_sided_to_stealth_address(amount, destination, payment_id, app_handle)
-            .await;
-
-        res.map_err(WalletManagerError::UnknownError)
-    }
-
     #[allow(dead_code)]
     pub async fn stop(&self) -> Result<i32, WalletManagerError> {
         // Reset the initial scan flag

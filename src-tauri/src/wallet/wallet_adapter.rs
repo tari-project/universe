@@ -27,7 +27,6 @@ use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
-use crate::wallet::transaction_service::TransactionService;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitor;
 use crate::wallet::wallet_types::WalletState;
 use anyhow::Error;
@@ -97,32 +96,6 @@ impl WalletAdapter {
         self.connect_with_local_node = connect_with_local_node;
     }
 
-    pub async fn send_one_sided_to_stealth_address(
-        &self,
-        amount: u64,
-        address: String,
-        payment_id: Option<String>,
-        app_handle: &tauri::AppHandle,
-    ) -> Result<(), anyhow::Error> {
-        let tx_service = TransactionService::new(self, app_handle);
-
-        let (unsigned_tx_file, tx_id) = tx_service
-            .prepare_one_sided_transaction_for_signing(amount, address, payment_id)
-            .await?;
-        let sign_result = tx_service
-            .sign_one_sided_tx(unsigned_tx_file, tx_id.clone())
-            .await;
-        match sign_result {
-            Ok(signed_tx_file) => tx_service.broadcast_one_sided_tx(signed_tx_file).await,
-            Err(e) => {
-                let cancel_res = tx_service.cancel_transaction(tx_id).await;
-                if let Err(cancel_err) = cancel_res {
-                    log::error!(target: LOG_TARGET, "Failed to cancel transaction after failed to sign one sided tx: {cancel_err}: {e}");
-                }
-                Err(e)
-            }
-        }
-    }
     pub fn wallet_grpc_address(&self) -> String {
         format!("http://127.0.0.1:{}", self.grpc_port)
     }

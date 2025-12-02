@@ -59,6 +59,7 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{airdrop, UniverseAppState};
 
@@ -1548,24 +1549,21 @@ pub async fn reconnect() -> Result<(), String> {
 
 #[tauri::command]
 pub async fn send_one_sided_to_stealth_address(
-    state: tauri::State<'_, UniverseAppState>,
-    app_handle: tauri::AppHandle,
     amount: String,
     destination: String,
     payment_id: Option<String>,
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
-    state
-        .wallet_manager
-        .send_one_sided_to_stealth_address(amount, destination, payment_id, &app_handle)
-        .await
-        .map_err(|e| e.to_string())?;
 
-    // let balance = state.wallet_manager.get_balance().await;
-    // if let Ok(balance) = balance {
-    //     EventsEmitter::emit_wallet_balance_update(balance).await;
-    // }
+    let parsed_amount = Minotari::from_str(&amount).map_err(|e| e.to_string())?;
+    MinotariWalletManager::send_one_sided_transaction(
+        destination,
+        parsed_amount.uT().0,
+        payment_id,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
