@@ -31,7 +31,7 @@ export const ActionWrapper = styled.div`
     }
 `;
 
-export const ActionText = styled(Typography)`
+export const ActionText = styled(Typography)<{ $isWrapped?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     font-size: 10px;
     line-height: 1;
@@ -39,6 +39,7 @@ export const ActionText = styled(Typography)`
     text-transform: uppercase;
     text-align: center;
     padding: 0 0 6px;
+    margin-top: ${({ $isWrapped }) => ($isWrapped ? `8px` : 0)};
 `;
 
 export const ActionHoveredWrapper = styled.div`
