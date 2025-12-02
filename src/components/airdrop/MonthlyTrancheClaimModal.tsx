@@ -65,7 +65,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
     const displayTitle = t('tranche.claim-modal.title', { context: isFuture ? 'future' : '' });
     const isAnyLoading = trancheLoading || isClaimingOptimistic || claim?.isClaimInProgress;
-    const displayAmount = nextTranche ? nextTranche?.amount : currentTranche?.amount || lastClaimedTranche?.amount;
+    const displayAmount = currentTranche?.amount || nextTranche?.amount || lastClaimedTranche?.amount;
 
     const displayDescription = t('tranche.claim-modal.description', { emojis: `💜🐢` });
     const countdownTime = isFuture ? nextTranche?.validFrom : isCurrentUnclaimed ? currentTranche?.validTo : undefined;
