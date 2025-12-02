@@ -4859,6 +4859,7 @@ name = "minotari"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum 0.8.6",
  "blake2",
  "chacha20poly1305",

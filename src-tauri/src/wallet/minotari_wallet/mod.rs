@@ -43,9 +43,9 @@ use minotari_wallet::{
     },
     get_balance,
     models::BalanceChange,
-    scan::init_with_view_key,
     transactions::one_sided_transaction::Recipient,
-    BlockProcessedEvent, DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
+    utils::init_with_view_key,
+    DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
     TransactionHistoryService,
 };
 use std::{
@@ -539,6 +539,13 @@ impl MinotariWalletManager {
                         EventsEmitter::emit_wallet_transactions_found(transactions_to_emit).await;
                     }
                 }
+                ProcessingEvent::ReorgDetected(reorg_event) => {
+                    info!(
+                        target: LOG_TARGET,
+                        "Chain reorganization detected at height {}",
+                        reorg_event.reorg_from_height
+                    );
+                }
             }
         }
     }
@@ -594,15 +601,11 @@ impl MinotariWalletManager {
                     0.0
                 };
 
-                // Use the stored value - once initial scan is complete, it stays true
-                let is_initial_scan_complete =
-                    INSTANCE.initial_sync_complete.load(Ordering::SeqCst);
-
                 EventsEmitter::emit_wallet_scanning_progress_update(
                     current_height,
                     tip_height,
                     progress,
-                    is_initial_scan_complete,
+                    false, // is_initial_scan_complete - still scanning
                 )
                 .await;
 
