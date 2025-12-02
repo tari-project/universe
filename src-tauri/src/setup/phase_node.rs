@@ -34,7 +34,7 @@ use crate::{
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
-    UniverseAppState,
+    UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 use anyhow::Error;
 use log::{error, info, warn};
@@ -55,8 +55,6 @@ use super::{
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
-
-static LOG_TARGET: &str = "tari::universe::phase_hardware";
 
 #[derive(Clone, Default)]
 pub struct NodeSetupPhaseAppConfiguration {
@@ -231,17 +229,17 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     Err(e) => {
                         if let NodeManagerError::ExitCode(code) = e {
                             if STOP_ON_ERROR_CODES.contains(&code) {
-                                warn!(target: LOG_TARGET, "Database for node is corrupt or needs a restart, deleting and trying again.");
+                                warn!(target: LOG_TARGET_APP_LOGIC, "Database for node is corrupt or needs a restart, deleting and trying again.");
                                 state.node_manager.clean_data_folder(&data_dir).await?;
                                 state.wallet_manager.clean_data_folder(&data_dir).await?;
                             }
                             continue;
                         }
                         if let NodeManagerError::UnknownError(error) = e {
-                            warn!(target: LOG_TARGET, "NodeManagerError::UnknownError({error:?}) needs a restart.");
+                            warn!(target: LOG_TARGET_APP_LOGIC, "NodeManagerError::UnknownError({error:?}) needs a restart.");
                             continue;
                         }
-                        error!(target: LOG_TARGET, "Could not start node manager after restart: {e:?} | Exiting the app");
+                        error!(target: LOG_TARGET_APP_LOGIC, "Could not start node manager after restart: {e:?} | Exiting the app");
                         self.app_handle.exit(-1);
                         return Err(e.into());
                     }
@@ -336,10 +334,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 .spawn(async move {
                     tokio::select! {
                         _ = wait_node_synced_with_progress(app_handle_clone) => {
-                            info!(target: LOG_TARGET, "wait_node_synced_with_progress completed")
+                            info!(target: LOG_TARGET_APP_LOGIC, "wait_node_synced_with_progress completed")
                         },
                         _ = shutdown_signal_clone.wait() => {
-                            info!(target: LOG_TARGET, "wait_node_synced_with_progress stopped")
+                            info!(target: LOG_TARGET_APP_LOGIC, "wait_node_synced_with_progress stopped")
                         }
                     }
                 });
@@ -367,12 +365,12 @@ impl SetupPhaseImpl for NodeSetupPhase {
                                     EventsEmitter::emit_stuck_on_orphan_chain(is_stuck).await;
                                 }
                                 Err(ref e) => {
-                                    error!(target: LOG_TARGET, "{e}");
+                                    error!(target: LOG_TARGET_APP_LOGIC, "{e}");
                                 }
                             }
                         },
                         _ = shutdown_signal.wait() => {
-                            info!(target: LOG_TARGET, "Stopping periodic orphan chain checks");
+                            info!(target: LOG_TARGET_APP_LOGIC, "Stopping periodic orphan chain checks");
                             break;
                         }
                     }

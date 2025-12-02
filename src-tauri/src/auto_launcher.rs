@@ -38,9 +38,10 @@ use tokio::sync::RwLock;
 #[cfg(target_os = "windows")]
 use whoami::username;
 
-use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
-
-const LOG_TARGET: &str = "tari::universe::auto_launcher";
+use crate::{
+    utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
+    LOG_TARGET_APP_LOGIC,
+};
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
 
@@ -56,7 +57,7 @@ impl AutoLauncher {
     }
 
     fn build_auto_launcher(app_name: &str, app_path: &str) -> Result<AutoLaunch, anyhow::Error> {
-        info!(target: LOG_TARGET, "Building auto-launcher with app_name: {app_name} and app_path: {app_path}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Building auto-launcher with app_name: {app_name} and app_path: {app_path}");
 
         match PlatformUtils::detect_current_os() {
             CurrentOperatingSystem::Windows => AutoLaunchBuilder::new()
@@ -85,9 +86,9 @@ impl AutoLauncher {
         auto_launcher: &AutoLaunch,
         config_is_auto_launcher_enabled: bool,
     ) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Toggling auto-launcher");
+        info!(target: LOG_TARGET_APP_LOGIC, "Toggling auto-launcher");
         let auto_launcher_is_enabled = auto_launcher.is_enabled()?;
-        info!(target: LOG_TARGET, "Auto-launcher is enabled: {auto_launcher_is_enabled}, config_is_auto_launcher_enabled: {config_is_auto_launcher_enabled}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is enabled: {auto_launcher_is_enabled}, config_is_auto_launcher_enabled: {config_is_auto_launcher_enabled}");
 
         let should_toggle_to_enabled = config_is_auto_launcher_enabled && !auto_launcher_is_enabled;
         let should_ensure_to_enable_at_first_startup =
@@ -97,7 +98,7 @@ impl AutoLauncher {
             !config_is_auto_launcher_enabled && auto_launcher_is_enabled;
 
         if should_toggle_to_enabled || should_ensure_to_enable_at_first_startup {
-            info!(target: LOG_TARGET, "Enabling auto-launcher");
+            info!(target: LOG_TARGET_APP_LOGIC, "Enabling auto-launcher");
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::MacOS => {
                     // This for some reason fixes the issue where macOS starts two instances of the app
@@ -110,7 +111,7 @@ impl AutoLauncher {
                     // To startup application as admin on windows, we need to create a task scheduler
                     #[cfg(target_os = "windows")]
                     let _unused = self.toggle_windows_admin_auto_launcher(true).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET, "Failed to enable admin auto-launcher: {}", e)
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to enable admin auto-launcher: {}", e)
                     });
                 }
                 _ => {
@@ -118,12 +119,12 @@ impl AutoLauncher {
                 }
             }
         } else if should_toggle_to_disabled {
-            info!(target: LOG_TARGET, "Disabling auto-launcher");
+            info!(target: LOG_TARGET_APP_LOGIC, "Disabling auto-launcher");
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => {
                     #[cfg(target_os = "windows")]
                     let _unused = self.toggle_windows_admin_auto_launcher(false).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET, "Failed to disable admin auto-launcher: {}", e)
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher: {}", e)
                     });
                     auto_launcher.disable()?;
                 }
@@ -132,7 +133,7 @@ impl AutoLauncher {
                 }
             }
         } else {
-            warn!(target: LOG_TARGET, "Auto-launcher is already in the desired state");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is already in the desired state");
         }
 
         Ok(())
@@ -144,14 +145,14 @@ impl AutoLauncher {
         should_be_enabled: bool,
     ) -> Result<(), anyhow::Error> {
         if should_be_enabled {
-            info!(target: LOG_TARGET, "Enabling admin auto-launcher");
+            info!(target: LOG_TARGET_APP_LOGIC, "Enabling admin auto-launcher");
             self.create_task_scheduler_for_admin_startup(true)
                 .await
                 .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
         };
 
         if !should_be_enabled {
-            info!(target: LOG_TARGET, "Disabling admin auto-launcher");
+            info!(target: LOG_TARGET_APP_LOGIC, "Disabling admin auto-launcher");
             self.create_task_scheduler_for_admin_startup(false)
                 .await
                 .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
@@ -180,8 +181,8 @@ impl AutoLauncher {
             .ok_or(anyhow!("Failed to convert path to string"))?
             .to_string();
 
-        info!(target: LOG_TARGET, "Creating task scheduler for admin startup with app_path: {}", app_path);
-        info!(target: LOG_TARGET, "UserName: {}", username());
+        info!(target: LOG_TARGET_APP_LOGIC, "Creating task scheduler for admin startup with app_path: {}", app_path);
+        info!(target: LOG_TARGET_APP_LOGIC, "UserName: {}", username());
 
         let mut retry_interval = Duration::new();
         retry_interval.minutes = Some(1);
@@ -229,7 +230,7 @@ impl AutoLauncher {
                 TaskCreationFlags::CreateOrUpdate as i32,
             )?;
 
-        info!(target: LOG_TARGET, "Task scheduler for admin startup created");
+        info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup created");
 
         Ok(())
     }
@@ -238,7 +239,7 @@ impl AutoLauncher {
         &self,
         is_auto_launcher_enabled: bool,
     ) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Initializing auto-launcher");
+        info!(target: LOG_TARGET_APP_LOGIC, "Initializing auto-launcher");
 
         let app_exe = current_exe()?;
         let app_exe = canonicalize(&app_exe)?;
@@ -253,19 +254,19 @@ impl AutoLauncher {
             .ok_or(anyhow!("Failed to convert path to string"))?
             .to_string();
 
-        info!(target: LOG_TARGET, "Building auto-launcher with app_name: {app_name} and app_path: {app_path}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Building auto-launcher with app_name: {app_name} and app_path: {app_path}");
         let auto_launcher = AutoLauncher::build_auto_launcher(app_name, &app_path)?;
 
-        info!(target: LOG_TARGET, "Auto-launcher built");
+        info!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher built");
 
         self.toggle_auto_launcher(&auto_launcher, is_auto_launcher_enabled)
             .await?;
 
-        info!(target: LOG_TARGET, "Auto-launcher toggled");
+        info!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher toggled");
 
         let _ = &self.auto_launcher.write().await.replace(auto_launcher);
 
-        info!(target: LOG_TARGET, "Auto-launcher initialized");
+        info!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher initialized");
 
         Ok(())
     }
@@ -274,11 +275,11 @@ impl AutoLauncher {
         &self,
         is_auto_launcher_enabled: bool,
     ) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Updating auto-launcher");
+        info!(target: LOG_TARGET_APP_LOGIC, "Updating auto-launcher");
         let auto_launcher = self.auto_launcher.read().await;
 
         if auto_launcher.is_none() {
-            warn!(target: LOG_TARGET, "Auto-launcher is not initialized. Initializing auto-launcher");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is not initialized. Initializing auto-launcher");
             drop(auto_launcher);
             self.initialize_auto_launcher(is_auto_launcher_enabled)
                 .await?;
@@ -290,7 +291,7 @@ impl AutoLauncher {
                         .await?;
                 }
                 None => {
-                    warn!(target: LOG_TARGET, "Could not get auto-launcher reference");
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Could not get auto-launcher reference");
                     drop(auto_launcher);
                 }
             }

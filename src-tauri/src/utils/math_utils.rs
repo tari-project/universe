@@ -23,8 +23,9 @@
 use log::warn;
 use tari_transaction_components::tari_amount::MicroMinotari;
 
+use crate::LOG_TARGET_APP_LOGIC;
+
 const BLOCKS_PER_DAY: u64 = 360; // both RandomX and SHA3 produce 360 blocks per day - 720 in total
-const LOG_TARGET: &str = "tari::universe::math_utils";
 
 pub fn estimate_earning(
     network_hash_rate: u64,
@@ -33,7 +34,7 @@ pub fn estimate_earning(
 ) -> u64 {
     let estimated_earnings = if network_hash_rate == 0 {
         warn!(
-            target: LOG_TARGET,
+            target: LOG_TARGET_APP_LOGIC,
             "Network hash rate is zero. Cannot estimate earnings"
         );
         0

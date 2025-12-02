@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -48,13 +48,20 @@ export const MiningMode = ({
     );
     const miningModes = useConfigMiningStore((s) => s.mining_modes);
 
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(open);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const listRef = useRef<(HTMLElement | null)[]>([]);
 
+    const handleOpenChange = useCallback((newOpen: boolean) => {
+        setIsOpen(newOpen);
+        if (!newOpen) {
+            listRef.current = [];
+        }
+    }, []);
+
     const { refs, floatingStyles, context } = useFloating({
         open: isOpen,
-        onOpenChange: setIsOpen,
+        onOpenChange: handleOpenChange,
         placement: 'bottom-end',
         whileElementsMounted: autoUpdate,
         middleware: [
@@ -112,16 +119,6 @@ export const MiningMode = ({
         typeahead,
     ]);
 
-    useEffect(() => {
-        if (isOpen) {
-            const selectedIndex = modes.findIndex((mode) => mode.name === selectedMiningMode?.mode_name);
-            const initialIndex = selectedIndex >= 0 ? selectedIndex : 0;
-            setActiveIndex(initialIndex);
-        } else {
-            setActiveIndex(null);
-        }
-    }, [isOpen, selectedMiningMode, modes]);
-
     const handleSelectMode = useCallback(
         async (mode: ModeDropdownMiningMode) => {
             if (handleSchedulerMiningModeCallback) {
@@ -131,26 +128,25 @@ export const MiningMode = ({
 
             if (mode.mode_type === MiningModeType.Custom) {
                 setCustomLevelsDialogOpen(true);
-                setIsOpen(false);
+                handleOpenChange(false);
                 return;
             }
             if (mode.mode_type === MiningModeType.Ludicrous) {
                 setDialogToShow('ludicrousConfirmation');
-                setIsOpen(false);
+                handleOpenChange(false);
                 return;
             }
             if (mode.mode_type === selectedMiningMode?.mode_type) {
-                setIsOpen(false);
+                handleOpenChange(false);
                 return;
             }
 
             await selectMiningMode(mode.name);
-            setIsOpen(false);
+            handleOpenChange(false);
         },
-        [selectedMiningMode]
-    );
 
-    useEffect(() => setIsOpen(open), [open]);
+        [handleOpenChange, handleSchedulerMiningModeCallback, selectedMiningMode?.mode_type]
+    );
 
     return (
         <Wrapper>
@@ -173,10 +169,11 @@ export const MiningMode = ({
                     className="option-icon"
                 />
             </Trigger>
-            <AnimatePresence>
-                {isOpen && (
-                    <FloatingFocusManager context={context} modal={true} initialFocus={activeIndex || 0}>
-                        <ListContainer ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
+
+            {isOpen ? (
+                <FloatingFocusManager context={context} modal={true} initialFocus={activeIndex || 0}>
+                    <ListContainer ref={refs.setFloating} style={floatingStyles} {...getFloatingProps()}>
+                        <AnimatePresence>
                             <List>
                                 {modes.map((mode, index) => {
                                     const isSelected = mode.name === selectedMiningMode?.mode_name;
@@ -215,10 +212,10 @@ export const MiningMode = ({
                                     );
                                 })}
                             </List>
-                        </ListContainer>
-                    </FloatingFocusManager>
-                )}
-            </AnimatePresence>
+                        </AnimatePresence>
+                    </ListContainer>
+                </FloatingFocusManager>
+            ) : null}
         </Wrapper>
     );
 };

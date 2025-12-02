@@ -26,6 +26,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::{TorAdapter, TorConfig};
 use crate::tor_control_client::TorStatus;
+use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use anyhow::anyhow;
 use log::{error, info};
 use std::time::Duration;
@@ -33,7 +34,6 @@ use std::{path::PathBuf, sync::Arc};
 use tauri_plugin_sentry::sentry;
 use tokio::sync::{watch, RwLock};
 
-const LOG_TARGET: &str = "tari::universe::tor_manager";
 const STARTUP_TIMEOUT: u64 = 180; // 3mins
 
 pub(crate) struct TorManager {
@@ -122,19 +122,19 @@ impl TorManager {
             tokio::select! {
                 _ = tokio::time::sleep(Duration::from_secs(STARTUP_TIMEOUT)) => {
                     let err_msg = format!("Waiting for Tor to be ready timed out after {STARTUP_TIMEOUT}");
-                    log::error!(target: LOG_TARGET, "{err_msg}");
+                    log::error!(target: LOG_TARGET_STATUSES, "{err_msg}");
                     sentry::capture_message(&err_msg, sentry::Level::Error);
                     return Err(anyhow!(err_msg))
                 }
                 _ = tor_status_watch_rx.changed() => {
                     let tor_status = *tor_status_watch_rx.borrow();
-                    log::info!(target: LOG_TARGET, "Waiting for Tor bootstrap: {}%", tor_status.bootstrap_phase);
+                    log::info!(target: LOG_TARGET_STATUSES, "Waiting for Tor bootstrap: {}%", tor_status.bootstrap_phase);
                     if tor_status.is_bootstrapped && tor_status.network_liveness && tor_status.circuit_ok {
                         break;
                     }
                 }
                 _ = shutdown_signal.wait() => {
-                    log::warn!(target: LOG_TARGET, "Shutdown signal received, stopping wait_ready for Tor");
+                    log::warn!(target: LOG_TARGET_STATUSES, "Shutdown signal received, stopping wait_ready for Tor");
                     break;
                 }
             };
@@ -178,10 +178,10 @@ impl TorManager {
             .await
         {
             Ok(_) => {
-                info!(target: LOG_TARGET, "TorManager::on_app_exit completed successfully");
+                info!(target: LOG_TARGET_APP_LOGIC, "TorManager::on_app_exit completed successfully");
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "TorManager::on_app_exit failed: {}", e);
+                error!(target: LOG_TARGET_APP_LOGIC, "TorManager::on_app_exit failed: {}", e);
             }
         }
     }

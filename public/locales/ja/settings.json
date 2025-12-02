@@ -100,6 +100,10 @@
     "load-qr-code": "QRコードを読み込む",
     "passphrase": "パスフレーズ"
   },
+  "pause-on-battery-mode": {
+    "description": "Pause mining when device is disconnected from charging",
+    "title": "Pause on Battery Mode"
+  },
   "pin": "ピン",
   "pool-configuration": "プール設定",
   "pool-mining": "プールマイニング",
@@ -152,7 +156,7 @@
   "sync-incomplete": "同期中...",
   "sync-status": "同期ステータス",
   "tabs": {
-    "airdrop": "ボーナスXTM",
+    "airdrop": "Airdrop Claim",
     "connections": "接続",
     "experimental": "実験的",
     "general": "一般",

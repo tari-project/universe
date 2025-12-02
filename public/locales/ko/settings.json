@@ -100,6 +100,10 @@
     "load-qr-code": "QR 코드 불러오기",
     "passphrase": "암호 구문"
   },
+  "pause-on-battery-mode": {
+    "description": "Pause mining when device is disconnected from charging",
+    "title": "Pause on Battery Mode"
+  },
   "pin": "핀",
   "pool-configuration": "풀 구성",
   "pool-mining": "풀 채굴",
@@ -152,7 +156,7 @@
   "sync-incomplete": "동기화 중...",
   "sync-status": "동기화 상태",
   "tabs": {
-    "airdrop": "보너스 XTM",
+    "airdrop": "Airdrop Claim",
     "connections": "연결",
     "experimental": "실험적",
     "general": "일반",

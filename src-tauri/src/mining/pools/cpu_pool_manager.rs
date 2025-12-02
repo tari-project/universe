@@ -45,8 +45,6 @@ use crate::{
     tasks_tracker::TasksTrackers,
 };
 
-#[allow(dead_code)]
-static LOG_TARGET: &str = "tari::universe::mining::pools::cpu_pool_manager";
 static INSTANCE: LazyLock<CpuPoolManager> = LazyLock::new(CpuPoolManager::new);
 
 pub struct CpuPoolManager {

@@ -36,6 +36,7 @@ use tokio::{
 
 use crate::mining::cpu::CpuMinerStatus;
 use crate::websocket_manager::WebsocketManager;
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
     airdrop::decode_jwt_claims_without_exp,
     commands::{sign_ws_data, SignWsDataResponse},
@@ -45,7 +46,6 @@ use crate::{
     websocket_manager::WebsocketMessage,
     BaseNodeStatus, GpuMinerStatus,
 };
-const LOG_TARGET: &str = "tari::universe::websocket_events_manager";
 static INTERVAL_DURATION: std::time::Duration = Duration::from_secs(15);
 static KEEP_ALIVE_INTERVAL_DURATION: std::time::Duration = Duration::from_secs(15);
 static MAX_ACCEPTABLE_COMMAND_TIME: std::time::Duration = Duration::from_secs(1);
@@ -86,10 +86,10 @@ impl WebsocketEventsManager {
     ) -> Result<(), anyhow::Error> {
         self.app = Some(app);
         if let Err(e) = self.websocket_connect(websocket_manager).await {
-            error!(target: LOG_TARGET, "Failed to start websocket connection: {e}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start websocket connection: {e}");
             return Err(anyhow::anyhow!(e));
         } else {
-            info!(target: LOG_TARGET, "Websocket events manager initialized successfully");
+            info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager initialized successfully");
         }
         Ok(())
     }
@@ -109,17 +109,17 @@ impl WebsocketEventsManager {
         let is_started = self.is_started.clone();
         let mut is_started_guard = is_started.lock().await;
         if *is_started_guard {
-            info!(target: LOG_TARGET, "Websocket events manager already started");
+            info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager already started");
             return Ok(());
         }
 
-        info!(target: LOG_TARGET, "Starting websocket events manager with intervals: {}s mining, {}s keep-alive",
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting websocket events manager with intervals: {}s mining, {}s keep-alive",
               INTERVAL_DURATION.as_secs(), KEEP_ALIVE_INTERVAL_DURATION.as_secs());
 
         let is_started_cloned = self.is_started.clone();
 
         TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
-            info!(target: LOG_TARGET, "Websocket events manager task spawned successfully");
+            info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager task spawned successfully");
             let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
             // Create intervals inside the spawned task
@@ -129,7 +129,7 @@ impl WebsocketEventsManager {
             let mut keep_alive_interval = time::interval(KEEP_ALIVE_INTERVAL_DURATION);
             keep_alive_interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
-            info!(target: LOG_TARGET, "Intervals created - starting event loop");
+            info!(target: LOG_TARGET_APP_LOGIC, "Intervals created - starting event loop");
 
             loop {
                 let app_version_option = app_cloned.clone().map(|handle| handle.package_info().version.clone().to_string());
@@ -145,30 +145,30 @@ impl WebsocketEventsManager {
                           app_version.clone(),
                         ).await {
                             drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
-                              error!(target:LOG_TARGET, "could not send to websocket channel due to {e}");
+                              error!(target:LOG_TARGET_APP_LOGIC, "could not send to websocket channel due to {e}");
                             }));
                         }
                   },
                   _= keep_alive_interval.tick()=>{
                         if let Some(message) = WebsocketEventsManager::assemble_keep_alive().await{
                             drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
-                              error!(target:LOG_TARGET, "could not send to websocket keep-alive channel due to {:?}", e);
+                              error!(target:LOG_TARGET_APP_LOGIC, "could not send to websocket keep-alive channel due to {:?}", e);
                             }));
                         }
                   },
                   _= shutdown_signal.wait()=>{
-                    info!(target:LOG_TARGET, "websocket events manager closed");
+                    info!(target:LOG_TARGET_APP_LOGIC, "websocket events manager closed");
                     return;
                   }
                   _=wait_for_close_signal(close_channel_tx.subscribe(),is_started_cloned.clone())=>{
-                    info!(target:LOG_TARGET, "websocket events manager closed");
+                    info!(target:LOG_TARGET_APP_LOGIC, "websocket events manager closed");
                     return;
                   }
                 }
             }
         });
         *is_started_guard = true;
-        info!(target: LOG_TARGET, "Websocket events manager started successfully");
+        info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager started successfully");
         Ok(())
     }
 
@@ -201,7 +201,7 @@ impl WebsocketEventsManager {
 
         // Check if wallet is initialized before trying to get address
         if !InternalWallet::is_initialized() {
-            warn!(target: LOG_TARGET, "Wallet has not been initialized");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Wallet has not been initialized");
             return None;
         }
         let tari_address = InternalWallet::tari_address().await;
@@ -270,7 +270,7 @@ impl WebsocketEventsManager {
         &mut self,
         websocket_manager: Arc<RwLock<WebsocketManager>>,
     ) -> Result<(), String> {
-        info!(target: LOG_TARGET, "websocket_connect command started");
+        info!(target: LOG_TARGET_APP_LOGIC, "websocket_connect command started");
         let timer = Instant::now();
 
         const MAX_RETRIES: u32 = 5;
@@ -295,9 +295,9 @@ impl WebsocketEventsManager {
                     .map_err(|e| e.to_string())?;
 
                 if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-                    warn!(target: LOG_TARGET, "websocket_connect took too long: {:?}", timer.elapsed());
+                    warn!(target: LOG_TARGET_APP_LOGIC, "websocket_connect took too long: {:?}", timer.elapsed());
                 }
-                info!(target: LOG_TARGET, "websocket_connect command finished after {} retries", retry_count);
+                info!(target: LOG_TARGET_APP_LOGIC, "websocket_connect command finished after {} retries", retry_count);
                 return Ok(());
             }
 
@@ -308,7 +308,7 @@ impl WebsocketEventsManager {
 
             // Check if we've exceeded max retries or total timeout
             if retry_count > MAX_RETRIES {
-                warn!(target: LOG_TARGET, "websocket_connect failed after {} retries - websocket manager not ready", MAX_RETRIES);
+                warn!(target: LOG_TARGET_APP_LOGIC, "websocket_connect failed after {} retries - websocket manager not ready", MAX_RETRIES);
                 return Err(format!(
                     "websocket manager not ready after {} retries",
                     MAX_RETRIES
@@ -316,14 +316,14 @@ impl WebsocketEventsManager {
             }
 
             if timer.elapsed().as_secs() >= MAX_TOTAL_TIMEOUT_SECS {
-                warn!(target: LOG_TARGET, "websocket_connect timed out after {:?} - websocket manager not ready", timer.elapsed());
+                warn!(target: LOG_TARGET_APP_LOGIC, "websocket_connect timed out after {:?} - websocket manager not ready", timer.elapsed());
                 return Err(format!(
                     "websocket manager not ready after {}s timeout",
                     MAX_TOTAL_TIMEOUT_SECS
                 ));
             }
 
-            info!(target: LOG_TARGET, "websocket_connect retry {} in {}ms - websocket manager not ready yet", retry_count, delay_ms);
+            info!(target: LOG_TARGET_APP_LOGIC, "websocket_connect retry {} in {}ms - websocket manager not ready yet", retry_count, delay_ms);
 
             // Sleep with exponential backoff
             sleep(Duration::from_millis(delay_ms));
@@ -341,10 +341,10 @@ async fn wait_for_close_signal(
             let mut is_started_guard = is_started.lock().await;
             *is_started_guard = false;
             drop(is_started_guard);
-            info!(target:LOG_TARGET,"received websocket_events_manager stop signal");
+            info!(target:LOG_TARGET_APP_LOGIC,"received websocket_events_manager stop signal");
         }
         Err(_) => {
-            info!(target:LOG_TARGET,"received websocket_events_manager stop signal");
+            info!(target:LOG_TARGET_APP_LOGIC,"received websocket_events_manager stop signal");
         }
     }
 }

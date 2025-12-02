@@ -36,10 +36,8 @@ use crate::{
         setup_manager::{PhaseStatus, SetupPhase},
         utils::timeout_watcher::hash_value,
     },
-    UniverseAppState,
+    UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
-
-const LOG_TARGET: &str = "tari::universe::progress_tracker";
 
 #[derive(Debug)]
 struct ProgressAccumulator {
@@ -261,7 +259,7 @@ impl ProgressStepper {
         if let Some(index) = self.steps.iter().position(|s| s.get_step() == &step) {
             let step_tracker = self.steps.remove(index);
             if let Some(err) = error {
-                warn!(target: LOG_TARGET, "Failed to complete step: {err}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to complete step: {err}");
                 self.handle_step_error(step_tracker, err).await?;
             } else {
                 self.emit_completion_update(&step).await;
@@ -316,7 +314,7 @@ impl ProgressStepper {
             .send(hash_value(&payload))
             .inspect_err(|e| {
                 warn!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_APP_LOGIC,
                     "Failed to send timeout watcher signal: {e}"
                 );
             });
@@ -350,7 +348,7 @@ impl ProgressStepper {
         step_tracker: StepTracker,
         error: anyhow::Error,
     ) -> Result<(), anyhow::Error> {
-        warn!(target: LOG_TARGET, "Failed to complete step: {error}");
+        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to complete step: {error}");
 
         if step_tracker.is_required() {
             let error_message = format!(

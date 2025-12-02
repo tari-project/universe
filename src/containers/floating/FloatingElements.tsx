@@ -4,10 +4,9 @@ import AdminUI from '../../components/AdminUI/AdminUI.tsx';
 import ToastStack from '../../components/ToastStack/ToastStack.tsx';
 import XCLinkModal from '../../components/exchanges/LinkModal/LinkModal.tsx';
 import { CustomPowerLevelsDialogContainer } from '../navigation/components/Miner/components/CustomPowerLevels/CustomPowerLevelsDialogContainer.tsx';
-import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
-import CrewRewards from '../main/CrewRewards/CrewRewards.tsx';
 
 import AutoUpdateDialog from './AutoUpdateDialog/AutoUpdateDialog.tsx';
+import BatteryAlertDialog from './BatteryAlertDialog/index.ts';
 import ShutdownSelectionDialog from './ShutdownSelectionDialog/index.ts';
 import CreatePinDialog from './security/pin/CreatePinDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
@@ -30,6 +29,7 @@ import SettingsModal from './Settings/SettingsModal.tsx';
 import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 import UniversalEXSelectorModal from './UniversalEXSelectorModal/UniversalEXSelectorModal.tsx';
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
+import AirdropClaimModal from '../main/Airdrop/AirdropClaim/AirdropClaimModal.tsx';
 import SchedulerModal from './scheduler/SchedulerModal.tsx';
 
 const environment = import.meta.env.MODE;
@@ -40,13 +40,13 @@ const FloatingElements = () => {
             {environment === 'development' && <AdminUI />}
 
             <AutoUpdateDialog />
+            <BatteryAlertDialog />
             <ShutdownSelectionDialog />
             <CriticalErrorDialog />
             <ExternalDependenciesDialog />
             <PaperWalletModal />
             <LudicrousCofirmationDialog />
             <ShareRewardModal />
-            <ShellOfSecrets />
             <ToastStack />
             <CriticalProblemDialog />
             <ReleaseNotesDialog />
@@ -61,8 +61,8 @@ const FloatingElements = () => {
             <SeedPhrase />
             <CreatePinDialog />
             <EnterPinDialog />
-            <CrewRewards />
             <SettingsModal />
+            <AirdropClaimModal />
             <FailedModuleInitializationDialog />
             <ExitFeedbackSurveyDialog />
             <LongTimeUserFeedbackDialog />

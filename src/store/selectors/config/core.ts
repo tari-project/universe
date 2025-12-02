@@ -10,7 +10,6 @@ export const getParsedBetweenTime = (
     const timing: BetweenTime | undefined = stored?.[event_id]?.timing['Between'];
 
     if (!timing) {
-        console.warn(`No timing found for scheduler event with id: ${event_id}`);
         return {
             start: DEFAULT_START,
             end: DEFAULT_END,
