@@ -22,6 +22,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
 
     const { currentTranche } = useCurrentMonthTranche();
+
     const {
         submitTrancheClaimWithOtp,
         isLoading: trancheLoading,
@@ -39,11 +40,10 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         ?.sort((a, b) => new Date(a.validTo).getTime() - new Date(b.validTo).getTime());
 
     const nextTranche = futureTranches?.find((t) => t.id !== currentTranche?.id && new Date(t.validFrom) > new Date());
-    const lastClaimedTranche = trancheStatus?.tranches.find((t) => t.claimed);
 
+    const lastClaimedTranche = trancheStatus?.tranches.find((t) => t.claimed);
     const isFuture = !currentTranche && !!nextTranche;
     const isCurrentUnclaimed = Boolean(currentTranche && !currentTranche.claimed);
-
     const handleClaim = async () => {
         if (!currentTranche || !trancheCanClaim) return;
         try {
@@ -63,7 +63,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         }
     }, [showModal]);
 
-    const displayTitle = t('tranche.claim-modal.title', { context: isFuture ? 'future' : '' });
+    const displayTitle = t('tranche.claim-modal.title', { context: isFuture || !currentTranche ? 'future' : '' });
     const isAnyLoading = trancheLoading || isClaimingOptimistic || claim?.isClaimInProgress;
     const displayAmount = currentTranche?.amount || nextTranche?.amount || lastClaimedTranche?.amount;
 
@@ -81,7 +81,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                         <ModalTitle variant="h2">{displayTitle}</ModalTitle>
                     </ModalHeader>
                     {!isFuture ? <ModalBody>{displayDescription}</ModalBody> : null}
-                    <ClaimDetails displayAmount={displayAmount} isFutureTranche={isFuture} />
+                    <ClaimDetails displayAmount={displayAmount} isFutureTranche={isFuture || !currentTranche} />
                     {!isAnyLoading && (
                         <Countdown
                             isCurrent={isCurrentUnclaimed}
@@ -89,7 +89,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                             onEndReached={refreshTranches}
                         />
                     )}
-                    {!isFuture && (
+                    {!isFuture && !!currentTranche && (
                         <ClaimButton onClick={handleClaim} disabled={!trancheCanClaim || isAnyLoading}>
                             {!isAnyLoading ? t('tranche.claim-modal.claim-button') : t('tranche.claim-modal.claiming')}
                         </ClaimButton>
