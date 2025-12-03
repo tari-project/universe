@@ -99,11 +99,13 @@ export default function Claim() {
     ]);
 
     const canClaim = !killswitchEngaged && claimEnabled && claimAvailable && !isIneligible;
+    const claimAmount = canClaim && claimStatus?.amount ? `${formatAmountWithKM(claimStatus?.amount)} XTM` : undefined;
+
     return (
         <SidebarItem
             tooltipContent={tooltipContent}
             onClick={canClaim ? openTrancheModal : undefined}
-            text={claimStatus?.amount ? `${formatAmountWithKM(claimStatus?.amount)} XTM` : undefined}
+            text={claimAmount}
         >
             <ActionImgWrapper>
                 <ParachuteSVG />
