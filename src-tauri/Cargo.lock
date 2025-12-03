@@ -4857,6 +4857,7 @@ dependencies = [
 [[package]]
 name = "minotari"
 version = "0.1.0"
+source = "git+https://github.com/Misieq01/minotari-cli.git?branch=feat%2FTU-integration-adjustments#f3cc6bce3314126e201ac80ee195f58c3374af4c"
 dependencies = [
  "anyhow",
  "async-trait",
