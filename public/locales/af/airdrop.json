@@ -97,6 +97,7 @@
   "logged-in-as": "Aangemeld as <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Airdrop Belonings",
   "loggedOutTitle": "Nooi Vriende om Edelstene te Verdien",
+  "login": "Log in",
   "loginButton": "Meld aan om edelstene te eis",
   "logout": "Teken uit",
   "nextTierBonus": "Nooi <strong>{{count}} vriende</strong> & verdien {{bonusGems}} bonus edelstene",

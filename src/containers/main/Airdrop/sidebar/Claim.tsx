@@ -12,7 +12,7 @@ import { FEATURE_FLAGS } from '@app/store/consts.ts';
 import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
 import { useBalanceSummary } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
 import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
-import { formatNumber, FormatPreset } from '@app/utils';
+import { formatNumber, FormatPreset, formatAmountWithKM } from '@app/utils';
 
 export default function Claim() {
     const { t } = useTranslation('airdrop');
@@ -100,7 +100,11 @@ export default function Claim() {
 
     const canClaim = !killswitchEngaged && claimEnabled && claimAvailable && !isIneligible;
     return (
-        <SidebarItem tooltipContent={tooltipContent} onClick={canClaim ? openTrancheModal : undefined}>
+        <SidebarItem
+            tooltipContent={tooltipContent}
+            onClick={canClaim ? openTrancheModal : undefined}
+            text={claimStatus?.amount ? `${formatAmountWithKM(claimStatus?.amount)} XTM` : undefined}
+        >
             <ActionImgWrapper>
                 <ParachuteSVG />
             </ActionImgWrapper>

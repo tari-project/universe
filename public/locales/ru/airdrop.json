@@ -97,6 +97,7 @@
   "logged-in-as": "Вход выполнен как <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Награды Airdrop",
   "loggedOutTitle": "Пригласите друзей, чтобы заработать драгоценные камни",
+  "login": "Log in",
   "loginButton": "Войдите, чтобы получить гемы",
   "logout": "Выйти",
   "nextTierBonus": "Пригласите <strong>{{count}} друзей</strong> и получите {{bonusGems}} бонусных гемов",

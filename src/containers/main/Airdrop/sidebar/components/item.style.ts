@@ -31,12 +31,12 @@ export const ActionWrapper = styled.div`
     }
 `;
 
-export const ActionText = styled(Typography)`
+export const ActionText = styled(Typography)<{ $isWrapped?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     font-size: 10px;
-    line-height: 0.95;
+    line-height: 1;
     font-weight: 600;
-    text-transform: uppercase;
+    text-transform: ${({ $isWrapped }) => ($isWrapped ? `capitalize` : 'uppercase')};
     text-align: center;
     padding: 0 0 6px;
 `;

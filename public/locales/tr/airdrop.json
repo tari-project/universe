@@ -97,6 +97,7 @@
   "logged-in-as": "<strong>@{{twitter}}</strong> olarak giriş yapıldı",
   "loggedInTitle": "Airdrop Ödülleri",
   "loggedOutTitle": "Mücevher Kazanmak İçin Arkadaşlarını Davet Et",
+  "login": "Log in",
   "loginButton": "Mücevherleri talep etmek için giriş yapın",
   "logout": "Çıkış",
   "nextTierBonus": "<strong>{{count}} arkadaş</strong> davet et ve {{bonusGems}} bonus taş kazan",

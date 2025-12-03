@@ -97,6 +97,7 @@
   "logged-in-as": "Eingeloggt als <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Airdrop-Belohnungen",
   "loggedOutTitle": "Freunde einladen, um Edelsteine zu verdienen",
+  "login": "Log in",
   "loginButton": "Einloggen, um Edelsteine zu beanspruchen",
   "logout": "Ausloggen",
   "nextTierBonus": "Lade <strong>{{count}} Freunde</strong> ein und erhalte {{bonusGems}} Bonus-Edelsteine",

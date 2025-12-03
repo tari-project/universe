@@ -40,7 +40,7 @@ export function SidebarItem({ children, text, hoverContent, tooltipContent, onCl
             style={{ cursor: onClick || isWrapped ? 'pointer' : 'default' }}
         >
             <ContentWrapper>{hovered && hoverContent ? hoverContent : children}</ContentWrapper>
-            {text ? <ActionText>{text}</ActionText> : null}
+            {text ? <ActionText $isWrapped={isWrapped}>{text}</ActionText> : null}
             <AnimatePresence>
                 {tooltipContent && hovered && (
                     <ActionHoveredWrapper ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>

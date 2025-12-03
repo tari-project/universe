@@ -97,6 +97,7 @@
   "logged-in-as": "<strong>@{{twitter}}</strong> के रूप में लॉग इन",
   "loggedInTitle": "एयरड्रॉप पुरस्कार",
   "loggedOutTitle": "रत्न कमाने के लिए दोस्तों को आमंत्रित करें",
+  "login": "Log in",
   "loginButton": "रत्नों का दावा करने के लिए लॉग इन करें",
   "logout": "लॉगआउट",
   "nextTierBonus": "<strong>{{count}} मित्रों</strong> को आमंत्रित करें और {{bonusGems}} बोनस रत्न कमाएं",
