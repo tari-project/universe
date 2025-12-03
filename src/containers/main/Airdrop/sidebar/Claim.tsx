@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useAirdropStore } from '@app/store';
 import { openTrancheModal } from '@app/store/actions/airdropStoreActions';
 
@@ -16,13 +16,15 @@ import { formatNumber, FormatPreset, formatAmountWithKM } from '@app/utils';
 
 export default function Claim() {
     const { t } = useTranslation('airdrop');
+    const initialFetched = useRef(false);
+    const { data: claimStatus, isLoading: claimStatusLoading } = useClaimStatus();
+
     const features = useAirdropStore((s) => s.features);
     const killswitchEngaged = features?.includes(FEATURE_FLAGS.FF_AD_KS);
     const claimEnabled = features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
     const claimAvailable = features?.includes(FEATURE_FLAGS.FF_AD_AVAILABLE);
 
     const balanceSummary = useBalanceSummary();
-    const { data: claimStatus, isLoading: claimStatusLoading } = useClaimStatus();
 
     const totalValues = useMemo(() => {
         const totalOriginalAmount = claimStatus?.amount || 0;
@@ -42,7 +44,8 @@ export default function Claim() {
     const { total: totalAirdropAmount, claimed: totalClaimedAmount, pending: totalPendingAmount } = totalValues;
     const isIneligible =
         !claimStatusLoading && (!totalAirdropAmount || totalAirdropAmount === 0 || claimStatus?.claimTarget !== 'xtm');
-    useTrancheAutoRefresh({ enabled: !killswitchEngaged && !isIneligible });
+
+    const { refreshTranches } = useTrancheAutoRefresh({ enabled: !killswitchEngaged && !isIneligible });
 
     const tooltipContent = useMemo(() => {
         if (killswitchEngaged) return null;
@@ -100,6 +103,13 @@ export default function Claim() {
 
     const canClaim = !killswitchEngaged && claimEnabled && claimAvailable && !isIneligible;
     const claimAmount = canClaim && claimStatus?.amount ? `${formatAmountWithKM(claimStatus?.amount)} XTM` : undefined;
+
+    useEffect(() => {
+        if (initialFetched.current) return;
+        if (canClaim) {
+            refreshTranches().then(() => (initialFetched.current = true));
+        }
+    }, [canClaim, refreshTranches]);
 
     return (
         <SidebarItem
