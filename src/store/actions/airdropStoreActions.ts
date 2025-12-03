@@ -370,7 +370,6 @@ export const setShowTrancheModal = (show: boolean) => {
 };
 
 export const openTrancheModal = () => {
-    console.log(`wen open`);
     setShowTrancheModal(true);
 };
 

@@ -29,7 +29,6 @@ async function fetchClaimStatus(): Promise<ClaimStatus | undefined> {
 
 export function useClaimStatus(enabled = true) {
     const userId = useAirdropStore((state) => state.userDetails?.user?.id);
-    console.log(`useClaimStatus userId`, userId);
     return useQuery({
         queryKey: [KEY_CLAIM_STATUS, userId],
         queryFn: fetchClaimStatus,
