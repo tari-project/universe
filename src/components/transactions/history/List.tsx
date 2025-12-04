@@ -6,8 +6,8 @@ import { VList } from 'virtua';
 import { useWalletStore } from '@app/store';
 
 import { EmptyText, ListItemWrapper, ListWrapper } from './List.styles.ts';
-import { setDetailsItemTransaction } from '@app/store/actions/walletStoreActions.ts';
-import { DisplayedTransaction } from '@app/types/app-status.ts';
+import { setSelectedTransactionId } from '@app/store/actions/walletStoreActions.ts';
+import { DisplayedTransaction, TransactionSource } from '@app/types/app-status.ts';
 import { HistoryListItem } from './transactionHistoryItem/HistoryItem.tsx';
 import { PlaceholderItem } from './transactionHistoryItem/HistoryItem.styles.ts';
 
@@ -26,11 +26,9 @@ export function List() {
             case 'all-activity':
                 return walletTransactionsAll;
             case 'rewards':
-                // Filter by coinbase source
-                return walletTransactionsAll.filter((tx) => tx.source === 'coinbase');
+                return walletTransactionsAll.filter((tx) => tx.source === TransactionSource.Coinbase);
             case 'transactions':
-                // Filter by non-coinbase source (transfers, one-sided, etc.)
-                return walletTransactionsAll.filter((tx) => tx.source !== 'coinbase');
+                return walletTransactionsAll.filter((tx) => tx.source !== TransactionSource.Coinbase);
             default:
                 return walletTransactionsAll;
         }
@@ -69,7 +67,7 @@ export function List() {
     }, [walletTransactions, seenTransactionIds]);
 
     const handleDetailsChange = useCallback((transaction: DisplayedTransaction) => {
-        setDetailsItemTransaction(transaction);
+        setSelectedTransactionId(transaction.id);
     }, []);
 
     // Calculate how many placeholder items we need to add

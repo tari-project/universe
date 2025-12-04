@@ -370,13 +370,13 @@ impl MinotariWalletManager {
         let history_service = TransactionHistoryService::new(db_pool);
 
         match history_service
-            .load_all_transactions(DEFAULT_ACCOUNT_ID)
+            .load_transactions_excluding_reorged(DEFAULT_ACCOUNT_ID)
             .await
         {
             Ok(transactions) => {
                 info!(
                     target: LOG_TARGET,
-                    "Loaded {} transactions from history via TransactionHistoryService", transactions.len()
+                    "Loaded {} transactions from history (excluding reorged) via TransactionHistoryService", transactions.len()
                 );
 
                 // Emit transactions to frontend
@@ -542,9 +542,28 @@ impl MinotariWalletManager {
                 ProcessingEvent::ReorgDetected(reorg_event) => {
                     info!(
                         target: LOG_TARGET,
-                        "Chain reorganization detected at height {}",
-                        reorg_event.reorg_from_height
+                        "Chain reorganization detected at height {}, {} transactions affected",
+                        reorg_event.reorg_from_height,
+                        reorg_event.reorganized_displayed_transactions.len()
                     );
+
+                    // Emit updates for each reorganized transaction so frontend can update/remove them
+                    for tx in reorg_event.reorganized_displayed_transactions {
+                        EventsEmitter::emit_wallet_transaction_updated(tx).await;
+                    }
+                }
+                ProcessingEvent::TransactionsUpdated(update_event) => {
+                    let update_count = update_event.updated_transactions.len();
+                    info!(
+                        target: LOG_TARGET,
+                        "TransactionsUpdated event received with {} transactions",
+                        update_count
+                    );
+
+                    // Emit update event for each transaction with updated confirmations
+                    for tx in update_event.updated_transactions {
+                        EventsEmitter::emit_wallet_transaction_updated(tx).await;
+                    }
                 }
             }
         }

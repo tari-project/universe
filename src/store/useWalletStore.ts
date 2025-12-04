@@ -32,7 +32,7 @@ export interface WalletStoreState {
     // ========================================
     is_wallet_importing: boolean;
     is_swapping?: boolean;
-    selectedTransactionDetails?: DisplayedTransaction | null;
+    selectedTransactionId?: string | null;
     wallet_scanning: {
         scanned_height: number;
         total_height: number;

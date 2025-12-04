@@ -37,127 +37,90 @@ export interface SystemDependency {
 // DisplayedTransaction Types (from minotari_wallet)
 // ============================================================================
 
-/** Direction of the transaction from the user's perspective */
-export type TransactionDirection = 'incoming' | 'outgoing';
+export enum TransactionDirection {
+    Incoming = 'incoming',
+    Outgoing = 'outgoing',
+}
 
-/** Source/type of the transaction */
-export type TransactionSource = 'transfer' | 'coinbase' | 'one_sided' | 'unknown';
+export enum TransactionSource {
+    Transfer = 'transfer',
+    Coinbase = 'coinbase',
+    OneSided = 'one_sided',
+    Unknown = 'unknown',
+}
 
-/** Simplified status for end users */
-export type TransactionDisplayStatus = 'pending' | 'confirmed' | 'cancelled';
+export enum TransactionDisplayStatus {
+    Pending = 'pending',
+    Unconfirmed = 'unconfirmed',
+    Confirmed = 'confirmed',
+    Cancelled = 'cancelled',
+    Reorganized = 'reorganized',
+    Rejected = 'rejected',
+}
 
-/** Output status */
-export type OutputStatus = 'Unspent' | 'Locked' | 'Spent' | 'Cancelled';
+export enum OutputStatus {
+    Unspent = 'Unspent',
+    Locked = 'Locked',
+    Spent = 'Spent',
+}
 
-/** Information about the other party in the transaction */
 export interface CounterpartyInfo {
-    /** Base58 address */
     address: string;
-    /** Emoji representation */
     address_emoji?: string;
-    /** Optional alias/label if user has saved it */
     label?: string;
 }
 
-/** Blockchain-related information */
 export interface BlockchainInfo {
-    /** Block height where mined */
     block_height: number;
-    /** Timestamp of the block (ISO 8601 string) */
     timestamp: string;
-    /** Number of confirmations */
     confirmations: number;
 }
 
-/** Fee information for outgoing transactions */
 export interface FeeInfo {
-    /** Fee in microTari */
     amount: number;
-    /** User-friendly display */
     amount_display: string;
 }
 
-/** A transaction input (references a previously created output that is being spent) */
 export interface TransactionInput {
-    /** Hash of the output being spent (hex encoded) */
     output_hash: string;
-    /** Amount being spent (microTari) */
     amount: number;
-    /** ID of the matched output in our database (if found) */
     matched_output_id?: number;
-    /** Whether this input was successfully matched */
     is_matched: boolean;
 }
 
-/** A transaction output (newly created output) */
 export interface TransactionOutput {
-    /** Output commitment hash (hex encoded) */
     hash: string;
-    /** Amount (microTari) */
     amount: number;
-    /** Output status */
     status: OutputStatus;
-    /** Block height where confirmed */
     confirmed_height?: number;
-    /** Output type (Standard, Coinbase, etc.) */
     output_type: string;
-    /** Whether this is likely a change output */
     is_change: boolean;
 }
 
-/** Advanced transaction details for power users */
 export interface TransactionDetails {
-    /** Account ID this belongs to */
     account_id: number;
-    /** Total credits (incoming value) */
     total_credit: number;
-    /** Total debits (outgoing value) */
     total_debit: number;
-    /** Transaction inputs (spent outputs) */
     inputs: TransactionInput[];
-    /** Transaction outputs (created outputs) */
     outputs: TransactionOutput[];
-    /** Raw output type from chain (for debugging) */
     output_type?: string;
-    /** Coinbase extra data (only for mining rewards) */
     coinbase_extra?: string;
-    /** Raw memo in hex (for debugging) */
     memo_hex?: string;
-    /** Hashes of outputs sent in this transaction (hex encoded) */
     sent_output_hashes: string[];
 }
 
-/** User-friendly transaction representation from DisplayedTransaction */
 export interface DisplayedTransaction {
-    // ===== Essential Info =====
-    /** Unique identifier */
     id: string;
-    /** Did user receive or send? */
     direction: TransactionDirection;
-    /** What kind of transaction (transfer, mining, etc.) */
     source: TransactionSource;
-    /** Current status */
     status: TransactionDisplayStatus;
-    /** Net amount in microTari (always positive, use direction for sign) */
     amount: number;
-    /** User-friendly amount (e.g., "1,234.567890 XTM") */
     amount_display: string;
-    /** Optional message/memo */
     message?: string;
-
-    // ===== Counterparty Info =====
     counterparty?: CounterpartyInfo;
-
-    // ===== Blockchain Info =====
     blockchain: BlockchainInfo;
-
-    // ===== Fee Info (only for outgoing) =====
     fee?: FeeInfo;
-
-    // ===== Advanced Details =====
     details: TransactionDetails;
-
-    // ===== Bridge Transaction Details (added by frontend) =====
     bridge_transaction_details?: {
         status: UserTransactionDTO.status;
         transactionHash?: string;

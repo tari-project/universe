@@ -108,8 +108,8 @@ export const setTxHistoryFilter = (filter: TxHistoryFilter) => {
     useWalletStore.setState((c) => ({ ...c, transaction_history_filter: filter }));
 };
 
-export const setDetailsItemTransaction = (detailsItemTransaction: DisplayedTransaction | null) =>
-    useWalletStore.setState((c) => ({ ...c, selectedTransactionDetails: detailsItemTransaction }));
+export const setSelectedTransactionId = (transactionId: string | null) =>
+    useWalletStore.setState((c) => ({ ...c, selectedTransactionId: transactionId }));
 
 export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayload) => {
     const { tari_address_base58, tari_address_emoji, tari_address_type } = payload;

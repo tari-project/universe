@@ -18,7 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 import { TransactionDirection as UITransactionDirection } from '@app/types/transactions.ts';
-import { DisplayedTransaction } from '@app/types/app-status.ts';
+import { DisplayedTransaction, TransactionDirection } from '@app/types/app-status.ts';
 import HoverItem from './HoverItem.tsx';
 import { formatEffectiveDate, resolveTransactionTitle, resolveTransactionType } from '../helpers.ts';
 
@@ -106,7 +106,9 @@ const HistoryListItem = memo(function HistoryListItem({
             time={formatEffectiveDate(transaction.blockchain.timestamp)}
             value={earningsFormatted}
             direction={
-                transaction.direction === 'outgoing' ? UITransactionDirection.Outbound : UITransactionDirection.Inbound
+                transaction.direction === TransactionDirection.Outgoing
+                    ? UITransactionDirection.Outbound
+                    : UITransactionDirection.Inbound
             }
             chip={itemIsNew ? t('new') : ''}
             hideWalletBalance={hideWalletBalance}

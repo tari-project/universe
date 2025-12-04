@@ -27,7 +27,7 @@ import { open } from '@tauri-apps/plugin-shell';
 
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 import { TransactionDetails } from '@app/components/transactions/history/transactionDetails/TransactionDetails.tsx';
-import { setIsSwapping, setTxHistoryFilter, setDetailsItemTransaction } from '@app/store/actions/walletStoreActions.ts';
+import { setIsSwapping, setTxHistoryFilter, setSelectedTransactionId } from '@app/store/actions/walletStoreActions.ts';
 
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
@@ -48,7 +48,9 @@ interface SidebarWalletProps {
 export default function SidebarWallet({ section, setSection }: SidebarWalletProps) {
     const { t } = useTranslation('wallet');
     const { data: xcData } = useFetchExchangeBranding();
-    const selectedTransactionDetails = useWalletStore((s) => s.selectedTransactionDetails);
+    const selectedTransaction = useWalletStore((s) =>
+        s.selectedTransactionId ? s.wallet_transactions.find((tx) => tx.id === s.selectedTransactionId) : null
+    );
     const filter = useWalletStore((s) => s.transaction_history_filter);
 
     const walletModule = useSetupStore(setupStoreSelectors.selectWalletModule);
@@ -166,11 +168,11 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     </WalletWrapper>
                 )}
             </AnimatePresence>
-            {selectedTransactionDetails && (
+            {selectedTransaction && (
                 <TransactionDetails
-                    transaction={selectedTransactionDetails}
-                    expanded={Boolean(selectedTransactionDetails)}
-                    handleClose={() => setDetailsItemTransaction(null)}
+                    transaction={selectedTransaction}
+                    expanded={Boolean(selectedTransaction)}
+                    handleClose={() => setSelectedTransactionId(null)}
                 />
             )}
         </>
