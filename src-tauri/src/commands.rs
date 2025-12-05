@@ -24,7 +24,7 @@ use crate::airdrop::{get_der_encode_pub_key, get_websocket_key};
 use crate::app_in_memory_config::{AppInMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
+use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent, CustomDirectory};
 use crate::configs::config_mining::{
     ConfigMining, ConfigMiningContent, MiningModeType, PauseOnBatteryModeState,
 };
@@ -2183,6 +2183,23 @@ pub async fn update_shutdown_mode_selection(
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "update_shutdown_mode_selection took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_custom_directory(
+    directory_type: CustomDirectory,
+    path: String,
+) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    ConfigCore::update_directories(directory_type, path)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_custom_directory took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }

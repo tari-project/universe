@@ -333,6 +333,7 @@ fn main() {
         reason = "This is a temporary fix until the new tauri API is released"
     )]
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
@@ -594,6 +595,7 @@ fn main() {
             commands::mark_feedback_survey_as_completed,
             commands::update_shutdown_mode_selection,
             commands::set_pause_on_battery_mode,
+            commands::set_custom_directory,
             // Scheduler commands
             commands::add_scheduler_event,
             commands::remove_scheduler_event,
