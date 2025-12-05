@@ -118,7 +118,7 @@ export default function Claim() {
         <ClaimTooltip
             claimStatus={claimStatus}
             claimStatusLoading={claimStatusLoading}
-            nextAvailable={trancheStatus?.nextAvailable}
+            nextAvailable={!canClaim ? trancheStatus?.nextAvailable : undefined}
         />
     );
 

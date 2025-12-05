@@ -15,10 +15,10 @@ interface MonthlyTrancheClaimModalProps {
 }
 
 export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheClaimModalProps) {
-    const { t } = useTranslation('airdrop');
+    const { t } = useTranslation(['airdrop', 'common']);
     const [isClaimingOptimistic, setIsClaimingOptimistic] = useState(false);
+    const [isClaimed, setIsClaimed] = useState(false);
 
-    const claim = useAirdropStore((state) => state.claim);
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
     const { currentTranche, nextTranche, lastClaimedTranche } = useAvailableTranches();
 
@@ -38,10 +38,11 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const isCurrentUnclaimed = Boolean(currentTranche && !currentTranche.claimed);
     const handleClaim = async () => {
         if (!currentTranche || !trancheCanClaim) return;
+        setIsClaimingOptimistic(true);
         try {
-            setIsClaimingOptimistic(true);
             await submitTrancheClaimWithOtp(currentTranche.id);
-            // Modal should close automatically on success via toast or parent component
+            setIsClaimingOptimistic(false);
+            setIsClaimed(true);
         } catch (error) {
             console.error('Tranche claim failed:', error);
             setIsClaimingOptimistic(false);
@@ -56,36 +57,66 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     }, [showModal]);
 
     const displayTitle = t('tranche.claim-modal.title', { context: isFuture || !currentTranche ? 'future' : '' });
-    const isAnyLoading = trancheLoading || isClaimingOptimistic || claim?.isClaimInProgress;
+    const isClaiming = trancheLoading || isClaimingOptimistic;
     const displayAmount = currentTranche?.amount || nextTranche?.amount || lastClaimedTranche?.amount;
 
     const displayDescription = t('tranche.claim-modal.description', { emojis: `💜🐢` });
     const countdownTime = isCurrentUnclaimed ? currentTranche?.validTo : undefined;
 
+    function handleClose() {
+        setIsClaimingOptimistic(false);
+        setIsClaimed(false);
+        onClose();
+    }
+
     if (!trancheStatus) {
         return null;
     }
+
+    const claimingMarkup = (
+        <>
+            {/*lottie goes here*/}
+            {`:)`}
+            <ClaimButton disabled>{t('tranche.claim-modal.claiming')}</ClaimButton>
+        </>
+    );
+    const postClaimMarkup = isClaimed && (
+        <>
+            <ModalHeader>
+                <ModalTitle variant="h2">{t('tranche.claim-modal.title-complete')}</ModalTitle>
+            </ModalHeader>
+            <ModalBody>{t('tranche.claim-modal.description-complete')}</ModalBody>
+            <ClaimButton onClick={handleClose}>{t('common:close')}</ClaimButton>
+        </>
+    );
+    const preClaimMarkup =
+        !isClaiming && !isClaimed ? (
+            <>
+                <ModalHeader>
+                    <ModalTitle variant="h2">{displayTitle}</ModalTitle>
+                </ModalHeader>
+                {!isFuture ? <ModalBody>{displayDescription}</ModalBody> : null}
+                <ClaimDetails displayAmount={displayAmount} isFutureTranche={isFuture || !currentTranche} />
+                {!isFuture && !!currentTranche && (
+                    <ClaimButton onClick={handleClaim} disabled={!trancheCanClaim || isClaiming}>
+                        {t('tranche.claim-modal.claim-button')}
+                    </ClaimButton>
+                )}
+                {!isClaiming && (
+                    <Countdown
+                        isCurrent={isCurrentUnclaimed}
+                        futureTime={countdownTime}
+                        onEndReached={refreshTranches}
+                    />
+                )}
+            </>
+        ) : null;
     return (
-        <Dialog open={showModal} onOpenChange={onClose}>
+        <Dialog open={showModal} onOpenChange={handleClose}>
             <DialogContent variant="wrapper">
                 <ModalWrapper initial={{ opacity: 0, y: '100px' }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                    <ModalHeader>
-                        <ModalTitle variant="h2">{displayTitle}</ModalTitle>
-                    </ModalHeader>
-                    {!isFuture ? <ModalBody>{displayDescription}</ModalBody> : null}
-                    <ClaimDetails displayAmount={displayAmount} isFutureTranche={isFuture || !currentTranche} />
-                    {!isFuture && !!currentTranche && (
-                        <ClaimButton onClick={handleClaim} disabled={!trancheCanClaim || isAnyLoading}>
-                            {!isAnyLoading ? t('tranche.claim-modal.claim-button') : t('tranche.claim-modal.claiming')}
-                        </ClaimButton>
-                    )}
-                    {!isAnyLoading && (
-                        <Countdown
-                            isCurrent={isCurrentUnclaimed}
-                            futureTime={countdownTime}
-                            onEndReached={refreshTranches}
-                        />
-                    )}
+                    {preClaimMarkup}
+                    {isClaiming ? claimingMarkup : postClaimMarkup}
                 </ModalWrapper>
             </DialogContent>
         </Dialog>

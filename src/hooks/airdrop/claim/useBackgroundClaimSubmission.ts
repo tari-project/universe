@@ -7,7 +7,6 @@ import { useCsrfToken } from './useCsrfToken';
 import { useAutomaticOtpClaim } from './useAutomaticOtpClaim';
 import type { ClaimRequest, ClaimResult, BackgroundClaimResult } from '@app/types/airdrop-claim';
 import { useTranslation } from 'react-i18next';
-import { closeTrancheModal } from '@app/store/actions/airdropStoreActions.ts';
 
 interface ClaimSubmissionResponse {
     success: boolean;
@@ -80,7 +79,6 @@ export function useBackgroundClaimSubmission() {
                     timeout: 4000,
                 });
             }
-            closeTrancheModal();
             resetOtp();
         },
         onError: (error: Error) => {
