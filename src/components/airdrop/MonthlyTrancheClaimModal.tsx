@@ -8,6 +8,8 @@ import { useAvailableTranches } from '@app/hooks/airdrop/tranches/useTrancheStat
 import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
 import ClaimDetails from '@app/components/airdrop/ClaimDetails.tsx';
 import Countdown from '@app/components/airdrop/Countdown.tsx';
+// import coins from '@app/assets/lotties/coins.json';
+// import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 interface MonthlyTrancheClaimModalProps {
     showModal: boolean;
@@ -76,7 +78,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const claimingMarkup = (
         <>
             {/*lottie goes here*/}
-            {`:)`}
+            {/*<DotLottieReact src={coins} autoplay loop />*/}
             <ClaimButton disabled>{t('tranche.claim-modal.claiming')}</ClaimButton>
         </>
     );
