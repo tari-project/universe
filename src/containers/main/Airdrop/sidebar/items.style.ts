@@ -54,4 +54,13 @@ export const RewardTooltipItems = styled.div`
     gap: 2px;
 `;
 
-export const RewardTooltipItem = styled(Typography).attrs({ variant: 'p' })``;
+export const RewardTooltipItem = styled(Typography).attrs({ variant: 'p' })`
+    color: ${({ theme }) => theme.palette.text.secondary};
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+
+    strong {
+        font-weight: 700;
+    }
+`;

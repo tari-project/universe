@@ -56,7 +56,7 @@ function ClaimTooltip({ claimStatus, claimStatusLoading }: ClaimTooltipProps) {
     const markup = hasClaims && !claimStatusLoading && (
         <RewardTooltipItems>
             <RewardTooltipItem>
-                {t('tranche.status.total-airdrop')}: {formatAmount(values.total)} XTM
+                {t('tranche.status.total-airdrop')} <strong>{formatAmount(values.total)}</strong>
             </RewardTooltipItem>
 
             <RewardTooltipItem>

@@ -135,6 +135,7 @@
     "status": {
       "available": "Available",
       "available-in": "Next claim window opens in",
+      "available-in-compact": "Available in ",
       "balance-summary": "XTM Balance Summary",
       "claimed": "Claimed",
       "closes-prefix": "Claim window closes in",
@@ -150,7 +151,7 @@
       "overall-rewards": "Your overall Airdrop rewards are",
       "pending": "Pending",
       "progress-title": "Airdrop Progress",
-      "total-airdrop": "Total airdrop amount",
+      "total-airdrop": "Your overall Airdrop rewards are ",
       "total-allocation": "Total Allocation",
       "total-claimed": "Total claimed",
       "total-due": "Total amount due",
