@@ -1,3 +1,40 @@
+🚀 TARI UNIVERSE v1.6.7: The Bountiful Harvest
+
+_December 2, 2025_
+
+Hey Tari fam,
+
+The big news: airdrop claiming is here! We've also fixed pause on battery mode for laptop users, improved the bridge, and made it easier to troubleshoot issues when they arise.
+
+✨ WHAT'S NEW & FIXED
+
+- 🎁 **Airdrop claiming** – The moment you've been waiting for! You can now claim your airdrop rewards directly in Tari Universe every month starting today! Click on the parachute icon to log in. The claiming interface walks you through the process with clear status updates and countdown timers for each installment. For Linux users, we created a step-by-step guide to [claiming on a Windows VM here](https://airdrop.tari.com/linux-faq).
+- 🔋 **Pause on battery mode** – Laptop users, we prematurely announced this in the last update but it wasn't quite ready. Tari Universe now automatically pauses mining when you switch from wall power to battery, so you won't drain your laptop battery. A helpful dialog explains what's happening, and mining resumes automatically when you plug back in. (Turn off in Settings if you prefer)
+- ⚙️ **Settings access during errors** – When something goes wrong and you see a critical error, you can now still access Settings. This means you can check your seed words or adjust settings even when the app hits a snag.
+- 📋 **Transaction details, simplified** – No more triple-clicking to reveal hidden fields! All transaction details are now visible immediately with a scrollbar for longer content.
+- 🎛️ **Mode selector fix** – Fixed the annoying bug where switching from Custom mode required selecting your new mode twice.
+
+---
+
+🚀 TARI UNIVERSE v1.6.6: Seasons of Soon
+
+_November 11, 2025_
+
+Hey Tari fam,
+
+This release makes mining Tari more convenient than ever before! We've also fixed hashrate display issues, improved wallet balance updates, and improved handling of config files and error messages.
+
+✨ WHAT'S NEW & FIXED
+
+- 🔋 **Pause on battery mode** – Laptop users, this one's for you! Tari Universe now automatically pauses mining when you switch from being plugged in to battery, so you won't drain your laptop battery. As soon as you plug back in, mining resumes right where you left off. (Turn off in Settings)
+- ⏰ **Schedule your mining** – Take complete control of when Tari Universe mines. Set a custom schedule (and mode!) e.g., every night ludicrous from 9 PM to 6 AM. Mine during off-peak hours or when you're not using your computer.
+- 🪟 **System tray improvements** – You now have full control over how Tari Universe behaves when you close it. Choose to minimize to the system tray instead of fully exiting, keep mining in the background, and get a clear dialog explaining your options. On Windows, the taskbar icon now behaves like other tray apps for a cleaner experience.
+- 📊 **Accurate hashrate display** – Your CPU mining hashrate was showing inflated numbers because we were accidentally adding rather than averaging. Now you'll see the real hashrate that matches what mining pools report.
+- 💰 **Wallet balance updates instantly** – We've heard from many of you that available balance would get stuck at zero after sending transactions, sometimes for 40+ minutes.
+- 🔐 **Better PIN error feedback** – When you enter an incorrect PIN during the "Sync with Phone" flow, you'll now see a clear error message instead of wondering what went wrong.
+
+---
+
 🚀 TARI UNIVERSE v1.6.5: The Invisible Garden - Part 3
 
 _October 23, 2025_
@@ -29,7 +66,6 @@ Quick hotfix! We've resolved the issue where pool rewards would stop updating in
 Everything should now update smoothly. Thanks for your patience! 💜🐜
 
 ---
-
 🚀 TARI UNIVERSE v1.6.3: The Invisible Garden
 
 _October 13, 2025_
@@ -107,6 +143,7 @@ This four-lane approach doesn't only make mining fairer, it makes the network in
 - **C29 Support**: GPU mining defaults to C29 pool mining (LuckyPool) if your system can support it.
 
 **Things to know:**
+
 - C29 requires 7+ GB VRAM and measures performance in Graphs per second (G/s) rather than Hashes per second (H/s).
 - It's memory-bound, so Tari Universe power levels won't have any effect (it's either on or off).
 - Tari Universe automatically switches to SHA-3x pool mining for GPUs with less VRAM.
@@ -187,7 +224,7 @@ Introducing "Season of Light" Part 6 (we are getting to the end of this series..
 ✨ WHAT'S NEW
 
 - 🔄 **Improved pool mining** – RXT and SHA-3 mining now run on LuckyPool by default, with built-in support for multiple pools. You can choose your preferred pool via a new dropdown selector (all stratum pools are compatible; stats endpoints currently available for SupportXTM and LuckyPool).
-   - Note: Your previous Hatchling rewards above 1 XTM will be paid out this week. 
+    - Note: Your previous Hatchling rewards above 1 XTM will be paid out this week.
 - 💪 **Smarter error handling** – If a mining component runs into issues, the app will now automatically disable that component (local/GPU/CPU mining) and keep everything else running smoothly. Additional fallback systems are on the way.
 - 🔔 **Streamlined security prompts** – Security notifications now appear in a less intrusive way without all the popups, so your mining flow stays uninterrupted.
 - 🎬 **Animation improvements** – Win animations now handle block height changes without getting stuck.
@@ -200,7 +237,7 @@ _August 1, 2025_
 
 Hey everyone,
 
-Introducing "Season of Light" Part 5: a follow-up release to Wednesday's huge update. We've been listening to your feedback and squashing bugs FAST. That's not all! Season of Light Part 5 includes a NEW seamless Gate.io integration that automatically converts your XTM to wXTM right into your exchange account. 
+Introducing "Season of Light" Part 5: a follow-up release to Wednesday's huge update. We've been listening to your feedback and squashing bugs FAST. That's not all! Season of Light Part 5 includes a NEW seamless Gate.io integration that automatically converts your XTM to wXTM right into your exchange account.
 
 ✨ WHAT'S NEW
 
@@ -211,7 +248,7 @@ Introducing "Season of Light" Part 5: a follow-up release to Wednesday's huge up
 - 🌉 Bridge screen improvements – Removed distracting banner notifications that were covering important content when bridging funds.
 - 💬 Enhanced transaction messages – You can now send transactions with empty messages without encountering errors. Sometimes you just want to send funds without adding a note.
 - 📱 Fixed phone sync dialog – Resolved an issue where the sync-to-phone feature would cover the PIN entry dialog, preventing you from completing the sync process.
-- ✨ Smoother wallet navigation – No more jarring blur effects when browsing your transaction history. 
+- ✨ Smoother wallet navigation – No more jarring blur effects when browsing your transaction history.
 
 ---
 
@@ -228,8 +265,8 @@ Picture this: you download Tari Universe, and within a minute or two, you're ear
 ✨ WHAT'S NEW
 
 - ⚡ Near-instant GPU (SHA3) Mining – Instead of waiting for many minutes or hours to sync, your GPU will now mine to a community-supported pool FAST (nearly instantly!)
-   -  You can toggle between Remote + Local (the default if you are upgrading), Remote only (default for new installs), or Local only
-   -  You can disable pool mining which will fall back to solo mining (merge-mined RX, and SHA3)
+    - You can toggle between Remote + Local (the default if you are upgrading), Remote only (default for new installs), or Local only
+    - You can disable pool mining which will fall back to solo mining (merge-mined RX, and SHA3)
 - 🔧 Better GPU Miner – We've integrated a new community-supported GPU miner that's ~15% more efficient than before
 - 💳 Faster Wallet Sync – Say goodbye to waiting hours! Since you don't have to wait for local node sync, your wallet transactions will show up faster (and your balance instantly)
 - 🔐 Enhanced Security – Major upgrades to seed word handling to keep your XTM even safer
@@ -263,6 +300,7 @@ Block bubbles are an entirely new way to experience Tari blocks. Every block is 
 Let us know what you think about block bubbles. We hope you love them as much as Tari contributors do!
 
 ✨ WHAT'S NEW
+
 - 🫧 **Block Bubbles** – A fun, beautiful, and invaluable real-time visualization of block production and XTM rewards
 - 🎨 **Interface Polish** – We've moved the Send and Receive buttons to the filter row for a cleaner wallet layout. The Exchange button now smartly hides when you scroll through your transaction history, and your balance display shows "My Balance" when available. The Start Mining button now has better visual feedback between active and inactive states
 - 🌉 **Transaction Organization** – Bridge transactions are no longer mixed up with mining Rewards. They now only show up in "Transactions" and "All Activity"
@@ -283,9 +321,9 @@ Tari contributors are excited to unveil Tari Universe v1.2.15 "The Season of Lig
 ✨ WHAT'S NEW
 
 - ⏰ **Clear Timing** – We now tell you how long to expect for three key milestones:
-   - A. CPU rewards
-   - B. GPU mining activation
-   - C. wallet balance updates
+    - A. CPU rewards
+    - B. GPU mining activation
+    - C. wallet balance updates
 - 🎉 **Victory Celebrations** – Many miners are winning but had no idea! We've completely revamped the winning experience to make your victories more fun and enjoyable
 - 🎛️ **Streamlined Controls** – The Start, Stop, and Power Level buttons have been polished and refined for a smoother, more intuitive mining experience
 - 🔧 **Under-the-Hood Improvements** – Various bug fixes and optimizations to further improve the stability of Tari Universe, and reduce the potential for errors
@@ -301,6 +339,7 @@ Hey everyone,
 Tari contributors are proud to introduce Tari Universe v1.2.14, the first release in the "The Season of Light" series. "The Season of Light" releases are focused on one goal: make Tari Universe work well on as many computers as possible. Our first release in this series makes significant headway on this front by eliminating several root causes for the dreaded "node setup failure" timeout and sync challenges. We can't wait to hear your thoughts on the first Season of Light release!
 
 ✨ WHAT'S NEW
+
 - 🔄 **Sync Reliability** – The setup process sometimes prematurely gives up ("node setup failed" error) on slower connections, whereas now it will continue if it detects that progress is still being made
 - ⚡ **Installing Dependencies** – Previously, set-up failures sometimes occurred if too many miners attempted to update all at once, such as during an automatic update. We also fixed a bug that was impacting the downloading of Tor
 - 🌉 **Bridge Timeouts** – We've fixed the issue where Tari Universe was overwhelming the bridge with excessive requests, causing timeouts
@@ -339,25 +378,25 @@ _June 17, 2025_
 
 Hey everyone,
 
-Tari contributors have been working behind the scenes with Centralized Exchanges (CEXs) on a breakthrough new type of collaboration 💪🚀 
+Tari contributors have been working behind the scenes with Centralized Exchanges (CEXs) on a breakthrough new type of collaboration 💪🚀
 
-Today, when CEXs list a project, there is a standard playbook involving trading competitions, AMAs etc. These elements are a great way for active CEX users to learn about new projects. What about legacy CEX users? Users that haven't logged in or traded in a while? How can we collaborate with CEXs to engage them? 
+Today, when CEXs list a project, there is a standard playbook involving trading competitions, AMAs etc. These elements are a great way for active CEX users to learn about new projects. What about legacy CEX users? Users that haven't logged in or traded in a while? How can we collaborate with CEXs to engage them?
 
 A plucky group of Tari contributors started thinking about this challenge and came up with a novel idea: what if you could enter a deposit wallet address from a supported exchange in Tari Universe, and mine directly to the CEX?
 
-This way, ALL users from the exchange (active and legacy alike!) can generate new liquidity for themselves on the CEX without needing to deposit fiat. And the Tari network gains tons of new miners in the process. We call this idea: CEXy Mining (blame @fluffypony for the name :P), and it's live in Tari Universe v1.2.10 aka "The Eternal Bloom!" 
+This way, ALL users from the exchange (active and legacy alike!) can generate new liquidity for themselves on the CEX without needing to deposit fiat. And the Tari network gains tons of new miners in the process. We call this idea: CEXy Mining (blame @fluffypony for the name :P), and it's live in Tari Universe v1.2.10 aka "The Eternal Bloom!"
 
 We're very lucky to have the support of forward thinking exchanges such as CoinEx, XT, and Biconomy. They are all launching support for CEXy Mining today!
 
 Imagine if every exchange that chooses to list Tari becomes a part of the CEXy Mining program. Tens of millions of users (and perhaps hundreds of millions in future) will discover Tari, and many will start mining with Tari Universe!
 
-PS: XT, Biconomy, and CoinEx are offering bonus XTM if you choose to use the CEXy Mining feature with them! The bonus program will occur in seasons, and today is the beginning of Season 1 🥳 
+PS: XT, Biconomy, and CoinEx are offering bonus XTM if you choose to use the CEXy Mining feature with them! The bonus program will occur in seasons, and today is the beginning of Season 1 🥳
 
 ✨ How CEXy Mining Works
 
-1. 💜🐢 Install Tari Universe 
+1. 💜🐢 Install Tari Universe
 
-2. 🤝 Connect Tari Universe to your desired CEX - Enter your Tari deposit address from your chosen exchange (Biconomy, XT, or CoinEx) 
+2. 🤝 Connect Tari Universe to your desired CEX - Enter your Tari deposit address from your chosen exchange (Biconomy, XT, or CoinEx)
 
 3. 💎 Mine XTM and Earn Bonuses! – Start mining with Tari Universe! When you reach the bonus threshold for your chosen exchange, they'll reward you with bonus XTM 🙌
 
@@ -376,6 +415,7 @@ Hey everyone,
 Tari contributors continue to pull out all the stops to make Tari Universe the most beautiful and easiest-to-use crypto app in the world. Introducing the "Colonies of Light" release of Tari Universe, an awesome release filled to the brim with tweaks, bug fixes, and amazing updates
 
 ✨ What's New in "Colonies of Light"
+
 - 🔗 **Link to Supported Exchanges**: We've introduced a new interface that makes it easy to see the list of CEXs that have listed XTM, and directly access them
 - 💎 **Revamped Transaction History**: We've completely revamped the Tari Universe transaction history (!!!). Now your TX history will include your bridge transactions and better formatting. It's clean, clear, and far easier to use than ever before
 - 🛡️ **Linux Tor Support**: We know the Tari Linux community will be hyped about this one: we've added missing library support for much smoother Linux installs
@@ -393,9 +433,10 @@ _June 9, 2025_
 
 Hey everyone,
 
-Introducing Tari Universe v1.2.8 "The Feast of Light." This release of Tari Universe adds an awesome new feature to the mix: now you can buy wXTM natively in Tari Universe with ETH, USDT, or USDC (!!!) 
+Introducing Tari Universe v1.2.8 "The Feast of Light." This release of Tari Universe adds an awesome new feature to the mix: now you can buy wXTM natively in Tari Universe with ETH, USDT, or USDC (!!!)
 
 ✨ What's New in "The Feast of Light"
+
 - 🌌 **Buy wXTM natively in Tari Universe**: Purchase wXTM directly using ETH, USDT, or USDC within the application
 - 🔄 **Bridge Status View**: We've significantly improved status updates throughout the bridging journey
 
@@ -409,10 +450,11 @@ Hey everyone,
 
 🎉 Tari Mainnet is nearly a month old! Tari Universe v1.2.7, also known as "The Crown of Every Heart," focuses on making the world's easiest-to-use crypto app smoother, faster, and more consistent. Our goal is for Tari Universe to become a "set it and forget" type of application. A well-oiled machine. With the release of "The Crown of Every Heart, we take a significant step together towards this goal!
 
-✨ What's New  
-- 🔡 **Improved message rendering**: Fixed garbled character issues when displaying messages from exchanges and third-party sources.  
-- 🛡️ **Enhanced transaction error handling**: Clearer error messages for failed transactions and significantly reduced false "pending sends".  
-- ⚡ **Faster balance updates**: Wallet balances now update in near real-time to reflect on-chain states.  
+✨ What's New
+
+- 🔡 **Improved message rendering**: Fixed garbled character issues when displaying messages from exchanges and third-party sources.
+- 🛡️ **Enhanced transaction error handling**: Clearer error messages for failed transactions and significantly reduced false "pending sends".
+- ⚡ **Faster balance updates**: Wallet balances now update in near real-time to reflect on-chain states.
 - 🔍 **Clearer transaction status display**: Transactions now clearly indicate whether they're pending, mined, confirmed, or completed—no more confusion around "Completed" meaning "still in mempool".
 
 ---
@@ -472,7 +514,7 @@ These features mark an exciting step towards integrating Tari with broader block
 
 ⚠️ Important Notes:
 • MVP Release: Currently a one-way bridge (XTM → wXTM only). The two-way bridge (wXTM → XTM) is scheduled for release around July 2025.
-• Transaction Cap: Transactions are initially capped at 100,000 XTM for security purposes. Transactions exceeding this amount will fail. There is no limit to the number of transactions you can do.  This cap will increase and eventually be removed as the feature matures.
+• Transaction Cap: Transactions are initially capped at 100,000 XTM for security purposes. Transactions exceeding this amount will fail. There is no limit to the number of transactions you can do. This cap will increase and eventually be removed as the feature matures.
 • Potential Bugs: Extensive QA testing has been conducted, but given the variety of community system configurations, you might encounter unforeseen issues. Please report bugs you encounter here: https://forms.gle/n8MVwLRrL9m6G7w39 so contributors can help!
 
 🔖 Official wXTM Contract Address:
@@ -520,7 +562,8 @@ We've integrated a centralized, low-fee (1% for infra costs) mining (Hatchling!)
 - CPU only: GPU miners will keep hashing directly via the native Tari p2pool.
 
 ⚠️ Known Issues (to be addressed in upcoming hotfix)
-- GPU Mining: GPU mining may not start automatically. If this happens, you'll need to stop and then start mining for it to work *after* sync completes
+
+- GPU Mining: GPU mining may not start automatically. If this happens, you'll need to stop and then start mining for it to work _after_ sync completes
 - Mac OS Keychain Prompts: On Mac, you'll be asked for your Keychain password many times when Universe updates the wallet. Selecting Always Allow will solve this issue
 
 Expect a hot fix soon that solves both of them.
@@ -546,10 +589,12 @@ Hey everyone,
 Welcome to Day 19 of Tari mainnet! The "Shell Ascendant" hotfix prepares the network for the hard fork at block 15,000, happening ~ mid-late afternoon on Monday 26th UTC. A reminder of how the Tari network is changing:
 
 Currently, the Tari network hash rate is split as follows:
+
 - 50% RandomX (merge mine with XMR)
 - 50% SHA3
 
 After the hard fork, the network hash rate will be split as follows:
+
 - 33% RandomX (merge with XMR)
 - 33% RandomX (Tari solo mine)
 - 33% SHA3
@@ -566,6 +611,7 @@ Hey everyone,
 Happy day 9 of Tari mainnet! The “Waves of Resolve” hotfix improves p2pool stability and networking reliability. P2pool ftw! 💜🐢
 
 ✨ WHAT’S NEW
+
 - Reduces unnecessary resyncs to the p2pool share chain
 - Fixes a bug where large messages in p2pool sent over the network were getting cut off because they were too big, which negatively impacted synching to the tip of the p2pool share chain
 

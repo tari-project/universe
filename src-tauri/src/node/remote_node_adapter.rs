@@ -34,15 +34,13 @@ use crate::{
         node_manager::NodeType,
     },
     process_adapter::{ProcessAdapter, ProcessInstanceTrait},
-    BaseNodeStatus,
+    BaseNodeStatus, LOG_TARGET_APP_LOGIC,
 };
 use anyhow::Error;
 use std::{
     path::PathBuf,
     sync::{atomic::AtomicU64, Arc},
 };
-
-const LOG_TARGET: &str = "tari::universe::remote_node_adapter";
 
 #[derive(Clone)]
 pub(crate) struct RemoteNodeAdapter {
@@ -136,7 +134,7 @@ impl NodeAdapter for RemoteNodeAdapter {
     }
 
     fn set_tor_control_port(&mut self, _tor_control_port: Option<u16>) {
-        log::info!(target: LOG_TARGET, "RemoteNodeAdapter doesn't use tor_control_port");
+        log::info!(target: LOG_TARGET_APP_LOGIC, "RemoteNodeAdapter doesn't use tor_control_port");
     }
 
     async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error> {

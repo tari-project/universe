@@ -33,12 +33,10 @@ use crate::{
     requests::{
         clients::http_file_client::HttpFileClient, get_gh_download_url, get_mirror_download_url,
     },
-    APPLICATION_FOLDER_ID,
+    APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC,
 };
 
 use super::binaries_resolver::{BinaryDownloadInfo, LatestVersionApiAdapter};
-
-pub const LOG_TARGET: &str = "tari::universe::adapter_github";
 
 pub struct GithubReleasesAdapter {
     pub repo: String,
@@ -87,7 +85,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             Ok(checksum_path) => Ok(checksum_path),
             Err(_) => {
                 let checksum_fallback_url = format!("{}.sha256", download_info.fallback_url);
-                info!(target: LOG_TARGET, "Fallback URL: {checksum_fallback_url}");
+                info!(target: LOG_TARGET_APP_LOGIC, "Fallback URL: {checksum_fallback_url}");
                 HttpFileClient::builder()
                     .build(checksum_fallback_url.clone(), directory.clone())?
                     .execute()
@@ -112,7 +110,7 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
 
         if !binary_folder_path.exists() {
             std::fs::create_dir_all(&binary_folder_path).unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Failed to create directory: {e}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to create directory: {e}");
             });
         };
 

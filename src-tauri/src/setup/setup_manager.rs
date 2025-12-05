@@ -49,7 +49,9 @@ use crate::setup::{
     phase_wallet::WalletSetupPhase,
 };
 use crate::systemtray_manager::SystemTrayManager;
+use crate::utils::battery_status::BatteryStatus;
 use crate::utils::platform_utils::PlatformUtils;
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
@@ -75,8 +77,6 @@ use tokio::{
     select,
     sync::{watch::Sender, Mutex, RwLock},
 };
-
-static LOG_TARGET: &str = "tari::universe::setup_manager";
 
 static INSTANCE: LazyLock<SetupManager> = LazyLock::new(SetupManager::new);
 
@@ -230,7 +230,7 @@ impl SetupManager {
 
     #[allow(clippy::too_many_lines)]
     async fn pre_setup(&self, app_handle: AppHandle) {
-        info!(target: LOG_TARGET, "Pre Setup");
+        info!(target: LOG_TARGET_APP_LOGIC, "Pre Setup");
         let state = app_handle.state::<UniverseAppState>();
         let in_memory_config = state.in_memory_config.clone();
 
@@ -247,7 +247,7 @@ impl SetupManager {
             .set_app_handle(app_handle.clone(), state.websocket_manager.clone())
             .await
         {
-            error!(target: LOG_TARGET, "Failed to start websocket events manager: {e}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start websocket events manager: {e}");
         }
 
         drop(websocket_events_manager_guard);
@@ -271,15 +271,15 @@ impl SetupManager {
             let app_handle_clone = app_handle_clone.clone();
 
             tauri::async_runtime::spawn(async move {
-                info!(target: LOG_TARGET, "Restarting websocket events manager after reconnection");
+                info!(target: LOG_TARGET_APP_LOGIC, "Restarting websocket events manager after reconnection");
                 let mut events_manager_guard = websocket_event_manager_clone.write().await;
                 if let Err(e) = events_manager_guard
                     .set_app_handle(app_handle_clone, websocket_manager_clone)
                     .await
                 {
-                    error!(target: LOG_TARGET, "Failed to restart websocket events manager: {e}");
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to restart websocket events manager: {e}");
                 } else {
-                    info!(target: LOG_TARGET, "Websocket events manager restarted successfully");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager restarted successfully");
                 }
             });
         });
@@ -318,8 +318,10 @@ impl SetupManager {
             .initialize_tray(&app_handle)
             .await;
 
+        BatteryStatus::start_battery_listener().await;
+
         let node_type = ConfigCore::content().await.node_type().clone();
-        info!(target: LOG_TARGET, "Retrieved initial node type: {node_type:?}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Retrieved initial node type: {node_type:?}");
         state.node_manager.set_node_type(node_type).await;
         EventsManager::handle_node_type_update(&app_handle).await;
 
@@ -361,11 +363,11 @@ impl SetupManager {
             .is_some();
         // Default app variant (when built-in exchange ID is DEFAULT_EXCHANGE_ID) can have either seedless wallet or standard wallet
 
-        info!(target: LOG_TARGET, "Is on exchange miner build: {is_on_exchange_miner_build}");
-        info!(target: LOG_TARGET, "Built-in exchange ID: {built_in_exchange_id}");
-        info!(target: LOG_TARGET, "Last config exchange ID: {last_config_exchange_id}");
-        info!(target: LOG_TARGET, "Is on exchange specific variant: {is_on_exchange_specific_variant}");
-        info!(target: LOG_TARGET, "Is external address selected: {is_external_address_selected}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Is on exchange miner build: {is_on_exchange_miner_build}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Built-in exchange ID: {built_in_exchange_id}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Last config exchange ID: {last_config_exchange_id}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Is on exchange specific variant: {is_on_exchange_specific_variant}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Is external address selected: {is_external_address_selected}");
 
         // If there is exchange id set in config_core that is different from DEFAULT_EXCHANGE_ID and external address is provided we want to display seedless wallet UI
         // This can happen when user was using dedicated exchange miner build before and now is using default app variant
@@ -400,7 +402,7 @@ impl SetupManager {
                         }
                     }
                     Err(e) => {
-                        error!(target: LOG_TARGET, "Error loading internal wallet: {e:?}");
+                        error!(target: LOG_TARGET_APP_LOGIC, "Error loading internal wallet: {e:?}");
                         EventsEmitter::emit_critical_problem(CriticalProblemPayload {
                             title: Some("Wallet(seed) not initialized!".to_string()),
                             description: Some(
@@ -423,7 +425,7 @@ impl SetupManager {
                 .await
                 .selected_external_tari_address()
                 .clone();
-            info!(target: LOG_TARGET, "External address selected on exchange miner build");
+            info!(target: LOG_TARGET_APP_LOGIC, "External address selected on exchange miner build");
             let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
             if let Err(e) =
                 InternalWallet::initialize_seedless(&app_handle, external_tari_address).await
@@ -472,7 +474,7 @@ impl SetupManager {
 
         // If we open different specific exchange miner build then previous one we always want to prompt user to provide tari address
         if is_on_exchange_miner_build && built_in_exchange_id.ne(&last_config_exchange_id) {
-            info!(target: LOG_TARGET, "Exchange ID changed from {last_config_exchange_id} to {built_in_exchange_id}");
+            info!(target: LOG_TARGET_APP_LOGIC, "Exchange ID changed from {last_config_exchange_id} to {built_in_exchange_id}");
             self.exchange_modal_status
                 .send_replace(ExchangeModalStatus::WaitForCompletion);
             EventsEmitter::emit_should_show_exchange_miner_modal().await;
@@ -494,16 +496,16 @@ impl SetupManager {
             .spawn_listener()
             .await
             .unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Failed to start event scheduler listener: {e}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to start event scheduler listener: {e}");
             });
 
-        info!(target: LOG_TARGET, "Pre Setup Finished");
+        info!(target: LOG_TARGET_APP_LOGIC, "Pre Setup Finished");
     }
 
     pub async fn resolve_setup_features(&self) -> Result<(), anyhow::Error> {
         let mut features = self.features.write().await;
 
-        info!(target: LOG_TARGET, "Resolving setup features");
+        info!(target: LOG_TARGET_APP_LOGIC, "Resolving setup features");
         // clear existing features
         features.clear();
 
@@ -514,12 +516,12 @@ impl SetupManager {
         let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
 
         if is_cpu_pool_enabled {
-            info!(target: LOG_TARGET, "Cpu Pool feature enabled");
+            info!(target: LOG_TARGET_APP_LOGIC, "Cpu Pool feature enabled");
             features.add_feature(SetupFeature::CpuPool);
         }
 
         if is_gpu_pool_enabled {
-            info!(target: LOG_TARGET, "Gpu Pool feature enabled");
+            info!(target: LOG_TARGET_APP_LOGIC, "Gpu Pool feature enabled");
             features.add_feature(SetupFeature::GpuPool);
         }
 
@@ -529,7 +531,7 @@ impl SetupManager {
             .clone();
         // Seedless Wallet feature
         if external_tari_address.is_some() || is_exchange_miner_build {
-            info!(target: LOG_TARGET, "Seedless wallet feature enabled");
+            info!(target: LOG_TARGET_APP_LOGIC, "Seedless wallet feature enabled");
             features.add_feature(SetupFeature::SeedlessWallet);
             EventsEmitter::emit_disabled_phases(vec![SetupPhase::Wallet]).await;
         } else {
@@ -710,7 +712,7 @@ impl SetupManager {
                 }
                 SetupPhase::Wallet => {
                     if setup_features.is_feature_enabled(SetupFeature::SeedlessWallet) {
-                        info!(target: LOG_TARGET, "Skipping Wallet Phase as Seedless Wallet is enabled");
+                        info!(target: LOG_TARGET_APP_LOGIC, "Skipping Wallet Phase as Seedless Wallet is enabled");
                         continue;
                     }
                     self.setup_wallet_phase().await;
@@ -720,7 +722,7 @@ impl SetupManager {
     }
 
     pub async fn restart_phases(&self, phases: Vec<SetupPhase>) {
-        info!(target: LOG_TARGET, "Restarting phases: {phases:?}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Restarting phases: {phases:?}");
         let _lock = self.restart_safe_lock.lock().await;
         self.shutdown_phases(phases.clone()).await;
         self.resume_phases(phases).await;
@@ -740,12 +742,12 @@ impl SetupManager {
             .spawn(async move {
                 loop {
                     if shutdown_signal.is_triggered() {
-                        info!(target: LOG_TARGET, "Shutdown signal received, exiting start_setup loop");
+                        info!(target: LOG_TARGET_APP_LOGIC, "Shutdown signal received, exiting start_setup loop");
                         break;
                     }
 
                     if modal_status_subscriber.borrow().is_completed() {
-                        info!(target: LOG_TARGET, "Exchange modal completed, exiting start_setup loop");
+                        info!(target: LOG_TARGET_APP_LOGIC, "Exchange modal completed, exiting start_setup loop");
                         break;
                     }
 
@@ -753,18 +755,18 @@ impl SetupManager {
                 }
             });
 
-        let _unused = task
-            .await
-            .inspect_err(|e| error!(target: LOG_TARGET, "Error in start_setup task: {e}"));
+        let _unused = task.await.inspect_err(
+            |e| error!(target: LOG_TARGET_APP_LOGIC, "Error in start_setup task: {e}"),
+        );
 
         let shutdown_signal = TasksTrackers::current().common.get_signal().await;
         if shutdown_signal.is_triggered() {
-            info!(target: LOG_TARGET, "Shutdown signal already triggered, exiting start_setup");
+            info!(target: LOG_TARGET_APP_LOGIC, "Shutdown signal already triggered, exiting start_setup");
             return;
         }
 
         let _unused = self.resolve_setup_features().await.inspect_err(
-            |e| error!(target: LOG_TARGET, "Failed to set setup features during start_setup: {e}"),
+            |e| error!(target: LOG_TARGET_APP_LOGIC, "Failed to set setup features during start_setup: {e}"),
         );
 
         let setup_features = self.features.read().await.clone();
@@ -812,7 +814,7 @@ impl SetupManager {
     /// Used in handle_unhealthy for graxil miner
     /// Should be triggered after x amount of time passed of graxil being unhealthy
     pub async fn turn_off_gpu_pool_feature(&self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Turning off GPU Pool feature");
+        info!(target: LOG_TARGET_APP_LOGIC, "Turning off GPU Pool feature");
 
         // We want to stop the stats watcher as its not needed when solo mining
         // Normal flow would monitor the status for extra hour but in case of disabling pool mining we want to stop it right away
@@ -827,7 +829,7 @@ impl SetupManager {
     }
 
     pub async fn turn_on_gpu_pool_feature(&self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Turning on GPU Pool feature");
+        info!(target: LOG_TARGET_APP_LOGIC, "Turning on GPU Pool feature");
         ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, true).await?;
         // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
         EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
@@ -839,7 +841,7 @@ impl SetupManager {
     /// Should be triggered after x amount of time passed of xmrig being unhealthy
     /// It will make only difference in case of pool connection issues as we do not use other cpu miner
     pub async fn turn_off_cpu_pool_feature(&self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Turning off CPU Pool feature");
+        info!(target: LOG_TARGET_APP_LOGIC, "Turning off CPU Pool feature");
         // We want to stop the stats watcher as its not needed when solo mining
         // Normal flow would monitor the status for extra hour but in case of disabling pool mining we want to stop it right away
         CpuPoolManager::stop_stats_watcher().await;
@@ -858,7 +860,7 @@ impl SetupManager {
     // Currently used in case when mmproxy fails to start
     // It throws error in mmproxy_manager.wait_ready() which breaks cpu mining for solo mode
     pub async fn turn_on_cpu_pool_feature(&self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Turning on CPU Pool feature");
+        info!(target: LOG_TARGET_APP_LOGIC, "Turning on CPU Pool feature");
         ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, true).await?;
         // TODO Implement solution for telling frontend about one field updates in configs without emitting full config or adding event per field
         EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
@@ -870,18 +872,18 @@ impl SetupManager {
 
     pub async fn handle_switch_to_local_node(&self) {
         let app_handle = self.app_handle().await;
-        info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");
+        info!(target: LOG_TARGET_APP_LOGIC, "Handle Switching to Local Node in Setup Manager");
         EventsManager::handle_node_type_update(&app_handle).await;
 
-        info!(target: LOG_TARGET, "Restarting Phases");
+        info!(target: LOG_TARGET_APP_LOGIC, "Restarting Phases");
         self.restart_phases(vec![SetupPhase::Wallet]).await;
     }
 
     pub async fn spawn_sleep_mode_handler() {
-        info!(target: LOG_TARGET, "Spawning Sleep Mode Handler");
+        info!(target: LOG_TARGET_APP_LOGIC, "Spawning Sleep Mode Handler");
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         if shutdown_signal.is_triggered() {
-            info!(target: LOG_TARGET, "Shutdown signal already triggered, exiting sleep mode handler");
+            info!(target: LOG_TARGET_APP_LOGIC, "Shutdown signal already triggered, exiting sleep mode handler");
             return;
         }
 
@@ -893,11 +895,11 @@ impl SetupManager {
                     _ = receiver.changed() => {
                         let current_state = *receiver.borrow();
                         if last_state && !current_state {
-                            info!(target: LOG_TARGET, "System is no longer in sleep mode");
+                            info!(target: LOG_TARGET_APP_LOGIC, "System is no longer in sleep mode");
                             SetupManager::get_instance().resume_phases(SetupPhase::all()).await;
                         }
                         if !last_state && current_state {
-                            info!(target: LOG_TARGET, "System entered sleep mode");
+                            info!(target: LOG_TARGET_APP_LOGIC, "System entered sleep mode");
                             SetupManager::get_instance().shutdown_phases(SetupPhase::all()).await;
                         }
                         last_state = current_state;
@@ -917,7 +919,7 @@ impl SetupManager {
                 queue.push(phase);
             }
         }
-        info!(target: LOG_TARGET, "Phases to restart queue: {queue:?}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Phases to restart queue: {queue:?}");
     }
 
     pub async fn restart_phases_from_queue(&self) {
@@ -925,7 +927,7 @@ impl SetupManager {
         if queue.is_empty() {
             return;
         }
-        info!(target: LOG_TARGET, "Restarting phases from queue: {queue:?}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Restarting phases from queue: {queue:?}");
         self.restart_phases(queue.clone()).await;
         queue.clear();
     }

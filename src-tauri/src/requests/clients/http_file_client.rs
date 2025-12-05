@@ -34,10 +34,10 @@ use crate::requests::{
     cache::cloudflare::CloudFlareCache, utils::get_content_length_from_head_response,
 };
 use crate::utils::network_status::NetworkStatus;
+use crate::LOG_TARGET_APP_LOGIC;
 
 use super::http_client::HttpClient;
 
-const LOG_TARGET: &str = "tari::universe::clients::http_file_client";
 const MAX_RETRIES: u32 = 5;
 
 struct FileClientConfig {
@@ -133,10 +133,10 @@ impl HttpFileClient {
 
     fn get_destination(&self) -> &PathBuf {
         if let Some(archive_destination) = &self.archive_destination {
-            info!(target: LOG_TARGET, "Using archive destination: {}", archive_destination.display());
+            info!(target: LOG_TARGET_APP_LOGIC, "Using archive destination: {}", archive_destination.display());
             archive_destination
         } else {
-            info!(target: LOG_TARGET, "Using destination: {}", self.destination.display());
+            info!(target: LOG_TARGET_APP_LOGIC, "Using destination: {}", self.destination.display());
             &self.destination
         }
     }
@@ -198,7 +198,7 @@ impl HttpFileClient {
                 file_size
             ));
         }
-        info!(target: LOG_TARGET, "File downloaded successfully to {}", destination.display());
+        info!(target: LOG_TARGET_APP_LOGIC, "File downloaded successfully to {}", destination.display());
         Ok(())
     }
 
@@ -209,8 +209,8 @@ impl HttpFileClient {
         let destination = self.get_destination();
         let destination_file = destination.join(&self.file_name);
 
-        info!(target: LOG_TARGET, "Destination directory: {}", destination.display());
-        info!(target: LOG_TARGET, "Destination file: {}", destination_file.display());
+        info!(target: LOG_TARGET_APP_LOGIC, "Destination directory: {}", destination.display());
+        info!(target: LOG_TARGET_APP_LOGIC, "Destination file: {}", destination_file.display());
 
         if !destination.exists() {
             create_dir_all(destination)
@@ -219,7 +219,7 @@ impl HttpFileClient {
         }
 
         if !destination_file.exists() {
-            info!(target: LOG_TARGET, "File does not exist, creating new file at {}", destination_file.display());
+            info!(target: LOG_TARGET_APP_LOGIC, "File does not exist, creating new file at {}", destination_file.display());
             File::create(&destination_file)
                 .await
                 .map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
@@ -231,11 +231,11 @@ impl HttpFileClient {
         .await?;
 
         if file_size > expected_size {
-            warn!(target: LOG_TARGET, "File is probably corrupted, expected size: {expected_size}, but got: {file_size}");
-            info!(target: LOG_TARGET, "Removing corrupted file: {}", destination_file.display());
+            warn!(target: LOG_TARGET_APP_LOGIC, "File is probably corrupted, expected size: {expected_size}, but got: {file_size}");
+            info!(target: LOG_TARGET_APP_LOGIC, "Removing corrupted file: {}", destination_file.display());
             std::fs::remove_file(&destination_file)
                 .map_err(|e| anyhow::anyhow!("Failed to remove corrupted file: {}", e))?;
-            info!(target: LOG_TARGET, "Creating new file at {}", destination_file.display());
+            info!(target: LOG_TARGET_APP_LOGIC, "Creating new file at {}", destination_file.display());
             File::create(&destination_file)
                 .await
                 .map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
@@ -256,12 +256,12 @@ impl HttpFileClient {
 
             let file_size = get_content_size_from_file(&file).await?;
 
-            info!(target: LOG_TARGET, "Expected file size: {expected_size}");
-            info!(target: LOG_TARGET, "Current file size: {file_size}");
+            info!(target: LOG_TARGET_APP_LOGIC, "Expected file size: {expected_size}");
+            info!(target: LOG_TARGET_APP_LOGIC, "Current file size: {file_size}");
 
             // Check if file is already complete
             if file_size.eq(&expected_size) {
-                info!(target: LOG_TARGET, "File downloaded to {}, size: {}", destination_file.display(), file_size);
+                info!(target: LOG_TARGET_APP_LOGIC, "File downloaded to {}, size: {}", destination_file.display(), file_size);
                 break;
             }
 
@@ -271,7 +271,7 @@ impl HttpFileClient {
             }
 
             if file_download_attempt_count > MAX_RETRIES {
-                warn!(target: LOG_TARGET, "Max download attempts reached, giving up on downloading file.");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Max download attempts reached, giving up on downloading file.");
                 return Err(anyhow::anyhow!(
                     "Max download attempts reached for file: {}",
                     destination_file.display()
@@ -279,20 +279,20 @@ impl HttpFileClient {
             }
 
             if file_size.eq(&0) {
-                info!(target: LOG_TARGET, "File is empty, starting download from the beginning.");
+                info!(target: LOG_TARGET_APP_LOGIC, "File is empty, starting download from the beginning.");
             } else {
-                info!(target: LOG_TARGET, "Resuming download from {} to {}, current size: {}", self.url, destination_file.display(), file_size);
+                info!(target: LOG_TARGET_APP_LOGIC, "Resuming download from {} to {}, current size: {}", self.url, destination_file.display(), file_size);
             }
 
             match self.download_file(expected_size, &mut file, true).await {
                 Ok(_) => {
-                    info!(target: LOG_TARGET, "Downloaded successfully");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Downloaded successfully");
                     break;
                 }
                 Err(e) => {
                     // If download return 404 [ Not Found ] we don't want to retry
                     if e.to_string().contains("404") {
-                        warn!(target: LOG_TARGET, "Unable to resume download, assets under this URL are not available: {}", self.url);
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Unable to resume download, assets under this URL are not available: {}", self.url);
                         return Err(anyhow::anyhow!("Unable to resume download, assets under this URL are not available: {}", self.url));
                     }
 
@@ -301,12 +301,12 @@ impl HttpFileClient {
                     if e.to_string().contains("408") || e.to_string().contains("400") {
                         loop {
                             internet_connection_check_attempt_count += 1;
-                            warn!(target: LOG_TARGET, "Failed to resume download: {e}");
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to resume download: {e}");
                             if NetworkStatus::check_internet_connection().await {
-                                info!(target: LOG_TARGET, "Internet connection is available, retrying download...");
+                                info!(target: LOG_TARGET_APP_LOGIC, "Internet connection is available, retrying download...");
                                 break;
                             } else {
-                                warn!(target: LOG_TARGET, "No internet connection, retrying in 5 seconds...");
+                                warn!(target: LOG_TARGET_APP_LOGIC, "No internet connection, retrying in 5 seconds...");
                                 tokio::time::sleep(create_exponential_timeout(
                                     internet_connection_check_attempt_count,
                                 ))
@@ -340,7 +340,7 @@ impl HttpFileClient {
 
             // If file is already complete, no need to download
             if current_size >= expected_size {
-                info!(target: LOG_TARGET, "File already complete, skipping download");
+                info!(target: LOG_TARGET_APP_LOGIC, "File already complete, skipping download");
                 return Ok(());
             }
 
@@ -365,13 +365,13 @@ impl HttpFileClient {
             match chunk {
                 Ok(data) => {
                     if let Err(e) = file.write_all(&data).await {
-                        warn!(target: LOG_TARGET, "Failed to write chunk to file: {e}");
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to write chunk to file: {e}");
                         return Err(anyhow!("Failed to write chunk to file: {}", e));
                     }
                     self.update_progress(file, expected_size).await?;
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Error reading chunk: {e}");
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Error reading chunk: {e}");
                     return Err(anyhow!("Error reading chunk: {}", e));
                 }
             }
@@ -386,7 +386,7 @@ impl HttpFileClient {
                 (file.metadata().await?.len() as f64 / expected_size as f64) * 100.0;
             if let Some(sender) = &self.config.progress_status_sender {
                 if let Err(e) = sender.send(progress_percentage.round()) {
-                    debug!(target: LOG_TARGET, "Failed to send progress update: {e}");
+                    debug!(target: LOG_TARGET_APP_LOGIC, "Failed to send progress update: {e}");
                 }
             }
         }
@@ -401,15 +401,15 @@ impl HttpFileClient {
             attempt += 1;
             match self.extract_inner().await {
                 Ok(_) => {
-                    info!(target: LOG_TARGET, "Extraction completed successfully.");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Extraction completed successfully.");
                     break;
                 }
                 Err(e) => {
                     if attempt >= MAX_RETRIES {
-                        error!(target: LOG_TARGET, "Extraction failed after {} attempts: {}", attempt, e);
+                        error!(target: LOG_TARGET_APP_LOGIC, "Extraction failed after {} attempts: {}", attempt, e);
                         return Err(anyhow::anyhow!("Extraction failed: {}", e));
                     } else {
-                        warn!(target: LOG_TARGET, "Extraction attempt {} failed: {}. Retrying...", attempt, e);
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Extraction attempt {} failed: {}. Retrying...", attempt, e);
                         tokio::time::sleep(create_exponential_timeout(attempt)).await;
                     }
                 }
@@ -420,32 +420,32 @@ impl HttpFileClient {
     }
 
     async fn extract_inner(&self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Extracting file to {}", self.destination.display());
+        info!(target: LOG_TARGET_APP_LOGIC, "Extracting file to {}", self.destination.display());
         if let Some(archive_destination) = &self.archive_destination {
             if archive_destination.exists() {
                 let archive_file = archive_destination.join(&self.file_name);
                 // There can be case where extracted dir already exists on this stage and windows will throw an error if we try to extract to it
                 if self.destination.exists() {
-                    info!(target: LOG_TARGET, "Destination directory already exists, removing old entries.");
-                    info!(target: LOG_TARGET, "Archive file: {}", archive_destination.display());
+                    info!(target: LOG_TARGET_APP_LOGIC, "Destination directory already exists, removing old entries.");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Archive file: {}", archive_destination.display());
                     for entry in std::fs::read_dir(&self.destination)? {
                         let entry = entry?;
                         let path = entry.path();
                         if path != *archive_destination {
-                            info!(target: LOG_TARGET, "Removing old entry: {}", path.display());
+                            info!(target: LOG_TARGET_APP_LOGIC, "Removing old entry: {}", path.display());
                             if path.is_dir() {
                                 std::fs::remove_dir_all(&path).unwrap_or_else(|e| {
-                                    error!(target: LOG_TARGET, "Failed to remove directory: {e}");
+                                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to remove directory: {e}");
                                 });
                             } else {
                                 std::fs::remove_file(&path).unwrap_or_else(|e| {
-                                    error!(target: LOG_TARGET, "Failed to remove file: {e}");
+                                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to remove file: {e}");
                                 });
                             }
                         }
                     }
                 }
-                info!(target: LOG_TARGET, "Extracting archive file: {}", archive_file.display());
+                info!(target: LOG_TARGET_APP_LOGIC, "Extracting archive file: {}", archive_file.display());
                 extract(&archive_file, &self.destination).await?;
             } else {
                 return Err(anyhow::anyhow!(

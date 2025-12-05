@@ -23,9 +23,11 @@ export interface DisabledPhasesPayload {
 }
 
 export const handleAppLoaded = async () => {
-    const tari_address_base58 = useWalletStore.getState().tari_address_base58;
-    await fetchBridgeTransactionsHistory(tari_address_base58);
     await fetchApplicationsVersionsWithRetry();
+    const tari_address_base58 = useWalletStore.getState().tari_address_base58;
+    if (tari_address_base58?.length) {
+        await fetchBridgeTransactionsHistory(tari_address_base58);
+    }
 };
 
 export const updateSetupProgress = (payload: ProgressTrackerUpdatePayload | undefined) => {

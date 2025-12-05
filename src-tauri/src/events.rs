@@ -88,6 +88,7 @@ pub enum EventType {
     UpdateGpuMinerControlsState,
     OpenSettings,
     ShowEcoAlert,
+    SetShowBatteryAlert,
     // Shutdown
     ShutdownModeSelectionRequested,
     FeedbackSurveyRequested,

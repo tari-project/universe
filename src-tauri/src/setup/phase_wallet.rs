@@ -48,6 +48,10 @@ use crate::{
     wallet::wallet_manager::WalletStartupConfig,
     UniverseAppState,
 };
+use crate::{
+    wallet::wallet_manager::{WalletManagerError, STOP_ON_ERROR_CODES},
+    LOG_TARGET_APP_LOGIC,
+};
 use anyhow::Error;
 use log::{error, info, warn};
 use tari_shutdown::ShutdownSignal;
@@ -57,9 +61,6 @@ use tokio::sync::{
     Mutex,
 };
 use tokio_util::task::TaskTracker;
-
-static LOG_TARGET: &str = "tari::universe::phase_wallet";
-
 // Bump to force wallet full scan
 const WALLET_MIGRATION_NONCE: u64 = 1;
 
@@ -187,9 +188,9 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 for _i in 0..2 {
                     let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
                     if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
-                        log::info!(target: LOG_TARGET, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
+                        log::info!(target: LOG_TARGET_APP_LOGIC, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
                         if let Err(e) = app_state.wallet_manager.clean_data_folder(&data_dir).await {
-                            log::warn!(target: LOG_TARGET, "Failed to clean wallet data folder: {e}");
+                            log::warn!(target: LOG_TARGET_APP_LOGIC, "Failed to clean wallet data folder: {e}");
                         }
                         if
                         let Err(e) = ConfigWallet::update_field(
@@ -197,7 +198,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                             WALLET_MIGRATION_NONCE
                         ).await
                         {
-                            log::warn!(target: LOG_TARGET, "Failed to update wallet migration nonce: {e}");
+                            log::warn!(target: LOG_TARGET_APP_LOGIC, "Failed to update wallet migration nonce: {e}");
                         }
                     }
 
@@ -216,16 +217,16 @@ impl SetupPhaseImpl for WalletSetupPhase {
                         Err(e)=> {
                             if let WalletManagerError::ExitCode(code) = e {
                                 if STOP_ON_ERROR_CODES.contains(&code) {
-                                    warn!(target: LOG_TARGET, "Wallet config is corrupt or needs a restart, deleting and trying again.");
+                                    warn!(target: LOG_TARGET_APP_LOGIC, "Wallet config is corrupt or needs a restart, deleting and trying again.");
                                     app_state.wallet_manager.clean_data_folder(&data_dir).await?;
                                 }
                                 continue;
                             }
                             if let WalletManagerError::UnknownError(e) = e {
-                                warn!(target: LOG_TARGET, "WalletManagerError::UnknownError({e:?}) needs a restart.");
+                                warn!(target: LOG_TARGET_APP_LOGIC, "WalletManagerError::UnknownError({e:?}) needs a restart.");
                                 continue;
                             }
-                            error!(target: LOG_TARGET, "Could not start wallet manager after restart: {e:?} | Exiting the app");
+                            error!(target: LOG_TARGET_APP_LOGIC, "Could not start wallet manager after restart: {e:?} | Exiting the app");
                             self.app_handle.exit(-1);
                             return Err(e.into());
                         }

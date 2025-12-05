@@ -55,10 +55,9 @@ use crate::{
     systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
     utils::math_utils::estimate_earning,
-    UniverseAppState,
+    UniverseAppState, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
 
-static LOG_TARGET: &str = "tari::universe::mining::cpu::manager";
 static INSTANCE: LazyLock<RwLock<CpuManager>> = LazyLock::new(|| RwLock::new(CpuManager::new()));
 
 pub struct CpuManager {
@@ -132,17 +131,17 @@ impl CpuManager {
             instance.cpu_internal_status_channel.clone();
     }
     pub async fn start_mining(&mut self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Starting cpu miner");
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting cpu miner");
         match self.start_mining_inner().await {
             Ok(_) => {
-                info!(target: LOG_TARGET, "Started cpu miner");
+                info!(target: LOG_TARGET_APP_LOGIC, "Started cpu miner");
                 EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Started).await;
                 SystemTrayManager::send_event(SystemTrayEvents::CpuMiningActivity(true)).await;
                 Ok(())
             }
             Err(e) => {
                 let err_msg = format!("Could not start CPU mining: {e}");
-                error!(target: LOG_TARGET, "{err_msg}");
+                error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
                 sentry::capture_message(&err_msg, sentry::Level::Error);
 
                 EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Stopped).await;
@@ -157,6 +156,11 @@ impl CpuManager {
 
         if !cpu_mining_enabled {
             return Err(anyhow::anyhow!("CPU mining is disabled"));
+        }
+
+        if self.process_watcher.is_running() {
+            info!(target: LOG_TARGET_APP_LOGIC, "CPU miner is already running");
+            return Ok(());
         }
 
         EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Initiated).await;
@@ -261,11 +265,15 @@ impl CpuManager {
         Ok(())
     }
 
+    pub fn is_running(&self) -> bool {
+        self.process_watcher.is_running()
+    }
+
     async fn determine_number_of_cores_to_use(cpu_usage_percentage: u32) -> u32 {
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => {
-                info!(target:LOG_TARGET, "Available CPU cores: {available_cpus}");
+                info!(target:LOG_TARGET_APP_LOGIC, "Available CPU cores: {available_cpus}");
                 u32::try_from(available_cpus.get()).unwrap_or(1)
             }
             Err(err) => {
@@ -279,13 +287,13 @@ impl CpuManager {
             .saturating_div(100)
             .clamp(1, max_cpu_available);
 
-        info!(target: LOG_TARGET, "Using {cpu_cores_to_use} CPU cores for mining");
+        info!(target: LOG_TARGET_APP_LOGIC, "Using {cpu_cores_to_use} CPU cores for mining");
 
         cpu_cores_to_use
     }
 
     pub async fn stop_mining(&mut self) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "Stopping cpu miner");
+        info!(target: LOG_TARGET_APP_LOGIC, "Stopping cpu miner");
         {
             self.process_watcher.status_monitor = None;
             self.process_watcher.stop().await?;
@@ -294,14 +302,14 @@ impl CpuManager {
                 .cpu_external_status_channel
                 .send(CpuMinerStatus::default());
         }
-        info!(target: LOG_TARGET, "Stopped cpu miner process");
+        info!(target: LOG_TARGET_APP_LOGIC, "Stopped cpu miner process");
         // Mark mining as stopped in pool manager
         // It will handle stopping the stats watcher after 1 hour of grace period
         CpuPoolManager::handle_mining_status_change(false).await;
-        info!(target: LOG_TARGET, "Marked mining as stopped in pool manager");
+        info!(target: LOG_TARGET_APP_LOGIC, "Marked mining as stopped in pool manager");
         EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Stopped).await;
         SystemTrayManager::send_event(SystemTrayEvents::CpuMiningActivity(false)).await;
-        info!(target: LOG_TARGET, "Stopped cpu miner");
+        info!(target: LOG_TARGET_APP_LOGIC, "Stopped cpu miner");
         Ok(())
     }
 
@@ -313,10 +321,10 @@ impl CpuManager {
             .await
         {
             Ok(_) => {
-                info!(target: LOG_TARGET, "CpuMiner processes cleaned up successfully on app exit");
+                info!(target: LOG_TARGET_APP_LOGIC, "CpuMiner processes cleaned up successfully on app exit");
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to clean up CpuMiner processes on app exit: {}", e);
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up CpuMiner processes on app exit: {}", e);
             }
         }
     }
@@ -339,17 +347,17 @@ impl CpuManager {
             loop {
                 select! {
                     _ = internal_shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET, "Shutting down cpu miner status updates");
+                        info!(target: LOG_TARGET_STATUSES, "Shutting down cpu miner status updates");
                         EventsEmitter::emit_cpu_mining_update(CpuMinerStatus::default()).await;
                         SystemTrayManager::send_event(SystemTrayEvents::CpuHashrate(0.0)).await;
                         break;
                     },
                     _ = global_shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET, "Shutting down cpu miner status updates");
+                        info!(target: LOG_TARGET_STATUSES, "Shutting down cpu miner status updates");
                         break;
                     },
                     updated_status = cpu_internal_status_reciever.changed() => {
-                        info!(target: LOG_TARGET, "Received cpu miner status update");
+                        info!(target: LOG_TARGET_STATUSES, "Received cpu miner status update");
                         if updated_status.is_ok() {
                             let status = cpu_internal_status_reciever.borrow().clone();
                             let paresd_status = match connection_type {

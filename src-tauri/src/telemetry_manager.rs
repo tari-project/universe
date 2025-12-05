@@ -22,6 +22,7 @@
 
 use crate::airdrop;
 use crate::airdrop::get_wallet_view_key_hashed;
+use crate::LOG_TARGET_APP_LOGIC;
 
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::configs::config_core::ConfigCore;
@@ -62,8 +63,6 @@ use tauri::Emitter;
 use tauri::Manager;
 use tokio::sync::{watch, RwLock};
 use tokio::time::interval;
-
-const LOG_TARGET: &str = "tari::universe::telemetry_manager";
 
 struct TelemetryFrequency(u64);
 
@@ -295,7 +294,7 @@ impl TelemetryManager {
     }
 
     pub async fn initialize(&mut self, app_handle: tauri::AppHandle) -> Result<()> {
-        info!(target: LOG_TARGET, "Starting telemetry manager");
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting telemetry manager");
         self.start_telemetry_process(TelemetryFrequency::default().into(), app_handle)
             .await?;
         Ok(())
@@ -326,7 +325,7 @@ impl TelemetryManager {
                 let allow_notifications = *ConfigCore::content().await.allow_notifications();
                 tokio::select! {
                     _ = interval.tick() => {
-                        debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
+                        debug!(target: LOG_TARGET_APP_LOGIC, "TelemetryManager::start_telemetry_process has  been started");
                         let airdrop_access_token = airdrop_tokens.map(|tokens| tokens.token);
                         let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
                         let memory_config = in_memory_config_cloned.read().await;
@@ -338,7 +337,7 @@ impl TelemetryManager {
 
                     },
                     _ = shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
+                        info!(target: LOG_TARGET_APP_LOGIC,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
                         break;
                     }
                 }
@@ -366,7 +365,7 @@ async fn cancellable_get_telemetry_data(
             result
         }
         _ = shutdown_signal.wait() => {
-            info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
+            info!(target: LOG_TARGET_APP_LOGIC,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
             Err(TelemetryManagerError::Cancelled)
         }
     }
@@ -763,7 +762,7 @@ async fn handle_data(
                         "send_telemetry_data",
                     ) => response,
                     _ = shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET, "Telemetry data sending cancelled by shutdown signal");
+                        info!(target: LOG_TARGET_APP_LOGIC, "Telemetry data sending cancelled by shutdown signal");
                         return;
                     }
                 };
@@ -772,7 +771,7 @@ async fn handle_data(
                     Ok(response) => {
                         if let Some(response_inner) = response {
                             if let Some(user_points) = response_inner.user_points {
-                                debug!(target: LOG_TARGET,"emitting UserPoints event{user_points:?}");
+                                debug!(target: LOG_TARGET_APP_LOGIC,"emitting UserPoints event{user_points:?}");
                                 let response_inner =
                                     response_inner.referral_count.unwrap_or(ReferralCount {
                                         gems: 0.0,
@@ -793,7 +792,7 @@ async fn handle_data(
                         }
                     }
                     Err(e) => {
-                        error!(target: LOG_TARGET,"Error sending telemetry data: {e}");
+                        error!(target: LOG_TARGET_APP_LOGIC,"Error sending telemetry data: {e}");
                     }
                 }
             }
@@ -803,26 +802,26 @@ async fn handle_data(
                     response = send_notification_data(telemetry.into(), airdrop_access_token, airdrop_api_url)
                         =>response,
                     _ = shutdown_signal.wait() => {
-                        debug!(target: LOG_TARGET, "mining status notification data sending cancelled by shutdown signal");
+                        debug!(target: LOG_TARGET_APP_LOGIC, "mining status notification data sending cancelled by shutdown signal");
                         return;
                     }
                 };
                 match notification_data_response {
                     Ok(_) => {
-                        debug!(target: LOG_TARGET,"successfully sent emitting mining status notification event");
+                        debug!(target: LOG_TARGET_APP_LOGIC,"successfully sent emitting mining status notification event");
                     }
                     Err(e) => {
-                        warn!(target: LOG_TARGET,"emitting mining status notification data sending error {:?}", e.to_string());
+                        warn!(target: LOG_TARGET_APP_LOGIC,"emitting mining status notification data sending error {:?}", e.to_string());
                     }
                 }
             }
         }
 
         Err(TelemetryManagerError::Cancelled) => {
-            debug!(target: LOG_TARGET, "Telemetry manager shutdown – no data sent");
+            debug!(target: LOG_TARGET_APP_LOGIC, "Telemetry manager shutdown – no data sent");
         }
         Err(e) => {
-            error!(target: LOG_TARGET,"Error getting telemetry data: {e}");
+            error!(target: LOG_TARGET_APP_LOGIC,"Error getting telemetry data: {e}");
         }
     }
 }
@@ -848,7 +847,7 @@ async fn send_telemetry_data(
     let response = request_builder.send().await?;
 
     if response.status() == 429 {
-        warn!(target: LOG_TARGET,"Telemetry data rate limited by http {:?}", response.status());
+        warn!(target: LOG_TARGET_APP_LOGIC,"Telemetry data rate limited by http {:?}", response.status());
         return Ok(None);
     }
 
@@ -864,7 +863,7 @@ async fn send_telemetry_data(
         .into());
     }
 
-    debug!(target: LOG_TARGET,"Telemetry data sent");
+    debug!(target: LOG_TARGET_APP_LOGIC,"Telemetry data sent");
 
     if airdrop_access_token.is_some() {
         let data: TelemetryDataResponse = response.json().await?;
@@ -896,7 +895,7 @@ async fn send_notification_data(
     let response = request_builder.send().await?;
 
     if response.status() == 429 {
-        warn!(target: LOG_TARGET,"notification data rate limited by http {:?}", response.status());
+        warn!(target: LOG_TARGET_APP_LOGIC,"notification data rate limited by http {:?}", response.status());
         return Ok(());
     }
 

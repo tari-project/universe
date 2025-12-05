@@ -24,7 +24,8 @@ use anyhow::{anyhow, Error};
 use log::{error, info, warn};
 use std::net::TcpListener;
 
-const LOG_TARGET: &str = "tari::universe::port_allocator";
+use crate::LOG_TARGET_APP_LOGIC;
+
 const ADDRESS: &str = "127.0.0.1";
 const MAX_RETRIES: u16 = 10;
 const FALLBACK_PORT_RANGE: std::ops::Range<u16> = 49152..65535;
@@ -51,7 +52,7 @@ impl PortAllocator {
                 Ok(port)
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to bind to port: {e:?}");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to bind to port: {e:?}");
                 Err(anyhow!("Failed to bind to port"))
             }
         }
@@ -82,13 +83,13 @@ impl PortAllocator {
                 .unwrap_or_else(|_| self.asign_port_from_fallback_range());
             tries += 1;
             if tries >= MAX_RETRIES {
-                warn!(target: LOG_TARGET, "Failed to assign port after {MAX_RETRIES} tries");
-                info!(target: LOG_TARGET, "Assigning port from fallback range");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to assign port after {MAX_RETRIES} tries");
+                info!(target: LOG_TARGET_APP_LOGIC, "Assigning port from fallback range");
                 return self.asign_port_from_fallback_range();
             }
         }
 
-        info!(target: LOG_TARGET, "Assigned port: {port}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Assigned port: {port}");
         port
     }
 }

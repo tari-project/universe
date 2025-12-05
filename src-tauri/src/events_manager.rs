@@ -31,13 +31,11 @@ use tauri::{AppHandle, Manager};
 // use crate::configs::trait_config::ConfigImpl;
 use crate::setup::listeners::SetupFeature;
 use crate::setup::setup_manager::SetupManager;
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
     events::NodeTypeUpdatePayload, events_emitter::EventsEmitter, tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
-
-const LOG_TARGET: &str = "tari::universe::events_manager";
-
 pub struct EventsManager;
 
 impl EventsManager {
@@ -50,7 +48,7 @@ impl EventsManager {
             .await
             .is_feature_enabled(SetupFeature::SeedlessWallet)
         {
-            info!(target: LOG_TARGET, "Firing new block height event but skipping wallet scan for seedless wallet feature");
+            info!(target: LOG_TARGET_APP_LOGIC, "Firing new block height event but skipping wallet scan for seedless wallet feature");
             EventsEmitter::emit_new_block_mined(block_height, None).await;
 
             return;
@@ -72,7 +70,7 @@ impl EventsManager {
                 //             // Check for coinbase transaction if there's pending balance
                 //             let coinbase_tx = if balance.pending_incoming_balance.gt(&MicroMinotari::zero()) {
                 //                 wallet_manager.find_coinbase_transaction_for_block(block_height).await.unwrap_or_else(|e| {
-                //                     error!(target: LOG_TARGET, "Failed to get coinbase transaction: {e:?}");
+                //                     error!(target: LOG_TARGET_APP_LOGIC, "Failed to get coinbase transaction: {e:?}");
                 //                     None
                 //                 })
                 //             } else {
@@ -89,7 +87,7 @@ impl EventsManager {
                 //                 send_new_block_mined(app_clone.clone(), block_height).await;
                 //             }
                 //         } else {
-                //             error!(target: LOG_TARGET, "Wallet balance is None after new block height #{block_height}");
+                //             error!(target: LOG_TARGET_APP_LOGIC, "Wallet balance is None after new block height #{block_height}");
                 //             EventsEmitter::emit_new_block_mined(
                 //                 block_height,
                 //                 None,
@@ -98,7 +96,7 @@ impl EventsManager {
                 //         }
                 //     },
                 //     Err(e) => {
-                //         error!(target: LOG_TARGET, "Error waiting for wallet scan: {e}");
+                //         error!(target: LOG_TARGET_APP_LOGIC, "Error waiting for wallet scan: {e}");
                 //         EventsEmitter::emit_new_block_mined(
                 //             block_height,
                 //             None,

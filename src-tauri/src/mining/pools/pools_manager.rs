@@ -35,9 +35,8 @@ use crate::{
         PoolStatus,
     },
     tasks_tracker::TaskTrackerUtil,
+    LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
-
-static LOG_TARGET: &str = "tari::universe::mining::pools::pools_manager";
 
 #[derive(Clone)]
 struct TaskState {
@@ -129,10 +128,10 @@ impl PoolManager {
                         statuses.insert(self.pool_adapter.name().to_string(), status.clone());
                         (self.pool_stats_event_callback)(statuses.clone(), status.clone());
                     }
-                    info!(target: LOG_TARGET, "Updated pool status: {status:?}");
+                    info!(target: LOG_TARGET_STATUSES, "Updated pool status: {status:?}");
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to fetch pool status: {e}");
+                    warn!(target: LOG_TARGET_STATUSES, "Failed to fetch pool status: {e}");
                 }
             }
         }
@@ -150,7 +149,7 @@ impl PoolManager {
     }
 
     pub async fn handle_pool_change(&mut self, adapter: PoolApiAdapters) {
-        info!(target: LOG_TARGET, "Updated pool configuration to: {adapter:?}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Updated pool configuration to: {adapter:?}");
         self.pool_adapter = adapter.clone();
 
         // No point in continuing the task after mining address changed when mining is not active there propably won't be any stats to fetch
@@ -166,7 +165,7 @@ impl PoolManager {
         // Send to task if running
         if let Some(sender) = &self.task_sender {
             if let Err(e) = sender.send(PoolManagerThreadCommands::UpdatePoolAdapter(adapter)) {
-                warn!(target: LOG_TARGET, "Failed to send pool update to task: {e}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to send pool update to task: {e}");
             }
             let pool_stats = self.pool_stats.read().await.clone();
             let current_status = pool_stats
@@ -182,7 +181,7 @@ impl PoolManager {
     pub async fn handle_new_mining_address(&mut self, mining_address: &TariAddress) {
         let mining_address = mining_address.to_base58();
 
-        info!(target: LOG_TARGET, "Updated mining address to: {mining_address}" );
+        info!(target: LOG_TARGET_APP_LOGIC, "Updated mining address to: {mining_address}" );
         self.cached_mining_address = Some(mining_address.clone());
 
         // No point in continuing the task after mining address changed when mining is not active there propably won't be any stats to fetch
@@ -200,7 +199,7 @@ impl PoolManager {
             if let Err(e) = sender.send(PoolManagerThreadCommands::UpdateMiningAddress(
                 mining_address.clone(),
             )) {
-                warn!(target: LOG_TARGET, "Failed to send mining address update to task: {e}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to send mining address update to task: {e}");
             }
             let pool_stats = self.pool_stats.read().await.clone();
             let current_status = pool_stats
@@ -213,12 +212,12 @@ impl PoolManager {
 
     pub async fn toggle_mining_active(&mut self, is_active: bool) {
         // Update local state
-        info!(target: LOG_TARGET, "Mining active status changed to: {is_active}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Mining active status changed to: {is_active}");
         self.is_mining_active = is_active;
         // Send to task if running
         if let Some(sender) = &self.task_sender {
             if let Err(e) = sender.send(PoolManagerThreadCommands::UpdateMiningStatus(is_active)) {
-                warn!(target: LOG_TARGET, "Failed to send mining status update to task: {e}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to send mining status update to task: {e}");
             }
             let pool_stats = self.pool_stats.read().await.clone();
             let current_status = pool_stats
@@ -233,14 +232,14 @@ impl PoolManager {
     pub fn stop_background_task(&mut self) {
         if let Some(sender) = &self.task_sender {
             if let Err(e) = sender.send(PoolManagerThreadCommands::Stop) {
-                warn!(target: LOG_TARGET, "Failed to send stop command to task: {e}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to send stop command to task: {e}");
             }
         }
         self.task_sender = None;
 
         if let Some(handle) = self.task_thread.take() {
             handle.abort(); // Abort the task if still running
-            info!(target: LOG_TARGET, "Stopped periodic pool status update task");
+            info!(target: LOG_TARGET_APP_LOGIC, "Stopped periodic pool status update task");
         }
     }
 
@@ -251,12 +250,12 @@ impl PoolManager {
             .as_ref()
             .is_some_and(|handle| !handle.is_finished())
         {
-            debug!(target: LOG_TARGET, "Periodic pool status update task is already running");
+            debug!(target: LOG_TARGET_APP_LOGIC, "Periodic pool status update task is already running");
             self.toggle_mining_active(true).await; // Ensure mining active status is updated
             return;
         }
 
-        info!(target: LOG_TARGET, "Starting periodic pool status update task");
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting periodic pool status update task");
 
         if let Some(tari_address) = &self.cached_mining_address {
             // Create channels for communication
@@ -290,20 +289,20 @@ impl PoolManager {
             loop {
                 tokio::select! {
                     _ = shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET, "Periodic pool status update task received shutdown signal");
+                        info!(target: LOG_TARGET_APP_LOGIC, "Periodic pool status update task received shutdown signal");
                         break;
                     }
                     // Handle incoming commands
                     Some(command) = task_receiver.recv() => {
-                        debug!(target: LOG_TARGET, "Task received command: {command:?}" );
+                        debug!(target: LOG_TARGET_APP_LOGIC, "Task received command: {command:?}" );
                         match command {
                             PoolManagerThreadCommands::UpdateMiningAddress(addr) => {
                                 task_state.cached_mining_address = addr;
                                 Self::periodic_update_logic_static(&mut task_state).await;
-                                info!(target: LOG_TARGET, "Task: Updated mining address");
+                                info!(target: LOG_TARGET_APP_LOGIC, "Task: Updated mining address");
                             }
                             PoolManagerThreadCommands::UpdateMiningStatus(status) => {
-                                info!(target: LOG_TARGET, "Task: Mining status updated to: {status:?}" );
+                                info!(target: LOG_TARGET_APP_LOGIC, "Task: Mining status updated to: {status:?}" );
                                 task_state.is_mining_active = status;
                                 if status {
                                     stop_task_at = None; // Reset grace period since we're mining again
@@ -317,10 +316,10 @@ impl PoolManager {
                             PoolManagerThreadCommands::UpdatePoolAdapter(adapter) => {
                                 task_state.pool_adapter = adapter.clone();
                                 Self::periodic_update_logic_static(&mut task_state).await;
-                                info!(target: LOG_TARGET, "Task: Updated pool configuration to: {adapter:?}");
+                                info!(target: LOG_TARGET_APP_LOGIC, "Task: Updated pool configuration to: {adapter:?}");
                             }
                             PoolManagerThreadCommands::Stop  => {
-                                info!(target: LOG_TARGET, "Task: Received stop command");
+                                info!(target: LOG_TARGET_APP_LOGIC, "Task: Received stop command");
                                 break;
                             }
                         }
@@ -340,7 +339,7 @@ impl PoolManager {
                                 let test = non_mining_interval_duration.checked_duration_since(last_tick);
                                 if let Some(elapsed) = test {
                                     task_state.tracking_duration += elapsed;
-                                    debug!(target: LOG_TARGET, "Task: Non-mining interval elapsed: {:?}", elapsed);
+                                    debug!(target: LOG_TARGET_APP_LOGIC, "Task: Non-mining interval elapsed: {:?}", elapsed);
                                 }
                             }
                             last_non_mining_tick = Some(non_mining_interval_duration);
@@ -353,13 +352,13 @@ impl PoolManager {
                 // Check if we should stop the task (1 hour after mining stopped)
                 if let Some(stop_at) = stop_task_at {
                     if task_state.tracking_duration > stop_at {
-                        info!(target: LOG_TARGET, "Stopping periodic pool status update task - 1 hour grace period expired");
+                        info!(target: LOG_TARGET_APP_LOGIC, "Stopping periodic pool status update task - 1 hour grace period expired");
                         break;
                     }
                 }
             }
 
-            info!(target: LOG_TARGET, "Periodic pool status update task finished");
+            info!(target: LOG_TARGET_APP_LOGIC, "Periodic pool status update task finished");
         }));
         }
     }
@@ -377,10 +376,10 @@ impl PoolManager {
                     statuses.insert(task_state.pool_adapter.name().to_string(), status.clone());
                     (task_state.pool_stats_event_callback)(statuses.clone(), status.clone());
                 }
-                info!(target: LOG_TARGET, "Updated pool status: {status:?}");
+                info!(target: LOG_TARGET_STATUSES, "Updated pool status: {status:?}");
             }
             Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to fetch pool status: {e}");
+                warn!(target: LOG_TARGET_STATUSES, "Failed to fetch pool status: {e}");
             }
         }
     }

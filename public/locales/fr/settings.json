@@ -100,6 +100,10 @@
     "load-qr-code": "Charger le code QR",
     "passphrase": "Phrase de passe"
   },
+  "pause-on-battery-mode": {
+    "description": "Pause mining when device is disconnected from charging",
+    "title": "Pause on Battery Mode"
+  },
   "pin": "Pin",
   "pool-configuration": "Configuration du pool",
   "pool-mining": "Minage en pool",
@@ -152,7 +156,7 @@
   "sync-incomplete": "Synchronisation...",
   "sync-status": "État de la synchronisation",
   "tabs": {
-    "airdrop": "Bonus XTM",
+    "airdrop": "Airdrop Claim",
     "connections": "Connexions",
     "experimental": "Expérimental",
     "general": "Général",

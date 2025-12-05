@@ -100,6 +100,10 @@
     "load-qr-code": "Laai QR-kode",
     "passphrase": "Wagwoordfrase"
   },
+  "pause-on-battery-mode": {
+    "description": "Pause mining when device is disconnected from charging",
+    "title": "Pause on Battery Mode"
+  },
   "pin": "Pin",
   "pool-configuration": "Swembadkonfigurasie",
   "pool-mining": "Poel Mynbou",
@@ -152,7 +156,7 @@
   "sync-incomplete": "Sinchroniseer...",
   "sync-status": "Sinchronisasie Status",
   "tabs": {
-    "airdrop": "Bonus XTM",
+    "airdrop": "Airdrop Claim",
     "connections": "Verbindings",
     "experimental": "Eksperimenteel",
     "general": "Algemeen",

@@ -28,6 +28,7 @@ use crate::process_adapter::{
 };
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
+use crate::LOG_TARGET_STATUSES;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::warn;
@@ -38,8 +39,6 @@ use reqwest::Client;
 use serde_json::json;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
-
-const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
 
 #[derive(Clone, PartialEq, Default)]
 pub(crate) struct MergeMiningProxyConfig {
@@ -194,7 +193,7 @@ impl StatusMonitor for MergeMiningProxyStatusMonitor {
                 Ok(_) => HealthStatus::Healthy,
                 Err(e) => {
                     warn!(
-                        target: LOG_TARGET,
+                        target: LOG_TARGET_STATUSES,
                         "Failed to get version during health check: {e}"
                     );
                     HealthStatus::Warning
@@ -202,7 +201,7 @@ impl StatusMonitor for MergeMiningProxyStatusMonitor {
             },
             Err(_) => {
                 warn!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_STATUSES,
                     "Mmproxy Version check timed out after {timeout_duration:?}"
                 );
                 HealthStatus::Warning

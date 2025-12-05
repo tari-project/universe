@@ -141,7 +141,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
         return (
             <AnimatePresence initial={false} mode="wait">
                 <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
-                    <Wrapper $listHidden>{walletMarkup}</Wrapper>
+                    <Wrapper>{walletMarkup}</Wrapper>
                 </WalletWrapper>
             </AnimatePresence>
         );
@@ -152,7 +152,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
             <AnimatePresence mode="wait">
                 {isSwapping ? (
                     <SwapsWrapper key="swap" variants={swapTransition} initial="hide" exit="hide" animate="show">
-                        <Wrapper $swapsPanel>
+                        <Wrapper>
                             <Swap />
                             <ExchangesUrls />
                         </Wrapper>

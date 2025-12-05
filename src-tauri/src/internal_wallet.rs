@@ -61,9 +61,7 @@ use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::pin::PinManager;
 use crate::utils::{cryptography, rand_utils};
 use crate::wallet::minotari_wallet::MinotariWalletManager;
-use crate::UniverseAppState;
-
-const LOG_TARGET: &str = "tari::universe::internal_wallet";
+use crate::{UniverseAppState, LOG_TARGET_APP_LOGIC};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TariWalletDetails {
@@ -163,7 +161,7 @@ impl InternalWallet {
         wallet_config: &ConfigWalletContent,
     ) -> Result<bool, anyhow::Error> {
         if *wallet_config.version_counter() < WALLET_VERSION {
-            log::info!(target: LOG_TARGET, "Wallet config version is outdated, migration needed");
+            log::info!(target: LOG_TARGET_APP_LOGIC, "Wallet config version is outdated, migration needed");
             return Ok(false);
         }
         // Latest version confirmed
@@ -171,7 +169,7 @@ impl InternalWallet {
         if wallet_config.tari_wallets().is_empty()
             && wallet_config.selected_external_tari_address().is_none()
         {
-            log::error!(target: LOG_TARGET, "No Tari wallets found");
+            log::error!(target: LOG_TARGET_APP_LOGIC, "No Tari wallets found");
             // In case of no wallets found, return falls to trigger migration or new wallet creation
             return Ok(false);
         }
@@ -364,7 +362,7 @@ impl InternalWallet {
         pin_password_provided: Option<SafePassword>,
     ) -> Result<(TariWalletDetails, Vec<u8>), anyhow::Error> {
         let wallet_id = rand_utils::get_rand_string(6);
-        log::info!(target: LOG_TARGET, "Adding Tari Wallet with id: {wallet_id}");
+        log::info!(target: LOG_TARGET_APP_LOGIC, "Adding Tari Wallet with id: {wallet_id}");
 
         let encrypted_seed = if PinManager::pin_locked().await {
             let pin_password = match pin_password_provided {
@@ -407,7 +405,7 @@ impl InternalWallet {
     }
 
     fn remove_tari_wallet(wallet_id: WalletId) -> Result<(), anyhow::Error> {
-        log::info!(target: LOG_TARGET, "Removing Tari Wallet with id: {wallet_id:?}");
+        log::info!(target: LOG_TARGET_APP_LOGIC, "Removing Tari Wallet with id: {wallet_id:?}");
         let cm = CredentialManager::new_default(wallet_id);
         cm.delete_credential()?;
 
@@ -415,7 +413,7 @@ impl InternalWallet {
     }
 
     async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
-        log::info!(target: LOG_TARGET, "Adding new Monero Wallet");
+        log::info!(target: LOG_TARGET_APP_LOGIC, "Adding new Monero Wallet");
         let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
         let monero_seed_binary = (*monero_seed.inner())
             .to_binary()
@@ -439,7 +437,7 @@ impl InternalWallet {
     }
 
     fn remove_monero_wallet() -> Result<(), anyhow::Error> {
-        log::info!(target: LOG_TARGET, "Removing Monero Wallet");
+        log::info!(target: LOG_TARGET_APP_LOGIC, "Removing Monero Wallet");
         let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
         cm.delete_credential()?;
 
@@ -470,7 +468,7 @@ impl InternalWallet {
             let monero_address = monero_seed
                 .to_address::<Mainnet>()
                 .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string());
-            log::info!(target: LOG_TARGET, "New Monero Address generated when recover_forgotten_pin: {monero_address}");
+            log::info!(target: LOG_TARGET_APP_LOGIC, "New Monero Address generated when recover_forgotten_pin: {monero_address}");
             ConfigWallet::update_field(
                 ConfigWalletContent::set_generated_monero_address,
                 monero_address,
@@ -619,7 +617,7 @@ impl InternalWallet {
         app_handle: &AppHandle,
         wallet_config: ConfigWalletContent,
     ) -> Result<InternalWallet, anyhow::Error> {
-        log::info!(target: LOG_TARGET, "Internal Wallet latest version detected.");
+        log::info!(target: LOG_TARGET_APP_LOGIC, "Internal Wallet latest version detected.");
         let monero_address = wallet_config.monero_address().clone();
         if monero_address.is_empty() {
             panic!(
@@ -636,7 +634,7 @@ impl InternalWallet {
 
         let (encrypted_tari_seed, tari_wallet_details) = {
             if let Some(wallet_details) = ConfigWallet::content().await.tari_wallet_details() {
-                log::info!(target: LOG_TARGET, "Extracted(wallet config file) Tari Wallet Details: {wallet_details:?}");
+                log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(wallet config file) Tari Wallet Details: {wallet_details:?}");
                 (None, wallet_details.clone())
             } else {
                 // If wallet details are not saved in the config file, extract them from the decrypted seed.
@@ -673,7 +671,7 @@ impl InternalWallet {
                     tari_cipher_seed,
                 )
                 .await?;
-                log::info!(target: LOG_TARGET, "Extracted(seed from credentials) Tari Wallet Details: {wallet_details:?}");
+                log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(seed from credentials) Tari Wallet Details: {wallet_details:?}");
                 (Some(encrypted_tari_seed), wallet_details)
             }
         };
@@ -740,7 +738,7 @@ impl InternalWallet {
             )
             .await?;
         } else {
-            log::info!(target: LOG_TARGET, "Monero Seed not found for migration");
+            log::info!(target: LOG_TARGET_APP_LOGIC, "Monero Seed not found for migration");
         }
 
         // Migrate Tari Seed
@@ -876,7 +874,7 @@ impl InternalWallet {
         } else {
             // Seed not yet encrypted with PIN
             CipherSeed::from_binary(&encrypted_tari_seed).map_err(|_| {
-                log::error!(target: LOG_TARGET, "[get_tari_seed] Could not parse Tari Seed from binary.");
+                log::error!(target: LOG_TARGET_APP_LOGIC, "[get_tari_seed] Could not parse Tari Seed from binary.");
                 anyhow!("Could not parse Tari Seed from binary")
             })
         }
@@ -1002,7 +1000,7 @@ async fn handle_critical_problem(
 ) {
     let state_wallet_details = InternalWallet::tari_wallet_details().await;
     log::error!(
-        target: LOG_TARGET,
+        target: LOG_TARGET_APP_LOGIC,
         "Unexpected {}! {} --- State: {:?} | Extracted from seed: {:?}",
         InternalWallet::current().read().await.tari_address_type,
         title,
@@ -1034,7 +1032,7 @@ where
     #[cfg(not(target_os = "macos"))]
     {
         operation().await.map_err(|e| {
-            log::error!(target: LOG_TARGET, "{log_msg}: {e}");
+            log::error!(target: LOG_TARGET_APP_LOGIC, "{log_msg}: {e}");
             e.into()
         })
     }
@@ -1055,7 +1053,7 @@ where
                 // Loop will retry
             }
             Err(err) => {
-                log::error!(target: LOG_TARGET, "{log_msg}: {err}");
+                log::error!(target: LOG_TARGET_APP_LOGIC, "{log_msg}: {err}");
                 return Err(err.into());
             }
         }

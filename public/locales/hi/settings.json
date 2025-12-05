@@ -100,6 +100,10 @@
     "load-qr-code": "QR कोड लोड करें",
     "passphrase": "पासफ्रेज़"
   },
+  "pause-on-battery-mode": {
+    "description": "Pause mining when device is disconnected from charging",
+    "title": "Pause on Battery Mode"
+  },
   "pin": "Pin",
   "pool-configuration": "Pool Configuration",
   "pool-mining": "पूल माइनिंग",
@@ -152,7 +156,7 @@
   "sync-incomplete": "Syncing...",
   "sync-status": "Sync Status",
   "tabs": {
-    "airdrop": "Bonus XTM",
+    "airdrop": "Airdrop Claim",
     "connections": "कनेक्शन्स",
     "experimental": "प्रायोगिक",
     "general": "सामान्य",

@@ -29,6 +29,7 @@ use crate::utils::logging_utils::setup_logging;
 use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitor;
 use crate::wallet::wallet_types::WalletState;
+use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use anyhow::Error;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
@@ -37,8 +38,6 @@ use std::path::{Path, PathBuf};
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
-
-const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
 #[derive(Serialize, Deserialize, Default)]
 struct MinotariWalletMigrationInfo {
@@ -116,7 +115,7 @@ impl ProcessAdapter for WalletAdapter {
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
-        info!(target: LOG_TARGET, "Starting read only wallet");
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting read only wallet");
 
         // Setup working directory using shared utility
         let working_dir = setup_working_directory(&data_dir, "wallet")?;
@@ -129,13 +128,13 @@ impl ProcessAdapter for WalletAdapter {
 
         if migration_info.version < 1 {
             if config_dir.exists() {
-                info!(target: LOG_TARGET, "Wallet migration v1: removing directory at {config_dir:?}");
+                info!(target: LOG_TARGET_APP_LOGIC, "Wallet migration v1: removing directory at {config_dir:?}");
                 let _unused = fs::remove_dir_all(config_dir).inspect_err(|e| {
-                    warn!(target: LOG_TARGET, "Wallet migration v1 Failed to remove directory: {e:?}");
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Wallet migration v1 Failed to remove directory: {e:?}");
                 });
             }
 
-            info!(target: LOG_TARGET, "Wallet migration v1 complete");
+            info!(target: LOG_TARGET_APP_LOGIC, "Wallet migration v1 complete");
             migration_info.version = 1;
         }
         migration_info.save(&migration_file)?;
@@ -179,7 +178,7 @@ impl ProcessAdapter for WalletAdapter {
                 args.push(wallet_birthday.to_string());
             }
             None => {
-                warn!(target: LOG_TARGET, "Wallet birthday not specified - wallet will scan from genesis block");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Wallet birthday not specified - wallet will scan from genesis block");
             }
         }
 
@@ -231,7 +230,7 @@ impl ProcessAdapter for WalletAdapter {
         }
 
         if let Err(e) = std::fs::remove_dir_all(peer_data_folder) {
-            warn!(target: LOG_TARGET, "Could not clear peer data folder: {e}");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Could not clear peer data folder: {e}");
         }
 
         #[cfg(target_os = "windows")]

@@ -15,7 +15,7 @@ appenders:
   stdout:
     kind: console
     encoder:
-      pattern: "{d(%H:%M:%S)} {h({l}):5} {m}{n}"
+      pattern: '{d(%H:%M:%S)} {h({l}):5} {m}{n}'
     filters:
       - kind: threshold
         level: info
@@ -23,7 +23,7 @@ appenders:
   # An appender named "web" that writes to a file with a custom pattern encoder
   web:
     kind: rolling_file
-    path: "{{log_dir}}/universe/log/universe-web.log"
+    path: '{{log_dir}}/universe/log/universe-web.log'
     policy:
       kind: compound
       trigger:
@@ -33,14 +33,14 @@ appenders:
         kind: fixed_window
         base: 1
         count: 2
-        pattern: "{{log_dir}}/universe/log/universe-web.{}.log"
+        pattern: '{{log_dir}}/universe/log/universe-web.{}.log'
     encoder:
-      pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m}{n} "
+      pattern: '{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m}{n} '
 
   # An appender named "base_layer" that writes to a file with a custom pattern encoder
   default:
     kind: rolling_file
-    path: "{{log_dir}}/universe/log/universe.log"
+    path: '{{log_dir}}/universe/log/universe.log'
     policy:
       kind: compound
       trigger:
@@ -50,14 +50,46 @@ appenders:
         kind: fixed_window
         base: 1
         count: 2
-        pattern: "{{log_dir}}/universe/log/universe.{}.log"
+        pattern: '{{log_dir}}/universe/log/universe.{}.log'
+    encoder:
+      pattern: '{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m} // {f}:{L}{n}'
+
+  app-logic:
+    kind: rolling_file
+    path: "{{log_dir}}/universe/log/app-logic.log"
+    policy:
+      kind: compound
+      trigger:
+        kind: size
+        limit: 2mb
+      roller:
+        kind: fixed_window
+        base: 1
+        count: 2
+        pattern: "{{log_dir}}/universe/log/app-logic.{}.log"
+    encoder:
+      pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m} // {f}:{L}{n}"
+
+  statuses:
+    kind: rolling_file
+    path: "{{log_dir}}/universe/log/statuses.log"
+    policy:
+      kind: compound
+      trigger:
+        kind: size
+        limit: 2mb
+      roller:
+        kind: fixed_window
+        base: 1
+        count: 2
+        pattern: "{{log_dir}}/universe/log/app-statuses.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m} // {f}:{L}{n}"
 
   # An appender named "other" that writes to a file with a custom pattern encoder
   other:
     kind: rolling_file
-    path: "{{log_dir}}/universe/log/other.log"
+    path: '{{log_dir}}/universe/log/other.log'
     policy:
       kind: compound
       trigger:
@@ -67,9 +99,9 @@ appenders:
         kind: fixed_window
         base: 1
         count: 2
-        pattern: "{{log_dir}}/universe/log/other.{}.log"
+        pattern: '{{log_dir}}/universe/log/other.{}.log'
     encoder:
-      pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m}{n} // {f}:{L} "
+      pattern: '{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m}{n} // {f}:{L} '
 
 # Set the default logging level to "info"
 root:
@@ -79,12 +111,20 @@ root:
     - stdout
 
 loggers:
-  # Route log events common to every application to all appenders
-  tari::universe:
+  tari::universe::app_logic:
     level: info
     appenders:
       - stdout
       - default
+      - app-logic
+    additive: false
+
+  tari::universe::statuses:
+    level: info
+    appenders:
+      - stdout
+      - default
+      - statuses
     additive: false
 
   tari::universe::web:

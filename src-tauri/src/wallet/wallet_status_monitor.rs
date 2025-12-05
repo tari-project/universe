@@ -22,6 +22,7 @@
 
 use crate::process_adapter::{HealthStatus, StatusMonitor};
 use crate::wallet::wallet_types::{NetworkStatus, WalletBalance, WalletState};
+use crate::LOG_TARGET_STATUSES;
 use async_trait::async_trait;
 use log::warn;
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
@@ -29,8 +30,6 @@ use minotari_node_grpc_client::grpc::GetStateRequest;
 use std::time::Duration;
 use tari_common_types::tari_address::TariAddressError;
 use tokio::sync::watch;
-
-const LOG_TARGET: &str = "tari::universe::wallet_status_monitor";
 
 pub struct WalletStatusMonitor {
     grpc_port: u16,
@@ -56,13 +55,13 @@ impl StatusMonitor for WalletStatusMonitor {
                     HealthStatus::Healthy
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Wallet health check failed: {e}");
+                    warn!(target: LOG_TARGET_STATUSES, "Wallet health check failed: {e}");
                     HealthStatus::Unhealthy
                 }
             },
             Err(_timeout_error) => {
                 warn!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_STATUSES,
                     "Wallet health check timed out after {timeout_duration:?}"
                 );
                 HealthStatus::Warning

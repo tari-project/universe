@@ -7,20 +7,19 @@ import {
     type AnimationType,
     type BonusTier,
     type CommunityMessage,
-    type Reward,
-    setAirdropTokensInConfig,
     type UserDetails,
     type UserEntryPoints,
     type UserPoints,
     useAirdropStore,
     useConfigBEInMemoryStore,
-    useConfigCoreStore,
     useUIStore,
-    useWalletStore,
 } from '@app/store';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import type { XSpaceEvent } from '@app/types/ws.ts';
+import type { TrancheStatus, BalanceSummary } from '@app/types/airdrop-claim.ts';
 import { invoke } from '@tauri-apps/api/core';
+import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
+import { setAirdropTokensInConfig } from '@app/store/actions/config/core.ts';
 
 interface TokenResponse {
     exp: number;
@@ -59,6 +58,7 @@ const clearState: AirdropStoreState = {
         page: 1,
         limit: 20,
     },
+    showTrancheModal: false,
 };
 
 const getAirdropInMemoryConfig = async () => {
@@ -271,54 +271,6 @@ export async function fetchLatestXSpaceEvent() {
     return response;
 }
 
-export async function sendCrewNudge(message: string, userId: string) {
-    return await handleAirdropRequest<{ success: boolean } | null>({
-        path: '/crew/nudge',
-        method: 'POST',
-        body: {
-            message,
-            userId,
-        },
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-}
-
-export async function claimCrewRewards(rewardId: string, memberId: string) {
-    const walletAddress = useWalletStore.getState().tari_address_base58;
-    if (!walletAddress) {
-        throw new Error('No wallet address found');
-    }
-    return await handleAirdropRequest<{
-        success: boolean;
-        claimedReward: Reward;
-    } | null>({
-        path: `/crew/rewards/${rewardId}/claim`,
-        method: 'POST',
-        body: {
-            rewardId,
-            memberId,
-            targetWalletAddress: walletAddress,
-        },
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-}
-
-export const setCrewQueryParams = (
-    params: Partial<{
-        status: 'all' | 'completed' | 'active' | 'inactive';
-        page: number;
-        limit: number;
-    }>
-) => {
-    useAirdropStore.setState((state) => ({
-        crewQueryParams: { ...state.crewQueryParams, ...params },
-    }));
-};
-
 export const fetchAllUserData = async () => {
     const fetchUserDetails = async () => {
         return await handleAirdropRequest<UserDetails>({
@@ -379,4 +331,48 @@ export const fetchAllUserData = async () => {
     if (authToken) {
         await fetchData();
     }
+};
+
+// Tranche state actions
+export const setTrancheStatus = (trancheStatus: TrancheStatus) => {
+    useAirdropStore.setState((_state) => ({
+        trancheStatus,
+        // Calculate balance summary from tranche data
+        balanceSummary: calculateBalanceSummaryFromTranches(trancheStatus),
+    }));
+};
+
+// Helper function to calculate balance summary from tranche data
+function calculateBalanceSummaryFromTranches(trancheStatus: TrancheStatus): BalanceSummary {
+    const totalXtm = trancheStatus.tranches.reduce((sum, tranche) => sum + tranche.amount, 0);
+    const totalClaimed = trancheStatus.tranches
+        .filter((tranche) => tranche.claimed)
+        .reduce((sum, tranche) => sum + tranche.amount, 0);
+
+    const now = new Date();
+    const totalExpired = trancheStatus.tranches
+        .filter((tranche) => !tranche.claimed && new Date(tranche.validTo) < now)
+        .reduce((sum, tranche) => sum + tranche.amount, 0);
+
+    const totalPending = totalXtm - totalClaimed - totalExpired;
+
+    return {
+        totalXtm,
+        totalClaimed,
+        totalPending,
+        totalExpired,
+    };
+}
+
+// Modal state actions
+export const setShowTrancheModal = (show: boolean) => {
+    useAirdropStore.setState({ showTrancheModal: show });
+};
+
+export const openTrancheModal = () => {
+    setShowTrancheModal(true);
+};
+
+export const closeTrancheModal = () => {
+    setShowTrancheModal(false);
 };

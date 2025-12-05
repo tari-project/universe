@@ -29,7 +29,8 @@ use tokio::{
     net::TcpStream,
 };
 
-const LOG_TARGET: &str = "tari::universe::tor_control_client";
+use crate::LOG_TARGET_APP_LOGIC;
+
 const BOOTSTRAP_QUERY: &str = "GETINFO status/bootstrap-phase\r\n";
 const AUTH_COMMAND: &str = "AUTHENTICATE\r\n";
 const CIRCUIT_QUERY: &str = "GETINFO status/circuit-established\r\n";
@@ -53,7 +54,7 @@ impl TorControlClient {
     }
 
     pub async fn get_info(&self) -> Result<TorStatus, anyhow::Error> {
-        // info!(target: LOG_TARGET, "Connecting to Tor control port {}", self.control_port);
+        // info!(target: LOG_TARGET_APP_LOGIC, "Connecting to Tor control port {}", self.control_port);
         let stream = TcpStream::connect(format!("127.0.0.1:{}", self.control_port)).await?;
         let (reader, mut writer) = stream.into_split();
         let mut reader = BufReader::new(reader).lines();
@@ -63,7 +64,7 @@ impl TorControlClient {
 
         if let Some(response) = reader.next_line().await? {
             if !response.starts_with("250") {
-                warn!(target: LOG_TARGET, "Failed to authenticate with Tor control port: {response}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to authenticate with Tor control port: {response}");
                 return Err(anyhow::anyhow!(
                     "Failed to authenticate with Tor control port: {}",
                     response
@@ -94,7 +95,7 @@ impl TorControlClient {
                 // drop the next line
                 let _s250_ok = reader.next_line().await?;
             } else {
-                warn!(target: LOG_TARGET, "Failed to parse bootstrap response: {response}");
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to parse bootstrap response: {response}");
             }
         }
 

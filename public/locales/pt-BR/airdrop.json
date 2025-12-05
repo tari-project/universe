@@ -1,4 +1,8 @@
 {
+  "auth": {
+    "url-error": "Could not open URL",
+    "url-error-copy": "It has been copied to your clipboard, please visit the link directly to log in"
+  },
   "bonus-gems-earned": "Gemas bônus ganhas",
   "claimGems": "Reivindicar Gemas",
   "claimModalFieldLabel": "Opcional",
@@ -11,7 +15,71 @@
   "copied": "Copiado!",
   "copyFailed": "Falha ao copiar",
   "copying": "Copiando...",
+  "crewRewards": {
+    "actions": {
+      "claim": "Claim {{amount}} XTM",
+      "claimed": "Claimed",
+      "nudge": "Nudge"
+    },
+    "activeMinersStat": "Active Miners",
+    "bonusXTMEarned": "Bonus XTM Earned",
+    "copied": "Copied!",
+    "crewEmpty": {
+      "description": "You have <strong>{{inactiveCount}}</strong> inactive friends. Give them a nudge or invite more.",
+      "descriptionSingular": "You have <strong>{{inactiveCount}}</strong> inactive friend. Give them a nudge or invite more.",
+      "descriptionZero": "Invite friends to start earning bonus rewards together!",
+      "nudgeButton": "Nudge your Friends",
+      "nudgeButtonSingular": "Nudge your Friend",
+      "title": "Your friends are slacking!",
+      "titleSingular": "Your friend is slacking!",
+      "titleZero": "Start building your crew!"
+    },
+    "crewStatus": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "needsNudge": "Needs Nudge"
+    },
+    "earnDescription": "Earn <strong>{{userReward}} XTM</strong> for every <strong>{{daysRequired}} days</strong> your friend mines. Your friend will also earn <strong>{{friendReward}} XTM</strong>.",
+    "errorLoadingData": "Error loading crew data. Please try again.",
+    "feedback": {
+      "nudgeSent": "Nudge sent!",
+      "rewardClaimed": "Reward claimed!"
+    },
+    "filters": {
+      "active": "Active",
+      "all": "All",
+      "complete": "Complete",
+      "inactive": "Inactive"
+    },
+    "inviteFriends": "Invite Friends",
+    "inviteFriendsMessage": "Invite friends and start earning <strong>bonus XTM!</strong>",
+    "login": {
+      "bonusText": "Earn bonus rewards up to {{maxWeeks}} weeks per invite",
+      "description": "You earn <strong>{{userReward}} bonus XTM/week</strong> AND your friend earns <strong>{{friendReward}} bonus XTM/week</strong> when you and your friend both mine",
+      "loginButton": "Log in & Start Earning!",
+      "title": "Mine with friends. <strong>Earn together.</strong>"
+    },
+    "manageYourCrew": "Manage your crew",
+    "myCrew": "Your Friends",
+    "of": "of",
+    "streak": {
+      "day": "Day",
+      "dayStreak": "{{days}} Day Streak",
+      "daysToMinimum": "{{days}} more days to meet minimum requirements!",
+      "keepStreak": "Keep your streak to keep earning rewards!",
+      "loadingStreak": "Loading streak...",
+      "mineConsecutiveDays": "Mine for at least <strong>{{streakDaysRequired}} consecutive days</strong> each week to earn your bonus XTM.",
+      "minimumRequirementsMet": "You've met the minimum requirements. Keep going!",
+      "multiDayStreak": "{{days}} Day Streak",
+      "oneDayStreak": "1 Day Streak",
+      "startMiningMessage": "Start mining to begin your streak and earn rewards!",
+      "startYourStreak": "Start Your Streak!",
+      "unlockBonusRewards": "Unlock your bonus rewards"
+    },
+    "title": "Rewards"
+  },
   "doLater": "Farei isso mais tarde",
+  "earnBonusXTM": "Bonus XTM",
   "gems": "Gemas",
   "giftReferralCode": "Ganhe {{gems}} gemas para cada amigo que você convidar para o Tari Universe. Assim que eles conectarem suas contas, suas gemas serão concedidas.",
   "giftReferralCodeHeader": "Reivindique seu código de indicação <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gemas.",
@@ -28,6 +96,7 @@
   "logged-in-as": "Logado como <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Recompensas do Airdrop",
   "loggedOutTitle": "Convide Amigos para Ganhar Gemas",
+  "login": "Log in",
   "loginButton": "Entrar para reivindicar gemas",
   "logout": "Sair",
   "nextTierBonus": "Convide <strong>{{count}} amigos</strong> e ganhe {{bonusGems}} gemas bônus",
@@ -49,6 +118,50 @@
   "success": "Sucesso",
   "topTooltipText": "Obtenha um Airdrop de Tari coletando gemas. Quanto mais gemas você ganhar, maior será seu airdrop.",
   "topTooltipTitle": "Minere e Convide Amigos para Ganhar Gemas",
+  "tranche": {
+    "claim-modal": {
+      "claim-button": "Claim",
+      "claiming": "Claiming...",
+      "description": "Thank you for being a part of the Tari community. Tari exists for one reason: you {{emojis}}",
+      "eyebrow": "Available airdrop",
+      "eyebrow-future": "Next month’s Airdrop",
+      "remaining-allocation": "Total remaining: <span>{{amount}} XTM</span>",
+      "title": "It’s time to claim your airdrop",
+      "title-future": "Airdrop details",
+      "waiting-verification": "Waiting for verification..."
+    },
+    "notifications": {
+      "claim-failed": "Claim Failed",
+      "claim-success": "Success! You claimed {{amount}} XTM.",
+      "claim-success-message": "Successfully claimed {{amount}} XTM from tranche",
+      "new-tranche-available": "New Tranche Available",
+      "new-tranches-available": "{{count}} new {{plural}} ready to claim!"
+    },
+    "status": {
+      "available": "Available",
+      "available-in": "Next claim window opens in",
+      "balance-summary": "XTM Balance Summary",
+      "claimed": "Claimed",
+      "closes-prefix": "Claim window closes in",
+      "closes-suffix": "Unclaimed tokens will be forfeited.",
+      "error": "Failed to load tranche status",
+      "expired": "Expired",
+      "ineligible": "You are not eligible to claim",
+      "loading": "Loading tranche status...",
+      "next-available": "Next tranche available:",
+      "next-reward": "Next reward",
+      "no-active-claims": "No active claims",
+      "no-data": "No tranche data available",
+      "overall-rewards": "Your overall Airdrop rewards are",
+      "pending": "Pending",
+      "progress-title": "Airdrop Progress",
+      "total-airdrop": "Total airdrop amount",
+      "total-allocation": "Total Allocation",
+      "total-claimed": "Total claimed",
+      "total-due": "Total amount due",
+      "tranches": "tranches"
+    }
+  },
   "unclaimedGems": "Gemas não Reivindicadas",
   "update-username": "Atualizar nome de usuário",
   "username-error": "O nome de usuário deve ter de 3 a 20 caracteres e conter apenas letras, números, sublinhados ou hífens",

@@ -28,8 +28,7 @@ use std::process::Command;
 
 use crate::consts::PROCESS_CREATION_NO_WINDOW;
 use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
-
-pub const LOG_TARGET: &str = "tari::universe::windows_defender";
+use crate::LOG_TARGET_APP_LOGIC;
 
 pub struct WindowsDefenderExclusions {}
 
@@ -41,7 +40,7 @@ impl WindowsDefenderExclusions {
             .to_str()
             .ok_or_else(|| anyhow!("Failed to convert path to string: {:?}", binary_path))?;
 
-        info!(target: LOG_TARGET, "Adding binary to Windows Defender exclusions: {path_str}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Adding binary to Windows Defender exclusions: {path_str}");
 
         let output = Command::new("powershell")
             .args([
@@ -53,7 +52,7 @@ impl WindowsDefenderExclusions {
             .map_err(|e| anyhow!("Failed to execute PowerShell command: {e}"))?;
 
         if output.status.success() {
-            info!(target: LOG_TARGET, "Successfully added binary to Windows Defender exclusions: {path_str}");
+            info!(target: LOG_TARGET_APP_LOGIC, "Successfully added binary to Windows Defender exclusions: {path_str}");
             Ok(())
         } else {
             let stderr = String::from_utf8_lossy(&output.stderr);
@@ -61,11 +60,11 @@ impl WindowsDefenderExclusions {
 
             // Check if it's already excluded (not an error)
             if stderr.contains("already exists") || stdout.contains("already exists") {
-                info!(target: LOG_TARGET, "Binary already in Windows Defender exclusions: {path_str}");
+                info!(target: LOG_TARGET_APP_LOGIC, "Binary already in Windows Defender exclusions: {path_str}");
                 return Ok(());
             }
 
-            warn!(target: LOG_TARGET, "Failed to add binary to Windows Defender exclusions. stdout: {stdout}, stderr: {stderr}");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to add binary to Windows Defender exclusions. stdout: {stdout}, stderr: {stderr}");
             Err(anyhow!(
                 "Failed to add binary to Windows Defender exclusions: {path_str}. Error: {stderr}"
             ))
@@ -79,7 +78,7 @@ impl WindowsDefenderExclusions {
             .to_str()
             .ok_or_else(|| anyhow!("Failed to convert directory path to string: {:?}", dir_path))?;
 
-        info!(target: LOG_TARGET, "Adding directory to Windows Defender exclusions: {path_str}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Adding directory to Windows Defender exclusions: {path_str}");
 
         let output = Command::new("powershell")
             .args([
@@ -91,18 +90,18 @@ impl WindowsDefenderExclusions {
             .map_err(|e| anyhow!("Failed to execute PowerShell command: {e}"))?;
 
         if output.status.success() {
-            info!(target: LOG_TARGET, "Successfully added directory to Windows Defender exclusions: {path_str}");
+            info!(target: LOG_TARGET_APP_LOGIC, "Successfully added directory to Windows Defender exclusions: {path_str}");
             Ok(())
         } else {
             let stderr = String::from_utf8_lossy(&output.stderr);
             let stdout = String::from_utf8_lossy(&output.stdout);
 
             if stderr.contains("already exists") || stdout.contains("already exists") {
-                info!(target: LOG_TARGET, "Directory already in Windows Defender exclusions: {path_str}");
+                info!(target: LOG_TARGET_APP_LOGIC, "Directory already in Windows Defender exclusions: {path_str}");
                 return Ok(());
             }
 
-            warn!(target: LOG_TARGET, "Failed to add directory to Windows Defender exclusions. stdout: {stdout}, stderr: {stderr}");
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to add directory to Windows Defender exclusions. stdout: {stdout}, stderr: {stderr}");
             Err(anyhow!(
                 "Failed to add directory to Windows Defender exclusions: {path_str}. Error: {stderr}",
             ))
@@ -125,7 +124,7 @@ impl WindowsDefenderExclusions {
                 stdout.trim() == "True"
             }
             Err(e) => {
-                info!(target: LOG_TARGET, "Failed to check Windows Defender status: {e}");
+                info!(target: LOG_TARGET_APP_LOGIC, "Failed to check Windows Defender status: {e}");
                 false
             }
         }
@@ -138,25 +137,25 @@ impl WindowsDefenderExclusions {
             PlatformUtils::detect_current_os(),
             CurrentOperatingSystem::Windows
         ) {
-            info!(target: LOG_TARGET, "Skipping Windows Defender exclusions on non-Windows platform");
+            info!(target: LOG_TARGET_APP_LOGIC, "Skipping Windows Defender exclusions on non-Windows platform");
             return Ok(());
         }
 
         // Check if Windows Defender is available
         if !Self::is_windows_defender_available() {
-            info!(target: LOG_TARGET, "Windows Defender is not available or disabled");
+            info!(target: LOG_TARGET_APP_LOGIC, "Windows Defender is not available or disabled");
             return Ok(());
         }
 
         // Add the specific binary file
         if let Err(e) = Self::add_binary_to_exclusions(binary_path) {
-            warn!(target: LOG_TARGET, "Failed to add binary exclusion for {}: {e}", binary_path.display());
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to add binary exclusion for {}: {e}", binary_path.display());
         }
 
         // Add the parent directory
         if let Some(parent_dir) = binary_path.parent() {
             if let Err(e) = Self::add_directory_to_exclusions(&parent_dir.to_path_buf()) {
-                warn!(target: LOG_TARGET, "Failed to add directory exclusion for {}: {e}", parent_dir.display());
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to add directory exclusion for {}: {e}", parent_dir.display());
             }
         }
 

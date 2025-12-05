@@ -2,7 +2,7 @@
 
 **Enhanced Common Public Attribution License Version 1.0**
 
-*([User Agreement](/user_agreement))*
+_([User Agreement](/user_agreement))_
 
 **(based on the [Common Public Attribution License Version 1.0](https://opensource.org/license/cpal_1-0))**
 
@@ -194,27 +194,25 @@ The term “External Deployment” means the use, distribution, or communication
 
 (b) If Exhibit D does not include any Visual Differentiation requirements, then there are no requirements.
 
-
-
 **EXHIBIT A**
 
 **Enhanced Common Public Attribution License Version 1.0**
 
 **(based on the [Common Public Attribution License Version 1.0](https://opensource.org/license/cpal_1-0))**
 
-“The contents of this file are subject to the Tari Public Attribution License (the “License”); you may not use this file except in compliance with the License. You may obtain a copy of the License at _____________. The License is based on the Common Public Attribution License Version 1.0, but Section 16 has been added to provide for the preservation of certain functional components of the Original Code, and Section 17 has been added to provide for certain elements of the graphic user interface employed by the end user to access the Covered Code to be visually differentiated from those used in the Original Code.
+“The contents of this file are subject to the Tari Public Attribution License (the “License”); you may not use this file except in compliance with the License. You may obtain a copy of the License at **\*\***\_**\*\***. The License is based on the Common Public Attribution License Version 1.0, but Section 16 has been added to provide for the preservation of certain functional components of the Original Code, and Section 17 has been added to provide for certain elements of the graphic user interface employed by the end user to access the Covered Code to be visually differentiated from those used in the Original Code.
 
 Software distributed under the License is distributed on an “AS IS” basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License for the specific language governing rights and limitations under the License.
 
 The Original Code is Tari Universe.
 
-The Original Developer is not the Initial Developer and is __________. If left blank, the Original Developer is the Initial Developer.
+The Original Developer is not the Initial Developer and is \***\*\_\_\*\***. If left blank, the Original Developer is the Initial Developer.
 
 The Initial Developer of the Original Code is Tari Labs, LLC. All portions of the code written by Tari Labs, LLC are Copyright (c) 2024. All Rights Reserved.
 
-Contributor ______________________.
+Contributor \***\*\*\*\*\***\_\_\***\*\*\*\*\***.
 
-Alternatively, the contents of this file may be used under the terms of the _____ license (the [___] License), in which case the provisions of [______] License are applicable instead of those above.
+Alternatively, the contents of this file may be used under the terms of the **\_** license (the [___] License), in which case the provisions of [______] License are applicable instead of those above.
 
 If you wish to allow use of your version of this file only under the terms of the [____] License and not to allow others to use your version of this file under the CPAL, indicate your decision by deleting the provisions above and replace them with the notice and other provisions required by the [___] License. If you do not delete the provisions above, a recipient may use your version of this file under either the CPAL or the [___] License.”
 
@@ -228,13 +226,11 @@ Attribution Copyright Notice: Copyright © 2024 Tari Labs, LLC
 
 Attribution Phrase: [Your Name] powered by Tari Universe
 
-Attribution URL: _______________________
+Attribution URL: \***\*\*\*\*\***\_\_\_\***\*\*\*\*\***
 
 Graphic Image as provided in the Covered Code, if any.
 
 Display of Attribution Information is required in Larger Works which are defined in the CPAL as a work which combines Covered Code or portions thereof with code not governed by the terms of the CPAL.
-
-
 
 **EXHIBIT C**
 
@@ -242,15 +238,12 @@ Display of Attribution Information is required in Larger Works which are defined
 
 Preservation of Functional Components: The Covered Code must include and retain the Tari miner and wallet functionalities as provided in the Original Code without modification to their fundamental operational characteristics.
 
-
-
 **EXHIBIT D**
 
 **Visual Differentiation**
 
-Visual Differentiation:  To avoid any potential confusion or implied association with the Original Code, except in the usage of the graphic as required under Section 14,
+Visual Differentiation: To avoid any potential confusion or implied association with the Original Code, except in the usage of the graphic as required under Section 14,
 
 (a) the [color scheme, icons, fonts,] in the graphic user interface employed by the end user to access the Covered Code must be significantly different and distinct from that used in the Original Code, and
 
 (b) the Covered Code must not use the specific shade known as 'Tari purple' anywhere within its application interface.
-

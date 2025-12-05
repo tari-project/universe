@@ -19,10 +19,13 @@ The primary motivation for this containerization is to allow testing `Tari Unive
 ### Linux Only:
 
 1. Allow access to the X11 server (at least for the time of testing) with the command:
+
     ```sh
     xhost +local:root
     ```
+
     This can be later revoked with:
+
     ```sh
     xhost -local:root
     ```
@@ -30,6 +33,7 @@ The primary motivation for this containerization is to allow testing `Tari Unive
 2. Copy the AppImage to the directory containing `Dockerfile` and rename all occurrences of `Tari Universe (Alpha)_0.8.45_amd64.AppImage` to your just copied file.
 
 3. Build the Docker image with:
+
     ```sh
     docker build -t taritest .
     ```

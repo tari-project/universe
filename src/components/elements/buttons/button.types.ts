@@ -5,7 +5,7 @@ type ButtonColor = 'transparent' | 'primary' | 'secondary' | 'gradient' | 'error
 type ButtonBackgroundColor = 'transparent' | ThemeColourGroup;
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outlined' | 'gradient' | 'green' | 'purple' | 'yellow' | 'black';
-export type ButtonSize = 'xs' | 'smaller' | 'small' | 'medium' | 'large' | 'xlarge';
+export type ButtonSize = 'xs' | 'smaller' | 'small' | 'medium' | 'large' | 'xlarge' | 'xxl';
 
 export type IconPosition = 'end' | 'start' | 'hug' | 'hug-start';
 
@@ -37,6 +37,7 @@ export interface ExtendedButtonProps extends ButtonHTMLAttributes<HTMLButtonElem
     size?: ButtonSize;
     colorIntensity?: number;
     active?: boolean;
+    fluid?: boolean;
 }
 
 export interface ExtendedButtonStyleProps {
@@ -45,4 +46,5 @@ export interface ExtendedButtonStyleProps {
     $size?: ExtendedButtonProps['size'];
     $colorIntensity?: ExtendedButtonProps['colorIntensity'];
     $active?: boolean;
+    $fluid?: boolean;
 }

@@ -13,6 +13,7 @@ import {
     setDialogToShow,
     setIsShuttingDown,
     setShouldShowExchangeSpecificModal,
+    setShowBatteryAlert,
     setShowShutdownSelectionModal,
     setSidebarOpen,
 } from '@app/store/actions/uiStoreActions';
@@ -52,7 +53,6 @@ import {
 import { setBackgroundNodeState, setNodeStoreState, setTorEntryGuards } from '@app/store/useNodeStore';
 import {
     handleExchangeIdChanged,
-    handleConfigCoreLoaded,
     handleConfigMiningLoaded,
     handleConfigUILoaded,
     handleConfigWalletLoaded,
@@ -71,6 +71,7 @@ import {
     handleWalletTransactionsCleared,
     handleWalletTransactionUpdated,
 } from '@app/store/actions/walletStoreActions';
+import { handleConfigCoreLoaded } from '@app/store/actions/config/core.ts';
 import { handleFeedbackExitSurveyRequested } from '@app/store/stores/userFeedbackStore';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
@@ -260,7 +261,7 @@ const useTauriEventsListener = () => {
                         setShowEcoAlert(true);
                         break;
                     case 'FeedbackSurveyRequested':
-                        handleFeedbackExitSurveyRequested();
+                        await handleFeedbackExitSurveyRequested();
                         break;
                     case 'ShutdownModeSelectionRequested':
                         setShowShutdownSelectionModal(true);
@@ -278,6 +279,9 @@ const useTauriEventsListener = () => {
                     case 'WalletTransactionUpdated':
                         console.log('WalletTransactionUpdated event received', event.payload);
                         handleWalletTransactionUpdated(event.payload);
+                        break;
+                    case 'SetShowBatteryAlert':
+                        setShowBatteryAlert(event.payload);
                         break;
                     default:
                         console.warn('Unknown event', JSON.stringify(event));

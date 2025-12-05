@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { SliderInput } from '@app/components/elements/inputs/range/Slider.tsx';
-import { InputDescription, RangeLabel, WarningContainer } from './RangeInput.styles.ts';
+import { InputDescription, RangeLabel, TopContent, WarningContainer } from './RangeInput.styles.ts';
 import { PowerLeveltemWrapper } from '@app/components/elements/inputs/range/styles.ts';
 
 interface PowerLeveltemProps {
@@ -35,7 +35,12 @@ export const PowerLeveltem = ({
 
     return (
         <PowerLeveltemWrapper>
-            <RangeLabel>{label}</RangeLabel>
+            <TopContent>
+                <RangeLabel>{label}</RangeLabel>
+                <WarningContainer $visible={hasWarning}>
+                    <strong>{t('custom-power-levels.warning')}</strong>: {warning}
+                </WarningContainer>
+            </TopContent>
             <SliderInput
                 defaultValue={value}
                 maxValue={maxLevel}
@@ -47,9 +52,6 @@ export const PowerLeveltem = ({
                 isLoading={isLoading}
             />
             <InputDescription>{description}</InputDescription>
-            <WarningContainer $visible={hasWarning}>
-                <strong>{t('custom-power-levels.warning')}</strong>: {warning}
-            </WarningContainer>
         </PowerLeveltemWrapper>
     );
 };

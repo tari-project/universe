@@ -23,11 +23,10 @@
 use crate::{
     mining::pools::{adapters::PoolApiAdapter, PoolStatus},
     requests::clients::http_client::HttpClient,
+    LOG_TARGET_STATUSES,
 };
 use log::info;
 use serde::{Deserialize, Serialize};
-
-static LOG_TARGET: &str = "universe::mining::pools::adapters::lucky_pool";
 
 // LuckyPool API can sometimes return field values as either strings or numbers.
 // This enum helps to handle both cases during deserialization and retriveve the value as a f64.
@@ -168,7 +167,7 @@ impl PoolApiAdapter for LuckyPoolAdapter {
         let url = self
             .stats_url
             .replace("%TARI_ADDRESS%", &address.to_string());
-        info!(target: LOG_TARGET, "Requesting lucky pool status from: {url}");
+        info!(target: LOG_TARGET_STATUSES, "Requesting lucky pool status from: {url}");
         let pool_status_response = HttpClient::with_retries(3).send_get_request(&url).await?;
         let response_text = pool_status_response.text().await?;
         let pool_status = self.convert_api_data(response_text.as_str())?;

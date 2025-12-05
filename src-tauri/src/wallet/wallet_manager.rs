@@ -28,7 +28,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::wallet::wallet_adapter::WalletAdapter;
 use crate::wallet::wallet_types::WalletState;
-use crate::BaseNodeStatus;
+use crate::{BaseNodeStatus, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use futures_util::future::FusedFuture;
 use log::{error, info};
 use std::path::{Path, PathBuf};
@@ -42,8 +42,6 @@ use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 use tokio::fs;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
-
-static LOG_TARGET: &str = "tari::universe::wallet_manager";
 
 #[derive(Debug, Clone)]
 pub struct WalletStartupConfig {
@@ -127,7 +125,7 @@ impl WalletManager {
         process_watcher.adapter.http_client_url = Some(self.node_manager.get_http_api_url().await);
         process_watcher.poll_time = Duration::from_secs(5);
         process_watcher.adapter.use_tor(config.use_tor);
-        info!(target: LOG_TARGET, "Using Tor: {}", config.use_tor);
+        info!(target: LOG_TARGET_APP_LOGIC, "Using Tor: {}", config.use_tor);
         process_watcher
             .adapter
             .connect_with_local_node(config.connect_with_local_node);
@@ -146,7 +144,7 @@ impl WalletManager {
                 task_tracker,
             )
             .await?;
-        info!(target: LOG_TARGET, "Wallet process started successfully");
+        info!(target: LOG_TARGET_APP_LOGIC, "Wallet process started successfully");
 
         match process_watcher.wait_ready().await {
             Ok(_) => Ok::<(), anyhow::Error>(()),
@@ -190,10 +188,10 @@ impl WalletManager {
             .await
         {
             Ok(_) => {
-                info!(target: LOG_TARGET, "WalletManager::on_app_exit completed successfully");
+                info!(target: LOG_TARGET_APP_LOGIC, "WalletManager::on_app_exit completed successfully");
             }
             Err(e) => {
-                error!(target: LOG_TARGET, "WalletManager::on_app_exit failed: {}", e);
+                error!(target: LOG_TARGET_APP_LOGIC, "WalletManager::on_app_exit failed: {}", e);
             }
         }
     }
@@ -210,7 +208,7 @@ impl WalletManager {
             fs::remove_dir_all(path_to_network_wallet).await?;
         }
 
-        log::info!(target: LOG_TARGET, "Cleaning wallet data folder");
+        log::info!(target: LOG_TARGET_APP_LOGIC, "Cleaning wallet data folder");
         Ok(())
     }
 
