@@ -3,7 +3,7 @@ import { useAirdropStore } from '@app/store';
 import { openTrancheModal } from '@app/store/actions/airdropStoreActions';
 
 import { SidebarItem } from './components/SidebarItem';
-import { ActionImgWrapper, RewardTooltipContent, RewardTooltipItems } from './items.style';
+import { ActionImgWrapper, RewardTooltipContent, RewardTooltipItem, RewardTooltipItems } from './items.style';
 import { ParachuteSVG } from '@app/assets/icons/ParachuteSVG';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
@@ -13,81 +13,81 @@ import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
 import { useBalanceSummary } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
 import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
 import { formatNumber, FormatPreset, formatAmountWithKM } from '@app/utils';
+import { ClaimStatus } from '@app/types/airdrop-claim.ts';
 
-export default function Claim() {
+interface ClaimTooltipProps {
+    claimStatus?: ClaimStatus;
+    claimStatusLoading?: boolean;
+}
+
+const formatAmount = (amount: number | undefined | null): string => {
+    if (amount === undefined || amount === null || isNaN(amount)) return '0';
+    const rounded = Math.round(amount * 100) / 100;
+    return formatNumber(rounded * 1_000_000, FormatPreset.XTM_LONG_DEC);
+};
+
+function ClaimTooltip({ claimStatus, claimStatusLoading }: ClaimTooltipProps) {
     const { t } = useTranslation('airdrop');
-    const initialFetched = useRef(false);
-    const features = useAirdropStore((s) => s.features);
-    const claimEnabled = !!features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
-
-    const { data: claimStatus, isLoading: claimStatusLoading } = useClaimStatus();
     const balanceSummary = useBalanceSummary();
+    const claimTotal = claimStatus?.amount || 0;
 
-    const totalValues = useMemo(() => {
-        const totalOriginalAmount = claimStatus?.amount || 0;
-
-        if (!totalOriginalAmount) return { total: 0, claimed: 0, pending: 0 };
-
+    const values = useMemo(() => {
+        if (!claimTotal) return { total: 0, claimed: 0, pending: 0 };
+        const total = claimTotal;
         if (balanceSummary) {
             const claimed = balanceSummary.totalClaimed;
             const expired = balanceSummary.totalExpired;
-            const pending = totalOriginalAmount - claimed - expired;
-            return { total: totalOriginalAmount, claimed, pending };
+            const pending = total - claimed - expired;
+            return { total, claimed, pending };
         }
 
         // Fallback if no balance summary
-        return { total: totalOriginalAmount, claimed: 0, pending: totalOriginalAmount };
-    }, [balanceSummary, claimStatus?.amount]);
-    const { total: totalAirdropAmount, claimed: totalClaimedAmount, pending: totalPendingAmount } = totalValues;
-    const isIneligible =
-        !claimStatusLoading && (!totalAirdropAmount || totalAirdropAmount === 0 || claimStatus?.claimTarget !== 'xtm');
+        return { total, claimed: 0, pending: total };
+    }, [balanceSummary, claimTotal]);
 
-    const { refreshTranches } = useTrancheAutoRefresh({ enabled: !isIneligible });
-    const tooltipContent = useMemo(() => {
-        const formatAmount = (amount: number | undefined | null): string => {
-            if (amount === undefined || amount === null || isNaN(amount)) return '0';
-            const rounded = Math.round(amount * 100) / 100;
-            return formatNumber(rounded * 1_000_000, FormatPreset.XTM_LONG_DEC);
-        };
-        if (isIneligible) {
-            return (
-                <RewardTooltipContent>
-                    <Typography variant="h6">{t('tranche.status.ineligible')}</Typography>
-                </RewardTooltipContent>
-            );
-        }
-        return (
-            <RewardTooltipContent>
-                <Typography variant="h6">{t('loggedInTitle')}</Typography>
+    const isIneligible = !claimStatusLoading && (!claimTotal || claimTotal === 0 || claimStatus?.claimTarget !== 'xtm');
+    const hasClaims = values.total > 0 || values.claimed > 0;
 
-                {claimStatusLoading ? (
-                    <Typography variant="p" style={{ color: '#666' }}>
-                        {t('tranche.status.loading')}
-                    </Typography>
-                ) : totalAirdropAmount > 0 || totalClaimedAmount > 0 ? (
-                    <RewardTooltipItems>
-                        <Typography variant="p">
-                            {t('tranche.status.total-airdrop')}: {formatAmount(totalAirdropAmount)} XTM
-                        </Typography>
+    const ineligibleMarkup = isIneligible && <Typography variant="h6">{t('tranche.status.ineligible')}</Typography>;
+    const loadingMarkup = claimStatusLoading && (
+        <RewardTooltipItem style={{ color: '#666' }}>{t('tranche.status.loading')}</RewardTooltipItem>
+    );
 
-                        <Typography variant="p">
-                            {t('tranche.status.total-claimed')}: {formatAmount(totalClaimedAmount)} XTM
-                        </Typography>
+    const markup = hasClaims && !claimStatusLoading && (
+        <RewardTooltipItems>
+            <RewardTooltipItem>
+                {t('tranche.status.total-airdrop')}: {formatAmount(values.total)} XTM
+            </RewardTooltipItem>
 
-                        <Typography variant="p">
-                            {t('tranche.status.total-due')}: {formatAmount(totalPendingAmount)} XTM
-                        </Typography>
-                    </RewardTooltipItems>
-                ) : (
-                    <Typography variant="p" style={{ color: '#666' }}>
-                        {t('tranche.status.no-data')}
-                    </Typography>
-                )}
-            </RewardTooltipContent>
-        );
-    }, [claimStatusLoading, isIneligible, t, totalAirdropAmount, totalClaimedAmount, totalPendingAmount]);
+            <RewardTooltipItem>
+                {t('tranche.status.total-claimed')}: {formatAmount(values.claimed)} XTM
+            </RewardTooltipItem>
 
-    const canClaim = claimEnabled && !isIneligible && !!claimStatus?.hasClaim;
+            <RewardTooltipItem>
+                {t('tranche.status.total-due')}: {formatAmount(values.pending)} XTM
+            </RewardTooltipItem>
+        </RewardTooltipItems>
+    );
+
+    return (
+        <RewardTooltipContent>
+            {ineligibleMarkup}
+            {!isIneligible && <Typography variant="h6">{t('loggedInTitle')}</Typography>}
+            {loadingMarkup}
+            {markup}
+        </RewardTooltipContent>
+    );
+}
+
+export default function Claim() {
+    const features = useAirdropStore((s) => s.features);
+    const claimEnabled = !!features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
+    const initialFetched = useRef(false);
+
+    const { data: claimStatus, isLoading: claimStatusLoading } = useClaimStatus();
+    const { refreshTranches } = useTrancheAutoRefresh({ enabled: claimEnabled });
+
+    const canClaim = claimEnabled && !!claimStatus?.hasClaim;
     const claimAmount = canClaim && claimStatus?.amount ? `${formatAmountWithKM(claimStatus?.amount)} XTM` : undefined;
 
     useEffect(() => {
@@ -99,7 +99,7 @@ export default function Claim() {
 
     return (
         <SidebarItem
-            tooltipContent={tooltipContent}
+            tooltipContent={<ClaimTooltip claimStatus={claimStatus} claimStatusLoading={claimStatusLoading} />}
             onClick={canClaim ? openTrancheModal : undefined}
             text={claimAmount}
         >

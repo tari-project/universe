@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Wrapper = styled.div`
     flex-direction: column;
@@ -52,3 +53,5 @@ export const RewardTooltipItems = styled.div`
     align-items: flex-start;
     gap: 2px;
 `;
+
+export const RewardTooltipItem = styled(Typography).attrs({ variant: 'p' })``;

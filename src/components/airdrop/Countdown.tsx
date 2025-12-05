@@ -73,7 +73,7 @@ export default function Countdown({ isCurrent = false, futureTime, onEndReached 
                 <strong>
                     {countdown.days > 0 && ` ${countdown.days}D`}
                     {(countdown.days > 0 || countdown.hours > 0) && ` ${countdown.hours}H`}
-                    {` ${countdown.minutes}M `}
+                    {` ${countdown.minutes}M. `}
                 </strong>
             </CountdownText>
             <CountdownText>{isCurrent && t('tranche.status.closes-suffix')}</CountdownText>
