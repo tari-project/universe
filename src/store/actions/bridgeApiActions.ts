@@ -17,6 +17,11 @@ export const fetchBridgeTransactionsHistory = async (
     OpenAPI.BASE = baseUrl;
     return await WrapTokenService.getUserTransactions(tari_address_base58)
         .then((response) => {
+            useWalletStore.setState((c) => ({
+                ...c,
+                bridge_transactions: response.transactions,
+            }));
+            console.log('Bridge transactions history fetched successfully:', response.transactions);
             return response.transactions;
         })
         .catch((error) => {

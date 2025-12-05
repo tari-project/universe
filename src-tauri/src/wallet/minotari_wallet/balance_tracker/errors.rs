@@ -20,8 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod minotari_wallet;
-pub mod wallet_adapter;
-pub mod wallet_manager;
-pub mod wallet_status_monitor;
-pub mod wallet_types;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum BalanceCalculationError {
+    #[error("Balance overflow: current={current}, credit={credit}")]
+    Overflow { current: u64, credit: u64 },
+    #[error("Balance underflow: current={current}, debit={debit}")]
+    Underflow { current: u64, debit: u64 },
+}
