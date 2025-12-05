@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { offset, safePolygon, useFloating, useHover, useFocus, useInteractions } from '@floating-ui/react';
+import { offset, safePolygon, useFloating, useHover, useFocus, useInteractions, shift } from '@floating-ui/react';
 import { ActionHoveredWrapper, ActionText, ActionWrapper, ContentWrapper, TooltipBox } from './item.style.ts';
 import { AnimatePresence } from 'motion/react';
 
@@ -19,7 +19,7 @@ export function SidebarItem({ children, text, hoverContent, tooltipContent, onCl
         open: hovered,
         onOpenChange: setHovered,
         placement: 'right',
-        middleware: [offset(15)],
+        middleware: [offset(15), shift()],
     });
 
     const hover = useHover(context, {
