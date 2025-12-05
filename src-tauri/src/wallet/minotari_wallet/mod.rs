@@ -80,7 +80,7 @@ static DEFAULT_GRPC_URL: LazyLock<String> = LazyLock::new(|| {
 static DEFAULT_PASSWORD: &str = "test_password";
 
 // Blockchain scanning constants
-const SCAN_BATCH_SIZE: u64 = 1000;
+const SCAN_BATCH_SIZE: u64 = 50;
 const SCAN_POLL_INTERVAL_SECS: u64 = 30;
 
 pub struct MinotariWalletManager {
