@@ -17,13 +17,10 @@ import { formatNumber, FormatPreset, formatAmountWithKM } from '@app/utils';
 export default function Claim() {
     const { t } = useTranslation('airdrop');
     const initialFetched = useRef(false);
-    const { data: claimStatus, isLoading: claimStatusLoading } = useClaimStatus();
-
     const features = useAirdropStore((s) => s.features);
-    const killswitchEngaged = features?.includes(FEATURE_FLAGS.FF_AD_KS);
-    const claimEnabled = features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
-    const claimAvailable = features?.includes(FEATURE_FLAGS.FF_AD_AVAILABLE);
+    const claimEnabled = !!features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
 
+    const { data: claimStatus, isLoading: claimStatusLoading } = useClaimStatus();
     const balanceSummary = useBalanceSummary();
 
     const totalValues = useMemo(() => {
@@ -45,11 +42,8 @@ export default function Claim() {
     const isIneligible =
         !claimStatusLoading && (!totalAirdropAmount || totalAirdropAmount === 0 || claimStatus?.claimTarget !== 'xtm');
 
-    const { refreshTranches } = useTrancheAutoRefresh({ enabled: !killswitchEngaged && !isIneligible });
-
+    const { refreshTranches } = useTrancheAutoRefresh({ enabled: !isIneligible });
     const tooltipContent = useMemo(() => {
-        if (killswitchEngaged) return null;
-
         const formatAmount = (amount: number | undefined | null): string => {
             if (amount === undefined || amount === null || isNaN(amount)) return '0';
             const rounded = Math.round(amount * 100) / 100;
@@ -91,17 +85,9 @@ export default function Claim() {
                 )}
             </RewardTooltipContent>
         );
-    }, [
-        claimStatusLoading,
-        isIneligible,
-        killswitchEngaged,
-        t,
-        totalAirdropAmount,
-        totalClaimedAmount,
-        totalPendingAmount,
-    ]);
+    }, [claimStatusLoading, isIneligible, t, totalAirdropAmount, totalClaimedAmount, totalPendingAmount]);
 
-    const canClaim = !killswitchEngaged && claimEnabled && claimAvailable && !isIneligible;
+    const canClaim = claimEnabled && !isIneligible && !!claimStatus?.hasClaim;
     const claimAmount = canClaim && claimStatus?.amount ? `${formatAmountWithKM(claimStatus?.amount)} XTM` : undefined;
 
     useEffect(() => {

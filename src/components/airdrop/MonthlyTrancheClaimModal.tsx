@@ -82,17 +82,17 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                     </ModalHeader>
                     {!isFuture ? <ModalBody>{displayDescription}</ModalBody> : null}
                     <ClaimDetails displayAmount={displayAmount} isFutureTranche={isFuture || !currentTranche} />
+                    {!isFuture && !!currentTranche && (
+                        <ClaimButton onClick={handleClaim} disabled={!trancheCanClaim || isAnyLoading}>
+                            {!isAnyLoading ? t('tranche.claim-modal.claim-button') : t('tranche.claim-modal.claiming')}
+                        </ClaimButton>
+                    )}
                     {!isAnyLoading && (
                         <Countdown
                             isCurrent={isCurrentUnclaimed}
                             futureTime={countdownTime}
                             onEndReached={refreshTranches}
                         />
-                    )}
-                    {!isFuture && !!currentTranche && (
-                        <ClaimButton onClick={handleClaim} disabled={!trancheCanClaim || isAnyLoading}>
-                            {!isAnyLoading ? t('tranche.claim-modal.claim-button') : t('tranche.claim-modal.claiming')}
-                        </ClaimButton>
                     )}
                 </ModalWrapper>
             </DialogContent>

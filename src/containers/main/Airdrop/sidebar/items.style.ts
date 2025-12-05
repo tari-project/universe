@@ -26,24 +26,6 @@ export const GemImgLarge = styled.img`
     transform: scaleX(-1);
 `;
 
-export const CopyButton = styled.button`
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: ${({ theme }) => theme.palette.contrast};
-    color: ${({ theme }) => theme.palette.base};
-    svg {
-        height: 24px;
-    }
-
-    &:hover {
-        opacity: 0.9;
-    }
-`;
-
 export const TooltipAction = styled.div`
     color: ${({ theme }) => theme.palette.warning.main};
     display: flex;
@@ -69,15 +51,4 @@ export const RewardTooltipItems = styled.div`
     color: ${({ theme }) => theme.palette.text.accent};
     align-items: flex-start;
     gap: 2px;
-`;
-
-export const GemImg = styled.img`
-    width: 18px;
-`;
-
-export const TooltipWrapper = styled.div`
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 6px;
 `;

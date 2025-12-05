@@ -6,15 +6,13 @@ import { MonthlyTrancheClaimModal } from '@app/components/airdrop/MonthlyTranche
 export default function AirdropClaimModal() {
     const features = useAirdropStore((s) => s.features);
     const showModal = useAirdropStore((state) => state.showTrancheModal);
+    const claimEnabled = features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
 
     const onClose = () => {
         closeTrancheModal();
     };
 
-    const claimEnabled = features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
-    const killswitchEngaged = features?.includes(FEATURE_FLAGS.FF_AD_KS);
-
-    if (killswitchEngaged || !claimEnabled) {
+    if (!claimEnabled) {
         return null;
     }
 

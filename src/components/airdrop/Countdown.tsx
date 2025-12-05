@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CountdownContainer, CountdownSquare, CountdownText, CountdownWrapper, Grid } from './Countdown.styles.ts';
+import { CountdownText, CountdownWrapper } from './Countdown.styles.ts';
 
 interface CountdownTime {
     days: number;
     hours: number;
     minutes: number;
+    seconds: number;
 }
 interface CountdownProps {
     isCurrent?: boolean;
@@ -42,7 +43,7 @@ function useCountdown({ futureTime, callback }: CountdownProps & { callback?: ()
         const parts = getCountdownParts();
         if (parts) {
             const { days, hours, minutes } = parts || {};
-            setCountdown({ days, hours, minutes });
+            setCountdown({ days, hours, minutes, seconds: 0 });
             initialCountdownRef.current = true;
         }
     }, [getCountdownParts]);
@@ -66,18 +67,16 @@ export default function Countdown({ isCurrent = false, futureTime, onEndReached 
     return countdown ? (
         <CountdownWrapper>
             <CountdownText>
-                {isCurrent ? t('tranche.status.closes-prefix') : t('tranche.status.available-in')}:
+                {isCurrent ? t('tranche.status.closes-prefix') : t('tranche.status.available-in')}
             </CountdownText>
-            <CountdownContainer>
-                <Grid>
-                    {countdown.days > 0 && <CountdownSquare>{countdown.days}D</CountdownSquare>}
-                    {(countdown.days > 0 || countdown.hours > 0) && (
-                        <CountdownSquare>{countdown.hours}H</CountdownSquare>
-                    )}
-                    <CountdownSquare>{countdown.minutes}M</CountdownSquare>
-                </Grid>
-            </CountdownContainer>
-            {isCurrent && <CountdownText>{t('tranche.status.closes-suffix')}</CountdownText>}
+            <CountdownText>
+                <strong>
+                    {countdown.days > 0 && ` ${countdown.days}D`}
+                    {(countdown.days > 0 || countdown.hours > 0) && ` ${countdown.hours}H`}
+                    {` ${countdown.minutes}M `}
+                </strong>
+            </CountdownText>
+            <CountdownText>{isCurrent && t('tranche.status.closes-suffix')}</CountdownText>
         </CountdownWrapper>
     ) : null;
 }
