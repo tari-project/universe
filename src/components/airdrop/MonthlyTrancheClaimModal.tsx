@@ -4,7 +4,7 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import { useTrancheClaimSubmission } from '@app/hooks/airdrop/tranches/useTrancheClaimSubmission';
 import { useAirdropStore } from '@app/store';
 import { ClaimButton, ModalBody, ModalHeader, ModalTitle, ModalWrapper } from './MonthlyTrancheClaimModal.styles';
-import { useCurrentMonthTranche } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
+import { useAvailableTranches } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
 import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
 import ClaimDetails from '@app/components/airdrop/ClaimDetails.tsx';
 import Countdown from '@app/components/airdrop/Countdown.tsx';
@@ -20,7 +20,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
     const claim = useAirdropStore((state) => state.claim);
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
-    const { currentTranche } = useCurrentMonthTranche();
+    const { currentTranche, nextTranche, lastClaimedTranche } = useAvailableTranches();
 
     const {
         submitTrancheClaimWithOtp,
@@ -34,13 +34,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         notifyOnNewTranches: false, // Don't show notifications in modal
     });
 
-    const futureTranches = trancheStatus?.tranches
-        .filter((t) => !t.claimed && new Date(t.validTo) > new Date())
-        ?.sort((a, b) => new Date(a.validTo).getTime() - new Date(b.validTo).getTime());
-
-    const nextTranche = futureTranches?.find((t) => t.id !== currentTranche?.id && new Date(t.validFrom) > new Date());
-
-    const lastClaimedTranche = trancheStatus?.tranches.find((t) => t.claimed);
     const isFuture = !currentTranche && !!nextTranche;
     const isCurrentUnclaimed = Boolean(currentTranche && !currentTranche.claimed);
     const handleClaim = async () => {

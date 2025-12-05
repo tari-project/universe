@@ -3,7 +3,14 @@ import { useAirdropStore } from '@app/store';
 import { openTrancheModal } from '@app/store/actions/airdropStoreActions';
 
 import { SidebarItem } from './components/SidebarItem';
-import { ActionImgWrapper, RewardTooltipContent, RewardTooltipItem, RewardTooltipItems } from './items.style';
+import {
+    ActionImgWrapper,
+    NextRewardWrapper,
+    RewardTooltipContent,
+    RewardTooltipItem,
+    RewardTooltipItems,
+    TooltipHeader,
+} from './items.style';
 import { ParachuteSVG } from '@app/assets/icons/ParachuteSVG';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +38,7 @@ const formatAmount = (amount: number | undefined | null): string => {
 function ClaimTooltip({ claimStatus, claimStatusLoading, nextAvailable }: ClaimTooltipProps) {
     const { t } = useTranslation('airdrop');
     const balanceSummary = useBalanceSummary();
+
     const claimTotal = claimStatus?.amount || 0;
     const values = useMemo(() => {
         if (!claimTotal) return { total: 0, claimed: 0, pending: 0 };
@@ -54,32 +62,34 @@ function ClaimTooltip({ claimStatus, claimStatusLoading, nextAvailable }: ClaimT
         <RewardTooltipItem style={{ color: '#666' }}>{t('tranche.status.loading')}</RewardTooltipItem>
     );
 
+    const nextItemMarkup = nextAvailable ? (
+        <>
+            <NextRewardWrapper>
+                <RewardTooltipItem>{t('tranche.status.next-reward')}</RewardTooltipItem>
+                <Typography variant="h5">{formatAmount(balanceSummary?.nextAvailableAmount)}</Typography>
+            </NextRewardWrapper>
+            <Countdown futureTime={nextAvailable} compact />
+        </>
+    ) : null;
+
     const markup = hasClaims && !claimStatusLoading && (
         <RewardTooltipItems>
             <RewardTooltipItem>
                 {t('tranche.status.total-airdrop')} <strong>{formatAmount(values.total)}</strong>
             </RewardTooltipItem>
-
-            <RewardTooltipItem>
-                {t('tranche.status.total-claimed')}: {formatAmount(values.claimed)} XTM
-            </RewardTooltipItem>
-
-            <RewardTooltipItem>
-                {t('tranche.status.total-due')}: {formatAmount(values.pending)} XTM
-            </RewardTooltipItem>
-
-            {nextAvailable && (
+            {!nextAvailable && (
                 <RewardTooltipItem>
-                    <Countdown futureTime={nextAvailable} compact />
+                    {t('tranche.status.total-claimed')}: <strong> {formatAmount(values.claimed)} XTM</strong>
                 </RewardTooltipItem>
             )}
+            {nextItemMarkup}
         </RewardTooltipItems>
     );
 
     return (
         <RewardTooltipContent>
             {ineligibleMarkup}
-            {!isIneligible && <Typography variant="h6">{t('loggedInTitle')}</Typography>}
+            {!isIneligible && <TooltipHeader>{t('loggedInTitle')}</TooltipHeader>}
             {loadingMarkup}
             {markup}
         </RewardTooltipContent>
@@ -91,13 +101,12 @@ export default function Claim() {
     const claimEnabled = !!features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
     const initialFetched = useRef(false);
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
-
     const { data: claimStatus, isLoading: claimStatusLoading } = useClaimStatus();
     const { refreshTranches } = useTrancheAutoRefresh({ enabled: claimEnabled });
 
-    const canClaim = claimEnabled && !!claimStatus?.hasClaim;
+    const canClaim = claimEnabled && !!claimStatus?.hasClaim && !!trancheStatus?.availableCount;
     const claimAmount = canClaim && claimStatus?.amount ? `${formatAmountWithKM(claimStatus?.amount)} XTM` : undefined;
-    console.log(trancheStatus?.availableCount);
+
     useEffect(() => {
         if (initialFetched.current) return;
         if (canClaim) {

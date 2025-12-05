@@ -66,20 +66,23 @@ export default function Countdown({ isCurrent = false, compact = false, futureTi
     const { t } = useTranslation('airdrop');
     const countdown = useCountdown({ futureTime, callback: onEndReached });
     return countdown ? (
-        <CountdownWrapper>
-            <CountdownText>
+        <CountdownWrapper $compact={compact}>
+            <CountdownText $compact={compact}>
                 {isCurrent
                     ? t('tranche.status.closes-prefix')
                     : t('tranche.status.available-in', { context: compact && 'compact' })}
             </CountdownText>
-            <CountdownText>
+            <CountdownText $compact={compact}>
                 <strong>
                     {countdown.days > 0 && ` ${countdown.days}D`}
                     {(countdown.days > 0 || countdown.hours > 0) && ` ${countdown.hours}H`}
-                    {` ${countdown.minutes}M. `}
+                    {` ${countdown.minutes}M`}
                 </strong>
+                {!compact && `.`}
             </CountdownText>
-            <CountdownText>{isCurrent && !compact && t('tranche.status.closes-suffix')}</CountdownText>
+            <CountdownText $compact={compact}>
+                {isCurrent && !compact && t('tranche.status.closes-suffix')}
+            </CountdownText>
         </CountdownWrapper>
     ) : null;
 }
