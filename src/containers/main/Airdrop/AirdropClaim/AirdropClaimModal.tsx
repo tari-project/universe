@@ -17,5 +17,5 @@ export default function AirdropClaimModal() {
     }
 
     // Always use the new modal design - it handles both tranche and legacy claims
-    return <MonthlyTrancheClaimModal showModal={false} onClose={onClose} />;
+    return <MonthlyTrancheClaimModal showModal={showModal} onClose={onClose} />;
 }

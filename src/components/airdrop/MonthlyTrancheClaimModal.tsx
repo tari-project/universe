@@ -20,7 +20,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
     const claim = useAirdropStore((state) => state.claim);
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
-
     const { currentTranche } = useCurrentMonthTranche();
 
     const {
@@ -68,7 +67,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const displayAmount = currentTranche?.amount || nextTranche?.amount || lastClaimedTranche?.amount;
 
     const displayDescription = t('tranche.claim-modal.description', { emojis: `💜🐢` });
-    const countdownTime = isFuture ? nextTranche?.validFrom : isCurrentUnclaimed ? currentTranche?.validTo : undefined;
+    const countdownTime = isCurrentUnclaimed ? currentTranche?.validTo : undefined;
 
     if (!trancheStatus) {
         return null;

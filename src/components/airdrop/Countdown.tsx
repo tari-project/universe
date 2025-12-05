@@ -11,6 +11,7 @@ interface CountdownTime {
 interface CountdownProps {
     isCurrent?: boolean;
     futureTime?: string;
+    compact?: boolean;
     onEndReached?: () => void;
 }
 
@@ -61,13 +62,15 @@ function useCountdown({ futureTime, callback }: CountdownProps & { callback?: ()
     return countdown;
 }
 
-export default function Countdown({ isCurrent = false, futureTime, onEndReached }: CountdownProps) {
+export default function Countdown({ isCurrent = false, compact = false, futureTime, onEndReached }: CountdownProps) {
     const { t } = useTranslation('airdrop');
     const countdown = useCountdown({ futureTime, callback: onEndReached });
     return countdown ? (
         <CountdownWrapper>
             <CountdownText>
-                {isCurrent ? t('tranche.status.closes-prefix') : t('tranche.status.available-in')}
+                {isCurrent
+                    ? t('tranche.status.closes-prefix')
+                    : t('tranche.status.available-in', { context: compact && 'compact' })}
             </CountdownText>
             <CountdownText>
                 <strong>
@@ -76,7 +79,7 @@ export default function Countdown({ isCurrent = false, futureTime, onEndReached 
                     {` ${countdown.minutes}M. `}
                 </strong>
             </CountdownText>
-            <CountdownText>{isCurrent && t('tranche.status.closes-suffix')}</CountdownText>
+            <CountdownText>{isCurrent && !compact && t('tranche.status.closes-suffix')}</CountdownText>
         </CountdownWrapper>
     ) : null;
 }
