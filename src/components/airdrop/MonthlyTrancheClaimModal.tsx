@@ -3,13 +3,20 @@ import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { useTrancheClaimSubmission } from '@app/hooks/airdrop/tranches/useTrancheClaimSubmission';
 import { useAirdropStore } from '@app/store';
-import { ClaimButton, ModalBody, ModalHeader, ModalTitle, ModalWrapper } from './MonthlyTrancheClaimModal.styles';
+import {
+    ClaimButton,
+    ClaimWrapper,
+    CoinWrapper,
+    ModalBody,
+    ModalHeader,
+    ModalTitle,
+    ModalWrapper,
+} from './MonthlyTrancheClaimModal.styles';
 import { useAvailableTranches } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
 import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
 import ClaimDetails from '@app/components/airdrop/ClaimDetails.tsx';
 import Countdown from '@app/components/airdrop/Countdown.tsx';
-// import coins from '@app/assets/lotties/coins.json';
-// import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import coins from '/assets/animation/coin_drop/coins.html?url';
 
 interface MonthlyTrancheClaimModalProps {
     showModal: boolean;
@@ -42,13 +49,21 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         if (!currentTranche || !trancheCanClaim) return;
         setIsClaimingOptimistic(true);
         try {
-            await submitTrancheClaimWithOtp(currentTranche.id);
-            setIsClaimingOptimistic(false);
-            setIsClaimed(true);
+            const r = await submitTrancheClaimWithOtp(currentTranche.id);
+
+            if (r) {
+                setIsClaimingOptimistic(false);
+                setIsClaimed(true);
+            } else {
+                setIsClaimingOptimistic(false);
+                setIsClaimed(false);
+            }
         } catch (error) {
             console.error('Tranche claim failed:', error);
             setIsClaimingOptimistic(false);
+            setIsClaimed(false);
         }
+        await refreshTranches();
     };
 
     // Reset optimistic state when modal closes
@@ -76,11 +91,11 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     }
 
     const claimingMarkup = (
-        <>
+        <ClaimWrapper>
             {/*lottie goes here*/}
-            {/*<DotLottieReact src={coins} autoplay loop />*/}
+            <CoinWrapper src={coins} />
             <ClaimButton disabled>{t('tranche.claim-modal.claiming')}</ClaimButton>
-        </>
+        </ClaimWrapper>
     );
     const postClaimMarkup = isClaimed && (
         <>

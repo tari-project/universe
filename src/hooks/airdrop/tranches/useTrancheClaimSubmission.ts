@@ -31,7 +31,7 @@ export function useTrancheClaimSubmission() {
 
                 if (result?.success) {
                     // Invalidate tranche status to refresh the data
-                    queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
+                    await queryClient.invalidateQueries({ queryKey: [KEY_TRANCHE_STATUS] });
 
                     return {
                         success: true,

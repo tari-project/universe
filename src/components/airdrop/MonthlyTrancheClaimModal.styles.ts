@@ -73,3 +73,14 @@ export const ClaimButton = styled(Button).attrs({
         cursor: wait;
     `}
 `;
+
+export const ClaimWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    margin-top: -45px;
+`;
+
+export const CoinWrapper = styled.iframe`
+    border: none;
+    min-height: 320px;
+`;
