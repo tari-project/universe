@@ -77,10 +77,16 @@ export const ClaimButton = styled(Button).attrs({
 export const ClaimWrapper = styled.div`
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
     margin-top: -45px;
+    gap: 16px;
 `;
 
-export const CoinWrapper = styled.iframe`
-    border: none;
-    min-height: 320px;
+export const CoinWrapper = styled.div`
+    height: 320px;
+    width: 480px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `;
