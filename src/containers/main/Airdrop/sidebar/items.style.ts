@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Wrapper = styled.div`
     flex-direction: column;
@@ -26,24 +27,6 @@ export const GemImgLarge = styled.img`
     transform: scaleX(-1);
 `;
 
-export const CopyButton = styled.button`
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: ${({ theme }) => theme.palette.contrast};
-    color: ${({ theme }) => theme.palette.base};
-    svg {
-        height: 24px;
-    }
-
-    &:hover {
-        opacity: 0.9;
-    }
-`;
-
 export const TooltipAction = styled.div`
     color: ${({ theme }) => theme.palette.warning.main};
     display: flex;
@@ -56,9 +39,12 @@ export const TooltipAction = styled.div`
     }
 `;
 
+export const TooltipHeader = styled(Typography).attrs({ variant: 'h6' })`
+    line-height: 0.8;
+`;
 export const RewardTooltipContent = styled.div`
     display: flex;
-    gap: 6px;
+    gap: 8px;
     flex-direction: column;
     align-items: flex-start;
 `;
@@ -68,16 +54,32 @@ export const RewardTooltipItems = styled.div`
     flex-direction: column;
     color: ${({ theme }) => theme.palette.text.accent};
     align-items: flex-start;
-    gap: 2px;
+    gap: 8px;
 `;
 
-export const GemImg = styled.img`
-    width: 18px;
+export const RewardTooltipItem = styled(Typography).attrs({ variant: 'p' })`
+    color: ${({ theme }) => theme.palette.text.accent};
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.2;
+
+    strong {
+        font-weight: 700;
+    }
 `;
 
-export const TooltipWrapper = styled.div`
+export const NextRewardWrapper = styled.div`
     display: flex;
+    width: 100%;
+    padding: 8px 10px;
+    flex-direction: column;
     justify-content: center;
-    align-items: center;
-    gap: 6px;
+    gap: 2px;
+    align-self: stretch;
+    border-radius: 10px;
+    background-color: ${({ theme }) => theme.palette.background.accent};
+    h5 {
+        color: ${({ theme }) => theme.palette.text.primary};
+        line-height: 1;
+    }
 `;

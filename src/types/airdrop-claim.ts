@@ -83,6 +83,7 @@ export interface BalanceSummary {
     totalClaimed: number;
     totalPending: number;
     totalExpired: number;
+    nextAvailableAmount?: number;
 }
 
 export interface TrancheClaimResult extends ClaimResult {
