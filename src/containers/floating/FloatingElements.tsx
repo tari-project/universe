@@ -31,6 +31,7 @@ import UniversalEXSelectorModal from './UniversalEXSelectorModal/UniversalEXSele
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
 import AirdropClaimModal from '../main/Airdrop/AirdropClaim/AirdropClaimModal.tsx';
 import SchedulerModal from './scheduler/SchedulerModal.tsx';
+import NodeDataLocationModal from './node/NodeDataLocation.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -67,6 +68,7 @@ const FloatingElements = () => {
             <ExitFeedbackSurveyDialog />
             <LongTimeUserFeedbackDialog />
             <SchedulerModal />
+            <NodeDataLocationModal />
         </FloatingTree>
     );
 };
