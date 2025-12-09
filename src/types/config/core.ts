@@ -23,8 +23,20 @@ export interface ConfigCore {
     should_auto_launch: boolean;
     use_tor: boolean;
     shutdown_mode: ShutdownMode;
+    directories?: Directory[];
 }
 export enum ShutdownMode {
     Direct = 'Direct',
     Tasktray = 'Tasktray',
+}
+
+export enum CustomDirectory {
+    ChainData = 'ChainData',
+    Config = 'Config',
+    Logs = 'Logs',
+}
+
+export interface Directory {
+    directoryType: CustomDirectory;
+    path: string;
 }

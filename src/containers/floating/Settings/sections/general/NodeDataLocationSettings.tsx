@@ -13,9 +13,10 @@ import {
 } from '../../components/SettingsGroup.styles.ts';
 import { FaDeleteLeft } from 'react-icons/fa6';
 import { DirectoryTextWrapper, RemoveCTA, SelectedDirectoryWrapper } from './styles.ts';
-import { invoke } from '@tauri-apps/api/core';
+
 import { CustomDirectory } from '@app/types/configs.ts';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { setDirectory } from '@app/store/actions/config/core.ts';
 
 export default function NodeDataLocationSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -35,8 +36,8 @@ export default function NodeDataLocationSettings() {
 
     function handleSave() {
         startTransition(async () => {
-            await invoke('set_custom_directory', { directoryType: CustomDirectory.ChainData, path: selectedDir }).then(
-                () => setSelectedDir('')
+            await setDirectory({ directoryType: CustomDirectory.ChainData, path: selectedDir }).then(() =>
+                setSelectedDir('')
             );
         });
     }

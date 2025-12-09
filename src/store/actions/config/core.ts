@@ -9,7 +9,7 @@ import { setCurrentExchangeMinerId } from '@app/store/useExchangeStore.ts';
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 import { fetchExchangeContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
-import { ConfigCore, ShutdownMode } from '@app/types/config/core.ts';
+import { ConfigCore, Directory, ShutdownMode } from '@app/types/config/core.ts';
 
 import { NodeType } from '@app/types/mining/node.ts';
 import { SchedulerEvent, SchedulerEventState } from '@app/types/mining/schedule.ts';
@@ -186,4 +186,24 @@ export const updateShutdownMode = async (shutdownMode: ShutdownMode) => {
         setError('Could not change shutdown mode');
         store.setState((c) => ({ ...c, shutdown_mode: previousShutdownMode }));
     });
+};
+
+export const setDirectory = async (directory: Directory) => {
+    const currentDirs = store.getState().directories || [];
+    await invoke('set_custom_directory', directory)
+        .then(() => {
+            const prevEntry = currentDirs?.find((d) => d.directoryType === directory.directoryType);
+            if (!currentDirs?.length || !prevEntry) {
+                currentDirs.push(directory);
+            }
+            if (prevEntry) {
+                const idx = currentDirs.indexOf(prevEntry);
+                currentDirs[idx] = directory;
+            }
+
+            store.setState({ directories: currentDirs });
+        })
+        .catch((e) => {
+            console.error('Could not set directory directory', e);
+        });
 };

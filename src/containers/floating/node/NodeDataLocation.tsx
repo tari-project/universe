@@ -3,7 +3,7 @@ import { NodeDataLocation } from '@app/components/node/NodeDataLocation.tsx';
 
 export default function NodeDataLocationModal() {
     return (
-        <Dialog open={true}>
+        <Dialog open={false}>
             <DialogContent variant="transparent">
                 <NodeDataLocation />
             </DialogContent>

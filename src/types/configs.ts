@@ -1,4 +1,5 @@
 import { WalletUIMode } from './events-payloads';
+import { Directory } from '@app/types/config/core.ts';
 
 export interface ConfigWallet {
     created_at: string;
@@ -139,7 +140,4 @@ export enum CustomDirectory {
     Logs = 'Logs',
 }
 
-export interface UpdateCustomDirectory {
-    directoryType: CustomDirectory;
-    path: string;
-}
+export type UpdateCustomDirectory = Directory;
