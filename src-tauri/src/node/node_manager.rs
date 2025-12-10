@@ -20,15 +20,14 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use log::{error, info, warn};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
-
-use log::{error, info, warn};
-use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
@@ -38,7 +37,7 @@ use tokio::time::sleep;
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
 
-use crate::configs::config_core::ConfigCore;
+use crate::configs::config_core::{ConfigCore, CustomDirectory};
 use crate::configs::trait_config::ConfigImpl;
 use crate::node::node_adapter::{
     NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError, ReadinessStatus,
@@ -161,8 +160,14 @@ impl NodeManager {
     ) -> Result<(), NodeManagerError> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
-
+        let base_path_clone = base_path.clone();
         if self.is_local().await {
+            let dirs = ConfigCore::content().await.directories().clone();
+            let data_dir_path = dirs
+                .get(&CustomDirectory::ChainData)
+                .unwrap_or(&base_path_clone)
+                .clone();
+
             self.configure_adapter(
                 self.local_node_watcher.clone(),
                 self.is_local_current().await,
@@ -173,7 +178,7 @@ impl NodeManager {
             .await?;
             start_watcher(
                 &self.local_node_watcher,
-                base_path.clone(),
+                data_dir_path,
                 config_path.clone(),
                 log_path.clone(),
                 shutdown_signal.clone(),
