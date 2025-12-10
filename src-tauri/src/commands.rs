@@ -2201,5 +2201,10 @@ pub async fn set_custom_directory(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_custom_directory took too long: {:?}", timer.elapsed());
     }
+
+    SetupManager::get_instance()
+        .restart_phases(SetupPhase::all())
+        .await;
+
     Ok(())
 }

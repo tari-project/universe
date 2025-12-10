@@ -183,7 +183,7 @@ impl ConfigCore {
     ) -> Result<(), anyhow::Error> {
         let mut dirs = Self::content().await.directories;
 
-        dirs.entry(directory).or_insert(path.parse()?);
+        dirs.entry(directory).insert_entry(path.parse()?);
         Self::update_field(ConfigCoreContent::set_directories, dirs.clone()).await?;
 
         Ok(())

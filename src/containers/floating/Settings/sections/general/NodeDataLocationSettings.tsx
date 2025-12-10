@@ -73,7 +73,7 @@ export default function NodeDataLocationSettings() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('Node data settings')}</Typography>
                     </SettingsGroupTitle>
-                    <Typography variant="p">{t('Set a custom location to store the base node data')}</Typography>
+                    <Typography variant="p">{t('Set a custom location to store the base node data')} </Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <Button size="xs" onClick={handleSelect}>
