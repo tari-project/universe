@@ -93,7 +93,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const claimingMarkup = (
         <ClaimWrapper>
             <CoinWrapper>
-                <DotLottieReact src="public/assets/animation/coin_drop/coindrop.lottie" autoplay loop />
+                <DotLottieReact src="/assets/animation/coin_drop/coindrop.lottie" autoplay loop />
             </CoinWrapper>
             <ClaimButton disabled>{t('tranche.claim-modal.claiming')}</ClaimButton>
         </ClaimWrapper>
