@@ -23,7 +23,7 @@ export interface ConfigCore {
     should_auto_launch: boolean;
     use_tor: boolean;
     shutdown_mode: ShutdownMode;
-    directories?: Directory[];
+    directories?: CustomDirectoryItems;
 }
 export enum ShutdownMode {
     Direct = 'Direct',
@@ -40,3 +40,5 @@ export interface Directory {
     directoryType: CustomDirectory;
     path: string;
 }
+
+export type CustomDirectoryItems = Partial<Record<CustomDirectory, string>>;

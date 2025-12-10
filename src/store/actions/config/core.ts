@@ -188,20 +188,13 @@ export const updateShutdownMode = async (shutdownMode: ShutdownMode) => {
     });
 };
 
-export const setDirectory = async (directory: Directory) => {
-    const currentDirs = store.getState().directories || [];
-    await invoke('set_custom_directory', directory)
+export const setDirectory = async ({ directoryType, path }: Directory) => {
+    const currentDirs = store.getState().directories;
+    await invoke('set_custom_directory', { directoryType, path })
         .then(() => {
-            const prevEntry = currentDirs?.find((d) => d.directoryType === directory.directoryType);
-            if (!currentDirs?.length || !prevEntry) {
-                currentDirs.push(directory);
-            }
-            if (prevEntry) {
-                const idx = currentDirs.indexOf(prevEntry);
-                currentDirs[idx] = directory;
-            }
-
-            store.setState({ directories: currentDirs });
+            const newDir = { [directoryType]: path };
+            const directories = currentDirs ? { ...currentDirs, ...newDir } : newDir;
+            store.setState({ directories });
         })
         .catch((e) => {
             console.error('Could not set directory directory', e);
