@@ -77,7 +77,7 @@ export default function NodeDataLocationSettings() {
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <Button size="xs" onClick={handleSelect}>
-                        {t('Select directory')}
+                        {t('Change directory')}
                     </Button>
                 </SettingsGroupAction>
             </SettingsGroup>

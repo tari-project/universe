@@ -171,7 +171,8 @@ impl ConfigCore {
             config
                 .content
                 .directories
-                .insert(CustomDirectory::Config, app_data_dir.clone());
+                .entry(CustomDirectory::ChainData)
+                .or_insert_with(|| app_data_dir.clone());
             let _unused = Self::_save_config(config._get_content().clone());
         }
     }
