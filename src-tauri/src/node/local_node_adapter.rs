@@ -242,10 +242,13 @@ impl ProcessAdapter for LocalNodeAdapter {
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
-            working_dir_string,
+            working_dir_string.clone(),
             "--non-interactive-mode".to_string(),
             "--mining-enabled".to_string(),
             format!("--log-config={}", config_dir_string),
+            "-p".to_string(),
+            "base_node.data_dir=".to_string(),
+            working_dir_string.clone(),
             "-p".to_string(),
             "base_node.grpc_enabled=true".to_string(),
             "-p".to_string(),

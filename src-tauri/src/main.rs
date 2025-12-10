@@ -61,8 +61,6 @@ use utils::logging_utils::setup_logging;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
-use telemetry_manager::TelemetryManager;
-
 use crate::feedback::Feedback;
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::cpu::CpuMinerStatus;
@@ -75,6 +73,7 @@ use crate::systemtray_manager::SystemTrayManager;
 use crate::tor_manager::TorManager;
 use crate::wallet::wallet_manager::WalletManager;
 use crate::wallet::wallet_types::WalletState;
+use telemetry_manager::TelemetryManager;
 
 mod ab_test_selector;
 mod airdrop;
@@ -226,6 +225,7 @@ fn main() {
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let (local_node_watch_tx, local_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let (remote_node_watch_tx, remote_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+
     let node_manager = NodeManager::new(
         &mut stats_collector,
         LocalNodeAdapter::new(local_node_watch_tx.clone()),
