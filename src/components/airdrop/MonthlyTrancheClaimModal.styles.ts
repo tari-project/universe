@@ -10,8 +10,8 @@ export const ModalWrapper = styled(m.div)`
     backdrop-filter: blur(80px);
     display: flex;
     flex-direction: column;
-    padding: 40px;
-    width: clamp(600px, 58vw, 825px);
+    padding: 45px;
+    width: 625px;
     overflow: hidden;
     gap: 26px;
 `;
@@ -28,9 +28,9 @@ export const ModalTitle = styled(Typography)`
 `;
 
 export const ModalBody = styled(Typography).attrs({ variant: 'p' })`
-    font-size: 16px;
+    font-size: 18px;
     color: ${({ theme }) => theme.palette.text.primary};
-    opacity: 0.8;
+    opacity: 0.75;
     display: flex;
     line-height: 1.2;
     font-weight: 400;
@@ -72,4 +72,21 @@ export const ClaimButton = styled(Button).attrs({
         background: #333333;
         cursor: wait;
     `}
+`;
+
+export const ClaimWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: -45px;
+    gap: 16px;
+`;
+
+export const CoinWrapper = styled.div`
+    height: 320px;
+    width: 480px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `;

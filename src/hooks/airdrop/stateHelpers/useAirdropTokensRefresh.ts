@@ -114,16 +114,3 @@ export async function handleTrancheRefresh(): Promise<boolean> {
         return false;
     }
 }
-
-// Combined refresh function for both tokens and tranche data
-export async function handleFullAirdropRefresh(): Promise<{
-    tokensRefreshed: boolean;
-    tranchesRefreshed: boolean;
-}> {
-    const results = await Promise.allSettled([handleRefreshAirdropTokens(), handleTrancheRefresh()]);
-
-    return {
-        tokensRefreshed: results[0].status === 'fulfilled' && !!results[0].value,
-        tranchesRefreshed: results[1].status === 'fulfilled' && !!results[1].value,
-    };
-}
