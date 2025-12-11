@@ -2197,9 +2197,7 @@ pub async fn set_custom_directory(
 
     match ConfigCore::update_directories(directory_type, path.clone()).await {
         Ok(previous) => {
-            let _unused = fs::rename(path, previous).inspect_err(|e| {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to move data: {e:?}");
-            })?;
+            let _unused = fs::rename(path, previous).map_err(|e| InvokeError::from(e.to_string()));
         }
         Err(e) => error!(target: LOG_TARGET_APP_LOGIC, "Could not update directories: {e}"),
     }
