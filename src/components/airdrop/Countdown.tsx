@@ -78,7 +78,6 @@ export default function Countdown({ isCurrent = false, compact = false, futureTi
                     {(countdown.days > 0 || countdown.hours > 0) && ` ${countdown.hours}H`}
                     {` ${countdown.minutes}M`}
                 </strong>
-                {!compact && `.`}
             </CountdownText>
         </CountdownWrapper>
     ) : null;
