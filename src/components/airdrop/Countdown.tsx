@@ -80,9 +80,6 @@ export default function Countdown({ isCurrent = false, compact = false, futureTi
                 </strong>
                 {!compact && `.`}
             </CountdownText>
-            <CountdownText $compact={compact}>
-                {isCurrent && !compact && t('tranche.status.closes-suffix')}
-            </CountdownText>
         </CountdownWrapper>
     ) : null;
 }
