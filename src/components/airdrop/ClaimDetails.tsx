@@ -6,23 +6,14 @@ import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus.ts';
 
 interface ClaimDetailsProps {
     displayAmount?: number | null;
-    isFutureTranche?: boolean;
 }
-export default function ClaimDetails({ displayAmount, isFutureTranche = false }: ClaimDetailsProps) {
+export default function ClaimDetails({ displayAmount }: ClaimDetailsProps) {
     const { t } = useTranslation('airdrop');
     const { data: claimStatus } = useClaimStatus();
     const balanceSummary = useBalanceSummary();
-
     const remainingAmount = calculateRemainingBalance(balanceSummary, claimStatus?.amount);
-    const displayEyebrow = t('tranche.claim-modal.eyebrow', { context: isFutureTranche ? 'future' : '' });
 
-    const hasClaimed = balanceSummary && balanceSummary.totalClaimed > 0;
-
-    const claimedMarkup = hasClaimed ? (
-        <RemainingBalance>
-            {t('tranche.status.total-claimed')}: <span>{formatAmount(balanceSummary.totalClaimed)} XTM</span>
-        </RemainingBalance>
-    ) : null;
+    const displayEyebrow = t('tranche.claim-modal.eyebrow');
 
     const remainingMarkup = !!remainingAmount && (
         <RemainingBalance>
@@ -42,10 +33,7 @@ export default function ClaimDetails({ displayAmount, isFutureTranche = false }:
             <TrancheAmount>
                 {formatAmount(displayAmount)} <span>XTM</span>
             </TrancheAmount>
-            <ClaimItems>
-                {claimedMarkup}
-                {remainingMarkup}
-            </ClaimItems>
+            <ClaimItems>{remainingMarkup}</ClaimItems>
         </ClaimContainer>
     );
 }

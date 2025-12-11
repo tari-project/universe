@@ -29,7 +29,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
     const [isClaimed, setIsClaimed] = useState(false);
 
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
-    const { currentTranche, nextTranche, lastClaimedTranche } = useAvailableTranches();
+    const { currentTranche, nextTranche } = useAvailableTranches();
 
     const {
         submitTrancheClaimWithOtp,
@@ -75,7 +75,6 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
 
     const displayTitle = t('tranche.claim-modal.title', { context: isFuture || !currentTranche ? 'future' : '' });
     const isClaiming = trancheLoading || isClaimingOptimistic;
-    const displayAmount = currentTranche?.amount || nextTranche?.amount || lastClaimedTranche?.amount;
 
     const displayDescription = t('tranche.claim-modal.description', { emojis: `💜🐢` });
     const countdownTime = isCurrentUnclaimed ? currentTranche?.validTo : undefined;
@@ -114,7 +113,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                     <ModalTitle variant="h2">{displayTitle}</ModalTitle>
                 </ModalHeader>
                 {!isFuture ? <ModalBody>{displayDescription}</ModalBody> : null}
-                <ClaimDetails displayAmount={displayAmount} isFutureTranche={isFuture || !currentTranche} />
+                {currentTranche?.amount ? <ClaimDetails displayAmount={currentTranche?.amount} /> : null}
                 {!isFuture && !!currentTranche && (
                     <ClaimButton onClick={handleClaim} disabled={!trancheCanClaim || isClaiming}>
                         {t('tranche.claim-modal.claim-button')}
