@@ -18,7 +18,6 @@ export function useSetCustomDirs({ type }: UseSetCustomDirs) {
     function handleSelect() {
         startTransition(async () => {
             const dir = await open({ multiple: false, directory: true });
-            console.log('dir: ', dir);
             if (dir) setSelectedDir(dir);
         });
     }

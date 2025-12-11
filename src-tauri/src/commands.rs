@@ -68,6 +68,7 @@ use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use std::fs;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
@@ -2194,9 +2195,14 @@ pub async fn set_custom_directory(
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
-    ConfigCore::update_directories(directory_type, path)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    match ConfigCore::update_directories(directory_type, path.clone()).await {
+        Ok(previous) => {
+            let _unused = fs::rename(path, previous).inspect_err(|e| {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to move data: {e:?}");
+            })?;
+        }
+        Err(e) => error!(target: LOG_TARGET_APP_LOGIC, "Could not update directories: {e}"),
+    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_custom_directory took too long: {:?}", timer.elapsed());

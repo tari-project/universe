@@ -180,13 +180,13 @@ impl ConfigCore {
     pub async fn update_directories(
         directory: CustomDirectory,
         path: String,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<PathBuf, anyhow::Error> {
         let mut dirs = Self::content().await.directories;
 
-        dirs.entry(directory).insert_entry(path.parse()?);
+        let previous_path = dirs.insert(directory, path.parse()?).unwrap_or_default();
         Self::update_field(ConfigCoreContent::set_directories, dirs.clone()).await?;
 
-        Ok(())
+        Ok(previous_path)
     }
 }
 
