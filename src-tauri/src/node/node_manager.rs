@@ -104,7 +104,7 @@ pub struct NodeManager {
     remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     local_node_db_cleared: Arc<AtomicBool>,
     orphan_chain_detected: Arc<AtomicBool>,
-    base_path: Arc<RwLock<PathBuf>>,
+    base_path: Arc<RwLock<Option<PathBuf>>>,
 }
 
 impl NodeManager {
@@ -146,7 +146,7 @@ impl NodeManager {
             remote_node_watch_rx,
             local_node_db_cleared: Arc::new(AtomicBool::new(false)),
             orphan_chain_detected: Arc::new(AtomicBool::new(false)),
-            base_path: Arc::new(RwLock::new(PathBuf::new())),
+            base_path: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -159,6 +159,7 @@ impl NodeManager {
         tor_control_port: Option<u16>,
         remote_grpc_address: Option<String>,
     ) -> Result<(), NodeManagerError> {
+        self.set_base_path().await;
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
         let base_path = self.get_base_path().await;
@@ -229,7 +230,6 @@ impl NodeManager {
     where
         T: NodeAdapter + ProcessAdapter + Send + Sync + Clone + 'static,
     {
-        self.set_base_path().await;
         let mut node_watcher = node_watcher.write().await;
         if let Some(node_watcher) = node_watcher.as_mut() {
             node_watcher.adapter.use_tor(use_tor);
@@ -255,13 +255,10 @@ impl NodeManager {
     }
     pub async fn set_base_path(&self) {
         let dirs = ConfigCore::content().await.directories().clone();
-        let data_dir_path = dirs
-            .get(&CustomDirectory::ChainData)
-            .unwrap_or(&PathBuf::new())
-            .clone();
+        let data_dir_path = dirs.get(&CustomDirectory::ChainData);
 
         let mut base_dir = self.base_path.write().await;
-        *base_dir = data_dir_path;
+        *base_dir = data_dir_path.as_ref().map(PathBuf::from);
     }
 
     async fn switch_to_local_when_synced(
@@ -413,7 +410,12 @@ impl NodeManager {
         node_type.clone()
     }
     pub async fn get_base_path(&self) -> PathBuf {
-        let base_path = self.base_path.read().await;
+        let base_path = self
+            .base_path
+            .read()
+            .await
+            .clone()
+            .unwrap_or_else(PathBuf::new);
         base_path.clone()
     }
 

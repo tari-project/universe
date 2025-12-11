@@ -279,17 +279,7 @@ impl ProcessAdapter for LocalNodeAdapter {
             args.push("-p".to_string());
             args.push("base_node.storage.pruning_horizon=100".to_string());
         }
-        // Uncomment to test winning blocks
-        // if cfg!(debug_assertions) {
-        // args.push("--network".to_string());
-        // args.push("localnet".to_string());
-        // }
         if self.use_tor {
-            // args.push("-p".to_string());
-            // args.push(
-            //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
-            //         .to_string(),
-            // );
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tor".to_string());
             if !cfg!(target_os = "macos") {
