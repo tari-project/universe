@@ -64,6 +64,7 @@ use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
 use crate::{airdrop, UniverseAppState, LOG_TARGET_APP_LOGIC};
 
 use base64::prelude::*;
+
 use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -2194,21 +2195,28 @@ pub async fn set_custom_directory(
     path: String,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
-
+    let setup_manager_instance = SetupManager::get_instance();
+    let phases = vec![
+        SetupPhase::Node,
+        SetupPhase::CpuMining,
+        SetupPhase::GpuMining,
+    ];
+    setup_manager_instance.shutdown_phases(phases.clone()).await;
     match ConfigCore::update_directories(directory_type, path.clone()).await {
         Ok(previous) => {
-            let _unused = fs::rename(path, previous).map_err(|e| InvokeError::from(e.to_string()));
+            if fs::rename(path, previous.clone())
+                .map_err(|e| InvokeError::from(e.to_string()))
+                .is_ok()
+            {
+                fs::remove_dir_all(previous).map_err(|e| InvokeError::from(e.to_string()))?;
+            }
         }
         Err(e) => error!(target: LOG_TARGET_APP_LOGIC, "Could not update directories: {e}"),
     }
-
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_custom_directory took too long: {:?}", timer.elapsed());
     }
-
-    SetupManager::get_instance()
-        .restart_phases(SetupPhase::all())
-        .await;
+    setup_manager_instance.resume_phases(phases).await;
 
     Ok(())
 }
