@@ -1,4 +1,5 @@
 import { WalletUIMode } from './events-payloads';
+import { Directory } from '@app/types/config/core.ts';
 
 export interface ConfigWallet {
     created_at: string;
@@ -132,3 +133,11 @@ export interface ConfigBackendInMemory {
     exchange_id: string;
     bridge_backend_api_url: string;
 }
+
+export enum CustomDirectory {
+    ChainData = 'ChainData',
+    Config = 'Config',
+    Logs = 'Logs',
+}
+
+export type UpdateCustomDirectory = Directory;

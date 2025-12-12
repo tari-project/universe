@@ -20,15 +20,14 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use log::{error, info, warn};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
-
-use log::{error, info, warn};
-use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
@@ -38,7 +37,7 @@ use tokio::time::sleep;
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
 
-use crate::configs::config_core::ConfigCore;
+use crate::configs::config_core::{ConfigCore, CustomDirectory};
 use crate::configs::trait_config::ConfigImpl;
 use crate::node::node_adapter::{
     NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError, ReadinessStatus,
@@ -161,7 +160,6 @@ impl NodeManager {
     ) -> Result<(), NodeManagerError> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
-
         if self.is_local().await {
             self.configure_adapter(
                 self.local_node_watcher.clone(),
@@ -235,6 +233,15 @@ impl NodeManager {
             node_watcher.adapter.set_tor_control_port(tor_control_port);
             let ab_group = *ConfigCore::content().await.ab_group();
             node_watcher.adapter.set_ab_group(ab_group);
+            if let Some(data_dir_path) = ConfigCore::content()
+                .await
+                .directories()
+                .get(&CustomDirectory::ChainData)
+            {
+                node_watcher
+                    .adapter
+                    .set_data_dir(Some(data_dir_path.clone()));
+            }
 
             if let Some(remote_grpc_address) = remote_grpc_address {
                 node_watcher.adapter.set_grpc_address(remote_grpc_address)?;

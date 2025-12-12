@@ -81,6 +81,7 @@ pub(crate) struct LocalNodeAdapter {
     required_initial_peers: u32,
     pub(crate) ab_test_group: ABTestSelector,
     pub(crate) http_api_port: u16,
+    data_dir: Option<PathBuf>,
 }
 
 impl LocalNodeAdapter {
@@ -99,6 +100,7 @@ impl LocalNodeAdapter {
             tor_control_port: None,
             ab_test_group: ABTestSelector::GroupA,
             http_api_port,
+            data_dir: None,
         }
     }
 
@@ -163,6 +165,9 @@ impl NodeAdapter for LocalNodeAdapter {
     fn set_ab_group(&mut self, ab_test_group: ABTestSelector) {
         self.ab_test_group = ab_test_group;
     }
+    fn set_data_dir(&mut self, data_dir: Option<PathBuf>) {
+        self.data_dir = data_dir;
+    }
 }
 
 impl ProcessAdapter for LocalNodeAdapter {
@@ -172,7 +177,7 @@ impl ProcessAdapter for LocalNodeAdapter {
     #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
-        data_dir: PathBuf,
+        base_path: PathBuf,
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
@@ -181,7 +186,7 @@ impl ProcessAdapter for LocalNodeAdapter {
         let inner_shutdown = Shutdown::new();
 
         info!(target: LOG_TARGET_APP_LOGIC, "Starting minotari node");
-        let working_dir: PathBuf = data_dir.join("node");
+        let working_dir: PathBuf = base_path.join("node");
         let network_dir = working_dir.join(Network::get_current().to_string().to_lowercase());
         fs::create_dir_all(&network_dir)?;
         let migration_file = network_dir.join("migrations.json");
@@ -242,7 +247,7 @@ impl ProcessAdapter for LocalNodeAdapter {
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
-            working_dir_string,
+            working_dir_string.clone(),
             "--non-interactive-mode".to_string(),
             "--mining-enabled".to_string(),
             format!("--log-config={}", config_dir_string),
@@ -272,21 +277,16 @@ impl ProcessAdapter for LocalNodeAdapter {
                 self.http_api_port
             ),
         ];
+        if let Some(data_dir) = &self.data_dir {
+            let data_dir_string = convert_to_string(data_dir.clone())?;
+            args.push("-p".to_string());
+            args.push(format!("base_node.data_dir={}", data_dir_string.clone()));
+        }
         if self.use_pruned_mode {
             args.push("-p".to_string());
             args.push("base_node.storage.pruning_horizon=100".to_string());
         }
-        // Uncomment to test winning blocks
-        // if cfg!(debug_assertions) {
-        // args.push("--network".to_string());
-        // args.push("localnet".to_string());
-        // }
         if self.use_tor {
-            // args.push("-p".to_string());
-            // args.push(
-            //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
-            //         .to_string(),
-            // );
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tor".to_string());
             if !cfg!(target_os = "macos") {
@@ -374,7 +374,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                     file_path: binary_version_path,
                     envs: None,
                     args,
-                    data_dir: data_dir.clone(),
+                    data_dir: base_path.clone(),
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
@@ -387,7 +387,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                 ),
                 self.status_broadcast.clone(),
                 Arc::new(AtomicU64::new(0)),
-                Some(data_dir),
+                Some(base_path),
             ),
         ))
     }
