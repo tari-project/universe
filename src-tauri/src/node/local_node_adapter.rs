@@ -278,8 +278,9 @@ impl ProcessAdapter for LocalNodeAdapter {
             ),
         ];
         if let Some(data_dir) = &self.data_dir {
+            let data_dir_string = convert_to_string(data_dir.clone())?;
             args.push("-p".to_string());
-            args.push(format!("base_node.data_dir=\"{:?}\"", data_dir.clone()));
+            args.push(format!("base_node.data_dir={}", data_dir_string.clone()));
         }
         if self.use_pruned_mode {
             args.push("-p".to_string());
