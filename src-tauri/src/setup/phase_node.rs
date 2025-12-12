@@ -214,6 +214,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 let tor_control_port = state.tor_manager.get_control_port().await?;
                 match
                     state.node_manager.ensure_started(
+                        data_dir.clone(),
                         config_dir.clone(),
                         log_dir.clone(),
                         use_tor,
@@ -229,7 +230,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         if let NodeManagerError::ExitCode(code) = e {
                             if STOP_ON_ERROR_CODES.contains(&code) {
                                 warn!(target: LOG_TARGET_APP_LOGIC, "Database for node is corrupt or needs a restart, deleting and trying again.");
-                                state.node_manager.clean_data_folder().await?;
+                                state.node_manager.clean_data_folder(&data_dir).await?;
                                 state.wallet_manager.clean_data_folder(&data_dir).await?;
                             }
                             continue;

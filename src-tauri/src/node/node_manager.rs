@@ -24,7 +24,7 @@ use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
@@ -104,7 +104,7 @@ pub struct NodeManager {
     remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     local_node_db_cleared: Arc<AtomicBool>,
     orphan_chain_detected: Arc<AtomicBool>,
-    base_path: Arc<RwLock<Option<PathBuf>>>,
+    data_dir: Arc<RwLock<Option<PathBuf>>>,
 }
 
 impl NodeManager {
@@ -146,23 +146,23 @@ impl NodeManager {
             remote_node_watch_rx,
             local_node_db_cleared: Arc::new(AtomicBool::new(false)),
             orphan_chain_detected: Arc::new(AtomicBool::new(false)),
-            base_path: Arc::new(RwLock::new(None)),
+            data_dir: Arc::new(RwLock::new(None)),
         }
     }
 
     #[allow(clippy::too_many_arguments)]
     pub async fn ensure_started(
         &self,
+        base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
         use_tor: bool,
         tor_control_port: Option<u16>,
         remote_grpc_address: Option<String>,
     ) -> Result<(), NodeManagerError> {
-        self.set_base_path().await;
+        self.set_data_dir().await;
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
-        let base_path = self.get_base_path().await;
         if self.is_local().await {
             self.configure_adapter(
                 self.local_node_watcher.clone(),
@@ -245,6 +245,9 @@ impl NodeManager {
                 let mut current_adapter = self.current_adapter.write().await;
                 *current_adapter = Box::new(node_watcher.adapter.clone());
             }
+
+            let data_dir = self.get_data_dir().await;
+            node_watcher.adapter.set_data_dir(Some(data_dir));
         }
         Ok(())
     }
@@ -253,12 +256,12 @@ impl NodeManager {
         let mut node_type = self.node_type.write().await;
         *node_type = new_node_type;
     }
-    pub async fn set_base_path(&self) {
+    pub async fn set_data_dir(&self) {
         let dirs = ConfigCore::content().await.directories().clone();
-        let data_dir_path = dirs.get(&CustomDirectory::ChainData);
-
-        let mut base_dir = self.base_path.write().await;
-        *base_dir = data_dir_path.as_ref().map(PathBuf::from);
+        if let Some(data_dir_path) = dirs.get(&CustomDirectory::ChainData) {
+            let mut base_dir = self.data_dir.write().await;
+            *base_dir = Some(data_dir_path.clone());
+        }
     }
 
     async fn switch_to_local_when_synced(
@@ -392,8 +395,7 @@ impl NodeManager {
         Ok(())
     }
 
-    pub async fn clean_data_folder(&self) -> Result<(), anyhow::Error> {
-        let base_path = self.get_base_path().await;
+    pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
         fs::remove_dir_all(
             base_path
                 .join("node")
@@ -409,14 +411,14 @@ impl NodeManager {
         let node_type = self.node_type.read().await;
         node_type.clone()
     }
-    pub async fn get_base_path(&self) -> PathBuf {
-        let base_path = self
-            .base_path
+    pub async fn get_data_dir(&self) -> PathBuf {
+        let data_dir = self
+            .data_dir
             .read()
             .await
             .clone()
             .unwrap_or_else(PathBuf::new);
-        base_path.clone()
+        data_dir.clone()
     }
 
     pub async fn get_current_service(&self) -> Result<NodeAdapterService, anyhow::Error> {
