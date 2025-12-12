@@ -104,7 +104,6 @@ pub struct NodeManager {
     remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     local_node_db_cleared: Arc<AtomicBool>,
     orphan_chain_detected: Arc<AtomicBool>,
-    data_dir: Arc<RwLock<Option<PathBuf>>>,
 }
 
 impl NodeManager {
@@ -146,7 +145,6 @@ impl NodeManager {
             remote_node_watch_rx,
             local_node_db_cleared: Arc::new(AtomicBool::new(false)),
             orphan_chain_detected: Arc::new(AtomicBool::new(false)),
-            data_dir: Arc::new(RwLock::new(None)),
         }
     }
 
@@ -160,7 +158,6 @@ impl NodeManager {
         tor_control_port: Option<u16>,
         remote_grpc_address: Option<String>,
     ) -> Result<(), NodeManagerError> {
-        self.set_data_dir().await;
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
         if self.is_local().await {
@@ -236,6 +233,15 @@ impl NodeManager {
             node_watcher.adapter.set_tor_control_port(tor_control_port);
             let ab_group = *ConfigCore::content().await.ab_group();
             node_watcher.adapter.set_ab_group(ab_group);
+            if let Some(data_dir_path) = ConfigCore::content()
+                .await
+                .directories()
+                .get(&CustomDirectory::ChainData)
+            {
+                node_watcher
+                    .adapter
+                    .set_data_dir(Some(data_dir_path.clone()));
+            }
 
             if let Some(remote_grpc_address) = remote_grpc_address {
                 node_watcher.adapter.set_grpc_address(remote_grpc_address)?;
@@ -245,9 +251,6 @@ impl NodeManager {
                 let mut current_adapter = self.current_adapter.write().await;
                 *current_adapter = Box::new(node_watcher.adapter.clone());
             }
-
-            let data_dir = self.get_data_dir().await;
-            node_watcher.adapter.set_data_dir(Some(data_dir));
         }
         Ok(())
     }
@@ -255,13 +258,6 @@ impl NodeManager {
     pub async fn set_node_type(&self, new_node_type: NodeType) {
         let mut node_type = self.node_type.write().await;
         *node_type = new_node_type;
-    }
-    pub async fn set_data_dir(&self) {
-        let dirs = ConfigCore::content().await.directories().clone();
-        if let Some(data_dir_path) = dirs.get(&CustomDirectory::ChainData) {
-            let mut base_dir = self.data_dir.write().await;
-            *base_dir = Some(data_dir_path.clone());
-        }
     }
 
     async fn switch_to_local_when_synced(
@@ -410,15 +406,6 @@ impl NodeManager {
     pub async fn get_node_type(&self) -> NodeType {
         let node_type = self.node_type.read().await;
         node_type.clone()
-    }
-    pub async fn get_data_dir(&self) -> PathBuf {
-        let data_dir = self
-            .data_dir
-            .read()
-            .await
-            .clone()
-            .unwrap_or_else(PathBuf::new);
-        data_dir.clone()
     }
 
     pub async fn get_current_service(&self) -> Result<NodeAdapterService, anyhow::Error> {
