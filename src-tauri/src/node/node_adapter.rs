@@ -230,7 +230,6 @@ impl NodeAdapterService {
                     .unwrap_or_default();
                 duration.as_secs() < 60
             })
-            .cloned()
             .map(|peer| peer.addresses[0].address.to_hex())
             .collect::<Vec<String>>();
 

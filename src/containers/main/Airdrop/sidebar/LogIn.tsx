@@ -14,7 +14,7 @@ export default function LogIn() {
     const { t } = useTranslation('airdrop');
     const { handleAuth, authUrlCopied } = useAirdropAuth();
     const ff = useAirdropStore((s) => s.features);
-    const claimEnabled = !ff?.includes(FF.FF_AD_KS) && ff?.includes(FF.FF_AD_CLAIM_ENABLED);
+    const claimEnabled = ff?.includes(FF.FF_AD_CLAIM_ENABLED);
 
     const tooltipContent = authUrlCopied ? (
         <>
@@ -35,7 +35,7 @@ export default function LogIn() {
         </SidebarItem>
     );
     const claimMarkup = (
-        <SidebarItem isWrapped>
+        <SidebarItem isWrapped text={t('login')}>
             <ActionImgWrapper style={{ marginBottom: '-4px' }}>
                 {claimEnabled ? <ParachuteSVG /> : <GemImgLarge src={gem} alt="gem ico" />}
             </ActionImgWrapper>

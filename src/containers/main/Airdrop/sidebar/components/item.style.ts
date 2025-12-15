@@ -31,12 +31,12 @@ export const ActionWrapper = styled.div`
     }
 `;
 
-export const ActionText = styled(Typography)`
+export const ActionText = styled(Typography)<{ $isWrapped?: boolean }>`
     color: ${({ theme }) => theme.palette.text.primary};
     font-size: 10px;
-    line-height: 0.95;
+    line-height: 1;
     font-weight: 600;
-    text-transform: uppercase;
+    text-transform: ${({ $isWrapped }) => ($isWrapped ? `capitalize` : 'uppercase')};
     text-align: center;
     padding: 0 0 6px;
 `;
@@ -50,13 +50,14 @@ export const TooltipBox = styled(m.div)`
     background: ${({ theme }) => theme.palette.background.tooltip};
     box-shadow: 0 3px 25px 0 rgba(0, 0, 0, 0.25);
     border-radius: 10px;
-    padding: 16px;
+    padding: 20px;
     display: flex;
     justify-content: center;
     flex-direction: column;
     z-index: 20;
     width: max-content;
-    max-width: 260px;
+
+    max-width: 220px;
 
     h6 {
         line-height: 1.2;
