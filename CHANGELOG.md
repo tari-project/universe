@@ -1,3 +1,20 @@
+🚀 TARI UNIVERSE v1.6.8: The Bountiful Harvest Part 2
+
+_December 16, 2025_
+
+Hey Tari fam,
+
+Quick bug fix release to smooth out a couple of rough edges from the last update.
+
+✨ WHAT'S FIXED
+
+- 🎁 **Airdrop claiming, streamlined** – We've refined the airdrop flow to make claiming your rewards clearer and more intuitive.
+- 🕰️ **Wallet scanning back up to speed** – Fixed a bug that was slowing down wallet scanning. Your balance and transactions should now refresh much faster.
+
+Thank you for your patience and all the helpful bug reports! 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.6.7: The Bountiful Harvest
 
 _December 2, 2025_
