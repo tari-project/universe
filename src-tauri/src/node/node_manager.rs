@@ -290,11 +290,13 @@ impl NodeManager {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         loop {
             let current_service = self.get_current_service().await?;
+            let remote = self.is_remote().await;
             match current_service
                 .wait_synced(
                     progress_params_tx,
                     progress_percentage_tx,
                     shutdown_signal.clone(),
+                    remote,
                 )
                 .await
             {
@@ -409,8 +411,17 @@ impl NodeManager {
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
+        if self.is_local().await{
         let current_service = self.get_current_service().await?;
         current_service.get_identity().await
+        }
+        else{
+            let (public_key, address) = self.get_connection_details().await?;
+            Ok(NodeIdentity{
+                public_key,
+                public_addresses: vec![address]
+            })
+        }
     }
 
     pub async fn get_connection_details(
@@ -510,8 +521,12 @@ impl NodeManager {
     }
 
     pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
+        if self.is_local().await{
         let current_service = self.get_current_service().await?;
         current_service.list_connected_peers().await
+        } else {
+            Ok(Vec::new())
+        }
     }
 
     // Self Checks
@@ -764,7 +779,7 @@ async fn monitor_local_node_sync_and_switch(
                     local_node_watcher.as_ref().and_then(|watcher| watcher.adapter.get_service())
                 } {
                     match local_node_service
-                        .wait_synced(&progress_params_tx, &progress_percentage_tx, shutdown_signal.clone())
+                        .wait_synced(&progress_params_tx, &progress_percentage_tx, shutdown_signal.clone(), false)
                         .await
                     {
                         Ok(synced_height) => {

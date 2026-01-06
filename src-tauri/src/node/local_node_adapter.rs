@@ -114,6 +114,7 @@ impl LocalNodeAdapter {
         if let Some(grpc_address) = self.get_grpc_address() {
             Some(NodeAdapterService::new(
                 format!("http://{}:{}", grpc_address.0, grpc_address.1),
+                self.get_http_api_url(),
                 self.required_initial_peers,
             ))
         } else {
@@ -383,6 +384,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                 NodeType::Local,
                 NodeAdapterService::new(
                     format!("http://{}:{}", grpc_address.0, grpc_address.1),
+                    self.get_http_api_url(),
                     self.required_initial_peers,
                 ),
                 self.status_broadcast.clone(),

@@ -27,23 +27,23 @@ use crate::process_adapter::{HandleUnhealthyResult, HealthStatus, StatusMonitor}
 use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use minotari_node_grpc_client::grpc::{
-    BlockHeader, Empty, GetBlocksRequest, GetNetworkStateRequest,
-};
+use minotari_node_grpc_client::grpc::{ Empty, GetNetworkStateRequest, SyncProgressResponse, SyncState};
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use tari_utilities::epoch_time::EpochTime;
 use tokio::fs;
-
+use url::Url;
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::{error, info, warn};
 use minotari_node_grpc_client::BaseNodeGrpcClient;
+use minotari_node_wallet_client::BaseNodeWalletClient;
 use serde::Serialize;
 use std::collections::HashMap;
-use std::fmt::Write as _;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use tari_common::configuration::Network;
+use tari_common_types::chain_metadata::ChainMetadata;
+use tari_common_types::types::FixedHash;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tari_transaction_components::tari_amount::MicroMinotari;
@@ -69,13 +69,15 @@ pub trait NodeAdapter {
 #[derive(Debug, Clone)]
 pub(crate) struct NodeAdapterService {
     connection_address: String,
+    http_address: String,
     required_sync_peers: u32,
 }
 
 impl NodeAdapterService {
-    pub fn new(connection_address: String, required_sync_peers: u32) -> Self {
+    pub fn new(connection_address: String, http_address: String, required_sync_peers: u32) -> Self {
         Self {
             connection_address,
+            http_address,
             required_sync_peers,
         }
     }
@@ -117,27 +119,15 @@ impl NodeAdapterService {
         &self,
         heights: Vec<u64>,
     ) -> Result<Vec<(u64, String)>, Error> {
-        let mut client = BaseNodeGrpcClient::connect(self.connection_address.clone()).await?;
-
-        let mut res = client
-            .get_blocks(GetBlocksRequest { heights })
-            .await?
-            .into_inner();
+        let address: Url = self.http_address.parse()
+            .map_err(|e| anyhow::anyhow!("base node URL is invalid:{e}"))?;
+        let client = minotari_node_wallet_client::http::Client::new(address.clone(), address);
 
         let mut blocks: Vec<(u64, String)> = Vec::new();
-        while let Some(block) = res.message().await? {
-            let BlockHeader { height, hash, .. } = block
-                .block
-                .clone()
-                .expect("Failed to get block data")
-                .header
-                .expect("Failed to get block header data");
-            let hash: String = hash.iter().fold(String::new(), |mut acc, x| {
-                write!(acc, "{x:02x}").expect("Unable to write");
-                acc
-            });
-
-            blocks.push((height, hash));
+        for height in heights{
+            if let Some(header) = client.get_header_by_height(height).await? {
+                blocks.push((height, header.hash.to_hex()));
+            };
         }
         Ok(blocks)
     }
@@ -159,41 +149,71 @@ impl NodeAdapterService {
         progress_params_tx: &watch::Sender<HashMap<String, String>>,
         progress_percentage_tx: &watch::Sender<f64>,
         shutdown_signal: ShutdownSignal,
+        remote: bool,
     ) -> Result<u64, NodeStatusMonitorError> {
-        let mut client = BaseNodeGrpcClient::connect(self.connection_address.clone())
+        let mut grpc_client = BaseNodeGrpcClient::connect(self.connection_address.clone())
             .await
             .map_err(|_e| NodeStatusMonitorError::NodeNotStarted)?;
+
+        let http_address: Url = self.http_address.parse()
+            .map_err(|e| anyhow::anyhow!("base node URL is invalid:{e}"))?;
+        let http_client = minotari_node_wallet_client::http::Client::new(http_address.clone(), http_address);
 
         loop {
             if shutdown_signal.is_triggered() {
                 return Ok(0);
             }
 
-            let tip = client
-                .get_tip_info(Empty {})
-                .await
-                .map_err(|e| NodeStatusMonitorError::UnknownError(e.into()))?;
-            let sync_progress = client
-                .get_sync_progress(Empty {})
-                .await
-                .map_err(|e| NodeStatusMonitorError::UnknownError(e.into()))?;
+            let (initial_sync_achieved, metadata) = if remote {
+                let tip = http_client.get_tip_info().await?;
+                let tari_transaction_components::rpc::models::TipInfoResponse{is_synced, metadata} = tip;
+                (is_synced, metadata)
+            } else{
+                // if we are running local, we want to connect to the grpc, as it runs the pre-service if the base node is migrating
+                let tip = grpc_client
+                    .get_tip_info(Empty {})
+                    .await
+                    .map_err(|e| NodeStatusMonitorError::UnknownError(e.into()))?.into_inner();
+                let minotari_node_grpc_client::grpc::TipInfoResponse{metadata, initial_sync_achieved, base_node_state: _, failed_checkpoints: _} = tip;
+                let core_meta = metadata.map(|meta| ChainMetadata::new(
+                    meta.best_block_height,
+                    FixedHash::try_from(meta.best_block_hash).unwrap_or_default(),
+                    0, 0, 0.into(), meta.timestamp,
+                ).ok()).flatten();
+                (initial_sync_achieved, core_meta)
+            };
 
-            let tip_res = tip.into_inner();
-            let sync_progress = sync_progress.into_inner();
+
+            let sync_progress = if metadata.is_some() && remote && initial_sync_achieved{
+                // if the remote node has intial sync status, we can just asume the rest will be correct, so dont ask
+                SyncProgressResponse{
+                    tip_height: metadata.as_ref().map(|meta|meta.best_block_height()).unwrap_or_default(),
+                    local_height: metadata.as_ref().map(|meta|meta.best_block_height()).unwrap_or_default(),
+                    state: SyncState::Done as i32,
+                    short_desc: "".to_string(),
+                    initial_connected_peers: 1,
+                }
+            } else {
+                let sync = grpc_client
+                    .get_sync_progress(Empty {})
+                    .await
+                    .map_err(|e| NodeStatusMonitorError::UnknownError(e.into()))?;
+                sync.into_inner()
+            };
             let sync_info =
                 SyncProgressInfo::from_sync_progress(&sync_progress, self.required_sync_peers);
 
             progress_percentage_tx.send(sync_info.percentage).ok();
             progress_params_tx.send(sync_info.progress_params).ok();
 
-            if tip_res.initial_sync_achieved
-                && tip_res.metadata.clone().is_some_and(|metadata| {
-                    metadata.best_block_height > 0 && sync_info.percentage >= 1.0
+            if initial_sync_achieved
+                && metadata.clone().is_some_and(|metadata| {
+                    metadata.best_block_height() > 0 && sync_info.percentage >= 1.0
                 })
             {
                 info!(target: LOG_TARGET_APP_LOGIC, "Initial sync achieved");
-                let tip_height = match tip_res.metadata {
-                    Some(metadata) => metadata.best_block_height,
+                let tip_height = match metadata {
+                    Some(metadata) => metadata.best_block_height(),
                     None => 0,
                 };
                 return Ok(tip_height);
