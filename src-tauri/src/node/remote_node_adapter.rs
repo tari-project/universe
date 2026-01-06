@@ -41,6 +41,7 @@ use std::{
     path::PathBuf,
     sync::{atomic::AtomicU64, Arc},
 };
+use tari_transaction_components::consensus::ConsensusManager;
 
 #[derive(Clone)]
 pub(crate) struct RemoteNodeAdapter {
@@ -48,15 +49,20 @@ pub(crate) struct RemoteNodeAdapter {
     pub(crate) use_tor: bool,
     ab_group: ABTestSelector,
     status_broadcast: watch::Sender<BaseNodeStatus>,
+    consensus_manager: ConsensusManager,
 }
 
 impl RemoteNodeAdapter {
-    pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
+    pub fn new(
+        status_broadcast: watch::Sender<BaseNodeStatus>,
+        consensus_manager: ConsensusManager,
+    ) -> Self {
         Self {
             grpc_address: None,
             status_broadcast,
             use_tor: false,
             ab_group: ABTestSelector::GroupA,
+            consensus_manager,
         }
     }
 
@@ -64,14 +70,19 @@ impl RemoteNodeAdapter {
         self.grpc_address.clone()
     }
 
-    pub fn get_service(&self) -> Option<NodeAdapterService> {
+    pub fn get_service(&self, consensus_manager: ConsensusManager) -> Option<NodeAdapterService> {
         if let Some(grpc_address) = self.get_grpc_address() {
             let address = if grpc_address.0.starts_with("http") {
                 format!("{}:{}", grpc_address.0, grpc_address.1)
             } else {
                 format!("http://{}:{}", grpc_address.0, grpc_address.1)
             };
-            Some(NodeAdapterService::new(address, self.get_http_api_url(), 1))
+            Some(NodeAdapterService::new(
+                address,
+                self.get_http_api_url(),
+                1,
+                consensus_manager,
+            ))
         } else {
             None
         }
@@ -109,7 +120,7 @@ impl NodeAdapter for RemoteNodeAdapter {
     }
 
     fn get_service(&self) -> Option<NodeAdapterService> {
-        self.get_service()
+        self.get_service(self.consensus_manager.clone())
     }
 
     fn get_http_api_url(&self) -> String {
@@ -138,9 +149,7 @@ impl NodeAdapter for RemoteNodeAdapter {
     }
 
     async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error> {
-        Ok(
-            (RistrettoPublicKey::default(), self.get_http_api_url())
-        )
+        Ok((RistrettoPublicKey::default(), self.get_http_api_url()))
     }
 }
 
@@ -171,7 +180,12 @@ impl ProcessAdapter for RemoteNodeAdapter {
             },
             NodeStatusMonitor::new(
                 NodeType::Remote,
-                NodeAdapterService::new(address,self.get_http_api_url(), 1),
+                NodeAdapterService::new(
+                    address,
+                    self.get_http_api_url(),
+                    1,
+                    self.consensus_manager.clone(),
+                ),
                 self.status_broadcast.clone(),
                 Arc::new(AtomicU64::new(0)),
                 None, // Used only by Local Node

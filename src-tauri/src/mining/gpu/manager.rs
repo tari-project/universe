@@ -58,7 +58,6 @@ use crate::{
     process_watcher::{ProcessWatcher, ProcessWatcherStats},
     systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
-    utils::math_utils::estimate_earning,
     UniverseAppState, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
 
@@ -619,7 +618,6 @@ impl GpuManager {
     pub async fn initialize_status_updates(&mut self) {
         let mut gpu_internal_status_reciever = self.gpu_internal_status_channel.subscribe();
         let gpu_external_status_channel = self.gpu_external_status_channel.clone();
-        let node_status_channel = self.node_status_channel.clone();
         let connection_type = self.connection_type.clone();
         let mut last_known_status = self.gpu_internal_status_channel.borrow().clone();
 
@@ -650,7 +648,7 @@ impl GpuManager {
                         if updated_status.is_ok() {
                             let status = gpu_internal_status_reciever.borrow().clone();
                             let paresd_status = match connection_type {
-                                GpuConnectionType::Node { .. } => Self::handle_node_connection_type_status_change(status.clone(), node_status_channel.clone()).await,
+                                GpuConnectionType::Node { .. } => status.clone(),
                                 GpuConnectionType::Pool { .. } => Self::handle_pool_connection_type_status_change(status.clone()).await,
                             };
                             let _res = gpu_external_status_channel.send(paresd_status.clone());
@@ -666,27 +664,6 @@ impl GpuManager {
                 }
             }
         });
-    }
-
-    async fn handle_node_connection_type_status_change(
-        gpu_status: GpuMinerStatus,
-        node_status_reciever: Option<Receiver<BaseNodeStatus>>,
-    ) -> GpuMinerStatus {
-        if let Some(node_status_reciever) = node_status_reciever {
-            let node_status = node_status_reciever.borrow();
-            let estimated_earnings = estimate_earning(
-                node_status.sha_network_hashrate,
-                gpu_status.hash_rate,
-                node_status.block_reward,
-            );
-
-            GpuMinerStatus {
-                estimated_earnings,
-                ..gpu_status
-            }
-        } else {
-            gpu_status
-        }
     }
 
     async fn handle_pool_connection_type_status_change(

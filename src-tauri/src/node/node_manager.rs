@@ -334,7 +334,7 @@ impl NodeManager {
                                     _ = tokio::time::sleep(Duration::from_millis(2000)) => {
                                         // Try to get node status
                                         if let Ok(ref current_service) = current_service {
-                                            if let Ok(status) = current_service.get_network_state().await {
+                                            if let Ok(status) = current_service.get_network_state(false).await {
                                                 match status.readiness_status {
                                                     ReadinessStatus::Migration(progress) => {
                                                         info!(target: LOG_TARGET_APP_LOGIC, "Database migration in progress: {:.1}% ({}/{})",
@@ -411,15 +411,14 @@ impl NodeManager {
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
-        if self.is_local().await{
-        let current_service = self.get_current_service().await?;
-        current_service.get_identity().await
-        }
-        else{
+        if self.is_local().await {
+            let current_service = self.get_current_service().await?;
+            current_service.get_identity().await
+        } else {
             let (public_key, address) = self.get_connection_details().await?;
-            Ok(NodeIdentity{
+            Ok(NodeIdentity {
                 public_key,
-                public_addresses: vec![address]
+                public_addresses: vec![address],
             })
         }
     }
@@ -521,9 +520,9 @@ impl NodeManager {
     }
 
     pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
-        if self.is_local().await{
-        let current_service = self.get_current_service().await?;
-        current_service.list_connected_peers().await
+        if self.is_local().await {
+            let current_service = self.get_current_service().await?;
+            current_service.list_connected_peers().await
         } else {
             Ok(Vec::new())
         }
