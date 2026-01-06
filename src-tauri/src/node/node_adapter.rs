@@ -182,9 +182,15 @@ impl NodeAdapterService {
         shutdown_signal: ShutdownSignal,
         remote: bool,
     ) -> Result<u64, NodeStatusMonitorError> {
-        let mut grpc_client = BaseNodeGrpcClient::connect(self.connection_address.clone())
-            .await
-            .map_err(|_e| NodeStatusMonitorError::NodeNotStarted)?;
+        let mut grpc_client = if remote {
+            None
+        } else {
+            Some(
+                BaseNodeGrpcClient::connect(self.connection_address.clone())
+                    .await
+                    .map_err(|_e| NodeStatusMonitorError::NodeNotStarted)?,
+            )
+        };
 
         let http_address: Url = self
             .http_address
@@ -206,8 +212,10 @@ impl NodeAdapterService {
                 } = tip;
                 (is_synced, metadata)
             } else {
+                let client = grpc_client.as_mut().expect("Should have a client here");
+
                 // if we are running local, we want to connect to the grpc, as it runs the pre-service if the base node is migrating
-                let tip = grpc_client
+                let tip = client
                     .get_tip_info(Empty {})
                     .await
                     .map_err(|e| NodeStatusMonitorError::UnknownError(e.into()))?
@@ -248,7 +256,8 @@ impl NodeAdapterService {
                     initial_connected_peers: 1,
                 }
             } else {
-                let sync = grpc_client
+                let client = grpc_client.as_mut().expect("Should have a client here");
+                let sync = client
                     .get_sync_progress(Empty {})
                     .await
                     .map_err(|e| NodeStatusMonitorError::UnknownError(e.into()))?;
