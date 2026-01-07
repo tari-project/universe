@@ -148,8 +148,10 @@ impl NodeAdapter for RemoteNodeAdapter {
         log::info!(target: LOG_TARGET_APP_LOGIC, "RemoteNodeAdapter doesn't use tor_control_port");
     }
 
-    async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error> {
-        Ok((RistrettoPublicKey::default(), self.get_http_api_url()))
+    async fn get_connection_details(
+        &self,
+    ) -> Result<(Option<RistrettoPublicKey>, String), anyhow::Error> {
+        Ok((None, self.get_http_api_url()))
     }
 }
 

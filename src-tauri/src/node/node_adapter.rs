@@ -62,7 +62,9 @@ pub trait NodeAdapter {
     fn get_grpc_address(&self) -> Option<(String, u16)>;
     fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error>;
     fn get_service(&self) -> Option<NodeAdapterService>;
-    async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error>;
+    async fn get_connection_details(
+        &self,
+    ) -> Result<(Option<RistrettoPublicKey>, String), anyhow::Error>;
     fn get_http_api_url(&self) -> String;
     fn use_tor(&mut self, use_tor: bool);
     fn set_tor_control_port(&mut self, tor_control_port: Option<u16>);
@@ -169,8 +171,10 @@ impl NodeAdapterService {
         let res = id.into_inner();
 
         Ok(NodeIdentity {
-            public_key: RistrettoPublicKey::from_canonical_bytes(&res.public_key)
-                .map_err(|e| anyhow!(e.to_string()))?,
+            public_key: Some(
+                RistrettoPublicKey::from_canonical_bytes(&res.public_key)
+                    .map_err(|e| anyhow!(e.to_string()))?,
+            ),
             public_addresses: res.public_addresses,
         })
     }
@@ -504,7 +508,7 @@ impl StatusMonitor for NodeStatusMonitor {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct NodeIdentity {
-    pub public_key: RistrettoPublicKey,
+    pub public_key: Option<RistrettoPublicKey>,
     pub public_addresses: Vec<String>,
 }
 

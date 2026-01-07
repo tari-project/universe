@@ -415,9 +415,9 @@ impl NodeManager {
             let current_service = self.get_current_service().await?;
             current_service.get_identity().await
         } else {
-            let (public_key, address) = self.get_connection_details().await?;
+            let (_, address) = self.get_connection_details().await?;
             Ok(NodeIdentity {
-                public_key,
+                public_key: None,
                 public_addresses: vec![address],
             })
         }
@@ -425,7 +425,7 @@ impl NodeManager {
 
     pub async fn get_connection_details(
         &self,
-    ) -> Result<(RistrettoPublicKey, String), anyhow::Error> {
+    ) -> Result<(Option<RistrettoPublicKey>, String), anyhow::Error> {
         let current_adapter = self.current_adapter.read().await;
         current_adapter.get_connection_details().await
     }

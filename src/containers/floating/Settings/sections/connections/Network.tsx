@@ -45,18 +45,6 @@ export default function Network() {
                     <SettingsGroupContent>
                         <Stack direction="column" alignItems="flex-start">
                             <Stack direction="row">
-                                <Typography>{t('sha-network-hash-rate')}</Typography>
-                                <Typography>
-                                    <b>{baseNodeStatus ? `${fmtSHA.value}${fmtSHA.unit}` : 'N/A'}</b>
-                                </Typography>
-                            </Stack>
-                            <Stack direction="row">
-                                <Typography>{t('randomx-network-hash-rate')}</Typography>
-                                <Typography>
-                                    <b>{baseNodeStatus ? `${fmtTariRX.value}${fmtTariRX.unit}` : 'N/A'}</b>
-                                </Typography>
-                            </Stack>
-                            <Stack direction="row">
                                 <Typography>{t('block-reward')}</Typography>
                                 <Typography>
                                     <b>{baseNodeStatus ? `${formattedBlockReward.value}k XTM` : 'N/A'}</b>

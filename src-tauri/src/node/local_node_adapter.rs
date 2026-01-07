@@ -144,7 +144,9 @@ impl NodeAdapter for LocalNodeAdapter {
         self.get_service()
     }
 
-    async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error> {
+    async fn get_connection_details(
+        &self,
+    ) -> Result<(Option<RistrettoPublicKey>, String), anyhow::Error> {
         let node_service = self.get_service();
         if let Some(node_service) = node_service {
             let node_identity = node_service.get_identity().await?;
