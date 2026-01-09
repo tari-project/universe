@@ -109,8 +109,7 @@ export const Tapplet = ({ source }: TappletProps) => {
     const iFrameMarkup = useMemo(
         () => (
             <iframe
-                src="http://localhost:3000"
-                // src={source}
+                src={source}
                 width="100%"
                 height="100%"
                 ref={tappletRef}
@@ -118,7 +117,7 @@ export const Tapplet = ({ source }: TappletProps) => {
                 style={{ border: 'none', pointerEvents: 'all' }}
             />
         ),
-        [sendWindowSize]
+        [sendWindowSize, source]
     );
 
     return <TappletContainer>{iFrameMarkup}</TappletContainer>;
