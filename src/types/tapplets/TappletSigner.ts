@@ -39,8 +39,8 @@ export class TappletSigner {
         // Check if method exists on the class prototype
         if (method in TappletSigner.prototype) {
             // Call the method with the correct 'this' context and args
-            const res = (this[method] as (...args: any) => Promise<any>)(...args);
-            return res;
+
+            return (this[method] as (...args: any) => Promise<any>)(...args);
         } else {
             console.warn(`Method "${method}" does not exist on TappletSigner.`);
             return undefined;
@@ -70,8 +70,7 @@ export class TappletSigner {
     }
 
     public async getOngoingBridgeTx(): Promise<BridgeTxDetails | undefined> {
-        const bridgeTx = useTappletsStore.getState().ongoingBridgeTx;
-        return bridgeTx;
+        return useTappletsStore.getState().ongoingBridgeTx;
     }
 
     public async sendOneSided(req: SendOneSidedRequest): Promise<boolean> {
@@ -89,8 +88,7 @@ export class TappletSigner {
     }
 
     public async getBaseNodeStatus(): Promise<BaseNodeStatus> {
-        const status = await invoke('get_base_node_status');
-        return status;
+        return await invoke('get_base_node_status');
     }
 
     public async getTariBalance(): Promise<WalletBalance> {
@@ -106,16 +104,21 @@ export class TappletSigner {
     }
 
     public async getAppLanguage(): Promise<string | undefined> {
-        const appLanguage = useConfigUIStore.getState().application_language;
-        return appLanguage;
+        return useConfigUIStore.getState().application_language;
     }
 
     public async getBridgeEnvs(): Promise<BridgeEnvs | undefined> {
         try {
             const envs = await invoke('get_bridge_envs');
-            return envs;
+            console.log(envs);
+            if (envs && envs.every((e) => e.length)) {
+                return envs;
+            } else {
+                console.error(`Error getting bridge envs, none returned`);
+            }
         } catch (error) {
-            setStoreError(`Error sending transaction: ${error}`);
+            console.error(`Error getting bridge envs: `, error);
+            setStoreError(`Error getting bridge envs: ${error}`);
         }
     }
 
@@ -129,7 +132,6 @@ export class TappletSigner {
     }
 
     public async getBackendBridgeTxs(): Promise<BackendBridgeTransaction[]> {
-        const bridgeTxs = useWalletStore.getState().bridge_transactions;
-        return bridgeTxs;
+        return useWalletStore.getState().bridge_transactions;
     }
 }
