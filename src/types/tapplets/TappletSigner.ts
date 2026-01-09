@@ -110,7 +110,8 @@ export class TappletSigner {
     public async getBridgeEnvs(): Promise<BridgeEnvs | undefined> {
         try {
             const envs = await invoke('get_bridge_envs');
-            if (envs?.walletconnect_id?.length && envs?.backend_api?.length) {
+            console.log(envs);
+            if (envs && envs.every((e) => e.length)) {
                 return envs;
             } else {
                 console.error(`Error getting bridge envs, none returned`);
