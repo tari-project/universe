@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef } from 'react';
 import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
 import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { open } from '@tauri-apps/plugin-shell';
@@ -18,7 +18,7 @@ export const Tapplet = ({ source }: TappletProps) => {
     const features = useAirdropStore((s) => s.features);
 
     const sendWindowSize = useCallback(() => {
-        if (tappletRef.current) {
+        if (tappletRef?.current) {
             const height = tappletRef.current.offsetHeight;
             const width = tappletRef.current.offsetWidth;
             const tappletWindow = tappletRef.current.contentWindow;
@@ -43,12 +43,7 @@ export const Tapplet = ({ source }: TappletProps) => {
         }
     }, []);
 
-    const runTappletTx = useCallback(
-        async (event: MessageEvent) => {
-            await runTransaction(event);
-        },
-        [runTransaction]
-    );
+    const runTappletTx = useCallback(async (event: MessageEvent) => await runTransaction(event), [runTransaction]);
 
     const sendAppLanguage = useCallback(() => {
         if (tappletRef.current) {
@@ -75,57 +70,56 @@ export const Tapplet = ({ source }: TappletProps) => {
         }
     }, [theme]);
 
-    const handleMessage = useCallback(
-        async (event: MessageEvent) => {
-            switch (event.data.type) {
-                case 'request-parent-size':
-                    sendWindowSize();
-                    break;
-                case 'signer-call':
-                    await runTappletTx(event);
-                    break;
-                case 'open-external-link':
-                    await openExternalLink(event);
-                    break;
-                case 'GET_INIT_CONFIG': {
-                    sendAppLanguage();
-                    sendTheme();
-                    sendFeatures();
-                    break;
-                }
-                case 'ERROR':
-                    setStoreError(`${event.data.payload.message}`, true);
-                    break;
-            }
-        },
-        [sendWindowSize, runTappletTx, openExternalLink, sendAppLanguage, sendTheme, sendFeatures]
-    );
+    const onResize = useEffectEvent(() => {
+        sendWindowSize();
+    });
 
-    useEffect(() => sendAppLanguage(), [sendAppLanguage]);
-    useEffect(() => sendFeatures(), [sendFeatures]);
-    useEffect(() => sendTheme(), [sendTheme]);
+    const onMessageEvent = useEffectEvent(async (e: MessageEvent) => {
+        switch (e.data.type) {
+            case 'request-parent-size':
+                sendWindowSize();
+                break;
+            case 'signer-call':
+                await runTappletTx(e);
+                break;
+            case 'open-external-link':
+                await openExternalLink(e);
+                break;
+            case 'GET_INIT_CONFIG': {
+                sendAppLanguage();
+                sendTheme();
+                sendFeatures();
+                break;
+            }
+            case 'ERROR':
+                setStoreError(`${e.data.payload.message}`, true);
+                break;
+        }
+    });
 
     useEffect(() => {
-        window.addEventListener('resize', sendWindowSize);
-        window.addEventListener('message', handleMessage);
+        window.addEventListener('message', onMessageEvent);
+        return () => window.removeEventListener('message', onMessageEvent);
+    }, []);
+    useEffect(() => {
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
 
-        sendWindowSize();
-        return () => {
-            window.removeEventListener('resize', sendWindowSize);
-            window.removeEventListener('message', handleMessage);
-        };
-    }, [sendWindowSize, handleMessage]);
-
-    return (
-        <TappletContainer>
+    const iFrameMarkup = useMemo(
+        () => (
             <iframe
-                src={source}
+                src="http://localhost:3000"
+                // src={source}
                 width="100%"
                 height="100%"
                 ref={tappletRef}
                 onLoad={sendWindowSize}
                 style={{ border: 'none', pointerEvents: 'all' }}
             />
-        </TappletContainer>
+        ),
+        [sendWindowSize]
     );
+
+    return <TappletContainer>{iFrameMarkup}</TappletContainer>;
 };
