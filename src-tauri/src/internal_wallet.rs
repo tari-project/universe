@@ -754,8 +754,8 @@ impl InternalWallet {
         let wallet_birthday = tari_cipher_seed.birthday();
 
         // Get a real error up in here
-        let seed_words_wallet = SeedWordsWallet::construct_new(tari_cipher_seed)
-            .map_err(|e| anyhow!(e.to_string()))?;
+        let seed_words_wallet =
+            SeedWordsWallet::construct_new(tari_cipher_seed).map_err(|e| anyhow!(e.to_string()))?;
         let wallet = WalletType::SeedWords(seed_words_wallet);
         let key_manager = KeyManager::new(wallet)?;
 
