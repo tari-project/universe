@@ -40,11 +40,11 @@ use std::sync::Arc;
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
+use tari_transaction_components::consensus::ConsensusManager;
 use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
-
 #[derive(Serialize, Deserialize, Default)]
 struct MinotariNodeMigrationInfo {
     version: u32,
@@ -81,10 +81,14 @@ pub(crate) struct LocalNodeAdapter {
     required_initial_peers: u32,
     pub(crate) ab_test_group: ABTestSelector,
     pub(crate) http_api_port: u16,
+    consensus_manager: ConsensusManager,
 }
 
 impl LocalNodeAdapter {
-    pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
+    pub fn new(
+        status_broadcast: watch::Sender<BaseNodeStatus>,
+        consensus_manager: ConsensusManager,
+    ) -> Self {
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         let http_api_port = PortAllocator::new().assign_port_with_fallback();
@@ -99,6 +103,7 @@ impl LocalNodeAdapter {
             tor_control_port: None,
             ab_test_group: ABTestSelector::GroupA,
             http_api_port,
+            consensus_manager,
         }
     }
 
@@ -114,7 +119,9 @@ impl LocalNodeAdapter {
         if let Some(grpc_address) = self.get_grpc_address() {
             Some(NodeAdapterService::new(
                 format!("http://{}:{}", grpc_address.0, grpc_address.1),
+                self.get_http_api_url(),
                 self.required_initial_peers,
+                self.consensus_manager.clone(),
             ))
         } else {
             None
@@ -137,7 +144,9 @@ impl NodeAdapter for LocalNodeAdapter {
         self.get_service()
     }
 
-    async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error> {
+    async fn get_connection_details(
+        &self,
+    ) -> Result<(Option<RistrettoPublicKey>, String), anyhow::Error> {
         let node_service = self.get_service();
         if let Some(node_service) = node_service {
             let node_identity = node_service.get_identity().await?;
@@ -383,7 +392,9 @@ impl ProcessAdapter for LocalNodeAdapter {
                 NodeType::Local,
                 NodeAdapterService::new(
                     format!("http://{}:{}", grpc_address.0, grpc_address.1),
+                    self.get_http_api_url(),
                     self.required_initial_peers,
+                    self.consensus_manager.clone(),
                 ),
                 self.status_broadcast.clone(),
                 Arc::new(AtomicU64::new(0)),
