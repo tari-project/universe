@@ -22,7 +22,7 @@ export default function Dashboard() {
     return (
         <DashboardContentContainer $tapplet={renderTapplet}>
             {connectionStatus !== 'connected' && !orphanChainUiDisabled ? <DisconnectWrapper /> : null}
-            {renderTapplet ? <Tapplet source={activeTapplet.source} /> : <MiningView />}
+            {renderTapplet ? <Tapplet source={'http://localhost:3000/'} /> : <MiningView />}
         </DashboardContentContainer>
     );
 }
