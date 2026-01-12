@@ -22,6 +22,7 @@ interface FormFieldProps {
     secondaryText?: string;
     miniButton?: ReactNode;
     isSecondary?: boolean;
+    as?: 'input' | 'textarea';
 }
 export function FormField({
     control,
@@ -41,6 +42,7 @@ export function FormField({
     secondaryText,
     miniButton,
     isSecondary,
+    as = 'input',
 }: FormFieldProps) {
     const { t } = useTranslation('wallet');
     const labelT = t(`send.label`, { context: name });
@@ -99,6 +101,7 @@ export function FormField({
                         secondaryText={secondaryText}
                         miniButton={miniButton}
                         isSecondary={isSecondary}
+                        as={as}
                     />
                 );
             }}
