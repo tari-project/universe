@@ -4,6 +4,7 @@ import { StyledIFrame, TappletContainer } from '@app/containers/main/Dashboard/M
 import { open } from '@tauri-apps/plugin-shell';
 import { useConfigUIStore, useUIStore, setError as setStoreError, useAirdropStore } from '@app/store';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
+import { IframeMessage, MessageType } from '@app/types/tapplets/tapplet.types.ts';
 
 interface TappletProps {
     source: string; //port
@@ -17,10 +18,10 @@ export const Tapplet = ({ source }: TappletProps) => {
     const theme = useUIStore((s) => s.theme);
     const features = useAirdropStore((s) => s.features);
 
-    function sendMessage(message) {
-        console.log(message);
+    function sendMessage(message: IframeMessage) {
+        const parsedMsg = JSON.stringify(message, null, 2);
         if (tappletRef?.current?.contentWindow) {
-            tappletRef.current.contentWindow.postMessage(message, `${ORIGIN}:*`);
+            tappletRef.current.contentWindow.postMessage(parsedMsg, `${ORIGIN}:*`);
         }
     }
 
@@ -50,17 +51,18 @@ export const Tapplet = ({ source }: TappletProps) => {
 
     const runTappletTx = useCallback(async (event: MessageEvent) => await runTransaction(event), []);
 
-    const sendAppLanguage = useCallback(
-        () => sendMessage({ type: 'SET_LANGUAGE', payload: { language: appLanguage } }),
-        [appLanguage]
-    );
+    const sendAppLanguage = useCallback(() => {
+        if (appLanguage) {
+            sendMessage({ type: MessageType.SET_LANGUAGE, payload: { language: appLanguage } });
+        }
+    }, [appLanguage]);
 
     const sendFeatures = useCallback(() => {
         const unwrapFeature = !!features?.includes(FEATURE_FLAGS.FE_UNWRAP);
-        sendMessage({ type: 'SET_FEATURES', payload: { unwrapEnabled: unwrapFeature } });
+        sendMessage({ type: MessageType.SET_FEATURES, payload: { unwrapEnabled: unwrapFeature } });
     }, [features]);
 
-    const sendTheme = useCallback(() => sendMessage({ type: 'SET_THEME', payload: { theme } }), [theme]);
+    const sendTheme = useCallback(() => sendMessage({ type: MessageType.SET_THEME, payload: { theme } }), [theme]);
 
     const onResize = useEffectEvent(() => {
         sendWindowSize();
