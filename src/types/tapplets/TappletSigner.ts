@@ -2,7 +2,11 @@ import { BackendBridgeTransaction, setError as setStoreError, useConfigUIStore, 
 import { invoke } from '@tauri-apps/api/core';
 import { BaseNodeStatus, BridgeEnvs, WalletBalance } from '../app-status';
 import { AccountData, BridgeTxDetails, SendOneSidedRequest, TappletSignerParams, WindowSize } from './tapplet.types';
-import { useTappletsStore } from '@app/store/useTappletsStore';
+import {
+    setOngoingBridgeTx as setTx,
+    removeOngoingBridgeTx as removeTx,
+    useTappletsStore,
+} from '@app/store/useTappletsStore';
 
 export class TappletSigner {
     public providerName = 'TappletSigner';
@@ -60,12 +64,10 @@ export class TappletSigner {
     }
 
     public async setOngoingBridgeTx(tx: BridgeTxDetails): Promise<void> {
-        const setTx = useTappletsStore.getState().setOngoingBridgeTx;
         setTx(tx);
     }
 
     public async removeOngoingBridgeTx(): Promise<void> {
-        const removeTx = useTappletsStore.getState().removeOngoingBridgeTx;
         removeTx();
     }
 

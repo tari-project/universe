@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useEffectEvent, useRef } from 'react';
-import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
+import { runTransaction, useTappletSignerStore } from '@app/store/useTappletSignerStore';
 import { StyledIFrame, TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { open } from '@tauri-apps/plugin-shell';
 import { useConfigUIStore, useUIStore, setError as setStoreError, useAirdropStore } from '@app/store';
@@ -13,12 +13,12 @@ const ORIGIN = 'http://127.0.0.1';
 export const Tapplet = ({ source }: TappletProps) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
     const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
-    const runTransaction = useTappletSignerStore((s) => s.runTransaction);
     const appLanguage = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
     const features = useAirdropStore((s) => s.features);
 
     function sendMessage(message) {
+        console.log(message);
         if (tappletRef?.current?.contentWindow) {
             tappletRef.current.contentWindow.postMessage(message, `${ORIGIN}:*`);
         }
@@ -29,11 +29,9 @@ export const Tapplet = ({ source }: TappletProps) => {
             const height = tappletRef.current.offsetHeight;
             const width = tappletRef.current.offsetWidth;
             const tappletWindow = tappletRef.current.contentWindow;
-            // use "*" for targetOrigin to bypass strict origin checks for custom protocols
-            const targetOrigin = '*';
 
             tappSigner?.setWindowSize(width, height);
-            tappSigner?.sendWindowSizeMessage(tappletWindow, targetOrigin);
+            tappSigner?.sendWindowSizeMessage(tappletWindow, `${ORIGIN}:*`);
         }
     }, [tappSigner]);
 
@@ -50,7 +48,7 @@ export const Tapplet = ({ source }: TappletProps) => {
         }
     }, []);
 
-    const runTappletTx = useCallback(async (event: MessageEvent) => await runTransaction(event), [runTransaction]);
+    const runTappletTx = useCallback(async (event: MessageEvent) => await runTransaction(event), []);
 
     const sendAppLanguage = useCallback(
         () => sendMessage({ type: 'SET_LANGUAGE', payload: { language: appLanguage } }),
@@ -69,6 +67,7 @@ export const Tapplet = ({ source }: TappletProps) => {
     });
 
     const onMessageEvent = useEffectEvent(async (e: MessageEvent) => {
+        console.log('INCOMING onMessageEvent', e.data);
         switch (e.data.type) {
             case 'request-parent-size':
                 sendWindowSize();
