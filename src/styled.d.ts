@@ -1,4 +1,3 @@
-import {} from 'react';
 import type { CSSProp } from 'styled-components';
 import 'styled-components';
 import { ThemePalette } from '@app/theme/types.ts';

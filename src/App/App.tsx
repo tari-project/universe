@@ -4,7 +4,7 @@ import { LazyMotion, domMax, AnimatePresence } from 'motion/react';
 import { QueryClientProvider } from '@tanstack/react-query';
 
 import { setError, setIsWebglNotSupported } from '../store/actions';
-import { GlobalStyle } from '../theme/GlobalStyle.ts';
+import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
 import ThemeProvider from '../theme/ThemeProvider.tsx';
 
 import { AppContentContainer } from './App.styles.ts';
@@ -69,13 +69,12 @@ export default function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <ThemeProvider>
-                <>
-                    <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
-                    <LazyMotion features={domMax} strict>
-                        <FloatingElements />
-                        <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
-                    </LazyMotion>
-                </>
+                <GlobalReset />
+                <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
+                <LazyMotion features={domMax} strict>
+                    <FloatingElements />
+                    <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
+                </LazyMotion>
             </ThemeProvider>
         </QueryClientProvider>
     );

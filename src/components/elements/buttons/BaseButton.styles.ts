@@ -245,6 +245,7 @@ export const IconWrapper = styled.div<{
             case 'end':
             default: {
                 return css`
+                    right: ${$size === 'smaller' ? '10px' : '16px'};
                     right: ${$size === 'smaller' ? '10px' : PADDING};
                 `;
             }

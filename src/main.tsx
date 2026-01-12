@@ -1,7 +1,7 @@
 import './i18initializer';
-import { lazy, StrictMode, Suspense } from 'react';
+import { StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
-const AppWrapper = lazy(() => import('./App/AppWrapper.tsx'));
+import AppWrapper from './App/AppWrapper.tsx';
 
 const rootEl = document.getElementById('root');
 
