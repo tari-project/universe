@@ -69,12 +69,14 @@ export default function App() {
     return (
         <QueryClientProvider client={queryClient}>
             <ThemeProvider>
-                <GlobalReset />
-                <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
-                <LazyMotion features={domMax} strict>
-                    <FloatingElements />
-                    <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
-                </LazyMotion>
+                <>
+                    <GlobalReset />
+                    <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
+                    <LazyMotion features={domMax} strict>
+                        <FloatingElements />
+                        <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
+                    </LazyMotion>
+                </>
             </ThemeProvider>
         </QueryClientProvider>
     );

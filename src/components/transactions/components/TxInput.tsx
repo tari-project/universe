@@ -59,7 +59,7 @@ export function TxInput({
     truncateText,
     isValid,
     disabled = false,
-    as = 'input',
+
     ...rest
 }: TxInputProps) {
     const [isFocused, setIsFocused] = useState(false);
@@ -94,7 +94,6 @@ export function TxInput({
             <ContentWrapper>
                 {icon ? <IconWrapper>{icon}</IconWrapper> : null}
                 <StyledInput
-                    as={as}
                     ref={ref}
                     id={name}
                     name={name}

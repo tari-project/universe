@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef } from 'react';
 import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
-import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
+import { StyledIFrame, TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { open } from '@tauri-apps/plugin-shell';
 import { useConfigUIStore, useUIStore, setError as setStoreError, useAirdropStore } from '@app/store';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
 
 interface TappletProps {
-    source: string;
+    source: string; //port
 }
 
+const ORIGIN = 'http://127.0.0.1';
 export const Tapplet = ({ source }: TappletProps) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
     const tappSigner = useTappletSignerStore((s) => s.tappletSigner);
@@ -16,6 +17,12 @@ export const Tapplet = ({ source }: TappletProps) => {
     const appLanguage = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
     const features = useAirdropStore((s) => s.features);
+
+    function sendMessage(message) {
+        if (tappletRef?.current?.contentWindow) {
+            tappletRef.current.contentWindow.postMessage(message, `${ORIGIN}:*`);
+        }
+    }
 
     const sendWindowSize = useCallback(() => {
         if (tappletRef?.current) {
@@ -45,30 +52,17 @@ export const Tapplet = ({ source }: TappletProps) => {
 
     const runTappletTx = useCallback(async (event: MessageEvent) => await runTransaction(event), [runTransaction]);
 
-    const sendAppLanguage = useCallback(() => {
-        if (tappletRef.current) {
-            tappletRef.current.contentWindow?.postMessage(
-                { type: 'SET_LANGUAGE', payload: { language: appLanguage } },
-                '*'
-            );
-        }
-    }, [appLanguage]);
+    const sendAppLanguage = useCallback(
+        () => sendMessage({ type: 'SET_LANGUAGE', payload: { language: appLanguage } }),
+        [appLanguage]
+    );
 
     const sendFeatures = useCallback(() => {
         const unwrapFeature = !!features?.includes(FEATURE_FLAGS.FE_UNWRAP);
-        if (tappletRef.current) {
-            tappletRef.current.contentWindow?.postMessage(
-                { type: 'SET_FEATURES', payload: { unwrapEnabled: unwrapFeature } },
-                '*'
-            );
-        }
+        sendMessage({ type: 'SET_FEATURES', payload: { unwrapEnabled: unwrapFeature } });
     }, [features]);
 
-    const sendTheme = useCallback(() => {
-        if (tappletRef.current) {
-            tappletRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
-        }
-    }, [theme]);
+    const sendTheme = useCallback(() => sendMessage({ type: 'SET_THEME', payload: { theme } }), [theme]);
 
     const onResize = useEffectEvent(() => {
         sendWindowSize();
@@ -106,19 +100,13 @@ export const Tapplet = ({ source }: TappletProps) => {
         return () => window.removeEventListener('resize', onResize);
     }, []);
 
-    const iFrameMarkup = useMemo(
-        () => (
-            <iframe
-                src={source}
-                width="100%"
-                height="100%"
+    return (
+        <TappletContainer>
+            <StyledIFrame
+                src={`${ORIGIN}:${source}`}
                 ref={tappletRef}
-                onLoad={sendWindowSize}
-                style={{ border: 'none', pointerEvents: 'all' }}
+                sandbox="allow-same-origin allow-modals allow-forms allow-scripts"
             />
-        ),
-        [sendWindowSize, source]
+        </TappletContainer>
     );
-
-    return <TappletContainer>{iFrameMarkup}</TappletContainer>;
 };
