@@ -11,6 +11,6 @@ export default function ThemeProvider({ children }: { children: ReactNode }) {
     const uiTheme = useUIStore((s) => s.theme);
     // if for some reason it was not stored, or stored as 'system'
     const themeName = !uiTheme || (uiTheme !== 'dark' && uiTheme !== 'light') ? preferredTheme : uiTheme;
-    const theme = themeName ? (themes[themeName] as DefaultTheme) : darkTheme;
+    const theme = themes[themeName] as DefaultTheme;
     return <SCThemeProvider theme={theme}>{children}</SCThemeProvider>;
 }

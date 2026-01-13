@@ -4,14 +4,12 @@ import { setError } from './actions/appStateStoreActions.ts';
 import { TransactionEvent } from '@app/types/tapplets/transaction.ts';
 import { TappletSignerParams } from '@app/types/tapplets/tapplet.types.ts';
 
-interface State {
+interface TappletSignerStoreState {
     isInitialized: boolean;
     tappletSigner?: TappletSigner;
 }
 
-type TappletSignerStoreState = State;
-
-const initialState: State = {
+const initialState: TappletSignerStoreState = {
     isInitialized: false,
     tappletSigner: undefined,
 };
@@ -21,10 +19,11 @@ export const useTappletSignerStore = create<TappletSignerStoreState>()(() => ({
 }));
 
 export const initTappletSigner = async () => {
+    if (useTappletSignerStore.getState().isInitialized) return;
     try {
-        if (useTappletSignerStore.getState().isInitialized) return;
         const params: TappletSignerParams = { id: 'default' };
         const provider: TappletSigner = TappletSigner.build(params);
+
         useTappletSignerStore.setState({ isInitialized: true, tappletSigner: provider });
     } catch (error) {
         console.error('Error initializing tapplet provider: ', error);
@@ -33,8 +32,8 @@ export const initTappletSigner = async () => {
 };
 
 export const runTransaction = async (evt: MessageEvent<TransactionEvent>) => {
+    const provider = useTappletSignerStore.getState().tappletSigner;
     try {
-        const provider = useTappletSignerStore.getState().tappletSigner;
         const result = await provider?.runOne(evt.data.methodName, evt.data.args);
         if (evt.source) {
             evt.source.postMessage({ id: evt.data.id, result, type: 'signer-call' }, { targetOrigin: evt.origin });

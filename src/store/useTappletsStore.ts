@@ -38,6 +38,7 @@ export const removeOngoingBridgeTx = () =>
 
 export const setActiveTappById = async (tappletId: number, isBuiltIn = false) => {
     if (tappletId == useTappletsStore.getState().activeTapplet?.tapplet_id) return;
+
     const tappProviderState = useTappletSignerStore.getState();
     if (!tappProviderState.isInitialized) {
         await initTappletSigner();
@@ -45,10 +46,10 @@ export const setActiveTappById = async (tappletId: number, isBuiltIn = false) =>
 
     // built-in tapplet
     if (isBuiltIn) {
-        await invoke('launch_builtin_tapplet').then((activeTapplet) => useTappletsStore.setState({ activeTapplet }));
+        const activeTapplet = await invoke('launch_builtin_tapplet');
+        useTappletsStore.setState({ activeTapplet });
         return;
     }
-
     // by default tapplets are supposed to work with the Ootle
     // run the Ootle dev/registed tapplet below
     return;

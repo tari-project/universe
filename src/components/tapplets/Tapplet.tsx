@@ -7,10 +7,9 @@ import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/st
 import { IframeMessage, MessageType } from '@app/types/tapplets/tapplet.types.ts';
 
 interface TappletProps {
-    source: string; //port
+    source: string;
 }
 
-const ORIGIN = 'http://127.0.0.1';
 export const Tapplet = ({ source }: TappletProps) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
     const appLanguage = useConfigUIStore((s) => s.application_language);
@@ -18,7 +17,7 @@ export const Tapplet = ({ source }: TappletProps) => {
 
     function sendMessage(message: IframeMessage) {
         if (tappletRef?.current?.contentWindow) {
-            tappletRef.current.contentWindow.postMessage(message, `${ORIGIN}:*`);
+            tappletRef.current.contentWindow.postMessage(message, 'http://127.0.0.1:*');
         }
     }
 

@@ -64,19 +64,9 @@ interface SetLanguageMessage {
     payload: { language: string };
 }
 
-interface SetFeaturesMessage {
-    type: MessageType.SET_FEATURES;
-    payload: { unwrapEnabled: boolean };
-}
-
 interface SetThemeMessage {
     type: MessageType.SET_THEME;
     payload: { theme: string };
 }
 
-export type IframeMessage =
-    | SignerCallMessage
-    | ResizeMessage
-    | SetLanguageMessage
-    | SetThemeMessage
-    | SetFeaturesMessage;
+export type IframeMessage = SignerCallMessage | ResizeMessage | SetLanguageMessage | SetThemeMessage;
