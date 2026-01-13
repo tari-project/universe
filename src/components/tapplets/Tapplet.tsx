@@ -43,7 +43,11 @@ export const Tapplet = ({ source }: TappletProps) => {
         }
     }, [appLanguage]);
 
-    const sendTheme = useCallback(() => sendMessage({ type: MessageType.SET_THEME, payload: { theme } }), [theme]);
+    const sendTheme = useCallback(() => {
+        if (theme) {
+            sendMessage({ type: MessageType.SET_THEME, payload: { theme } });
+        }
+    }, [theme]);
 
     const onMessageEvent = useEffectEvent(async (e: MessageEvent) => {
         switch (e.data.type) {

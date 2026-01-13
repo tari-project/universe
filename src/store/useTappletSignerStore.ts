@@ -33,15 +33,14 @@ export const initTappletSigner = async () => {
 };
 
 export const runTransaction = async (evt: MessageEvent<TransactionEvent>) => {
-    const { methodName, args, id } = evt.data;
     try {
         const provider = useTappletSignerStore.getState().tappletSigner;
-        const result = await provider?.runOne(methodName, args);
+        const result = await provider?.runOne(evt.data.methodName, evt.data.args);
         if (evt.source) {
-            evt.source.postMessage({ id, result, type: 'signer-call' }, { targetOrigin: evt.origin });
+            evt.source.postMessage({ id: evt.data.id, result, type: 'signer-call' }, { targetOrigin: evt.origin });
         }
     } catch (error) {
-        console.error(`Error running method "${String(methodName)}": ${error}`);
-        setError(`Error running method "${String(methodName)}": ${error}`);
+        console.error(`Error running method "${String(evt.data.methodName)}": ${error}`);
+        setError(`Error running method "${String(evt.data.methodName)}": ${error}`);
     }
 };

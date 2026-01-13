@@ -30,10 +30,6 @@ export class TappletSigner {
         this.height = height;
     }
 
-    public sendWindowSizeMessage(tappletWindow: Window | null, targetOrigin: string): void {
-        tappletWindow?.postMessage({ height: this.height, width: this.width, type: 'resize' }, targetOrigin);
-    }
-
     public requestParentSize(): Promise<WindowSize> {
         return Promise.resolve({ width: this.width, height: this.height });
     }
