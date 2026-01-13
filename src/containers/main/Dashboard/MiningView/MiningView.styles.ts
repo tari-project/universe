@@ -22,15 +22,10 @@ export const TappletContainer = styled.div`
     justify-content: center;
     align-items: center;
     z-index: 2;
-`;
-
-export const StyledIFrame = styled.iframe.attrs({
-    title: 'Tari Bridge Tapplet',
-    width: '100%',
-    height: '100%',
-    loading: 'lazy',
-    referrerPolicy: 'strict-origin-when-cross-origin',
-})`
-    border: none;
-    pointer-events: all;
+    iframe {
+        border: none;
+        pointer-events: all;
+        width: 100%;
+        height: 100%;
+    }
 `;

@@ -18,12 +18,11 @@ export default function Dashboard() {
     );
 
     const renderTapplet = showTapplet && activeTapplet && activeTapplet?.source?.length > 0;
-    const builtInSrcPort = activeTapplet?.source.split(`:`)?.pop();
 
     return (
         <DashboardContentContainer $tapplet={renderTapplet}>
             {connectionStatus !== 'connected' && !orphanChainUiDisabled ? <DisconnectWrapper /> : null}
-            {renderTapplet && builtInSrcPort ? <Tapplet source={builtInSrcPort} /> : <MiningView />}
+            {renderTapplet ? <Tapplet source={activeTapplet.source} /> : <MiningView />}
         </DashboardContentContainer>
     );
 }

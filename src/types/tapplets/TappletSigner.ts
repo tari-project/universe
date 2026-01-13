@@ -3,8 +3,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { BaseNodeStatus, BridgeEnvs, WalletBalance } from '../app-status';
 import { AccountData, BridgeTxDetails, SendOneSidedRequest, TappletSignerParams, WindowSize } from './tapplet.types';
 import {
-    setOngoingBridgeTx as setTx,
-    removeOngoingBridgeTx as removeTx,
+    removeOngoingBridgeTx as removeOngoingTx,
+    setOngoingBridgeTx as setOngoingTx,
     useTappletsStore,
 } from '@app/store/useTappletsStore';
 
@@ -43,7 +43,6 @@ export class TappletSigner {
         // Check if method exists on the class prototype
         if (method in TappletSigner.prototype) {
             // Call the method with the correct 'this' context and args
-
             return (this[method] as (...args: any) => Promise<any>)(...args);
         } else {
             console.warn(`Method "${method}" does not exist on TappletSigner.`);
@@ -64,11 +63,11 @@ export class TappletSigner {
     }
 
     public async setOngoingBridgeTx(tx: BridgeTxDetails): Promise<void> {
-        setTx(tx);
+        setOngoingTx(tx);
     }
 
     public async removeOngoingBridgeTx(): Promise<void> {
-        removeTx();
+        removeOngoingTx();
     }
 
     public async getOngoingBridgeTx(): Promise<BridgeTxDetails | undefined> {
@@ -111,15 +110,9 @@ export class TappletSigner {
 
     public async getBridgeEnvs(): Promise<BridgeEnvs | undefined> {
         try {
-            const envs = await invoke('get_bridge_envs');
-            if (envs && envs.every((e) => e.length)) {
-                return envs;
-            } else {
-                console.error(`Error getting bridge envs, none returned`);
-            }
+            return await invoke('get_bridge_envs');
         } catch (error) {
-            console.error(`Error getting bridge envs: `, error);
-            setStoreError(`Error getting bridge envs: ${error}`);
+            setStoreError(`Error sending transaction: ${error}`);
         }
     }
 
