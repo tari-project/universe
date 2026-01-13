@@ -46,7 +46,6 @@ export const Tapplet = ({ source }: TappletProps) => {
     const sendTheme = useCallback(() => sendMessage({ type: MessageType.SET_THEME, payload: { theme } }), [theme]);
 
     const onMessageEvent = useEffectEvent(async (e: MessageEvent) => {
-        console.log(e.data);
         switch (e.data.type) {
             case 'signer-call':
                 await runTappletTx(e);

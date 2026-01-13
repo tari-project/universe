@@ -25,9 +25,6 @@ export const useTappletsStore = create<TappletsStoreState>()(() => ({
     ...initialState,
 }));
 
-export const setActiveTapp = (activeTapplet: ActiveTapplet) => useTappletsStore.setState({ activeTapplet });
-export const deactivateTapplet = async () => useTappletsStore.setState({ activeTapplet: undefined });
-
 export const setOngoingBridgeTx = (tx: BridgeTxDetails) =>
     useTappletsStore.setState({
         ongoingBridgeTx: tx,

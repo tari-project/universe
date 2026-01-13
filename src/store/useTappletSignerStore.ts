@@ -32,21 +32,6 @@ export const initTappletSigner = async () => {
     }
 };
 
-export const setTappletSigner = async (id: string) => {
-    try {
-        if (useTappletSignerStore.getState().tappletSigner?.id == id) return;
-        const params: TappletSignerParams = {
-            id,
-        };
-        const provider: TappletSigner = TappletSigner.build(params);
-
-        useTappletSignerStore.setState({ isInitialized: true, tappletSigner: provider });
-    } catch (error) {
-        console.error('Error setting tapplet provider: ', error);
-        setError(`Error setting tapplet provider: ${error}`);
-    }
-};
-
 export const runTransaction = async (evt: MessageEvent<TransactionEvent>) => {
     const { methodName, args, id } = evt.data;
     try {
