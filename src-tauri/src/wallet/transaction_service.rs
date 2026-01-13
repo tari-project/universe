@@ -145,10 +145,7 @@ impl<'a> TransactionService<'a> {
             .await
             .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
         let res = client
-            .cancel_transaction(CancelTransactionRequest {
-                tx_id: tx_id_u64,
-                force_if_completed: false,
-            })
+            .cancel_transaction(CancelTransactionRequest { tx_id: tx_id_u64 })
             .await?;
 
         let cancel_tx_res = res.into_inner();

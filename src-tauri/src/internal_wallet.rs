@@ -32,8 +32,13 @@ use tari_common_types::seeds::cipher_seed::CipherSeed;
 use tari_common_types::seeds::mnemonic::Mnemonic;
 use tari_common_types::seeds::seed_words::SeedWords;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
-use tari_transaction_components::key_manager::wallet_types::{SeedWordsWallet, WalletType};
-use tari_transaction_components::key_manager::{KeyManager, TransactionKeyManagerInterface};
+use tari_common_types::types::CompressedPublicKey;
+use tari_transaction_components::key_manager::memory_key_manager::create_memory_key_manager_from_seed;
+use tari_transaction_components::key_manager::tari_key_manager::TariKeyManager;
+use tari_transaction_components::key_manager::{
+    KeyDigest, KeyManagerBranch, SecretTransactionKeyManagerInterface,
+    TransactionKeyManagerInterface,
+};
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
@@ -246,7 +251,7 @@ impl InternalWallet {
                     }
                 } else {
                     // Create new wallet
-                    let tari_seed = CipherSeed::random();
+                    let tari_seed = CipherSeed::new();
                     let (tari_wallet_details, tari_seed_binary) =
                         InternalWallet::add_tari_wallet(app_handle, tari_seed, None).await?;
 
@@ -753,16 +758,21 @@ impl InternalWallet {
     ) -> Result<TariWalletDetails, anyhow::Error> {
         let wallet_birthday = tari_cipher_seed.birthday();
 
-        // Get a real error up in here
-        let seed_words_wallet =
-            SeedWordsWallet::construct_new(tari_cipher_seed).map_err(|e| anyhow!(e.to_string()))?;
-        let wallet = WalletType::SeedWords(seed_words_wallet);
-        let key_manager = KeyManager::new(wallet)?;
+        let comms_key_manager = TariKeyManager::<KeyDigest>::from(
+            tari_cipher_seed.clone(),
+            KeyManagerBranch::Comms.get_branch_key(),
+            0,
+        );
+        let comms_key = comms_key_manager
+            .derive_key(0)
+            .map_err(|e| anyhow!(e.to_string()))?
+            .key;
 
-        let comms_pub_key = key_manager.get_spend_key().pub_key;
-        let view_key = key_manager.get_view_key();
+        let comms_pub_key = CompressedPublicKey::from_secret_key(&comms_key);
+        let tx_key_manager = create_memory_key_manager_from_seed(tari_cipher_seed, 64).await?;
+        let view_key = tx_key_manager.get_view_key().await?;
+        let view_key_private = tx_key_manager.get_private_key(&view_key.key_id).await?;
         let view_key_public = view_key.pub_key;
-        let view_key_private = key_manager.get_private_view_key();
 
         let network = Network::default();
         let tari_address = TariAddress::new_dual_address(
