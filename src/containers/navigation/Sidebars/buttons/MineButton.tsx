@@ -1,25 +1,33 @@
-import { memo, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Button, DecorationWrapper, Wrapper } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { setSidebarOpen, setShowTapplet } from '@app/store/actions/uiStoreActions';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 import ConnectedPulse from '../../components/VersionChip/ConnectedPulse/ConnectedPulse.tsx';
 import { useConfigUIStore } from '@app/store';
+import { deactivateTapplet } from '@app/store/useTappletsStore.ts';
 
-const MineButton = memo(function MineButton() {
+export default function MineButton() {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const towerSidebarOffset = useUIStore((s) => s.towerSidebarOffset);
     const showTapplet = useUIStore((s) => s.showTapplet);
 
-    function handleClick() {
+    const handleTapplet = useCallback(() => {
+        setShowTapplet(false);
+        deactivateTapplet();
+        setSidebarOpen(true);
+    }, []);
+
+    const toggleSidebar = useCallback(() => setSidebarOpen(!sidebarOpen), [sidebarOpen]);
+
+    const handleClick = useCallback(() => {
         if (showTapplet) {
-            setSidebarOpen(true);
-            setShowTapplet(false);
+            return handleTapplet();
         } else {
-            setSidebarOpen(!sidebarOpen);
+            return toggleSidebar();
         }
-    }
+    }, [handleTapplet, showTapplet, toggleSidebar]);
 
     useEffect(() => {
         if (!visualMode) return;
@@ -45,6 +53,4 @@ const MineButton = memo(function MineButton() {
             </Button>
         </Wrapper>
     );
-});
-
-export default MineButton;
+}
