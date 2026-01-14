@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { ActiveTapplet, BridgeTxDetails } from '@app/types/tapplets/tapplet.types.ts';
-import { useTappletSignerStore } from './useTappletSignerStore.ts';
+import { initTappletSigner, useTappletSignerStore } from './useTappletSignerStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 
 interface State {
@@ -41,7 +41,10 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
     setActiveTappById: async (tappletId, isBuiltIn = false) => {
         if (tappletId == get().activeTapplet?.tapplet_id) return;
         const tappProviderState = useTappletSignerStore.getState();
-        if (!tappProviderState.isInitialized) tappProviderState.initTappletSigner();
+
+        if (!tappProviderState.isInitialized) {
+            await initTappletSigner();
+        }
 
         // built-in tapplet
         if (isBuiltIn) {
