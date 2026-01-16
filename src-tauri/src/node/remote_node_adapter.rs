@@ -50,6 +50,7 @@ pub(crate) struct RemoteNodeAdapter {
     ab_group: ABTestSelector,
     status_broadcast: watch::Sender<BaseNodeStatus>,
     consensus_manager: ConsensusManager,
+    data_dir: Option<PathBuf>,
 }
 
 impl RemoteNodeAdapter {
@@ -63,6 +64,7 @@ impl RemoteNodeAdapter {
             use_tor: false,
             ab_group: ABTestSelector::GroupA,
             consensus_manager,
+            data_dir: None,
         }
     }
 
@@ -142,6 +144,9 @@ impl NodeAdapter for RemoteNodeAdapter {
 
     fn set_ab_group(&mut self, ab_group: ABTestSelector) {
         self.ab_group = ab_group;
+    }
+    fn set_data_dir(&mut self, data_dir: Option<PathBuf>) {
+        self.data_dir = data_dir;
     }
 
     fn set_tor_control_port(&mut self, _tor_control_port: Option<u16>) {

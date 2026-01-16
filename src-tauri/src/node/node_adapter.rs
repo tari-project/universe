@@ -69,6 +69,7 @@ pub trait NodeAdapter {
     fn use_tor(&mut self, use_tor: bool);
     fn set_tor_control_port(&mut self, tor_control_port: Option<u16>);
     fn set_ab_group(&mut self, ab_group: ABTestSelector);
+    fn set_data_dir(&mut self, data_dir: Option<PathBuf>);
 }
 
 #[derive(Debug, Clone)]
