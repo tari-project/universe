@@ -11,7 +11,7 @@ export default function SidebarNavigation() {
     return (
         <SidebarNavigationWrapper>
             <SidebarMini />
-            <AnimatePresence>{sidebarOpen && !showTapplet && <Sidebar />}</AnimatePresence>
+            <AnimatePresence>{sidebarOpen && !showTapplet ? <Sidebar /> : null}</AnimatePresence>
         </SidebarNavigationWrapper>
     );
 }
