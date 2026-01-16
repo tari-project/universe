@@ -29,7 +29,6 @@ pub mod file_utils;
 pub mod formatting_utils;
 pub mod logging_utils;
 pub mod macos_utils;
-pub mod math_utils;
 pub mod network_status;
 pub mod platform_utils;
 pub mod rand_utils;

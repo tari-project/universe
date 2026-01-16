@@ -154,7 +154,6 @@ impl BatteryStatus {
 
                         if let Ok(batteries) = battery_manager.batteries() {
                             for battery in batteries.flatten() {
-                                info!(target: LOG_TARGET, "Checking battery states | Battery Vendor '{}' state: {:?}", battery.vendor().unwrap_or("Unknown"), battery.state());
                                 match battery.state() {
                                     battery::State::Charging | battery::State::Full => {
                                         all_discharging = false;
@@ -171,20 +170,21 @@ impl BatteryStatus {
 
                             let mut state = last_battery_state_clone.blocking_lock();
 
-                            let can_switch_to_charge = *state != battery::State::Charging && (all_charging || (*state == starship_battery::State::Discharging && !all_discharging));
-                            let can_switch_to_discharge = *state != starship_battery::State::Discharging && all_discharging;
+                            let was_charging =  *state == battery::State::Charging;
+                            let was_discharging =  *state == battery::State::Discharging;
+
+                            let should_switch_to_charge = all_charging || (was_discharging && !all_discharging);
+                            let should_switch_to_discharge = !was_discharging && all_discharging;
 
 
-                            if can_switch_to_charge {
+                            if should_switch_to_charge && !was_charging  {
                                 tokio::spawn(Self::switched_to_charging_handler());
                                 *state = battery::State::Charging;
-                            } else if can_switch_to_discharge {
+                            };
+                            if should_switch_to_discharge {
                                 tokio::spawn(Self::switched_to_discharging_handler());
                                 *state = battery::State::Discharging;
-                            } else {
-                                info!(target: LOG_TARGET, "No change in battery state detected.");
-                                // Mixed states or unknown states, do nothing
-                        }
+                            };
                         }
                     }).await;
                     tokio::select! {
