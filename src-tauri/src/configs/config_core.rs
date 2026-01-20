@@ -21,12 +21,14 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use getset::{Getters, Setters};
+use log::error;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::{sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::ab_test_selector::ABTestSelector;
@@ -35,6 +37,7 @@ use crate::event_scheduler::ScheduledEventInfo;
 use crate::node::node_manager::NodeType;
 use crate::shutdown_manager::ShutdownMode;
 use crate::utils::rand_utils;
+use crate::LOG_TARGET_APP_LOGIC;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -42,6 +45,13 @@ use super::trait_config::{ConfigContentImpl, ConfigImpl};
 pub struct AirdropTokens {
     pub token: String,
     pub refresh_token: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Eq, Hash, Deserialize)]
+pub enum CustomDirectory {
+    ChainData,
+    Config,
+    Logs,
 }
 
 pub const CORE_CONFIG_VERSION: u32 = 0;
@@ -73,6 +83,7 @@ pub struct ConfigCoreContent {
     exchange_id: String,
     scheduler_events: HashMap<String, ScheduledEventInfo>,
     shutdown_mode: ShutdownMode,
+    directories: HashMap<CustomDirectory, PathBuf>,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -127,6 +138,7 @@ impl Default for ConfigCoreContent {
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
             scheduler_events: HashMap::new(),
             shutdown_mode: ShutdownMode::Tasktray,
+            directories: HashMap::new(),
         }
     }
 }
@@ -134,6 +146,9 @@ impl ConfigContentImpl for ConfigCoreContent {}
 impl ConfigCoreContent {
     pub fn is_on_exchange_specific_variant(&self) -> bool {
         MinerType::from_str(&self.exchange_id).is_exchange_mode()
+    }
+    pub fn get_custom_directory_path(&self, dir: CustomDirectory) -> Option<PathBuf> {
+        self.directories.get(&dir).cloned()
     }
 }
 
@@ -152,6 +167,35 @@ impl ConfigCore {
             config.content.version_counter = 1;
             let _unused = Self::_save_config(config._get_content().clone());
         };
+
+        if let Ok(app_data_dir) = app_handle.path().app_data_dir().inspect_err(|e| {
+            error!(target: LOG_TARGET_APP_LOGIC, "Could not load data dir {e}");
+        }) {
+            config
+                .content
+                .directories
+                .entry(CustomDirectory::ChainData)
+                .or_insert_with(|| app_data_dir.clone());
+            let _unused = Self::_save_config(config._get_content().clone());
+        }
+    }
+
+    pub async fn update_directories(
+        directory: CustomDirectory,
+        path: String,
+    ) -> Result<PathBuf, anyhow::Error> {
+        let mut dirs = Self::content().await.directories;
+
+        let previous_path = dirs.insert(directory, path.parse()?).unwrap_or_default();
+        Self::update_field(ConfigCoreContent::set_directories, dirs.clone()).await?;
+
+        Ok(previous_path)
+    }
+
+    pub async fn get_path() -> Option<PathBuf> {
+        Self::content()
+            .await
+            .get_custom_directory_path(CustomDirectory::ChainData)
     }
 }
 

@@ -24,7 +24,7 @@ use crate::airdrop::{get_der_encode_pub_key, get_websocket_key};
 use crate::app_in_memory_config::{AppInMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
+use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent, CustomDirectory};
 use crate::configs::config_mining::{
     ConfigMining, ConfigMiningContent, MiningModeType, PauseOnBatteryModeState,
 };
@@ -64,10 +64,12 @@ use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
 use crate::{airdrop, UniverseAppState, LOG_TARGET_APP_LOGIC};
 
 use base64::prelude::*;
+
 use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+use std::fs;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
@@ -2184,5 +2186,37 @@ pub async fn update_shutdown_mode_selection(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "update_shutdown_mode_selection took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_custom_directory(
+    directory_type: CustomDirectory,
+    path: String,
+) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    let setup_manager_instance = SetupManager::get_instance();
+    let phases = vec![
+        SetupPhase::Node,
+        SetupPhase::CpuMining,
+        SetupPhase::GpuMining,
+    ];
+    setup_manager_instance.shutdown_phases(phases.clone()).await;
+    match ConfigCore::update_directories(directory_type, path.clone()).await {
+        Ok(previous) => {
+            if fs::rename(path, previous.clone())
+                .map_err(|e| InvokeError::from(e.to_string()))
+                .is_ok()
+            {
+                fs::remove_dir_all(previous).map_err(|e| InvokeError::from(e.to_string()))?;
+            }
+        }
+        Err(e) => error!(target: LOG_TARGET_APP_LOGIC, "Could not update directories: {e}"),
+    }
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_custom_directory took too long: {:?}", timer.elapsed());
+    }
+    setup_manager_instance.resume_phases(phases).await;
+
     Ok(())
 }

@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ab_test_selector::ABTestSelector;
+use crate::configs::config_core::ConfigCore;
 use crate::node::node_adapter::{
     BaseNodeStatus, NodeAdapter, NodeAdapterService, NodeStatusMonitor,
 };
@@ -29,9 +30,12 @@ use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec};
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::LOG_TARGET_APP_LOGIC;
 use async_trait::async_trait;
 use log::{info, warn};
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -41,10 +45,9 @@ use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_transaction_components::consensus::ConsensusManager;
+use tauri::async_runtime::block_on;
 use tokio::sync::watch;
 
-#[cfg(target_os = "windows")]
-use crate::utils::windows_setup_utils::add_firewall_rule;
 #[derive(Serialize, Deserialize, Default)]
 struct MinotariNodeMigrationInfo {
     version: u32,
@@ -188,9 +191,15 @@ impl ProcessAdapter for LocalNodeAdapter {
         _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let inner_shutdown = Shutdown::new();
+        let mut data_dir_path = data_dir.clone();
+        block_on(async {
+            if let Some(path) = ConfigCore::get_path().await {
+                data_dir_path = path.clone();
+            }
+        });
 
         info!(target: LOG_TARGET_APP_LOGIC, "Starting minotari node");
-        let working_dir: PathBuf = data_dir.join("node");
+        let working_dir: PathBuf = data_dir_path.join("node");
         let network_dir = working_dir.join(Network::get_current().to_string().to_lowercase());
         fs::create_dir_all(&network_dir)?;
         let migration_file = network_dir.join("migrations.json");
@@ -285,11 +294,6 @@ impl ProcessAdapter for LocalNodeAdapter {
             args.push("-p".to_string());
             args.push("base_node.storage.pruning_horizon=100".to_string());
         }
-        // Uncomment to test winning blocks
-        // if cfg!(debug_assertions) {
-        // args.push("--network".to_string());
-        // args.push("localnet".to_string());
-        // }
         if self.use_tor {
             // args.push("-p".to_string());
             // args.push(
@@ -383,7 +387,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                     file_path: binary_version_path,
                     envs: None,
                     args,
-                    data_dir: data_dir.clone(),
+                    data_dir: data_dir_path.clone(),
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
@@ -398,7 +402,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                 ),
                 self.status_broadcast.clone(),
                 Arc::new(AtomicU64::new(0)),
-                Some(data_dir),
+                Some(data_dir_path),
             ),
         ))
     }
