@@ -192,7 +192,7 @@ impl ConfigCore {
         Ok(previous_path)
     }
 
-    pub async fn get_path() -> Option<PathBuf> {
+    pub async fn get_chain_data_path() -> Option<PathBuf> {
         Self::content()
             .await
             .get_custom_directory_path(CustomDirectory::ChainData)

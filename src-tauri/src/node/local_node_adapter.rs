@@ -193,7 +193,7 @@ impl ProcessAdapter for LocalNodeAdapter {
         let inner_shutdown = Shutdown::new();
         let mut data_dir_path = data_dir.clone();
         block_on(async {
-            if let Some(path) = ConfigCore::get_path().await {
+            if let Some(path) = ConfigCore::get_chain_data_path().await {
                 data_dir_path = path.clone();
             }
         });
