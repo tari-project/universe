@@ -336,6 +336,7 @@ fn main() {
         reason = "This is a temporary fix until the new tauri API is released"
     )]
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
