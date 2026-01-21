@@ -14,7 +14,7 @@ export default function LogIn() {
     const { t } = useTranslation('airdrop');
     const { handleAuth, authUrlCopied } = useAirdropAuth();
     const ff = useAirdropStore((s) => s.features);
-    const claimEnabled = !ff?.includes(FF.FF_AD_KS) && ff?.includes(FF.FF_AD_CLAIM_ENABLED);
+    const claimEnabled = ff?.includes(FF.FF_AD_CLAIM_ENABLED);
 
     const tooltipContent = authUrlCopied ? (
         <>

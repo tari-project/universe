@@ -18,8 +18,6 @@ export default function Network() {
     const { t } = useTranslation('settings');
     const baseNodeStatus = useNodeStore((state) => state?.base_node_status);
 
-    const sha_network_hashrate = baseNodeStatus?.sha_network_hashrate || 0;
-    const tari_randomx_network_hashrate = baseNodeStatus?.tari_randomx_network_hashrate || 0;
     const block_reward = baseNodeStatus?.block_reward || 0;
     const block_height = baseNodeStatus?.block_height || 0;
     const block_time = baseNodeStatus?.block_time || 0;
@@ -27,8 +25,6 @@ export default function Network() {
     const readiness_status = baseNodeStatus?.readiness_status?.['State'] || 0;
 
     // Format values
-    const fmtSHA = formatHashrate(sha_network_hashrate);
-    const fmtTariRX = formatHashrate(tari_randomx_network_hashrate);
     const formattedBlockReward = formatHashrate(block_reward);
 
     // Format block time as a date
@@ -44,18 +40,6 @@ export default function Network() {
                     </SettingsGroupTitle>
                     <SettingsGroupContent>
                         <Stack direction="column" alignItems="flex-start">
-                            <Stack direction="row">
-                                <Typography>{t('sha-network-hash-rate')}</Typography>
-                                <Typography>
-                                    <b>{baseNodeStatus ? `${fmtSHA.value}${fmtSHA.unit}` : 'N/A'}</b>
-                                </Typography>
-                            </Stack>
-                            <Stack direction="row">
-                                <Typography>{t('randomx-network-hash-rate')}</Typography>
-                                <Typography>
-                                    <b>{baseNodeStatus ? `${fmtTariRX.value}${fmtTariRX.unit}` : 'N/A'}</b>
-                                </Typography>
-                            </Stack>
                             <Stack direction="row">
                                 <Typography>{t('block-reward')}</Typography>
                                 <Typography>

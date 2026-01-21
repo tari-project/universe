@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CountdownContainer, CountdownSquare, CountdownText, CountdownWrapper, Grid } from './Countdown.styles.ts';
+import { CountdownText, CountdownWrapper } from './Countdown.styles.ts';
 
 interface CountdownTime {
     days: number;
     hours: number;
     minutes: number;
+    seconds: number;
 }
 interface CountdownProps {
     isCurrent?: boolean;
     futureTime?: string;
+    compact?: boolean;
     onEndReached?: () => void;
 }
 
@@ -42,7 +44,7 @@ function useCountdown({ futureTime, callback }: CountdownProps & { callback?: ()
         const parts = getCountdownParts();
         if (parts) {
             const { days, hours, minutes } = parts || {};
-            setCountdown({ days, hours, minutes });
+            setCountdown({ days, hours, minutes, seconds: 0 });
             initialCountdownRef.current = true;
         }
     }, [getCountdownParts]);
@@ -60,24 +62,23 @@ function useCountdown({ futureTime, callback }: CountdownProps & { callback?: ()
     return countdown;
 }
 
-export default function Countdown({ isCurrent = false, futureTime, onEndReached }: CountdownProps) {
+export default function Countdown({ isCurrent = false, compact = false, futureTime, onEndReached }: CountdownProps) {
     const { t } = useTranslation('airdrop');
     const countdown = useCountdown({ futureTime, callback: onEndReached });
     return countdown ? (
-        <CountdownWrapper>
-            <CountdownText>
-                {isCurrent ? t('tranche.status.closes-prefix') : t('tranche.status.available-in')}:
+        <CountdownWrapper $compact={compact}>
+            <CountdownText $compact={compact}>
+                {isCurrent
+                    ? t('tranche.status.closes-prefix')
+                    : t('tranche.status.available-in', { context: compact && 'compact' })}
             </CountdownText>
-            <CountdownContainer>
-                <Grid>
-                    {countdown.days > 0 && <CountdownSquare>{countdown.days}D</CountdownSquare>}
-                    {(countdown.days > 0 || countdown.hours > 0) && (
-                        <CountdownSquare>{countdown.hours}H</CountdownSquare>
-                    )}
-                    <CountdownSquare>{countdown.minutes}M</CountdownSquare>
-                </Grid>
-            </CountdownContainer>
-            {isCurrent && <CountdownText>{t('tranche.status.closes-suffix')}</CountdownText>}
+            <CountdownText $compact={compact}>
+                <strong>
+                    {countdown.days > 0 && ` ${countdown.days}D`}
+                    {(countdown.days > 0 || countdown.hours > 0) && ` ${countdown.hours}H`}
+                    {` ${countdown.minutes}M`}
+                </strong>
+            </CountdownText>
         </CountdownWrapper>
     ) : null;
 }

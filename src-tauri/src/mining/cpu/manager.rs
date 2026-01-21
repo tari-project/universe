@@ -54,7 +54,6 @@ use crate::{
     process_watcher::{ProcessWatcher, ProcessWatcherStats},
     systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
-    utils::math_utils::estimate_earning,
     UniverseAppState, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
 
@@ -332,7 +331,6 @@ impl CpuManager {
     pub async fn initialize_status_updates(&mut self) {
         let mut cpu_internal_status_reciever = self.cpu_internal_status_channel.subscribe();
         let cpu_external_status_channel = self.cpu_external_status_channel.clone();
-        let node_status_channel = self.node_status_channel.clone();
         let connection_type = self.connection_type.clone();
 
         let mut internal_shutdown_signal = self.status_thread_shutdown.to_signal();
@@ -361,7 +359,7 @@ impl CpuManager {
                         if updated_status.is_ok() {
                             let status = cpu_internal_status_reciever.borrow().clone();
                             let paresd_status = match connection_type {
-                                CpuConnectionType::LocalMMProxy { .. } => Self::handle_local_mm_proxy_connection_type_status_change(status.clone(), node_status_channel.clone()).await,
+                                CpuConnectionType::LocalMMProxy { .. } => status.clone(),
                                 CpuConnectionType::Pool { .. } => Self::handle_pool_connection_type_status_change(status.clone()).await,
                             };
                             let _res = cpu_external_status_channel.send(paresd_status.clone());
@@ -375,27 +373,6 @@ impl CpuManager {
                 }
             }
         });
-    }
-
-    async fn handle_local_mm_proxy_connection_type_status_change(
-        gpu_status: CpuMinerStatus,
-        node_status_reciever: Option<Receiver<BaseNodeStatus>>,
-    ) -> CpuMinerStatus {
-        if let Some(node_status_reciever) = node_status_reciever {
-            let node_status = node_status_reciever.borrow();
-            let estimated_earnings = estimate_earning(
-                node_status.monero_randomx_network_hashrate,
-                gpu_status.hash_rate,
-                node_status.block_reward,
-            );
-
-            CpuMinerStatus {
-                estimated_earnings,
-                ..gpu_status
-            }
-        } else {
-            gpu_status
-        }
     }
 
     async fn handle_pool_connection_type_status_change(

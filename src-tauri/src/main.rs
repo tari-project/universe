@@ -52,6 +52,7 @@ use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tari_common::configuration::Network;
+use tari_transaction_components::consensus::ConsensusManager;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
@@ -226,10 +227,12 @@ fn main() {
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let (local_node_watch_tx, local_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let (remote_node_watch_tx, remote_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+    let network = Network::get_current();
+    let consensus_manager = ConsensusManager::builder(network).build();
     let node_manager = NodeManager::new(
         &mut stats_collector,
-        LocalNodeAdapter::new(local_node_watch_tx.clone()),
-        RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
+        LocalNodeAdapter::new(local_node_watch_tx.clone(), consensus_manager.clone()),
+        RemoteNodeAdapter::new(remote_node_watch_tx.clone(), consensus_manager),
         // This value is later overriden when retrieved from config
         NodeType::Local,
         base_node_watch_tx,
