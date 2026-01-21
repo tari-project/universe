@@ -1,14 +1,14 @@
 {
     "binaries": {
-        "bridge": "0.3.2",
+        "bridge": "0.4.1",
         "glytex": "0.2.32 | ad20e05",
         "graxil": "1.0.13 | 16af6ba",
         "lolminer": "1.98",
-        "minotari_node": "5.2.1-pre.1 | c22e477",
-        "mmproxy": "5.2.1-pre.1 | c22e477",
+        "minotari_node": "5.2.1 | c79f555",
+        "mmproxy": "5.2.1 | c79f555",
         "sha-p2pool": "1.0.3 | cff9241",
         "tor": "14.5.1",
-        "wallet": "5.2.1-pre.1 | c22e477",
+        "wallet": "5.2.1 | c79f555",
         "xmrig": "6.24.0"
     }
 }
