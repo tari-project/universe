@@ -1,3 +1,17 @@
+🚀 TARI UNIVERSE v1.6.9: Master Oogway's Secret pt 1
+
+_January 21, 2026_
+
+✨ WHAT'S FIXED
+
+- 🌉 **No more crashes when switching to Bridge** – Some of you experienced crashes when quickly switching between the Bridge and the main mining view. That's fixed! You can now toggle back and forth as fast as you want without the app crashing on you.
+- 🌐 **Faster remote node experience** – If you're running in remote node mode, Tari Universe now communicates more efficiently with those nodes. We've switched to a smarter caching approach that means less waiting and more mining.
+- 🔧 **Under the hood** – We've updated to the latest Tari core components (v5.2.1), bringing you the most recent stability improvements and bug fixes from the core team. Plus, we've cleaned up internal wallet code and refreshed dependencies across the app.
+
+This one's all about making Tari Universe more solid and responsive. Thank you for your patience and your feedback—it helps us squash these bugs faster! 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.6.8: The Bountiful Harvest Part 2
 
 _December 16, 2025_
