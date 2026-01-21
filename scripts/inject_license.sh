@@ -2,7 +2,7 @@
 
 # Define the block of text to be added (multiline)
 BLOCK=$(cat <<'EOF'
-// Copyright 2025. The Tari Project
+// Copyright 2026. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
