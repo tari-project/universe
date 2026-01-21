@@ -29,7 +29,7 @@ use crate::utils::logging_utils::setup_logging;
 use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitor;
 use crate::wallet::wallet_types::WalletState;
-use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
+use crate::LOG_TARGET_APP_LOGIC;
 use anyhow::Error;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
@@ -93,10 +93,6 @@ impl WalletAdapter {
 
     pub fn connect_with_local_node(&mut self, connect_with_local_node: bool) {
         self.connect_with_local_node = connect_with_local_node;
-    }
-
-    pub fn wallet_grpc_address(&self) -> String {
-        format!("http://127.0.0.1:{}", self.grpc_port)
     }
 }
 

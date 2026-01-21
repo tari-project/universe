@@ -44,12 +44,15 @@ use minotari_wallet::{
     get_balance,
     models::BalanceChange,
     transactions::one_sided_transaction::Recipient,
-    utils::init_with_view_key,
+    utils::init_wallet::init_with_view_key,
     DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
     TransactionHistoryService,
 };
+use r2d2::PooledConnection;
+use r2d2_sqlite::SqliteConnectionManager;
 use std::{
     collections::HashMap,
+    path::{Path, PathBuf},
     sync::{
         atomic::{AtomicBool, Ordering},
         LazyLock,
@@ -300,7 +303,7 @@ impl MinotariWalletManager {
     }
 
     /// Acquire database connection with retry logic
-    async fn get_db_connection() -> Result<sqlx::pool::PoolConnection<sqlx::Sqlite>, anyhow::Error>
+    async fn get_db_connection() -> Result<PooledConnection<SqliteConnectionManager>, anyhow::Error>
     {
         INSTANCE.database_manager.get_connection().await
     }
@@ -310,25 +313,20 @@ impl MinotariWalletManager {
         account_id: i64,
     ) -> Result<Option<minotari_wallet::models::ScannedTipBlock>, anyhow::Error> {
         let mut conn = Self::get_db_connection().await?;
-        get_latest_scanned_tip_block_by_account(&mut conn, account_id)
-            .await
-            .map_err(|e| e.into())
+        get_latest_scanned_tip_block_by_account(&mut conn, account_id).map_err(|e| e.into())
     }
 
     /// Get balance for an account
     async fn get_account_balance(account_id: i64) -> Result<AccountBalance, anyhow::Error> {
         let mut conn = Self::get_db_connection().await?;
-        get_balance(&mut conn, account_id)
-            .await
-            .map_err(|e| e.into())
+        get_balance(&mut conn, account_id).map_err(|e| e.into())
     }
 
     /// Get all balance changes for an account
+    #[allow(dead_code)]
     async fn get_all_balance_changes(account_id: i64) -> Result<Vec<BalanceChange>, anyhow::Error> {
         let mut conn = Self::get_db_connection().await?;
-        get_all_balance_changes_by_account_id(&mut conn, account_id)
-            .await
-            .map_err(|e| e.into())
+        get_all_balance_changes_by_account_id(&mut conn, account_id).map_err(|e| e.into())
     }
 
     pub async fn initialize_wallet() -> Result<(), anyhow::Error> {
@@ -369,10 +367,7 @@ impl MinotariWalletManager {
         let db_pool = INSTANCE.database_manager.get_pool().await?;
         let history_service = TransactionHistoryService::new(db_pool);
 
-        match history_service
-            .load_transactions_excluding_reorged(DEFAULT_ACCOUNT_ID)
-            .await
-        {
+        match history_service.load_transactions_excluding_reorged(DEFAULT_ACCOUNT_ID) {
             Ok(transactions) => {
                 info!(
                     target: LOG_TARGET,
@@ -426,7 +421,7 @@ impl MinotariWalletManager {
 
         // Spawn the scan via spawn_blocking since the Scanner future is !Send
         // We create the Scanner inside spawn_blocking to avoid Send issues
-        let database_path_clone = database_path.clone();
+        let database_path_buf = PathBuf::from(database_path);
         let tari_address_clone = tari_address.clone();
         tokio::task::spawn_blocking(move || {
             tokio::runtime::Handle::current().block_on(async move {
@@ -434,7 +429,7 @@ impl MinotariWalletManager {
                 let (event_rx, scan_future) = Scanner::new(
                     DEFAULT_PASSWORD,
                     DEFAULT_GRPC_URL.as_str(),
-                    &database_path_clone,
+                    database_path_buf,
                     SCAN_BATCH_SIZE,
                 )
                 .account(&tari_address_clone)
@@ -481,6 +476,7 @@ impl MinotariWalletManager {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub async fn stop_scanning() {
         if let Some(token) = INSTANCE.cancel_token.write().await.take() {
             token.cancel();
@@ -701,11 +697,10 @@ impl MinotariWalletManager {
                 &details.view_private_key_hex,
                 &details.spend_public_key_hex,
                 DEFAULT_PASSWORD,
-                database_path.as_str(),
+                Path::new(&database_path),
                 details.wallet_birthday,
                 Some(tari_address.as_str()),
-            )
-            .await?;
+            )?;
 
             Ok(())
         } else {

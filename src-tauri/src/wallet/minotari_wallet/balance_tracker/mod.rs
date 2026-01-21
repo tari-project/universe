@@ -24,7 +24,6 @@ mod balance_calculator;
 mod errors;
 
 pub use balance_calculator::BalanceCalculator;
-pub use errors::BalanceCalculationError;
 
 use log::{error, info};
 use minotari_wallet::{db::AccountBalance, DisplayedTransaction};

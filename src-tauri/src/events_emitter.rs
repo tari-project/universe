@@ -843,10 +843,11 @@ impl EventsEmitter {
                 payload,
             },
         ) {
-            error!(target: LOG_TARGET, "Failed to emit WalletTransactionsFound event: {e:?}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletTransactionsFound event: {e:?}");
         }
     }
 
+    #[allow(dead_code)]
     pub async fn emit_wallet_transactions_cleared() {
         let _ = FrontendReadyChannel::current().wait_for_ready().await;
         if let Err(e) = Self::get_app_handle().await.emit(
@@ -856,7 +857,7 @@ impl EventsEmitter {
                 payload: (),
             },
         ) {
-            error!(target: LOG_TARGET, "Failed to emit WalletTransactionsCleared event: {e:?}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletTransactionsCleared event: {e:?}");
         }
     }
 
@@ -871,48 +872,7 @@ impl EventsEmitter {
                 payload,
             },
         ) {
-            error!(target: LOG_TARGET, "Failed to emit WalletTransactionUpdated event: {e:?}");
-        }
-    }
-
-    pub async fn emit_wallet_transactions_found(payload: Vec<DisplayedTransaction>) {
-        let _ = FrontendReadyChannel::current().wait_for_ready().await;
-        if let Err(e) = Self::get_app_handle().await.emit(
-            BACKEND_STATE_UPDATE,
-            Event {
-                event_type: EventType::WalletTransactionsFound,
-                payload,
-            },
-        ) {
-            error!(target: LOG_TARGET, "Failed to emit WalletTransactionsFound event: {e:?}");
-        }
-    }
-
-    pub async fn emit_wallet_transactions_cleared() {
-        let _ = FrontendReadyChannel::current().wait_for_ready().await;
-        if let Err(e) = Self::get_app_handle().await.emit(
-            BACKEND_STATE_UPDATE,
-            Event {
-                event_type: EventType::WalletTransactionsCleared,
-                payload: (),
-            },
-        ) {
-            error!(target: LOG_TARGET, "Failed to emit WalletTransactionsCleared event: {e:?}");
-        }
-    }
-
-    /// Emit when a pending transaction has been matched with a scanned transaction
-    /// This allows the frontend to update the transaction status
-    pub async fn emit_wallet_transaction_updated(payload: DisplayedTransaction) {
-        let _ = FrontendReadyChannel::current().wait_for_ready().await;
-        if let Err(e) = Self::get_app_handle().await.emit(
-            BACKEND_STATE_UPDATE,
-            Event {
-                event_type: EventType::WalletTransactionUpdated,
-                payload,
-            },
-        ) {
-            error!(target: LOG_TARGET, "Failed to emit WalletTransactionUpdated event: {e:?}");
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletTransactionUpdated event: {e:?}");
         }
     }
 }

@@ -28,18 +28,17 @@
 
 use anyhow::anyhow;
 use minotari_wallet::{
-    db::AccountRow,
+    db::SqlitePool,
     transactions::{manager::TransactionSender, one_sided_transaction::Recipient},
     DisplayedTransaction,
 };
-use sqlx::SqlitePool;
 use tari_common::configuration::Network;
 use tari_transaction_components::{
     offline_signing::{
         models::{PrepareOneSidedTransactionForSigningResult, SignedOneSidedTransactionResult},
         sign_locked_transaction,
     },
-    test_helpers::{create_consensus_constants, create_consensus_manager},
+    test_helpers::create_consensus_manager,
 };
 use tauri::AppHandle;
 
@@ -48,6 +47,8 @@ use crate::{
     wallet::minotari_wallet::{DEFAULT_GRPC_URL, DEFAULT_PASSWORD},
 };
 
+const CONFIRMATION_WINDOW: u64 = 3;
+
 pub struct TransactionManager {
     transaction_sender: TransactionSender,
 }
@@ -55,9 +56,13 @@ pub struct TransactionManager {
 impl TransactionManager {
     pub async fn new(pool: SqlitePool, sender_address: String) -> Result<Self, anyhow::Error> {
         let network = Network::get_current_or_user_setting_or_default();
-        let transaction_sender =
-            TransactionSender::new(pool, sender_address, DEFAULT_PASSWORD.to_string(), network)
-                .await?;
+        let transaction_sender = TransactionSender::new(
+            pool,
+            sender_address,
+            DEFAULT_PASSWORD.to_string(),
+            network,
+            CONFIRMATION_WINDOW,
+        )?;
 
         Ok(Self { transaction_sender })
     }
@@ -72,7 +77,6 @@ impl TransactionManager {
         let prepared_one_sided_transaction = self
             .transaction_sender
             .start_new_transaction(idempotency_key, recipient, seconds_to_lock)
-            .await
             .map_err(|e| anyhow!("Failed to create unsigned transaction: {}", e))?;
 
         Ok(prepared_one_sided_transaction)

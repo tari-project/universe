@@ -28,17 +28,15 @@ use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::wallet::wallet_adapter::WalletAdapter;
 use crate::wallet::wallet_types::WalletState;
-use crate::{BaseNodeStatus, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
+use crate::{BaseNodeStatus, LOG_TARGET_APP_LOGIC};
 use futures_util::future::FusedFuture;
 use log::{error, info};
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
-use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 use tokio::fs;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
@@ -55,6 +53,7 @@ pub struct WalletStartupConfig {
 #[derive(thiserror::Error, Debug)]
 pub enum WalletManagerError {
     #[error("Wallet not started")]
+    #[allow(dead_code)]
     WalletNotStarted,
     #[error("Node manager error: {0}")]
     NodeManagerError(#[from] NodeManagerError),

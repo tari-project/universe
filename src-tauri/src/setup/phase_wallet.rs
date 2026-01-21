@@ -29,6 +29,7 @@ use crate::wallet::{
     minotari_wallet::MinotariWalletManager,
     wallet_manager::{WalletManagerError, STOP_ON_ERROR_CODES},
 };
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{
@@ -47,10 +48,6 @@ use crate::{
     tasks_tracker::TasksTrackers,
     wallet::wallet_manager::WalletStartupConfig,
     UniverseAppState,
-};
-use crate::{
-    wallet::wallet_manager::{WalletManagerError, STOP_ON_ERROR_CODES},
-    LOG_TARGET_APP_LOGIC,
 };
 use anyhow::Error;
 use log::{error, info, warn};
@@ -243,9 +240,9 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 MinotariWalletManager::load_app_handle(app_handle_clone).await;
                 if InternalWallet::is_internal().await {
                 MinotariWalletManager::initialize_wallet().await?;
-                info!(target: LOG_TARGET, "============================ Setting up Minotari Wallet");
+                info!(target: LOG_TARGET_APP_LOGIC, "============================ Setting up Minotari Wallet");
                 let _unused = MinotariWalletManager::import_view_key().await;
-                info!(target: LOG_TARGET, "============================ Scanning blocks for Minotari Wallet");
+                info!(target: LOG_TARGET_APP_LOGIC, "============================ Scanning blocks for Minotari Wallet");
                 MinotariWalletManager::initialize_blockchain_scanning().await?;
                 }
 

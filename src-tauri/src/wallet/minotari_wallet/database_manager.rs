@@ -20,23 +20,24 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::path::PathBuf;
+
 use crate::{tasks_tracker::TasksTrackers, APPLICATION_FOLDER_ID};
 use log::{error, info, warn};
-use minotari_wallet::init_db;
-use sqlx::{Pool, Sqlite};
+use minotari_wallet::{db::SqlitePool, init_db};
+use r2d2::PooledConnection;
+use r2d2_sqlite::SqliteConnectionManager;
 use tari_common::configuration::Network;
 use tokio::sync::RwLock;
 
 static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet::database_manager";
 
 const CONNECTION_HEALTH_CHECK_INTERVAL_SECS: u64 = 60;
-const CONNECTION_RETRY_MAX_ATTEMPTS: usize = 3;
-const CONNECTION_RETRY_DELAY_MS: u64 = 1000;
 
 pub const DEFAULT_ACCOUNT_ID: i64 = 1;
 
 pub struct MinotariWalletDatabaseManager {
-    database_pool: RwLock<Option<Pool<Sqlite>>>,
+    database_pool: RwLock<Option<SqlitePool>>,
 }
 
 impl MinotariWalletDatabaseManager {
@@ -47,7 +48,7 @@ impl MinotariWalletDatabaseManager {
     }
 
     pub async fn initialize(&self, database_path: &str) -> Result<(), anyhow::Error> {
-        let pool = init_db(database_path).await?;
+        let pool = init_db(PathBuf::from(database_path))?;
         let mut pool_lock = self.database_pool.write().await;
         *pool_lock = Some(pool);
         Ok(())
@@ -74,7 +75,7 @@ impl MinotariWalletDatabaseManager {
         }
     }
 
-    pub async fn get_pool(&self) -> Result<Pool<Sqlite>, anyhow::Error> {
+    pub async fn get_pool(&self) -> Result<SqlitePool, anyhow::Error> {
         let pool_lock = self.database_pool.read().await;
         let pool = pool_lock
             .as_ref()
@@ -84,40 +85,13 @@ impl MinotariWalletDatabaseManager {
 
     pub async fn get_connection(
         &self,
-    ) -> Result<sqlx::pool::PoolConnection<Sqlite>, anyhow::Error> {
+    ) -> Result<PooledConnection<SqliteConnectionManager>, anyhow::Error> {
         let pool_lock = self.database_pool.read().await;
         let pool = pool_lock
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("Database pool not initialized"))?;
-
-        for attempt in 1..=CONNECTION_RETRY_MAX_ATTEMPTS {
-            match pool.acquire().await {
-                Ok(conn) => {
-                    log::debug!(target: LOG_TARGET, "Database connection acquired");
-                    return Ok(conn);
-                }
-                Err(e) => {
-                    warn!(
-                        target: LOG_TARGET,
-                        "Failed to acquire database connection (attempt {}/{}): {}",
-                        attempt, CONNECTION_RETRY_MAX_ATTEMPTS, e
-                    );
-                    if attempt < CONNECTION_RETRY_MAX_ATTEMPTS {
-                        tokio::time::sleep(tokio::time::Duration::from_millis(
-                            CONNECTION_RETRY_DELAY_MS,
-                        ))
-                        .await;
-                    } else {
-                        return Err(anyhow::anyhow!(
-                            "Failed to acquire database connection after {} attempts",
-                            CONNECTION_RETRY_MAX_ATTEMPTS
-                        ));
-                    }
-                }
-            }
-        }
-
-        Err(anyhow::anyhow!("Failed to acquire database connection"))
+        let connection = pool.get()?;
+        Ok(connection)
     }
 
     pub async fn start_health_check(&self) {
@@ -139,7 +113,7 @@ impl MinotariWalletDatabaseManager {
                     tokio::select! {
                         _ = interval.tick() => {
                             if let Some(pool) = &pool_clone {
-                                match pool.acquire().await {
+                                match pool.get() {
                                     Ok(_) => {
                                         log::debug!(target: LOG_TARGET, "Database connection health check passed");
                                     }
@@ -162,12 +136,13 @@ impl MinotariWalletDatabaseManager {
             });
     }
 
+    #[allow(dead_code)]
     pub async fn get_account_by_name(
         &self,
         friendly_name: &str,
     ) -> Result<Option<minotari_wallet::db::AccountRow>, anyhow::Error> {
         let mut conn = self.get_connection().await?;
-        let account = minotari_wallet::db::get_account_by_name(&mut conn, friendly_name).await?;
+        let account = minotari_wallet::db::get_account_by_name(&mut conn, friendly_name)?;
         Ok(account)
     }
 }
