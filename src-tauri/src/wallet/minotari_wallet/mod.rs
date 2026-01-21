@@ -83,7 +83,7 @@ static DEFAULT_GRPC_URL: LazyLock<String> = LazyLock::new(|| {
 static DEFAULT_PASSWORD: &str = "test_password";
 
 // Blockchain scanning constants
-const SCAN_BATCH_SIZE: u64 = 50;
+const SCAN_BATCH_SIZE: u64 = 25;
 const SCAN_POLL_INTERVAL_SECS: u64 = 30;
 
 pub struct MinotariWalletManager {
@@ -419,46 +419,41 @@ impl MinotariWalletManager {
         let cancel_token_for_shutdown = cancel_token.clone();
         let cancel_token_for_scan = cancel_token.clone();
 
-        // Spawn the scan via spawn_blocking since the Scanner future is !Send
-        // We create the Scanner inside spawn_blocking to avoid Send issues
         let database_path_buf = PathBuf::from(database_path);
-        let tari_address_clone = tari_address.clone();
-        tokio::task::spawn_blocking(move || {
-            tokio::runtime::Handle::current().block_on(async move {
-                // Build the scanner with continuous mode inside the blocking task
-                let (event_rx, scan_future) = Scanner::new(
-                    DEFAULT_PASSWORD,
-                    DEFAULT_GRPC_URL.as_str(),
-                    database_path_buf,
-                    SCAN_BATCH_SIZE,
-                )
-                .account(&tari_address_clone)
-                .mode(ScanMode::Continuous {
-                    poll_interval: Duration::from_secs(SCAN_POLL_INTERVAL_SECS),
-                })
-                .cancel_token(cancel_token_for_scan.clone())
-                .run_with_events();
 
-                // Process events and run scan concurrently
-                tokio::select! {
-                    _ = Self::process_scan_events(event_rx) => {
-                        info!(target: LOG_TARGET, "Scan event processing completed.");
-                    }
-                    result = scan_future => {
-                        match result {
-                            Ok(_) => {
-                                info!(target: LOG_TARGET, "Blockchain scan completed successfully.");
-                            }
-                            Err(e) => {
-                                error!(target: LOG_TARGET, "Blockchain scan failed: {:?}", e);
-                            }
+        tokio::spawn(async move {
+            let (event_rx, scan_future) = Scanner::new(
+                DEFAULT_PASSWORD,
+                DEFAULT_GRPC_URL.as_str(),
+                database_path_buf,
+                SCAN_BATCH_SIZE,
+            )
+            .account(&tari_address)
+            .mode(ScanMode::Continuous {
+                poll_interval: Duration::from_secs(SCAN_POLL_INTERVAL_SECS),
+            })
+            .cancel_token(cancel_token_for_scan.clone())
+            .run_with_events();
+
+            // Process events and run scan concurrently
+            tokio::select! {
+                _ = Self::process_scan_events(event_rx) => {
+                    info!(target: LOG_TARGET, "Scan event processing completed.");
+                }
+                result = scan_future => {
+                    match result {
+                        Ok(_) => {
+                            info!(target: LOG_TARGET, "Blockchain scan completed successfully.");
+                        }
+                        Err(e) => {
+                            error!(target: LOG_TARGET, "Blockchain scan failed: {:?}", e);
                         }
                     }
                 }
+            }
 
-                // Ensure token is cancelled when done
-                cancel_token_for_scan.cancel();
-            });
+            // Ensure token is cancelled when done
+            cancel_token_for_scan.cancel();
         });
 
         // Spawn shutdown listener task
@@ -494,9 +489,7 @@ impl MinotariWalletManager {
                 ProcessingEvent::ScanStatus(status) => {
                     Self::handle_status_event(status).await;
                 }
-                ProcessingEvent::BlockProcessed(block_event) => {
-                    info!(target: LOG_TARGET, "Block processed event: height {}", block_event.height);
-                }
+                ProcessingEvent::BlockProcessed(_block_event) => {}
                 ProcessingEvent::TransactionsReady(transactions_event) => {
                     let transaction_count = transactions_event.transactions.len();
                     info!(
