@@ -3,6 +3,7 @@ import { AnimatePresence } from 'motion/react';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import {
     BlockInfoWrapper,
+    Chip,
     Content,
     ContentWrapper,
     CurrencyText,
@@ -98,6 +99,7 @@ const HistoryListItem = memo(function HistoryListItem({
         ? `***`
         : formatNumber(transaction.amount, FormatPreset.XTM_COMPACT).toLowerCase();
 
+    /*
     // note re. isPositiveValue:
     // amounts in the tx response are always positive numbers but
     // if the transaction is Outbound, the value is negative
@@ -115,6 +117,7 @@ const HistoryListItem = memo(function HistoryListItem({
             <CurrencyText>{`XTM`}</CurrencyText>
         </ValueWrapper>
     );
+    */
     const baseItem = (
         <BaseItem
             title={itemTitle}

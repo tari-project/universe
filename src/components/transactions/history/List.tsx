@@ -13,11 +13,8 @@ import { PlaceholderItem } from './transactionHistoryItem/HistoryItem.styles.ts'
 
 export function List() {
     const { t } = useTranslation('wallet');
-    const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const walletTransactionsAll = useWalletStore((s) => s.wallet_transactions);
     const transactionsFilter = useWalletStore((s) => s.transaction_history_filter);
-
-    console.log('Rendering Transaction History List with filter:', walletTransactionsAll, transactionsFilter);
 
     const walletTransactions = useMemo(() => {
         if (!walletTransactionsAll) return [];

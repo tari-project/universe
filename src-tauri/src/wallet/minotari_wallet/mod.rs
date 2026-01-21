@@ -584,17 +584,7 @@ impl MinotariWalletManager {
                     "Scan started for account {} from height {}", account_id, from_height
                 );
             }
-            ScanStatusEvent::Progress {
-                current_height,
-                blocks_scanned,
-                ..
-            } => {
-                info!(
-                    target: LOG_TARGET,
-                    "Scan progress event: current height {}, blocks scanned {}",
-                    current_height, blocks_scanned
-                );
-
+            ScanStatusEvent::Progress { current_height, .. } => {
                 // Update last scanned height
                 {
                     let mut height = INSTANCE.last_scanned_height.write().await;
@@ -616,12 +606,6 @@ impl MinotariWalletManager {
                     false, // is_initial_scan_complete - still scanning
                 )
                 .await;
-
-                info!(
-                    target: LOG_TARGET,
-                    "Scan progress: height {}/{}, {:.1}%, {} blocks scanned",
-                    current_height, tip_height, progress, blocks_scanned
-                );
             }
             ScanStatusEvent::Completed {
                 final_height,
@@ -666,15 +650,7 @@ impl MinotariWalletManager {
                     "Scan waiting, will resume in {:?}", resume_in
                 );
             }
-            ScanStatusEvent::MoreBlocksAvailable {
-                last_scanned_height,
-                ..
-            } => {
-                info!(
-                    target: LOG_TARGET,
-                    "More blocks available after height {}", last_scanned_height
-                );
-            }
+            ScanStatusEvent::MoreBlocksAvailable { .. } => {}
             ScanStatusEvent::Paused { reason, .. } => {
                 info!(target: LOG_TARGET, "Scan paused: {:?}", reason);
             }
