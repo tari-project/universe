@@ -33,6 +33,7 @@ use std::time::Duration;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::task::JoinHandle;
 
+use crate::configs::config_core::ConfigCore;
 use tokio::select;
 use tokio::sync::watch;
 use tokio::time::sleep;
@@ -122,13 +123,24 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let poll_time = self.poll_time;
         let health_timeout = self.health_timeout;
 
+        let mut data_dir_path = base_path.clone();
+        if self.adapter.name() == "local_minotari_node" {
+            if let Some(path) = ConfigCore::get_chain_data_path().await {
+                data_dir_path = path.clone();
+            }
+        }
+
         info!(target: LOG_TARGET_APP_LOGIC, "Using {binary_path:?} for {name}");
         let first_start = self
             .is_first_start
             .load(std::sync::atomic::Ordering::SeqCst);
-        let (mut child, status_monitor) =
-            self.adapter
-                .spawn(base_path, config_path, log_path, binary_path, first_start)?;
+        let (mut child, status_monitor) = self.adapter.spawn(
+            data_dir_path,
+            config_path,
+            log_path,
+            binary_path,
+            first_start,
+        )?;
         if first_start {
             self.is_first_start
                 .store(false, std::sync::atomic::Ordering::SeqCst);
