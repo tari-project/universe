@@ -147,7 +147,7 @@ impl MinotariWalletManager {
         amount: u64,
         payment_id: Option<String>,
     ) -> Result<DisplayedTransaction, anyhow::Error> {
-        println!(
+        info!(
             "Sending one-sided transaction to address: {}, amount: {}",
             address, amount
         );
@@ -164,7 +164,7 @@ impl MinotariWalletManager {
             payment_id,
         };
 
-        println!(
+        info!(
             "Creating one-sided transaction from {} to {} for amount {}",
             tari_address, address, amount
         );
@@ -172,7 +172,7 @@ impl MinotariWalletManager {
             .create_one_sided_transaction(recipient)
             .await?;
 
-        println!("Signing one-sided transaction...");
+        info!("Signing one-sided transaction...");
 
         let signed_transaction = transaction_manager
             .sign_one_sided_transaction(
@@ -186,7 +186,7 @@ impl MinotariWalletManager {
             )
             .await?;
 
-        println!("Finalizing and broadcasting one-sided transaction...");
+        info!("Finalizing and broadcasting one-sided transaction...");
 
         let displayed_transaction = transaction_manager
             .finalize_one_sided_transaction(signed_transaction)
@@ -198,7 +198,7 @@ impl MinotariWalletManager {
         // Emit to frontend immediately so user sees the pending transaction
         EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()]).await;
 
-        println!("One-sided transaction sent successfully.");
+        info!("One-sided transaction sent successfully.");
         Ok(displayed_transaction)
     }
 
