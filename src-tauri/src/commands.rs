@@ -59,6 +59,7 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
+use crate::wallet::minotari_wallet::balance_tracker::BalanceTracker;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{airdrop, UniverseAppState, LOG_TARGET_APP_LOGIC};
@@ -1581,24 +1582,12 @@ pub fn verify_address_for_send(
 }
 
 #[tauri::command]
-pub fn validate_minotari_amount(
-    amount: String,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), InvokeError> {
+pub async fn validate_minotari_amount(amount: String) -> Result<(), InvokeError> {
     let t_amount = Minotari::from_str(&amount).map_err(|e| e.to_string())?;
     let m_amount = MicroMinotari::from(t_amount);
 
-    let balance = state
-        .wallet_state_watch_rx
-        .borrow()
-        .clone()
-        .and_then(|state| state.balance);
-
-    let mut available_balance = MicroMinotari::from(0);
-
-    if let Some(wallet_balance) = &balance {
-        available_balance = wallet_balance.available_balance
-    }
+    let balance = BalanceTracker::current().get_balance().await;
+    let available_balance = MicroMinotari::from(balance);
 
     match m_amount.cmp(&available_balance) {
         std::cmp::Ordering::Less => Ok(()),
