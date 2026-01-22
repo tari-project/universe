@@ -57,7 +57,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
         LazyLock,
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
@@ -85,6 +85,7 @@ static DEFAULT_PASSWORD: &str = "test_password";
 // Blockchain scanning constants
 const SCAN_BATCH_SIZE: u64 = 25;
 const SCAN_POLL_INTERVAL_SECS: u64 = 30;
+const PROGRESS_UPDATE_INTERVAL_SECS: u64 = 5;
 
 pub struct MinotariWalletManager {
     database_manager: MinotariWalletDatabaseManager,
@@ -98,6 +99,7 @@ pub struct MinotariWalletManager {
     /// Stores pending transactions by their sent_output_hashes for matching with scanned transactions
     /// Key: comma-separated sorted output hashes, Value: DisplayedTransaction
     pending_transactions: RwLock<HashMap<String, DisplayedTransaction>>,
+    last_progress_emit_time: RwLock<Instant>,
 }
 
 impl MinotariWalletManager {
@@ -110,6 +112,9 @@ impl MinotariWalletManager {
             last_scanned_height: RwLock::new(0),
             initial_sync_complete: AtomicBool::new(false),
             pending_transactions: RwLock::new(HashMap::new()),
+            last_progress_emit_time: RwLock::new(
+                Instant::now() - Duration::from_secs(PROGRESS_UPDATE_INTERVAL_SECS),
+            ),
         }
     }
 
@@ -591,21 +596,29 @@ impl MinotariWalletManager {
                     *height = current_height;
                 }
 
-                // Get chain tip from node status for accurate progress
-                let tip_height = Self::get_chain_tip_height();
-                let progress = if tip_height > 0 {
-                    ((current_height as f64 / tip_height as f64) * 100.0).min(100.0)
-                } else {
-                    0.0
+                let should_emit = {
+                    let last_emit = INSTANCE.last_progress_emit_time.read().await;
+                    last_emit.elapsed() >= Duration::from_secs(PROGRESS_UPDATE_INTERVAL_SECS)
                 };
+                if should_emit {
+                    *INSTANCE.last_progress_emit_time.write().await = Instant::now();
 
-                EventsEmitter::emit_wallet_scanning_progress_update(
-                    current_height,
-                    tip_height,
-                    progress,
-                    false, // is_initial_scan_complete - still scanning
-                )
-                .await;
+                    // Get chain tip from node status for accurate progress
+                    let tip_height = Self::get_chain_tip_height();
+                    let progress = if tip_height > 0 {
+                        ((current_height as f64 / tip_height as f64) * 100.0).min(100.0)
+                    } else {
+                        0.0
+                    };
+
+                    EventsEmitter::emit_wallet_scanning_progress_update(
+                        current_height,
+                        tip_height,
+                        progress,
+                        false, // is_initial_scan_complete - still scanning
+                    )
+                    .await;
+                }
             }
             ScanStatusEvent::Completed {
                 final_height,
