@@ -68,27 +68,27 @@ export interface NodeTypeUpdatePayload {
 
 export type BackgroundNodeSyncUpdatePayload =
     | {
-        step: 'Startup';
-        initial_connected_peers: number;
-        required_peers: number;
-    }
+          step: 'Startup';
+          initial_connected_peers: number;
+          required_peers: number;
+      }
     | {
-        step: 'Header';
-        local_header_height: number;
-        tip_header_height: number;
-        local_block_height: number;
-        tip_block_height: number;
-    }
+          step: 'Header';
+          local_header_height: number;
+          tip_header_height: number;
+          local_block_height: number;
+          tip_block_height: number;
+      }
     | {
-        step: 'Block';
-        local_header_height: number;
-        tip_header_height: number;
-        local_block_height: number;
-        tip_block_height: number;
-    }
+          step: 'Block';
+          local_header_height: number;
+          tip_header_height: number;
+          local_block_height: number;
+          tip_block_height: number;
+      }
     | {
-        step: 'Done';
-    };
+          step: 'Done';
+      };
 
 export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';
 

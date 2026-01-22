@@ -11,12 +11,6 @@ export interface BackendBridgeTransaction extends UserTransactionDTO {
     mined_in_block_height?: number;
 }
 
-export interface BridgeTransactionDetails {
-    status: UserTransactionDTO.status;
-    transactionHash?: string;
-    amountAfterFee: string;
-}
-
 export interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;

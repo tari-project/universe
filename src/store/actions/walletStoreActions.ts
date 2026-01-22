@@ -15,16 +15,6 @@ import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import { fetchBridgeTransactionsHistory } from './bridgeApiActions';
 
-// NOTE: Tx status differ for core and proto(grpc)
-export const COINBASE_BITFLAG = 6144;
-export const NON_COINBASE_BITFLAG = 2015;
-
-export interface TxArgs {
-    filter?: TxHistoryFilter;
-    offset?: number;
-    limit?: number;
-}
-
 export const importSeedWords = async (seedWords: string[]) => {
     useWalletStore.setState((c) => ({
         ...c,

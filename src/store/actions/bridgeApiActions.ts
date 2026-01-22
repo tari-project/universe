@@ -21,7 +21,6 @@ export const fetchBridgeTransactionsHistory = async (
                 ...c,
                 bridge_transactions: response.transactions,
             }));
-            console.log('Bridge transactions history fetched successfully:', response.transactions);
             return response.transactions;
         })
         .catch((error) => {

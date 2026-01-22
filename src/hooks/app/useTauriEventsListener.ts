@@ -270,14 +270,12 @@ const useTauriEventsListener = () => {
                         setIsShuttingDown(true);
                         break;
                     case 'WalletTransactionsFound':
-                        console.log('WalletTransactionsFound event received', event.payload);
                         handleWalletTransactionsFound(event.payload);
                         break;
                     case 'WalletTransactionsCleared':
                         handleWalletTransactionsCleared();
                         break;
                     case 'WalletTransactionUpdated':
-                        console.log('WalletTransactionUpdated event received', event.payload);
                         handleWalletTransactionUpdated(event.payload);
                         break;
                     case 'SetShowBatteryAlert':
@@ -304,18 +302,16 @@ const useTauriEventsListener = () => {
         console.info('Setting up Tauri event listener for backend state updates');
         if (initializationRef.current) return;
         initializationRef.current = true;
-        console.log('Initializing Tauri event listener');
 
         let unlistenFunction: (() => void) | null = null;
         setupListener().then((unlisten) => {
-            console.log('Tauri event listener set up successfully');
             unlistenFunction = unlisten;
         });
 
         return () => {
             unlistenFunction?.();
         };
-    }, []);
+    }, [setupListener]);
 };
 
 export default useTauriEventsListener;

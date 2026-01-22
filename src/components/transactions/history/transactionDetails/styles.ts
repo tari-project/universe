@@ -52,19 +52,3 @@ export const OperationsTitle = styled.h3`
     letter-spacing: 0.5px;
     opacity: 0.8;
 `;
-
-export const OutputDetailsSection = styled.div`
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid ${({ theme }) => theme.colorsAlpha.greyscaleAlpha[10]};
-`;
-
-export const OutputDetailsSectionTitle = styled.div`
-    font-size: 12px;
-    font-weight: 600;
-    margin: 0 0 8px 0;
-    color: ${({ theme }) => theme.palette.text.secondary};
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    opacity: 0.8;
-`;
