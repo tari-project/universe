@@ -34,11 +34,11 @@ use minotari_wallet::{
 };
 use tari_common::configuration::Network;
 use tari_transaction_components::{
+    consensus::ConsensusManager,
     offline_signing::{
         models::{PrepareOneSidedTransactionForSigningResult, SignedOneSidedTransactionResult},
         sign_locked_transaction,
     },
-    test_helpers::create_consensus_manager,
 };
 use tauri::AppHandle;
 
@@ -90,7 +90,7 @@ impl TransactionManager {
         println!("Signing one-sided transaction...");
         let key_manager = InternalWallet::get_key_manager(app_handle).await?;
         let network = Network::get_current_or_user_setting_or_default();
-        let rules = create_consensus_manager();
+        let rules = ConsensusManager::builder(network).build();
 
         let signed_transaction = sign_locked_transaction(
             &key_manager,
