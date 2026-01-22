@@ -763,7 +763,7 @@ impl InternalWallet {
                 match InternalWallet::get_credentials(app_handle, details.id.clone(), true).await {
                     Ok(cred) => cred.encrypted_seed,
                     Err(e) => {
-                        panic!("Failed to get credentials: {e}")
+                        return Err(anyhow::anyhow!("Failed to get credentials: {e}"));
                     }
                 };
             let tari_cipher_seed = CipherSeed::from_binary(&tari_seed_binary)
