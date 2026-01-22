@@ -84,7 +84,7 @@ tari_transaction_components = { git = "https://github.com/tari-project/tari/", r
 tari_crypto = "0.22.1"
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", rev = "c79f5557b1d214cdca7b4e52f02ddb729600e7cd" }
 tari_utilities = { version = "0.8", features = ["std"] }
-minotari-wallet = { package = "minotari", git = "https://github.com/Misieq01/minotari-cli.git", rev = "672b6a935a8ce1f81ca6fe4abc93c3f57b878c3d" }
+minotari-wallet = { package = "minotari", git = "https://github.com/tari-project/minotari-cli.git", rev = "672b6a935a8ce1f81ca6fe4abc93c3f57b878c3d" }
 tauri = { version = "2", features = [
   "protocol-asset",
   "isolation",
@@ -127,7 +127,6 @@ winreg = "0.52.0"
 
 chrono = "0.4.38"
 device_query = "2.1.0"
-# libsqlite3-sys = { version = "0.25.1", features = ["bundled"] }
 log = { version = "0.4.29", features = ["kv"] }
 nvml-wrapper = "0.10.0"
 rand = "0.8.5"

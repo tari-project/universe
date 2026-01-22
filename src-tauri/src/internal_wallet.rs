@@ -33,9 +33,8 @@ use tari_common_types::seeds::mnemonic::Mnemonic;
 use tari_common_types::seeds::seed_words::SeedWords;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_transaction_components::key_manager::wallet_types::{SeedWordsWallet, WalletType};
-use tari_transaction_components::key_manager::KeyManager;
 use tari_transaction_components::key_manager::{
-    SecretTransactionKeyManagerInterface, TransactionKeyManagerInterface,
+    KeyManager, SecretTransactionKeyManagerInterface, TransactionKeyManagerInterface,
 };
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
