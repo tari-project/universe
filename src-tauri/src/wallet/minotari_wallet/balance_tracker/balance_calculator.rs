@@ -58,27 +58,27 @@ mod tests {
     fn test_calculate_new_balance_happy_path() {
         // Simple addition and subtraction
         let result = BalanceCalculator::calculate_new_balance(100, 50, 30);
-        assert_eq!(result.unwrap(), 120);
+        assert_eq!(result.expect("Simple addition and subtraction"), 120);
 
         // Zero incoming
         let result = BalanceCalculator::calculate_new_balance(100, 0, 30);
-        assert_eq!(result.unwrap(), 70);
+        assert_eq!(result.expect("Zero incoming"), 70);
 
         // Zero outgoing
         let result = BalanceCalculator::calculate_new_balance(100, 50, 0);
-        assert_eq!(result.unwrap(), 150);
+        assert_eq!(result.expect("Zero outgoing"), 150);
 
         // Both zero
         let result = BalanceCalculator::calculate_new_balance(100, 0, 0);
-        assert_eq!(result.unwrap(), 100);
+        assert_eq!(result.expect("Both zero"), 100);
 
         // Zero balance with incoming
         let result = BalanceCalculator::calculate_new_balance(0, 100, 50);
-        assert_eq!(result.unwrap(), 50);
+        assert_eq!(result.expect("Zero balance with incoming"), 50);
 
         // Large values
         let result = BalanceCalculator::calculate_new_balance(1_000_000, 500_000, 300_000);
-        assert_eq!(result.unwrap(), 1_200_000);
+        assert_eq!(result.expect("Large values"), 1_200_000);
     }
 
     #[test]
@@ -86,7 +86,7 @@ mod tests {
         // Adding to u64::MAX causes overflow
         let result = BalanceCalculator::calculate_new_balance(u64::MAX, 1, 0);
         assert!(result.is_err());
-        match result.unwrap_err() {
+        match result.expect_err("Adding to u64::MAX causes overflow") {
             BalanceCalculationError::Overflow { current, credit } => {
                 assert_eq!(current, u64::MAX);
                 assert_eq!(credit, 1);
@@ -97,7 +97,7 @@ mod tests {
         // Large incoming causing overflow
         let result = BalanceCalculator::calculate_new_balance(u64::MAX - 10, 20, 0);
         assert!(result.is_err());
-        match result.unwrap_err() {
+        match result.expect_err("Large incoming causing overflow") {
             BalanceCalculationError::Overflow { current, credit } => {
                 assert_eq!(current, u64::MAX - 10);
                 assert_eq!(credit, 20);
@@ -108,7 +108,7 @@ mod tests {
         // Overflow even though outgoing would bring it back down
         let result = BalanceCalculator::calculate_new_balance(u64::MAX, 100, 100);
         assert!(result.is_err());
-        match result.unwrap_err() {
+        match result.expect_err("Overflow even though outgoing would bring it back down") {
             BalanceCalculationError::Overflow { .. } => {}
             _ => panic!("Expected Overflow error"),
         }
@@ -119,7 +119,7 @@ mod tests {
         // Subtracting more than available
         let result = BalanceCalculator::calculate_new_balance(100, 0, 101);
         assert!(result.is_err());
-        match result.unwrap_err() {
+        match result.expect_err("Subtracting more than available") {
             BalanceCalculationError::Underflow { current, debit } => {
                 assert_eq!(current, 100);
                 assert_eq!(debit, 101);
@@ -130,7 +130,7 @@ mod tests {
         // Zero balance with outgoing
         let result = BalanceCalculator::calculate_new_balance(0, 0, 1);
         assert!(result.is_err());
-        match result.unwrap_err() {
+        match result.expect_err("Zero balance with outgoing") {
             BalanceCalculationError::Underflow { current, debit } => {
                 assert_eq!(current, 0);
                 assert_eq!(debit, 1);
@@ -141,7 +141,7 @@ mod tests {
         // Incoming + current < outgoing
         let result = BalanceCalculator::calculate_new_balance(100, 50, 200);
         assert!(result.is_err());
-        match result.unwrap_err() {
+        match result.expect_err("Incoming + current < outgoing") {
             BalanceCalculationError::Underflow { current, debit } => {
                 assert_eq!(current, 100);
                 assert_eq!(debit, 200);
@@ -152,7 +152,7 @@ mod tests {
         // Large outgoing value
         let result = BalanceCalculator::calculate_new_balance(1000, 500, u64::MAX);
         assert!(result.is_err());
-        match result.unwrap_err() {
+        match result.expect_err("Large outgoing value") {
             BalanceCalculationError::Underflow { .. } => {}
             _ => panic!("Expected Underflow error"),
         }
@@ -162,11 +162,14 @@ mod tests {
     fn test_calculate_new_balance_edge_cases() {
         // Max balance minus max outgoing = 0
         let result = BalanceCalculator::calculate_new_balance(u64::MAX, 0, u64::MAX);
-        assert_eq!(result.unwrap(), 0);
+        assert_eq!(result.expect("Max balance minus max outgoing = 0"), 0);
 
         // Zero balance with equal incoming and outgoing
         let result = BalanceCalculator::calculate_new_balance(0, 100, 100);
-        assert_eq!(result.unwrap(), 0);
+        assert_eq!(
+            result.expect("Zero balance with equal incoming and outgoing"),
+            0
+        );
 
         // All max values should underflow (overflow first, actually)
         let result = BalanceCalculator::calculate_new_balance(u64::MAX, u64::MAX, u64::MAX);

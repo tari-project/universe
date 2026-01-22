@@ -141,8 +141,8 @@ impl MinotariWalletDatabaseManager {
         &self,
         friendly_name: &str,
     ) -> Result<Option<minotari_wallet::db::AccountRow>, anyhow::Error> {
-        let mut conn = self.get_connection().await?;
-        let account = minotari_wallet::db::get_account_by_name(&mut conn, friendly_name)?;
+        let conn = self.get_connection().await?;
+        let account = minotari_wallet::db::get_account_by_name(&conn, friendly_name)?;
         Ok(account)
     }
 }

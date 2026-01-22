@@ -312,21 +312,21 @@ impl MinotariWalletManager {
     async fn get_latest_scanned_tip_block(
         account_id: i64,
     ) -> Result<Option<minotari_wallet::models::ScannedTipBlock>, anyhow::Error> {
-        let mut conn = Self::get_db_connection().await?;
-        get_latest_scanned_tip_block_by_account(&mut conn, account_id).map_err(|e| e.into())
+        let conn = Self::get_db_connection().await?;
+        get_latest_scanned_tip_block_by_account(&conn, account_id).map_err(|e| e.into())
     }
 
     /// Get balance for an account
     async fn get_account_balance(account_id: i64) -> Result<AccountBalance, anyhow::Error> {
-        let mut conn = Self::get_db_connection().await?;
-        get_balance(&mut conn, account_id).map_err(|e| e.into())
+        let conn = Self::get_db_connection().await?;
+        get_balance(&conn, account_id).map_err(|e| e.into())
     }
 
     /// Get all balance changes for an account
     #[allow(dead_code)]
     async fn get_all_balance_changes(account_id: i64) -> Result<Vec<BalanceChange>, anyhow::Error> {
-        let mut conn = Self::get_db_connection().await?;
-        get_all_balance_changes_by_account_id(&mut conn, account_id).map_err(|e| e.into())
+        let conn = Self::get_db_connection().await?;
+        get_all_balance_changes_by_account_id(&conn, account_id).map_err(|e| e.into())
     }
 
     pub async fn initialize_wallet() -> Result<(), anyhow::Error> {
