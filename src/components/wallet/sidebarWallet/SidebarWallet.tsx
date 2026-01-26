@@ -20,7 +20,7 @@ import {
     TabsWrapper,
     WalletErrorWrapper,
 } from './styles.ts';
-import { useCallback, useRef, RefObject } from 'react';
+import { useCallback, useState } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
 import { List } from '@app/components/transactions/history/List.tsx';
 import { open } from '@tauri-apps/plugin-shell';
@@ -60,8 +60,8 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const isConnectedToTariNetwork = useNodeStore((s) => s.isNodeConnected);
     const isInitialWalletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);
 
-    const targetRef = useRef<HTMLDivElement>(null) as RefObject<HTMLDivElement>;
-    const isScrolled = false;
+    const [isScrolled, setIsScrolled] = useState(false);
+
     function handleFilterChange(newFilter: TxHistoryFilter) {
         setTxHistoryFilter(newFilter);
     }
@@ -132,8 +132,8 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                         <FilterSelect filter={filter} handleFilterChange={handleFilterChange} />
                         <WalletActions section={section} setSection={setSection} />
                     </TabsWrapper>
-                    <HistoryListWrapper ref={targetRef}>
-                        <List />
+                    <HistoryListWrapper>
+                        <List setIsScrolled={setIsScrolled} />
                     </HistoryListWrapper>
                 </>
             )}

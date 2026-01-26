@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 
 import { useTranslation } from 'react-i18next';
-import { VList } from 'virtua';
+import { VList, VListHandle } from 'virtua';
 
 import { useWalletStore } from '@app/store';
 
@@ -11,11 +11,15 @@ import { DisplayedTransaction, TransactionSource } from '@app/types/app-status.t
 import { HistoryListItem } from './transactionHistoryItem/HistoryItem.tsx';
 import { PlaceholderItem } from './transactionHistoryItem/HistoryItem.styles.ts';
 
-export function List() {
+interface ListProps {
+    setIsScrolled: (isScrolled: boolean) => void;
+}
+
+export function List({ setIsScrolled }: ListProps) {
     const { t } = useTranslation('wallet');
     const walletTransactionsAll = useWalletStore((s) => s.wallet_transactions);
     const transactionsFilter = useWalletStore((s) => s.transaction_history_filter);
-
+    const ref = useRef<VListHandle>(null);
     const walletTransactions = useMemo(() => {
         if (!walletTransactionsAll) return [];
 
@@ -77,7 +81,14 @@ export function List() {
     return (
         <ListWrapper>
             {emptyMarkup}
-            <VList style={{ height: '100%', width: '100%' }}>
+            <VList
+                style={{ height: '100%', width: '100%' }}
+                ref={ref}
+                onScroll={() => {
+                    if (!ref.current) return;
+                    setIsScrolled(true);
+                }}
+            >
                 <ListItemWrapper>
                     {walletTransactions?.map((tx, i) => {
                         const isNewTransaction = !seenTransactionIds.has(tx.id);
