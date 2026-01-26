@@ -20,7 +20,7 @@ import {
     TabsWrapper,
     WalletErrorWrapper,
 } from './styles.ts';
-import { useCallback, useRef, useState, useEffect, RefObject } from 'react';
+import { useCallback, useRef, RefObject } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
 import { List } from '@app/components/transactions/history/List.tsx';
 import { open } from '@tauri-apps/plugin-shell';
@@ -60,19 +60,10 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     const isInitialWalletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);
 
     const targetRef = useRef<HTMLDivElement>(null) as RefObject<HTMLDivElement>;
-    const [isScrolled, setIsScrolled] = useState(false);
-
+    const isScrolled = false;
     function handleFilterChange(newFilter: TxHistoryFilter) {
         setTxHistoryFilter(newFilter);
     }
-
-    useEffect(() => {
-        const el = targetRef.current;
-        if (!el) return;
-        const onScroll = () => setIsScrolled(el.scrollTop > 1);
-        el.addEventListener('scroll', onScroll);
-        return () => el.removeEventListener('scroll', onScroll);
-    }, []);
 
     const isSyncing = !isConnectedToTariNetwork || isInitialWalletScanning;
     const isSwapping = useWalletStore((s) => s.is_swapping);
@@ -123,7 +114,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     </WalletErrorWrapper>
                 )}
             </DetailsCard>
-            {isStandardWalletUI && !isWalletModuleFailed && (
+            {!isSyncing && isStandardWalletUI && !isWalletModuleFailed && (
                 <>
                     <TabsWrapper>
                         <FilterSelect filter={filter} handleFilterChange={handleFilterChange} />
@@ -159,7 +150,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     </SwapsWrapper>
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
-                        <Wrapper $listHidden={!isStandardWalletUI || isSyncing}>
+                        <Wrapper>
                             {walletMarkup}
                             <BuyTariButton onClick={() => setIsSwapping(true)}>
                                 <span>{`${t('swap.buy-tari')} (XTM)`}</span>

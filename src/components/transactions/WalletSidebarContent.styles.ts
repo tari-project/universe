@@ -8,4 +8,5 @@ export const WalletSections = styled.div`
     display: flex;
     flex-direction: column;
     max-height: max(50vh, 600px);
+    justify-content: flex-end;
 `;

@@ -15,13 +15,14 @@ export const WalletWrapper = styled(m.div)`
     justify-content: flex-end;
 `;
 
-export const Wrapper = styled.div<{ $listHidden?: boolean }>`
+export const Wrapper = styled.div`
     border-radius: 20px;
     background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
     padding: 10px;
     display: flex;
     position: relative;
     flex-direction: column;
+    justify-content: space-between;
     overflow: hidden;
     overflow-y: auto;
     width: 100%;
