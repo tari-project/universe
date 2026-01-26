@@ -6,6 +6,7 @@ export const ListWrapper = styled.div`
     position: relative;
     width: 100%;
     height: 100%;
+
     h6 {
         text-align: center;
     }
@@ -17,6 +18,8 @@ export const ListItemWrapper = styled.div`
     align-items: center;
     position: relative;
     gap: 4px;
+    overflow-y: auto;
+    overflow-anchor: none;
 `;
 
 export const FilterWrapper = styled.div`

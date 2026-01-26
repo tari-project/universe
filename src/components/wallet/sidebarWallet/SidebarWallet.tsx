@@ -19,6 +19,7 @@ import {
     DetailsCardBottomContent,
     TabsWrapper,
     WalletErrorWrapper,
+    SidebarWalletWrapper,
 } from './styles.ts';
 import { useCallback, useState } from 'react';
 import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
@@ -151,7 +152,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     }
 
     return (
-        <>
+        <SidebarWalletWrapper>
             <AnimatePresence mode="wait">
                 {isSwapping ? (
                     <SwapsWrapper key="swap" variants={swapTransition} initial="hide" exit="hide" animate="show">
@@ -178,6 +179,6 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     handleClose={() => setSelectedTransactionId(null)}
                 />
             )}
-        </>
+        </SidebarWalletWrapper>
     );
 }

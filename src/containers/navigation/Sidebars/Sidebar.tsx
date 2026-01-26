@@ -1,15 +1,12 @@
-import WalletSection from './sections/Wallet.tsx';
 import MiningSection from './sections/Mining.tsx';
 import { GridAreaBottom, GridAreaTop, WrapperGrid, SidebarWrapper, BuyOverlay } from './Sidebar.styles.ts';
-import { useNodeStore, useWalletStore } from '@app/store';
+import { useWalletStore } from '@app/store';
 import { AnimatePresence } from 'motion/react';
+import WalletSidebarContent from '@app/components/transactions/WalletSidebarContent.tsx';
 
 export default function Sidebar() {
     const isSwapping = useWalletStore((s) => s.is_swapping);
-    const isScanComplete = useWalletStore((s) => s.wallet_scanning?.is_initial_scan_complete);
-    const isConnectedToTariNetwork = useNodeStore((s) => s.isNodeConnected);
 
-    const isLoading = !isConnectedToTariNetwork || !isScanComplete;
     return (
         <SidebarWrapper
             initial={{
@@ -25,17 +22,15 @@ export default function Sidebar() {
                 left: -10,
             }}
         >
+            <AnimatePresence>
+                {isSwapping && <BuyOverlay initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />}
+            </AnimatePresence>
             <WrapperGrid>
                 <GridAreaTop>
                     <MiningSection />
                 </GridAreaTop>
-                <AnimatePresence>
-                    {isSwapping && (
-                        <BuyOverlay initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
-                    )}
-                </AnimatePresence>
-                <GridAreaBottom $swapsOpen={isSwapping} $isLoading={isLoading}>
-                    <WalletSection />
+                <GridAreaBottom $swapsOpen={isSwapping}>
+                    <WalletSidebarContent />
                 </GridAreaBottom>
             </WrapperGrid>
         </SidebarWrapper>

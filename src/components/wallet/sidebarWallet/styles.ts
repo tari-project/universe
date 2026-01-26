@@ -1,17 +1,23 @@
 import * as m from 'motion/react-m';
 import styled, { css, keyframes } from 'styled-components';
 
+export const SidebarWalletWrapper = styled.div`
+    position: relative;
+    display: flex;
+    width: 100%;
+`;
+
 export const SwapsWrapper = styled(m.div)`
     display: flex;
     height: 100%;
-    justify-content: flex-end;
+    width: 100%;
+    position: relative;
 `;
 export const WalletWrapper = styled(m.div)`
     width: 100%;
     flex-direction: column;
     display: flex;
     position: relative;
-    height: 100%;
     justify-content: flex-end;
 `;
 
@@ -24,11 +30,8 @@ export const Wrapper = styled.div`
     flex-direction: column;
     justify-content: space-between;
     overflow: hidden;
-    overflow-y: auto;
     width: 100%;
     gap: 8px;
-    height: auto;
-    min-height: 100%;
 `;
 
 export const DetailsCard = styled(m.div)<{ $isScrolled: boolean }>`

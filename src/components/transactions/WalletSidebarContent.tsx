@@ -1,5 +1,5 @@
 import { Receive } from './receive/Receive';
-import { WalletSections } from './WalletSidebarContent.styles.ts';
+
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
@@ -11,9 +11,7 @@ export default function WalletSidebarContent() {
     const [section, setSection] = useState('history');
     return (
         <>
-            <WalletSections>
-                <SidebarWallet section={section} setSection={setSection} />
-            </WalletSections>
+            <SidebarWallet section={section} setSection={setSection} />
 
             {section !== 'history' && <SendModal section={section} setSection={setSection} />}
 
