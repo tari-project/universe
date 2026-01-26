@@ -758,16 +758,14 @@ impl InternalWallet {
     pub async fn get_key_manager(app_handle: &AppHandle) -> Result<KeyManager, anyhow::Error> {
         let tari_wallet_details = Self::tari_wallet_details().await;
 
-        if let Some(details) = tari_wallet_details {
-            let tari_seed_binary =
-                match InternalWallet::get_credentials(app_handle, details.id.clone(), true).await {
-                    Ok(cred) => cred.encrypted_seed,
-                    Err(e) => {
-                        return Err(anyhow::anyhow!("Failed to get credentials: {e}"));
-                    }
-                };
-            let tari_cipher_seed = CipherSeed::from_binary(&tari_seed_binary)
-                .expect("Could not convert Tari Seed to binary");
+        if tari_wallet_details.is_some() {
+            let pin_password = if PinManager::pin_locked().await {
+                Some(PinManager::get_validated_pin(app_handle).await?)
+            } else {
+                None
+            };
+
+            let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password).await?;
 
             let seed_words_wallet = SeedWordsWallet::construct_new(tari_cipher_seed.clone())
                 .map_err(|e| anyhow!(e.to_string()))?;
