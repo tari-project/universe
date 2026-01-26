@@ -59,8 +59,9 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet::wallet_manager::WalletManagerError;
-use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
+use crate::wallet::minotari_wallet::balance_tracker::BalanceTracker;
+use crate::wallet::minotari_wallet::MinotariWalletManager;
+use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{airdrop, UniverseAppState, LOG_TARGET_APP_LOGIC};
 
 use base64::prelude::*;
@@ -552,32 +553,6 @@ pub async fn get_airdrop_tokens(
         warn!(target: LOG_TARGET_APP_LOGIC, "get_airdrop_tokens took too long: {:?}", timer.elapsed());
     }
     Ok(airdrop_access_token)
-}
-
-#[tauri::command]
-pub async fn get_transactions(
-    state: tauri::State<'_, UniverseAppState>,
-    offset: Option<u32>,
-    limit: Option<u32>,
-    status_bitflag: Option<u32>,
-) -> Result<Vec<TransactionInfo>, String> {
-    let timer = Instant::now();
-    let transactions = state
-        .wallet_manager
-        .get_transactions(offset, limit, status_bitflag)
-        .await
-        .unwrap_or_else(|e| {
-            if !matches!(e, WalletManagerError::WalletNotStarted) {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Error getting transactions: {e}");
-            }
-            vec![]
-        });
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET_APP_LOGIC, "get_transactions took too long: {:?}", timer.elapsed());
-    }
-
-    Ok(transactions)
 }
 
 #[tauri::command]
@@ -1574,24 +1549,21 @@ pub async fn reconnect() -> Result<(), String> {
 
 #[tauri::command]
 pub async fn send_one_sided_to_stealth_address(
-    state: tauri::State<'_, UniverseAppState>,
-    app_handle: tauri::AppHandle,
     amount: String,
     destination: String,
     payment_id: Option<String>,
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
-    state
-        .wallet_manager
-        .send_one_sided_to_stealth_address(amount, destination, payment_id, &app_handle)
-        .await
-        .map_err(|e| e.to_string())?;
 
-    let balance = state.wallet_manager.get_balance().await;
-    if let Ok(balance) = balance {
-        EventsEmitter::emit_wallet_balance_update(balance).await;
-    }
+    let parsed_amount = Minotari::from_str(&amount).map_err(|e| e.to_string())?;
+    MinotariWalletManager::send_one_sided_transaction(
+        destination,
+        parsed_amount.uT().0,
+        payment_id,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
@@ -1610,24 +1582,12 @@ pub fn verify_address_for_send(
 }
 
 #[tauri::command]
-pub fn validate_minotari_amount(
-    amount: String,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), InvokeError> {
+pub async fn validate_minotari_amount(amount: String) -> Result<(), InvokeError> {
     let t_amount = Minotari::from_str(&amount).map_err(|e| e.to_string())?;
     let m_amount = MicroMinotari::from(t_amount);
 
-    let balance = state
-        .wallet_state_watch_rx
-        .borrow()
-        .clone()
-        .and_then(|state| state.balance);
-
-    let mut available_balance = MicroMinotari::from(0);
-
-    if let Some(wallet_balance) = &balance {
-        available_balance = wallet_balance.available_balance
-    }
+    let balance = BalanceTracker::current().get_balance().await;
+    let available_balance = MicroMinotari::from(balance);
 
     match m_amount.cmp(&available_balance) {
         std::cmp::Ordering::Less => Ok(()),
@@ -1992,9 +1952,9 @@ pub async fn refresh_wallet_history(
         .map_err(|e| e.to_string())?;
 
     // Trigger it manually to immediately update the UI
-    let node_status_watch_rx = state.node_status_watch_rx.clone();
-    let node_status = *node_status_watch_rx.borrow();
-    EventsEmitter::emit_init_wallet_scanning_progress(0, node_status.block_height, 0.0).await;
+    // let node_status_watch_rx = state.node_status_watch_rx.clone();
+    // let node_status = *node_status_watch_rx.borrow();
+    // EventsEmitter::emit_wallet_scanning_progress_update(0, node_status.block_height, 0.0).await;
 
     SetupManager::get_instance()
         .resume_phases(vec![SetupPhase::Wallet])

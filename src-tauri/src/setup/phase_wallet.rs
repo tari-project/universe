@@ -25,6 +25,11 @@ use super::{
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
+use crate::wallet::{
+    minotari_wallet::MinotariWalletManager,
+    wallet_manager::{WalletManagerError, STOP_ON_ERROR_CODES},
+};
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{
@@ -44,12 +49,8 @@ use crate::{
     wallet::wallet_manager::WalletStartupConfig,
     UniverseAppState,
 };
-use crate::{
-    wallet::wallet_manager::{WalletManagerError, STOP_ON_ERROR_CODES},
-    LOG_TARGET_APP_LOGIC,
-};
 use anyhow::Error;
-use log::{error, warn};
+use log::{error, info, warn};
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
@@ -139,6 +140,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         ProgressStepperBuilder::new()
             .add_incremental_step(SetupStep::BinariesWallet, true)
             .add_step(SetupStep::StartWallet, true)
+            .add_step(SetupStep::MinotariWallet, true)
             .add_incremental_step(SetupStep::SetupBridge, false)
             .build(
                 app_handle,
@@ -232,6 +234,22 @@ impl SetupPhaseImpl for WalletSetupPhase {
             })
             .await?;
 
+        let app_handle_clone = self.get_app_handle().clone();
+        progress_stepper
+            .complete_step(SetupStep::MinotariWallet, || async {
+                MinotariWalletManager::load_app_handle(app_handle_clone).await;
+                if InternalWallet::is_internal().await {
+                MinotariWalletManager::initialize_wallet().await?;
+                info!(target: LOG_TARGET_APP_LOGIC, "============================ Setting up Minotari Wallet");
+                let _unused = MinotariWalletManager::import_view_key().await;
+                info!(target: LOG_TARGET_APP_LOGIC, "============================ Scanning blocks for Minotari Wallet");
+                MinotariWalletManager::initialize_blockchain_scanning().await?;
+                }
+
+                Ok(())
+            })
+            .await?;
+
         let bridge_binary_progress_tracker =
             progress_stepper.track_step_incrementally(SetupStep::SetupBridge);
 
@@ -254,15 +272,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
         } else {
             self.status_sender
                 .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
-        }
-
-        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
-        let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        if InternalWallet::is_internal().await {
-            app_state
-                .wallet_manager
-                .wait_for_initial_wallet_scan(node_status_watch_rx)
-                .await?;
         }
 
         let config_wallet = ConfigWallet::content().await;

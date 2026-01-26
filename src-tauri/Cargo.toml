@@ -42,14 +42,14 @@ keyring = { version = "3.0.5", features = [
   "linux-native-sync-persistent",
   "windows-native",
 ] }
-libsqlite3-sys = { version = "0.25.1", features = [
+libsqlite3-sys = { version = "0.35.0", features = [
   "bundled",
 ] } # Required for tari_wallet
 log = "0.4.22"
 log4rs = "1.3.0"
-minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", tag = "v5.2.1" }
-minotari_node_wallet_client = { git = "https://github.com/tari-project/tari.git", tag = "v5.2.1" }
-minotari_wallet_grpc_client = { git = "https://github.com/tari-project/tari.git", tag = "v5.2.1" }
+minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", rev = "766f80ccc20596413ee208311750c11e02a2841d" }
+minotari_node_wallet_client = { git = "https://github.com/tari-project/tari.git", rev = "766f80ccc20596413ee208311750c11e02a2841d" }
+minotari_wallet_grpc_client = { git = "https://github.com/tari-project/tari.git", rev = "766f80ccc20596413ee208311750c11e02a2841d" }
 monero-address-creator = { git = "https://github.com/tari-project/monero-address-creator.git", rev = "6129ca0" }
 nix = { version = "0.29.0", features = ["signal"] }
 nvml-wrapper = "0.10.0"
@@ -59,6 +59,8 @@ openssl = { version = "0.10", features = [
 ] } # temporary fix for openssl
 phraze = "0.3.15"
 psp = { git = "https://github.com/tari-project/psp.git", rev = "ddef0c6" }
+r2d2 = "0.8.10"
+r2d2_sqlite = "0.31.0"
 rand = "0.8.5"
 regex = "1.10.5"
 reqwest = { version = "0.12.5", features = ["stream", "json", "multipart"] }
@@ -76,12 +78,13 @@ sha2 = "0.10.8"
 sys-locale = "0.3.1"
 sysinfo = "0.31.2"
 tar = "0.4.26"
-tari_common = { git = "https://github.com/tari-project/tari.git", tag = "v5.2.1" }
-tari_common_types = { git = "https://github.com/tari-project/tari.git", tag = "v5.2.1" }
-tari_transaction_components = { git = "https://github.com/tari-project/tari.git", tag = "v5.2.1" }
+tari_common = { git = "https://github.com/tari-project/tari/", rev = "766f80ccc20596413ee208311750c11e02a2841d" }
+tari_common_types = { git = "https://github.com/tari-project/tari/", rev = "766f80ccc20596413ee208311750c11e02a2841d" }
+tari_transaction_components = { git = "https://github.com/tari-project/tari/", rev = "766f80ccc20596413ee208311750c11e02a2841d" }
 tari_crypto = "0.22.1"
-tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v5.2.1" }
-tari_utilities = "0.8.0"
+tari_shutdown = { git = "https://github.com/tari-project/tari.git", rev = "766f80ccc20596413ee208311750c11e02a2841d" }
+tari_utilities = { version = "0.8", features = ["std"] }
+minotari-wallet = { package = "minotari", git = "https://github.com/tari-project/minotari-cli.git", rev = "08f18ae1106848755b9773ec0edcb061a39fb30c" }
 tauri = { version = "2", features = [
   "protocol-asset",
   "isolation",
@@ -124,8 +127,7 @@ winreg = "0.52.0"
 
 chrono = "0.4.38"
 device_query = "2.1.0"
-libsqlite3-sys = { version = "0.25.1", features = ["bundled"] }
-log = "0.4.22"
+log = { version = "0.4.29", features = ["kv"] }
 nvml-wrapper = "0.10.0"
 rand = "0.8.5"
 sys-locale = "0.3.1"

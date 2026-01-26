@@ -5,18 +5,18 @@ import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 
 import gemImage from '@app/assets/images/gem.png';
-import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore.ts';
 import { ReplaySVG } from '@app/assets/icons/replay.tsx';
-import { ButtonWrapper, FlexButton, GemImage, GemPill, HoverWrapper, ReplayButton } from './ListItem.styles.ts';
+import { ButtonWrapper, FlexButton, GemImage, GemPill, HoverWrapper, ReplayButton } from './HistoryItem.styles.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
-import { CombinedBridgeWalletTransaction } from '@app/store/useWalletStore.ts';
+import { DisplayedTransaction } from '@app/types/app-status.ts';
+import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore.ts';
 
 interface Props {
-    item: CombinedBridgeWalletTransaction;
+    transaction: DisplayedTransaction;
     button?: React.ReactNode;
 }
 
-const ItemHover = memo(function ItemHover({ item, button }: Props) {
+const HoverItem = memo(function ItemHover({ transaction, button }: Props) {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const sharingEnabled = useConfigUIStore((s) => s.sharing_enabled);
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
@@ -27,7 +27,7 @@ const ItemHover = memo(function ItemHover({ item, button }: Props) {
 
     const handleShareClick = () => {
         setShowModal(true);
-        setItemData(item);
+        setItemData(transaction);
     };
     const isLoggedIn = !!airdropTokens;
     const showShareButton = sharingEnabled && isLoggedIn;
@@ -47,7 +47,7 @@ const ItemHover = memo(function ItemHover({ item, button }: Props) {
                                 </GemPill>
                             </FlexButton>
                         )}
-                        <ReplayButton onClick={() => handleWinReplay(item)}>
+                        <ReplayButton onClick={() => handleWinReplay(transaction)}>
                             <ReplaySVG />
                         </ReplayButton>
                     </>
@@ -57,4 +57,4 @@ const ItemHover = memo(function ItemHover({ item, button }: Props) {
     );
 });
 
-export default ItemHover;
+export default HoverItem;

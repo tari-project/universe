@@ -15,7 +15,7 @@ export const WalletWrapper = styled(m.div)`
     justify-content: flex-end;
 `;
 
-export const Wrapper = styled.div`
+export const Wrapper = styled.div<{ $listHidden?: boolean }>`
     border-radius: 20px;
     background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
     padding: 10px;

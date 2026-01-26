@@ -93,6 +93,28 @@ export const ValueWrapper = styled.div`
     align-items: baseline;
 `;
 
+export const Chip = styled.div`
+    display: flex;
+    align-self: center;
+    justify-content: center;
+    align-items: center;
+    text-transform: uppercase;
+    border-radius: 50px;
+    background-color: ${({ theme }) => theme.colors.green[700]};
+    height: 14px;
+    padding: 0 7px;
+    color: #fff;
+    text-align: center;
+    font-family: Poppins, sans-serif;
+    font-size: 8px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+    span {
+        height: 10px;
+    }
+`;
+
 export const CurrencyText = styled(Typography).attrs({ variant: 'p' })`
     display: flex;
     font-size: 0.66rem;

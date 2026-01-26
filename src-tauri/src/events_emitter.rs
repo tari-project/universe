@@ -24,7 +24,7 @@ use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
-    InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload, WalletStatusUpdatePayload,
+    UpdateAppModuleStatusPayload, WalletScanningProgressUpdatePayload,
 };
 use crate::internal_wallet::TariAddressType;
 use crate::mining::cpu::CpuMinerStatus;
@@ -51,6 +51,7 @@ use crate::{
     BaseNodeStatus,
 };
 use log::error;
+use minotari_wallet::DisplayedTransaction;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 use tari_common_types::tari_address::TariAddress;
@@ -532,18 +533,20 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_init_wallet_scanning_progress(
+    pub async fn emit_wallet_scanning_progress_update(
         scanned_height: u64,
         total_height: u64,
         progress: f64,
+        is_initial_scan_complete: bool,
     ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::InitWalletScanningProgress,
-            payload: InitWalletScanningProgressPayload {
+            event_type: EventType::WalletScanningProgressUpdate,
+            payload: WalletScanningProgressUpdatePayload {
                 scanned_height,
                 total_height,
                 progress,
+                is_initial_scan_complete,
             },
         };
         if let Err(e) = Self::get_app_handle()
@@ -728,18 +731,6 @@ impl EventsEmitter {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit SeedBackedUp event: {e:?}");
         }
     }
-
-    pub async fn emit_wallet_status_updated(loading: bool, unhealthy: Option<bool>) {
-        let _ = FrontendReadyChannel::current().wait_for_ready().await;
-        let evt = Event {
-            event_type: EventType::WalletStatusUpdate,
-            payload: WalletStatusUpdatePayload { loading, unhealthy },
-        };
-        if let Err(e) = Self::get_app_handle().await.emit(BACKEND_STATE_UPDATE, evt) {
-            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletStatusUpdate event: {e:?}");
-        }
-    }
-
     pub async fn emit_update_cpu_miner_state(state: MinerControlsState) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         if let Err(e) = Self::get_app_handle().await.emit(
@@ -840,6 +831,48 @@ impl EventsEmitter {
             },
         ) {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit ShowBatteryAlert event: {e:?}");
+        }
+    }
+
+    pub async fn emit_wallet_transactions_found(payload: Vec<DisplayedTransaction>) {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::WalletTransactionsFound,
+                payload,
+            },
+        ) {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletTransactionsFound event: {e:?}");
+        }
+    }
+
+    #[allow(dead_code)]
+    pub async fn emit_wallet_transactions_cleared() {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::WalletTransactionsCleared,
+                payload: (),
+            },
+        ) {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletTransactionsCleared event: {e:?}");
+        }
+    }
+
+    /// Emit when a pending transaction has been matched with a scanned transaction
+    /// This allows the frontend to update the transaction status
+    pub async fn emit_wallet_transaction_updated(payload: DisplayedTransaction) {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::WalletTransactionUpdated,
+                payload,
+            },
+        ) {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletTransactionUpdated event: {e:?}");
         }
     }
 }

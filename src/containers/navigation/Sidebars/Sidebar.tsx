@@ -6,11 +6,10 @@ import { AnimatePresence } from 'motion/react';
 
 export default function Sidebar() {
     const isSwapping = useWalletStore((s) => s.is_swapping);
-    const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
-    const walletIsLoading = useWalletStore((s) => s.isLoading);
+    const isScanComplete = useWalletStore((s) => s.wallet_scanning?.is_initial_scan_complete);
     const isConnectedToTariNetwork = useNodeStore((s) => s.isNodeConnected);
 
-    const isLoading = !isConnectedToTariNetwork || isWalletScanning || walletIsLoading;
+    const isLoading = !isConnectedToTariNetwork || !isScanComplete;
     return (
         <SidebarWrapper
             initial={{

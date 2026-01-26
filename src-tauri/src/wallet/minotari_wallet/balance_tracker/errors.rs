@@ -1,4 +1,4 @@
-// Copyright 2024. The Tari Project
+// Copyright 2025. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
@@ -20,43 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
+use thiserror::Error;
 
-/// Helper struct for building command parameters
-#[derive(Debug)]
-#[allow(dead_code)]
-pub struct CommandBuilder {
-    /// Name of the command for logging
-    pub(crate) name: String,
-    /// Command arguments
-    pub(crate) args: Vec<String>,
-    /// Environment variables
-    pub(crate) envs: HashMap<String, String>,
-}
-
-impl CommandBuilder {
-    /// Creates a new command builder with the given name
-    #[allow(dead_code)]
-    pub fn new(name: impl Into<String>) -> Self {
-        Self {
-            name: name.into(),
-            args: Vec::new(),
-            envs: HashMap::new(),
-        }
-    }
-
-    /// Adds a list of arguments to the command
-    #[allow(dead_code)]
-    pub fn add_args(mut self, args: &[impl AsRef<str>]) -> Self {
-        self.args
-            .extend(args.iter().map(|a| a.as_ref().to_string()));
-        self
-    }
-
-    /// Adds an environment variable to the command
-    #[allow(dead_code)]
-    pub fn add_env(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
-        self.envs.insert(key.into(), value.into());
-        self
-    }
+#[derive(Debug, Error)]
+pub enum BalanceCalculationError {
+    #[error("Balance overflow: current={current}, credit={credit}")]
+    Overflow { current: u64, credit: u64 },
+    #[error("Balance underflow: current={current}, debit={debit}")]
+    Underflow { current: u64, debit: u64 },
 }

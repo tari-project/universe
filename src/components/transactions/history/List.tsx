@@ -1,96 +1,103 @@
-import { useCallback, useEffect, RefObject } from 'react';
-import { useOnInView } from 'react-intersection-observer';
+import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
+
 import { useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api/core';
+import { VList } from 'virtua';
 
-import { CombinedBridgeWalletTransaction, useWalletStore } from '@app/store';
+import { useWalletStore } from '@app/store';
 
-import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
-
-import { HistoryListItem } from './ListItem.tsx';
-import { PlaceholderItem } from './ListItem.styles.ts';
 import { EmptyText, ListItemWrapper, ListWrapper } from './List.styles.ts';
-import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
-import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { setSelectedTransactionId } from '@app/store/actions/walletStoreActions.ts';
+import { DisplayedTransaction, TransactionSource } from '@app/types/app-status.ts';
+import { HistoryListItem } from './transactionHistoryItem/HistoryItem.tsx';
+import { PlaceholderItem } from './transactionHistoryItem/HistoryItem.styles.ts';
 
-interface ListProps {
-    setIsScrolled: (isScrolled: boolean) => void;
-    targetRef: RefObject<HTMLDivElement> | null;
-}
-
-export function List({ setIsScrolled, targetRef }: ListProps) {
+export function List() {
     const { t } = useTranslation('wallet');
-    const walletScanning = useWalletStore((s) => s.wallet_scanning);
-    const walletImporting = useWalletStore((s) => s.is_wallet_importing);
-    const walletIsLoading = useWalletStore((s) => s.isLoading);
-    const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
+    const walletTransactionsAll = useWalletStore((s) => s.wallet_transactions);
+    const transactionsFilter = useWalletStore((s) => s.transaction_history_filter);
 
-    // TODO clean up
-    const walletLoading = walletImporting || walletScanning?.is_scanning || isFetching || walletIsLoading;
+    const walletTransactions = useMemo(() => {
+        if (!walletTransactionsAll) return [];
 
+        switch (transactionsFilter) {
+            case 'all-activity':
+                return walletTransactionsAll;
+            case 'rewards':
+                return walletTransactionsAll.filter((tx) => tx.source === TransactionSource.Coinbase);
+            case 'transactions':
+                return walletTransactionsAll.filter((tx) => tx.source !== TransactionSource.Coinbase);
+            default:
+                return walletTransactionsAll;
+        }
+    }, [walletTransactionsAll, transactionsFilter]);
+
+    // Track seen transaction IDs to show "new" indicator for new transactions
+    const [seenTransactionIds, setSeenTransactionIds] = useState<Set<string>>(new Set());
+    const isInitialLoad = useRef(true);
+
+    // Mark all transactions as seen on initial load (so they don't show as "new")
     useEffect(() => {
-        const el = targetRef?.current;
-        if (!el) return;
-        const onScroll = () => setIsScrolled(el.scrollTop > 1);
-        el.addEventListener('scroll', onScroll);
-        return () => el.removeEventListener('scroll', onScroll);
-    }, [targetRef, setIsScrolled]);
-
-    const ref = useOnInView((inView) => {
-        if (inView && hasNextPage && !isFetching) {
-            void fetchNextPage({ cancelRefetch: false });
+        if (isInitialLoad.current && walletTransactions && walletTransactions.length > 0) {
+            const initialIds = new Set(walletTransactions.map((tx) => tx.id));
+            setSeenTransactionIds(initialIds);
+            isInitialLoad.current = false;
         }
-    });
-    const transactions = data?.pages.flatMap((page) => page) || [];
+    }, [walletTransactions]);
 
-    const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
-        if (!transaction || !transaction.walletTransactionDetails) {
-            setDetailsItem(null);
-            return;
-        }
-        const dest_address_emoji = await invoke('parse_tari_address', { address: transaction.destinationAddress })
-            .then((result) => result?.emoji_string)
-            .catch(() => undefined);
+    // Mark new transactions as seen after 30 seconds
+    useEffect(() => {
+        if (!walletTransactions || isInitialLoad.current) return;
 
-        setDetailsItem({
-            ...transaction,
-            walletTransactionDetails: {
-                ...transaction.walletTransactionDetails,
-                destAddressEmoji: dest_address_emoji,
-            },
-        });
+        const newTransactionIds = walletTransactions.filter((tx) => !seenTransactionIds.has(tx.id)).map((tx) => tx.id);
+
+        if (newTransactionIds.length === 0) return;
+
+        const timer = setTimeout(() => {
+            setSeenTransactionIds((prev) => {
+                const updated = new Set(prev);
+                newTransactionIds.forEach((id) => updated.add(id));
+                return updated;
+            });
+        }, 30000); // 30 seconds
+
+        return () => clearTimeout(timer);
+    }, [walletTransactions, seenTransactionIds]);
+
+    const handleDetailsChange = useCallback((transaction: DisplayedTransaction) => {
+        setSelectedTransactionId(transaction.id);
     }, []);
 
     // Calculate how many placeholder items we need to add
-    const transactionsCount = transactions?.length || 0;
+    const transactionsCount = walletTransactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
-    const listMarkup = (
-        <ListItemWrapper>
-            {transactions?.map((tx, i) => {
-                const txId = tx.walletTransactionDetails?.txId || tx.paymentId;
-                const hash = tx.bridgeTransactionDetails?.transactionHash;
-                const hasNoId = !txId && !hash?.length;
 
-                const itemKey = `ListItem_${txId}-${hash}-${hasNoId ? i : ''}`;
-                return <HistoryListItem key={itemKey} item={tx} index={i} setDetailsItem={handleDetailsChange} />;
-            })}
-
-            {/* fill the list with placeholders if there are less than 4 entries */}
-            {Array.from({ length: placeholdersNeeded }).map((_, index) => (
-                <PlaceholderItem key={`placeholder-${index}`} />
-            ))}
-            {isFetchingNextPage || isFetching ? <LoadingDots /> : null}
-        </ListItemWrapper>
-    );
-
-    const isEmpty = !walletLoading && !transactions?.length;
+    const isEmpty = !walletTransactionsAll?.length;
     const emptyMarkup = isEmpty ? <EmptyText>{t('empty-tx')}</EmptyText> : null;
+
     return (
         <ListWrapper>
             {emptyMarkup}
-            {listMarkup}
-            {/*added placeholder so the scroll can trigger fetch*/}
-            {!walletScanning?.is_scanning ? <PlaceholderItem ref={ref} $isLast /> : null}
+            <VList style={{ height: '100%', width: '100%' }}>
+                <ListItemWrapper>
+                    {walletTransactions?.map((tx, i) => {
+                        const isNewTransaction = !seenTransactionIds.has(tx.id);
+                        return (
+                            <HistoryListItem
+                                transaction={tx}
+                                key={i}
+                                index={i}
+                                itemIsNew={isNewTransaction}
+                                setDetailsItem={handleDetailsChange}
+                            />
+                        );
+                    })}
+
+                    {/* fill the list with placeholders if there are less than 4 entries */}
+                    {Array.from({ length: placeholdersNeeded }).map((_, index) => (
+                        <PlaceholderItem key={`placeholder-${index}`} />
+                    ))}
+                </ListItemWrapper>
+            </VList>
         </ListWrapper>
     );
 }
