@@ -39,6 +39,7 @@ import { WalletUIMode } from '@app/types/events-payloads.ts';
 import SecureWalletWarning from './SecureWalletWarning/SecureWalletWarning.tsx';
 import FailedModuleAlertButton from '@app/components/dialogs/FailedModuleAlertButton.tsx';
 import { useTranslation } from 'react-i18next';
+import SyncLoading from '@app/components/wallet/components/loaders/SyncLoading/SyncLoading.tsx';
 
 interface SidebarWalletProps {
     section: string;
@@ -74,7 +75,19 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
             await open(xcData.wallet_app_link);
         }
     }, [xcData]);
-
+    const syncMarkup = (
+        <>
+            <DetailsCard $isScrolled={false}>
+                <AnimatedBG $col1={xcData?.primary_colour || `#0B0A0D`} $col2={xcData?.secondary_colour || `#6F8309`} />
+                <DetailsCardContent>
+                    <WalletDetails />
+                    <DetailsCardBottomContent>
+                        {isStandardWalletUI ? <WalletBalance /> : <WalletBalanceHidden />}
+                    </DetailsCardBottomContent>
+                </DetailsCardContent>
+            </DetailsCard>
+        </>
+    );
     const postLoadedMarkup = (
         <>
             {xcData?.wallet_app_link && xcData?.wallet_app_label && (
@@ -94,7 +107,6 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
             <SecureWalletWarning $isScrolled={isScrolled} isExchangeMiner={xcData?.id !== 'universal'} />
         </>
     );
-
     const walletMarkup = (
         <>
             <DetailsCard $isScrolled={isScrolled}>
@@ -114,7 +126,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     </WalletErrorWrapper>
                 )}
             </DetailsCard>
-            {!isSyncing && isStandardWalletUI && !isWalletModuleFailed && (
+            {isStandardWalletUI && !isWalletModuleFailed && (
                 <>
                     <TabsWrapper>
                         <FilterSelect filter={filter} handleFilterChange={handleFilterChange} />
@@ -151,7 +163,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                 ) : (
                     <WalletWrapper key="wallet" variants={swapTransition} initial="show" exit="hide" animate="show">
                         <Wrapper>
-                            {walletMarkup}
+                            {isStandardWalletUI && isSyncing ? <SyncLoading>{syncMarkup}</SyncLoading> : walletMarkup}
                             <BuyTariButton onClick={() => setIsSwapping(true)}>
                                 <span>{`${t('swap.buy-tari')} (XTM)`}</span>
                             </BuyTariButton>
