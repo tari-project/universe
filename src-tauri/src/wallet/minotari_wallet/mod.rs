@@ -37,9 +37,17 @@ use crate::{
 };
 use log::{error, info};
 use minotari_wallet::{
-    DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner, TransactionHistoryService, db::{
-        AccountBalance, get_all_balance_changes_by_account_id, get_latest_scanned_tip_block_by_account
-    }, get_balance, models::BalanceChange, tasks::unlocker::TransactionUnlocker, transactions::one_sided_transaction::Recipient, utils::init_wallet::init_with_view_key
+    db::{
+        get_all_balance_changes_by_account_id, get_latest_scanned_tip_block_by_account,
+        AccountBalance,
+    },
+    get_balance,
+    models::BalanceChange,
+    tasks::unlocker::TransactionUnlocker,
+    transactions::one_sided_transaction::Recipient,
+    utils::init_wallet::init_with_view_key,
+    DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
+    TransactionHistoryService,
 };
 use r2d2::PooledConnection;
 use r2d2_sqlite::SqliteConnectionManager;
@@ -341,9 +349,9 @@ impl MinotariWalletManager {
 
         // Start connection health check
         INSTANCE.database_manager.start_health_check().await;
-        
+
         if let Err(e) = Self::run_transaction_unlocker().await {
-             error!(target: LOG_TARGET, "Failed to start transaction unlocker: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to start transaction unlocker: {:?}", e);
         }
 
         // ============= | Check latest block height | ==============
@@ -689,7 +697,7 @@ impl MinotariWalletManager {
             Err(anyhow::anyhow!("Tari wallet details not found"))
         }
     }
-    
+
     pub async fn run_transaction_unlocker() -> Result<(), anyhow::Error> {
         if INSTANCE.unlocker_handle.read().await.is_some() {
             info!(target: LOG_TARGET, "Transaction unlocker is already running.");
@@ -714,13 +722,13 @@ impl MinotariWalletManager {
             .await
             .spawn(async move {
                 app_shutdown_signal.wait().await;
-                
+
                 info!(target: LOG_TARGET, "Shutdown signal received. Stopping Transaction Unlocker.");
-                
+
                 if let Err(e) = shutdown_tx.send(()) {
                     error!(target: LOG_TARGET, "Failed to send shutdown signal to unlocker (it might have already stopped): {:?}", e);
                 }
-                
+
                 *INSTANCE.unlocker_handle.write().await = None;
             });
 
