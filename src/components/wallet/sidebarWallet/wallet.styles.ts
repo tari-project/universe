@@ -23,3 +23,7 @@ export const TabsWrapper = styled.div`
     gap: 40px;
     margin: 8px 0;
 `;
+
+export const CTAWrapper = styled.div`
+    margin: 8px 0 0 0;
+`;

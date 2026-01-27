@@ -18,7 +18,7 @@ export const ListMask = styled.div<{ $bottom?: boolean }>`
         $bottom &&
         css`
             mask-position: bottom;
-            bottom: 0;
+            bottom: -8px;
             top: unset;
         `};
 `;

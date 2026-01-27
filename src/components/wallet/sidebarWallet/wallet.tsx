@@ -5,7 +5,7 @@ import SidebarWalletDetails from '@app/components/wallet/sidebarWallet/details.t
 import { useState } from 'react';
 import { useConfigUIStore, useNodeStore, useWalletStore } from '@app/store';
 import { FilterSelect } from '@app/components/transactions/history/FilterSelect.tsx';
-import { WalletWrapper, TabsWrapper } from '@app/components/wallet/sidebarWallet/wallet.styles.ts';
+import { WalletWrapper, TabsWrapper, CTAWrapper } from '@app/components/wallet/sidebarWallet/wallet.styles.ts';
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
@@ -37,16 +37,20 @@ export default function Wallet({ section, setSection }: WalletProps) {
                 walletScrolled={isScrolled}
                 isWalletModuleFailed={isWalletModuleFailed}
             />
-            <TabsWrapper>
-                <FilterSelect />
-                {isStandardWalletUI && !isWalletModuleFailed && (
-                    <WalletActions section={section} setSection={setSection} />
-                )}
-            </TabsWrapper>
-            <List setIsScrolled={setIsScrolled} scrolled={isScrolled} />
-            <Button onClick={() => setIsSwapping(true)} fluid size="large" variant="black">
-                <span>{`${t('swap.buy-tari')} (XTM)`}</span>
-            </Button>
+            {isStandardWalletUI && !isWalletModuleFailed && (
+                <>
+                    <TabsWrapper>
+                        <FilterSelect />
+                        <WalletActions section={section} setSection={setSection} />
+                    </TabsWrapper>
+                    <List setIsScrolled={setIsScrolled} scrolled={isScrolled} />
+                </>
+            )}
+            <CTAWrapper>
+                <Button onClick={() => setIsSwapping(true)} fluid size="large" variant="black">
+                    <span>{`${t('swap.buy-tari')} (XTM)`}</span>
+                </Button>
+            </CTAWrapper>
         </WalletWrapper>
     );
 }
