@@ -227,11 +227,11 @@ const mergeTransactions = (
         if (matchIndex >= 0) {
             const existing = updatedList[matchIndex];
 
-            if (existing.bridge_transaction_details && !newTx.bridge_transaction_details) {
-                newTx.bridge_transaction_details = existing.bridge_transaction_details;
+            const updatedTransaction = { ...newTx };
+            if (existing.bridge_transaction_details && !updatedTransaction.bridge_transaction_details) {
+                updatedTransaction.bridge_transaction_details = existing.bridge_transaction_details;
             }
-
-            updatedList[matchIndex] = newTx;
+            updatedList[matchIndex] = updatedTransaction;
             hasChanges = true;
         } else if (upsert) {
             addedItems.push(newTx);
