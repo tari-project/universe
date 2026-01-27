@@ -58,7 +58,6 @@ export const Swap = () => {
         setConfirmingTransaction(null);
         setProcessingTransaction(null);
     };
-
     useIframeMessage((event) => {
         switch (event.data.type) {
             case MessageType.CONFIRM_REQUEST:

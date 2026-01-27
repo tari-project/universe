@@ -1,11 +1,15 @@
 import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
-import { Button } from '@app/components/elements/buttons/Button.tsx';
 import SidebarWalletDetails from '@app/components/wallet/sidebarWallet/details.tsx';
 import { useState } from 'react';
 import { useConfigUIStore, useNodeStore, useWalletStore } from '@app/store';
 import { FilterSelect } from '@app/components/transactions/history/FilterSelect.tsx';
-import { WalletWrapper, TabsWrapper, CTAWrapper } from '@app/components/wallet/sidebarWallet/wallet.styles.ts';
+import {
+    WalletWrapper,
+    TabsWrapper,
+    CTAWrapper,
+    BuyButton,
+} from '@app/components/wallet/sidebarWallet/wallet.styles.ts';
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
@@ -57,9 +61,9 @@ export default function Wallet({ section, setSection }: WalletProps) {
             )}
             {!isWalletModuleFailed && (
                 <CTAWrapper>
-                    <Button onClick={() => setIsSwapping(true)} fluid size="large" variant="black">
+                    <BuyButton onClick={() => setIsSwapping(true)} fluid size="xlarge">
                         <span>{`${t('swap.buy-tari')} (XTM)`}</span>
-                    </Button>
+                    </BuyButton>
                 </CTAWrapper>
             )}
         </WalletWrapper>
