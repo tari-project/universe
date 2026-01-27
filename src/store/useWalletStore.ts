@@ -39,6 +39,7 @@ export interface WalletStoreState {
 
 export interface WalletStoreSelectors {
     getETHAddressOfCurrentExchange: () => string | undefined;
+    selectedTransaction: () => DisplayedTransaction | null;
 }
 
 export const initialState: WalletStoreState = {
@@ -66,6 +67,10 @@ export const useWalletStore = create<WalletStoreState & WalletStoreSelectors>()(
     getETHAddressOfCurrentExchange: () => {
         const exchangeId = useExchangeStore.getState().currentExchangeMinerId;
         return get().exchange_wxtm_addresses[exchangeId] || undefined;
+    },
+    selectedTransaction: () => {
+        const selectedId = get().selectedTransactionId;
+        return selectedId ? get().wallet_transactions.find((tx) => tx.id === selectedId) || null : null;
     },
 }));
 

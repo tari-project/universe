@@ -21,20 +21,20 @@ import {
     WalletErrorWrapper,
 } from './styles.ts';
 import { useCallback, useState } from 'react';
-
+import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
 import { List } from '@app/components/transactions/history/List.tsx';
 import { open } from '@tauri-apps/plugin-shell';
 
 import WalletActions from '@app/components/wallet/components/actions/WalletActions.tsx';
-import { TransactionDetails } from '@app/components/transactions/history/transactionDetails/TransactionDetails.tsx';
-import { setIsSwapping, setTxHistoryFilter, setSelectedTransactionId } from '@app/store/actions/walletStoreActions.ts';
+
+import { setIsSwapping } from '@app/store/actions/walletStoreActions.ts';
 
 import ExchangesUrls from '@app/components/transactions/wallet/Exchanges/ExchangesUrls.tsx';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { ExternalLink } from '@app/components/transactions/components/StatusList/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ExternalLink2SVG } from '@app/assets/icons/external-link2.tsx';
-import { FilterSelect, TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
+import { FilterSelect } from '@app/components/transactions/history/FilterSelect.tsx';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
 import SecureWalletWarning from './SecureWalletWarning/SecureWalletWarning.tsx';
 import FailedModuleAlertButton from '@app/components/dialogs/FailedModuleAlertButton.tsx';
@@ -49,10 +49,6 @@ interface SidebarWalletProps {
 export default function SidebarWallet({ section, setSection }: SidebarWalletProps) {
     const { t } = useTranslation('wallet');
     const { data: xcData } = useFetchExchangeBranding();
-    const selectedTransaction = useWalletStore((s) =>
-        s.selectedTransactionId ? s.wallet_transactions.find((tx) => tx.id === s.selectedTransactionId) : null
-    );
-    const filter = useWalletStore((s) => s.transaction_history_filter);
 
     const walletModule = useSetupStore(setupStoreSelectors.selectWalletModule);
     const isWalletModuleFailed = walletModule?.status === AppModuleStatus.Failed;
@@ -62,33 +58,16 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
 
     const [isScrolled, setIsScrolled] = useState(false);
 
-    function handleFilterChange(newFilter: TxHistoryFilter) {
-        setTxHistoryFilter(newFilter);
-    }
-
     const isSyncing = !isConnectedToTariNetwork || isInitialWalletScanning;
     const isSwapping = useWalletStore((s) => s.is_swapping);
-    const isStandardWalletUI = false;
-    // const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
+    const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
 
     const openLink = useCallback(async () => {
         if (xcData && xcData.wallet_app_link) {
             await open(xcData.wallet_app_link);
         }
     }, [xcData]);
-    const syncMarkup = (
-        <>
-            <DetailsCard $isScrolled={false}>
-                <AnimatedBG $col1={xcData?.primary_colour || `#0B0A0D`} $col2={xcData?.secondary_colour || `#6F8309`} />
-                <DetailsCardContent>
-                    <WalletDetails />
-                    <DetailsCardBottomContent>
-                        {isStandardWalletUI ? <WalletBalance /> : <WalletBalanceHidden />}
-                    </DetailsCardBottomContent>
-                </DetailsCardContent>
-            </DetailsCard>
-        </>
-    );
+    const syncMarkup = <></>;
     const postLoadedMarkup = (
         <>
             {xcData?.wallet_app_link && xcData?.wallet_app_label && (
@@ -130,12 +109,12 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
             {isStandardWalletUI && !isWalletModuleFailed && (
                 <>
                     <TabsWrapper>
-                        <FilterSelect filter={filter} handleFilterChange={handleFilterChange} />
+                        <FilterSelect />
                         <WalletActions section={section} setSection={setSection} />
                     </TabsWrapper>
-                    {/*<HistoryListWrapper>*/}
-                    <List setIsScrolled={setIsScrolled} />
-                    {/*</HistoryListWrapper>*/}
+                    <HistoryListWrapper>
+                        <List setIsScrolled={setIsScrolled} />
+                    </HistoryListWrapper>
                 </>
             )}
         </>
@@ -172,13 +151,6 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     </WalletWrapper>
                 )}
             </AnimatePresence>
-            {selectedTransaction && (
-                <TransactionDetails
-                    transaction={selectedTransaction}
-                    expanded={Boolean(selectedTransaction)}
-                    handleClose={() => setSelectedTransactionId(null)}
-                />
-            )}
         </>
     );
 }

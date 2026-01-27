@@ -8,23 +8,22 @@ export const SwapsWrapper = styled(m.div)`
     position: relative;
 `;
 export const WalletWrapper = styled(m.div)`
-    width: 100%;
-    flex-direction: column-reverse;
+    flex-direction: column;
     display: flex;
+    flex: 1 1 100%;
     position: relative;
     border: 1px solid aqua;
 `;
 
 export const Wrapper = styled.div`
+    display: flex;
     border-radius: 20px;
+    flex: 1 1 100%;
     background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
     padding: 10px;
     overflow: hidden;
-    display: flex;
     position: relative;
     flex-direction: column;
-    width: 100%;
-    height: 90%;
     border: 1px solid orange;
     gap: 8px;
 `;
