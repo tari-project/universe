@@ -247,10 +247,16 @@ const mergeTransactions = (
 export const handleWalletTransactionsFound = async (payload: DisplayedTransaction[]) => {
     const processedTransactions = await solveBridgeTransactionDetails(payload);
 
-    useWalletStore.setState((state) => ({
-        ...state,
-        wallet_transactions: mergeTransactions(state.wallet_transactions, processedTransactions, true),
-    }));
+    useWalletStore.setState((state) => {
+        const newTransactions = mergeTransactions(state.wallet_transactions, processedTransactions, true);
+        if (newTransactions === state.wallet_transactions) {
+            return state;
+        }
+        return {
+            ...state,
+            wallet_transactions: newTransactions,
+        };
+    });
 };
 
 export const handleWalletTransactionsCleared = () => {
@@ -265,11 +271,9 @@ export const handleWalletTransactionUpdated = async (payload: DisplayedTransacti
 
     useWalletStore.setState((state) => {
         const newTransactions = mergeTransactions(state.wallet_transactions, processedTransactions, false);
-
         if (newTransactions === state.wallet_transactions) {
             return state;
         }
-
         return {
             ...state,
             wallet_transactions: newTransactions,
