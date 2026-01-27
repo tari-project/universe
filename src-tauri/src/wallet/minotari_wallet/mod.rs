@@ -725,8 +725,13 @@ impl MinotariWalletManager {
 
                 info!(target: LOG_TARGET, "Shutdown signal received. Stopping Transaction Unlocker.");
 
-                if let Err(e) = shutdown_tx.send(()) {
-                    error!(target: LOG_TARGET, "Failed to send shutdown signal to unlocker (it might have already stopped): {:?}", e);
+                if let Some(handle) = INSTANCE.unlocker_handle.write().await.take() {
+                    if let Err(e) = shutdown_tx.send(()) {
+                        error!(target: LOG_TARGET, "Failed to send shutdown signal to unlocker (it might have already stopped): {:?}", e);
+                    }
+                    if let Err(e) = handle.await {
+                        error!(target: LOG_TARGET, "Transaction unlocker task did not complete successfully: {:?}", e);
+                    }
                 }
 
                 *INSTANCE.unlocker_handle.write().await = None;
