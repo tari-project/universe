@@ -16,4 +16,8 @@ export const SidebarContent = styled.div`
     flex-direction: column;
     justify-content: space-between;
     gap: 20px;
+
+    & * {
+        pointer-events: auto;
+    }
 `;

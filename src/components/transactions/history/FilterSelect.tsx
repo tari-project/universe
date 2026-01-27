@@ -19,16 +19,9 @@ const renderCustomIcon = (isOpen: boolean) =>
         <IoIosArrowDown size={11} style={{ marginLeft: 2 }} />
     );
 
-interface FilterSelectProps {
-    filter: TxHistoryFilter;
-    handleFilterChange: (newFilter: TxHistoryFilter) => void;
-}
-
 export const FilterSelect = React.memo(() => {
     const { t } = useTranslation('wallet', { useSuspense: false });
-
     const filter = useWalletStore((s) => s.transaction_history_filter);
-
 
     const filterOptions = useCallback(
         (): SelectOption<TxHistoryFilter>[] =>

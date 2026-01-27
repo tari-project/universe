@@ -31,7 +31,7 @@ export default function Wallet({ section, setSection }: WalletProps) {
     const isSyncing = !isConnectedToTariNetwork || isInitialWalletScanning;
 
     return (
-        <WalletWrapper>
+        <WalletWrapper $listHidden={isSyncing || !isStandardWalletUI}>
             <SidebarWalletDetails
                 isSyncing={isSyncing}
                 walletScrolled={isScrolled}
@@ -43,7 +43,7 @@ export default function Wallet({ section, setSection }: WalletProps) {
                     <WalletActions section={section} setSection={setSection} />
                 )}
             </TabsWrapper>
-            <List setIsScrolled={setIsScrolled} />
+            <List setIsScrolled={setIsScrolled} scrolled={isScrolled} />
             <Button onClick={() => setIsSwapping(true)} fluid size="large" variant="black">
                 <span>{`${t('swap.buy-tari')} (XTM)`}</span>
             </Button>

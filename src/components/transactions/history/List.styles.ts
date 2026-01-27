@@ -1,9 +1,31 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
+
+export const ListMask = styled.div<{ $bottom?: boolean }>`
+    background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
+    mask-image: ${({ $bottom }) =>
+        `linear-gradient(to ${$bottom ? 'top' : 'bottom'}, black 0px, black 10px, black calc(100% - 40px), transparent 100%)`};
+    mask-size: 60% 100%;
+    display: flex;
+    height: 35px;
+    width: 100%;
+    position: absolute;
+    z-index: 3;
+    mask-position: top;
+    pointer-events: none;
+    top: 0;
+    bottom: unset;
+    ${({ $bottom }) =>
+        $bottom &&
+        css`
+            mask-position: bottom;
+            bottom: 0;
+            top: unset;
+        `};
+`;
 
 export const ListWrapper = styled.div`
     display: flex;
     position: relative;
-    border: 1px solid deeppink;
     overflow: hidden;
     flex: 1 1 fit-content;
     h6 {

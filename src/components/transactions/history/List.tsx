@@ -5,7 +5,7 @@ import { VList, VListHandle } from 'virtua';
 
 import { useWalletStore } from '@app/store';
 
-import { EmptyText, ListItemWrapper, ListWrapper } from './List.styles.ts';
+import { EmptyText, ListItemWrapper, ListMask, ListWrapper } from './List.styles.ts';
 import { setSelectedTransactionId } from '@app/store/actions/walletStoreActions.ts';
 import { DisplayedTransaction, TransactionSource } from '@app/types/app-status.ts';
 import { HistoryListItem } from './transactionHistoryItem/HistoryItem.tsx';
@@ -13,9 +13,10 @@ import { PlaceholderItem } from './transactionHistoryItem/HistoryItem.styles.ts'
 
 interface ListProps {
     setIsScrolled: (isScrolled: boolean) => void;
+    scrolled?: boolean;
 }
 
-export function List({ setIsScrolled }: ListProps) {
+export function List({ setIsScrolled, scrolled = false }: ListProps) {
     const { t } = useTranslation('wallet');
     const walletTransactionsAll = useWalletStore((s) => s.wallet_transactions);
     const transactionsFilter = useWalletStore((s) => s.transaction_history_filter);
@@ -77,6 +78,7 @@ export function List({ setIsScrolled }: ListProps) {
 
     return (
         <ListWrapper>
+            {scrolled && <ListMask />}
             {emptyMarkup}
             <ListItemWrapper>
                 <VList
@@ -107,6 +109,7 @@ export function List({ setIsScrolled }: ListProps) {
                     <PlaceholderItem key={`placeholder-${index}`} />
                 ))}
             </ListItemWrapper>
+            <ListMask $bottom />
         </ListWrapper>
     );
 }
