@@ -182,20 +182,75 @@ const solveBridgeTransactionDetails = async (walletTxs: DisplayedTransaction[]):
     return walletTxs;
 };
 
-export const handleWalletTransactionsFound = async (payload: DisplayedTransaction[]) => {
-    const currentTransactions = useWalletStore.getState().wallet_transactions;
-    const copiedCurrentTransactions = [...currentTransactions];
-    const filteredIncomingTransactions = payload.filter((newTx) => {
-        return !copiedCurrentTransactions.some((existingTx) => existingTx.id === newTx.id);
+const isTransactionMatch = (txA: DisplayedTransaction, txB: DisplayedTransaction) => {
+    if (txA.id === txB.id) return true;
+
+    // If both transactions spend the exact same Input UTXO, they are the same transaction.
+    const inputsA = txA.details?.inputs;
+    const inputsB = txB.details?.inputs;
+
+    if (inputsA && inputsA.length > 0 && inputsB && inputsB.length > 0) {
+        const hasMatchingInput = inputsA.some((inputA) =>
+            inputsB.some((inputB) => inputB.output_hash === inputA.output_hash)
+        );
+
+        if (hasMatchingInput) {
+            return true;
+        }
+    }
+
+    // Fallback: match by Output Hashes (if available in both)
+    const outA = txA.details?.sent_output_hashes;
+    const outB = txB.details?.sent_output_hashes;
+    if (outA && outA.length > 0 && outB && outB.length > 0) {
+        const keyA = [...outA].sort().join(',');
+        const keyB = [...outB].sort().join(',');
+        if (keyA === keyB) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
+const mergeTransactions = (
+    currentList: DisplayedTransaction[],
+    incomingList: DisplayedTransaction[],
+    upsert: boolean // true = Add if new, false = Only update if exists
+): DisplayedTransaction[] => {
+    const updatedList = [...currentList];
+    const addedItems: DisplayedTransaction[] = [];
+    let hasChanges = false;
+
+    incomingList.forEach((newTx) => {
+        const matchIndex = updatedList.findIndex((existingTx) => isTransactionMatch(existingTx, newTx));
+
+        if (matchIndex >= 0) {
+            const existing = updatedList[matchIndex];
+
+            if (existing.bridge_transaction_details && !newTx.bridge_transaction_details) {
+                newTx.bridge_transaction_details = existing.bridge_transaction_details;
+            }
+
+            updatedList[matchIndex] = newTx;
+            hasChanges = true;
+        } else if (upsert) {
+            addedItems.push(newTx);
+            hasChanges = true;
+        }
     });
 
-    const processedTransactions = await solveBridgeTransactionDetails(filteredIncomingTransactions);
+    if (!hasChanges) return currentList;
 
-    // Prepend new transactions so they appear at the top of the list
-    const mergedTransactions = processedTransactions.concat(copiedCurrentTransactions);
-    useWalletStore.setState((c) => ({
-        ...c,
-        wallet_transactions: mergedTransactions,
+    return [...addedItems, ...updatedList];
+};
+
+export const handleWalletTransactionsFound = async (payload: DisplayedTransaction[]) => {
+    const processedTransactions = await solveBridgeTransactionDetails(payload);
+
+    useWalletStore.setState((state) => ({
+        ...state,
+        wallet_transactions: mergeTransactions(state.wallet_transactions, processedTransactions, true),
     }));
 };
 
@@ -207,33 +262,18 @@ export const handleWalletTransactionsCleared = () => {
 };
 
 export const handleWalletTransactionUpdated = async (payload: DisplayedTransaction) => {
-    // Find and replace the matching transaction (by id or output hashes)
-    const currentTransactions = useWalletStore.getState().wallet_transactions;
+    const processedTransactions = await solveBridgeTransactionDetails([payload]);
 
-    // Find matching transaction by sent_output_hashes in details
-    const matchingIndex = currentTransactions.findIndex((tx) => {
-        if (tx.id === payload.id) return true;
-        // Match by output hashes if available (in details)
-        const txHashes = tx.details?.sent_output_hashes;
-        const payloadHashes = payload.details?.sent_output_hashes;
-        if (txHashes?.length && payloadHashes?.length) {
-            const txHashKey = [...txHashes].sort().join(',');
-            const payloadHashKey = [...payloadHashes].sort().join(',');
-            return txHashKey === payloadHashKey;
+    useWalletStore.setState((state) => {
+        const newTransactions = mergeTransactions(state.wallet_transactions, processedTransactions, false);
+
+        if (newTransactions === state.wallet_transactions) {
+            return state;
         }
-        return false;
-    });
 
-    if (matchingIndex >= 0) {
-        const processedTransactions = await solveBridgeTransactionDetails([payload]);
-        const updatedTransaction = processedTransactions[0] || payload;
-
-        const newTransactions = [...currentTransactions];
-        newTransactions[matchingIndex] = updatedTransaction;
-
-        useWalletStore.setState((c) => ({
-            ...c,
+        return {
+            ...state,
             wallet_transactions: newTransactions,
-        }));
-    }
+        };
+    });
 };
