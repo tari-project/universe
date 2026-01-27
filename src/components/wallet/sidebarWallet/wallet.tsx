@@ -50,13 +50,13 @@ export default function Wallet({ section, setSection }: WalletProps) {
                 walletScrolled={isScrolled}
                 isWalletModuleFailed={isWalletModuleFailed}
             />
-            {isStandardWalletUI && !isWalletModuleFailed && (
+            {!listHidden && (
                 <>
                     <TabsWrapper>
                         <FilterSelect />
                         <WalletActions section={section} setSection={setSection} />
                     </TabsWrapper>
-                    <List setIsScrolled={setIsScrolled} scrolled={isScrolled} />
+                    {<List setIsScrolled={setIsScrolled} scrolled={isScrolled} />}
                 </>
             )}
             {!isWalletModuleFailed && (
