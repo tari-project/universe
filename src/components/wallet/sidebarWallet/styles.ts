@@ -1,12 +1,6 @@
 import * as m from 'motion/react-m';
 import styled, { css, keyframes } from 'styled-components';
 
-export const SidebarWalletWrapper = styled.div`
-    position: relative;
-    display: flex;
-    width: 100%;
-`;
-
 export const SwapsWrapper = styled(m.div)`
     display: flex;
     height: 100%;
@@ -15,22 +9,23 @@ export const SwapsWrapper = styled(m.div)`
 `;
 export const WalletWrapper = styled(m.div)`
     width: 100%;
-    flex-direction: column;
+    flex-direction: column-reverse;
     display: flex;
     position: relative;
-    justify-content: flex-end;
+    border: 1px solid aqua;
 `;
 
 export const Wrapper = styled.div`
     border-radius: 20px;
     background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
     padding: 10px;
+    overflow: hidden;
     display: flex;
     position: relative;
     flex-direction: column;
-    justify-content: space-between;
-    overflow: hidden;
     width: 100%;
+    height: 90%;
+    border: 1px solid orange;
     gap: 8px;
 `;
 

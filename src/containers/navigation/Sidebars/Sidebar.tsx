@@ -26,12 +26,12 @@ export default function Sidebar() {
                 {isSwapping && <BuyOverlay initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />}
             </AnimatePresence>
             <WrapperGrid>
-                <GridAreaTop>
-                    <MiningSection />
-                </GridAreaTop>
                 <GridAreaBottom $swapsOpen={isSwapping}>
                     <WalletSidebarContent />
                 </GridAreaBottom>
+                <GridAreaTop>
+                    <MiningSection />
+                </GridAreaTop>
             </WrapperGrid>
         </SidebarWrapper>
     );

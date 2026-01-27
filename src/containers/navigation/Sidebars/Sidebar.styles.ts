@@ -22,9 +22,10 @@ export const SidebarWrapper = styled(m.div)`
 
 export const WrapperGrid = styled.div`
     height: 100%;
-    display: grid;
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: space-between;
     gap: 8px;
-    justify-items: stretch;
 `;
 
 export const GridAreaTop = styled.div`
@@ -36,9 +37,14 @@ export const GridAreaTop = styled.div`
 
 export const GridAreaBottom = styled.div<{ $swapsOpen?: boolean; $isLoading?: boolean }>`
     display: flex;
+    align-items: stretch;
     position: relative;
     gap: 4px;
+    border: 1px solid green;
     overflow: hidden;
+    height: 100%;
+    //flex: 1 1 0;
+
     ${({ $swapsOpen }) =>
         $swapsOpen &&
         css`

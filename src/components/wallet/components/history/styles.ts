@@ -4,12 +4,7 @@ import * as m from 'motion/react-m';
 export const HistoryListWrapper = styled(m.div)`
     display: flex;
     width: 100%;
-    height: auto;
-    flex-grow: 1;
-    overflow: hidden;
-    overflow-y: auto;
-    align-items: flex-end;
-    justify-content: flex-end;
+    height: 90%;
     position: relative;
     mask-image: linear-gradient(to bottom, black 0px, black 10px, black calc(100% - 40px), transparent 100%);
     mask-position: bottom;

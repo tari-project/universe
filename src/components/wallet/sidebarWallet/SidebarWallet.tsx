@@ -19,10 +19,9 @@ import {
     DetailsCardBottomContent,
     TabsWrapper,
     WalletErrorWrapper,
-    SidebarWalletWrapper,
 } from './styles.ts';
 import { useCallback, useState } from 'react';
-import { HistoryListWrapper } from '@app/components/wallet/components/history/styles.ts';
+
 import { List } from '@app/components/transactions/history/List.tsx';
 import { open } from '@tauri-apps/plugin-shell';
 
@@ -69,7 +68,8 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
 
     const isSyncing = !isConnectedToTariNetwork || isInitialWalletScanning;
     const isSwapping = useWalletStore((s) => s.is_swapping);
-    const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
+    const isStandardWalletUI = false;
+    // const isStandardWalletUI = useConfigUIStore((s) => s.wallet_ui_mode === WalletUIMode.Standard);
 
     const openLink = useCallback(async () => {
         if (xcData && xcData.wallet_app_link) {
@@ -133,9 +133,9 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                         <FilterSelect filter={filter} handleFilterChange={handleFilterChange} />
                         <WalletActions section={section} setSection={setSection} />
                     </TabsWrapper>
-                    <HistoryListWrapper>
-                        <List setIsScrolled={setIsScrolled} />
-                    </HistoryListWrapper>
+                    {/*<HistoryListWrapper>*/}
+                    <List setIsScrolled={setIsScrolled} />
+                    {/*</HistoryListWrapper>*/}
                 </>
             )}
         </>
@@ -152,7 +152,7 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
     }
 
     return (
-        <SidebarWalletWrapper>
+        <>
             <AnimatePresence mode="wait">
                 {isSwapping ? (
                     <SwapsWrapper key="swap" variants={swapTransition} initial="hide" exit="hide" animate="show">
@@ -179,6 +179,6 @@ export default function SidebarWallet({ section, setSection }: SidebarWalletProp
                     handleClose={() => setSelectedTransactionId(null)}
                 />
             )}
-        </SidebarWalletWrapper>
+        </>
     );
 }

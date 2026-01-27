@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 
 import { useTranslation } from 'react-i18next';
-import { Virtualizer, VListHandle } from 'virtua';
+import { VList, VListHandle } from 'virtua';
 
 import { useWalletStore } from '@app/store';
 
@@ -79,8 +79,11 @@ export function List({ setIsScrolled }: ListProps) {
         <ListWrapper>
             {emptyMarkup}
             <ListItemWrapper>
-                <Virtualizer
+                <VList
                     ref={ref}
+                    bufferSize={4}
+                    itemSize={48}
+                    style={{ height: '100%', width: '100%' }}
                     onScroll={(offset) => {
                         if (!ref.current) return;
                         setIsScrolled(offset > 1);
@@ -98,7 +101,7 @@ export function List({ setIsScrolled }: ListProps) {
                             />
                         );
                     })}
-                </Virtualizer>
+                </VList>
                 {/* fill the list with placeholders if there are less than 4 entries */}
                 {Array.from({ length: placeholdersNeeded }).map((_, index) => (
                     <PlaceholderItem key={`placeholder-${index}`} />

@@ -2,11 +2,10 @@ import styled from 'styled-components';
 
 export const ListWrapper = styled.div`
     display: flex;
-    flex-direction: column;
     position: relative;
-    width: 100%;
-    height: 100%;
-
+    border: 1px solid deeppink;
+    overflow: hidden;
+    flex: 1 1 fit-content;
     h6 {
         text-align: center;
     }
@@ -16,10 +15,9 @@ export const ListItemWrapper = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
-    position: relative;
-    gap: 4px;
     overflow-y: auto;
-    overflow-anchor: none;
+    width: 100%;
+    position: relative;
 `;
 
 export const FilterWrapper = styled.div`
