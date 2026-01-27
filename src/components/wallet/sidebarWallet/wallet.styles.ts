@@ -1,7 +1,7 @@
 import styled, { css } from 'styled-components';
 import * as m from 'motion/react-m';
 
-export const WalletWrapper = styled(m.div)<{ $listHidden?: boolean }>`
+export const WalletWrapper = styled(m.div)<{ $listHidden?: boolean; $isSwaps?: boolean }>`
     background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
     flex-direction: column;
     border-radius: 20px;
@@ -13,6 +13,15 @@ export const WalletWrapper = styled(m.div)<{ $listHidden?: boolean }>`
         $listHidden &&
         css`
             flex: 0 1 0;
+        `}
+
+    ${({ $isSwaps }) =>
+        $isSwaps &&
+        css`
+            position: absolute;
+            z-index: 5;
+            bottom: 12px;
+            width: calc(100% - 24px);
         `}
 `;
 

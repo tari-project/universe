@@ -61,10 +61,17 @@ export const Content = styled.div`
 
 export const BottomContent = styled.div`
     display: flex;
+    color: ${({ theme }) => theme.colorsAlpha.lightAlpha[80]};
     flex-direction: column;
     gap: 8px;
+
     @media (max-height: 652px) {
         gap: 4px;
+    }
+
+    p {
+        font-size: 10px;
+        line-height: 1;
     }
 `;
 

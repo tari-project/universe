@@ -8,14 +8,20 @@ import Wallet from '../wallet/sidebarWallet/wallet.tsx';
 import { useWalletStore } from '@app/store';
 import { TransactionDetails } from '@app/components/transactions/history/transactionDetails/TransactionDetails.tsx';
 import { setSelectedTransactionId } from '@app/store/actions/walletStoreActions.ts';
+import { AnimatePresence } from 'motion/react';
+import SwapUI from '@app/components/wallet/sidebarWallet/swap.tsx';
 
 export default function WalletSidebarContent() {
     const { t } = useTranslation('wallet');
     const selectedTransaction = useWalletStore((s) => s.selectedTransaction());
+    const isSwapping = useWalletStore((s) => s.is_swapping);
     const [section, setSection] = useState('history');
     return (
         <>
-            <Wallet section={section} setSection={setSection} />
+            <AnimatePresence mode="wait">
+                {isSwapping ? <SwapUI /> : <Wallet section={section} setSection={setSection} />}
+            </AnimatePresence>
+
             {section !== 'history' && <SendModal section={section} setSection={setSection} />}
             <TransactionModal
                 show={section === 'receive'}

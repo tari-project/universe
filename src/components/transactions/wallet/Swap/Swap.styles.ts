@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 export const SwapsContainer = styled.div`
-    width: 100%;
+    position: relative;
     display: flex;
     flex-direction: column;
 `;
@@ -35,7 +35,6 @@ export const SwapsIframe = styled.iframe<{ $walletConnectOpen: boolean; $swapHei
 export const IframeContainer = styled.div`
     width: 100%;
     height: 100%;
-    min-height: 320px;
     display: flex;
     align-items: center;
 `;

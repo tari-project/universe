@@ -6,7 +6,7 @@ import { queryClient } from '@app/App/queryClient.ts';
 import { WalletUIMode } from '@app/types/events-payloads';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 
-export const KEY_XC_LIST = 'exchanges';
+export const KEY_XC_LIST = 'exchanges-list';
 
 function handleRewardData(list: ExchangeBranding[]) {
     const highestAmt = list.sort((a, b) => (b?.reward_percentage || 0) - (a?.reward_percentage || 0))?.[0]

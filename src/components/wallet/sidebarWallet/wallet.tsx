@@ -12,6 +12,7 @@ import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
 import { AppModuleStatus } from '@app/store/types/setup.ts';
 import { List } from '@app/components/transactions/history/List.tsx';
+import { swapTransition } from '@app/components/transactions/wallet/transitions.ts';
 
 interface WalletProps {
     section: string;
@@ -29,9 +30,17 @@ export default function Wallet({ section, setSection }: WalletProps) {
     const [isScrolled, setIsScrolled] = useState(false);
 
     const isSyncing = !isConnectedToTariNetwork || isInitialWalletScanning;
+    const listHidden = isSyncing || !isStandardWalletUI || isWalletModuleFailed;
 
     return (
-        <WalletWrapper $listHidden={isSyncing || !isStandardWalletUI}>
+        <WalletWrapper
+            key="wallet"
+            $listHidden={listHidden}
+            variants={swapTransition}
+            initial="show"
+            exit="hide"
+            animate="show"
+        >
             <SidebarWalletDetails
                 isSyncing={isSyncing}
                 walletScrolled={isScrolled}
@@ -46,11 +55,13 @@ export default function Wallet({ section, setSection }: WalletProps) {
                     <List setIsScrolled={setIsScrolled} scrolled={isScrolled} />
                 </>
             )}
-            <CTAWrapper>
-                <Button onClick={() => setIsSwapping(true)} fluid size="large" variant="black">
-                    <span>{`${t('swap.buy-tari')} (XTM)`}</span>
-                </Button>
-            </CTAWrapper>
+            {!isWalletModuleFailed && (
+                <CTAWrapper>
+                    <Button onClick={() => setIsSwapping(true)} fluid size="large" variant="black">
+                        <span>{`${t('swap.buy-tari')} (XTM)`}</span>
+                    </Button>
+                </CTAWrapper>
+            )}
         </WalletWrapper>
     );
 }

@@ -46,6 +46,7 @@ export const FilterWrapper = styled.div`
     display: flex;
     gap: 12px;
     flex-shrink: 0;
+    padding: 0 4px;
 `;
 
 export const EmptyText = styled.div`
