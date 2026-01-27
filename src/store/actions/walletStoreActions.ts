@@ -190,9 +190,8 @@ const isTransactionMatch = (txA: DisplayedTransaction, txB: DisplayedTransaction
     const inputsB = txB.details?.inputs;
 
     if (inputsA && inputsA.length > 0 && inputsB && inputsB.length > 0) {
-        const hasMatchingInput = inputsA.some((inputA) =>
-            inputsB.some((inputB) => inputB.output_hash === inputA.output_hash)
-        );
+        const inputsBHashes = new Set(inputsB.map((input) => input.output_hash));
+        const hasMatchingInput = inputsA.some((inputA) => inputsBHashes.has(inputA.output_hash));
 
         if (hasMatchingInput) {
             return true;
