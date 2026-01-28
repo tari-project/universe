@@ -26,6 +26,7 @@ mod errors;
 pub use balance_calculator::BalanceCalculator;
 
 use log::{error, info};
+use minotari_wallet::transactions::{TransactionDisplayStatus, TransactionSource};
 use minotari_wallet::{db::AccountBalance, DisplayedTransaction};
 use std::sync::LazyLock;
 use tokio::sync::RwLock;
@@ -117,6 +118,17 @@ impl BalanceTracker {
                     current, new_balance, total_credit, total_debit
                 );
 
+                let last_tx = transactions.last();
+
+                if let Some(tx) = last_tx {
+                    let is_coinbase_confirmed = tx.source == TransactionSource::Coinbase
+                        && tx.status == TransactionDisplayStatus::Confirmed;
+
+                    if (is_coinbase_confirmed) {
+                        Self::emit_change_from_mined(tx.clone()).await;
+                    }
+                }
+
                 Self::emit_balance(new_balance).await;
             }
             Err(e) => {
@@ -138,5 +150,9 @@ impl BalanceTracker {
         };
 
         EventsEmitter::emit_wallet_balance_update(wallet_balance).await;
+    }
+    /// Emit new mined block if balance change was from a mined block
+    async fn emit_change_from_mined(coinbase_tx: DisplayedTransaction) {
+        EventsEmitter::emit_new_block_mined(coinbase_tx).await;
     }
 }

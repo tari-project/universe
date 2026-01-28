@@ -3,7 +3,7 @@ import { listen } from '@tauri-apps/api/event';
 
 import { BACKEND_STATE_UPDATE, BackendStateUpdateEvent } from '@app/types/backend-state.ts';
 
-import { handleNewBlockPayload, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
+import { processNewBlock } from '@app/store/useBlockchainVisualisationStore';
 import { setCpuMiningStatus, setGpuDevices, setGpuMiningStatus } from '@app/store/actions/miningMetricsStoreActions';
 import {
     handleAskForRestart,
@@ -126,11 +126,8 @@ const useTauriEventsListener = () => {
                     case 'GpuPoolsStatsUpdate':
                         setGpuPoolStats(event.payload);
                         break;
-                    case 'NewBlockHeight': {
-                        const current = useBlockchainVisualisationStore.getState().latestBlockPayload?.block_height;
-                        if (!current || current < event.payload.block_height) {
-                            await handleNewBlockPayload(event.payload);
-                        }
+                    case 'NewBlockMined': {
+                        await processNewBlock(event.payload);
                         break;
                     }
                     case 'ConfigCoreLoaded':
@@ -269,13 +266,13 @@ const useTauriEventsListener = () => {
                         setIsShuttingDown(true);
                         break;
                     case 'WalletTransactionsFound':
-                        handleWalletTransactionsFound(event.payload);
+                        await handleWalletTransactionsFound(event.payload);
                         break;
                     case 'WalletTransactionsCleared':
                         handleWalletTransactionsCleared();
                         break;
                     case 'WalletTransactionUpdated':
-                        handleWalletTransactionUpdated(event.payload);
+                        await handleWalletTransactionUpdated(event.payload);
                         break;
                     case 'SetShowBatteryAlert':
                         setShowBatteryAlert(event.payload);

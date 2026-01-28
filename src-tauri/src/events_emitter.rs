@@ -42,8 +42,8 @@ use crate::{
     },
     events::{
         DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
-        NetworkStatusPayload, NewBlockHeightPayload, NodeTypeUpdatePayload,
-        ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, TariAddressUpdatePayload,
+        NetworkStatusPayload, NewBlockMined, NodeTypeUpdatePayload, ProgressTrackerUpdatePayload,
+        ShowReleaseNotesPayload, TariAddressUpdatePayload,
     },
     hardware::hardware_status_monitor::PublicDeviceGpuProperties,
     setup::setup_manager::SetupPhase,
@@ -471,15 +471,11 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_new_block_mined(
-        block_height: u64,
-        coinbase_transaction: Option<TransactionInfo>,
-    ) {
+    pub async fn emit_new_block_mined(coinbase_transaction: DisplayedTransaction) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::NewBlockHeight,
-            payload: NewBlockHeightPayload {
-                block_height,
+            payload: NewBlockMined {
                 coinbase_transaction,
             },
         };

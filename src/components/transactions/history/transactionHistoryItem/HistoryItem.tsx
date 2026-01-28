@@ -99,25 +99,6 @@ const HistoryListItem = memo(function HistoryListItem({
         ? `***`
         : formatNumber(transaction.amount, FormatPreset.XTM_COMPACT).toLowerCase();
 
-    /*
-    // note re. isPositiveValue:
-    // amounts in the tx response are always positive numbers but
-    // if the transaction is Outbound, the value is negative
-    const isPositiveValue = item.walletTransactionDetails.direction === TransactionDirection.Inbound;
-    const displayTitle = itemTitle.length > 26 ? truncateMiddle(itemTitle, 8) : itemTitle;
-
-    const getValueMarkup = (fullValue = false) => (
-        <ValueWrapper>
-            {!hideWalletBalance && (
-                <ValueChangeWrapper $isPositiveValue={isPositiveValue}>
-                    {isPositiveValue ? `+` : `-`}
-                </ValueChangeWrapper>
-            )}
-            {fullValue ? earningsFull : earningsFormatted}
-            <CurrencyText>{`XTM`}</CurrencyText>
-        </ValueWrapper>
-    );
-    */
     const baseItem = (
         <BaseItem
             title={itemTitle}
