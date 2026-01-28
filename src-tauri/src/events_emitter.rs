@@ -471,11 +471,15 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_new_block_mined(coinbase_transaction: DisplayedTransaction) {
+    pub async fn emit_new_block_mined(
+        block_height: u64,
+        coinbase_transaction: Option<DisplayedTransaction>,
+    ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::NewBlockHeight,
             payload: NewBlockMined {
+                block_height,
                 coinbase_transaction,
             },
         };
