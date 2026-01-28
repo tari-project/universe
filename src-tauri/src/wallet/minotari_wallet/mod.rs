@@ -43,6 +43,7 @@ use minotari_wallet::{
     },
     get_balance,
     models::BalanceChange,
+    tasks::unlocker::TransactionUnlocker,
     transactions::one_sided_transaction::Recipient,
     utils::init_wallet::init_with_view_key,
     DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
@@ -63,6 +64,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
+use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet_manager";
 
@@ -100,6 +102,7 @@ pub struct MinotariWalletManager {
     /// Key: comma-separated sorted output hashes, Value: DisplayedTransaction
     pending_transactions: RwLock<HashMap<String, DisplayedTransaction>>,
     last_progress_emit_time: RwLock<Instant>,
+    unlocker_handle: RwLock<Option<JoinHandle<Result<(), anyhow::Error>>>>,
 }
 
 impl MinotariWalletManager {
@@ -115,6 +118,7 @@ impl MinotariWalletManager {
             last_progress_emit_time: RwLock::new(
                 Instant::now() - Duration::from_secs(PROGRESS_UPDATE_INTERVAL_SECS),
             ),
+            unlocker_handle: RwLock::new(None),
         }
     }
 
@@ -345,6 +349,10 @@ impl MinotariWalletManager {
 
         // Start connection health check
         INSTANCE.database_manager.start_health_check().await;
+
+        if let Err(e) = Self::run_transaction_unlocker().await {
+            error!(target: LOG_TARGET, "Failed to start transaction unlocker: {:?}", e);
+        }
 
         // ============= | Check latest block height | ==============
 
@@ -688,5 +696,47 @@ impl MinotariWalletManager {
         } else {
             Err(anyhow::anyhow!("Tari wallet details not found"))
         }
+    }
+
+    pub async fn run_transaction_unlocker() -> Result<(), anyhow::Error> {
+        if INSTANCE.unlocker_handle.read().await.is_some() {
+            info!(target: LOG_TARGET, "Transaction unlocker is already running.");
+            return Ok(());
+        }
+
+        info!(target: LOG_TARGET, "Starting Transaction Unlocker...");
+
+        let pool = INSTANCE.database_manager.get_pool().await?;
+        let unlocker = TransactionUnlocker::new(pool);
+
+        let (shutdown_tx, shutdown_rx) = tokio::sync::broadcast::channel(1);
+        let handle = unlocker.run(shutdown_rx);
+
+        *INSTANCE.unlocker_handle.write().await = Some(handle);
+
+        let mut app_shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+
+        TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                app_shutdown_signal.wait().await;
+
+                info!(target: LOG_TARGET, "Shutdown signal received. Stopping Transaction Unlocker.");
+
+                if let Some(handle) = INSTANCE.unlocker_handle.write().await.take() {
+                    if let Err(e) = shutdown_tx.send(()) {
+                        error!(target: LOG_TARGET, "Failed to send shutdown signal to unlocker (it might have already stopped): {:?}", e);
+                    }
+                    if let Err(e) = handle.await {
+                        error!(target: LOG_TARGET, "Transaction unlocker task did not complete successfully: {:?}", e);
+                    }
+                }
+
+                *INSTANCE.unlocker_handle.write().await = None;
+            });
+
+        Ok(())
     }
 }
