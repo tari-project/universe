@@ -4,6 +4,7 @@ import { getExplorerUrl } from '@app/utils/network.ts';
 import { defaultHeaders } from '@app/utils';
 import { processNewBlock, useBlockchainVisualisationStore } from '@app/store';
 import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
+import { useEffect } from 'react';
 
 async function getTipHeight(): Promise<BlockTip> {
     const explorerUrl = getExplorerUrl();
@@ -15,19 +16,28 @@ async function getTipHeight(): Promise<BlockTip> {
 }
 export function useBlockTip() {
     const latestBlock = useBlockchainVisualisationStore((s) => s.latestBlockPayload);
-    return useQuery<BlockTip>({
-        queryKey: [KEY_EXPLORER, 'block_tip'],
-        queryFn: async () => {
-            const data = await getTipHeight();
+    const lastBlockHeight = latestBlock?.block_height;
 
-            console.log('hi from useBlockTip! latestBlock vs fetch data', latestBlock?.block_height, data?.height);
-            if (latestBlock && data?.height !== latestBlock?.block_height) {
-                await processNewBlock(latestBlock);
-            }
-            return data;
-        },
+    const { data, isLoading, refetch } = useQuery<BlockTip>({
+        queryKey: [KEY_EXPLORER, 'tip_height'],
+        queryFn: async () => await getTipHeight(),
+        notifyOnChangeProps: ['data'],
         refetchIntervalInBackground: true,
-        refetchInterval: 20 * 1000,
-        staleTime: 1000 * 60,
+        refetchInterval: 1000 * 60 * 1.5,
     });
+
+    useEffect(() => {
+        if (!data || !lastBlockHeight) return;
+        console.log('useBlockTip! latestBlock VS fetch data', lastBlockHeight, data?.height);
+        if (lastBlockHeight <= data?.height) {
+            processNewBlock(latestBlock);
+        }
+
+        if (data.height !== lastBlockHeight) {
+            console.log('refetching...');
+            refetch();
+        }
+    }, [data, lastBlockHeight, latestBlock, refetch]);
+
+    return { data, isLoading };
 }

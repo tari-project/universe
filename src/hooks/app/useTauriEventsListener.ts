@@ -135,7 +135,6 @@ const useTauriEventsListener = () => {
                         console.log(`current= block_height`, current);
                         console.log('payload.block_height=', event.payload.block_height);
                         if (!current || current < event.payload.block_height) {
-                            await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER, 'block_tip'] });
                             await handleNewBlockPayload(event.payload);
                         }
                         break;
