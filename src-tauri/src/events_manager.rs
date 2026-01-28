@@ -34,6 +34,8 @@ impl EventsManager {
     pub async fn handle_new_block_height(app: &AppHandle, block_height: u64) {
         let state = app.state::<UniverseAppState>();
         let in_memory_config = state.in_memory_config.read().await;
+
+        info!(target: LOG_TARGET_APP_LOGIC,"NEW BLOCK HEIGHT: {}", block_height);
         if SetupManager::get_instance()
             .features
             .read()
@@ -46,6 +48,8 @@ impl EventsManager {
             return;
         }
         drop(in_memory_config);
+        info!(target: LOG_TARGET_APP_LOGIC,"did we get to emit_new_block_mined? {}", block_height);
+        EventsEmitter::emit_new_block_mined(block_height, None).await;
     }
 
     pub async fn handle_node_type_update(app_handle: &AppHandle) {

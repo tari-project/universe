@@ -62,7 +62,7 @@ export type BackendStateUpdateEvent =
           payload: GpuMinerStatus;
       }
     | {
-          event_type: 'NewBlockMined';
+          event_type: 'NewBlockHeight';
           payload: NewBlockHeightPayload;
       }
     | {
