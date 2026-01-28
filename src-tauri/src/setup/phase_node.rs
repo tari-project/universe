@@ -284,12 +284,19 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 EventsEmitter::emit_base_node_update(init_node_status).await;
 
                 let mut latest_updated_block_height = init_node_status.block_height;
+
+
                 loop {
                     tokio::select! {
                 _ = node_status_watch_rx.changed() => {
                     let node_status = *node_status_watch_rx.borrow();
-                    let is_syncing = MinotariWalletManager::is_syncing().await;
                     let node_synced = node_status.is_synced;
+                    let is_syncing = MinotariWalletManager::is_syncing().await;
+
+
+                    if !is_syncing && node_synced && latest_updated_block_height == 0 {
+                        latest_updated_block_height = node_status.block_height;
+                    }
 
                     if node_status.block_height > latest_updated_block_height && !is_syncing && node_synced {
                         while latest_updated_block_height < node_status.block_height {

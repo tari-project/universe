@@ -12,6 +12,7 @@ export const ItemWrapper = styled(m.div)`
     justify-content: flex-end;
     flex-direction: column;
     overflow: hidden;
+    margin: 0 0 4px 0;
     position: relative;
     box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.025)} 0 1px 2px -1px`};
     background-color: ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)};
@@ -208,4 +209,5 @@ export const PlaceholderItem = styled.div<{ $isLast?: boolean }>`
     border-radius: 10px;
     flex-shrink: 0;
     opacity: ${({ $isLast }) => ($isLast ? 0 : 0.75)};
+    margin: 0 0 4px 0;
 `;

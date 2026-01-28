@@ -146,7 +146,6 @@ const useTauriEventsListener = () => {
                         await handleConfigUILoaded(event.payload);
                         break;
                     case 'ConfigPoolsLoaded':
-                        console.info('ConfigPoolsLoaded', event.payload);
                         handleConfigPoolsLoaded(event.payload);
                         break;
                     case 'CloseSplashscreen':

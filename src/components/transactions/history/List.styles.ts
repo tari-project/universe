@@ -1,11 +1,33 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
+
+export const ListMask = styled.div<{ $bottom?: boolean }>`
+    background: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
+    mask-image: ${({ $bottom }) =>
+        `linear-gradient(to ${$bottom ? 'top' : 'bottom'}, black 0px, black 10px, black calc(100% - 40px), transparent 100%)`};
+    mask-size: 60% 100%;
+    display: flex;
+    height: 35px;
+    width: 100%;
+    position: absolute;
+    z-index: 3;
+    mask-position: top;
+    pointer-events: none;
+    top: 0;
+    bottom: unset;
+    ${({ $bottom }) =>
+        $bottom &&
+        css`
+            mask-position: bottom;
+            bottom: -8px;
+            top: unset;
+        `};
+`;
 
 export const ListWrapper = styled.div`
     display: flex;
-    flex-direction: column;
     position: relative;
-    width: 100%;
-    height: 100%;
+    overflow: hidden;
+    flex: 1 1 fit-content;
     h6 {
         text-align: center;
     }
@@ -15,14 +37,16 @@ export const ListItemWrapper = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
+    overflow-y: auto;
+    width: 100%;
     position: relative;
-    gap: 4px;
 `;
 
 export const FilterWrapper = styled.div`
     display: flex;
     gap: 12px;
     flex-shrink: 0;
+    padding: 0 4px;
 `;
 
 export const EmptyText = styled.div`

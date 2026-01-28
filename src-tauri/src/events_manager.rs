@@ -48,7 +48,7 @@ impl EventsManager {
             .await
             .is_feature_enabled(SetupFeature::SeedlessWallet)
         {
-            info!(target: LOG_TARGET_APP_LOGIC, "Firing new block height event but skipping wallet scan for seedless wallet feature");
+            info!(target: LOG_TARGET_APP_LOGIC, "Firing new block height {block_height} event but skipping wallet scan for seedless wallet feature");
             EventsEmitter::emit_new_block_mined(block_height, None).await;
 
             return;

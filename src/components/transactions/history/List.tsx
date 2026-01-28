@@ -1,20 +1,30 @@
 import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 
 import { useTranslation } from 'react-i18next';
-import { VList } from 'virtua';
+import { VList, VListHandle } from 'virtua';
 
 import { useWalletStore } from '@app/store';
 
-import { EmptyText, ListItemWrapper, ListWrapper } from './List.styles.ts';
+import { EmptyText, ListItemWrapper, ListMask, ListWrapper } from './List.styles.ts';
 import { setSelectedTransactionId } from '@app/store/actions/walletStoreActions.ts';
 import { DisplayedTransaction, TransactionSource } from '@app/types/app-status.ts';
 import { HistoryListItem } from './transactionHistoryItem/HistoryItem.tsx';
 import { PlaceholderItem } from './transactionHistoryItem/HistoryItem.styles.ts';
 
-export function List() {
+interface ListProps {
+    setIsScrolled: (isScrolled: boolean) => void;
+    scrolled?: boolean;
+}
+
+export function List({ setIsScrolled, scrolled = false }: ListProps) {
     const { t } = useTranslation('wallet');
     const walletTransactionsAll = useWalletStore((s) => s.wallet_transactions);
     const transactionsFilter = useWalletStore((s) => s.transaction_history_filter);
+
+    // Track seen transaction IDs to show "new" indicator for new transactions
+    const [seenTransactionIds, setSeenTransactionIds] = useState<Set<string>>(new Set());
+    const isInitialLoad = useRef(true);
+    const ref = useRef<VListHandle>(null);
 
     const walletTransactions = useMemo(() => {
         if (!walletTransactionsAll) return [];
@@ -31,10 +41,6 @@ export function List() {
         }
     }, [walletTransactionsAll, transactionsFilter]);
 
-    // Track seen transaction IDs to show "new" indicator for new transactions
-    const [seenTransactionIds, setSeenTransactionIds] = useState<Set<string>>(new Set());
-    const isInitialLoad = useRef(true);
-
     // Mark all transactions as seen on initial load (so they don't show as "new")
     useEffect(() => {
         if (isInitialLoad.current && walletTransactions && walletTransactions.length > 0) {
@@ -47,11 +53,8 @@ export function List() {
     // Mark new transactions as seen after 30 seconds
     useEffect(() => {
         if (!walletTransactions || isInitialLoad.current) return;
-
         const newTransactionIds = walletTransactions.filter((tx) => !seenTransactionIds.has(tx.id)).map((tx) => tx.id);
-
         if (newTransactionIds.length === 0) return;
-
         const timer = setTimeout(() => {
             setSeenTransactionIds((prev) => {
                 const updated = new Set(prev);
@@ -59,7 +62,6 @@ export function List() {
                 return updated;
             });
         }, 30000); // 30 seconds
-
         return () => clearTimeout(timer);
     }, [walletTransactions, seenTransactionIds]);
 
@@ -69,16 +71,26 @@ export function List() {
 
     // Calculate how many placeholder items we need to add
     const transactionsCount = walletTransactions?.length || 0;
-    const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
+    const placeholdersNeeded = Math.max(0, 2 - transactionsCount);
 
     const isEmpty = !walletTransactionsAll?.length;
     const emptyMarkup = isEmpty ? <EmptyText>{t('empty-tx')}</EmptyText> : null;
 
     return (
         <ListWrapper>
+            {scrolled && <ListMask />}
             {emptyMarkup}
-            <VList style={{ height: '100%', width: '100%' }}>
-                <ListItemWrapper>
+            <ListItemWrapper>
+                <VList
+                    ref={ref}
+                    bufferSize={4}
+                    itemSize={48}
+                    style={{ height: '100%', width: '100%' }}
+                    onScroll={(offset) => {
+                        if (!ref.current) return;
+                        setIsScrolled(offset > 1);
+                    }}
+                >
                     {walletTransactions?.map((tx, i) => {
                         const isNewTransaction = !seenTransactionIds.has(tx.id);
                         return (
@@ -91,13 +103,13 @@ export function List() {
                             />
                         );
                     })}
-
-                    {/* fill the list with placeholders if there are less than 4 entries */}
-                    {Array.from({ length: placeholdersNeeded }).map((_, index) => (
-                        <PlaceholderItem key={`placeholder-${index}`} />
-                    ))}
-                </ListItemWrapper>
-            </VList>
+                </VList>
+                {/* fill the list with placeholders if there are less than 4 entries */}
+                {Array.from({ length: placeholdersNeeded }).map((_, index) => (
+                    <PlaceholderItem key={`placeholder-${index}`} />
+                ))}
+            </ListItemWrapper>
+            <ListMask $bottom />
         </ListWrapper>
     );
 }
