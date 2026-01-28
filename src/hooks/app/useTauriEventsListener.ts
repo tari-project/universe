@@ -3,7 +3,7 @@ import { listen } from '@tauri-apps/api/event';
 
 import { BACKEND_STATE_UPDATE, BackendStateUpdateEvent } from '@app/types/backend-state.ts';
 
-import { processNewBlock } from '@app/store/useBlockchainVisualisationStore';
+import { handleNewBlockPayload, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { setCpuMiningStatus, setGpuDevices, setGpuMiningStatus } from '@app/store/actions/miningMetricsStoreActions';
 import {
     handleAskForRestart,
@@ -126,8 +126,15 @@ const useTauriEventsListener = () => {
                     case 'GpuPoolsStatsUpdate':
                         setGpuPoolStats(event.payload);
                         break;
+
                     case 'NewBlockMined': {
-                        await processNewBlock(event.payload);
+                        const current = useBlockchainVisualisationStore.getState().latestBlockPayload?.block_height;
+                        console.log('============== NewBlockMined! ==============');
+                        console.log(`current= block_height`, current);
+                        console.log('payload.block_height=', event.payload.block_height);
+                        if (!current || current < event.payload.block_height) {
+                            await handleNewBlockPayload(event.payload);
+                        }
                         break;
                     }
                     case 'ConfigCoreLoaded':

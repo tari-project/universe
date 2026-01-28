@@ -1,4 +1,4 @@
-import { GpuDevice } from './app-status';
+import { DisplayedTransaction, GpuDevice } from './app-status';
 
 export enum SetupPhase {
     Core = 'Core',
@@ -30,6 +30,10 @@ export interface WalletScanningProgressUpdatePayload {
     total_height: number;
     progress: number;
     is_initial_scan_complete: boolean;
+}
+export interface NewBlockHeightPayload {
+    block_height: number;
+    coinbase_transaction?: DisplayedTransaction;
 }
 
 export interface DetectedDevicesPayload {

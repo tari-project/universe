@@ -7,6 +7,7 @@ import {
     GpuMiner,
     GpuMinerType,
     MinerControlsState,
+    NewBlockHeightPayload,
     NodeTypeUpdatePayload,
     ProgressTrackerUpdatePayload,
     SetupPhase,
@@ -62,7 +63,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'NewBlockMined';
-          payload: DisplayedTransaction;
+          payload: NewBlockHeightPayload;
       }
     | {
           event_type: 'CloseSplashscreen';
