@@ -303,8 +303,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         info!(target: LOG_TARGET_APP_LOGIC, "node_status.block_height: {}, latest_updated_block_height: {}", node_status.block_height,latest_updated_block_height);
                         while latest_updated_block_height < node_status.block_height {
                             latest_updated_block_height += 1;
-                            let _ = EventsManager::handle_new_block_height(&app_handle_clone, latest_updated_block_height).await;
                         }
+                        EventsEmitter::emit_new_block_mined(latest_updated_block_height, None).await;
                     }
                     EventsEmitter::emit_base_node_update(node_status).await;
                     if node_status.block_height > latest_updated_block_height && is_syncing {

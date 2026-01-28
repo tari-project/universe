@@ -18,7 +18,7 @@ export function useBlockTip() {
     const latestBlock = useBlockchainVisualisationStore((s) => s.latestBlockPayload);
     const lastBlockHeight = latestBlock?.block_height;
 
-    const { data, isLoading, refetch } = useQuery<BlockTip>({
+    const { data, isLoading, refetch, isFetching, isRefetching } = useQuery<BlockTip>({
         queryKey: [KEY_EXPLORER, 'tip_height'],
         queryFn: async () => await getTipHeight(),
         notifyOnChangeProps: ['data'],
@@ -33,11 +33,11 @@ export function useBlockTip() {
             processNewBlock(latestBlock);
         }
 
-        if (data.height !== lastBlockHeight) {
+        if (!isFetching && !isRefetching && data.height !== lastBlockHeight) {
             console.debug('mismatched heights re-fetching explorer data...');
             refetch();
         }
-    }, [data, lastBlockHeight, latestBlock, refetch]);
+    }, [data, isFetching, isRefetching, lastBlockHeight, latestBlock, refetch]);
 
     return { data, isLoading };
 }

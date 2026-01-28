@@ -20,38 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::info;
 use tauri::{AppHandle, Manager};
 
-use crate::setup::listeners::SetupFeature;
-use crate::setup::setup_manager::SetupManager;
-use crate::LOG_TARGET_APP_LOGIC;
 use crate::{events::NodeTypeUpdatePayload, events_emitter::EventsEmitter, UniverseAppState};
 
 pub struct EventsManager;
 
 impl EventsManager {
-    pub async fn handle_new_block_height(app: &AppHandle, block_height: u64) {
-        let state = app.state::<UniverseAppState>();
-        let in_memory_config = state.in_memory_config.read().await;
-
-        info!(target: LOG_TARGET_APP_LOGIC,"NEW BLOCK HEIGHT: {}", block_height);
-        if SetupManager::get_instance()
-            .features
-            .read()
-            .await
-            .is_feature_enabled(SetupFeature::SeedlessWallet)
-        {
-            info!(target: LOG_TARGET_APP_LOGIC, "Firing new block height {block_height} event but skipping wallet scan for seedless wallet feature");
-            EventsEmitter::emit_new_block_mined(block_height, None).await;
-
-            return;
-        }
-        drop(in_memory_config);
-        info!(target: LOG_TARGET_APP_LOGIC,"did we get to emit_new_block_mined? {}", block_height);
-        EventsEmitter::emit_new_block_mined(block_height, None).await;
-    }
-
     pub async fn handle_node_type_update(app_handle: &AppHandle) {
         let node_manager = &app_handle.state::<UniverseAppState>().node_manager;
         let node_type = Some(node_manager.get_node_type().await);
