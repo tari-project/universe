@@ -118,12 +118,12 @@ export const handleReplayComplete = () => {
 };
 
 export async function processNewBlock(payload: { block_height: number; transaction?: DisplayedTransaction }) {
-    console.log('hi from processNewBlock', payload.block_height);
+    console.debug('hi from processNewBlock', payload.block_height);
     if (useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
         const canAnimate = !minimized && documentIsVisible;
-        console.log(`canAnimate= `, canAnimate);
+        console.debug(`canAnimate= `, canAnimate);
         if (payload.transaction) {
             await handleWin(payload.transaction, canAnimate);
         } else {

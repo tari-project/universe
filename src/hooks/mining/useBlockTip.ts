@@ -28,13 +28,13 @@ export function useBlockTip() {
 
     useEffect(() => {
         if (!data || !lastBlockHeight) return;
-        console.log('useBlockTip! latestBlock VS fetch data', lastBlockHeight, data?.height);
+        console.debug('useBlockTip! latestBlock VS fetch data', lastBlockHeight, data?.height);
         if (lastBlockHeight <= data?.height) {
             processNewBlock(latestBlock);
         }
 
         if (data.height !== lastBlockHeight) {
-            console.log('refetching...');
+            console.debug('mismatched heights re-fetching explorer data...');
             refetch();
         }
     }, [data, lastBlockHeight, latestBlock, refetch]);

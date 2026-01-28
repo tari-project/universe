@@ -73,8 +73,6 @@ import {
 } from '@app/store/actions/walletStoreActions';
 import { handleConfigCoreLoaded } from '@app/store/actions/config/core.ts';
 import { handleFeedbackExitSurveyRequested } from '@app/store/stores/userFeedbackStore';
-import { queryClient } from '@app/App/queryClient.ts';
-import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -131,9 +129,9 @@ const useTauriEventsListener = () => {
 
                     case 'NewBlockHeight': {
                         const current = useBlockchainVisualisationStore.getState().latestBlockPayload?.block_height;
-                        console.log('======NewBlockMined!======');
-                        console.log(`current= block_height`, current);
-                        console.log('payload.block_height=', event.payload.block_height);
+                        console.debug('======NewBlockMined!======');
+                        console.debug(`current= block_height`, current);
+                        console.debug('payload.block_height=', event.payload.block_height);
                         if (!current || current < event.payload.block_height) {
                             await handleNewBlockPayload(event.payload);
                         }
