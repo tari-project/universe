@@ -24,8 +24,6 @@ mod balance_calculator;
 mod errors;
 
 pub use balance_calculator::BalanceCalculator;
-
-use dyn_clone::clone;
 use log::{error, info};
 use minotari_wallet::transactions::{TransactionDisplayStatus, TransactionSource};
 use minotari_wallet::{db::AccountBalance, DisplayedTransaction};
@@ -38,8 +36,6 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::wallet::wallet_types::WalletBalance;
 use tari_transaction_components::tari_amount::MicroMinotari;
-use tari_transaction_components::tx;
-use tauri::async_runtime::handle;
 use tauri::AppHandle;
 
 const LOG_TARGET: &str = "tari::universe::wallet::balance_tracker";
@@ -112,7 +108,7 @@ impl BalanceTracker {
 
         let mut total_credit: u64 = 0;
         let mut total_debit: u64 = 0;
-        let mut latest_win;
+        let mut latest_win: Option<&DisplayedTransaction> = None;
 
         for tx in transactions {
             // Use details.total_credit and details.total_debit from DisplayedTransaction
@@ -122,7 +118,7 @@ impl BalanceTracker {
             if tx.source == TransactionSource::Coinbase
                 && tx.status == TransactionDisplayStatus::Confirmed
             {
-                latest_win = tx
+                latest_win = Some(tx)
             }
         }
 
@@ -139,10 +135,13 @@ impl BalanceTracker {
                     current, new_balance, total_credit, total_debit
                 );
 
-                let emit_win = transactions.last().is_some_and(|tx| tx.id == latest_win.id);
-
-                if emit_win {
-                    Self::emit_change_from_mined(self, latest_win.clone()).await;
+                if let Some(latest_win_tx) = latest_win {
+                    let emit_win = transactions
+                        .last()
+                        .is_some_and(|tx| tx.id == latest_win_tx.id);
+                    if emit_win {
+                        Self::emit_change_from_mined(self, latest_win_tx.clone()).await;
+                    }
                 }
 
                 Self::emit_balance(new_balance).await;
@@ -170,10 +169,10 @@ impl BalanceTracker {
     /// Emit new mined block if balance change was from a mined block
     async fn emit_change_from_mined(&self, coinbase_tx: DisplayedTransaction) {
         let tx = coinbase_tx.clone();
-        let block_height = tx.blockchain.block_height.clone();
+        let block_height = tx.blockchain.block_height;
         EventsEmitter::emit_new_block_mined(block_height, Some(tx)).await;
 
-        if let Some(handle) = self.app_handle.read().await {
+        if let Some(handle) = self.app_handle.read().await.clone() {
             let allow_notifications = *ConfigCore::content().await.allow_notifications();
             if allow_notifications {
                 send_new_block_mined(handle.clone(), block_height).await;

@@ -20,49 +20,18 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// use std::time::Duration;
-
 use log::info;
-// use tari_transaction_components::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
-// use crate::airdrop::send_new_block_mined;
-// use crate::configs::config_core::ConfigCore;
-// use crate::configs::trait_config::ConfigImpl;
 use crate::setup::listeners::SetupFeature;
 use crate::setup::setup_manager::SetupManager;
 use crate::LOG_TARGET_APP_LOGIC;
-use crate::{
-    events::NodeTypeUpdatePayload, events_emitter::EventsEmitter, tasks_tracker::TasksTrackers,
-    UniverseAppState,
-};
-use crate::configs::config_core::ConfigCore;
-use crate::configs::trait_config::ConfigImpl;
+use crate::{events::NodeTypeUpdatePayload, events_emitter::EventsEmitter, UniverseAppState};
 
 pub struct EventsManager;
 
 impl EventsManager {
     pub async fn handle_new_block_height(app: &AppHandle, block_height: u64) {
-        let state = app.state::<UniverseAppState>();
-        let in_memory_config = state.in_memory_config.read().await;
-        if SetupManager::get_instance()
-            .features
-            .read()
-            .await
-            .is_feature_enabled(SetupFeature::SeedlessWallet)
-        {
-            info!(target: LOG_TARGET_APP_LOGIC, "Firing new block height {block_height} event but skipping wallet scan for seedless wallet feature");
-            EventsEmitter::emit_new_block_mined(block_height, None).await;
-
-            return;
-        }
-        drop(in_memory_config);
-    }
-
-    pub async fn handle_new_block_notification(app: &AppHandle, block_height: u64) {
-
-        let allow_notifications = *ConfigCore::content().await.allow_notifications();
-
         let state = app.state::<UniverseAppState>();
         let in_memory_config = state.in_memory_config.read().await;
         if SetupManager::get_instance()

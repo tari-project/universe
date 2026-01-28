@@ -369,7 +369,7 @@ impl MinotariWalletManager {
         }
 
         // ============== |Initialize Balance Data| ==============
-        if let Some(app_handle) = INSTANCE.app_handle.read().await {
+        if let Some(app_handle) = INSTANCE.app_handle.read().await.clone() {
             BalanceTracker::load_app_handle(app_handle).await;
         }
         let balance = Self::get_account_balance(DEFAULT_ACCOUNT_ID).await?;

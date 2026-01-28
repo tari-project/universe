@@ -34,7 +34,7 @@ use crate::mining::pools::PoolStatus;
 use crate::mining::MinerControlsState;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
-use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
+use crate::wallet::wallet_types::WalletBalance;
 use crate::{
     configs::{
         config_core::ConfigCoreContent, config_mining::ConfigMiningContent,
