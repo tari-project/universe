@@ -29,9 +29,12 @@ use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec};
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::LOG_TARGET_APP_LOGIC;
 use async_trait::async_trait;
 use log::{info, warn};
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -43,8 +46,6 @@ use tari_shutdown::Shutdown;
 use tari_transaction_components::consensus::ConsensusManager;
 use tokio::sync::watch;
 
-#[cfg(target_os = "windows")]
-use crate::utils::windows_setup_utils::add_firewall_rule;
 #[derive(Serialize, Deserialize, Default)]
 struct MinotariNodeMigrationInfo {
     version: u32,
@@ -189,6 +190,8 @@ impl ProcessAdapter for LocalNodeAdapter {
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let inner_shutdown = Shutdown::new();
 
+        info!(target: LOG_TARGET_APP_LOGIC, "DIR PATH {data_dir:?}");
+
         info!(target: LOG_TARGET_APP_LOGIC, "Starting minotari node");
         let working_dir: PathBuf = data_dir.join("node");
         let network_dir = working_dir.join(Network::get_current().to_string().to_lowercase());
@@ -285,11 +288,6 @@ impl ProcessAdapter for LocalNodeAdapter {
             args.push("-p".to_string());
             args.push("base_node.storage.pruning_horizon=100".to_string());
         }
-        // Uncomment to test winning blocks
-        // if cfg!(debug_assertions) {
-        // args.push("--network".to_string());
-        // args.push("localnet".to_string());
-        // }
         if self.use_tor {
             // args.push("-p".to_string());
             // args.push(
