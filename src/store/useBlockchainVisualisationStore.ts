@@ -8,8 +8,6 @@ import { DisplayedTransaction } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
-import { queryClient } from '@app/App/queryClient.ts';
-import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 
 const appWindow = getCurrentWindow();
 interface LatestBlockPayload {
@@ -136,7 +134,6 @@ export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
     useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: payload }));
     const isWalletScanned = useWalletStore.getState().wallet_scanning?.is_initial_scan_complete;
     if (isWalletScanned) {
-        await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER, 'tip_height'] });
         updateWalletScanningProgress({
             progress: 1,
             scanned_height: payload.block_height,

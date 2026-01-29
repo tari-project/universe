@@ -115,10 +115,11 @@ impl BalanceTracker {
             total_credit = total_credit.saturating_add(tx.details.total_credit);
             total_debit = total_debit.saturating_add(tx.details.total_debit);
 
-            if tx.source == TransactionSource::Coinbase
-                && tx.status == TransactionDisplayStatus::Confirmed
-            {
-                latest_win = Some(tx)
+            if tx.source == TransactionSource::Coinbase {
+                info!(target: LOG_TARGET, "[ NEW  Coinbase ] status {:?} height {}", tx.status, tx.blockchain.block_height);
+                if tx.status == TransactionDisplayStatus::Confirmed {
+                    latest_win = Some(tx)
+                }
             }
         }
 
@@ -136,6 +137,7 @@ impl BalanceTracker {
                 );
 
                 if let Some(latest_win_tx) = latest_win {
+                    info!(target: LOG_TARGET, "[ NEW BLOCK WIN ] latest_win_tx: {}", latest_win_tx.blockchain.block_height);
                     let emit_win = transactions
                         .last()
                         .is_some_and(|tx| tx.id == latest_win_tx.id);
@@ -167,8 +169,7 @@ impl BalanceTracker {
         EventsEmitter::emit_wallet_balance_update(wallet_balance).await;
     }
     /// Emit new mined block if balance change was from a mined block
-    async fn emit_change_from_mined(&self, coinbase_tx: DisplayedTransaction) {
-        let tx = coinbase_tx.clone();
+    async fn emit_change_from_mined(&self, tx: DisplayedTransaction) {
         let block_height = tx.blockchain.block_height;
         EventsEmitter::emit_new_block_mined(block_height, Some(tx)).await;
 
