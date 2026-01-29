@@ -24,15 +24,19 @@ mod balance_calculator;
 mod errors;
 
 pub use balance_calculator::BalanceCalculator;
-
 use log::{error, info};
+use minotari_wallet::transactions::{TransactionDisplayStatus, TransactionSource};
 use minotari_wallet::{db::AccountBalance, DisplayedTransaction};
 use std::sync::LazyLock;
 use tokio::sync::RwLock;
 
+use crate::airdrop::send_new_block_mined;
+use crate::configs::config_core::ConfigCore;
+use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::wallet::wallet_types::WalletBalance;
 use tari_transaction_components::tari_amount::MicroMinotari;
+use tauri::AppHandle;
 
 const LOG_TARGET: &str = "tari::universe::wallet::balance_tracker";
 
@@ -40,18 +44,25 @@ static INSTANCE: LazyLock<BalanceTracker> = LazyLock::new(BalanceTracker::new);
 
 pub struct BalanceTracker {
     current_balance: RwLock<u64>,
+    app_handle: RwLock<Option<AppHandle>>,
 }
 
 impl BalanceTracker {
     pub fn new() -> Self {
         Self {
             current_balance: RwLock::new(0),
+            app_handle: RwLock::new(None),
         }
     }
 
     /// Get the singleton instance
     pub fn current() -> &'static BalanceTracker {
         &INSTANCE
+    }
+
+    pub async fn load_app_handle(app_handle: AppHandle) {
+        let mut handle_lock = INSTANCE.app_handle.write().await;
+        *handle_lock = Some(app_handle);
     }
 
     /// Initialize balance from database AccountBalance
@@ -97,11 +108,19 @@ impl BalanceTracker {
 
         let mut total_credit: u64 = 0;
         let mut total_debit: u64 = 0;
+        let mut latest_win: Option<&DisplayedTransaction> = None;
 
         for tx in transactions {
             // Use details.total_credit and details.total_debit from DisplayedTransaction
             total_credit = total_credit.saturating_add(tx.details.total_credit);
             total_debit = total_debit.saturating_add(tx.details.total_debit);
+
+            if tx.source == TransactionSource::Coinbase {
+                info!(target: LOG_TARGET, "[ NEW  Coinbase ] status {:?} height {}", tx.status, tx.blockchain.block_height);
+                if tx.status == TransactionDisplayStatus::Confirmed {
+                    latest_win = Some(tx)
+                }
+            }
         }
 
         let current = self.get_balance().await;
@@ -116,6 +135,16 @@ impl BalanceTracker {
                     "Balance updated: {} -> {} (credit: +{}, debit: -{})",
                     current, new_balance, total_credit, total_debit
                 );
+
+                if let Some(latest_win_tx) = latest_win {
+                    info!(target: LOG_TARGET, "[ NEW BLOCK WIN ] latest_win_tx: {}", latest_win_tx.blockchain.block_height);
+                    let emit_win = transactions
+                        .last()
+                        .is_some_and(|tx| tx.id == latest_win_tx.id);
+                    if emit_win {
+                        Self::emit_change_from_mined(self, latest_win_tx.clone()).await;
+                    }
+                }
 
                 Self::emit_balance(new_balance).await;
             }
@@ -138,5 +167,17 @@ impl BalanceTracker {
         };
 
         EventsEmitter::emit_wallet_balance_update(wallet_balance).await;
+    }
+    /// Emit new mined block if balance change was from a mined block
+    async fn emit_change_from_mined(&self, tx: DisplayedTransaction) {
+        let block_height = tx.blockchain.block_height;
+        EventsEmitter::emit_new_block_mined(block_height, Some(tx)).await;
+
+        if let Some(handle) = self.app_handle.read().await.clone() {
+            let allow_notifications = *ConfigCore::content().await.allow_notifications();
+            if allow_notifications {
+                send_new_block_mined(handle.clone(), block_height).await;
+            }
+        }
     }
 }

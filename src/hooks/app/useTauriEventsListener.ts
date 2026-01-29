@@ -126,8 +126,12 @@ const useTauriEventsListener = () => {
                     case 'GpuPoolsStatsUpdate':
                         setGpuPoolStats(event.payload);
                         break;
+
                     case 'NewBlockHeight': {
                         const current = useBlockchainVisualisationStore.getState().latestBlockPayload?.block_height;
+                        console.debug('======NewBlockMined!======');
+                        console.debug(`current= block_height`, current);
+                        console.debug('payload.block_height=', event.payload.block_height);
                         if (!current || current < event.payload.block_height) {
                             await handleNewBlockPayload(event.payload);
                         }
@@ -269,13 +273,13 @@ const useTauriEventsListener = () => {
                         setIsShuttingDown(true);
                         break;
                     case 'WalletTransactionsFound':
-                        handleWalletTransactionsFound(event.payload);
+                        await handleWalletTransactionsFound(event.payload);
                         break;
                     case 'WalletTransactionsCleared':
                         handleWalletTransactionsCleared();
                         break;
                     case 'WalletTransactionUpdated':
-                        handleWalletTransactionUpdated(event.payload);
+                        await handleWalletTransactionUpdated(event.payload);
                         break;
                     case 'SetShowBatteryAlert':
                         setShowBatteryAlert(event.payload);

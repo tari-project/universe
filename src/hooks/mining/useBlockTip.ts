@@ -4,6 +4,7 @@ import { getExplorerUrl } from '@app/utils/network.ts';
 import { defaultHeaders } from '@app/utils';
 import { processNewBlock, useBlockchainVisualisationStore } from '@app/store';
 import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
+import { useEffect, useRef } from 'react';
 
 async function getTipHeight(): Promise<BlockTip> {
     const explorerUrl = getExplorerUrl();
@@ -15,17 +16,61 @@ async function getTipHeight(): Promise<BlockTip> {
 }
 export function useBlockTip() {
     const latestBlock = useBlockchainVisualisationStore((s) => s.latestBlockPayload);
-    return useQuery<BlockTip>({
-        queryKey: [KEY_EXPLORER, 'block_tip'],
-        queryFn: async () => {
-            const data = await getTipHeight();
-            if (latestBlock && data?.height !== latestBlock?.block_height) {
-                await processNewBlock(latestBlock);
-            }
-            return data;
-        },
+    const lastBlockHeight = latestBlock?.block_height;
+
+    const cancelRefetch = useRef(false);
+    const cancelProcess = useRef(false);
+
+    const { data, isLoading, refetch, isRefetching } = useQuery<BlockTip>({
+        queryKey: [KEY_EXPLORER, 'tip_height'],
+        queryFn: async () => await getTipHeight(),
+        notifyOnChangeProps: ['data'],
         refetchIntervalInBackground: true,
-        refetchInterval: 20 * 1000,
-        staleTime: 1000 * 60,
+        refetchInterval: 1000 * 60 * 1.5,
     });
+
+    const explorerDelayed = Boolean(lastBlockHeight && data && lastBlockHeight > data?.height);
+    const nodeSync = Boolean(lastBlockHeight && data && lastBlockHeight <= data?.height);
+
+    useEffect(() => {
+        if (explorerDelayed) {
+            console.debug(
+                `explorerDelayed isRefetching=${isRefetching} | lastBlockHeight=${lastBlockHeight} | dataHeight=${data?.height}`
+            );
+        }
+    }, [data, explorerDelayed, isRefetching, lastBlockHeight]);
+
+    useEffect(() => {
+        if (explorerDelayed && !cancelRefetch.current && !isRefetching) {
+            console.debug(`==== mismatch refetch ====`);
+            cancelRefetch.current = true;
+            cancelProcess.current = true;
+            refetch().then(() => {
+                cancelRefetch.current = false;
+                cancelProcess.current = false;
+            });
+        }
+    }, [explorerDelayed, isRefetching, refetch]);
+
+    useEffect(() => {
+        if (!latestBlock) return;
+        console.debug(
+            `isLoading, isRefetching, latestBlock, nodeSync= `,
+            isLoading,
+            isRefetching,
+            latestBlock,
+            nodeSync
+        );
+        if (nodeSync && !isLoading && !isRefetching && !cancelProcess.current) {
+            console.debug(`==== sync processNewBlock ====`);
+            cancelProcess.current = true;
+            cancelRefetch.current = true;
+            processNewBlock(latestBlock).then(() => {
+                cancelProcess.current = false;
+                cancelRefetch.current = false;
+            });
+        }
+    }, [isLoading, isRefetching, latestBlock, nodeSync]);
+
+    return { data, isLoading };
 }

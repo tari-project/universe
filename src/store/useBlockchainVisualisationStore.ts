@@ -4,7 +4,7 @@ import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
 import { setAnimationState } from '@tari-project/tari-tower';
-import { DisplayedTransaction, TransactionInfo } from '@app/types/app-status.ts';
+import { DisplayedTransaction } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
@@ -12,7 +12,7 @@ import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 const appWindow = getCurrentWindow();
 interface LatestBlockPayload {
     block_height: number;
-    coinbase_transaction?: TransactionInfo;
+    coinbase_transaction?: DisplayedTransaction;
 }
 interface Recap {
     count: number;
@@ -116,10 +116,12 @@ export const handleReplayComplete = () => {
 };
 
 export async function processNewBlock(payload: { block_height: number; transaction?: DisplayedTransaction }) {
+    console.debug('hi from processNewBlock', payload.block_height);
     if (useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
         const canAnimate = !minimized && documentIsVisible;
+        console.debug(`canAnimate= `, canAnimate);
         if (payload.transaction) {
             await handleWin(payload.transaction, canAnimate);
         } else {

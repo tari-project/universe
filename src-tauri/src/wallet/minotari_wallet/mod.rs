@@ -122,10 +122,16 @@ impl MinotariWalletManager {
         }
     }
 
+    /// Returns true if we're polling for new blocks.
+    pub async fn is_scanning() -> bool {
+        let scan_running = INSTANCE.cancel_token.read().await.is_some();
+        scan_running
+    }
+
     /// Returns true if wallet is currently performing initial sync (catching up to chain tip).
     /// Returns false once the first sync completes and we're just polling for new blocks.
     pub async fn is_syncing() -> bool {
-        let scan_running = INSTANCE.cancel_token.read().await.is_some();
+        let scan_running = Self::is_scanning().await;
         let initial_complete = INSTANCE.initial_sync_complete.load(Ordering::SeqCst);
 
         // We're syncing if scan is running AND initial sync hasn't completed yet
@@ -369,6 +375,9 @@ impl MinotariWalletManager {
         }
 
         // ============== |Initialize Balance Data| ==============
+        if let Some(app_handle) = INSTANCE.app_handle.read().await.clone() {
+            BalanceTracker::load_app_handle(app_handle).await;
+        }
         let balance = Self::get_account_balance(DEFAULT_ACCOUNT_ID).await?;
         BalanceTracker::current()
             .initialize_from_account_balance(balance)
