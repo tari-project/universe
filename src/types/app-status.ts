@@ -128,23 +128,6 @@ export interface DisplayedTransaction {
     };
 }
 
-export interface TransactionInfo {
-    tx_id: number;
-    source_address: string;
-    dest_address: string;
-    status: number;
-    direction: number;
-    amount: number;
-    fee: number;
-    is_cancelled: boolean;
-    excess_sig: string;
-    timestamp: number;
-    message: string;
-    payment_id: string;
-    mined_in_block_height?: number;
-    payment_reference?: string;
-}
-
 export interface GpuDevice {
     name: string;
     device_id: number;

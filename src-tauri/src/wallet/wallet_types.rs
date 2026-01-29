@@ -95,7 +95,7 @@ impl WalletBalance {
         res.map(Self::from_response)
     }
 }
-
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Clone)]
 pub struct TransactionInfo {
     pub tx_id: String,
