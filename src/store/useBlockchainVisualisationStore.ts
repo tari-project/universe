@@ -52,7 +52,6 @@ const handleFail = async (canAnimate: boolean) => {
         setAnimationState('fail');
         setMiningControlsEnabled(true);
     }
-    useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: undefined }));
 };
 
 export const handleWinRecap = (recapData: Recap) => {
@@ -87,6 +86,7 @@ export async function processNewBlock() {
     const canAnimate = !minimized && documentIsVisible;
 
     await handleFail(canAnimate);
+    useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockHeight: undefined }));
 }
 
 export const handleNewBlockPayload = async (block_height: number) => {

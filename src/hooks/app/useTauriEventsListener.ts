@@ -129,8 +129,8 @@ const useTauriEventsListener = () => {
 
                     case 'NewBlockHeight': {
                         const current = useBlockchainVisualisationStore.getState().latestBlockHeight;
-                        if (!current || current < event.payload) {
-                            await handleNewBlockPayload(event.payload);
+                        if (!current || current < event.payload.block_height) {
+                            await handleNewBlockPayload(event.payload.block_height);
                         }
                         break;
                     }

@@ -62,7 +62,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'NewBlockHeight';
-          payload: number;
+          payload: { block_height: number };
       }
     | {
           event_type: 'CloseSplashscreen';
