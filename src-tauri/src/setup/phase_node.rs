@@ -34,6 +34,7 @@ use crate::{
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
+    wallet::minotari_wallet::MinotariWalletManager,
     UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 use anyhow::Error;
@@ -283,21 +284,28 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 EventsEmitter::emit_base_node_update(init_node_status).await;
 
                 let mut latest_updated_block_height = init_node_status.block_height;
+
+
                 loop {
                     tokio::select! {
                 _ = node_status_watch_rx.changed() => {
                     let node_status = *node_status_watch_rx.borrow();
-                    let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
                     let node_synced = node_status.is_synced;
+                    let is_syncing = MinotariWalletManager::is_syncing().await;
 
-                    if node_status.block_height > latest_updated_block_height && initial_sync_finished && node_synced {
+
+                    if !is_syncing && node_synced && latest_updated_block_height == 0 {
+                        latest_updated_block_height = node_status.block_height;
+                    }
+
+                    if node_status.block_height > latest_updated_block_height && !is_syncing && node_synced {
                         while latest_updated_block_height < node_status.block_height {
                             latest_updated_block_height += 1;
                             let _ = EventsManager::handle_new_block_height(&app_handle_clone, latest_updated_block_height).await;
                         }
                     }
                     EventsEmitter::emit_base_node_update(node_status).await;
-                    if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
+                    if node_status.block_height > latest_updated_block_height && is_syncing {
                         latest_updated_block_height = node_status.block_height;
                     }
                 },
