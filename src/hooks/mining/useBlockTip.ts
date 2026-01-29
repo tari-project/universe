@@ -5,7 +5,7 @@ import { defaultHeaders } from '@app/utils';
 import { processNewBlock, useBlockchainVisualisationStore, useMiningStore } from '@app/store';
 import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 import { useEffect, useRef } from 'react';
-import { getIsMining } from '@app/store/selectors/minningStoreSelectors.ts';
+import { getIsMining } from '@app/store/selectors/miningStoreSelectors.ts';
 
 async function getTipHeight(): Promise<BlockTip> {
     const explorerUrl = getExplorerUrl();

@@ -7,7 +7,7 @@ import { SettingsGroupContent, SettingsGroupTitle, SettingsGroupWrapper } from '
 import * as m from 'motion/react-m';
 import { switchSelectedMiner } from '@app/store/actions/miningStoreActions.ts';
 import { GpuMinerType } from '@app/types/events-payloads.ts';
-import { getSelectedMiner } from '@app/store/selectors/minningStoreSelectors';
+import { getSelectedMiner } from '@app/store/selectors/miningStoreSelectors';
 import { GpuMinerSelect } from './components/GpuMinerSelect.tsx';
 
 const Wrapper = styled(m.div)`
