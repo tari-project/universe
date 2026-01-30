@@ -23,7 +23,7 @@ use crate::LOG_TARGET_APP_LOGIC;
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
-    ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
+    ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload, NewBlockHeightPayload,
     UpdateAppModuleStatusPayload, WalletScanningProgressUpdatePayload,
 };
 use crate::internal_wallet::TariAddressType;
@@ -34,7 +34,7 @@ use crate::mining::pools::PoolStatus;
 use crate::mining::MinerControlsState;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
-use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
+use crate::wallet::wallet_types::WalletBalance;
 use crate::{
     configs::{
         config_core::ConfigCoreContent, config_mining::ConfigMiningContent,
@@ -42,8 +42,8 @@ use crate::{
     },
     events::{
         DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
-        NetworkStatusPayload, NewBlockHeightPayload, NodeTypeUpdatePayload,
-        ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, TariAddressUpdatePayload,
+        NetworkStatusPayload, NodeTypeUpdatePayload, ProgressTrackerUpdatePayload,
+        ShowReleaseNotesPayload, TariAddressUpdatePayload,
     },
     hardware::hardware_status_monitor::PublicDeviceGpuProperties,
     setup::setup_manager::SetupPhase,
@@ -471,17 +471,11 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_new_block_mined(
-        block_height: u64,
-        coinbase_transaction: Option<TransactionInfo>,
-    ) {
+    pub async fn emit_new_block_mined(block_height: u64) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::NewBlockHeight,
-            payload: NewBlockHeightPayload {
-                block_height,
-                coinbase_transaction,
-            },
+            payload: NewBlockHeightPayload { block_height },
         };
         if let Err(e) = Self::get_app_handle()
             .await

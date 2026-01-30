@@ -282,32 +282,25 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
                 let init_node_status = *node_status_watch_rx.borrow();
                 EventsEmitter::emit_base_node_update(init_node_status).await;
-
                 let mut latest_updated_block_height = init_node_status.block_height;
-
 
                 loop {
                     tokio::select! {
                 _ = node_status_watch_rx.changed() => {
                     let node_status = *node_status_watch_rx.borrow();
                     let node_synced = node_status.is_synced;
-                    let is_syncing = MinotariWalletManager::is_syncing().await;
+                    let wallet_is_syncing = MinotariWalletManager::is_syncing().await;
 
+                    let all_syncing_complete= !wallet_is_syncing && node_synced;
+                    let latest_needs_update = all_syncing_complete && latest_updated_block_height == 0 || node_status.block_height > latest_updated_block_height;
 
-                    if !is_syncing && node_synced && latest_updated_block_height == 0 {
+                   if latest_needs_update {
                         latest_updated_block_height = node_status.block_height;
-                    }
-
-                    if node_status.block_height > latest_updated_block_height && !is_syncing && node_synced {
-                        while latest_updated_block_height < node_status.block_height {
-                            latest_updated_block_height += 1;
-                            let _ = EventsManager::handle_new_block_height(&app_handle_clone, latest_updated_block_height).await;
+                        if all_syncing_complete {
+                            EventsEmitter::emit_new_block_mined(latest_updated_block_height).await;
                         }
                     }
                     EventsEmitter::emit_base_node_update(node_status).await;
-                    if node_status.block_height > latest_updated_block_height && is_syncing {
-                        latest_updated_block_height = node_status.block_height;
-                    }
                 },
                 _ = shutdown_signal.wait() => {
                     break;

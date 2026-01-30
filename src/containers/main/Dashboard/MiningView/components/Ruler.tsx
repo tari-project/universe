@@ -1,5 +1,5 @@
 import { useTheme } from 'styled-components';
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useMotionValue } from 'motion/react';
 import { useBlockTip } from '@app/hooks/mining/useBlockTip.ts';
 import { Column, MarkGroup, RulerMark, RulerMarkGroup, Wrapper } from './Ruler.styles.ts';
@@ -58,7 +58,7 @@ export function Ruler() {
         );
     });
 
-    useLayoutEffect(() => {
+    useEffect(() => {
         function handleResize() {
             windowWidth.set(window.innerWidth);
         }

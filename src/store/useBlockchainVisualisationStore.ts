@@ -1,19 +1,12 @@
 import { create } from 'zustand';
-
-import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-
 import { setAnimationState } from '@tari-project/tari-tower';
-import { DisplayedTransaction, TransactionInfo } from '@app/types/app-status.ts';
+import { DisplayedTransaction } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 
 const appWindow = getCurrentWindow();
-interface LatestBlockPayload {
-    block_height: number;
-    coinbase_transaction?: TransactionInfo;
-}
 interface Recap {
     count: number;
     totalEarnings: number;
@@ -25,7 +18,7 @@ interface State {
     rewardCount?: number;
     recapIds: string[];
     replayItem?: DisplayedTransaction;
-    latestBlockPayload?: LatestBlockPayload;
+    latestBlockHeight?: number;
 }
 
 interface Actions {
@@ -52,33 +45,6 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setRewardCount: (rewardCount) => set({ rewardCount }),
 }));
 
-const handleWin = async (transaction: DisplayedTransaction, canAnimate: boolean) => {
-    const blockHeight = Number(transaction?.blockchain.block_height);
-    const earnings = transaction.amount;
-
-    console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
-
-    useBlockchainVisualisationStore.setState((curr) => ({ ...curr, rewardCount: (curr.rewardCount || 0) + 1 }));
-    if (canAnimate) {
-        const visualModeEnabled = useConfigUIStore.getState().visual_mode;
-        if (visualModeEnabled) {
-            setMiningControlsEnabled(false);
-            const successTier = getSuccessTier(earnings);
-            setAnimationState(successTier);
-            setMiningControlsEnabled(true);
-        }
-        useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings }));
-        useBlockchainVisualisationStore.setState((c) => ({ ...c, earnings: undefined, latestBlockPayload: undefined }));
-    } else {
-        useBlockchainVisualisationStore.setState((curr) => ({
-            ...curr,
-            recapIds: [...curr.recapIds, transaction.id],
-            displayBlockHeight: blockHeight,
-            earnings: undefined,
-            latestBlockPayload: undefined,
-        }));
-    }
-};
 const handleFail = async (canAnimate: boolean) => {
     const visualModeEnabled = useConfigUIStore.getState().visual_mode;
     if (canAnimate && visualModeEnabled) {
@@ -86,7 +52,6 @@ const handleFail = async (canAnimate: boolean) => {
         setAnimationState('fail');
         setMiningControlsEnabled(true);
     }
-    useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: undefined }));
 };
 
 export const handleWinRecap = (recapData: Recap) => {
@@ -115,27 +80,23 @@ export const handleReplayComplete = () => {
     }
 };
 
-export async function processNewBlock(payload: { block_height: number; transaction?: DisplayedTransaction }) {
-    if (useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated) {
-        const minimized = await appWindow?.isMinimized();
-        const documentIsVisible = document?.visibilityState === 'visible' || false;
-        const canAnimate = !minimized && documentIsVisible;
-        if (payload.transaction) {
-            await handleWin(payload.transaction, canAnimate);
-        } else {
-            await handleFail(canAnimate);
-        }
-    }
+export async function processNewBlock() {
+    const minimized = await appWindow?.isMinimized();
+    const documentIsVisible = document?.visibilityState === 'visible' || false;
+    const canAnimate = !minimized && documentIsVisible;
+
+    await handleFail(canAnimate);
+    useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockHeight: undefined }));
 }
 
-export const handleNewBlockPayload = async (payload: LatestBlockPayload) => {
-    useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockPayload: payload }));
+export const handleNewBlockPayload = async (block_height: number) => {
+    useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockHeight: block_height }));
     const isWalletScanned = useWalletStore.getState().wallet_scanning?.is_initial_scan_complete;
     if (isWalletScanned) {
         updateWalletScanningProgress({
             progress: 1,
-            scanned_height: payload.block_height,
-            total_height: payload.block_height,
+            scanned_height: block_height,
+            total_height: block_height,
             is_initial_scan_complete: true,
         });
     }

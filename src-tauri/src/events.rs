@@ -20,18 +20,17 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use serde::Serialize;
-use std::{
-    collections::HashMap,
-    hash::{Hash, Hasher},
-};
-
 use crate::{
     internal_wallet::TariAddressType,
     mining::gpu::miners::GpuCommonInformation,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
     setup::{listeners::AppModule, setup_manager::SetupPhase},
-    wallet::wallet_types::TransactionInfo,
+};
+
+use serde::Serialize;
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
 };
 
 #[derive(Clone, Debug, Serialize)]
@@ -150,7 +149,6 @@ pub struct Event<T, E> {
 #[derive(Clone, Debug, Serialize)]
 pub struct NewBlockHeightPayload {
     pub block_height: u64,
-    pub coinbase_transaction: Option<TransactionInfo>,
 }
 
 #[derive(Debug, Serialize, Clone)]
