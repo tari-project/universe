@@ -37,7 +37,6 @@ use crate::event_scheduler::EventScheduler;
 use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
 use crate::mining::cpu::manager::CpuManager;
-use crate::mining::gpu::consts::GpuMinerType;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
@@ -342,11 +341,6 @@ impl SetupManager {
         if !*config_minig.is_lolminer_tested() {
             let _unused =
                 ConfigMining::update_field(ConfigMiningContent::set_is_lolminer_tested, true).await;
-            let _unused = ConfigMining::update_field(
-                ConfigMiningContent::set_gpu_miner_type,
-                GpuMinerType::LolMiner,
-            )
-            .await;
         }
 
         EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
@@ -811,8 +805,8 @@ impl SetupManager {
         self.setup_wallet_phase().await;
     }
 
-    /// Used in handle_unhealthy for graxil miner
-    /// Should be triggered after x amount of time passed of graxil being unhealthy
+    /// Turns off the GPU pool feature
+    /// This stops the stats watcher and disables GPU pool mining
     pub async fn turn_off_gpu_pool_feature(&self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET_APP_LOGIC, "Turning off GPU Pool feature");
 

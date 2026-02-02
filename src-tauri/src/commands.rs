@@ -40,7 +40,6 @@ use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
 use crate::mining::cpu::manager::CpuManager;
-use crate::mining::gpu::consts::{EngineType, GpuMinerType};
 use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
@@ -306,7 +305,7 @@ pub async fn get_applications_versions(
         .get_binary_version(Binaries::MergeMiningProxy)
         .await;
     let wallet_version = binary_resolver.get_binary_version(Binaries::Wallet).await;
-    let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::Glytex).await;
+    let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::LolMiner).await;
     let bridge_version = binary_resolver
         .get_binary_version(Binaries::BridgeTapplet)
         .await;
@@ -1391,30 +1390,6 @@ pub async fn stop_gpu_mining() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn switch_gpu_miner(gpu_miner_type: GpuMinerType) -> Result<(), String> {
-    let timer = Instant::now();
-
-    ConfigMining::update_field(
-        ConfigMiningContent::set_gpu_miner_type,
-        gpu_miner_type.clone(),
-    )
-    .await
-    .map_err(|e| e.to_string())?;
-
-    GpuManager::write()
-        .await
-        .switch_miner(gpu_miner_type.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET_APP_LOGIC, "switch_gpu_miner took too long: {:?}", timer.elapsed());
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
 pub async fn toggle_cpu_pool_mining(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
 
@@ -1533,28 +1508,6 @@ pub async fn stop_mining_status(state: tauri::State<'_, UniverseAppState>) -> Re
     }
     Ok(())
 }
-#[tauri::command]
-pub async fn set_selected_engine(
-    selected_engine: &str,
-    _state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<(), InvokeError> {
-    info!(target: LOG_TARGET_APP_LOGIC, "set_selected_engine called with engine: {selected_engine:?}");
-    let timer = Instant::now();
-
-    let engine_type = EngineType::from_string(selected_engine).map_err(InvokeError::from_anyhow)?;
-
-    ConfigMining::update_field(ConfigMiningContent::set_gpu_engine, engine_type)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET_APP_LOGIC, "proceed_with_update took too long: {:?}", timer.elapsed());
-    }
-
-    Ok(())
-}
-
 #[tauri::command]
 pub async fn websocket_get_status(
     _: tauri::AppHandle,

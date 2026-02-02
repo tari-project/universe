@@ -22,7 +22,6 @@
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 use crate::events_emitter::EventsEmitter;
-use crate::mining::gpu::consts::{EngineType, GpuMinerType};
 use crate::LOG_TARGET_APP_LOGIC;
 use getset::{Getters, Setters};
 use log::{info, warn};
@@ -144,10 +143,8 @@ pub struct ConfigMiningContent {
     mine_on_app_start: bool,
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
-    gpu_engine: EngineType,
     gpu_devices_settings: GpuDevicesSettings,
     squad_override: Option<String>,
-    gpu_miner_type: GpuMinerType,
     pause_on_battery_mode: PauseOnBatteryModeState,
     is_lolminer_tested: bool,
     is_gpu_mining_recommended: bool,
@@ -163,11 +160,6 @@ impl Default for ConfigMiningContent {
             created_at: SystemTime::now(),
             selected_mining_mode: "Eco".to_string(),
             mine_on_app_start: true,
-            gpu_miner_type: if cfg!(target_os = "windows") || cfg!(target_os = "linux") {
-                GpuMinerType::LolMiner
-            } else {
-                GpuMinerType::Graxil
-            },
             mining_modes: HashMap::from([
                 (
                     "Eco".to_string(),
@@ -208,7 +200,6 @@ impl Default for ConfigMiningContent {
             ]),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
-            gpu_engine: EngineType::OpenCL,
             gpu_devices_settings: GpuDevicesSettings::new(),
             pause_on_battery_mode: PauseOnBatteryModeState::Enabled,
             squad_override: None,

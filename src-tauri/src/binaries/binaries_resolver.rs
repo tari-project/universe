@@ -129,30 +129,6 @@ impl BinaryResolver {
         );
 
         binary_manager.insert(
-            Binaries::Glytex,
-            BinaryManager::new(
-                Binaries::Glytex.name().to_string(),
-                None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "glytex".to_string(),
-                    owner: "tari-project".to_string(),
-                }),
-                true,
-            ),
-        );
-        binary_manager.insert(
-            Binaries::Graxil,
-            BinaryManager::new(
-                Binaries::Graxil.name().to_string(),
-                None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "graxil".to_string(),
-                    owner: "tari-project".to_string(),
-                }),
-                false,
-            ),
-        );
-        binary_manager.insert(
             Binaries::LolMiner,
             BinaryManager::new(
                 Binaries::LolMiner.name().to_string(),

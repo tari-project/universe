@@ -36,8 +36,7 @@ use crate::{
         gpu::consts::GpuMinerType,
         pools::{
             adapters::{
-                kryptex_pool::KryptexPoolAdapter, lucky_pool::LuckyPoolAdapter,
-                support_xmr_pool::SupportXmrPoolAdapter, PoolApiAdapters,
+                kryptex_pool::KryptexPoolAdapter, lucky_pool::LuckyPoolAdapter, PoolApiAdapters,
             },
             pools_manager::PoolManager,
             PoolManagerInterfaceTrait, PoolStatus,
@@ -91,16 +90,14 @@ impl GpuPoolManager {
         }
     }
 
-    /// Handle the case when user switches or fallbacks the GPU miner type (e.g., from Lolminer to Graxil)
+    /// Handle the case when GPU miner type changes
     /// Behavior:
-    /// 1. If the currently selected pool supports the new miner type, do nothing (keep using the same pool)
-    /// 2. If the currently selected pool does not support the new miner type, switch to the default pool for that miner type
+    /// 1. If the currently selected pool supports the miner type, do nothing (keep using the same pool)
+    /// 2. If the currently selected pool does not support the miner type, switch to the default pool
     ///   - Update pool config values and adapter in the pool manager
     ///   - Emit event to the frontend to update the selected pool in the settings UI
-    /// 3. If the new miner type is Glytex (solo mining only), disable pool mining
-    ///   - Emit event to the frontend to update the settings UI
     /// ### Arguments
-    /// * `miner` - The new GPU miner type
+    /// * `miner` - The GPU miner type
     pub async fn handle_miner_switch(miner: GpuMinerType) {
         let current_pool_content = ConfigPools::content().await.current_gpu_pool().clone();
 
@@ -123,7 +120,7 @@ impl GpuPoolManager {
         } else {
             info!(target: LOG_TARGET_APP_LOGIC, "Current selected GPU pool '{}' does not support the new miner type '{miner:?}', switching to default pool for that miner", current_pool_content.pool_name);
             if let Some(default_miner_pool) = miner.default_pool() {
-                // LolMiner or Graxil
+                // Switch to the default pool for the miner
                 let _unused = ConfigPools::update_field(
                     ConfigPoolsContent::set_current_gpu_pool,
                     default_miner_pool,
@@ -175,17 +172,6 @@ impl PoolManagerInterfaceTrait<GpuPool> for GpuPoolManager {
                 pool.pool_type.key_string(),
                 pool.stats_url,
             )),
-            GpuPool::KryptexPoolSHA3X => PoolApiAdapters::Kryptex(KryptexPoolAdapter::new(
-                pool.pool_type.key_string(),
-                pool.stats_url,
-            )),
-            GpuPool::LuckyPoolSHA3X => PoolApiAdapters::LuckyPool(LuckyPoolAdapter::new(
-                pool.pool_type.key_string(),
-                pool.stats_url,
-            )),
-            GpuPool::SupportXTMPoolSHA3X => PoolApiAdapters::SupportXmr(
-                SupportXmrPoolAdapter::new(pool.pool_type.key_string(), pool.stats_url),
-            ),
         }
     }
 }

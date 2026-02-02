@@ -22,12 +22,12 @@
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
-    hardware::hardware_status_monitor::HardwareStatusMonitor,
-    mining::gpu::{
-        consts::{EngineType, GpuMinerType},
-        manager::GpuManager,
+    configs::{
+        config_mining::{ConfigMining, ConfigMiningContent},
+        trait_config::ConfigImpl,
     },
+    hardware::hardware_status_monitor::HardwareStatusMonitor,
+    mining::gpu::{consts::GpuMinerType, manager::GpuManager},
     progress_trackers::{
         progress_plans::SetupStep,
         progress_stepper::{ProgressStepper, ProgressStepperBuilder},
@@ -37,7 +37,7 @@ use crate::{
     LOG_TARGET_APP_LOGIC,
 };
 use anyhow::Error;
-use log::error;
+use log::{error, info};
 use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
 use tokio::sync::{
@@ -52,11 +52,8 @@ use super::{
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
-#[allow(dead_code)]
 #[derive(Clone, Default)]
-pub struct GpuMiningSetupPhaseAppConfiguration {
-    gpu_engine: EngineType,
-}
+pub struct GpuMiningSetupPhaseAppConfiguration {}
 
 pub struct GpuMiningSetupPhase {
     app_handle: AppHandle,
@@ -141,9 +138,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        let gpu_engine = ConfigMining::content().await.gpu_engine().clone();
-
-        Ok(GpuMiningSetupPhaseAppConfiguration { gpu_engine })
+        Ok(GpuMiningSetupPhaseAppConfiguration {})
     }
 
     async fn setup(self) {
@@ -152,15 +147,19 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
 
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
+        // Check if any GPU miner is supported on this platform
+        // If not (e.g., macOS), disable GPU mining and skip the entire phase
+        if !GpuMinerType::LolMiner.is_supported_on_current_platform() {
+            info!(target: LOG_TARGET_APP_LOGIC, "GPU mining not supported on this platform, disabling GPU mining");
+            ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, false).await?;
+            ConfigMining::update_field(ConfigMiningContent::set_is_gpu_mining_recommended, false)
+                .await?;
+            return Ok(());
+        }
+
         let mut progress_stepper = self.progress_stepper.lock().await;
 
         let binary_resolver = BinaryResolver::current();
-
-        let graxil_binary_progress_tracker =
-            progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
-
-        let glytex_binary_progress_tracker =
-            progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
 
         let lolminer_binary_progress_tracker =
             progress_stepper.track_step_incrementally(SetupStep::BinariesGpuMiner);
@@ -168,54 +167,6 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         progress_stepper
             .complete_step(SetupStep::BinariesGpuMiner, || async {
                 let mut is_any_miner_succeeded = false;
-
-                // Graxil is supported on Windows | Linux | MacOS
-                if GpuMinerType::Graxil.is_supported_on_current_platform() {
-                    let graxil_initialization_result = binary_resolver
-                        .initialize_binary(Binaries::Graxil, graxil_binary_progress_tracker)
-                        .await;
-
-                    let graxil_err = graxil_initialization_result.as_ref().err();
-
-                    if graxil_initialization_result.is_ok() {
-                        is_any_miner_succeeded = true;
-                    }else {
-                        error!(target: LOG_TARGET_APP_LOGIC, "Graxil initialization error: {:?}", graxil_err);
-                    }
-
-                    GpuManager::write()
-                        .await
-                        .load_miner(
-                            GpuMinerType::Graxil,
-                            graxil_initialization_result.is_ok(),
-                            graxil_err.map(|e| e.to_string()),
-                        )
-                        .await;
-                }
-
-                // Glytex is supported on Windows | Linux | MacOS
-                if GpuMinerType::Glytex.is_supported_on_current_platform() {
-                    let glytex_initialization_result = binary_resolver
-                        .initialize_binary(Binaries::Glytex, glytex_binary_progress_tracker)
-                        .await;
-
-                    let glytex_err = glytex_initialization_result.as_ref().err();
-
-                    if glytex_initialization_result.is_ok() {
-                        is_any_miner_succeeded = true;
-                    } else {
-                        error!(target: LOG_TARGET_APP_LOGIC, "Glytex initialization error: {:?}", glytex_err);
-                    }
-
-                    GpuManager::write()
-                        .await
-                        .load_miner(
-                            GpuMinerType::Glytex,
-                            glytex_initialization_result.is_ok(),
-                            glytex_err.map(|e| e.to_string()),
-                        )
-                        .await;
-                }
 
                 // LolMiner is supported on Windows | Linux
                 if GpuMinerType::LolMiner.is_supported_on_current_platform() {
@@ -243,7 +194,7 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
 
                 if !is_any_miner_succeeded {
                     return Err(anyhow::anyhow!(
-                        "Failed to initialize GPU miner binaries: Graxil, Glytex, LolMiner"
+                        "Failed to initialize GPU miner binary: LolMiner"
                     ));
                 }
 
@@ -254,59 +205,55 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         progress_stepper
             .complete_step(SetupStep::DetectGpu, || async {
                 let mut gpu_manager = GpuManager::write().await;
-                if let Err(original_error) = gpu_manager.detect_devices().await {
-                    #[cfg(target_os = "windows")]
-                    {
-                        use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
+                let detection_result = gpu_manager.detect_devices().await;
 
-                        // Try to add GPU drivers as dependencies and retry
-                        if let Err(e) = SystemDependenciesManager::get_instance()
-                            .get_windows_dependencies_resolver()
-                            .add_gpu_drivers_as_dependencies()
-                            .await
-                        {
-                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to add GPU drivers as dependencies: {e}");
-                            return Err(original_error);
-                        }
+                let Err(original_error) = detection_result else {
+                    return Ok(());
+                };
 
-                        if let Err(e) = SystemDependenciesManager::get_instance()
+                #[cfg(target_os = "windows")]
+                {
+                    use crate::system_dependencies::system_dependencies_manager::SystemDependenciesManager;
+
+                    // Try to add GPU drivers as dependencies and retry
+                    let drivers_added = SystemDependenciesManager::get_instance()
+                        .get_windows_dependencies_resolver()
+                        .add_gpu_drivers_as_dependencies()
+                        .await
+                        .is_ok()
+                        && SystemDependenciesManager::get_instance()
                             .validate_dependencies()
                             .await
-                        {
-                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to validate dependencies after adding GPU drivers: {e}");
-                            return Err(original_error);
+                            .is_ok();
+
+                    if drivers_added {
+                        if gpu_manager.detect_devices().await.is_ok() {
+                            return Ok(());
                         }
 
-                        // Retry GPU detection after adding GPU drivers
-                        if let Err(first_retry_error) = gpu_manager.detect_devices().await {
-                            // Try adding Khronos OpenCL as a fallback
-                            if let Err(e) = SystemDependenciesManager::get_instance()
-                                .get_windows_dependencies_resolver()
-                                .add_khronos_opencl_as_dependency()
-                                .await
-                            {
-                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to add Khronos OpenCL as dependency: {e}");
-                                return Err(first_retry_error);
-                            }
-
-                            if let Err(e) = SystemDependenciesManager::get_instance()
+                        // Try adding Khronos OpenCL as a fallback
+                        let opencl_added = SystemDependenciesManager::get_instance()
+                            .get_windows_dependencies_resolver()
+                            .add_khronos_opencl_as_dependency()
+                            .await
+                            .is_ok()
+                            && SystemDependenciesManager::get_instance()
                                 .validate_dependencies()
                                 .await
-                            {
-                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to validate dependencies after adding Khronos OpenCL: {e}");
-                                return Err(first_retry_error);
-                            }
+                                .is_ok();
 
-                            // Final retry after adding all dependencies
-                            gpu_manager.detect_devices().await?;
+                        if opencl_added && gpu_manager.detect_devices().await.is_ok() {
+                            return Ok(());
                         }
                     }
-                    #[cfg(not(target_os = "windows"))]
-                    {
-                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to detect GPU devices: {original_error}");
-                        return Err(original_error);
-                    }
                 }
+
+                // Detection failed after all retries - disable GPU mining
+                info!(target: LOG_TARGET_APP_LOGIC, "No compatible GPU devices found, disabling GPU mining: {original_error}");
+                ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, false)
+                    .await?;
+                ConfigMining::update_field(ConfigMiningContent::set_is_gpu_mining_recommended, false)
+                    .await?;
                 Ok(())
             })
             .await?;

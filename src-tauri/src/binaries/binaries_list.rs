@@ -39,8 +39,6 @@ pub enum Binaries {
     Wallet,
     Tor,
     BridgeTapplet,
-    Glytex,
-    Graxil,
     LolMiner,
 }
 impl Binaries {
@@ -50,10 +48,8 @@ impl Binaries {
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
             Binaries::Wallet => "wallet",
-            Binaries::Glytex => "glytex",
             Binaries::Tor => "tor",
             Binaries::BridgeTapplet => "bridge",
-            Binaries::Graxil => "graxil",
             Binaries::LolMiner => "lolminer",
         }
     }
@@ -64,10 +60,8 @@ impl Binaries {
             "mmproxy" => Binaries::MergeMiningProxy,
             "minotari_node" => Binaries::MinotariNode,
             "wallet" => Binaries::Wallet,
-            "glytex" => Binaries::Glytex,
             "tor" => Binaries::Tor,
             "bridge" => Binaries::BridgeTapplet,
-            "graxil" => Binaries::Graxil,
             "lolminer" => Binaries::LolMiner,
             _ => panic!("Unknown binary name: {name}"),
         }
@@ -101,10 +95,6 @@ impl Binaries {
                 let file_name = "minotari_console_wallet";
                 Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
-            Binaries::Glytex => {
-                let file_name = "glytex";
-                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
-            }
             Binaries::Tor => {
                 let file_name = "tor";
                 Self::append_exe_if_windows(&mut PathBuf::from(file_name))
@@ -112,10 +102,6 @@ impl Binaries {
             Binaries::BridgeTapplet => {
                 let file_name = format!("bridge-{version}");
                 PathBuf::from(file_name).join("bridge")
-            }
-            Binaries::Graxil => {
-                let file_name = "graxil";
-                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
             Binaries::LolMiner => {
                 let file_name = "lolMiner";
@@ -136,20 +122,6 @@ impl Binaries {
     ) -> String {
         match self {
             Binaries::BridgeTapplet => format!("bridge-v{version}.zip"),
-            Binaries::Glytex => match platform {
-                BinaryPlatformAssets::LinuxX64 => {
-                    format!("glytex-opencl-linux-x86_64-{network}-{version}-{hash}.zip")
-                }
-                BinaryPlatformAssets::WindowsX64 => {
-                    format!("glytex-opencl-windows-x64-{network}-{version}-{hash}.zip")
-                }
-                BinaryPlatformAssets::MacOSX64 => {
-                    format!("glytex-opencl-macos-x86_64-{network}-{version}-{hash}.zip")
-                }
-                BinaryPlatformAssets::MacOSArm64 => {
-                    format!("glytex-combined-macos-arm64-{network}-{version}-{hash}.zip")
-                }
-            },
             Binaries::Xmrig => match platform {
                 BinaryPlatformAssets::LinuxX64 => {
                     format!("xmrig-{version}-linux-static-x64.tar.gz")
@@ -218,22 +190,6 @@ impl Binaries {
                 }
                 BinaryPlatformAssets::MacOSArm64 => {
                     format!("tari_suite-{version}-{network}-{hash}-macos-arm64.zip")
-                }
-            },
-
-            // TODO: Change to proper names once we have the binaries online
-            Binaries::Graxil => match platform {
-                BinaryPlatformAssets::LinuxX64 => {
-                    format!("graxil-linux-x86_64-{version}-{hash}.zip")
-                }
-                BinaryPlatformAssets::WindowsX64 => {
-                    format!("graxil-windows-x64-{version}-{hash}.zip")
-                }
-                BinaryPlatformAssets::MacOSX64 => {
-                    format!("graxil-macos-x86_64-{version}-{hash}.zip")
-                }
-                BinaryPlatformAssets::MacOSArm64 => {
-                    format!("graxil-macos-arm64-{version}-{hash}.zip")
                 }
             },
             Binaries::LolMiner => match platform {

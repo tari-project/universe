@@ -26,14 +26,7 @@ use axum::async_trait;
 
 use crate::{
     mining::{
-        gpu::{
-            consts::EngineType,
-            miners::{
-                glytex::{GlytexGpuMiner, GlytexGpuMinerStatusMonitor},
-                graxil::{GraxilGpuMiner, GraxilGpuMinerStatusMonitor},
-                lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
-            },
-        },
+        gpu::miners::lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
         GpuConnectionType,
     },
     process_adapter::{
@@ -53,9 +46,6 @@ pub trait GpuMinerInterfaceTrait: Send + Sync {
         connection_type: GpuConnectionType,
     ) -> Result<(), anyhow::Error>;
     async fn detect_devices(&mut self) -> Result<(), anyhow::Error>;
-    async fn load_gpu_engine(&mut self, _engine: EngineType) -> Result<(), anyhow::Error> {
-        Ok(())
-    }
     async fn load_excluded_devices(
         &mut self,
         _excluded_devices: Vec<u32>,
@@ -66,23 +56,17 @@ pub trait GpuMinerInterfaceTrait: Send + Sync {
 
 pub enum GpuMinerInterface {
     LolMiner(LolMinerGpuMiner),
-    Graxil(GraxilGpuMiner),
-    Glytex(GlytexGpuMiner),
 }
 
 impl GpuMinerInterfaceTrait for GpuMinerInterface {
     async fn load_tari_address(&mut self, tari_address: &str) -> Result<(), anyhow::Error> {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.load_tari_address(tari_address).await,
-            GpuMinerInterface::Graxil(miner) => miner.load_tari_address(tari_address).await,
-            GpuMinerInterface::Glytex(miner) => miner.load_tari_address(tari_address).await,
         }
     }
     async fn load_worker_name(&mut self, worker_name: Option<&str>) -> Result<(), anyhow::Error> {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.load_worker_name(worker_name).await,
-            GpuMinerInterface::Graxil(miner) => miner.load_worker_name(worker_name).await,
-            GpuMinerInterface::Glytex(miner) => miner.load_worker_name(worker_name).await,
         }
     }
     async fn load_intensity_percentage(
@@ -93,12 +77,6 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
             GpuMinerInterface::LolMiner(miner) => {
                 miner.load_intensity_percentage(intensity_percentage).await
             }
-            GpuMinerInterface::Graxil(miner) => {
-                miner.load_intensity_percentage(intensity_percentage).await
-            }
-            GpuMinerInterface::Glytex(miner) => {
-                miner.load_intensity_percentage(intensity_percentage).await
-            }
         }
     }
     async fn load_connection_type(
@@ -107,24 +85,12 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
     ) -> Result<(), anyhow::Error> {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.load_connection_type(connection_type).await,
-            GpuMinerInterface::Graxil(miner) => miner.load_connection_type(connection_type).await,
-            GpuMinerInterface::Glytex(miner) => miner.load_connection_type(connection_type).await,
-        }
-    }
-
-    async fn load_gpu_engine(&mut self, engine: EngineType) -> Result<(), anyhow::Error> {
-        match self {
-            GpuMinerInterface::LolMiner(miner) => miner.load_gpu_engine(engine).await,
-            GpuMinerInterface::Graxil(miner) => miner.load_gpu_engine(engine).await,
-            GpuMinerInterface::Glytex(miner) => miner.load_gpu_engine(engine).await,
         }
     }
 
     async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.detect_devices().await,
-            GpuMinerInterface::Graxil(miner) => miner.detect_devices().await,
-            GpuMinerInterface::Glytex(miner) => miner.detect_devices().await,
         }
     }
 
@@ -136,8 +102,6 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
             GpuMinerInterface::LolMiner(miner) => {
                 miner.load_excluded_devices(excluded_devices).await
             }
-            GpuMinerInterface::Graxil(miner) => miner.load_excluded_devices(excluded_devices).await,
-            GpuMinerInterface::Glytex(miner) => miner.load_excluded_devices(excluded_devices).await,
         }
     }
 }
@@ -145,8 +109,6 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
 #[derive(Clone)]
 pub enum GpuMinerStatusInterface {
     LolMiner(LolMinerGpuMinerStatusMonitor),
-    Graxil(GraxilGpuMinerStatusMonitor),
-    Glytex(GlytexGpuMinerStatusMonitor),
 }
 
 #[async_trait]
@@ -161,27 +123,11 @@ impl StatusMonitor for GpuMinerStatusInterface {
                     .handle_unhealthy(duration_since_last_healthy_status)
                     .await
             }
-            GpuMinerStatusInterface::Graxil(monitor) => {
-                monitor
-                    .handle_unhealthy(duration_since_last_healthy_status)
-                    .await
-            }
-            GpuMinerStatusInterface::Glytex(monitor) => {
-                monitor
-                    .handle_unhealthy(duration_since_last_healthy_status)
-                    .await
-            }
         }
     }
     async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         match self {
             GpuMinerStatusInterface::LolMiner(monitor) => {
-                monitor.check_health(uptime, timeout_duration).await
-            }
-            GpuMinerStatusInterface::Graxil(monitor) => {
-                monitor.check_health(uptime, timeout_duration).await
-            }
-            GpuMinerStatusInterface::Glytex(monitor) => {
                 monitor.check_health(uptime, timeout_duration).await
             }
         }
@@ -207,34 +153,16 @@ impl ProcessAdapter for GpuMinerInterface {
                 binary_version_path,
                 is_first_start,
             ),
-            GpuMinerInterface::Graxil(miner) => miner.spawn_inner(
-                base_folder,
-                config_folder,
-                log_folder,
-                binary_version_path,
-                is_first_start,
-            ),
-            GpuMinerInterface::Glytex(miner) => miner.spawn_inner(
-                base_folder,
-                config_folder,
-                log_folder,
-                binary_version_path,
-                is_first_start,
-            ),
         }
     }
     fn name(&self) -> &str {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.name(),
-            GpuMinerInterface::Graxil(miner) => miner.name(),
-            GpuMinerInterface::Glytex(miner) => miner.name(),
         }
     }
     fn pid_file_name(&self) -> &str {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.pid_file_name(),
-            GpuMinerInterface::Graxil(miner) => miner.pid_file_name(),
-            GpuMinerInterface::Glytex(miner) => miner.pid_file_name(),
         }
     }
 }
