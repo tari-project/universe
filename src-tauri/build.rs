@@ -20,7 +20,40 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fs;
+use std::process::Command;
+
+fn compile_process_wrapper() {
+    let target = std::env::var("TARGET").expect("TARGET env var not set");
+
+    fs::create_dir_all("binaries").ok();
+
+    let output_name = if target.contains("windows") {
+        format!("binaries/process-wrapper-{}.exe", target)
+    } else {
+        format!("binaries/process-wrapper-{}", target)
+    };
+
+    let status = Command::new("rustc")
+        .args([
+            "process-wrapper/main.rs",
+            "--edition",
+            "2021",
+            "-o",
+            &output_name,
+        ])
+        .status()
+        .expect("Failed to run rustc for process-wrapper");
+
+    if !status.success() {
+        panic!("Failed to compile process-wrapper sidecar");
+    }
+
+    println!("cargo::rerun-if-changed=process-wrapper/main.rs");
+}
+
 fn main() {
+    compile_process_wrapper();
     // Allow the use of unstable features in tokio
     println!("cargo::rustc-check-cfg=cfg(tokio_unstable)");
 

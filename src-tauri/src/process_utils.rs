@@ -23,6 +23,7 @@
 use std::{fs, future::Future, io::Write, path::Path, pin::Pin, time::Duration};
 
 use crate::process_adapter::ProcessStartupSpec;
+use crate::process_wrapper;
 
 pub fn launch_child_process(
     file_path: &Path,
@@ -41,10 +42,21 @@ pub fn launch_child_process(
     } else {
         std::process::Stdio::null()
     };
+
+    let (actual_binary, actual_args) =
+        if let Some(wrapper_path) = process_wrapper::get_wrapper_path() {
+            let parent_pid = std::process::id().to_string();
+            let mut wrapper_args = vec![parent_pid, file_path.to_string_lossy().to_string()];
+            wrapper_args.extend(args.iter().cloned());
+            (wrapper_path, wrapper_args)
+        } else {
+            (file_path.to_path_buf(), args.to_vec())
+        };
+
     #[cfg(not(target_os = "windows"))]
     {
-        Ok(tokio::process::Command::new(file_path)
-            .args(args)
+        Ok(tokio::process::Command::new(&actual_binary)
+            .args(&actual_args)
             .current_dir(current_dir)
             .envs(envs.cloned().unwrap_or_default())
             .stdout(stdout)
@@ -56,8 +68,8 @@ pub fn launch_child_process(
     {
         use crate::consts::PROCESS_CREATION_NO_WINDOW;
 
-        Ok(tokio::process::Command::new(file_path)
-            .args(args)
+        Ok(tokio::process::Command::new(&actual_binary)
+            .args(&actual_args)
             .current_dir(current_dir)
             .envs(envs.cloned().unwrap_or_default())
             .stdout(stdout)
@@ -141,5 +153,37 @@ pub fn write_pid_file(spec: &ProcessStartupSpec, id: u32) -> Result<(), String> 
         .map_err(|e| format!("Failed to write PID file: {e}"))?;
     file.flush()
         .map_err(|e| format!("Failed to flush PID file: {e}"))?;
+    Ok(())
+}
+
+/// Gracefully terminate a child process.
+/// Sends SIGTERM first (so the process-wrapper can catch it and clean up),
+/// waits for graceful shutdown, then falls back to SIGKILL if needed.
+pub async fn graceful_kill(child: &mut tokio::process::Child) -> Result<(), std::io::Error> {
+    if let Some(pid) = child.id() {
+        #[cfg(unix)]
+        {
+            use nix::sys::signal::{kill, Signal};
+            use nix::unistd::Pid;
+
+            let _ = kill(Pid::from_raw(pid.cast_signed()), Signal::SIGTERM);
+
+            tokio::time::sleep(Duration::from_secs(2)).await;
+
+            if let Ok(Some(_)) = child.try_wait() {
+                return Ok(());
+            }
+
+            child.kill().await?;
+        }
+
+        #[cfg(windows)]
+        {
+            child.kill().await?;
+        }
+    } else {
+        child.kill().await?;
+    }
+
     Ok(())
 }

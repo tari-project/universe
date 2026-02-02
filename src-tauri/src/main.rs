@@ -110,6 +110,7 @@ mod process_utils;
 mod process_watcher;
 #[cfg(test)]
 mod process_watcher_test;
+mod process_wrapper;
 mod progress_trackers;
 mod release_notes;
 mod requests;
@@ -537,6 +538,11 @@ fn main() {
                 let state = handle_clone.state::<UniverseAppState>();
 
                 block_on(ShutdownManager::instance().initialize_app_handle(handle_clone.clone()));
+
+                if let Err(e) = process_wrapper::initialize_wrapper_path(&handle_clone) {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to initialize process wrapper sidecar: {}. Processes will spawn without orphan protection.", e);
+                }
+
                 block_on(state.updates_manager.initial_try_update(&handle_clone));
 
                 tauri::async_runtime::spawn(async move {
