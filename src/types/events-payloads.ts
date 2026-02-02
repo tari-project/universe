@@ -34,11 +34,6 @@ export interface DetectedDevicesPayload {
     devices: GpuDevice[];
 }
 
-export interface DetectedAvailableGpuEngines {
-    engines: string[];
-    selected_engine: string;
-}
-
 export interface CriticalProblemPayload {
     title?: string;
     description?: string;
@@ -96,8 +91,6 @@ export interface ProgressTrackerUpdatePayload {
 }
 
 export enum GpuMinerType {
-    Glytex = 'Glytex',
-    Graxil = 'Graxil',
     LolMiner = 'LolMiner',
 }
 
@@ -110,7 +103,6 @@ export enum GpuMinerFeature {
 }
 
 export enum GpuMiningAlgorithm {
-    SHA3X = 'SHA3X',
     C29 = 'C29',
 }
 
