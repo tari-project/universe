@@ -1,4 +1,4 @@
-// Copyright 2024. The Tari Project
+// Copyright 2026. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
@@ -29,18 +29,19 @@
 //!
 //! On Unix: Creates a new process group and uses it for signal propagation.
 //! On Windows: Uses taskkill with /T for tree termination.
+//!
+//! Signal Safety: Signal handlers only set atomic flags. All termination logic
+//! runs in the main thread to avoid async-signal-safety issues.
 
 use std::env;
 use std::process::{exit, Child, Command};
-use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
 
-const POLL_INTERVAL_SECS: u64 = 2;
+const POLL_INTERVAL_MS: u64 = 200;
 const GRACEFUL_SHUTDOWN_SECS: u64 = 2;
 
-static CHILD_PID: AtomicU32 = AtomicU32::new(0);
 static SHOULD_TERMINATE: AtomicBool = AtomicBool::new(false);
 
 fn main() {
@@ -70,31 +71,24 @@ fn main() {
         }
     };
 
-    CHILD_PID.store(child.id(), Ordering::SeqCst);
-
     setup_signal_handlers();
 
-    let should_terminate = Arc::new(AtomicBool::new(false));
-    let should_terminate_clone = Arc::clone(&should_terminate);
-
-    thread::spawn(move || loop {
-        thread::sleep(Duration::from_secs(POLL_INTERVAL_SECS));
-
-        if SHOULD_TERMINATE.load(Ordering::SeqCst) {
-            should_terminate_clone.store(true, Ordering::SeqCst);
-            break;
-        }
-
-        if !is_parent_alive(parent_pid) {
-            should_terminate_clone.store(true, Ordering::SeqCst);
-            break;
-        }
-    });
+    let mut parent_check_counter: u64 = 0;
+    const PARENT_CHECK_INTERVAL: u64 = 10;
 
     loop {
-        if should_terminate.load(Ordering::SeqCst) || SHOULD_TERMINATE.load(Ordering::SeqCst) {
+        if SHOULD_TERMINATE.load(Ordering::SeqCst) {
             terminate_child(&mut child);
             exit(0);
+        }
+
+        parent_check_counter += 1;
+        if parent_check_counter >= PARENT_CHECK_INTERVAL {
+            parent_check_counter = 0;
+            if !is_parent_alive(parent_pid) {
+                terminate_child(&mut child);
+                exit(0);
+            }
         }
 
         match child.try_wait() {
@@ -102,7 +96,7 @@ fn main() {
                 exit(status.code().unwrap_or(0));
             }
             Ok(None) => {
-                thread::sleep(Duration::from_millis(100));
+                thread::sleep(Duration::from_millis(POLL_INTERVAL_MS));
             }
             Err(e) => {
                 eprintln!("Error waiting for child: {}", e);
@@ -136,80 +130,52 @@ fn spawn_child(binary: &str, args: &[String]) -> Result<Child, std::io::Error> {
 #[cfg(unix)]
 fn setup_signal_handlers() {
     unsafe {
-        libc::signal(libc::SIGTERM, handle_signal as usize);
-        libc::signal(libc::SIGINT, handle_signal as usize);
-        libc::signal(libc::SIGHUP, handle_signal as usize);
+        libc::signal(libc::SIGTERM, handle_signal as libc::sighandler_t);
+        libc::signal(libc::SIGINT, handle_signal as libc::sighandler_t);
+        libc::signal(libc::SIGHUP, handle_signal as libc::sighandler_t);
     }
 }
 
 #[cfg(unix)]
-extern "C" fn handle_signal(_sig: i32) {
+extern "C" fn handle_signal(_sig: libc::c_int) {
     SHOULD_TERMINATE.store(true, Ordering::SeqCst);
-
-    let child_pid = CHILD_PID.load(Ordering::SeqCst);
-    if child_pid != 0 {
-        unsafe {
-            libc::kill(-(child_pid as i32), libc::SIGTERM);
-        }
-
-        thread::sleep(Duration::from_secs(GRACEFUL_SHUTDOWN_SECS));
-
-        unsafe {
-            libc::kill(-(child_pid as i32), libc::SIGKILL);
-        }
-    }
-
-    exit(0);
 }
 
 #[cfg(unix)]
 fn is_parent_alive(pid: u32) -> bool {
-    unsafe { libc::kill(pid as i32, 0) == 0 }
+    unsafe { libc::kill(pid.cast_signed(), 0) == 0 }
 }
 
 #[cfg(unix)]
 fn terminate_child(child: &mut Child) {
-    let child_pid = child.id() as i32;
+    let child_pid = child.id().cast_signed();
 
     unsafe {
         libc::kill(-child_pid, libc::SIGTERM);
     }
 
-    thread::sleep(Duration::from_secs(GRACEFUL_SHUTDOWN_SECS));
-
-    match child.try_wait() {
-        Ok(Some(_)) => return,
-        _ => {}
+    let deadline = std::time::Instant::now() + Duration::from_secs(GRACEFUL_SHUTDOWN_SECS);
+    while std::time::Instant::now() < deadline {
+        match child.try_wait() {
+            Ok(Some(_)) => return,
+            _ => thread::sleep(Duration::from_millis(100)),
+        }
     }
 
     unsafe {
         libc::kill(-child_pid, libc::SIGKILL);
     }
 
-    let _ = child.wait();
+    drop(child.wait());
 }
 
 #[cfg(windows)]
 fn setup_signal_handlers() {
-    #[link(name = "kernel32")]
-    extern "system" {
-        fn SetConsoleCtrlHandler(
-            HandlerRoutine: Option<extern "system" fn(u32) -> i32>,
-            Add: i32,
-        ) -> i32;
-    }
+    use windows_sys::Win32::System::Console::{SetConsoleCtrlHandler, CTRL_C_EVENT};
 
-    extern "system" fn console_handler(_ctrl_type: u32) -> i32 {
+    unsafe extern "system" fn console_handler(_ctrl_type: u32) -> i32 {
         SHOULD_TERMINATE.store(true, Ordering::SeqCst);
-
-        let child_pid = CHILD_PID.load(Ordering::SeqCst);
-        if child_pid != 0 {
-            let _ = Command::new("taskkill")
-                .args(["/F", "/T", "/PID", &child_pid.to_string()])
-                .output();
-        }
-
-        exit(0);
+        1
     }
 
     unsafe {
@@ -219,19 +185,10 @@ fn setup_signal_handlers() {
 
 #[cfg(windows)]
 fn is_parent_alive(pid: u32) -> bool {
-    #[link(name = "kernel32")]
-    extern "system" {
-        fn OpenProcess(
-            dwDesiredAccess: u32,
-            bInheritHandle: i32,
-            dwProcessId: u32,
-        ) -> *mut std::ffi::c_void;
-        fn CloseHandle(hObject: *mut std::ffi::c_void) -> i32;
-        fn GetExitCodeProcess(hProcess: *mut std::ffi::c_void, lpExitCode: *mut u32) -> i32;
-    }
-
-    const PROCESS_QUERY_LIMITED_INFORMATION: u32 = 0x1000;
-    const STILL_ACTIVE: u32 = 259;
+    use windows_sys::Win32::Foundation::{CloseHandle, STILL_ACTIVE};
+    use windows_sys::Win32::System::Threading::{
+        GetExitCodeProcess, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+    };
 
     unsafe {
         let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
@@ -243,7 +200,7 @@ fn is_parent_alive(pid: u32) -> bool {
         let result = GetExitCodeProcess(handle, &mut exit_code);
         CloseHandle(handle);
 
-        result != 0 && exit_code == STILL_ACTIVE
+        result != 0 && exit_code == STILL_ACTIVE as u32
     }
 }
 
@@ -255,22 +212,5 @@ fn terminate_child(child: &mut Child) {
         .args(["/F", "/T", "/PID", &child_pid.to_string()])
         .output();
 
-    let _ = child.wait();
-}
-
-#[cfg(unix)]
-mod libc {
-    pub type SignalHandler = usize;
-
-    #[link(name = "c")]
-    extern "C" {
-        pub fn kill(pid: i32, sig: i32) -> i32;
-        pub fn signal(sig: i32, handler: SignalHandler) -> SignalHandler;
-        pub fn setpgid(pid: i32, pgid: i32) -> i32;
-    }
-
-    pub const SIGTERM: i32 = 15;
-    pub const SIGKILL: i32 = 9;
-    pub const SIGINT: i32 = 2;
-    pub const SIGHUP: i32 = 1;
+    drop(child.wait());
 }

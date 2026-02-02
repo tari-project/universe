@@ -8,3 +8,6 @@
 
 # Compiled sidecar binaries (built by build.rs)
 /binaries/
+
+# Process wrapper build artifacts
+/process-wrapper/target/
