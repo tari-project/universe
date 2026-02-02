@@ -54,7 +54,10 @@ pub enum GpuMinerType {
 impl GpuMinerType {
     pub fn get_expected_features(&self) -> Vec<GpuMinerFeature> {
         match self {
-            GpuMinerType::LolMiner => vec![GpuMinerFeature::PoolMining],
+            GpuMinerType::LolMiner => vec![
+                GpuMinerFeature::PoolMining,
+                GpuMinerFeature::DeviceExclusion,
+            ],
         }
     }
 
@@ -130,6 +133,8 @@ pub enum GpuMinerFeature {
     SoloMining,
     /// Support for mining in a pool
     PoolMining,
+    /// Support for excluding specific GPU devices
+    DeviceExclusion,
 }
 
 #[derive(Clone, Serialize)]
