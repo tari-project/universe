@@ -40,7 +40,7 @@ use std::thread;
 use std::time::Duration;
 
 const POLL_INTERVAL_MS: u64 = 200;
-const GRACEFUL_SHUTDOWN_SECS: u64 = 2;
+const GRACEFUL_SHUTDOWN_SECS: u64 = 10;
 
 static SHOULD_TERMINATE: AtomicBool = AtomicBool::new(false);
 

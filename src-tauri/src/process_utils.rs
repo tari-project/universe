@@ -157,11 +157,16 @@ pub fn write_pid_file(spec: &ProcessStartupSpec, id: u32) -> Result<(), String> 
 }
 
 /// Time to wait for graceful shutdown before sending SIGKILL.
-const GRACEFUL_SHUTDOWN_WAIT_SECS: u64 = 2;
+const GRACEFUL_SHUTDOWN_WAIT_SECS: u64 = 10;
 
 /// Gracefully terminate a child process.
-/// Sends SIGTERM first (so the process-wrapper can catch it and clean up),
+///
+/// On Unix: Sends SIGTERM first (so the process-wrapper can catch it and clean up),
 /// waits for graceful shutdown, then falls back to SIGKILL if needed.
+///
+/// On Windows: Does nothing. The process-wrapper monitors its parent PID and will
+/// detect when the main app exits, then terminate its child process gracefully.
+/// Using TerminateProcess would kill the wrapper abruptly, preventing cleanup.
 pub async fn graceful_kill(child: &mut tokio::process::Child) -> Result<(), std::io::Error> {
     if let Some(pid) = child.id() {
         #[cfg(unix)]
@@ -182,9 +187,13 @@ pub async fn graceful_kill(child: &mut tokio::process::Child) -> Result<(), std:
 
         #[cfg(windows)]
         {
-            child.kill().await?;
+            // On Windows, let the process-wrapper detect parent exit and clean up.
+            // Calling kill() would use TerminateProcess, which kills abruptly
+            // and prevents the wrapper from gracefully terminating its child.
+            let _ = pid;
         }
     } else {
+        // No PID means process already exited or wasn't wrapped
         child.kill().await?;
     }
 
