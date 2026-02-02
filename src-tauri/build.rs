@@ -22,75 +22,39 @@
 
 use std::fs;
 use std::path::Path;
-use std::process::Command;
 
-fn compile_process_wrapper() {
+fn copy_process_wrapper() {
     let target = std::env::var("TARGET").expect("TARGET env var not set");
     let profile = std::env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
 
     fs::create_dir_all("binaries").ok();
 
-    let binary_name = if target.contains("windows") {
-        "process-wrapper.exe"
+    let (src_name, dst_name) = if target.contains("windows") {
+        (
+            "process-wrapper.exe",
+            format!("binaries/process-wrapper-{}.exe", target),
+        )
     } else {
-        "process-wrapper"
+        (
+            "process-wrapper",
+            format!("binaries/process-wrapper-{}", target),
+        )
     };
 
-    let output_name = if target.contains("windows") {
-        format!("binaries/process-wrapper-{}.exe", target)
-    } else {
-        format!("binaries/process-wrapper-{}", target)
-    };
+    let src_path = format!("../target/{}/{}", profile, src_name);
 
-    let cargo_args = if profile == "release" {
-        vec![
-            "build",
-            "--release",
-            "--target",
-            &target,
-            "--manifest-path",
-            "process-wrapper/Cargo.toml",
-        ]
-    } else {
-        vec![
-            "build",
-            "--target",
-            &target,
-            "--manifest-path",
-            "process-wrapper/Cargo.toml",
-        ]
-    };
-
-    let status = Command::new("cargo")
-        .args(&cargo_args)
-        .status()
-        .expect("Failed to run cargo for process-wrapper");
-
-    if !status.success() {
-        panic!("Failed to compile process-wrapper sidecar");
-    }
-
-    let built_binary = format!(
-        "process-wrapper/target/{}/{}/{}",
-        target, profile, binary_name
-    );
-
-    if Path::new(&built_binary).exists() {
-        fs::copy(&built_binary, &output_name)
+    if Path::new(&src_path).exists() {
+        fs::copy(&src_path, &dst_name)
             .unwrap_or_else(|e| panic!("Failed to copy process-wrapper binary: {}", e));
-    } else {
-        panic!(
-            "Built process-wrapper binary not found at expected path: {}",
-            built_binary
-        );
     }
 
-    println!("cargo::rerun-if-changed=process-wrapper/src/main.rs");
-    println!("cargo::rerun-if-changed=process-wrapper/Cargo.toml");
+    println!("cargo::rerun-if-changed={}", src_path);
+    println!("cargo::rerun-if-changed=../process-wrapper/src/main.rs");
+    println!("cargo::rerun-if-changed=../process-wrapper/Cargo.toml");
 }
 
 fn main() {
-    compile_process_wrapper();
+    copy_process_wrapper();
     // Allow the use of unstable features in tokio
     println!("cargo::rustc-check-cfg=cfg(tokio_unstable)");
 

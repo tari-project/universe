@@ -156,6 +156,9 @@ pub fn write_pid_file(spec: &ProcessStartupSpec, id: u32) -> Result<(), String> 
     Ok(())
 }
 
+/// Time to wait for graceful shutdown before sending SIGKILL.
+const GRACEFUL_SHUTDOWN_WAIT_SECS: u64 = 2;
+
 /// Gracefully terminate a child process.
 /// Sends SIGTERM first (so the process-wrapper can catch it and clean up),
 /// waits for graceful shutdown, then falls back to SIGKILL if needed.
@@ -168,7 +171,7 @@ pub async fn graceful_kill(child: &mut tokio::process::Child) -> Result<(), std:
 
             let _ = kill(Pid::from_raw(pid.cast_signed()), Signal::SIGTERM);
 
-            tokio::time::sleep(Duration::from_secs(2)).await;
+            tokio::time::sleep(Duration::from_secs(GRACEFUL_SHUTDOWN_WAIT_SECS)).await;
 
             if let Ok(Some(_)) = child.try_wait() {
                 return Ok(());

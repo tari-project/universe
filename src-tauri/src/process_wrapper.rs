@@ -30,37 +30,29 @@ use log::{info, warn};
 use std::path::PathBuf;
 use std::sync::{LazyLock, RwLock};
 use tauri::AppHandle;
+use tauri_plugin_shell::ShellExt;
 
 use crate::LOG_TARGET_APP_LOGIC;
 
 static WRAPPER_PATH: LazyLock<RwLock<Option<PathBuf>>> = LazyLock::new(|| RwLock::new(None));
 
-fn resolve_sidecar_path(_app: &AppHandle) -> Result<PathBuf, anyhow::Error> {
-    let exe_path = tauri::utils::platform::current_exe()?;
-    let exe_dir = exe_path
+fn resolve_sidecar_path(app: &AppHandle) -> Result<PathBuf, anyhow::Error> {
+    // Verify the sidecar is configured (this validates externalBin config)
+    app.shell()
+        .sidecar("process-wrapper")
+        .map_err(|e| anyhow::anyhow!("Sidecar 'process-wrapper' not configured: {}", e))?;
+
+    // Resolve path using same logic as Tauri's shell plugin
+    let exe_dir = tauri::utils::platform::current_exe()?
         .parent()
-        .ok_or_else(|| anyhow::anyhow!("Current executable has no parent directory"))?;
+        .ok_or_else(|| anyhow::anyhow!("Current executable has no parent directory"))?
+        .to_path_buf();
 
-    let base_dir = if exe_dir.ends_with("deps") {
-        exe_dir.parent().unwrap_or(exe_dir)
-    } else {
-        exe_dir
-    };
+    #[cfg(windows)]
+    let sidecar_path = exe_dir.join("process-wrapper.exe");
 
-    let sidecar_name = "process-wrapper";
-
-    #[cfg(target_os = "windows")]
-    let sidecar_path = base_dir.join(format!("{}.exe", sidecar_name));
-
-    #[cfg(not(target_os = "windows"))]
-    let sidecar_path = base_dir.join(sidecar_name);
-
-    if !sidecar_path.exists() {
-        return Err(anyhow::anyhow!(
-            "Process wrapper sidecar not found at: {:?}",
-            sidecar_path
-        ));
-    }
+    #[cfg(not(windows))]
+    let sidecar_path = exe_dir.join("process-wrapper");
 
     Ok(sidecar_path)
 }
