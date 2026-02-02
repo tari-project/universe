@@ -62,6 +62,7 @@ use std::{
 };
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
+use tari_common_types::types::FixedHash;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
@@ -212,10 +213,15 @@ impl MinotariWalletManager {
     }
 
     /// Create a key from output hashes for pending transaction lookup
-    fn create_pending_tx_key(output_hashes: &[String]) -> String {
-        let mut sorted_hashes = output_hashes.to_vec();
-        sorted_hashes.sort();
-        sorted_hashes.join(",")
+    fn create_pending_tx_key(output_hashes: &Vec<FixedHash>) -> String {
+        info!("output_hashes = {:?}", output_hashes);
+        let mut hashes = vec![];
+        for hash in output_hashes {
+            hashes.push(hash.to_string());
+        }
+        let hash_string = hashes.join(",");
+        info!("hash_string = {:?}", hash_string);
+        hash_string
     }
 
     /// Store a pending transaction for later matching with scanned transactions
@@ -235,7 +241,7 @@ impl MinotariWalletManager {
     /// Try to find and remove a pending transaction that matches the given output hashes
     /// Returns the pending transaction if found
     async fn match_and_remove_pending_transaction(
-        output_hashes: &[String],
+        output_hashes: &Vec<FixedHash>,
     ) -> Option<DisplayedTransaction> {
         if output_hashes.is_empty() {
             return None;
