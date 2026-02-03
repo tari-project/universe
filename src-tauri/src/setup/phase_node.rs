@@ -162,9 +162,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
         let app_configuration = Self::load_app_configuration().await.unwrap_or_default();
-        let (app_data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let (app_local_data_dir, config_dir, log_dir) = self.get_app_dirs()?;
 
-        let mut data_dir = app_data_dir;
+        let mut data_dir = app_local_data_dir;
 
         if let Some(custom_data_dir) = app_configuration.custom_data_dir {
             data_dir = custom_data_dir;

@@ -70,7 +70,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fs;
-use std::fs::{read_dir, remove_dir_all, remove_file, File};
+use std::fs::{read_dir, remove_dir_all, remove_file};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
@@ -1250,7 +1250,7 @@ pub async fn set_tor_config(
 }
 
 #[tauri::command]
-pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<(), InvokeError> {
+pub async fn set_use_tor(use_tor: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_use_tor,
@@ -1263,17 +1263,6 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
     SetupManager::get_instance()
         .restart_phases_from_queue()
         .await;
-
-    let config_dir = app_handle
-        .path()
-        .app_config_dir()
-        .expect("Could not get config dir");
-
-    //TODO: Do we still need this?
-    if config_dir.exists() {
-        let tcp_tor_toggled_file = config_dir.join("tcp_tor_toggled");
-        File::create(tcp_tor_toggled_file).map_err(|e| e.to_string())?;
-    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_use_tor took too long: {:?}", timer.elapsed());
@@ -2201,7 +2190,7 @@ pub async fn set_custom_directory(
         .shutdown_phases(vec![SetupPhase::Node])
         .await;
 
-    let new_dir: PathBuf = PathBuf::from(path).join("node");
+    let new_dir: PathBuf = PathBuf::from(path);
 
     match ConfigCore::update_directories(directory_type, new_dir.clone()).await {
         Ok(previous) => {
