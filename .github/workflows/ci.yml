@@ -65,6 +65,7 @@ jobs:
 
       - name: Build process-wrapper
         run: |
+          cargo build --manifest-path process-wrapper/Cargo.toml
           cargo build --release --manifest-path process-wrapper/Cargo.toml
 
       - name: clippy lint
@@ -94,6 +95,10 @@ jobs:
       - uses: swatinem/rust-cache@v2.7.5
         with:
           workspaces: './src-tauri -> target'
+
+      - name: Build process-wrapper
+        run: |
+          cargo build --manifest-path process-wrapper/Cargo.toml
 
       - name: cargo machete
         working-directory: ./src-tauri
