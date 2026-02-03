@@ -63,6 +63,7 @@ use std::{
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_common_types::types::FixedHash;
+use tari_utilities::hex::Hex;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
@@ -213,15 +214,8 @@ impl MinotariWalletManager {
     }
 
     /// Create a key from output hashes for pending transaction lookup
-    fn create_pending_tx_key(output_hashes: &Vec<FixedHash>) -> String {
-        info!("output_hashes = {:?}", output_hashes);
-        let mut hashes = vec![];
-        for hash in output_hashes {
-            hashes.push(hash.to_string());
-        }
-        let hash_string = hashes.join(",");
-        info!("hash_string = {:?}", hash_string);
-        hash_string
+    fn create_pending_tx_key(output_hashes: &FixedHash) -> String {
+        output_hashes.to_hex()
     }
 
     /// Store a pending transaction for later matching with scanned transactions
@@ -229,19 +223,19 @@ impl MinotariWalletManager {
         if tx.details.sent_output_hashes.is_empty() {
             return;
         }
-        let key = Self::create_pending_tx_key(&tx.details.sent_output_hashes);
+        let key = Self::create_pending_tx_key(&tx.details.inputs[0].output_hash);
         let mut pending = INSTANCE.pending_transactions.write().await;
-        pending.insert(key, tx.clone());
+        pending.insert(key.clone(), tx.clone());
         info!(
             target: LOG_TARGET,
-            "Stored pending transaction with id: {}", tx.id
+            "Stored pending transaction with key: {} - id: {}", key, tx.id
         );
     }
 
     /// Try to find and remove a pending transaction that matches the given output hashes
     /// Returns the pending transaction if found
     async fn match_and_remove_pending_transaction(
-        output_hashes: &Vec<FixedHash>,
+        output_hashes: &FixedHash,
     ) -> Option<DisplayedTransaction> {
         if output_hashes.is_empty() {
             return None;
@@ -522,7 +516,7 @@ impl MinotariWalletManager {
                     for tx in transactions_event.transactions {
                         // Check if this scanned transaction matches any pending transaction
                         if let Some(_pending_tx) = Self::match_and_remove_pending_transaction(
-                            &tx.details.sent_output_hashes,
+                            &tx.details.inputs[0].output_hash,
                         )
                         .await
                         {
