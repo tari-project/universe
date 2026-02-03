@@ -41,14 +41,24 @@ fn copy_process_wrapper() {
         )
     };
 
-    let src_path = format!("../target/{}/{}", profile, src_name);
+    // Check target-specific directory first (for cross-compiled builds)
+    // then fall back to profile directory (for native builds)
+    let src_path_cross = format!("../target/{}/{}/{}", target, profile, src_name);
+    let src_path_native = format!("../target/{}/{}", profile, src_name);
+
+    let src_path = if Path::new(&src_path_cross).exists() {
+        src_path_cross
+    } else {
+        src_path_native
+    };
 
     if Path::new(&src_path).exists() {
         fs::copy(&src_path, &dst_name)
             .unwrap_or_else(|e| panic!("Failed to copy process-wrapper binary: {}", e));
     }
 
-    println!("cargo::rerun-if-changed={}", src_path);
+    println!("cargo::rerun-if-changed=../target/{}/{}/{}", target, profile, src_name);
+    println!("cargo::rerun-if-changed=../target/{}/{}", profile, src_name);
     println!("cargo::rerun-if-changed=../process-wrapper/src/main.rs");
     println!("cargo::rerun-if-changed=../process-wrapper/Cargo.toml");
 }

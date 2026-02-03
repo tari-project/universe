@@ -132,6 +132,10 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
+      - name: Build process-wrapper
+        run: |
+          cargo build --release --manifest-path process-wrapper/Cargo.toml
+
       - name: cargo tauri build
         working-directory: ./src-tauri
         run: |
