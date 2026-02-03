@@ -14,8 +14,7 @@ import { FaDeleteLeft } from 'react-icons/fa6';
 import { DirectoryTextWrapper, RemoveCTA, SelectedDirectoryWrapper } from './styles.ts';
 
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
-import { useSetCustomDirs } from '@app/hooks/app/useSetCustomDirs.ts';
-import { CustomDirectory } from '@app/types/configs.ts';
+import { useSetCustomDir } from '@app/hooks/app/useSetCustomDir.ts';
 
 function PathDisplay({ path, action }: { path: string; action?: ReactNode }) {
     return (
@@ -35,9 +34,7 @@ function PathDisplay({ path, action }: { path: string; action?: ReactNode }) {
 
 export default function NodeDataLocationSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-    const { loading, selected, handleSelect, handleSave, handleClear, currentDir } = useSetCustomDirs({
-        type: CustomDirectory.ChainData,
-    });
+    const { loading, selected, handleSelect, handleSave, handleClear, currentDir } = useSetCustomDir();
 
     const showSelected = selected?.length && selected !== currentDir;
 

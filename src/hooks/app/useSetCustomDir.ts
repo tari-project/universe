@@ -1,23 +1,14 @@
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
-import { CustomDirectory } from '@app/types/configs.ts';
 import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 import { setDirectory } from '@app/store/actions/config/core.ts';
 
-interface UseSetCustomDirs {
-    type: CustomDirectory;
-}
-export function useSetCustomDirs({ type }: UseSetCustomDirs) {
-    const directories = useConfigCoreStore((s) => s.directories);
+export function useSetCustomDir() {
+    const currentDir = useConfigCoreStore((s) => s.node_data_directory);
     const [isPending, startTransition] = useTransition();
     const [selectedDir, setSelectedDir] = useState('');
 
-    const currentDir = directories?.[type];
     const handleClear = () => setSelectedDir('');
-
-    useEffect(() => {
-        console.log(`directories= `, directories);
-    }, [directories]);
 
     function handleSelect() {
         startTransition(async () => {
@@ -28,7 +19,7 @@ export function useSetCustomDirs({ type }: UseSetCustomDirs) {
 
     function handleSave() {
         startTransition(async () => {
-            await setDirectory({ directoryType: CustomDirectory.ChainData, path: selectedDir }).then(handleClear);
+            await setDirectory({ path: selectedDir }).then(handleClear);
         });
     }
 

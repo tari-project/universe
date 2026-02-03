@@ -13,7 +13,6 @@ import { BasePoolData, ConfigBackendInMemory, PauseOnBatteryModeState } from './
 import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from './tapplets/tapplet.types';
 import { SchedulerEventTiming, SchedulerEventType } from './mining/schedule.ts';
-import { UpdateCustomDirectory } from '@app/types/configs.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -153,5 +152,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'remove_scheduler_event', payload: { eventId: string }): Promise<void>;
     function invoke(param: 'pause_scheduler_event', payload: { eventId: string }): Promise<void>;
     function invoke(param: 'resume_scheduler_event', payload: { eventId: string }): Promise<void>;
-    function invoke(param: 'set_custom_directory', payload: UpdateCustomDirectory): Promise<void>;
+    function invoke(param: 'set_custom_node_directory', payload: { path: string }): Promise<void>;
 }

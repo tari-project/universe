@@ -34,6 +34,7 @@ use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::task::JoinHandle;
 
 use crate::configs::config_core::ConfigCore;
+use crate::configs::trait_config::ConfigImpl;
 use tokio::select;
 use tokio::sync::watch;
 use tokio::time::sleep;
@@ -125,7 +126,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         let mut data_dir_path = base_path.clone();
         if self.adapter.name() == "local_minotari_node" {
-            if let Some(path) = ConfigCore::get_chain_data_path().await {
+            if let Some(path) = ConfigCore::content().await.node_data_directory().clone() {
                 data_dir_path = path.clone();
             }
         }

@@ -22,6 +22,4 @@ const initialState: ConfigCore = {
     scheduler_events: null,
     shutdown_mode: ShutdownMode.Tasktray,
 };
-export const useConfigCoreStore = create<ConfigCore>()(() => ({
-    ...initialState,
-}));
+export const useConfigCoreStore = create<ConfigCore>()(() => ({ ...initialState }));

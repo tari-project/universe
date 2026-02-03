@@ -9,7 +9,7 @@ import { setCurrentExchangeMinerId } from '@app/store/useExchangeStore.ts';
 import { fetchExchangeList } from '@app/hooks/exchanges/fetchExchanges.ts';
 import { fetchExchangeContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 
-import { ConfigCore, Directory, ShutdownMode } from '@app/types/config/core.ts';
+import { ConfigCore, ShutdownMode } from '@app/types/config/core.ts';
 
 import { NodeType } from '@app/types/mining/node.ts';
 import { SchedulerEvent, SchedulerEventState } from '@app/types/mining/schedule.ts';
@@ -188,14 +188,10 @@ export const updateShutdownMode = async (shutdownMode: ShutdownMode) => {
     });
 };
 
-export const setDirectory = async ({ directoryType, path }: Directory) => {
-    const currentDirs = store.getState().directories;
-    await invoke('set_custom_directory', { directoryType, path })
+export const setDirectory = async ({ path }: { path: string }) => {
+    await invoke('set_custom_node_directory', { path })
         .then(() => {
-            const newDir = { [directoryType]: path };
-            console.log('new', newDir);
-            const directories = currentDirs ? { ...currentDirs, ...newDir } : newDir;
-            store.setState((c) => ({ ...c, directories }));
+            store.setState((c) => ({ ...c, node_data_directory: path }));
         })
         .catch((e) => {
             console.error('Could not set directory directory', e);

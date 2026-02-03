@@ -144,9 +144,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
         let config_core = ConfigCore::content().await;
-        let custom_data_dir = ConfigCore::get_chain_data_path().await;
         let use_tor = *config_core.use_tor();
         let base_node_grpc_address = config_core.remote_base_node_address().clone();
+        let custom_data_dir = config_core.node_data_directory().clone();
 
         Ok(NodeSetupPhaseAppConfiguration {
             use_tor,

@@ -24,7 +24,7 @@ use crate::airdrop::{get_der_encode_pub_key, get_websocket_key};
 use crate::app_in_memory_config::{AppInMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent, CustomDirectory};
+use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::{
     ConfigMining, ConfigMiningContent, MiningModeType, PauseOnBatteryModeState,
 };
@@ -2180,10 +2180,7 @@ pub async fn update_shutdown_mode_selection(
 }
 
 #[tauri::command]
-pub async fn set_custom_directory(
-    directory_type: CustomDirectory,
-    path: String,
-) -> Result<(), InvokeError> {
+pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
     SetupManager::get_instance()
@@ -2192,22 +2189,22 @@ pub async fn set_custom_directory(
 
     let new_dir: PathBuf = PathBuf::from(path);
 
-    match ConfigCore::update_directories(directory_type, new_dir.clone()).await {
+    match ConfigCore::update_node_data_directory(new_dir.clone()).await {
         Ok(previous) => {
             if let Some(previous) = previous {
-                info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_directory ] previous path {:?}, updating to {:?}", previous, new_dir.clone());
+                info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] previous path {:?}, updating to {:?}", previous, new_dir.clone());
                 let prev_dir_full = previous.join("node");
                 let new_dir_full = new_dir.join("node");
                 fs::rename(prev_dir_full, new_dir_full)
                     .map_err(|e| InvokeError::from(e.to_string()))?;
             }
         }
-        Err(e) => error!(target: LOG_TARGET_APP_LOGIC, "Could not update directories: {e}"),
+        Err(e) => error!(target: LOG_TARGET_APP_LOGIC, "Could not update directory: {e}"),
     }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET_APP_LOGIC, "set_custom_directory took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_custom_node_directory took too long: {:?}", timer.elapsed());
     }
-    info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_directory ] restarting phases");
+    info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] restarting phases");
 
     SetupManager::get_instance()
         .resume_phases(vec![SetupPhase::Node])

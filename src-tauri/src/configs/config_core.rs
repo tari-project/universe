@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use getset::{Getters, Setters};
-use log::{error, info};
+use log::error;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -45,13 +45,6 @@ use super::trait_config::{ConfigContentImpl, ConfigImpl};
 pub struct AirdropTokens {
     pub token: String,
     pub refresh_token: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Eq, Hash, Deserialize)]
-pub enum CustomDirectory {
-    ChainData,
-    Config,
-    Logs,
 }
 
 pub const CORE_CONFIG_VERSION: u32 = 0;
@@ -83,7 +76,7 @@ pub struct ConfigCoreContent {
     exchange_id: String,
     scheduler_events: HashMap<String, ScheduledEventInfo>,
     shutdown_mode: ShutdownMode,
-    directories: HashMap<CustomDirectory, PathBuf>,
+    node_data_directory: Option<PathBuf>,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -138,7 +131,7 @@ impl Default for ConfigCoreContent {
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
             scheduler_events: HashMap::new(),
             shutdown_mode: ShutdownMode::Tasktray,
-            directories: HashMap::new(),
+            node_data_directory: None,
         }
     }
 }
@@ -146,9 +139,6 @@ impl ConfigContentImpl for ConfigCoreContent {}
 impl ConfigCoreContent {
     pub fn is_on_exchange_specific_variant(&self) -> bool {
         MinerType::from_str(&self.exchange_id).is_exchange_mode()
-    }
-    pub fn get_custom_directory_path(&self, dir: CustomDirectory) -> Option<PathBuf> {
-        self.directories.get(&dir).cloned()
     }
 }
 
@@ -168,34 +158,20 @@ impl ConfigCore {
             let _unused = Self::_save_config(config._get_content().clone());
         };
 
-        if let Ok(app_data_dir) = app_handle.path().app_data_dir().inspect_err(|e| {
+        if let Ok(app_data_dir) = app_handle.path().app_local_data_dir().inspect_err(|e| {
             error!(target: LOG_TARGET_APP_LOGIC, "Could not load data dir {e}");
         }) {
-            config
-                .content
-                .directories
-                .entry(CustomDirectory::ChainData)
-                .or_insert_with(|| app_data_dir.clone());
+            config.content.node_data_directory = Some(app_data_dir);
             let _unused = Self::_save_config(config._get_content().clone());
         }
     }
 
-    pub async fn update_directories(
-        directory: CustomDirectory,
+    pub async fn update_node_data_directory(
         path: PathBuf,
     ) -> Result<Option<PathBuf>, anyhow::Error> {
-        let mut dirs = Self::content().await.directories;
-
-        let previous_path = dirs.insert(directory, path);
-        Self::update_field(ConfigCoreContent::set_directories, dirs.clone()).await?;
-        info!("previous_path {:?}", previous_path);
+        let previous_path = Self::content().await.node_data_directory;
+        Self::update_field(ConfigCoreContent::set_node_data_directory, Some(path)).await?;
         Ok(previous_path)
-    }
-
-    pub async fn get_chain_data_path() -> Option<PathBuf> {
-        Self::content()
-            .await
-            .get_custom_directory_path(CustomDirectory::ChainData)
     }
 }
 
