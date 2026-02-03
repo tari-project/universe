@@ -164,10 +164,13 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let app_configuration = Self::load_app_configuration().await.unwrap_or_default();
         let (app_local_data_dir, config_dir, log_dir) = self.get_app_dirs()?;
 
-        let mut node_data_dir = app_local_data_dir.clone();
+        let node_data_dir: PathBuf;
 
         if let Some(custom_data_dir) = app_configuration.custom_data_dir {
+            info!("Using custom data dir: {:?}", custom_data_dir.clone());
             node_data_dir = custom_data_dir;
+        } else {
+            node_data_dir = app_local_data_dir.clone();
         }
 
         let state = self.app_handle.state::<UniverseAppState>();
