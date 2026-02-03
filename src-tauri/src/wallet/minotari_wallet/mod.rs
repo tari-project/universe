@@ -494,12 +494,15 @@ impl MinotariWalletManager {
                     Self::handle_status_event(status).await;
                 }
                 ProcessingEvent::BlockProcessed(block_event) => {
-                    info!(
-                        target: LOG_TARGET_APP_LOGIC,
-                        "BlockProcessed event | height: {} balance_changes: {:?}",
-                        block_event.height,
-                        block_event.balance_changes
-                    );
+                    let is_syncing = Self::is_syncing().await;
+                    if !is_syncing {
+                        info!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "BlockProcessed event | height: {} balance_changes: {:?}",
+                            block_event.height,
+                            block_event.balance_changes
+                        );
+                    }
                 }
                 ProcessingEvent::TransactionsReady(transactions_event) => {
                     let transaction_count = transactions_event.transactions.len();
