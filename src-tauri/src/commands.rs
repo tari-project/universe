@@ -71,6 +71,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::fs;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::thread::sleep;
@@ -2195,20 +2196,18 @@ pub async fn set_custom_directory(
     path: String,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    let setup_manager_instance = SetupManager::get_instance();
-    let phases = vec![
-        SetupPhase::Node,
-        SetupPhase::CpuMining,
-        SetupPhase::GpuMining,
-    ];
-    setup_manager_instance.shutdown_phases(phases.clone()).await;
-    match ConfigCore::update_directories(directory_type, path.clone()).await {
+
+    SetupManager::get_instance()
+        .shutdown_phases(vec![SetupPhase::Node])
+        .await;
+
+    let new_dir: PathBuf = PathBuf::from(path).join("node");
+
+    match ConfigCore::update_directories(directory_type, new_dir.clone()).await {
         Ok(previous) => {
-            if fs::rename(path, previous.clone())
-                .map_err(|e| InvokeError::from(e.to_string()))
-                .is_ok()
-            {
-                fs::remove_dir_all(previous).map_err(|e| InvokeError::from(e.to_string()))?;
+            if let Some(previous) = previous {
+                info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_directory ] previous path {:?}, updating to {:?}", previous, new_dir.clone());
+                fs::rename(previous, new_dir).map_err(|e| InvokeError::from(e.to_string()))?;
             }
         }
         Err(e) => error!(target: LOG_TARGET_APP_LOGIC, "Could not update directories: {e}"),
@@ -2216,7 +2215,11 @@ pub async fn set_custom_directory(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_custom_directory took too long: {:?}", timer.elapsed());
     }
-    setup_manager_instance.resume_phases(phases).await;
+    info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_directory ] restarting phases");
+
+    SetupManager::get_instance()
+        .resume_phases(vec![SetupPhase::Node])
+        .await;
 
     Ok(())
 }

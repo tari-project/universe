@@ -20,8 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{collections::HashMap, time::Duration};
-
+use super::{
+    listeners::SetupFeaturesList,
+    setup_manager::PhaseStatus,
+    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
+};
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
@@ -38,6 +42,8 @@ use crate::{
 };
 use anyhow::Error;
 use log::{error, info, warn};
+use std::path::PathBuf;
+use std::{collections::HashMap, time::Duration};
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::{
@@ -49,17 +55,11 @@ use tokio::{
 };
 use tokio_util::task::TaskTracker;
 
-use super::{
-    listeners::SetupFeaturesList,
-    setup_manager::PhaseStatus,
-    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
-    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
-};
-
 #[derive(Clone, Default)]
 pub struct NodeSetupPhaseAppConfiguration {
     use_tor: bool,
     base_node_grpc_address: String,
+    custom_data_dir: Option<PathBuf>,
 }
 
 pub struct NodeSetupPhase {
@@ -144,12 +144,14 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
         let config_core = ConfigCore::content().await;
+        let custom_data_dir = ConfigCore::get_chain_data_path().await;
         let use_tor = *config_core.use_tor();
         let base_node_grpc_address = config_core.remote_base_node_address().clone();
 
         Ok(NodeSetupPhaseAppConfiguration {
             use_tor,
             base_node_grpc_address,
+            custom_data_dir,
         })
     }
 
@@ -160,7 +162,13 @@ impl SetupPhaseImpl for NodeSetupPhase {
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
         let app_configuration = Self::load_app_configuration().await.unwrap_or_default();
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let (app_data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+
+        let mut data_dir = app_data_dir;
+
+        if let Some(custom_data_dir) = app_configuration.custom_data_dir {
+            data_dir = custom_data_dir;
+        }
 
         let state = self.app_handle.state::<UniverseAppState>();
         let node_type = state.node_manager.get_node_type().await;

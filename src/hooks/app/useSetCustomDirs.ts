@@ -1,4 +1,4 @@
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { CustomDirectory } from '@app/types/configs.ts';
 import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
@@ -14,6 +14,10 @@ export function useSetCustomDirs({ type }: UseSetCustomDirs) {
 
     const currentDir = directories?.[type];
     const handleClear = () => setSelectedDir('');
+
+    useEffect(() => {
+        console.log(`directories= `, directories);
+    }, [directories]);
 
     function handleSelect() {
         startTransition(async () => {

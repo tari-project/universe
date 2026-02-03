@@ -193,8 +193,9 @@ export const setDirectory = async ({ directoryType, path }: Directory) => {
     await invoke('set_custom_directory', { directoryType, path })
         .then(() => {
             const newDir = { [directoryType]: path };
+            console.log('new', newDir);
             const directories = currentDirs ? { ...currentDirs, ...newDir } : newDir;
-            store.setState({ directories });
+            store.setState((c) => ({ ...c, directories }));
         })
         .catch((e) => {
             console.error('Could not set directory directory', e);

@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use getset::{Getters, Setters};
-use log::error;
+use log::{error, info};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -175,20 +175,20 @@ impl ConfigCore {
                 .content
                 .directories
                 .entry(CustomDirectory::ChainData)
-                .or_insert_with(|| app_data_dir.clone());
+                .or_insert_with(|| app_data_dir.clone().join("node"));
             let _unused = Self::_save_config(config._get_content().clone());
         }
     }
 
     pub async fn update_directories(
         directory: CustomDirectory,
-        path: String,
-    ) -> Result<PathBuf, anyhow::Error> {
+        path: PathBuf,
+    ) -> Result<Option<PathBuf>, anyhow::Error> {
         let mut dirs = Self::content().await.directories;
 
-        let previous_path = dirs.insert(directory, path.parse()?).unwrap_or_default();
+        let previous_path = dirs.insert(directory, path);
         Self::update_field(ConfigCoreContent::set_directories, dirs.clone()).await?;
-
+        info!("previous_path {:?}", previous_path);
         Ok(previous_path)
     }
 
