@@ -270,12 +270,17 @@ const useTauriEventsListener = () => {
                         setIsShuttingDown(true);
                         break;
                     case 'WalletTransactionsFound':
+                        console.log(
+                            'WalletTransactionsFound',
+                            event.payload?.map((tx) => tx.id)
+                        );
                         await handleWalletTransactionsFound(event.payload);
                         break;
                     case 'WalletTransactionsCleared':
                         handleWalletTransactionsCleared();
                         break;
                     case 'WalletTransactionUpdated':
+                        console.log('WalletTransactionUpdated', event.payload?.id);
                         await handleWalletTransactionUpdated(event.payload);
                         break;
                     case 'SetShowBatteryAlert':
