@@ -57,7 +57,10 @@ fn copy_process_wrapper() {
             .unwrap_or_else(|e| panic!("Failed to copy process-wrapper binary: {}", e));
     }
 
-    println!("cargo::rerun-if-changed=../target/{}/{}/{}", target, profile, src_name);
+    println!(
+        "cargo::rerun-if-changed=../target/{}/{}/{}",
+        target, profile, src_name
+    );
     println!("cargo::rerun-if-changed=../target/{}/{}", profile, src_name);
     println!("cargo::rerun-if-changed=../process-wrapper/src/main.rs");
     println!("cargo::rerun-if-changed=../process-wrapper/Cargo.toml");

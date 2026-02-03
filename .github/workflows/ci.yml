@@ -63,6 +63,10 @@ jobs:
           rustup component add rustfmt
           cargo fmt --all -- --check
 
+      - name: Build process-wrapper
+        run: |
+          cargo build --release --manifest-path process-wrapper/Cargo.toml
+
       - name: clippy lint
         working-directory: ./src-tauri
         env:
@@ -187,6 +191,10 @@ jobs:
           sudo apt-get install --no-install-recommends --assume-yes \
             opencl-headers \
             ocl-icd-opencl-dev
+
+      - name: Build process-wrapper
+        run: |
+          cargo build --release --manifest-path process-wrapper/Cargo.toml
 
       - name: cargo test
         working-directory: ./src-tauri
