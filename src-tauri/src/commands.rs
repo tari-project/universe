@@ -2196,7 +2196,10 @@ pub async fn set_custom_directory(
         Ok(previous) => {
             if let Some(previous) = previous {
                 info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_directory ] previous path {:?}, updating to {:?}", previous, new_dir.clone());
-                fs::rename(previous, new_dir).map_err(|e| InvokeError::from(e.to_string()))?;
+                let prev_dir_full = previous.join("node");
+                let new_dir_full = new_dir.join("node");
+                fs::rename(prev_dir_full, new_dir_full)
+                    .map_err(|e| InvokeError::from(e.to_string()))?;
             }
         }
         Err(e) => error!(target: LOG_TARGET_APP_LOGIC, "Could not update directories: {e}"),
