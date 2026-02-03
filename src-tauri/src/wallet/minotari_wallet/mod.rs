@@ -211,7 +211,7 @@ impl MinotariWalletManager {
         // Store as pending transaction for later matching with scanned transactions
         Self::store_pending_transaction(&displayed_transaction).await;
         // Emit to frontend immediately so user sees the pending transaction
-        info!("[ emit_wallet_transactions_found ] from send_one_sided_transaction");
+        info!(target: LOG_TARGET_APP_LOGIC, "[ emit_wallet_transactions_found ] from send_one_sided_transaction");
         EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()]).await;
 
         info!(target: LOG_TARGET, "One-sided transaction sent successfully.");
@@ -377,7 +377,7 @@ impl MinotariWalletManager {
                     "Loaded {} transactions from history (excluding reorged) via TransactionHistoryService", transactions.len()
                 );
 
-                info!("[ emit_wallet_transactions_found ] from history_service");
+                info!(target: LOG_TARGET_APP_LOGIC, "[ emit_wallet_transactions_found ] from history_service");
                 // Emit transactions to frontend
                 EventsEmitter::emit_wallet_transactions_found(transactions).await;
             }
@@ -515,6 +515,11 @@ impl MinotariWalletManager {
                     // Process transactions - check each for pending transaction match
                     let mut transactions_to_emit = Vec::new();
                     for tx in transactions_event.transactions {
+                        info!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "NEW tx id: {}",
+                            tx.id
+                        );
                         // Check if this scanned transaction matches any pending transaction
                         if let Some(_pending_tx) =
                             Self::match_and_remove_pending_transaction(&tx.id).await
@@ -536,7 +541,7 @@ impl MinotariWalletManager {
                             .update_from_transactions(&transactions_to_emit)
                             .await;
 
-                        info!("[ emit_wallet_transactions_found ] from TransactionsReady");
+                        info!(target: LOG_TARGET_APP_LOGIC, "[ emit_wallet_transactions_found ] from TransactionsReady");
                         // Emit all transactions to frontend
                         EventsEmitter::emit_wallet_transactions_found(transactions_to_emit).await;
                     }
