@@ -33,7 +33,7 @@ use crate::{
         database_manager::{MinotariWalletDatabaseManager, DEFAULT_ACCOUNT_ID},
         transaction::TransactionManager,
     },
-    UniverseAppState,
+    UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 use log::{error, info};
 use minotari_wallet::{
@@ -157,6 +157,7 @@ impl MinotariWalletManager {
         payment_id: Option<String>,
     ) -> Result<DisplayedTransaction, anyhow::Error> {
         info!(
+            target:LOG_TARGET_APP_LOGIC,
             "Sending one-sided transaction to address: {}, amount: {}",
             address, amount
         );
@@ -173,7 +174,8 @@ impl MinotariWalletManager {
             payment_id,
         };
 
-        info!(target: LOG_TARGET,
+        info!(
+            target: LOG_TARGET,
             "Creating one-sided transaction from {} to {} for amount {}",
             tari_address, address, amount
         );
@@ -181,7 +183,7 @@ impl MinotariWalletManager {
             .create_one_sided_transaction(recipient)
             .await?;
 
-        info!("Signing one-sided transaction...");
+        info!(target: LOG_TARGET, "Signing one-sided transaction...");
 
         let signed_transaction = transaction_manager
             .sign_one_sided_transaction(
@@ -195,20 +197,22 @@ impl MinotariWalletManager {
             )
             .await?;
 
-        info!("Finalizing and broadcasting one-sided transaction...");
+        info!(target: LOG_TARGET, "Finalizing and broadcasting one-sided transaction...");
 
         let displayed_transaction = transaction_manager
             .finalize_one_sided_transaction(signed_transaction)
             .await?;
 
-        if !displayed_transaction.clone().id.is_empty() {
-            // Store as pending transaction for later matching with scanned transactions
-            Self::store_pending_transaction(&displayed_transaction).await;
-            // Emit to frontend immediately so user sees the pending transaction
-            info!("[ emit_wallet_transactions_found ] from send_one_sided_transaction");
-            EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()])
-                .await;
-        }
+        info!(target: LOG_TARGET_APP_LOGIC, "[finalize_one_sided_transaction] complete, display tx id is: {}", displayed_transaction.id);
+        let latest_scanned_block = Self::get_latest_scanned_tip_block(DEFAULT_ACCOUNT_ID).await?;
+        let tip_height = Self::get_chain_tip_height();
+        info!(target: LOG_TARGET_APP_LOGIC, "latest_scanned_block is {:?} and tip_height is {} before storing pending tx with id {}", latest_scanned_block, tip_height, displayed_transaction.id);
+
+        // Store as pending transaction for later matching with scanned transactions
+        Self::store_pending_transaction(&displayed_transaction).await;
+        // Emit to frontend immediately so user sees the pending transaction
+        info!("[ emit_wallet_transactions_found ] from send_one_sided_transaction");
+        EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()]).await;
 
         info!(target: LOG_TARGET, "One-sided transaction sent successfully.");
         Ok(displayed_transaction)
@@ -219,7 +223,7 @@ impl MinotariWalletManager {
         let mut pending = INSTANCE.pending_transactions.write().await;
         pending.insert(tx.id.clone(), tx.clone());
         info!(
-            target: LOG_TARGET,
+            target: LOG_TARGET_APP_LOGIC,
             "Stored pending transaction with id: {}", tx.id
         );
     }
@@ -489,11 +493,18 @@ impl MinotariWalletManager {
                 ProcessingEvent::ScanStatus(status) => {
                     Self::handle_status_event(status).await;
                 }
-                ProcessingEvent::BlockProcessed(_block_event) => {}
+                ProcessingEvent::BlockProcessed(block_event) => {
+                    info!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "BlockProcessed event | height: {} balance_changes: {:?}",
+                        block_event.height,
+                        block_event.balance_changes
+                    );
+                }
                 ProcessingEvent::TransactionsReady(transactions_event) => {
                     let transaction_count = transactions_event.transactions.len();
                     info!(
-                        target: LOG_TARGET,
+                        target: LOG_TARGET_APP_LOGIC,
                         "TransactionsReady event received with {} transactions",
                         transaction_count
                     );
@@ -507,7 +518,7 @@ impl MinotariWalletManager {
                         {
                             // Emit update event - the scanned transaction replaces the pending one
                             info!(
-                                target: LOG_TARGET,
+                                target: LOG_TARGET_APP_LOGIC,
                                 "Found matching pending transaction for scanned tx: {}",
                                 tx.id
                             );
