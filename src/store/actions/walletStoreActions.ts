@@ -195,7 +195,7 @@ export const handleWalletTransactionsFound = async (payload: DisplayedTransactio
     const mergedTransactions = processedTransactions.concat(copiedCurrentTransactions);
     useWalletStore.setState((c) => ({
         ...c,
-        wallet_transactions: mergedTransactions,
+        wallet_transactions: getSortedTxs(mergedTransactions),
     }));
 };
 
@@ -207,33 +207,25 @@ export const handleWalletTransactionsCleared = () => {
 };
 
 export const handleWalletTransactionUpdated = async (payload: DisplayedTransaction) => {
-    // Find and replace the matching transaction (by id or output hashes)
+    // Find and replace the matching transaction id
     const currentTransactions = useWalletStore.getState().wallet_transactions;
 
-    // Find matching transaction by sent_output_hashes in details
-    const matchingIndex = currentTransactions.findIndex((tx) => {
-        if (tx.id === payload.id) return true;
-        // Match by output hashes if available (in details)
-        const txHashes = tx.details?.sent_output_hashes;
-        const payloadHashes = payload.details?.sent_output_hashes;
-        if (txHashes?.length && payloadHashes?.length) {
-            const txHashKey = [...txHashes].sort().join(',');
-            const payloadHashKey = [...payloadHashes].sort().join(',');
-            return txHashKey === payloadHashKey;
-        }
-        return false;
-    });
+    // Find matching transaction
+    const matchingIndex = currentTransactions.findIndex((tx) => tx.id === payload.id);
 
     if (matchingIndex >= 0) {
         const processedTransactions = await solveBridgeTransactionDetails([payload]);
         const updatedTransaction = processedTransactions[0] || payload;
 
-        const newTransactions = [...currentTransactions];
+        const newTransactions = currentTransactions;
         newTransactions[matchingIndex] = updatedTransaction;
 
         useWalletStore.setState((c) => ({
             ...c,
-            wallet_transactions: newTransactions,
+            wallet_transactions: getSortedTxs(newTransactions),
         }));
     }
 };
+
+export const getSortedTxs = (txs: DisplayedTransaction[]): DisplayedTransaction[] =>
+    txs.sort((a, b) => new Date(b.blockchain.timestamp).getTime() - new Date(a.blockchain.timestamp).getTime());

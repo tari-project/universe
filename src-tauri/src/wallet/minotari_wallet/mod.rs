@@ -173,7 +173,7 @@ impl MinotariWalletManager {
             payment_id,
         };
 
-        info!(
+        info!(target: LOG_TARGET,
             "Creating one-sided transaction from {} to {} for amount {}",
             tari_address, address, amount
         );
@@ -204,43 +204,23 @@ impl MinotariWalletManager {
         if !displayed_transaction.clone().id.is_empty() {
             // Store as pending transaction for later matching with scanned transactions
             Self::store_pending_transaction(&displayed_transaction).await;
-
             // Emit to frontend immediately so user sees the pending transaction
             info!("[ emit_wallet_transactions_found ] from send_one_sided_transaction");
             EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()])
                 .await;
         }
 
-        info!("One-sided transaction sent successfully.");
+        info!(target: LOG_TARGET, "One-sided transaction sent successfully.");
         Ok(displayed_transaction)
     }
 
     /// Store a pending transaction for later matching with scanned transactions
     async fn store_pending_transaction(tx: &DisplayedTransaction) {
-        info!(
-            "PENDING Current = {:?}",
-            INSTANCE
-                .pending_transactions
-                .read()
-                .await
-                .values()
-                .map(|tx| tx.id.to_string())
-        );
         let mut pending = INSTANCE.pending_transactions.write().await;
         pending.insert(tx.id.clone(), tx.clone());
         info!(
             target: LOG_TARGET,
             "Stored pending transaction with id: {}", tx.id
-        );
-
-        info!(
-            "PENDING AFTER = {:?}",
-            INSTANCE
-                .pending_transactions
-                .read()
-                .await
-                .values()
-                .map(|tx| tx.id.to_string())
         );
     }
 
