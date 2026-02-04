@@ -34,22 +34,8 @@ export const restartMining = async () => {
         }
     }
 };
-export const setAvailableEngines = (availableEngines: string[], currentEngine: string) =>
-    useMiningStore.setState({ availableEngines, engine: currentEngine });
 export const setCustomLevelsDialogOpen = (customLevelsDialogOpen: boolean) =>
     useMiningStore.setState({ customLevelsDialogOpen });
-export const setEngine = async (engine) => {
-    const current_engine = useMiningStore.getState().engine;
-    try {
-        await invoke('set_selected_engine', { selectedEngine: engine });
-        useMiningStore.setState({ engine });
-        await restartMining();
-    } catch (e) {
-        console.error('Could not set engine: ', e);
-        setError(e as string);
-        useMiningStore.setState({ engine: current_engine || undefined });
-    }
-};
 
 export const setMiningControlsEnabled = (miningControlsEnabled: boolean) =>
     useMiningStore.setState((state) => {
@@ -204,31 +190,6 @@ export const handleSelectedMinerChanged = (miner: GpuMinerType) => {
 
 export const handleAvailableMinersChanged = (miners: Record<GpuMinerType, GpuMiner>) => {
     useMiningStore.setState({ availableMiners: miners });
-};
-
-export const switchSelectedMiner = async (newGpuMiner: GpuMinerType) => {
-    const oldMiner = useMiningStore.getState().selectedMiner;
-    useMiningStore.setState({ selectedMiner: newGpuMiner });
-
-    const anyMiningInitiated =
-        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
-    const isGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
-    const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
-
-    if (gpuMining || isGpuMiningInitiated) {
-        await stopGpuMining();
-    }
-    try {
-        await invoke('switch_gpu_miner', { gpuMinerType: newGpuMiner });
-
-        if (anyMiningInitiated) {
-            await startGpuMining();
-        }
-    } catch (e) {
-        useMiningStore.setState({ selectedMiner: oldMiner });
-        console.error('Could not switch selected miner: ', e);
-        setError(e as string);
-    }
 };
 
 export const handleSessionMiningTime = ({ startTimestamp, stopTimestamp }: SessionMiningTime) => {

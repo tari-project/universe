@@ -22,6 +22,10 @@ import { PowerLeveltem } from '@app/containers/navigation/components/Miner/compo
 import { MiningModeType } from '@app/types/configs.ts';
 import { selectMiningMode, updateCustomMiningMode } from '@app/store/actions/appConfigStoreActions.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
+import { useShallow } from 'zustand/react/shallow';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
+import { type as osType } from '@tauri-apps/plugin-os';
 
 enum FormFields {
     CPU = 'cpu',
@@ -40,9 +44,24 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
     const { t } = useTranslation('settings', { useSuspense: false });
     const [saved, setSaved] = useState(false);
 
-    const currentMode = useConfigMiningStore((state) => state.getSelectedMiningMode());
-    const storedCustomLevels = useConfigMiningStore((s) => s.mining_modes[MiningModeType.Custom]);
+    const { currentMode, storedCustomLevels } = useConfigMiningStore(
+        useShallow((state) => ({
+            currentMode: state.getSelectedMiningMode(),
+            storedCustomLevels: state.mining_modes[MiningModeType.Custom],
+        }))
+    );
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
+    const gpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isGpuMiningModuleInitialized);
+    const [isMac, setIsMac] = useState(false);
+
+    useEffect(() => {
+        const currentOs = osType();
+        if (currentOs) {
+            setIsMac(currentOs === 'macos');
+        }
+    }, []);
+
+    const showGpuSettings = gpuMiningModuleInitialized && !isMac;
 
     const { control, handleSubmit, formState } = useForm<FormValues>({
         reValidateMode: 'onSubmit',
@@ -130,12 +149,14 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                     <CurrentModeDetails>
                         <Typography variant="p">
                             <span>{`${t('custom-power-levels.current-mode')}: `}</span>
-                            {`${currentMode?.mode_name} • CPU ${currentMode?.cpu_usage_percentage}% • GPU ${currentMode?.gpu_usage_percentage}%`}
+                            {showGpuSettings
+                                ? `${currentMode?.mode_name} • CPU ${currentMode?.cpu_usage_percentage}% • GPU ${currentMode?.gpu_usage_percentage}%`
+                                : `${currentMode?.mode_name} • CPU ${currentMode?.cpu_usage_percentage}%`}
                         </Typography>
                     </CurrentModeDetails>
                 )}
                 {cpuMarkup}
-                {gpuMarkup}
+                {showGpuSettings && gpuMarkup}
                 <CTAWrapper>
                     <Button
                         onClick={handleSubmit(onSubmit)}

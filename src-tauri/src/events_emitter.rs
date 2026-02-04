@@ -41,9 +41,9 @@ use crate::{
         config_ui::ConfigUIContent, config_wallet::ConfigWalletContent,
     },
     events::{
-        DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
-        NetworkStatusPayload, NewBlockHeightPayload, NodeTypeUpdatePayload,
-        ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, TariAddressUpdatePayload,
+        DetectedDevicesPayload, Event, EventType, NetworkStatusPayload, NewBlockHeightPayload,
+        NodeTypeUpdatePayload, ProgressTrackerUpdatePayload, ShowReleaseNotesPayload,
+        TariAddressUpdatePayload,
     },
     hardware::hardware_status_monitor::PublicDeviceGpuProperties,
     setup::setup_manager::SetupPhase,
@@ -226,26 +226,6 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit AvailableMiners event: {e:?}");
-        }
-    }
-
-    pub async fn emit_detected_available_gpu_engines(
-        engines: Vec<String>,
-        selected_engine: String,
-    ) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::DetectedAvailableGpuEngines,
-            payload: DetectedAvailableGpuEnginesPayload {
-                engines,
-                selected_engine,
-            },
-        };
-        if let Err(e) = Self::get_app_handle()
-            .await
-            .emit(BACKEND_STATE_UPDATE, event)
-        {
-            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit DetectedAvailableGpuEngines event: {e:?}");
         }
     }
 

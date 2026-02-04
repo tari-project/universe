@@ -50,7 +50,6 @@ export interface ConfigMining {
     mining_modes: Record<string, MiningMode>;
     gpu_devices_settings: Record<number, GpuDeviceSettings>;
     cpu_mining_enabled: boolean;
-    gpu_engine: string;
     is_gpu_mining_recommended: boolean;
     eco_alert_needed: boolean;
     mode_mining_times?: MiningModeTimes;
@@ -86,7 +85,6 @@ export interface ConfigPools {
     was_config_migrated: boolean;
     created_at: string;
     // ======= Gpu Pool =======
-    // When false we are solo mining with glytex, if true we are pool mining with graxil
     gpu_pool_enabled: boolean; // Whether GPU pool mining is enabled | defaults to true
     current_gpu_pool?: GpuPools; // Name of the selected GPU pool => defaults to LuckyPool
     gpu_pools?: Record<GpuPools, BasePoolData>; // Available GPU pools
@@ -98,10 +96,7 @@ export interface ConfigPools {
 }
 
 export enum GpuPools {
-    LuckyPoolSHA3X = 'LuckyPoolSHA3X',
     LuckyPoolC29 = 'LuckyPoolC29',
-    SupportXTMPoolSHA3X = 'SupportXTMPoolSHA3X',
-    KryptexPoolSHA3X = 'KryptexPoolSHA3X',
     KryptexPoolC29 = 'KryptexPoolC29',
 }
 

@@ -26,15 +26,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::configs::pools::{BasePoolData, PoolOrigin};
 
-static DEFAULT_GPU_LUCKYPOOL_SHA3X: LazyLock<BasePoolData<GpuPool>> =
-    LazyLock::new(|| BasePoolData {
-        pool_name: "LuckyPool [ SHA3X ]".to_string(),
-        pool_url: "tu.luckypool.io:5118".to_string(),
-        stats_url: "https://api-tari.luckypool.io/stats_address?address=%TARI_ADDRESS%".to_string(),
-        pool_type: GpuPool::LuckyPoolSHA3X,
-        pool_origin: PoolOrigin::LuckyPool,
-    });
-
 static DEFAULT_GPU_LUCKYPOOL_C29: LazyLock<BasePoolData<GpuPool>> =
     LazyLock::new(|| BasePoolData {
         pool_name: "LuckyPool [ C29 ]".to_string(),
@@ -43,26 +34,6 @@ static DEFAULT_GPU_LUCKYPOOL_C29: LazyLock<BasePoolData<GpuPool>> =
             .to_string(),
         pool_type: GpuPool::LuckyPoolC29,
         pool_origin: PoolOrigin::LuckyPool,
-    });
-
-static DEFAULT_GPU_SUPPORTXTM_SHA3X: LazyLock<BasePoolData<GpuPool>> =
-    LazyLock::new(|| BasePoolData {
-        pool_name: "SupportXTMPool [ SHA3X ]".to_string(),
-        pool_url: "pool.sha3x.supportxtm.com:6118".to_string(),
-        stats_url: "https://backend.sha3x.supportxtm.com/api/miner/%TARI_ADDRESS%/stats"
-            .to_string(),
-        pool_type: GpuPool::SupportXTMPoolSHA3X,
-        pool_origin: PoolOrigin::SupportXTM,
-    });
-
-static DEFAULT_GPU_KRYPTEX_SHA3X: LazyLock<BasePoolData<GpuPool>> =
-    LazyLock::new(|| BasePoolData {
-        pool_name: "KryptexPool [ SHA3X ]".to_string(),
-        pool_url: "xtm-sha3x-tu.kryptex.network:7039".to_string(),
-        stats_url: "https://pool.kryptex.com/xtm-sha3x/api/v1/miner/balance/%TARI_ADDRESS%"
-            .to_string(),
-        pool_type: GpuPool::KryptexPoolSHA3X,
-        pool_origin: PoolOrigin::Kryptex,
     });
 
 static DEFAULT_GPU_KRYPTEX_C29: LazyLock<BasePoolData<GpuPool>> = LazyLock::new(|| BasePoolData {
@@ -76,20 +47,14 @@ static DEFAULT_GPU_KRYPTEX_C29: LazyLock<BasePoolData<GpuPool>> = LazyLock::new(
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash, Default)]
 pub enum GpuPool {
     #[default]
-    LuckyPoolSHA3X,
     LuckyPoolC29,
-    SupportXTMPoolSHA3X,
-    KryptexPoolSHA3X,
     KryptexPoolC29,
 }
 
 impl Display for GpuPool {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name = match self {
-            GpuPool::LuckyPoolSHA3X => "LuckyPoolSHA3X",
             GpuPool::LuckyPoolC29 => "LuckyPoolC29",
-            GpuPool::SupportXTMPoolSHA3X => "SupportXTMPoolSHA3X",
-            GpuPool::KryptexPoolSHA3X => "KryptexPoolSHA3X",
             GpuPool::KryptexPoolC29 => "KryptexPoolC29",
         };
         write!(f, "{name}")
@@ -99,31 +64,26 @@ impl Display for GpuPool {
 impl GpuPool {
     pub fn from_string(pool_name: &str) -> Result<GpuPool, anyhow::Error> {
         match pool_name {
-            "LuckyPoolSHA3X" => Ok(GpuPool::LuckyPoolSHA3X),
             "LuckyPoolC29" => Ok(GpuPool::LuckyPoolC29),
-            "SupportXTMPoolSHA3X" => Ok(GpuPool::SupportXTMPoolSHA3X),
-            "KryptexPoolSHA3X" => Ok(GpuPool::KryptexPoolSHA3X),
             "KryptexPoolC29" => Ok(GpuPool::KryptexPoolC29),
+            // Backward compatibility: map old SHA3X pool names to C29 equivalents
+            "LuckyPoolSHA3X" => Ok(GpuPool::LuckyPoolC29),
+            "KryptexPoolSHA3X" => Ok(GpuPool::KryptexPoolC29),
+            "SupportXTMPoolSHA3X" => Ok(GpuPool::LuckyPoolC29),
             _ => Err(anyhow::anyhow!("Invalid GPU pool name")),
         }
     }
 
     pub fn key_string(&self) -> String {
         match self {
-            GpuPool::LuckyPoolSHA3X => "LuckyPoolSHA3X".to_string(),
             GpuPool::LuckyPoolC29 => "LuckyPoolC29".to_string(),
-            GpuPool::SupportXTMPoolSHA3X => "SupportXTMPoolSHA3X".to_string(),
-            GpuPool::KryptexPoolSHA3X => "KryptexPoolSHA3X".to_string(),
             GpuPool::KryptexPoolC29 => "KryptexPoolC29".to_string(),
         }
     }
 
     pub fn default_content(&self) -> BasePoolData<GpuPool> {
         match self {
-            GpuPool::LuckyPoolSHA3X => DEFAULT_GPU_LUCKYPOOL_SHA3X.clone(),
             GpuPool::LuckyPoolC29 => DEFAULT_GPU_LUCKYPOOL_C29.clone(),
-            GpuPool::SupportXTMPoolSHA3X => DEFAULT_GPU_SUPPORTXTM_SHA3X.clone(),
-            GpuPool::KryptexPoolSHA3X => DEFAULT_GPU_KRYPTEX_SHA3X.clone(),
             GpuPool::KryptexPoolC29 => DEFAULT_GPU_KRYPTEX_C29.clone(),
         }
     }
@@ -131,10 +91,7 @@ impl GpuPool {
     pub fn load_default_pools_data() -> HashMap<Self, BasePoolData<GpuPool>> {
         use GpuPool::*;
         let mut gpu_pools = HashMap::new();
-        gpu_pools.insert(LuckyPoolSHA3X, DEFAULT_GPU_LUCKYPOOL_SHA3X.clone());
         gpu_pools.insert(LuckyPoolC29, DEFAULT_GPU_LUCKYPOOL_C29.clone());
-        gpu_pools.insert(SupportXTMPoolSHA3X, DEFAULT_GPU_SUPPORTXTM_SHA3X.clone());
-        gpu_pools.insert(KryptexPoolSHA3X, DEFAULT_GPU_KRYPTEX_SHA3X.clone());
         gpu_pools.insert(KryptexPoolC29, DEFAULT_GPU_KRYPTEX_C29.clone());
         gpu_pools
     }

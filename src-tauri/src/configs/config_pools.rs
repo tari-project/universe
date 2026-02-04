@@ -33,7 +33,7 @@ use crate::{
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
-pub const POOLS_CONFIG_VERSION: u32 = 0;
+pub const POOLS_CONFIG_VERSION: u32 = 1;
 static INSTANCE: LazyLock<RwLock<ConfigPools>> = LazyLock::new(|| RwLock::new(ConfigPools::new()));
 
 #[allow(clippy::struct_excessive_bools)]
@@ -125,10 +125,48 @@ impl ConfigPools {
     pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
+        drop(config);
+
+        Self::_check_for_migration()
+            .await
+            .expect("Could not check for pool migration");
 
         // We want to initialize and fetch initial pool status only if pool mining is enabled
-        CpuPoolManager::initialize_from_pool_config(&config.content).await;
-        GpuPoolManager::initialize_from_pool_config(&config.content).await;
+        CpuPoolManager::initialize_from_pool_config(&Self::content().await).await;
+        GpuPoolManager::initialize_from_pool_config(&Self::content().await).await;
+    }
+
+    async fn _check_for_migration() -> Result<(), anyhow::Error> {
+        let current_version = Self::content().await.version_counter;
+        if current_version < POOLS_CONFIG_VERSION {
+            Self::_migrate().await?;
+            Self::update_field(
+                ConfigPoolsContent::set_version_counter,
+                POOLS_CONFIG_VERSION,
+            )
+            .await?;
+        }
+        Ok(())
+    }
+
+    async fn _migrate() -> Result<(), anyhow::Error> {
+        let current_version = Self::content().await.version_counter;
+
+        // v0 -> v1 migration (SHA3X pool removal)
+        if current_version < 1 {
+            // Migrate GPU pool selections to C29
+            Self::update_field(
+                ConfigPoolsContent::set_current_gpu_pool,
+                GpuPool::LuckyPoolC29,
+            )
+            .await?;
+
+            // Update the pools map to only include C29 pools
+            let gpu_pools = GpuPool::load_default_pools_data();
+            Self::update_field(ConfigPoolsContent::set_gpu_pools, gpu_pools).await?;
+        }
+
+        Ok(())
     }
 }
 
