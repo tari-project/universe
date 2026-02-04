@@ -85,6 +85,11 @@
   "network": "Netwerk",
   "no-entry-guard": "Geen Toegangsbewaarder verbind nie!",
   "no-pool-configuration-available": "Geen swembadkonfigurasie beskikbaar nie",
+  "node": {
+    "data-cta": "Change location",
+    "data-subtile": "Set a custom location to store the base node data",
+    "data-tile": "Node data settings"
+  },
   "node-configuration": "Node-konfigurasie",
   "node-configuration-description": "Koppel met Afstand, Plaaslik of albei totdat jou Plaaslike gereed is om te gebruik",
   "node-connection-address": "Verbindingsadres",

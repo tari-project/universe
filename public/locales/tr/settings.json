@@ -85,6 +85,11 @@
   "network": "Ağ",
   "no-entry-guard": "Giriş Koruması bağlı değil!",
   "no-pool-configuration-available": "Havuz yapılandırması mevcut değil",
+  "node": {
+    "data-cta": "Change location",
+    "data-subtile": "Set a custom location to store the base node data",
+    "data-tile": "Node data settings"
+  },
   "node-configuration": "Düğüm yapılandırması",
   "node-configuration-description": "Yerel kullanıma hazır olana kadar Uzaktan, Yerel veya her ikisiyle bağlanın",
   "node-connection-address": "Bağlantı adresi",

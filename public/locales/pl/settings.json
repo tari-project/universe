@@ -86,6 +86,11 @@
   "network": "Sieć",
   "no-entry-guard": "Brak połączenia z Entry Guardami!",
   "no-pool-configuration-available": "Brak dostępnej konfiguracji puli",
+  "node": {
+    "data-cta": "Change location",
+    "data-subtile": "Set a custom location to store the base node data",
+    "data-tile": "Node data settings"
+  },
   "node-configuration": "Konfiguracja węzła",
   "node-configuration-description": "Połącz zdalnie, lokalnie lub obie opcje, dopóki Twój lokalny węzeł nie będzie gotowy do użycia",
   "node-connection-address": "Adres połączenia",

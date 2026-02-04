@@ -85,6 +85,11 @@
   "network": "Netzwerk",
   "no-entry-guard": "Kein Eingangswächter verbunden!",
   "no-pool-configuration-available": "Keine Pool-Konfiguration verfügbar",
+  "node": {
+    "data-cta": "Change location",
+    "data-subtile": "Set a custom location to store the base node data",
+    "data-tile": "Node data settings"
+  },
   "node-configuration": "Knotenkonfiguration",
   "node-configuration-description": "Verbinden Sie sich mit Remote, Lokal oder beidem, bis Ihr Lokal einsatzbereit ist",
   "node-connection-address": "Verbindungsadresse",

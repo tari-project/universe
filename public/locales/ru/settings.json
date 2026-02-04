@@ -85,6 +85,11 @@
   "network": "Сеть",
   "no-entry-guard": "Нет подключения к Entry Guard!",
   "no-pool-configuration-available": "Конфигурация пула недоступна",
+  "node": {
+    "data-cta": "Change location",
+    "data-subtile": "Set a custom location to store the base node data",
+    "data-tile": "Node data settings"
+  },
   "node-configuration": "Конфигурация узлов",
   "node-configuration-description": "Подключитесь к удаленной, локальной или обеим нодам пока Ваша локальная не будет готова",
   "node-connection-address": "Адрес подключения",

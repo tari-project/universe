@@ -87,6 +87,11 @@
   "network": "Rede",
   "no-entry-guard": "Nenhum Entry Guard conectado!",
   "no-pool-configuration-available": "No pool configuration available",
+  "node": {
+    "data-cta": "Change location",
+    "data-subtile": "Set a custom location to store the base node data",
+    "data-tile": "Node data settings"
+  },
   "node-configuration": "Configuração do nó",
   "node-configuration-description": "Conecte-se com Remoto, Local ou ambos até que seu Local esteja pronto para uso",
   "node-connection-address": "Endereço de conexão",

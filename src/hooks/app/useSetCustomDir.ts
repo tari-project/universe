@@ -9,14 +9,12 @@ export function useSetCustomDir() {
     const [selectedDir, setSelectedDir] = useState('');
 
     const handleClear = () => setSelectedDir('');
-
     function handleSelect() {
         startTransition(async () => {
             const dir = await open({ multiple: false, directory: true });
             if (dir) setSelectedDir(dir);
         });
     }
-
     function handleSave() {
         startTransition(async () => {
             await setDirectory({ path: selectedDir }).then(handleClear);

@@ -85,6 +85,11 @@
   "network": "网络",
   "no-entry-guard": "未连接入口守卫！",
   "no-pool-configuration-available": "无可用矿池配置",
+  "node": {
+    "data-cta": "Change location",
+    "data-subtile": "Set a custom location to store the base node data",
+    "data-tile": "Node data settings"
+  },
   "node-configuration": "节点配置",
   "node-configuration-description": "连接远程、本地或两者，直到您的本地节点准备好使用",
   "node-connection-address": "连接地址",

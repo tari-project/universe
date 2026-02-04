@@ -85,6 +85,11 @@
   "network": "Jaringan",
   "no-entry-guard": "Tidak ada Penjaga Masuk yang terhubung!",
   "no-pool-configuration-available": "Tidak ada konfigurasi pool yang tersedia",
+  "node": {
+    "data-cta": "Change location",
+    "data-subtile": "Set a custom location to store the base node data",
+    "data-tile": "Node data settings"
+  },
   "node-configuration": "Konfigurasi Node",
   "node-configuration-description": "Hubungkan dengan Remote, Lokal, atau keduanya hingga Lokal Anda siap digunakan",
   "node-connection-address": "Alamat koneksi",
