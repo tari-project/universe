@@ -26,6 +26,7 @@ use crate::{
         config_mining::{ConfigMining, ConfigMiningContent},
         trait_config::ConfigImpl,
     },
+    events_emitter::EventsEmitter,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     mining::gpu::{consts::GpuMinerType, manager::GpuManager},
     progress_trackers::{
@@ -154,6 +155,8 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
             ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, false).await?;
             ConfigMining::update_field(ConfigMiningContent::set_is_gpu_mining_recommended, false)
                 .await?;
+            EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
+
             return Ok(());
         }
 
