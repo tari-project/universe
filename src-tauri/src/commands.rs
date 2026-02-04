@@ -2195,8 +2195,6 @@ pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> 
                 let prev_dir_full = previous.join("node");
                 fs::rename(prev_dir_full, new_dir_full)
                     .map_err(|e| InvokeError::from(e.to_string()))?;
-            } else {
-                fs::create_dir_all(new_dir_full).map_err(|e| InvokeError::from(e.to_string()))?;
             }
         }
         Err(e) => error!(target: LOG_TARGET_APP_LOGIC, "Could not update directory: {e}"),
