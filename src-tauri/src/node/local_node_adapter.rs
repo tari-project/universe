@@ -190,8 +190,6 @@ impl ProcessAdapter for LocalNodeAdapter {
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let inner_shutdown = Shutdown::new();
 
-        info!(target: LOG_TARGET_APP_LOGIC, "DIR PATH {data_dir:?}");
-
         info!(target: LOG_TARGET_APP_LOGIC, "Starting minotari node");
         let working_dir: PathBuf = data_dir.join("node");
         let network_dir = working_dir.join(Network::get_current().to_string().to_lowercase());
@@ -289,11 +287,6 @@ impl ProcessAdapter for LocalNodeAdapter {
             args.push("base_node.storage.pruning_horizon=100".to_string());
         }
         if self.use_tor {
-            // args.push("-p".to_string());
-            // args.push(
-            //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
-            //         .to_string(),
-            // );
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tor".to_string());
             if !cfg!(target_os = "macos") {

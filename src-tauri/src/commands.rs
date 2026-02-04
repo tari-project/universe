@@ -2182,7 +2182,6 @@ pub async fn update_shutdown_mode_selection(
 #[tauri::command]
 pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Node])
         .await;
@@ -2193,7 +2192,6 @@ pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> 
     match ConfigCore::update_node_data_directory(new_dir.clone()).await {
         Ok(previous) => {
             if let Some(previous) = previous {
-                info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] previous path {:?}, updating to {:?}", previous, new_dir.clone());
                 let prev_dir_full = previous.join("node");
                 fs::rename(prev_dir_full, new_dir_full)
                     .map_err(|e| InvokeError::from(e.to_string()))?;
