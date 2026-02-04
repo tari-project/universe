@@ -26,3 +26,6 @@ pub mod wallet_adapter;
 pub mod wallet_manager;
 pub mod wallet_status_monitor;
 pub mod wallet_types;
+
+#[cfg(test)]
+mod wallet_manager_test;

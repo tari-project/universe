@@ -121,6 +121,14 @@ mod tasks_tracker;
 mod telemetry_manager;
 mod telemetry_service;
 mod tests;
+#[cfg(test)]
+mod event_scheduler_test;
+#[cfg(test)]
+mod internal_wallet_test;
+#[cfg(test)]
+mod process_watcher_test;
+#[cfg(test)]
+mod testing;
 mod tor_adapter;
 mod tor_control_client;
 mod tor_manager;

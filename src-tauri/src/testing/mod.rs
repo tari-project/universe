@@ -20,11 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod local_node_adapter;
-pub mod node_adapter;
-pub mod node_manager;
-pub mod remote_node_adapter;
-pub mod utils;
+//! Testing infrastructure for the Tari Universe backend.
+//!
+//! This module provides utilities, mocks, and test fixtures for unit and integration testing.
 
-#[cfg(test)]
-mod node_manager_test;
+pub mod mocks;
+pub mod test_utils;
