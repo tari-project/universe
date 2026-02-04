@@ -87,8 +87,8 @@
   "no-pool-configuration-available": "사용 가능한 풀 구성이 없습니다",
   "node": {
     "data-cta": "Change location",
-    "data-subtile": "Set a custom location to store the base node data",
-    "data-tile": "Node data settings"
+    "data-subtitle": "Set a custom location to store the base node data",
+    "data-title": "Node data settings"
   },
   "node-configuration": "노드 구성",
   "node-configuration-description": "로컬이 준비될 때까지 원격, 로컬 또는 둘 다 연결",

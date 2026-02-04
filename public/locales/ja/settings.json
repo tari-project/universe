@@ -87,8 +87,8 @@
   "no-pool-configuration-available": "利用可能なプール設定がありません",
   "node": {
     "data-cta": "Change location",
-    "data-subtile": "Set a custom location to store the base node data",
-    "data-tile": "Node data settings"
+    "data-subtitle": "Set a custom location to store the base node data",
+    "data-title": "Node data settings"
   },
   "node-configuration": "ノード設定",
   "node-configuration-description": "ローカルが使用可能になるまで、リモート、ローカル、または両方で接続します",

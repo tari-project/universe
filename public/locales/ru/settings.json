@@ -87,8 +87,8 @@
   "no-pool-configuration-available": "Конфигурация пула недоступна",
   "node": {
     "data-cta": "Change location",
-    "data-subtile": "Set a custom location to store the base node data",
-    "data-tile": "Node data settings"
+    "data-subtitle": "Set a custom location to store the base node data",
+    "data-title": "Node data settings"
   },
   "node-configuration": "Конфигурация узлов",
   "node-configuration-description": "Подключитесь к удаленной, локальной или обеим нодам пока Ваша локальная не будет готова",

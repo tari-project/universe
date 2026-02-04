@@ -87,8 +87,8 @@
   "no-pool-configuration-available": "Tidak ada konfigurasi pool yang tersedia",
   "node": {
     "data-cta": "Change location",
-    "data-subtile": "Set a custom location to store the base node data",
-    "data-tile": "Node data settings"
+    "data-subtitle": "Set a custom location to store the base node data",
+    "data-title": "Node data settings"
   },
   "node-configuration": "Konfigurasi Node",
   "node-configuration-description": "Hubungkan dengan Remote, Lokal, atau keduanya hingga Lokal Anda siap digunakan",

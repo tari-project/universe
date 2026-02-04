@@ -87,8 +87,8 @@
   "no-pool-configuration-available": "无可用矿池配置",
   "node": {
     "data-cta": "Change location",
-    "data-subtile": "Set a custom location to store the base node data",
-    "data-tile": "Node data settings"
+    "data-subtitle": "Set a custom location to store the base node data",
+    "data-title": "Node data settings"
   },
   "node-configuration": "节点配置",
   "node-configuration-description": "连接远程、本地或两者，直到您的本地节点准备好使用",

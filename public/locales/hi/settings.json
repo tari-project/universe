@@ -87,8 +87,8 @@
   "no-pool-configuration-available": "No pool configuration available",
   "node": {
     "data-cta": "Change location",
-    "data-subtile": "Set a custom location to store the base node data",
-    "data-tile": "Node data settings"
+    "data-subtitle": "Set a custom location to store the base node data",
+    "data-title": "Node data settings"
   },
   "node-configuration": "नोड कॉन्फ़िगरेशन",
   "node-configuration-description": "जब तक आपका लोकल उपयोग के लिए तैयार नहीं हो जाता, तब तक रिमोट, लोकल या दोनों से कनेक्ट करें",
