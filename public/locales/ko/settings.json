@@ -48,6 +48,7 @@
   "gpu-miners-not-found": "GPU 채굴기를 찾을 수 없습니다",
   "gpu-mining-enabled": "GPU 채굴",
   "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
+  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
   "gpu-unavailable": "⚠️ 하드웨어가 지원하지 않아 GPU가 비활성화되었습니다",
   "hardware-status": "하드웨어 상태",
   "idle-timeout": {

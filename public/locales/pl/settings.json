@@ -49,6 +49,7 @@
   "gpu-miners-not-found": "Nie znaleziono kopaczy GPU",
   "gpu-mining-enabled": "Wydobycie GPU",
   "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
+  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
   "gpu-unavailable": "⚠️ Kopanie GPU niedostępne ponieważ Twój sprzęt go nie obsługuje",
   "hardware-status": "Status sprzętu",
   "idle-timeout": {

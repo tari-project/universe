@@ -24,8 +24,6 @@ export interface MiningStoreState {
     wasMineOnAppStartExecuted?: boolean;
     customLevelsDialogOpen: boolean;
     network?: Network;
-    engine?: string;
-    availableEngines: string[];
     availableMiners?: Record<GpuMinerType, GpuMiner>;
     selectedMiner?: GpuMinerType;
     sessionMiningTime: SessionMiningTime;
@@ -46,8 +44,6 @@ const initialState: MiningStoreState = {
     isChangingMode: false,
     isExcludingGpuDevices: false,
     miningControlsEnabled: true,
-    availableEngines: [],
-    engine: undefined,
     network: undefined,
     availableMiners: undefined,
     selectedMiner: undefined,

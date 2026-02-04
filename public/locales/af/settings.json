@@ -48,6 +48,7 @@
   "gpu-miners-not-found": "Geen GPU Myners gevind nie",
   "gpu-mining-enabled": "GPU Mynbou",
   "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
+  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
   "gpu-unavailable": "⚠️ GPU gedeaktiveer omdat jou hardeware dit nie ondersteun nie",
   "hardware-status": "Hardeware status",
   "idle-timeout": {

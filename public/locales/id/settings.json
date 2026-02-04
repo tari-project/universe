@@ -48,6 +48,7 @@
   "gpu-miners-not-found": "Tidak ada Penambang GPU ditemukan",
   "gpu-mining-enabled": "Penambangan GPU",
   "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
+  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
   "gpu-unavailable": "⚠️ GPU dinonaktifkan karena perangkat keras Anda tidak mendukungnya",
   "hardware-status": "Status perangkat keras",
   "idle-timeout": {

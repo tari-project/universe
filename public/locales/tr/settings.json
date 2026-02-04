@@ -48,6 +48,7 @@
   "gpu-miners-not-found": "GPU Madencisi bulunamadı",
   "gpu-mining-enabled": "GPU Madenciliği",
   "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
+  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
   "gpu-unavailable": "⚠️ Donanımınız desteklemediği için GPU devre dışı bırakıldı",
   "hardware-status": "Donanım durumu",
   "idle-timeout": {

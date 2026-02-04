@@ -368,7 +368,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
 
             // We are adding unhealthy_timer.elapsed() to the duration since last healthy status instead of health_timer.elapsed()
             // because we get there by watcher tick and we want to measure the time since the last healthy status
-            // for GraxilMiner for example time between this line execution is around 10 seconds
+            // Time between line executions may be around 10 seconds
             // health_timer.elapsed() is resolves to around 1 second
             // unhealthy_timer.elapsed() resolves to around 10 seconds
             *duration_since_last_healthy_status += unhealthy_timer.elapsed();
