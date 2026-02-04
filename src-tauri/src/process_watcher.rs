@@ -126,9 +126,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         let mut data_dir_path = base_path.clone();
         if self.adapter.name() == "local_minotari_node" {
-            if let Some(path) = ConfigCore::content().await.node_data_directory().clone() {
-                data_dir_path = path.clone();
-            }
+            data_dir_path = ConfigCore::content().await.node_data_directory().clone()
         }
 
         info!(target: LOG_TARGET_APP_LOGIC, "Using {binary_path:?} for {name}");

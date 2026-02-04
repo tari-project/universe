@@ -59,7 +59,7 @@ use tokio_util::task::TaskTracker;
 pub struct NodeSetupPhaseAppConfiguration {
     use_tor: bool,
     base_node_grpc_address: String,
-    custom_data_dir: Option<PathBuf>,
+    custom_data_dir: PathBuf,
 }
 
 pub struct NodeSetupPhase {
@@ -162,16 +162,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
         let app_configuration = Self::load_app_configuration().await.unwrap_or_default();
-        let (app_local_data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let node_data_dir = app_configuration.custom_data_dir;
 
-        let node_data_dir: PathBuf;
-
-        if let Some(custom_data_dir) = app_configuration.custom_data_dir {
-            info!("Using custom data dir: {:?}", custom_data_dir.clone());
-            node_data_dir = custom_data_dir;
-        } else {
-            node_data_dir = app_local_data_dir.clone();
-        }
+        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
 
         let state = self.app_handle.state::<UniverseAppState>();
         let node_type = state.node_manager.get_node_type().await;
@@ -215,11 +208,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 }
                 state
                     .tor_manager
-                    .ensure_started(
-                        app_local_data_dir.clone(),
-                        config_dir.clone(),
-                        log_dir.clone(),
-                    )
+                    .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
                     .await
             })
             .await?;
@@ -246,7 +235,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             if STOP_ON_ERROR_CODES.contains(&code) {
                                 warn!(target: LOG_TARGET_APP_LOGIC, "Database for node is corrupt or needs a restart, deleting and trying again.");
                                 state.node_manager.clean_data_folder(&node_data_dir).await?;
-                                state.wallet_manager.clean_data_folder(&app_local_data_dir).await?;
+                                state.wallet_manager.clean_data_folder(&data_dir).await?;
                             }
                             continue;
                         }

@@ -2144,13 +2144,16 @@ pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> 
 
     match ConfigCore::update_node_data_directory(new_dir.clone()).await {
         Ok(previous) => {
-            if let Some(previous) = previous {
-                let prev_dir_full = previous.join("node");
+            let prev_dir_full = previous.join("node");
+            if prev_dir_full.exists() {
                 fs::rename(prev_dir_full, new_dir_full)
                     .map_err(|e| InvokeError::from(e.to_string()))?;
             }
         }
-        Err(e) => error!(target: LOG_TARGET_APP_LOGIC, "Could not update directory: {e}"),
+        Err(e) => {
+            error!(target: LOG_TARGET_APP_LOGIC, "Could not update node data location: {e}");
+            return Err(InvokeError::from(e.to_string()));
+        }
     }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_custom_node_directory took too long: {:?}", timer.elapsed());

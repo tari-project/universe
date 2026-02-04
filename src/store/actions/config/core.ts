@@ -194,6 +194,7 @@ export const setDirectory = async ({ path }: { path: string }) => {
             store.setState((c) => ({ ...c, node_data_directory: path }));
         })
         .catch((e) => {
-            console.error('Could not set directory directory', e);
+            console.error(`set_custom_node_directory error:`, e);
+            setError(`Could not set custom node data directory.`);
         });
 };
