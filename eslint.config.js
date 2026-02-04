@@ -56,4 +56,10 @@ export default defineConfig([
         },
     },
     reactCompiler.configs.recommended,
+    {
+        files: ['src/**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}'],
+        rules: {
+            'i18next/no-literal-string': 'off',
+        },
+    },
 ]);

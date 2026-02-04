@@ -12,7 +12,10 @@
         "lint:fix": "eslint src/ --fix",
         "lint:taplo": "taplo format --check",
         "translate": "node ./scripts/translator.js",
-        "knip": "knip"
+        "knip": "knip",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage"
     },
     "dependencies": {
         "@floating-ui/react": "^0.27.17",
@@ -68,6 +71,11 @@
         "eslint-plugin-react-hooks": "^6.1.1",
         "globals": "^16.5.0",
         "knip": "^5.82.1",
+        "vitest": "^3.2.4",
+        "@vitest/coverage-v8": "^3.2.4",
+        "jsdom": "^26.1.0",
+        "@testing-library/react": "^16.3.0",
+        "@testing-library/jest-dom": "^6.6.3",
         "prettier": "^3.8.1",
         "react-qrcode-logo": "^4.0.0",
         "typescript": "^5.9.3",
