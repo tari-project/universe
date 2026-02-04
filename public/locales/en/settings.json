@@ -48,8 +48,8 @@
   "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "GPU Mining",
   "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
-  "gpu-unavailable": "⚠️ GPU disabled because your hardware does not support it",
   "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
+  "gpu-unavailable": "⚠️ GPU disabled because your hardware does not support it",
   "hardware-status": "Hardware status",
   "idle-timeout": {
     "max": "Maximum is 21600 seconds",
