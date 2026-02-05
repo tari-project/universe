@@ -37,6 +37,12 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
     if let Ok(path) = fs::canonicalize(to_path) {
         new_dir = path.join("node");
 
+        if !new_dir.exists() {
+            fs::create_dir_all(&new_dir).unwrap_or_else(|e| {
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to create new node directory: {e}");
+            });
+        };
+
         match ConfigCore::update_node_data_directory(new_dir.clone()).await {
             Ok(previous) => {
                 if let Some(previous) = previous {
