@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useMiningMetricsStore } from './useMiningMetricsStore';
+import { GpuDevice } from '@app/types/app-status.ts';
 
 describe('useMiningMetricsStore', () => {
     beforeEach(() => {
@@ -312,7 +313,7 @@ describe('useMiningMetricsStore', () => {
 
         it('preserves devices when updating mining status', () => {
             useMiningMetricsStore.setState({
-                gpu_devices: [{ device_index: 0, device_name: 'Test GPU' }] as any,
+                gpu_devices: [{ device_id: 0, name: 'Test GPU' }] as GpuDevice[],
             });
 
             useMiningMetricsStore.setState({

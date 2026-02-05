@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useAirdropStore, GIFT_GEMS } from './useAirdropStore';
-import type { AirdropStoreState } from './useAirdropStore';
+import type { XSpaceEvent } from '@app/types/ws.ts';
+import type { TrancheStatus } from '@app/types/airdrop-claim.ts';
 
 describe('useAirdropStore', () => {
     beforeEach(() => {
@@ -232,16 +233,16 @@ describe('useAirdropStore', () => {
         it('can set XSpace event', () => {
             const event = {
                 id: 'event-123',
-                title: 'Tari Community Call',
-                startsAt: '2024-01-15T18:00:00Z',
+                text: 'Tari Community Call',
+                visibilityStart: '2024-01-15T18:00:00Z',
                 url: 'https://x.com/spaces/abc123',
             };
-            useAirdropStore.setState({ latestXSpaceEvent: event as any });
+            useAirdropStore.setState({ latestXSpaceEvent: event as unknown as XSpaceEvent | null });
             expect(useAirdropStore.getState().latestXSpaceEvent).toEqual(event);
         });
 
         it('can clear XSpace event', () => {
-            useAirdropStore.setState({ latestXSpaceEvent: { id: 'event' } as any });
+            useAirdropStore.setState({ latestXSpaceEvent: { id: 'event' } as unknown as XSpaceEvent | null });
             useAirdropStore.setState({ latestXSpaceEvent: null });
             expect(useAirdropStore.getState().latestXSpaceEvent).toBeNull();
         });
@@ -361,7 +362,7 @@ describe('useAirdropStore', () => {
                     { id: 't2', amount: 2000, claimed: false, validTo: '2025-06-30' },
                 ],
             };
-            useAirdropStore.setState({ trancheStatus: trancheStatus as any });
+            useAirdropStore.setState({ trancheStatus: trancheStatus as unknown as TrancheStatus });
             expect(useAirdropStore.getState().trancheStatus?.tranches).toHaveLength(2);
         });
     });

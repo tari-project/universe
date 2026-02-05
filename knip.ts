@@ -13,12 +13,7 @@ const config: KnipConfig = {
         unresolved: 'warn',
     },
     ignoreBinaries: ['commitlint'],
-    ignoreDependencies: [
-        'babel-plugin-styled-components',
-        'babel-plugin-react-compiler',
-        '@tauri-apps/cli',
-        '@testing-library/react', // test infrastructure, will be used for component tests
-    ],
+    ignoreDependencies: ['babel-plugin-styled-components', 'babel-plugin-react-compiler', '@tauri-apps/cli'],
     ignoreExportsUsedInFile: true,
 };
 

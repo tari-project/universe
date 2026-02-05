@@ -4,18 +4,21 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock window.matchMedia for useUIStore dependency
-Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: vi.fn().mockImplementation((query: string) => ({
-        matches: false,
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-    })),
+vi.hoisted(() => {
+    Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        enumerable: true,
+        value: vi.fn().mockImplementation((query) => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: vi.fn(), // deprecated
+            removeListener: vi.fn(), // deprecated
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+        })),
+    });
 });
 
 // Mock external dependencies that cause issues
@@ -38,7 +41,9 @@ import {
     useBlockchainVisualisationStore,
     handleWinRecap,
     handleReplayComplete,
+    LatestBlockPayload,
 } from './useBlockchainVisualisationStore';
+import { CombinedBridgeWalletTransaction } from '@app/store/useWalletStore.ts';
 
 describe('useBlockchainVisualisationStore', () => {
     beforeEach(() => {
@@ -170,12 +175,14 @@ describe('useBlockchainVisualisationStore', () => {
                 createdAt: Date.now(),
                 tokenAmount: 1000000,
             };
-            useBlockchainVisualisationStore.setState({ replayItem: item as any });
+            useBlockchainVisualisationStore.setState({ replayItem: item as CombinedBridgeWalletTransaction });
             expect(useBlockchainVisualisationStore.getState().replayItem).toBeDefined();
         });
 
         it('can clear replayItem', () => {
-            useBlockchainVisualisationStore.setState({ replayItem: { paymentId: 'test' } as any });
+            useBlockchainVisualisationStore.setState({
+                replayItem: { paymentId: 'test' } as unknown as CombinedBridgeWalletTransaction,
+            });
             useBlockchainVisualisationStore.setState({ replayItem: undefined });
             expect(useBlockchainVisualisationStore.getState().replayItem).toBeUndefined();
         });
@@ -190,7 +197,7 @@ describe('useBlockchainVisualisationStore', () => {
                     amount: 1000000,
                 },
             };
-            useBlockchainVisualisationStore.setState({ latestBlockPayload: payload as any });
+            useBlockchainVisualisationStore.setState({ latestBlockPayload: payload as unknown as LatestBlockPayload });
             expect(useBlockchainVisualisationStore.getState().latestBlockPayload?.block_height).toBe(12345);
         });
 
@@ -268,7 +275,7 @@ describe('useBlockchainVisualisationStore', () => {
     describe('handleReplayComplete', () => {
         it('clears replayItem', () => {
             useBlockchainVisualisationStore.setState({
-                replayItem: { paymentId: 'test' } as any,
+                replayItem: { paymentId: 'test' } as unknown as CombinedBridgeWalletTransaction,
             });
 
             handleReplayComplete();
@@ -280,7 +287,7 @@ describe('useBlockchainVisualisationStore', () => {
             useBlockchainVisualisationStore.setState({
                 recapData: { count: 5, totalEarnings: 5000000 },
                 recapIds: [1, 2, 3],
-                replayItem: { paymentId: 'test' } as any,
+                replayItem: { paymentId: 'test' } as unknown as CombinedBridgeWalletTransaction,
             });
 
             handleReplayComplete();
@@ -293,7 +300,7 @@ describe('useBlockchainVisualisationStore', () => {
             useBlockchainVisualisationStore.setState({
                 recapData: undefined,
                 recapIds: [1, 2, 3],
-                replayItem: { paymentId: 'test' } as any,
+                replayItem: { paymentId: 'test' } as unknown as CombinedBridgeWalletTransaction,
             });
 
             handleReplayComplete();
