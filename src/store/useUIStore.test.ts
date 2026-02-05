@@ -1,25 +1,27 @@
 /**
  * @vitest-environment jsdom
  */
+
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-
-// Mock window.matchMedia for the store initialization
-Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: vi.fn().mockImplementation((query: string) => ({
-        matches: false,
-        media: query,
-        onchange: null,
-        addListener: vi.fn(),
-        removeListener: vi.fn(),
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-    })),
+vi.hoisted(() => {
+    Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        enumerable: true,
+        value: vi.fn().mockImplementation((query) => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: vi.fn(), // deprecated
+            removeListener: vi.fn(), // deprecated
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+        })),
+    });
 });
-
 // Now import the store after the mock is set up
 import { useUIStore } from './useUIStore';
+import { AdminShow } from '@app/store/types/ui.ts';
 
 describe('useUIStore', () => {
     beforeEach(() => {
@@ -332,8 +334,8 @@ describe('useUIStore', () => {
 
     describe('admin state', () => {
         it('can set admin show', () => {
-            useUIStore.setState({ adminShow: 'logs' as any });
-            expect(useUIStore.getState().adminShow).toBe('logs');
+            useUIStore.setState({ adminShow: 'shutdown' as AdminShow });
+            expect(useUIStore.getState().adminShow).toBe('shutdown');
         });
     });
 
