@@ -62,16 +62,6 @@ impl MockProcessInstance {
         Self::default()
     }
 
-    pub fn with_ping_result(mut self, result: bool) -> Self {
-        self.ping_result = Arc::new(AtomicBool::new(result));
-        self
-    }
-
-    pub fn with_exit_code(mut self, code: i32) -> Self {
-        self.exit_code = Arc::new(AtomicI32::new(code));
-        self
-    }
-
     pub fn set_ping_result(&self, result: bool) {
         self.ping_result.store(result, Ordering::SeqCst);
     }
@@ -137,11 +127,6 @@ impl MockStatusMonitor {
 
     pub fn with_health_status(self, status: HealthStatus) -> Self {
         *self.health_status.write().unwrap() = status;
-        self
-    }
-
-    pub fn with_unhealthy_result(self, result: HandleUnhealthyResult) -> Self {
-        *self.unhealthy_result.write().unwrap() = result;
         self
     }
 

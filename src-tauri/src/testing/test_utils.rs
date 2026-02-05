@@ -29,8 +29,9 @@ use tempfile::TempDir;
 ///
 /// Use this to avoid tests interfering with each other through shared file paths.
 pub struct TestContext {
-    /// The temporary directory that will be cleaned up when the context is dropped
-    pub temp_dir: TempDir,
+    /// The temporary directory that will be cleaned up when the context is dropped.
+    /// Prefixed with underscore because it's kept for Drop side-effect, not read directly.
+    _temp_dir: TempDir,
     /// Path to use for config files
     pub config_dir: PathBuf,
     /// Path to use for data files
@@ -54,16 +55,11 @@ impl TestContext {
         std::fs::create_dir_all(&log_dir).expect("Failed to create log dir");
 
         Self {
-            temp_dir,
+            _temp_dir: temp_dir,
             config_dir,
             data_dir,
             log_dir,
         }
-    }
-
-    /// Get the root path of the temporary directory
-    pub fn root(&self) -> &std::path::Path {
-        self.temp_dir.path()
     }
 }
 
@@ -71,11 +67,6 @@ impl Default for TestContext {
     fn default() -> Self {
         Self::new()
     }
-}
-
-/// Helper to create a mock shutdown signal for testing
-pub fn create_test_shutdown() -> tari_shutdown::Shutdown {
-    tari_shutdown::Shutdown::new()
 }
 
 #[cfg(test)]

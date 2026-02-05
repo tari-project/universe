@@ -55,6 +55,7 @@
 //! Many methods require `&tauri::AppHandle` for:
 //! - Getting app config directory paths
 //! - Event emission via Manager trait
+//!
 //! To mock this:
 //! - Use tauri's test utilities: `tauri::test::mock_app()`
 //! - Or extract path resolution into a separate trait that can be mocked
