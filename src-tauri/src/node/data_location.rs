@@ -12,35 +12,33 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
         println!("{}", process_info.total_bytes);
         dir::TransitProcessResult::ContinueOrAbort
     };
-    let mut new_dir;
-
+    let new_dir;
     if let Ok(path) = fs::canonicalize(to_path) {
         new_dir = path.join("node");
-    }
 
-    match ConfigCore::update_node_data_directory(new_dir.clone()).await {
-        Ok(previous) => {
-            if let Some(previous) = previous {
-                SetupManager::get_instance()
-                    .shutdown_phases(vec![SetupPhase::Node])
-                    .await;
+        match ConfigCore::update_node_data_directory(new_dir.clone()).await {
+            Ok(previous) => {
+                if let Some(previous) = previous {
+                    SetupManager::get_instance()
+                        .shutdown_phases(vec![SetupPhase::Node])
+                        .await;
 
-                let mut from_paths = Vec::new();
-                from_paths.push(previous.join("node"));
+                    let from_paths = vec![previous.join("node")];
 
-                move_items_with_progress(&from_paths, &new_dir, &options, &handle)
-                    .map_err(|e| InvokeError::from(e.to_string()))?;
+                    move_items_with_progress(&from_paths, &new_dir, &options, &handle)
+                        .map_err(|e| InvokeError::from(e.to_string()))?;
 
-                info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] restarting phases");
+                    info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] restarting phases");
 
-                SetupManager::get_instance()
-                    .resume_phases(vec![SetupPhase::Node])
-                    .await;
+                    SetupManager::get_instance()
+                        .resume_phases(vec![SetupPhase::Node])
+                        .await;
+                }
             }
-        }
-        Err(e) => {
-            error!(target: LOG_TARGET_APP_LOGIC, "Could not update node data location: {e}");
-            return Err(InvokeError::from(e.to_string()));
+            Err(e) => {
+                error!(target: LOG_TARGET_APP_LOGIC, "Could not update node data location: {e}");
+                return Err(InvokeError::from(e.to_string()));
+            }
         }
     }
 
