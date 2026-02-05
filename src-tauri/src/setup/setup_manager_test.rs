@@ -66,12 +66,18 @@ fn setup_phase_i18n_key_core() {
 
 #[test]
 fn setup_phase_i18n_key_cpu_mining() {
-    assert_eq!(SetupPhase::CpuMining.get_i18n_title_key(), "setup-cpu-mining");
+    assert_eq!(
+        SetupPhase::CpuMining.get_i18n_title_key(),
+        "setup-cpu-mining"
+    );
 }
 
 #[test]
 fn setup_phase_i18n_key_gpu_mining() {
-    assert_eq!(SetupPhase::GpuMining.get_i18n_title_key(), "setup-gpu-mining");
+    assert_eq!(
+        SetupPhase::GpuMining.get_i18n_title_key(),
+        "setup-gpu-mining"
+    );
 }
 
 #[test]

@@ -66,8 +66,14 @@ fn node_type_local_after_remote_not_remote() {
 fn node_type_display() {
     assert_eq!(format!("{}", NodeType::Local), "Local");
     assert_eq!(format!("{}", NodeType::Remote), "Remote");
-    assert_eq!(format!("{}", NodeType::RemoteUntilLocal), "RemoteUntilLocal");
-    assert_eq!(format!("{}", NodeType::LocalAfterRemote), "LocalAfterRemote");
+    assert_eq!(
+        format!("{}", NodeType::RemoteUntilLocal),
+        "RemoteUntilLocal"
+    );
+    assert_eq!(
+        format!("{}", NodeType::LocalAfterRemote),
+        "LocalAfterRemote"
+    );
 }
 
 #[test]

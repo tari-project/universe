@@ -150,8 +150,14 @@ fn test_find_transaction_by_block_height_first_match() {
 fn test_transaction_status_from_i32() {
     assert_eq!(TransactionStatus::from(0), TransactionStatus::Completed);
     assert_eq!(TransactionStatus::from(5), TransactionStatus::Coinbase);
-    assert_eq!(TransactionStatus::from(12), TransactionStatus::CoinbaseUnconfirmed);
-    assert_eq!(TransactionStatus::from(13), TransactionStatus::CoinbaseConfirmed);
+    assert_eq!(
+        TransactionStatus::from(12),
+        TransactionStatus::CoinbaseUnconfirmed
+    );
+    assert_eq!(
+        TransactionStatus::from(13),
+        TransactionStatus::CoinbaseConfirmed
+    );
     assert_eq!(TransactionStatus::from(999), TransactionStatus::NotFound);
     assert_eq!(TransactionStatus::from(-1), TransactionStatus::NotFound);
 }

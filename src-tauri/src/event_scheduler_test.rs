@@ -24,8 +24,7 @@ use chrono::Local;
 use test_case::test_case;
 
 use crate::event_scheduler::{
-    BetweenTimeVariantPayload, CronSchedule, InVariantPayload, SchedulerError, TimePeriod,
-    TimeUnit,
+    BetweenTimeVariantPayload, CronSchedule, InVariantPayload, SchedulerError, TimePeriod, TimeUnit,
 };
 
 // =============================================================================
@@ -35,11 +34,11 @@ use crate::event_scheduler::{
 #[test]
 fn valid_cron_patterns_parse_successfully() {
     let valid_patterns = [
-        ("0 22 * * *", "0 6 * * *"),   // 10 PM to 6 AM daily
-        ("30 8 * * *", "0 17 * * *"),  // 8:30 AM to 5 PM daily
-        ("0 0 * * *", "0 12 * * *"),   // Midnight to noon
-        ("0 * * * *", "30 * * * *"),   // Every hour on the hour to half hour
-        ("0 9 * * 1", "0 17 * * 5"),   // 9 AM Monday to 5 PM Friday
+        ("0 22 * * *", "0 6 * * *"),  // 10 PM to 6 AM daily
+        ("30 8 * * *", "0 17 * * *"), // 8:30 AM to 5 PM daily
+        ("0 0 * * *", "0 12 * * *"),  // Midnight to noon
+        ("0 * * * *", "30 * * * *"),  // Every hour on the hour to half hour
+        ("0 9 * * 1", "0 17 * * 5"),  // 9 AM Monday to 5 PM Friday
     ];
 
     for (start, end) in valid_patterns {
@@ -61,8 +60,8 @@ fn invalid_cron_pattern_returns_error() {
         ("0 6 * * *", "not a cron"),
         ("", "0 6 * * *"),
         ("0 6 * * *", ""),
-        ("60 22 * * *", "0 6 * * *"),  // Invalid minute (60)
-        ("0 25 * * *", "0 6 * * *"),   // Invalid hour (25)
+        ("60 22 * * *", "0 6 * * *"), // Invalid minute (60)
+        ("0 25 * * *", "0 6 * * *"),  // Invalid hour (25)
     ];
 
     for (start, end) in invalid_patterns {
@@ -318,15 +317,49 @@ fn seconds_duration_invalid_over_60() {
 #[test]
 fn between_payload_am_pm_conversion() {
     let test_cases = [
-        (10, TimePeriod::PM, 6, TimePeriod::AM, "0 22 * * *", "0 6 * * *"),
-        (12, TimePeriod::AM, 12, TimePeriod::PM, "0 0 * * *", "0 12 * * *"),
-        (1, TimePeriod::AM, 1, TimePeriod::PM, "0 1 * * *", "0 13 * * *"),
-        (11, TimePeriod::PM, 11, TimePeriod::AM, "0 23 * * *", "0 11 * * *"),
-        (12, TimePeriod::PM, 12, TimePeriod::AM, "0 12 * * *", "0 0 * * *"),
+        (
+            10,
+            TimePeriod::PM,
+            6,
+            TimePeriod::AM,
+            "0 22 * * *",
+            "0 6 * * *",
+        ),
+        (
+            12,
+            TimePeriod::AM,
+            12,
+            TimePeriod::PM,
+            "0 0 * * *",
+            "0 12 * * *",
+        ),
+        (
+            1,
+            TimePeriod::AM,
+            1,
+            TimePeriod::PM,
+            "0 1 * * *",
+            "0 13 * * *",
+        ),
+        (
+            11,
+            TimePeriod::PM,
+            11,
+            TimePeriod::AM,
+            "0 23 * * *",
+            "0 11 * * *",
+        ),
+        (
+            12,
+            TimePeriod::PM,
+            12,
+            TimePeriod::AM,
+            "0 12 * * *",
+            "0 0 * * *",
+        ),
     ];
 
-    for (start_hour, start_period, end_hour, end_period, expected_start, expected_end) in
-        test_cases
+    for (start_hour, start_period, end_hour, end_period, expected_start, expected_end) in test_cases
     {
         let payload = BetweenTimeVariantPayload {
             start_hour,

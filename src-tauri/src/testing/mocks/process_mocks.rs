@@ -29,7 +29,9 @@ use std::time::Duration;
 use async_trait::async_trait;
 use tokio_util::task::TaskTracker;
 
-use crate::process_adapter::{HandleUnhealthyResult, HealthStatus, ProcessInstanceTrait, StatusMonitor};
+use crate::process_adapter::{
+    HandleUnhealthyResult, HealthStatus, ProcessInstanceTrait, StatusMonitor,
+};
 
 /// A configurable mock for ProcessInstanceTrait
 #[derive(Clone)]

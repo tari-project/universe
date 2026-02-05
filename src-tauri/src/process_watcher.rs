@@ -237,7 +237,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(crate) async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: ProcessInstanceTrait>(
+pub(crate) async fn do_health_check<
+    TStatusMonitor: StatusMonitor,
+    TProcessInstance: ProcessInstanceTrait,
+>(
     child: &mut TProcessInstance,
     status_monitor3: TStatusMonitor,
     name: String,
