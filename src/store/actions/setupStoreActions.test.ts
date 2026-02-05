@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SetupPhase } from '@app/types/events-payloads';
+
+import { ProgressTrackerUpdatePayload, SetupPhase } from '@app/types/events-payloads';
 import { AppModule, AppModuleStatus } from '../types/setup';
 
+type Payload = Partial<ProgressTrackerUpdatePayload> | undefined;
 // Mock stores
 const mockSetupStore = {
     state: {
-        core_phase_setup_payload: undefined as any,
-        cpu_mining_phase_setup_payload: undefined as any,
-        gpu_mining_phase_setup_payload: undefined as any,
-        node_phase_setup_payload: undefined as any,
-        wallet_phase_setup_payload: undefined as any,
+        core_phase_setup_payload: undefined as Payload,
+        cpu_mining_phase_setup_payload: undefined as Payload,
+        gpu_mining_phase_setup_payload: undefined as Payload,
+        node_phase_setup_payload: undefined as Payload,
+        wallet_phase_setup_payload: undefined as Payload,
         isInitialSetupFinished: false,
         disabled_phases: [] as SetupPhase[],
         app_modules: {

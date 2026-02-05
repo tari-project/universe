@@ -6,7 +6,8 @@ import {
     setTorEntryGuards,
     setBackgroundNodeState,
 } from './useNodeStore';
-import type { NodeType } from '@app/types/mining/node';
+import { BackgroundNodeSyncUpdatePayload } from '@app/types/events-payloads.ts';
+import { BaseNodeStatus } from '@app/types/app-status.ts';
 
 describe('useNodeStore', () => {
     beforeEach(() => {
@@ -151,7 +152,7 @@ describe('useNodeStore', () => {
                 block_height: 12345,
                 progress: 50,
             };
-            setBackgroundNodeState(payload as any);
+            setBackgroundNodeState(payload as unknown as BackgroundNodeSyncUpdatePayload);
 
             expect(useNodeStore.getState().backgroundNodeSyncLastUpdate).toEqual(payload);
         });
@@ -161,11 +162,11 @@ describe('useNodeStore', () => {
                 block_height: 12345,
                 progress: 50,
             };
-            setBackgroundNodeState(payload as any);
+            setBackgroundNodeState(payload as unknown as BackgroundNodeSyncUpdatePayload);
             const firstUpdate = useNodeStore.getState().backgroundNodeSyncLastUpdate;
 
             // Same payload again
-            setBackgroundNodeState(payload as any);
+            setBackgroundNodeState(payload as unknown as BackgroundNodeSyncUpdatePayload);
             const secondUpdate = useNodeStore.getState().backgroundNodeSyncLastUpdate;
 
             // Should be the same reference (no update)
@@ -177,13 +178,13 @@ describe('useNodeStore', () => {
                 block_height: 12345,
                 progress: 50,
             };
-            setBackgroundNodeState(payload1 as any);
+            setBackgroundNodeState(payload1 as unknown as BackgroundNodeSyncUpdatePayload);
 
             const payload2 = {
                 block_height: 12346,
                 progress: 51,
             };
-            setBackgroundNodeState(payload2 as any);
+            setBackgroundNodeState(payload2 as unknown as BackgroundNodeSyncUpdatePayload);
 
             expect(useNodeStore.getState().backgroundNodeSyncLastUpdate).toEqual(payload2);
         });
@@ -219,7 +220,7 @@ describe('useNodeStore', () => {
                 block_height: 50000,
                 block_time: 120,
             };
-            setNodeStoreState({ base_node_status: status as any });
+            setNodeStoreState({ base_node_status: status as unknown as BaseNodeStatus });
             expect(useNodeStore.getState().base_node_status).toBeDefined();
         });
     });

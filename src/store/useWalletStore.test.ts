@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { useWalletStore, initialState, updateWalletScanningProgress, pruneTransactionHistory } from './useWalletStore';
+import {
+    useWalletStore,
+    initialState,
+    updateWalletScanningProgress,
+    pruneTransactionHistory,
+    BackendBridgeTransaction,
+    CombinedBridgeWalletTransaction,
+} from './useWalletStore';
 import { TariAddressType } from '@app/types/events-payloads';
+import { TransactionInfo } from '@app/types/app-status.ts';
 
 // Mock useExchangeStore
 vi.mock('./useExchangeStore', () => ({
@@ -125,7 +133,7 @@ describe('useWalletStore', () => {
                 direction: 2,
                 timestamp: Date.now(),
             };
-            useWalletStore.setState({ tx_history: [tx as any] });
+            useWalletStore.setState({ tx_history: [tx as TransactionInfo] });
             expect(useWalletStore.getState().tx_history).toHaveLength(1);
         });
 
@@ -140,7 +148,7 @@ describe('useWalletStore', () => {
                 { tx_id: 2, amount: 200, timestamp: 2000 },
                 { tx_id: 3, amount: 300, timestamp: 3000 },
             ];
-            useWalletStore.setState({ tx_history: transactions as any });
+            useWalletStore.setState({ tx_history: transactions as TransactionInfo[] });
             expect(useWalletStore.getState().tx_history).toHaveLength(3);
         });
     });
@@ -153,7 +161,7 @@ describe('useWalletStore', () => {
                 status: 13,
                 timestamp: Date.now(),
             };
-            useWalletStore.setState({ coinbase_transactions: [coinbaseTx as any] });
+            useWalletStore.setState({ coinbase_transactions: [coinbaseTx as TransactionInfo] });
             expect(useWalletStore.getState().coinbase_transactions).toHaveLength(1);
         });
     });
@@ -166,7 +174,7 @@ describe('useWalletStore', () => {
                 sourceAddress: 'tari-addr',
                 amount: 1000000,
             };
-            useWalletStore.setState({ bridge_transactions: [bridgeTx as any] });
+            useWalletStore.setState({ bridge_transactions: [bridgeTx as unknown as BackendBridgeTransaction] });
             expect(useWalletStore.getState().bridge_transactions).toHaveLength(1);
         });
     });
@@ -207,12 +215,12 @@ describe('useWalletStore', () => {
                     status: 6,
                 },
             };
-            useWalletStore.setState({ detailsItem: item as any });
+            useWalletStore.setState({ detailsItem: item as CombinedBridgeWalletTransaction | null });
             expect(useWalletStore.getState().detailsItem).toEqual(item);
         });
 
         it('can clear detailsItem', () => {
-            useWalletStore.setState({ detailsItem: { paymentId: 'test' } as any });
+            useWalletStore.setState({ detailsItem: { paymentId: 'test' } as CombinedBridgeWalletTransaction | null });
             useWalletStore.setState({ detailsItem: null });
             expect(useWalletStore.getState().detailsItem).toBeNull();
         });
@@ -312,7 +320,7 @@ describe('useWalletStore', () => {
                 tx_id: i,
                 timestamp: i * 1000,
             }));
-            useWalletStore.setState({ tx_history: transactions as any });
+            useWalletStore.setState({ tx_history: transactions as TransactionInfo[] });
 
             pruneTransactionHistory();
 

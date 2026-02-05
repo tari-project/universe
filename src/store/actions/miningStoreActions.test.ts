@@ -1,5 +1,27 @@
+/**
+ * @vitest-environment jsdom
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+// Mock window.matchMedia for useUIStore dependency
+vi.hoisted(() => {
+    Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        enumerable: true,
+        value: vi.fn().mockImplementation((query) => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: vi.fn(), // deprecated
+            removeListener: vi.fn(), // deprecated
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+        })),
+    });
+});
+
 import { GpuMinerType, MinerControlsState } from '@app/types/events-payloads';
+import { MiningStoreState } from '@app/store';
 
 // Create mock stores
 const mockMiningStore = {
@@ -8,7 +30,7 @@ const mockMiningStore = {
         isCpuMiningInitiated: false,
         isGpuMiningInitiated: false,
         selectedMiner: undefined as GpuMinerType | undefined,
-        availableMiners: undefined as Record<GpuMinerType, any> | undefined,
+        availableMiners: undefined as MiningStoreState['availableMiners'] | undefined,
         sessionMiningTime: {} as { startTimestamp?: number; stopTimestamp?: number; durationMs?: number },
         showEcoAlert: false,
         selectedResumeDuration: undefined as { durationHours: number; timeStamp: number } | undefined,

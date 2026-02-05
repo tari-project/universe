@@ -1,5 +1,35 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+/**
+ * @vitest-environment jsdom
+ */
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+// Mock window.matchMedia for useUIStore dependency
+vi.hoisted(() => {
+    Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        enumerable: true,
+        value: vi.fn().mockImplementation((query) => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: vi.fn(), // deprecated
+            removeListener: vi.fn(), // deprecated
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+        })),
+    });
+});
+
+// Mock external dependencies that cause issues
+vi.mock('@tauri-apps/api/window', () => ({
+    getCurrentWindow: () => ({
+        isMinimized: vi.fn().mockResolvedValue(false),
+    }),
+}));
+
 import { useMiningStore } from './useMiningStore';
+import { Network } from '@app/utils/network.ts';
 
 describe('useMiningStore', () => {
     beforeEach(() => {
@@ -197,7 +227,7 @@ describe('useMiningStore', () => {
         });
 
         it('can set network', () => {
-            useMiningStore.setState({ network: 'esmeralda' as any });
+            useMiningStore.setState({ network: Network.Esmeralda });
             expect(useMiningStore.getState().network).toBe('esmeralda');
         });
     });

@@ -11,7 +11,7 @@ import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 import { refreshTransactions } from '@app/hooks/wallet/useFetchTxHistory.ts';
 
 const appWindow = getCurrentWindow();
-interface LatestBlockPayload {
+export interface LatestBlockPayload {
     block_height: number;
     coinbase_transaction?: TransactionInfo;
 }
