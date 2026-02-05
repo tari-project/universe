@@ -59,7 +59,7 @@ use tokio_util::task::TaskTracker;
 pub struct NodeSetupPhaseAppConfiguration {
     use_tor: bool,
     base_node_grpc_address: String,
-    custom_data_dir: PathBuf,
+    custom_data_dir: Option<PathBuf>,
 }
 
 pub struct NodeSetupPhase {
@@ -162,9 +162,12 @@ impl SetupPhaseImpl for NodeSetupPhase {
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
         let app_configuration = Self::load_app_configuration().await.unwrap_or_default();
-        let node_data_dir = app_configuration.custom_data_dir;
 
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let mut node_data_dir = data_dir.clone();
+        if let Some(custom_data_dir) = app_configuration.custom_data_dir {
+            node_data_dir = custom_data_dir
+        }
 
         let state = self.app_handle.state::<UniverseAppState>();
         let node_type = state.node_manager.get_node_type().await;

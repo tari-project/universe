@@ -116,6 +116,7 @@ croner = "3.0.0"
 starship-battery = "0.10.3"
 url = { version = "2.5.4", features = ["default", "serde"] }
 tauri-plugin-dialog = "2"
+fs_extra = "1.3.0"
 
 [target.'cfg(windows)'.dependencies]
 planif = "1.0.0"
