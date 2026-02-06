@@ -8,7 +8,7 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import RestartDialog from '@app/components/dialogs/RestartDialog.tsx';
-
+import ConfirnNodeDataLocationModal from '@app/components/dialogs/ConfirmNodaDataLocation.tsx';
 import SettingsNavigation from './components/Navigation.tsx';
 import { SETTINGS_TYPES, SettingsType } from './types.ts';
 import {
@@ -74,6 +74,7 @@ const SettingsModal = memo(function SettingsModal() {
                     </ContentContainer>
                 </Container>
                 <RestartDialog />
+                <ConfirnNodeDataLocationModal />
             </DialogContent>
         </Dialog>
     );
