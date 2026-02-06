@@ -190,7 +190,6 @@ export const updateShutdownMode = async (shutdownMode: ShutdownMode) => {
 };
 
 export const setDirectory = async ({ path }: { path: string }) => {
-    console.log(`path=`, path);
     await invoke('set_custom_node_directory', { path })
         .then(() => {
             store.setState((c) => ({ ...c, node_data_directory: path }));

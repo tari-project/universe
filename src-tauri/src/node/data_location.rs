@@ -22,15 +22,15 @@
 use crate::configs::config_core::ConfigCore;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::LOG_TARGET_APP_LOGIC;
+use dunce::canonicalize;
 use fs_extra::{dir, move_items};
 use log::{error, info};
-use std::fs;
 use tauri::ipc::InvokeError;
 
 pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
     let options = dir::CopyOptions::new();
 
-    match fs::canonicalize(to_path) {
+    match canonicalize(to_path) {
         Ok(new_dir) => match ConfigCore::update_node_data_directory(new_dir.clone()).await {
             Ok(previous) => {
                 if let Some(previous) = previous {
@@ -38,7 +38,7 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
                         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
                         .await;
 
-                    let from_paths = vec![previous.clone().join("node")];
+                    let from_paths = vec![previous.join("node")];
                     match move_items(&from_paths, &new_dir, &options) {
                         Ok(..) => {
                             info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] success.");
