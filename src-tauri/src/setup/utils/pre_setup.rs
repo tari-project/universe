@@ -1,3 +1,26 @@
+// Copyright 2026. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+use crate::configs::config_core::ConfigCore;
+use crate::configs::trait_config::ConfigImpl;
 use crate::LOG_TARGET_APP_LOGIC;
 use log::{error, info, warn};
 use std::fs;
@@ -18,10 +41,19 @@ pub async fn check_data_import(app_handle: AppHandle) -> Result<(), anyhow::Erro
                     );
                     let backup_path = Path::new(backup_path);
                     if backup_path.exists() {
-                        let existing_db = app_handle
+                        let local_data_dir = app_handle
                             .path()
                             .app_local_data_dir()
-                            .map_err(|e| anyhow::Error::msg(e.to_string()))?
+                            .map_err(|e| anyhow::Error::msg(e.to_string()))?;
+
+                        let mut node_data_dir = local_data_dir.clone();
+                        if let Some(custom_path) =
+                            ConfigCore::content().await.node_data_directory().clone()
+                        {
+                            node_data_dir = custom_path;
+                        }
+
+                        let existing_db = node_data_dir
                             .join("node")
                             .join(Network::get_current_or_user_setting_or_default().to_string())
                             .join("data")
@@ -69,8 +101,8 @@ pub async fn clear_data(app_handle: AppHandle) -> Result<(), anyhow::Error> {
     let config_path = app_handle
         .path()
         .app_config_dir()
-        .expect("Could not get config dir");
-    // The start of needed restart operations. Break this out into a module if we need n+1
+        .map_err(|e| anyhow::Error::msg(e.to_string()))?;
+
     let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
     if tcp_tor_toggled_file.exists() {
         let network = Network::default().as_key_str();
@@ -78,9 +110,14 @@ pub async fn clear_data(app_handle: AppHandle) -> Result<(), anyhow::Error> {
         let local_data_dir = app_handle
             .path()
             .app_local_data_dir()
-            .expect("Could not get local data dir");
+            .map_err(|e| anyhow::Error::msg(e.to_string()))?;
 
-        let node_peer_db = local_data_dir.join("node").join(network).join("peer_db");
+        let mut node_data_dir = local_data_dir.clone();
+        if let Some(custom_path) = ConfigCore::content().await.node_data_directory().clone() {
+            node_data_dir = custom_path;
+        }
+
+        let node_peer_db = node_data_dir.join("node").join(network).join("peer_db");
         let wallet_peer_db = local_data_dir.join("wallet").join(network).join("peer_db");
 
         // They may not exist. This could be first run.
