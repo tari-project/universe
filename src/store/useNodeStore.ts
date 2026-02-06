@@ -56,3 +56,5 @@ export const setBackgroundNodeState = (backgroundNodeSyncLastUpdate: BackgroundN
         return { backgroundNodeSyncLastUpdate };
     });
 };
+
+export const setMoveDataConfirmed = (moveDataConfirmed: boolean) => useNodeStore.setState({ moveDataConfirmed });

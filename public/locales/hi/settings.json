@@ -87,6 +87,8 @@
   "no-entry-guard": "कोई एंट्री गार्ड कनेक्ट नहीं है!",
   "no-pool-configuration-available": "No pool configuration available",
   "node": {
+    "confirm-title": "Confirm node data location change",
+    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
     "data-cta": "Change location",
     "data-subtitle": "Set a custom location to store the base node data",
     "data-title": "Node data settings"

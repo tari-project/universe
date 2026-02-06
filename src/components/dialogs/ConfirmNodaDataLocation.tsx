@@ -4,26 +4,33 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Content, CTAWrapper, StyledCTA, Wrapper } from './styles.ts';
 import alertEmoji from '/assets/img/icons/emoji/alert_emoji.png';
+import { setMoveDataConfirmed } from '@app/store';
 
 export default function ConfirnNodeDataLocation() {
     const { t } = useTranslation('settings');
     const showConfirmLocation = useModalStore((s) => s.showConfirmLocation);
+
+    function handleClose() {
+        setShowConfirmLocation(false);
+        setMoveDataConfirmed(false);
+    }
+    function handleConfirm() {
+        setMoveDataConfirmed(true);
+    }
     return (
         <Dialog open={showConfirmLocation} onOpenChange={setShowConfirmLocation} disableClose>
             <DialogContent>
                 <Wrapper>
-                    <Typography variant="h3">{t('Confirm node data location change')}</Typography>
+                    <Typography variant="h3">{t('node.confirm-title')}</Typography>
                     <Content>
                         <img src={alertEmoji} alt="Alert Emoji Icon" />
-                        <Typography>
-                            {t(
-                                `Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.`
-                            )}
-                        </Typography>
+                        <Typography>{t('node.confirm-warning')}</Typography>
                     </Content>
                     <CTAWrapper>
-                        <StyledCTA>{t('cancel')}</StyledCTA>
-                        <StyledCTA backgroundColor="green">{t('Confirm')}</StyledCTA>
+                        <StyledCTA onClick={handleClose}>{t('cancel')}</StyledCTA>
+                        <StyledCTA backgroundColor="green" onClick={handleConfirm}>
+                            {t('Confirm')}
+                        </StyledCTA>
                     </CTAWrapper>
                 </Wrapper>
             </DialogContent>
