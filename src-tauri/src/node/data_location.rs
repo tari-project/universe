@@ -23,13 +23,28 @@ use crate::configs::config_core::ConfigCore;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::LOG_TARGET_APP_LOGIC;
 use dunce::canonicalize;
-use fs_extra::{dir, move_items};
+use fs_more::directory::{
+    move_directory, BrokenSymlinkBehaviour, CollidingSubDirectoryBehaviour,
+    DestinationDirectoryRule, DirectoryMoveAllowedStrategies, DirectoryMoveByCopyOptions,
+    DirectoryMoveOptions, SymlinkBehaviour,
+};
+use fs_more::file::CollidingFileBehaviour;
 use log::{error, info};
 use tauri::ipc::InvokeError;
 
 pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
-    let options = dir::CopyOptions::new();
-
+    let move_options = DirectoryMoveOptions {
+        destination_directory_rule: DestinationDirectoryRule::AllowNonEmpty {
+            colliding_file_behaviour: CollidingFileBehaviour::Abort,
+            colliding_subdirectory_behaviour: CollidingSubDirectoryBehaviour::Abort,
+        },
+        allowed_strategies: DirectoryMoveAllowedStrategies::Either {
+            copy_and_delete_options: DirectoryMoveByCopyOptions {
+                broken_symlink_behaviour: BrokenSymlinkBehaviour::Abort,
+                symlink_behaviour: SymlinkBehaviour::Keep,
+            },
+        },
+    };
     match canonicalize(to_path) {
         Ok(new_dir) => match ConfigCore::update_node_data_directory(new_dir.clone()).await {
             Ok(previous) => {
@@ -38,10 +53,12 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
                         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
                         .await;
 
-                    let from_paths = vec![previous.join("node")];
-                    match move_items(&from_paths, &new_dir, &options) {
-                        Ok(..) => {
-                            info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] success.");
+                    let source_dir = previous.join("node");
+                    let destination_dir = new_dir.join("node");
+
+                    match move_directory(source_dir, destination_dir, move_options) {
+                        Ok(res) => {
+                            info!(target: LOG_TARGET_APP_LOGIC, "Successfully moved items - Total bytes: {}, Directories: {:?}", res.total_bytes_moved, res.directories_moved);
                         }
                         Err(e) => {
                             error!(target: LOG_TARGET_APP_LOGIC, "Could not move items, reverting config change: {e}");
@@ -68,6 +85,5 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
             return Err(InvokeError::from(e.to_string()));
         }
     }
-
     Ok(())
 }
