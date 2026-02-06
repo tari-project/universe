@@ -35,16 +35,13 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
             Ok(previous) => {
                 if let Some(previous) = previous {
                     SetupManager::get_instance()
-                        .shutdown_phases(vec![SetupPhase::Node])
+                        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
                         .await;
 
                     let from_paths = vec![previous.clone().join("node")];
                     match move_items(&from_paths, &new_dir, &options) {
                         Ok(..) => {
-                            info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] restarting phases");
-                            SetupManager::get_instance()
-                                .resume_phases(vec![SetupPhase::Node])
-                                .await;
+                            info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] success.");
                         }
                         Err(e) => {
                             error!(target: LOG_TARGET_APP_LOGIC, "Could not move items, reverting config change: {e}");
@@ -53,7 +50,12 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
                                 .map_err(|e| InvokeError::from(e.to_string()))?;
                             return Err(InvokeError::from(e.to_string()));
                         }
-                    }
+                    };
+
+                    info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] restarting phases");
+                    SetupManager::get_instance()
+                        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
+                        .await;
                 }
             }
             Err(e) => {
