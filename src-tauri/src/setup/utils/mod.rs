@@ -21,5 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod phase_builder;
+pub mod pre_setup;
 pub mod setup_default_adapter;
 pub mod timeout_watcher;
