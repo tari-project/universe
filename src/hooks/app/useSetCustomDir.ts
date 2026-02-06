@@ -17,7 +17,9 @@ export function useSetCustomDir() {
     }
     function handleSave() {
         startTransition(async () => {
-            await setDirectory({ path: selectedDir }).then(handleClear);
+            await setDirectory({ path: selectedDir });
+            // clear on both success and failure - currentDir from store (which matches config) will then be displayed
+            handleClear();
         });
     }
 

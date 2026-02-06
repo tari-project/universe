@@ -24,6 +24,7 @@ use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::LOG_TARGET_APP_LOGIC;
 use fs_extra::{dir, move_items};
 use log::{error, info};
+use serde_json::to_string;
 use std::fs;
 use tauri::ipc::InvokeError;
 
@@ -38,7 +39,7 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
                         .shutdown_phases(vec![SetupPhase::Node])
                         .await;
 
-                    let from_paths = vec![previous.join("node")];
+                    let from_paths = vec![previous.clone().join("node")];
                     match move_items(&from_paths, &new_dir, &options) {
                         Ok(..) => {
                             info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] restarting phases");
@@ -47,7 +48,10 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
                                 .await;
                         }
                         Err(e) => {
-                            error!(target: LOG_TARGET_APP_LOGIC, "Could not move items: {e}");
+                            error!(target: LOG_TARGET_APP_LOGIC, "Could not move items, reverting config change: {e}");
+                            ConfigCore::update_node_data_directory(previous)
+                                .await
+                                .map_err(|e| InvokeError::from(e.to_string()))?;
                             return Err(InvokeError::from(e.to_string()));
                         }
                     }
