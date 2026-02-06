@@ -21,6 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod setup_manager;
+#[cfg(test)]
+mod setup_manager_test;
 mod trait_setup_phase;
 pub mod utils;
 

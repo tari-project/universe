@@ -20,11 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod local_node_adapter;
-pub mod node_adapter;
-pub mod node_manager;
-pub mod remote_node_adapter;
-pub mod utils;
+//! Mock implementations for testing.
+//!
+//! This module contains mock implementations of traits used throughout the application,
+//! enabling unit testing without external dependencies.
 
-#[cfg(test)]
-mod node_manager_test;
+pub mod process_mocks;

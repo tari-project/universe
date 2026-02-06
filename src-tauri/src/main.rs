@@ -89,12 +89,16 @@ mod consts;
 mod credential_manager;
 mod download_utils;
 mod event_scheduler;
+#[cfg(test)]
+mod event_scheduler_test;
 mod events;
 mod events_emitter;
 mod events_manager;
 mod feedback;
 mod hardware;
 mod internal_wallet;
+#[cfg(test)]
+mod internal_wallet_test;
 mod mining;
 mod mining_status_manager;
 mod mm_proxy_adapter;
@@ -109,6 +113,8 @@ mod process_killer;
 mod process_stats_collector;
 mod process_utils;
 mod process_watcher;
+#[cfg(test)]
+mod process_watcher_test;
 mod progress_trackers;
 mod release_notes;
 mod requests;
@@ -120,6 +126,8 @@ mod tapplets;
 mod tasks_tracker;
 mod telemetry_manager;
 mod telemetry_service;
+#[cfg(test)]
+mod testing;
 mod tests;
 mod tor_adapter;
 mod tor_control_client;

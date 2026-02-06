@@ -237,7 +237,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: ProcessInstanceTrait>(
+pub(crate) async fn do_health_check<
+    TStatusMonitor: StatusMonitor,
+    TProcessInstance: ProcessInstanceTrait,
+>(
     child: &mut TProcessInstance,
     status_monitor3: TStatusMonitor,
     name: String,
@@ -274,12 +277,17 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                 is_healthy = true;
             }
             HealthStatus::Initializing => {
+                // TODO(testing): If process stays in Initializing forever, no restart occurs.
+                // Consider adding max initialization timeout. See TESTING_ISSUES.md.
                 *warning_count = 0;
                 is_healthy = false;
             }
             HealthStatus::Warning => {
                 stats.num_warnings += 1;
                 *warning_count += 1;
+                // TODO(testing): When warning_count > 10, is_healthy stays false (triggers restart).
+                // Next 10 warnings are then "healthy" again, creating restart cycles.
+                // Clarify if this is intended behavior. See TESTING_ISSUES.md.
                 if *warning_count > 10 {
                     error!(target: LOG_TARGET_STATUSES, "{name} is not healthy. Health check returned warning");
                     *warning_count = 0;
