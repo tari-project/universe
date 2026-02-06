@@ -149,5 +149,13 @@ ignored = [
   "openssl",
 ]
 
+[dev-dependencies]
+mockall = "0.13"
+tempfile = "3.10"
+serial_test = "3.0"
+test-case = "3.3"
+tokio-test = "0.4"
+wiremock = "0.6"
+
 [profile.release]
 debug = true

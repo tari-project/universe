@@ -1,0 +1,21 @@
+# Clippy configuration for Tari Universe
+# See: https://doc.rust-lang.org/clippy/lint_configuration.html
+
+# Allow unwrap/expect in test code - tests should be allowed to panic on failures
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true
+
+# Allow panics in test code
+allow-panic-in-tests = true
+
+# Allow indexing/slicing in test code (can panic but acceptable in tests)
+allow-indexing-slicing-in-tests = true
+
+# Allow dbg! macro in test code for debugging
+allow-dbg-in-tests = true
+
+# Allow print statements in test code
+allow-print-in-tests = true
+
+# Test functions can be longer than production code
+too-many-lines-threshold = 100
