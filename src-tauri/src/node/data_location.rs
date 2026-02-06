@@ -24,7 +24,6 @@ use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::LOG_TARGET_APP_LOGIC;
 use fs_extra::{dir, move_items};
 use log::{error, info};
-use serde_json::to_string;
 use std::fs;
 use tauri::ipc::InvokeError;
 
