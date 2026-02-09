@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
+use crate::node::chain_data_path::chain_data_dir;
 use crate::LOG_TARGET_APP_LOGIC;
 use log::{error, info, warn};
 use std::fs;
@@ -46,19 +47,11 @@ pub async fn check_data_import(app_handle: AppHandle) -> Result<(), anyhow::Erro
                             .app_local_data_dir()
                             .map_err(|e| anyhow::Error::msg(e.to_string()))?;
 
-                        let mut node_data_dir = local_data_dir.clone();
-                        if let Some(custom_path) =
-                            ConfigCore::content().await.node_data_directory().clone()
-                        {
-                            node_data_dir = custom_path;
-                        }
-
-                        let existing_db = node_data_dir
-                            .join("node")
-                            .join(Network::get_current_or_user_setting_or_default().to_string())
-                            .join("data")
-                            .join("base_node")
-                            .join("db");
+                        let custom_path =
+                            ConfigCore::content().await.chain_data_directory().clone();
+                        let chain_dir =
+                            chain_data_dir(&local_data_dir, custom_path.as_deref());
+                        let existing_db = chain_dir.join("base_node").join("db");
 
                         info!(target: LOG_TARGET_APP_LOGIC, "Existing db path: {existing_db:?}");
                         let _unused = fs::remove_dir_all(&existing_db).inspect_err(|e| {
@@ -112,12 +105,7 @@ pub async fn clear_data(app_handle: AppHandle) -> Result<(), anyhow::Error> {
             .app_local_data_dir()
             .map_err(|e| anyhow::Error::msg(e.to_string()))?;
 
-        let mut node_data_dir = local_data_dir.clone();
-        if let Some(custom_path) = ConfigCore::content().await.node_data_directory().clone() {
-            node_data_dir = custom_path;
-        }
-
-        let node_peer_db = node_data_dir.join("node").join(network).join("peer_db");
+        let node_peer_db = local_data_dir.join("node").join(network).join("peer_db");
         let wallet_peer_db = local_data_dir.join("wallet").join(network).join("peer_db");
 
         // They may not exist. This could be first run.

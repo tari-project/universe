@@ -23,7 +23,7 @@ export interface ConfigCore {
     should_auto_launch: boolean;
     use_tor: boolean;
     shutdown_mode: ShutdownMode;
-    node_data_directory?: string;
+    chain_data_directory?: string;
 }
 export enum ShutdownMode {
     Direct = 'Direct',

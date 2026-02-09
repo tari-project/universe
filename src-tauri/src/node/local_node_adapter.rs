@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ab_test_selector::ABTestSelector;
+use crate::node::chain_data_path::chain_data_dir;
 use crate::node::node_adapter::{
     BaseNodeStatus, NodeAdapter, NodeAdapterService, NodeStatusMonitor,
 };
@@ -83,12 +84,14 @@ pub(crate) struct LocalNodeAdapter {
     pub(crate) ab_test_group: ABTestSelector,
     pub(crate) http_api_port: u16,
     consensus_manager: ConsensusManager,
+    chain_data_directory: Option<PathBuf>,
 }
 
 impl LocalNodeAdapter {
     pub fn new(
         status_broadcast: watch::Sender<BaseNodeStatus>,
         consensus_manager: ConsensusManager,
+        chain_data_directory: Option<PathBuf>,
     ) -> Self {
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
@@ -105,7 +108,12 @@ impl LocalNodeAdapter {
             ab_test_group: ABTestSelector::GroupA,
             http_api_port,
             consensus_manager,
+            chain_data_directory,
         }
+    }
+
+    pub fn set_chain_data_directory(&mut self, chain_data_directory: Option<PathBuf>) {
+        self.chain_data_directory = chain_data_directory;
     }
 
     pub fn get_grpc_address(&self) -> Option<(String, u16)> {
@@ -282,6 +290,13 @@ impl ProcessAdapter for LocalNodeAdapter {
                 self.http_api_port
             ),
         ];
+        if let Some(ref custom_path) = self.chain_data_directory {
+            let custom_chain_dir = chain_data_dir(custom_path, None);
+            if let Some(dir_str) = custom_chain_dir.to_str() {
+                args.push("-p".to_string());
+                args.push(format!("base_node.data_dir={}", dir_str));
+            }
+        }
         if self.use_pruned_mode {
             args.push("-p".to_string());
             args.push("base_node.storage.pruning_horizon=100".to_string());

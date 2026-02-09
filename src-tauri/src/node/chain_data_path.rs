@@ -1,4 +1,4 @@
-// Copyright 2024. The Tari Project
+// Copyright 2026. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
@@ -19,14 +19,16 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+use std::path::{Path, PathBuf};
+use tari_common::configuration::Network;
 
-pub mod chain_data_path;
-pub mod data_location;
-pub mod local_node_adapter;
-pub mod node_adapter;
-pub mod node_manager;
-pub mod remote_node_adapter;
-pub mod utils;
+pub fn network_folder_name() -> String {
+    Network::get_current().to_string().to_lowercase()
+}
 
-#[cfg(test)]
-mod node_manager_test;
+pub fn chain_data_dir(base_dir: &Path, custom_override: Option<&Path>) -> PathBuf {
+    let root = custom_override.unwrap_or(base_dir);
+    root.join("node")
+        .join(network_folder_name())
+        .join("data")
+}

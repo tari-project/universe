@@ -76,7 +76,8 @@ pub struct ConfigCoreContent {
     exchange_id: String,
     scheduler_events: HashMap<String, ScheduledEventInfo>,
     shutdown_mode: ShutdownMode,
-    node_data_directory: Option<PathBuf>,
+    #[serde(alias = "node_data_directory")]
+    chain_data_directory: Option<PathBuf>,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -131,7 +132,7 @@ impl Default for ConfigCoreContent {
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
             scheduler_events: HashMap::new(),
             shutdown_mode: ShutdownMode::Tasktray,
-            node_data_directory: None,
+            chain_data_directory: None,
         }
     }
 }
@@ -158,20 +159,20 @@ impl ConfigCore {
             let _unused = Self::_save_config(config._get_content().clone());
         };
 
-        if config.content.node_data_directory.is_none() {
+        if config.content.chain_data_directory.is_none() {
             if let Ok(app_data_dir) = app_handle.path().app_local_data_dir().inspect_err(|e| {
                 error!(target: LOG_TARGET_APP_LOGIC, "Could not load data dir {e}");
             }) {
-                config.content.node_data_directory = Some(app_data_dir);
+                config.content.chain_data_directory = Some(app_data_dir);
                 let _unused = Self::_save_config(config._get_content().clone());
             }
         }
     }
-    pub async fn update_node_data_directory(
+    pub async fn update_chain_data_directory(
         path: PathBuf,
     ) -> Result<Option<PathBuf>, anyhow::Error> {
-        let previous_path = Self::content().await.node_data_directory;
-        Self::update_field(ConfigCoreContent::set_node_data_directory, Some(path)).await?;
+        let previous_path = Self::content().await.chain_data_directory;
+        Self::update_field(ConfigCoreContent::set_chain_data_directory, Some(path)).await?;
         Ok(previous_path)
     }
 }

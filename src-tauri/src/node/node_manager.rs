@@ -163,6 +163,13 @@ impl NodeManager {
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
 
         if self.is_local().await {
+            {
+                let mut watcher = self.local_node_watcher.write().await;
+                if let Some(watcher) = watcher.as_mut() {
+                    let chain_data_dir = ConfigCore::content().await.chain_data_directory().clone();
+                    watcher.adapter.set_chain_data_directory(chain_data_dir);
+                }
+            }
             self.configure_adapter(
                 self.local_node_watcher.clone(),
                 self.is_local_current().await,
