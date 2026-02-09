@@ -123,6 +123,7 @@ export const Text = styled.div`
     font-size: 12px;
     opacity: 0.8;
     font-weight: 400;
-    line-height: 120%;
+    line-height: 1.1;
     max-width: 500px;
+    padding: 4px;
 `;
