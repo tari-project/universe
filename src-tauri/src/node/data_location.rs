@@ -57,7 +57,7 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
     let move_options = DirectoryMoveOptions {
         destination_directory_rule: DestinationDirectoryRule::AllowNonEmpty {
             colliding_file_behaviour: CollidingFileBehaviour::Abort,
-            colliding_subdirectory_behaviour: CollidingSubDirectoryBehaviour::Abort,
+            colliding_subdirectory_behaviour: CollidingSubDirectoryBehaviour::Continue,
         },
         allowed_strategies: DirectoryMoveAllowedStrategies::Either {
             copy_and_delete_options: DirectoryMoveByCopyOptions {
