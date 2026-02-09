@@ -56,7 +56,7 @@ describe('useWalletStore', () => {
 
         it('has wallet_scanning with default values', () => {
             const scanning = useWalletStore.getState().wallet_scanning;
-            expect(scanning.is_initial_scan_complete).toBe(true);
+            expect(scanning.is_initial_scan_complete).toBe(false);
             expect(scanning.scanned_height).toBe(0);
             expect(scanning.total_height).toBe(0);
             expect(scanning.progress).toBe(0);

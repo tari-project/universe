@@ -118,7 +118,7 @@ describe('useBlockchainVisualisationStore', () => {
             useBlockchainVisualisationStore.setState({
                 recapIds: ['1', '2', '3'],
             });
-            expect(useBlockchainVisualisationStore.getState().recapIds).toEqual([1, 2, 3]);
+            expect(useBlockchainVisualisationStore.getState().recapIds).toEqual(['1', '2', '3']);
         });
 
         it('can add to existing recap IDs', () => {
@@ -317,7 +317,7 @@ describe('useBlockchainVisualisationStore', () => {
 
             useBlockchainVisualisationStore.setState({ earnings: 1000000 });
 
-            expect(useBlockchainVisualisationStore.getState().recapIds).toEqual([1, 2, 3]);
+            expect(useBlockchainVisualisationStore.getState().recapIds).toEqual(['1', '2', '3']);
             expect(useBlockchainVisualisationStore.getState().rewardCount).toBe(5);
             expect(useBlockchainVisualisationStore.getState().earnings).toBe(1000000);
         });
