@@ -95,18 +95,22 @@ impl BalanceTracker {
             return;
         }
 
-        let mut total_credit: u64 = 0;
-        let mut total_debit: u64 = 0;
+        let mut total_credit: MicroMinotari = MicroMinotari::zero();
+        let mut total_debit: MicroMinotari = MicroMinotari::zero();
 
         for tx in transactions {
             // Use details.total_credit and details.total_debit from DisplayedTransaction
-            total_credit = total_credit.saturating_add(tx.details.total_credit.as_u64());
-            total_debit = total_debit.saturating_add(tx.details.total_debit.as_u64());
+            total_credit = total_credit.saturating_add(tx.details.total_credit);
+            total_debit = total_debit.saturating_add(tx.details.total_debit);
         }
 
         let current = self.get_balance().await;
 
-        match BalanceCalculator::calculate_new_balance(current, total_credit, total_debit) {
+        match BalanceCalculator::calculate_new_balance(
+            current,
+            total_credit.as_u64(),
+            total_debit.as_u64(),
+        ) {
             Ok(new_balance) => {
                 let mut balance = self.current_balance.write().await;
                 *balance = new_balance;
