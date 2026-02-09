@@ -100,8 +100,8 @@ impl BalanceTracker {
 
         for tx in transactions {
             // Use details.total_credit and details.total_debit from DisplayedTransaction
-            total_credit = total_credit.saturating_add(tx.details.total_credit);
-            total_debit = total_debit.saturating_add(tx.details.total_debit);
+            total_credit = total_credit.saturating_add(tx.details.total_credit.as_u64());
+            total_debit = total_debit.saturating_add(tx.details.total_debit.as_u64());
         }
 
         let current = self.get_balance().await;

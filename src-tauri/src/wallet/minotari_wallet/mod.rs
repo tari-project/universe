@@ -62,6 +62,7 @@ use std::{
 };
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
+use tari_common_types::types::FixedHash;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
@@ -83,6 +84,7 @@ static DEFAULT_GRPC_URL: LazyLock<String> = LazyLock::new(|| {
     http_api_url.to_string()
 });
 static DEFAULT_PASSWORD: &str = "test_password";
+static REQUIRED_CONFIRMATIONS: u64 = 3;
 
 // Blockchain scanning constants
 const SCAN_BATCH_SIZE: u64 = 25;
@@ -212,10 +214,12 @@ impl MinotariWalletManager {
     }
 
     /// Create a key from output hashes for pending transaction lookup
-    fn create_pending_tx_key(output_hashes: &[String]) -> String {
-        let mut sorted_hashes = output_hashes.to_vec();
-        sorted_hashes.sort();
-        sorted_hashes.join(",")
+    fn create_pending_tx_key(output_hashes: &[FixedHash]) -> String {
+        output_hashes
+            .first()
+            .copied()
+            .unwrap_or_else(FixedHash::zero)
+            .to_string()
     }
 
     /// Store a pending transaction for later matching with scanned transactions
@@ -235,7 +239,7 @@ impl MinotariWalletManager {
     /// Try to find and remove a pending transaction that matches the given output hashes
     /// Returns the pending transaction if found
     async fn match_and_remove_pending_transaction(
-        output_hashes: &[String],
+        output_hashes: &[FixedHash],
     ) -> Option<DisplayedTransaction> {
         if output_hashes.is_empty() {
             return None;
@@ -440,6 +444,7 @@ impl MinotariWalletManager {
                 DEFAULT_GRPC_URL.as_str(),
                 database_path_buf,
                 SCAN_BATCH_SIZE,
+                REQUIRED_CONFIRMATIONS,
             )
             .account(&tari_address)
             .mode(ScanMode::Continuous {
