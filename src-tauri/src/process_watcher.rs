@@ -237,7 +237,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: ProcessInstanceTrait>(
+pub(crate) async fn do_health_check<
+    TStatusMonitor: StatusMonitor,
+    TProcessInstance: ProcessInstanceTrait,
+>(
     child: &mut TProcessInstance,
     status_monitor3: TStatusMonitor,
     name: String,
@@ -274,12 +277,17 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                 is_healthy = true;
             }
             HealthStatus::Initializing => {
+                // TODO(testing): If process stays in Initializing forever, no restart occurs.
+                // Consider adding max initialization timeout. See TESTING_ISSUES.md.
                 *warning_count = 0;
                 is_healthy = false;
             }
             HealthStatus::Warning => {
                 stats.num_warnings += 1;
                 *warning_count += 1;
+                // TODO(testing): When warning_count > 10, is_healthy stays false (triggers restart).
+                // Next 10 warnings are then "healthy" again, creating restart cycles.
+                // Clarify if this is intended behavior. See TESTING_ISSUES.md.
                 if *warning_count > 10 {
                     error!(target: LOG_TARGET_STATUSES, "{name} is not healthy. Health check returned warning");
                     *warning_count = 0;
@@ -355,7 +363,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
 
             // We are adding unhealthy_timer.elapsed() to the duration since last healthy status instead of health_timer.elapsed()
             // because we get there by watcher tick and we want to measure the time since the last healthy status
-            // for GraxilMiner for example time between this line execution is around 10 seconds
+            // Time between line executions may be around 10 seconds
             // health_timer.elapsed() is resolves to around 1 second
             // unhealthy_timer.elapsed() resolves to around 10 seconds
             *duration_since_last_healthy_status += unhealthy_timer.elapsed();

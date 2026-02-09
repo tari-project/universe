@@ -29,7 +29,6 @@ use crate::{
     },
     events_emitter::EventsEmitter,
     hardware::{cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader},
-    mining::gpu::{interface::GpuMinerInterfaceTrait, manager::GpuManager, miners::GpuDeviceType},
     APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC,
 };
 
@@ -362,25 +361,10 @@ impl HardwareStatusMonitor {
     }
 
     // This method will decide if gpu mining is recommended by which we mean if it should be enabled by default in config mining
-    // It will have two steps verification:
-    // Checking raw_detected_devices in graxil which includes device_type ( INTEGRATED or DEDICATED )
-    // Checking system memory with sysinfo
-    // If there is at least one dedicated gpu and system memory is above 16GB we recommend enabling gpu mining
+    // It checks system memory with sysinfo
+    // If system memory is above 16GB we recommend enabling gpu mining
     pub async fn decide_if_gpu_mining_is_recommended(&self) -> Result<(), Error> {
-        let mut is_dedicated_gpu_found = false;
         let mut is_system_memory_above_16gb = false;
-
-        if let Ok(mut graxil_interface) = GpuManager::write().await.get_raw_graxil_miner() {
-            // TODO remove that extra detection step when miners will persist their state
-            graxil_interface.detect_devices().await?;
-            let raw_devices = graxil_interface.get_raw_gpu_devices();
-            info!(target: LOG_TARGET_APP_LOGIC, "Raw detected GPU devices: {:?}", raw_devices);
-            for device in raw_devices {
-                if device.device_type == GpuDeviceType::Dedicated {
-                    is_dedicated_gpu_found = true;
-                }
-            }
-        }
 
         let system = System::new_all();
         let total_memory_mb = system.total_memory() / 1024; // Convert KB to MB
@@ -389,10 +373,9 @@ impl HardwareStatusMonitor {
         }
 
         info!(target: LOG_TARGET_APP_LOGIC, "System total memory: {} MB", total_memory_mb);
-        info!(target: LOG_TARGET_APP_LOGIC, "Is dedicated GPU found: {}", is_dedicated_gpu_found);
 
         let is_gpu_mining_recommended = *ConfigMining::content().await.is_gpu_mining_recommended();
-        let should_recommend_gpu_mining = is_dedicated_gpu_found || is_system_memory_above_16gb;
+        let should_recommend_gpu_mining = is_system_memory_above_16gb;
 
         // is_gpu_mining_recommended is by default true on first run
         // This check handles first time check and cases when something change on the machine which caused to gpu not work

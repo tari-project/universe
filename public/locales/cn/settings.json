@@ -48,6 +48,7 @@
   "gpu-miners-not-found": "未找到 GPU 矿工",
   "gpu-mining-enabled": "GPU 挖矿",
   "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
+  "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
   "gpu-unavailable": "⚠️ GPU已禁用，因为您的硬件不支持",
   "hardware-status": "硬件状态",
   "idle-timeout": {

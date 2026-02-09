@@ -25,7 +25,6 @@ const configWalletInitialState: ConfigWallet = {
 const configMininigInitialState: ConfigMining = {
     created_at: '',
     cpu_mining_enabled: true,
-    gpu_engine: '',
     gpu_mining_enabled: true,
     mine_on_app_start: false,
     mining_modes: {},

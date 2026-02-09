@@ -37,7 +37,7 @@ use tokio::{
 use crate::{
     binaries::Binaries,
     configs::{
-        config_mining::{ConfigMining, ConfigMiningContent},
+        config_mining::ConfigMining,
         config_pools::ConfigPools,
         pools::{gpu_pools::GpuPool, PoolOrigin},
         trait_config::ConfigImpl,
@@ -46,9 +46,9 @@ use crate::{
     internal_wallet::InternalWallet,
     mining::{
         gpu::{
-            consts::{EngineType, GpuMiner, GpuMinerStatus, GpuMinerType, MINERS_PRIORITY},
+            consts::{GpuMiner, GpuMinerStatus, GpuMinerType, MINERS_PRIORITY},
             interface::{GpuMinerInterface, GpuMinerInterfaceTrait},
-            miners::{glytex::GlytexGpuMiner, graxil::GraxilGpuMiner, lolminer::LolMinerGpuMiner},
+            miners::lolminer::LolMinerGpuMiner,
         },
         pools::{gpu_pool_manager::GpuPoolManager, PoolManagerInterfaceTrait},
         GpuConnectionType, MinerControlsState,
@@ -86,8 +86,6 @@ pub struct GpuManager {
     intensity_percentage: Option<u32>,
     #[allow(dead_code)]
     worker_name: Option<String>,
-    #[allow(dead_code)]
-    selected_engine: Option<EngineType>,
 }
 
 impl GpuManager {
@@ -118,7 +116,6 @@ impl GpuManager {
             pool: None,
             intensity_percentage: None,
             worker_name: None,
-            selected_engine: None,
         }
     }
 
@@ -134,42 +131,24 @@ impl GpuManager {
         self.app_handle = Some(app_handle);
     }
 
-    pub fn get_raw_graxil_miner(&self) -> Result<GraxilGpuMiner, anyhow::Error> {
-        if self.available_miners.contains_key(&GpuMinerType::Graxil) {
-            Ok(GraxilGpuMiner::new(
-                self.gpu_internal_status_channel.clone(),
-            ))
-        } else {
-            Err(anyhow::anyhow!("Graxil miner is not available"))
-        }
-    }
-
     pub async fn initialize(
         process_stats_collector: Sender<ProcessWatcherStats>,
         status_channel: Sender<GpuMinerStatus>,
         node_status_channel: Option<Receiver<BaseNodeStatus>>,
     ) {
-        let selected_engine = ConfigMining::content().await.gpu_engine().clone();
         let mut instance = INSTANCE.write().await;
 
         instance.process_stats_collector = process_stats_collector;
         instance.gpu_external_status_channel = status_channel;
         instance.node_status_channel = node_status_channel;
-        instance.selected_engine = Some(selected_engine);
     }
 
-    // Loads the saved miner from config or the first available one
+    // Loads the saved miner - always uses LolMiner since it's the only GPU miner
     pub async fn load_saved_miner(&mut self) -> Result<(), anyhow::Error> {
-        let mut selected_gpu_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
+        let selected_gpu_miner_type = GpuMinerType::LolMiner;
 
         if self.available_miners.contains_key(&selected_gpu_miner_type) {
-            info!(target: LOG_TARGET_APP_LOGIC, "Loaded saved gpu miner: {selected_gpu_miner_type}");
-        } else if !self.available_miners.is_empty() {
-            if let Some(fallback_miner_type) = MINERS_PRIORITY.iter().find(|miner_type| {
-                matches!(self.available_miners.get(miner_type), Some(m) if m.is_healthy)
-            }) {
-                selected_gpu_miner_type = fallback_miner_type.clone();
-            }
+            info!(target: LOG_TARGET_APP_LOGIC, "Loaded gpu miner: {selected_gpu_miner_type}");
         } else {
             return Err(anyhow::anyhow!("No available gpu miners to load"));
         }
@@ -354,7 +333,6 @@ impl GpuManager {
             let gpu_usage_percentage = ConfigMining::content()
                 .await
                 .get_selected_gpu_usage_percentage();
-            let selected_engine = ConfigMining::content().await.gpu_engine().clone();
 
             if *ConfigPools::content().await.gpu_pool_enabled() {
                 self.handle_pool_connection_load().await?;
@@ -365,9 +343,7 @@ impl GpuManager {
             }
 
             let binary = match self.selected_miner {
-                GpuMinerType::Graxil => Binaries::Graxil,
                 GpuMinerType::LolMiner => Binaries::LolMiner,
-                GpuMinerType::Glytex => Binaries::Glytex,
             };
 
             // Worker name format depends on the pool
@@ -393,10 +369,6 @@ impl GpuManager {
             self.process_watcher
                 .adapter
                 .load_intensity_percentage(gpu_usage_percentage)
-                .await?;
-            self.process_watcher
-                .adapter
-                .load_gpu_engine(selected_engine)
                 .await?;
             self.process_watcher
                 .adapter
@@ -476,8 +448,6 @@ impl GpuManager {
             self.process_watcher.adapter = adapter;
             info!(target: LOG_TARGET_APP_LOGIC, "Set selected gpu miner interface in process watcher");
             EventsEmitter::emit_update_selected_gpu_miner(miner_cloned.miner_type).await;
-            ConfigMining::update_field(ConfigMiningContent::set_gpu_miner_type, miner_type.clone())
-                .await?;
             GpuPoolManager::handle_miner_switch(new_miner.clone()).await;
         } else {
             return Err(anyhow::anyhow!("Selected gpu miner is not available"));
@@ -603,13 +573,7 @@ impl GpuManager {
 
     fn resolve_miner_interface(&self, miner_type: &GpuMinerType) -> GpuMinerInterface {
         match miner_type {
-            GpuMinerType::Graxil => GpuMinerInterface::Graxil(GraxilGpuMiner::new(
-                self.gpu_internal_status_channel.clone(),
-            )),
             GpuMinerType::LolMiner => GpuMinerInterface::LolMiner(LolMinerGpuMiner::new(
-                self.gpu_internal_status_channel.clone(),
-            )),
-            GpuMinerType::Glytex => GpuMinerInterface::Glytex(GlytexGpuMiner::new(
                 self.gpu_internal_status_channel.clone(),
             )),
         }
@@ -686,11 +650,6 @@ impl GpuManager {
                 error!(target: LOG_TARGET_APP_LOGIC, "GpuManager::on_app_exit failed: {}", e);
             }
         }
-    }
-
-    #[allow(dead_code)]
-    pub async fn handle_engine_change(_new_engine: EngineType) -> Result<(), anyhow::Error> {
-        todo!()
     }
 
     #[allow(dead_code)]

@@ -32,7 +32,7 @@ use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::internal_wallet::InternalWallet;
 use crate::mining::cpu::CpuMinerStatus;
 use crate::mining::gpu::consts::GpuMinerStatus;
-use crate::mining::gpu::consts::GpuMiningAlgorithm;
+
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeManager;
 use crate::process_stats_collector::ProcessStatsCollector;
@@ -436,14 +436,8 @@ async fn get_telemetry_data_inner(
             (None, vec![])
         };
 
-    let mut gpu_hash_rate = None;
-    let mut gpu_hash_rate_c29 = None;
-
-    if gpu_status.algorithm.eq(&GpuMiningAlgorithm::SHA3X) {
-        gpu_hash_rate = Some(gpu_status.hash_rate);
-    } else {
-        gpu_hash_rate_c29 = Some(gpu_status.hash_rate);
-    }
+    let gpu_hash_rate: Option<f64> = None;
+    let gpu_hash_rate_c29 = Some(gpu_status.hash_rate);
 
     let is_hashrate_some = gpu_hash_rate.is_some() || gpu_hash_rate_c29.is_some();
 

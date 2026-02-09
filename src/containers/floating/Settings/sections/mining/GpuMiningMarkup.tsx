@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch.tsx';
@@ -14,12 +14,21 @@ import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { setGpuMiningEnabled, useConfigMiningStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
+import { type as osType } from '@tauri-apps/plugin-os';
 
 const GpuMiningMarkup = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const gpuDevicesHardware = useMiningMetricsStore((s) => s.gpu_devices);
     const gpuMiningModuleInitialized = useSetupStore(setupStoreSelectors.isGpuMiningModuleInitialized);
+    const [isMac, setIsMac] = useState(false);
+
+    useEffect(() => {
+        const currentOs = osType();
+        if (currentOs) {
+            setIsMac(currentOs === 'macos');
+        }
+    }, []);
 
     const isGPUMiningAvailable = useMemo(() => {
         if (!gpuDevicesHardware) return false;
@@ -30,6 +39,8 @@ const GpuMiningMarkup = () => {
         await setGpuMiningEnabled(!isGpuMiningEnabled);
     }, [isGpuMiningEnabled]);
 
+    const isDisabled = isMac || !gpuMiningModuleInitialized;
+
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>
@@ -38,14 +49,17 @@ const GpuMiningMarkup = () => {
                         <Typography variant="h6">{t('gpu-mining-enabled')}</Typography>
                     </SettingsGroupTitle>
                     <Typography>{t('mining-toggle-warning')}</Typography>
-                    {!isGPUMiningAvailable && (
+                    {isMac && (
+                        <Typography variant="p">{t('gpu-not-available-on-macos', { ns: 'settings' })}</Typography>
+                    )}
+                    {!isMac && !isGPUMiningAvailable && (
                         <Typography variant="p">{t('gpu-unavailable', { ns: 'settings' })}</Typography>
                     )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch
-                        checked={isGpuMiningEnabled}
-                        disabled={!gpuMiningModuleInitialized}
+                        checked={isGpuMiningEnabled && !isMac}
+                        disabled={isDisabled}
                         onChange={handleGpuMiningEnabled}
                     />
                 </SettingsGroupAction>

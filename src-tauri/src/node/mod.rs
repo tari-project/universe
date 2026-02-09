@@ -25,3 +25,6 @@ pub mod node_adapter;
 pub mod node_manager;
 pub mod remote_node_adapter;
 pub mod utils;
+
+#[cfg(test)]
+mod node_manager_test;

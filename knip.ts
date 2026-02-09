@@ -13,7 +13,7 @@ const config: KnipConfig = {
         unresolved: 'warn',
     },
     ignoreBinaries: ['commitlint'],
-    ignoreDependencies: ['babel-plugin-styled-components', 'babel-plugin-react-compiler', '@tauri-apps/cli'], // needed by plugins
+    ignoreDependencies: ['babel-plugin-styled-components', 'babel-plugin-react-compiler', '@tauri-apps/cli'],
     ignoreExportsUsedInFile: true,
 };
 
