@@ -197,6 +197,6 @@ export const setDirectory = async ({ path }: { path: string }) => {
         })
         .catch((e) => {
             console.error(`set_custom_node_directory error:`, e);
-            setError(`Could not set custom node data directory.`);
+            addToast({ type: 'error', title: 'Could not set a custom directory', text: e, timeout: 6000 });
         });
 };
