@@ -41,8 +41,8 @@ use crate::{
         config_ui::ConfigUIContent, config_wallet::ConfigWalletContent,
     },
     events::{
-        DetectedDevicesPayload, Event, EventType, NetworkStatusPayload, NodeTypeUpdatePayload, ProgressTrackerUpdatePayload,
-        ShowReleaseNotesPayload, TariAddressUpdatePayload,
+        DetectedDevicesPayload, Event, EventType, NetworkStatusPayload, NodeTypeUpdatePayload,
+        ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, TariAddressUpdatePayload,
     },
     hardware::hardware_status_monitor::PublicDeviceGpuProperties,
     setup::setup_manager::SetupPhase,
