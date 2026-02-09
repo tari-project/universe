@@ -186,6 +186,9 @@ impl InternalWallet {
                 {
                     Ok(cred) => cred.encrypted_seed,
                     Err(e) => {
+                        // TODO(testing): This panic crashes the app on credential failures.
+                        // Convert to Result and show user-friendly recovery UI.
+                        // See TESTING_ISSUES.md for full analysis.
                         panic!("Failed to get credentials: {e}")
                     }
                 };
@@ -326,6 +329,9 @@ impl InternalWallet {
         } else if let Some(ref details) = self.tari_wallet_details {
             &details.tari_address
         } else {
+            // TODO(testing): This panic can occur if wallet is in invalid state.
+            // Consider returning Result<&TariAddress, WalletError> instead.
+            // See TESTING_ISSUES.md for full analysis.
             panic!("Internal wallet must have a Tari Address defined!")
         }
     }
@@ -618,6 +624,9 @@ impl InternalWallet {
     ) -> Result<InternalWallet, anyhow::Error> {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Internal Wallet latest version detected.");
         let monero_address = wallet_config.monero_address().clone();
+        // TODO(testing): These panics can crash the app if config is corrupted.
+        // Convert to Result<InternalWallet, WalletConfigError> with recovery options.
+        // See TESTING_ISSUES.md for full analysis.
         if monero_address.is_empty() {
             panic!(
                 "Unexpected! Monero address should be accessible for v{:?}",

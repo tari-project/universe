@@ -22,7 +22,6 @@ import {
     handleCpuMinerControlsStateChanged,
     handleGpuMinerControlsStateChanged,
     handleSelectedMinerChanged,
-    setAvailableEngines,
     setShowEcoAlert,
 } from '@app/store/actions/miningStoreActions';
 import {
@@ -163,9 +162,6 @@ const useTauriEventsListener = () => {
                         break;
                     case 'AvailableMiners':
                         handleAvailableMinersChanged(event.payload);
-                        break;
-                    case 'DetectedAvailableGpuEngines':
-                        setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                         break;
                     case 'CriticalProblem': {
                         const isMacAppFolderError =

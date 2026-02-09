@@ -2,7 +2,6 @@ import {
     BackgroundNodeSyncUpdatePayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
-    DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
     GpuMiner,
     GpuMinerType,
@@ -71,10 +70,6 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'DetectedDevices';
           payload: DetectedDevicesPayload;
-      }
-    | {
-          event_type: 'DetectedAvailableGpuEngines';
-          payload: DetectedAvailableGpuEngines;
       }
     | {
           event_type: 'CriticalProblem';

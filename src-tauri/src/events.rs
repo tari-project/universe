@@ -49,7 +49,6 @@ pub enum EventType {
     NewBlockHeight,
     CloseSplashscreen,
     DetectedDevices,
-    DetectedAvailableGpuEngines,
     RestartingPhases,
     AskForRestart,
     ShowReleaseNotes,
@@ -127,12 +126,6 @@ pub struct NetworkStatusPayload {
     pub upload_speed: f64,
     pub latency: f64,
     pub is_too_low: bool,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct DetectedAvailableGpuEnginesPayload {
-    pub engines: Vec<String>,
-    pub selected_engine: String,
 }
 
 #[derive(Clone, Debug, Serialize)]

@@ -22,7 +22,6 @@
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 use crate::events_emitter::EventsEmitter;
-use crate::mining::gpu::consts::{EngineType, GpuMinerType};
 use crate::LOG_TARGET_APP_LOGIC;
 use getset::{Getters, Setters};
 use log::{info, warn};
@@ -32,7 +31,7 @@ use std::{collections::HashMap, fmt::Display, sync::LazyLock, time::SystemTime};
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-pub const MINING_CONFIG_VERSION: u32 = 1;
+pub const MINING_CONFIG_VERSION: u32 = 2;
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
     LazyLock::new(|| RwLock::new(ConfigMining::new()));
 
@@ -144,10 +143,8 @@ pub struct ConfigMiningContent {
     mine_on_app_start: bool,
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
-    gpu_engine: EngineType,
     gpu_devices_settings: GpuDevicesSettings,
     squad_override: Option<String>,
-    gpu_miner_type: GpuMinerType,
     pause_on_battery_mode: PauseOnBatteryModeState,
     is_lolminer_tested: bool,
     is_gpu_mining_recommended: bool,
@@ -163,11 +160,6 @@ impl Default for ConfigMiningContent {
             created_at: SystemTime::now(),
             selected_mining_mode: "Eco".to_string(),
             mine_on_app_start: true,
-            gpu_miner_type: if cfg!(target_os = "windows") || cfg!(target_os = "linux") {
-                GpuMinerType::LolMiner
-            } else {
-                GpuMinerType::Graxil
-            },
             mining_modes: HashMap::from([
                 (
                     "Eco".to_string(),
@@ -208,7 +200,6 @@ impl Default for ConfigMiningContent {
             ]),
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
-            gpu_engine: EngineType::OpenCL,
             gpu_devices_settings: GpuDevicesSettings::new(),
             pause_on_battery_mode: PauseOnBatteryModeState::Enabled,
             squad_override: None,
@@ -336,36 +327,46 @@ impl ConfigMining {
     }
 
     async fn _migrate() -> Result<(), anyhow::Error> {
-        let mut mining_modes = Self::content().await.mining_modes;
-        let should_update_selected = !mining_modes.contains_key("Turbo")
-            && Self::content().await.selected_mining_mode == "Eco";
+        let current_version = Self::content().await.version_counter;
 
-        mining_modes
-            .entry("Eco".to_string())
-            .and_modify(|m| m.cpu_usage_percentage = 1)
-            .and_modify(|m| m.gpu_usage_percentage = 1);
+        // v0 -> v1 migration (existing mining modes migration)
+        if current_version < 1 {
+            let mut mining_modes = Self::content().await.mining_modes;
+            let should_update_selected = !mining_modes.contains_key("Turbo")
+                && Self::content().await.selected_mining_mode == "Eco";
 
-        let turbo = MiningMode {
-            mode_type: MiningModeType::Turbo,
-            mode_name: "Turbo".to_string(),
-            cpu_usage_percentage: 10,
-            gpu_usage_percentage: 10,
-        };
+            mining_modes
+                .entry("Eco".to_string())
+                .and_modify(|m| m.cpu_usage_percentage = 1)
+                .and_modify(|m| m.gpu_usage_percentage = 1);
 
-        mining_modes
-            .entry("Turbo".to_string())
-            .or_insert_with(|| turbo);
+            let turbo = MiningMode {
+                mode_type: MiningModeType::Turbo,
+                mode_name: "Turbo".to_string(),
+                cpu_usage_percentage: 10,
+                gpu_usage_percentage: 10,
+            };
 
-        Self::update_field(ConfigMiningContent::set_mining_modes, mining_modes).await?;
+            mining_modes
+                .entry("Turbo".to_string())
+                .or_insert_with(|| turbo);
 
-        if should_update_selected {
-            Self::update_field(
-                ConfigMiningContent::set_selected_mining_mode,
-                "Turbo".to_string(),
-            )
-            .await?;
-            return Ok(());
+            Self::update_field(ConfigMiningContent::set_mining_modes, mining_modes).await?;
+
+            if should_update_selected {
+                Self::update_field(
+                    ConfigMiningContent::set_selected_mining_mode,
+                    "Turbo".to_string(),
+                )
+                .await?;
+            }
         }
+
+        // v1 -> v2 migration (SHA3 removal)
+        // Note: gpu_miner_type and gpu_engine fields will be ignored on next deserialize
+        // since they're removed from the struct. GPU mining disable is handled at runtime
+        // via is_supported_on_current_platform() check in phase_gpu_mining.rs
+
         Ok(())
     }
 

@@ -193,3 +193,23 @@ jobs:
           TELEMETRY_API_URL: http://localhost:3004
           EXCHANGE_ID: universal
         run: cargo test --locked --all-features --release
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run frontend tests
+        run: npm run test
+
+      - name: Run frontend tests with coverage
+        run: npm run test:coverage
