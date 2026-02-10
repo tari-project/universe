@@ -64,6 +64,8 @@ use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{airdrop, UniverseAppState, LOG_TARGET_APP_LOGIC};
 
 use base64::prelude::*;
+
+use crate::node::data_location::update_data_location;
 use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -2096,5 +2098,18 @@ pub async fn update_shutdown_mode_selection(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "update_shutdown_mode_selection took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+
+    update_data_location(path).await?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_custom_node_directory took too long: {:?}", timer.elapsed());
+    }
+
     Ok(())
 }

@@ -15,6 +15,7 @@ import { NodeType } from '@app/types/mining/node.ts';
 import { SchedulerEvent, SchedulerEventState } from '@app/types/mining/schedule.ts';
 
 import { useConfigCoreStore as store } from '../../stores/config/useConfigCoreStore.ts';
+import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 
 export const handleConfigCoreLoaded = async (coreConfig: ConfigCore) => {
     store.setState((c) => ({ ...c, ...coreConfig }));
@@ -186,4 +187,16 @@ export const updateShutdownMode = async (shutdownMode: ShutdownMode) => {
         setError('Could not change shutdown mode');
         store.setState((c) => ({ ...c, shutdown_mode: previousShutdownMode }));
     });
+};
+
+export const setDirectory = async ({ path }: { path: string }) => {
+    await invoke('set_custom_node_directory', { path })
+        .then(() => {
+            store.setState((c) => ({ ...c, node_data_directory: path }));
+            addToast({ title: `Success!`, type: 'success' });
+        })
+        .catch((e) => {
+            console.error(`set_custom_node_directory error:`, e);
+            addToast({ type: 'error', title: 'Could not set a custom directory', text: e, timeout: 6000 });
+        });
 };

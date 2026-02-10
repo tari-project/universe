@@ -25,20 +25,16 @@
 
 use app_in_memory_config::AppInMemoryConfig;
 use events_emitter::EventsEmitter;
-use log::{error, info, warn};
+use log::{error, info};
 use mining_status_manager::MiningStatusManager;
 use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
 use node::node_manager::NodeType;
-use process_stats_collector::ProcessStatsCollectorBuilder;
-
 use node::remote_node_adapter::RemoteNodeAdapter;
-
+use process_stats_collector::ProcessStatsCollectorBuilder;
 use setup::setup_manager::SetupManager;
-use std::fs::{remove_dir_all, remove_file};
-use std::path::Path;
+use std::fs::remove_file;
 use tasks_tracker::TasksTrackers;
-use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use tor_control_client::TorStatus;
@@ -48,7 +44,6 @@ use websocket_events_manager::WebsocketEventsManager;
 use websocket_manager::{WebsocketManager, WebsocketManagerStatusMessage, WebsocketMessage};
 
 use log4rs::config::RawConfig;
-use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tari_common::configuration::Network;
@@ -164,7 +159,6 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 #[derive(Clone)]
 struct UniverseAppState {
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
-    #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     mm_proxy_manager: MmProxyManager,
@@ -344,6 +338,7 @@ fn main() {
         reason = "This is a temporary fix until the new tauri API is released"
     )]
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
@@ -388,11 +383,6 @@ fn main() {
             }
         })
         .setup(|app| {
-            let config_path = app
-                .path()
-                .app_config_dir()
-                .expect("Could not get config dir");
-
             // Remove this after it's been rolled out for a few versions
             let log_path = app.path().app_log_dir().map_err(|e| e.to_string())?;
             let logs_cleared_file = log_path.join("logs_cleared");
@@ -415,104 +405,6 @@ fn main() {
 
             // Do this after logging has started otherwise we can't actually see any errors
             app.manage(app_state_clone);
-            match app.cli().matches() {
-                Ok(matches) => {
-                    if let Some(backup_path) = matches.args.get("import-backup") {
-                        if let Some(backup_path) = backup_path.value.as_str() {
-                            info!(
-                                target: LOG_TARGET_APP_LOGIC,
-                                "Trying to copy backup to existing db: {backup_path:?}"
-                            );
-                            let backup_path = Path::new(backup_path);
-                            if backup_path.exists() {
-                                let existing_db = app
-                                    .path()
-                                    .app_local_data_dir()
-                                    .map_err(Box::new)?
-                                    .join("node")
-                                    .join(
-                                        Network::get_current_or_user_setting_or_default()
-                                            .to_string(),
-                                    )
-                                    .join("data")
-                                    .join("base_node")
-                                    .join("db");
-
-                                info!(target: LOG_TARGET_APP_LOGIC, "Existing db path: {existing_db:?}");
-                                let _unused = fs::remove_dir_all(&existing_db).inspect_err(|e| {
-                                    warn!(
-                                        target: LOG_TARGET_APP_LOGIC,
-                                        "Could not remove existing db when importing backup: {e:?}"
-                                    )
-                                });
-                                let _unused = fs::create_dir_all(&existing_db).inspect_err(|e| {
-                                    error!(
-                                        target: LOG_TARGET_APP_LOGIC,
-                                        "Could not create existing db when importing backup: {e:?}"
-                                    )
-                                });
-                                let _unused = fs::copy(backup_path, existing_db.join("data.mdb"))
-                                    .inspect_err(|e| {
-                                        error!(
-                                            target: LOG_TARGET_APP_LOGIC,
-                                            "Could not copy backup to existing db: {e:?}"
-                                        )
-                                    });
-                            } else {
-                                warn!(
-                                    target: LOG_TARGET_APP_LOGIC,
-                                    "Backup file does not exist: {backup_path:?}"
-                                );
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Could not get cli matches: {e:?}");
-                    return Err(Box::new(e));
-                }
-            };
-            // The start of needed restart operations. Break this out into a module if we need n+1
-            let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
-            if tcp_tor_toggled_file.exists() {
-                let network = Network::default().as_key_str();
-
-                let local_data_dir = app
-                    .path()
-                    .app_local_data_dir()
-                    .expect("Could not get local data dir");
-
-                let node_peer_db = local_data_dir.join("node").join(network).join("peer_db");
-                let wallet_peer_db = local_data_dir.join("wallet").join(network).join("peer_db");
-
-                // They may not exist. This could be first run.
-                if node_peer_db.exists() {
-                    if let Err(e) = remove_dir_all(node_peer_db) {
-                        warn!(
-                            target: LOG_TARGET_APP_LOGIC,
-                            "Could not clear peer data folder: {e}"
-                        );
-                    }
-                }
-
-                if wallet_peer_db.exists() {
-                    if let Err(e) = remove_dir_all(wallet_peer_db) {
-                        warn!(
-                            target: LOG_TARGET_APP_LOGIC,
-                            "Could not clear peer data folder: {e}"
-                        );
-                    }
-                }
-
-                remove_file(tcp_tor_toggled_file).map_err(|e| {
-                    error!(
-                        target: LOG_TARGET_APP_LOGIC,
-                        "Could not remove tcp_tor_toggled file: {e}"
-                    );
-                    e.to_string()
-                })?;
-            }
-
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -602,6 +494,7 @@ fn main() {
             commands::mark_feedback_survey_as_completed,
             commands::update_shutdown_mode_selection,
             commands::set_pause_on_battery_mode,
+            commands::set_custom_node_directory,
             // Scheduler commands
             commands::add_scheduler_event,
             commands::remove_scheduler_event,

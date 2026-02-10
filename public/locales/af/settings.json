@@ -86,6 +86,13 @@
   "network": "Netwerk",
   "no-entry-guard": "Geen Toegangsbewaarder verbind nie!",
   "no-pool-configuration-available": "Geen swembadkonfigurasie beskikbaar nie",
+  "node": {
+    "confirm-title": "Confirm node data location change",
+    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
+    "data-cta": "Change location",
+    "data-subtitle": "Set a custom location to store the base node data",
+    "data-title": "Node data settings"
+  },
   "node-configuration": "Node-konfigurasie",
   "node-configuration-description": "Koppel met Afstand, Plaaslik of albei totdat jou Plaaslike gereed is om te gebruik",
   "node-connection-address": "Verbindingsadres",

@@ -86,6 +86,13 @@
   "network": "Jaringan",
   "no-entry-guard": "Tidak ada Penjaga Masuk yang terhubung!",
   "no-pool-configuration-available": "Tidak ada konfigurasi pool yang tersedia",
+  "node": {
+    "confirm-title": "Confirm node data location change",
+    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
+    "data-cta": "Change location",
+    "data-subtitle": "Set a custom location to store the base node data",
+    "data-title": "Node data settings"
+  },
   "node-configuration": "Konfigurasi Node",
   "node-configuration-description": "Hubungkan dengan Remote, Lokal, atau keduanya hingga Lokal Anda siap digunakan",
   "node-connection-address": "Alamat koneksi",

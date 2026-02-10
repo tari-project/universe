@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Wrapper, ProgressWrapper, Text, TextWrapper, Title } from './styles.ts';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { SettingsGroupWrapper } from '@app/containers/floating/Settings/components/SettingsGroup.styles.ts';
 interface Progress {
     current?: number;
     required?: number;
@@ -71,18 +72,24 @@ export function LocalNodeSync() {
         ) : null;
 
     const isSynced = lastUpdate?.step === 'Done';
-    return isSynced || !lastUpdate ? null : (
-        <Wrapper>
-            <TextWrapper>
-                <Title>{t('local-node-sync')}</Title>
-                {title && <Text>{`${title}...`}</Text>}
-            </TextWrapper>
-            <ProgressWrapper>
-                {peerProgressMarkup}
-                {headerProgress}
-                {blockProgress}
-                <CircularProgress />
-            </ProgressWrapper>
-        </Wrapper>
+
+    if (isSynced || !lastUpdate) {
+        return null;
+    }
+    return (
+        <SettingsGroupWrapper>
+            <Wrapper>
+                <TextWrapper>
+                    <Title>{t('local-node-sync')}</Title>
+                    {title && <Text>{`${title}...`}</Text>}
+                </TextWrapper>
+                <ProgressWrapper>
+                    {peerProgressMarkup}
+                    {headerProgress}
+                    {blockProgress}
+                    <CircularProgress />
+                </ProgressWrapper>
+            </Wrapper>
+        </SettingsGroupWrapper>
     );
 }

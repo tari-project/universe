@@ -140,4 +140,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'remove_scheduler_event', payload: { eventId: string }): Promise<void>;
     function invoke(param: 'pause_scheduler_event', payload: { eventId: string }): Promise<void>;
     function invoke(param: 'resume_scheduler_event', payload: { eventId: string }): Promise<void>;
+    function invoke(param: 'set_custom_node_directory', payload: { path: string }): Promise<void>;
 }

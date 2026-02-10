@@ -20,8 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{collections::HashMap, time::Duration};
-
+use super::{
+    listeners::SetupFeaturesList,
+    setup_manager::PhaseStatus,
+    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
+};
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
@@ -39,6 +43,8 @@ use crate::{
 };
 use anyhow::Error;
 use log::{error, info, warn};
+use std::path::PathBuf;
+use std::{collections::HashMap, time::Duration};
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::{
@@ -50,17 +56,11 @@ use tokio::{
 };
 use tokio_util::task::TaskTracker;
 
-use super::{
-    listeners::SetupFeaturesList,
-    setup_manager::PhaseStatus,
-    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
-    utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
-};
-
 #[derive(Clone, Default)]
 pub struct NodeSetupPhaseAppConfiguration {
     use_tor: bool,
     base_node_grpc_address: String,
+    custom_data_dir: Option<PathBuf>,
 }
 
 pub struct NodeSetupPhase {
@@ -147,10 +147,12 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let config_core = ConfigCore::content().await;
         let use_tor = *config_core.use_tor();
         let base_node_grpc_address = config_core.remote_base_node_address().clone();
+        let custom_data_dir = config_core.node_data_directory().clone();
 
         Ok(NodeSetupPhaseAppConfiguration {
             use_tor,
             base_node_grpc_address,
+            custom_data_dir,
         })
     }
 
@@ -161,7 +163,12 @@ impl SetupPhaseImpl for NodeSetupPhase {
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
         let app_configuration = Self::load_app_configuration().await.unwrap_or_default();
+
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let mut node_data_dir = data_dir.clone();
+        if let Some(custom_data_dir) = app_configuration.custom_data_dir {
+            node_data_dir = custom_data_dir
+        }
 
         let state = self.app_handle.state::<UniverseAppState>();
         let node_type = state.node_manager.get_node_type().await;
@@ -215,7 +222,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 let tor_control_port = state.tor_manager.get_control_port().await?;
                 match
                     state.node_manager.ensure_started(
-                        data_dir.clone(),
+                        node_data_dir.clone(),
                         config_dir.clone(),
                         log_dir.clone(),
                         use_tor,
@@ -231,7 +238,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         if let NodeManagerError::ExitCode(code) = e {
                             if STOP_ON_ERROR_CODES.contains(&code) {
                                 warn!(target: LOG_TARGET_APP_LOGIC, "Database for node is corrupt or needs a restart, deleting and trying again.");
-                                state.node_manager.clean_data_folder(&data_dir).await?;
+                                state.node_manager.clean_data_folder(&node_data_dir).await?;
                                 state.wallet_manager.clean_data_folder(&data_dir).await?;
                             }
                             continue;
