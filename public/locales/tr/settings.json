@@ -86,6 +86,13 @@
   "network": "Ağ",
   "no-entry-guard": "Giriş Koruması bağlı değil!",
   "no-pool-configuration-available": "Havuz yapılandırması mevcut değil",
+  "node": {
+    "confirm-title": "Confirm node data location change",
+    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
+    "data-cta": "Change location",
+    "data-subtitle": "Set a custom location to store the base node data",
+    "data-title": "Node data settings"
+  },
   "node-configuration": "Düğüm yapılandırması",
   "node-configuration-description": "Yerel kullanıma hazır olana kadar Uzaktan, Yerel veya her ikisiyle bağlanın",
   "node-connection-address": "Bağlantı adresi",

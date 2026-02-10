@@ -86,6 +86,13 @@
   "network": "Netzwerk",
   "no-entry-guard": "Kein Eingangswächter verbunden!",
   "no-pool-configuration-available": "Keine Pool-Konfiguration verfügbar",
+  "node": {
+    "confirm-title": "Confirm node data location change",
+    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
+    "data-cta": "Change location",
+    "data-subtitle": "Set a custom location to store the base node data",
+    "data-title": "Node data settings"
+  },
   "node-configuration": "Knotenkonfiguration",
   "node-configuration-description": "Verbinden Sie sich mit Remote, Lokal oder beidem, bis Ihr Lokal einsatzbereit ist",
   "node-connection-address": "Verbindungsadresse",

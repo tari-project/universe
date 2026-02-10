@@ -12,6 +12,7 @@ interface NodeStoreState {
     tor_entry_guards: string[];
     isNodeConnected: boolean;
     base_node_status?: BaseNodeStatus;
+    moveDataConfirmed: boolean;
 }
 
 const initialState: NodeStoreState = {
@@ -23,6 +24,7 @@ const initialState: NodeStoreState = {
     node_connection_address: '',
     tor_entry_guards: [],
     isNodeConnected: false,
+    moveDataConfirmed: false,
     base_node_status: undefined,
 };
 
@@ -54,3 +56,5 @@ export const setBackgroundNodeState = (backgroundNodeSyncLastUpdate: BackgroundN
         return { backgroundNodeSyncLastUpdate };
     });
 };
+
+export const setMoveDataConfirmed = (moveDataConfirmed: boolean) => useNodeStore.setState({ moveDataConfirmed });

@@ -88,6 +88,13 @@
   "network": "Rede",
   "no-entry-guard": "Nenhum Entry Guard conectado!",
   "no-pool-configuration-available": "No pool configuration available",
+  "node": {
+    "confirm-title": "Confirm node data location change",
+    "confirm-warning": "Moving your base node location could result in losing your existing chain data. If this happens you will have to resync.",
+    "data-cta": "Change location",
+    "data-subtitle": "Set a custom location to store the base node data",
+    "data-title": "Node data settings"
+  },
   "node-configuration": "Configuração do nó",
   "node-configuration-description": "Conecte-se com Remoto, Local ou ambos até que seu Local esteja pronto para uso",
   "node-connection-address": "Endereço de conexão",

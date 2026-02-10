@@ -42,6 +42,7 @@ use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::progress_trackers::progress_plans::SetupStep;
+use crate::setup::utils::pre_setup::{check_data_import, clear_data};
 use crate::setup::{
     phase_core::CoreSetupPhase, phase_cpu_mining::CpuMiningSetupPhase,
     phase_gpu_mining::GpuMiningSetupPhase, phase_node::NodeSetupPhase,
@@ -310,6 +311,13 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
+
+        let _ = check_data_import(app_handle.clone()).await.map_err(|e| {
+            error!(target: LOG_TARGET_APP_LOGIC, "Error in data import: {e}");
+        });
+        let _ = clear_data(app_handle.clone()).await.map_err(|e| {
+            error!(target: LOG_TARGET_APP_LOGIC, "Error clearing data: {e}");
+        });
 
         // Initialize after configs are loaded as its reads mining mode from config
         SystemTrayManager::write()

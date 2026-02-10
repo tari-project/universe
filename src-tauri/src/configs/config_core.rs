@@ -21,12 +21,14 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use getset::{Getters, Setters};
+use log::error;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::{sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::ab_test_selector::ABTestSelector;
@@ -35,6 +37,7 @@ use crate::event_scheduler::ScheduledEventInfo;
 use crate::node::node_manager::NodeType;
 use crate::shutdown_manager::ShutdownMode;
 use crate::utils::rand_utils;
+use crate::LOG_TARGET_APP_LOGIC;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -73,6 +76,7 @@ pub struct ConfigCoreContent {
     exchange_id: String,
     scheduler_events: HashMap<String, ScheduledEventInfo>,
     shutdown_mode: ShutdownMode,
+    node_data_directory: Option<PathBuf>,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -127,6 +131,7 @@ impl Default for ConfigCoreContent {
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
             scheduler_events: HashMap::new(),
             shutdown_mode: ShutdownMode::Tasktray,
+            node_data_directory: None,
         }
     }
 }
@@ -152,6 +157,22 @@ impl ConfigCore {
             config.content.version_counter = 1;
             let _unused = Self::_save_config(config._get_content().clone());
         };
+
+        if config.content.node_data_directory.is_none() {
+            if let Ok(app_data_dir) = app_handle.path().app_local_data_dir().inspect_err(|e| {
+                error!(target: LOG_TARGET_APP_LOGIC, "Could not load data dir {e}");
+            }) {
+                config.content.node_data_directory = Some(app_data_dir);
+                let _unused = Self::_save_config(config._get_content().clone());
+            }
+        }
+    }
+    pub async fn update_node_data_directory(
+        path: PathBuf,
+    ) -> Result<Option<PathBuf>, anyhow::Error> {
+        let previous_path = Self::content().await.node_data_directory;
+        Self::update_field(ConfigCoreContent::set_node_data_directory, Some(path)).await?;
+        Ok(previous_path)
     }
 }
 

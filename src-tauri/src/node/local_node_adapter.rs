@@ -29,9 +29,12 @@ use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec};
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
+#[cfg(target_os = "windows")]
+use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::LOG_TARGET_APP_LOGIC;
 use async_trait::async_trait;
 use log::{info, warn};
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -43,8 +46,6 @@ use tari_shutdown::Shutdown;
 use tari_transaction_components::consensus::ConsensusManager;
 use tokio::sync::watch;
 
-#[cfg(target_os = "windows")]
-use crate::utils::windows_setup_utils::add_firewall_rule;
 #[derive(Serialize, Deserialize, Default)]
 struct MinotariNodeMigrationInfo {
     version: u32,
@@ -285,17 +286,7 @@ impl ProcessAdapter for LocalNodeAdapter {
             args.push("-p".to_string());
             args.push("base_node.storage.pruning_horizon=100".to_string());
         }
-        // Uncomment to test winning blocks
-        // if cfg!(debug_assertions) {
-        // args.push("--network".to_string());
-        // args.push("localnet".to_string());
-        // }
         if self.use_tor {
-            // args.push("-p".to_string());
-            // args.push(
-            //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
-            //         .to_string(),
-            // );
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tor".to_string());
             if !cfg!(target_os = "macos") {
