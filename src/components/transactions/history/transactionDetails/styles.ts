@@ -27,14 +27,6 @@ export const Wrapper = styled.div`
     }
 `;
 
-export const EmojiAddressWrapper = styled.div`
-    display: flex;
-    width: 100%;
-    line-height: 1.4;
-    letter-spacing: 2px;
-    font-size: 13px;
-`;
-
 export const OperationsSection = styled.div`
     margin-top: 20px;
     display: flex;

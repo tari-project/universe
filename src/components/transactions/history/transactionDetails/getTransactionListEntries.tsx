@@ -10,7 +10,7 @@ import {
     TransactionSource,
     TransactionDisplayStatus,
 } from '@app/types/app-status.ts';
-import { EmojiAddressWrapper } from '@app/components/transactions/history/transactionDetails/styles.ts';
+
 import { formatEffectiveDate } from '../helpers';
 
 enum TransactionField {
@@ -206,19 +206,11 @@ export function getTransactionListEntries(transaction: DisplayedTransaction): St
         });
     }
 
-    if (transaction.counterparty?.address) {
+    if (transaction.counterparty) {
         entries.push({
             field: TransactionField.CounterpartyAddress,
             label: transaction.direction === TransactionDirection.Incoming ? 'From Address' : 'To Address',
-            value: transaction.counterparty.address,
-        });
-    }
-
-    if (transaction.counterparty?.address_emoji) {
-        entries.push({
-            field: TransactionField.CounterpartyEmoji,
-            label: transaction.direction === TransactionDirection.Incoming ? 'From (Emoji)' : 'To (Emoji)',
-            value: <EmojiAddressWrapper>{transaction.counterparty.address_emoji}</EmojiAddressWrapper>,
+            value: transaction.counterparty,
         });
     }
 

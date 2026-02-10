@@ -39,13 +39,13 @@ const LOG_TARGET: &str = "tari::universe::wallet::balance_tracker";
 static INSTANCE: LazyLock<BalanceTracker> = LazyLock::new(BalanceTracker::new);
 
 pub struct BalanceTracker {
-    current_balance: RwLock<u64>,
+    current_balance: RwLock<MicroMinotari>,
 }
 
 impl BalanceTracker {
     pub fn new() -> Self {
         Self {
-            current_balance: RwLock::new(0),
+            current_balance: RwLock::new(MicroMinotari(0)),
         }
     }
 
@@ -57,8 +57,8 @@ impl BalanceTracker {
     /// Initialize balance from database AccountBalance
     pub async fn initialize_from_account_balance(&self, account_balance: AccountBalance) {
         // Calculate available balance from total_credits - total_debits
-        let credits = account_balance.total_credits.unwrap_or(0) as u64;
-        let debits = account_balance.total_debits.unwrap_or(0) as u64;
+        let credits = account_balance.total_credits.unwrap_or(MicroMinotari(0));
+        let debits = account_balance.total_debits.unwrap_or(MicroMinotari(0));
         let balance = credits.saturating_sub(debits);
 
         let mut current = self.current_balance.write().await;
@@ -76,15 +76,15 @@ impl BalanceTracker {
     /// Clear balance (e.g., on wallet import)
     pub async fn clear(&self) {
         let mut current = self.current_balance.write().await;
-        *current = 0;
+        *current = MicroMinotari(0);
 
         info!(target: LOG_TARGET, "Balance cleared");
 
-        Self::emit_balance(0).await;
+        Self::emit_balance(MicroMinotari(0)).await;
     }
 
     /// Get current balance
-    pub async fn get_balance(&self) -> u64 {
+    pub async fn get_balance(&self) -> MicroMinotari {
         *self.current_balance.read().await
     }
 
@@ -95,8 +95,8 @@ impl BalanceTracker {
             return;
         }
 
-        let mut total_credit: MicroMinotari = MicroMinotari::zero();
-        let mut total_debit: MicroMinotari = MicroMinotari::zero();
+        let mut total_credit: MicroMinotari = MicroMinotari(0);
+        let mut total_debit: MicroMinotari = MicroMinotari(0);
 
         for tx in transactions {
             // Use details.total_credit and details.total_debit from DisplayedTransaction
@@ -106,11 +106,7 @@ impl BalanceTracker {
 
         let current = self.get_balance().await;
 
-        match BalanceCalculator::calculate_new_balance(
-            current,
-            total_credit.as_u64(),
-            total_debit.as_u64(),
-        ) {
+        match BalanceCalculator::calculate_new_balance(current, total_credit, total_debit) {
             Ok(new_balance) => {
                 let mut balance = self.current_balance.write().await;
                 *balance = new_balance;
@@ -133,9 +129,9 @@ impl BalanceTracker {
     }
 
     /// Emit balance update to frontend
-    async fn emit_balance(balance: u64) {
+    async fn emit_balance(balance: MicroMinotari) {
         let wallet_balance = WalletBalance {
-            available_balance: MicroMinotari(balance),
+            available_balance: balance,
             pending_incoming_balance: MicroMinotari(0),
             pending_outgoing_balance: MicroMinotari(0),
             timelocked_balance: MicroMinotari(0),

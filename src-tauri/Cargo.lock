@@ -4783,7 +4783,7 @@ dependencies = [
 [[package]]
 name = "minotari"
 version = "0.1.0"
-source = "git+https://github.com/tari-project/minotari-cli.git?rev=01ad2eae22363e2f3566e17331dbb8b1ec0a03cc#01ad2eae22363e2f3566e17331dbb8b1ec0a03cc"
+source = "git+https://github.com/tari-project/minotari-cli.git?rev=fefd9853e7c558d73e31047951e029f1775796bd#fefd9853e7c558d73e31047951e029f1775796bd"
 dependencies = [
  "anyhow",
  "argon2 0.5.3",
@@ -4797,7 +4797,6 @@ dependencies = [
  "lightweight_wallet_libs",
  "log",
  "log4rs",
- "num-format",
  "r2d2",
  "r2d2_sqlite",
  "reqwest 0.12.28",
