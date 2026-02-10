@@ -142,16 +142,14 @@ function shouldFetchBridgeItems(incomingWalletTransactions: DisplayedTransaction
     const bridgeWalletTransactions = useWalletStore.getState().bridge_transactions;
     const coldWalletAddress = useWalletStore.getState().cold_wallet_address;
 
-    const isThereANewBridgeTransaction = incomingWalletTransactions.some(
+    return incomingWalletTransactions.some(
         (tx) =>
-            tx.counterparty?.address === coldWalletAddress &&
+            tx.counterparty === coldWalletAddress &&
             (bridgeWalletTransactions.length === 0 ||
                 !bridgeWalletTransactions?.some(
                     (bridgeTx) => bridgeTx.paymentId === tx.message && Number(bridgeTx.tokenAmount) === tx.amount
                 ))
     );
-
-    return isThereANewBridgeTransaction;
 }
 
 const solveBridgeTransactionDetails = async (walletTxs: DisplayedTransaction[]): Promise<DisplayedTransaction[]> => {
@@ -164,7 +162,7 @@ const solveBridgeTransactionDetails = async (walletTxs: DisplayedTransaction[]):
                 if (
                     bridgeTx.paymentId === walletTx.message ||
                     (Number(bridgeTx.tokenAmount) === walletTx.amount &&
-                        walletTx.counterparty?.address === useWalletStore.getState().cold_wallet_address)
+                        walletTx.counterparty === useWalletStore.getState().cold_wallet_address)
                 ) {
                     processedTransactions[index] = {
                         ...walletTx,

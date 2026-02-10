@@ -11,14 +11,18 @@ import { useConfigUIStore } from '@app/store';
 export const formatEffectiveDate = (timestamp: string): string => {
     const appLanguage = useConfigUIStore.getState().application_language;
     const systemLang = useConfigUIStore.getState().should_always_use_system_language;
+    const date = new Date(timestamp);
+    const locale = systemLang ? undefined : appLanguage;
 
-    return new Date(timestamp)?.toLocaleString(systemLang ? undefined : appLanguage, {
+    const fmt = new Intl.DateTimeFormat(locale, {
         month: 'short',
         day: '2-digit',
-        hourCycle: 'h23',
+        hour12: false,
         hour: 'numeric',
         minute: 'numeric',
     });
+
+    return fmt.format(date);
 };
 
 export const resolveTransactionType = (transaction: DisplayedTransaction): TransactionType => {

@@ -64,12 +64,6 @@ export enum OutputStatus {
     Spent = 'Spent',
 }
 
-export interface CounterpartyInfo {
-    address: string;
-    address_emoji?: string;
-    label?: string;
-}
-
 export interface BlockchainInfo {
     block_height: number;
     timestamp: string;
@@ -117,7 +111,7 @@ export interface DisplayedTransaction {
     amount: number;
     amount_display: string;
     message?: string;
-    counterparty?: CounterpartyInfo;
+    counterparty?: string;
     blockchain: BlockchainInfo;
     fee?: FeeInfo;
     details: TransactionDetails;

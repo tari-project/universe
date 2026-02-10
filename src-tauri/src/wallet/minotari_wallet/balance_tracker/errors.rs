@@ -20,12 +20,19 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use tari_transaction_components::MicroMinotari;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum BalanceCalculationError {
     #[error("Balance overflow: current={current}, credit={credit}")]
-    Overflow { current: u64, credit: u64 },
+    Overflow {
+        current: MicroMinotari,
+        credit: MicroMinotari,
+    },
     #[error("Balance underflow: current={current}, debit={debit}")]
-    Underflow { current: u64, debit: u64 },
+    Underflow {
+        current: MicroMinotari,
+        debit: MicroMinotari,
+    },
 }
