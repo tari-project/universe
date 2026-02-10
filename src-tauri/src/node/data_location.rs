@@ -29,14 +29,16 @@ use fs_more::directory::{
     DirectoryMoveOptions, SymlinkBehaviour,
 };
 use fs_more::file::CollidingFileBehaviour;
-use log::{error, info};
+use log::{error, info, warn};
+use std::fs;
+use tari_common::configuration::Network;
 use tauri::ipc::InvokeError;
 
 pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
     let move_options = DirectoryMoveOptions {
         destination_directory_rule: DestinationDirectoryRule::AllowNonEmpty {
             colliding_file_behaviour: CollidingFileBehaviour::Abort,
-            colliding_subdirectory_behaviour: CollidingSubDirectoryBehaviour::Abort,
+            colliding_subdirectory_behaviour: CollidingSubDirectoryBehaviour::Continue,
         },
         allowed_strategies: DirectoryMoveAllowedStrategies::Either {
             copy_and_delete_options: DirectoryMoveByCopyOptions {
@@ -53,18 +55,37 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
                         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
                         .await;
 
-                    let source_dir = previous.join("node");
-                    let destination_dir = new_dir.join("node");
+                    let network = Network::get_current().to_string().to_lowercase();
+                    let source_dir = previous.join("node").join(&network);
+                    let destination_dir = new_dir.join("node").join(&network);
 
-                    match move_directory(source_dir, destination_dir, move_options) {
+                    if let Some(parent) = destination_dir.parent() {
+                        fs::create_dir_all(parent).map_err(|e| InvokeError::from(e.to_string()))?;
+                    }
+
+                    let dest_existed = destination_dir.exists();
+
+                    match move_directory(source_dir, destination_dir.clone(), move_options) {
                         Ok(res) => {
                             info!(target: LOG_TARGET_APP_LOGIC, "Successfully moved items - Total bytes: {}, Directories: {:?}", res.total_bytes_moved, res.directories_moved);
                         }
                         Err(e) => {
                             error!(target: LOG_TARGET_APP_LOGIC, "Could not move items, reverting config change: {e}");
+
+                            if !dest_existed && destination_dir.exists() {
+                                if let Err(cleanup_err) = fs::remove_dir_all(&destination_dir) {
+                                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up destination after failed move: {cleanup_err}");
+                                }
+                            }
+
                             ConfigCore::update_node_data_directory(previous)
                                 .await
                                 .map_err(|e| InvokeError::from(e.to_string()))?;
+
+                            SetupManager::get_instance()
+                                .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
+                                .await;
+
                             return Err(InvokeError::from(e.to_string()));
                         }
                     };

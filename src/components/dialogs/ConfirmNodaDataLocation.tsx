@@ -5,13 +5,17 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { Content, CTAWrapper, StyledCTA, Wrapper } from './styles.ts';
 import alertEmoji from '/assets/img/icons/emoji/alert_emoji.png';
 import { setMoveDataConfirmed } from '@app/store';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 export default function ConfirnNodeDataLocation() {
     const { t } = useTranslation('settings');
     const showConfirmLocation = useModalStore((s) => s.showConfirmLocation);
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        if (!showConfirmLocation) setIsLoading(false);
+    }, [showConfirmLocation]);
 
     function handleClose() {
         setShowConfirmLocation(false);

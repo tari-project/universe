@@ -3,7 +3,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 import { setDirectory } from '@app/store/actions/config/core.ts';
 import { setShowConfirmLocation } from '@app/store/stores/useModalStore.ts';
-import { useNodeStore } from '@app/store';
+import { setMoveDataConfirmed, useNodeStore } from '@app/store';
 
 export function useSetCustomDir() {
     const currentDir = useConfigCoreStore((s) => s.node_data_directory);
@@ -21,15 +21,15 @@ export function useSetCustomDir() {
 
     useEffect(() => {
         if (!moveDataConfirmed || !selectedDir) return;
-        function handleSetDirectory() {
-            startTransition(async () => {
+        startTransition(async () => {
+            try {
                 await setDirectory({ path: selectedDir });
-                // clear on both success and failure - currentDir from store (which matches config) will then be displayed
+            } finally {
+                setMoveDataConfirmed(false);
                 handleClear();
                 setShowConfirmLocation(false);
-            });
-        }
-        handleSetDirectory();
+            }
+        });
     }, [moveDataConfirmed, selectedDir]);
 
     return {
