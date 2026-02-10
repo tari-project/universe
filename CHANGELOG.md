@@ -14,7 +14,7 @@ Following up on last month's stability-focused release, Master Oogway's Secret p
 - 🚫 **SHA-3 mining removed** – SHA-3 mining has been fully removed from Tari Universe. GPU mining is currently not supported on macOS. We're focusing our efforts on delivering the best possible CPU and merge-mining experience for now.
 - 🧪 **Under the hood** – We've been hammering away on automated testing across both the frontend and backend to continue ensuring quality, stable releases over time.
 
-Thank you for your patience and continued support—Tari Universe keeps getting better because of you! 💜🐢
+Thank you for your patience and continued support. Tari Universe keeps getting better because of you! 💜🐢
 
 ---
 
