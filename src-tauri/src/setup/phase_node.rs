@@ -42,6 +42,7 @@ use crate::{
 };
 use anyhow::Error;
 use log::{error, info, warn};
+use std::path::PathBuf;
 use std::{collections::HashMap, time::Duration};
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
@@ -58,6 +59,7 @@ use tokio_util::task::TaskTracker;
 pub struct NodeSetupPhaseAppConfiguration {
     use_tor: bool,
     base_node_grpc_address: String,
+    custom_data_dir: Option<PathBuf>,
 }
 
 pub struct NodeSetupPhase {
@@ -144,10 +146,12 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let config_core = ConfigCore::content().await;
         let use_tor = *config_core.use_tor();
         let base_node_grpc_address = config_core.remote_base_node_address().clone();
+        let custom_data_dir = config_core.node_data_directory().clone();
 
         Ok(NodeSetupPhaseAppConfiguration {
             use_tor,
             base_node_grpc_address,
+            custom_data_dir,
         })
     }
 
@@ -160,7 +164,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let app_configuration = Self::load_app_configuration().await.unwrap_or_default();
 
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
-        let node_data_dir = data_dir.clone();
+        let mut node_data_dir = data_dir.clone();
+        if let Some(custom_data_dir) = app_configuration.custom_data_dir {
+            node_data_dir = custom_data_dir
+        }
 
         let state = self.app_handle.state::<UniverseAppState>();
         let node_type = state.node_manager.get_node_type().await;

@@ -6,7 +6,7 @@ import { setShowConfirmLocation } from '@app/store/stores/useModalStore.ts';
 import { useNodeStore } from '@app/store';
 
 export function useSetCustomDir() {
-    const currentDir = useConfigCoreStore((s) => s.chain_data_directory);
+    const currentDir = useConfigCoreStore((s) => s.node_data_directory);
     const moveDataConfirmed = useNodeStore((s) => s.moveDataConfirmed);
     const [isPending, startTransition] = useTransition();
     const [selectedDir, setSelectedDir] = useState('');

@@ -233,7 +233,7 @@ fn main() {
     let consensus_manager = ConsensusManager::builder(network).build();
     let node_manager = NodeManager::new(
         &mut stats_collector,
-        LocalNodeAdapter::new(local_node_watch_tx.clone(), consensus_manager.clone(), None),
+        LocalNodeAdapter::new(local_node_watch_tx.clone(), consensus_manager.clone()),
         RemoteNodeAdapter::new(remote_node_watch_tx.clone(), consensus_manager),
         // This value is later overriden when retrieved from config
         NodeType::Local,

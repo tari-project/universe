@@ -192,7 +192,7 @@ export const updateShutdownMode = async (shutdownMode: ShutdownMode) => {
 export const setDirectory = async ({ path }: { path: string }) => {
     await invoke('set_custom_node_directory', { path })
         .then(() => {
-            store.setState((c) => ({ ...c, chain_data_directory: path }));
+            store.setState((c) => ({ ...c, node_data_directory: path }));
             addToast({ title: `Success!`, type: 'success' });
         })
         .catch((e) => {
