@@ -25,7 +25,7 @@
 
 use app_in_memory_config::AppInMemoryConfig;
 use events_emitter::EventsEmitter;
-use log::{error, info};
+use log::{error, info, warn};
 use mining_status_manager::MiningStatusManager;
 use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
