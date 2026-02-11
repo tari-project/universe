@@ -685,6 +685,9 @@ fn main() {
                     });
                 } else if is_e2e {
                     info!(target: LOG_TARGET_APP_LOGIC, "E2E full mode: starting real backend with remote-ui");
+                    // Use mock keyring in E2E mode so wallet init works on headless CI
+                    #[cfg(feature = "test-mode")]
+                    keyring::set_default_credential_builder(keyring::mock::default_credential_builder());
                     tauri::async_runtime::spawn(async move {
                         EventsEmitter::load_app_handle(handle_clone.clone()).await;
                         utils::app_flow_utils::FrontendReadyChannel::current().set_ready();
