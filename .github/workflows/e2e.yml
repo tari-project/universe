@@ -43,6 +43,12 @@ jobs:
             ocl-icd-opencl-dev \
             xvfb
 
+      - name: Fix npm cache permissions (self-hosted runner)
+        run: |
+          if [ -d ~/.npm ]; then
+            sudo chown -R "$(id -u):$(id -g)" ~/.npm
+          fi
+
       - uses: actions/setup-node@v4
         with:
           node-version: lts/*
