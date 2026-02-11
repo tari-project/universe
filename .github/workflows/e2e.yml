@@ -1,0 +1,83 @@
+---
+name: E2E Tests
+
+'on':
+  workflow_dispatch:
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+permissions: {}
+
+env:
+  TARI_NETWORK: esmeralda
+
+jobs:
+  e2e:
+    name: E2E (ubuntu)
+    runs-on: [self-hosted, ubuntu-high-cpu]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies (linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --assume-yes \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libprotobuf-dev \
+            protobuf-compiler \
+            opencl-headers \
+            ocl-icd-opencl-dev \
+            xvfb
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2.7.5
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli
+        working-directory: ./src-tauri
+
+      - name: Create dist dir
+        run: mkdir -p dist
+
+      - name: Build Tauri binary (test-mode)
+        working-directory: ./src-tauri
+        run: cargo tauri build --debug --no-bundle --features test-mode
+
+      - name: Install E2E dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: e2e
+        env:
+          SKIP_BUILD: '1'
+        run: xvfb-run --auto-servernum npx playwright test
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: |
+            e2e/test-results/
+            e2e/playwright-report/
+          retention-days: 14
