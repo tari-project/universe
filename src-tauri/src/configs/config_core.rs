@@ -93,6 +93,7 @@ impl Default for ConfigCoreContent {
         let network = Network::get_current_or_user_setting_or_default();
         let remote_base_node_address = match network {
             Network::MainNet => "https://grpc.tari.com:443".to_string(),
+            Network::LocalNet => "http://127.0.0.1:18142".to_string(),
             _ => {
                 format!("https://grpc.{}.tari.com:443", network.as_key_str())
             }
@@ -127,7 +128,10 @@ impl Default for ConfigCoreContent {
             last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
             remote_base_node_address,
-            node_type: NodeType::default(),
+            node_type: match network {
+                Network::LocalNet | Network::Igor => NodeType::Local,
+                _ => NodeType::default(),
+            },
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
             scheduler_events: HashMap::new(),
             shutdown_mode: ShutdownMode::Tasktray,

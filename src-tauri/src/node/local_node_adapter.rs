@@ -94,12 +94,15 @@ impl LocalNodeAdapter {
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         let http_api_port = PortAllocator::new().assign_port_with_fallback();
 
+        let network = Network::get_current_or_user_setting_or_default();
+        let required_initial_peers = if network == Network::LocalNet { 0 } else { 3 };
+
         Self {
             grpc_address: Some(("127.0.0.1".to_string(), grpc_port)),
             status_broadcast,
             tcp_listener_port,
             use_pruned_mode: false,
-            required_initial_peers: 3,
+            required_initial_peers,
             use_tor: false,
             tor_control_port: None,
             ab_test_group: ABTestSelector::GroupA,
@@ -271,7 +274,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                 self.required_initial_peers
             ),
             "-p".to_string(),
-            "base_node.grpc_server_allow_methods=\"list_connected_peers, get_blocks\"".to_string(),
+            "base_node.grpc_server_allow_methods=\"list_connected_peers, get_blocks, list_headers\"".to_string(),
             "-p".to_string(),
             "base_node.p2p.allow_test_addresses=true".to_string(),
             "-p".to_string(),
@@ -311,15 +314,17 @@ impl ProcessAdapter for LocalNodeAdapter {
                 ));
             }
             let network = Network::get_current_or_user_setting_or_default();
-            args.push("-p".to_string());
             match network {
                 Network::MainNet => {
+                    args.push("-p".to_string());
                     args.push(format!(
                         "{key}.p2p.seeds.dns_seeds=seeds.tari.com",
                         key = network.as_key_str(),
                     ));
                 }
+                Network::LocalNet => {}
                 _ => {
+                    args.push("-p".to_string());
                     args.push(format!(
                         "{key}.p2p.seeds.dns_seeds=seeds.{key}.tari.com",
                         key = network.as_key_str(),
@@ -330,15 +335,17 @@ impl ProcessAdapter for LocalNodeAdapter {
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
             let network = Network::get_current_or_user_setting_or_default();
-            args.push("-p".to_string());
             match network {
                 Network::MainNet => {
+                    args.push("-p".to_string());
                     args.push(format!(
                         "{key}.p2p.seeds.dns_seeds=ip4.seeds.tari.com,ip6.seeds.tari.com",
                         key = network.as_key_str(),
                     ));
                 }
+                Network::LocalNet => {}
                 _ => {
+                    args.push("-p".to_string());
                     args.push(format!(
                         "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
                         key = network.as_key_str(),
@@ -361,6 +368,16 @@ impl ProcessAdapter for LocalNodeAdapter {
             info!(target: LOG_TARGET_APP_LOGIC, "Using AB test group A");
             args.push("-p".to_string());
             args.push("base_node.p2p.dht.minimize_connections=false".to_string());
+        }
+
+        let network = Network::get_current_or_user_setting_or_default();
+        if network == Network::LocalNet {
+            args.push("-p".to_string());
+            args.push(format!("{}.p2p.seeds.dns_seeds=", network.as_key_str()));
+            args.push("-p".to_string());
+            args.push("base_node.p2p.dht.network_discovery.enabled=false".to_string());
+            args.push("-p".to_string());
+            args.push("base_node.p2p.dht.auto_join=false".to_string());
         }
 
         #[cfg(target_os = "windows")]

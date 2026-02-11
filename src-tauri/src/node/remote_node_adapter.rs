@@ -129,7 +129,7 @@ impl NodeAdapter for RemoteNodeAdapter {
             Network::MainNet => "https://rpc.tari.com",
             Network::StageNet => "https://rpc.stagenet.tari.com",
             Network::NextNet => "https://rpc.nextnet.tari.com",
-            Network::LocalNet => "https://rpc.localnet.tari.com",
+            Network::LocalNet => "http://127.0.0.1:18142",
             Network::Igor => "https://rpc.igor.tari.com",
             Network::Esmeralda => "https://rpc.esmeralda.tari.com",
         };
