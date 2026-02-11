@@ -16,6 +16,11 @@ const networkGroups: Record<NetworkGroup, Network[]> = {
     mainnet: [Network.MainNet],
 };
 
+export function isLocalNet(): boolean {
+    const storedNetwork = useMiningStore.getState().network;
+    return storedNetwork === Network.LocalNet;
+}
+
 export function isMainNet(): boolean {
     const storedNetwork = useMiningStore.getState().network;
     const _network = Object.values(Network).find((network) => network === storedNetwork);

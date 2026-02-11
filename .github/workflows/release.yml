@@ -38,6 +38,8 @@ name: Release
           - esmeralda
           - nextnet
           - mainnet
+          - localnet
+          - igor
 
 concurrency:
   # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
@@ -69,7 +71,12 @@ jobs:
           elif [ "${{ github.event_name }}" == "workflow_dispatch" ] ; then
             echo "Ad-hoc Build - selective"
             echo "tari_network=${{ github.event.inputs.tari_network }}" >> $GITHUB_OUTPUT
-            echo "tari_target_network=${{ github.event.inputs.tari_network == 'esmeralda' && 'testnet' || github.event.inputs.tari_network }}" >> $GITHUB_OUTPUT
+            NETWORK="${{ github.event.inputs.tari_network }}"
+            if [ "$NETWORK" = "esmeralda" ] || [ "$NETWORK" = "localnet" ] || [ "$NETWORK" = "igor" ]; then
+              echo "tari_target_network=testnet" >> $GITHUB_OUTPUT
+            else
+              echo "tari_target_network=$NETWORK" >> $GITHUB_OUTPUT
+            fi
           else
             echo "Other builds"
             echo "tari_network=esmeralda" >> $GITHUB_OUTPUT

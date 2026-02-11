@@ -773,7 +773,7 @@ impl InternalWallet {
         let view_key_public = view_key.pub_key;
         let view_key_private = key_manager.get_private_view_key();
 
-        let network = Network::default();
+        let network = Network::get_current_or_user_setting_or_default();
         let tari_address = TariAddress::new_dual_address(
             view_key_public.clone(),
             comms_pub_key.clone(),

@@ -121,6 +121,8 @@ mod tapplets;
 mod tasks_tracker;
 mod telemetry_manager;
 mod telemetry_service;
+#[cfg(feature = "test-mode")]
+mod test_commands;
 #[cfg(test)]
 mod testing;
 mod tests;
@@ -281,7 +283,7 @@ fn main() {
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         cpu_miner_status_watch_rx.clone(),
         app_in_memory_config.clone(),
-        Some(Network::default()),
+        Some(Network::get_current()),
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
         tor_watch_rx.clone(),
@@ -337,7 +339,7 @@ fn main() {
         deprecated,
         reason = "This is a temporary fix until the new tauri API is released"
     )]
-    let app = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
@@ -364,7 +366,10 @@ fn main() {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
-        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_http::init());
+    #[cfg(feature = "test-mode")]
+    let builder = builder.plugin(tauri_remote_ui::init());
+    let app = builder
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
@@ -407,101 +412,210 @@ fn main() {
             app.manage(app_state_clone);
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
-            commands::download_and_start_installer,
-            commands::exit_application,
-            commands::fetch_tor_bridges,
-            commands::get_app_in_memory_config,
-            commands::get_applications_versions,
-            commands::get_monero_seed_words,
-            commands::get_network,
-            commands::get_paper_wallet_details,
-            commands::get_seed_words,
-            commands::get_tor_config,
-            commands::get_transactions,
-            commands::import_seed_words,
-            commands::revert_to_internal_wallet,
-            commands::log_web_message,
-            commands::open_log_dir,
-            commands::reset_settings,
-            commands::restart_application,
-            commands::send_feedback,
-            commands::set_allow_telemetry,
-            commands::set_application_language,
-            commands::set_auto_update,
-            commands::set_cpu_mining_enabled,
-            commands::set_display_mode,
-            commands::set_gpu_mining_enabled,
-            commands::set_mine_on_app_start,
-            commands::set_monero_address,
-            commands::set_monerod_config,
-            commands::set_external_tari_address,
-            commands::confirm_exchange_address,
-            commands::select_exchange_miner,
-            commands::set_show_experimental_settings,
-            commands::set_should_always_use_system_language,
-            commands::set_should_auto_launch,
-            commands::set_tor_config,
-            commands::set_use_tor,
-            commands::set_visual_mode,
-            commands::start_cpu_mining,
-            commands::start_gpu_mining,
-            commands::stop_cpu_mining,
-            commands::stop_gpu_mining,
-            commands::toggle_cpu_pool_mining,
-            commands::toggle_gpu_pool_mining,
-            commands::proceed_with_update,
-            commands::set_pre_release,
-            commands::toggle_device_exclusion,
-            commands::set_airdrop_tokens,
-            commands::get_airdrop_tokens,
-            commands::frontend_ready,
-            commands::start_mining_status,
-            commands::stop_mining_status,
-            commands::websocket_get_status,
-            commands::reconnect,
-            commands::send_one_sided_to_stealth_address,
-            commands::verify_address_for_send,
-            commands::validate_minotari_amount,
-            commands::trigger_phases_restart,
-            commands::set_node_type,
-            commands::set_allow_notifications,
-            commands::launch_builtin_tapplet,
-            commands::get_bridge_envs,
-            commands::parse_tari_address,
-            commands::refresh_wallet_history,
-            commands::get_base_node_status,
-            commands::create_pin,
-            commands::forgot_pin,
-            commands::set_seed_backed_up,
-            commands::select_mining_mode,
-            commands::update_custom_mining_mode,
-            commands::encode_payment_id_to_address,
-            commands::save_wxtm_address,
-            commands::set_security_warning_dismissed,
-            commands::change_cpu_pool,
-            commands::change_gpu_pool,
-            commands::update_selected_gpu_pool_config,
-            commands::update_selected_cpu_pool_config,
-            commands::reset_gpu_pool_config,
-            commands::reset_cpu_pool_config,
-            commands::restart_phases,
-            commands::list_connected_peers,
-            commands::set_feedback_fields,
-            commands::send_otp_request,
-            commands::set_mode_mining_time,
-            commands::set_eco_alert_needed,
-            commands::mark_shutdown_selection_as_completed,
-            commands::mark_feedback_survey_as_completed,
-            commands::update_shutdown_mode_selection,
-            commands::set_pause_on_battery_mode,
-            commands::set_custom_node_directory,
-            // Scheduler commands
-            commands::add_scheduler_event,
-            commands::remove_scheduler_event,
-            commands::pause_scheduler_event,
-            commands::resume_scheduler_event,
-        ])
+        .invoke_handler({
+            #[cfg(not(feature = "test-mode"))]
+            {
+                tauri::generate_handler![
+                    commands::download_and_start_installer,
+                    commands::exit_application,
+                    commands::fetch_tor_bridges,
+                    commands::get_app_in_memory_config,
+                    commands::get_applications_versions,
+                    commands::get_monero_seed_words,
+                    commands::get_network,
+                    commands::get_paper_wallet_details,
+                    commands::get_seed_words,
+                    commands::get_tor_config,
+                    commands::get_transactions,
+                    commands::import_seed_words,
+                    commands::revert_to_internal_wallet,
+                    commands::log_web_message,
+                    commands::open_log_dir,
+                    commands::reset_settings,
+                    commands::restart_application,
+                    commands::send_feedback,
+                    commands::set_allow_telemetry,
+                    commands::set_application_language,
+                    commands::set_auto_update,
+                    commands::set_cpu_mining_enabled,
+                    commands::set_display_mode,
+                    commands::set_gpu_mining_enabled,
+                    commands::set_mine_on_app_start,
+                    commands::set_monero_address,
+                    commands::set_monerod_config,
+                    commands::set_external_tari_address,
+                    commands::confirm_exchange_address,
+                    commands::select_exchange_miner,
+                    commands::set_show_experimental_settings,
+                    commands::set_should_always_use_system_language,
+                    commands::set_should_auto_launch,
+                    commands::set_tor_config,
+                    commands::set_use_tor,
+                    commands::set_visual_mode,
+                    commands::start_cpu_mining,
+                    commands::start_gpu_mining,
+                    commands::stop_cpu_mining,
+                    commands::stop_gpu_mining,
+                    commands::toggle_cpu_pool_mining,
+                    commands::toggle_gpu_pool_mining,
+                    commands::proceed_with_update,
+                    commands::set_pre_release,
+                    commands::toggle_device_exclusion,
+                    commands::set_airdrop_tokens,
+                    commands::get_airdrop_tokens,
+                    commands::frontend_ready,
+                    commands::start_mining_status,
+                    commands::stop_mining_status,
+                    commands::websocket_get_status,
+                    commands::reconnect,
+                    commands::send_one_sided_to_stealth_address,
+                    commands::verify_address_for_send,
+                    commands::validate_minotari_amount,
+                    commands::trigger_phases_restart,
+                    commands::set_node_type,
+                    commands::set_allow_notifications,
+                    commands::launch_builtin_tapplet,
+                    commands::get_bridge_envs,
+                    commands::parse_tari_address,
+                    commands::refresh_wallet_history,
+                    commands::get_base_node_status,
+                    commands::get_local_block_stats,
+                    commands::create_pin,
+                    commands::forgot_pin,
+                    commands::set_seed_backed_up,
+                    commands::select_mining_mode,
+                    commands::update_custom_mining_mode,
+                    commands::encode_payment_id_to_address,
+                    commands::save_wxtm_address,
+                    commands::set_security_warning_dismissed,
+                    commands::change_cpu_pool,
+                    commands::change_gpu_pool,
+                    commands::update_selected_gpu_pool_config,
+                    commands::update_selected_cpu_pool_config,
+                    commands::reset_gpu_pool_config,
+                    commands::reset_cpu_pool_config,
+                    commands::restart_phases,
+                    commands::list_connected_peers,
+                    commands::set_feedback_fields,
+                    commands::send_otp_request,
+                    commands::set_mode_mining_time,
+                    commands::set_eco_alert_needed,
+                    commands::mark_shutdown_selection_as_completed,
+                    commands::mark_feedback_survey_as_completed,
+                    commands::update_shutdown_mode_selection,
+                    commands::set_pause_on_battery_mode,
+                    commands::set_custom_node_directory,
+                    commands::add_scheduler_event,
+                    commands::remove_scheduler_event,
+                    commands::pause_scheduler_event,
+                    commands::resume_scheduler_event,
+                ]
+            }
+            #[cfg(feature = "test-mode")]
+            {
+                tauri::generate_handler![
+                    commands::download_and_start_installer,
+                    commands::exit_application,
+                    commands::fetch_tor_bridges,
+                    commands::get_app_in_memory_config,
+                    commands::get_applications_versions,
+                    commands::get_monero_seed_words,
+                    commands::get_network,
+                    commands::get_paper_wallet_details,
+                    commands::get_seed_words,
+                    commands::get_tor_config,
+                    commands::get_transactions,
+                    commands::import_seed_words,
+                    commands::revert_to_internal_wallet,
+                    commands::log_web_message,
+                    commands::open_log_dir,
+                    commands::reset_settings,
+                    commands::restart_application,
+                    commands::send_feedback,
+                    commands::set_allow_telemetry,
+                    commands::set_application_language,
+                    commands::set_auto_update,
+                    commands::set_cpu_mining_enabled,
+                    commands::set_display_mode,
+                    commands::set_gpu_mining_enabled,
+                    commands::set_mine_on_app_start,
+                    commands::set_monero_address,
+                    commands::set_monerod_config,
+                    commands::set_external_tari_address,
+                    commands::confirm_exchange_address,
+                    commands::select_exchange_miner,
+                    commands::set_show_experimental_settings,
+                    commands::set_should_always_use_system_language,
+                    commands::set_should_auto_launch,
+                    commands::set_tor_config,
+                    commands::set_use_tor,
+                    commands::set_visual_mode,
+                    commands::start_cpu_mining,
+                    commands::start_gpu_mining,
+                    commands::stop_cpu_mining,
+                    commands::stop_gpu_mining,
+                    commands::toggle_cpu_pool_mining,
+                    commands::toggle_gpu_pool_mining,
+                    commands::proceed_with_update,
+                    commands::set_pre_release,
+                    commands::toggle_device_exclusion,
+                    commands::set_airdrop_tokens,
+                    commands::get_airdrop_tokens,
+                    commands::frontend_ready,
+                    commands::start_mining_status,
+                    commands::stop_mining_status,
+                    commands::websocket_get_status,
+                    commands::reconnect,
+                    commands::send_one_sided_to_stealth_address,
+                    commands::verify_address_for_send,
+                    commands::validate_minotari_amount,
+                    commands::trigger_phases_restart,
+                    commands::set_node_type,
+                    commands::set_allow_notifications,
+                    commands::launch_builtin_tapplet,
+                    commands::get_bridge_envs,
+                    commands::parse_tari_address,
+                    commands::refresh_wallet_history,
+                    commands::get_base_node_status,
+                    commands::get_local_block_stats,
+                    commands::create_pin,
+                    commands::forgot_pin,
+                    commands::set_seed_backed_up,
+                    commands::select_mining_mode,
+                    commands::update_custom_mining_mode,
+                    commands::encode_payment_id_to_address,
+                    commands::save_wxtm_address,
+                    commands::set_security_warning_dismissed,
+                    commands::change_cpu_pool,
+                    commands::change_gpu_pool,
+                    commands::update_selected_gpu_pool_config,
+                    commands::update_selected_cpu_pool_config,
+                    commands::reset_gpu_pool_config,
+                    commands::reset_cpu_pool_config,
+                    commands::restart_phases,
+                    commands::list_connected_peers,
+                    commands::set_feedback_fields,
+                    commands::send_otp_request,
+                    commands::set_mode_mining_time,
+                    commands::set_eco_alert_needed,
+                    commands::mark_shutdown_selection_as_completed,
+                    commands::mark_feedback_survey_as_completed,
+                    commands::update_shutdown_mode_selection,
+                    commands::set_pause_on_battery_mode,
+                    commands::set_custom_node_directory,
+                    commands::add_scheduler_event,
+                    commands::remove_scheduler_event,
+                    commands::pause_scheduler_event,
+                    commands::resume_scheduler_event,
+                    test_commands::e2e_emit_cpu_mining_status,
+                    test_commands::e2e_emit_gpu_mining_status,
+                    test_commands::e2e_emit_base_node_status,
+                    test_commands::e2e_emit_wallet_balance,
+                    test_commands::e2e_emit_close_splashscreen,
+                    test_commands::e2e_emit_connection_status,
+                ]
+            }
+        })
         .build(tauri::generate_context!())
         .inspect_err(|e| {
             error!(
@@ -537,14 +651,73 @@ fn main() {
                 let state = handle_clone.state::<UniverseAppState>();
 
                 block_on(ShutdownManager::instance().initialize_app_handle(handle_clone.clone()));
-                block_on(state.updates_manager.initial_try_update(&handle_clone));
 
-                tauri::async_runtime::spawn(async move {
-                    SetupManager::get_instance()
-                        .start_setup(handle_clone.clone())
-                        .await;
-                    SetupManager::spawn_sleep_mode_handler().await;
-                });
+                let (is_e2e, is_e2e_mock) = {
+                    use tauri_plugin_cli::CliExt;
+                    let matches = handle_clone.cli().matches();
+                    let e2e = matches.as_ref().is_ok_and(|m| {
+                        m.args.get("e2e").is_some_and(|arg| arg.occurrences > 0)
+                    });
+                    let e2e_mock = matches.as_ref().is_ok_and(|m| {
+                        m.args.get("e2e-mock").is_some_and(|arg| arg.occurrences > 0)
+                    });
+                    (e2e, e2e_mock)
+                };
+
+                if is_e2e_mock {
+                    info!(target: LOG_TARGET_APP_LOGIC, "E2E mock mode: skipping process initialization");
+                    tauri::async_runtime::spawn(async move {
+                        EventsEmitter::load_app_handle(handle_clone.clone()).await;
+                        #[cfg(feature = "test-mode")]
+                        {
+                            use tauri_remote_ui::RemoteUiExt;
+                            let mut config = tauri_remote_ui::RemoteUiConfig::default().set_port(Some(9515));
+                            if std::env::var("REMOTE_UI_BIND_ALL").as_deref() == Ok("1") {
+                                info!(target: LOG_TARGET_APP_LOGIC, "REMOTE_UI_BIND_ALL set: binding remote-ui to 0.0.0.0");
+                                config = config.set_allowed_origin(tauri_remote_ui::OriginType::Any);
+                            }
+                            if let Err(e) = handle_clone.start_remote_ui(config).await {
+                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to start remote UI: {e:?}");
+                            } else {
+                                info!(target: LOG_TARGET_APP_LOGIC, "Remote UI available at http://localhost:9515");
+                            }
+                        }
+                    });
+                } else if is_e2e {
+                    info!(target: LOG_TARGET_APP_LOGIC, "E2E full mode: starting real backend with remote-ui");
+                    tauri::async_runtime::spawn(async move {
+                        EventsEmitter::load_app_handle(handle_clone.clone()).await;
+                        utils::app_flow_utils::FrontendReadyChannel::current().set_ready();
+                        info!(target: LOG_TARGET_APP_LOGIC, "E2E: frontend ready channel pre-set");
+                        #[cfg(feature = "test-mode")]
+                        {
+                            use tauri_remote_ui::RemoteUiExt;
+                            let mut config = tauri_remote_ui::RemoteUiConfig::default().set_port(Some(9515));
+                            if std::env::var("REMOTE_UI_BIND_ALL").as_deref() == Ok("1") {
+                                info!(target: LOG_TARGET_APP_LOGIC, "REMOTE_UI_BIND_ALL set: binding remote-ui to 0.0.0.0");
+                                config = config.set_allowed_origin(tauri_remote_ui::OriginType::Any);
+                            }
+                            if let Err(e) = handle_clone.start_remote_ui(config).await {
+                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to start remote UI: {e:?}");
+                            } else {
+                                info!(target: LOG_TARGET_APP_LOGIC, "Remote UI available at http://localhost:9515");
+                            }
+                        }
+                        SetupManager::get_instance()
+                            .start_setup(handle_clone.clone())
+                            .await;
+                        SetupManager::spawn_sleep_mode_handler().await;
+                    });
+                } else {
+                    block_on(state.updates_manager.initial_try_update(&handle_clone));
+
+                    tauri::async_runtime::spawn(async move {
+                        SetupManager::get_instance()
+                            .start_setup(handle_clone.clone())
+                            .await;
+                        SetupManager::spawn_sleep_mode_handler().await;
+                    });
+                }
             }
             tauri::RunEvent::ExitRequested { api: _, code, .. } => {
                 info!(

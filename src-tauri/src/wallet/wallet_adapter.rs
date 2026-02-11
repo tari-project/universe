@@ -373,6 +373,7 @@ impl ProcessAdapter for WalletAdapter {
                         key = network.as_key_str(),
                     ));
                 }
+                Network::LocalNet => {}
                 _ => {
                     args.push(format!(
                         "{key}.p2p.seeds.dns_seeds=seeds.{key}.tari.com",
@@ -394,6 +395,7 @@ impl ProcessAdapter for WalletAdapter {
                         key = network.as_key_str(),
                     ));
                 }
+                Network::LocalNet => {}
                 _ => {
                     args.push(format!(
                         "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",

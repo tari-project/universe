@@ -119,6 +119,16 @@
                     "name": "import-backup",
                     "description": "Imports a minotari node backup file",
                     "takesValue": true
+                },
+                {
+                    "name": "e2e",
+                    "description": "Run in E2E testing mode with full backend (node, wallet, mining)",
+                    "takesValue": false
+                },
+                {
+                    "name": "e2e-mock",
+                    "description": "Run in E2E mock mode (skips process initialization, injects fake state)",
+                    "takesValue": false
                 }
             ]
         }

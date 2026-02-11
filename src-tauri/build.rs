@@ -28,8 +28,11 @@ fn main() {
     // This is project specific and doesn't work against our dependencies like tari_common.
     // It's essentially duplicated work for lints etc that npm already injects when running tauri.
     // TODO: Remove compile time env vars. TU should be network agnostic.
-    println!("cargo::rerun-if-changed=env.esme");
+    println!("cargo::rerun-if-changed=env.esmeralda");
     println!("cargo::rerun-if-changed=env.mainnet");
+    println!("cargo::rerun-if-changed=env.nextnet");
+    println!("cargo::rerun-if-changed=env.localnet");
+    println!("cargo::rerun-if-changed=env.igor");
     println!("cargo::rerun-if-env-changed=TARI_NETWORK");
     println!("cargo::rerun-if-env-changed=TARI_TARGET_NETWORK");
 
