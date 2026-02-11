@@ -22,6 +22,7 @@ function getBinaryPath(projectRoot: string): string {
       break;
     default:
       candidates.push(path.join(debugDir, 'tari-universe'));
+      candidates.push(path.join(debugDir, 'Tari Universe (Alpha)'));
       break;
   }
 
