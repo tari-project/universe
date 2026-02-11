@@ -84,7 +84,7 @@ tari_transaction_components = { git = "https://github.com/tari-project/tari/", r
 tari_crypto = "0.22.1"
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", rev = "766f80ccc20596413ee208311750c11e02a2841d" }
 tari_utilities = { version = "0.8", features = ["std"] }
-minotari-wallet = { package = "minotari", git = "https://github.com/tari-project/minotari-cli.git", rev = "fb5e0e78d75d54403b01b8aa2374e3cc2c99f18d" }
+minotari-wallet = { package = "minotari", git = "https://github.com/tari-project/minotari-cli.git", rev = "eeb8247fbdcd46f43bafee4c46e981543afe2985" }
 tauri = { version = "2", features = [
   "protocol-asset",
   "isolation",
