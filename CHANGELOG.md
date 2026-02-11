@@ -1,3 +1,23 @@
+🚀 TARI UNIVERSE v1.6.10: Master Oogway's Secret pt 2
+
+_February 10, 2026_
+
+Hey Tari fam,
+
+Following up on last month's stability-focused release, Master Oogway's Secret pt 2 brings some important under-the-hood upgrades and a handy new feature for managing your node data.
+
+✨ WHAT'S NEW & FIXED
+
+- 📂 **Custom node data location** – You can now choose where your local node stores its chain data! Head to Settings to pick a custom directory, and Tari Universe will copy or move your existing chain data to the new location. Perfect if you want to free up space on your main drive or move things to a faster SSD.
+- ⛏️ **XMRig updated to v6.25.0** – We've updated the CPU mining engine to the latest version for improved performance and stability. Heads up: you may need to update your antivirus exclusions, as the new binary can trigger a fresh false-positive detection.
+- 🔒 **Tor updated to v15.0.5** – Updated to the latest Tor release for improved privacy and connection reliability.
+- 🚫 **SHA-3 mining removed** – SHA-3 mining has been fully removed from Tari Universe. GPU mining is currently not supported on macOS. We're focusing our efforts on delivering the best possible CPU and merge-mining experience for now.
+- 🧪 **Under the hood** – We've been hammering away on automated testing across both the frontend and backend to continue ensuring quality, stable releases over time.
+
+Thank you for your patience and continued support. Tari Universe keeps getting better because of you! 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.6.9: Master Oogway's Secret pt 1
 
 _January 21, 2026_
