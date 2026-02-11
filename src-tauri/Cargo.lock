@@ -4795,7 +4795,7 @@ dependencies = [
 [[package]]
 name = "minotari"
 version = "0.1.0"
-source = "git+https://github.com/tari-project/minotari-cli.git?rev=4d39146583f2751a9c3676d44e6bc29458aa41f6#4d39146583f2751a9c3676d44e6bc29458aa41f6"
+source = "git+https://github.com/tari-project/minotari-cli.git?rev=fb5e0e78d75d54403b01b8aa2374e3cc2c99f18d#fb5e0e78d75d54403b01b8aa2374e3cc2c99f18d"
 dependencies = [
  "anyhow",
  "argon2 0.5.3",
@@ -4805,12 +4805,14 @@ dependencies = [
  "clap 4.5.57",
  "config",
  "hex",
+ "hmac",
  "include_dir",
  "lightweight_wallet_libs",
  "log",
  "log4rs",
  "r2d2",
  "r2d2_sqlite",
+ "rand 0.8.5",
  "reqwest 0.12.28",
  "reqwest-middleware",
  "reqwest-retry",
@@ -4820,6 +4822,7 @@ dependencies = [
  "serde_json",
  "serde_rusqlite",
  "serde_yaml",
+ "sha2",
  "tari_common",
  "tari_common_types",
  "tari_crypto",

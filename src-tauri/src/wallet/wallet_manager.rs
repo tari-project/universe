@@ -207,7 +207,7 @@ impl WalletManager {
             fs::remove_dir_all(path_to_network_wallet).await?;
         }
 
-        log::info!(target: LOG_TARGET_APP_LOGIC, "Cleaning wallet data folder");
+        info!(target: LOG_TARGET_APP_LOGIC, "Cleaning wallet data folder");
         Ok(())
     }
 
