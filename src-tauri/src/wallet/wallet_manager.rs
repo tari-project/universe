@@ -199,6 +199,13 @@ impl WalletManager {
         self.initial_scan_completed
             .store(false, std::sync::atomic::Ordering::Relaxed);
 
+        let path_to_cli_wallet = base_path
+            .join("minotari-wallet")
+            .join(Network::get_current().to_string().to_lowercase());
+
+        if path_to_cli_wallet.try_exists()? && path_to_cli_wallet.is_dir() {
+            fs::remove_dir_all(path_to_cli_wallet).await?;
+        }
         let path_to_network_wallet = base_path
             .join("wallet")
             .join(Network::get_current().to_string().to_lowercase());
