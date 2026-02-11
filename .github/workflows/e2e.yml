@@ -3,6 +3,15 @@ name: E2E Tests
 
 'on':
   workflow_dispatch:
+  push:
+    branches:
+      - 'ci-*'
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  merge_group:
 
 concurrency:
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
@@ -11,7 +20,7 @@ concurrency:
 permissions: {}
 
 env:
-  TARI_NETWORK: esmeralda
+  TARI_NETWORK: localnet
 
 jobs:
   e2e:
