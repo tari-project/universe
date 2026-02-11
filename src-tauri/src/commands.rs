@@ -44,6 +44,7 @@ use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
+use crate::network_utils::NetworkExt;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
 use crate::pin::PinManager;
@@ -1621,7 +1622,7 @@ pub async fn set_node_type(
     }
 
     let network = Network::get_current_or_user_setting_or_default();
-    if matches!(network, Network::LocalNet | Network::Igor) && node_type != NodeType::Local {
+    if network.is_dev_network() && node_type != NodeType::Local {
         info!(target: LOG_TARGET_APP_LOGIC, "[set_node_type] Forcing Local node type for {network} network");
         node_type = NodeType::Local;
     }

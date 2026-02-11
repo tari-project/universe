@@ -34,6 +34,7 @@ use tokio::sync::RwLock;
 use crate::ab_test_selector::ABTestSelector;
 use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
 use crate::event_scheduler::ScheduledEventInfo;
+use crate::network_utils::NetworkExt;
 use crate::node::node_manager::NodeType;
 use crate::shutdown_manager::ShutdownMode;
 use crate::utils::rand_utils;
@@ -128,9 +129,10 @@ impl Default for ConfigCoreContent {
             last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
             remote_base_node_address,
-            node_type: match network {
-                Network::LocalNet | Network::Igor => NodeType::Local,
-                _ => NodeType::default(),
+            node_type: if network.is_dev_network() {
+                NodeType::Local
+            } else {
+                NodeType::default()
             },
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
             scheduler_events: HashMap::new(),

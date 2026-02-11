@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ab_test_selector::ABTestSelector;
+use crate::network_utils::NetworkExt;
 use crate::node::node_adapter::{
     BaseNodeStatus, NodeAdapter, NodeAdapterService, NodeStatusMonitor,
 };
@@ -95,7 +96,7 @@ impl LocalNodeAdapter {
         let http_api_port = PortAllocator::new().assign_port_with_fallback();
 
         let network = Network::get_current_or_user_setting_or_default();
-        let required_initial_peers = if network == Network::LocalNet { 0 } else { 3 };
+        let required_initial_peers = if network.is_solo_network() { 0 } else { 3 };
 
         Self {
             grpc_address: Some(("127.0.0.1".to_string(), grpc_port)),
@@ -121,9 +122,11 @@ impl LocalNodeAdapter {
 
     pub fn get_service(&self) -> Option<NodeAdapterService> {
         if let Some(grpc_address) = self.get_grpc_address() {
+            let network = Network::get_current_or_user_setting_or_default();
             Some(NodeAdapterService::new(
                 format!("http://{}:{}", grpc_address.0, grpc_address.1),
                 self.get_http_api_url(),
+                network,
                 self.required_initial_peers,
                 self.consensus_manager.clone(),
             ))
@@ -371,7 +374,7 @@ impl ProcessAdapter for LocalNodeAdapter {
         }
 
         let network = Network::get_current_or_user_setting_or_default();
-        if network == Network::LocalNet {
+        if network.is_solo_network() {
             args.push("-p".to_string());
             args.push(format!("{}.p2p.seeds.dns_seeds=", network.as_key_str()));
             args.push("-p".to_string());
@@ -401,6 +404,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                 NodeAdapterService::new(
                     format!("http://{}:{}", grpc_address.0, grpc_address.1),
                     self.get_http_api_url(),
+                    network,
                     self.required_initial_peers,
                     self.consensus_manager.clone(),
                 ),

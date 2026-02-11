@@ -77,9 +77,11 @@ impl RemoteNodeAdapter {
             } else {
                 format!("http://{}:{}", grpc_address.0, grpc_address.1)
             };
+            let network = Network::get_current_or_user_setting_or_default();
             Some(NodeAdapterService::new(
                 address,
                 self.get_http_api_url(),
+                network,
                 1,
                 consensus_manager,
             ))
@@ -185,6 +187,7 @@ impl ProcessAdapter for RemoteNodeAdapter {
                 NodeAdapterService::new(
                     address,
                     self.get_http_api_url(),
+                    Network::get_current_or_user_setting_or_default(),
                     1,
                     self.consensus_manager.clone(),
                 ),

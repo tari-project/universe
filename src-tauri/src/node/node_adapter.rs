@@ -56,7 +56,9 @@ use tokio::sync::watch;
 use tokio::time::timeout;
 use url::Url;
 
-use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
+use crate::network_utils::{
+    get_best_block_from_block_scan, get_block_info_from_block_scan, NetworkExt,
+};
 
 #[async_trait]
 pub trait NodeAdapter {
@@ -76,6 +78,7 @@ pub trait NodeAdapter {
 pub(crate) struct NodeAdapterService {
     connection_address: String,
     http_address: String,
+    network: Network,
     required_sync_peers: u32,
     consensus_manager: ConsensusManager,
 }
@@ -84,15 +87,23 @@ impl NodeAdapterService {
     pub fn new(
         connection_address: String,
         http_address: String,
+        network: Network,
         required_sync_peers: u32,
         consensus_manager: ConsensusManager,
     ) -> Self {
         Self {
             connection_address,
             http_address,
+            network,
             required_sync_peers,
             consensus_manager,
         }
+    }
+
+    /// A solo network (e.g. LocalNet) has no peers and no external block explorer.
+    /// The node is considered synced as soon as it is ready.
+    pub fn is_solo_network(&self) -> bool {
+        self.network.is_solo_network()
     }
 
     pub async fn get_network_state(
@@ -137,11 +148,8 @@ impl NodeAdapterService {
                 .unwrap_or(ReadinessStatus::NOT_READY);
             (status, res.num_connections)
         };
-        let is_synced = if !remote && self.required_sync_peers == 0 && readiness_status.is_ready() {
-            true
-        } else {
-            tip.is_synced
-        };
+        let is_synced =
+            (!remote && self.is_solo_network() && readiness_status.is_ready()) || tip.is_synced;
         Ok(BaseNodeStatus {
             block_reward,
             block_height,
@@ -332,7 +340,7 @@ impl NodeAdapterService {
             progress_percentage_tx.send(sync_info.percentage).ok();
             progress_params_tx.send(sync_info.progress_params).ok();
 
-            let sync_complete = if self.required_sync_peers == 0 {
+            let sync_complete = if self.is_solo_network() {
                 metadata.clone().is_some_and(|m| m.best_block_height() > 0)
             } else {
                 initial_sync_achieved
@@ -387,11 +395,10 @@ impl NodeAdapterService {
     }
 
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
-        let network = Network::get_current_or_user_setting_or_default();
-        if network == Network::LocalNet {
+        if self.is_solo_network() {
             return Ok(false);
         }
-        let block_scan_tip = get_best_block_from_block_scan(network).await?;
+        let block_scan_tip = get_best_block_from_block_scan(self.network).await?;
         let heights: Vec<u64> = vec![
             block_scan_tip.saturating_sub(50),
             block_scan_tip.saturating_sub(100),
@@ -400,7 +407,7 @@ impl NodeAdapterService {
         let mut block_scan_blocks: Vec<(u64, String)> = vec![];
 
         for height in &heights {
-            let block_scan_block = get_block_info_from_block_scan(network, height).await?;
+            let block_scan_block = get_block_info_from_block_scan(self.network, height).await?;
             block_scan_blocks.push(block_scan_block);
         }
 
@@ -464,7 +471,7 @@ impl StatusMonitor for NodeStatusMonitor {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status);
                     if status.readiness_status.is_initializing() {
-                        if self.node_service.required_sync_peers == 0
+                        if self.node_service.is_solo_network()
                             && status.readiness_status.migration_progress().is_none()
                         {
                             return HealthStatus::Healthy;
@@ -477,7 +484,7 @@ impl StatusMonitor for NodeStatusMonitor {
                         return HealthStatus::Initializing;
                     }
 
-                    if status.num_connections == 0 && self.node_service.required_sync_peers > 0 {
+                    if status.num_connections == 0 && !self.node_service.is_solo_network() {
                         warn!(
                             "{:?} Node Health Check Warning: No connections | status: {:?}",
                             self.node_type,
@@ -491,7 +498,7 @@ impl StatusMonitor for NodeStatusMonitor {
                         .load(std::sync::atomic::Ordering::SeqCst)
                         == status.block_time
                     {
-                        if self.node_service.required_sync_peers > 0
+                        if !self.node_service.is_solo_network()
                             && uptime.as_secs() > 3600
                             && EpochTime::now()
                                 .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
