@@ -41,7 +41,9 @@ jobs:
             protobuf-compiler \
             opencl-headers \
             ocl-icd-opencl-dev \
-            xvfb
+            xvfb \
+            gnome-keyring \
+            dbus-x11
 
       - name: Fix npm cache permissions (self-hosted runner)
         run: |
@@ -80,6 +82,13 @@ jobs:
       - name: Install Playwright browsers
         working-directory: e2e
         run: npx playwright install --with-deps chromium
+
+      - name: Start D-Bus and unlock gnome-keyring
+        run: |
+          eval "$(dbus-launch --sh-syntax)"
+          echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> "$GITHUB_ENV"
+          echo "DBUS_SESSION_BUS_PID=$DBUS_SESSION_BUS_PID" >> "$GITHUB_ENV"
+          echo '' | gnome-keyring-daemon --unlock --components=secrets
 
       - name: Run E2E tests
         working-directory: e2e
