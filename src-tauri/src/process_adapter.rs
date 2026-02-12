@@ -41,7 +41,7 @@ use crate::download_utils::set_permissions;
 use crate::events::CriticalProblemPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::process_killer::kill_process;
-use crate::process_utils::{launch_child_process, write_pid_file};
+use crate::process_utils::{graceful_kill, launch_child_process, write_pid_file};
 use crate::LOG_TARGET_APP_LOGIC;
 
 const SPACE_ERROR_MESSAGE: &str = "No space left on device";
@@ -266,9 +266,8 @@ impl ProcessInstanceTrait for ProcessInstance {
 
             select! {
                 _res = shutdown_signal =>{
-                    child.kill().await?;
+                    graceful_kill(&mut child).await?;
                     exit_code = 0;
-                    // res
                 },
                 res2 = child.wait() => {
                     match res2
