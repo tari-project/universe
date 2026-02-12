@@ -20,61 +20,49 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::time::Instant;
 
 use crate::configs::config_mcp::ConfigMcp;
 use crate::configs::trait_config::ConfigImpl;
 
-// TODO: Remove allow(dead_code) when Phase 2 (MCP server) uses rate limiting
+// TODO: Remove allow(dead_code) when Phase 2 (MCP server) uses the transaction rate limiter
 #[allow(dead_code)]
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
-pub enum RateLimitTier {
-    Read,
-    Control,
-    Transaction,
-}
-
-// TODO: Remove allow(dead_code) when Phase 2 (MCP server) uses rate limiting
-#[allow(dead_code)]
-pub struct RateLimiter {
-    windows: HashMap<(RateLimitTier, String), VecDeque<Instant>>,
+pub struct TransactionRateLimiter {
+    timestamps: VecDeque<Instant>,
 }
 
 #[allow(dead_code)]
-impl RateLimiter {
+impl TransactionRateLimiter {
     pub fn new() -> Self {
         Self {
-            windows: HashMap::new(),
+            timestamps: VecDeque::new(),
         }
     }
 
-    pub async fn check_allowed(&mut self, tier: &RateLimitTier, client_key: &str) -> bool {
+    /// Check if a transaction is allowed under the sliding window rate limit.
+    /// Returns `true` if the transaction is within the configured limit per minute.
+    pub async fn check_transaction_allowed(&mut self) -> bool {
         let config = ConfigMcp::content().await;
-        let limit = match tier {
-            RateLimitTier::Read | RateLimitTier::Control => *config.rate_limit_read(),
-            RateLimitTier::Transaction => *config.rate_limit_transaction(),
-        };
+        let limit = *config.rate_limit_transaction();
 
         let now = Instant::now();
         let window = std::time::Duration::from_secs(60);
-        let key = (tier.clone(), client_key.to_string());
-
-        let timestamps = self.windows.entry(key).or_default();
 
         // Remove expired entries
-        while timestamps
+        while self
+            .timestamps
             .front()
             .is_some_and(|t| now.duration_since(*t) > window)
         {
-            timestamps.pop_front();
+            self.timestamps.pop_front();
         }
 
-        if timestamps.len() >= limit as usize {
+        if self.timestamps.len() >= limit as usize {
             return false;
         }
 
-        timestamps.push_back(now);
+        self.timestamps.push_back(now);
         true
     }
 }

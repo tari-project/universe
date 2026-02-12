@@ -40,6 +40,7 @@ static INSTANCE: LazyLock<RwLock<ConfigMcp>> = LazyLock::new(|| RwLock::new(Conf
 #[serde(default)]
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ConfigMcpContent {
     version_counter: u32,
     created_at: SystemTime,
@@ -53,7 +54,6 @@ pub struct ConfigMcpContent {
     port: u16,
     read_tier_enabled: bool,
     control_tier_enabled: bool,
-    rate_limit_read: u32,
     rate_limit_transaction: u32,
 }
 
@@ -72,7 +72,6 @@ impl Default for ConfigMcpContent {
             port: 19222,
             read_tier_enabled: true,
             control_tier_enabled: true,
-            rate_limit_read: 60,
             rate_limit_transaction: 5,
         }
     }
@@ -101,7 +100,9 @@ impl ConfigMcpContent {
             self.token_created_at = Some(now);
             self.token_expires_at = Some(expiry);
         }
-        self.bearer_token.as_deref().unwrap()
+        self.bearer_token
+            .as_deref()
+            .expect("bearer_token guaranteed by preceding is_none check")
     }
 
     pub fn revoke_token(&mut self) {

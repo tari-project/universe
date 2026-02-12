@@ -504,16 +504,16 @@ fn main() {
             commands::pause_scheduler_event,
             commands::resume_scheduler_event,
             // MCP commands
-            commands::get_mcp_config,
-            commands::get_mcp_token,
-            commands::set_mcp_enabled,
-            commands::refresh_mcp_token_expiry,
-            commands::revoke_mcp_token,
-            commands::set_mcp_port,
-            commands::set_mcp_max_transaction_amount,
-            commands::set_mcp_tier_enabled,
-            commands::get_mcp_audit_log,
-            commands::export_mcp_audit_log,
+            mcp::commands::get_mcp_config,
+            mcp::commands::get_mcp_token,
+            mcp::commands::set_mcp_enabled,
+            mcp::commands::refresh_mcp_token_expiry,
+            mcp::commands::revoke_mcp_token,
+            mcp::commands::set_mcp_port,
+            mcp::commands::set_mcp_max_transaction_amount,
+            mcp::commands::set_mcp_tier_enabled,
+            mcp::commands::get_mcp_audit_log,
+            mcp::commands::export_mcp_audit_log,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {
