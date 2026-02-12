@@ -112,7 +112,7 @@ export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayloa
     }));
 };
 
-export const setExchangeETHAdress = (ethAddress: string, exchangeId: string) => {
+export const setExchangeETHAddress = (ethAddress: string, exchangeId: string) => {
     const newEntry = { [exchangeId]: ethAddress };
 
     useWalletStore.setState((c) => ({
@@ -180,20 +180,17 @@ const solveBridgeTransactionDetails = async (walletTxs: DisplayedTransaction[]):
     return walletTxs;
 };
 
+const getSortedTxs = (txs: DisplayedTransaction[]): DisplayedTransaction[] =>
+    txs.sort((a, b) => new Date(b.blockchain.timestamp).getTime() - new Date(a.blockchain.timestamp).getTime());
+
 export const handleWalletTransactionsFound = async (payload: DisplayedTransaction[]) => {
-    const currentTransactions = useWalletStore.getState().wallet_transactions;
-    const copiedCurrentTransactions = [...currentTransactions];
-    const filteredIncomingTransactions = payload.filter((newTx) => {
-        return !copiedCurrentTransactions.some((existingTx) => existingTx.id === newTx.id);
-    });
-
-    const processedTransactions = await solveBridgeTransactionDetails(filteredIncomingTransactions);
-
-    // Prepend new transactions so they appear at the top of the list
-    const mergedTransactions = processedTransactions.concat(copiedCurrentTransactions);
+    const transactions = useWalletStore.getState().wallet_transactions;
+    const incoming = payload.filter((newTx) => !transactions.some((existingTx) => existingTx.id === newTx.id));
+    const processedTransactions = await solveBridgeTransactionDetails(incoming);
+    const mergedTransactions = processedTransactions.concat(transactions);
     useWalletStore.setState((c) => ({
         ...c,
-        wallet_transactions: mergedTransactions,
+        wallet_transactions: getSortedTxs(mergedTransactions),
     }));
 };
 
@@ -205,33 +202,14 @@ export const handleWalletTransactionsCleared = () => {
 };
 
 export const handleWalletTransactionUpdated = async (payload: DisplayedTransaction) => {
-    // Find and replace the matching transaction (by id or output hashes)
-    const currentTransactions = useWalletStore.getState().wallet_transactions;
-
-    // Find matching transaction by sent_output_hashes in details
-    const matchingIndex = currentTransactions.findIndex((tx) => {
-        if (tx.id === payload.id) return true;
-        // Match by output hashes if available (in details)
-        const txHashes = tx.details?.sent_output_hashes;
-        const payloadHashes = payload.details?.sent_output_hashes;
-        if (txHashes?.length && payloadHashes?.length) {
-            const txHashKey = [...txHashes].sort().join(',');
-            const payloadHashKey = [...payloadHashes].sort().join(',');
-            return txHashKey === payloadHashKey;
-        }
-        return false;
-    });
-
-    if (matchingIndex >= 0) {
+    const transactions = useWalletStore.getState().wallet_transactions;
+    const matchingIndex = transactions.findIndex((tx) => tx.id === payload.id);
+    if (matchingIndex > -1) {
         const processedTransactions = await solveBridgeTransactionDetails([payload]);
-        const updatedTransaction = processedTransactions[0] || payload;
-
-        const newTransactions = [...currentTransactions];
-        newTransactions[matchingIndex] = updatedTransaction;
-
+        transactions[matchingIndex] = processedTransactions[0] || payload;
         useWalletStore.setState((c) => ({
             ...c,
-            wallet_transactions: newTransactions,
+            wallet_transactions: getSortedTxs(transactions),
         }));
     }
 };

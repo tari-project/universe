@@ -36,6 +36,7 @@ use crate::{
     UniverseAppState,
 };
 use log::{error, info};
+use minotari_wallet::transactions::TransactionDisplayStatus;
 use minotari_wallet::{
     db::{
         get_all_balance_changes_by_account_id, get_latest_scanned_tip_block_by_account,
@@ -500,19 +501,23 @@ impl MinotariWalletManager {
                     // Process transactions - check each for pending transaction match
                     let mut transactions_to_emit = Vec::new();
                     for tx in transactions_event.transactions {
-                        // Check if this scanned transaction matches any pending transaction
-                        if let Some(_pending_tx) =
-                            Self::match_and_remove_pending_transaction(&tx.id).await
-                        {
-                            // Emit update event - the scanned transaction replaces the pending one
-                            info!(
-                                target: LOG_TARGET,
-                                "Found matching pending transaction for scanned tx: {}",
-                                tx.id
-                            );
-                            EventsEmitter::emit_wallet_transaction_updated(tx.clone()).await;
+                        let is_ready = tx.status != TransactionDisplayStatus::Unconfirmed
+                            && tx.status != TransactionDisplayStatus::Pending;
+                        if is_ready {
+                            // Check if this scanned transaction matches any pending transaction
+                            if let Some(_pending_tx) =
+                                Self::match_and_remove_pending_transaction(&tx.id).await
+                            {
+                                // Emit update event - the scanned transaction replaces the pending one
+                                info!(
+                                    target: LOG_TARGET,
+                                    "Found matching pending transaction for scanned tx: {}",
+                                    tx.id
+                                );
+                                EventsEmitter::emit_wallet_transaction_updated(tx.clone()).await;
+                            }
+                            transactions_to_emit.push(tx);
                         }
-                        transactions_to_emit.push(tx);
                     }
 
                     // Update balance based on new transactions
@@ -548,7 +553,11 @@ impl MinotariWalletManager {
 
                     // Emit update event for each transaction with updated confirmations
                     for tx in update_event.updated_transactions {
-                        EventsEmitter::emit_wallet_transaction_updated(tx).await;
+                        let should_emit = tx.status != TransactionDisplayStatus::Unconfirmed
+                            && tx.status != TransactionDisplayStatus::Pending;
+                        if should_emit {
+                            EventsEmitter::emit_wallet_transaction_updated(tx).await;
+                        }
                     }
                 }
             }
