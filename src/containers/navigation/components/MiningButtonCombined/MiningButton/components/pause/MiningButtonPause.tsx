@@ -105,7 +105,7 @@ export default function MiningButtonPause({ children, isMining, isMiningButtonDi
                     >
                         {renderDurationOption(2)}
                         {renderDurationOption(8)}
-                        <OptionWrapper variants={item} onClick={handleStopMining}>
+                        <OptionWrapper data-testid="mining-stop" variants={item} onClick={handleStopMining}>
                             <IconWrapper>
                                 <PauseOutlineIcon />
                             </IconWrapper>

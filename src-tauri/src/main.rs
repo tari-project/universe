@@ -49,6 +49,8 @@ use std::sync::Arc;
 use tari_common::configuration::Network;
 use tari_transaction_components::consensus::ConsensusManager;
 use tauri::async_runtime::block_on;
+#[cfg(feature = "test-mode")]
+use tauri::Listener;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::RwLock;
@@ -281,7 +283,7 @@ fn main() {
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         cpu_miner_status_watch_rx.clone(),
         app_in_memory_config.clone(),
-        Some(Network::default()),
+        Some(Network::get_current()),
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
         tor_watch_rx.clone(),
@@ -337,7 +339,7 @@ fn main() {
         deprecated,
         reason = "This is a temporary fix until the new tauri API is released"
     )]
-    let app = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
@@ -364,7 +366,10 @@ fn main() {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
-        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_http::init());
+    #[cfg(feature = "test-mode")]
+    let builder = builder.plugin(tauri_remote_ui::init());
+    let app = builder
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
@@ -471,6 +476,7 @@ fn main() {
             commands::parse_tari_address,
             commands::refresh_wallet_history,
             commands::get_base_node_status,
+            commands::get_local_block_stats,
             commands::create_pin,
             commands::forgot_pin,
             commands::set_seed_backed_up,
@@ -496,7 +502,6 @@ fn main() {
             commands::update_shutdown_mode_selection,
             commands::set_pause_on_battery_mode,
             commands::set_custom_node_directory,
-            // Scheduler commands
             commands::add_scheduler_event,
             commands::remove_scheduler_event,
             commands::pause_scheduler_event,
@@ -537,14 +542,110 @@ fn main() {
                 let state = handle_clone.state::<UniverseAppState>();
 
                 block_on(ShutdownManager::instance().initialize_app_handle(handle_clone.clone()));
-                block_on(state.updates_manager.initial_try_update(&handle_clone));
 
-                tauri::async_runtime::spawn(async move {
-                    SetupManager::get_instance()
-                        .start_setup(handle_clone.clone())
-                        .await;
-                    SetupManager::spawn_sleep_mode_handler().await;
-                });
+                let (is_e2e, is_e2e_mock) = {
+                    use tauri_plugin_cli::CliExt;
+                    let matches = handle_clone.cli().matches();
+                    let e2e = matches.as_ref().is_ok_and(|m| {
+                        m.args.get("e2e").is_some_and(|arg| arg.occurrences > 0)
+                    });
+                    let e2e_mock = matches.as_ref().is_ok_and(|m| {
+                        m.args.get("e2e-mock").is_some_and(|arg| arg.occurrences > 0)
+                    });
+                    (e2e, e2e_mock)
+                };
+
+                #[cfg(feature = "test-mode")]
+                if is_e2e || is_e2e_mock {
+                    keyring::set_default_credential_builder(keyring::mock::default_credential_builder());
+                    info!(target: LOG_TARGET_APP_LOGIC, "E2E: using mock credential store (no OS keychain)");
+                }
+
+                if is_e2e_mock {
+                    info!(target: LOG_TARGET_APP_LOGIC, "E2E mock mode: skipping process initialization");
+                    tauri::async_runtime::spawn(async move {
+                        EventsEmitter::load_app_handle(handle_clone.clone()).await;
+                        #[cfg(feature = "test-mode")]
+                        {
+                            use tauri_remote_ui::RemoteUiExt;
+                            let mut config = tauri_remote_ui::RemoteUiConfig::default().set_port(Some(9515));
+                            if std::env::var("REMOTE_UI_BIND_ALL").as_deref() == Ok("1") {
+                                info!(target: LOG_TARGET_APP_LOGIC, "REMOTE_UI_BIND_ALL set: binding remote-ui to 0.0.0.0");
+                                config = config.set_allowed_origin(tauri_remote_ui::OriginType::Any);
+                            }
+                            if let Err(e) = handle_clone.start_remote_ui(config).await {
+                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to start remote UI: {e:?}");
+                            } else {
+                                info!(target: LOG_TARGET_APP_LOGIC, "Remote UI available at http://localhost:9515");
+                                let forward_handle = handle_clone.clone();
+                                handle_clone.listen("backend_state_update", move |event| {
+                                    let handle = forward_handle.clone();
+                                    let payload_str = event.payload().to_string();
+                                    tauri::async_runtime::spawn(async move {
+                                        let remote_ui_state = handle.state::<Arc<RwLock<tauri_remote_ui::RemoteUi>>>();
+                                        let remote_ui = remote_ui_state.read().await;
+                                        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&payload_str) {
+                                            remote_ui.emit("backend_state_update", value).ok();
+                                        }
+                                    });
+                                });
+                            }
+                        }
+                    });
+                } else if is_e2e {
+                    info!(target: LOG_TARGET_APP_LOGIC, "E2E full mode: starting real backend with remote-ui");
+                    tauri::async_runtime::spawn(async move {
+                        EventsEmitter::load_app_handle(handle_clone.clone()).await;
+                        #[cfg(feature = "test-mode")]
+                        {
+                            use tauri_remote_ui::RemoteUiExt;
+                            let mut config = tauri_remote_ui::RemoteUiConfig::default().set_port(Some(9515));
+                            if std::env::var("REMOTE_UI_BIND_ALL").as_deref() == Ok("1") {
+                                info!(target: LOG_TARGET_APP_LOGIC, "REMOTE_UI_BIND_ALL set: binding remote-ui to 0.0.0.0");
+                                config = config.set_allowed_origin(tauri_remote_ui::OriginType::Any);
+                            }
+                            if let Err(e) = handle_clone.start_remote_ui(config).await {
+                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to start remote UI: {e:?}");
+                            } else {
+                                info!(target: LOG_TARGET_APP_LOGIC, "Remote UI available at http://localhost:9515");
+                                // Forward backend events to the remote-ui WebSocket so the
+                                // browser-based E2E frontend receives state updates
+                                // (e.g. CloseSplashscreen, mining status, wallet balance).
+                                let forward_handle = handle_clone.clone();
+                                handle_clone.listen("backend_state_update", move |event| {
+                                    let handle = forward_handle.clone();
+                                    let payload_str = event.payload().to_string();
+                                    tauri::async_runtime::spawn(async move {
+                                        let remote_ui_state = handle.state::<Arc<RwLock<tauri_remote_ui::RemoteUi>>>();
+                                        let remote_ui = remote_ui_state.read().await;
+                                        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&payload_str) {
+                                            remote_ui.emit("backend_state_update", value).ok();
+                                        }
+                                    });
+                                });
+                            }
+                        }
+                        // Set frontend ready AFTER remote-ui and event forwarding are
+                        // established. Events emitted via EventsEmitter block on
+                        // wait_for_ready(), so this ensures no events are lost before
+                        // the WebSocket bridge is ready to forward them.
+                        utils::app_flow_utils::FrontendReadyChannel::current().set_ready();
+                        info!(target: LOG_TARGET_APP_LOGIC, "E2E: frontend ready channel set (after remote-ui)");
+                        SetupManager::get_instance()
+                            .start_setup(handle_clone.clone())
+                            .await;
+                        SetupManager::spawn_sleep_mode_handler().await;
+                    });
+                } else {
+                    block_on(state.updates_manager.initial_try_update(&handle_clone));
+
+                    tauri::async_runtime::spawn(async move {
+                        SetupManager::get_instance()
+                            .start_setup(handle_clone.clone())
+                            .await;
+                        SetupManager::spawn_sleep_mode_handler().await;
+                    });
+                }
             }
             tauri::RunEvent::ExitRequested { api: _, code, .. } => {
                 info!(

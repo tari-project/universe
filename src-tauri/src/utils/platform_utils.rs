@@ -88,7 +88,7 @@ impl PlatformUtils {
 
     #[cfg(target_os = "macos")]
     async fn initialize_macos_preqesities() -> Result<(), anyhow::Error> {
-        if !cfg!(dev) && !is_app_in_applications_folder() {
+        if !cfg!(dev) && !cfg!(feature = "test-mode") && !is_app_in_applications_folder() {
             EventsEmitter::emit_critical_problem(CriticalProblemPayload {
                 title: Some("common:installation-problem".to_string()),
                 description: Some("common:not-installed-in-applications-directory".to_string()),

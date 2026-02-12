@@ -23,6 +23,7 @@ interface SliderProps {
     startingValue?: number;
     performanceMarkers?: boolean;
     isLoading?: boolean;
+    testId?: string;
 }
 export function SliderInput({
     defaultValue = 0,
@@ -33,6 +34,7 @@ export function SliderInput({
     maxValue,
     stepSize = 1,
     onChange,
+    testId,
 }: SliderProps) {
     const [value, setValue] = useState(defaultValue);
     const deferredValue = useDebouncedValue(value, 200);
@@ -90,7 +92,7 @@ export function SliderInput({
                     scale,
                 }}
             >
-                <Slider ref={sliderRef} onPointerMove={handlePointerMove} onPointerDown={handlePointerDown}>
+                <Slider ref={sliderRef} data-testid={testId} onPointerMove={handlePointerMove} onPointerDown={handlePointerDown}>
                     <ValueIndicator
                         style={{
                             left: `${getRangePercentage()}%`,

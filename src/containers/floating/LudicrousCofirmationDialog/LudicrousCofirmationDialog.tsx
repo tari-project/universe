@@ -47,7 +47,7 @@ const LudicrousCofirmationDialog = memo(function LudicrousCofirmationDialog() {
                         </Text>
                     </TextWrapper>
                     <ButtonWrapper>
-                        <KeepButton onClick={handleChange}>
+                        <KeepButton data-testid="ludicrous-confirm-keep" onClick={handleChange}>
                             <span>🔥</span> {t('ludicrousConfirmationDialog.keepChanges')}
                         </KeepButton>
                         <RevertButton onClick={handleClose}>{t('ludicrousConfirmationDialog.cancel')}</RevertButton>

@@ -105,7 +105,7 @@ pub async fn clear_data(app_handle: AppHandle) -> Result<(), anyhow::Error> {
 
     let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
     if tcp_tor_toggled_file.exists() {
-        let network = Network::default().as_key_str();
+        let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
         let local_data_dir = app_handle
             .path()

@@ -6,7 +6,7 @@ import { useMiningStore } from '../useMiningStore.ts';
 
 export const handleBaseNodeStatusUpdate = (base_node_status: BaseNodeStatus) => {
     const wasNodeConnected = useNodeStore.getState().isNodeConnected;
-    const isNodeConnected = base_node_status.num_connections > 0;
+    const isNodeConnected = base_node_status.num_connections > 0 || base_node_status.is_synced;
     useNodeStore.setState((c) => ({ ...c, base_node_status, isNodeConnected }));
 
     const miningInitiated =

@@ -39,8 +39,11 @@ impl SyncProgressInfo {
 
         match sync_progress.state {
             x if x == SyncState::Startup as i32 => {
-                percentage =
-                    sync_progress.initial_connected_peers as f64 / f64::from(required_sync_peers);
+                percentage = if required_sync_peers == 0 {
+                    1.0
+                } else {
+                    sync_progress.initial_connected_peers as f64 / f64::from(required_sync_peers)
+                };
                 progress_params.insert("step".to_string(), "Startup".to_string());
                 progress_params.insert(
                     "initial_connected_peers".to_string(),
