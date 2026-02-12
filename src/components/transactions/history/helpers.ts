@@ -3,27 +3,17 @@ import { DisplayedTransaction } from '@app/types/app-status';
 import { TransactionType } from '../types';
 import { useConfigUIStore } from '@app/store';
 
-const asUTC = (d: Date) =>
-    Date.UTC(
-        d.getFullYear(),
-        d.getMonth(),
-        d.getDate(),
-        d.getHours(),
-        d.getMinutes(),
-        d.getSeconds(),
-        d.getMilliseconds()
-    );
-
 /**
  * Formats the blockchain timestamp from DisplayedTransaction into a readable format
- * @param timestamp - ISO 8601 date string (e.g., "2025-05-13T05:25:43")
+ * @param timeString - ISO 8601 date string (e.g., "2025-05-13T05:25:43")
  * @returns Formatted date string (e.g., "May 13, 05:25")
  */
-export const formatEffectiveDate = (timestamp: string): string => {
+export const formatEffectiveDate = (timeString: string): string => {
     const appLanguage = useConfigUIStore.getState().application_language;
     const systemLang = useConfigUIStore.getState().should_always_use_system_language;
+    const isUTC = timeString?.endsWith(`Z`);
+    const timestamp = `${timeString}${isUTC ? '' : 'Z'}`;
     const date = new Date(timestamp);
-    const utc = asUTC(date);
 
     const locale = systemLang ? undefined : appLanguage;
 
@@ -35,7 +25,7 @@ export const formatEffectiveDate = (timestamp: string): string => {
         minute: 'numeric',
     });
 
-    return fmt.format(utc);
+    return fmt.format(date);
 };
 
 export const resolveTransactionType = (transaction: DisplayedTransaction): TransactionType => {
