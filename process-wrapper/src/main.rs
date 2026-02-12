@@ -130,9 +130,18 @@ fn spawn_child(binary: &str, args: &[String]) -> Result<Child, std::io::Error> {
 #[cfg(unix)]
 fn setup_signal_handlers() {
     unsafe {
-        libc::signal(libc::SIGTERM, handle_signal as libc::sighandler_t);
-        libc::signal(libc::SIGINT, handle_signal as libc::sighandler_t);
-        libc::signal(libc::SIGHUP, handle_signal as libc::sighandler_t);
+        libc::signal(
+            libc::SIGTERM,
+            handle_signal as *const () as libc::sighandler_t,
+        );
+        libc::signal(
+            libc::SIGINT,
+            handle_signal as *const () as libc::sighandler_t,
+        );
+        libc::signal(
+            libc::SIGHUP,
+            handle_signal as *const () as libc::sighandler_t,
+        );
     }
 }
 

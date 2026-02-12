@@ -20,15 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::info;
-use serde::{Deserialize, Serialize};
-use std::{ops::Index, sync::LazyLock};
-use tauri::{async_runtime::spawn, AppHandle, Manager};
-use tokio::sync::{
-    watch::{Receiver, Sender},
-    Mutex, RwLock,
-};
-
 use crate::{
     configs::{config_core::ConfigCore, config_ui::ConfigUI, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
@@ -36,6 +27,14 @@ use crate::{
     systemtray_manager::SystemTrayManager,
     tasks_tracker::TasksTrackers,
     UniverseAppState, LOG_TARGET_APP_LOGIC,
+};
+use log::info;
+use serde::{Deserialize, Serialize};
+use std::{ops::Index, sync::LazyLock};
+use tauri::{async_runtime::spawn, AppHandle, Manager};
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex, RwLock,
 };
 
 static INSTANCE: LazyLock<ShutdownManager> = LazyLock::new(ShutdownManager::new);
@@ -105,7 +104,7 @@ impl ShutdownManager {
         !self.shutdown_sequence.read().await.is_empty()
     }
 
-    pub async fn initialize_app_handle(&self, app_handle: tauri::AppHandle) {
+    pub async fn initialize_app_handle(&self, app_handle: AppHandle) {
         let mut handle = self.app_handle.write().await;
         *handle = Some(app_handle);
     }
@@ -143,7 +142,7 @@ impl ShutdownManager {
             .await
             .push(ShutdownStep::Exit);
 
-        log::info!(target: LOG_TARGET_APP_LOGIC, "Initialized shutdown sequence: {:?}", *self.shutdown_sequence.read().await);
+        info!(target: LOG_TARGET_APP_LOGIC, "Initialized shutdown sequence from Tray: {:?}", *self.shutdown_sequence.read().await);
 
         self.execute_shutdown_sequence().await;
     }
@@ -196,7 +195,7 @@ impl ShutdownManager {
             .await
             .push(ShutdownStep::Exit);
 
-        log::info!(target: LOG_TARGET_APP_LOGIC, "Initialized shutdown sequence: {:?}", *self.shutdown_sequence.read().await);
+        info!(target: LOG_TARGET_APP_LOGIC, "Initialized shutdown sequence from Close Button: {:?}", *self.shutdown_sequence.read().await);
 
         self.execute_shutdown_sequence().await;
     }

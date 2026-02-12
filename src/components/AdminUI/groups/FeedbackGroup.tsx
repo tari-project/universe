@@ -3,7 +3,7 @@ import { setShowFeedbackExitSurveyModal } from '@app/store/actions/uiStoreAction
 import { AdminButton, ButtonGroup, ExtraContent } from '../styles';
 
 import {
-    setMininimumMiningTimeMs,
+    setMinimumMiningTimeMs,
     setShowLongTimeDialog,
     useUserFeedbackStore,
 } from '@app/store/stores/userFeedbackStore.ts';
@@ -57,7 +57,7 @@ export function FeedbackGroup() {
                     <button
                         type="button"
                         onClick={() => {
-                            setMininimumMiningTimeMs('closeMiningTimeMs', convertToMs(closeMin));
+                            setMinimumMiningTimeMs('closeMiningTimeMs', convertToMs(closeMin));
                         }}
                     >
                         save
@@ -82,7 +82,7 @@ export function FeedbackGroup() {
                     <button
                         type="button"
                         onClick={() => {
-                            setMininimumMiningTimeMs('longMiningTimeMs', convertToMs(longMin));
+                            setMinimumMiningTimeMs('longMiningTimeMs', convertToMs(longMin));
                         }}
                     >
                         save
