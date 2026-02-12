@@ -20,7 +20,54 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fs;
+use std::path::Path;
+
+fn copy_process_wrapper() {
+    let target = std::env::var("TARGET").expect("TARGET env var not set");
+    let profile = std::env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
+
+    fs::create_dir_all("binaries").ok();
+
+    let (src_name, dst_name) = if target.contains("windows") {
+        (
+            "process-wrapper.exe",
+            format!("binaries/process-wrapper-{}.exe", target),
+        )
+    } else {
+        (
+            "process-wrapper",
+            format!("binaries/process-wrapper-{}", target),
+        )
+    };
+
+    // Check target-specific directory first (for cross-compiled builds)
+    // then fall back to profile directory (for native builds)
+    let src_path_cross = format!("../target/{}/{}/{}", target, profile, src_name);
+    let src_path_native = format!("../target/{}/{}", profile, src_name);
+
+    let src_path = if Path::new(&src_path_cross).exists() {
+        src_path_cross
+    } else {
+        src_path_native
+    };
+
+    if Path::new(&src_path).exists() {
+        fs::copy(&src_path, &dst_name)
+            .unwrap_or_else(|e| panic!("Failed to copy process-wrapper binary: {}", e));
+    }
+
+    println!(
+        "cargo::rerun-if-changed=../target/{}/{}/{}",
+        target, profile, src_name
+    );
+    println!("cargo::rerun-if-changed=../target/{}/{}", profile, src_name);
+    println!("cargo::rerun-if-changed=../process-wrapper/src/main.rs");
+    println!("cargo::rerun-if-changed=../process-wrapper/Cargo.toml");
+}
+
 fn main() {
+    copy_process_wrapper();
     // Allow the use of unstable features in tokio
     println!("cargo::rustc-check-cfg=cfg(tokio_unstable)");
 
