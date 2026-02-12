@@ -514,7 +514,6 @@ impl MinotariWalletManager {
                                     "Found matching pending transaction for scanned tx: {}",
                                     tx.id
                                 );
-                                EventsEmitter::emit_wallet_transaction_updated(tx.clone()).await;
                             }
                             transactions_to_emit.push(tx);
                         }
