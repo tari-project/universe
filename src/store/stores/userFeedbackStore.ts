@@ -52,9 +52,10 @@ export const handleFeedbackExitSurveyRequested = async () => {
     const minimumMiningTimeForCloseSurvey = useUserFeedbackStore.getState().closeMiningTimeMs;
     const currentMiningTimeMs = checkMiningTime();
     const minimumTimeForSurveyNotMet = !currentMiningTimeMs || currentMiningTimeMs < minimumMiningTimeForCloseSurvey;
-    // User has to mine for at least the minimum time to be eligible for the survey
-    if (minimumTimeForSurveyNotMet) {
-        markFeedbackSurveyAsCompleted();
+
+    // User has to mine for at least the minimum time to NOT be shown the survey
+    if (!minimumTimeForSurveyNotMet) {
+        await markFeedbackSurveyAsCompleted();
         return;
     }
 
@@ -63,8 +64,9 @@ export const handleFeedbackExitSurveyRequested = async () => {
         queryKey: ['surveys', 'close'],
         queryFn: async () => await fetchSurvey('close'),
     });
+
     if (!feedbackQueryData || feedbackQueryData?.slug !== 'close') {
-        markFeedbackSurveyAsCompleted();
+        await markFeedbackSurveyAsCompleted();
         return;
     }
 
@@ -72,7 +74,7 @@ export const handleFeedbackExitSurveyRequested = async () => {
 };
 
 //admin
-export const setMininimumMiningTimeMs = (type: 'closeMiningTimeMs' | 'longMiningTimeMs', timeInMs: number) => {
+export const setMinimumMiningTimeMs = (type: 'closeMiningTimeMs' | 'longMiningTimeMs', timeInMs: number) => {
     if (type === 'closeMiningTimeMs') {
         useUserFeedbackStore.setState({ closeMiningTimeMs: timeInMs });
     } else if (type === 'longMiningTimeMs') {

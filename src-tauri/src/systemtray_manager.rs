@@ -458,17 +458,6 @@ impl SystemTrayManager {
         )?;
         Ok(menu)
     }
-    // fn get_tooltip_text(&self, data: SystemTrayData) -> Option<String> {
-    //     match PlatformUtils::detect_current_os() {
-    //         CurrentOperatingSystem::Linux => None,
-    //         _ => Some(format!(
-    //             "CPU Power: {}\nGPU Power: {}\nEst. earning: {}",
-    //             format_hashrate(data.cpu_hashrate),
-    //             format_hashrate(data.gpu_hashrate),
-    //             format_currency(data.estimated_earning / 1_000_000.0, "XTM/day")
-    //         )),
-    //     }
-    // }
 
     pub async fn initialize_tray(&mut self, app: &AppHandle) {
         let tray = app.tray_by_id("universe-tray-id").expect("tray not found");
