@@ -37,8 +37,9 @@ use crate::system_dependencies::UniversalSystemDependency;
 use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
 use crate::{
     configs::{
-        config_core::ConfigCoreContent, config_mining::ConfigMiningContent,
-        config_ui::ConfigUIContent, config_wallet::ConfigWalletContent,
+        config_core::ConfigCoreContent, config_mcp::ConfigMcpContent,
+        config_mining::ConfigMiningContent, config_ui::ConfigUIContent,
+        config_wallet::ConfigWalletContent,
     },
     events::{
         DetectedDevicesPayload, Event, EventType, NetworkStatusPayload, NewBlockHeightPayload,
@@ -347,6 +348,21 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit PoolsConfigLoaded event: {e:?}");
+        }
+    }
+    // TODO: Remove allow(dead_code) when Phase 4 (frontend) wires up ConfigMcpLoaded event
+    #[allow(dead_code)]
+    pub async fn emit_mcp_config_loaded(payload: &ConfigMcpContent) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ConfigMcpLoaded,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit McpConfigLoaded event: {e:?}");
         }
     }
 

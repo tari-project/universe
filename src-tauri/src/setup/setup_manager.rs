@@ -54,8 +54,8 @@ use crate::utils::platform_utils::PlatformUtils;
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
     configs::{
-        config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
-        config_wallet::ConfigWallet, trait_config::ConfigImpl,
+        config_core::ConfigCore, config_mcp::ConfigMcp, config_mining::ConfigMining,
+        config_ui::ConfigUI, config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
     events_manager::EventsManager,
@@ -311,6 +311,7 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
+        ConfigMcp::initialize(app_handle.clone()).await;
 
         let _ = check_data_import(app_handle.clone()).await.map_err(|e| {
             error!(target: LOG_TARGET_APP_LOGIC, "Error in data import: {e}");
