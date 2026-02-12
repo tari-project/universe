@@ -20,8 +20,32 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod audit;
-pub mod commands;
-pub mod rate_limiter;
-pub mod server;
-pub mod tools;
+use crate::internal_wallet::InternalWallet;
+
+pub async fn get_wallet_address() -> Result<String, String> {
+    let address = InternalWallet::tari_address().await;
+    let emoji = address.to_emoji_string();
+    let hex = address.to_hex();
+    let base58 = address.to_base58();
+
+    let result = serde_json::json!({
+        "emoji": emoji,
+        "base58": base58,
+        "hex": hex,
+    });
+    serde_json::to_string(&result).map_err(|e| e.to_string())
+}
+
+pub async fn get_wallet_balance() -> Result<String, String> {
+    Err(
+        "Wallet balance query is not yet available. Wallet state access will be enabled in a future update."
+            .to_string(),
+    )
+}
+
+pub async fn get_transaction_history(_limit: Option<u32>) -> Result<String, String> {
+    Err(
+        "Transaction history query is not yet available. Wallet state access will be enabled in a future update."
+            .to_string(),
+    )
+}

@@ -366,6 +366,22 @@ impl EventsEmitter {
         }
     }
 
+    // TODO: Remove allow(dead_code) when Phase 4 (frontend) wires up McpServerStatusUpdate event
+    #[allow(dead_code)]
+    pub async fn emit_mcp_server_status_update(running: bool, port: Option<u16>) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::McpServerStatusUpdate,
+            payload: crate::events::McpServerStatusPayload { running, port },
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit McpServerStatusUpdate event: {e:?}");
+        }
+    }
+
     pub async fn emit_wallet_balance_update(balance: WalletBalance) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

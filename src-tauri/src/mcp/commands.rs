@@ -25,6 +25,7 @@ use std::time::SystemTime;
 use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::mcp::audit::AuditLog;
+use crate::mcp::server::McpServerManager;
 
 #[tauri::command]
 pub async fn get_mcp_config() -> Result<serde_json::Value, String> {
@@ -68,6 +69,13 @@ pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
     ConfigMcp::update_field(ConfigMcpContent::set_enabled, enabled)
         .await
         .map_err(|e| e.to_string())?;
+
+    if enabled {
+        McpServerManager::start().await.map_err(|e| e.to_string())?;
+    } else {
+        McpServerManager::stop().await;
+    }
+
     Ok(())
 }
 
@@ -98,6 +106,9 @@ pub async fn revoke_mcp_token() -> Result<(), String> {
     ConfigMcp::update_field(ConfigMcpContent::set_enabled, false)
         .await
         .map_err(|e| e.to_string())?;
+
+    McpServerManager::stop().await;
+
     Ok(())
 }
 

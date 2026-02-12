@@ -61,6 +61,7 @@ pub enum EventType {
     ConfigMiningLoaded,
     ConfigPoolsLoaded,
     ConfigMcpLoaded,
+    McpServerStatusUpdate,
     BackgroundNodeSyncUpdate,
     InitWalletScanningProgress,
     ConnectionStatus,
@@ -199,4 +200,10 @@ pub struct TariAddressUpdatePayload {
 pub struct WalletStatusUpdatePayload {
     pub loading: bool,
     pub unhealthy: Option<bool>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct McpServerStatusPayload {
+    pub running: bool,
+    pub port: Option<u16>,
 }
