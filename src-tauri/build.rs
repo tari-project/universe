@@ -36,7 +36,7 @@ fn main() {
     println!("cargo::rerun-if-env-changed=TARI_NETWORK");
     println!("cargo::rerun-if-env-changed=TARI_TARGET_NETWORK");
 
-    let network = option_env!("TARI_NETWORK").unwrap_or("esmeralda");
+    let network = std::env::var("TARI_NETWORK").unwrap_or_else(|_| "esmeralda".to_string());
     let _ = dotenvy::from_path(format!("env.{network}")).ok();
     for (key, value) in std::env::vars() {
         println!("cargo::rustc-env={key}={value}");

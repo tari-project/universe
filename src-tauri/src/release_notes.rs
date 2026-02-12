@@ -28,7 +28,7 @@ use std::{
 
 use anyhow::{anyhow, Error};
 use dirs::cache_dir;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use reqwest::{self, Client, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
@@ -270,8 +270,12 @@ impl ReleaseNotes {
         debug!(target: LOG_TARGET_APP_LOGIC, "[handle_release_notes_event_emit] Was release notes updated: {was_release_notes_updated}");
         debug!(target: LOG_TARGET_APP_LOGIC, "[handle_release_notes_event_emit] Is app on latest release notes version or higher: {is_app_on_latest_release_notes_version_or_higher}");
 
-        let should_show_release_notes =
-            was_release_notes_updated && is_app_on_latest_release_notes_version_or_higher;
+        let should_show_release_notes = if cfg!(feature = "test-mode") {
+            info!(target: LOG_TARGET_APP_LOGIC, "test-mode: suppressing release notes dialog");
+            false
+        } else {
+            was_release_notes_updated && is_app_on_latest_release_notes_version_or_higher
+        };
 
         let is_app_update_available: bool = state
             .updates_manager

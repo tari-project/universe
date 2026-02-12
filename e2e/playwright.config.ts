@@ -9,22 +9,16 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }], ['list']],
 
   use: {
-    baseURL: 'http://localhost:1420',
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'on-first-retry',
+    trace: 'off',
+    screenshot: 'off',
+    video: 'off',
   },
 
   projects: [
     {
-      name: 'mock',
-      testMatch: /tests\/(app-launch|mining|wallet|error-handling)\.spec\.ts/,
-      timeout: 60_000,
-    },
-    {
       name: 'real',
-      testMatch: /tests\/(real-.*|full-flow|mining-modes)\.spec\.ts/,
-      timeout: 90_000,
+      testMatch: /tests\/all-e2e\.spec\.ts/,
+      timeout: 180_000,
       expect: {
         timeout: 30_000,
       },

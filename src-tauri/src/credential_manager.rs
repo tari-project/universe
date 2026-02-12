@@ -78,24 +78,17 @@ impl CredentialManager {
     }
 
     pub async fn set_credentials(&self, credential: &Credential) -> Result<(), CredentialError> {
-        match self.save_to_keyring(credential) {
-            Ok(_) => Ok(()),
-            Err(CredentialError::Keyring(e)) => Err(e.into()),
-            Err(err) => Err(err),
-        }
+        self.save_to_keyring(credential)
     }
 
     pub async fn get_credentials(&self) -> Result<Credential, CredentialError> {
-        match self.load_from_keyring() {
-            Ok(credential) => Ok(credential),
-            Err(CredentialError::Keyring(e)) => Err(e.into()),
-            Err(err) => Err(err),
-        }
+        self.load_from_keyring()
     }
 
-    pub fn delete_credential(&self) -> Result<(), keyring::Error> {
+    pub fn delete_credential(&self) -> Result<(), CredentialError> {
         let entry = Entry::new(&self.service_name, &self.username)?;
-        entry.delete_credential()
+        entry.delete_credential()?;
+        Ok(())
     }
 
     fn save_to_keyring(&self, credential: &Credential) -> Result<(), CredentialError> {

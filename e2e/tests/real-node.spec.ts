@@ -1,20 +1,13 @@
-import { test, expect } from '@playwright/test';
-import { initReadinessMarker, waitForTauriReady } from '../helpers/state';
+import { test, expect } from '../helpers/shared-page';
 import { waitForNodeSynced, waitForBlockHeight, clickStartMining, stopCpuMining } from '../helpers/wait-for';
 
 test.describe('Real Node', () => {
-  test.beforeEach(async ({ page }) => {
-    await initReadinessMarker(page);
-    await page.goto('/');
-    await waitForTauriReady(page);
-  });
-
-  test('node starts and syncs on localnet', async ({ page }) => {
+  test('node starts and syncs on localnet', async ({ sharedPage: page }) => {
     const nodeStatus = await waitForNodeSynced(page, 30_000);
     expect(nodeStatus.is_synced).toBe(true);
   });
 
-  test('block height increases while mining', async ({ page }) => {
+  test('block height increases while mining', async ({ sharedPage: page }) => {
     await waitForNodeSynced(page);
     await clickStartMining(page);
     try {

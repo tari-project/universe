@@ -26,6 +26,14 @@ export const sel = {
     blockHeight: '[data-testid="block-height"]',
   },
 
+  sidebar: {
+    mineButton: '[data-testid="sidebar-mine-button"]',
+  },
+
+  dialogs: {
+    releaseNotesDismiss: '[data-testid="release-notes-dismiss"]',
+  },
+
   app: {
     splashscreen: '[data-testid="splashscreen"]',
     mainContent: '[data-testid="main-content"]',

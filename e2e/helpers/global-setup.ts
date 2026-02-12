@@ -145,23 +145,13 @@ export default async function globalSetup() {
 
   if (!skipBackend && !process.env.SKIP_BUILD) {
     console.log('Building Tauri app with test-mode feature (TARI_NETWORK=localnet)...');
+    // build.rs loads env.localnet via dotenvy when TARI_NETWORK=localnet,
+    // so all required env vars (AIRDROP_*, BRIDGE_*, etc.) are provided automatically.
     const buildEnv: Record<string, string> = {
       ...process.env as Record<string, string>,
       CARGO_TERM_COLOR: 'always',
       TARI_NETWORK: 'localnet',
     };
-    const placeholders: Record<string, string> = {
-      AIRDROP_BASE_URL: 'http://localhost:0',
-      AIRDROP_API_BASE_URL: 'http://localhost:0',
-      AIRDROP_WEBSOCKET_CRYPTO_KEY: 'e2e-placeholder-key',
-      TELEMETRY_API_URL: 'http://localhost:0',
-      EXCHANGE_ID: 'tari',
-      BRIDGE_BACKEND_API_URL: 'http://localhost:0',
-      BRIDGE_WALLET_CONNECT_PROJECT_ID: 'e2e-placeholder',
-    };
-    for (const [key, val] of Object.entries(placeholders)) {
-      if (!buildEnv[key]) buildEnv[key] = val;
-    }
     execSync('cargo tauri build --debug --no-bundle --features test-mode', {
       cwd: projectRoot,
       stdio: 'inherit',
@@ -194,7 +184,7 @@ export default async function globalSetup() {
   await waitForPort(1420, 30_000);
   console.log('Vite dev server ready.');
 
-  const e2eFlag = process.env.E2E_MODE === 'mock' ? '--e2e-mock' : '--e2e';
+  const e2eFlag = '--e2e';
 
   if (skipBackend) {
     console.log('E2E_SKIP_BACKEND set: assuming backend is already running.');
