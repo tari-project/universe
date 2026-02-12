@@ -1,23 +1,29 @@
 export const sel = {
   mining: {
-    cpuHashrate: '[data-testid="cpu-hashrate"]',
-    gpuHashrate: '[data-testid="gpu-hashrate"]',
-    cpuToggle: '[data-testid="cpu-mining-toggle"]',
-    gpuToggle: '[data-testid="gpu-mining-toggle"]',
-    estimatedEarnings: '[data-testid="estimated-earnings"]',
+    startButton: '[data-testid="mining-button-start"]',
+    resumeButton: '[data-testid="mining-button-resume"]',
+    pauseButton: '[data-testid="mining-button-pause"]',
+    stopOption: '[data-testid="mining-stop"]',
+    tileCpu: '[data-testid="mining-tile-cpu"]',
+    tileGpu: '[data-testid="mining-tile-gpu"]',
+  },
+
+  mode: {
+    trigger: '[data-testid="mining-mode-trigger"]',
+    option: (name: string) => `[data-testid="mining-mode-${name}"]`,
+    ludicrousConfirm: '[data-testid="ludicrous-confirm-keep"]',
+    customSave: '[data-testid="custom-levels-save"]',
+    customModeDetails: '[data-testid="custom-mode-details"]',
+    cpuSlider: '[data-testid="custom-cpu-slider"]',
+    gpuSlider: '[data-testid="custom-gpu-slider"]',
   },
 
   wallet: {
     balance: '[data-testid="wallet-balance"]',
-    address: '[data-testid="wallet-address"]',
-    pendingBalance: '[data-testid="wallet-pending"]',
   },
 
   node: {
-    status: '[data-testid="node-status"]',
     blockHeight: '[data-testid="block-height"]',
-    syncStatus: '[data-testid="sync-status"]',
-    peerCount: '[data-testid="peer-count"]',
   },
 
   app: {

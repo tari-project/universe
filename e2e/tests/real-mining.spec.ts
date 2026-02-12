@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { initReadinessMarker, waitForTauriReady } from '../helpers/state';
-import { waitForNodeSynced, waitForBlockHeight, startCpuMining, stopCpuMining, waitForMiningActive } from '../helpers/wait-for';
+import { waitForNodeSynced, waitForBlockHeight, clickStartMining, clickStopMining, stopCpuMining } from '../helpers/wait-for';
 
 test.describe('Real Mining', () => {
   test.beforeEach(async ({ page }) => {
@@ -10,20 +10,21 @@ test.describe('Real Mining', () => {
     await waitForNodeSynced(page);
   });
 
-  test('can start CPU solo mining', async ({ page }) => {
-    await startCpuMining(page);
-    const result = await waitForMiningActive(page);
-    expect(result).toBeTruthy();
+  test.afterEach(async ({ page }) => {
+    await stopCpuMining(page);
+  });
+
+  test('can start and stop CPU mining', async ({ page }) => {
+    await clickStartMining(page);
+    const height = await waitForBlockHeight(page, 1);
+    expect(height).toBeGreaterThanOrEqual(1);
+    await clickStopMining(page);
   });
 
   test('block height increases while mining', async ({ page }) => {
-    await startCpuMining(page);
-    await waitForBlockHeight(page, 2);
-  });
-
-  test('can stop CPU mining', async ({ page }) => {
-    await startCpuMining(page);
-    await page.waitForTimeout(5_000);
-    await stopCpuMining(page);
+    await clickStartMining(page);
+    const first = await waitForBlockHeight(page, 1);
+    const next = await waitForBlockHeight(page, first + 1);
+    expect(next).toBeGreaterThan(first);
   });
 });

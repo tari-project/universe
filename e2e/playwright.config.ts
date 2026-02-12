@@ -23,10 +23,10 @@ export default defineConfig({
     },
     {
       name: 'real',
-      testMatch: /tests\/(real-.*|full-flow)\.spec\.ts/,
-      timeout: 300_000,
+      testMatch: /tests\/(real-.*|full-flow|mining-modes)\.spec\.ts/,
+      timeout: 90_000,
       expect: {
-        timeout: 120_000,
+        timeout: 30_000,
       },
     },
   ],

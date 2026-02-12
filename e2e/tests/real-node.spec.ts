@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { initReadinessMarker, waitForTauriReady } from '../helpers/state';
-import { waitForNodeSynced, waitForBlockHeight } from '../helpers/wait-for';
+import { waitForNodeSynced, waitForBlockHeight, clickStartMining, stopCpuMining } from '../helpers/wait-for';
 
 test.describe('Real Node', () => {
   test.beforeEach(async ({ page }) => {
@@ -10,15 +10,19 @@ test.describe('Real Node', () => {
   });
 
   test('node starts and syncs on localnet', async ({ page }) => {
-    const nodeStatus = await waitForNodeSynced(page, 120_000);
+    const nodeStatus = await waitForNodeSynced(page, 30_000);
     expect(nodeStatus.is_synced).toBe(true);
   });
 
-  test('block height increases over time', async ({ page }) => {
+  test('block height increases while mining', async ({ page }) => {
     await waitForNodeSynced(page);
-    const initial = await waitForBlockHeight(page, 1);
-    const initialHeight = initial.block_height ?? 1;
-    await page.waitForTimeout(10_000);
-    await waitForBlockHeight(page, initialHeight + 1);
+    await clickStartMining(page);
+    try {
+      const first = await waitForBlockHeight(page, 1);
+      const next = await waitForBlockHeight(page, first + 1);
+      expect(next).toBeGreaterThan(first);
+    } finally {
+      await stopCpuMining(page);
+    }
   });
 });

@@ -151,6 +151,7 @@ export const MiningMode = ({
     return (
         <Wrapper>
             <Trigger
+                data-testid="mining-mode-trigger"
                 ref={refs.setReference}
                 {...getReferenceProps()}
                 role="combobox"
@@ -181,6 +182,7 @@ export const MiningMode = ({
                                     return (
                                         <Option
                                             key={mode.name}
+                                            data-testid={`mining-mode-${mode.name}`}
                                             ref={(node) => {
                                                 listRef.current[index] = node;
                                             }}

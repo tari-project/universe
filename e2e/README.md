@@ -39,6 +39,52 @@ Mock tests (`--project=mock`) pass.
 └─────────────────────────────────────────────────────────┘
 ```
 
+## Testing Principles
+
+### Interact via the UI, never hack the backend
+
+E2E tests must exercise the application the way a user would: clicking buttons,
+reading rendered text, and interacting with form controls. **Never add
+test-specific backend commands** (e.g. `e2e_get_*`, `e2e_set_*`) to read or
+write state that should be tested through the interface. The whole point of E2E
+tests is to validate the full chain from UI interaction to backend behaviour.
+
+The existing `e2e_emit_*` commands in `test_commands.rs` are an exception: they
+exist solely for the **mock** test project where we inject fake state to verify
+UI rendering in isolation. Real tests must not use them.
+
+**Allowed:**
+- Click the Start Mining button to start mining
+- Read block height from the rendered `[data-testid="block-height"]` element
+- Open the mode dropdown and click an option to change modes
+- Poll `get_base_node_status` (an existing production command) to wait for sync
+
+**Not allowed:**
+- Adding a `e2e_get_mining_config` command to read config from the backend
+- Calling `invoke('start_cpu_mining')` instead of clicking the start button
+- Calling `invoke('select_mining_mode')` instead of using the mode dropdown
+
+### Always clean up mining
+
+Every test that starts mining must stop it afterward. Use `test.afterEach` with
+`stopCpuMining(page)` (the invoke-based cleanup helper) so mining never leaks
+across tests. The invoke-based cleanup is acceptable because it ensures reliable
+teardown even when the UI is in an unexpected state.
+
+### Keep timeouts tight
+
+On localnet, blocks are found in seconds. Default timeouts:
+- Node sync: 30s
+- Block height: 30s
+- Wallet balance: 60s
+- Project timeout: 90s
+
+### Adding data-testid attributes
+
+When you need to select a UI element in tests, add a `data-testid` attribute to
+the component and register it in `helpers/selectors.ts`. Keep testids stable and
+descriptive (e.g. `mining-button-start`, `block-height`, `wallet-balance`).
+
 ## How It Works
 
 1. Binary built with `TARI_NETWORK=localnet` and `--features test-mode`
@@ -65,6 +111,7 @@ e2e/
 │   ├── real-mining.spec.ts  # Real: CPU solo mining
 │   ├── real-wallet.spec.ts  # Real: wallet balance after mining
 │   ├── full-flow.spec.ts    # Real: complete end-to-end flow
+│   ├── mining-modes.spec.ts # Real: mining mode switching and custom settings
 │   ├── app-launch.spec.ts   # Mock: basic app launch (low priority)
 │   ├── mining.spec.ts       # Mock: mining state injection (low priority)
 │   ├── wallet.spec.ts       # Mock: wallet state injection (low priority)

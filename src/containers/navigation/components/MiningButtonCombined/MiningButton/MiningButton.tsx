@@ -43,7 +43,7 @@ export default function MiningButton({
             $selectedMode={selectedMiningMode?.mode_type || 'Eco'}
             $disabled={disabled}
         >
-            <HitBox onClick={onClick} disabled={disabled}>
+            <HitBox data-testid={`mining-button-${buttonText}`} onClick={onClick} disabled={disabled}>
                 <IconWrapper $absolute={false} className="mining_button-icon">
                     {icon}
                 </IconWrapper>

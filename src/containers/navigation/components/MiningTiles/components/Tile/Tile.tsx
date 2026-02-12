@@ -149,6 +149,7 @@ export default function Tile({
     return (
         <Wrapper
             key={title}
+            data-testid={`mining-tile-${title.toLowerCase()}`}
             ref={tooltipTriggerRef}
             {...getReferenceProps?.()}
             onClick={handleClick}

@@ -96,6 +96,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
             render={({ field }) => {
                 return (
                     <PowerLeveltem
+                        testId="custom-cpu-slider"
                         description={`${t('custom-power-levels.input-label', { percentage: field.value, type: 'CPU' })}`}
                         value={field.value}
                         maxLevel={100}
@@ -117,6 +118,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
             render={({ field }) => {
                 return (
                     <PowerLeveltem
+                        testId="custom-gpu-slider"
                         description={`${t('custom-power-levels.input-label', { percentage: field.value, type: field.name.toUpperCase() })}`}
                         label={`${t('custom-power-levels.gpu-power-level')}`}
                         maxLevel={100}
@@ -146,7 +148,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
             </CustomLevelsHeader>
             <CustomLevelsContent>
                 {!!currentMode && (
-                    <CurrentModeDetails>
+                    <CurrentModeDetails data-testid="custom-mode-details">
                         <Typography variant="p">
                             <span>{`${t('custom-power-levels.current-mode')}: `}</span>
                             {showGpuSettings
@@ -159,6 +161,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                 {showGpuSettings && gpuMarkup}
                 <CTAWrapper>
                     <Button
+                        data-testid="custom-levels-save"
                         onClick={handleSubmit(onSubmit)}
                         backgroundColor="greyscale"
                         disabled={
