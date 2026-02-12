@@ -20,11 +20,49 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod config_core;
-pub mod config_mcp;
-pub mod config_mining;
-pub mod config_pools;
-pub mod config_ui;
-pub mod config_wallet;
-pub mod pools;
-pub mod trait_config;
+use std::collections::VecDeque;
+use std::time::Instant;
+
+use crate::configs::config_mcp::ConfigMcp;
+use crate::configs::trait_config::ConfigImpl;
+
+// TODO: Remove allow(dead_code) when Phase 2 (MCP server) uses the transaction rate limiter
+#[allow(dead_code)]
+pub struct TransactionRateLimiter {
+    timestamps: VecDeque<Instant>,
+}
+
+#[allow(dead_code)]
+impl TransactionRateLimiter {
+    pub fn new() -> Self {
+        Self {
+            timestamps: VecDeque::new(),
+        }
+    }
+
+    /// Check if a transaction is allowed under the sliding window rate limit.
+    /// Returns `true` if the transaction is within the configured limit per minute.
+    pub async fn check_transaction_allowed(&mut self) -> bool {
+        let config = ConfigMcp::content().await;
+        let limit = *config.rate_limit_transaction();
+
+        let now = Instant::now();
+        let window = std::time::Duration::from_secs(60);
+
+        // Remove expired entries
+        while self
+            .timestamps
+            .front()
+            .is_some_and(|t| now.duration_since(*t) > window)
+        {
+            self.timestamps.pop_front();
+        }
+
+        if self.timestamps.len() >= limit as usize {
+            return false;
+        }
+
+        self.timestamps.push_back(now);
+        true
+    }
+}
