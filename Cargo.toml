@@ -1,0 +1,9 @@
+[workspace]
+members = ["src-tauri", "process-wrapper"]
+resolver = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
+debug = true

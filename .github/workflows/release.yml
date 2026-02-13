@@ -321,6 +321,17 @@ jobs:
           npm --version
           npm install
 
+      - name: Build process-wrapper
+        shell: bash
+        run: |
+          if [[ "${{ matrix.platform }}" == "macos-latest" && "${{ matrix.args }}" == *"universal-apple-darwin"* ]]; then
+            # Build for both architectures on macOS universal
+            cargo build --release --manifest-path process-wrapper/Cargo.toml --target aarch64-apple-darwin
+            cargo build --release --manifest-path process-wrapper/Cargo.toml --target x86_64-apple-darwin
+          else
+            cargo build --release --manifest-path process-wrapper/Cargo.toml
+          fi
+
       - name: Build Tauri Apps
         id: build
         uses: tauri-apps/tauri-action@v0

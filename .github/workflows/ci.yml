@@ -63,6 +63,11 @@ jobs:
           rustup component add rustfmt
           cargo fmt --all -- --check
 
+      - name: Build process-wrapper
+        run: |
+          cargo build --manifest-path process-wrapper/Cargo.toml
+          cargo build --release --manifest-path process-wrapper/Cargo.toml
+
       - name: clippy lint
         working-directory: ./src-tauri
         env:
@@ -90,6 +95,10 @@ jobs:
       - uses: swatinem/rust-cache@v2.7.5
         with:
           workspaces: './src-tauri -> target'
+
+      - name: Build process-wrapper
+        run: |
+          cargo build --manifest-path process-wrapper/Cargo.toml
 
       - name: cargo machete
         working-directory: ./src-tauri
@@ -131,6 +140,10 @@ jobs:
       - uses: swatinem/rust-cache@v2.7.5
         with:
           workspaces: './src-tauri -> target'
+
+      - name: Build process-wrapper
+        run: |
+          cargo build --release --manifest-path process-wrapper/Cargo.toml
 
       - name: cargo tauri build
         working-directory: ./src-tauri
@@ -183,6 +196,10 @@ jobs:
           sudo apt-get install --no-install-recommends --assume-yes \
             opencl-headers \
             ocl-icd-opencl-dev
+
+      - name: Build process-wrapper
+        run: |
+          cargo build --release --manifest-path process-wrapper/Cargo.toml
 
       - name: cargo test
         working-directory: ./src-tauri
