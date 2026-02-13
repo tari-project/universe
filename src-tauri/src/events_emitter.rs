@@ -356,23 +356,13 @@ impl EventsEmitter {
     }
     pub async fn emit_mcp_config_loaded(payload: &ConfigMcpContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        // Build a redacted payload: replace bearer_token with bearer_token_redacted
-        let mut value = match serde_json::to_value(payload) {
+        let value = match payload.to_redacted_value() {
             Ok(v) => v,
             Err(e) => {
                 error!(target: LOG_TARGET_APP_LOGIC, "Failed to serialize MCP config: {e:?}");
                 return;
             }
         };
-        if let Some(obj) = value.as_object_mut() {
-            if obj.get("bearer_token").and_then(|v| v.as_str()).is_some() {
-                obj.insert(
-                    "bearer_token_redacted".to_string(),
-                    serde_json::Value::String(payload.redacted_token().unwrap_or_default()),
-                );
-            }
-            obj.remove("bearer_token");
-        }
         let event = Event {
             event_type: EventType::ConfigMcpLoaded,
             payload: value,

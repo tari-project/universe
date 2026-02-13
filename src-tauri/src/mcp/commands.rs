@@ -31,17 +31,7 @@ use crate::mcp::server::McpServerManager;
 #[tauri::command]
 pub async fn get_mcp_config() -> Result<serde_json::Value, String> {
     let content = ConfigMcp::content().await;
-    let mut value = serde_json::to_value(&content).map_err(|e| e.to_string())?;
-    if let Some(obj) = value.as_object_mut() {
-        if obj.get("bearer_token").and_then(|v| v.as_str()).is_some() {
-            obj.insert(
-                "bearer_token_redacted".to_string(),
-                serde_json::Value::String(content.redacted_token().unwrap_or_default()),
-            );
-            obj.remove("bearer_token");
-        }
-    }
-    Ok(value)
+    content.to_redacted_value().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -177,6 +167,7 @@ pub async fn set_mcp_transactions_enabled(enabled: bool) -> Result<(), String> {
     ConfigMcp::update_field(ConfigMcpContent::set_transactions_enabled, enabled)
         .await
         .map_err(|e| e.to_string())?;
+    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
 }
 

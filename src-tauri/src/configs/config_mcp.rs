@@ -137,6 +137,22 @@ impl ConfigMcpContent {
             }
         })
     }
+
+    /// Returns a JSON value with the bearer token replaced by a redacted version,
+    /// suitable for sending to the frontend.
+    pub fn to_redacted_value(&self) -> Result<serde_json::Value, serde_json::Error> {
+        let mut value = serde_json::to_value(self)?;
+        if let Some(obj) = value.as_object_mut() {
+            if obj.get("bearer_token").and_then(|v| v.as_str()).is_some() {
+                obj.insert(
+                    "bearer_token_redacted".to_string(),
+                    serde_json::Value::String(self.redacted_token().unwrap_or_default()),
+                );
+            }
+            obj.remove("bearer_token");
+        }
+        Ok(value)
+    }
 }
 
 pub struct ConfigMcp {

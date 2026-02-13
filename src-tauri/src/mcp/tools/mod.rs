@@ -686,8 +686,8 @@ impl TariMcpHandler {
 
         let status = match &result {
             Ok(_) => AuditStatus::Success,
-            Err(e) if e.contains("denied") || e.contains("cancelled") => AuditStatus::Denied,
-            Err(e) if e.contains("rate limit") => AuditStatus::RateLimited,
+            Err(transaction::TransactionError::Denied(_)) => AuditStatus::Denied,
+            Err(transaction::TransactionError::RateLimited(_)) => AuditStatus::RateLimited,
             Err(_) => AuditStatus::Error,
         };
         self.audit_tool_call(
@@ -697,6 +697,6 @@ impl TariMcpHandler {
             Some(u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX)),
         )
         .await;
-        result
+        result.map_err(|e| e.to_string())
     }
 }

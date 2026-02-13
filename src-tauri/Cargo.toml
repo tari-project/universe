@@ -66,7 +66,11 @@ reqwest = { version = "0.12.5", features = ["stream", "json", "multipart"] }
 reqwest-middleware = "0.4.0"
 reqwest-retry = "0.7.0"
 ring = "0.17.8"
-rmcp = { version = "0.15", features = ["server", "macros", "transport-streamable-http-server"] }
+rmcp = { version = "0.15", features = [
+  "server",
+  "macros",
+  "transport-streamable-http-server",
+] }
 ring-compat = "0.8.0"
 sanitize-filename = "0.5"
 schemars = "1"

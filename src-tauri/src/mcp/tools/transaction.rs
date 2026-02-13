@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fmt;
 use std::str::FromStr;
 use std::sync::LazyLock;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -37,6 +38,35 @@ use crate::wallet::wallet_manager::WalletManager;
 use crate::LOG_TARGET_APP_LOGIC;
 
 const DIALOG_TIMEOUT_SECS: u64 = 120;
+
+#[derive(Debug)]
+pub enum TransactionError {
+    Disabled(String),
+    NoPinConfigured(String),
+    InvalidAmount(String),
+    RateLimited(String),
+    Denied(String),
+    Timeout(String),
+    PinValidationFailed(String),
+    WalletError(String),
+    InternalError(String),
+}
+
+impl fmt::Display for TransactionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TransactionError::Disabled(msg)
+            | TransactionError::NoPinConfigured(msg)
+            | TransactionError::InvalidAmount(msg)
+            | TransactionError::RateLimited(msg)
+            | TransactionError::Denied(msg)
+            | TransactionError::Timeout(msg)
+            | TransactionError::PinValidationFailed(msg)
+            | TransactionError::WalletError(msg)
+            | TransactionError::InternalError(msg) => write!(f, "{}", msg),
+        }
+    }
+}
 
 static TXN_DIALOG_GATE: LazyLock<tokio::sync::Semaphore> =
     LazyLock::new(|| tokio::sync::Semaphore::new(1));
@@ -78,36 +108,44 @@ fn validate_amount(
     Ok(amount_u64)
 }
 
+#[derive(serde::Serialize)]
+struct SendTransactionSuccess {
+    status: &'static str,
+    destination: String,
+    amount: String,
+    amount_micro_minotari: u64,
+}
+
 pub async fn send_transaction(
     destination: String,
     amount: String,
     payment_id: Option<String>,
     wallet_manager: &WalletManager,
     app_handle: &tauri::AppHandle,
-) -> Result<String, String> {
+) -> Result<String, TransactionError> {
     // 1. Check transactions enabled
     let config = ConfigMcp::content().await;
     if !*config.transactions_enabled() {
-        return Err(
+        return Err(TransactionError::Disabled(
             "Transaction tier is disabled. Enable transactions in MCP settings.".to_string(),
-        );
+        ));
     }
 
     // 2. Check PIN is configured
     if !PinManager::pin_locked().await {
-        return Err(
+        return Err(TransactionError::NoPinConfigured(
             "No PIN configured. Set up a PIN before enabling MCP transactions.".to_string(),
-        );
+        ));
     }
 
     // 3. Parse and validate amount
-    let amount_u64 = validate_amount(&amount, &config)?;
+    let amount_u64 = validate_amount(&amount, &config).map_err(TransactionError::InvalidAmount)?;
 
     // 4. Acquire serialization gate (one dialog at a time)
     let _permit = TXN_DIALOG_GATE
         .acquire()
         .await
-        .map_err(|_| "Transaction gate closed".to_string())?;
+        .map_err(|_| TransactionError::InternalError("Transaction gate closed".to_string()))?;
 
     // 5. Rate limit check (after acquiring gate to avoid burning quota)
     if !TXN_RATE_LIMITER
@@ -116,7 +154,9 @@ pub async fn send_transaction(
         .check_transaction_allowed()
         .await
     {
-        return Err("Transaction rate limit exceeded. Try again later.".to_string());
+        return Err(TransactionError::RateLimited(
+            "Transaction rate limit exceeded. Try again later.".to_string(),
+        ));
     }
 
     // 6. Generate request ID
@@ -154,32 +194,10 @@ pub async fn send_transaction(
     )
     .await;
 
-    // 10. Wait for response with timeout
-    let response = match tokio::time::timeout(Duration::from_secs(DIALOG_TIMEOUT_SECS), rx).await {
-        Ok(Ok(response)) => response,
-        Ok(Err(_)) => {
-            clear_inflight().await;
-            return Err("Transaction confirmation channel closed unexpectedly".to_string());
-        }
-        Err(_) => {
-            clear_inflight().await;
-            return Err("Transaction timed out waiting for confirmation (120s)".to_string());
-        }
-    };
+    // 10. Wait for user confirmation and validate PIN
+    await_confirmation_and_validate_pin(rx).await?;
 
-    // 11. Check approval
-    if !response.approved {
-        return Err("Transaction denied by user".to_string());
-    }
-
-    // 12. Validate PIN
-    let pin_str = response.pin.ok_or("PIN is required for transactions")?;
-    let pin_password = SafePassword::from(pin_str);
-    PinManager::validate_pin(pin_password)
-        .await
-        .map_err(|e: anyhow::Error| format!("PIN incorrect: {}", e))?;
-
-    // 13. Execute transaction
+    // 11. Execute transaction
     info!(target: LOG_TARGET_APP_LOGIC, "MCP: executing send_transaction (destination={}, amount={})", destination, amount_display);
     wallet_manager
         .send_one_sided_to_stealth_address(
@@ -189,20 +207,53 @@ pub async fn send_transaction(
             app_handle,
         )
         .await
-        .map_err(|e| format!("Transaction failed: {}", e))?;
+        .map_err(|e| TransactionError::WalletError(format!("Transaction failed: {}", e)))?;
 
-    // 14. Emit balance update
     if let Ok(balance) = wallet_manager.get_balance().await {
         EventsEmitter::emit_wallet_balance_update(balance).await;
     }
 
-    let result = serde_json::json!({
-        "status": "success",
-        "destination": destination,
-        "amount": amount_display,
-        "amount_micro_minotari": amount_u64,
-    });
-    serde_json::to_string(&result).map_err(|e| e.to_string())
+    let result = SendTransactionSuccess {
+        status: "success",
+        destination,
+        amount: amount_display,
+        amount_micro_minotari: amount_u64,
+    };
+    serde_json::to_string(&result).map_err(|e| TransactionError::InternalError(e.to_string()))
+}
+
+async fn await_confirmation_and_validate_pin(
+    rx: tokio::sync::oneshot::Receiver<TxnDialogResponse>,
+) -> Result<(), TransactionError> {
+    let response = match tokio::time::timeout(Duration::from_secs(DIALOG_TIMEOUT_SECS), rx).await {
+        Ok(Ok(response)) => response,
+        Ok(Err(_)) => {
+            clear_inflight().await;
+            return Err(TransactionError::InternalError(
+                "Transaction confirmation channel closed unexpectedly".to_string(),
+            ));
+        }
+        Err(_) => {
+            clear_inflight().await;
+            return Err(TransactionError::Timeout(
+                "Transaction timed out waiting for confirmation (120s)".to_string(),
+            ));
+        }
+    };
+
+    if !response.approved {
+        return Err(TransactionError::Denied(
+            "Transaction denied by user".to_string(),
+        ));
+    }
+
+    let pin_str = response.pin.ok_or(TransactionError::PinValidationFailed(
+        "PIN is required for transactions".to_string(),
+    ))?;
+    let pin_password = SafePassword::from(pin_str);
+    PinManager::validate_pin(pin_password)
+        .await
+        .map_err(|e: anyhow::Error| TransactionError::PinValidationFailed(e.to_string()))
 }
 
 /// Called by the Tauri command when the frontend responds to the transaction dialog.

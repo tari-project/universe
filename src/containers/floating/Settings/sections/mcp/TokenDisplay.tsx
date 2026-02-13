@@ -51,8 +51,6 @@ export default function TokenDisplay() {
     const handleRefreshExpiry = useCallback(async () => {
         try {
             await invoke('refresh_mcp_token_expiry');
-            const config = await invoke<Record<string, unknown>>('get_mcp_config');
-            useConfigMcpStore.setState((c) => ({ ...c, ...config }));
         } catch (e) {
             console.error('Failed to refresh token expiry:', e);
         }
@@ -62,13 +60,6 @@ export default function TokenDisplay() {
         if (!confirm(t('mcp.token-display.revoke-confirm'))) return;
         try {
             await invoke('revoke_mcp_token');
-            useConfigMcpStore.setState((c) => ({
-                ...c,
-                enabled: false,
-                bearer_token_redacted: undefined,
-                token_created_at: undefined,
-                token_expires_at: undefined,
-            }));
             setRevealed(false);
             setFullToken(null);
         } catch (e) {
