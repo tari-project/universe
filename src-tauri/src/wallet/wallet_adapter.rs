@@ -233,17 +233,15 @@ impl WalletAdapter {
                             return Ok(state);
                         }
                         // Case 2: Wallet is at height 0 but is connected - likely means scan finished already
-                        if state.scanned_height == 0 {
-                            if let Some(network) = &state.network {
-                                if matches!(network.status, ConnectivityStatus::Online(3..)) {
+                        if state.scanned_height == 0
+                            && let Some(network) = &state.network
+                                && matches!(network.status, ConnectivityStatus::Online(3..)) {
                                     zero_scanned_height_count += 1;
                                     if zero_scanned_height_count >= 5 {
                                         warn!(target: LOG_TARGET_STATUSES, "Wallet scanned before gRPC service started");
                                         return Ok(state);
                                     }
                                 }
-                            }
-                        }
                     }
                 },
                 _ = shutdown_signal.wait() => {

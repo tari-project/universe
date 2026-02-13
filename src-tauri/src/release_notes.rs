@@ -26,24 +26,24 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use dirs::cache_dir;
 use log::{debug, error, warn};
 use reqwest::{self, Client, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
-use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use crate::{
+    APPLICATION_FOLDER_ID, EventsEmitter, LOG_TARGET_APP_LOGIC, UniverseAppState,
     configs::{
         config_core::{ConfigCore, ConfigCoreContent},
         trait_config::ConfigImpl,
     },
     events::ShowReleaseNotesPayload,
-    EventsEmitter, UniverseAppState, APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC,
 };
 
 const CHANGELOG_URL: &str = "https://cdn-universe.tari.com/tari-project/universe/CHANGELOG.md";

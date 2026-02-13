@@ -171,7 +171,7 @@ pub async fn graceful_kill(child: &mut tokio::process::Child) -> Result<(), std:
     if let Some(pid) = child.id() {
         #[cfg(unix)]
         {
-            use nix::sys::signal::{kill, Signal};
+            use nix::sys::signal::{Signal, kill};
             use nix::unistd::Pid;
 
             let _ = kill(Pid::from_raw(pid.cast_signed()), Signal::SIGTERM);

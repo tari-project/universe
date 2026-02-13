@@ -23,13 +23,13 @@
 use std::path::PathBuf;
 use std::time::Duration;
 
+use crate::LOG_TARGET_STATUSES;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
-use crate::LOG_TARGET_STATUSES;
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use async_trait::async_trait;
 use log::warn;
 use rand::seq::SliceRandom;

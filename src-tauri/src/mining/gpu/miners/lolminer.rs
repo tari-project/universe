@@ -35,6 +35,7 @@ use tokio::sync::watch::Sender;
 use crate::utils::windows_setup_utils::add_firewall_rule;
 
 use crate::{
+    APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
     binaries::{Binaries, BinaryResolver},
     configs::{
         config_mining::{ConfigMining, ConfigMiningContent},
@@ -42,13 +43,13 @@ use crate::{
     },
     events_emitter::EventsEmitter,
     mining::{
+        GpuConnectionType,
         gpu::{
             consts::{GpuMinerStatus, GpuMinerType},
             interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
             manager::GpuManager,
             miners::GpuCommonInformation,
         },
-        GpuConnectionType,
     },
     port_allocator::PortAllocator,
     process_adapter::{
@@ -56,7 +57,6 @@ use crate::{
         StatusMonitor,
     },
     process_utils::launch_child_process,
-    APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
 
 #[derive(Default)]

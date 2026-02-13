@@ -25,19 +25,19 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use log::{error, info};
 use regex::Regex;
 use reqwest::multipart;
 use tokio::sync::RwLock;
-use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
+use zip::write::SimpleFileOptions;
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::utils::file_utils::{make_relative_path, path_as_string};
-use crate::LOG_TARGET_APP_LOGIC;
 const MAX_FILE_SIZE: u64 = 100 * 1024 * 1024; // 100MB in bytes
 pub struct Feedback {
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,

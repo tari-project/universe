@@ -21,8 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
-use crate::events_emitter::EventsEmitter;
 use crate::LOG_TARGET_APP_LOGIC;
+use crate::events_emitter::EventsEmitter;
 use getset::{Getters, Setters};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};

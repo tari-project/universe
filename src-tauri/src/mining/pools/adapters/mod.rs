@@ -21,11 +21,11 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::mining::pools::{
+    PoolStatus,
     adapters::{
         kryptex_pool::KryptexPoolAdapter, lucky_pool::LuckyPoolAdapter,
         support_xmr_pool::SupportXmrPoolAdapter,
     },
-    PoolStatus,
 };
 
 pub mod kryptex_pool;

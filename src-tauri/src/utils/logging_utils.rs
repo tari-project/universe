@@ -29,15 +29,15 @@ pub fn setup_logging(config_file: &Path, base_path: &Path, default: &str) -> Res
         config_file.to_str().unwrap_or("[??]")
     );
 
-    if !config_file.exists() {
-        if let Some(d) = config_file.parent() {
-            fs::create_dir_all(d).map_err(|e| {
-                Error::msg(format!(
-                    "Could not create parent directory for log file: {e:?}"
-                ))
-            })?;
-        };
-    }
+    if !config_file.exists()
+        && let Some(d) = config_file.parent()
+    {
+        fs::create_dir_all(d).map_err(|e| {
+            Error::msg(format!(
+                "Could not create parent directory for log file: {e:?}"
+            ))
+        })?;
+    };
 
     let contents = default.to_string();
 

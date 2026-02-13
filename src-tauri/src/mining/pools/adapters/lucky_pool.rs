@@ -21,9 +21,9 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
-    mining::pools::{adapters::PoolApiAdapter, PoolStatus},
-    requests::clients::http_client::HttpClient,
     LOG_TARGET_STATUSES,
+    mining::pools::{PoolStatus, adapters::PoolApiAdapter},
+    requests::clients::http_client::HttpClient,
 };
 use log::info;
 use serde::{Deserialize, Serialize};

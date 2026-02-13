@@ -30,21 +30,21 @@ use log::{error, info, warn};
 use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::{
-    sync::{broadcast, watch, RwLock},
+    sync::{RwLock, broadcast, watch},
     time,
 };
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::mining::cpu::CpuMinerStatus;
 use crate::websocket_manager::WebsocketManager;
-use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
+    BaseNodeStatus, GpuMinerStatus,
     airdrop::decode_jwt_claims_without_exp,
-    commands::{sign_ws_data, SignWsDataResponse},
+    commands::{SignWsDataResponse, sign_ws_data},
     configs::{config_core::ConfigCore, config_pools::ConfigPools, trait_config::ConfigImpl},
     internal_wallet::InternalWallet,
     tasks_tracker::TasksTrackers,
     websocket_manager::WebsocketMessage,
-    BaseNodeStatus, GpuMinerStatus,
 };
 static INTERVAL_DURATION: std::time::Duration = Duration::from_secs(15);
 static KEEP_ALIVE_INTERVAL_DURATION: std::time::Duration = Duration::from_secs(15);

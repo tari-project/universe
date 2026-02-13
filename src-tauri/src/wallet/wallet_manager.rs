@@ -37,15 +37,15 @@ use futures_util::future::FusedFuture;
 use log::{error, info};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 use tokio::fs;
-use tokio::sync::watch;
 use tokio::sync::RwLock;
+use tokio::sync::watch;
 
 #[derive(Debug, Clone)]
 pub struct WalletStartupConfig {
@@ -356,16 +356,16 @@ impl WalletManager {
                     _ = wallet_state_rx.changed() => {
                         let current_target_height = node_status_watch_rx_progress.borrow().block_height;
                         let (scanned_height, progress) = {
-                            if let Some(wallet_state) = &*wallet_state_rx.borrow() {
+                            match &*wallet_state_rx.borrow() { Some(wallet_state) => {
                                 let progress = if current_target_height > 0 {
                                     (wallet_state.scanned_height as f64 / current_target_height as f64 * 100.0).min(100.0)
                                 } else {
                                     0.0
                                 };
                                 (wallet_state.scanned_height, progress)
-                            } else {
+                            } _ => {
                                 continue;
-                            }
+                            }}
                         };
                         if initial_scan_completed.load(std::sync::atomic::Ordering::Relaxed) {
                             break;
@@ -505,12 +505,11 @@ impl WalletManager {
                     }
 
                     let wallet_status = wallet_state_receiver.borrow().clone();
-                    if let Some(wallet_state) = wallet_status {
-                        if let Some(balance) = wallet_state.balance {
+                    if let Some(wallet_state) = wallet_status
+                        && let Some(balance) = wallet_state.balance {
                             ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
                             EventsEmitter::emit_wallet_balance_update(balance).await;
                         }
-                    }
                 }
             }
         }

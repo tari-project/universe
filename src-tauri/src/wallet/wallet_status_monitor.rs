@@ -20,13 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::LOG_TARGET_STATUSES;
 use crate::process_adapter::{HealthStatus, StatusMonitor};
 use crate::wallet::wallet_types::{NetworkStatus, WalletBalance, WalletState};
-use crate::LOG_TARGET_STATUSES;
 use async_trait::async_trait;
 use log::warn;
-use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::GetStateRequest;
+use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use std::time::Duration;
 use tari_common_types::tari_address::TariAddressError;
 use tokio::sync::watch;

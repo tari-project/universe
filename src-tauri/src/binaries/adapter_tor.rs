@@ -23,7 +23,7 @@
 use crate::binaries::binaries_resolver::LatestVersionApiAdapter;
 use crate::requests::clients::http_file_client::HttpFileClient;
 use crate::{APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC};
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use async_trait::async_trait;
 use log::{error, info};
 use std::path::PathBuf;

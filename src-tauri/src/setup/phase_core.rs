@@ -23,12 +23,13 @@
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
-    watch::{Receiver, Sender},
     Mutex,
+    watch::{Receiver, Sender},
 };
 use tokio_util::task::TaskTracker;
 
 use crate::{
+    UniverseAppState,
     auto_launcher::AutoLauncher,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     progress_trackers::{
@@ -38,7 +39,6 @@ use crate::{
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
     utils::network_status::NetworkStatus,
-    UniverseAppState,
 };
 
 use super::{

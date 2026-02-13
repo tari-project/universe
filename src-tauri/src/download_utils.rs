@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
 use sha2::{Digest, Sha256};

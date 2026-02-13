@@ -30,10 +30,10 @@ use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     configs::config_ui::{ConfigUI, ConfigUIContent},
     internal_wallet::TariWalletDetails,
     pin::PinLockerState,
-    LOG_TARGET_APP_LOGIC,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};

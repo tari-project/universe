@@ -21,11 +21,11 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     tapplets::error::{
         Error::{self, TappletServerError},
         TappletServerError::*,
     },
-    LOG_TARGET_APP_LOGIC,
 };
 
 use axum::Router;

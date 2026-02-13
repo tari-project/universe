@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::ab_test_selector::ABTestSelector;
 use crate::node::node_adapter::{
     BaseNodeStatus, NodeAdapter, NodeAdapterService, NodeStatusMonitor,
@@ -31,15 +32,14 @@ use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
-use crate::LOG_TARGET_APP_LOGIC;
 use async_trait::async_trait;
 use log::{info, warn};
 
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
+use std::sync::atomic::AtomicU64;
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;

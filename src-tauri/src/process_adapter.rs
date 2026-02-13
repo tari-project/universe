@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use async_trait::async_trait;
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
@@ -37,12 +37,12 @@ use tokio::select;
 use tokio::task::JoinHandle;
 use tokio_util::task::TaskTracker;
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::download_utils::set_permissions;
 use crate::events::CriticalProblemPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::process_killer::kill_process;
 use crate::process_utils::{graceful_kill, launch_child_process, write_pid_file};
-use crate::LOG_TARGET_APP_LOGIC;
 
 const SPACE_ERROR_MESSAGE: &str = "No space left on device";
 
@@ -374,22 +374,25 @@ impl Drop for ProcessInstance {
 
         if let Some(handle) = self.handle.take() {
             // Check if we're in a tokio runtime context
-            if let Ok(current_handle) = Handle::try_current() {
-                // We're in a tokio context, spawn a detached task for cleanup
-                let spec_name = self.startup_spec.name.clone();
-                current_handle.spawn(async move {
+            match Handle::try_current() {
+                Ok(current_handle) => {
+                    // We're in a tokio context, spawn a detached task for cleanup
+                    let spec_name = self.startup_spec.name.clone();
+                    current_handle.spawn(async move {
                     if let Err(e) = handle.await {
                         warn!(target: LOG_TARGET_APP_LOGIC, "Error during process cleanup for {spec_name}: {e}");
                     }
                 });
-            } else {
-                // We're not in a tokio context, we need to use block_on
-                // This is the fallback case - log it as it might indicate a design issue
-                warn!(target: LOG_TARGET_APP_LOGIC, "Process {} dropped outside tokio context, using block_on for cleanup", self.startup_spec.name);
+                }
+                _ => {
+                    // We're not in a tokio context, we need to use block_on
+                    // This is the fallback case - log it as it might indicate a design issue
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Process {} dropped outside tokio context, using block_on for cleanup", self.startup_spec.name);
 
-                // Use a timeout to prevent indefinite blocking
-                if let Ok(rt) = tokio::runtime::Handle::try_current() {
-                    rt.block_on(async move {
+                    // Use a timeout to prevent indefinite blocking
+                    match tokio::runtime::Handle::try_current() {
+                        Ok(rt) => {
+                            rt.block_on(async move {
                         if let Err(e) = tokio::time::timeout(
                             Duration::from_secs(5),
                             handle
@@ -397,10 +400,13 @@ impl Drop for ProcessInstance {
                             warn!(target: LOG_TARGET_APP_LOGIC, "Timeout or error during emergency process cleanup: {e}");
                         }
                     });
-                } else {
-                    // Last resort: detach the handle and let the OS clean up
-                    warn!(target: LOG_TARGET_APP_LOGIC, "Cannot properly clean up process {}, detaching handle", self.startup_spec.name);
-                    std::mem::forget(handle);
+                        }
+                        _ => {
+                            // Last resort: detach the handle and let the OS clean up
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Cannot properly clean up process {}, detaching handle", self.startup_spec.name);
+                            std::mem::forget(handle);
+                        }
+                    }
                 }
             }
         }

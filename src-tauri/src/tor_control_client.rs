@@ -62,14 +62,14 @@ impl TorControlClient {
         writer.write_all(AUTH_COMMAND.as_bytes()).await?;
         writer.flush().await?;
 
-        if let Some(response) = reader.next_line().await? {
-            if !response.starts_with("250") {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to authenticate with Tor control port: {response}");
-                return Err(anyhow::anyhow!(
-                    "Failed to authenticate with Tor control port: {}",
-                    response
-                ));
-            }
+        if let Some(response) = reader.next_line().await?
+            && !response.starts_with("250")
+        {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to authenticate with Tor control port: {response}");
+            return Err(anyhow::anyhow!(
+                "Failed to authenticate with Tor control port: {}",
+                response
+            ));
         }
 
         writer.write_all(BOOTSTRAP_QUERY.as_bytes()).await?;
@@ -113,10 +113,10 @@ impl TorControlClient {
         writer.flush().await?;
 
         let mut network_liveness = false;
-        if let Some(response) = reader.next_line().await? {
-            if response.contains("network-liveness=up") {
-                network_liveness = true;
-            }
+        if let Some(response) = reader.next_line().await?
+            && response.contains("network-liveness=up")
+        {
+            network_liveness = true;
         }
         Ok(TorStatus {
             bootstrap_phase,

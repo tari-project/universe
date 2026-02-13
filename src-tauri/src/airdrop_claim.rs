@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::{
-    commands::{sign_ws_data, SignWsDataResponse},
+    commands::{SignWsDataResponse, sign_ws_data},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     websocket_manager::WebsocketMessage,
 };

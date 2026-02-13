@@ -22,24 +22,24 @@
 
 use std::{collections::HashMap, sync::LazyLock};
 
-use tokio::sync::{watch::Receiver, Mutex};
+use tokio::sync::{Mutex, watch::Receiver};
 
 use crate::{
+    EventsEmitter, LOG_TARGET_APP_LOGIC,
     events::UpdateAppModuleStatusPayload,
     setup::{
         listeners::{AppModule, AppModuleStatus},
         setup_manager::{PhaseStatus, SetupPhase},
     },
-    EventsEmitter, LOG_TARGET_APP_LOGIC,
 };
 
 use log::info;
 
 use super::{
+    SetupFeature, SetupFeaturesList,
     trait_listener::{
         UnlockConditionsListenerTrait, UnlockConditionsStatusChannels, UnlockStrategyTrait,
     },
-    SetupFeature, SetupFeaturesList,
 };
 
 static INSTANCE: LazyLock<ListenerUnlockGpuMining> = LazyLock::new(ListenerUnlockGpuMining::new);
