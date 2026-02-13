@@ -230,11 +230,10 @@ impl PoolManager {
 
     /// Send a stop command to the background task
     pub fn stop_background_task(&mut self) {
-        if let Some(sender) = &self.task_sender {
-            if let Err(e) = sender.send(PoolManagerThreadCommands::Stop) {
+        if let Some(sender) = &self.task_sender
+            && let Err(e) = sender.send(PoolManagerThreadCommands::Stop) {
                 warn!(target: LOG_TARGET_APP_LOGIC, "Failed to send stop command to task: {e}");
             }
-        }
         self.task_sender = None;
 
         if let Some(handle) = self.task_thread.take() {
@@ -350,12 +349,11 @@ impl PoolManager {
                 }
 
                 // Check if we should stop the task (1 hour after mining stopped)
-                if let Some(stop_at) = stop_task_at {
-                    if task_state.tracking_duration > stop_at {
+                if let Some(stop_at) = stop_task_at
+                    && task_state.tracking_duration > stop_at {
                         info!(target: LOG_TARGET_APP_LOGIC, "Stopping periodic pool status update task - 1 hour grace period expired");
                         break;
                     }
-                }
             }
 
             info!(target: LOG_TARGET_APP_LOGIC, "Periodic pool status update task finished");

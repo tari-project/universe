@@ -811,11 +811,10 @@ pub async fn reset_settings(
                 let entry = entry.map_err(|e| e.to_string())?;
                 let path = entry.path();
                 if path.is_dir() {
-                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
-                        if folder_block_list.contains(&file_name) {
+                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str())
+                        && folder_block_list.contains(&file_name) {
                             continue;
                         }
-                    }
 
                     let contains_wallet_config =
                         read_dir(&path)
@@ -844,11 +843,10 @@ pub async fn reset_settings(
                         format!("Could not remove directory: {e}")
                     })?;
                 } else {
-                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
-                        if files_block_list.contains(&file_name) {
+                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str())
+                        && files_block_list.contains(&file_name) {
                             continue;
                         }
-                    }
 
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Could not remove {path:?} file: {e:?}");

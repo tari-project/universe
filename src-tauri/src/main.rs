@@ -555,12 +555,11 @@ fn main() {
                     target: LOG_TARGET_APP_LOGIC,
                     "App shutdown request [ExitRequested] caught with code: {code:#?}"
                 );
-                if let Some(exit_code) = code {
-                    if exit_code == RESTART_EXIT_CODE {
+                if let Some(exit_code) = code
+                    && exit_code == RESTART_EXIT_CODE {
                         // RunEvent does not hold the exit code so we store it separately
                         is_restart_requested.store(true, Ordering::SeqCst);
                     }
-                }
 
                 info!(target: LOG_TARGET_APP_LOGIC, "All processes stopped");
             }

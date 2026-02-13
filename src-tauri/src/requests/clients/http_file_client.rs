@@ -387,11 +387,10 @@ impl HttpFileClient {
         if expected_size > 0 {
             let progress_percentage =
                 (file.metadata().await?.len() as f64 / expected_size as f64) * 100.0;
-            if let Some(sender) = &self.config.progress_status_sender {
-                if let Err(e) = sender.send(progress_percentage.round()) {
+            if let Some(sender) = &self.config.progress_status_sender
+                && let Err(e) = sender.send(progress_percentage.round()) {
                     debug!(target: LOG_TARGET_APP_LOGIC, "Failed to send progress update: {e}");
                 }
-            }
         }
         Ok(())
     }

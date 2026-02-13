@@ -33,8 +33,8 @@ use tauri_plugin_cli::CliExt;
 pub async fn check_data_import(app_handle: AppHandle) -> Result<(), anyhow::Error> {
     match app_handle.cli().matches() {
         Ok(matches) => {
-            if let Some(backup_path) = matches.args.get("import-backup") {
-                if let Some(backup_path) = backup_path.value.as_str() {
+            if let Some(backup_path) = matches.args.get("import-backup")
+                && let Some(backup_path) = backup_path.value.as_str() {
                     info!(
                         target: LOG_TARGET_APP_LOGIC,
                         "Trying to copy backup to existing db: {backup_path:?}"
@@ -87,7 +87,6 @@ pub async fn check_data_import(app_handle: AppHandle) -> Result<(), anyhow::Erro
                         );
                     }
                 }
-            }
         }
         Err(e) => {
             error!(target: LOG_TARGET_APP_LOGIC, "Could not get cli matches: {e:?}");
@@ -121,23 +120,21 @@ pub async fn clear_data(app_handle: AppHandle) -> Result<(), anyhow::Error> {
         let wallet_peer_db = local_data_dir.join("wallet").join(network).join("peer_db");
 
         // They may not exist. This could be first run.
-        if node_peer_db.exists() {
-            if let Err(e) = fs::remove_dir_all(node_peer_db) {
+        if node_peer_db.exists()
+            && let Err(e) = fs::remove_dir_all(node_peer_db) {
                 warn!(
                     target: LOG_TARGET_APP_LOGIC,
                     "Could not clear peer data folder: {e}"
                 );
             }
-        }
 
-        if wallet_peer_db.exists() {
-            if let Err(e) = fs::remove_dir_all(wallet_peer_db) {
+        if wallet_peer_db.exists()
+            && let Err(e) = fs::remove_dir_all(wallet_peer_db) {
                 warn!(
                     target: LOG_TARGET_APP_LOGIC,
                     "Could not clear peer data folder: {e}"
                 );
             }
-        }
 
         remove_file(tcp_tor_toggled_file)?
     }

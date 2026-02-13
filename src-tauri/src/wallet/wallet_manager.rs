@@ -505,12 +505,11 @@ impl WalletManager {
                     }
 
                     let wallet_status = wallet_state_receiver.borrow().clone();
-                    if let Some(wallet_state) = wallet_status {
-                        if let Some(balance) = wallet_state.balance {
+                    if let Some(wallet_state) = wallet_status
+                        && let Some(balance) = wallet_state.balance {
                             ConfigWallet::update_field(ConfigWalletContent::set_last_known_balance, balance.available_balance).await?;
                             EventsEmitter::emit_wallet_balance_update(balance).await;
                         }
-                    }
                 }
             }
         }

@@ -333,8 +333,8 @@ impl NodeManager {
                                     }
                                     _ = tokio::time::sleep(Duration::from_millis(2000)) => {
                                         // Try to get node status
-                                        if let Ok(ref current_service) = current_service {
-                                            if let Ok(status) = current_service.get_network_state(false).await {
+                                        if let Ok(ref current_service) = current_service
+                                            && let Ok(status) = current_service.get_network_state(false).await {
                                                 match status.readiness_status {
                                                     ReadinessStatus::Migration(progress) => {
                                                         info!(target: LOG_TARGET_APP_LOGIC, "Database migration in progress: {:.1}% ({}/{})",
@@ -364,7 +364,6 @@ impl NodeManager {
                                                     }
                                                 }
                                             }
-                                        }
                                     }
                                 }
                             }
@@ -827,10 +826,9 @@ async fn switch_to_local(node_manager: NodeManager, node_type: Arc<RwLock<NodeTy
             .handle_switch_to_local_node()
             .await;
         let mut remote_node_watcher = node_manager.remote_node_watcher.write().await;
-        if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
-            if let Err(e) = remote_node_watcher.stop().await {
+        if let Some(remote_node_watcher) = remote_node_watcher.as_mut()
+            && let Err(e) = remote_node_watcher.stop().await {
                 error!(target: LOG_TARGET_APP_LOGIC, "Failed to stop remote node watcher: {e}");
             }
-        }
     }
 }

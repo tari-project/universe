@@ -509,15 +509,14 @@ async fn get_telemetry_data_inner(
     }
 
     // Add payment ID from current tari address
-    if InternalWallet::is_initialized() {
-        if let Some(_state) = app_handle.try_state::<crate::UniverseAppState>() {
+    if InternalWallet::is_initialized()
+        && let Some(_state) = app_handle.try_state::<crate::UniverseAppState>() {
             let tari_address = InternalWallet::tari_address().await;
             if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
                 extra_data.insert("mining_address_payment_id".to_string(), payment_id);
             }
             // Note: If no payment ID, we don't add the field (saves space vs empty string)
         }
-    }
 
     extra_data.insert(
         "tor_bootstrap_phase".to_string(),
@@ -763,8 +762,8 @@ async fn handle_data(
 
                 match telemetry_response {
                     Ok(response) => {
-                        if let Some(response_inner) = response {
-                            if let Some(user_points) = response_inner.user_points {
+                        if let Some(response_inner) = response
+                            && let Some(user_points) = response_inner.user_points {
                                 debug!(target: LOG_TARGET_APP_LOGIC,"emitting UserPoints event{user_points:?}");
                                 let response_inner =
                                     response_inner.referral_count.unwrap_or(ReferralCount {
@@ -783,7 +782,6 @@ async fn handle_data(
                                     })
                                     .unwrap_or(());
                             }
-                        }
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET_APP_LOGIC,"Error sending telemetry data: {e}");

@@ -619,8 +619,8 @@ impl SystemTrayManager {
     }
 
     pub fn hide_to_tray(window: Option<WebviewWindow>) {
-        if let Some(window) = window {
-            if window.is_visible().unwrap_or(false) {
+        if let Some(window) = window
+            && window.is_visible().unwrap_or(false) {
                 #[cfg(target_os = "macos")]
                 {
                     AppHandle::hide(window.app_handle()).unwrap_or_else(|error| {
@@ -635,7 +635,6 @@ impl SystemTrayManager {
                     });
                 }
             }
-        }
     }
 
     #[cfg(target_os = "windows")]

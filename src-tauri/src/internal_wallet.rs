@@ -712,9 +712,8 @@ impl InternalWallet {
         old_wallet_config: LegacyWalletConfig,
     ) -> Result<(WalletId, Vec<u8>, Option<Vec<u8>>), anyhow::Error> {
         let legacy_cred: LegacyCredential = if *ConfigWallet::content().await.keyring_accessed() {
-            let cred =
-                InternalWallet::get_legacy_credentials_forced(app_handle, app_config_dir).await?;
-            cred
+            
+            InternalWallet::get_legacy_credentials_forced(app_handle, app_config_dir).await?
         } else {
             let legacy_fallback_file = get_legacy_fallback_file(app_config_dir).await?;
             if !legacy_fallback_file.exists() {

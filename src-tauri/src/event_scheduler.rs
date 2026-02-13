@@ -1037,8 +1037,8 @@ impl EventScheduler {
         events: &HashMap<String, ScheduledEvent>,
         event_id: String,
     ) -> Result<(), SchedulerError> {
-        if let Some(event) = events.get(&event_id) {
-            if event.state == SchedulerEventState::Active {
+        if let Some(event) = events.get(&event_id)
+            && event.state == SchedulerEventState::Active {
                 match event.event_type.clone() {
                     SchedulerEventType::ResumeMining => {
                         GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
@@ -1064,7 +1064,6 @@ impl EventScheduler {
                     }
                 }
             }
-        }
         Ok(())
     }
 
@@ -1112,14 +1111,13 @@ impl EventScheduler {
         events: &mut HashMap<String, ScheduledEvent>,
         event_id: String,
     ) {
-        if let Some(event) = events.get(&event_id) {
-            if let SchedulerEventTiming::In(_) = event.timing {
+        if let Some(event) = events.get(&event_id)
+            && let SchedulerEventTiming::In(_) = event.timing {
                 info!(target: LOG_TARGET_APP_LOGIC, "Cleaning up schedule for event ID {:?}", event_id);
                 if let Err(e) = Self::handle_remove_event(events, event_id.clone()) {
                     error!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up scheduled event {:?}: {}", event_id, e);
                 }
             }
-        }
     }
 
     /// Creates a tokio task to handle the timing logic for an event.

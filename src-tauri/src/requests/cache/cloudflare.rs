@@ -115,13 +115,13 @@ impl CloudFlareCache {
             info!(target: LOG_TARGET_APP_LOGIC, "get_cf_cache_status_from_head_response, error");
             return CloudFlareCacheStatus::Unknown;
         };
-        let cache_status = CloudFlareCacheStatus::from_str(
+        
+        CloudFlareCacheStatus::from_str(
             response
                 .headers()
                 .get("cf-cache-status")
                 .map_or("", |v| v.to_str().unwrap_or_default()),
-        );
-        cache_status
+        )
     }
 
     #[allow(dead_code)]

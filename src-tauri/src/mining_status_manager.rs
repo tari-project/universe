@@ -135,8 +135,8 @@ impl MiningStatusManager {
 
                         tokio::select! {
                                 _ = interval.tick() => {
-                                if let (Some(jwt), Some(app_version))= (jwt_token, app_version_option){
-                                    if let Some(message) = MiningStatusManager::assemble_mining_status(cpu_miner_status_watch_rx.clone(),gpu_latest_miner_stats.clone(),node_latest_status.clone(),app_id.clone(),app_version.clone(),jwt.clone(),).await {
+                                if let (Some(jwt), Some(app_version))= (jwt_token, app_version_option)
+                                    && let Some(message) = MiningStatusManager::assemble_mining_status(cpu_miner_status_watch_rx.clone(),gpu_latest_miner_stats.clone(),node_latest_status.clone(),app_id.clone(),app_version.clone(),jwt.clone(),).await {
                                         let client = reqwest::Client::new();
                                         let url = format!("{base_url}/miner/mining-status");
                                         if let Ok(response) = client.post(url).header(AUTHORIZATION, &format!("Bearer {jwt}")).json(&message).send().await.inspect_err(|e|{
@@ -148,7 +148,6 @@ impl MiningStatusManager {
                                             }
                                         }
                                     }
-                                }
                             }
                             _ = shutdown_signal.wait() => {
                                 info!(target:LOG_TARGET_APP_LOGIC,"websocket events manager closed");

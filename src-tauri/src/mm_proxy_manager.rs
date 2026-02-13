@@ -133,8 +133,8 @@ impl MmProxyManager {
         let lock = self.watcher.read().await;
         let start_time = Instant::now();
         for i in 0..90 {
-            if lock.is_running() {
-                if let Some(status) = lock.status_monitor.as_ref() {
+            if lock.is_running()
+                && let Some(status) = lock.status_monitor.as_ref() {
                     if status
                         // Not sure what timeout to use
                         .check_health(start_time.elapsed(), std::time::Duration::from_secs(10))
@@ -147,7 +147,6 @@ impl MmProxyManager {
                         info!(target: LOG_TARGET_STATUSES, "Waiting for mmproxy to be healthy... {}/90", i + 1);
                     }
                 }
-            }
             info!(target: LOG_TARGET_STATUSES, "Waiting for mmproxy to start... {}/90", i + 1);
             sleep(std::time::Duration::from_secs(1)).await;
         }
