@@ -273,14 +273,14 @@ impl SetupManager {
             tauri::async_runtime::spawn(async move {
                 info!(target: LOG_TARGET_APP_LOGIC, "Restarting websocket events manager after reconnection");
                 let mut events_manager_guard = websocket_event_manager_clone.write().await;
-                if let Err(e) = events_manager_guard
+                match events_manager_guard
                     .set_app_handle(app_handle_clone, websocket_manager_clone)
                     .await
-                {
+                { Err(e) => {
                     error!(target: LOG_TARGET_APP_LOGIC, "Failed to restart websocket events manager: {e}");
-                } else {
+                } _ => {
                     info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager restarted successfully");
-                }
+                }}
             });
         });
         let websocket_tx = state.websocket_message_tx.clone();

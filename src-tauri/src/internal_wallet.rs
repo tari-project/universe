@@ -633,10 +633,10 @@ impl InternalWallet {
         }
 
         let (encrypted_tari_seed, tari_wallet_details) = {
-            if let Some(wallet_details) = ConfigWallet::content().await.tari_wallet_details() {
+            match ConfigWallet::content().await.tari_wallet_details() { Some(wallet_details) => {
                 log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(wallet config file) Tari Wallet Details: {wallet_details:?}");
                 (None, wallet_details.clone())
-            } else {
+            } _ => {
                 // If wallet details are not saved in the config file, extract them from the decrypted seed.
                 let tari_wallet_id = (*wallet_config.tari_wallets())
                     .first()
@@ -673,7 +673,7 @@ impl InternalWallet {
                 .await?;
                 log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(seed from credentials) Tari Wallet Details: {wallet_details:?}");
                 (Some(encrypted_tari_seed), wallet_details)
-            }
+            }}
         };
 
         Ok(InternalWallet {

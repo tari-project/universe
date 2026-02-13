@@ -76,7 +76,7 @@ impl UnlockConditionsStatusChannels {
 
     #[allow(dead_code)]
     pub async fn changed(&mut self, key: &SetupPhase) -> Result<(), anyhow::Error> {
-        if let Ok(receiver) = self.get_mut(key) {
+        match self.get_mut(key) { Ok(receiver) => {
             receiver.changed().await.map_err(|e: RecvError| {
                 anyhow::anyhow!(
                     "Failed to receive change notification for phase {:?}: {}",
@@ -84,9 +84,9 @@ impl UnlockConditionsStatusChannels {
                     e
                 )
             })
-        } else {
+        } _ => {
             Err(anyhow::anyhow!("Channel for phase {:?} not found", key))
-        }
+        }}
     }
 }
 
@@ -148,7 +148,7 @@ pub trait UnlockConditionsListenerTrait {
                     if shutdown_signal.is_triggered() {
                         return;
                     }
-                    if let Ok(status) = unlock_strategy.check_conditions(&channels) {
+                    match unlock_strategy.check_conditions(&channels) { Ok(status) => {
                         match status {
                             AppModuleStatus::Initialized => {
                                 Self::current().conditions_met_callback().await;
@@ -162,9 +162,9 @@ pub trait UnlockConditionsListenerTrait {
                             }
                             _ => {}
                         }
-                    } else {
+                    } _ => {
                         warn!(target: LOG_TARGET_APP_LOGIC, "Failed to check unlock conditions");
-                    }
+                    }}
                     sleep(Duration::from_secs(5)).await;
                 }
             });
@@ -236,14 +236,14 @@ pub trait UnlockStrategyTrait {
 
     fn is_any_phase_restarting(&self, channels: UnlockConditionsStatusChannels) -> bool {
         for phase in &self.required_channels() {
-            if let Ok(channel) = channels.get(phase) {
+            match channels.get(phase) { Ok(channel) => {
                 if channel.borrow().is_restarting() {
                     return true;
                 }
-            } else {
+            } _ => {
                 warn!(target: LOG_TARGET_APP_LOGIC, "Channel for phase {phase:?} not found");
                 return true;
-            }
+            }}
         }
         false
     }

@@ -356,16 +356,16 @@ impl WalletManager {
                     _ = wallet_state_rx.changed() => {
                         let current_target_height = node_status_watch_rx_progress.borrow().block_height;
                         let (scanned_height, progress) = {
-                            if let Some(wallet_state) = &*wallet_state_rx.borrow() {
+                            match &*wallet_state_rx.borrow() { Some(wallet_state) => {
                                 let progress = if current_target_height > 0 {
                                     (wallet_state.scanned_height as f64 / current_target_height as f64 * 100.0).min(100.0)
                                 } else {
                                     0.0
                                 };
                                 (wallet_state.scanned_height, progress)
-                            } else {
+                            } _ => {
                                 continue;
-                            }
+                            }}
                         };
                         if initial_scan_completed.load(std::sync::atomic::Ordering::Relaxed) {
                             break;

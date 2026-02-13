@@ -109,12 +109,12 @@ impl BatteryStatus {
 
     pub async fn stop_battery_listener() {
         let mut thread_lock = INSTANCE.battery_listener_thread.lock().await;
-        if let Some(handle) = thread_lock.take() {
+        match thread_lock.take() { Some(handle) => {
             handle.abort();
             log::info!(target: LOG_TARGET, "Battery listener thread stopped.");
-        } else {
+        } _ => {
             log::info!(target: LOG_TARGET, "Battery listener thread is not running.");
-        }
+        }}
     }
 
     pub async fn start_battery_listener() {

@@ -374,7 +374,7 @@ impl Drop for ProcessInstance {
 
         if let Some(handle) = self.handle.take() {
             // Check if we're in a tokio runtime context
-            if let Ok(current_handle) = Handle::try_current() {
+            match Handle::try_current() { Ok(current_handle) => {
                 // We're in a tokio context, spawn a detached task for cleanup
                 let spec_name = self.startup_spec.name.clone();
                 current_handle.spawn(async move {
@@ -382,13 +382,13 @@ impl Drop for ProcessInstance {
                         warn!(target: LOG_TARGET_APP_LOGIC, "Error during process cleanup for {spec_name}: {e}");
                     }
                 });
-            } else {
+            } _ => {
                 // We're not in a tokio context, we need to use block_on
                 // This is the fallback case - log it as it might indicate a design issue
                 warn!(target: LOG_TARGET_APP_LOGIC, "Process {} dropped outside tokio context, using block_on for cleanup", self.startup_spec.name);
 
                 // Use a timeout to prevent indefinite blocking
-                if let Ok(rt) = tokio::runtime::Handle::try_current() {
+                match tokio::runtime::Handle::try_current() { Ok(rt) => {
                     rt.block_on(async move {
                         if let Err(e) = tokio::time::timeout(
                             Duration::from_secs(5),
@@ -397,12 +397,12 @@ impl Drop for ProcessInstance {
                             warn!(target: LOG_TARGET_APP_LOGIC, "Timeout or error during emergency process cleanup: {e}");
                         }
                     });
-                } else {
+                } _ => {
                     // Last resort: detach the handle and let the OS clean up
                     warn!(target: LOG_TARGET_APP_LOGIC, "Cannot properly clean up process {}, detaching handle", self.startup_spec.name);
                     std::mem::forget(handle);
-                }
-            }
+                }}
+            }}
         }
     }
 }

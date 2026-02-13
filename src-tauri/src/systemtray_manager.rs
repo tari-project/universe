@@ -578,7 +578,7 @@ impl SystemTrayManager {
     }
     fn update_menu_data_item(&mut self, item: SystemTrayDataItem) {
         if let Some(menu) = &self.menu {
-            if let Some(menu_item) = menu.get(item.id()) {
+            match menu.get(item.id()) { Some(menu_item) => {
                 if let Some(menu_item) = menu_item.as_menuitem() {
                     if let Err(e) = menu_item.set_text(item.to_string()) {
                         error!(target: LOG_TARGET_APP_LOGIC, "Failed to update menu field: {e}");
@@ -586,9 +586,9 @@ impl SystemTrayManager {
                 } else {
                     error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item for {item}");
                 }
-            } else {
+            } _ => {
                 error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item by id for {item}");
-            }
+            }}
         } else {
             error!(target: LOG_TARGET_APP_LOGIC, "Menu is not initialized");
         }
@@ -596,7 +596,7 @@ impl SystemTrayManager {
 
     fn update_menu_action_item(&mut self, item: SystemTrayActionItem) {
         if let Some(menu) = &self.menu {
-            if let Some(menu_item) = menu.get(item.id()) {
+            match menu.get(item.id()) { Some(menu_item) => {
                 if let Some(menu_item) = menu_item.as_menuitem() {
                     if let Err(e) = menu_item.set_text(item.to_string()) {
                         error!(target: LOG_TARGET_APP_LOGIC, "Failed to update menu field: {e}");
@@ -604,9 +604,9 @@ impl SystemTrayManager {
                 } else {
                     error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item for {item}");
                 }
-            } else {
+            } _ => {
                 error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item by id for {item}");
-            }
+            }}
         } else {
             error!(target: LOG_TARGET_APP_LOGIC, "Menu is not initialized");
         }

@@ -113,7 +113,7 @@ impl MiningStatusManager {
         let base_url = app_in_config_memory.read().await.airdrop_api_url.clone();
 
         let is_started = self.is_started.clone();
-        if let Some(mut is_started_guard) = self.is_started.try_lock() {
+        match self.is_started.try_lock() { Some(mut is_started_guard) => {
             if *is_started_guard {
                 return Ok(());
             }
@@ -161,9 +161,9 @@ impl MiningStatusManager {
             });
             *is_started_guard = true;
             Ok(())
-        } else {
+        } _ => {
             Err(anyhow::anyhow!("could not start emitting"))
-        }
+        }}
     }
 
     async fn assemble_mining_status(

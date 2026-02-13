@@ -937,15 +937,15 @@ impl EventScheduler {
         event_id: String,
     ) -> Result<(), SchedulerError> {
         info!(target: LOG_TARGET_APP_LOGIC, "Removing event with ID {:?}", event_id);
-        if let Some(mut event) = events.remove(&event_id) {
+        match events.remove(&event_id) { Some(mut event) => {
             if let Some(handle) = event.task_handle.take() {
                 handle.abort();
             }
             info!(target: LOG_TARGET_APP_LOGIC, "Removed event with ID {:?}", event_id);
             Ok(())
-        } else {
+        } _ => {
             Err(SchedulerError::EventNotFound(event_id))
-        }
+        }}
     }
 
     /// Internal handler for pausing events.

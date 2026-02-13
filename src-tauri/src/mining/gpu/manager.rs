@@ -307,7 +307,7 @@ impl GpuManager {
 
         EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Initiated).await;
 
-        if let Some(app_handle) = self.app_handle.clone() {
+        match self.app_handle.clone() { Some(app_handle) => {
             let base_path = app_handle
                 .path()
                 .app_local_data_dir()
@@ -397,9 +397,9 @@ impl GpuManager {
             self.status_thread_shutdown = Shutdown::new();
             self.initialize_status_updates().await;
             info!(target: LOG_TARGET_APP_LOGIC, "Initialized gpu miner status updates");
-        } else {
+        } _ => {
             return Err(anyhow::anyhow!("App handle is not set"));
-        }
+        }}
 
         Ok(())
     }
