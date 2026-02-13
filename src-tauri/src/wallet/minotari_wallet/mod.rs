@@ -33,9 +33,10 @@ use crate::{
         database_manager::{MinotariWalletDatabaseManager, DEFAULT_ACCOUNT_ID},
         transaction::TransactionManager,
     },
-    UniverseAppState,
+    UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 use log::{error, info};
+use minotari_wallet::transactions::{TransactionDisplayStatus, TransactionSource};
 use minotari_wallet::{
     db::{
         get_all_balance_changes_by_account_id, get_latest_scanned_tip_block_by_account,
@@ -67,7 +68,6 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
-static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet_manager";
 
 static INSTANCE: LazyLock<MinotariWalletManager> = LazyLock::new(MinotariWalletManager::new);
 
@@ -218,7 +218,8 @@ impl MinotariWalletManager {
         let mut pending = INSTANCE.pending_transactions.write().await;
         pending.insert(tx.id, tx.clone());
         info!(
-            target: LOG_TARGET,
+            target:
+            LOG_TARGET_APP_LOGIC,
             "Stored pending transaction with id: {}", tx.id
         );
     }
@@ -230,7 +231,7 @@ impl MinotariWalletManager {
         let result = pending.remove(tx_id);
         if result.is_some() {
             info!(
-                target: LOG_TARGET,
+                target: LOG_TARGET_APP_LOGIC,
                 "Matched and removed pending transaction with id: {}", tx_id
             );
         }
@@ -238,7 +239,7 @@ impl MinotariWalletManager {
     }
 
     /// Clear all pending transactions (e.g., on wallet import)
-    async fn clear_pending_transactions() {
+    pub async fn clear_pending_transactions() {
         let mut pending = INSTANCE.pending_transactions.write().await;
         pending.clear();
     }
@@ -247,7 +248,7 @@ impl MinotariWalletManager {
         tari_wallet_type: TariAddressType,
     ) -> Result<(), anyhow::Error> {
         info!(
-            target: LOG_TARGET,
+            target: LOG_TARGET_APP_LOGIC,
             "Handling side effects after wallet import for wallet type: {:?}", tari_wallet_type
         );
 
@@ -268,7 +269,7 @@ impl MinotariWalletManager {
             .store(false, Ordering::SeqCst);
 
         info!(
-            target: LOG_TARGET,
+            target: LOG_TARGET_APP_LOGIC,
             "Wallet import side effects handled. Transactions, balance, and pending transactions cleared."
         );
         Ok(())
@@ -291,7 +292,7 @@ impl MinotariWalletManager {
             .as_ref()
             .cloned()
             .unwrap_or_else(|| {
-                error!(target: LOG_TARGET, "Failed to get owner Tari address");
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to get owner Tari address");
                 String::new()
             })
     }
@@ -336,7 +337,7 @@ impl MinotariWalletManager {
         INSTANCE.database_manager.start_health_check().await;
 
         if let Err(e) = Self::run_transaction_unlocker().await {
-            error!(target: LOG_TARGET, "Failed to start transaction unlocker: {:?}", e);
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start transaction unlocker: {:?}", e);
         }
 
         // ============= | Check latest block height | ==============
@@ -347,7 +348,7 @@ impl MinotariWalletManager {
                 let mut last_scanned_height_lock = INSTANCE.last_scanned_height.write().await;
                 *last_scanned_height_lock = block.height;
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_APP_LOGIC,
                     "Latest scanned tip block height from database: {}", block.height
                 );
             }
@@ -368,7 +369,7 @@ impl MinotariWalletManager {
         match history_service.load_transactions_excluding_reorged(DEFAULT_ACCOUNT_ID) {
             Ok(transactions) => {
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_APP_LOGIC,
                     "Loaded {} transactions from history (excluding reorged) via TransactionHistoryService", transactions.len()
                 );
 
@@ -377,7 +378,7 @@ impl MinotariWalletManager {
             }
             Err(e) => {
                 error!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_APP_LOGIC,
                     "Failed to load transaction history: {:?}", e
                 );
             }
@@ -394,7 +395,7 @@ impl MinotariWalletManager {
         // Check if already running
         if INSTANCE.cancel_token.read().await.is_some() {
             info!(
-                target: LOG_TARGET,
+                target: LOG_TARGET_APP_LOGIC,
                 "Blockchain scanning already running, skipping initialization."
             );
             return Ok(());
@@ -404,7 +405,7 @@ impl MinotariWalletManager {
         let tari_address = Self::get_owner_address().await;
 
         info!(
-            target: LOG_TARGET,
+            target: LOG_TARGET_APP_LOGIC,
             "Starting blockchain scan for Minotari wallet at database path: {}", database_path
         );
 
@@ -437,15 +438,15 @@ impl MinotariWalletManager {
             // Process events and run scan concurrently
             tokio::select! {
                 _ = Self::process_scan_events(event_rx) => {
-                    info!(target: LOG_TARGET, "Scan event processing completed.");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Scan event processing completed.");
                 }
                 result = scan_future => {
                     match result {
                         Ok(_) => {
-                            info!(target: LOG_TARGET, "Blockchain scan completed successfully.");
+                            info!(target: LOG_TARGET_APP_LOGIC, "Blockchain scan completed successfully.");
                         }
                         Err(e) => {
-                            error!(target: LOG_TARGET, "Blockchain scan failed: {:?}", e);
+                            error!(target: LOG_TARGET_APP_LOGIC, "Blockchain scan failed: {:?}", e);
                         }
                     }
                 }
@@ -462,7 +463,7 @@ impl MinotariWalletManager {
             .await
             .spawn(async move {
                 shutdown_signal.wait().await;
-                info!(target: LOG_TARGET, "Shutdown signal received. Cancelling scan.");
+                info!(target: LOG_TARGET_APP_LOGIC, "Shutdown signal received. Cancelling scan.");
                 cancel_token_for_shutdown.cancel();
                 *INSTANCE.cancel_token.write().await = None;
             });
@@ -478,7 +479,7 @@ impl MinotariWalletManager {
             INSTANCE
                 .initial_sync_complete
                 .store(false, Ordering::SeqCst);
-            info!(target: LOG_TARGET, "Blockchain scanning stopped.");
+            info!(target: LOG_TARGET_APP_LOGIC, "Blockchain scanning stopped.");
         }
     }
 
@@ -492,7 +493,7 @@ impl MinotariWalletManager {
                 ProcessingEvent::TransactionsReady(transactions_event) => {
                     let transaction_count = transactions_event.transactions.len();
                     info!(
-                        target: LOG_TARGET,
+                        target: LOG_TARGET_APP_LOGIC,
                         "TransactionsReady event received with {} transactions",
                         transaction_count
                     );
@@ -500,19 +501,22 @@ impl MinotariWalletManager {
                     // Process transactions - check each for pending transaction match
                     let mut transactions_to_emit = Vec::new();
                     for tx in transactions_event.transactions {
-                        // Check if this scanned transaction matches any pending transaction
-                        if let Some(_pending_tx) =
-                            Self::match_and_remove_pending_transaction(&tx.id).await
-                        {
-                            // Emit update event - the scanned transaction replaces the pending one
-                            info!(
-                                target: LOG_TARGET,
-                                "Found matching pending transaction for scanned tx: {}",
-                                tx.id
-                            );
-                            EventsEmitter::emit_wallet_transaction_updated(tx.clone()).await;
+                        let is_ready = tx.status != TransactionDisplayStatus::Unconfirmed
+                            && tx.status != TransactionDisplayStatus::Pending;
+                        if is_ready {
+                            // Check if this scanned transaction matches any pending transaction
+                            if let Some(_pending_tx) =
+                                Self::match_and_remove_pending_transaction(&tx.id).await
+                            {
+                                // Emit update event - the scanned transaction replaces the pending one
+                                info!(
+                                    target: LOG_TARGET_APP_LOGIC,
+                                    "Found matching pending transaction for scanned tx: {}",
+                                    tx.id
+                                );
+                            }
+                            transactions_to_emit.push(tx);
                         }
-                        transactions_to_emit.push(tx);
                     }
 
                     // Update balance based on new transactions
@@ -527,7 +531,7 @@ impl MinotariWalletManager {
                 }
                 ProcessingEvent::ReorgDetected(reorg_event) => {
                     info!(
-                        target: LOG_TARGET,
+                        target: LOG_TARGET_APP_LOGIC,
                         "Chain reorganization detected at height {}, {} transactions affected",
                         reorg_event.reorg_from_height,
                         reorg_event.reorganized_displayed_transactions.len()
@@ -541,14 +545,22 @@ impl MinotariWalletManager {
                 ProcessingEvent::TransactionsUpdated(update_event) => {
                     let update_count = update_event.updated_transactions.len();
                     info!(
-                        target: LOG_TARGET,
+                        target: LOG_TARGET_APP_LOGIC,
                         "TransactionsUpdated event received with {} transactions",
                         update_count
                     );
 
                     // Emit update event for each transaction with updated confirmations
                     for tx in update_event.updated_transactions {
-                        EventsEmitter::emit_wallet_transaction_updated(tx).await;
+                        let confirmed_with_fee = tx.source != TransactionSource::Coinbase
+                            && tx.status == TransactionDisplayStatus::Confirmed
+                            && tx.fee.is_some();
+                        let should_emit = tx.status != TransactionDisplayStatus::Unconfirmed
+                            && tx.status != TransactionDisplayStatus::Pending
+                            || confirmed_with_fee;
+                        if should_emit {
+                            EventsEmitter::emit_wallet_transaction_updated(tx).await;
+                        }
                     }
                 }
             }
@@ -577,7 +589,7 @@ impl MinotariWalletManager {
                 from_height,
             } => {
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_APP_LOGIC,
                     "Scan started for account {} from height {}", account_id, from_height
                 );
             }
@@ -618,7 +630,7 @@ impl MinotariWalletManager {
                 ..
             } => {
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_APP_LOGIC,
                     "Scan completed at height {}, total blocks scanned {}",
                     final_height, total_blocks_scanned
                 );
@@ -644,20 +656,20 @@ impl MinotariWalletManager {
                 .await;
 
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_APP_LOGIC,
                     "Scan completed at height {}, {} total blocks scanned",
                     final_height, total_blocks_scanned
                 );
             }
             ScanStatusEvent::Waiting { resume_in, .. } => {
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_APP_LOGIC,
                     "Scan waiting, will resume in {:?}", resume_in
                 );
             }
             ScanStatusEvent::MoreBlocksAvailable { .. } => {}
             ScanStatusEvent::Paused { reason, .. } => {
-                info!(target: LOG_TARGET, "Scan paused: {:?}", reason);
+                info!(target: LOG_TARGET_APP_LOGIC, "Scan paused: {:?}", reason);
             }
         }
     }
@@ -684,11 +696,11 @@ impl MinotariWalletManager {
 
     pub async fn run_transaction_unlocker() -> Result<(), anyhow::Error> {
         if INSTANCE.unlocker_handle.read().await.is_some() {
-            info!(target: LOG_TARGET, "Transaction unlocker is already running.");
+            info!(target: LOG_TARGET_APP_LOGIC, "Transaction unlocker is already running.");
             return Ok(());
         }
 
-        info!(target: LOG_TARGET, "Starting Transaction Unlocker...");
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting Transaction Unlocker...");
 
         let pool = INSTANCE.database_manager.get_pool().await?;
         let unlocker = TransactionUnlocker::new(pool);
@@ -707,14 +719,14 @@ impl MinotariWalletManager {
             .spawn(async move {
                 app_shutdown_signal.wait().await;
 
-                info!(target: LOG_TARGET, "Shutdown signal received. Stopping Transaction Unlocker.");
+                info!(target: LOG_TARGET_APP_LOGIC, "Shutdown signal received. Stopping Transaction Unlocker.");
 
                 if let Some(handle) = INSTANCE.unlocker_handle.write().await.take() {
                     if let Err(e) = shutdown_tx.send(()) {
-                        error!(target: LOG_TARGET, "Failed to send shutdown signal to unlocker (it might have already stopped): {:?}", e);
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to send shutdown signal to unlocker (it might have already stopped): {:?}", e);
                     }
                     if let Err(e) = handle.await {
-                        error!(target: LOG_TARGET, "Transaction unlocker task did not complete successfully: {:?}", e);
+                        error!(target: LOG_TARGET_APP_LOGIC, "Transaction unlocker task did not complete successfully: {:?}", e);
                     }
                 }
 

@@ -5,13 +5,16 @@ import { useConfigUIStore } from '@app/store';
 
 /**
  * Formats the blockchain timestamp from DisplayedTransaction into a readable format
- * @param timestamp - ISO 8601 date string (e.g., "2025-05-13T05:25:43")
+ * @param timeString - ISO 8601 date string (e.g., "2025-05-13T05:25:43")
  * @returns Formatted date string (e.g., "May 13, 05:25")
  */
-export const formatEffectiveDate = (timestamp: string): string => {
+export const formatEffectiveDate = (timeString: string): string => {
     const appLanguage = useConfigUIStore.getState().application_language;
     const systemLang = useConfigUIStore.getState().should_always_use_system_language;
+    const isUTC = timeString?.endsWith(`Z`);
+    const timestamp = `${timeString}${isUTC ? '' : 'Z'}`;
     const date = new Date(timestamp);
+
     const locale = systemLang ? undefined : appLanguage;
 
     const fmt = new Intl.DateTimeFormat(locale, {

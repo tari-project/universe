@@ -199,15 +199,19 @@ impl WalletManager {
         self.initial_scan_completed
             .store(false, std::sync::atomic::Ordering::Relaxed);
 
-        let path_to_network_wallet = base_path
-            .join("wallet")
-            .join(Network::get_current().to_string().to_lowercase());
+        let network_str = Network::get_current().to_string().to_lowercase();
 
-        if path_to_network_wallet.try_exists()? && path_to_network_wallet.is_dir() {
-            fs::remove_dir_all(path_to_network_wallet).await?;
+        let cli_wallet = base_path.join("minotari-wallet").join(&network_str);
+        let network_wallet = base_path.join("wallet").join(network_str);
+
+        if cli_wallet.try_exists()? && cli_wallet.is_dir() {
+            fs::remove_dir_all(cli_wallet).await?;
+        }
+        if network_wallet.try_exists()? && network_wallet.is_dir() {
+            fs::remove_dir_all(network_wallet).await?;
         }
 
-        log::info!(target: LOG_TARGET_APP_LOGIC, "Cleaning wallet data folder");
+        info!(target: LOG_TARGET_APP_LOGIC, "Cleaning wallet data folder");
         Ok(())
     }
 
