@@ -115,6 +115,3 @@ tempfile = "3.10"
 test-case = "3.3"
 tokio-test = "0.4"
 wiremock = "0.6"
-
-[profile.release]
-debug = true
