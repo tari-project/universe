@@ -6,7 +6,9 @@ name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
 
 [features]
-custom-protocol = ["tauri/custom-protocol"] # DO NOT REMOVE!! This feature is used for production builds or when a dev server is not specified.
+custom-protocol = [
+  "tauri/custom-protocol",
+] # DO NOT REMOVE!! This feature is used for production builds or when a dev server is not specified.
 exchange-ci = ["tauri/custom-protocol"]
 release-ci = ["tauri/custom-protocol"]
 release-ci-beta = ["tauri/custom-protocol"]
@@ -41,7 +43,11 @@ futures-util = "0.3.30"
 getset = "0.1.5"
 hex = "0.4.3"
 jsonwebtoken = "9.3.0"
-keyring = { version = "3.0.5", features = ["apple-native", "linux-native-sync-persistent", "windows-native", ] }
+keyring = { version = "3.0.5", features = [
+  "apple-native",
+  "linux-native-sync-persistent",
+  "windows-native",
+] }
 log = "0.4.22"
 log4rs = "1.3.0"
 minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", tag = "v5.2.1" }
@@ -76,7 +82,15 @@ tari_crypto = "0.22.1"
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v5.2.1" }
 tari_transaction_components = { git = "https://github.com/tari-project/tari.git", tag = "v5.2.1" }
 tari_utilities = "0.8.0"
-tauri = { version = "2", features = ["protocol-asset", "isolation", "macos-private-api", "image-png", "image-ico", "tray-icon", "devtools", ] }
+tauri = { version = "2", features = [
+  "protocol-asset",
+  "isolation",
+  "macos-private-api",
+  "image-png",
+  "image-ico",
+  "tray-icon",
+  "devtools",
+] }
 tauri-plugin-cli = "2"
 tauri-plugin-clipboard-manager = "2.2.0"
 tauri-plugin-dialog = "2"
@@ -102,8 +116,12 @@ zip = "2.2.0"
 
 [target.'cfg(windows)'.dependencies]
 device_query = "2.1.0"
-libsqlite3-sys = { version = "0.25.1", features = ["bundled" ] } # Required for tari_wallet
-openssl = { version = "0.10", features = ["vendored", ] } # temporary fix for openssl
+libsqlite3-sys = { version = "0.25.1", features = [
+  "bundled",
+] } # Required for tari_wallet
+openssl = { version = "0.10", features = [
+  "vendored",
+] } # temporary fix for openssl
 planif = "1.0.0"
 whoami = "1.5.2"
 winreg = "0.52.0"
