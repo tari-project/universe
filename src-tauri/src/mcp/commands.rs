@@ -24,6 +24,7 @@ use std::time::SystemTime;
 
 use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent};
 use crate::configs::trait_config::ConfigImpl;
+use crate::events_emitter::EventsEmitter;
 use crate::mcp::audit::AuditLog;
 use crate::mcp::server::McpServerManager;
 
@@ -76,6 +77,8 @@ pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
         McpServerManager::stop().await;
     }
 
+    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
+
     Ok(())
 }
 
@@ -89,6 +92,7 @@ pub async fn refresh_mcp_token_expiry() -> Result<(), String> {
             .await
             .map_err(|e| e.to_string())?;
     }
+    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
 }
 
@@ -108,6 +112,8 @@ pub async fn revoke_mcp_token() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     McpServerManager::stop().await;
+
+    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
 
     Ok(())
 }
@@ -158,4 +164,27 @@ pub async fn get_mcp_audit_log(count: usize) -> Result<Vec<serde_json::Value>, S
 #[tauri::command]
 pub async fn export_mcp_audit_log() -> Result<String, String> {
     AuditLog::export().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn set_mcp_transactions_enabled(enabled: bool) -> Result<(), String> {
+    if enabled && !crate::pin::PinManager::pin_locked().await {
+        return Err(
+            "Cannot enable MCP transactions without a PIN configured. Please set up a PIN first."
+                .to_string(),
+        );
+    }
+    ConfigMcp::update_field(ConfigMcpContent::set_transactions_enabled, enabled)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn mcp_transaction_dialog_response(
+    request_id: String,
+    approved: bool,
+    pin: Option<String>,
+) -> Result<(), String> {
+    crate::mcp::tools::transaction::respond_to_transaction(request_id, approved, pin).await
 }

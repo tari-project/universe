@@ -127,3 +127,17 @@ export interface ConfigBackendInMemory {
     exchange_id: string;
     bridge_backend_api_url: string;
 }
+
+export interface ConfigMcp {
+    enabled: boolean;
+    bearer_token_redacted?: string;
+    token_created_at?: { secs_since_epoch: number; nanos_since_epoch: number };
+    token_expires_at?: { secs_since_epoch: number; nanos_since_epoch: number };
+    token_expiry_days: number;
+    transactions_enabled: boolean;
+    max_transaction_amount?: number;
+    port: number;
+    read_tier_enabled: boolean;
+    control_tier_enabled: boolean;
+    rate_limit_transaction: number;
+}

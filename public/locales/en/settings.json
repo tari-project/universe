@@ -171,6 +171,7 @@
     "mining": "Mining",
     "p2p": "Pool Mining",
     "pools": "Mining Pools",
+    "mcp": "MCP Server",
     "releaseNotes": "Release Notes",
     "very_experimental": "Very Experimental",
     "wallet": "Wallet"
@@ -202,5 +203,67 @@
   "waiting-for-data": "Waiting for chain data...",
   "yes": "Yes",
   "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
-  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>"
+  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>",
+  "mcp": {
+    "title": "MCP Server",
+    "server-toggle": {
+      "title": "MCP Server",
+      "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
+      "status-running": "Running on port {{port}}",
+      "status-stopped": "Stopped"
+    },
+    "token-display": {
+      "title": "Bearer Token",
+      "description": "Use this token to authenticate MCP clients",
+      "reveal": "Reveal",
+      "hide": "Hide",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "refresh-expiry": "Refresh Expiry",
+      "revoke": "Revoke Token",
+      "revoke-confirm": "Are you sure? This will stop the MCP server and require generating a new token.",
+      "created": "Created",
+      "expires": "Expires",
+      "days-remaining": "{{days}} days remaining",
+      "no-token": "No token generated"
+    },
+    "agent-config": {
+      "title": "Agent Configuration",
+      "description": "Copy the configuration below to connect an AI agent to Tari Universe",
+      "copy": "Copy Configuration",
+      "copied": "Copied!"
+    },
+    "transactions": {
+      "title": "Transactions",
+      "description": "Allow MCP clients to send transactions (requires PIN)",
+      "pin-required": "PIN must be configured to enable transactions",
+      "max-amount": "Max Transaction Amount (µT)",
+      "max-amount-description": "Leave empty for no limit"
+    },
+    "audit-log": {
+      "title": "Audit Log",
+      "description": "Recent MCP tool calls",
+      "empty": "No audit entries yet",
+      "export": "Export Log",
+      "duration-ms": "{{ms}}ms"
+    },
+    "transaction-dialog": {
+      "title": "MCP Transaction Confirmation",
+      "destination": "Destination",
+      "amount": "Amount",
+      "micro-minotari": "({{amount}} µT)",
+      "enter-pin": "Enter PIN to approve",
+      "remaining": "{{countdown}}s remaining",
+      "deny": "Deny",
+      "approve": "Approve"
+    },
+    "advanced": {
+      "title": "Advanced Settings",
+      "port": "Server Port",
+      "expiry-days": "Token Expiry (days)",
+      "rate-limit": "Transaction Rate Limit (per minute)",
+      "read-tier": "Read Tier",
+      "control-tier": "Control Tier"
+    }
+  }
 }

@@ -26,13 +26,10 @@ use std::time::Instant;
 use crate::configs::config_mcp::ConfigMcp;
 use crate::configs::trait_config::ConfigImpl;
 
-// TODO: Remove allow(dead_code) when Phase 2 (MCP server) uses the transaction rate limiter
-#[allow(dead_code)]
 pub struct TransactionRateLimiter {
     timestamps: VecDeque<Instant>,
 }
 
-#[allow(dead_code)]
 impl TransactionRateLimiter {
     pub fn new() -> Self {
         Self {

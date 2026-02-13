@@ -36,6 +36,7 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::tools::TariMcpHandler;
 use crate::node::node_adapter::BaseNodeStatus;
+use crate::wallet::wallet_manager::WalletManager;
 use crate::LOG_TARGET_APP_LOGIC;
 
 static INSTANCE: LazyLock<RwLock<McpServerManager>> =
@@ -48,6 +49,7 @@ pub struct McpServerManager {
     shutdown_tx: Option<tokio::sync::watch::Sender<bool>>,
     bound_port: Option<u16>,
     node_status_rx: Option<Arc<tokio::sync::watch::Receiver<BaseNodeStatus>>>,
+    wallet_manager: Option<WalletManager>,
 }
 
 impl McpServerManager {
@@ -57,6 +59,7 @@ impl McpServerManager {
             shutdown_tx: None,
             bound_port: None,
             node_status_rx: None,
+            wallet_manager: None,
         }
     }
 
@@ -64,9 +67,13 @@ impl McpServerManager {
         &INSTANCE
     }
 
-    pub async fn initialize(node_status_rx: Arc<tokio::sync::watch::Receiver<BaseNodeStatus>>) {
+    pub async fn initialize(
+        node_status_rx: Arc<tokio::sync::watch::Receiver<BaseNodeStatus>>,
+        wallet_manager: WalletManager,
+    ) {
         let mut manager = Self::current().write().await;
         manager.node_status_rx = Some(node_status_rx);
+        manager.wallet_manager = Some(wallet_manager);
     }
 
     pub fn port(&self) -> Option<u16> {
@@ -129,10 +136,22 @@ impl McpServerManager {
         let bound_port = listener.local_addr()?.port();
         info!(target: LOG_TARGET_APP_LOGIC, "MCP server listening on 127.0.0.1:{bound_port}");
 
+        let wallet_manager = {
+            let manager = Self::current().read().await;
+            manager.wallet_manager.clone().ok_or_else(|| {
+                anyhow::anyhow!("MCP server not initialized — WalletManager not available")
+            })?
+        };
+
         // Build the rmcp StreamableHttpService
         let mcp_service: StreamableHttpService<TariMcpHandler, LocalSessionManager> =
             StreamableHttpService::new(
-                move || Ok(TariMcpHandler::new(node_status_rx.clone())),
+                move || {
+                    Ok(TariMcpHandler::new(
+                        node_status_rx.clone(),
+                        wallet_manager.clone(),
+                    ))
+                },
                 LocalSessionManager::default().into(),
                 StreamableHttpServerConfig::default(),
             );
@@ -206,6 +225,8 @@ impl McpServerManager {
         }
 
         EventsEmitter::emit_mcp_server_status_update(false, None).await;
+
+        crate::mcp::tools::transaction::clear_inflight().await;
     }
 
     // TODO: Remove allow(dead_code) when Phase 4 (frontend) uses restart on port change
