@@ -231,9 +231,10 @@ impl PoolManager {
     /// Send a stop command to the background task
     pub fn stop_background_task(&mut self) {
         if let Some(sender) = &self.task_sender
-            && let Err(e) = sender.send(PoolManagerThreadCommands::Stop) {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to send stop command to task: {e}");
-            }
+            && let Err(e) = sender.send(PoolManagerThreadCommands::Stop)
+        {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to send stop command to task: {e}");
+        }
         self.task_sender = None;
 
         if let Some(handle) = self.task_thread.take() {

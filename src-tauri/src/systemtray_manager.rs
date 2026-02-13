@@ -620,21 +620,22 @@ impl SystemTrayManager {
 
     pub fn hide_to_tray(window: Option<WebviewWindow>) {
         if let Some(window) = window
-            && window.is_visible().unwrap_or(false) {
-                #[cfg(target_os = "macos")]
-                {
-                    AppHandle::hide(window.app_handle()).unwrap_or_else(|error| {
-                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to hide app: {error}");
-                    });
-                }
-
-                #[cfg(not(target_os = "macos"))]
-                {
-                    window.hide().unwrap_or_else(|error| {
-                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to hide window: {error}");
-                    });
-                }
+            && window.is_visible().unwrap_or(false)
+        {
+            #[cfg(target_os = "macos")]
+            {
+                AppHandle::hide(window.app_handle()).unwrap_or_else(|error| {
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to hide app: {error}");
+                });
             }
+
+            #[cfg(not(target_os = "macos"))]
+            {
+                window.hide().unwrap_or_else(|error| {
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to hide window: {error}");
+                });
+            }
+        }
     }
 
     #[cfg(target_os = "windows")]

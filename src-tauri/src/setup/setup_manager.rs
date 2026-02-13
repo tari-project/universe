@@ -297,9 +297,9 @@ impl SetupManager {
                         .await
                         .inspect_err(|e| error!("too many messages in websocket send queue {e}"))
                         .is_ok()
-                    {
-                        log::trace!("websocket message sent {message:?}");
-                    }
+                {
+                    log::trace!("websocket message sent {message:?}");
+                }
             });
         });
         EventsManager::handle_node_type_update(&app_handle).await;

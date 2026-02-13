@@ -126,9 +126,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
         let mut data_dir_path = base_path.clone();
         if self.adapter.name() == "local_minotari_node"
-            && let Some(custom_path) = ConfigCore::content().await.node_data_directory().clone() {
-                data_dir_path = custom_path;
-            }
+            && let Some(custom_path) = ConfigCore::content().await.node_data_directory().clone()
+        {
+            data_dir_path = custom_path;
+        }
 
         info!(target: LOG_TARGET_APP_LOGIC, "Using {binary_path:?} for {name}");
         let first_start = self
@@ -227,11 +228,12 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         if let Some(ref task) = self.watcher_task
-            && task.is_finished() {
-                //let exit_code = task.await??;
+            && task.is_finished()
+        {
+            //let exit_code = task.await??;
 
-                return Err(anyhow::anyhow!("Process watcher task has already finished"));
-            }
+            return Err(anyhow::anyhow!("Process watcher task has already finished"));
+        }
         Ok(())
     }
 

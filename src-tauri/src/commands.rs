@@ -812,9 +812,10 @@ pub async fn reset_settings(
                 let path = entry.path();
                 if path.is_dir() {
                     if let Some(file_name) = path.file_name().and_then(|name| name.to_str())
-                        && folder_block_list.contains(&file_name) {
-                            continue;
-                        }
+                        && folder_block_list.contains(&file_name)
+                    {
+                        continue;
+                    }
 
                     let contains_wallet_config =
                         read_dir(&path)
@@ -844,9 +845,10 @@ pub async fn reset_settings(
                     })?;
                 } else {
                     if let Some(file_name) = path.file_name().and_then(|name| name.to_str())
-                        && files_block_list.contains(&file_name) {
-                            continue;
-                        }
+                        && files_block_list.contains(&file_name)
+                    {
+                        continue;
+                    }
 
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Could not remove {path:?} file: {e:?}");

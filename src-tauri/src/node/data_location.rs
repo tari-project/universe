@@ -72,10 +72,12 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
                         Err(e) => {
                             error!(target: LOG_TARGET_APP_LOGIC, "Could not move items, reverting config change: {e}");
 
-                            if !dest_existed && destination_dir.exists()
-                                && let Err(cleanup_err) = fs::remove_dir_all(&destination_dir) {
-                                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up destination after failed move: {cleanup_err}");
-                                }
+                            if !dest_existed
+                                && destination_dir.exists()
+                                && let Err(cleanup_err) = fs::remove_dir_all(&destination_dir)
+                            {
+                                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up destination after failed move: {cleanup_err}");
+                            }
 
                             ConfigCore::update_node_data_directory(previous)
                                 .await

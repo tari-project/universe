@@ -827,8 +827,9 @@ async fn switch_to_local(node_manager: NodeManager, node_type: Arc<RwLock<NodeTy
             .await;
         let mut remote_node_watcher = node_manager.remote_node_watcher.write().await;
         if let Some(remote_node_watcher) = remote_node_watcher.as_mut()
-            && let Err(e) = remote_node_watcher.stop().await {
-                error!(target: LOG_TARGET_APP_LOGIC, "Failed to stop remote node watcher: {e}");
-            }
+            && let Err(e) = remote_node_watcher.stop().await
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to stop remote node watcher: {e}");
+        }
     }
 }

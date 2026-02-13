@@ -115,7 +115,7 @@ impl CloudFlareCache {
             info!(target: LOG_TARGET_APP_LOGIC, "get_cf_cache_status_from_head_response, error");
             return CloudFlareCacheStatus::Unknown;
         };
-        
+
         CloudFlareCacheStatus::from_str(
             response
                 .headers()

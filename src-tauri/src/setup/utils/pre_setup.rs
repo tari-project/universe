@@ -34,59 +34,60 @@ pub async fn check_data_import(app_handle: AppHandle) -> Result<(), anyhow::Erro
     match app_handle.cli().matches() {
         Ok(matches) => {
             if let Some(backup_path) = matches.args.get("import-backup")
-                && let Some(backup_path) = backup_path.value.as_str() {
-                    info!(
-                        target: LOG_TARGET_APP_LOGIC,
-                        "Trying to copy backup to existing db: {backup_path:?}"
-                    );
-                    let backup_path = Path::new(backup_path);
-                    if backup_path.exists() {
-                        let local_data_dir = app_handle
-                            .path()
-                            .app_local_data_dir()
-                            .map_err(|e| anyhow::Error::msg(e.to_string()))?;
+                && let Some(backup_path) = backup_path.value.as_str()
+            {
+                info!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Trying to copy backup to existing db: {backup_path:?}"
+                );
+                let backup_path = Path::new(backup_path);
+                if backup_path.exists() {
+                    let local_data_dir = app_handle
+                        .path()
+                        .app_local_data_dir()
+                        .map_err(|e| anyhow::Error::msg(e.to_string()))?;
 
-                        let mut node_data_dir = local_data_dir.clone();
-                        if let Some(custom_path) =
-                            ConfigCore::content().await.node_data_directory().clone()
-                        {
-                            node_data_dir = custom_path;
-                        }
+                    let mut node_data_dir = local_data_dir.clone();
+                    if let Some(custom_path) =
+                        ConfigCore::content().await.node_data_directory().clone()
+                    {
+                        node_data_dir = custom_path;
+                    }
 
-                        let existing_db = node_data_dir
-                            .join("node")
-                            .join(Network::get_current_or_user_setting_or_default().to_string())
-                            .join("data")
-                            .join("base_node")
-                            .join("db");
+                    let existing_db = node_data_dir
+                        .join("node")
+                        .join(Network::get_current_or_user_setting_or_default().to_string())
+                        .join("data")
+                        .join("base_node")
+                        .join("db");
 
-                        info!(target: LOG_TARGET_APP_LOGIC, "Existing db path: {existing_db:?}");
-                        let _unused = fs::remove_dir_all(&existing_db).inspect_err(|e| {
-                            warn!(
-                                target: LOG_TARGET_APP_LOGIC,
-                                "Could not remove existing db when importing backup: {e:?}"
-                            )
-                        });
-                        let _unused = fs::create_dir_all(&existing_db).inspect_err(|e| {
-                            error!(
-                                target: LOG_TARGET_APP_LOGIC,
-                                "Could not create existing db when importing backup: {e:?}"
-                            )
-                        });
-                        let _unused = fs::copy(backup_path, existing_db.join("data.mdb"))
-                            .inspect_err(|e| {
-                                error!(
-                                    target: LOG_TARGET_APP_LOGIC,
-                                    "Could not copy backup to existing db: {e:?}"
-                                )
-                            });
-                    } else {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Existing db path: {existing_db:?}");
+                    let _unused = fs::remove_dir_all(&existing_db).inspect_err(|e| {
                         warn!(
                             target: LOG_TARGET_APP_LOGIC,
-                            "Backup file does not exist: {backup_path:?}"
-                        );
-                    }
+                            "Could not remove existing db when importing backup: {e:?}"
+                        )
+                    });
+                    let _unused = fs::create_dir_all(&existing_db).inspect_err(|e| {
+                        error!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "Could not create existing db when importing backup: {e:?}"
+                        )
+                    });
+                    let _unused =
+                        fs::copy(backup_path, existing_db.join("data.mdb")).inspect_err(|e| {
+                            error!(
+                                target: LOG_TARGET_APP_LOGIC,
+                                "Could not copy backup to existing db: {e:?}"
+                            )
+                        });
+                } else {
+                    warn!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "Backup file does not exist: {backup_path:?}"
+                    );
                 }
+            }
         }
         Err(e) => {
             error!(target: LOG_TARGET_APP_LOGIC, "Could not get cli matches: {e:?}");
@@ -121,20 +122,22 @@ pub async fn clear_data(app_handle: AppHandle) -> Result<(), anyhow::Error> {
 
         // They may not exist. This could be first run.
         if node_peer_db.exists()
-            && let Err(e) = fs::remove_dir_all(node_peer_db) {
-                warn!(
-                    target: LOG_TARGET_APP_LOGIC,
-                    "Could not clear peer data folder: {e}"
-                );
-            }
+            && let Err(e) = fs::remove_dir_all(node_peer_db)
+        {
+            warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Could not clear peer data folder: {e}"
+            );
+        }
 
         if wallet_peer_db.exists()
-            && let Err(e) = fs::remove_dir_all(wallet_peer_db) {
-                warn!(
-                    target: LOG_TARGET_APP_LOGIC,
-                    "Could not clear peer data folder: {e}"
-                );
-            }
+            && let Err(e) = fs::remove_dir_all(wallet_peer_db)
+        {
+            warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Could not clear peer data folder: {e}"
+            );
+        }
 
         remove_file(tcp_tor_toggled_file)?
     }

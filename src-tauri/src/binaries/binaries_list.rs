@@ -78,8 +78,6 @@ impl Binaries {
     }
 
     pub fn binary_file_name(self, version: String) -> PathBuf {
-        
-
         match self {
             Binaries::Xmrig => {
                 let file_name = format!("xmrig-{version}");

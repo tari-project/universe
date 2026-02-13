@@ -225,18 +225,19 @@ impl ProgressStepper {
     ) -> Option<IncrementalProgressTracker> {
         if let Some(StepTracker::Incremental { tracker, .. }) =
             self.steps.iter_mut().find(|s| s.get_step() == &step)
-            && tracker.is_none() {
-                let incremental_tracker = IncrementalProgressTracker {
-                    step: step.clone(),
-                    last_reported_percentage: Arc::new(RwLock::new(0.0)),
-                    accumulator: self.accumulator.clone(),
-                    timeout_watcher_sender: self.timeout_watcher_sender.clone(),
-                    setup_phase: self.setup_phase.clone(),
-                };
+            && tracker.is_none()
+        {
+            let incremental_tracker = IncrementalProgressTracker {
+                step: step.clone(),
+                last_reported_percentage: Arc::new(RwLock::new(0.0)),
+                accumulator: self.accumulator.clone(),
+                timeout_watcher_sender: self.timeout_watcher_sender.clone(),
+                setup_phase: self.setup_phase.clone(),
+            };
 
-                *tracker = Some(incremental_tracker.clone());
-                return Some(incremental_tracker);
-            }
+            *tracker = Some(incremental_tracker.clone());
+            return Some(incremental_tracker);
+        }
         None
     }
 

@@ -161,10 +161,11 @@ impl ConfigCore {
         if config.content.node_data_directory.is_none()
             && let Ok(app_data_dir) = app_handle.path().app_local_data_dir().inspect_err(|e| {
                 error!(target: LOG_TARGET_APP_LOGIC, "Could not load data dir {e}");
-            }) {
-                config.content.node_data_directory = Some(app_data_dir);
-                let _unused = Self::_save_config(config._get_content().clone());
-            }
+            })
+        {
+            config.content.node_data_directory = Some(app_data_dir);
+            let _unused = Self::_save_config(config._get_content().clone());
+        }
     }
     pub async fn update_node_data_directory(
         path: PathBuf,

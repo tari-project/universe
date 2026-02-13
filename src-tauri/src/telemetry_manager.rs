@@ -510,13 +510,14 @@ async fn get_telemetry_data_inner(
 
     // Add payment ID from current tari address
     if InternalWallet::is_initialized()
-        && let Some(_state) = app_handle.try_state::<crate::UniverseAppState>() {
-            let tari_address = InternalWallet::tari_address().await;
-            if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
-                extra_data.insert("mining_address_payment_id".to_string(), payment_id);
-            }
-            // Note: If no payment ID, we don't add the field (saves space vs empty string)
+        && let Some(_state) = app_handle.try_state::<crate::UniverseAppState>()
+    {
+        let tari_address = InternalWallet::tari_address().await;
+        if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
+            extra_data.insert("mining_address_payment_id".to_string(), payment_id);
         }
+        // Note: If no payment ID, we don't add the field (saves space vs empty string)
+    }
 
     extra_data.insert(
         "tor_bootstrap_phase".to_string(),
@@ -763,25 +764,24 @@ async fn handle_data(
                 match telemetry_response {
                     Ok(response) => {
                         if let Some(response_inner) = response
-                            && let Some(user_points) = response_inner.user_points {
-                                debug!(target: LOG_TARGET_APP_LOGIC,"emitting UserPoints event{user_points:?}");
-                                let response_inner =
-                                    response_inner.referral_count.unwrap_or(ReferralCount {
-                                        gems: 0.0,
-                                        count: 0,
-                                    });
-                                let emit_data = TelemetryDataResponseEvent {
-                                    base: user_points,
-                                    referral_count: response_inner,
-                                };
+                            && let Some(user_points) = response_inner.user_points
+                        {
+                            debug!(target: LOG_TARGET_APP_LOGIC,"emitting UserPoints event{user_points:?}");
+                            let response_inner =
+                                response_inner.referral_count.unwrap_or(ReferralCount {
+                                    gems: 0.0,
+                                    count: 0,
+                                });
+                            let emit_data = TelemetryDataResponseEvent {
+                                base: user_points,
+                                referral_count: response_inner,
+                            };
 
-                                app_handle
-                                    .emit("UserPoints", emit_data)
-                                    .map_err(|e| {
-                                        error!("could not send user points as an event: {e}")
-                                    })
-                                    .unwrap_or(());
-                            }
+                            app_handle
+                                .emit("UserPoints", emit_data)
+                                .map_err(|e| error!("could not send user points as an event: {e}"))
+                                .unwrap_or(());
+                        }
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET_APP_LOGIC,"Error sending telemetry data: {e}");
