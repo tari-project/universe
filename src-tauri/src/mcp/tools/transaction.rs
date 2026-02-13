@@ -237,3 +237,200 @@ pub async fn clear_inflight() {
         warn!(target: LOG_TARGET_APP_LOGIC, "MCP: cleared in-flight transaction dialog (request_id={})", txn.request_id);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::configs::config_mcp::ConfigMcpContent;
+    use serial_test::serial;
+
+    // =========================================================================
+    // validate_amount
+    // =========================================================================
+
+    #[test]
+    fn validate_amount_valid_integer() {
+        let config = ConfigMcpContent::default();
+        let result = validate_amount("1", &config);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1_000_000);
+    }
+
+    #[test]
+    fn validate_amount_valid_decimal() {
+        let config = ConfigMcpContent::default();
+        let result = validate_amount("1.5", &config);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1_500_000);
+    }
+
+    #[test]
+    fn validate_amount_invalid_string() {
+        let config = ConfigMcpContent::default();
+        let result = validate_amount("not_a_number", &config);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Invalid amount"));
+    }
+
+    #[test]
+    fn validate_amount_empty_string() {
+        let config = ConfigMcpContent::default();
+        let result = validate_amount("", &config);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn validate_amount_exceeds_max() {
+        let mut config = ConfigMcpContent::default();
+        config.set_max_transaction_amount(Some(500_000)); // 0.5 XTM max
+        let result = validate_amount("1", &config); // 1 XTM = 1_000_000 µT
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("exceeds maximum"));
+    }
+
+    #[test]
+    fn validate_amount_at_max_boundary() {
+        let mut config = ConfigMcpContent::default();
+        config.set_max_transaction_amount(Some(1_000_000)); // 1 XTM max
+        let result = validate_amount("1", &config); // exactly 1 XTM
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 1_000_000);
+    }
+
+    #[test]
+    fn validate_amount_no_max_configured() {
+        let config = ConfigMcpContent::default();
+        let result = validate_amount("999999", &config);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn validate_amount_zero() {
+        let config = ConfigMcpContent::default();
+        let result = validate_amount("0", &config);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
+    }
+
+    #[test]
+    fn validate_amount_negative() {
+        let config = ConfigMcpContent::default();
+        let result = validate_amount("-1", &config);
+        assert!(result.is_err());
+    }
+
+    // =========================================================================
+    // respond_to_transaction
+    // =========================================================================
+
+    #[tokio::test]
+    #[serial]
+    async fn respond_to_transaction_no_inflight() {
+        clear_inflight().await;
+
+        let result =
+            respond_to_transaction("test_id".to_string(), true, Some("1234".to_string())).await;
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .contains("No transaction awaiting confirmation"));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn respond_to_transaction_mismatched_id() {
+        let (tx, _rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
+        {
+            let mut inflight = INFLIGHT.lock().await;
+            *inflight = Some(InFlightTxn {
+                request_id: "correct_id".to_string(),
+                tx,
+            });
+        }
+
+        let result =
+            respond_to_transaction("wrong_id".to_string(), true, Some("1234".to_string())).await;
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Request ID mismatch"));
+
+        clear_inflight().await;
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn respond_to_transaction_matching_id_approved() {
+        let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
+        {
+            let mut inflight = INFLIGHT.lock().await;
+            *inflight = Some(InFlightTxn {
+                request_id: "match_id".to_string(),
+                tx,
+            });
+        }
+
+        let result =
+            respond_to_transaction("match_id".to_string(), true, Some("1234".to_string())).await;
+        assert!(result.is_ok());
+
+        let response = rx.await.unwrap();
+        assert!(response.approved);
+        assert_eq!(response.pin, Some("1234".to_string()));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn respond_to_transaction_denied() {
+        let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
+        {
+            let mut inflight = INFLIGHT.lock().await;
+            *inflight = Some(InFlightTxn {
+                request_id: "deny_id".to_string(),
+                tx,
+            });
+        }
+
+        let result = respond_to_transaction("deny_id".to_string(), false, None).await;
+        assert!(result.is_ok());
+
+        let response = rx.await.unwrap();
+        assert!(!response.approved);
+        assert!(response.pin.is_none());
+    }
+
+    // =========================================================================
+    // clear_inflight
+    // =========================================================================
+
+    #[tokio::test]
+    #[serial]
+    async fn clear_inflight_with_pending() {
+        let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
+        {
+            let mut inflight = INFLIGHT.lock().await;
+            *inflight = Some(InFlightTxn {
+                request_id: "clear_test".to_string(),
+                tx,
+            });
+        }
+
+        clear_inflight().await;
+
+        let response = rx.await.unwrap();
+        assert!(!response.approved);
+        assert!(response.pin.is_none());
+
+        let inflight = INFLIGHT.lock().await;
+        assert!(inflight.is_none());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn clear_inflight_when_empty() {
+        clear_inflight().await;
+        // Should not panic on second call
+        clear_inflight().await;
+
+        let inflight = INFLIGHT.lock().await;
+        assert!(inflight.is_none());
+    }
+}

@@ -231,7 +231,8 @@
       "title": "Agent Configuration",
       "description": "Copy the configuration below to connect an AI agent to Tari Universe",
       "copy": "Copy Configuration",
-      "copied": "Copied!"
+      "copied": "Copied!",
+      "or-add-to-settings-json": "Or add this to your settings JSON:"
     },
     "transactions": {
       "title": "Transactions",

@@ -21,6 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod chain;
+#[cfg(test)]
+mod chain_test;
 pub mod mining;
 pub mod scheduler;
 pub mod transaction;
