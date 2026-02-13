@@ -64,7 +64,7 @@ use crate::{
     websocket_manager::WebsocketMessage,
     UniverseAppState,
 };
-use log::{error, info};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::{
@@ -312,6 +312,18 @@ impl SetupManager {
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
         ConfigMcp::initialize(app_handle.clone()).await;
+
+        // Initialize MCP server with node status receiver for chain tools
+        crate::mcp::server::McpServerManager::initialize(state.node_status_watch_rx.clone()).await;
+
+        // Auto-start MCP server if enabled with a valid token
+        if *ConfigMcp::content().await.enabled()
+            && ConfigMcp::content().await.bearer_token().is_some()
+        {
+            if let Err(e) = crate::mcp::server::McpServerManager::start().await {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to auto-start MCP server: {e}");
+            }
+        }
 
         let _ = check_data_import(app_handle.clone()).await.map_err(|e| {
             error!(target: LOG_TARGET_APP_LOGIC, "Error in data import: {e}");

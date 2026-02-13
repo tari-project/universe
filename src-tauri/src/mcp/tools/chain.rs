@@ -20,8 +20,27 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod audit;
-pub mod commands;
-pub mod rate_limiter;
-pub mod server;
-pub mod tools;
+use crate::node::node_adapter::BaseNodeStatus;
+use tari_common::configuration::Network;
+
+pub fn get_chain_status(status: &BaseNodeStatus) -> Result<String, String> {
+    let result = serde_json::json!({
+        "block_height": status.block_height,
+        "block_time": status.block_time,
+        "block_reward_micro_minotari": status.block_reward.0,
+        "is_synced": status.is_synced,
+        "num_connections": status.num_connections,
+        "readiness_status": format!("{}", status.readiness_status),
+    });
+    Ok(result.to_string())
+}
+
+pub fn get_network_info(status: &BaseNodeStatus) -> Result<String, String> {
+    let network = Network::get_current_or_user_setting_or_default();
+    let result = serde_json::json!({
+        "network": network.as_key_str(),
+        "is_synced": status.is_synced,
+        "num_connections": status.num_connections,
+    });
+    Ok(result.to_string())
+}

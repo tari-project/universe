@@ -36,8 +36,6 @@ use tokio::sync::RwLock;
 use crate::APPLICATION_FOLDER_ID;
 
 const MAX_BUFFER_SIZE: usize = 500;
-// TODO: Remove allow(dead_code) when Phase 2 (MCP server) records audit entries
-#[allow(dead_code)]
 const MAX_LOG_LINES: usize = 10_000;
 
 static INSTANCE: LazyLock<RwLock<AuditLog>> = LazyLock::new(|| RwLock::new(AuditLog::new()));
@@ -65,8 +63,6 @@ pub enum AuditStatus {
 pub struct AuditLog {
     buffer: VecDeque<AuditEntry>,
     log_path: PathBuf,
-    // TODO: Remove allow(dead_code) when Phase 2 (MCP server) records audit entries
-    #[allow(dead_code)]
     line_count: usize,
 }
 
@@ -101,8 +97,6 @@ impl AuditLog {
         }
     }
 
-    // TODO: Remove allow(dead_code) when Phase 2 (MCP server) records audit entries
-    #[allow(dead_code)]
     pub async fn record(entry: AuditEntry) {
         let cloned = entry.clone();
         let mut log = Self::current().write().await;
