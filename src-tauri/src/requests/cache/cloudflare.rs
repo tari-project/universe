@@ -24,11 +24,11 @@ use log::info;
 use reqwest::Response;
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     requests::{
         clients::http_client::HttpClient,
         utils::{convert_content_length_to_mb, get_content_length_from_head_response},
     },
-    LOG_TARGET_APP_LOGIC,
 };
 
 pub enum CloudFlareCacheStatusHandlingOptions {

@@ -19,28 +19,28 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
-use tokio::sync::watch::{channel, Sender};
+use tokio::sync::watch::{Sender, channel};
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     download_utils::validate_checksum,
     progress_trackers::progress_stepper::IncrementalProgressTracker,
     requests::clients::http_file_client::HttpFileClient,
     tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
-    LOG_TARGET_APP_LOGIC,
 };
 
 use super::{
+    Binaries,
     binaries_list::BinaryPlatformAssets,
     binaries_resolver::{BinaryDownloadInfo, LatestVersionApiAdapter},
-    Binaries,
 };
 
 #[derive(Deserialize, Serialize, Default)]

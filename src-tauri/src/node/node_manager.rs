@@ -23,8 +23,8 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 
 use log::{error, info, warn};
@@ -32,8 +32,8 @@ use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
-use tokio::sync::watch::{self, Sender};
 use tokio::sync::RwLock;
+use tokio::sync::watch::{self, Sender};
 use tokio::time::sleep;
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
@@ -50,7 +50,7 @@ use crate::process_watcher::ProcessWatcherStats;
 use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
-use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter, LOG_TARGET_APP_LOGIC};
+use crate::{BaseNodeStatus, LOG_TARGET_APP_LOGIC, LocalNodeAdapter, RemoteNodeAdapter};
 
 #[derive(Debug, thiserror::Error)]
 pub enum NodeManagerError {

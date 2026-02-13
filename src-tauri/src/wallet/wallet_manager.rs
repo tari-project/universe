@@ -37,15 +37,15 @@ use futures_util::future::FusedFuture;
 use log::{error, info};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 use tokio::fs;
-use tokio::sync::watch;
 use tokio::sync::RwLock;
+use tokio::sync::watch;
 
 #[derive(Debug, Clone)]
 pub struct WalletStartupConfig {

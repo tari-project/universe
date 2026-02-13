@@ -31,13 +31,13 @@ use tari_common::configuration::Network;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::ab_test_selector::ABTestSelector;
-use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
+use crate::app_in_memory_config::{DEFAULT_EXCHANGE_ID, MinerType};
 use crate::event_scheduler::ScheduledEventInfo;
 use crate::node::node_manager::NodeType;
 use crate::shutdown_manager::ShutdownMode;
 use crate::utils::rand_utils;
-use crate::LOG_TARGET_APP_LOGIC;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 

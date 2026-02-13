@@ -28,13 +28,13 @@ use tokio::fs::create_dir_all;
 use tokio::sync::watch;
 use tokio::{fs::File, io::AsyncWriteExt};
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::download_utils::extract;
 use crate::requests::utils::{create_exponential_timeout, get_content_size_from_file};
 use crate::requests::{
     cache::cloudflare::CloudFlareCache, utils::get_content_length_from_head_response,
 };
 use crate::utils::network_status::NetworkStatus;
-use crate::LOG_TARGET_APP_LOGIC;
 
 use super::http_client::HttpClient;
 
@@ -293,7 +293,10 @@ impl HttpFileClient {
                     // If download return 404 [ Not Found ] we don't want to retry
                     if e.to_string().contains("404") {
                         warn!(target: LOG_TARGET_APP_LOGIC, "Unable to resume download, assets under this URL are not available: {}", self.url);
-                        return Err(anyhow::anyhow!("Unable to resume download, assets under this URL are not available: {}", self.url));
+                        return Err(anyhow::anyhow!(
+                            "Unable to resume download, assets under this URL are not available: {}",
+                            self.url
+                        ));
                     }
 
                     // If download timeouts so it returns 408 [ Request Timeout ] or 400 [ Bad Request ] we want to check if internet connection is available

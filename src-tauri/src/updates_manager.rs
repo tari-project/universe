@@ -35,11 +35,11 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     app_in_memory_config::{DEFAULT_EXCHANGE_ID, EXCHANGE_ID},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     tasks_tracker::TasksTrackers,
     utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
-    LOG_TARGET_APP_LOGIC,
 };
 use tokio::time::Duration;
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -255,7 +255,9 @@ impl UpdatesManager {
                 "https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest-{EXCHANGE_ID}.json"
             )
         } else {
-            format!("https://raw.githubusercontent.com/tari-project/universe/main/.updater/{updater_filename}.json")
+            format!(
+                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/{updater_filename}.json"
+            )
         };
         Url::parse(&update_url_string).expect("Failed to parse update URL")
     }

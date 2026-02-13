@@ -23,6 +23,7 @@
 use std::{collections::HashMap, future::Future, time::Duration};
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     events::UpdateAppModuleStatusPayload,
     events_emitter::EventsEmitter,
     setup::{
@@ -30,15 +31,14 @@ use crate::{
         setup_manager::{PhaseStatus, SetupPhase},
     },
     tasks_tracker::TasksTrackers,
-    LOG_TARGET_APP_LOGIC,
 };
 
 use super::SetupFeaturesList;
 use log::warn;
 use tokio::{
     sync::{
-        watch::{error::RecvError, Receiver},
         MutexGuard,
+        watch::{Receiver, error::RecvError},
     },
     time::sleep,
 };
@@ -76,17 +76,16 @@ impl UnlockConditionsStatusChannels {
 
     #[allow(dead_code)]
     pub async fn changed(&mut self, key: &SetupPhase) -> Result<(), anyhow::Error> {
-        match self.get_mut(key) { Ok(receiver) => {
-            receiver.changed().await.map_err(|e: RecvError| {
+        match self.get_mut(key) {
+            Ok(receiver) => receiver.changed().await.map_err(|e: RecvError| {
                 anyhow::anyhow!(
                     "Failed to receive change notification for phase {:?}: {}",
                     key,
                     e
                 )
-            })
-        } _ => {
-            Err(anyhow::anyhow!("Channel for phase {:?} not found", key))
-        }}
+            }),
+            _ => Err(anyhow::anyhow!("Channel for phase {:?} not found", key)),
+        }
     }
 }
 
@@ -236,14 +235,17 @@ pub trait UnlockStrategyTrait {
 
     fn is_any_phase_restarting(&self, channels: UnlockConditionsStatusChannels) -> bool {
         for phase in &self.required_channels() {
-            match channels.get(phase) { Ok(channel) => {
-                if channel.borrow().is_restarting() {
+            match channels.get(phase) {
+                Ok(channel) => {
+                    if channel.borrow().is_restarting() {
+                        return true;
+                    }
+                }
+                _ => {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Channel for phase {phase:?} not found");
                     return true;
                 }
-            } _ => {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Channel for phase {phase:?} not found");
-                return true;
-            }}
+            }
         }
         false
     }

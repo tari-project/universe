@@ -26,13 +26,14 @@ use futures::executor::block_on;
 use log::{error, info};
 
 use tauri::{
+    AppHandle, Manager, WebviewWindow, Wry,
     menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::TrayIcon,
-    AppHandle, Manager, WebviewWindow, Wry,
 };
-use tokio::sync::{mpsc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use tokio::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard, mpsc};
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     configs::{
         config_mining::{ConfigMining, MiningModeType},
         trait_config::ConfigImpl,
@@ -45,7 +46,6 @@ use crate::{
         formatting_utils::{format_currency, format_hashrate},
         platform_utils::{CurrentOperatingSystem, PlatformUtils},
     },
-    LOG_TARGET_APP_LOGIC,
 };
 
 static INSTANCE: LazyLock<RwLock<SystemTrayManager>> =
@@ -578,17 +578,20 @@ impl SystemTrayManager {
     }
     fn update_menu_data_item(&mut self, item: SystemTrayDataItem) {
         if let Some(menu) = &self.menu {
-            match menu.get(item.id()) { Some(menu_item) => {
-                if let Some(menu_item) = menu_item.as_menuitem() {
-                    if let Err(e) = menu_item.set_text(item.to_string()) {
-                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to update menu field: {e}");
+            match menu.get(item.id()) {
+                Some(menu_item) => {
+                    if let Some(menu_item) = menu_item.as_menuitem() {
+                        if let Err(e) = menu_item.set_text(item.to_string()) {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to update menu field: {e}");
+                        }
+                    } else {
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item for {item}");
                     }
-                } else {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item for {item}");
                 }
-            } _ => {
-                error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item by id for {item}");
-            }}
+                _ => {
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item by id for {item}");
+                }
+            }
         } else {
             error!(target: LOG_TARGET_APP_LOGIC, "Menu is not initialized");
         }
@@ -596,17 +599,20 @@ impl SystemTrayManager {
 
     fn update_menu_action_item(&mut self, item: SystemTrayActionItem) {
         if let Some(menu) = &self.menu {
-            match menu.get(item.id()) { Some(menu_item) => {
-                if let Some(menu_item) = menu_item.as_menuitem() {
-                    if let Err(e) = menu_item.set_text(item.to_string()) {
-                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to update menu field: {e}");
+            match menu.get(item.id()) {
+                Some(menu_item) => {
+                    if let Some(menu_item) = menu_item.as_menuitem() {
+                        if let Err(e) = menu_item.set_text(item.to_string()) {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to update menu field: {e}");
+                        }
+                    } else {
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item for {item}");
                     }
-                } else {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item for {item}");
                 }
-            } _ => {
-                error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item by id for {item}");
-            }}
+                _ => {
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to get menu item by id for {item}");
+                }
+            }
         } else {
             error!(target: LOG_TARGET_APP_LOGIC, "Menu is not initialized");
         }
@@ -635,7 +641,7 @@ impl SystemTrayManager {
     #[cfg(target_os = "windows")]
     async fn set_tray_icon_promoted(promote: bool) -> Result<(), anyhow::Error> {
         use crate::system_dependencies::windows::registry::{
-            entry_tasktray_icon::WindowsRegistryTasktrayIconResolver, WindowsRegistryReader,
+            WindowsRegistryReader, entry_tasktray_icon::WindowsRegistryTasktrayIconResolver,
         };
 
         let entries = WindowsRegistryTasktrayIconResolver::read_registry()?;

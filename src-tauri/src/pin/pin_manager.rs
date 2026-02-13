@@ -25,11 +25,11 @@ use tauri::{AppHandle, Listener};
 use tokio::sync::oneshot;
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     configs::{config_wallet::ConfigWallet, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     pin::pin_locker::PinLocker,
-    LOG_TARGET_APP_LOGIC,
 };
 
 pub struct PinManager {}

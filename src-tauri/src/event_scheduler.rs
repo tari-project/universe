@@ -72,23 +72,24 @@
 #![allow(dead_code, unused_variables, unused_must_use)]
 
 use chrono::{DateTime, Duration, Local};
-use croner::{self, parser::CronParser, Cron};
+use croner::{self, Cron, parser::CronParser};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::Display,
     sync::{
-        atomic::{AtomicBool, AtomicU64},
         LazyLock,
+        atomic::{AtomicBool, AtomicU64},
     },
 };
 use tokio::{
-    sync::{mpsc, RwLock},
+    sync::{RwLock, mpsc},
     time::sleep,
 };
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     configs::{
         config_core::{ConfigCore, ConfigCoreContent},
         config_mining::{ConfigMining, ConfigMiningContent},
@@ -97,7 +98,6 @@ use crate::{
     events_emitter::EventsEmitter,
     mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
     tasks_tracker::TasksTrackers,
-    LOG_TARGET_APP_LOGIC,
 };
 
 static ZERO_DURATION: std::time::Duration = std::time::Duration::from_secs(0);
@@ -937,15 +937,16 @@ impl EventScheduler {
         event_id: String,
     ) -> Result<(), SchedulerError> {
         info!(target: LOG_TARGET_APP_LOGIC, "Removing event with ID {:?}", event_id);
-        match events.remove(&event_id) { Some(mut event) => {
-            if let Some(handle) = event.task_handle.take() {
-                handle.abort();
+        match events.remove(&event_id) {
+            Some(mut event) => {
+                if let Some(handle) = event.task_handle.take() {
+                    handle.abort();
+                }
+                info!(target: LOG_TARGET_APP_LOGIC, "Removed event with ID {:?}", event_id);
+                Ok(())
             }
-            info!(target: LOG_TARGET_APP_LOGIC, "Removed event with ID {:?}", event_id);
-            Ok(())
-        } _ => {
-            Err(SchedulerError::EventNotFound(event_id))
-        }}
+            _ => Err(SchedulerError::EventNotFound(event_id)),
+        }
     }
 
     /// Internal handler for pausing events.

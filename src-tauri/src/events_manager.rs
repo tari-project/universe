@@ -26,15 +26,15 @@ use log::{error, info};
 use tari_transaction_components::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::airdrop::send_new_block_mined;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::setup::listeners::SetupFeature;
 use crate::setup::setup_manager::SetupManager;
-use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
-    events::NodeTypeUpdatePayload, events_emitter::EventsEmitter, tasks_tracker::TasksTrackers,
-    UniverseAppState,
+    UniverseAppState, events::NodeTypeUpdatePayload, events_emitter::EventsEmitter,
+    tasks_tracker::TasksTrackers,
 };
 pub struct EventsManager;
 

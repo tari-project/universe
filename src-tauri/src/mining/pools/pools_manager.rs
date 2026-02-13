@@ -25,17 +25,17 @@ use std::{collections::HashMap, sync::Arc};
 use log::{debug, info, warn};
 use tari_common_types::tari_address::TariAddress;
 use tokio::{
-    sync::{mpsc, RwLock},
-    time::{interval, Duration, Instant},
+    sync::{RwLock, mpsc},
+    time::{Duration, Instant, interval},
 };
 
 use crate::{
+    LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
     mining::pools::{
-        adapters::{PoolApiAdapter, PoolApiAdapters},
         PoolStatus,
+        adapters::{PoolApiAdapter, PoolApiAdapters},
     },
     tasks_tracker::TaskTrackerUtil,
-    LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
 
 #[derive(Clone)]

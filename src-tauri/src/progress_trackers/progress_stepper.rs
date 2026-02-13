@@ -26,9 +26,10 @@ use serde_json::json;
 use tauri::{AppHandle, Manager};
 
 use log::warn;
-use tokio::sync::{watch::Sender, RwLock};
+use tokio::sync::{RwLock, watch::Sender};
 
 use crate::{
+    LOG_TARGET_APP_LOGIC, UniverseAppState,
     events::ProgressTrackerUpdatePayload,
     events_emitter::EventsEmitter,
     progress_trackers::progress_plans::SetupStep,
@@ -36,7 +37,6 @@ use crate::{
         setup_manager::{PhaseStatus, SetupPhase},
         utils::timeout_watcher::hash_value,
     },
-    UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 
 #[derive(Debug)]

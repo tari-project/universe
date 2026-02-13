@@ -19,14 +19,14 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_core::ConfigCore;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
-use crate::LOG_TARGET_APP_LOGIC;
 use dunce::canonicalize;
 use fs_more::directory::{
-    move_directory, BrokenSymlinkBehaviour, CollidingSubDirectoryBehaviour,
-    DestinationDirectoryRule, DirectoryMoveAllowedStrategies, DirectoryMoveByCopyOptions,
-    DirectoryMoveOptions, SymlinkBehaviour,
+    BrokenSymlinkBehaviour, CollidingSubDirectoryBehaviour, DestinationDirectoryRule,
+    DirectoryMoveAllowedStrategies, DirectoryMoveByCopyOptions, DirectoryMoveOptions,
+    SymlinkBehaviour, move_directory,
 };
 use fs_more::file::CollidingFileBehaviour;
 use log::{error, info, warn};

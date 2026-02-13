@@ -23,23 +23,23 @@
 use std::{path::PathBuf, sync::LazyLock};
 
 use crate::{
+    APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC,
     configs::{
         config_mining::{ConfigMining, ConfigMiningContent},
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
     hardware::{cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader},
-    APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC,
 };
 
 use super::{
     cpu_readers::{
-        amd_cpu_reader::AmdCpuParametersReader, apple_cpu_reader::AppleCpuParametersReader,
-        intel_cpu_reader::IntelCpuParametersReader, CpuParametersReader,
+        CpuParametersReader, amd_cpu_reader::AmdCpuParametersReader,
+        apple_cpu_reader::AppleCpuParametersReader, intel_cpu_reader::IntelCpuParametersReader,
     },
     gpu_readers::{
-        amd_gpu_reader::AmdGpuReader, apple_gpu_reader::AppleGpuReader,
-        intel_gpu_reader::IntelGpuReader, nvidia_gpu_reader::NvidiaGpuReader, GpuParametersReader,
+        GpuParametersReader, amd_gpu_reader::AmdGpuReader, apple_gpu_reader::AppleGpuReader,
+        intel_gpu_reader::IntelGpuReader, nvidia_gpu_reader::NvidiaGpuReader,
     },
 };
 use anyhow::Error;

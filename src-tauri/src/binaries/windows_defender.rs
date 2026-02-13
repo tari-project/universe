@@ -20,15 +20,15 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use log::{info, warn};
 use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use std::process::Command;
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::consts::PROCESS_CREATION_NO_WINDOW;
 use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
-use crate::LOG_TARGET_APP_LOGIC;
 
 pub struct WindowsDefenderExclusions {}
 
