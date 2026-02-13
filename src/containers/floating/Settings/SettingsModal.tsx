@@ -16,6 +16,7 @@ import {
     ConnectionsSettings,
     ExperimentalSettings,
     GeneralSettings,
+    McpSettings,
     MiningSettings,
     WalletSettings,
     ReleaseNotes,
@@ -37,6 +38,7 @@ const SettingsModal = memo(function SettingsModal() {
         pools: <PoolsSettings />,
         wallet: <WalletSettings />,
         airdrop: <AirdropSettings />,
+        mcp: <McpSettings />,
         experimental: <ExperimentalSettings />,
         releaseNotes: <ReleaseNotes />,
     };

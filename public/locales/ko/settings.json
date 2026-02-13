@@ -71,6 +71,69 @@
   "local-node-sync-progress": "로컬 노드 동기화 진행",
   "logs": "로그",
   "low-hash-rate-warning": "해시레이트가 매우 낮습니다. Tari Universe 외의 모든 앱을 닫아보세요",
+  "mcp": {
+    "advanced": {
+      "control-tier": "Control Tier",
+      "expiry-days": "Token Expiry (days)",
+      "port": "Server Port",
+      "rate-limit": "Transaction Rate Limit (per minute)",
+      "read-tier": "Read Tier",
+      "title": "Advanced Settings"
+    },
+    "agent-config": {
+      "copied": "Copied!",
+      "copy": "Copy Configuration",
+      "description": "Copy the configuration below to connect an AI agent to Tari Universe",
+      "or-add-to-settings-json": "Or add this to your settings JSON:",
+      "title": "Agent Configuration"
+    },
+    "audit-log": {
+      "description": "Recent MCP tool calls",
+      "duration-ms": "{{ms}}ms",
+      "empty": "No audit entries yet",
+      "export": "Export Log",
+      "title": "Audit Log"
+    },
+    "server-toggle": {
+      "description": "Enable the MCP server to allow AI agents to interact with Tari Universe",
+      "status-running": "Running on port {{port}}",
+      "status-stopped": "Stopped",
+      "title": "MCP Server"
+    },
+    "title": "MCP Server",
+    "token-display": {
+      "copied": "Copied!",
+      "copy": "Copy",
+      "created": "Created",
+      "days-remaining": "{{days}} days remaining",
+      "description": "Use this token to authenticate MCP clients",
+      "expires": "Expires",
+      "hide": "Hide",
+      "no-token": "No token generated",
+      "refresh-expiry": "Refresh Expiry",
+      "reveal": "Reveal",
+      "revoke": "Revoke Token",
+      "revoke-confirm": "Are you sure? This will stop the MCP server and require generating a new token.",
+      "title": "Bearer Token"
+    },
+    "transaction-dialog": {
+      "amount": "Amount",
+      "approve": "Approve",
+      "deny": "Deny",
+      "destination": "Destination",
+      "enter-pin": "Enter PIN to approve",
+      "micro-minotari": "({{amount}} µT)",
+      "remaining": "{{countdown}}s remaining",
+      "title": "MCP Transaction Confirmation"
+    },
+    "transactions": {
+      "description": "Allow MCP clients to send transactions (requires PIN)",
+      "max-amount": "Max Transaction Amount (µT)",
+      "max-amount-description": "Leave empty for no limit",
+      "pin-required": "PIN must be configured to enable transactions",
+      "title": "Transactions"
+    }
+  },
   "mine-on-app-start": {
     "description": "활성화되면 앱이 시작될 때 자동으로 채굴을 시작합니다.",
     "title": "시작 시 채굴"
@@ -168,6 +231,7 @@
     "connections": "연결",
     "experimental": "실험적",
     "general": "일반",
+    "mcp": "MCP Server",
     "mining": "채굴",
     "p2p": "풀 채굴",
     "pools": "채굴 풀",

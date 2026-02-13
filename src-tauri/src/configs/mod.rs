@@ -21,6 +21,9 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod config_core;
+pub mod config_mcp;
+#[cfg(test)]
+mod config_mcp_test;
 pub mod config_mining;
 pub mod config_pools;
 pub mod config_ui;
