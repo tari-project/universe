@@ -202,10 +202,10 @@ impl HttpFileClient {
         Ok(())
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn handle_resume_flow(&self) -> Result<(), anyhow::Error> {
         let head_response = HttpClient::default().send_head_request(&self.url).await?;
         let expected_size = get_content_length_from_head_response(&head_response);
-
         let destination = self.get_destination();
         let destination_file = destination.join(&self.file_name);
 
@@ -253,23 +253,17 @@ impl HttpFileClient {
 
         loop {
             file_download_attempt_count += 1;
-
             let file_size = get_content_size_from_file(&file).await?;
-
-            info!(target: LOG_TARGET_APP_LOGIC, "Expected file size: {expected_size}");
-            info!(target: LOG_TARGET_APP_LOGIC, "Current file size: {file_size}");
-
+            info!(target: LOG_TARGET_APP_LOGIC, "Expected file size: {expected_size} vs Current file size: {file_size}");
             // Check if file is already complete
             if file_size.eq(&expected_size) {
                 info!(target: LOG_TARGET_APP_LOGIC, "File downloaded to {}, size: {}", destination_file.display(), file_size);
                 break;
             }
-
             if file_size.ne(&last_registered_file_size) {
                 last_registered_file_size = file_size;
                 file_download_attempt_count = 0;
             }
-
             if file_download_attempt_count > MAX_RETRIES {
                 warn!(target: LOG_TARGET_APP_LOGIC, "Max download attempts reached, giving up on downloading file.");
                 return Err(anyhow::anyhow!(
@@ -298,9 +292,7 @@ impl HttpFileClient {
                             self.url
                         ));
                     }
-
-                    // If download timeouts so it returns 408 [ Request Timeout ] or 400 [ Bad Request ] we want to check if internet connection is available
-                    // We include 400 because some servers return 400 instead of 408 as far as I understand
+                    // If download timeouts so it returns 408 [ Request Timeout ] or 400 [ Bad Request ] we want to check if internet connection is available - We include 400 because some servers return 400 instead of 408 as far as I understand
                     if e.to_string().contains("408") || e.to_string().contains("400") {
                         loop {
                             internet_connection_check_attempt_count += 1;
