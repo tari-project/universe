@@ -4776,18 +4776,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "minotari_wallet_grpc_client"
-version = "0.1.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v5.2.1#c79f5557b1d214cdca7b4e52f02ddb729600e7cd"
-dependencies = [
- "minotari_app_grpc",
- "tari_common",
- "tari_common_types",
- "thiserror 2.0.18",
- "tonic 0.13.1",
-]
-
-[[package]]
 name = "mio"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8720,7 +8708,6 @@ dependencies = [
  "log4rs",
  "minotari_node_grpc_client",
  "minotari_node_wallet_client",
- "minotari_wallet_grpc_client",
  "mockall",
  "monero-address-creator",
  "nix 0.29.0",
@@ -8784,7 +8771,6 @@ dependencies = [
  "whoami",
  "winreg 0.52.0",
  "wiremock",
- "xz2",
  "zip 2.4.2",
 ]
 
