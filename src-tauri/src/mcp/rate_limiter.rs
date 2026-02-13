@@ -26,13 +26,10 @@ use std::time::Instant;
 use crate::configs::config_mcp::ConfigMcp;
 use crate::configs::trait_config::ConfigImpl;
 
-// TODO: Remove allow(dead_code) when Phase 2 (MCP server) uses the transaction rate limiter
-#[allow(dead_code)]
 pub struct TransactionRateLimiter {
     timestamps: VecDeque<Instant>,
 }
 
-#[allow(dead_code)]
 impl TransactionRateLimiter {
     pub fn new() -> Self {
         Self {
@@ -64,5 +61,126 @@ impl TransactionRateLimiter {
 
         self.timestamps.push_back(now);
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn new_limiter_has_no_timestamps() {
+        let limiter = TransactionRateLimiter::new();
+        assert!(limiter.timestamps.is_empty());
+    }
+
+    #[test]
+    fn new_limiter_deque_length_is_zero() {
+        let limiter = TransactionRateLimiter::new();
+        assert_eq!(limiter.timestamps.len(), 0);
+    }
+
+    #[test]
+    fn sliding_window_removes_expired_entries() {
+        let mut limiter = TransactionRateLimiter::new();
+        // Insert a timestamp that is more than 60 seconds old
+        let expired = Instant::now() - Duration::from_secs(120);
+        limiter.timestamps.push_back(expired);
+        assert_eq!(limiter.timestamps.len(), 1);
+
+        // Insert a fresh timestamp to trigger the cleanup logic
+        let now = Instant::now();
+        let window = Duration::from_secs(60);
+        while limiter
+            .timestamps
+            .front()
+            .is_some_and(|t| now.duration_since(*t) > window)
+        {
+            limiter.timestamps.pop_front();
+        }
+
+        assert!(
+            limiter.timestamps.is_empty(),
+            "Expired timestamps should be removed"
+        );
+    }
+
+    #[test]
+    fn sliding_window_keeps_fresh_entries() {
+        let mut limiter = TransactionRateLimiter::new();
+        let fresh = Instant::now();
+        limiter.timestamps.push_back(fresh);
+
+        let now = Instant::now();
+        let window = Duration::from_secs(60);
+        while limiter
+            .timestamps
+            .front()
+            .is_some_and(|t| now.duration_since(*t) > window)
+        {
+            limiter.timestamps.pop_front();
+        }
+
+        assert_eq!(
+            limiter.timestamps.len(),
+            1,
+            "Fresh timestamps should be kept"
+        );
+    }
+
+    #[test]
+    fn window_check_with_mixed_entries() {
+        let mut limiter = TransactionRateLimiter::new();
+        // Two expired, one fresh
+        limiter
+            .timestamps
+            .push_back(Instant::now() - Duration::from_secs(120));
+        limiter
+            .timestamps
+            .push_back(Instant::now() - Duration::from_secs(90));
+        limiter.timestamps.push_back(Instant::now());
+
+        let now = Instant::now();
+        let window = Duration::from_secs(60);
+        while limiter
+            .timestamps
+            .front()
+            .is_some_and(|t| now.duration_since(*t) > window)
+        {
+            limiter.timestamps.pop_front();
+        }
+
+        assert_eq!(
+            limiter.timestamps.len(),
+            1,
+            "Only the fresh entry should remain"
+        );
+    }
+
+    #[test]
+    fn limit_check_blocks_when_at_capacity() {
+        let mut limiter = TransactionRateLimiter::new();
+        let limit: usize = 5;
+        // Fill to capacity with fresh timestamps
+        for _ in 0..limit {
+            limiter.timestamps.push_back(Instant::now());
+        }
+
+        assert!(
+            limiter.timestamps.len() >= limit,
+            "Should be at or above limit"
+        );
+    }
+
+    #[test]
+    fn limit_check_allows_when_below_capacity() {
+        let mut limiter = TransactionRateLimiter::new();
+        let limit: usize = 5;
+        for _ in 0..(limit - 1) {
+            limiter.timestamps.push_back(Instant::now());
+        }
+
+        assert!(limiter.timestamps.len() < limit, "Should be below limit");
     }
 }

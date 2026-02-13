@@ -514,6 +514,8 @@ fn main() {
             mcp::commands::set_mcp_tier_enabled,
             mcp::commands::get_mcp_audit_log,
             mcp::commands::export_mcp_audit_log,
+            mcp::commands::set_mcp_transactions_enabled,
+            mcp::commands::mcp_transaction_dialog_response,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

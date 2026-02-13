@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import {
     ConfigBackendInMemory,
+    ConfigMcp,
     ConfigMining,
     ConfigMiningSelectors,
     ConfigPools,
@@ -88,4 +89,18 @@ export const useConfigPoolsStore = create<ConfigPools>()(() => ({
 
 export const useConfigBEInMemoryStore = create<ConfigBackendInMemory>()(() => ({
     ...configBEInMemoryInitialState,
+}));
+
+const configMcpInitialState: ConfigMcp = {
+    enabled: false,
+    token_expiry_days: 30,
+    transactions_enabled: false,
+    port: 19222,
+    read_tier_enabled: true,
+    control_tier_enabled: true,
+    rate_limit_transaction: 5,
+};
+
+export const useConfigMcpStore = create<ConfigMcp>()(() => ({
+    ...configMcpInitialState,
 }));

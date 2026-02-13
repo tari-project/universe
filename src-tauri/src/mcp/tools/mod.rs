@@ -21,8 +21,11 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod chain;
+#[cfg(test)]
+mod chain_test;
 pub mod mining;
 pub mod scheduler;
+pub mod transaction;
 pub mod wallet;
 
 use std::sync::Arc;
@@ -41,12 +44,14 @@ use crate::configs::config_mcp::ConfigMcp;
 use crate::configs::trait_config::ConfigImpl;
 use crate::mcp::audit::{AuditEntry, AuditLog, AuditStatus};
 use crate::node::node_adapter::BaseNodeStatus;
+use crate::wallet::wallet_manager::WalletManager;
 use crate::LOG_TARGET_APP_LOGIC;
 
 #[derive(Clone)]
 pub struct TariMcpHandler {
     tool_router: ToolRouter<Self>,
     node_status_rx: Arc<watch::Receiver<BaseNodeStatus>>,
+    wallet_manager: WalletManager,
 }
 
 #[tool_handler]
@@ -112,11 +117,25 @@ struct CancelScheduledEventParams {
     event_id: String,
 }
 
+#[derive(Deserialize, JsonSchema)]
+struct SendTransactionParams {
+    /// Tari address to send to (base58, hex, or emoji format)
+    destination: String,
+    /// Amount to send in XTM (e.g., "1.5")
+    amount: String,
+    /// Optional payment ID for the transaction
+    payment_id: Option<String>,
+}
+
 impl TariMcpHandler {
-    pub fn new(node_status_rx: Arc<watch::Receiver<BaseNodeStatus>>) -> Self {
+    pub fn new(
+        node_status_rx: Arc<watch::Receiver<BaseNodeStatus>>,
+        wallet_manager: WalletManager,
+    ) -> Self {
         Self {
             tool_router: Self::tool_router(),
             node_status_rx,
+            wallet_manager,
         }
     }
 
@@ -144,6 +163,7 @@ impl TariMcpHandler {
         match tier {
             "read" => *config.read_tier_enabled(),
             "control" => *config.control_tier_enabled(),
+            "transaction" => *config.transactions_enabled(),
             _ => false,
         }
     }
@@ -403,7 +423,7 @@ impl TariMcpHandler {
         let start = Instant::now();
         self.audit_tool_call("get_wallet_balance", "read", AuditStatus::Started, None)
             .await;
-        let result = wallet::get_wallet_balance().await;
+        let result = wallet::get_wallet_balance(&self.wallet_manager).await;
         let status = if result.is_ok() {
             AuditStatus::Success
         } else {
@@ -439,7 +459,7 @@ impl TariMcpHandler {
             None,
         )
         .await;
-        let result = wallet::get_transaction_history(params.limit).await;
+        let result = wallet::get_transaction_history(&self.wallet_manager, params.limit).await;
         let status = if result.is_ok() {
             AuditStatus::Success
         } else {
@@ -628,5 +648,55 @@ impl TariMcpHandler {
         )
         .await;
         result
+    }
+
+    // ==================== Transaction Tools (Transaction tier) ====================
+
+    /// Send a one-sided stealth transaction to a Tari address.
+    #[tool(
+        name = "send_transaction",
+        description = "Send XTM to a Tari address. Requires PIN confirmation via in-app dialog (120s timeout). Amount is in XTM (e.g., '1.5')"
+    )]
+    async fn send_transaction(
+        &self,
+        Parameters(params): Parameters<SendTransactionParams>,
+    ) -> Result<String, String> {
+        if !Self::is_tier_enabled("transaction").await {
+            return Err("Transaction tier is disabled".to_string());
+        }
+        let start = Instant::now();
+        info!(target: LOG_TARGET_APP_LOGIC, "MCP: send_transaction called (destination={}, amount={})", params.destination, params.amount);
+        self.audit_tool_call(
+            "send_transaction",
+            "transaction",
+            AuditStatus::Started,
+            None,
+        )
+        .await;
+
+        let app_handle = crate::events_emitter::EventsEmitter::get_app_handle_public().await;
+        let result = transaction::send_transaction(
+            params.destination,
+            params.amount,
+            params.payment_id,
+            &self.wallet_manager,
+            &app_handle,
+        )
+        .await;
+
+        let status = match &result {
+            Ok(_) => AuditStatus::Success,
+            Err(transaction::TransactionError::Denied(_)) => AuditStatus::Denied,
+            Err(transaction::TransactionError::RateLimited(_)) => AuditStatus::RateLimited,
+            Err(_) => AuditStatus::Error,
+        };
+        self.audit_tool_call(
+            "send_transaction",
+            "transaction",
+            status,
+            Some(u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX)),
+        )
+        .await;
+        result.map_err(|e| e.to_string())
     }
 }
