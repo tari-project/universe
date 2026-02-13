@@ -42,11 +42,11 @@
         "react-hook-form": "^7.71.1",
         "react-i18next": "^15.7.4",
         "react-icons": "^5.5.0",
-        "react-intersection-observer": "^10.0.2",
         "react-markdown": "^10.1.0",
         "styled-components": "^6.3.8",
         "use-sync-external-store": "^1.6.0",
         "uuid": "^13.0.0",
+        "virtua": "^0.47.2",
         "vite-tsconfig-paths": "^5.1.4",
         "zustand": "^5.0.10"
     },
