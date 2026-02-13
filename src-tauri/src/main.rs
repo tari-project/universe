@@ -185,7 +185,9 @@ fn main() {
             && std::env::var("WAYLAND_DISPLAY").is_err()
             && std::env::var("XDG_SESSION_TYPE").unwrap_or_default() == "x11"
         {
-            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+            unsafe {
+                std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+            }
         }
     }
     let _unused = fix_path_env::fix();
