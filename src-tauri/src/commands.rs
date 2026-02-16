@@ -1541,9 +1541,9 @@ pub async fn validate_minotari_amount(amount: String) -> Result<(), InvokeError>
     let t_amount = Minotari::from_str(&amount).map_err(|e| e.to_string())?;
     let m_amount = MicroMinotari::from(t_amount);
 
-    let available_balance = BalanceTracker::current().get_balance().await;
+    let account_balance = BalanceTracker::current().get_balance().await;
 
-    match m_amount.cmp(&available_balance) {
+    match m_amount.cmp(&account_balance.available) {
         std::cmp::Ordering::Less => Ok(()),
         _ => Err(InvokeError::from("Insufficient balance".to_string())),
     }

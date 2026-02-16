@@ -36,7 +36,7 @@ use crate::{
     UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 use log::{error, info};
-use minotari_wallet::transactions::{TransactionDisplayStatus, TransactionSource};
+use minotari_wallet::transactions::TransactionDisplayStatus;
 use minotari_wallet::{
     db::{
         get_all_balance_changes_by_account_id, get_latest_scanned_tip_block_by_account,
@@ -90,10 +90,6 @@ static REQUIRED_CONFIRMATIONS: u64 = 3;
 const SCAN_BATCH_SIZE: u64 = 25;
 const SCAN_POLL_INTERVAL_SECS: u64 = 30;
 const PROGRESS_UPDATE_INTERVAL_SECS: u64 = 5;
-const IGNORED_STATUSES: [TransactionDisplayStatus; 2] = [
-    TransactionDisplayStatus::Pending,
-    TransactionDisplayStatus::Unconfirmed,
-];
 
 pub struct MinotariWalletManager {
     database_manager: MinotariWalletDatabaseManager,
@@ -316,7 +312,7 @@ impl MinotariWalletManager {
     }
 
     /// Get balance for an account
-    async fn get_account_balance(account_id: i64) -> Result<AccountBalance, anyhow::Error> {
+    pub async fn get_account_balance(account_id: i64) -> Result<AccountBalance, anyhow::Error> {
         let conn = Self::get_db_connection().await?;
         get_balance(&conn, account_id).map_err(|e| e.into())
     }
@@ -494,10 +490,12 @@ impl MinotariWalletManager {
                     Self::handle_status_event(status).await;
                 }
                 ProcessingEvent::BlockProcessed(block_event) => {
-                    if block_event.balance_changes.is_empty() {
-                        return;
+                    if !block_event.balance_changes.is_empty() {
+                        info!(target: LOG_TARGET_APP_LOGIC, "BlockProcessed event at {:?} with balance changes: {:?}", block_event.height, block_event.balance_changes);
+                        BalanceTracker::current()
+                            .update_from_block_event(block_event.balance_changes)
+                            .await;
                     }
-                    info!(target: LOG_TARGET_APP_LOGIC, "BlockProcessed event at {:?} with balance changes: {:?}", block_event.height, block_event.balance_changes);
                 }
                 ProcessingEvent::TransactionsReady(transactions_event) => {
                     let transaction_count = transactions_event.transactions.len();
@@ -510,9 +508,9 @@ impl MinotariWalletManager {
                     // Process transactions - check each for pending transaction match
                     let mut transactions_to_emit = Vec::new();
                     for tx in transactions_event.transactions {
-                        let is_ready = !IGNORED_STATUSES.contains(&tx.status);
-                        info!("is_ready {}", is_ready);
-                        if is_ready || Self::is_syncing().await {
+                        let is_ready = tx.status != TransactionDisplayStatus::Unconfirmed
+                            && tx.status != TransactionDisplayStatus::Pending;
+                        if is_ready {
                             // Check if this scanned transaction matches any pending transaction
                             if let Some(_pending_tx) =
                                 Self::match_and_remove_pending_transaction(&tx.id).await
@@ -530,10 +528,6 @@ impl MinotariWalletManager {
 
                     // Update balance based on new transactions
                     if !transactions_to_emit.is_empty() {
-                        BalanceTracker::current()
-                            .update_from_transactions(&transactions_to_emit)
-                            .await;
-
                         // Emit all transactions to frontend
                         EventsEmitter::emit_wallet_transactions_found(transactions_to_emit).await;
                     }
@@ -561,18 +555,7 @@ impl MinotariWalletManager {
 
                     // Emit update event for each transaction with updated confirmations
                     for tx in update_event.updated_transactions {
-                        let is_ignored = IGNORED_STATUSES.contains(&tx.status);
-                        info!("is_ignored {}", is_ignored);
-                        let confirmed_with_fee = tx.source != TransactionSource::Coinbase
-                            && tx.status == TransactionDisplayStatus::Confirmed
-                            && tx.fee.is_some();
-                        let should_emit = Self::is_syncing().await
-                            || confirmed_with_fee
-                            || !is_ignored
-                            || tx.source == TransactionSource::Coinbase;
-                        if should_emit {
-                            EventsEmitter::emit_wallet_transaction_updated(tx).await;
-                        }
+                        EventsEmitter::emit_wallet_transaction_updated(tx).await;
                     }
                 }
             }
