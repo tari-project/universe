@@ -493,7 +493,12 @@ impl MinotariWalletManager {
                 ProcessingEvent::ScanStatus(status) => {
                     Self::handle_status_event(status).await;
                 }
-                ProcessingEvent::BlockProcessed(_block_event) => {}
+                ProcessingEvent::BlockProcessed(block_event) => {
+                    if block_event.balance_changes.is_empty() {
+                        return;
+                    }
+                    info!(target: LOG_TARGET_APP_LOGIC, "BlockProcessed event at {:?} with balance changes: {:?}", block_event.height, block_event.balance_changes);
+                }
                 ProcessingEvent::TransactionsReady(transactions_event) => {
                     let transaction_count = transactions_event.transactions.len();
                     info!(
@@ -506,7 +511,7 @@ impl MinotariWalletManager {
                     let mut transactions_to_emit = Vec::new();
                     for tx in transactions_event.transactions {
                         let is_ready = !IGNORED_STATUSES.contains(&tx.status);
-                        if is_ready {
+                        if is_ready || Self::is_syncing().await {
                             // Check if this scanned transaction matches any pending transaction
                             if let Some(_pending_tx) =
                                 Self::match_and_remove_pending_transaction(&tx.id).await
@@ -559,7 +564,8 @@ impl MinotariWalletManager {
                         let confirmed_with_fee = tx.source != TransactionSource::Coinbase
                             && tx.status == TransactionDisplayStatus::Confirmed
                             && tx.fee.is_some();
-                        let should_emit = confirmed_with_fee
+                        let should_emit = Self::is_syncing().await
+                            || confirmed_with_fee
                             || !is_ignored
                             || tx.source == TransactionSource::Coinbase;
                         if should_emit {

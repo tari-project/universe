@@ -771,7 +771,7 @@ pub async fn reset_settings(
             .await
             .map_err(|e| e.to_string())?;
     } else {
-        folder_block_list.push("wallet");
+        folder_block_list.push("minotari-wallet");
         files_block_list.push("credentials_backup.bin");
     }
     // handle App Config reset individually
