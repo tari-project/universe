@@ -511,6 +511,7 @@ impl MinotariWalletManager {
                     let mut transactions_to_emit = Vec::new();
                     for tx in transactions_event.transactions {
                         let is_ready = !IGNORED_STATUSES.contains(&tx.status);
+                        info!("is_ready {}", is_ready);
                         if is_ready || Self::is_syncing().await {
                             // Check if this scanned transaction matches any pending transaction
                             if let Some(_pending_tx) =
@@ -561,6 +562,7 @@ impl MinotariWalletManager {
                     // Emit update event for each transaction with updated confirmations
                     for tx in update_event.updated_transactions {
                         let is_ignored = IGNORED_STATUSES.contains(&tx.status);
+                        info!("is_ignored {}", is_ignored);
                         let confirmed_with_fee = tx.source != TransactionSource::Coinbase
                             && tx.status == TransactionDisplayStatus::Confirmed
                             && tx.fee.is_some();
