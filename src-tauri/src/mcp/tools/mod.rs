@@ -100,15 +100,23 @@ struct GetTransactionHistoryParams {
 }
 
 #[derive(Deserialize, JsonSchema)]
-struct ScheduleMiningEventParams {
+struct ScheduleMiningWindowParams {
     /// Unique identifier for the scheduled event
     event_id: String,
-    /// Mining mode to use when the event triggers (e.g., Eco, Turbo, Ludicrous)
+    /// Mining mode to use during the window (e.g., Eco, Turbo, Ludicrous)
     mining_mode: String,
-    /// Number of time units to wait before triggering
-    time_value: i64,
-    /// Time unit: hours, minutes, or seconds
-    time_unit: String,
+    /// Start hour in 12-hour format (1-12)
+    start_hour: i64,
+    /// Start minute (0-59, defaults to 0)
+    start_minute: Option<i64>,
+    /// Start time period: "AM" or "PM"
+    start_period: String,
+    /// End hour in 12-hour format (1-12)
+    end_hour: i64,
+    /// End minute (0-59, defaults to 0)
+    end_minute: Option<i64>,
+    /// End time period: "AM" or "PM"
+    end_period: String,
 }
 
 #[derive(Deserialize, JsonSchema)]
@@ -570,33 +578,40 @@ impl TariMcpHandler {
         result
     }
 
-    /// Schedule a mining event to trigger after a specified delay.
+    /// Schedule recurring daily mining during a time window.
     #[tool(
-        name = "schedule_mining_event",
-        description = "Schedule a mining event with a specified mode to trigger after a delay (e.g., switch to Ludicrous in 2 hours)"
+        name = "schedule_mining_window",
+        description = "Schedule recurring daily mining during a time window (e.g., 10 PM to 6 AM in Ludicrous mode)"
     )]
-    async fn schedule_mining_event(
+    async fn schedule_mining_window(
         &self,
-        Parameters(params): Parameters<ScheduleMiningEventParams>,
+        Parameters(params): Parameters<ScheduleMiningWindowParams>,
     ) -> Result<String, String> {
         if !Self::is_tier_enabled("control").await {
             return Err("Control tier is disabled".to_string());
         }
         let start = Instant::now();
-        info!(target: LOG_TARGET_APP_LOGIC, "MCP: schedule_mining_event called (id={}, mode={}, time={}{})", params.event_id, params.mining_mode, params.time_value, params.time_unit);
+        info!(target: LOG_TARGET_APP_LOGIC, "MCP: schedule_mining_window called (id={}, mode={}, start={}:{:02} {}, end={}:{:02} {})",
+            params.event_id, params.mining_mode,
+            params.start_hour, params.start_minute.unwrap_or(0), params.start_period,
+            params.end_hour, params.end_minute.unwrap_or(0), params.end_period);
         self.audit_tool_call(
-            "schedule_mining_event",
+            "schedule_mining_window",
             "control",
             AuditStatus::Started,
             None,
         )
         .await;
-        let result = scheduler::schedule_mining_event(
-            params.event_id,
-            params.mining_mode,
-            params.time_value,
-            params.time_unit,
-        )
+        let result = scheduler::schedule_mining_window(scheduler::MiningWindowParams {
+            event_id: params.event_id,
+            mining_mode: params.mining_mode,
+            start_hour: params.start_hour,
+            start_minute: params.start_minute,
+            start_period: params.start_period,
+            end_hour: params.end_hour,
+            end_minute: params.end_minute,
+            end_period: params.end_period,
+        })
         .await;
         let status = if result.is_ok() {
             AuditStatus::Success
@@ -604,7 +619,7 @@ impl TariMcpHandler {
             AuditStatus::Error
         };
         self.audit_tool_call(
-            "schedule_mining_event",
+            "schedule_mining_window",
             "control",
             status,
             Some(u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX)),

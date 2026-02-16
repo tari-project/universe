@@ -22,7 +22,9 @@
 
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
-use crate::event_scheduler::{EventScheduler, SchedulerEventTiming, SchedulerEventType, TimeUnit};
+use crate::event_scheduler::{
+    EventScheduler, SchedulerEventTiming, SchedulerEventType, TimePeriod,
+};
 
 pub async fn list_scheduled_events() -> Result<String, String> {
     let content = ConfigCore::content().await;
@@ -34,34 +36,49 @@ pub async fn list_scheduled_events() -> Result<String, String> {
     serde_json::to_string(&result).map_err(|e| e.to_string())
 }
 
-pub async fn schedule_mining_event(
-    event_id: String,
-    mining_mode: String,
-    time_value: i64,
-    time_unit: String,
-) -> Result<String, String> {
-    let unit = match time_unit.to_lowercase().as_str() {
-        "hours" => TimeUnit::Hours,
-        "minutes" => TimeUnit::Minutes,
-        "seconds" => TimeUnit::Seconds,
-        _ => {
-            return Err(format!(
-                "Invalid time unit: {time_unit}. Use 'hours', 'minutes', or 'seconds'"
-            ))
-        }
+pub struct MiningWindowParams {
+    pub event_id: String,
+    pub mining_mode: String,
+    pub start_hour: i64,
+    pub start_minute: Option<i64>,
+    pub start_period: String,
+    pub end_hour: i64,
+    pub end_minute: Option<i64>,
+    pub end_period: String,
+}
+
+pub async fn schedule_mining_window(params: MiningWindowParams) -> Result<String, String> {
+    let start_period = parse_time_period(&params.start_period)?;
+    let end_period = parse_time_period(&params.end_period)?;
+
+    let timing = SchedulerEventTiming::parse_between_variant(
+        params.start_hour,
+        params.start_minute.unwrap_or(0),
+        start_period,
+        params.end_hour,
+        params.end_minute.unwrap_or(0),
+        end_period,
+    )
+    .map_err(|e| e.to_string())?;
+
+    let event_type = SchedulerEventType::Mine {
+        mining_mode: params.mining_mode,
     };
 
-    let timing =
-        SchedulerEventTiming::parse_in_variant(time_value, unit).map_err(|e| e.to_string())?;
-
-    let event_type = SchedulerEventType::Mine { mining_mode };
-
     EventScheduler::instance()
-        .schedule_event(event_type, event_id.clone(), timing)
+        .schedule_event(event_type, params.event_id.clone(), timing)
         .await
         .map_err(|e| e.to_string())?;
 
-    Ok(serde_json::json!({"status": "scheduled", "event_id": event_id}).to_string())
+    Ok(serde_json::json!({"status": "scheduled", "event_id": params.event_id}).to_string())
+}
+
+fn parse_time_period(period: &str) -> Result<TimePeriod, String> {
+    match period.to_uppercase().as_str() {
+        "AM" => Ok(TimePeriod::AM),
+        "PM" => Ok(TimePeriod::PM),
+        _ => Err(format!("Invalid time period: {period}. Use 'AM' or 'PM'")),
+    }
 }
 
 pub async fn cancel_scheduled_event(event_id: String) -> Result<String, String> {
