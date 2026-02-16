@@ -142,6 +142,34 @@ impl AuditLog {
             info!(target: LOG_TARGET_APP_LOGIC, "Rotated MCP audit log to {rotated_path:?}");
         }
         self.line_count = 0;
+        self._cleanup_old_rotated_logs();
+    }
+
+    fn _cleanup_old_rotated_logs(&self) {
+        const MAX_ROTATED_LOGS: usize = 5;
+        if let Some(parent) = self.log_path.parent() {
+            let mut rotated: Vec<PathBuf> = fs::read_dir(parent)
+                .into_iter()
+                .flatten()
+                .filter_map(|e| e.ok())
+                .map(|e| e.path())
+                .filter(|p| {
+                    p.to_str()
+                        .map(|s| s.contains("mcp_audit.") && s.ends_with(".jsonl") && *p != self.log_path)
+                        .unwrap_or(false)
+                })
+                .collect();
+            rotated.sort();
+            if rotated.len() > MAX_ROTATED_LOGS {
+                for old in &rotated[..rotated.len() - MAX_ROTATED_LOGS] {
+                    if let Err(e) = fs::remove_file(old) {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove old MCP audit log {old:?}: {e:?}");
+                    } else {
+                        info!(target: LOG_TARGET_APP_LOGIC, "Removed old MCP audit log: {old:?}");
+                    }
+                }
+            }
+        }
     }
 
     pub async fn get_recent(count: usize) -> Vec<AuditEntry> {

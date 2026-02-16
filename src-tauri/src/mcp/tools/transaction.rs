@@ -23,7 +23,7 @@
 use std::fmt;
 use std::str::FromStr;
 use std::sync::LazyLock;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 use log::{info, warn};
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
@@ -96,6 +96,10 @@ fn validate_amount(
     let micro_minotari_amount = MicroMinotari::from(minotari_amount);
     let amount_u64 = micro_minotari_amount.as_u64();
 
+    if amount_u64 == 0 {
+        return Err("Amount must be greater than zero".to_string());
+    }
+
     if let Some(max_amount) = config.max_transaction_amount() {
         if amount_u64 > *max_amount {
             return Err(format!(
@@ -160,13 +164,7 @@ pub async fn send_transaction(
     }
 
     // 6. Generate request ID
-    let request_id = format!(
-        "mcp_tx_{}",
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis()
-    );
+    let request_id = format!("mcp_tx_{}", uuid::Uuid::new_v4());
 
     // 7. Create oneshot channel and set INFLIGHT
     let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
@@ -359,8 +357,8 @@ mod tests {
     fn validate_amount_zero() {
         let config = ConfigMcpContent::default();
         let result = validate_amount("0", &config);
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap(), 0);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("greater than zero"));
     }
 
     #[test]

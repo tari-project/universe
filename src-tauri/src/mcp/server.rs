@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::sync::{Arc, LazyLock};
+use std::time::SystemTime;
 
 use axum08 as axum;
 use log::{error, info, warn};
@@ -31,7 +32,7 @@ use sha2::{Digest, Sha256};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 
-use crate::configs::config_mcp::ConfigMcp;
+use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::tools::TariMcpHandler;
@@ -254,6 +255,22 @@ async fn auth_middleware(
             let provided_hash = Sha256::digest(provided.as_bytes());
             let expected_hash = Sha256::digest(expected_token.as_bytes());
             if provided_hash == expected_hash {
+                let config = ConfigMcp::content().await;
+                if config.is_token_expired() {
+                    return Err(axum::http::StatusCode::UNAUTHORIZED);
+                }
+                // Sliding-window refresh: bump expiry on each successful request
+                // so the token only expires after `token_expiry_days` of inactivity.
+                let _ = ConfigMcp::update_field(
+                    ConfigMcpContent::set_token_expires_at,
+                    Some(
+                        SystemTime::now()
+                            + std::time::Duration::from_secs(
+                                u64::from(*config.token_expiry_days()) * 86400,
+                            ),
+                    ),
+                )
+                .await;
                 Ok(next.run(req).await)
             } else {
                 Err(axum::http::StatusCode::UNAUTHORIZED)

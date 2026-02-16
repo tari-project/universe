@@ -35,31 +35,35 @@ pub async fn get_mcp_config() -> Result<serde_json::Value, String> {
 }
 
 #[tauri::command]
-pub async fn get_mcp_token() -> Result<Option<String>, String> {
+pub async fn get_mcp_token(pin: Option<String>) -> Result<Option<String>, String> {
+    if crate::pin::PinManager::pin_locked().await {
+        let pin_str = pin.ok_or("PIN is required to reveal the token")?;
+        let pin_password = tari_utilities::SafePassword::from(pin_str);
+        crate::pin::PinManager::validate_pin(pin_password)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
     let content = ConfigMcp::content().await;
     Ok(content.bearer_token().clone())
 }
 
 #[tauri::command]
 pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
-    if enabled && ConfigMcp::content().await.bearer_token().is_none() {
-        let token = ConfigMcpContent::generate_token();
-        let now = SystemTime::now();
-        let expiry_days = *ConfigMcp::content().await.token_expiry_days();
-        let expiry = now + std::time::Duration::from_secs(u64::from(expiry_days) * 86400);
-        ConfigMcp::update_field(ConfigMcpContent::set_bearer_token, Some(token))
-            .await
-            .map_err(|e| e.to_string())?;
-        ConfigMcp::update_field(ConfigMcpContent::set_token_created_at, Some(now))
-            .await
-            .map_err(|e| e.to_string())?;
-        ConfigMcp::update_field(ConfigMcpContent::set_token_expires_at, Some(expiry))
-            .await
-            .map_err(|e| e.to_string())?;
+    {
+        let mut config = ConfigMcp::current().write().await;
+        let content = config._get_content_mut();
+        if enabled && content.bearer_token().is_none() {
+            let token = ConfigMcpContent::generate_token();
+            let now = SystemTime::now();
+            let expiry_days = *content.token_expiry_days();
+            let expiry = now + std::time::Duration::from_secs(u64::from(expiry_days) * 86400);
+            content.set_bearer_token(Some(token));
+            content.set_token_created_at(Some(now));
+            content.set_token_expires_at(Some(expiry));
+        }
+        content.set_enabled(enabled);
+        ConfigMcp::_save_config(content.clone()).map_err(|e| e.to_string())?;
     }
-    ConfigMcp::update_field(ConfigMcpContent::set_enabled, enabled)
-        .await
-        .map_err(|e| e.to_string())?;
 
     if enabled {
         McpServerManager::start().await.map_err(|e| e.to_string())?;
@@ -88,18 +92,15 @@ pub async fn refresh_mcp_token_expiry() -> Result<(), String> {
 
 #[tauri::command]
 pub async fn revoke_mcp_token() -> Result<(), String> {
-    ConfigMcp::update_field(ConfigMcpContent::set_bearer_token, None::<String>)
-        .await
-        .map_err(|e| e.to_string())?;
-    ConfigMcp::update_field(ConfigMcpContent::set_token_created_at, None::<SystemTime>)
-        .await
-        .map_err(|e| e.to_string())?;
-    ConfigMcp::update_field(ConfigMcpContent::set_token_expires_at, None::<SystemTime>)
-        .await
-        .map_err(|e| e.to_string())?;
-    ConfigMcp::update_field(ConfigMcpContent::set_enabled, false)
-        .await
-        .map_err(|e| e.to_string())?;
+    {
+        let mut config = ConfigMcp::current().write().await;
+        let content = config._get_content_mut();
+        content.set_bearer_token(None::<String>);
+        content.set_token_created_at(None::<SystemTime>);
+        content.set_token_expires_at(None::<SystemTime>);
+        content.set_enabled(false);
+        ConfigMcp::_save_config(content.clone()).map_err(|e| e.to_string())?;
+    }
 
     McpServerManager::stop().await;
 
@@ -157,13 +158,17 @@ pub async fn export_mcp_audit_log() -> Result<String, String> {
 }
 
 #[tauri::command]
-pub async fn set_mcp_transactions_enabled(enabled: bool) -> Result<(), String> {
-    if enabled && !crate::pin::PinManager::pin_locked().await {
+pub async fn set_mcp_transactions_enabled(enabled: bool, pin: String) -> Result<(), String> {
+    if !crate::pin::PinManager::pin_locked().await {
         return Err(
-            "Cannot enable MCP transactions without a PIN configured. Please set up a PIN first."
+            "Cannot change MCP transaction settings without a PIN configured. Please set up a PIN first."
                 .to_string(),
         );
     }
+    let pin_password = tari_utilities::SafePassword::from(pin);
+    crate::pin::PinManager::validate_pin(pin_password)
+        .await
+        .map_err(|e| e.to_string())?;
     ConfigMcp::update_field(ConfigMcpContent::set_transactions_enabled, enabled)
         .await
         .map_err(|e| e.to_string())?;

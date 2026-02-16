@@ -35,6 +35,91 @@ use tokio::sync::RwLock;
 pub const MCP_CONFIG_VERSION: u32 = 0;
 static INSTANCE: LazyLock<RwLock<ConfigMcp>> = LazyLock::new(|| RwLock::new(ConfigMcp::new()));
 
+mod token_cipher {
+    use base64::prelude::*;
+    use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+    use ring::digest;
+    use ring::rand::{SecureRandom, SystemRandom};
+
+    use crate::APPLICATION_FOLDER_ID;
+
+    const NONCE_LEN: usize = 12;
+
+    fn derive_key() -> LessSafeKey {
+        let hash1 = digest::digest(
+            &digest::SHA256,
+            format!("tari-universe-mcp-token-v1:{}", APPLICATION_FOLDER_ID).as_bytes(),
+        );
+        let hash2 = digest::digest(&digest::SHA256, hash1.as_ref());
+        let unbound =
+            UnboundKey::new(&AES_256_GCM, &hash2.as_ref()[..32]).expect("AES key creation failed");
+        LessSafeKey::new(unbound)
+    }
+
+    pub fn encrypt(plaintext: &str) -> String {
+        let key = derive_key();
+        let rng = SystemRandom::new();
+        let mut nonce_bytes = [0u8; NONCE_LEN];
+        rng.fill(&mut nonce_bytes)
+            .expect("Failed to generate nonce");
+
+        let mut in_out = plaintext.as_bytes().to_vec();
+        let nonce = Nonce::assume_unique_for_key(nonce_bytes);
+        key.seal_in_place_append_tag(nonce, Aad::empty(), &mut in_out)
+            .expect("AES-GCM seal failed");
+
+        let mut result = Vec::with_capacity(NONCE_LEN + in_out.len());
+        result.extend_from_slice(&nonce_bytes);
+        result.extend_from_slice(&in_out);
+        BASE64_URL_SAFE_NO_PAD.encode(&result)
+    }
+
+    pub fn decrypt(encoded: &str) -> Result<String, &'static str> {
+        let data = BASE64_URL_SAFE_NO_PAD
+            .decode(encoded)
+            .map_err(|_| "invalid base64")?;
+        if data.len() < NONCE_LEN + AES_256_GCM.tag_len() {
+            return Err("ciphertext too short");
+        }
+
+        let (nonce_bytes, ciphertext_and_tag) = data.split_at(NONCE_LEN);
+        let nonce =
+            Nonce::try_assume_unique_for_key(nonce_bytes).map_err(|_| "invalid nonce")?;
+        let key = derive_key();
+
+        let mut buf = ciphertext_and_tag.to_vec();
+        let plaintext = key
+            .open_in_place(nonce, Aad::empty(), &mut buf)
+            .map_err(|_| "decryption failed")?;
+        String::from_utf8(plaintext.to_vec()).map_err(|_| "invalid utf8")
+    }
+
+    pub fn serialize_token<S>(value: &Option<String>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match value {
+            Some(plaintext) => serializer.serialize_some(&encrypt(plaintext)),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize_token<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use serde::Deserialize;
+        let opt: Option<String> = Option::deserialize(deserializer)?;
+        match opt {
+            Some(encoded) => match decrypt(&encoded) {
+                Ok(plaintext) => Ok(Some(plaintext)),
+                Err(_) => Ok(Some(encoded)),
+            },
+            None => Ok(None),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
@@ -45,6 +130,10 @@ pub struct ConfigMcpContent {
     version_counter: u32,
     created_at: SystemTime,
     enabled: bool,
+    #[serde(
+        serialize_with = "token_cipher::serialize_token",
+        deserialize_with = "token_cipher::deserialize_token"
+    )]
     bearer_token: Option<String>,
     token_created_at: Option<SystemTime>,
     token_expires_at: Option<SystemTime>,
