@@ -90,6 +90,10 @@ static REQUIRED_CONFIRMATIONS: u64 = 3;
 const SCAN_BATCH_SIZE: u64 = 25;
 const SCAN_POLL_INTERVAL_SECS: u64 = 30;
 const PROGRESS_UPDATE_INTERVAL_SECS: u64 = 5;
+const IGNORED_STATUSES: [TransactionDisplayStatus; 2] = [
+    TransactionDisplayStatus::Pending,
+    TransactionDisplayStatus::Unconfirmed,
+];
 
 pub struct MinotariWalletManager {
     database_manager: MinotariWalletDatabaseManager,
@@ -501,8 +505,7 @@ impl MinotariWalletManager {
                     // Process transactions - check each for pending transaction match
                     let mut transactions_to_emit = Vec::new();
                     for tx in transactions_event.transactions {
-                        let is_ready = tx.status != TransactionDisplayStatus::Unconfirmed
-                            && tx.status != TransactionDisplayStatus::Pending;
+                        let is_ready = !IGNORED_STATUSES.contains(&tx.status);
                         if is_ready {
                             // Check if this scanned transaction matches any pending transaction
                             if let Some(_pending_tx) =
@@ -552,12 +555,13 @@ impl MinotariWalletManager {
 
                     // Emit update event for each transaction with updated confirmations
                     for tx in update_event.updated_transactions {
+                        let is_ignored = IGNORED_STATUSES.contains(&tx.status);
                         let confirmed_with_fee = tx.source != TransactionSource::Coinbase
                             && tx.status == TransactionDisplayStatus::Confirmed
                             && tx.fee.is_some();
-                        let should_emit = tx.status != TransactionDisplayStatus::Unconfirmed
-                            && tx.status != TransactionDisplayStatus::Pending
-                            || confirmed_with_fee;
+                        let should_emit = confirmed_with_fee
+                            || !is_ignored
+                            || tx.source == TransactionSource::Coinbase;
                         if should_emit {
                             EventsEmitter::emit_wallet_transaction_updated(tx).await;
                         }

@@ -202,14 +202,14 @@ export const handleWalletTransactionsCleared = () => {
 };
 
 export const handleWalletTransactionUpdated = async (payload: DisplayedTransaction) => {
-    const transactions = useWalletStore.getState().wallet_transactions;
-    const matchingIndex = transactions.findIndex((tx) => tx.id === payload.id);
+    const transactions_copy = [...useWalletStore.getState().wallet_transactions];
+    const matchingIndex = transactions_copy.findIndex((tx) => tx.id === payload.id);
     if (matchingIndex > -1) {
         const processedTransactions = await solveBridgeTransactionDetails([payload]);
-        transactions[matchingIndex] = processedTransactions[0] || payload;
+        transactions_copy[matchingIndex] = processedTransactions[0] || payload;
         useWalletStore.setState((c) => ({
             ...c,
-            wallet_transactions: getSortedTxs(transactions),
+            wallet_transactions: getSortedTxs(transactions_copy),
         }));
     }
 };
