@@ -263,6 +263,14 @@ export type BackendStateUpdateEvent =
           };
       }
     | {
+          event_type: 'McpTransactionResult';
+          payload: {
+              request_id: string;
+              success: boolean;
+              error?: string;
+          };
+      }
+    | {
           event_type: 'McpAuditEntry';
           payload: {
               timestamp: string;

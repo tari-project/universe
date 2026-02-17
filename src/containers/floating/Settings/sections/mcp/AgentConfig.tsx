@@ -3,9 +3,13 @@ import { Typography } from '@app/components/elements/Typography';
 import { SettingsGroupContent, SettingsGroupTitle, SettingsGroupWrapper } from '../../components/SettingsGroup.styles';
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useMcpStore } from '@app/store/useMcpStore';
+import { useWalletStore } from '@app/store/useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { useCallback, useMemo, useState } from 'react';
 import styled, { css } from 'styled-components';
+import { requestPin } from '@app/store/useSecurityStore';
+import { addToast } from '@app/components/ToastStack/useToastStore';
 
 const AGENTS = ['claude-code', 'cursor', 'windsurf', 'custom'] as const;
 type AgentId = (typeof AGENTS)[number];
@@ -103,42 +107,51 @@ function buildSnippets(port: number, token: string): Record<AgentId, AgentSnippe
     };
 }
 
+const PLACEHOLDER_TOKEN = '••••••••••••••••';
+
 export default function AgentConfig() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const enabled = useConfigMcpStore((s) => s.enabled);
     const redactedToken = useConfigMcpStore((s) => s.bearer_token_redacted);
     const serverRunning = useMcpStore((s) => s.serverRunning);
     const serverPort = useMcpStore((s) => s.serverPort);
+    const isPinLocked = useWalletStore((s) => s.is_pin_locked);
 
     const [activeAgent, setActiveAgent] = useState<AgentId>('claude-code');
-    const [fullToken, setFullToken] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
 
-    useEffect(() => {
-        if (!enabled || !redactedToken) return;
-        invoke<string | null>('get_mcp_token')
-            .then(setFullToken)
-            .catch((e) => console.error('Failed to get MCP token:', e));
-    }, [enabled, redactedToken]);
+    const displaySnippets = useMemo(() => {
+        if (!serverPort) return null;
+        return buildSnippets(serverPort, PLACEHOLDER_TOKEN);
+    }, [serverPort]);
 
-    const snippets = useMemo(() => {
-        if (!serverPort || !fullToken) return null;
-        return buildSnippets(serverPort, fullToken);
-    }, [serverPort, fullToken]);
+    const handleCopy = useCallback(
+        async (buildText: (token: string) => string) => {
+            try {
+                let token: string | null = null;
+                if (isPinLocked) {
+                    const pin = await requestPin();
+                    if (!pin) return;
+                    token = await invoke<string | null>('get_mcp_token', { pin });
+                } else {
+                    token = await invoke<string | null>('get_mcp_token');
+                }
+                if (!token) return;
+                const text = buildText(token);
+                await writeText(text);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+            } catch (e) {
+                addToast({ title: 'Failed to copy', text: String(e), type: 'error' });
+            }
+        },
+        [isPinLocked]
+    );
 
-    const handleCopy = useCallback(async (text: string) => {
-        try {
-            await navigator.clipboard.writeText(text);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        } catch (e) {
-            console.error('Failed to copy config:', e);
-        }
-    }, []);
+    if (!enabled || !redactedToken || !serverRunning || !serverPort || !displaySnippets) return null;
 
-    if (!enabled || !redactedToken || !serverRunning || !snippets) return null;
-
-    const activeSnippet = snippets[activeAgent];
+    const activeDisplaySnippet = displaySnippets[activeAgent];
+    const port = serverPort;
 
     return (
         <SettingsGroupWrapper>
@@ -157,22 +170,26 @@ export default function AgentConfig() {
                 </TabBar>
 
                 <ConfigPanel>
-                    <InstructionText>{activeSnippet.instructions}</InstructionText>
+                    <InstructionText>{activeDisplaySnippet.instructions}</InstructionText>
                     <CodeBlock>
-                        <code>{activeSnippet.config}</code>
+                        <code>{activeDisplaySnippet.config}</code>
                     </CodeBlock>
-                    <CopyButton onClick={() => handleCopy(activeSnippet.config)}>
+                    <CopyButton onClick={() => handleCopy((token) => buildSnippets(port, token)[activeAgent].config)}>
                         {copied ? t('mcp.agent-config.copied') : t('mcp.agent-config.copy')}
                     </CopyButton>
-                    {activeSnippet.jsonConfig && (
+                    {activeDisplaySnippet.jsonConfig && (
                         <>
                             <InstructionText style={{ marginTop: 8 }}>
                                 {t('mcp.agent-config.or-add-to-settings-json')}
                             </InstructionText>
                             <CodeBlock>
-                                <code>{activeSnippet.jsonConfig}</code>
+                                <code>{activeDisplaySnippet.jsonConfig}</code>
                             </CodeBlock>
-                            <CopyButton onClick={() => handleCopy(activeSnippet.jsonConfig!)}>
+                            <CopyButton
+                                onClick={() =>
+                                    handleCopy((token) => buildSnippets(port, token)[activeAgent].jsonConfig!)
+                                }
+                            >
                                 {t('mcp.agent-config.copy')} JSON
                             </CopyButton>
                         </>

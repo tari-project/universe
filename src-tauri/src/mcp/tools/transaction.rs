@@ -25,17 +25,15 @@ use std::str::FromStr;
 use std::sync::LazyLock;
 use std::time::Duration;
 
-use log::{info, warn};
-use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
-use tari_utilities::SafePassword;
-
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_mcp::ConfigMcp;
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::rate_limiter::TransactionRateLimiter;
 use crate::pin::PinManager;
 use crate::wallet::wallet_manager::WalletManager;
-use crate::LOG_TARGET_APP_LOGIC;
+use log::{info, warn};
+use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
 const DIALOG_TIMEOUT_SECS: u64 = 120;
 
@@ -47,7 +45,6 @@ pub enum TransactionError {
     RateLimited(String),
     Denied(String),
     Timeout(String),
-    PinValidationFailed(String),
     WalletError(String),
     InternalError(String),
 }
@@ -61,7 +58,6 @@ impl fmt::Display for TransactionError {
             | TransactionError::RateLimited(msg)
             | TransactionError::Denied(msg)
             | TransactionError::Timeout(msg)
-            | TransactionError::PinValidationFailed(msg)
             | TransactionError::WalletError(msg)
             | TransactionError::InternalError(msg) => write!(f, "{}", msg),
         }
@@ -84,7 +80,6 @@ struct InFlightTxn {
 
 pub struct TxnDialogResponse {
     pub approved: bool,
-    pub pin: Option<String>,
 }
 
 fn validate_amount(
@@ -100,13 +95,13 @@ fn validate_amount(
         return Err("Amount must be greater than zero".to_string());
     }
 
-    if let Some(max_amount) = config.max_transaction_amount() {
-        if amount_u64 > *max_amount {
-            return Err(format!(
-                "Amount {} µT exceeds maximum allowed {} µT",
-                amount_u64, max_amount
-            ));
-        }
+    if let Some(max_amount) = config.max_transaction_amount()
+        && amount_u64 > *max_amount
+    {
+        return Err(format!(
+            "Amount {} µT exceeds maximum allowed {} µT",
+            amount_u64, max_amount
+        ));
     }
 
     Ok(amount_u64)
@@ -192,35 +187,60 @@ pub async fn send_transaction(
     )
     .await;
 
-    // 10. Wait for user confirmation and validate PIN
-    await_confirmation_and_validate_pin(rx).await?;
+    // 10. Wait for user confirmation
+    await_confirmation(rx).await?;
 
-    // 11. Execute transaction
+    // 11. Execute transaction (PIN dialog is triggered by PinManager during signing)
     info!(target: LOG_TARGET_APP_LOGIC, "MCP: executing send_transaction (destination={}, amount={})", destination, amount_display);
-    wallet_manager
+    let tx_result = wallet_manager
         .send_one_sided_to_stealth_address(
             amount.clone(),
             destination.clone(),
             payment_id,
             app_handle,
         )
-        .await
-        .map_err(|e| TransactionError::WalletError(format!("Transaction failed: {}", e)))?;
+        .await;
 
-    if let Ok(balance) = wallet_manager.get_balance().await {
-        EventsEmitter::emit_wallet_balance_update(balance).await;
+    match tx_result {
+        Ok(()) => {
+            EventsEmitter::emit_mcp_transaction_result(
+                crate::events::McpTransactionResultPayload {
+                    request_id,
+                    success: true,
+                    error: None,
+                },
+            )
+            .await;
+
+            if let Ok(balance) = wallet_manager.get_balance().await {
+                EventsEmitter::emit_wallet_balance_update(balance).await;
+            }
+
+            let result = SendTransactionSuccess {
+                status: "success",
+                destination,
+                amount: amount_display,
+                amount_micro_minotari: amount_u64,
+            };
+            serde_json::to_string(&result)
+                .map_err(|e| TransactionError::InternalError(e.to_string()))
+        }
+        Err(e) => {
+            let error_msg = format!("Transaction failed: {}", e);
+            EventsEmitter::emit_mcp_transaction_result(
+                crate::events::McpTransactionResultPayload {
+                    request_id,
+                    success: false,
+                    error: Some(error_msg.clone()),
+                },
+            )
+            .await;
+            Err(TransactionError::WalletError(error_msg))
+        }
     }
-
-    let result = SendTransactionSuccess {
-        status: "success",
-        destination,
-        amount: amount_display,
-        amount_micro_minotari: amount_u64,
-    };
-    serde_json::to_string(&result).map_err(|e| TransactionError::InternalError(e.to_string()))
 }
 
-async fn await_confirmation_and_validate_pin(
+async fn await_confirmation(
     rx: tokio::sync::oneshot::Receiver<TxnDialogResponse>,
 ) -> Result<(), TransactionError> {
     let response = match tokio::time::timeout(Duration::from_secs(DIALOG_TIMEOUT_SECS), rx).await {
@@ -245,30 +265,19 @@ async fn await_confirmation_and_validate_pin(
         ));
     }
 
-    let pin_str = response.pin.ok_or(TransactionError::PinValidationFailed(
-        "PIN is required for transactions".to_string(),
-    ))?;
-    let pin_password = SafePassword::from(pin_str);
-    PinManager::validate_pin(pin_password)
-        .await
-        .map_err(|e: anyhow::Error| TransactionError::PinValidationFailed(e.to_string()))
+    Ok(())
 }
 
 /// Called by the Tauri command when the frontend responds to the transaction dialog.
-pub async fn respond_to_transaction(
-    request_id: String,
-    approved: bool,
-    pin: Option<String>,
-) -> Result<(), String> {
+pub async fn respond_to_transaction(request_id: String, approved: bool) -> Result<(), String> {
     let mut inflight = INFLIGHT.lock().await;
     match inflight.take() {
         Some(txn) => {
             if txn.request_id != request_id {
-                // Put it back — stale response
                 *inflight = Some(txn);
                 return Err("Request ID mismatch — stale or invalid response".to_string());
             }
-            drop(txn.tx.send(TxnDialogResponse { approved, pin }));
+            drop(txn.tx.send(TxnDialogResponse { approved }));
             Ok(())
         }
         None => Err("No transaction awaiting confirmation".to_string()),
@@ -279,10 +288,7 @@ pub async fn respond_to_transaction(
 pub async fn clear_inflight() {
     let mut inflight = INFLIGHT.lock().await;
     if let Some(txn) = inflight.take() {
-        drop(txn.tx.send(TxnDialogResponse {
-            approved: false,
-            pin: None,
-        }));
+        drop(txn.tx.send(TxnDialogResponse { approved: false }));
         warn!(target: LOG_TARGET_APP_LOGIC, "MCP: cleared in-flight transaction dialog (request_id={})", txn.request_id);
     }
 }
@@ -377,12 +383,13 @@ mod tests {
     async fn respond_to_transaction_no_inflight() {
         clear_inflight().await;
 
-        let result =
-            respond_to_transaction("test_id".to_string(), true, Some("1234".to_string())).await;
+        let result = respond_to_transaction("test_id".to_string(), true).await;
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .contains("No transaction awaiting confirmation"));
+        assert!(
+            result
+                .unwrap_err()
+                .contains("No transaction awaiting confirmation")
+        );
     }
 
     #[tokio::test]
@@ -397,8 +404,7 @@ mod tests {
             });
         }
 
-        let result =
-            respond_to_transaction("wrong_id".to_string(), true, Some("1234".to_string())).await;
+        let result = respond_to_transaction("wrong_id".to_string(), true).await;
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Request ID mismatch"));
 
@@ -417,13 +423,11 @@ mod tests {
             });
         }
 
-        let result =
-            respond_to_transaction("match_id".to_string(), true, Some("1234".to_string())).await;
+        let result = respond_to_transaction("match_id".to_string(), true).await;
         assert!(result.is_ok());
 
         let response = rx.await.unwrap();
         assert!(response.approved);
-        assert_eq!(response.pin, Some("1234".to_string()));
     }
 
     #[tokio::test]
@@ -438,12 +442,11 @@ mod tests {
             });
         }
 
-        let result = respond_to_transaction("deny_id".to_string(), false, None).await;
+        let result = respond_to_transaction("deny_id".to_string(), false).await;
         assert!(result.is_ok());
 
         let response = rx.await.unwrap();
         assert!(!response.approved);
-        assert!(response.pin.is_none());
     }
 
     // =========================================================================
@@ -466,7 +469,6 @@ mod tests {
 
         let response = rx.await.unwrap();
         assert!(!response.approved);
-        assert!(response.pin.is_none());
 
         let inflight = INFLIGHT.lock().await;
         assert!(inflight.is_none());

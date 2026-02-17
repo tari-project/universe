@@ -181,7 +181,6 @@ pub async fn set_mcp_transactions_enabled(enabled: bool, pin: String) -> Result<
 pub async fn mcp_transaction_dialog_response(
     request_id: String,
     approved: bool,
-    pin: Option<String>,
 ) -> Result<(), String> {
-    crate::mcp::tools::transaction::respond_to_transaction(request_id, approved, pin).await
+    crate::mcp::tools::transaction::respond_to_transaction(request_id, approved).await
 }

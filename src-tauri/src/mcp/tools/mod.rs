@@ -35,17 +35,17 @@ use log::info;
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::*;
-use rmcp::{tool, tool_handler, tool_router, ServerHandler};
+use rmcp::{ServerHandler, tool, tool_handler, tool_router};
 use schemars::JsonSchema;
 use serde::Deserialize;
 use tokio::sync::watch;
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_mcp::ConfigMcp;
 use crate::configs::trait_config::ConfigImpl;
 use crate::mcp::audit::{AuditEntry, AuditLog, AuditStatus};
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::wallet::wallet_manager::WalletManager;
-use crate::LOG_TARGET_APP_LOGIC;
 
 #[derive(Clone)]
 pub struct TariMcpHandler {

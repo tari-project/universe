@@ -133,6 +133,9 @@ enum SchedulerMessage {
     TriggerExitCallback {
         event_id: String,
     },
+    ListEvents {
+        response: tokio::sync::oneshot::Sender<Vec<ScheduledEventInfo>>,
+    },
     CleanupSchedule {
         event_id: String,
     },
@@ -711,6 +714,21 @@ impl EventScheduler {
             .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
     }
 
+    /// Lists all events currently in the scheduler (both persistent and one-time).
+    pub async fn list_events(&self) -> Result<Vec<ScheduledEventInfo>, SchedulerError> {
+        let (response_tx, response_rx) = tokio::sync::oneshot::channel();
+
+        self.message_sender
+            .send(SchedulerMessage::ListEvents {
+                response: response_tx,
+            })
+            .map_err(|_| SchedulerError::SchedulerNotRunning)?;
+
+        response_rx
+            .await
+            .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))
+    }
+
     /// Saves persistent events (Between timing) to the application configuration.
     ///
     /// This ensures that recurring events survive application restarts by storing
@@ -831,7 +849,11 @@ impl EventScheduler {
                             },
                             Some(SchedulerMessage::RemoveEvent { event_id, response }) => {
                                 let result = Self::handle_remove_event(&mut internal_events, event_id);
+                                let should_persist = result.is_ok();
                                 let _unused = response.send(result);
+                                if should_persist {
+                                    Self::save_persistent_events_to_config(&internal_events).await;
+                                }
                             },
                             Some(SchedulerMessage::PauseEvent { event_id, response }) => {
                                 let result = Self::handle_pause_event(&mut internal_events, event_id);
@@ -849,6 +871,18 @@ impl EventScheduler {
                                 Self::handle_exit_callback(&internal_events, event_id).await;
 
                             }
+                            Some(SchedulerMessage::ListEvents { response }) => {
+                                let events: Vec<ScheduledEventInfo> = internal_events
+                                    .iter()
+                                    .map(|(id, event)| ScheduledEventInfo {
+                                        id: id.clone(),
+                                        event_type: event.event_type.clone(),
+                                        timing: event.timing.clone(),
+                                        state: event.state.clone(),
+                                    })
+                                    .collect();
+                                let _unused = response.send(events);
+                            },
                             Some(SchedulerMessage::CleanupSchedule { event_id }) => {
                                 Self::handle_cleanup_schedule_events(&mut internal_events, event_id).await;
                             }

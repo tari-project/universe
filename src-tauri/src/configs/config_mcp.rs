@@ -38,7 +38,7 @@ static INSTANCE: LazyLock<RwLock<ConfigMcp>> = LazyLock::new(|| RwLock::new(Conf
 
 mod token_cipher {
     use base64::prelude::*;
-    use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+    use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
     use ring::digest;
     use ring::rand::{SecureRandom, SystemRandom};
 

@@ -25,12 +25,15 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::event_scheduler::{
     EventScheduler, SchedulerEventTiming, SchedulerEventType, TimePeriod,
 };
+use crate::events_emitter::EventsEmitter;
 
 pub async fn list_scheduled_events() -> Result<String, String> {
-    let content = ConfigCore::content().await;
-    let events = content.scheduler_events();
+    let events = EventScheduler::instance()
+        .list_events()
+        .await
+        .map_err(|e| e.to_string())?;
     let result: Vec<serde_json::Value> = events
-        .values()
+        .iter()
         .map(|e| serde_json::to_value(e).unwrap_or_default())
         .collect();
     serde_json::to_string(&result).map_err(|e| e.to_string())
@@ -70,6 +73,8 @@ pub async fn schedule_mining_window(params: MiningWindowParams) -> Result<String
         .await
         .map_err(|e| e.to_string())?;
 
+    EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
+
     Ok(serde_json::json!({"status": "scheduled", "event_id": params.event_id}).to_string())
 }
 
@@ -86,6 +91,8 @@ pub async fn cancel_scheduled_event(event_id: String) -> Result<String, String> 
         .remove_event(event_id.clone())
         .await
         .map_err(|e| e.to_string())?;
+
+    EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
 
     Ok(serde_json::json!({"status": "cancelled", "event_id": event_id}).to_string())
 }

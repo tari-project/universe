@@ -60,7 +60,12 @@ import {
     handleConfigPoolsLoaded,
     handleGpuDevicesSettingsUpdated,
 } from '@app/store/actions/appConfigStoreActions';
-import { setMcpServerStatus, addMcpAuditEntry, setMcpPendingTransaction } from '@app/store/useMcpStore';
+import {
+    setMcpServerStatus,
+    addMcpAuditEntry,
+    setMcpPendingTransaction,
+    handleMcpTransactionResult,
+} from '@app/store/useMcpStore';
 import { invoke } from '@tauri-apps/api/core';
 
 import { setCpuPoolStats, setGpuPoolStats } from '@app/store/actions/miningPoolsStoreActions';
@@ -156,6 +161,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'McpTransactionConfirmation':
                             setMcpPendingTransaction(event.payload);
+                            break;
+                        case 'McpTransactionResult':
+                            handleMcpTransactionResult(event.payload);
                             break;
                         case 'McpAuditEntry':
                             addMcpAuditEntry(event.payload);

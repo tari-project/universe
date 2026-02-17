@@ -321,10 +321,9 @@ impl SetupManager {
         // Auto-start MCP server if enabled with a valid token
         if *ConfigMcp::content().await.enabled()
             && ConfigMcp::content().await.bearer_token().is_some()
+            && let Err(e) = crate::mcp::server::McpServerManager::start().await
         {
-            if let Err(e) = crate::mcp::server::McpServerManager::start().await {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to auto-start MCP server: {e}");
-            }
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to auto-start MCP server: {e}");
         }
 
         let _ = check_data_import(app_handle.clone()).await.map_err(|e| {
@@ -734,6 +733,13 @@ impl SetupManager {
                         continue;
                     }
                     self.setup_wallet_phase().await;
+
+                    // Restart MCP server if running so it picks up the new wallet state
+                    if *ConfigMcp::content().await.enabled()
+                        && let Err(e) = crate::mcp::server::McpServerManager::restart().await
+                    {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to restart MCP server after wallet phase resume: {e}");
+                    }
                 }
             }
         }

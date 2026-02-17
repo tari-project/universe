@@ -404,6 +404,20 @@ impl EventsEmitter {
         }
     }
 
+    pub async fn emit_mcp_transaction_result(payload: crate::events::McpTransactionResultPayload) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::McpTransactionResult,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit McpTransactionResult event: {e:?}");
+        }
+    }
+
     pub async fn emit_wallet_balance_update(balance: WalletBalance) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

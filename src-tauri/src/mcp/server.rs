@@ -25,20 +25,20 @@ use std::time::SystemTime;
 
 use axum08 as axum;
 use log::{error, info, warn};
+use rmcp::transport::StreamableHttpServerConfig;
 use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
 use rmcp::transport::streamable_http_server::tower::StreamableHttpService;
-use rmcp::transport::StreamableHttpServerConfig;
 use sha2::{Digest, Sha256};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::tools::TariMcpHandler;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::wallet::wallet_manager::WalletManager;
-use crate::LOG_TARGET_APP_LOGIC;
 
 static INSTANCE: LazyLock<RwLock<McpServerManager>> =
     LazyLock::new(|| RwLock::new(McpServerManager::new()));
@@ -89,11 +89,11 @@ impl McpServerManager {
         // Check if already running
         {
             let manager = Self::current().read().await;
-            if manager.is_running() {
-                if let Some(port) = manager.port() {
-                    info!(target: LOG_TARGET_APP_LOGIC, "MCP server already running on port {port}");
-                    return Ok(port);
-                }
+            if manager.is_running()
+                && let Some(port) = manager.port()
+            {
+                info!(target: LOG_TARGET_APP_LOGIC, "MCP server already running on port {port}");
+                return Ok(port);
             }
         }
 
@@ -230,8 +230,6 @@ impl McpServerManager {
         crate::mcp::tools::transaction::clear_inflight().await;
     }
 
-    // TODO: Remove allow(dead_code) when Phase 4 (frontend) uses restart on port change
-    #[allow(dead_code)]
     pub async fn restart() -> Result<u16, anyhow::Error> {
         Self::stop().await;
         Self::start().await

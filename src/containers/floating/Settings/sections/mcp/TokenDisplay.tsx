@@ -9,7 +9,10 @@ import {
 import { useConfigMcpStore } from '@app/store/useAppConfigStore';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { invoke } from '@tauri-apps/api/core';
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useCallback, useState } from 'react';
+import { requestPin } from '@app/store/useSecurityStore';
+import { addToast } from '@app/components/ToastStack/useToastStore';
 
 export default function TokenDisplay() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -21,33 +24,10 @@ export default function TokenDisplay() {
     const [revealed, setRevealed] = useState(false);
     const [fullToken, setFullToken] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
-    const [pinPrompt, setPinPrompt] = useState<'reveal' | 'copy' | null>(null);
-    const [pin, setPin] = useState('');
-    const [error, setError] = useState<string | null>(null);
 
     const fetchToken = useCallback(async (pinValue?: string) => {
         return invoke<string | null>('get_mcp_token', { pin: pinValue ?? null });
     }, []);
-
-    const handlePinSubmit = useCallback(async () => {
-        if (pin.length < 4) return;
-        setError(null);
-        try {
-            const token = await fetchToken(pin);
-            if (pinPrompt === 'reveal') {
-                setFullToken(token);
-                setRevealed(true);
-            } else if (pinPrompt === 'copy' && token) {
-                await navigator.clipboard.writeText(token);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-            }
-            setPinPrompt(null);
-            setPin('');
-        } catch (e) {
-            setError(String(e));
-        }
-    }, [pin, pinPrompt, fetchToken]);
 
     const handleReveal = useCallback(async () => {
         if (revealed) {
@@ -55,42 +35,57 @@ export default function TokenDisplay() {
             setFullToken(null);
             return;
         }
-        setError(null);
         if (isPinLocked) {
-            setPin('');
-            setPinPrompt('reveal');
+            const pin = await requestPin();
+            if (!pin) return;
+            try {
+                const token = await fetchToken(pin);
+                setFullToken(token);
+                setRevealed(true);
+            } catch (e) {
+                addToast({ title: 'Failed to reveal token', text: String(e), type: 'error' });
+            }
         } else {
             try {
                 const token = await fetchToken();
                 setFullToken(token);
                 setRevealed(true);
             } catch (e) {
-                setError(String(e));
+                addToast({ title: 'Failed to reveal token', text: String(e), type: 'error' });
             }
         }
     }, [revealed, isPinLocked, fetchToken]);
 
     const handleCopy = useCallback(async () => {
-        setError(null);
         if (fullToken) {
-            await navigator.clipboard.writeText(fullToken);
+            await writeText(fullToken);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
             return;
         }
         if (isPinLocked) {
-            setPin('');
-            setPinPrompt('copy');
-        } else {
+            const pin = await requestPin();
+            if (!pin) return;
             try {
-                const token = await fetchToken();
+                const token = await fetchToken(pin);
                 if (token) {
-                    await navigator.clipboard.writeText(token);
+                    await writeText(token);
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                 }
             } catch (e) {
-                setError(String(e));
+                addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
+            }
+        } else {
+            try {
+                const token = await fetchToken();
+                if (token) {
+                    await writeText(token);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                }
+            } catch (e) {
+                addToast({ title: 'Failed to copy token', text: String(e), type: 'error' });
             }
         }
     }, [fullToken, isPinLocked, fetchToken]);
@@ -138,51 +133,6 @@ export default function TokenDisplay() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                         <code style={{ fontSize: 12, wordBreak: 'break-all' }}>{displayToken}</code>
                     </div>
-                    {pinPrompt && (
-                        <div style={{ display: 'flex', gap: 8, marginTop: 4, alignItems: 'center' }}>
-                            <input
-                                type="password"
-                                value={pin}
-                                onChange={(e) => setPin(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && handlePinSubmit()}
-                                maxLength={6}
-                                placeholder="PIN"
-                                style={{
-                                    padding: '4px 8px',
-                                    fontSize: 13,
-                                    letterSpacing: 4,
-                                    width: 100,
-                                    borderRadius: 6,
-                                    border: '1px solid rgba(128,128,128,0.3)',
-                                    background: 'transparent',
-                                    color: 'inherit',
-                                }}
-                                autoFocus
-                            />
-                            <button
-                                onClick={handlePinSubmit}
-                                disabled={pin.length < 4}
-                                style={{ fontSize: 11, cursor: pin.length >= 4 ? 'pointer' : 'default' }}
-                            >
-                                {t('mcp.token-display.confirm')}
-                            </button>
-                            <button
-                                onClick={() => {
-                                    setPinPrompt(null);
-                                    setPin('');
-                                    setError(null);
-                                }}
-                                style={{ fontSize: 11, cursor: 'pointer' }}
-                            >
-                                {t('mcp.token-display.cancel')}
-                            </button>
-                        </div>
-                    )}
-                    {error && (
-                        <Typography variant="p" style={{ color: '#e55', fontSize: 11, marginTop: 2 }}>
-                            {error}
-                        </Typography>
-                    )}
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                         <button onClick={handleReveal} style={{ fontSize: 11, cursor: 'pointer' }}>
                             {revealed ? t('mcp.token-display.hide') : t('mcp.token-display.reveal')}

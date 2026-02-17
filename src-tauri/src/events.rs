@@ -63,6 +63,7 @@ pub enum EventType {
     ConfigMcpLoaded,
     McpServerStatusUpdate,
     McpTransactionConfirmation,
+    McpTransactionResult,
     BackgroundNodeSyncUpdate,
     InitWalletScanningProgress,
     ConnectionStatus,
@@ -215,4 +216,11 @@ pub struct McpTransactionConfirmationPayload {
     pub destination: String,
     pub amount_micro_minotari: u64,
     pub amount_display: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct McpTransactionResultPayload {
+    pub request_id: String,
+    pub success: bool,
+    pub error: Option<String>,
 }

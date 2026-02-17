@@ -20,11 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
+use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, MiningModeType};
 use crate::configs::trait_config::ConfigImpl;
+use crate::events_emitter::EventsEmitter;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::manager::GpuManager;
+use crate::systemtray_manager::{SystemTrayEvents, SystemTrayManager};
 use serde_json::json;
 
 pub async fn get_mining_status() -> Result<String, String> {
@@ -129,9 +131,41 @@ pub async fn stop_mining(cpu: Option<bool>, gpu: Option<bool>) -> Result<String,
 }
 
 pub async fn set_mining_mode(mode: String) -> Result<String, String> {
+    let cpu_was_running = CpuManager::read().await.is_running();
+    let gpu_was_running = GpuManager::read().await.is_running();
+
+    // Stop running miners before changing mode
+    if cpu_was_running {
+        let _ = CpuManager::write().await.stop_mining().await;
+    }
+    if gpu_was_running {
+        let _ = GpuManager::write().await.stop_mining().await;
+    }
+
     ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone())
         .await
         .map_err(|e| format!("Failed to set mining mode: {e}"))?;
+
+    if mode != "Eco" {
+        ConfigMining::update_field(ConfigMiningContent::set_eco_alert_needed, false)
+            .await
+            .map_err(|e| format!("Failed to update eco alert: {e}"))?;
+    }
+
+    SystemTrayManager::send_event(SystemTrayEvents::MiningMode(MiningModeType::from(
+        mode.clone(),
+    )))
+    .await;
+
+    EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
+
+    // Restart miners that were previously running
+    if cpu_was_running {
+        let _ = CpuManager::write().await.start_mining().await;
+    }
+    if gpu_was_running {
+        let _ = GpuManager::write().await.start_mining().await;
+    }
 
     let config = ConfigMining::content().await;
     let modes = config.mining_modes();
