@@ -14,6 +14,7 @@ import { queryClient } from '@app/App/queryClient.ts';
 import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import { fetchBridgeTransactionsHistory } from './bridgeApiActions';
+import { mergeTransactions } from '@app/store/actions/helpers.ts';
 
 export const importSeedWords = async (seedWords: string[]) => {
     useWalletStore.setState((c) => ({
@@ -180,18 +181,33 @@ const solveBridgeTransactionDetails = async (walletTxs: DisplayedTransaction[]):
     return walletTxs;
 };
 
-const getSortedTxs = (txs: DisplayedTransaction[]): DisplayedTransaction[] =>
-    txs.sort((a, b) => new Date(b.blockchain.timestamp).getTime() - new Date(a.blockchain.timestamp).getTime());
-
 export const handleWalletTransactionsFound = async (payload: DisplayedTransaction[]) => {
-    const transactions = useWalletStore.getState().wallet_transactions;
-    const incoming = payload.filter((newTx) => !transactions.some((existingTx) => existingTx.id === newTx.id));
-    const processedTransactions = await solveBridgeTransactionDetails(incoming);
-    const mergedTransactions = processedTransactions.concat(transactions);
-    useWalletStore.setState((c) => ({
-        ...c,
-        wallet_transactions: getSortedTxs(mergedTransactions),
-    }));
+    const processedTransactions = await solveBridgeTransactionDetails(payload);
+
+    useWalletStore.setState((state) => {
+        const newTransactions = mergeTransactions(state.wallet_transactions, processedTransactions, true);
+        if (newTransactions === state.wallet_transactions) {
+            return state;
+        }
+        return {
+            ...state,
+            wallet_transactions: newTransactions,
+        };
+    });
+};
+
+export const handleWalletTransactionUpdated = async (payload: DisplayedTransaction) => {
+    const processedTransactions = await solveBridgeTransactionDetails([payload]);
+    useWalletStore.setState((state) => {
+        const newTransactions = mergeTransactions(state.wallet_transactions, processedTransactions, false);
+        if (newTransactions === state.wallet_transactions) {
+            return state;
+        }
+        return {
+            ...state,
+            wallet_transactions: newTransactions,
+        };
+    });
 };
 
 export const handleWalletTransactionsCleared = () => {
@@ -199,17 +215,4 @@ export const handleWalletTransactionsCleared = () => {
         ...c,
         wallet_transactions: [],
     }));
-};
-
-export const handleWalletTransactionUpdated = async (payload: DisplayedTransaction) => {
-    const transactions_copy = [...useWalletStore.getState().wallet_transactions];
-    const matchingIndex = transactions_copy.findIndex((tx) => tx.id === payload.id);
-    if (matchingIndex > -1) {
-        const processedTransactions = await solveBridgeTransactionDetails([payload]);
-        transactions_copy[matchingIndex] = processedTransactions[0] || payload;
-        useWalletStore.setState((c) => ({
-            ...c,
-            wallet_transactions: getSortedTxs(transactions_copy),
-        }));
-    }
 };

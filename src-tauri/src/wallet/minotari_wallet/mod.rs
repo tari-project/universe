@@ -492,9 +492,7 @@ impl MinotariWalletManager {
                 ProcessingEvent::BlockProcessed(block_event) => {
                     if !block_event.balance_changes.is_empty() {
                         info!(target: LOG_TARGET_APP_LOGIC, "BlockProcessed event at {:?} with balance changes: {:?}", block_event.height, block_event.balance_changes);
-                        BalanceTracker::current()
-                            .update_from_block_event(block_event.balance_changes)
-                            .await;
+                        BalanceTracker::current().update_from_block_event().await;
                     }
                 }
                 ProcessingEvent::TransactionsReady(transactions_event) => {
