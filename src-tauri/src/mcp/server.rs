@@ -259,7 +259,7 @@ async fn auth_middleware(
                 }
                 // Sliding-window refresh: bump expiry on each successful request
                 // so the token only expires after `token_expiry_days` of inactivity.
-                let _ = ConfigMcp::update_field(
+                let _unused = ConfigMcp::update_field(
                     ConfigMcpContent::set_token_expires_at,
                     Some(
                         SystemTime::now()

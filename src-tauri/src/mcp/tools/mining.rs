@@ -136,10 +136,10 @@ pub async fn set_mining_mode(mode: String) -> Result<String, String> {
 
     // Stop running miners before changing mode
     if cpu_was_running {
-        let _ = CpuManager::write().await.stop_mining().await;
+        let _unused = CpuManager::write().await.stop_mining().await;
     }
     if gpu_was_running {
-        let _ = GpuManager::write().await.stop_mining().await;
+        let _unused = GpuManager::write().await.stop_mining().await;
     }
 
     ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mode.clone())
@@ -161,10 +161,10 @@ pub async fn set_mining_mode(mode: String) -> Result<String, String> {
 
     // Restart miners that were previously running
     if cpu_was_running {
-        let _ = CpuManager::write().await.start_mining().await;
+        let _unused = CpuManager::write().await.start_mining().await;
     }
     if gpu_was_running {
-        let _ = GpuManager::write().await.start_mining().await;
+        let _unused = GpuManager::write().await.start_mining().await;
     }
 
     let config = ConfigMining::content().await;

@@ -25,11 +25,11 @@ describe('McpTransactionDialog', () => {
         });
         render(<McpTransactionDialog />);
         await waitFor(() => {
-            expect(screen.getByText('mcp.transaction-dialog.title')).toBeInTheDocument();
+            expect(screen.getByText('wallet:send.review-title')).toBeInTheDocument();
         });
     });
 
-    it('shows amount display', async () => {
+    it('shows review label', async () => {
         setMcpPendingTransaction({
             request_id: 'mcp_tx_123',
             destination: '5AexampleAddress',
@@ -38,11 +38,11 @@ describe('McpTransactionDialog', () => {
         });
         render(<McpTransactionDialog />);
         await waitFor(() => {
-            expect(screen.getByText('1.5 XTM')).toBeInTheDocument();
+            expect(screen.getByText('send.review-label')).toBeInTheDocument();
         });
     });
 
-    it('shows PIN input', async () => {
+    it('shows confirm button', async () => {
         setMcpPendingTransaction({
             request_id: 'mcp_tx_123',
             destination: '5AexampleAddress',
@@ -51,11 +51,11 @@ describe('McpTransactionDialog', () => {
         });
         render(<McpTransactionDialog />);
         await waitFor(() => {
-            expect(screen.getByPlaceholderText('PIN')).toBeInTheDocument();
+            expect(screen.getByText('send.cta-confirm')).toBeInTheDocument();
         });
     });
 
-    it('shows approve and deny buttons', async () => {
+    it('shows destination address label', async () => {
         setMcpPendingTransaction({
             request_id: 'mcp_tx_123',
             destination: '5AexampleAddress',
@@ -64,21 +64,20 @@ describe('McpTransactionDialog', () => {
         });
         render(<McpTransactionDialog />);
         await waitFor(() => {
-            expect(screen.getByText('mcp.transaction-dialog.approve')).toBeInTheDocument();
-            expect(screen.getByText('mcp.transaction-dialog.deny')).toBeInTheDocument();
+            expect(screen.getByText('send.destination-address')).toBeInTheDocument();
         });
     });
 
-    it('truncates long destination addresses', async () => {
+    it('shows destination address value', async () => {
         setMcpPendingTransaction({
             request_id: 'mcp_tx_123',
-            destination: '5AexampleVeryLongAddressHere1234567890abcdef',
+            destination: '5AexampleAddress',
             amount_micro_minotari: 1_500_000,
             amount_display: '1.5 XTM',
         });
         render(<McpTransactionDialog />);
         await waitFor(() => {
-            expect(screen.getByText('5AexampleV...7890abcdef')).toBeInTheDocument();
+            expect(screen.getByText('5AexampleAddress')).toBeInTheDocument();
         });
     });
 
@@ -95,7 +94,7 @@ describe('McpTransactionDialog', () => {
         });
     });
 
-    it('shows micro minotari amount', async () => {
+    it('shows countdown timer text', async () => {
         setMcpPendingTransaction({
             request_id: 'mcp_tx_123',
             destination: '5AexampleAddress',
@@ -104,20 +103,7 @@ describe('McpTransactionDialog', () => {
         });
         render(<McpTransactionDialog />);
         await waitFor(() => {
-            expect(screen.getByText('mcp.transaction-dialog.micro-minotari')).toBeInTheDocument();
-        });
-    });
-
-    it('shows countdown timer', async () => {
-        setMcpPendingTransaction({
-            request_id: 'mcp_tx_123',
-            destination: '5AexampleAddress',
-            amount_micro_minotari: 1_500_000,
-            amount_display: '1.5 XTM',
-        });
-        render(<McpTransactionDialog />);
-        await waitFor(() => {
-            expect(screen.getByText('mcp.transaction-dialog.remaining')).toBeInTheDocument();
+            expect(screen.getByText('settings:mcp.transaction-dialog.remaining')).toBeInTheDocument();
         });
     });
 });
