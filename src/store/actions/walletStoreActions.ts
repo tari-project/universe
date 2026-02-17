@@ -79,12 +79,12 @@ export const setWalletBalance = async (balance: WalletBalance) => {
 
     if (isEqual) return;
 
-    useWalletStore.setState({ balance });
+    const pending = Math.max(balance.pending_incoming_balance - balance.pending_outgoing_balance, 0);
 
-    const calculated_balance =
-        balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
-
-    useWalletStore.setState({ calculated_balance });
+    useWalletStore.setState({
+        balance,
+        calculated_balance: pending > 0 ? pending : balance.available_balance,
+    });
     await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
 };
 

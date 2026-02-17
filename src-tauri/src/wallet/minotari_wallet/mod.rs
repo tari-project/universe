@@ -497,6 +497,7 @@ impl MinotariWalletManager {
                 }
                 ProcessingEvent::TransactionsReady(transactions_event) => {
                     let transaction_count = transactions_event.transactions.len();
+
                     info!(
                         target: LOG_TARGET_APP_LOGIC,
                         "TransactionsReady event received with {} transactions",
@@ -505,6 +506,7 @@ impl MinotariWalletManager {
 
                     // Process transactions - check each for pending transaction match
                     let mut transactions_to_emit = Vec::new();
+
                     for tx in transactions_event.transactions {
                         let is_ready = tx.status != TransactionDisplayStatus::Unconfirmed
                             && tx.status != TransactionDisplayStatus::Pending;

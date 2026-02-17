@@ -88,7 +88,6 @@ export const WalletBalance = () => {
         </LoadingText>
     );
 
-    // const bottomMarkup = !isLoading ? <Typography>{balanceText}</Typography> : loadingMarkup;
     let bottomMarkup;
     if (scanData.total_height === 0 && isScanning) {
         bottomMarkup = <></>;
