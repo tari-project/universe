@@ -25,12 +25,13 @@ use super::{
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
-use crate::wallet::{
-    minotari_wallet::MinotariWalletManager,
-    wallet_manager::{WalletManagerError, STOP_ON_ERROR_CODES},
-};
-use crate::LOG_TARGET_APP_LOGIC;
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::{
+    LOG_TARGET_APP_LOGIC,
+    wallet::wallet_manager::{STOP_ON_ERROR_CODES, WalletManagerError},
+};
+use crate::{
+    UniverseAppState,
     binaries::{Binaries, BinaryResolver},
     configs::{
         config_core::ConfigCore,
@@ -47,17 +48,17 @@ use crate::{
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
     wallet::wallet_manager::WalletStartupConfig,
-    UniverseAppState,
 };
 use anyhow::Error;
 use log::{error, info, warn};
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
-    watch::{Receiver, Sender},
     Mutex,
+    watch::{Receiver, Sender},
 };
 use tokio_util::task::TaskTracker;
+
 // Bump to force wallet full scan
 const WALLET_MIGRATION_NONCE: u64 = 1;
 

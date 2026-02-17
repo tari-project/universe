@@ -20,9 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::airdrop;
 use crate::airdrop::get_wallet_view_key_hashed;
-use crate::LOG_TARGET_APP_LOGIC;
 
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::configs::config_core::ConfigCore;
@@ -33,6 +33,7 @@ use crate::internal_wallet::InternalWallet;
 use crate::mining::cpu::CpuMinerStatus;
 use crate::mining::gpu::consts::GpuMinerStatus;
 
+use crate::TasksTrackers;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeManager;
 use crate::process_stats_collector::ProcessStatsCollector;
@@ -40,12 +41,11 @@ use crate::process_utils::retry_with_backoff;
 use crate::tor_control_client::TorStatus;
 use crate::utils::address_utils::extract_payment_id;
 use crate::utils::network_status::NetworkStatus;
-use crate::TasksTrackers;
 use anyhow::Result;
 use base64::prelude::*;
+use blake2::Blake2bVar;
 use blake2::digest::Update;
 use blake2::digest::VariableOutput;
-use blake2::Blake2bVar;
 use jsonwebtoken::errors::Error as JwtError;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -61,7 +61,7 @@ use tari_shutdown::ShutdownSignal;
 use tari_utilities::encoding::MBase58;
 use tauri::Emitter;
 use tauri::Manager;
-use tokio::sync::{watch, RwLock};
+use tokio::sync::{RwLock, watch};
 use tokio::time::interval;
 
 struct TelemetryFrequency(u64);
@@ -509,14 +509,14 @@ async fn get_telemetry_data_inner(
     }
 
     // Add payment ID from current tari address
-    if InternalWallet::is_initialized() {
-        if let Some(_state) = app_handle.try_state::<crate::UniverseAppState>() {
-            let tari_address = InternalWallet::tari_address().await;
-            if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
-                extra_data.insert("mining_address_payment_id".to_string(), payment_id);
-            }
-            // Note: If no payment ID, we don't add the field (saves space vs empty string)
+    if InternalWallet::is_initialized()
+        && let Some(_state) = app_handle.try_state::<crate::UniverseAppState>()
+    {
+        let tari_address = InternalWallet::tari_address().await;
+        if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
+            extra_data.insert("mining_address_payment_id".to_string(), payment_id);
         }
+        // Note: If no payment ID, we don't add the field (saves space vs empty string)
     }
 
     extra_data.insert(
@@ -763,26 +763,24 @@ async fn handle_data(
 
                 match telemetry_response {
                     Ok(response) => {
-                        if let Some(response_inner) = response {
-                            if let Some(user_points) = response_inner.user_points {
-                                debug!(target: LOG_TARGET_APP_LOGIC,"emitting UserPoints event{user_points:?}");
-                                let response_inner =
-                                    response_inner.referral_count.unwrap_or(ReferralCount {
-                                        gems: 0.0,
-                                        count: 0,
-                                    });
-                                let emit_data = TelemetryDataResponseEvent {
-                                    base: user_points,
-                                    referral_count: response_inner,
-                                };
+                        if let Some(response_inner) = response
+                            && let Some(user_points) = response_inner.user_points
+                        {
+                            debug!(target: LOG_TARGET_APP_LOGIC,"emitting UserPoints event{user_points:?}");
+                            let response_inner =
+                                response_inner.referral_count.unwrap_or(ReferralCount {
+                                    gems: 0.0,
+                                    count: 0,
+                                });
+                            let emit_data = TelemetryDataResponseEvent {
+                                base: user_points,
+                                referral_count: response_inner,
+                            };
 
-                                app_handle
-                                    .emit("UserPoints", emit_data)
-                                    .map_err(|e| {
-                                        error!("could not send user points as an event: {e}")
-                                    })
-                                    .unwrap_or(());
-                            }
+                            app_handle
+                                .emit("UserPoints", emit_data)
+                                .map_err(|e| error!("could not send user points as an event: {e}"))
+                                .unwrap_or(());
                         }
                     }
                     Err(e) => {

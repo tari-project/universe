@@ -24,10 +24,11 @@ use super::listeners::listener_unlock_cpu_mining::ListenerUnlockCpuMining;
 use super::listeners::listener_unlock_gpu_mining::ListenerUnlockGpuMining;
 use super::listeners::listener_unlock_wallet::ListenerUnlockWallet;
 use super::listeners::trait_listener::UnlockConditionsListenerTrait;
-use super::listeners::{setup_listener, SetupFeature, SetupFeaturesList};
+use super::listeners::{SetupFeature, SetupFeaturesList, setup_listener};
 use super::trait_setup_phase::SetupPhaseImpl;
 use super::utils::phase_builder::PhaseBuilder;
-use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
+use crate::LOG_TARGET_APP_LOGIC;
+use crate::app_in_memory_config::{DEFAULT_EXCHANGE_ID, MinerType};
 use crate::configs::config_core::ConfigCoreContent;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
@@ -38,9 +39,9 @@ use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::manager::GpuManager;
+use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
-use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::progress_trackers::progress_plans::SetupStep;
 use crate::setup::utils::pre_setup::{check_data_import, clear_data};
 use crate::setup::{
@@ -51,8 +52,8 @@ use crate::setup::{
 use crate::systemtray_manager::SystemTrayManager;
 use crate::utils::battery_status::BatteryStatus;
 use crate::utils::platform_utils::PlatformUtils;
-use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
+    UniverseAppState,
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
@@ -62,7 +63,6 @@ use crate::{
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
     websocket_manager::WebsocketMessage,
-    UniverseAppState,
 };
 use log::{error, info};
 use serde::{Deserialize, Serialize};
@@ -75,7 +75,7 @@ use std::{
 use tauri::{AppHandle, Listener, Manager};
 use tokio::{
     select,
-    sync::{watch::Sender, Mutex, RwLock},
+    sync::{Mutex, RwLock, watch::Sender},
 };
 
 static INSTANCE: LazyLock<SetupManager> = LazyLock::new(SetupManager::new);
@@ -273,14 +273,14 @@ impl SetupManager {
             tauri::async_runtime::spawn(async move {
                 info!(target: LOG_TARGET_APP_LOGIC, "Restarting websocket events manager after reconnection");
                 let mut events_manager_guard = websocket_event_manager_clone.write().await;
-                if let Err(e) = events_manager_guard
+                match events_manager_guard
                     .set_app_handle(app_handle_clone, websocket_manager_clone)
                     .await
-                {
+                { Err(e) => {
                     error!(target: LOG_TARGET_APP_LOGIC, "Failed to restart websocket events manager: {e}");
-                } else {
+                } _ => {
                     info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager restarted successfully");
-                }
+                }}
             });
         });
         let websocket_tx = state.websocket_message_tx.clone();
@@ -292,15 +292,13 @@ impl SetupManager {
                 let message = event_cloned.payload();
                 if let Ok(message) = serde_json::from_str::<WebsocketMessage>(message)
                     .inspect_err(|e| error!("websocket malformatted: {e}"))
-                {
-                    if websocket_tx_clone
+                    && websocket_tx_clone
                         .send(message.clone())
                         .await
                         .inspect_err(|e| error!("too many messages in websocket send queue {e}"))
                         .is_ok()
-                    {
-                        log::trace!("websocket message sent {message:?}");
-                    }
+                {
+                    log::trace!("websocket message sent {message:?}");
                 }
             });
         });

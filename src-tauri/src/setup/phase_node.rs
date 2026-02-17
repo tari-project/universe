@@ -27,6 +27,7 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 use crate::{
+    LOG_TARGET_APP_LOGIC, UniverseAppState,
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
@@ -39,7 +40,6 @@ use crate::{
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
     wallet::minotari_wallet::MinotariWalletManager,
-    UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 use anyhow::Error;
 use log::{error, info, warn};
@@ -49,10 +49,10 @@ use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::{
     sync::{
-        watch::{self, Sender},
         Mutex,
+        watch::{self, Sender},
     },
-    time::{interval, Interval},
+    time::{Interval, interval},
 };
 use tokio_util::task::TaskTracker;
 

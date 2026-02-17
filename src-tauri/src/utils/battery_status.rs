@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern crate starship_battery as battery;
-use std::sync::{atomic::AtomicBool, Arc, LazyLock};
+use std::sync::{Arc, LazyLock, atomic::AtomicBool};
 
 use log::{error, info};
 use tokio::{sync::Mutex, task::JoinHandle};
@@ -109,11 +109,14 @@ impl BatteryStatus {
 
     pub async fn stop_battery_listener() {
         let mut thread_lock = INSTANCE.battery_listener_thread.lock().await;
-        if let Some(handle) = thread_lock.take() {
-            handle.abort();
-            log::info!(target: LOG_TARGET, "Battery listener thread stopped.");
-        } else {
-            log::info!(target: LOG_TARGET, "Battery listener thread is not running.");
+        match thread_lock.take() {
+            Some(handle) => {
+                handle.abort();
+                log::info!(target: LOG_TARGET, "Battery listener thread stopped.");
+            }
+            _ => {
+                log::info!(target: LOG_TARGET, "Battery listener thread is not running.");
+            }
         }
     }
 

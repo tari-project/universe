@@ -26,9 +26,10 @@ use serde_json::json;
 use tauri::{AppHandle, Manager};
 
 use log::warn;
-use tokio::sync::{watch::Sender, RwLock};
+use tokio::sync::{RwLock, watch::Sender};
 
 use crate::{
+    LOG_TARGET_APP_LOGIC, UniverseAppState,
     events::ProgressTrackerUpdatePayload,
     events_emitter::EventsEmitter,
     progress_trackers::progress_plans::SetupStep,
@@ -36,7 +37,6 @@ use crate::{
         setup_manager::{PhaseStatus, SetupPhase},
         utils::timeout_watcher::hash_value,
     },
-    UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 
 #[derive(Debug)]
@@ -225,19 +225,18 @@ impl ProgressStepper {
     ) -> Option<IncrementalProgressTracker> {
         if let Some(StepTracker::Incremental { tracker, .. }) =
             self.steps.iter_mut().find(|s| s.get_step() == &step)
+            && tracker.is_none()
         {
-            if tracker.is_none() {
-                let incremental_tracker = IncrementalProgressTracker {
-                    step: step.clone(),
-                    last_reported_percentage: Arc::new(RwLock::new(0.0)),
-                    accumulator: self.accumulator.clone(),
-                    timeout_watcher_sender: self.timeout_watcher_sender.clone(),
-                    setup_phase: self.setup_phase.clone(),
-                };
+            let incremental_tracker = IncrementalProgressTracker {
+                step: step.clone(),
+                last_reported_percentage: Arc::new(RwLock::new(0.0)),
+                accumulator: self.accumulator.clone(),
+                timeout_watcher_sender: self.timeout_watcher_sender.clone(),
+                setup_phase: self.setup_phase.clone(),
+            };
 
-                *tracker = Some(incremental_tracker.clone());
-                return Some(incremental_tracker);
-            }
+            *tracker = Some(incremental_tracker.clone());
+            return Some(incremental_tracker);
         }
         None
     }

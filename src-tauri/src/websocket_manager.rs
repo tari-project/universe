@@ -34,24 +34,24 @@ use tauri::AppHandle;
 use tauri::Emitter;
 use tauri::Manager;
 use tokio::net::TcpStream;
+use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use tokio::sync::broadcast;
 use tokio::sync::mpsc;
 use tokio::sync::watch;
-use tokio::sync::Mutex;
-use tokio::sync::RwLock;
 use tokio::time::sleep;
-use tokio_tungstenite::connect_async;
 use tokio_tungstenite::MaybeTlsStream;
 use tokio_tungstenite::WebSocketStream;
+use tokio_tungstenite::connect_async;
 use tungstenite::Message;
 use tungstenite::Utf8Bytes;
 use urlencoding::encode;
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::tasks_tracker::TasksTrackers;
-use crate::LOG_TARGET_APP_LOGIC;
 
 #[derive(Debug, thiserror::Error)]
 pub enum WebsocketError {

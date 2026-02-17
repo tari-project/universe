@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     binaries::{Binaries, BinaryResolver},
     configs::{
         config_mining::{ConfigMining, ConfigMiningContent},
@@ -35,15 +36,14 @@ use crate::{
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
-    LOG_TARGET_APP_LOGIC,
 };
 use anyhow::Error;
 use log::{error, info};
 use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
 use tokio::sync::{
-    watch::{Receiver, Sender},
     Mutex,
+    watch::{Receiver, Sender},
 };
 use tokio_util::task::TaskTracker;
 

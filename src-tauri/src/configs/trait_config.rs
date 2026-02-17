@@ -32,9 +32,9 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::{
+    APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC, UniverseAppState,
     events_emitter::EventsEmitter,
     setup::setup_manager::{SetupManager, SetupPhase},
-    UniverseAppState, APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC,
 };
 
 #[allow(dead_code)]

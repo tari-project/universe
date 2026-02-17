@@ -32,7 +32,7 @@ use log::{error, info};
 use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::{watch, RwLock};
+use tokio::sync::{RwLock, watch};
 
 const STARTUP_TIMEOUT: u64 = 180; // 3mins
 

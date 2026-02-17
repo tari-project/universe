@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 use log::info;
 use minotari_wallet::db::AccountBalance;
 use minotari_wallet::scan::BalanceChangeSummary;
@@ -28,8 +27,8 @@ use std::sync::LazyLock;
 use tokio::sync::RwLock;
 
 use crate::events_emitter::EventsEmitter;
-use crate::wallet::minotari_wallet::database_manager::DEFAULT_ACCOUNT_ID;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
+use crate::wallet::minotari_wallet::database_manager::DEFAULT_ACCOUNT_ID;
 use crate::wallet::wallet_types::WalletBalance;
 use tari_transaction_components::tari_amount::MicroMinotari;
 
