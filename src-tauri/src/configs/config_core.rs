@@ -31,13 +31,13 @@ use tari_common::configuration::Network;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::ab_test_selector::ABTestSelector;
-use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
+use crate::app_in_memory_config::{DEFAULT_EXCHANGE_ID, MinerType};
 use crate::event_scheduler::ScheduledEventInfo;
 use crate::node::node_manager::NodeType;
 use crate::shutdown_manager::ShutdownMode;
 use crate::utils::rand_utils;
-use crate::LOG_TARGET_APP_LOGIC;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -158,13 +158,13 @@ impl ConfigCore {
             let _unused = Self::_save_config(config._get_content().clone());
         };
 
-        if config.content.node_data_directory.is_none() {
-            if let Ok(app_data_dir) = app_handle.path().app_local_data_dir().inspect_err(|e| {
+        if config.content.node_data_directory.is_none()
+            && let Ok(app_data_dir) = app_handle.path().app_local_data_dir().inspect_err(|e| {
                 error!(target: LOG_TARGET_APP_LOGIC, "Could not load data dir {e}");
-            }) {
-                config.content.node_data_directory = Some(app_data_dir);
-                let _unused = Self::_save_config(config._get_content().clone());
-            }
+            })
+        {
+            config.content.node_data_directory = Some(app_data_dir);
+            let _unused = Self::_save_config(config._get_content().clone());
         }
     }
     pub async fn update_node_data_directory(

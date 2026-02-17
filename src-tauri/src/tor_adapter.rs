@@ -24,7 +24,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use async_trait::async_trait;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -38,13 +38,13 @@ use tokio::time::timeout;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::HandleUnhealthyResult;
 use crate::tor_control_client::{TorControlClient, TorStatus};
+use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use crate::{
     process_adapter::{
         HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
     },
     utils::file_utils::convert_to_string,
 };
-use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 
 pub(crate) struct TorAdapter {
     socks_port: u16,

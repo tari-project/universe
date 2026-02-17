@@ -25,30 +25,30 @@ pub mod database_manager;
 pub mod transaction;
 
 use crate::{
+    LOG_TARGET_APP_LOGIC, UniverseAppState,
     events_emitter::EventsEmitter,
     internal_wallet::{InternalWallet, TariAddressType},
     tasks_tracker::TasksTrackers,
     wallet::minotari_wallet::{
         balance_tracker::BalanceTracker,
-        database_manager::{MinotariWalletDatabaseManager, DEFAULT_ACCOUNT_ID},
+        database_manager::{DEFAULT_ACCOUNT_ID, MinotariWalletDatabaseManager},
         transaction::TransactionManager,
     },
-    UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 use log::{error, info};
 use minotari_wallet::transactions::{TransactionDisplayStatus, TransactionSource};
 use minotari_wallet::{
+    DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
+    TransactionHistoryService,
     db::{
-        get_all_balance_changes_by_account_id, get_latest_scanned_tip_block_by_account,
-        AccountBalance,
+        AccountBalance, get_all_balance_changes_by_account_id,
+        get_latest_scanned_tip_block_by_account,
     },
     get_balance,
     models::BalanceChange,
     tasks::unlocker::TransactionUnlocker,
     transactions::one_sided_transaction::Recipient,
     utils::init_wallet::init_with_view_key,
-    DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
-    TransactionHistoryService,
 };
 use r2d2::PooledConnection;
 use r2d2_sqlite::SqliteConnectionManager;
@@ -56,8 +56,8 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicBool, Ordering},
         LazyLock,
+        atomic::{AtomicBool, Ordering},
     },
     time::{Duration, Instant},
 };
@@ -578,8 +578,7 @@ impl MinotariWalletManager {
         };
 
         let app_state: tauri::State<'_, UniverseAppState> = app_handle.state::<UniverseAppState>();
-        let height = app_state.node_status_watch_rx.borrow().block_height;
-        height
+        app_state.node_status_watch_rx.borrow().block_height
     }
 
     async fn handle_status_event(event: ScanStatusEvent) {

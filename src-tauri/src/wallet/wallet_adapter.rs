@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec};
 use crate::process_adapter_utils::setup_working_directory;
@@ -29,7 +30,6 @@ use crate::utils::logging_utils::setup_logging;
 use crate::utils::windows_setup_utils::add_firewall_rule;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitor;
 use crate::wallet::wallet_types::WalletState;
-use crate::LOG_TARGET_APP_LOGIC;
 use anyhow::Error;
 use log::{info, warn};
 use serde::{Deserialize, Serialize};

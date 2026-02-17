@@ -28,9 +28,9 @@
 
 use anyhow::anyhow;
 use minotari_wallet::{
+    DisplayedTransaction,
     db::SqlitePool,
     transactions::{manager::TransactionSender, one_sided_transaction::Recipient},
-    DisplayedTransaction,
 };
 use tari_common::configuration::Network;
 use tari_transaction_components::{

@@ -22,7 +22,7 @@
 
 use tauri::{AppHandle, Manager};
 
-use crate::{events::NodeTypeUpdatePayload, events_emitter::EventsEmitter, UniverseAppState};
+use crate::{UniverseAppState, events::NodeTypeUpdatePayload, events_emitter::EventsEmitter};
 
 pub struct EventsManager;
 

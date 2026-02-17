@@ -22,7 +22,7 @@
 
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use async_trait::async_trait;
 use log::{error, info};
 use regex::Regex;
@@ -30,10 +30,10 @@ use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};
 
 use crate::{
+    APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC,
     requests::{
         clients::http_file_client::HttpFileClient, get_gh_download_url, get_mirror_download_url,
     },
-    APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC,
 };
 
 use super::binaries_resolver::{BinaryDownloadInfo, LatestVersionApiAdapter};

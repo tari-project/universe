@@ -22,7 +22,7 @@
 
 use std::path::PathBuf;
 
-use crate::{tasks_tracker::TasksTrackers, APPLICATION_FOLDER_ID};
+use crate::{APPLICATION_FOLDER_ID, tasks_tracker::TasksTrackers};
 use log::{error, info, warn};
 use minotari_wallet::{db::SqlitePool, init_db};
 use r2d2::PooledConnection;

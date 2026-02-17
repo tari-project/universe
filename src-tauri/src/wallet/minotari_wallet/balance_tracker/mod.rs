@@ -26,7 +26,7 @@ mod errors;
 pub use balance_calculator::BalanceCalculator;
 
 use log::{error, info};
-use minotari_wallet::{db::AccountBalance, DisplayedTransaction};
+use minotari_wallet::{DisplayedTransaction, db::AccountBalance};
 use std::sync::LazyLock;
 use tokio::sync::RwLock;
 

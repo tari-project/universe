@@ -30,7 +30,7 @@ use tokio::time::Instant;
 use tokio_util::task::TaskTracker;
 
 use crate::process_adapter::{HandleUnhealthyResult, HealthStatus, ProcessInstanceTrait};
-use crate::process_watcher::{do_health_check, ProcessWatcherStats};
+use crate::process_watcher::{ProcessWatcherStats, do_health_check};
 use crate::testing::mocks::process_mocks::{MockProcessInstance, MockStatusMonitor};
 
 async fn setup_test_context() -> (
