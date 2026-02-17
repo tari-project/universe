@@ -167,7 +167,11 @@ export default function TokenDisplay() {
                                 {t('mcp.token-display.confirm')}
                             </button>
                             <button
-                                onClick={() => { setPinPrompt(null); setPin(''); setError(null); }}
+                                onClick={() => {
+                                    setPinPrompt(null);
+                                    setPin('');
+                                    setError(null);
+                                }}
                                 style={{ fontSize: 11, cursor: 'pointer' }}
                             >
                                 {t('mcp.token-display.cancel')}

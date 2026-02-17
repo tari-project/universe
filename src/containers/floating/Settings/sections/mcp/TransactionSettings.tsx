@@ -83,7 +83,11 @@ export default function TransactionSettings() {
                                 {t('mcp.transactions.confirm')}
                             </button>
                             <button
-                                onClick={() => { setPendingToggle(null); setPin(''); setError(null); }}
+                                onClick={() => {
+                                    setPendingToggle(null);
+                                    setPin('');
+                                    setError(null);
+                                }}
                                 style={{ fontSize: 11, cursor: 'pointer' }}
                                 disabled={loading}
                             >

@@ -25,12 +25,13 @@ use dirs::config_dir;
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-use std::fs::{self, File, OpenOptions};
-use std::io::{BufRead, BufReader, Write};
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::SystemTime;
 use tari_common::configuration::Network;
+use tokio::io::AsyncWriteExt;
 use tokio::sync::RwLock;
 
 use crate::APPLICATION_FOLDER_ID;
@@ -109,7 +110,7 @@ impl AuditLog {
 
         // Check if rotation needed
         if log.line_count >= MAX_LOG_LINES {
-            log._rotate();
+            log._rotate().await;
         }
 
         let log_path = log.log_path.clone();
@@ -118,11 +119,17 @@ impl AuditLog {
         // Write to file (outside of heavy processing but still within lock for line_count accuracy)
         if let Ok(serialized) = serde_json::to_string(&cloned) {
             if let Some(parent) = log_path.parent() {
-                let _unused = fs::create_dir_all(parent);
+                let _unused = tokio::fs::create_dir_all(parent).await;
             }
-            match OpenOptions::new().create(true).append(true).open(&log_path) {
+            match tokio::fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&log_path)
+                .await
+            {
                 Ok(mut file) => {
-                    if writeln!(file, "{serialized}").is_ok() {
+                    let line = format!("{serialized}\n");
+                    if file.write_all(line.as_bytes()).await.is_ok() {
                         *current_count += 1;
                     }
                 }
@@ -133,36 +140,42 @@ impl AuditLog {
         }
     }
 
-    fn _rotate(&mut self) {
+    async fn _rotate(&mut self) {
         let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
         let rotated_path = self.log_path.with_extension(format!("{timestamp}.jsonl"));
-        if let Err(e) = fs::rename(&self.log_path, &rotated_path) {
+        if let Err(e) = tokio::fs::rename(&self.log_path, &rotated_path).await {
             warn!(target: LOG_TARGET_APP_LOGIC, "Failed to rotate MCP audit log: {e:?}");
         } else {
             info!(target: LOG_TARGET_APP_LOGIC, "Rotated MCP audit log to {rotated_path:?}");
         }
         self.line_count = 0;
-        self._cleanup_old_rotated_logs();
+        self._cleanup_old_rotated_logs().await;
     }
 
-    fn _cleanup_old_rotated_logs(&self) {
+    async fn _cleanup_old_rotated_logs(&self) {
         const MAX_ROTATED_LOGS: usize = 5;
         if let Some(parent) = self.log_path.parent() {
-            let mut rotated: Vec<PathBuf> = fs::read_dir(parent)
-                .into_iter()
-                .flatten()
-                .filter_map(|e| e.ok())
-                .map(|e| e.path())
-                .filter(|p| {
-                    p.to_str()
-                        .map(|s| s.contains("mcp_audit.") && s.ends_with(".jsonl") && *p != self.log_path)
-                        .unwrap_or(false)
-                })
-                .collect();
+            let mut rotated: Vec<PathBuf> = Vec::new();
+            if let Ok(mut entries) = tokio::fs::read_dir(parent).await {
+                while let Ok(Some(entry)) = entries.next_entry().await {
+                    let path = entry.path();
+                    let is_rotated = path
+                        .to_str()
+                        .map(|s| {
+                            s.contains("mcp_audit.")
+                                && s.ends_with(".jsonl")
+                                && path != self.log_path
+                        })
+                        .unwrap_or(false);
+                    if is_rotated {
+                        rotated.push(path);
+                    }
+                }
+            }
             rotated.sort();
             if rotated.len() > MAX_ROTATED_LOGS {
                 for old in &rotated[..rotated.len() - MAX_ROTATED_LOGS] {
-                    if let Err(e) = fs::remove_file(old) {
+                    if let Err(e) = tokio::fs::remove_file(old).await {
                         warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove old MCP audit log {old:?}: {e:?}");
                     } else {
                         info!(target: LOG_TARGET_APP_LOGIC, "Removed old MCP audit log: {old:?}");
@@ -181,7 +194,7 @@ impl AuditLog {
         let log = Self::current().read().await;
         let path = &log.log_path;
         if path.exists() {
-            Ok(fs::read_to_string(path)?)
+            Ok(tokio::fs::read_to_string(path).await?)
         } else {
             Ok(String::new())
         }

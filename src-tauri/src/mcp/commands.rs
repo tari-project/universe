@@ -22,7 +22,7 @@
 
 use std::time::SystemTime;
 
-use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent};
+use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent, SECONDS_PER_DAY};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::audit::AuditLog;
@@ -56,7 +56,8 @@ pub async fn set_mcp_enabled(enabled: bool) -> Result<(), String> {
             let token = ConfigMcpContent::generate_token();
             let now = SystemTime::now();
             let expiry_days = *content.token_expiry_days();
-            let expiry = now + std::time::Duration::from_secs(u64::from(expiry_days) * 86400);
+            let expiry =
+                now + std::time::Duration::from_secs(u64::from(expiry_days) * SECONDS_PER_DAY);
             content.set_bearer_token(Some(token));
             content.set_token_created_at(Some(now));
             content.set_token_expires_at(Some(expiry));
@@ -81,7 +82,7 @@ pub async fn refresh_mcp_token_expiry() -> Result<(), String> {
     if ConfigMcp::content().await.bearer_token().is_some() {
         let now = SystemTime::now();
         let expiry_days = *ConfigMcp::content().await.token_expiry_days();
-        let expiry = now + std::time::Duration::from_secs(u64::from(expiry_days) * 86400);
+        let expiry = now + std::time::Duration::from_secs(u64::from(expiry_days) * SECONDS_PER_DAY);
         ConfigMcp::update_field(ConfigMcpContent::set_token_expires_at, Some(expiry))
             .await
             .map_err(|e| e.to_string())?;

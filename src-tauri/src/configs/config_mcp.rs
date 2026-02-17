@@ -33,6 +33,7 @@ use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 pub const MCP_CONFIG_VERSION: u32 = 0;
+pub(crate) const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
 static INSTANCE: LazyLock<RwLock<ConfigMcp>> = LazyLock::new(|| RwLock::new(ConfigMcp::new()));
 
 mod token_cipher {
@@ -83,8 +84,7 @@ mod token_cipher {
         }
 
         let (nonce_bytes, ciphertext_and_tag) = data.split_at(NONCE_LEN);
-        let nonce =
-            Nonce::try_assume_unique_for_key(nonce_bytes).map_err(|_| "invalid nonce")?;
+        let nonce = Nonce::try_assume_unique_for_key(nonce_bytes).map_err(|_| "invalid nonce")?;
         let key = derive_key();
 
         let mut buf = ciphertext_and_tag.to_vec();
@@ -183,8 +183,10 @@ impl ConfigMcpContent {
         if self.bearer_token.is_none() {
             let token = Self::generate_token();
             let now = SystemTime::now();
-            let expiry =
-                now + std::time::Duration::from_secs(u64::from(self.token_expiry_days) * 86400);
+            let expiry = now
+                + std::time::Duration::from_secs(
+                    u64::from(self.token_expiry_days) * SECONDS_PER_DAY,
+                );
             self.bearer_token = Some(token);
             self.token_created_at = Some(now);
             self.token_expires_at = Some(expiry);
@@ -203,8 +205,10 @@ impl ConfigMcpContent {
     pub fn refresh_token_expiry(&mut self) {
         if self.bearer_token.is_some() {
             let now = SystemTime::now();
-            let expiry =
-                now + std::time::Duration::from_secs(u64::from(self.token_expiry_days) * 86400);
+            let expiry = now
+                + std::time::Duration::from_secs(
+                    u64::from(self.token_expiry_days) * SECONDS_PER_DAY,
+                );
             self.token_expires_at = Some(expiry);
         }
     }
