@@ -20,8 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod balance_calculator;
-mod errors;
 
 use log::info;
 use minotari_wallet::db::AccountBalance;
@@ -112,22 +110,10 @@ impl BalanceTracker {
             return;
         }
 
-        let mut total_credit: MicroMinotari = MicroMinotari(0);
-        let mut total_debit: MicroMinotari = MicroMinotari(0);
-
-        for change in balance_changes {
-            total_credit = total_credit.saturating_add(change.credit);
-            total_debit = total_debit.saturating_add(change.debit);
-        }
-
-        let current = self.get_balance().await;
-
-        if current.total != total_credit - total_debit {
-            if let Ok(new_balance) =
-                MinotariWalletManager::get_account_balance(DEFAULT_ACCOUNT_ID).await
-            {
-                Self::emit_balance(new_balance).await;
-            }
+        if let Ok(new_balance) =
+            MinotariWalletManager::get_account_balance(DEFAULT_ACCOUNT_ID).await
+        {
+            Self::emit_balance(new_balance).await;
         }
     }
 
