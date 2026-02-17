@@ -26,8 +26,9 @@ use crate::{
     hardware::hardware_status_monitor::HardwareVendor,
     setup::listeners::AppModule,
     system_dependencies::{
-        windows::registry::WindowsRegistryRecordType, UniversalDependencyManufacturerUIInfo,
-        UniversalDependencyStatus, UniversalDependencyUIInfo, UniversalSystemDependency,
+        UniversalDependencyManufacturerUIInfo, UniversalDependencyStatus,
+        UniversalDependencyUIInfo, UniversalSystemDependency,
+        windows::registry::WindowsRegistryRecordType,
     },
 };
 

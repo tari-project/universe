@@ -21,20 +21,20 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
+    LOG_TARGET_APP_LOGIC, UniverseAppState,
     configs::{config_core::ConfigCore, config_ui::ConfigUI, trait_config::ConfigImpl},
     events_emitter::EventsEmitter,
     mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
     systemtray_manager::SystemTrayManager,
     tasks_tracker::TasksTrackers,
-    UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::{ops::Index, sync::LazyLock};
-use tauri::{async_runtime::spawn, AppHandle, Manager};
+use tauri::{AppHandle, Manager, async_runtime::spawn};
 use tokio::sync::{
-    watch::{Receiver, Sender},
     Mutex, RwLock,
+    watch::{Receiver, Sender},
 };
 
 static INSTANCE: LazyLock<ShutdownManager> = LazyLock::new(ShutdownManager::new);

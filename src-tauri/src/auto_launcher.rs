@@ -39,8 +39,8 @@ use tokio::sync::RwLock;
 use whoami::username;
 
 use crate::{
-    utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
     LOG_TARGET_APP_LOGIC,
+    utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);

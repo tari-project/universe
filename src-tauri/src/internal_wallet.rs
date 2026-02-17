@@ -21,8 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::anyhow;
-use monero_address_creator::network::Mainnet;
 use monero_address_creator::Seed as MoneroSeed;
+use monero_address_creator::network::Mainnet;
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
 use std::io::Read;
@@ -44,7 +44,7 @@ use tokio::sync::{OnceCell, RwLock};
 use tari_utilities::hex::Hex;
 
 use crate::configs::config_ui::ConfigUI;
-use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId, WALLET_VERSION};
+use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WALLET_VERSION, WalletId};
 use crate::configs::trait_config::ConfigImpl;
 use crate::consts::DEFAULT_MONERO_ADDRESS;
 use crate::credential_manager::{
@@ -52,12 +52,12 @@ use crate::credential_manager::{
 };
 use crate::events::CriticalProblemPayload;
 use crate::events_emitter::EventsEmitter;
+use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
-use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::pin::PinManager;
 use crate::utils::{cryptography, rand_utils};
-use crate::{UniverseAppState, LOG_TARGET_APP_LOGIC};
+use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TariWalletDetails {
@@ -633,46 +633,52 @@ impl InternalWallet {
         }
 
         let (encrypted_tari_seed, tari_wallet_details) = {
-            if let Some(wallet_details) = ConfigWallet::content().await.tari_wallet_details() {
-                log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(wallet config file) Tari Wallet Details: {wallet_details:?}");
-                (None, wallet_details.clone())
-            } else {
-                // If wallet details are not saved in the config file, extract them from the decrypted seed.
-                let tari_wallet_id = (*wallet_config.tari_wallets())
-                    .first()
-                    .expect("Unexpected! Selected wallet not found in the wallet config!");
-                let encrypted_tari_seed =
-                    match InternalWallet::get_credentials(app_handle, tari_wallet_id.clone(), true)
-                        .await
+            match ConfigWallet::content().await.tari_wallet_details() {
+                Some(wallet_details) => {
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(wallet config file) Tari Wallet Details: {wallet_details:?}");
+                    (None, wallet_details.clone())
+                }
+                _ => {
+                    // If wallet details are not saved in the config file, extract them from the decrypted seed.
+                    let tari_wallet_id = (*wallet_config.tari_wallets())
+                        .first()
+                        .expect("Unexpected! Selected wallet not found in the wallet config!");
+                    let encrypted_tari_seed = match InternalWallet::get_credentials(
+                        app_handle,
+                        tari_wallet_id.clone(),
+                        true,
+                    )
+                    .await
                     {
                         Ok(cred) => cred.encrypted_seed,
                         Err(e) => {
                             panic!("Failed to get credentials: {e}")
                         }
                     };
-                let tari_cipher_seed = if PinManager::pin_locked().await {
-                    let pin_password = PinManager::get_validated_pin(app_handle).await?;
-                    match CipherSeed::from_enciphered_bytes(
-                        &encrypted_tari_seed,
-                        Some(pin_password),
-                    ) {
-                        Ok(seed) => seed,
-                        Err(_) => {
-                            return Err(anyhow!("Wrong PIN entered!"));
+                    let tari_cipher_seed = if PinManager::pin_locked().await {
+                        let pin_password = PinManager::get_validated_pin(app_handle).await?;
+                        match CipherSeed::from_enciphered_bytes(
+                            &encrypted_tari_seed,
+                            Some(pin_password),
+                        ) {
+                            Ok(seed) => seed,
+                            Err(_) => {
+                                return Err(anyhow!("Wrong PIN entered!"));
+                            }
                         }
-                    }
-                } else {
-                    // Seed not yet encrypted with PIN
-                    CipherSeed::from_binary(&encrypted_tari_seed)
-                        .expect("Could not parse Tari Seed from binary")
-                };
-                let wallet_details = InternalWallet::get_tari_wallet_details(
-                    tari_wallet_id.clone(),
-                    tari_cipher_seed,
-                )
-                .await?;
-                log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(seed from credentials) Tari Wallet Details: {wallet_details:?}");
-                (Some(encrypted_tari_seed), wallet_details)
+                    } else {
+                        // Seed not yet encrypted with PIN
+                        CipherSeed::from_binary(&encrypted_tari_seed)
+                            .expect("Could not parse Tari Seed from binary")
+                    };
+                    let wallet_details = InternalWallet::get_tari_wallet_details(
+                        tari_wallet_id.clone(),
+                        tari_cipher_seed,
+                    )
+                    .await?;
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(seed from credentials) Tari Wallet Details: {wallet_details:?}");
+                    (Some(encrypted_tari_seed), wallet_details)
+                }
             }
         };
 
@@ -706,9 +712,7 @@ impl InternalWallet {
         old_wallet_config: LegacyWalletConfig,
     ) -> Result<(WalletId, Vec<u8>, Option<Vec<u8>>), anyhow::Error> {
         let legacy_cred: LegacyCredential = if *ConfigWallet::content().await.keyring_accessed() {
-            let cred =
-                InternalWallet::get_legacy_credentials_forced(app_handle, app_config_dir).await?;
-            cred
+            InternalWallet::get_legacy_credentials_forced(app_handle, app_config_dir).await?
         } else {
             let legacy_fallback_file = get_legacy_fallback_file(app_config_dir).await?;
             if !legacy_fallback_file.exists() {

@@ -26,26 +26,26 @@ use log::info;
 use tokio::{spawn, sync::RwLock};
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     configs::{
         config_pools::{ConfigPools, ConfigPoolsContent},
-        pools::{gpu_pools::GpuPool, BasePoolData},
+        pools::{BasePoolData, gpu_pools::GpuPool},
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
     mining::{
         gpu::consts::GpuMinerType,
         pools::{
+            PoolManagerInterfaceTrait, PoolStatus,
             adapters::{
-                kryptex_pool::KryptexPoolAdapter, lucky_pool::LuckyPoolAdapter, PoolApiAdapters,
+                PoolApiAdapters, kryptex_pool::KryptexPoolAdapter, lucky_pool::LuckyPoolAdapter,
             },
             pools_manager::PoolManager,
-            PoolManagerInterfaceTrait, PoolStatus,
         },
     },
     setup::setup_manager::SetupManager,
     systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
-    LOG_TARGET_APP_LOGIC,
 };
 
 static INSTANCE: LazyLock<GpuPoolManager> = LazyLock::new(GpuPoolManager::new);
@@ -147,8 +147,8 @@ impl PoolManagerInterfaceTrait<GpuPool> for GpuPoolManager {
         INSTANCE.pool_status_manager.write().await
     }
 
-    fn construct_callback_for_pool_status_update(
-    ) -> impl Fn(HashMap<String, PoolStatus>, PoolStatus) + Send + Sync + 'static {
+    fn construct_callback_for_pool_status_update()
+    -> impl Fn(HashMap<String, PoolStatus>, PoolStatus) + Send + Sync + 'static {
         move |pool_statuses: HashMap<String, PoolStatus>, current_status: PoolStatus| {
             spawn(async move {
                 EventsEmitter::emit_gpu_pools_status_update(pool_statuses).await;

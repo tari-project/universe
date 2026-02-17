@@ -22,17 +22,17 @@
 
 use std::sync::LazyLock;
 
+use anyhow::Error;
 #[cfg(target_os = "windows")]
 use anyhow::anyhow;
-use anyhow::Error;
 
 #[cfg(target_os = "windows")]
 use crate::events_emitter::EventsEmitter;
 #[cfg(target_os = "windows")]
-use crate::system_dependencies::windows::resolver::WindowsDependenciesResolver;
-#[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalDependencyStatus;
 use crate::system_dependencies::UniversalSystemDependency;
+#[cfg(target_os = "windows")]
+use crate::system_dependencies::windows::resolver::WindowsDependenciesResolver;
 #[cfg(target_os = "windows")]
 use crate::tasks_tracker::TasksTrackers;
 
