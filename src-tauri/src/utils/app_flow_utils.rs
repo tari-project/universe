@@ -23,8 +23,8 @@
 use std::sync::LazyLock;
 
 use tokio::sync::{
-    watch::{Receiver, Sender},
     Mutex,
+    watch::{Receiver, Sender},
 };
 
 static INSTANCE: LazyLock<FrontendReadyChannel> = LazyLock::new(FrontendReadyChannel::new);

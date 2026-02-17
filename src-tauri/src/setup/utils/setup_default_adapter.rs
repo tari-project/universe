@@ -21,8 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
-    setup::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl},
     LOG_TARGET_APP_LOGIC,
+    setup::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl},
 };
 use log::{info, warn};
 use tokio::select;

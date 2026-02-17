@@ -27,7 +27,7 @@ use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use crate::{
-    configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool, BasePoolData},
+    configs::pools::{BasePoolData, cpu_pools::CpuPool, gpu_pools::GpuPool},
     mining::pools::{cpu_pool_manager::CpuPoolManager, gpu_pool_manager::GpuPoolManager},
 };
 

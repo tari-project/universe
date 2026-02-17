@@ -1,5 +1,3 @@
-use crate::configs::config_mining::GpuDevicesSettings;
-use crate::LOG_TARGET_APP_LOGIC;
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -21,21 +19,25 @@ use crate::LOG_TARGET_APP_LOGIC;
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use crate::configs::config_mining::GpuDevicesSettings;
+use crate::configs::config_pools::ConfigPoolsContent;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
     InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload, WalletStatusUpdatePayload,
 };
 use crate::internal_wallet::TariAddressType;
+use crate::mining::MinerControlsState;
 use crate::mining::cpu::CpuMinerStatus;
 use crate::mining::gpu::consts::{GpuMiner, GpuMinerStatus, GpuMinerType};
 use crate::mining::gpu::miners::GpuCommonInformation;
 use crate::mining::pools::PoolStatus;
-use crate::mining::MinerControlsState;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
 use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
 use crate::{
+    BaseNodeStatus, LOG_TARGET_APP_LOGIC,
     configs::{
         config_core::ConfigCoreContent, config_mcp::ConfigMcpContent,
         config_mining::ConfigMiningContent, config_ui::ConfigUIContent,
@@ -49,7 +51,6 @@ use crate::{
     hardware::hardware_status_monitor::PublicDeviceGpuProperties,
     setup::setup_manager::SetupPhase,
     utils::app_flow_utils::FrontendReadyChannel,
-    BaseNodeStatus,
 };
 use log::error;
 use std::collections::HashMap;
@@ -57,8 +58,6 @@ use std::sync::LazyLock;
 use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::RwLock;
-
-use crate::configs::config_pools::ConfigPoolsContent;
 
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
 

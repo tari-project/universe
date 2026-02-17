@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use winreg::{enums::HKEY_CURRENT_USER, RegKey, HKEY};
+use winreg::{HKEY, RegKey, enums::HKEY_CURRENT_USER};
 
 use crate::system_dependencies::windows::registry::WindowsRegistryReader;
 

@@ -29,36 +29,36 @@ use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{Receiver, Sender},
         RwLock,
+        watch::{Receiver, Sender},
     },
 };
 
 use crate::{
+    LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES, UniverseAppState,
     binaries::Binaries,
     configs::{
         config_mining::ConfigMining,
         config_pools::ConfigPools,
-        pools::{gpu_pools::GpuPool, PoolOrigin},
+        pools::{PoolOrigin, gpu_pools::GpuPool},
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     mining::{
+        GpuConnectionType, MinerControlsState,
         gpu::{
             consts::{GpuMiner, GpuMinerStatus, GpuMinerType, MINERS_PRIORITY},
             interface::{GpuMinerInterface, GpuMinerInterfaceTrait},
             miners::lolminer::LolMinerGpuMiner,
         },
-        pools::{gpu_pool_manager::GpuPoolManager, PoolManagerInterfaceTrait},
-        GpuConnectionType, MinerControlsState,
+        pools::{PoolManagerInterfaceTrait, gpu_pool_manager::GpuPoolManager},
     },
     node::node_adapter::BaseNodeStatus,
     process_adapter::ProcessAdapter,
     process_watcher::{ProcessWatcher, ProcessWatcherStats},
     systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
-    UniverseAppState, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
 
 static INSTANCE: LazyLock<RwLock<GpuManager>> = LazyLock::new(|| RwLock::new(GpuManager::new()));
@@ -215,7 +215,9 @@ impl GpuManager {
                     })
                     .await?;
             } else {
-                return Err(anyhow::anyhow!("Selected gpu miner does not support pool mining and no other miners are available"));
+                return Err(anyhow::anyhow!(
+                    "Selected gpu miner does not support pool mining and no other miners are available"
+                ));
             }
         }
         Ok(())
@@ -262,7 +264,9 @@ impl GpuManager {
                     })
                     .await?;
             } else {
-                return Err(anyhow::anyhow!("Selected gpu miner does not support solo mining and no other miners are available"));
+                return Err(anyhow::anyhow!(
+                    "Selected gpu miner does not support solo mining and no other miners are available"
+                ));
             }
         }
 
@@ -307,98 +311,102 @@ impl GpuManager {
 
         EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Initiated).await;
 
-        if let Some(app_handle) = self.app_handle.clone() {
-            let base_path = app_handle
-                .path()
-                .app_local_data_dir()
-                .expect("Could not get data dir");
-            let config_path = app_handle
-                .path()
-                .app_config_dir()
-                .expect("Could not get config dir");
-            let log_path = app_handle
-                .path()
-                .app_log_dir()
-                .expect("Could not get log dir");
+        match self.app_handle.clone() {
+            Some(app_handle) => {
+                let base_path = app_handle
+                    .path()
+                    .app_local_data_dir()
+                    .expect("Could not get data dir");
+                let config_path = app_handle
+                    .path()
+                    .app_config_dir()
+                    .expect("Could not get config dir");
+                let log_path = app_handle
+                    .path()
+                    .app_log_dir()
+                    .expect("Could not get log dir");
 
-            let global_shutdown_signal =
-                TasksTrackers::current().gpu_mining_phase.get_signal().await;
+                let global_shutdown_signal =
+                    TasksTrackers::current().gpu_mining_phase.get_signal().await;
 
-            let task_tracker = TasksTrackers::current()
-                .gpu_mining_phase
-                .get_task_tracker()
-                .await;
+                let task_tracker = TasksTrackers::current()
+                    .gpu_mining_phase
+                    .get_task_tracker()
+                    .await;
 
-            let tari_address = InternalWallet::tari_address().await;
-            let gpu_usage_percentage = ConfigMining::content()
-                .await
-                .get_selected_gpu_usage_percentage();
+                let tari_address = InternalWallet::tari_address().await;
+                let gpu_usage_percentage = ConfigMining::content()
+                    .await
+                    .get_selected_gpu_usage_percentage();
 
-            if *ConfigPools::content().await.gpu_pool_enabled() {
-                self.handle_pool_connection_load().await?;
-            } else {
-                let app_state = app_handle.state::<UniverseAppState>();
-                let grpc_node_address = app_state.node_manager.get_grpc_address().await?;
-                self.handle_node_connection_load(grpc_node_address).await?;
+                if *ConfigPools::content().await.gpu_pool_enabled() {
+                    self.handle_pool_connection_load().await?;
+                } else {
+                    let app_state = app_handle.state::<UniverseAppState>();
+                    let grpc_node_address = app_state.node_manager.get_grpc_address().await?;
+                    self.handle_node_connection_load(grpc_node_address).await?;
+                }
+
+                let binary = match self.selected_miner {
+                    GpuMinerType::LolMiner => Binaries::LolMiner,
+                };
+
+                // Worker name format depends on the pool
+                // LuckyPool: .Tari-Universe
+                // Kryptex: /Tari-Universe
+                // SupportXTM: Not specified so we use None
+                let worker_name = match ConfigPools::content().await.current_gpu_pool().pool_origin
+                {
+                    PoolOrigin::LuckyPool => Some(".Tari-universe"),
+                    PoolOrigin::SupportXTM => None,
+                    PoolOrigin::Kryptex => Some("/Tari-universe"),
+                };
+
+                let excluded_devices = ConfigMining::content().await.get_excluded_devices();
+
+                self.process_watcher
+                    .adapter
+                    .load_tari_address(&tari_address.to_base58())
+                    .await?;
+                self.process_watcher
+                    .adapter
+                    .load_worker_name(worker_name)
+                    .await?;
+                self.process_watcher
+                    .adapter
+                    .load_intensity_percentage(gpu_usage_percentage)
+                    .await?;
+                self.process_watcher
+                    .adapter
+                    .load_excluded_devices(excluded_devices)
+                    .await?;
+
+                info!(target: LOG_TARGET_APP_LOGIC, "Starting gpu miner process watcher with binary: {:?}", binary);
+
+                self.process_watcher
+                    .start(
+                        base_path,
+                        config_path,
+                        log_path,
+                        binary,
+                        global_shutdown_signal,
+                        task_tracker,
+                    )
+                    .await?;
+
+                info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner process watcher");
+
+                if self.connection_type.is_pool() {
+                    GpuPoolManager::start_stats_watcher().await;
+                    info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner pool watcher");
+                }
+                self.status_thread_shutdown = Shutdown::new();
+                self.initialize_status_updates().await;
+                info!(target: LOG_TARGET_APP_LOGIC, "Initialized gpu miner status updates");
             }
-
-            let binary = match self.selected_miner {
-                GpuMinerType::LolMiner => Binaries::LolMiner,
-            };
-
-            // Worker name format depends on the pool
-            // LuckyPool: .Tari-Universe
-            // Kryptex: /Tari-Universe
-            // SupportXTM: Not specified so we use None
-            let worker_name = match ConfigPools::content().await.current_gpu_pool().pool_origin {
-                PoolOrigin::LuckyPool => Some(".Tari-universe"),
-                PoolOrigin::SupportXTM => None,
-                PoolOrigin::Kryptex => Some("/Tari-universe"),
-            };
-
-            let excluded_devices = ConfigMining::content().await.get_excluded_devices();
-
-            self.process_watcher
-                .adapter
-                .load_tari_address(&tari_address.to_base58())
-                .await?;
-            self.process_watcher
-                .adapter
-                .load_worker_name(worker_name)
-                .await?;
-            self.process_watcher
-                .adapter
-                .load_intensity_percentage(gpu_usage_percentage)
-                .await?;
-            self.process_watcher
-                .adapter
-                .load_excluded_devices(excluded_devices)
-                .await?;
-
-            info!(target: LOG_TARGET_APP_LOGIC, "Starting gpu miner process watcher with binary: {:?}", binary);
-
-            self.process_watcher
-                .start(
-                    base_path,
-                    config_path,
-                    log_path,
-                    binary,
-                    global_shutdown_signal,
-                    task_tracker,
-                )
-                .await?;
-
-            info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner process watcher");
-
-            if self.connection_type.is_pool() {
-                GpuPoolManager::start_stats_watcher().await;
-                info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner pool watcher");
+            _ => {
+                return Err(anyhow::anyhow!("App handle is not set"));
             }
-            self.status_thread_shutdown = Shutdown::new();
-            self.initialize_status_updates().await;
-            info!(target: LOG_TARGET_APP_LOGIC, "Initialized gpu miner status updates");
-        } else {
-            return Err(anyhow::anyhow!("App handle is not set"));
         }
 
         Ok(())

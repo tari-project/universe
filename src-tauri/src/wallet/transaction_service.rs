@@ -20,10 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::wallet::spend_wallet::SpendWallet;
 use crate::wallet::wallet_adapter::WalletAdapter;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
-use crate::LOG_TARGET_APP_LOGIC;
 use minotari_node_grpc_client::grpc::payment_recipient::PaymentType;
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{

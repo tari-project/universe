@@ -78,7 +78,7 @@ impl Binaries {
     }
 
     pub fn binary_file_name(self, version: String) -> PathBuf {
-        let base_path = match self {
+        match self {
             Binaries::Xmrig => {
                 let file_name = format!("xmrig-{version}");
                 Self::append_exe_if_windows(&mut PathBuf::from(file_name).join("xmrig"))
@@ -107,9 +107,7 @@ impl Binaries {
                 let file_name = "lolMiner";
                 Self::append_exe_if_windows(&mut PathBuf::from(version).join(file_name))
             }
-        };
-
-        base_path
+        }
     }
 
     #[allow(clippy::too_many_lines)]

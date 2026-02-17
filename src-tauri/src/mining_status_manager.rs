@@ -29,18 +29,18 @@ use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::{
-    sync::{broadcast, watch, RwLock},
+    sync::{RwLock, broadcast, watch},
     time,
 };
 
 use crate::{
+    BaseNodeStatus, GpuMinerStatus, LOG_TARGET_APP_LOGIC,
     airdrop::decode_jwt_claims_without_exp,
     app_in_memory_config::AppInMemoryConfig,
-    commands::{sign_ws_data, SignWsDataResponse},
+    commands::{SignWsDataResponse, sign_ws_data},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     mining::cpu::CpuMinerStatus,
     tasks_tracker::TasksTrackers,
-    BaseNodeStatus, GpuMinerStatus, LOG_TARGET_APP_LOGIC,
 };
 static INTERVAL_DURATION: std::time::Duration = Duration::from_secs(15);
 
@@ -113,56 +113,57 @@ impl MiningStatusManager {
         let base_url = app_in_config_memory.read().await.airdrop_api_url.clone();
 
         let is_started = self.is_started.clone();
-        if let Some(mut is_started_guard) = self.is_started.try_lock() {
-            if *is_started_guard {
-                return Ok(());
-            }
+        match self.is_started.try_lock() {
+            Some(mut is_started_guard) => {
+                if *is_started_guard {
+                    return Ok(());
+                }
 
-            tokio::spawn(async move {
-                loop {
-                    let app_version_option = app_cloned
-                        .clone()
-                        .map(|handle| handle.package_info().version.clone().to_string());
+                tokio::spawn(async move {
+                    loop {
+                        let app_version_option = app_cloned
+                            .clone()
+                            .map(|handle| handle.package_info().version.clone().to_string());
 
-                    let jwt_token = ConfigCore::content()
-                        .await
-                        .airdrop_tokens()
-                        .clone()
-                        .map(|tokens| tokens.token);
-                    let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+                        let jwt_token = ConfigCore::content()
+                            .await
+                            .airdrop_tokens()
+                            .clone()
+                            .map(|tokens| tokens.token);
+                        let mut shutdown_signal =
+                            TasksTrackers::current().common.get_signal().await;
 
-                    tokio::select! {
-                            _ = interval.tick() => {
-                            if let (Some(jwt), Some(app_version))= (jwt_token, app_version_option){
-                                if let Some(message) = MiningStatusManager::assemble_mining_status(cpu_miner_status_watch_rx.clone(),gpu_latest_miner_stats.clone(),node_latest_status.clone(),app_id.clone(),app_version.clone(),jwt.clone(),).await {
-                                    let client = reqwest::Client::new();
-                                    let url = format!("{base_url}/miner/mining-status");
-                                    if let Ok(response) = client.post(url).header(AUTHORIZATION, &format!("Bearer {jwt}")).json(&message).send().await.inspect_err(|e|{
-                                        error!("error at sending mining status {e}");
-                                    }){
-                                        let status = response.status();
-                                        if !status.is_success(){
-                                            error!(target:LOG_TARGET_APP_LOGIC,"error at sending mining status {:?}",response.text().await);
+                        tokio::select! {
+                                _ = interval.tick() => {
+                                if let (Some(jwt), Some(app_version))= (jwt_token, app_version_option)
+                                    && let Some(message) = MiningStatusManager::assemble_mining_status(cpu_miner_status_watch_rx.clone(),gpu_latest_miner_stats.clone(),node_latest_status.clone(),app_id.clone(),app_version.clone(),jwt.clone(),).await {
+                                        let client = reqwest::Client::new();
+                                        let url = format!("{base_url}/miner/mining-status");
+                                        if let Ok(response) = client.post(url).header(AUTHORIZATION, &format!("Bearer {jwt}")).json(&message).send().await.inspect_err(|e|{
+                                            error!("error at sending mining status {e}");
+                                        }){
+                                            let status = response.status();
+                                            if !status.is_success(){
+                                                error!(target:LOG_TARGET_APP_LOGIC,"error at sending mining status {:?}",response.text().await);
+                                            }
                                         }
                                     }
-                                }
+                            }
+                            _ = shutdown_signal.wait() => {
+                                info!(target:LOG_TARGET_APP_LOGIC,"websocket events manager closed");
+                                return;
+                            }
+                            _ = wait_for_close_signal(close_channel_tx.subscribe(),is_started.clone()) => {
+                                info!(target:LOG_TARGET_APP_LOGIC,"websocket events manager closed");
+                                return;
                             }
                         }
-                        _ = shutdown_signal.wait() => {
-                            info!(target:LOG_TARGET_APP_LOGIC,"websocket events manager closed");
-                            return;
-                        }
-                        _ = wait_for_close_signal(close_channel_tx.subscribe(),is_started.clone()) => {
-                            info!(target:LOG_TARGET_APP_LOGIC,"websocket events manager closed");
-                            return;
-                        }
                     }
-                }
-            });
-            *is_started_guard = true;
-            Ok(())
-        } else {
-            Err(anyhow::anyhow!("could not start emitting"))
+                });
+                *is_started_guard = true;
+                Ok(())
+            }
+            _ => Err(anyhow::anyhow!("could not start emitting")),
         }
     }
 

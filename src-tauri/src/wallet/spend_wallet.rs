@@ -32,6 +32,7 @@ use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_shutdown::Shutdown;
 use tauri::{AppHandle, Manager};
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::internal_wallet::InternalWallet;
 use crate::pin::PinManager;
@@ -42,7 +43,6 @@ use crate::process_adapter::{
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::commands_builder::CommandBuilder;
 use crate::utils::logging_utils::setup_logging;
-use crate::LOG_TARGET_APP_LOGIC;
 
 /// Log target for spend wallet module
 const EXIT_CODE_ZERO: i32 = 0;
