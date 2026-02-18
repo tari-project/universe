@@ -200,5 +200,5 @@ pub struct TariAddressUpdatePayload {
 #[derive(Clone, Debug, Serialize)]
 pub struct WalletBalanceUpdatePayload {
     pub account_balance: AccountBalance,
-    pub display_balance: MicroMinotari,
+    pub display_balance: Option<MicroMinotari>,
 }

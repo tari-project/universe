@@ -25,7 +25,7 @@ use crate::configs::config_pools::ConfigPoolsContent;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload, NewBlockHeightPayload,
-    UpdateAppModuleStatusPayload, WalletScanningProgressUpdatePayload,
+    UpdateAppModuleStatusPayload, WalletBalanceUpdatePayload, WalletScanningProgressUpdatePayload,
 };
 use crate::internal_wallet::TariAddressType;
 use crate::mining::MinerControlsState;
@@ -35,7 +35,6 @@ use crate::mining::gpu::miners::GpuCommonInformation;
 use crate::mining::pools::PoolStatus;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
-use crate::wallet::wallet_types::WalletBalance;
 use crate::{
     BaseNodeStatus, LOG_TARGET_APP_LOGIC,
     configs::{
@@ -52,7 +51,6 @@ use crate::{
 };
 use log::error;
 use minotari_wallet::DisplayedTransaction;
-use minotari_wallet::db::AccountBalance;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 use tari_common_types::tari_address::TariAddress;

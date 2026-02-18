@@ -29,11 +29,10 @@ use minotari_wallet::db::AccountBalance;
 use std::sync::LazyLock;
 use tokio::sync::RwLock;
 
+use crate::events::WalletBalanceUpdatePayload;
 use crate::events_emitter::EventsEmitter;
+use crate::wallet::minotari_wallet::LOG_TARGET;
 use crate::wallet::minotari_wallet::balance_tracker::balance_calculator::BalanceCalculator;
-use crate::wallet::minotari_wallet::database_manager::DEFAULT_ACCOUNT_ID;
-use crate::wallet::minotari_wallet::{LOG_TARGET, MinotariWalletManager};
-use crate::wallet::wallet_types::WalletBalance;
 use tari_transaction_components::tari_amount::MicroMinotari;
 
 const EMPTY_BALANCE: AccountBalance = AccountBalance {
@@ -86,7 +85,7 @@ impl BalanceTracker {
         );
 
         // Emit initial balance to frontend
-        Self::emit_balance(account_balance).await;
+        Self::emit_balance(account_balance, Some(balance)).await;
     }
 
     /// Clear balance (e.g., on wallet import)
@@ -95,12 +94,18 @@ impl BalanceTracker {
         *current = EMPTY_BALANCE.clone();
 
         info!(target: LOG_TARGET, "Balance cleared");
-        Self::emit_balance(EMPTY_BALANCE.clone()).await;
+        Self::emit_balance(EMPTY_BALANCE.clone(), None).await;
     }
 
     /// Get current balance
-    pub async fn get_balance(&self) -> MicroMinotari {
+    async fn get_balance(&self) -> MicroMinotari {
         *self.current_balance.read().await
+    }
+
+    /// Get current account balance
+    pub async fn get_account_balance(&self) -> AccountBalance {
+        let current = self.account_balance.read().await;
+        current.clone()
     }
 
     /// Update balance based on a list of new transactions
@@ -120,6 +125,7 @@ impl BalanceTracker {
         }
 
         let current = self.get_balance().await;
+        let account_balance = self.get_account_balance().await;
 
         match BalanceCalculator::calculate_new_balance(current, total_credit, total_debit) {
             Ok(new_balance) => {
@@ -132,7 +138,7 @@ impl BalanceTracker {
                     current, new_balance, total_credit, total_debit
                 );
 
-                Self::emit_balance(new_balance).await;
+                Self::emit_balance(account_balance, Some(new_balance)).await;
             }
             Err(e) => {
                 error!(
@@ -143,25 +149,12 @@ impl BalanceTracker {
         }
     }
 
-    pub async fn update_from_block_event(&self) {
-        match MinotariWalletManager::get_account_balance(DEFAULT_ACCOUNT_ID).await {
-            Ok(new_balance) => Self::emit_balance(new_balance).await,
-            Err(e) => error!(
-                target: LOG_TARGET,
-                "Failed to get account balance on block event: {:?}", e
-            ),
-        }
-    }
-
     /// Emit balance update to frontend
-    async fn emit_balance(account_balance: AccountBalance) {
-        let wallet_balance = WalletBalance {
-            available_balance: account_balance.available,
-            pending_incoming_balance: account_balance.total_credits.unwrap_or(MicroMinotari(0)),
-            pending_outgoing_balance: account_balance.total_debits.unwrap_or(MicroMinotari(0)),
-            timelocked_balance: account_balance.locked,
-        };
-
-        EventsEmitter::emit_wallet_balance_update(wallet_balance).await;
+    async fn emit_balance(account_balance: AccountBalance, display_balance: Option<MicroMinotari>) {
+        EventsEmitter::emit_wallet_balance_update(WalletBalanceUpdatePayload {
+            account_balance,
+            display_balance,
+        })
+        .await;
     }
 }
