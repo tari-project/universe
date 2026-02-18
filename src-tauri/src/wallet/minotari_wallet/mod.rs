@@ -89,8 +89,8 @@ static REQUIRED_CONFIRMATIONS: u64 = 3;
 
 // Blockchain scanning constants
 const SCAN_BATCH_SIZE: u64 = 25;
-const SCAN_POLL_INTERVAL_SECS: u64 = 30;
-const PROGRESS_UPDATE_INTERVAL_SECS: u64 = 5;
+const SCAN_POLL_INTERVAL_SECS: u64 = 20;
+const PROGRESS_UPDATE_INTERVAL_SECS: u64 = 10;
 
 pub struct MinotariWalletManager {
     database_manager: MinotariWalletDatabaseManager,

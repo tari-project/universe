@@ -47,9 +47,8 @@ export const WalletBalance = () => {
     const available = useWalletStore((s) => s.balance?.available);
     const total = useWalletStore((s) => s.calculated_balance);
     const scanData = useWalletStore((s) => s.wallet_scanning);
-
+    console.debug(`total =`, total);
     console.debug(`available =`, available);
-    console.debug(total);
 
     const isScanning = !scanData.is_initial_scan_complete;
     const scanProgress = Math.floor(scanData.progress * 10) / 10;

@@ -9,7 +9,7 @@ import { addToast } from '@app/components/ToastStack/useToastStore';
 import { t } from 'i18next';
 import { startMining, stopMining } from './miningStoreActions';
 import { useMiningStore } from '../useMiningStore';
-import { deepEqual } from '@app/utils/objectDeepEqual.ts';
+
 import { queryClient } from '@app/App/queryClient.ts';
 import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
@@ -73,15 +73,15 @@ export const setExternalTariAddress = async (newAddress: string) => {
         });
 };
 
-export const setWalletBalance = async (payload: WalletBalanceExtended) => {
+export const setWalletBalance = async ({ account_balance, display_balance }: WalletBalanceExtended) => {
     const currentBalance = useWalletStore.getState().balance;
     const currentDisplay = useWalletStore.getState().calculated_balance;
-    const fullEqual = deepEqual(currentBalance, payload.account_balance);
-    const isEqual = fullEqual && currentDisplay == payload.display_balance;
-
+    const fullEqual = currentBalance?.total === account_balance.total;
+    const isEqual = fullEqual && currentDisplay == display_balance;
+    console.debug(`isEqual=`, isEqual);
     if (isEqual) return;
 
-    useWalletStore.setState({ balance: payload.account_balance, calculated_balance: payload.display_balance });
+    useWalletStore.setState({ balance: account_balance, calculated_balance: display_balance });
     await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
 };
 
