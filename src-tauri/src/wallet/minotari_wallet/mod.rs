@@ -207,6 +207,9 @@ impl MinotariWalletManager {
         // Store as pending transaction for later matching with scanned transactions
         Self::store_pending_transaction(&displayed_transaction).await;
 
+        BalanceTracker::current()
+            .update_from_transactions(std::slice::from_ref(&displayed_transaction))
+            .await;
         // Emit to frontend immediately so user sees the pending transaction
         EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()]).await;
 
