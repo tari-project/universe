@@ -91,10 +91,10 @@ describe('useWalletStore', () => {
     describe('balance state', () => {
         it('can set balance', () => {
             const balance = {
-                available_balance: 1000000,
-                pending_incoming_balance: 50000,
-                pending_outgoing_balance: 10000,
-                timelocked_balance: 0,
+                total: 1000000,
+                available: 50000,
+                locked: 100,
+                unconfirmed: 10000,
             };
             useWalletStore.setState({ balance });
             expect(useWalletStore.getState().balance).toEqual(balance);

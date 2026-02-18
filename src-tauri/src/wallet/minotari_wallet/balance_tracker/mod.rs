@@ -99,9 +99,8 @@ impl BalanceTracker {
     }
 
     /// Get current balance
-    pub async fn get_balance(&self) -> AccountBalance {
-        let current = self.account_balance.read().await;
-        current.clone()
+    pub async fn get_balance(&self) -> MicroMinotari {
+        *self.current_balance.read().await
     }
 
     /// Update balance based on a list of new transactions

@@ -26,7 +26,7 @@ export function SendForm({ isBack }: Props) {
     const debouncedAddress = useDebouncedValue(address, 350);
     const [isAddressEmpty, setIsAddressEmpty] = useState(true);
     const [isAddressValid, setIsAddressValid] = useState(false);
-    const availableBalance = useWalletStore((s) => s.balance?.available_balance);
+    const availableBalance = useWalletStore((s) => s.balance?.available);
 
     const numericAvailableBalance = Number(Math.floor((availableBalance || 0) / 1_000_000).toFixed(2));
     const isInitialWalletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);

@@ -33,6 +33,7 @@ export interface SystemDependency {
     required_by_app_modules: AppModule[];
 }
 
+// TODO move this to transactions.ts
 // ============================================================================
 // DisplayedTransaction Types (from minotari_wallet)
 // ============================================================================
@@ -169,6 +170,16 @@ export interface WalletBalance {
     timelocked_balance: number;
     pending_incoming_balance: number;
     pending_outgoing_balance: number;
+}
+export interface AccountBalance {
+    total: number;
+    available: number;
+    locked: number;
+    unconfirmed: number;
+    total_credits?: number;
+    total_debits?: number;
+    max_height?: number;
+    max_date?: string;
 }
 
 interface ApplicationsInformation {

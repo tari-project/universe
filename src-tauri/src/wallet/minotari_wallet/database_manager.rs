@@ -22,6 +22,7 @@
 
 use std::path::PathBuf;
 
+use crate::wallet::minotari_wallet::LOG_TARGET;
 use crate::{APPLICATION_FOLDER_ID, tasks_tracker::TasksTrackers};
 use log::{error, info, warn};
 use minotari_wallet::{db::SqlitePool, init_db};

@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
-import { DisplayedTransaction, WalletBalance } from '@app/types/app-status.ts';
-import { useWalletStore } from '../useWalletStore';
+import { DisplayedTransaction } from '@app/types/app-status.ts';
+import { useWalletStore, WalletBalanceExtended } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
 
@@ -73,18 +73,13 @@ export const setExternalTariAddress = async (newAddress: string) => {
         });
 };
 
-export const setWalletBalance = async (balance: WalletBalance) => {
+export const setWalletBalance = async (payload: WalletBalanceExtended) => {
     const currentBalance = useWalletStore.getState().balance;
-    const isEqual = deepEqual(currentBalance, balance);
+    const isEqual = deepEqual(currentBalance, payload.account_balance);
 
     if (isEqual) return;
 
-    const pending = Math.max(balance.pending_incoming_balance - balance.pending_outgoing_balance, 0);
-
-    useWalletStore.setState({
-        balance,
-        calculated_balance: pending > 0 ? pending : balance.available_balance,
-    });
+    useWalletStore.setState({ balance: payload.account_balance, calculated_balance: payload.display_balance });
     await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
 };
 

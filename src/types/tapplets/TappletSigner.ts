@@ -94,17 +94,15 @@ export class TappletSigner {
         const status = await invoke('get_base_node_status');
         return status;
     }
-
+    // TODO - check how minotari-cli updates affect bridge
     public async getTariBalance(): Promise<WalletBalance> {
         const walletBalance = useWalletStore.getState().balance;
-        return (
-            walletBalance ?? {
-                available_balance: 0,
-                timelocked_balance: 0,
-                pending_incoming_balance: 0,
-                pending_outgoing_balance: 0,
-            }
-        );
+        return {
+            available_balance: walletBalance?.available ?? 0,
+            timelocked_balance: walletBalance?.locked ?? 0,
+            pending_incoming_balance: walletBalance?.total_credits ?? 0,
+            pending_outgoing_balance: walletBalance?.total_debits ?? 0,
+        };
     }
 
     public async getAppLanguage(): Promise<string | undefined> {

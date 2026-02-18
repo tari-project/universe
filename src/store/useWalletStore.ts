@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DisplayedTransaction, WalletBalance } from '../types/app-status.ts';
+import { AccountBalance, DisplayedTransaction } from '../types/app-status.ts';
 
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect.tsx';
 import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
@@ -11,12 +11,17 @@ export interface BackendBridgeTransaction extends UserTransactionDTO {
     mined_in_block_height?: number;
 }
 
+export interface WalletBalanceExtended {
+    account_balance: AccountBalance;
+    display_balance: number;
+}
+
 export interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;
     tari_address_type: TariAddressType;
     exchange_wxtm_addresses: Record<string, string>;
-    balance?: WalletBalance;
+    balance?: AccountBalance;
     calculated_balance?: number;
     transaction_history_filter: TxHistoryFilter;
     wallet_transactions: DisplayedTransaction[];
