@@ -30,8 +30,6 @@ use r2d2_sqlite::SqliteConnectionManager;
 use tari_common::configuration::Network;
 use tokio::sync::RwLock;
 
-static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet::database_manager";
-
 const CONNECTION_HEALTH_CHECK_INTERVAL_SECS: u64 = 60;
 
 pub const DEFAULT_ACCOUNT_ID: i64 = 1;

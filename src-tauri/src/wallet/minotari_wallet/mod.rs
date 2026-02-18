@@ -24,6 +24,8 @@ pub mod balance_tracker;
 pub mod database_manager;
 pub mod transaction;
 
+pub static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet";
+
 use crate::{
     LOG_TARGET_APP_LOGIC, UniverseAppState,
     events_emitter::EventsEmitter,
