@@ -27,7 +27,7 @@ pub mod transaction;
 pub static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet";
 
 use crate::{
-    UniverseAppState,
+    LOG_TARGET_STATUSES, UniverseAppState,
     events_emitter::EventsEmitter,
     internal_wallet::{InternalWallet, TariAddressType},
     tasks_tracker::TasksTrackers,
@@ -439,12 +439,12 @@ impl MinotariWalletManager {
             // Process events and run scan concurrently
             tokio::select! {
                 _ = Self::process_scan_events(event_rx) => {
-                    info!(target: LOG_TARGET, "Scan event processing completed.");
+                    info!(target: LOG_TARGET_STATUSES, "Scan event processing completed.");
                 }
                 result = scan_future => {
                     match result {
                         Ok(_) => {
-                            info!(target: LOG_TARGET, "Blockchain scan completed successfully.");
+                            info!(target: LOG_TARGET_STATUSES, "Blockchain scan completed successfully.");
                         }
                         Err(e) => {
                             error!(target: LOG_TARGET, "Blockchain scan failed: {:?}", e);
@@ -587,7 +587,7 @@ impl MinotariWalletManager {
                 from_height,
             } => {
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_STATUSES,
                     "Scan started for account {} from height {}", account_id, from_height
                 );
             }
@@ -628,7 +628,7 @@ impl MinotariWalletManager {
                 ..
             } => {
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_STATUSES,
                     "Scan completed at height {}, total blocks scanned {}",
                     final_height, total_blocks_scanned
                 );
@@ -654,20 +654,20 @@ impl MinotariWalletManager {
                 .await;
 
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_STATUSES,
                     "Scan completed at height {}, {} total blocks scanned",
                     final_height, total_blocks_scanned
                 );
             }
             ScanStatusEvent::Waiting { resume_in, .. } => {
                 info!(
-                    target: LOG_TARGET,
+                    target: LOG_TARGET_STATUSES,
                     "Scan waiting, will resume in {:?}", resume_in
                 );
             }
             ScanStatusEvent::MoreBlocksAvailable { .. } => {}
             ScanStatusEvent::Paused { reason, .. } => {
-                info!(target: LOG_TARGET, "Scan paused: {:?}", reason);
+                info!(target: LOG_TARGET_STATUSES, "Scan paused: {:?}", reason);
             }
         }
     }

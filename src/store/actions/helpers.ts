@@ -1,5 +1,8 @@
 import { DisplayedTransaction } from '@app/types/app-status.ts';
 
+const sortTransactions = (txs: DisplayedTransaction[]): DisplayedTransaction[] =>
+    txs.sort((a, b) => new Date(b.blockchain.timestamp).getTime() - new Date(a.blockchain.timestamp).getTime());
+
 const isTransactionMatch = (txA: DisplayedTransaction, txB: DisplayedTransaction) => {
     if (txA.id === txB.id) return true;
 
@@ -47,5 +50,5 @@ export const mergeTransactions = (
 
     if (!hasChanges) return currentList;
 
-    return [...addedItems, ...updatedList];
+    return sortTransactions([...addedItems, ...updatedList]);
 };

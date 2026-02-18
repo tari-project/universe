@@ -348,11 +348,14 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_wallet_balance_update(balance_update: WalletBalanceUpdatePayload) {
+    pub async fn emit_wallet_balance_update(payload: WalletBalanceUpdatePayload) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::WalletBalanceUpdate,
-            payload: balance_update,
+            payload: WalletBalanceUpdatePayload {
+                account_balance: payload.account_balance,
+                display_balance: payload.display_balance,
+            },
         };
         if let Err(e) = Self::get_app_handle()
             .await

@@ -75,7 +75,9 @@ export const setExternalTariAddress = async (newAddress: string) => {
 
 export const setWalletBalance = async (payload: WalletBalanceExtended) => {
     const currentBalance = useWalletStore.getState().balance;
-    const isEqual = deepEqual(currentBalance, payload.account_balance);
+    const currentDisplay = useWalletStore.getState().calculated_balance;
+    const fullEqual = deepEqual(currentBalance, payload.account_balance);
+    const isEqual = fullEqual && currentDisplay == payload.display_balance;
 
     if (isEqual) return;
 

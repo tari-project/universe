@@ -63,23 +63,6 @@ appenders:
     encoder:
       pattern: '{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] [Thread:{I}] {l:5} {m}{n}'
 
-  # An appender named "minotari_cli" that writes to a file with a custom pattern encoder
-  minotari_cli:
-    kind: rolling_file
-    path: '{{log_dir}}/wallet/log/minotari_cli.log'
-    policy:
-      kind: compound
-      trigger:
-        kind: size
-        limit: 2mb
-      roller:
-        kind: fixed_window
-        base: 1
-        count: 2
-        pattern: '{{log_dir}}/wallet/log/minotari_cli.{}.log'
-    encoder:
-      pattern: '{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] // {f}:{L}{n}'
-
   # An appender named "other" that writes to a file with a custom pattern encoder
   other:
     kind: rolling_file
@@ -128,13 +111,6 @@ loggers:
       - base_layer
       - stdout
     additive: false
-
-  #minotari_wallet
-  tari::universe::wallet::minotari_wallet:
-    level: info
-    appenders:
-      - minotari_cli
-      - stdout
 
   # other
   h2:
