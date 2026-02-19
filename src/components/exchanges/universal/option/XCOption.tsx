@@ -62,35 +62,30 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
             name: content.name,
         };
 
-        let tariAddress = miningAddress;
-
-        if (content.wxtm_mode) {
-            const encodedAddress = await convertEthAddressToTariAddress(miningAddress, selectedExchangeMiner.id);
-            console.info('Original Tari address:', miningAddress);
-            console.info('Encoded Tari address:', encodedAddress);
-            tariAddress = encodedAddress;
-        }
-
         setIsSubmitting(true);
-        await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner, miningAddress: tariAddress })
-            .then(() => {
-                setShowUniversalModal(false);
-                setSeedlessUI(true);
-                console.info('New Tari address set successfully to:', tariAddress);
-            })
-            .catch((e) => {
-                console.error('Could not set Exchange address', e);
-                const errorMessage = e as unknown as string;
-                if (
-                    !errorMessage.includes('User canceled the operation') &&
-                    !errorMessage.includes('PIN entry cancelled')
-                ) {
-                    setError(errorMessage);
-                }
-            })
-            .finally(() => {
-                setIsSubmitting(false);
-            });
+        try {
+            let tariAddress = miningAddress;
+
+            if (content.wxtm_mode) {
+                const encodedAddress = await convertEthAddressToTariAddress(miningAddress, selectedExchangeMiner.id);
+                tariAddress = encodedAddress;
+            }
+
+            await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner, miningAddress: tariAddress });
+            setSeedlessUI(true);
+            setIsSubmitting(false);
+            setShowUniversalModal(false);
+        } catch (e) {
+            console.error('Could not set Exchange address', e);
+            const errorMessage = e as unknown as string;
+            if (
+                !errorMessage.includes('User canceled the operation') &&
+                !errorMessage.includes('PIN entry cancelled')
+            ) {
+                setError(errorMessage);
+            }
+            setIsSubmitting(false);
+        }
     };
 
     const isTari = content.slug === 'universal' && content.id === 'universal';

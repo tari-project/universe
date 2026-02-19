@@ -47,25 +47,23 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
     const handleRevertToInternalWallet = async () => {
         setIsSubmitting(true);
         setIsWalletLoading(true);
-        await invoke('revert_to_internal_wallet')
-            .then(() => {
-                setShowUniversalModal(false);
-                setIsWalletLoading(false);
-            })
-            .catch((e) => {
-                console.error('Could not revert to internal wallet', e);
-                const errorMessage = e as unknown as string;
-                const showError =
-                    !errorMessage.includes('User canceled the operation') &&
-                    !errorMessage.includes('PIN entry cancelled');
-                if (showError) {
-                    setError(errorMessage);
-                }
-                setIsWalletLoading(false);
-            })
-            .finally(() => {
-                setIsSubmitting(false);
-            });
+        try {
+            await invoke('revert_to_internal_wallet');
+            setIsWalletLoading(false);
+            setIsSubmitting(false);
+            setShowUniversalModal(false);
+        } catch (e) {
+            console.error('Could not revert to internal wallet', e);
+            const errorMessage = e as unknown as string;
+            const showError =
+                !errorMessage.includes('User canceled the operation') &&
+                !errorMessage.includes('PIN entry cancelled');
+            if (showError) {
+                setError(errorMessage);
+            }
+            setIsWalletLoading(false);
+            setIsSubmitting(false);
+        }
     };
 
     const isTari = universalExchangeMinerOption.slug === 'universal' && universalExchangeMinerOption.id === 'universal';

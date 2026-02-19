@@ -90,11 +90,10 @@ export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
     }
 
     const { isCpuMiningInitiated, isGpuMiningInitiated } = useMiningStore.getState();
-    const wasMining = isCpuMiningInitiated || isGpuMiningInitiated;
 
     setDialogToShow(undefined);
     setShowResumeAppModal(true);
-    useMiningStore.setState({ resumeMiningAfterRestart: wasMining });
+    useMiningStore.setState({ resumeAfterRestart: { cpu: isCpuMiningInitiated, gpu: isGpuMiningInitiated } });
 
     for (const phase of phasesToRestart) {
         clearSetupProgress(phase);

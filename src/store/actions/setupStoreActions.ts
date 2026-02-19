@@ -127,11 +127,13 @@ const handleCpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             const cpuMiningEnabled = useConfigMiningStore.getState().cpu_mining_enabled;
             const gpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
             const wasMineOnAppStartExecuted = useMiningStore.getState().wasMineOnAppStartExecuted;
-            const resumeMiningAfterRestart = useMiningStore.getState().resumeMiningAfterRestart;
+            const resumeAfterRestart = useMiningStore.getState().resumeAfterRestart;
 
-            if (resumeMiningAfterRestart && cpuMiningEnabled) {
-                await startCpuMining();
-                useMiningStore.setState((c) => ({ ...c, resumeMiningAfterRestart: false }));
+            if (resumeAfterRestart.cpu) {
+                useMiningStore.setState((c) => ({ ...c, resumeAfterRestart: { ...c.resumeAfterRestart, cpu: false } }));
+                if (cpuMiningEnabled) {
+                    await startCpuMining();
+                }
             } else if (mineOnAppStart && cpuMiningEnabled && !wasMineOnAppStartExecuted) {
                 await startCpuMining();
                 handleSessionMiningTime({ startTimestamp: Date.now() });
@@ -142,6 +144,7 @@ const handleCpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             break;
         }
         case AppModuleStatus.Failed:
+            useMiningStore.setState((c) => ({ ...c, resumeAfterRestart: { ...c.resumeAfterRestart, cpu: false } }));
             break;
         case AppModuleStatus.NotInitialized: {
             const isCpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
@@ -162,11 +165,13 @@ const handleGpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             const gpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
             const cpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
             const wasMineOnAppStartExecuted = useMiningStore.getState().wasMineOnAppStartExecuted;
-            const resumeMiningAfterRestart = useMiningStore.getState().resumeMiningAfterRestart;
+            const resumeAfterRestart = useMiningStore.getState().resumeAfterRestart;
 
-            if (resumeMiningAfterRestart && gpuMiningEnabled) {
-                await startGpuMining();
-                useMiningStore.setState((c) => ({ ...c, resumeMiningAfterRestart: false }));
+            if (resumeAfterRestart.gpu) {
+                useMiningStore.setState((c) => ({ ...c, resumeAfterRestart: { ...c.resumeAfterRestart, gpu: false } }));
+                if (gpuMiningEnabled) {
+                    await startGpuMining();
+                }
             } else if (mineOnAppStart && gpuMiningEnabled && !wasMineOnAppStartExecuted) {
                 await startGpuMining();
                 handleSessionMiningTime({ startTimestamp: Date.now() });
@@ -177,6 +182,7 @@ const handleGpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             break;
         }
         case AppModuleStatus.Failed:
+            useMiningStore.setState((c) => ({ ...c, resumeAfterRestart: { ...c.resumeAfterRestart, gpu: false } }));
             break;
         case AppModuleStatus.NotInitialized: {
             const isMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
