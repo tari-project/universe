@@ -13,7 +13,7 @@ export interface BackendBridgeTransaction extends UserTransactionDTO {
 
 export interface WalletBalanceExtended {
     account_balance: AccountBalance;
-    display_balance: number;
+    display_balance?: number;
 }
 
 export interface WalletStoreState {

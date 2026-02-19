@@ -78,7 +78,7 @@ export const setWalletBalance = async ({ account_balance, display_balance }: Wal
     const currentDisplay = useWalletStore.getState().calculated_balance;
     const fullEqual = currentBalance?.total === account_balance.total;
     const isEqual = fullEqual && currentDisplay == display_balance;
-    console.debug(`isEqual=`, isEqual);
+
     if (isEqual) return;
 
     useWalletStore.setState({ balance: account_balance, calculated_balance: display_balance });

@@ -41,12 +41,8 @@ use log::{error, info};
 use minotari_wallet::{
     DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
     TransactionHistoryService,
-    db::{
-        AccountBalance, get_all_balance_changes_by_account_id,
-        get_latest_scanned_tip_block_by_account,
-    },
+    db::{AccountBalance, get_latest_scanned_tip_block_by_account},
     get_balance,
-    models::BalanceChange,
     tasks::unlocker::TransactionUnlocker,
     transactions::one_sided_transaction::Recipient,
     utils::init_wallet::init_with_view_key,
@@ -207,8 +203,12 @@ impl MinotariWalletManager {
         // Store as pending transaction for later matching with scanned transactions
         Self::store_pending_transaction(&displayed_transaction).await;
 
+        let updated_balance = Self::get_latest_account_balance().await;
         BalanceTracker::current()
-            .update_from_transactions(std::slice::from_ref(&displayed_transaction), None)
+            .update_from_transactions(
+                std::slice::from_ref(&displayed_transaction),
+                updated_balance.clone(),
+            )
             .await;
         // Emit to frontend immediately so user sees the pending transaction
         EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()]).await;
@@ -321,11 +321,12 @@ impl MinotariWalletManager {
         get_balance(&conn, account_id).map_err(|e| e.into())
     }
 
-    /// Get all balance changes for an account
-    #[allow(dead_code)]
-    async fn get_all_balance_changes(account_id: i64) -> Result<Vec<BalanceChange>, anyhow::Error> {
-        let conn = Self::get_db_connection().await?;
-        get_all_balance_changes_by_account_id(&conn, account_id).map_err(|e| e.into())
+    pub async fn get_latest_account_balance() -> Option<AccountBalance> {
+        let mut updated_balance: Option<AccountBalance> = None;
+        if let Ok(bal) = Self::get_account_balance(DEFAULT_ACCOUNT_ID).await {
+            updated_balance = Some(bal)
+        };
+        updated_balance
     }
 
     pub async fn initialize_wallet() -> Result<(), anyhow::Error> {
@@ -526,15 +527,8 @@ impl MinotariWalletManager {
 
                     // Update balance based on new transactions
                     if !transactions_to_emit.is_empty() {
-                        transactions_to_emit.dedup_by(|a, b| {
-                            a.id == b.id
-                                || a.details.sent_output_hashes == b.details.sent_output_hashes
-                        });
-
-                        let mut updated_balance: Option<AccountBalance> = None;
-                        if let Ok(bal) = Self::get_account_balance(DEFAULT_ACCOUNT_ID).await {
-                            updated_balance = Some(bal)
-                        };
+                        transactions_to_emit.dedup_by(|a, b| a.id == b.id);
+                        let updated_balance = Self::get_latest_account_balance().await;
 
                         BalanceTracker::current()
                             .update_from_transactions(

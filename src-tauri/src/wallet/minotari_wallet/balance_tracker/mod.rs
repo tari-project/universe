@@ -129,27 +129,29 @@ impl BalanceTracker {
         }
 
         let current = self.get_balance().await;
-
-        let mut new_account_balance = self.get_account_balance().await;
+        let mut account_balance = self.account_balance.write().await;
 
         if let Some(updated_balance) = updated_account_balance {
-            new_account_balance = updated_balance
+            *account_balance = updated_balance.clone();
+        } else {
+            *account_balance = self.get_account_balance().await;
         }
-
         match BalanceCalculator::calculate_new_balance(current, total_credit, total_debit) {
             Ok(new_balance) => {
+                let mut display_balance = new_balance;
+                if account_balance.available > new_balance {
+                    display_balance = account_balance.available
+                }
                 let mut balance = self.current_balance.write().await;
-                let mut account_balance = self.account_balance.write().await;
-                *balance = new_balance;
-                *account_balance = new_account_balance.clone();
+                *balance = display_balance;
 
                 info!(
                     target: LOG_TARGET,
                     "Balance updated: {} -> {} (credit: +{}, debit: -{})",
-                    current, new_balance, total_credit, total_debit
+                    current, display_balance, total_credit, total_debit
                 );
 
-                Self::emit_balance(new_account_balance, Some(new_balance)).await;
+                Self::emit_balance(account_balance.clone(), Some(display_balance)).await;
             }
             Err(e) => {
                 error!(

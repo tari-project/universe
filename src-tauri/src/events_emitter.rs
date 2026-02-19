@@ -352,10 +352,7 @@ impl EventsEmitter {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::WalletBalanceUpdate,
-            payload: WalletBalanceUpdatePayload {
-                account_balance: payload.account_balance,
-                display_balance: payload.display_balance,
-            },
+            payload,
         };
         if let Err(e) = Self::get_app_handle()
             .await
