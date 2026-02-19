@@ -208,7 +208,7 @@ impl MinotariWalletManager {
         Self::store_pending_transaction(&displayed_transaction).await;
 
         BalanceTracker::current()
-            .update_from_transactions(std::slice::from_ref(&displayed_transaction))
+            .update_from_transactions(std::slice::from_ref(&displayed_transaction), None)
             .await;
         // Emit to frontend immediately so user sees the pending transaction
         EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()]).await;
@@ -531,8 +531,16 @@ impl MinotariWalletManager {
                                 || a.details.sent_output_hashes == b.details.sent_output_hashes
                         });
 
+                        let mut updated_balance: Option<AccountBalance> = None;
+                        if let Ok(bal) = Self::get_account_balance(DEFAULT_ACCOUNT_ID).await {
+                            updated_balance = Some(bal)
+                        };
+
                         BalanceTracker::current()
-                            .update_from_transactions(&transactions_to_emit)
+                            .update_from_transactions(
+                                &transactions_to_emit,
+                                updated_balance.clone(),
+                            )
                             .await;
 
                         // Emit all transactions to frontend
