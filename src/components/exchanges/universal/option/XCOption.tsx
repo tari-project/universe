@@ -175,7 +175,11 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
 
                         {isAddressValid ? (
                             <ConfirmButton onClick={handleExchangeMiner} disabled={isSubmitting || !isAddressValid}>
-                                {isSubmitting ? <LoadingDots /> : <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>}
+                                {isSubmitting ? (
+                                    <LoadingDots />
+                                ) : (
+                                    <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
+                                )}
                             </ConfirmButton>
                         ) : (
                             helpMarkup

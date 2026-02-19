@@ -56,8 +56,7 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
             console.error('Could not revert to internal wallet', e);
             const errorMessage = e as unknown as string;
             const showError =
-                !errorMessage.includes('User canceled the operation') &&
-                !errorMessage.includes('PIN entry cancelled');
+                !errorMessage.includes('User canceled the operation') && !errorMessage.includes('PIN entry cancelled');
             if (showError) {
                 setError(errorMessage);
             }
@@ -130,7 +129,11 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
                         ) : null}
                     </SeasonReward>
                     <ConfirmButton onClick={handleRevertToInternalWallet} disabled={isSubmitting}>
-                        {isSubmitting ? <LoadingDots /> : <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>}
+                        {isSubmitting ? (
+                            <LoadingDots />
+                        ) : (
+                            <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
+                        )}
                     </ConfirmButton>
                 </ContentBodyWrapper>
             )}
