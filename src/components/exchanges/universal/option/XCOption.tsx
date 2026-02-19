@@ -28,7 +28,6 @@ import { ExchangeAddress } from '../exchangeAddress/ExchangeAddress.tsx';
 import { useState, Ref } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { formatCountdown } from '@app/utils/formatters.ts';
-import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 import { setError, useWalletStore } from '@app/store';
 import { ExchangeBranding, ExchangeMiner } from '@app/types/exchange.ts';
 
@@ -39,6 +38,7 @@ import { truncateMiddle } from '@app/utils';
 import { AnimatePresence } from 'motion/react';
 import { convertEthAddressToTariAddress } from '@app/store/actions/bridgeApiActions.ts';
 import { WalletAddressNetwork } from '@app/types/transactions.ts';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface XCOptionProps {
     isCurrent?: boolean;
@@ -53,6 +53,7 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [miningAddress, setMiningAddress] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleExchangeMiner = async () => {
         const selectedExchangeMiner: ExchangeMiner = {
@@ -70,10 +71,10 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
             tariAddress = encodedAddress;
         }
 
+        setIsSubmitting(true);
         await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner, miningAddress: tariAddress })
             .then(() => {
                 setShowUniversalModal(false);
-                restartMining();
                 setSeedlessUI(true);
                 console.info('New Tari address set successfully to:', tariAddress);
             })
@@ -86,6 +87,9 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
                 ) {
                     setError(errorMessage);
                 }
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
     };
 
@@ -175,8 +179,8 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
                         ) : null}
 
                         {isAddressValid ? (
-                            <ConfirmButton onClick={handleExchangeMiner} disabled={!isAddressValid}>
-                                <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
+                            <ConfirmButton onClick={handleExchangeMiner} disabled={isSubmitting || !isAddressValid}>
+                                {isSubmitting ? <LoadingDots /> : <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>}
                             </ConfirmButton>
                         ) : (
                             helpMarkup

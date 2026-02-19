@@ -25,12 +25,12 @@ import { ExchangeAddress } from '../exchangeAddress/ExchangeAddress.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { formatCountdown } from '@app/utils/formatters.ts';
 import { setError, useWalletStore } from '@app/store';
-import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 
 import { truncateMiddle } from '@app/utils/truncateString.ts';
-import { Ref } from 'react';
+import { useState, Ref } from 'react';
 import { WalletAddressNetwork } from '@app/types/transactions.ts';
 import { setIsWalletLoading } from '@app/store/actions/walletStoreActions.ts';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface XCOptionProps {
     isCurrent?: boolean;
@@ -42,13 +42,14 @@ interface XCOptionProps {
 export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClick, ref }: XCOptionProps) => {
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const base_tari_address = useWalletStore((state) => state.tari_address_emoji);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleRevertToInternalWallet = async () => {
+        setIsSubmitting(true);
         setIsWalletLoading(true);
         await invoke('revert_to_internal_wallet')
             .then(() => {
                 setShowUniversalModal(false);
-                restartMining();
                 setIsWalletLoading(false);
             })
             .catch((e) => {
@@ -61,6 +62,9 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
                     setError(errorMessage);
                 }
                 setIsWalletLoading(false);
+            })
+            .finally(() => {
+                setIsSubmitting(false);
             });
     };
 
@@ -127,8 +131,8 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
                             </Countdown>
                         ) : null}
                     </SeasonReward>
-                    <ConfirmButton onClick={handleRevertToInternalWallet}>
-                        <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
+                    <ConfirmButton onClick={handleRevertToInternalWallet} disabled={isSubmitting}>
+                        {isSubmitting ? <LoadingDots /> : <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>}
                     </ConfirmButton>
                 </ContentBodyWrapper>
             )}

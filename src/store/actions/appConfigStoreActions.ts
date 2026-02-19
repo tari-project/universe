@@ -13,7 +13,6 @@ import {
     useWalletStore,
 } from '../index.ts';
 import {
-    restartMining,
     setLastSelectedMiningModeNameForSchedulerEvent,
     startCpuMining,
     startGpuMining,
@@ -247,7 +246,7 @@ export const setMoneroAddress = async (moneroAddress: string) => {
     useConfigWalletStore.setState((c) => ({ ...c, monero_address_is_generated: false }));
     invoke('set_monero_address', { moneroAddress })
         .then(() => {
-            restartMining();
+            // Backend handles mining restart via restart_phases
         })
         .catch((e) => {
             console.error('Could not set Monero address', e);

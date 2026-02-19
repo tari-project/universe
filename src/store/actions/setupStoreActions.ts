@@ -127,7 +127,12 @@ const handleCpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             const cpuMiningEnabled = useConfigMiningStore.getState().cpu_mining_enabled;
             const gpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
             const wasMineOnAppStartExecuted = useMiningStore.getState().wasMineOnAppStartExecuted;
-            if (mineOnAppStart && cpuMiningEnabled && !wasMineOnAppStartExecuted) {
+            const resumeMiningAfterRestart = useMiningStore.getState().resumeMiningAfterRestart;
+
+            if (resumeMiningAfterRestart && cpuMiningEnabled) {
+                await startCpuMining();
+                useMiningStore.setState((c) => ({ ...c, resumeMiningAfterRestart: false }));
+            } else if (mineOnAppStart && cpuMiningEnabled && !wasMineOnAppStartExecuted) {
                 await startCpuMining();
                 handleSessionMiningTime({ startTimestamp: Date.now() });
                 useMiningStore.setState((c) => ({ ...c, wasMineOnAppStartExecuted: true }));
@@ -157,7 +162,12 @@ const handleGpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             const gpuMiningEnabled = useConfigMiningStore.getState().gpu_mining_enabled;
             const cpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
             const wasMineOnAppStartExecuted = useMiningStore.getState().wasMineOnAppStartExecuted;
-            if (mineOnAppStart && gpuMiningEnabled && !wasMineOnAppStartExecuted) {
+            const resumeMiningAfterRestart = useMiningStore.getState().resumeMiningAfterRestart;
+
+            if (resumeMiningAfterRestart && gpuMiningEnabled) {
+                await startGpuMining();
+                useMiningStore.setState((c) => ({ ...c, resumeMiningAfterRestart: false }));
+            } else if (mineOnAppStart && gpuMiningEnabled && !wasMineOnAppStartExecuted) {
                 await startGpuMining();
                 handleSessionMiningTime({ startTimestamp: Date.now() });
                 useMiningStore.setState((c) => ({ ...c, wasMineOnAppStartExecuted: true }));
