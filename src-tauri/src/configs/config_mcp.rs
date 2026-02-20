@@ -63,7 +63,10 @@ pub(crate) mod token_cipher {
         let anon_id = ANON_ID
             .get()
             .expect("token_cipher: anon_id not set — call set_anon_id before loading ConfigMcp");
-        let material = format!("tari-universe-mcp-token-v1:{}:{}", APPLICATION_FOLDER_ID, anon_id);
+        let material = format!(
+            "tari-universe-mcp-token-v1:{}:{}",
+            APPLICATION_FOLDER_ID, anon_id
+        );
         let hash1 = digest::digest(&digest::SHA256, material.as_bytes());
         let hash2 = digest::digest(&digest::SHA256, hash1.as_ref());
         let unbound =
