@@ -36,43 +36,39 @@ pub const MCP_CONFIG_VERSION: u32 = 0;
 pub(crate) const SECONDS_PER_DAY: u64 = 24 * 60 * 60;
 static INSTANCE: LazyLock<RwLock<ConfigMcp>> = LazyLock::new(|| RwLock::new(ConfigMcp::new()));
 
-mod token_cipher {
+pub(crate) mod token_cipher {
     use base64::prelude::*;
     use ring::aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey};
     use ring::digest;
-    use ring::rand::{SecureRandom, SystemRandom};
+    use std::sync::OnceLock;
 
     use crate::APPLICATION_FOLDER_ID;
 
     const NONCE_LEN: usize = 12;
 
-    fn derive_key() -> LessSafeKey {
-        let hash1 = digest::digest(
-            &digest::SHA256,
-            format!("tari-universe-mcp-token-v1:{}", APPLICATION_FOLDER_ID).as_bytes(),
+    static ANON_ID: OnceLock<String> = OnceLock::new();
+
+    /// Must be called before ConfigMcp's LazyLock is first accessed.
+    /// setup_manager calls ConfigCore::initialize before ConfigMcp::initialize,
+    /// so the anon_id is available in memory by then.
+    pub fn set_anon_id(anon_id: String) {
+        let existing = ANON_ID.get_or_init(|| anon_id.clone());
+        assert_eq!(
+            existing, &anon_id,
+            "token_cipher: anon_id already set to a different value"
         );
+    }
+
+    fn derive_key() -> LessSafeKey {
+        let anon_id = ANON_ID
+            .get()
+            .expect("token_cipher: anon_id not set — call set_anon_id before loading ConfigMcp");
+        let material = format!("tari-universe-mcp-token-v1:{}:{}", APPLICATION_FOLDER_ID, anon_id);
+        let hash1 = digest::digest(&digest::SHA256, material.as_bytes());
         let hash2 = digest::digest(&digest::SHA256, hash1.as_ref());
         let unbound =
             UnboundKey::new(&AES_256_GCM, &hash2.as_ref()[..32]).expect("AES key creation failed");
         LessSafeKey::new(unbound)
-    }
-
-    pub fn encrypt(plaintext: &str) -> String {
-        let key = derive_key();
-        let rng = SystemRandom::new();
-        let mut nonce_bytes = [0u8; NONCE_LEN];
-        rng.fill(&mut nonce_bytes)
-            .expect("Failed to generate nonce");
-
-        let mut in_out = plaintext.as_bytes().to_vec();
-        let nonce = Nonce::assume_unique_for_key(nonce_bytes);
-        key.seal_in_place_append_tag(nonce, Aad::empty(), &mut in_out)
-            .expect("AES-GCM seal failed");
-
-        let mut result = Vec::with_capacity(NONCE_LEN + in_out.len());
-        result.extend_from_slice(&nonce_bytes);
-        result.extend_from_slice(&in_out);
-        BASE64_URL_SAFE_NO_PAD.encode(&result)
     }
 
     pub fn decrypt(encoded: &str) -> Result<String, &'static str> {
@@ -94,12 +90,29 @@ mod token_cipher {
         String::from_utf8(plaintext.to_vec()).map_err(|_| "invalid utf8")
     }
 
+    pub fn encrypt_deterministic(plaintext: &str) -> String {
+        let key = derive_key();
+        let hash = digest::digest(&digest::SHA256, plaintext.as_bytes());
+        let mut nonce_bytes = [0u8; NONCE_LEN];
+        nonce_bytes.copy_from_slice(&hash.as_ref()[..NONCE_LEN]);
+
+        let mut in_out = plaintext.as_bytes().to_vec();
+        let nonce = Nonce::assume_unique_for_key(nonce_bytes);
+        key.seal_in_place_append_tag(nonce, Aad::empty(), &mut in_out)
+            .expect("AES-GCM seal failed");
+
+        let mut result = Vec::with_capacity(NONCE_LEN + in_out.len());
+        result.extend_from_slice(&nonce_bytes);
+        result.extend_from_slice(&in_out);
+        BASE64_URL_SAFE_NO_PAD.encode(&result)
+    }
+
     pub fn serialize_token<S>(value: &Option<String>, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         match value {
-            Some(plaintext) => serializer.serialize_some(&encrypt(plaintext)),
+            Some(plaintext) => serializer.serialize_some(&encrypt_deterministic(plaintext)),
             None => serializer.serialize_none(),
         }
     }
@@ -113,7 +126,9 @@ mod token_cipher {
         match opt {
             Some(encoded) => match decrypt(&encoded) {
                 Ok(plaintext) => Ok(Some(plaintext)),
-                Err(_) => Ok(Some(encoded)),
+                Err(e) => Err(serde::de::Error::custom(format!(
+                    "failed to decrypt MCP token: {e}"
+                ))),
             },
             None => Ok(None),
         }
@@ -255,6 +270,11 @@ pub struct ConfigMcp {
 
 impl ConfigMcp {
     pub async fn initialize(app_handle: AppHandle) {
+        let anon_id = super::config_core::ConfigCore::content()
+            .await
+            .anon_id()
+            .clone();
+        token_cipher::set_anon_id(anon_id);
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
         drop(config);

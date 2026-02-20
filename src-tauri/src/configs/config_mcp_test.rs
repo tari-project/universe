@@ -22,6 +22,10 @@
 
 use super::config_mcp::ConfigMcpContent;
 
+fn ensure_test_identity() {
+    super::config_mcp::token_cipher::set_anon_id("test-anon-id".to_string());
+}
+
 // =============================================================================
 // Default values
 // =============================================================================
@@ -268,6 +272,7 @@ fn set_control_tier_disabled() {
 
 #[test]
 fn config_serialization_roundtrip() {
+    ensure_test_identity();
     let config = ConfigMcpContent::default();
     let serialized = serde_json::to_string(&config).unwrap();
     let deserialized: ConfigMcpContent = serde_json::from_str(&serialized).unwrap();
@@ -294,6 +299,7 @@ fn config_serialization_roundtrip() {
 
 #[test]
 fn config_serialization_with_token() {
+    ensure_test_identity();
     let mut config = ConfigMcpContent::default();
     config.ensure_token();
 

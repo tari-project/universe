@@ -33,7 +33,7 @@ use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 
 use crate::LOG_TARGET_APP_LOGIC;
-use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent};
+use crate::configs::config_mcp::{ConfigMcp, ConfigMcpContent, SECONDS_PER_DAY};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::tools::TariMcpHandler;
@@ -120,19 +120,15 @@ impl McpServerManager {
             })?
         };
 
-        // Bind the listener — try configured port first, fall back to OS-assigned
         let addr = std::net::SocketAddr::from(([127, 0, 0, 1], configured_port));
-        let listener = match tokio::net::TcpListener::bind(addr).await {
-            Ok(l) => {
-                info!(target: LOG_TARGET_APP_LOGIC, "MCP server bound to configured port {configured_port}");
-                l
-            }
-            Err(e) => {
-                warn!(target: LOG_TARGET_APP_LOGIC, "MCP server failed to bind to port {configured_port}: {e}, falling back to OS-assigned port");
-                let fallback_addr = std::net::SocketAddr::from(([127, 0, 0, 1], 0u16));
-                tokio::net::TcpListener::bind(fallback_addr).await?
-            }
-        };
+        let listener = tokio::net::TcpListener::bind(addr).await.map_err(|e| {
+            anyhow::anyhow!(
+                "MCP server failed to bind to configured port {configured_port}: {e}. \
+                 Refusing to fall back to a random port for security reasons — \
+                 another process on the configured port could intercept bearer tokens."
+            )
+        })?;
+        info!(target: LOG_TARGET_APP_LOGIC, "MCP server bound to configured port {configured_port}");
 
         let bound_port = listener.local_addr()?.port();
         info!(target: LOG_TARGET_APP_LOGIC, "MCP server listening on 127.0.0.1:{bound_port}");
@@ -264,7 +260,7 @@ async fn auth_middleware(
                     Some(
                         SystemTime::now()
                             + std::time::Duration::from_secs(
-                                u64::from(*config.token_expiry_days()) * 86400,
+                                u64::from(*config.token_expiry_days()) * SECONDS_PER_DAY,
                             ),
                     ),
                 )
