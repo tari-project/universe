@@ -25,6 +25,7 @@ import { loadAnimation, setUITheme, updateSetMiningModeAsSchedulerEventMode } fr
 import { displayMode } from '../types';
 import {
     BasePoolData,
+    ConfigMcp,
     ConfigMining,
     ConfigPools,
     ConfigUI,
@@ -36,6 +37,7 @@ import {
     PromptType,
 } from '@app/types/configs.ts';
 import { setCurrentExchangeMinerId } from '../useExchangeStore.ts';
+import { useConfigMcpStore } from '../useAppConfigStore.ts';
 import { refreshXCContent } from '@app/hooks/exchanges/fetchExchangeContent.ts';
 import { WalletUIMode } from '@app/types/events-payloads.ts';
 import { getSelectedCpuPool, getSelectedGpuPool } from '../selectors/appConfigStoreSelectors.ts';
@@ -634,4 +636,8 @@ export const markFeedbackSurveyAsCompleted = async () => {
         console.error('Could not mark feedback survey as completed', e);
         setError('Could not mark feedback survey as completed');
     });
+};
+
+export const handleConfigMcpLoaded = (mcpConfig: ConfigMcp) => {
+    useConfigMcpStore.setState((c) => ({ ...c, ...mcpConfig }));
 };

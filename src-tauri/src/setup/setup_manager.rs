@@ -55,8 +55,8 @@ use crate::utils::platform_utils::PlatformUtils;
 use crate::{
     UniverseAppState,
     configs::{
-        config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
-        config_wallet::ConfigWallet, trait_config::ConfigImpl,
+        config_core::ConfigCore, config_mcp::ConfigMcp, config_mining::ConfigMining,
+        config_ui::ConfigUI, config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
     events_manager::EventsManager,
@@ -64,7 +64,7 @@ use crate::{
     utils::system_status::SystemStatus,
     websocket_manager::WebsocketMessage,
 };
-use log::{error, info};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::{
@@ -309,6 +309,22 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
+        ConfigMcp::initialize(app_handle.clone()).await;
+
+        // Initialize MCP server with node status receiver for chain tools
+        crate::mcp::server::McpServerManager::initialize(
+            state.node_status_watch_rx.clone(),
+            state.wallet_manager.clone(),
+        )
+        .await;
+
+        // Auto-start MCP server if enabled with a valid token
+        if *ConfigMcp::content().await.enabled()
+            && ConfigMcp::content().await.bearer_token().is_some()
+            && let Err(e) = crate::mcp::server::McpServerManager::start().await
+        {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to auto-start MCP server: {e}");
+        }
 
         let _ = check_data_import(app_handle.clone()).await.map_err(|e| {
             error!(target: LOG_TARGET_APP_LOGIC, "Error in data import: {e}");
@@ -353,6 +369,7 @@ impl SetupManager {
         EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
         EventsEmitter::emit_ui_config_loaded(&ConfigUI::content().await).await;
         EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+        EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
 
         let is_on_exchange_specific_variant = ConfigCore::content()
             .await
@@ -716,6 +733,13 @@ impl SetupManager {
                         continue;
                     }
                     self.setup_wallet_phase().await;
+
+                    // Restart MCP server if running so it picks up the new wallet state
+                    if *ConfigMcp::content().await.enabled()
+                        && let Err(e) = crate::mcp::server::McpServerManager::restart().await
+                    {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to restart MCP server after wallet phase resume: {e}");
+                    }
                 }
             }
         }

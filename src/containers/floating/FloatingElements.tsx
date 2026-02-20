@@ -30,6 +30,7 @@ import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 import UniversalEXSelectorModal from './UniversalEXSelectorModal/UniversalEXSelectorModal.tsx';
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
 import AirdropClaimModal from '../main/Airdrop/AirdropClaim/AirdropClaimModal.tsx';
+import McpTransactionDialog from './mcp/McpTransactionDialog.tsx';
 import SchedulerModal from './scheduler/SchedulerModal.tsx';
 
 const environment = import.meta.env.MODE;
@@ -62,6 +63,7 @@ const FloatingElements = () => {
             <CreatePinDialog />
             <EnterPinDialog />
             <SettingsModal />
+            <McpTransactionDialog />
             <AirdropClaimModal />
             <FailedModuleInitializationDialog />
             <ExitFeedbackSurveyDialog />

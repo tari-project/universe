@@ -187,6 +187,11 @@ impl WalletManager {
             .load(std::sync::atomic::Ordering::Relaxed)
     }
 
+    pub fn reset_initial_scan_completed(&self) {
+        self.initial_scan_completed
+            .store(false, std::sync::atomic::Ordering::Relaxed);
+    }
+
     pub async fn on_app_exit(&self) {
         match self
             .watcher
