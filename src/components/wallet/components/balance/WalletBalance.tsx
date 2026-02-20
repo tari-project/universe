@@ -18,7 +18,7 @@ import {
     LoadingText,
 } from './styles.ts';
 import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
 import { AnimatePresence } from 'motion/react';
 import { Progress } from '@app/components/elements/loaders/CircularProgress/Progress.tsx';
@@ -44,7 +44,7 @@ export const WalletBalance = () => {
 
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const isConnected = useNodeStore((s) => s.isNodeConnected);
-    const available = useWalletStore((s) => s.balance?.available_balance);
+    const available = useWalletStore((s) => s.balance?.available);
     const total = useWalletStore((s) => s.calculated_balance);
     const scanData = useWalletStore((s) => s.wallet_scanning);
 
@@ -88,8 +88,7 @@ export const WalletBalance = () => {
         </LoadingText>
     );
 
-    // const bottomMarkup = !isLoading ? <Typography>{balanceText}</Typography> : loadingMarkup;
-    let bottomMarkup;
+    let bottomMarkup: ReactNode;
     if (scanData.total_height === 0 && isScanning) {
         bottomMarkup = <></>;
     } else if (isLoading) {

@@ -49,7 +49,7 @@ keyring = { version = "3.0.5", features = [
   "windows-native",
 ] }
 log = "0.4.22"
-log4rs = "1.3.0"
+log4rs = "1.4.0"
 minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", rev = "32df87fab620ae2ccd34d37aac9a7670351932d0" }
 minotari_node_wallet_client = { git = "https://github.com/tari-project/tari.git", rev = "32df87fab620ae2ccd34d37aac9a7670351932d0" }
 minotari-wallet = { package = "minotari", git = "https://github.com/tari-project/minotari-cli.git", rev = "eee623b3a506b40213f7c692e5cfe9c62381ab55" }

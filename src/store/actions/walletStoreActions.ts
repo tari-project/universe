@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
-import { DisplayedTransaction, WalletBalance } from '@app/types/app-status.ts';
-import { useWalletStore } from '../useWalletStore';
+import { DisplayedTransaction } from '@app/types/app-status.ts';
+import { useWalletStore, WalletBalanceExtended } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
 
@@ -9,11 +9,12 @@ import { addToast } from '@app/components/ToastStack/useToastStore';
 import { t } from 'i18next';
 import { startMining, stopMining } from './miningStoreActions';
 import { useMiningStore } from '../useMiningStore';
-import { deepEqual } from '@app/utils/objectDeepEqual.ts';
+
 import { queryClient } from '@app/App/queryClient.ts';
 import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import { fetchBridgeTransactionsHistory } from './bridgeApiActions';
+import { mergeTransactions } from '@app/store/actions/helpers.ts';
 
 export const importSeedWords = async (seedWords: string[]) => {
     useWalletStore.setState((c) => ({
@@ -72,18 +73,15 @@ export const setExternalTariAddress = async (newAddress: string) => {
         });
 };
 
-export const setWalletBalance = async (balance: WalletBalance) => {
+export const setWalletBalance = async ({ account_balance, display_balance }: WalletBalanceExtended) => {
     const currentBalance = useWalletStore.getState().balance;
-    const isEqual = deepEqual(currentBalance, balance);
+    const currentDisplay = useWalletStore.getState().calculated_balance;
+    const fullEqual = currentBalance?.total === account_balance.total;
+    const isEqual = fullEqual && currentDisplay == display_balance;
 
     if (isEqual) return;
 
-    useWalletStore.setState({ balance });
-
-    const calculated_balance =
-        balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
-
-    useWalletStore.setState({ calculated_balance });
+    useWalletStore.setState({ balance: account_balance, calculated_balance: display_balance });
     await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
 };
 
@@ -180,18 +178,33 @@ const solveBridgeTransactionDetails = async (walletTxs: DisplayedTransaction[]):
     return walletTxs;
 };
 
-const getSortedTxs = (txs: DisplayedTransaction[]): DisplayedTransaction[] =>
-    txs.sort((a, b) => new Date(b.blockchain.timestamp).getTime() - new Date(a.blockchain.timestamp).getTime());
-
 export const handleWalletTransactionsFound = async (payload: DisplayedTransaction[]) => {
-    const transactions = useWalletStore.getState().wallet_transactions;
-    const incoming = payload.filter((newTx) => !transactions.some((existingTx) => existingTx.id === newTx.id));
-    const processedTransactions = await solveBridgeTransactionDetails(incoming);
-    const mergedTransactions = processedTransactions.concat(transactions);
-    useWalletStore.setState((c) => ({
-        ...c,
-        wallet_transactions: getSortedTxs(mergedTransactions),
-    }));
+    const processedTransactions = await solveBridgeTransactionDetails(payload);
+
+    useWalletStore.setState((state) => {
+        const newTransactions = mergeTransactions(state.wallet_transactions, processedTransactions, true);
+        if (newTransactions === state.wallet_transactions) {
+            return state;
+        }
+        return {
+            ...state,
+            wallet_transactions: newTransactions,
+        };
+    });
+};
+
+export const handleWalletTransactionUpdated = async (payload: DisplayedTransaction) => {
+    const processedTransactions = await solveBridgeTransactionDetails([payload]);
+    useWalletStore.setState((state) => {
+        const newTransactions = mergeTransactions(state.wallet_transactions, processedTransactions, false);
+        if (newTransactions === state.wallet_transactions) {
+            return state;
+        }
+        return {
+            ...state,
+            wallet_transactions: newTransactions,
+        };
+    });
 };
 
 export const handleWalletTransactionsCleared = () => {
@@ -199,17 +212,4 @@ export const handleWalletTransactionsCleared = () => {
         ...c,
         wallet_transactions: [],
     }));
-};
-
-export const handleWalletTransactionUpdated = async (payload: DisplayedTransaction) => {
-    const transactions = useWalletStore.getState().wallet_transactions;
-    const matchingIndex = transactions.findIndex((tx) => tx.id === payload.id);
-    if (matchingIndex > -1) {
-        const processedTransactions = await solveBridgeTransactionDetails([payload]);
-        transactions[matchingIndex] = processedTransactions[0] || payload;
-        useWalletStore.setState((c) => ({
-            ...c,
-            wallet_transactions: getSortedTxs(transactions),
-        }));
-    }
 };

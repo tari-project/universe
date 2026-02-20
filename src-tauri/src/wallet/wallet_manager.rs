@@ -214,27 +214,4 @@ impl WalletManager {
         info!(target: LOG_TARGET_APP_LOGIC, "Cleaning wallet data folder");
         Ok(())
     }
-
-    #[allow(dead_code)]
-    pub async fn stop(&self) -> Result<i32, WalletManagerError> {
-        // Reset the initial scan flag
-        self.initial_scan_completed
-            .store(false, std::sync::atomic::Ordering::Relaxed);
-
-        let mut process_watcher = self.watcher.write().await;
-        process_watcher
-            .stop()
-            .await
-            .map_err(WalletManagerError::UnknownError)
-    }
-    #[allow(dead_code)]
-    pub async fn is_running(&self) -> bool {
-        let process_watcher = self.watcher.read().await;
-        process_watcher.is_running()
-    }
-    #[allow(dead_code)]
-    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.watcher.read().await;
-        lock.is_pid_file_exists(base_path)
-    }
 }

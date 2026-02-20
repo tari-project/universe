@@ -22,6 +22,7 @@
 
 use std::path::PathBuf;
 
+use crate::wallet::minotari_wallet::LOG_TARGET;
 use crate::{APPLICATION_FOLDER_ID, tasks_tracker::TasksTrackers};
 use log::{error, info, warn};
 use minotari_wallet::{db::SqlitePool, init_db};
@@ -29,8 +30,6 @@ use r2d2::PooledConnection;
 use r2d2_sqlite::SqliteConnectionManager;
 use tari_common::configuration::Network;
 use tokio::sync::RwLock;
-
-static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet::database_manager";
 
 const CONNECTION_HEALTH_CHECK_INTERVAL_SECS: u64 = 60;
 

@@ -63,7 +63,7 @@ appenders:
     encoder:
       pattern: '{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] [Thread:{I}] {l:5} {m}{n}'
 
-  # An appender named "base_layer" that writes to a file with a custom pattern encoder
+  # An appender named "other" that writes to a file with a custom pattern encoder
   other:
     kind: rolling_file
     path: '{{log_dir}}/wallet/log/other.log'
@@ -111,6 +111,7 @@ loggers:
       - base_layer
       - stdout
     additive: false
+
   # other
   h2:
     level: warn

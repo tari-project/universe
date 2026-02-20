@@ -25,7 +25,7 @@ use crate::configs::config_pools::ConfigPoolsContent;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload, NewBlockHeightPayload,
-    UpdateAppModuleStatusPayload, WalletScanningProgressUpdatePayload,
+    UpdateAppModuleStatusPayload, WalletBalanceUpdatePayload, WalletScanningProgressUpdatePayload,
 };
 use crate::internal_wallet::TariAddressType;
 use crate::mining::MinerControlsState;
@@ -35,7 +35,6 @@ use crate::mining::gpu::miners::GpuCommonInformation;
 use crate::mining::pools::PoolStatus;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
-use crate::wallet::wallet_types::WalletBalance;
 use crate::{
     BaseNodeStatus, LOG_TARGET_APP_LOGIC,
     configs::{
@@ -349,11 +348,11 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_wallet_balance_update(balance: WalletBalance) {
+    pub async fn emit_wallet_balance_update(payload: WalletBalanceUpdatePayload) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::WalletBalanceUpdate,
-            payload: balance,
+            payload,
         };
         if let Err(e) = Self::get_app_handle()
             .await
