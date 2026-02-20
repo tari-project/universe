@@ -104,6 +104,8 @@
     },
     "title": "MCP Server",
     "token-display": {
+      "cancel": "Cancel",
+      "confirm": "Confirm",
       "copied": "Copied!",
       "copy": "Copy",
       "created": "Created",
@@ -129,6 +131,8 @@
       "title": "MCP Transaction Confirmation"
     },
     "transactions": {
+      "cancel": "Cancel",
+      "confirm": "Confirm",
       "description": "Allow MCP clients to send transactions (requires PIN)",
       "max-amount": "Max Transaction Amount (µT)",
       "max-amount-description": "Leave empty for no limit",

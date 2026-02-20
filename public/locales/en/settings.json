@@ -74,11 +74,8 @@
   "mcp": {
     "advanced": {
       "control-tier": "Control Tier",
-      "expiry-days": "Token Expiry (days)",
       "port": "Server Port",
-      "rate-limit": "Transaction Rate Limit (per minute)",
-      "read-tier": "Read Tier",
-      "title": "Advanced Settings"
+      "read-tier": "Read Tier"
     },
     "agent-config": {
       "copied": "Copied!",
@@ -100,10 +97,7 @@
       "status-stopped": "Stopped",
       "title": "MCP Server"
     },
-    "title": "MCP Server",
     "token-display": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
       "copied": "Copied!",
       "copy": "Copy",
       "created": "Created",
@@ -111,7 +105,6 @@
       "description": "Use this token to authenticate MCP clients",
       "expires": "Expires",
       "hide": "Hide",
-      "no-token": "No token generated",
       "refresh-expiry": "Refresh Expiry",
       "reveal": "Reveal",
       "revoke": "Revoke Token",
@@ -119,22 +112,10 @@
       "title": "Bearer Token"
     },
     "transaction-dialog": {
-      "amount": "Amount",
-      "approve": "Approve",
-      "deny": "Deny",
-      "destination": "Destination",
-      "enter-pin": "Enter PIN to approve",
-      "micro-minotari": "({{amount}} µT)",
-      "remaining": "{{countdown}}s remaining",
-      "title": "MCP Transaction Confirmation"
+      "remaining": "{{countdown}}s remaining"
     },
     "transactions": {
-      "cancel": "Cancel",
-      "confirm": "Confirm",
       "description": "Allow MCP clients to send transactions (requires PIN)",
-      "max-amount": "Max Transaction Amount (µT)",
-      "max-amount-description": "Leave empty for no limit",
-      "pin-required": "PIN must be configured to enable transactions",
       "title": "Transactions"
     }
   },

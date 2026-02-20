@@ -115,6 +115,14 @@ pub async fn set_mcp_port(port: u16) -> Result<(), String> {
     ConfigMcp::update_field(ConfigMcpContent::set_port, port)
         .await
         .map_err(|e| e.to_string())?;
+    // Restart if currently running so the new port takes effect
+    let content = ConfigMcp::content().await;
+    if *content.enabled() {
+        McpServerManager::restart()
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
     Ok(())
 }
 
