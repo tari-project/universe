@@ -23,7 +23,7 @@ import {
     PoolStats,
     SystemDependency,
 } from './app-status.ts';
-import { ConfigMining, ConfigPools, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
+import { ConfigMcp, ConfigMining, ConfigPools, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 import { AppModuleState } from '@app/store/types/setup.ts';
 import { ConfigCore } from '@app/types/config/core.ts';
@@ -246,4 +246,41 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'SetShowBatteryAlert';
           payload: boolean;
+      }
+    | {
+          event_type: 'ConfigMcpLoaded';
+          payload: ConfigMcp;
+      }
+    | {
+          event_type: 'McpServerStatusUpdate';
+          payload: { running: boolean; port?: number };
+      }
+    | {
+          event_type: 'McpTransactionConfirmation';
+          payload: {
+              request_id: string;
+              destination: string;
+              amount_micro_minotari: number;
+              amount_display: string;
+          };
+      }
+    | {
+          event_type: 'McpTransactionResult';
+          payload: {
+              request_id: string;
+              success: boolean;
+              error?: string;
+          };
+      }
+    | {
+          event_type: 'McpAuditEntry';
+          payload: {
+              timestamp: string;
+              tool_name: string;
+              tier: string;
+              status: 'Started' | 'Success' | 'Error' | 'Denied' | 'RateLimited';
+              duration_ms?: number;
+              client_info?: string;
+              details?: string;
+          };
       };

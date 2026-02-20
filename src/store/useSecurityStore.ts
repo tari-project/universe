@@ -7,6 +7,7 @@ export type DialogsType = DialogsTuple[number] | null;
 
 interface State {
     modal: DialogsType;
+    pinResolver: ((pin?: string) => void) | null;
 }
 
 interface Actions {
@@ -15,9 +16,20 @@ interface Actions {
 
 const initialState: State = {
     modal: null,
+    pinResolver: null,
 };
 
 export const useSecurityStore = create<State & Actions>()((set) => ({
     ...initialState,
     setModal: (modal) => set({ modal }),
 }));
+
+export function requestPin(): Promise<string | undefined> {
+    return new Promise((resolve) => {
+        const current = useSecurityStore.getState();
+        if (current.pinResolver) {
+            current.pinResolver(undefined);
+        }
+        useSecurityStore.setState({ pinResolver: resolve, modal: 'enter_pin' });
+    });
+}

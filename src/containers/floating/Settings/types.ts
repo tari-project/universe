@@ -5,6 +5,7 @@ export const SETTINGS_TYPES = [
     'mining',
     'pools',
     'connections',
+    'mcp',
     'experimental',
     'releaseNotes',
 ] as const;

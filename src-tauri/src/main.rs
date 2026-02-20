@@ -94,6 +94,7 @@ mod hardware;
 mod internal_wallet;
 #[cfg(test)]
 mod internal_wallet_test;
+mod mcp;
 mod mining;
 mod mining_status_manager;
 mod mm_proxy_adapter;
@@ -501,6 +502,19 @@ fn main() {
             commands::remove_scheduler_event,
             commands::pause_scheduler_event,
             commands::resume_scheduler_event,
+            // MCP commands
+            mcp::commands::get_mcp_config,
+            mcp::commands::get_mcp_token,
+            mcp::commands::set_mcp_enabled,
+            mcp::commands::refresh_mcp_token_expiry,
+            mcp::commands::revoke_mcp_token,
+            mcp::commands::set_mcp_port,
+            mcp::commands::set_mcp_max_transaction_amount,
+            mcp::commands::set_mcp_tier_enabled,
+            mcp::commands::get_mcp_audit_log,
+            mcp::commands::export_mcp_audit_log,
+            mcp::commands::set_mcp_transactions_enabled,
+            mcp::commands::mcp_transaction_dialog_response,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {

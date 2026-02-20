@@ -221,6 +221,9 @@ pub async fn exit_application(
 
     info!(target: LOG_TARGET_APP_LOGIC, "Exit application command received, shutting down processes...");
 
+    crate::mcp::server::McpServerManager::stop().await;
+    info!(target: LOG_TARGET_APP_LOGIC, "MCP server stopped.");
+
     let _unused = GpuManager::write().await.stop_mining().await;
     info!(target: LOG_TARGET_APP_LOGIC, "GPU Mining stopped.");
 

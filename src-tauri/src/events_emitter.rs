@@ -38,8 +38,9 @@ use crate::system_dependencies::UniversalSystemDependency;
 use crate::{
     BaseNodeStatus, LOG_TARGET_APP_LOGIC,
     configs::{
-        config_core::ConfigCoreContent, config_mining::ConfigMiningContent,
-        config_ui::ConfigUIContent, config_wallet::ConfigWalletContent,
+        config_core::ConfigCoreContent, config_mcp::ConfigMcpContent,
+        config_mining::ConfigMiningContent, config_ui::ConfigUIContent,
+        config_wallet::ConfigWalletContent,
     },
     events::{
         DetectedDevicesPayload, Event, EventType, NetworkStatusPayload, NodeTypeUpdatePayload,
@@ -87,6 +88,10 @@ impl EventsEmitter {
             .as_ref()
             .expect("Cannot emit events due to missing AppHandle")
             .clone()
+    }
+
+    pub async fn get_app_handle_public() -> AppHandle {
+        Self::get_app_handle().await
     }
     pub async fn emit_progress_tracker_update(payload: ProgressTrackerUpdatePayload) {
         let event = Event {
@@ -345,6 +350,70 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit PoolsConfigLoaded event: {e:?}");
+        }
+    }
+    pub async fn emit_mcp_config_loaded(payload: &ConfigMcpContent) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let value = match payload.to_redacted_value() {
+            Ok(v) => v,
+            Err(e) => {
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to serialize MCP config: {e:?}");
+                return;
+            }
+        };
+        let event = Event {
+            event_type: EventType::ConfigMcpLoaded,
+            payload: value,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit McpConfigLoaded event: {e:?}");
+        }
+    }
+
+    pub async fn emit_mcp_server_status_update(running: bool, port: Option<u16>) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::McpServerStatusUpdate,
+            payload: crate::events::McpServerStatusPayload { running, port },
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit McpServerStatusUpdate event: {e:?}");
+        }
+    }
+
+    pub async fn emit_mcp_transaction_confirmation(
+        payload: crate::events::McpTransactionConfirmationPayload,
+    ) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::McpTransactionConfirmation,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit McpTransactionConfirmation event: {e:?}");
+        }
+    }
+
+    pub async fn emit_mcp_transaction_result(payload: crate::events::McpTransactionResultPayload) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::McpTransactionResult,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit McpTransactionResult event: {e:?}");
         }
     }
 
