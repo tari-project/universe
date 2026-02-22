@@ -314,7 +314,6 @@ impl SetupManager {
         // Initialize MCP server with node status receiver for chain tools
         crate::mcp::server::McpServerManager::initialize(
             state.node_status_watch_rx.clone(),
-            state.wallet_manager.clone(),
         )
         .await;
 
