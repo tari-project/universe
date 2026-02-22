@@ -65,9 +65,7 @@ impl McpServerManager {
         &INSTANCE
     }
 
-    pub async fn initialize(
-        node_status_rx: Arc<tokio::sync::watch::Receiver<BaseNodeStatus>>,
-    ) {
+    pub async fn initialize(node_status_rx: Arc<tokio::sync::watch::Receiver<BaseNodeStatus>>) {
         let mut manager = Self::current().write().await;
         manager.node_status_rx = Some(node_status_rx);
     }
@@ -131,11 +129,7 @@ impl McpServerManager {
         // Build the rmcp StreamableHttpService
         let mcp_service: StreamableHttpService<TariMcpHandler, LocalSessionManager> =
             StreamableHttpService::new(
-                move || {
-                    Ok(TariMcpHandler::new(
-                        node_status_rx.clone(),
-                    ))
-                },
+                move || Ok(TariMcpHandler::new(node_status_rx.clone())),
                 LocalSessionManager::default().into(),
                 StreamableHttpServerConfig::default(),
             );

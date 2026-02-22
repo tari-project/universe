@@ -134,9 +134,7 @@ struct SendTransactionParams {
 }
 
 impl TariMcpHandler {
-    pub fn new(
-        node_status_rx: Arc<watch::Receiver<BaseNodeStatus>>,
-    ) -> Self {
+    pub fn new(node_status_rx: Arc<watch::Receiver<BaseNodeStatus>>) -> Self {
         Self {
             tool_router: Self::tool_router(),
             node_status_rx,
@@ -685,12 +683,9 @@ impl TariMcpHandler {
         )
         .await;
 
-        let result = transaction::send_transaction(
-            params.destination,
-            params.amount,
-            params.payment_id,
-        )
-        .await;
+        let result =
+            transaction::send_transaction(params.destination, params.amount, params.payment_id)
+                .await;
 
         let status = match &result {
             Ok(_) => AuditStatus::Success,

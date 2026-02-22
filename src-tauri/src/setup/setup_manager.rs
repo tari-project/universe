@@ -312,10 +312,7 @@ impl SetupManager {
         ConfigMcp::initialize(app_handle.clone()).await;
 
         // Initialize MCP server with node status receiver for chain tools
-        crate::mcp::server::McpServerManager::initialize(
-            state.node_status_watch_rx.clone(),
-        )
-        .await;
+        crate::mcp::server::McpServerManager::initialize(state.node_status_watch_rx.clone()).await;
 
         // Auto-start MCP server if enabled with a valid token
         if *ConfigMcp::content().await.enabled()

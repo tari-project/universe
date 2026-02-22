@@ -16,12 +16,18 @@ const isTransactionMatch = (txA: DisplayedTransaction, txB: DisplayedTransaction
     const inputsB = txB.details?.inputs;
 
     const matchedInputA = inputsA?.find((input) => input.is_matched && input.matched_output_id);
-    if (matchedInputA && inputsB?.some((input) => input.is_matched && input.matched_output_id === matchedInputA.matched_output_id)) {
+    if (
+        matchedInputA &&
+        inputsB?.some((input) => input.is_matched && input.matched_output_id === matchedInputA.matched_output_id)
+    ) {
         return true;
     }
 
     const matchedInputB = inputsB?.find((input) => input.is_matched && input.matched_output_id);
-    if (matchedInputB && inputsA?.some((input) => input.is_matched && input.matched_output_id === matchedInputB.matched_output_id)) {
+    if (
+        matchedInputB &&
+        inputsA?.some((input) => input.is_matched && input.matched_output_id === matchedInputB.matched_output_id)
+    ) {
         return true;
     }
 

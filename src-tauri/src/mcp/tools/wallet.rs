@@ -69,7 +69,7 @@ pub async fn get_transaction_history(limit: Option<u32>) -> Result<String, Strin
                 "counterparty": tx.counterparty,
                 "message": tx.message,
                 "source": tx.source,
-                "timestamp": tx.details.timestamp,
+                "timestamp": tx.blockchain.timestamp.to_string(),
             })
         })
         .collect();
