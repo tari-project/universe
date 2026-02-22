@@ -45,13 +45,11 @@ use crate::configs::config_mcp::ConfigMcp;
 use crate::configs::trait_config::ConfigImpl;
 use crate::mcp::audit::{AuditEntry, AuditLog, AuditStatus};
 use crate::node::node_adapter::BaseNodeStatus;
-use crate::wallet::wallet_manager::WalletManager;
 
 #[derive(Clone)]
 pub struct TariMcpHandler {
     tool_router: ToolRouter<Self>,
     node_status_rx: Arc<watch::Receiver<BaseNodeStatus>>,
-    wallet_manager: WalletManager,
 }
 
 #[tool_handler]
@@ -138,12 +136,10 @@ struct SendTransactionParams {
 impl TariMcpHandler {
     pub fn new(
         node_status_rx: Arc<watch::Receiver<BaseNodeStatus>>,
-        wallet_manager: WalletManager,
     ) -> Self {
         Self {
             tool_router: Self::tool_router(),
             node_status_rx,
-            wallet_manager,
         }
     }
 
@@ -431,7 +427,7 @@ impl TariMcpHandler {
         let start = Instant::now();
         self.audit_tool_call("get_wallet_balance", "read", AuditStatus::Started, None)
             .await;
-        let result = wallet::get_wallet_balance(&self.wallet_manager).await;
+        let result = wallet::get_wallet_balance().await;
         let status = if result.is_ok() {
             AuditStatus::Success
         } else {
@@ -467,7 +463,7 @@ impl TariMcpHandler {
             None,
         )
         .await;
-        let result = wallet::get_transaction_history(&self.wallet_manager, params.limit).await;
+        let result = wallet::get_transaction_history(params.limit).await;
         let status = if result.is_ok() {
             AuditStatus::Success
         } else {
@@ -689,13 +685,10 @@ impl TariMcpHandler {
         )
         .await;
 
-        let app_handle = crate::events_emitter::EventsEmitter::get_app_handle_public().await;
         let result = transaction::send_transaction(
             params.destination,
             params.amount,
             params.payment_id,
-            &self.wallet_manager,
-            &app_handle,
         )
         .await;
 
