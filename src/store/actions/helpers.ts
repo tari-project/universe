@@ -6,16 +6,26 @@ const sortTransactions = (txs: DisplayedTransaction[]): DisplayedTransaction[] =
 const isTransactionMatch = (txA: DisplayedTransaction, txB: DisplayedTransaction) => {
     if (txA.id === txB.id) return true;
 
+    const hashesA = txA.details?.sent_output_hashes;
+    const hashesB = txB.details?.sent_output_hashes;
+    if (hashesA?.length && hashesB?.length && hashesA.some((h) => hashesB.includes(h))) {
+        return true;
+    }
+
     const inputsA = txA.details?.inputs;
     const inputsB = txB.details?.inputs;
 
     const matchedInputA = inputsA?.find((input) => input.is_matched && input.matched_output_id);
+    if (matchedInputA && inputsB?.some((input) => input.is_matched && input.matched_output_id === matchedInputA.matched_output_id)) {
+        return true;
+    }
 
-    const hasMatch =
-        matchedInputA &&
-        inputsB?.find((input) => input.is_matched && input.matched_output_id === matchedInputA.matched_output_id);
+    const matchedInputB = inputsB?.find((input) => input.is_matched && input.matched_output_id);
+    if (matchedInputB && inputsA?.some((input) => input.is_matched && input.matched_output_id === matchedInputB.matched_output_id)) {
+        return true;
+    }
 
-    return !!hasMatch;
+    return false;
 };
 
 export const mergeTransactions = (
