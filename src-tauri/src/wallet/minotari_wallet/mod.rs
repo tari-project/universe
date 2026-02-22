@@ -329,6 +329,17 @@ impl MinotariWalletManager {
         updated_balance
     }
 
+    /// Load transaction history excluding reorged transactions
+    pub async fn get_transaction_history(
+        account_id: i64,
+    ) -> Result<Vec<DisplayedTransaction>, anyhow::Error> {
+        let db_pool = INSTANCE.database_manager.get_pool().await?;
+        let history_service = TransactionHistoryService::new(db_pool);
+        history_service
+            .load_transactions_excluding_reorged(account_id)
+            .map_err(|e| e.into())
+    }
+
     pub async fn initialize_wallet() -> Result<(), anyhow::Error> {
         let database_path = MinotariWalletDatabaseManager::database_path()?;
 
@@ -706,12 +717,27 @@ impl MinotariWalletManager {
 
         info!(target: LOG_TARGET, "Starting Transaction Unlocker...");
 
-        let pool = INSTANCE.database_manager.get_pool().await?;
+        let pool = INSTANCE.database_manager.get_pool().await.map_err(|e| {
+            error!(target: LOG_TARGET, "Failed to get database pool for transaction unlocker: {:?}", e);
+            e
+        })?;
         let unlocker = TransactionUnlocker::new(pool);
 
         let (shutdown_tx, shutdown_rx) = tokio::sync::broadcast::channel(1);
         let handle = unlocker.run(shutdown_rx);
 
+        if handle.is_finished() {
+            let result = handle.await;
+            let err_msg = match result {
+                Ok(Ok(())) => "Transaction unlocker exited immediately without error".to_string(),
+                Ok(Err(e)) => format!("Transaction unlocker failed to start: {:?}", e),
+                Err(e) => format!("Transaction unlocker task panicked: {:?}", e),
+            };
+            error!(target: LOG_TARGET, "{}", err_msg);
+            return Err(anyhow::anyhow!(err_msg));
+        }
+
+        info!(target: LOG_TARGET, "Transaction unlocker spawned successfully.");
         *INSTANCE.unlocker_handle.write().await = Some(handle);
 
         let mut app_shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
@@ -729,12 +755,15 @@ impl MinotariWalletManager {
                     if let Err(e) = shutdown_tx.send(()) {
                         error!(target: LOG_TARGET, "Failed to send shutdown signal to unlocker (it might have already stopped): {:?}", e);
                     }
-                    if let Err(e) = handle.await {
-                        error!(target: LOG_TARGET, "Transaction unlocker task did not complete successfully: {:?}", e);
+                    match handle.await {
+                        Ok(Ok(())) => info!(target: LOG_TARGET, "Transaction unlocker stopped cleanly."),
+                        Ok(Err(e)) => error!(target: LOG_TARGET, "Transaction unlocker finished with error: {:?}", e),
+                        Err(e) => error!(target: LOG_TARGET, "Transaction unlocker task did not complete successfully: {:?}", e),
                     }
                 }
 
                 *INSTANCE.unlocker_handle.write().await = None;
+                info!(target: LOG_TARGET, "Transaction unlocker shutdown complete.");
             });
 
         Ok(())
