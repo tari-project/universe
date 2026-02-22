@@ -123,7 +123,7 @@ export const setApplicationLanguage = async (applicationLanguage: Language) => {
     useConfigUIStore.setState((c) => ({
         ...c,
         application_language: applicationLanguage,
-        should_always_use_system_language: shouldDisableSystemLanguage ? false : c.should_always_use_system_language,
+        should_always_use_system_language: false,
     }));
 
     const updateTasks: CompensatedOperation[] = [
