@@ -83,19 +83,23 @@ interface CompensatedOperation {
     rollback: () => Promise<unknown>;
 }
 
-const settleSingle = async <T>(operation: Promise<T>) => {
+const settleSingle = async <T>(operation: Promise<T>): Promise<PromiseSettledResult<T>> => {
     const [result] = await Promise.allSettled([operation]);
     return result;
 };
 
-const rollbackLanguageConfig = async (previousUIConfig: ReturnType<typeof useConfigUIStore.getState>) => {
+const rollbackLanguageConfig = async (
+    previousUIConfig: ReturnType<typeof useConfigUIStore.getState>
+): Promise<void> => {
     useConfigUIStore.setState((c) => ({ ...c, ...previousUIConfig }));
     if (previousUIConfig.application_language) {
         await changeLanguage(previousUIConfig.application_language);
     }
 };
 
-const runCompensatedOperations = async (operations: CompensatedOperation[]) => {
+const runCompensatedOperations = async (
+    operations: CompensatedOperation[]
+): Promise<{ ok: true } | { ok: false; reason: unknown }> => {
     const results = await Promise.allSettled(operations.map((operation) => operation.run()));
     const successfulRollbacks = results
         .map((result, index) => ({ result, index }))
