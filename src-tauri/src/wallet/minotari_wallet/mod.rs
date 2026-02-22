@@ -50,7 +50,7 @@ use minotari_wallet::{
 use r2d2::PooledConnection;
 use r2d2_sqlite::SqliteConnectionManager;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::{Path, PathBuf},
     sync::{
         LazyLock,
@@ -527,7 +527,8 @@ impl MinotariWalletManager {
 
                     // Update balance based on new transactions
                     if !transactions_to_emit.is_empty() {
-                        transactions_to_emit.dedup_by(|a, b| a.id == b.id);
+                        let mut seen_ids = HashSet::new();
+                        transactions_to_emit.retain(|tx| seen_ids.insert(tx.id));
                         let updated_balance = Self::get_latest_account_balance().await;
 
                         BalanceTracker::current()
