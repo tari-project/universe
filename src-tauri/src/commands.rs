@@ -940,6 +940,11 @@ pub async fn set_application_language(application_language: String) -> Result<()
 }
 
 #[tauri::command]
+pub async fn get_application_language() -> Result<String, InvokeError> {
+    Ok(ConfigUI::content().await.application_language().clone())
+}
+
+#[tauri::command]
 pub async fn set_auto_update(auto_update: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigCore::update_field(ConfigCoreContent::set_auto_update, auto_update)
@@ -1200,8 +1205,8 @@ pub async fn set_should_always_use_system_language(
     should_always_use_system_language: bool,
 ) -> Result<(), InvokeError> {
     ConfigUI::update_field(
-        ConfigUIContent::set_should_always_use_system_language,
-        should_always_use_system_language,
+        ConfigUIContent::set_should_always_use_system_language_and_resolve_language,
+        (should_always_use_system_language, "en-US".to_string()),
     )
     .await
     .map_err(InvokeError::from_anyhow)?;

@@ -128,6 +128,21 @@ impl Default for ConfigUIContent {
 }
 impl ConfigContentImpl for ConfigUIContent {}
 impl ConfigUIContent {
+    pub fn set_should_always_use_system_language_and_resolve_language(
+        &mut self,
+        payload: (bool, String),
+    ) -> &mut Self {
+        let (should_use_system_language, fallback_language) = payload;
+        self.should_always_use_system_language = should_use_system_language;
+
+        if should_use_system_language {
+            self.application_language = get_locale().unwrap_or(fallback_language);
+            self.has_system_language_been_proposed = true;
+        }
+
+        self
+    }
+
     pub fn propose_system_language(&mut self, fallback_language: String) -> &mut Self {
         if self.has_system_language_been_proposed() | !self.should_always_use_system_language() {
             self

@@ -415,6 +415,7 @@ fn main() {
             commands::fetch_tor_bridges,
             commands::get_app_in_memory_config,
             commands::get_applications_versions,
+            commands::get_application_language,
             commands::get_monero_seed_words,
             commands::get_network,
             commands::get_paper_wallet_details,

@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import i18next, { changeLanguage } from 'i18next';
-import { Language } from '@app/i18initializer.ts';
+import { Language, resolveI18nLanguage } from '@app/i18initializer.ts';
 import {
     useConfigBEInMemoryStore,
     useConfigMiningStore,
@@ -78,18 +78,83 @@ export const handleConfigPoolsLoaded = (poolsConfig: ConfigPools) => {
     useConfigPoolsStore.setState((c) => ({ ...c, ...poolsConfig }));
 };
 
+interface CompensatedOperation {
+    run: () => Promise<unknown>;
+    rollback: () => Promise<unknown>;
+}
+
+const settleSingle = async <T>(operation: Promise<T>) => {
+    const [result] = await Promise.allSettled([operation]);
+    return result;
+};
+
+const rollbackLanguageConfig = async (previousUIConfig: ReturnType<typeof useConfigUIStore.getState>) => {
+    useConfigUIStore.setState((c) => ({ ...c, ...previousUIConfig }));
+    if (previousUIConfig.application_language) {
+        await changeLanguage(previousUIConfig.application_language);
+    }
+};
+
+const runCompensatedOperations = async (operations: CompensatedOperation[]) => {
+    const results = await Promise.allSettled(operations.map((operation) => operation.run()));
+    const successfulRollbacks = results
+        .map((result, index) => ({ result, index }))
+        .filter(({ result }) => result.status === 'fulfilled')
+        .map(({ index }) => operations[index].rollback());
+
+    if (results.some((result) => result.status === 'rejected')) {
+        await Promise.allSettled(successfulRollbacks);
+        const failure = results.find((result) => result.status === 'rejected');
+        return { ok: false as const, reason: failure?.reason };
+    }
+
+    return { ok: true as const };
+};
+
 export const setApplicationLanguage = async (applicationLanguage: Language) => {
-    const prevApplicationLanguage = useConfigUIStore.getState().application_language;
-    useConfigUIStore.setState((c) => ({ ...c, application_language: applicationLanguage }));
-    invoke('set_application_language', { applicationLanguage })
-        .then(() => {
-            changeLanguage(applicationLanguage);
-        })
-        .catch((e) => {
-            console.error('Could not set application language', e);
-            setError('Could not change application language');
-            useConfigUIStore.setState((c) => ({ ...c, application_language: prevApplicationLanguage }));
+    const previousUIConfig = useConfigUIStore.getState();
+    const currentLanguage = resolveI18nLanguage(previousUIConfig.application_language || i18next.language);
+
+    if (applicationLanguage === currentLanguage) {
+        return;
+    }
+
+    const shouldDisableSystemLanguage = previousUIConfig.should_always_use_system_language;
+    useConfigUIStore.setState((c) => ({
+        ...c,
+        application_language: applicationLanguage,
+        should_always_use_system_language: shouldDisableSystemLanguage ? false : c.should_always_use_system_language,
+    }));
+
+    const updateTasks: CompensatedOperation[] = [
+        {
+            run: () => invoke('set_application_language', { applicationLanguage }),
+            rollback: () =>
+                invoke('set_application_language', {
+                    applicationLanguage: previousUIConfig.application_language,
+                }),
+        },
+    ];
+
+    if (shouldDisableSystemLanguage) {
+        updateTasks.push({
+            run: () => invoke('set_should_always_use_system_language', { shouldAlwaysUseSystemLanguage: false }),
+            rollback: () =>
+                invoke('set_should_always_use_system_language', {
+                    shouldAlwaysUseSystemLanguage: previousUIConfig.should_always_use_system_language,
+                }),
         });
+    }
+
+    const updateResult = await runCompensatedOperations(updateTasks);
+    if (!updateResult.ok) {
+        console.error('Could not set application language', updateResult.reason);
+        setError('Could not change application language');
+        await rollbackLanguageConfig(previousUIConfig);
+        return;
+    }
+
+    await changeLanguage(applicationLanguage);
 };
 
 export const setCpuMiningEnabled = async (enabled: boolean) => {
@@ -259,12 +324,34 @@ export const setMoneroAddress = async (moneroAddress: string) => {
 };
 
 export const setShouldAlwaysUseSystemLanguage = async (shouldAlwaysUseSystemLanguage: boolean) => {
+    const previousUIConfig = useConfigUIStore.getState();
     useConfigUIStore.setState((c) => ({ ...c, should_always_use_system_language: shouldAlwaysUseSystemLanguage }));
-    invoke('set_should_always_use_system_language', { shouldAlwaysUseSystemLanguage }).catch((e) => {
-        console.error('Could not set should always use system language', e);
+
+    const toggleSystemLanguageResult = await settleSingle(
+        invoke('set_should_always_use_system_language', { shouldAlwaysUseSystemLanguage })
+    );
+
+    if (toggleSystemLanguageResult.status === 'rejected') {
+        console.error('Could not set should always use system language', toggleSystemLanguageResult.reason);
         setError('Could not change system language');
-        useConfigUIStore.setState((c) => ({ ...c, should_always_use_system_language: !shouldAlwaysUseSystemLanguage }));
-    });
+        await rollbackLanguageConfig(previousUIConfig);
+        return;
+    }
+
+    if (!shouldAlwaysUseSystemLanguage) {
+        return;
+    }
+
+    const resolvedLanguageResult = await settleSingle(invoke('get_application_language'));
+
+    if (resolvedLanguageResult.status === 'rejected') {
+        console.error('Could not resolve system language', resolvedLanguageResult.reason);
+        setError('Could not resolve system language');
+        return;
+    }
+
+    useConfigUIStore.setState((c) => ({ ...c, application_language: resolvedLanguageResult.value }));
+    await changeLanguage(resolvedLanguageResult.value);
 };
 
 export const setShowExperimentalSettings = async (showExperimentalSettings: boolean) => {
