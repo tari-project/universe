@@ -36,7 +36,7 @@ use tokio::{
 
 use crate::{
     LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES, UniverseAppState,
-    binaries::Binaries,
+    binaries::{Binaries, binaries_resolver::BinaryResolveError},
     configs::{
         config_mining::ConfigMining,
         config_pools::ConfigPools,
@@ -46,7 +46,7 @@ use crate::{
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     mining::{
-        GpuConnectionType, MinerControlsState,
+        GpuConnectionType, MinerControlsState, MiningError,
         gpu::{
             consts::{GpuMiner, GpuMinerStatus, GpuMinerType, MINERS_PRIORITY},
             interface::{GpuMinerInterface, GpuMinerInterfaceTrait},
@@ -287,8 +287,14 @@ impl GpuManager {
             }
             Err(e) => {
                 let err_msg = format!("Could not start GPU mining: {e}");
-                error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}", );
-                sentry::capture_message(&err_msg, sentry::Level::Error);
+
+                // Only report genuine operational failures to Sentry, not user-environment issues
+                if Self::is_user_environment_error(&e) {
+                    info!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
+                } else {
+                    error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
+                    sentry::capture_message(&err_msg, sentry::Level::Error);
+                }
 
                 EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
                 SystemTrayManager::send_event(SystemTrayEvents::GpuMiningActivity(false)).await;
@@ -297,11 +303,18 @@ impl GpuManager {
         }
     }
 
+    /// Returns true if the error is a user-environment issue rather than an application bug.
+    fn is_user_environment_error(e: &anyhow::Error) -> bool {
+        e.downcast_ref::<MiningError>().is_some()
+            || e.downcast_ref::<BinaryResolveError>()
+                .is_some_and(|e| matches!(e, BinaryResolveError::AntivirusIssue { .. }))
+    }
+
     async fn start_mining_inner(&mut self) -> Result<(), anyhow::Error> {
         let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
 
         if !gpu_mining_enabled {
-            return Err(anyhow::anyhow!("GPU mining is disabled"));
+            return Err(MiningError::GpuMiningDisabled.into());
         }
 
         if self.process_watcher.is_running() {

@@ -26,6 +26,18 @@ pub mod cpu;
 pub mod gpu;
 pub mod pools;
 
+/// Errors that represent user-environment issues rather than application bugs.
+/// These should never be reported to Sentry.
+#[derive(Debug, thiserror::Error)]
+pub enum MiningError {
+    #[error("GPU mining is disabled")]
+    GpuMiningDisabled,
+    #[error("CPU mining is disabled")]
+    CpuMiningDisabled,
+    #[error("All GPU devices are excluded. Cannot start lolminer.")]
+    AllDevicesExcluded,
+}
+
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub enum MinerControlsState {
     Initiated,

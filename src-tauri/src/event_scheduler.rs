@@ -1076,25 +1076,35 @@ impl EventScheduler {
         {
             match event.event_type.clone() {
                 SchedulerEventType::ResumeMining => {
-                    GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during PauseMining event {:?}: {}", event_id, e);
-                });
-                    CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during PauseMining event {:?}: {}", event_id, e);
-                });
+                    let config = ConfigMining::content().await;
+                    if *config.gpu_mining_enabled() {
+                        GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during ResumeMining event {:?}: {}", event_id, e);
+                        });
+                    }
+                    if *config.cpu_mining_enabled() {
+                        CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during ResumeMining event {:?}: {}", event_id, e);
+                        });
+                    }
                 }
                 SchedulerEventType::Mine { mining_mode } => {
                     ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.clone()).await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
-                });
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
+                    });
                     // TODO: Replace with emiting specific value only
                     EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
-                    GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
-                });
-                    CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
-                });
+                    let config = ConfigMining::content().await;
+                    if *config.gpu_mining_enabled() {
+                        GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
+                        });
+                    }
+                    if *config.cpu_mining_enabled() {
+                        CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
+                        });
+                    }
                 }
             }
         }

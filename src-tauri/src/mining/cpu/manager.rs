@@ -36,6 +36,7 @@ use tokio::{
 
 use crate::{
     LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES, UniverseAppState,
+    binaries::binaries_resolver::BinaryResolveError,
     configs::{
         config_mining::ConfigMining,
         config_pools::ConfigPools,
@@ -46,7 +47,7 @@ use crate::{
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     mining::{
-        CpuConnectionType, MinerControlsState,
+        CpuConnectionType, MinerControlsState, MiningError,
         cpu::{CpuMinerStatus, miners::xmrig::XmrigAdapter},
         pools::{PoolManagerInterfaceTrait, cpu_pool_manager::CpuPoolManager},
     },
@@ -140,8 +141,14 @@ impl CpuManager {
             }
             Err(e) => {
                 let err_msg = format!("Could not start CPU mining: {e}");
-                error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
-                sentry::capture_message(&err_msg, sentry::Level::Error);
+
+                // Only report genuine operational failures to Sentry, not user-environment issues
+                if Self::is_user_environment_error(&e) {
+                    info!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
+                } else {
+                    error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
+                    sentry::capture_message(&err_msg, sentry::Level::Error);
+                }
 
                 EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Stopped).await;
                 SystemTrayManager::send_event(SystemTrayEvents::CpuMiningActivity(false)).await;
@@ -150,11 +157,18 @@ impl CpuManager {
         }
     }
 
+    /// Returns true if the error is a user-environment issue rather than an application bug.
+    fn is_user_environment_error(e: &anyhow::Error) -> bool {
+        e.downcast_ref::<MiningError>().is_some()
+            || e.downcast_ref::<BinaryResolveError>()
+                .is_some_and(|e| matches!(e, BinaryResolveError::AntivirusIssue { .. }))
+    }
+
     async fn start_mining_inner(&mut self) -> Result<(), anyhow::Error> {
         let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
 
         if !cpu_mining_enabled {
-            return Err(anyhow::anyhow!("CPU mining is disabled"));
+            return Err(MiningError::CpuMiningDisabled.into());
         }
 
         if self.process_watcher.is_running() {

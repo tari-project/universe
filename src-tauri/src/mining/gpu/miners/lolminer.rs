@@ -244,9 +244,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
                 .collect();
 
             if devices_to_use.is_empty() {
-                return Err(anyhow::anyhow!(
-                    "All GPU devices are excluded. Cannot start lolminer."
-                ));
+                return Err(crate::mining::MiningError::AllDevicesExcluded.into());
             } else {
                 args.push("--devices".to_string());
                 args.push(devices_to_use.join(","));
