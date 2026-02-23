@@ -59,13 +59,13 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
-use crate::wallet::minotari_wallet::balance_tracker::BalanceTracker;
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
 
 use base64::prelude::*;
 
 use crate::node::data_location::update_data_location;
+use crate::wallet::minotari_wallet::balance_tracker::BalanceTracker;
 use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
