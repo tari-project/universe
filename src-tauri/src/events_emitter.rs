@@ -90,9 +90,6 @@ impl EventsEmitter {
             .clone()
     }
 
-    pub async fn get_app_handle_public() -> AppHandle {
-        Self::get_app_handle().await
-    }
     pub async fn emit_progress_tracker_update(payload: ProgressTrackerUpdatePayload) {
         let event = Event {
             event_type: EventType::SetupProgressUpdate,
