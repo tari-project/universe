@@ -1093,8 +1093,8 @@ impl EventScheduler {
                         error!(target: LOG_TARGET_APP_LOGIC, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
                     });
                     // TODO: Replace with emiting specific value only
-                    EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
                     let config = ConfigMining::content().await;
+                    EventsEmitter::emit_mining_config_loaded(&config).await;
                     if *config.gpu_mining_enabled() {
                         GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
                             error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);

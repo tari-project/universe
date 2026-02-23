@@ -38,6 +38,22 @@ pub enum MiningError {
     AllDevicesExcluded,
 }
 
+impl MiningError {
+    /// Returns true if the error is a user-environment issue rather than an application bug.
+    pub fn is_user_environment_error(e: &anyhow::Error) -> bool {
+        e.downcast_ref::<MiningError>().is_some()
+            || e.downcast_ref::<crate::binaries::binaries_resolver::BinaryResolveError>()
+                .is_some_and(|e| {
+                    matches!(
+                        e,
+                        crate::binaries::binaries_resolver::BinaryResolveError::AntivirusIssue {
+                            ..
+                        }
+                    )
+                })
+    }
+}
+
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub enum MinerControlsState {
     Initiated,

@@ -36,7 +36,7 @@ use tokio::{
 
 use crate::{
     LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES, UniverseAppState,
-    binaries::{Binaries, binaries_resolver::BinaryResolveError},
+    binaries::Binaries,
     configs::{
         config_mining::ConfigMining,
         config_pools::ConfigPools,
@@ -289,7 +289,7 @@ impl GpuManager {
                 let err_msg = format!("Could not start GPU mining: {e}");
 
                 // Only report genuine operational failures to Sentry, not user-environment issues
-                if Self::is_user_environment_error(&e) {
+                if MiningError::is_user_environment_error(&e) {
                     info!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
                 } else {
                     error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
@@ -301,13 +301,6 @@ impl GpuManager {
                 Err(anyhow::anyhow!("{err_msg}"))
             }
         }
-    }
-
-    /// Returns true if the error is a user-environment issue rather than an application bug.
-    fn is_user_environment_error(e: &anyhow::Error) -> bool {
-        e.downcast_ref::<MiningError>().is_some()
-            || e.downcast_ref::<BinaryResolveError>()
-                .is_some_and(|e| matches!(e, BinaryResolveError::AntivirusIssue { .. }))
     }
 
     async fn start_mining_inner(&mut self) -> Result<(), anyhow::Error> {
