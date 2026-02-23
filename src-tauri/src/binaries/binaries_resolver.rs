@@ -71,6 +71,23 @@ impl From<BinaryResolveError> for Error {
     }
 }
 
+/// Errors that represent user-environment issues during binary downloads
+/// rather than application bugs. These should never be reported to Sentry.
+#[derive(Debug, thiserror::Error)]
+pub enum BinaryDownloadError {
+    /// Network connectivity issue — user's network can't reach the download server
+    #[error("Network error: {0}")]
+    NetworkError(String),
+
+    /// File system access denied — AV quarantine, Windows file locks, permission issues
+    #[error("File access denied: {0}")]
+    FileAccessDenied(String),
+
+    /// Corrupt or incomplete download — bad archive headers, truncated files
+    #[error("Corrupt download: {0}")]
+    CorruptDownload(String),
+}
+
 #[derive(Clone, Debug)]
 pub struct BinaryDownloadInfo {
     pub name: String,
