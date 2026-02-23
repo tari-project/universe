@@ -29,6 +29,7 @@ use tokio::sync::watch;
 use tokio::{fs::File, io::AsyncWriteExt};
 
 use crate::LOG_TARGET_APP_LOGIC;
+use crate::binaries::binaries_resolver::BinaryDownloadError;
 use crate::download_utils::extract;
 use crate::requests::utils::{create_exponential_timeout, get_content_size_from_file};
 use crate::requests::{
@@ -402,7 +403,8 @@ impl HttpFileClient {
                 Err(e) => {
                     if attempt >= MAX_RETRIES {
                         error!(target: LOG_TARGET_APP_LOGIC, "Extraction failed after {} attempts: {}", attempt, e);
-                        return Err(anyhow::anyhow!("Extraction failed: {}", e));
+                        let classified = Self::classify_extraction_error(&e);
+                        return Err(classified.into());
                     } else {
                         warn!(target: LOG_TARGET_APP_LOGIC, "Extraction attempt {} failed: {}. Retrying...", attempt, e);
                         tokio::time::sleep(create_exponential_timeout(attempt)).await;
@@ -412,6 +414,17 @@ impl HttpFileClient {
         }
 
         Ok(())
+    }
+
+    fn classify_extraction_error(e: &anyhow::Error) -> BinaryDownloadError {
+        for cause in e.chain() {
+            if let Some(io_err) = cause.downcast_ref::<std::io::Error>()
+                && io_err.kind() == std::io::ErrorKind::PermissionDenied
+            {
+                return BinaryDownloadError::FileAccessDenied(format!("Extraction failed: {}", e));
+            }
+        }
+        BinaryDownloadError::CorruptDownload(format!("Extraction failed: {}", e))
     }
 
     async fn extract_inner(&self) -> Result<(), anyhow::Error> {
