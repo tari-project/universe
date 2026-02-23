@@ -24,13 +24,12 @@ use minotari_wallet::db::AccountBalance;
 use std::sync::LazyLock;
 use tokio::sync::RwLock;
 
-use crate::events::WalletBalanceUpdatePayload;
 use crate::events_emitter::EventsEmitter;
 use crate::wallet::minotari_wallet::LOG_TARGET;
 use log::info;
 use tari_transaction_components::tari_amount::MicroMinotari;
 
-const EMPTY_BALANCE: AccountBalance = AccountBalance {
+static EMPTY_BALANCE: AccountBalance = AccountBalance {
     total: MicroMinotari(0),
     available: MicroMinotari(0),
     locked: MicroMinotari(0),
@@ -65,17 +64,14 @@ impl BalanceTracker {
         *current_account = account_balance.clone();
 
         // Calculate available balance from total_credits - total_debits
-        let credits = account_balance.total_credits.unwrap_or(MicroMinotari(0));
-        let debits = account_balance.total_debits.unwrap_or(MicroMinotari(0));
-        let balance = credits.saturating_sub(debits);
+        let total_balance = account_balance.total;
 
         info!(
             target: LOG_TARGET,
-            "Account Balance initialized to {} available microTari", account_balance.available
+            "Account Balance initialized to {} available | {} total", account_balance.available, total_balance
         );
 
-        // Emit initial balance to frontend
-        Self::emit_balance(account_balance, Some(balance)).await;
+        Self::emit_balance(account_balance).await;
     }
 
     /// Clear balance (e.g., on wallet import)
@@ -84,7 +80,7 @@ impl BalanceTracker {
         *current = EMPTY_BALANCE.clone();
 
         info!(target: LOG_TARGET, "Balance cleared");
-        Self::emit_balance(EMPTY_BALANCE.clone(), None).await;
+        Self::emit_balance(EMPTY_BALANCE.clone()).await;
     }
 
     /// Get current account balance
@@ -97,12 +93,9 @@ impl BalanceTracker {
     /// This calculates the net change from transactions and applies it
     pub async fn update_from_transactions(&self, updated_account_balance: Option<AccountBalance>) {
         let mut account_balance = self.account_balance.write().await;
-
         if let Some(updated_balance) = updated_account_balance {
             *account_balance = updated_balance;
         }
-
-        let display_balance = account_balance.total;
 
         info!(
             target: LOG_TARGET,
@@ -110,15 +103,11 @@ impl BalanceTracker {
             account_balance.total, account_balance.available
         );
 
-        Self::emit_balance(account_balance.clone(), Some(display_balance)).await;
+        Self::emit_balance(account_balance.clone()).await;
     }
 
     /// Emit balance update to frontend
-    async fn emit_balance(account_balance: AccountBalance, display_balance: Option<MicroMinotari>) {
-        EventsEmitter::emit_wallet_balance_update(WalletBalanceUpdatePayload {
-            account_balance,
-            display_balance,
-        })
-        .await;
+    async fn emit_balance(account_balance: AccountBalance) {
+        EventsEmitter::emit_wallet_balance_update(account_balance).await;
     }
 }

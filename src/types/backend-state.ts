@@ -15,6 +15,7 @@ import {
     WalletUIMode,
 } from './events-payloads.ts';
 import {
+    AccountBalance,
     BaseNodeStatus,
     CpuMinerStatus,
     DisplayedTransaction,
@@ -27,7 +28,6 @@ import { ConfigMcp, ConfigMining, ConfigPools, ConfigUI, ConfigWallet, GpuDevice
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
 import { AppModuleState } from '@app/store/types/setup.ts';
 import { ConfigCore } from '@app/types/config/core.ts';
-import { WalletBalanceExtended } from '@app/store';
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
 export type BackendStateUpdateEvent =
@@ -49,7 +49,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'WalletBalanceUpdate';
-          payload: WalletBalanceExtended;
+          payload: AccountBalance;
       }
     | {
           event_type: 'CpuMiningUpdate';
