@@ -20,15 +20,36 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod config_core;
-pub mod config_mcp;
-#[cfg(test)]
-mod config_mcp_test;
-pub mod config_mining;
-pub mod config_pools;
-pub mod config_ui;
-#[cfg(test)]
-mod config_ui_test;
-pub mod config_wallet;
-pub mod pools;
-pub mod trait_config;
+use sys_locale::get_locale;
+
+use crate::consts::DEFAULT_SYSTEM_LOCALE_FALLBACK;
+
+use super::config_ui::ConfigUIContent;
+
+#[test]
+fn set_should_always_use_system_language_true_resolves_application_language() {
+    let mut config = ConfigUIContent::default();
+    let fallback_language = DEFAULT_SYSTEM_LOCALE_FALLBACK.to_string();
+    let expected_language = get_locale().unwrap_or_else(|| fallback_language.clone());
+
+    config.set_should_always_use_system_language_and_resolve_language((true, fallback_language));
+
+    assert!(*config.should_always_use_system_language());
+    assert!(*config.has_system_language_been_proposed());
+    assert_eq!(config.application_language(), &expected_language);
+}
+
+#[test]
+fn set_should_always_use_system_language_false_keeps_selected_language() {
+    let mut config = ConfigUIContent::default();
+    config.set_application_language("fr".to_string());
+
+    config.set_should_always_use_system_language_and_resolve_language((
+        false,
+        DEFAULT_SYSTEM_LOCALE_FALLBACK.to_string(),
+    ));
+
+    assert!(!*config.should_always_use_system_language());
+    assert!(!*config.has_system_language_been_proposed());
+    assert_eq!(config.application_language(), "fr");
+}

@@ -21,8 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
-    configs::config_core::ConfigCore, events_emitter::EventsEmitter,
-    internal_wallet::TariAddressType,
+    configs::config_core::ConfigCore, consts::DEFAULT_SYSTEM_LOCALE_FALLBACK,
+    events_emitter::EventsEmitter, internal_wallet::TariAddressType,
 };
 
 use getset::{Getters, Setters};
@@ -128,6 +128,21 @@ impl Default for ConfigUIContent {
 }
 impl ConfigContentImpl for ConfigUIContent {}
 impl ConfigUIContent {
+    pub fn set_should_always_use_system_language_and_resolve_language(
+        &mut self,
+        payload: (bool, String),
+    ) -> &mut Self {
+        let (should_use_system_language, fallback_language) = payload;
+        self.should_always_use_system_language = should_use_system_language;
+
+        if should_use_system_language {
+            self.application_language = get_locale().unwrap_or(fallback_language);
+            self.has_system_language_been_proposed = true;
+        }
+
+        self
+    }
+
     pub fn propose_system_language(&mut self, fallback_language: String) -> &mut Self {
         if self.has_system_language_been_proposed() | !self.should_always_use_system_language() {
             self
@@ -198,7 +213,7 @@ impl ConfigUI {
 
         let _unused = Self::update_field(
             ConfigUIContent::propose_system_language,
-            "en-US".to_string(),
+            DEFAULT_SYSTEM_LOCALE_FALLBACK.to_string(),
         )
         .await;
     }

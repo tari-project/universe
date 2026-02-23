@@ -6,13 +6,13 @@ import {
     TariAddressVariants,
     BaseNodeStatus,
 } from './app-status';
-import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from './app-status.ts';
 import { displayMode } from '../store/types.ts';
 import { BasePoolData, ConfigBackendInMemory, PauseOnBatteryModeState } from './configs.ts';
 import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from './tapplets/tapplet.types';
 import { SchedulerEventTiming, SchedulerEventType } from './mining/schedule.ts';
+import { Language } from '../i18initializer.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -23,6 +23,7 @@ declare module '@tauri-apps/api/core' {
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }
     ): Promise<void>;
+    function invoke(param: 'get_application_language'): Promise<string>;
     function invoke(param: 'set_should_auto_launch', payload: { shouldAutoLaunch: boolean }): Promise<void>;
     function invoke(param: 'set_application_language', payload: { applicationLanguage: Language }): Promise<void>;
     function invoke(param: 'frontend_ready'): Promise<void>;

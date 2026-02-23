@@ -1,4 +1,7 @@
 /**
+ * @vitest-environment jsdom
+ */
+/**
  * Tests for appConfigStoreActions patterns and logic.
  *
  * These tests validate the settings action patterns without requiring Tauri:
@@ -7,8 +10,87 @@
  * - State transformation logic
  * - Business rules for settings changes
  */
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+import { invoke } from '@tauri-apps/api/core';
+import i18next, { changeLanguage } from 'i18next';
+import { Language } from '@app/i18initializer.ts';
 import { MiningModeType, PauseOnBatteryModeState } from '@app/types/configs';
+import { setError } from './appStateStoreActions.ts';
+import { setApplicationLanguage, setShouldAlwaysUseSystemLanguage } from './appConfigStoreActions.ts';
+import { useConfigUIStore } from '../useAppConfigStore.ts';
+
+vi.mock('@tauri-apps/api/core', () => ({
+    invoke: vi.fn(),
+}));
+
+vi.mock('@tauri-apps/api/window', () => ({
+    getCurrentWindow: vi.fn(() => ({
+        listen: vi.fn(),
+        onCloseRequested: vi.fn(),
+    })),
+}));
+
+vi.mock('i18next', () => ({
+    default: {
+        language: 'en-US',
+        t: (key: string) => key,
+    },
+    changeLanguage: vi.fn(),
+}));
+
+vi.mock('@app/i18initializer.ts', () => ({
+    Language: {
+        EN: 'en',
+        FR: 'fr',
+    },
+    resolveI18nLanguage: vi.fn((languageCode: string) => {
+        if (languageCode.startsWith('en')) {
+            return 'en';
+        }
+
+        if (languageCode.startsWith('fr')) {
+            return 'fr';
+        }
+
+        return 'en';
+    }),
+}));
+
+vi.mock('./appStateStoreActions.ts', () => ({
+    setError: vi.fn(),
+}));
+
+vi.mock('./miningStoreActions', () => ({
+    restartMining: vi.fn(),
+    setLastSelectedMiningModeNameForSchedulerEvent: vi.fn(),
+    startCpuMining: vi.fn(),
+    startGpuMining: vi.fn(),
+    stopCpuMining: vi.fn(),
+    stopGpuMining: vi.fn(),
+}));
+
+vi.mock('./uiStoreActions', () => ({
+    loadAnimation: vi.fn(),
+    setUITheme: vi.fn(),
+    updateSetMiningModeAsSchedulerEventMode: vi.fn(),
+}));
+
+vi.mock('../useExchangeStore.ts', () => ({
+    setCurrentExchangeMinerId: vi.fn(),
+}));
+
+vi.mock('@app/hooks/exchanges/fetchExchangeContent.ts', () => ({
+    refreshXCContent: vi.fn(),
+}));
+
+vi.mock('../selectors/appConfigStoreSelectors.ts', () => ({
+    getSelectedCpuPool: vi.fn(),
+    getSelectedGpuPool: vi.fn(),
+}));
+
+vi.mock('@app/store/stores/userFeedbackStore.ts', () => ({
+    setFeedbackConfigItems: vi.fn(),
+}));
 
 describe('appConfigStoreActions', () => {
     describe('optimistic update pattern', () => {
@@ -361,6 +443,97 @@ describe('appConfigStoreActions', () => {
         it('handles NotSupported state', () => {
             const mode = PauseOnBatteryModeState.NotSupported;
             expect(mode).toBe('NotSupported');
+        });
+    });
+
+    describe('language settings actions', () => {
+        const invokeMock = invoke as unknown as ReturnType<typeof vi.fn>;
+        const changeLanguageMock = changeLanguage as unknown as ReturnType<typeof vi.fn>;
+        const setErrorMock = setError as unknown as ReturnType<typeof vi.fn>;
+
+        beforeEach(() => {
+            vi.clearAllMocks();
+            i18next.language = 'en-US';
+            useConfigUIStore.setState((state) => ({
+                ...state,
+                application_language: 'en-US',
+                should_always_use_system_language: true,
+            }));
+        });
+
+        it('skips manual language update when resolved system language already matches selected language', async () => {
+            await setApplicationLanguage(Language.EN);
+
+            expect(invokeMock).not.toHaveBeenCalled();
+            expect(changeLanguageMock).not.toHaveBeenCalled();
+            expect(useConfigUIStore.getState().should_always_use_system_language).toBe(true);
+        });
+
+        it('switches to manual mode when selected language differs from system language', async () => {
+            invokeMock.mockResolvedValue(undefined);
+
+            await setApplicationLanguage(Language.FR);
+
+            expect(invokeMock).toHaveBeenCalledWith('set_application_language', { applicationLanguage: Language.FR });
+            expect(invokeMock).toHaveBeenCalledWith('set_should_always_use_system_language', {
+                shouldAlwaysUseSystemLanguage: false,
+            });
+            expect(changeLanguageMock).toHaveBeenCalledWith(Language.FR);
+            expect(useConfigUIStore.getState().should_always_use_system_language).toBe(false);
+            expect(useConfigUIStore.getState().application_language).toBe(Language.FR);
+        });
+
+        it('rolls back frontend state and compensates backend on partial failure', async () => {
+            invokeMock.mockImplementation((command: string, payload?: { applicationLanguage?: string }) => {
+                if (command === 'set_application_language' && payload?.applicationLanguage === Language.FR) {
+                    return Promise.resolve(undefined);
+                }
+
+                if (command === 'set_should_always_use_system_language') {
+                    return Promise.reject(new Error('toggle failed'));
+                }
+
+                if (command === 'set_application_language' && payload?.applicationLanguage === 'en-US') {
+                    return Promise.resolve(undefined);
+                }
+
+                return Promise.resolve(undefined);
+            });
+
+            await setApplicationLanguage(Language.FR);
+
+            expect(invokeMock).toHaveBeenCalledWith('set_application_language', { applicationLanguage: 'en-US' });
+            expect(useConfigUIStore.getState().application_language).toBe('en-US');
+            expect(useConfigUIStore.getState().should_always_use_system_language).toBe(true);
+            expect(changeLanguageMock).toHaveBeenCalledWith('en-US');
+            expect(setErrorMock).toHaveBeenCalledWith('Could not change application language');
+        });
+
+        it('keeps system language toggle enabled when language readback fails', async () => {
+            useConfigUIStore.setState((state) => ({
+                ...state,
+                application_language: 'en',
+                should_always_use_system_language: false,
+            }));
+
+            invokeMock.mockImplementation((command: string) => {
+                if (command === 'set_should_always_use_system_language') {
+                    return Promise.resolve(undefined);
+                }
+
+                if (command === 'get_application_language') {
+                    return Promise.reject(new Error('readback failed'));
+                }
+
+                return Promise.resolve(undefined);
+            });
+
+            await setShouldAlwaysUseSystemLanguage(true);
+
+            expect(useConfigUIStore.getState().should_always_use_system_language).toBe(true);
+            expect(useConfigUIStore.getState().application_language).toBe('en');
+            expect(changeLanguageMock).not.toHaveBeenCalled();
+            expect(setErrorMock).toHaveBeenCalledWith('Could not resolve system language');
         });
     });
 

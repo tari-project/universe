@@ -34,6 +34,7 @@ use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId}
 use crate::configs::pools::BasePoolData;
 use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
+use crate::consts::DEFAULT_SYSTEM_LOCALE_FALLBACK;
 use crate::event_scheduler::{EventScheduler, SchedulerEventTiming, SchedulerEventType};
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
@@ -944,6 +945,11 @@ pub async fn set_application_language(application_language: String) -> Result<()
 }
 
 #[tauri::command]
+pub async fn get_application_language() -> Result<String, InvokeError> {
+    Ok(ConfigUI::content().await.application_language().clone())
+}
+
+#[tauri::command]
 pub async fn set_auto_update(auto_update: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigCore::update_field(ConfigCoreContent::set_auto_update, auto_update)
@@ -1206,8 +1212,11 @@ pub async fn set_should_always_use_system_language(
     should_always_use_system_language: bool,
 ) -> Result<(), InvokeError> {
     ConfigUI::update_field(
-        ConfigUIContent::set_should_always_use_system_language,
-        should_always_use_system_language,
+        ConfigUIContent::set_should_always_use_system_language_and_resolve_language,
+        (
+            should_always_use_system_language,
+            DEFAULT_SYSTEM_LOCALE_FALLBACK.to_string(),
+        ),
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
