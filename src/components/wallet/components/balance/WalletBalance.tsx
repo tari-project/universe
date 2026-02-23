@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import NumberFlow, { type Format } from '@number-flow/react';
 import { Trans, useTranslation } from 'react-i18next';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
-import { useConfigWalletStore, useNodeStore, useUIStore, useWalletStore } from '@app/store';
+import { useNodeStore, useUIStore, useWalletStore } from '@app/store';
 
 import { roundToTwoDecimals, removeXTMCryptoDecimals, formatNumber, FormatPreset, formatValue } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -18,7 +18,7 @@ import {
     LoadingText,
 } from './styles.ts';
 import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { ActionButton } from '@app/components/wallet/components/details/actions/styles.ts';
 import { AnimatePresence } from 'motion/react';
 import { Progress } from '@app/components/elements/loaders/CircularProgress/Progress.tsx';
@@ -44,20 +44,18 @@ export const WalletBalance = () => {
 
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const isConnected = useNodeStore((s) => s.isNodeConnected);
-    const cached = useConfigWalletStore((s) => s.last_known_balance);
-    const walletIsLoading = useWalletStore((s) => s.isLoading);
-    const available = useWalletStore((s) => s.balance?.available_balance);
+    const available = useWalletStore((s) => s.balance?.available);
     const total = useWalletStore((s) => s.calculated_balance);
     const scanData = useWalletStore((s) => s.wallet_scanning);
 
-    const isScanning = scanData.is_scanning;
+    const isScanning = !scanData.is_initial_scan_complete;
     const scanProgress = Math.floor(scanData.progress * 10) / 10;
 
-    const balance = removeXTMCryptoDecimals(roundToTwoDecimals((isScanning ? cached : total) || 0));
+    const balance = removeXTMCryptoDecimals(roundToTwoDecimals(total || 0));
     const balanceMismatch = removeXTMCryptoDecimals(roundToTwoDecimals(available || 0)) != balance;
 
     const displayText = hideBalance ? '*******' : formatNumber(available || 0, FormatPreset.XTM_LONG);
-    const isLoading = !isConnected || isScanning || walletIsLoading;
+    const isLoading = !isConnected || isScanning;
 
     const balanceText = balanceMismatch
         ? `${t('history.available-balance')}: ${displayText} XTM`
@@ -90,7 +88,14 @@ export const WalletBalance = () => {
         </LoadingText>
     );
 
-    const bottomMarkup = !isLoading ? <Typography>{balanceText}</Typography> : loadingMarkup;
+    let bottomMarkup: ReactNode;
+    if (scanData.total_height === 0 && isScanning) {
+        bottomMarkup = <></>;
+    } else if (isLoading) {
+        bottomMarkup = loadingMarkup;
+    } else {
+        bottomMarkup = <Typography>{balanceText}</Typography>;
+    }
 
     const progressMarkup = isLoading && !walletModuleFailed && (
         <ScanProgressWrapper>

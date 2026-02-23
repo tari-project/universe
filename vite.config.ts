@@ -17,8 +17,9 @@ const plugins: UserConfig['plugins'] = [
                 [
                     'babel-plugin-styled-components',
                     {
+                        pure: true,
                         displayName: true,
-                        fileName: true,
+                        meaninglessFileNames: ['index', 'styles', 'style'],
                     },
                 ],
                 ['babel-plugin-react-compiler', ReactCompilerConfig],

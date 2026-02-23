@@ -420,7 +420,6 @@ fn main() {
             commands::get_paper_wallet_details,
             commands::get_seed_words,
             commands::get_tor_config,
-            commands::get_transactions,
             commands::import_seed_words,
             commands::revert_to_internal_wallet,
             commands::log_web_message,

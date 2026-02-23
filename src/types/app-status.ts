@@ -1,4 +1,5 @@
 import { AppModule } from '@app/store/types/setup';
+import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 
 export interface TorConfig {
     control_port: number;
@@ -32,21 +33,94 @@ export interface SystemDependency {
     required_by_app_modules: AppModule[];
 }
 
-export interface TransactionInfo {
-    tx_id: number;
-    source_address: string;
-    dest_address: string;
-    status: number;
-    direction: number;
+// TODO move this to transactions.ts
+// ============================================================================
+// DisplayedTransaction Types (from minotari_wallet)
+// ============================================================================
+
+export enum TransactionDirection {
+    Incoming = 'incoming',
+    Outgoing = 'outgoing',
+}
+
+export enum TransactionSource {
+    Transfer = 'transfer',
+    Coinbase = 'coinbase',
+    OneSided = 'one_sided',
+    Unknown = 'unknown',
+}
+
+export enum TransactionDisplayStatus {
+    Pending = 'pending',
+    Unconfirmed = 'unconfirmed',
+    Confirmed = 'confirmed',
+    Cancelled = 'cancelled',
+    Reorganized = 'reorganized',
+    Rejected = 'rejected',
+}
+
+export enum OutputStatus {
+    Unspent = 'Unspent',
+    Locked = 'Locked',
+    Spent = 'Spent',
+}
+
+export interface BlockchainInfo {
+    block_height: number;
+    timestamp: string;
+    confirmations: number;
+}
+
+export interface FeeInfo {
     amount: number;
-    fee: number;
-    is_cancelled: boolean;
-    excess_sig: string;
-    timestamp: number;
-    message: string;
-    payment_id: string;
-    mined_in_block_height?: number;
-    payment_reference?: string;
+    amount_display: string;
+}
+
+export interface TransactionInput {
+    output_hash: string;
+    amount: number;
+    matched_output_id?: number;
+    is_matched: boolean;
+}
+
+export interface TransactionOutput {
+    hash: string;
+    amount: number;
+    status: OutputStatus;
+    confirmed_height?: number;
+    output_type: string;
+    is_change: boolean;
+}
+
+export interface TransactionDetails {
+    account_id: number;
+    total_credit: number;
+    total_debit: number;
+    inputs: TransactionInput[];
+    outputs: TransactionOutput[];
+    output_type?: string;
+    coinbase_extra?: string;
+    memo_hex?: string;
+    sent_output_hashes: string[];
+}
+
+export interface DisplayedTransaction {
+    id: string;
+    direction: TransactionDirection;
+    source: TransactionSource;
+    status: TransactionDisplayStatus;
+    amount: number;
+    amount_display: string;
+    message?: string;
+    counterparty?: string;
+    blockchain: BlockchainInfo;
+    fee?: FeeInfo;
+    details: TransactionDetails;
+    bridge_transaction_details?: {
+        status: UserTransactionDTO.status;
+        transactionHash?: string;
+        amountAfterFee?: string;
+    };
 }
 
 export interface GpuDevice {
@@ -96,6 +170,16 @@ export interface WalletBalance {
     timelocked_balance: number;
     pending_incoming_balance: number;
     pending_outgoing_balance: number;
+}
+export interface AccountBalance {
+    total: number;
+    available: number;
+    locked: number;
+    unconfirmed: number;
+    total_credits?: number;
+    total_debits?: number;
+    max_height?: number;
+    max_date?: string;
 }
 
 interface ApplicationsInformation {

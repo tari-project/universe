@@ -1,4 +1,4 @@
-import { GpuDevice, TransactionInfo } from './app-status';
+import { GpuDevice } from './app-status';
 
 export enum SetupPhase {
     Core = 'Core',
@@ -25,9 +25,11 @@ export interface TariAddressUpdatePayload {
     tari_address_type: TariAddressType;
 }
 
-export interface NewBlockHeightPayload {
-    block_height: number;
-    coinbase_transaction?: TransactionInfo;
+export interface WalletScanningProgressUpdatePayload {
+    scanned_height: number;
+    total_height: number;
+    progress: number;
+    is_initial_scan_complete: boolean;
 }
 
 export interface DetectedDevicesPayload {

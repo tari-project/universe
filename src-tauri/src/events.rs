@@ -20,23 +20,28 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use serde::Serialize;
-use std::{
-    collections::HashMap,
-    hash::{Hash, Hasher},
-};
-
 use crate::{
     internal_wallet::TariAddressType,
     mining::gpu::miners::GpuCommonInformation,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
     setup::{listeners::AppModule, setup_manager::SetupPhase},
-    wallet::wallet_types::TransactionInfo,
 };
+
+use minotari_wallet::db::AccountBalance;
+use serde::Serialize;
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
+};
+use tari_transaction_components::MicroMinotari;
 
 #[derive(Clone, Debug, Serialize)]
 pub enum EventType {
-    WalletBalanceUpdate,
+    WalletBalanceUpdate,          // ===================
+    WalletScanningProgressUpdate, // ===================
+    WalletTransactionsFound,
+    WalletTransactionsCleared,
+    WalletTransactionUpdated,
     BaseNodeUpdate,
     GpuDevicesUpdate,
     CpuPoolsStatsUpdate,
@@ -65,7 +70,6 @@ pub enum EventType {
     McpTransactionConfirmation,
     McpTransactionResult,
     BackgroundNodeSyncUpdate,
-    InitWalletScanningProgress,
     ConnectionStatus,
     ExchangeIdChanged,
     DisabledPhases,
@@ -84,7 +88,6 @@ pub enum EventType {
     UpdateAppModuleStatus,
     UpdateSelectedMiner,
     AvailableMiners,
-    WalletStatusUpdate,
     UpdateCpuMinerControlsState,
     UpdateGpuMinerControlsState,
     OpenSettings,
@@ -145,7 +148,6 @@ pub struct Event<T, E> {
 #[derive(Clone, Debug, Serialize)]
 pub struct NewBlockHeightPayload {
     pub block_height: u64,
-    pub coinbase_transaction: Option<TransactionInfo>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -170,10 +172,11 @@ pub struct NodeTypeUpdatePayload {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct InitWalletScanningProgressPayload {
+pub struct WalletScanningProgressUpdatePayload {
     pub scanned_height: u64,
     pub total_height: u64,
     pub progress: f64,
+    pub is_initial_scan_complete: bool,
 }
 
 // TODO: Bring back connection status callback, was removed with removing setup screen and related logic
@@ -198,10 +201,10 @@ pub struct TariAddressUpdatePayload {
     pub tari_address_type: TariAddressType,
 }
 
-#[derive(Debug, Serialize, Clone)]
-pub struct WalletStatusUpdatePayload {
-    pub loading: bool,
-    pub unhealthy: Option<bool>,
+#[derive(Clone, Debug, Serialize)]
+pub struct WalletBalanceUpdatePayload {
+    pub account_balance: AccountBalance,
+    pub display_balance: Option<MicroMinotari>,
 }
 
 #[derive(Debug, Serialize, Clone)]

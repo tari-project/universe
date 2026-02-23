@@ -20,34 +20,23 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::events_emitter::EventsEmitter;
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec};
 use crate::process_adapter_utils::setup_working_directory;
-use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
-use crate::wallet::transaction_service::TransactionService;
-use crate::wallet::wallet_status_monitor::{WalletStatusMonitor, WalletStatusMonitorError};
-use crate::wallet::wallet_types::{
-    ConnectivityStatus, TransactionInfo, TransactionStatus, WalletBalance, WalletState,
-};
-use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
+use crate::wallet::wallet_status_monitor::WalletStatusMonitor;
+use crate::wallet::wallet_types::WalletState;
 use anyhow::Error;
 use log::{info, warn};
-use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
-use minotari_node_grpc_client::grpc::{GetAllCompletedTransactionsRequest, GetBalanceRequest};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_shutdown::Shutdown;
-use tari_transaction_components::tari_amount::MicroMinotari;
-use tari_transaction_components::transaction_components::memo_field::MemoField;
 use tokio::sync::watch;
 
 #[derive(Serialize, Deserialize, Default)]
@@ -104,171 +93,6 @@ impl WalletAdapter {
 
     pub fn connect_with_local_node(&mut self, connect_with_local_node: bool) {
         self.connect_with_local_node = connect_with_local_node;
-    }
-
-    pub async fn get_balance(&self) -> Result<WalletBalance, anyhow::Error> {
-        let mut client = WalletClient::connect(self.wallet_grpc_address())
-            .await
-            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-        let res = client
-            .get_balance(GetBalanceRequest { payment_id: None })
-            .await?;
-        let balance = res.into_inner();
-
-        Ok(WalletBalance::from_response(balance))
-    }
-
-    pub async fn get_transactions(
-        &self,
-        offset: Option<u32>,
-        limit: Option<u32>,
-        status: Option<u32>,
-        current_block_height: u64,
-    ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
-        let mut client = WalletClient::connect(self.wallet_grpc_address())
-            .await
-            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-        // TODO: This needs to be upgraded to the streaming API https://github.com/tari-project/tari/pull/7366/
-        #[allow(deprecated)]
-        let res = client
-            .get_all_completed_transactions(GetAllCompletedTransactionsRequest {
-                offset: u64::from(offset.unwrap_or(0)),
-                limit: u64::from(limit.unwrap_or(0)),
-                status_bitflag: u64::from(status.unwrap_or(0)),
-            })
-            .await
-            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-
-        let transactions = res
-            .into_inner()
-            .transactions
-            .into_iter()
-            .map(|tx| {
-                let confirmations = if current_block_height > 0
-                    && tx.mined_in_block_height <= current_block_height
-                {
-                    current_block_height - tx.mined_in_block_height
-                } else {
-                    0
-                };
-                let payment_reference = if confirmations >= 5 {
-                    match tx.direction {
-                        1 => tx.payment_references_received.last().map(hex::encode),
-                        2 => tx.payment_references_sent.last().map(hex::encode),
-                        _ => None,
-                    }
-                } else {
-                    None
-                };
-
-                Ok(TransactionInfo {
-                    tx_id: tx.tx_id.to_string(),
-                    source_address: TariAddress::from_bytes(&tx.source_address)?.to_base58(),
-                    dest_address: TariAddress::from_bytes(&tx.dest_address)?.to_base58(),
-                    status: TransactionStatus::from(tx.status),
-                    amount: MicroMinotari(tx.amount),
-                    is_cancelled: tx.is_cancelled,
-                    direction: tx.direction,
-                    excess_sig: tx.excess_sig,
-                    fee: tx.fee,
-                    timestamp: tx.timestamp,
-                    payment_id: MemoField::stringify_bytes(&tx.user_payment_id),
-                    mined_in_block_height: tx.mined_in_block_height,
-                    payment_reference,
-                })
-            })
-            .collect::<Result<Vec<_>, TariAddressError>>()?;
-
-        Ok(transactions)
-    }
-
-    pub async fn send_one_sided_to_stealth_address(
-        &self,
-        amount: u64,
-        address: String,
-        payment_id: Option<String>,
-        app_handle: &tauri::AppHandle,
-    ) -> Result<(), anyhow::Error> {
-        let tx_service = TransactionService::new(self, app_handle);
-
-        let (unsigned_tx_file, tx_id) = tx_service
-            .prepare_one_sided_transaction_for_signing(amount, address, payment_id)
-            .await?;
-        let sign_result = tx_service
-            .sign_one_sided_tx(unsigned_tx_file, tx_id.clone())
-            .await;
-        match sign_result {
-            Ok(signed_tx_file) => tx_service.broadcast_one_sided_tx(signed_tx_file).await,
-            Err(e) => {
-                let cancel_res = tx_service.cancel_transaction(tx_id).await;
-                if let Err(cancel_err) = cancel_res {
-                    log::error!(target: LOG_TARGET_APP_LOGIC, "Failed to cancel transaction after failed to sign one sided tx: {cancel_err}: {e}");
-                }
-                Err(e)
-            }
-        }
-    }
-
-    pub async fn wait_for_scan_to_height(
-        &self,
-        block_height: u64,
-        timeout: Option<Duration>,
-    ) -> Result<WalletState, WalletStatusMonitorError> {
-        let mut state_receiver = self.state_broadcast.subscribe();
-        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
-        let mut zero_scanned_height_count = 0;
-        loop {
-            tokio::select! {
-                result = state_receiver.changed() => {
-                    if result.is_err() {
-                        return Err(WalletStatusMonitorError::WalletNotStarted);
-                    }
-
-                    let current_state = state_receiver.borrow().clone();
-                    if let Some(state) = current_state {
-                        // Case 1: Scan has reached or exceeded target height
-                        if state.scanned_height >= block_height {
-                            info!(target: LOG_TARGET_STATUSES, "Wallet scan completed up to block height {block_height}");
-                            EventsEmitter::emit_wallet_status_updated(false, None).await;
-                            return Ok(state);
-                        }
-                        // Case 2: Wallet is at height 0 but is connected - likely means scan finished already
-                        if state.scanned_height == 0
-                            && let Some(network) = &state.network
-                                && matches!(network.status, ConnectivityStatus::Online(3..)) {
-                                    zero_scanned_height_count += 1;
-                                    if zero_scanned_height_count >= 5 {
-                                        warn!(target: LOG_TARGET_STATUSES, "Wallet scanned before gRPC service started");
-                                        return Ok(state);
-                                    }
-                                }
-                    }
-                },
-                _ = shutdown_signal.wait() => {
-                    log::info!(target: LOG_TARGET_STATUSES, "Shutdown signal received, stopping wait_for_scan_to_height");
-                    return Ok(WalletState::default());
-                }
-                _ = async {
-                    tokio::time::sleep(timeout.unwrap_or(Duration::MAX)).await;
-                } => {
-                    warn!(
-                        target: LOG_TARGET_STATUSES,
-                        "Timeout reached while waiting for wallet scan to complete. Current height: {}/{}",
-                        state_receiver.borrow().as_ref().map(|s| s.scanned_height).unwrap_or(0),
-                        block_height
-                    );
-                    // Return current state if available, otherwise error
-                    return state_receiver
-                        .borrow()
-                        .clone()
-                        .ok_or(WalletStatusMonitorError::WalletNotStarted);
-                }
-            }
-        }
-    }
-
-    pub fn wallet_grpc_address(&self) -> String {
-        format!("http://127.0.0.1:{}", self.grpc_port)
     }
 }
 

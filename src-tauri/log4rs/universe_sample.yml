@@ -37,7 +37,7 @@ appenders:
     encoder:
       pattern: '{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m}{n} '
 
-  # An appender named "base_layer" that writes to a file with a custom pattern encoder
+  # An appender named "default" that writes to a file with a custom pattern encoder
   default:
     kind: rolling_file
     path: '{{log_dir}}/universe/log/universe.log'
@@ -56,7 +56,7 @@ appenders:
 
   app-logic:
     kind: rolling_file
-    path: "{{log_dir}}/universe/log/app-logic.log"
+    path: '{{log_dir}}/universe/log/app-logic.log'
     policy:
       kind: compound
       trigger:
@@ -66,13 +66,13 @@ appenders:
         kind: fixed_window
         base: 1
         count: 2
-        pattern: "{{log_dir}}/universe/log/app-logic.{}.log"
+        pattern: '{{log_dir}}/universe/log/app-logic.{}.log'
     encoder:
-      pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m} // {f}:{L}{n}"
+      pattern: '{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m} // {f}:{L}{n}'
 
   statuses:
     kind: rolling_file
-    path: "{{log_dir}}/universe/log/statuses.log"
+    path: '{{log_dir}}/universe/log/statuses.log'
     policy:
       kind: compound
       trigger:
@@ -82,9 +82,26 @@ appenders:
         kind: fixed_window
         base: 1
         count: 2
-        pattern: "{{log_dir}}/universe/log/app-statuses.{}.log"
+        pattern: '{{log_dir}}/universe/log/app-statuses.{}.log'
     encoder:
-      pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m} // {f}:{L}{n}"
+      pattern: '{d(%Y-%m-%d %H:%M:%S.%f)} {l:5} {m} // {f}:{L}{n}'
+
+  # An appender named "minotari_cli" that writes to a file with a custom pattern encoder
+  minotari_cli:
+    kind: rolling_file
+    path: '{{log_dir}}/universe/log/minotari_cli.log'
+    policy:
+      kind: compound
+      trigger:
+        kind: size
+        limit: 2mb
+      roller:
+        kind: fixed_window
+        base: 1
+        count: 2
+        pattern: '{{log_dir}}/universe/log/minotari_cli.{}.log'
+    encoder:
+      pattern: '{d(%Y-%m-%d %H:%M:%S)} {l:5} {m} // {f}:{L}{n}'
 
   # An appender named "other" that writes to a file with a custom pattern encoder
   other:
@@ -111,11 +128,17 @@ root:
     - stdout
 
 loggers:
-  tari::universe::app_logic:
+  tari::universe:
     level: info
     appenders:
       - stdout
       - default
+    additive: false
+
+  tari::universe::app_logic:
+    level: info
+    appenders:
+      - stdout
       - app-logic
     additive: false
 
@@ -123,7 +146,6 @@ loggers:
     level: info
     appenders:
       - stdout
-      - default
       - statuses
     additive: false
 
@@ -131,4 +153,11 @@ loggers:
     level: info
     appenders:
       - web
+    additive: false
+
+  tari::universe::wallet::minotari_wallet:
+    level: info
+    appenders:
+      - minotari_cli
+      - stdout
     additive: false

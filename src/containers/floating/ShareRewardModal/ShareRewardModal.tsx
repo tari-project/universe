@@ -50,8 +50,8 @@ const ShareRewardModal = memo(function ShareRewardModal() {
     const userDetails = useAirdropStore((s) => s.userDetails);
     const referralCode = userDetails?.user?.referral_code || '';
     const gemsValue = GIFT_GEMS.toLocaleString();
-    const block = item?.mined_in_block_height || 0;
-    const reward = item?.tokenAmount || 0;
+    const block = item?.blockchain.block_height || 0;
+    const reward = item?.amount || 0;
     const earningsFormatted = useMemo(() => formatNumber(reward, FormatPreset.XTM_COMPACT).toLowerCase(), [reward]);
 
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;

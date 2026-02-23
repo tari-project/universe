@@ -24,6 +24,7 @@ use std::collections::HashMap;
 
 /// Helper struct for building command parameters
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct CommandBuilder {
     /// Name of the command for logging
     pub(crate) name: String,
@@ -35,6 +36,7 @@ pub struct CommandBuilder {
 
 impl CommandBuilder {
     /// Creates a new command builder with the given name
+    #[allow(dead_code)]
     pub fn new(name: impl Into<String>) -> Self {
         Self {
             name: name.into(),
@@ -44,6 +46,7 @@ impl CommandBuilder {
     }
 
     /// Adds a list of arguments to the command
+    #[allow(dead_code)]
     pub fn add_args(mut self, args: &[impl AsRef<str>]) -> Self {
         self.args
             .extend(args.iter().map(|a| a.as_ref().to_string()));
@@ -51,6 +54,7 @@ impl CommandBuilder {
     }
 
     /// Adds an environment variable to the command
+    #[allow(dead_code)]
     pub fn add_env(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.envs.insert(key.into(), value.into());
         self

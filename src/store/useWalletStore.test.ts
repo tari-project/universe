@@ -1,14 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-    useWalletStore,
-    initialState,
-    updateWalletScanningProgress,
-    pruneTransactionHistory,
-    BackendBridgeTransaction,
-    CombinedBridgeWalletTransaction,
-} from './useWalletStore';
+import { useWalletStore, initialState, updateWalletScanningProgress, BackendBridgeTransaction } from './useWalletStore';
 import { TariAddressType } from '@app/types/events-payloads';
-import { TransactionInfo } from '@app/types/app-status.ts';
+import { DisplayedTransaction } from '@app/types/app-status.ts';
 
 // Mock useExchangeStore
 vi.mock('./useExchangeStore', () => ({
@@ -37,20 +30,16 @@ describe('useWalletStore', () => {
             expect(useWalletStore.getState().tari_address_type).toBe(TariAddressType.Internal);
         });
 
-        it('has empty coinbase_transactions', () => {
-            expect(useWalletStore.getState().coinbase_transactions).toEqual([]);
+        it('has empty wallet_transactions', () => {
+            expect(useWalletStore.getState().wallet_transactions).toEqual([]);
         });
 
         it('has empty exchange_wxtm_addresses', () => {
             expect(useWalletStore.getState().exchange_wxtm_addresses).toEqual({});
         });
 
-        it('has tx_history_filter as all-activity', () => {
-            expect(useWalletStore.getState().tx_history_filter).toBe('all-activity');
-        });
-
-        it('has empty tx_history', () => {
-            expect(useWalletStore.getState().tx_history).toEqual([]);
+        it('has transaction_history_filter as all-activity', () => {
+            expect(useWalletStore.getState().transaction_history_filter).toBe('all-activity');
         });
 
         it('has empty bridge_transactions', () => {
@@ -65,13 +54,9 @@ describe('useWalletStore', () => {
             expect(useWalletStore.getState().is_wallet_importing).toBe(false);
         });
 
-        it('has isLoading as false', () => {
-            expect(useWalletStore.getState().isLoading).toBe(false);
-        });
-
         it('has wallet_scanning with default values', () => {
             const scanning = useWalletStore.getState().wallet_scanning;
-            expect(scanning.is_scanning).toBe(true);
+            expect(scanning.is_initial_scan_complete).toBe(false);
             expect(scanning.scanned_height).toBe(0);
             expect(scanning.total_height).toBe(0);
             expect(scanning.progress).toBe(0);
@@ -106,10 +91,10 @@ describe('useWalletStore', () => {
     describe('balance state', () => {
         it('can set balance', () => {
             const balance = {
-                available_balance: 1000000,
-                pending_incoming_balance: 50000,
-                pending_outgoing_balance: 10000,
-                timelocked_balance: 0,
+                total: 1000000,
+                available: 50000,
+                locked: 100,
+                unconfirmed: 10000,
             };
             useWalletStore.setState({ balance });
             expect(useWalletStore.getState().balance).toEqual(balance);
@@ -122,7 +107,7 @@ describe('useWalletStore', () => {
     });
 
     describe('transaction history', () => {
-        it('can set tx_history', () => {
+        it('can set wallet_transactions', () => {
             const tx = {
                 tx_id: 1,
                 source_address: 'addr1',
@@ -133,13 +118,13 @@ describe('useWalletStore', () => {
                 direction: 2,
                 timestamp: Date.now(),
             };
-            useWalletStore.setState({ tx_history: [tx as TransactionInfo] });
-            expect(useWalletStore.getState().tx_history).toHaveLength(1);
+            useWalletStore.setState({ wallet_transactions: [tx as unknown as DisplayedTransaction] });
+            expect(useWalletStore.getState().wallet_transactions).toHaveLength(1);
         });
 
-        it('can set tx_history_filter', () => {
-            useWalletStore.setState({ tx_history_filter: 'transactions' });
-            expect(useWalletStore.getState().tx_history_filter).toBe('transactions');
+        it('can set transaction_history_filter', () => {
+            useWalletStore.setState({ transaction_history_filter: 'transactions' });
+            expect(useWalletStore.getState().transaction_history_filter).toBe('transactions');
         });
 
         it('can add multiple transactions', () => {
@@ -148,21 +133,8 @@ describe('useWalletStore', () => {
                 { tx_id: 2, amount: 200, timestamp: 2000 },
                 { tx_id: 3, amount: 300, timestamp: 3000 },
             ];
-            useWalletStore.setState({ tx_history: transactions as TransactionInfo[] });
-            expect(useWalletStore.getState().tx_history).toHaveLength(3);
-        });
-    });
-
-    describe('coinbase transactions', () => {
-        it('can set coinbase_transactions', () => {
-            const coinbaseTx = {
-                tx_id: 1,
-                amount: 10000000,
-                status: 13,
-                timestamp: Date.now(),
-            };
-            useWalletStore.setState({ coinbase_transactions: [coinbaseTx as TransactionInfo] });
-            expect(useWalletStore.getState().coinbase_transactions).toHaveLength(1);
+            useWalletStore.setState({ wallet_transactions: transactions as unknown as DisplayedTransaction[] });
+            expect(useWalletStore.getState().wallet_transactions).toHaveLength(3);
         });
     });
 
@@ -186,13 +158,6 @@ describe('useWalletStore', () => {
         });
     });
 
-    describe('loading state', () => {
-        it('can set isLoading to true', () => {
-            useWalletStore.setState({ isLoading: true });
-            expect(useWalletStore.getState().isLoading).toBe(true);
-        });
-    });
-
     describe('swapping state', () => {
         it('can set is_swapping to true', () => {
             useWalletStore.setState({ is_swapping: true });
@@ -200,9 +165,10 @@ describe('useWalletStore', () => {
         });
     });
 
-    describe('details item', () => {
+    describe('details item - selectedTransactionId', () => {
         it('can set detailsItem', () => {
             const item = {
+                id: 'selected',
                 destinationAddress: 'dest',
                 paymentId: 'payment-1',
                 feeAmount: 100,
@@ -215,14 +181,16 @@ describe('useWalletStore', () => {
                     status: 6,
                 },
             };
-            useWalletStore.setState({ detailsItem: item as CombinedBridgeWalletTransaction | null });
-            expect(useWalletStore.getState().detailsItem).toEqual(item);
+            useWalletStore.setState({ selectedTransactionId: item.id });
+            expect(useWalletStore.getState().selectedTransactionId).toEqual(item.id);
         });
 
         it('can clear detailsItem', () => {
-            useWalletStore.setState({ detailsItem: { paymentId: 'test' } as CombinedBridgeWalletTransaction | null });
-            useWalletStore.setState({ detailsItem: null });
-            expect(useWalletStore.getState().detailsItem).toBeNull();
+            useWalletStore.setState({
+                selectedTransactionId: 'selected',
+            });
+            useWalletStore.setState({ selectedTransactionId: null });
+            expect(useWalletStore.getState().selectedTransactionId).toBeNull();
         });
     });
 
@@ -277,6 +245,7 @@ describe('useWalletStore', () => {
     describe('updateWalletScanningProgress', () => {
         it('updates scanning progress', () => {
             updateWalletScanningProgress({
+                is_initial_scan_complete: true,
                 scanned_height: 50,
                 total_height: 100,
                 progress: 50,
@@ -286,46 +255,7 @@ describe('useWalletStore', () => {
             expect(scanning.scanned_height).toBe(50);
             expect(scanning.total_height).toBe(100);
             expect(scanning.progress).toBe(50);
-            expect(scanning.is_scanning).toBe(true);
-        });
-
-        it('sets is_scanning to false when scan is complete', () => {
-            updateWalletScanningProgress({
-                scanned_height: 100,
-                total_height: 100,
-                progress: 100,
-            });
-
-            expect(useWalletStore.getState().wallet_scanning.is_scanning).toBe(false);
-        });
-
-        it('sets is_scanning to true when scan is incomplete', () => {
-            updateWalletScanningProgress({
-                scanned_height: 99,
-                total_height: 100,
-                progress: 99,
-            });
-
-            expect(useWalletStore.getState().wallet_scanning.is_scanning).toBe(true);
-        });
-    });
-
-    describe('pruneTransactionHistory', () => {
-        it('does not fail with empty arrays', () => {
-            expect(() => pruneTransactionHistory()).not.toThrow();
-        });
-
-        it('preserves transactions when under limit', () => {
-            const transactions = Array.from({ length: 10 }, (_, i) => ({
-                tx_id: i,
-                timestamp: i * 1000,
-            }));
-            useWalletStore.setState({ tx_history: transactions as TransactionInfo[] });
-
-            pruneTransactionHistory();
-
-            // Should still have transactions (pruning happens at > 1000)
-            expect(useWalletStore.getState().tx_history.length).toBeGreaterThanOrEqual(0);
+            expect(scanning.is_initial_scan_complete).toBe(true);
         });
     });
 

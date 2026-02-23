@@ -182,7 +182,9 @@ pub(crate) trait ProcessInstanceTrait: Sync + Send + 'static {
     async fn start(&mut self, task_tracker: TaskTracker) -> Result<(), anyhow::Error>;
     async fn stop(&mut self) -> Result<i32, anyhow::Error>;
     fn is_shutdown_triggered(&self) -> bool;
+    #[allow(dead_code)]
     async fn wait(&mut self) -> Result<i32, anyhow::Error>;
+    #[allow(dead_code)]
     async fn start_and_wait_for_output(
         &mut self,
         task_tracker: TaskTracker,

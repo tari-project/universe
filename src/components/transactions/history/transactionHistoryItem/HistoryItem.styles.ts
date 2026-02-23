@@ -12,6 +12,7 @@ export const ItemWrapper = styled(m.div)`
     justify-content: flex-end;
     flex-direction: column;
     overflow: hidden;
+    margin: 0 0 4px 0;
     position: relative;
     box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.025)} 0 1px 2px -1px`};
     background-color: ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)};
@@ -91,6 +92,28 @@ export const ValueWrapper = styled.div`
     font-weight: 500;
     justify-content: flex-end;
     align-items: baseline;
+`;
+
+export const Chip = styled.div`
+    display: flex;
+    align-self: center;
+    justify-content: center;
+    align-items: center;
+    text-transform: uppercase;
+    border-radius: 50px;
+    background-color: ${({ theme }) => theme.colors.green[700]};
+    height: 14px;
+    padding: 0 7px;
+    color: #fff;
+    text-align: center;
+    font-family: Poppins, sans-serif;
+    font-size: 8px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+    span {
+        height: 10px;
+    }
 `;
 
 export const CurrencyText = styled(Typography).attrs({ variant: 'p' })`
@@ -186,4 +209,5 @@ export const PlaceholderItem = styled.div<{ $isLast?: boolean }>`
     border-radius: 10px;
     flex-shrink: 0;
     opacity: ${({ $isLast }) => ($isLast ? 0 : 0.75)};
+    margin: 0 0 4px 0;
 `;

@@ -26,10 +26,10 @@ export function SendForm({ isBack }: Props) {
     const debouncedAddress = useDebouncedValue(address, 350);
     const [isAddressEmpty, setIsAddressEmpty] = useState(true);
     const [isAddressValid, setIsAddressValid] = useState(false);
-    const availableBalance = useWalletStore((s) => s.balance?.available_balance);
+    const availableBalance = useWalletStore((s) => s.balance?.available);
 
     const numericAvailableBalance = Number(Math.floor((availableBalance || 0) / 1_000_000).toFixed(2));
-    const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
+    const isInitialWalletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);
 
     const { control, formState, setError, setValue, clearErrors, getValues } = useFormContext<SendInputs>();
     const { isSubmitting, errors } = formState;
@@ -142,10 +142,12 @@ export function SendForm({ isBack }: Props) {
                             isSecondary={true}
                         />
                     }
-                    secondaryText={!isWalletScanning ? `${t('send.max-available')} ${numericAvailableBalance} XTM` : ''}
+                    secondaryText={
+                        !isInitialWalletScanning ? `${t('send.max-available')} ${numericAvailableBalance} XTM` : ''
+                    }
                     miniButton={
                         <>
-                            {!isWalletScanning && (
+                            {!isInitialWalletScanning && (
                                 <MiniButton
                                     variant="outlined"
                                     size="xs"
