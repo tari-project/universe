@@ -26,6 +26,7 @@ pub mod transaction;
 
 pub static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet";
 
+use crate::wallet::minotari_wallet::balance_tracker::EMPTY_BALANCE;
 use crate::{
     LOG_TARGET_STATUSES, UniverseAppState,
     events_emitter::EventsEmitter,
@@ -61,6 +62,7 @@ use std::{
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_common_types::transaction::TxId;
+use tari_transaction_components::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
@@ -203,10 +205,30 @@ impl MinotariWalletManager {
         // Store as pending transaction for later matching with scanned transactions
         Self::store_pending_transaction(&displayed_transaction).await;
 
-        let updated_balance = Self::get_latest_account_balance().await;
+        let current_balance = Self::get_latest_account_balance().await;
+        info!(target: LOG_TARGET, "Updated balance BEFORE: {:?}", current_balance);
+
+        let mut updated_balance = current_balance.clone().unwrap_or(EMPTY_BALANCE.clone());
+        let mut temp_total = MicroMinotari(0);
+        if let Some(balance) = current_balance {
+            temp_total = balance.total.saturating_sub(MicroMinotari(amount));
+            updated_balance = AccountBalance {
+                total: temp_total,
+                ..balance
+            }
+        }
+
+        updated_balance = AccountBalance {
+            total: temp_total,
+            ..updated_balance
+        };
+
+        info!(target: LOG_TARGET, "Updated balance AFTER: {:?}", updated_balance);
+
         BalanceTracker::current()
-            .update_from_transactions(updated_balance.clone())
+            .update_from_transactions(Some(updated_balance))
             .await;
+
         // Emit to frontend immediately so user sees the pending transaction
         EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()]).await;
 

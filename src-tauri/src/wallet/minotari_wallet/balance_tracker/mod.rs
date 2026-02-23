@@ -29,7 +29,7 @@ use crate::wallet::minotari_wallet::LOG_TARGET;
 use log::info;
 use tari_transaction_components::tari_amount::MicroMinotari;
 
-static EMPTY_BALANCE: AccountBalance = AccountBalance {
+pub static EMPTY_BALANCE: AccountBalance = AccountBalance {
     total: MicroMinotari(0),
     available: MicroMinotari(0),
     locked: MicroMinotari(0),
@@ -63,12 +63,10 @@ impl BalanceTracker {
         let mut current_account = self.account_balance.write().await;
         *current_account = account_balance.clone();
 
-        // Calculate available balance from total_credits - total_debits
-        let total_balance = account_balance.total;
-
         info!(
             target: LOG_TARGET,
-            "Account Balance initialized to {} available | {} total", account_balance.available, total_balance
+            "Account Balance initialized. {} total, {} avaliable",
+            account_balance.total, account_balance.available
         );
 
         Self::emit_balance(account_balance).await;
@@ -99,7 +97,7 @@ impl BalanceTracker {
 
         info!(
             target: LOG_TARGET,
-            "Balance updated from DB state. Total: {}, Available: {}",
+            "Balance updated from DB state and transaction. Total: {}, Available: {}",
             account_balance.total, account_balance.available
         );
 
