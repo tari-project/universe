@@ -549,6 +549,21 @@ async fn get_telemetry_data_inner(
         std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
         system.refresh_cpu_usage();
         system.refresh_memory();
+
+        let disks = Disks::new_with_refreshed_list();
+        let disk_info: Vec<(u64, u64, String)> = disks
+            .list()
+            .iter()
+            .map(|disk| {
+                let kind = match disk.kind() {
+                    sysinfo::DiskKind::HDD => "HDD".to_string(),
+                    sysinfo::DiskKind::SSD => "SSD".to_string(),
+                    sysinfo::DiskKind::Unknown(_) => "Unknown".to_string(),
+                };
+                (disk.total_space(), disk.available_space(), kind)
+            })
+            .collect();
+
         (
             system.global_cpu_usage(),
             system.total_memory(),
@@ -556,12 +571,14 @@ async fn get_telemetry_data_inner(
             system.used_memory(),
             system.physical_core_count(),
             System::cpu_arch(),
+            disk_info,
         )
     })
     .await
     .map_err(|e| anyhow::anyhow!("spawn_blocking(sysinfo) join error: {e}"))?;
 
-    let (cpu_usage, total_memory, free_memory, used_memory, core_count, cpu_arch) = sys_info;
+    let (cpu_usage, total_memory, free_memory, used_memory, core_count, cpu_arch, disk_info) =
+        sys_info;
     extra_data.insert("cpu_usage".to_string(), cpu_usage.to_string());
     extra_data.insert(
         "total_memory_gb".to_string(),
@@ -634,32 +651,23 @@ async fn get_telemetry_data_inner(
     extra_data.insert("network_latency".to_string(), latency.round().to_string());
     extra_data.insert("exchange_id".to_string(), exchange_id.to_string());
 
-    let disks = Disks::new_with_refreshed_list();
-    for (i, disk) in disks.list().iter().enumerate() {
+    for (i, (total_space, available_space, kind)) in disk_info.into_iter().enumerate() {
         extra_data.insert(
             format!("disk_{i}_total_gb"),
-            disk.total_space().saturating_div(1_000_000_000).to_string(),
+            total_space.saturating_div(1_000_000_000).to_string(),
         );
         extra_data.insert(
             format!("disk_{i}_free_gb"),
-            disk.available_space()
-                .saturating_div(1_000_000_000)
-                .to_string(),
+            available_space.saturating_div(1_000_000_000).to_string(),
         );
         extra_data.insert(
             format!("disk_{i}_used_gb"),
-            (disk.total_space().saturating_sub(disk.available_space()))
+            total_space
+                .saturating_sub(available_space)
                 .saturating_div(1_000_000_000)
                 .to_string(),
         );
-        extra_data.insert(
-            format!("disk_{i}_kind"),
-            match disk.kind() {
-                sysinfo::DiskKind::HDD => "HDD".to_string(),
-                sysinfo::DiskKind::SSD => "SSD".to_string(),
-                sysinfo::DiskKind::Unknown(_) => "Unknown".to_string(),
-            },
-        );
+        extra_data.insert(format!("disk_{i}_kind"), kind);
     }
 
     let tari_address = InternalWallet::tari_address().await.to_base58();
