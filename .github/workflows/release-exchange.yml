@@ -228,6 +228,13 @@ jobs:
             # Build for both architectures on macOS universal
             cargo build --release --manifest-path process-wrapper/Cargo.toml --target aarch64-apple-darwin
             cargo build --release --manifest-path process-wrapper/Cargo.toml --target x86_64-apple-darwin
+            # Create universal binary via lipo so Tauri can find it at binaries/process-wrapper-universal-apple-darwin
+            mkdir -p target/universal-apple-darwin/release
+            lipo -create \
+              target/aarch64-apple-darwin/release/process-wrapper \
+              target/x86_64-apple-darwin/release/process-wrapper \
+              -output target/universal-apple-darwin/release/process-wrapper
+            chmod +x target/universal-apple-darwin/release/process-wrapper
           else
             cargo build --release --manifest-path process-wrapper/Cargo.toml
           fi
@@ -277,7 +284,7 @@ jobs:
           # https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
           curl -s --location --remote-name "https://aka.ms/vs/17/release/vc_redist.x64.exe"
           cd ../..
-          ls -la "src-tauri/target/release/bundle/msi"
+          ls -la "target/release/bundle/msi"
           ls -la "tari-win-bundler/executables"
           export TARI_UNIVERSE_BUNDLER_NAME="Tari Universe-${{matrix.exchange.name}}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
           export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe ${{matrix.exchange.name}}"
@@ -305,8 +312,8 @@ jobs:
             -includepath tari-win-bundler/resources \
             -includepath tari-win-bundler/executables \
             -includepath wix \
-            -includepath src-tauri/target/release/bundle/msi
-          ls -la src-tauri/target/release/bundle/msi
+            -includepath target/release/bundle/msi
+          ls -la target/release/bundle/msi
           ls -la tari-win-bundler
           ls -la tari-win-bundler/executables
           mv -v ./tari-win-bundler/Bundle.exe "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe"
@@ -453,7 +460,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: tari_universe_${{ matrix.exchange.name }}.pdb
-          path: '${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb'
+          path: '${{ github.workspace }}/target/release/tari_universe.pdb'
 
       - name: Windows install Sentry CLI
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}
@@ -469,8 +476,8 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
         shell: bash
         run: |
-          sentry-cli debug-files check ./src-tauri/target/release/tari_universe.pdb
-          sentry-cli debug-files upload --org tari-labs --project tari-universe ./src-tauri/target/release/tari_universe.pdb
+          sentry-cli debug-files check ./target/release/tari_universe.pdb
+          sentry-cli debug-files upload --org tari-labs --project tari-universe ./target/release/tari_universe.pdb
 
   github-updater-artifact:
     name: '[ Github ] Prepare updater artifact ${{ matrix.exchange.id }}'
