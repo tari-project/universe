@@ -22,12 +22,14 @@
 
 use sys_locale::get_locale;
 
+use crate::consts::DEFAULT_SYSTEM_LOCALE_FALLBACK;
+
 use super::config_ui::ConfigUIContent;
 
 #[test]
 fn set_should_always_use_system_language_true_resolves_application_language() {
     let mut config = ConfigUIContent::default();
-    let fallback_language = "en-US".to_string();
+    let fallback_language = DEFAULT_SYSTEM_LOCALE_FALLBACK.to_string();
     let expected_language = get_locale().unwrap_or_else(|| fallback_language.clone());
 
     config.set_should_always_use_system_language_and_resolve_language((true, fallback_language));
@@ -44,7 +46,7 @@ fn set_should_always_use_system_language_false_keeps_selected_language() {
 
     config.set_should_always_use_system_language_and_resolve_language((
         false,
-        "en-US".to_string(),
+        DEFAULT_SYSTEM_LOCALE_FALLBACK.to_string(),
     ));
 
     assert!(!*config.should_always_use_system_language());

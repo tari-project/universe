@@ -21,8 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
-    configs::config_core::ConfigCore, events_emitter::EventsEmitter,
-    internal_wallet::TariAddressType,
+    configs::config_core::ConfigCore, consts::DEFAULT_SYSTEM_LOCALE_FALLBACK,
+    events_emitter::EventsEmitter, internal_wallet::TariAddressType,
 };
 
 use getset::{Getters, Setters};
@@ -213,7 +213,7 @@ impl ConfigUI {
 
         let _unused = Self::update_field(
             ConfigUIContent::propose_system_language,
-            "en-US".to_string(),
+            DEFAULT_SYSTEM_LOCALE_FALLBACK.to_string(),
         )
         .await;
     }
