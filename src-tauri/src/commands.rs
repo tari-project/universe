@@ -146,9 +146,11 @@ pub async fn select_exchange_miner(
 
     EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
 
-    SetupManager::get_instance()
-        .restart_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
-        .await;
+    tauri::async_runtime::spawn(async move {
+        SetupManager::get_instance()
+            .restart_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+            .await;
+    });
 
     Ok(())
 }
@@ -684,9 +686,11 @@ pub async fn revert_to_internal_wallet(
     .map_err(InvokeError::from_anyhow)?;
     EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
 
-    SetupManager::get_instance()
-        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
-        .await;
+    tauri::async_runtime::spawn(async move {
+        SetupManager::get_instance()
+            .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+            .await;
+    });
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "revert_to_internal_wallet took too long: {:?}", timer.elapsed());
@@ -1138,9 +1142,11 @@ pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeErro
         .await
         .map_err(InvokeError::from_anyhow)?;
 
-    SetupManager::get_instance()
-        .restart_phases_from_queue()
-        .await;
+    tauri::async_runtime::spawn(async move {
+        SetupManager::get_instance()
+            .restart_phases_from_queue()
+            .await;
+    });
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_monero_address took too long: {:?}", timer.elapsed());
     }
@@ -1322,9 +1328,11 @@ pub async fn set_airdrop_tokens(airdrop_tokens: Option<AirdropTokens>) -> Result
     info!(target: LOG_TARGET_APP_LOGIC, "New Airdrop tokens saved, user id changed:{user_id_changed:?}");
     if user_id_changed {
         // If the user id changed, we need to restart the cpu mining phases to ensure that the new telemetry_id ( unique_string value )is used
-        SetupManager::get_instance()
-            .restart_phases(vec![SetupPhase::CpuMining])
-            .await;
+        tauri::async_runtime::spawn(async move {
+            SetupManager::get_instance()
+                .restart_phases(vec![SetupPhase::CpuMining])
+                .await;
+        });
     }
     Ok(())
 }
