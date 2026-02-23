@@ -165,12 +165,6 @@ export interface BaseNodeStatus {
     readiness_status: string;
 }
 
-export interface WalletBalance {
-    available_balance: number;
-    timelocked_balance: number;
-    pending_incoming_balance: number;
-    pending_outgoing_balance: number;
-}
 export interface AccountBalance {
     total: number;
     available: number;

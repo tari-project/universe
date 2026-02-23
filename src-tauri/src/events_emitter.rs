@@ -25,7 +25,7 @@ use crate::configs::config_pools::ConfigPoolsContent;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload, NewBlockHeightPayload,
-    UpdateAppModuleStatusPayload, WalletBalanceUpdatePayload, WalletScanningProgressUpdatePayload,
+    UpdateAppModuleStatusPayload, WalletScanningProgressUpdatePayload,
 };
 use crate::internal_wallet::TariAddressType;
 use crate::mining::MinerControlsState;
@@ -52,6 +52,7 @@ use crate::{
 };
 use log::error;
 use minotari_wallet::DisplayedTransaction;
+use minotari_wallet::db::AccountBalance;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 use tari_common_types::tari_address::TariAddress;
@@ -414,11 +415,11 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_wallet_balance_update(payload: WalletBalanceUpdatePayload) {
+    pub async fn emit_wallet_balance_update(account_balance: AccountBalance) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::WalletBalanceUpdate,
-            payload,
+            payload: account_balance,
         };
         if let Err(e) = Self::get_app_handle()
             .await

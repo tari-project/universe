@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
-import { DisplayedTransaction } from '@app/types/app-status.ts';
-import { useWalletStore, WalletBalanceExtended } from '../useWalletStore';
+import { AccountBalance, DisplayedTransaction } from '@app/types/app-status.ts';
+import { useWalletStore } from '../useWalletStore';
 import { setError } from './appStateStoreActions';
 import { TxHistoryFilter } from '@app/components/transactions/history/FilterSelect';
 
@@ -15,6 +15,7 @@ import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import { fetchBridgeTransactionsHistory } from './bridgeApiActions';
 import { mergeTransactions } from '@app/store/actions/helpers.ts';
+import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
 export const importSeedWords = async (seedWords: string[]) => {
     useWalletStore.setState((c) => ({
@@ -73,15 +74,13 @@ export const setExternalTariAddress = async (newAddress: string) => {
         });
 };
 
-export const setWalletBalance = async ({ account_balance, display_balance }: WalletBalanceExtended) => {
-    const currentBalance = useWalletStore.getState().balance;
-    const currentDisplay = useWalletStore.getState().calculated_balance;
-    const fullEqual = currentBalance?.total === account_balance.total;
-    const isEqual = fullEqual && currentDisplay == display_balance;
+export const setWalletBalance = async (account_balance: AccountBalance) => {
+    const currentBalance = useWalletStore.getState().account_balance;
+    const isEqual = deepEqual(currentBalance, account_balance);
 
     if (isEqual) return;
 
-    useWalletStore.setState({ balance: account_balance, calculated_balance: display_balance });
+    useWalletStore.setState({ account_balance });
     await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
 };
 
