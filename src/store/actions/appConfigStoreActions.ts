@@ -101,12 +101,11 @@ const runCompensatedOperations = async (
     operations: CompensatedOperation[]
 ): Promise<{ ok: true } | { ok: false; reason: unknown }> => {
     const results = await Promise.allSettled(operations.map((operation) => operation.run()));
-    const successfulRollbacks = results
-        .map((result, index) => ({ result, index }))
-        .filter(({ result }) => result.status === 'fulfilled')
-        .map(({ index }) => operations[index].rollback());
-
     if (results.some((result) => result.status === 'rejected')) {
+        const successfulRollbacks = results
+            .map((result, index) => ({ result, index }))
+            .filter(({ result }) => result.status === 'fulfilled')
+            .map(({ index }) => operations[index].rollback());
         await Promise.allSettled(successfulRollbacks);
         const failure = results.find((result) => result.status === 'rejected');
         return { ok: false as const, reason: failure?.reason };
