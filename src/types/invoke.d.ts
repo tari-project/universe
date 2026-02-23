@@ -12,6 +12,7 @@ import { BasePoolData, ConfigBackendInMemory, PauseOnBatteryModeState } from './
 import { ExchangeMiner } from './exchange';
 import { ActiveTapplet } from './tapplets/tapplet.types';
 import { SchedulerEventTiming, SchedulerEventType } from './mining/schedule.ts';
+import { Language } from '../i18initializer.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -24,7 +25,7 @@ declare module '@tauri-apps/api/core' {
     ): Promise<void>;
     function invoke(param: 'get_application_language'): Promise<string>;
     function invoke(param: 'set_should_auto_launch', payload: { shouldAutoLaunch: boolean }): Promise<void>;
-    function invoke(param: 'set_application_language', payload: { applicationLanguage: string }): Promise<void>;
+    function invoke(param: 'set_application_language', payload: { applicationLanguage: Language }): Promise<void>;
     function invoke(param: 'frontend_ready'): Promise<void>;
     function invoke(param: 'download_and_start_installer', payload: { id: string }): Promise<void>;
     function invoke(param: 'get_paper_wallet_details', payload?: { authUuid?: string }): Promise<PaperWalletDetails>;
