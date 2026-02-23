@@ -353,8 +353,9 @@ export const setShouldAlwaysUseSystemLanguage = async (shouldAlwaysUseSystemLang
         return;
     }
 
-    useConfigUIStore.setState((c) => ({ ...c, application_language: resolvedLanguageResult.value }));
-    await changeLanguage(resolvedLanguageResult.value);
+    const resolvedLanguage = resolveI18nLanguage(resolvedLanguageResult.value);
+    useConfigUIStore.setState((c) => ({ ...c, application_language: resolvedLanguage }));
+    await changeLanguage(resolvedLanguage);
 };
 
 export const setShowExperimentalSettings = async (showExperimentalSettings: boolean) => {
