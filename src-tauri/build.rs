@@ -57,6 +57,26 @@ fn copy_process_wrapper() {
             .unwrap_or_else(|e| panic!("Failed to copy process-wrapper binary: {}", e));
     }
 
+    // For macOS universal builds: Tauri builds each arch separately but expects
+    // binaries/process-wrapper-universal-apple-darwin at bundle time.
+    // Create it via lipo when we have both per-arch binaries available.
+    if target.contains("apple-darwin") {
+        let universal_dst = "binaries/process-wrapper-universal-apple-darwin";
+        let aarch64_bin = "binaries/process-wrapper-aarch64-apple-darwin";
+        let x86_64_bin = "binaries/process-wrapper-x86_64-apple-darwin";
+
+        if Path::new(aarch64_bin).exists() && Path::new(x86_64_bin).exists() && !Path::new(universal_dst).exists() {
+            let output = std::process::Command::new("lipo")
+                .args(["-create", aarch64_bin, x86_64_bin, "-output", universal_dst])
+                .output();
+            match output {
+                Ok(o) if o.status.success() => {}
+                Ok(o) => eprintln!("lipo failed: {}", String::from_utf8_lossy(&o.stderr)),
+                Err(e) => eprintln!("Failed to run lipo: {}", e),
+            }
+        }
+    }
+
     println!(
         "cargo::rerun-if-changed=../target/{}/{}/{}",
         target, profile, src_name
