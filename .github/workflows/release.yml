@@ -328,13 +328,16 @@ jobs:
             # Build for both architectures on macOS universal
             cargo build --release --manifest-path process-wrapper/Cargo.toml --target aarch64-apple-darwin
             cargo build --release --manifest-path process-wrapper/Cargo.toml --target x86_64-apple-darwin
-            # Create universal binary via lipo so Tauri can find it at binaries/process-wrapper-universal-apple-darwin
+            # Create universal binary via lipo
             mkdir -p target/universal-apple-darwin/release
             lipo -create \
               target/aarch64-apple-darwin/release/process-wrapper \
               target/x86_64-apple-darwin/release/process-wrapper \
               -output target/universal-apple-darwin/release/process-wrapper
             chmod +x target/universal-apple-darwin/release/process-wrapper
+            # Pre-place the binary for Tauri bundling (build.rs only runs per-arch, not for universal)
+            mkdir -p src-tauri/binaries
+            cp target/universal-apple-darwin/release/process-wrapper src-tauri/binaries/process-wrapper-universal-apple-darwin
           else
             cargo build --release --manifest-path process-wrapper/Cargo.toml
           fi
