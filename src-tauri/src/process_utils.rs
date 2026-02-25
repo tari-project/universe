@@ -164,9 +164,10 @@ const GRACEFUL_SHUTDOWN_WAIT_SECS: u64 = 10;
 /// On Unix: Sends SIGTERM first (so the process-wrapper can catch it and clean up),
 /// waits for graceful shutdown, then falls back to SIGKILL if needed.
 ///
-/// On Windows: Does nothing. The process-wrapper monitors its parent PID and will
-/// detect when the main app exits, then terminate its child process gracefully.
-/// Using TerminateProcess would kill the wrapper abruptly, preventing cleanup.
+/// On Windows: Uses taskkill /T to terminate the entire process tree (wrapper + child).
+/// A non-forced attempt is made first, followed by a forced kill if needed.
+/// Direct TerminateProcess (child.kill()) only kills the wrapper and orphans the child,
+/// so taskkill /T is required to clean up the whole tree.
 pub async fn graceful_kill(child: &mut tokio::process::Child) -> Result<(), std::io::Error> {
     if let Some(pid) = child.id() {
         #[cfg(unix)]
@@ -187,13 +188,42 @@ pub async fn graceful_kill(child: &mut tokio::process::Child) -> Result<(), std:
 
         #[cfg(windows)]
         {
-            // On Windows, let the process-wrapper detect parent exit and clean up.
-            // Calling kill() would use TerminateProcess, which kills abruptly
-            // and prevents the wrapper from gracefully terminating its child.
-            let _ = pid;
+            use crate::consts::PROCESS_CREATION_NO_WINDOW;
+
+            let pid_str = pid.to_string();
+
+            // Attempt non-forced tree kill first
+            let _ = tokio::process::Command::new("taskkill")
+                .args(["/T", "/PID", &pid_str])
+                .creation_flags(PROCESS_CREATION_NO_WINDOW)
+                .output()
+                .await;
+
+            // Wait for the process to exit
+            let deadline =
+                std::time::Instant::now() + Duration::from_secs(GRACEFUL_SHUTDOWN_WAIT_SECS);
+            while std::time::Instant::now() < deadline {
+                if let Ok(Some(_)) = child.try_wait() {
+                    return Ok(());
+                }
+                tokio::time::sleep(Duration::from_millis(200)).await;
+            }
+
+            // Force kill the entire tree if still alive
+            let _ = tokio::process::Command::new("taskkill")
+                .args(["/F", "/T", "/PID", &pid_str])
+                .creation_flags(PROCESS_CREATION_NO_WINDOW)
+                .output()
+                .await;
+
+            if let Ok(Some(_)) = child.try_wait() {
+                return Ok(());
+            }
+
+            // Last resort: TerminateProcess on the wrapper handle
+            let _ = child.kill().await;
         }
     } else {
-        // No PID means process already exited or wasn't wrapped
         child.kill().await?;
     }
 
