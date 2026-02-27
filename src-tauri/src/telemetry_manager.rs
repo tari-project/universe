@@ -328,11 +328,12 @@ impl TelemetryManager {
                         debug!(target: LOG_TARGET_APP_LOGIC, "TelemetryManager::start_telemetry_process has  been started");
                         let airdrop_access_token = airdrop_tokens.map(|tokens| tokens.token);
                         let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
-                        let memory_config = in_memory_config_cloned.read().await;
-                        let exchange_id = memory_config.exchange_id.clone();
+                        let (exchange_id, airdrop_api_url) = {
+                            let memory_config = in_memory_config_cloned.read().await;
+                            (memory_config.exchange_id.clone(), memory_config.airdrop_api_url.clone())
+                        };
                         let telemetry_data = cancellable_get_telemetry_data(app_handle.clone(),&cpu_miner_status_watch_rx, &gpu_status, &node_status,
                             &tor_status, network, exchange_id, uptime, &stats_collector, &node_manager, &mut (shutdown_signal.clone())).await;
-                        let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                         handle_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone(), &mut (shutdown_signal.clone()), allow_telemetry, allow_notifications).await;
 
                     },
@@ -543,38 +544,59 @@ async fn get_telemetry_data_inner(
         extra_data.insert("all_gpus".to_string(), all_gpus.join(","));
     }
 
-    let mut system = System::new_all();
-    std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
-    // Refresh CPUs again.
-    system.refresh_cpu_usage();
-    extra_data.insert(
-        "cpu_usage".to_string(),
-        system.global_cpu_usage().to_string(),
-    );
-    system.refresh_memory();
+    let sys_info = tokio::task::spawn_blocking(|| {
+        let mut system = System::new_all();
+        std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+        system.refresh_cpu_usage();
+        system.refresh_memory();
+
+        let disks = Disks::new_with_refreshed_list();
+        let disk_info: Vec<(u64, u64, String)> = disks
+            .list()
+            .iter()
+            .map(|disk| {
+                let kind = match disk.kind() {
+                    sysinfo::DiskKind::HDD => "HDD".to_string(),
+                    sysinfo::DiskKind::SSD => "SSD".to_string(),
+                    sysinfo::DiskKind::Unknown(_) => "Unknown".to_string(),
+                };
+                (disk.total_space(), disk.available_space(), kind)
+            })
+            .collect();
+
+        (
+            system.global_cpu_usage(),
+            system.total_memory(),
+            system.free_memory(),
+            system.used_memory(),
+            system.physical_core_count(),
+            System::cpu_arch(),
+            disk_info,
+        )
+    })
+    .await
+    .map_err(|e| anyhow::anyhow!("spawn_blocking(sysinfo) join error: {e}"))?;
+
+    let (cpu_usage, total_memory, free_memory, used_memory, core_count, cpu_arch, disk_info) =
+        sys_info;
+    extra_data.insert("cpu_usage".to_string(), cpu_usage.to_string());
     extra_data.insert(
         "total_memory_gb".to_string(),
-        system
-            .total_memory()
-            .saturating_div(1_000_000_000)
-            .to_string(),
+        total_memory.saturating_div(1_000_000_000).to_string(),
     );
-    let memory_utilization = (system.used_memory() as f64 / system.total_memory() as f64) * 100.0;
+    let memory_utilization = (used_memory as f64 / total_memory as f64) * 100.0;
     extra_data.insert(
         "memory_utilization".to_string(),
         memory_utilization.round().to_string(),
     );
     extra_data.insert(
         "free_memory_gb".to_string(),
-        system
-            .free_memory()
-            .saturating_div(1_000_000_000)
-            .to_string(),
+        free_memory.saturating_div(1_000_000_000).to_string(),
     );
-    if let Some(core_count) = system.physical_core_count() {
+    if let Some(core_count) = core_count {
         extra_data.insert("physical_core_count".to_string(), core_count.to_string());
     }
-    if let Some(arch) = System::cpu_arch() {
+    if let Some(arch) = cpu_arch {
         extra_data.insert("cpu_arch".to_string(), arch);
     }
     extra_data.insert(
@@ -629,32 +651,23 @@ async fn get_telemetry_data_inner(
     extra_data.insert("network_latency".to_string(), latency.round().to_string());
     extra_data.insert("exchange_id".to_string(), exchange_id.to_string());
 
-    let disks = Disks::new_with_refreshed_list();
-    for (i, disk) in disks.list().iter().enumerate() {
+    for (i, (total_space, available_space, kind)) in disk_info.into_iter().enumerate() {
         extra_data.insert(
             format!("disk_{i}_total_gb"),
-            disk.total_space().saturating_div(1_000_000_000).to_string(),
+            total_space.saturating_div(1_000_000_000).to_string(),
         );
         extra_data.insert(
             format!("disk_{i}_free_gb"),
-            disk.available_space()
-                .saturating_div(1_000_000_000)
-                .to_string(),
+            available_space.saturating_div(1_000_000_000).to_string(),
         );
         extra_data.insert(
             format!("disk_{i}_used_gb"),
-            (disk.total_space().saturating_sub(disk.available_space()))
+            total_space
+                .saturating_sub(available_space)
                 .saturating_div(1_000_000_000)
                 .to_string(),
         );
-        extra_data.insert(
-            format!("disk_{i}_kind"),
-            match disk.kind() {
-                sysinfo::DiskKind::HDD => "HDD".to_string(),
-                sysinfo::DiskKind::SSD => "SSD".to_string(),
-                sysinfo::DiskKind::Unknown(_) => "Unknown".to_string(),
-            },
-        );
+        extra_data.insert(format!("disk_{i}_kind"), kind);
     }
 
     let tari_address = InternalWallet::tari_address().await.to_base58();
