@@ -42,33 +42,17 @@ static INSTANCE: LazyLock<BinaryResolver> = LazyLock::new(BinaryResolver::new);
 // that all come from the same zip file and would conflict when downloading in parallel
 static TARI_SUITE_DOWNLOAD_LOCK: LazyLock<AsyncMutex<()>> = LazyLock::new(|| AsyncMutex::new(()));
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum BinaryResolveError {
     /// Binary files missing, likely due to antivirus quarantine
+    #[error("Binary missing due to antivirus: {error} at {}", expected_path.display())]
     AntivirusIssue {
         expected_path: PathBuf,
         error: String,
     },
     /// Other error occurred
+    #[error(transparent)]
     Other(Error),
-}
-
-impl From<BinaryResolveError> for Error {
-    fn from(error: BinaryResolveError) -> Self {
-        match error {
-            BinaryResolveError::AntivirusIssue {
-                expected_path,
-                error,
-            } => {
-                anyhow!(
-                    "Binary missing due to antivirus: {} at {}",
-                    error,
-                    expected_path.display()
-                )
-            }
-            BinaryResolveError::Other(error) => error,
-        }
-    }
 }
 
 #[derive(Clone, Debug)]
