@@ -43,7 +43,7 @@ futures-lite = "2.3.0"
 futures-util = "0.3.30"
 getset = "0.1.5"
 hex = "0.4.3"
-jsonwebtoken = "9.3.0"
+jsonwebtoken = "10.3.0"
 keyring = { version = "3.0.5", features = [
   "apple-native",
   "linux-native-sync-persistent",
