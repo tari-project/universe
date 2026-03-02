@@ -395,14 +395,14 @@ jobs:
 
       - name: Builds - Upload assets [ GitHub ]
         if: ${{ startsWith(inputs.destination, 'github') }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{matrix.exchange.id}}_${{ steps.build.outputs.appVersion }}_${{ matrix.platforms.platform }}${{ matrix.platforms.extra }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
 
       - name: Bundled Windows installer upload [ GitHub ]
         if: ${{ startsWith(runner.os,'Windows') && ( startsWith(inputs.destination, 'github' )) }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{matrix.exchange.id}}_${{ steps.build.outputs.appVersion }}_x64_en-US
           path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe
@@ -460,7 +460,7 @@ jobs:
 
       - name: Windows debug symbols - Upload asset
         if: startsWith(runner.os,'Windows')
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari_universe_${{ matrix.exchange.name }}.pdb
           path: '${{ github.workspace }}/target/release/tari_universe.pdb'
@@ -523,7 +523,7 @@ jobs:
         if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-msi
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Tari Universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi
           path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi
@@ -532,7 +532,7 @@ jobs:
         if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-exe
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Tari Universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.exe
           path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.exe
@@ -541,7 +541,7 @@ jobs:
         if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-dmg
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Tari Universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_universal.dmg
           path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_universal.dmg
@@ -550,7 +550,7 @@ jobs:
         if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-tar
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: Tari Universe-${{ matrix.exchange.id }}.app.tar.gz
           path: Tari Universe-${{ matrix.exchange.name }}.app.tar.gz
@@ -559,7 +559,7 @@ jobs:
         if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-amd64
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage
           path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage
@@ -568,14 +568,14 @@ jobs:
         if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-aarch64
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage
           path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage
       - name: Upload Deb amd64 artifact
         if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.deb
           path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.deb
@@ -583,7 +583,7 @@ jobs:
       - name: Upload Deb aarch64 artifact
         if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_arm64.deb
           path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_arm64.deb
@@ -592,7 +592,7 @@ jobs:
       #   if: ${{ inputs.destination == 'github' }}
       #   continue-on-error: true
       #   id: upload-rpm-aarch
-      #   uses: actions/upload-artifact@v6
+      #   uses: actions/upload-artifact@v7
       #   with:
       #     name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.rpm
       #     path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}-1_aarch64.rpm
@@ -601,7 +601,7 @@ jobs:
       #   if: ${{ inputs.destination == 'github' }}
       #   continue-on-error: true
       #   id: upload-rpm-amd64
-      #   uses: actions/upload-artifact@v6
+      #   uses: actions/upload-artifact@v7
       #   with:
       #     name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.rpm
       #     path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}-1.x86_64.rpm
@@ -626,7 +626,7 @@ jobs:
 
       - name: Upload latest.json [GitHub]
         if: ${{ inputs.destination == 'github' }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: latest-${{matrix.exchange.id}}.json
           path: latest-${{matrix.exchange.id}}.json
