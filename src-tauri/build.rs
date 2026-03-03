@@ -65,7 +65,10 @@ fn copy_process_wrapper() {
         let aarch64_bin = "binaries/process-wrapper-aarch64-apple-darwin";
         let x86_64_bin = "binaries/process-wrapper-x86_64-apple-darwin";
 
-        if Path::new(aarch64_bin).exists() && Path::new(x86_64_bin).exists() && !Path::new(universal_dst).exists() {
+        if Path::new(aarch64_bin).exists()
+            && Path::new(x86_64_bin).exists()
+            && !Path::new(universal_dst).exists()
+        {
             let output = std::process::Command::new("lipo")
                 .args(["-create", aarch64_bin, x86_64_bin, "-output", universal_dst])
                 .output();
