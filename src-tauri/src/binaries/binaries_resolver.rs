@@ -55,8 +55,6 @@ pub enum BinaryResolveError {
     Other(Error),
 }
 
-
-
 /// Errors that represent user-environment issues during binary downloads
 /// rather than application bugs. These should never be reported to Sentry.
 #[derive(Debug, thiserror::Error)]
