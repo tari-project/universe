@@ -55,23 +55,7 @@ pub enum BinaryResolveError {
     Other(Error),
 }
 
-impl From<BinaryResolveError> for Error {
-    fn from(error: BinaryResolveError) -> Self {
-        match error {
-            BinaryResolveError::AntivirusIssue {
-                expected_path,
-                error,
-            } => {
-                anyhow!(
-                    "Binary missing due to antivirus: {} at {}",
-                    error,
-                    expected_path.display()
-                )
-            }
-            BinaryResolveError::Other(error) => error,
-        }
-    }
-}
+
 
 /// Errors that represent user-environment issues during binary downloads
 /// rather than application bugs. These should never be reported to Sentry.
