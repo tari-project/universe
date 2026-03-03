@@ -35,3 +35,9 @@ vite-profile*
 tari-win-bundler/.vs
 tari-win-bundler/logs
 tari-win-bundler/bin
+
+# Cargo workspace target directory
+/target/
+
+# Built process-wrapper sidecar binaries
+src-tauri/binaries/

@@ -10,18 +10,31 @@ export default function EnterPinDialog() {
     const { t } = useTranslation('wallet');
     const modal = useSecurityStore((s) => s.modal);
     const setModal = useSecurityStore((s) => s.setModal);
+    const pinResolver = useSecurityStore((s) => s.pinResolver);
 
     const isOpen = modal === 'enter_pin';
 
     function handleClose() {
-        void emit('pin-dialog-response', { pin: undefined });
-        setModal(null);
+        if (pinResolver) {
+            pinResolver(undefined);
+            useSecurityStore.setState({ pinResolver: null });
+            setModal(null);
+        } else {
+            void emit('pin-dialog-response', { pin: undefined });
+            setModal(null);
+        }
     }
 
     function handleSubmit(pin: string) {
-        emit('pin-dialog-response', Number(pin)).finally(() => {
+        if (pinResolver) {
+            pinResolver(pin);
+            useSecurityStore.setState({ pinResolver: null });
             setModal(null);
-        });
+        } else {
+            emit('pin-dialog-response', Number(pin)).finally(() => {
+                setModal(null);
+            });
+        }
     }
 
     return (

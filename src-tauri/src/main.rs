@@ -25,7 +25,7 @@
 
 use app_in_memory_config::AppInMemoryConfig;
 use events_emitter::EventsEmitter;
-use log::{error, info};
+use log::{error, info, warn};
 use mining_status_manager::MiningStatusManager;
 use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
@@ -44,8 +44,8 @@ use websocket_events_manager::WebsocketEventsManager;
 use websocket_manager::{WebsocketManager, WebsocketManagerStatusMessage, WebsocketMessage};
 
 use log4rs::config::RawConfig;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tari_common::configuration::Network;
 use tari_transaction_components::consensus::ConsensusManager;
 use tauri::async_runtime::block_on;
@@ -60,8 +60,8 @@ use app_in_memory_config::EXCHANGE_ID;
 use telemetry_manager::TelemetryManager;
 
 use crate::feedback::Feedback;
-use crate::mining::cpu::manager::CpuManager;
 use crate::mining::cpu::CpuMinerStatus;
+use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mm_proxy_manager::MmProxyManager;
@@ -94,6 +94,7 @@ mod hardware;
 mod internal_wallet;
 #[cfg(test)]
 mod internal_wallet_test;
+mod mcp;
 mod mining;
 mod mining_status_manager;
 mod mm_proxy_adapter;
@@ -110,6 +111,7 @@ mod process_utils;
 mod process_watcher;
 #[cfg(test)]
 mod process_watcher_test;
+mod process_wrapper;
 mod progress_trackers;
 mod release_notes;
 mod requests;
@@ -184,7 +186,9 @@ fn main() {
             && std::env::var("WAYLAND_DISPLAY").is_err()
             && std::env::var("XDG_SESSION_TYPE").unwrap_or_default() == "x11"
         {
-            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+            unsafe {
+                std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+            }
         }
     }
     let _unused = fix_path_env::fix();
@@ -209,13 +213,11 @@ fn main() {
             attach_stacktrace: true,
             before_send: Some(Arc::new(|event| {
                 let is_in_ignored = event.logentry.as_ref().is_some_and(|entry| {
-                    IGNORED_SENTRY_ERRORS.iter().any(|ignored| entry.message.starts_with(ignored))
+                    IGNORED_SENTRY_ERRORS
+                        .iter()
+                        .any(|ignored| entry.message.starts_with(ignored))
                 });
-                if is_in_ignored {
-                    None
-                } else {
-                    Some(event)
-                }
+                if is_in_ignored { None } else { Some(event) }
             })),
             ..Default::default()
         },
@@ -414,6 +416,7 @@ fn main() {
             commands::fetch_tor_bridges,
             commands::get_app_in_memory_config,
             commands::get_applications_versions,
+            commands::get_application_language,
             commands::get_monero_seed_words,
             commands::get_network,
             commands::get_paper_wallet_details,
@@ -502,6 +505,19 @@ fn main() {
             commands::remove_scheduler_event,
             commands::pause_scheduler_event,
             commands::resume_scheduler_event,
+            // MCP commands
+            mcp::commands::get_mcp_config,
+            mcp::commands::get_mcp_token,
+            mcp::commands::set_mcp_enabled,
+            mcp::commands::refresh_mcp_token_expiry,
+            mcp::commands::revoke_mcp_token,
+            mcp::commands::set_mcp_port,
+            mcp::commands::set_mcp_max_transaction_amount,
+            mcp::commands::set_mcp_tier_enabled,
+            mcp::commands::get_mcp_audit_log,
+            mcp::commands::export_mcp_audit_log,
+            mcp::commands::set_mcp_transactions_enabled,
+            mcp::commands::mcp_transaction_dialog_response,
         ])
         .build(tauri::generate_context!())
         .inspect_err(|e| {
@@ -539,6 +555,10 @@ fn main() {
 
                 block_on(ShutdownManager::instance().initialize_app_handle(handle_clone.clone()));
 
+                if let Err(e) = process_wrapper::initialize_wrapper_path(&handle_clone) {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to initialize process wrapper sidecar: {}. Processes will spawn without orphan protection.", e);
+                }
+
                 block_on(state.updates_manager.initial_try_update(&handle_clone));
 
                 tauri::async_runtime::spawn(async move {
@@ -553,12 +573,11 @@ fn main() {
                     target: LOG_TARGET_APP_LOGIC,
                     "App shutdown request [ExitRequested] caught with code: {code:#?}"
                 );
-                if let Some(exit_code) = code {
-                    if exit_code == RESTART_EXIT_CODE {
+                if let Some(exit_code) = code
+                    && exit_code == RESTART_EXIT_CODE {
                         // RunEvent does not hold the exit code so we store it separately
                         is_restart_requested.store(true, Ordering::SeqCst);
                     }
-                }
 
                 info!(target: LOG_TARGET_APP_LOGIC, "All processes stopped");
             }

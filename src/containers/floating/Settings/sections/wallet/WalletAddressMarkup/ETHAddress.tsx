@@ -8,7 +8,6 @@ import AddressEditor from '@app/containers/floating/Settings/sections/wallet/com
 import { ETHAddressWrapper } from './styles.ts';
 import { convertEthAddressToTariAddress } from '@app/store/actions/bridgeApiActions.ts';
 import { invoke } from '@tauri-apps/api/core';
-import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 import { ExchangeMiner } from '@app/types/exchange.ts';
 import { useFetchExchangeBranding } from '@app/hooks/exchanges/fetchExchangeContent.ts';
@@ -41,7 +40,6 @@ export default function ETHAddress() {
             title: 'Address updated',
             text: 'Your converted Tari Address has also been updated',
         });
-        await restartMining();
     }
 
     return ethAddress?.length ? (

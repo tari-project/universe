@@ -29,32 +29,32 @@ use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{Receiver, Sender},
         RwLock,
+        watch::{Receiver, Sender},
     },
 };
 
 use crate::{
+    LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES, UniverseAppState,
     configs::{
         config_mining::ConfigMining,
         config_pools::ConfigPools,
         config_wallet::ConfigWallet,
-        pools::{cpu_pools::CpuPool, PoolOrigin},
+        pools::{PoolOrigin, cpu_pools::CpuPool},
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     mining::{
-        cpu::{miners::xmrig::XmrigAdapter, CpuMinerStatus},
-        pools::{cpu_pool_manager::CpuPoolManager, PoolManagerInterfaceTrait},
-        CpuConnectionType, MinerControlsState,
+        CpuConnectionType, MinerControlsState, MiningError,
+        cpu::{CpuMinerStatus, miners::xmrig::XmrigAdapter},
+        pools::{PoolManagerInterfaceTrait, cpu_pool_manager::CpuPoolManager},
     },
     node::node_adapter::BaseNodeStatus,
     process_adapter::ProcessAdapter,
     process_watcher::{ProcessWatcher, ProcessWatcherStats},
     systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
-    UniverseAppState, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
 
 static INSTANCE: LazyLock<RwLock<CpuManager>> = LazyLock::new(|| RwLock::new(CpuManager::new()));
@@ -140,8 +140,14 @@ impl CpuManager {
             }
             Err(e) => {
                 let err_msg = format!("Could not start CPU mining: {e}");
-                error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
-                sentry::capture_message(&err_msg, sentry::Level::Error);
+
+                // Only report genuine operational failures to Sentry, not user-environment issues
+                if MiningError::is_user_environment_error(&e) {
+                    info!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
+                } else {
+                    error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
+                    sentry::capture_message(&err_msg, sentry::Level::Error);
+                }
 
                 EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Stopped).await;
                 SystemTrayManager::send_event(SystemTrayEvents::CpuMiningActivity(false)).await;
@@ -154,7 +160,7 @@ impl CpuManager {
         let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
 
         if !cpu_mining_enabled {
-            return Err(anyhow::anyhow!("CPU mining is disabled"));
+            return Err(MiningError::CpuMiningDisabled.into());
         }
 
         if self.process_watcher.is_running() {

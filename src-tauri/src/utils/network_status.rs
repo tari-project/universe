@@ -26,9 +26,9 @@ use std::{sync::LazyLock, time::Duration};
 use tokio::sync::watch::{Receiver, Sender};
 use tokio::task::spawn_blocking;
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::events_emitter::EventsEmitter;
 use crate::utils::speed_test_utils::{test_download, test_latency, test_upload};
-use crate::LOG_TARGET_APP_LOGIC;
 
 const SPEED_TEST_TIMEOUT: Duration = Duration::from_secs(60);
 // Mb values

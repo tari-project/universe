@@ -20,7 +20,77 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fs;
+use std::path::Path;
+
+fn copy_process_wrapper() {
+    let target = std::env::var("TARGET").expect("TARGET env var not set");
+    let profile = std::env::var("PROFILE").unwrap_or_else(|_| "debug".to_string());
+
+    fs::create_dir_all("binaries").ok();
+
+    let (src_name, dst_name) = if target.contains("windows") {
+        (
+            "process-wrapper.exe",
+            format!("binaries/process-wrapper-{}.exe", target),
+        )
+    } else {
+        (
+            "process-wrapper",
+            format!("binaries/process-wrapper-{}", target),
+        )
+    };
+
+    // Check target-specific directory first (for cross-compiled builds)
+    // then fall back to profile directory (for native builds)
+    let src_path_cross = format!("../target/{}/{}/{}", target, profile, src_name);
+    let src_path_native = format!("../target/{}/{}", profile, src_name);
+
+    let src_path = if Path::new(&src_path_cross).exists() {
+        src_path_cross
+    } else {
+        src_path_native
+    };
+
+    if Path::new(&src_path).exists() {
+        fs::copy(&src_path, &dst_name)
+            .unwrap_or_else(|e| panic!("Failed to copy process-wrapper binary: {}", e));
+    }
+
+    // For macOS universal builds: Tauri builds each arch separately but expects
+    // binaries/process-wrapper-universal-apple-darwin at bundle time.
+    // Create it via lipo when we have both per-arch binaries available.
+    if target.contains("apple-darwin") {
+        let universal_dst = "binaries/process-wrapper-universal-apple-darwin";
+        let aarch64_bin = "binaries/process-wrapper-aarch64-apple-darwin";
+        let x86_64_bin = "binaries/process-wrapper-x86_64-apple-darwin";
+
+        if Path::new(aarch64_bin).exists()
+            && Path::new(x86_64_bin).exists()
+            && !Path::new(universal_dst).exists()
+        {
+            let output = std::process::Command::new("lipo")
+                .args(["-create", aarch64_bin, x86_64_bin, "-output", universal_dst])
+                .output();
+            match output {
+                Ok(o) if o.status.success() => {}
+                Ok(o) => eprintln!("lipo failed: {}", String::from_utf8_lossy(&o.stderr)),
+                Err(e) => eprintln!("Failed to run lipo: {}", e),
+            }
+        }
+    }
+
+    println!(
+        "cargo::rerun-if-changed=../target/{}/{}/{}",
+        target, profile, src_name
+    );
+    println!("cargo::rerun-if-changed=../target/{}/{}", profile, src_name);
+    println!("cargo::rerun-if-changed=../process-wrapper/src/main.rs");
+    println!("cargo::rerun-if-changed=../process-wrapper/Cargo.toml");
+}
+
 fn main() {
+    copy_process_wrapper();
     // Allow the use of unstable features in tokio
     println!("cargo::rustc-check-cfg=cfg(tokio_unstable)");
 

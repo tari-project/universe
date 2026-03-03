@@ -24,10 +24,11 @@ use super::listeners::listener_unlock_cpu_mining::ListenerUnlockCpuMining;
 use super::listeners::listener_unlock_gpu_mining::ListenerUnlockGpuMining;
 use super::listeners::listener_unlock_wallet::ListenerUnlockWallet;
 use super::listeners::trait_listener::UnlockConditionsListenerTrait;
-use super::listeners::{setup_listener, SetupFeature, SetupFeaturesList};
+use super::listeners::{SetupFeature, SetupFeaturesList, setup_listener};
 use super::trait_setup_phase::SetupPhaseImpl;
 use super::utils::phase_builder::PhaseBuilder;
-use crate::app_in_memory_config::{MinerType, DEFAULT_EXCHANGE_ID};
+use crate::LOG_TARGET_APP_LOGIC;
+use crate::app_in_memory_config::{DEFAULT_EXCHANGE_ID, MinerType};
 use crate::configs::config_core::ConfigCoreContent;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
@@ -38,9 +39,9 @@ use crate::events::CriticalProblemPayload;
 use crate::internal_wallet::InternalWallet;
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::manager::GpuManager;
+use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
-use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::network_utils::NetworkExt;
 use crate::node::node_manager::NodeType;
 use crate::progress_trackers::progress_plans::SetupStep;
@@ -53,20 +54,19 @@ use crate::setup::{
 use crate::systemtray_manager::SystemTrayManager;
 use crate::utils::battery_status::BatteryStatus;
 use crate::utils::platform_utils::PlatformUtils;
-use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
+    UniverseAppState,
     configs::{
-        config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
-        config_wallet::ConfigWallet, trait_config::ConfigImpl,
+        config_core::ConfigCore, config_mcp::ConfigMcp, config_mining::ConfigMining,
+        config_ui::ConfigUI, config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
     events_manager::EventsManager,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
     websocket_manager::WebsocketMessage,
-    UniverseAppState,
 };
-use log::{error, info};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::{
@@ -78,7 +78,7 @@ use tari_common::configuration::Network;
 use tauri::{AppHandle, Listener, Manager};
 use tokio::{
     select,
-    sync::{watch::Sender, Mutex, RwLock},
+    sync::{Mutex, RwLock, watch::Sender},
 };
 
 static INSTANCE: LazyLock<SetupManager> = LazyLock::new(SetupManager::new);
@@ -276,14 +276,14 @@ impl SetupManager {
             tauri::async_runtime::spawn(async move {
                 info!(target: LOG_TARGET_APP_LOGIC, "Restarting websocket events manager after reconnection");
                 let mut events_manager_guard = websocket_event_manager_clone.write().await;
-                if let Err(e) = events_manager_guard
+                match events_manager_guard
                     .set_app_handle(app_handle_clone, websocket_manager_clone)
                     .await
-                {
+                { Err(e) => {
                     error!(target: LOG_TARGET_APP_LOGIC, "Failed to restart websocket events manager: {e}");
-                } else {
+                } _ => {
                     info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager restarted successfully");
-                }
+                }}
             });
         });
         let websocket_tx = state.websocket_message_tx.clone();
@@ -295,15 +295,13 @@ impl SetupManager {
                 let message = event_cloned.payload();
                 if let Ok(message) = serde_json::from_str::<WebsocketMessage>(message)
                     .inspect_err(|e| error!("websocket malformatted: {e}"))
-                {
-                    if websocket_tx_clone
+                    && websocket_tx_clone
                         .send(message.clone())
                         .await
                         .inspect_err(|e| error!("too many messages in websocket send queue {e}"))
                         .is_ok()
-                    {
-                        log::trace!("websocket message sent {message:?}");
-                    }
+                {
+                    log::trace!("websocket message sent {message:?}");
                 }
             });
         });
@@ -314,6 +312,22 @@ impl SetupManager {
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
+        ConfigMcp::initialize(app_handle.clone()).await;
+
+        // Initialize MCP server with node status receiver for chain tools
+        crate::mcp::server::McpServerManager::initialize(
+            state.node_status_watch_rx.clone(),
+            state.wallet_manager.clone(),
+        )
+        .await;
+
+        // Auto-start MCP server if enabled with a valid token
+        if *ConfigMcp::content().await.enabled()
+            && ConfigMcp::content().await.bearer_token().is_some()
+            && let Err(e) = crate::mcp::server::McpServerManager::start().await
+        {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to auto-start MCP server: {e}");
+        }
 
         let _ = check_data_import(app_handle.clone()).await.map_err(|e| {
             error!(target: LOG_TARGET_APP_LOGIC, "Error in data import: {e}");
@@ -363,6 +377,7 @@ impl SetupManager {
         EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
         EventsEmitter::emit_ui_config_loaded(&ConfigUI::content().await).await;
         EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+        EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
 
         let is_on_exchange_specific_variant = ConfigCore::content()
             .await
@@ -726,6 +741,13 @@ impl SetupManager {
                         continue;
                     }
                     self.setup_wallet_phase().await;
+
+                    // Restart MCP server if running so it picks up the new wallet state
+                    if *ConfigMcp::content().await.enabled()
+                        && let Err(e) = crate::mcp::server::McpServerManager::restart().await
+                    {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to restart MCP server after wallet phase resume: {e}");
+                    }
                 }
             }
         }

@@ -19,28 +19,28 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
-use tokio::sync::watch::{channel, Sender};
+use tokio::sync::watch::{Sender, channel};
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     download_utils::validate_checksum,
     progress_trackers::progress_stepper::IncrementalProgressTracker,
     requests::clients::http_file_client::HttpFileClient,
     tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
-    LOG_TARGET_APP_LOGIC,
 };
 
 use super::{
-    binaries_list::BinaryPlatformAssets,
-    binaries_resolver::{BinaryDownloadInfo, LatestVersionApiAdapter},
     Binaries,
+    binaries_list::BinaryPlatformAssets,
+    binaries_resolver::{BinaryDownloadError, BinaryDownloadInfo, LatestVersionApiAdapter},
 };
 
 #[derive(Deserialize, Serialize, Default)]
@@ -334,7 +334,7 @@ impl BinaryManager {
             }
         }
 
-        let mut last_error_message = String::new();
+        let mut last_error: Option<anyhow::Error> = None;
         for retry in 0..3 {
             match self
                 .download_selected_version(progress_channel.clone())
@@ -345,18 +345,29 @@ impl BinaryManager {
                     return Ok(());
                 }
                 Err(error) => {
-                    last_error_message = format!(
-                        "Failed to download binary: {}. Error: {:?}",
-                        self.binary_name, error
-                    );
                     warn!(target: LOG_TARGET_APP_LOGIC, "Failed to download binary: {} at retry: {}", self.binary_name, retry);
+                    last_error = Some(error);
                     continue;
                 }
             }
         }
-        sentry::capture_message(&last_error_message, sentry::Level::Error);
-        error!(target: LOG_TARGET_APP_LOGIC, "{last_error_message}");
-        Err(anyhow!(last_error_message))
+        let last_error = last_error.unwrap_or_else(|| anyhow!("Unknown download error"));
+        let last_error_message = format!(
+            "Failed to download binary: {}. Error: {:?}",
+            self.binary_name, last_error
+        );
+
+        let is_user_env = last_error
+            .chain()
+            .any(|c| c.downcast_ref::<BinaryDownloadError>().is_some());
+
+        if is_user_env {
+            info!(target: LOG_TARGET_APP_LOGIC, "Binary download failed due to user environment issue: {last_error_message}");
+        } else {
+            sentry::capture_message(&last_error_message, sentry::Level::Error);
+            error!(target: LOG_TARGET_APP_LOGIC, "{last_error_message}");
+        }
+        Err(last_error.context(format!("Failed to download binary: {}", self.binary_name)))
     }
 
     pub async fn download_selected_version(
@@ -392,8 +403,7 @@ impl BinaryManager {
             .with_download_resume()
             .build(download_url.clone(), destination_dir.clone())?
             .execute()
-            .await
-            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e));
+            .await;
 
         if main_file_download_result.is_err() {
             info!(target: LOG_TARGET_APP_LOGIC, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);

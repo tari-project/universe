@@ -20,10 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use anyhow::{anyhow, Error};
+use std::sync::LazyLock;
+
+use anyhow::{Error, anyhow};
 use async_trait::async_trait;
 use log::{debug, error};
-use nvml_wrapper::{enum_wrappers::device::TemperatureSensor, Nvml};
+use nvml_wrapper::{Nvml, enum_wrappers::device::TemperatureSensor};
 
 use crate::{
     hardware::hardware_status_monitor::DeviceParameters,
@@ -32,6 +34,17 @@ use crate::{
 
 use super::GpuParametersReader;
 
+static NVML_INSTANCE: LazyLock<Option<Nvml>> = LazyLock::new(|| match Nvml::init() {
+    Ok(nvml) => {
+        debug!("Nvidia GPU reader initialized (NVML singleton)");
+        Some(nvml)
+    }
+    Err(e) => {
+        error!("Failed to initialize Nvidia GPU reader (NVML singleton): {e}");
+        None
+    }
+});
+
 #[derive(Clone)]
 pub struct NvidiaGpuReader {}
 impl NvidiaGpuReader {
@@ -39,17 +52,8 @@ impl NvidiaGpuReader {
         Self {}
     }
 
-    pub fn init_nvml(&self) -> Option<Nvml> {
-        match Nvml::init() {
-            Ok(nvml) => {
-                debug!("Nvidia GPU reader initialized");
-                Some(nvml)
-            }
-            Err(e) => {
-                error!("Failed to initialize Nvidia GPU reader: {e}");
-                None
-            }
-        }
+    pub fn init_nvml(&self) -> Option<&'static Nvml> {
+        NVML_INSTANCE.as_ref()
     }
 }
 

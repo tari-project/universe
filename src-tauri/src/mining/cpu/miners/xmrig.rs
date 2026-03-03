@@ -31,8 +31,8 @@ use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
 use uuid::Uuid;
 
-use crate::mining::cpu::{CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::mining::CpuConnectionType;
+use crate::mining::cpu::{CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec,

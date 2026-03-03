@@ -21,22 +21,22 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::anyhow;
-use der::asn1::{BitString, ObjectIdentifier};
 use der::Encode;
-use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+use der::asn1::{BitString, ObjectIdentifier};
+use jsonwebtoken::dangerous::insecure_decode;
 use log::{error, info, warn};
 use ring::signature::{Ed25519KeyPair, KeyPair};
-use ring_compat::pkcs8::spki::AlgorithmIdentifier;
 use ring_compat::pkcs8::SubjectPublicKeyInfo;
+use ring_compat::pkcs8::spki::AlgorithmIdentifier;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager};
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
+    UniverseAppState,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     tasks_tracker::TasksTrackers,
-    UniverseAppState,
 };
 
 const AIRDROP_WEBSOCKET_CRYPTO_KEY: &str = env!("AIRDROP_WEBSOCKET_CRYPTO_KEY");
@@ -60,11 +60,7 @@ pub struct AirdropMinedBlockMessage {
 }
 
 pub fn decode_jwt_claims(t: &str) -> Option<AirdropAccessToken> {
-    let key = DecodingKey::from_secret(&[]);
-    let mut validation = Validation::new(Algorithm::HS256);
-    validation.insecure_disable_signature_validation();
-
-    match decode::<AirdropAccessToken>(t, &key, &validation) {
+    match insecure_decode::<AirdropAccessToken>(t) {
         Ok(data) => Some(data.claims),
         Err(e) => {
             warn!(target: LOG_TARGET_APP_LOGIC,"Error decoding access token: {e:?}");
@@ -74,12 +70,7 @@ pub fn decode_jwt_claims(t: &str) -> Option<AirdropAccessToken> {
 }
 
 pub fn decode_jwt_claims_without_exp(t: &str) -> Option<AirdropAccessToken> {
-    let key = DecodingKey::from_secret(&[]);
-    let mut validation = Validation::new(Algorithm::HS256);
-    validation.insecure_disable_signature_validation();
-    validation.validate_exp = false;
-
-    match decode::<AirdropAccessToken>(t, &key, &validation) {
+    match insecure_decode::<AirdropAccessToken>(t) {
         Ok(data) => Some(data.claims),
         Err(e) => {
             warn!(target: LOG_TARGET_APP_LOGIC,"Error decoding access token without exp: {e:?}");

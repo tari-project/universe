@@ -27,8 +27,8 @@ use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::time::Duration;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::task::JoinHandle;
@@ -125,10 +125,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let health_timeout = self.health_timeout;
 
         let mut data_dir_path = base_path.clone();
-        if self.adapter.name() == "local_minotari_node" {
-            if let Some(custom_path) = ConfigCore::content().await.node_data_directory().clone() {
-                data_dir_path = custom_path;
-            }
+        if self.adapter.name() == "local_minotari_node"
+            && let Some(custom_path) = ConfigCore::content().await.node_data_directory().clone()
+        {
+            data_dir_path = custom_path;
         }
 
         info!(target: LOG_TARGET_APP_LOGIC, "Using {binary_path:?} for {name}");
@@ -227,12 +227,12 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     }
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
-        if let Some(ref task) = self.watcher_task {
-            if task.is_finished() {
-                //let exit_code = task.await??;
+        if let Some(ref task) = self.watcher_task
+            && task.is_finished()
+        {
+            //let exit_code = task.await??;
 
-                return Err(anyhow::anyhow!("Process watcher task has already finished"));
-            }
+            return Err(anyhow::anyhow!("Process watcher task has already finished"));
         }
         Ok(())
     }

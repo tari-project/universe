@@ -25,15 +25,15 @@ env:
 
 jobs:
   cargo-checks:
-    name: cargo checks (fmt, clippy, check)
+    name: Cargo checks (fmt, clippy, check)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: create empty dist dir
+      - name: Create empty dist dir
         run: |
           mkdir dist
 
-      - name: install dependencies (linux)
+      - name: Install dependencies (linux)
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends --assume-yes \
@@ -44,7 +44,7 @@ jobs:
             libprotobuf-dev \
             protobuf-compiler
 
-      - name: install dependencies (linux/OpenCL)
+      - name: Install dependencies (linux/OpenCL)
         run: |
           sudo apt-get install --no-install-recommends --assume-yes \
             opencl-headers \
@@ -57,13 +57,18 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: cargo format
+      - name: Cargo format
         working-directory: ./src-tauri
         run: |
           rustup component add rustfmt
           cargo fmt --all -- --check
 
-      - name: clippy lint
+      - name: Build process-wrapper
+        run: |
+          cargo build --manifest-path process-wrapper/Cargo.toml
+          cargo build --release --manifest-path process-wrapper/Cargo.toml
+
+      - name: Clippy lint
         working-directory: ./src-tauri
         env:
           AIRDROP_BASE_URL: http://localhost:4000
@@ -76,13 +81,13 @@ jobs:
           cargo install cargo-lints
           cargo lints clippy --all-targets --all-features
 
-      - name: cargo check
+      - name: Cargo check
         working-directory: ./src-tauri
         run: |
           cargo check --release --all-targets --workspace
 
   machete:
-    name: machete
+    name: Machete
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -91,18 +96,22 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: cargo machete
+      - name: Build process-wrapper
+        run: |
+          cargo build --manifest-path process-wrapper/Cargo.toml
+
+      - name: Cargo machete
         working-directory: ./src-tauri
         run: |
           cargo install --version 0.7.0 cargo-machete
           cargo machete
 
   tauri-test-build:
-    name: tauri-build
+    name: Tauri build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: install dependencies (linux)
+      - name: Install dependencies (linux)
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends --assume-yes \
@@ -113,7 +122,7 @@ jobs:
             libprotobuf-dev \
             protobuf-compiler
 
-      - name: install dependencies (linux/OpenCL)
+      - name: Install dependencies (linux/OpenCL)
         run: |
           sudo apt-get install --no-install-recommends --assume-yes \
             opencl-headers \
@@ -124,7 +133,7 @@ jobs:
           node-version: lts/*
           cache: 'npm'
 
-      - name: Install dependencies (node)
+      - name: Install dependencies (Node)
         run: npm ci
 
       - uses: dtolnay/rust-toolchain@stable
@@ -132,7 +141,11 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: cargo tauri build
+      - name: Build process-wrapper
+        run: |
+          cargo build --release --manifest-path process-wrapper/Cargo.toml
+
+      - name: Cargo tauri build
         working-directory: ./src-tauri
         run: |
           cargo install tauri-cli
@@ -140,26 +153,26 @@ jobs:
           cargo tauri build --ci --no-bundle
 
   file-licenses:
-    name: file-licenses
+    name: File licenses
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v6
-      - name: install ripgrep
+      - name: Install ripgrep
         run: |
           # https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb.sha256
           wget -v https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb
           sudo dpkg -i ripgrep_14.1.1-1_amd64.deb
           rg --version || exit 1
-      - name: run the license check
+      - name: Run the license check
         run: ./scripts/file_license_check.sh
 
   test:
-    name: "lil' testy tests"
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: create empty dist dir
+      - name: Create empty dist dir
         run: |
           mkdir dist
       - uses: dtolnay/rust-toolchain@stable
@@ -167,7 +180,7 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: install dependencies (linux)
+      - name: Install dependencies (linux)
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends --assume-yes \
@@ -178,13 +191,17 @@ jobs:
             libprotobuf-dev \
             protobuf-compiler
 
-      - name: install dependencies (linux/OpenCL)
+      - name: Install dependencies (linux/OpenCL)
         run: |
           sudo apt-get install --no-install-recommends --assume-yes \
             opencl-headers \
             ocl-icd-opencl-dev
 
-      - name: cargo test
+      - name: Build process-wrapper
+        run: |
+          cargo build --release --manifest-path process-wrapper/Cargo.toml
+
+      - name: Cargo test
         working-directory: ./src-tauri
         env:
           AIRDROP_BASE_URL: http://localhost:4000

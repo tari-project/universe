@@ -20,8 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::configs::config_wallet::WalletId;
 use crate::APPLICATION_FOLDER_ID;
+use crate::configs::config_wallet::WalletId;
 use keyring::{Entry, Error as KeyringError};
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
@@ -112,7 +112,7 @@ impl CredentialManager {
         let encoded = match entry.get_secret() {
             Ok(secret) => secret,
             Err(_e @ KeyringError::NoEntry) => {
-                return Err(CredentialError::NoEntry(self.username.clone()))
+                return Err(CredentialError::NoEntry(self.username.clone()));
             }
             Err(e) => return Err(e.into()),
         };
@@ -183,7 +183,7 @@ impl LegacyCredentialManager {
         let encoded = match entry.get_secret() {
             Ok(secret) => secret,
             Err(_e @ KeyringError::NoEntry) => {
-                return Err(CredentialError::NoEntry(self.username.clone()))
+                return Err(CredentialError::NoEntry(self.username.clone()));
             }
             Err(e) => return Err(e.into()),
         };

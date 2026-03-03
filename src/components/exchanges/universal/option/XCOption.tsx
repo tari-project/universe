@@ -28,7 +28,6 @@ import { ExchangeAddress } from '../exchangeAddress/ExchangeAddress.tsx';
 import { useState, Ref } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { formatCountdown } from '@app/utils/formatters.ts';
-import { restartMining } from '@app/store/actions/miningStoreActions.ts';
 import { setError, useWalletStore } from '@app/store';
 import { ExchangeBranding, ExchangeMiner } from '@app/types/exchange.ts';
 
@@ -39,6 +38,7 @@ import { truncateMiddle } from '@app/utils';
 import { AnimatePresence } from 'motion/react';
 import { convertEthAddressToTariAddress } from '@app/store/actions/bridgeApiActions.ts';
 import { WalletAddressNetwork } from '@app/types/transactions.ts';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface XCOptionProps {
     isCurrent?: boolean;
@@ -53,6 +53,7 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
     const { t } = useTranslation(['exchange', 'settings'], { useSuspense: false });
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [miningAddress, setMiningAddress] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleExchangeMiner = async () => {
         const selectedExchangeMiner: ExchangeMiner = {
@@ -61,32 +62,30 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
             name: content.name,
         };
 
-        let tariAddress = miningAddress;
+        setIsSubmitting(true);
+        try {
+            let tariAddress = miningAddress;
 
-        if (content.wxtm_mode) {
-            const encodedAddress = await convertEthAddressToTariAddress(miningAddress, selectedExchangeMiner.id);
-            console.info('Original Tari address:', miningAddress);
-            console.info('Encoded Tari address:', encodedAddress);
-            tariAddress = encodedAddress;
+            if (content.wxtm_mode) {
+                const encodedAddress = await convertEthAddressToTariAddress(miningAddress, selectedExchangeMiner.id);
+                tariAddress = encodedAddress;
+            }
+
+            await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner, miningAddress: tariAddress });
+            setSeedlessUI(true);
+            setIsSubmitting(false);
+            setShowUniversalModal(false);
+        } catch (e) {
+            console.error('Could not set Exchange address', e);
+            const errorMessage = e as unknown as string;
+            if (
+                !errorMessage.includes('User canceled the operation') &&
+                !errorMessage.includes('PIN entry cancelled')
+            ) {
+                setError(errorMessage);
+            }
+            setIsSubmitting(false);
         }
-
-        await invoke('select_exchange_miner', { exchangeMiner: selectedExchangeMiner, miningAddress: tariAddress })
-            .then(() => {
-                setShowUniversalModal(false);
-                restartMining();
-                setSeedlessUI(true);
-                console.info('New Tari address set successfully to:', tariAddress);
-            })
-            .catch((e) => {
-                console.error('Could not set Exchange address', e);
-                const errorMessage = e as unknown as string;
-                if (
-                    !errorMessage.includes('User canceled the operation') &&
-                    !errorMessage.includes('PIN entry cancelled')
-                ) {
-                    setError(errorMessage);
-                }
-            });
     };
 
     const isTari = content.slug === 'universal' && content.id === 'universal';
@@ -175,8 +174,12 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
                         ) : null}
 
                         {isAddressValid ? (
-                            <ConfirmButton onClick={handleExchangeMiner} disabled={!isAddressValid}>
-                                <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
+                            <ConfirmButton onClick={handleExchangeMiner} disabled={isSubmitting || !isAddressValid}>
+                                {isSubmitting ? (
+                                    <LoadingDots />
+                                ) : (
+                                    <Typography variant="h4">{t('confirm', { ns: 'settings' })}</Typography>
+                                )}
                             </ConfirmButton>
                         ) : (
                             helpMarkup

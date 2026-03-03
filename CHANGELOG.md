@@ -1,3 +1,23 @@
+🚀 TARI UNIVERSE v1.6.11: Soonsville Sunrise
+
+_February 26, 2026_
+
+Hey Tari fam,
+
+New release with stability improvements and a handful of bug fixes to keep things running smoothly.
+
+✨ WHAT'S NEW & FIXED
+
+- 🔧 **Better process management** – Tari Universe now wraps spawned child processes more reliably. Fewer orphan processes hanging around after the app shuts down.
+- 🤖 **MCP server support** – Agents can now interact with Tari Universe through a Model Context Protocol (MCP) server. Let AI-powered tools plug directly into your mining setup.
+- 🌐 **System language toggle fix** – The "Use System Language" toggle in Settings now works as expected. Previously it could get stuck or fail to apply your system's language correctly.
+- 🐛 **Bug fixes** – Squashed a few bugs around the exit feedback survey, mining restart behavior when changing settings, and other small quirks.
+- 🧹 **Under the hood** – Cleaned up Rust dependencies and updated to the latest Rust edition for better build performance and maintainability.
+
+Thank you for your continued support! 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.6.10: Master Oogway's Secret pt 2
 
 _February 10, 2026_

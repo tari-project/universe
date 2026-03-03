@@ -26,8 +26,8 @@ use axum::async_trait;
 
 use crate::{
     mining::{
-        gpu::miners::lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
         GpuConnectionType,
+        gpu::miners::lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
     },
     process_adapter::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor,

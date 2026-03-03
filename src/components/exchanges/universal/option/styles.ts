@@ -134,6 +134,14 @@ export const ConfirmButton = styled.button`
     font-weight: bold;
     cursor: pointer;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 `;
 
 export const HelpButtonWrapper = styled.div`

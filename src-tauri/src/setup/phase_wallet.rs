@@ -26,6 +26,11 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 use crate::{
+    LOG_TARGET_APP_LOGIC,
+    wallet::wallet_manager::{STOP_ON_ERROR_CODES, WalletManagerError},
+};
+use crate::{
+    UniverseAppState,
     binaries::{Binaries, BinaryResolver},
     configs::{
         config_core::ConfigCore,
@@ -42,19 +47,14 @@ use crate::{
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
     wallet::wallet_manager::WalletStartupConfig,
-    UniverseAppState,
-};
-use crate::{
-    wallet::wallet_manager::{WalletManagerError, STOP_ON_ERROR_CODES},
-    LOG_TARGET_APP_LOGIC,
 };
 use anyhow::Error;
 use log::{error, warn};
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
-    watch::{Receiver, Sender},
     Mutex,
+    watch::{Receiver, Sender},
 };
 use tokio_util::task::TaskTracker;
 // Bump to force wallet full scan
@@ -259,6 +259,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
         if InternalWallet::is_internal().await {
+            app_state.wallet_manager.reset_initial_scan_completed();
             app_state
                 .wallet_manager
                 .wait_for_initial_wallet_scan(node_status_watch_rx)

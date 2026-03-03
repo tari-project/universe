@@ -24,11 +24,11 @@ use log::info;
 use reqwest::Response;
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     requests::{
         clients::http_client::HttpClient,
         utils::{convert_content_length_to_mb, get_content_length_from_head_response},
     },
-    LOG_TARGET_APP_LOGIC,
 };
 
 pub enum CloudFlareCacheStatusHandlingOptions {
@@ -115,13 +115,13 @@ impl CloudFlareCache {
             info!(target: LOG_TARGET_APP_LOGIC, "get_cf_cache_status_from_head_response, error");
             return CloudFlareCacheStatus::Unknown;
         };
-        let cache_status = CloudFlareCacheStatus::from_str(
+
+        CloudFlareCacheStatus::from_str(
             response
                 .headers()
                 .get("cf-cache-status")
                 .map_or("", |v| v.to_str().unwrap_or_default()),
-        );
-        cache_status
+        )
     }
 
     #[allow(dead_code)]

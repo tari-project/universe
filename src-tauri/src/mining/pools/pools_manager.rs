@@ -25,17 +25,17 @@ use std::{collections::HashMap, sync::Arc};
 use log::{debug, info, warn};
 use tari_common_types::tari_address::TariAddress;
 use tokio::{
-    sync::{mpsc, RwLock},
-    time::{interval, Duration, Instant},
+    sync::{RwLock, mpsc},
+    time::{Duration, Instant, interval},
 };
 
 use crate::{
+    LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
     mining::pools::{
-        adapters::{PoolApiAdapter, PoolApiAdapters},
         PoolStatus,
+        adapters::{PoolApiAdapter, PoolApiAdapters},
     },
     tasks_tracker::TaskTrackerUtil,
-    LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES,
 };
 
 #[derive(Clone)]
@@ -230,10 +230,10 @@ impl PoolManager {
 
     /// Send a stop command to the background task
     pub fn stop_background_task(&mut self) {
-        if let Some(sender) = &self.task_sender {
-            if let Err(e) = sender.send(PoolManagerThreadCommands::Stop) {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to send stop command to task: {e}");
-            }
+        if let Some(sender) = &self.task_sender
+            && let Err(e) = sender.send(PoolManagerThreadCommands::Stop)
+        {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to send stop command to task: {e}");
         }
         self.task_sender = None;
 
@@ -350,12 +350,11 @@ impl PoolManager {
                 }
 
                 // Check if we should stop the task (1 hour after mining stopped)
-                if let Some(stop_at) = stop_task_at {
-                    if task_state.tracking_duration > stop_at {
+                if let Some(stop_at) = stop_task_at
+                    && task_state.tracking_duration > stop_at {
                         info!(target: LOG_TARGET_APP_LOGIC, "Stopping periodic pool status update task - 1 hour grace period expired");
                         break;
                     }
-                }
             }
 
             info!(target: LOG_TARGET_APP_LOGIC, "Periodic pool status update task finished");

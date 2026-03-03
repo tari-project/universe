@@ -28,18 +28,18 @@ use tokio_util::task::TaskTracker;
 use tonic::async_trait;
 
 use crate::{
+    BaseNodeStatus, LOG_TARGET_APP_LOGIC,
     ab_test_selector::ABTestSelector,
     node::{
         node_adapter::{NodeAdapter, NodeAdapterService, NodeStatusMonitor},
         node_manager::NodeType,
     },
     process_adapter::{ProcessAdapter, ProcessInstanceTrait},
-    BaseNodeStatus, LOG_TARGET_APP_LOGIC,
 };
 use anyhow::Error;
 use std::{
     path::PathBuf,
-    sync::{atomic::AtomicU64, Arc},
+    sync::{Arc, atomic::AtomicU64},
 };
 use tari_transaction_components::consensus::ConsensusManager;
 

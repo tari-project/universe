@@ -27,7 +27,7 @@ pub async fn kill_process(pid: i32) -> Result<(), anyhow::Error> {
     {
         use crate::consts::PROCESS_CREATION_NO_WINDOW;
         use anyhow::Context;
-        let command = format!("taskkill /F /PID {}", pid);
+        let command = format!("taskkill /F /T /PID {}", pid);
 
         let mut child = tokio::process::Command::new("cmd")
             .arg("/C")

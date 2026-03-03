@@ -72,23 +72,24 @@
 #![allow(dead_code, unused_variables, unused_must_use)]
 
 use chrono::{DateTime, Duration, Local};
-use croner::{self, parser::CronParser, Cron};
+use croner::{self, Cron, parser::CronParser};
 use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fmt::Display,
     sync::{
-        atomic::{AtomicBool, AtomicU64},
         LazyLock,
+        atomic::{AtomicBool, AtomicU64},
     },
 };
 use tokio::{
-    sync::{mpsc, RwLock},
+    sync::{RwLock, mpsc},
     time::sleep,
 };
 
 use crate::{
+    LOG_TARGET_APP_LOGIC,
     configs::{
         config_core::{ConfigCore, ConfigCoreContent},
         config_mining::{ConfigMining, ConfigMiningContent},
@@ -97,7 +98,6 @@ use crate::{
     events_emitter::EventsEmitter,
     mining::{cpu::manager::CpuManager, gpu::manager::GpuManager},
     tasks_tracker::TasksTrackers,
-    LOG_TARGET_APP_LOGIC,
 };
 
 static ZERO_DURATION: std::time::Duration = std::time::Duration::from_secs(0);
@@ -132,6 +132,9 @@ enum SchedulerMessage {
     },
     TriggerExitCallback {
         event_id: String,
+    },
+    ListEvents {
+        response: tokio::sync::oneshot::Sender<Vec<ScheduledEventInfo>>,
     },
     CleanupSchedule {
         event_id: String,
@@ -711,6 +714,21 @@ impl EventScheduler {
             .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))?
     }
 
+    /// Lists all events currently in the scheduler (both persistent and one-time).
+    pub async fn list_events(&self) -> Result<Vec<ScheduledEventInfo>, SchedulerError> {
+        let (response_tx, response_rx) = tokio::sync::oneshot::channel();
+
+        self.message_sender
+            .send(SchedulerMessage::ListEvents {
+                response: response_tx,
+            })
+            .map_err(|_| SchedulerError::SchedulerNotRunning)?;
+
+        response_rx
+            .await
+            .map_err(|_| SchedulerError::InternalError("Response channel closed".to_string()))
+    }
+
     /// Saves persistent events (Between timing) to the application configuration.
     ///
     /// This ensures that recurring events survive application restarts by storing
@@ -831,7 +849,11 @@ impl EventScheduler {
                             },
                             Some(SchedulerMessage::RemoveEvent { event_id, response }) => {
                                 let result = Self::handle_remove_event(&mut internal_events, event_id);
+                                let should_persist = result.is_ok();
                                 let _unused = response.send(result);
+                                if should_persist {
+                                    Self::save_persistent_events_to_config(&internal_events).await;
+                                }
                             },
                             Some(SchedulerMessage::PauseEvent { event_id, response }) => {
                                 let result = Self::handle_pause_event(&mut internal_events, event_id);
@@ -849,6 +871,18 @@ impl EventScheduler {
                                 Self::handle_exit_callback(&internal_events, event_id).await;
 
                             }
+                            Some(SchedulerMessage::ListEvents { response }) => {
+                                let events: Vec<ScheduledEventInfo> = internal_events
+                                    .iter()
+                                    .map(|(id, event)| ScheduledEventInfo {
+                                        id: id.clone(),
+                                        event_type: event.event_type.clone(),
+                                        timing: event.timing.clone(),
+                                        state: event.state.clone(),
+                                    })
+                                    .collect();
+                                let _unused = response.send(events);
+                            },
                             Some(SchedulerMessage::CleanupSchedule { event_id }) => {
                                 Self::handle_cleanup_schedule_events(&mut internal_events, event_id).await;
                             }
@@ -937,14 +971,15 @@ impl EventScheduler {
         event_id: String,
     ) -> Result<(), SchedulerError> {
         info!(target: LOG_TARGET_APP_LOGIC, "Removing event with ID {:?}", event_id);
-        if let Some(mut event) = events.remove(&event_id) {
-            if let Some(handle) = event.task_handle.take() {
-                handle.abort();
+        match events.remove(&event_id) {
+            Some(mut event) => {
+                if let Some(handle) = event.task_handle.take() {
+                    handle.abort();
+                }
+                info!(target: LOG_TARGET_APP_LOGIC, "Removed event with ID {:?}", event_id);
+                Ok(())
             }
-            info!(target: LOG_TARGET_APP_LOGIC, "Removed event with ID {:?}", event_id);
-            Ok(())
-        } else {
-            Err(SchedulerError::EventNotFound(event_id))
+            _ => Err(SchedulerError::EventNotFound(event_id)),
         }
     }
 
@@ -1036,30 +1071,39 @@ impl EventScheduler {
         events: &HashMap<String, ScheduledEvent>,
         event_id: String,
     ) -> Result<(), SchedulerError> {
-        if let Some(event) = events.get(&event_id) {
-            if event.state == SchedulerEventState::Active {
-                match event.event_type.clone() {
-                    SchedulerEventType::ResumeMining => {
+        if let Some(event) = events.get(&event_id)
+            && event.state == SchedulerEventState::Active
+        {
+            match event.event_type.clone() {
+                SchedulerEventType::ResumeMining => {
+                    let config = ConfigMining::content().await;
+                    if *config.gpu_mining_enabled() {
                         GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during PauseMining event {:?}: {}", event_id, e);
-                });
-                        CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during PauseMining event {:?}: {}", event_id, e);
-                });
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during ResumeMining event {:?}: {}", event_id, e);
+                        });
                     }
-                    SchedulerEventType::Mine { mining_mode } => {
-                        ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.clone()).await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
-                });
-                        // TODO: Replace with emiting specific value only
-                        EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await)
-                            .await;
-                        GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
-                });
+                    if *config.cpu_mining_enabled() {
                         CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
-                });
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during ResumeMining event {:?}: {}", event_id, e);
+                        });
+                    }
+                }
+                SchedulerEventType::Mine { mining_mode } => {
+                    ConfigMining::update_field(ConfigMiningContent::set_selected_mining_mode, mining_mode.clone()).await.unwrap_or_else(|e| {
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to set mining mode during Mine event {:?}: {}", event_id, e);
+                    });
+                    // TODO: Replace with emiting specific value only
+                    let config = ConfigMining::content().await;
+                    EventsEmitter::emit_mining_config_loaded(&config).await;
+                    if *config.gpu_mining_enabled() {
+                        GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start GPU mining during Mine event {:?}: {}", event_id, e);
+                        });
+                    }
+                    if *config.cpu_mining_enabled() {
+                        CpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to start CPU mining during Mine event {:?}: {}", event_id, e);
+                        });
                     }
                 }
             }
@@ -1111,12 +1155,12 @@ impl EventScheduler {
         events: &mut HashMap<String, ScheduledEvent>,
         event_id: String,
     ) {
-        if let Some(event) = events.get(&event_id) {
-            if let SchedulerEventTiming::In(_) = event.timing {
-                info!(target: LOG_TARGET_APP_LOGIC, "Cleaning up schedule for event ID {:?}", event_id);
-                if let Err(e) = Self::handle_remove_event(events, event_id.clone()) {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up scheduled event {:?}: {}", event_id, e);
-                }
+        if let Some(event) = events.get(&event_id)
+            && let SchedulerEventTiming::In(_) = event.timing
+        {
+            info!(target: LOG_TARGET_APP_LOGIC, "Cleaning up schedule for event ID {:?}", event_id);
+            if let Err(e) = Self::handle_remove_event(events, event_id.clone()) {
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up scheduled event {:?}: {}", event_id, e);
             }
         }
     }

@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::airdrop::{get_der_encode_pub_key, get_websocket_key};
-use crate::app_in_memory_config::{AppInMemoryConfig, ExchangeMiner, DEFAULT_EXCHANGE_ID};
+use crate::app_in_memory_config::{AppInMemoryConfig, DEFAULT_EXCHANGE_ID, ExchangeMiner};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
@@ -34,16 +34,17 @@ use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId}
 use crate::configs::pools::BasePoolData;
 use crate::configs::pools::{cpu_pools::CpuPool, gpu_pools::GpuPool};
 use crate::configs::trait_config::ConfigImpl;
+use crate::consts::DEFAULT_SYSTEM_LOCALE_FALLBACK;
 use crate::event_scheduler::{EventScheduler, SchedulerEventTiming, SchedulerEventType};
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
-use crate::internal_wallet::{mnemonic_to_tari_cipher_seed, InternalWallet, PaperWalletConfig};
+use crate::internal_wallet::{InternalWallet, PaperWalletConfig, mnemonic_to_tari_cipher_seed};
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::manager::GpuManager;
+use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
-use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::network_utils::NetworkExt;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
@@ -61,7 +62,7 @@ use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::wallet_manager::WalletManagerError;
 use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
-use crate::{airdrop, UniverseAppState, LOG_TARGET_APP_LOGIC};
+use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
 
 use base64::prelude::*;
 
@@ -70,7 +71,7 @@ use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-use std::fs::{read_dir, remove_dir_all, remove_file, File};
+use std::fs::{File, read_dir, remove_dir_all, remove_file};
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::thread::sleep;
@@ -81,10 +82,10 @@ use tari_common_types::seeds::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_common_types::tari_address::dual_address::DualAddress;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
-use tari_utilities::encoding::MBase58;
 use tari_utilities::SafePassword;
-use tauri::ipc::InvokeError;
+use tari_utilities::encoding::MBase58;
 use tauri::Manager;
+use tauri::ipc::InvokeError;
 use urlencoding::encode;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
@@ -147,9 +148,11 @@ pub async fn select_exchange_miner(
 
     EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
 
-    SetupManager::get_instance()
-        .restart_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
-        .await;
+    tauri::async_runtime::spawn(async move {
+        SetupManager::get_instance()
+            .restart_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+            .await;
+    });
 
     Ok(())
 }
@@ -220,6 +223,9 @@ pub async fn exit_application(
     // Cleaning up processes in RunEvent::Exit is not reliable as it does not always get triggered properly so we doing it here
 
     info!(target: LOG_TARGET_APP_LOGIC, "Exit application command received, shutting down processes...");
+
+    crate::mcp::server::McpServerManager::stop().await;
+    info!(target: LOG_TARGET_APP_LOGIC, "MCP server stopped.");
 
     let _unused = GpuManager::write().await.stop_mining().await;
     info!(target: LOG_TARGET_APP_LOGIC, "GPU Mining stopped.");
@@ -682,9 +688,11 @@ pub async fn revert_to_internal_wallet(
     .map_err(InvokeError::from_anyhow)?;
     EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
 
-    SetupManager::get_instance()
-        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
-        .await;
+    tauri::async_runtime::spawn(async move {
+        SetupManager::get_instance()
+            .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+            .await;
+    });
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "revert_to_internal_wallet took too long: {:?}", timer.elapsed());
@@ -812,10 +820,10 @@ pub async fn reset_settings(
                 let entry = entry.map_err(|e| e.to_string())?;
                 let path = entry.path();
                 if path.is_dir() {
-                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
-                        if folder_block_list.contains(&file_name) {
-                            continue;
-                        }
+                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str())
+                        && folder_block_list.contains(&file_name)
+                    {
+                        continue;
                     }
 
                     let contains_wallet_config =
@@ -845,10 +853,10 @@ pub async fn reset_settings(
                         format!("Could not remove directory: {e}")
                     })?;
                 } else {
-                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
-                        if files_block_list.contains(&file_name) {
-                            continue;
-                        }
+                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str())
+                        && files_block_list.contains(&file_name)
+                    {
+                        continue;
                     }
 
                     remove_file(path.clone()).map_err(|e| {
@@ -935,6 +943,11 @@ pub async fn set_application_language(application_language: String) -> Result<()
     .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_application_language() -> Result<String, InvokeError> {
+    Ok(ConfigUI::content().await.application_language().clone())
 }
 
 #[tauri::command]
@@ -1136,9 +1149,11 @@ pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeErro
         .await
         .map_err(InvokeError::from_anyhow)?;
 
-    SetupManager::get_instance()
-        .restart_phases_from_queue()
-        .await;
+    tauri::async_runtime::spawn(async move {
+        SetupManager::get_instance()
+            .restart_phases_from_queue()
+            .await;
+    });
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_monero_address took too long: {:?}", timer.elapsed());
     }
@@ -1198,8 +1213,11 @@ pub async fn set_should_always_use_system_language(
     should_always_use_system_language: bool,
 ) -> Result<(), InvokeError> {
     ConfigUI::update_field(
-        ConfigUIContent::set_should_always_use_system_language,
-        should_always_use_system_language,
+        ConfigUIContent::set_should_always_use_system_language_and_resolve_language,
+        (
+            should_always_use_system_language,
+            DEFAULT_SYSTEM_LOCALE_FALLBACK.to_string(),
+        ),
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1320,9 +1338,11 @@ pub async fn set_airdrop_tokens(airdrop_tokens: Option<AirdropTokens>) -> Result
     info!(target: LOG_TARGET_APP_LOGIC, "New Airdrop tokens saved, user id changed:{user_id_changed:?}");
     if user_id_changed {
         // If the user id changed, we need to restart the cpu mining phases to ensure that the new telemetry_id ( unique_string value )is used
-        SetupManager::get_instance()
-            .restart_phases(vec![SetupPhase::CpuMining])
-            .await;
+        tauri::async_runtime::spawn(async move {
+            SetupManager::get_instance()
+                .restart_phases(vec![SetupPhase::CpuMining])
+                .await;
+        });
     }
     Ok(())
 }

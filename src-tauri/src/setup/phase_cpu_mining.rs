@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
+    LOG_TARGET_APP_LOGIC, UniverseAppState,
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     hardware::hardware_status_monitor::HardwareStatusMonitor,
@@ -35,7 +36,6 @@ use crate::{
         setup_manager::{SetupManager, SetupPhase},
     },
     tasks_tracker::TasksTrackers,
-    UniverseAppState, LOG_TARGET_APP_LOGIC,
 };
 use anyhow::Error;
 use log::warn;
@@ -45,8 +45,8 @@ use tauri::{AppHandle, Manager};
 use tokio::{
     spawn,
     sync::{
-        watch::{Receiver, Sender},
         Mutex,
+        watch::{Receiver, Sender},
     },
 };
 use tokio_util::task::TaskTracker;

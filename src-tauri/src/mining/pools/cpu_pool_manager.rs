@@ -30,16 +30,16 @@ use tokio::{
 use crate::{
     configs::{
         config_pools::ConfigPoolsContent,
-        pools::{cpu_pools::CpuPool, BasePoolData},
+        pools::{BasePoolData, cpu_pools::CpuPool},
     },
     events_emitter::EventsEmitter,
     mining::pools::{
+        PoolManagerInterfaceTrait, PoolStatus,
         adapters::{
-            kryptex_pool::KryptexPoolAdapter, lucky_pool::LuckyPoolAdapter,
-            support_xmr_pool::SupportXmrPoolAdapter, PoolApiAdapters,
+            PoolApiAdapters, kryptex_pool::KryptexPoolAdapter, lucky_pool::LuckyPoolAdapter,
+            support_xmr_pool::SupportXmrPoolAdapter,
         },
         pools_manager::PoolManager,
-        PoolManagerInterfaceTrait, PoolStatus,
     },
     systemtray_manager::{SystemTrayEvents, SystemTrayManager},
     tasks_tracker::TasksTrackers,
@@ -94,8 +94,8 @@ impl PoolManagerInterfaceTrait<CpuPool> for CpuPoolManager {
         INSTANCE.pool_status_manager.write().await
     }
 
-    fn construct_callback_for_pool_status_update(
-    ) -> impl Fn(HashMap<String, PoolStatus>, PoolStatus) + Send + Sync + 'static {
+    fn construct_callback_for_pool_status_update()
+    -> impl Fn(HashMap<String, PoolStatus>, PoolStatus) + Send + Sync + 'static {
         move |pool_statuses: HashMap<String, PoolStatus>, current_status: PoolStatus| {
             spawn(async move {
                 EventsEmitter::emit_cpu_pools_status_update(pool_statuses).await;

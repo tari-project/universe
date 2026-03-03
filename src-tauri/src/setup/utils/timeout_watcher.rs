@@ -30,8 +30,8 @@ use log::info;
 use tokio::{
     select,
     sync::{
-        watch::{Receiver, Sender},
         Mutex,
+        watch::{Receiver, Sender},
     },
 };
 
