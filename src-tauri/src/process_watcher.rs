@@ -50,6 +50,7 @@ pub(crate) struct ProcessWatcherStats {
     pub num_restarts: u64,
     pub max_health_check_duration: Duration,
     pub total_health_check_duration: Duration,
+    pub last_failure_reason: String,
 }
 
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
@@ -165,6 +166,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 num_restarts: 0,
                 max_health_check_duration: Duration::from_secs(0),
                 total_health_check_duration: Duration::from_secs(0),
+                last_failure_reason: String::new(),
             };
             // sleep(Duration::from_secs(10)).await;
             info!(target: LOG_TARGET_APP_LOGIC, "Starting process watcher for {name}");
@@ -279,12 +281,18 @@ pub(crate) async fn do_health_check<
         let mut app_shutdown2 = global_shutdown_signal.clone();
         let current_uptime = uptime.elapsed();
 
-        match select! {
+        let (current_status, reason) = match select! {
             r = status_monitor3.check_health(current_uptime, health_timeout) => r,
-            // Watch for shutdown signals
             _ = inner_shutdown2.wait() => HealthStatus::Healthy,
             _ = app_shutdown2.wait() => HealthStatus::Healthy
         } {
+            HealthStatus::WarningWithReason(r) => (HealthStatus::Warning, r),
+            HealthStatus::UnhealthyWithReason(r) => (HealthStatus::Unhealthy, r),
+            other => (other, String::new()),
+        };
+        stats.last_failure_reason = reason.clone();
+
+        match current_status {
             HealthStatus::Healthy => {
                 *warning_count = 0;
                 is_healthy = true;
@@ -311,6 +319,7 @@ pub(crate) async fn do_health_check<
             HealthStatus::Unhealthy => {
                 warn!(target: LOG_TARGET_STATUSES, "{name} is not healthy. Health check returned false");
             }
+            _ => {}
         }
     } else {
         ping_failed = true;

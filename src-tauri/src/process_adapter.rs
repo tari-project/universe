@@ -154,7 +154,9 @@ pub(crate) trait ProcessAdapter {
 pub enum HealthStatus {
     Healthy,
     Warning,
+    WarningWithReason(String),
     Unhealthy,
+    UnhealthyWithReason(String),
     Initializing,
 }
 
