@@ -290,7 +290,7 @@ pub(crate) async fn do_health_check<
             HealthStatus::UnhealthyWithReason(r) => (HealthStatus::Unhealthy, r),
             other => (other, String::new()),
         };
-        stats.last_failure_reason = reason.clone();
+        stats.last_failure_reason = reason;
 
         match current_status {
             HealthStatus::Healthy => {
