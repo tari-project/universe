@@ -335,8 +335,7 @@ pub(crate) async fn do_health_check<
         && !child.is_shutdown_triggered()
         && !global_shutdown_signal.is_triggered()
         && !inner_shutdown.is_triggered()
-    {
-        if let Some(exit_code) = handle_unhealthy_restart(
+        && let Some(exit_code) = handle_unhealthy_restart(
             child,
             status_monitor3,
             &name,
@@ -350,9 +349,8 @@ pub(crate) async fn do_health_check<
             stats,
         )
         .await?
-        {
-            return Ok(Some(exit_code));
-        }
+    {
+        return Ok(Some(exit_code));
     }
 
     if is_healthy {
