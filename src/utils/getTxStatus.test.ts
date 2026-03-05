@@ -255,7 +255,6 @@ describe('getTxStatus utilities', () => {
                 const tx = createMockTransaction({ status: TransactionStatus.NotFound });
                 expect(getTxStatusTitleKey(tx)).toBe('failed');
             });
-
         });
 
         describe('pending wallet transactions - coinbase', () => {

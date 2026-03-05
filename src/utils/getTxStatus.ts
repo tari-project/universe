@@ -12,7 +12,11 @@ const txTypes = {
         TransactionStatus.MinedConfirmed,
         TransactionStatus.MinedUnconfirmed,
     ],
-    mined: [TransactionStatus.CoinbaseConfirmed, TransactionStatus.CoinbaseUnconfirmed, TransactionStatus.CoinbaseNotInBlockChain],
+    mined: [
+        TransactionStatus.CoinbaseConfirmed,
+        TransactionStatus.CoinbaseUnconfirmed,
+        TransactionStatus.CoinbaseNotInBlockChain,
+    ],
 };
 
 const txStates = {
