@@ -25,6 +25,19 @@ use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 use tari_common::configuration::Network;
 
+pub(crate) trait NetworkExt {
+    /// LocalNet only. A solo network has no peers, no pool mining, and no external
+    /// block explorer. The local node is the only node, and is considered synced
+    /// as soon as it is ready.
+    fn is_solo_network(&self) -> bool;
+}
+
+impl NetworkExt for Network {
+    fn is_solo_network(&self) -> bool {
+        matches!(self, Network::LocalNet)
+    }
+}
+
 fn create_client() -> Result<reqwest::Client, anyhow::Error> {
     let agent = create_user_agent();
     let mut headers = HeaderMap::new();

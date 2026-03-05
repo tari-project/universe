@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAirdropStore } from '@app/store';
 import { defaultHeaders } from '@app/utils';
+import { isLocalNet } from '@app/utils/network.ts';
 
 export const KEY_MINER_STATS = 'miners';
 
@@ -9,6 +10,9 @@ interface MinerStats {
 }
 
 async function fetchMinerStats() {
+    if (isLocalNet()) {
+        return { totalMiners: 1 };
+    }
     const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdrop_api_url;
     const res = await fetch(`${airdropApiUrl}/miner/stats`, { headers: defaultHeaders });
 

@@ -1,4 +1,6 @@
 ./src-tauri/env.esmeralda
+./src-tauri/env.igor
+./src-tauri/env.localnet
 ./src-tauri/env.mainnet
 ./src-tauri/env.nextnet
 ./tari-win-bundler/Bundle.wxs
