@@ -57,6 +57,8 @@ use url::Url;
 
 use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
 
+const STALLED_BLOCK_TIMEOUT_SECS: u64 = 15 * 60;
+
 #[async_trait]
 pub trait NodeAdapter {
     fn get_grpc_address(&self) -> Option<(String, u16)>;
@@ -420,12 +422,12 @@ impl StatusMonitor for NodeStatusMonitor {
                         .load(std::sync::atomic::Ordering::SeqCst)
                         == status.block_time
                     {
-                        if uptime.as_secs() > 900
+                        if uptime.as_secs() > STALLED_BLOCK_TIMEOUT_SECS
                             && EpochTime::now()
                                 .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
                                 .unwrap_or(EpochTime::from(0))
                                 .as_u64()
-                                > 900
+                                > STALLED_BLOCK_TIMEOUT_SECS
                         {
                             warn!(target: LOG_TARGET_STATUSES, "Base node height has not changed in 15 minutes");
 
