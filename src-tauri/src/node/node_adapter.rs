@@ -180,6 +180,7 @@ impl NodeAdapterService {
     }
 
     pub async fn get_recent_block_stats(&self, limit: u64) -> Result<Vec<LocalBlockStats>, Error> {
+        let limit = limit.min(100);
         let mut grpc_client = BaseNodeGrpcClient::connect(self.connection_address.clone())
             .await
             .map_err(|e| anyhow!("Failed to connect to gRPC: {e}"))?;
@@ -209,7 +210,8 @@ impl NodeAdapterService {
                 .map(|p| match p.pow_algo {
                     0 => "RandomX".to_string(),
                     1 => "Sha3x".to_string(),
-                    2 => "RandomX".to_string(),
+                    2 => "RandomXT".to_string(),
+                    3 => "Cuckaroo".to_string(),
                     _ => "Unknown".to_string(),
                 })
                 .unwrap_or_else(|| "Unknown".to_string());
@@ -221,9 +223,9 @@ impl NodeAdapterService {
             stats.push(LocalBlockStats {
                 height: header.height,
                 total_coinbase_xtm,
-                num_coinbases: 1,
+                num_coinbases: 1, // Approximation: ListHeaders doesn't provide coinbase counts
                 num_outputs_no_coinbases: u64::from(header_resp.num_transactions.saturating_sub(1)),
-                num_inputs: 0,
+                num_inputs: 0, // Not available from header-only data (ListHeaders)
                 pow_algo,
                 timestamp: header.timestamp,
             });
@@ -471,11 +473,6 @@ impl StatusMonitor for NodeStatusMonitor {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status);
                     if status.readiness_status.is_initializing() {
-                        if self.node_service.is_solo_network()
-                            && status.readiness_status.migration_progress().is_none()
-                        {
-                            return HealthStatus::Healthy;
-                        }
                         info!(
                             "{:?} Node Health Check: Not ready yet | status: {:?}",
                             self.node_type,

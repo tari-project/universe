@@ -2035,6 +2035,11 @@ pub async fn get_local_block_stats(
     state: tauri::State<'_, UniverseAppState>,
     limit: u64,
 ) -> Result<Vec<crate::node::node_adapter::LocalBlockStats>, String> {
+    let network = Network::get_current_or_user_setting_or_default();
+    if !network.is_solo_network() {
+        return Err("get_local_block_stats is only available on solo networks".to_string());
+    }
+
     let node_service = state
         .node_manager
         .get_current_service()
