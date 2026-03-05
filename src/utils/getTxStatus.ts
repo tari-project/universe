@@ -12,7 +12,7 @@ const txTypes = {
         TransactionStatus.MinedConfirmed,
         TransactionStatus.MinedUnconfirmed,
     ],
-    mined: [TransactionStatus.CoinbaseConfirmed, TransactionStatus.CoinbaseUnconfirmed],
+    mined: [TransactionStatus.CoinbaseConfirmed, TransactionStatus.CoinbaseUnconfirmed, TransactionStatus.CoinbaseNotInBlockChain],
 };
 
 const txStates = {
@@ -22,8 +22,9 @@ const txStates = {
         TransactionStatus.Broadcast,
         TransactionStatus.Coinbase,
         TransactionStatus.Queued,
+        TransactionStatus.CoinbaseNotInBlockChain,
     ],
-    failed: [TransactionStatus.Rejected, TransactionStatus.NotFound, TransactionStatus.CoinbaseNotInBlockChain],
+    failed: [TransactionStatus.Rejected, TransactionStatus.NotFound],
     complete: [
         TransactionStatus.Imported,
         TransactionStatus.OneSidedUnconfirmed,

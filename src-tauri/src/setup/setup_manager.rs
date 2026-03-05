@@ -373,6 +373,13 @@ impl SetupManager {
                 ConfigMining::update_field(ConfigMiningContent::set_is_lolminer_tested, true).await;
         }
 
+        // On solo networks, force pool mining off
+        if network.is_solo_network() {
+            info!(target: LOG_TARGET_APP_LOGIC, "Disabling pool mining for solo network ({network})");
+            drop(ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, false).await);
+            drop(ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, false).await);
+        }
+
         EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
         EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
         EventsEmitter::emit_ui_config_loaded(&ConfigUI::content().await).await;
@@ -537,8 +544,15 @@ impl SetupManager {
         let exchange_id = ConfigCore::content().await.exchange_id().clone();
         let is_exchange_miner_build = exchange_id.ne(DEFAULT_EXCHANGE_ID);
 
-        let is_cpu_pool_enabled = *ConfigPools::content().await.cpu_pool_enabled();
-        let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
+        let network = Network::get_current_or_user_setting_or_default();
+        let is_cpu_pool_enabled =
+            *ConfigPools::content().await.cpu_pool_enabled() && !network.is_solo_network();
+        let is_gpu_pool_enabled =
+            *ConfigPools::content().await.gpu_pool_enabled() && !network.is_solo_network();
+
+        if network.is_solo_network() {
+            info!(target: LOG_TARGET_APP_LOGIC, "Pool mining disabled for solo network ({network})");
+        }
 
         if is_cpu_pool_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Cpu Pool feature enabled");

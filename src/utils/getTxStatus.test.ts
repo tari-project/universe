@@ -91,6 +91,11 @@ describe('getTxStatus utilities', () => {
                 const tx = createMockTransaction({ status: TransactionStatus.CoinbaseUnconfirmed });
                 expect(getTxTypeByStatus(tx)).toBe('mined');
             });
+
+            it('returns "mined" for CoinbaseNotInBlockChain status', () => {
+                const tx = createMockTransaction({ status: TransactionStatus.CoinbaseNotInBlockChain });
+                expect(getTxTypeByStatus(tx)).toBe('mined');
+            });
         });
 
         describe('one-sided transactions - inbound (received)', () => {
@@ -251,9 +256,12 @@ describe('getTxStatus utilities', () => {
                 expect(getTxStatusTitleKey(tx)).toBe('failed');
             });
 
-            it('returns "failed" for CoinbaseNotInBlockChain status', () => {
+        });
+
+        describe('pending wallet transactions - coinbase', () => {
+            it('returns "pending" for CoinbaseNotInBlockChain status', () => {
                 const tx = createMockTransaction({ status: TransactionStatus.CoinbaseNotInBlockChain });
-                expect(getTxStatusTitleKey(tx)).toBe('failed');
+                expect(getTxStatusTitleKey(tx)).toBe('pending');
             });
         });
 

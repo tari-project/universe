@@ -57,7 +57,7 @@ use tokio::time::timeout;
 use url::Url;
 
 use crate::network_utils::{
-    get_best_block_from_block_scan, get_block_info_from_block_scan, NetworkExt,
+    NetworkExt, get_best_block_from_block_scan, get_block_info_from_block_scan,
 };
 
 #[async_trait]
