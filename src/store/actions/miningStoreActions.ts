@@ -14,7 +14,7 @@ import { useAirdropStore } from '@app/store';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
 import { TimeUnit } from '@app/types/mining/schedule.ts';
 
-export const restartMining = async () => {
+const restartMining = async () => {
     const isMining =
         useMiningMetricsStore.getState().cpu_mining_status.is_mining ||
         useMiningMetricsStore.getState().gpu_mining_status.is_mining;
