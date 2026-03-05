@@ -26,21 +26,15 @@ use serde::Deserialize;
 use tari_common::configuration::Network;
 
 pub(crate) trait NetworkExt {
-    /// A solo network has no peers and no external block explorer.
-    /// The node is considered synced as soon as it is ready.
+    /// LocalNet only. A solo network has no peers, no pool mining, and no external
+    /// block explorer. The local node is the only node, and is considered synced
+    /// as soon as it is ready.
     fn is_solo_network(&self) -> bool;
-
-    /// A dev network forces local node type and has relaxed requirements.
-    fn is_dev_network(&self) -> bool;
 }
 
 impl NetworkExt for Network {
     fn is_solo_network(&self) -> bool {
         matches!(self, Network::LocalNet)
-    }
-
-    fn is_dev_network(&self) -> bool {
-        matches!(self, Network::LocalNet | Network::Igor)
     }
 }
 

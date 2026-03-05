@@ -129,7 +129,7 @@ impl Default for ConfigCoreContent {
             last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
             remote_base_node_address,
-            node_type: if network.is_dev_network() {
+            node_type: if network.is_solo_network() {
                 NodeType::Local
             } else {
                 NodeType::default()

@@ -346,7 +346,7 @@ impl SetupManager {
 
         let mut node_type = ConfigCore::content().await.node_type().clone();
         let network = Network::get_current_or_user_setting_or_default();
-        if network.is_dev_network() && node_type != NodeType::Local {
+        if network.is_solo_network() && node_type != NodeType::Local {
             info!(target: LOG_TARGET_APP_LOGIC, "Overriding node type to Local for {network} network");
             node_type = NodeType::Local;
         }
