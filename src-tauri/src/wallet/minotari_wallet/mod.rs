@@ -512,15 +512,7 @@ impl MinotariWalletManager {
                 ProcessingEvent::ScanStatus(status) => {
                     Self::handle_status_event(status).await;
                 }
-                ProcessingEvent::BlockProcessed(block_event) => {
-                    if Self::is_syncing().await {
-                        return;
-                    }
-                    if !block_event.balance_changes.is_empty() {
-                        info!(target: LOG_TARGET, "Block {} processed with {} balance changes", block_event.height, block_event.balance_changes.len());
-                        info!(target: LOG_TARGET, "Changes: {:?}", block_event.balance_changes);
-                    }
-                }
+                ProcessingEvent::BlockProcessed(_block_event) => {}
                 ProcessingEvent::TransactionsReady(transactions_event) => {
                     let transaction_count = transactions_event.transactions.len();
 
