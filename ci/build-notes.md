@@ -5,11 +5,11 @@
 ```bash
 git clone git@github.com:tari-project/universe.git
 cd universe
-mkdir -p src-tauri/target/temp/root
+mkdir -p target/temp/root
 docker run -it --rm \
   -v /run/host-services/ssh-auth.sock:/run/host-services/ssh-auth.sock \
   -e SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock \
-  -v ${PWD}/src-tauri/target/temp/root:/root \
+  -v ${PWD}/target/temp/root:/root \
   -v ${PWD}:/work \
   -w /work \
   -p 0.0.0.0:2230-2240:1230-1240 \

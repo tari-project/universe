@@ -20,33 +20,36 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use anyhow::Result;
+use sys_locale::get_locale;
 
-pub async fn kill_process(pid: i32) -> Result<(), anyhow::Error> {
-    #[cfg(target_os = "windows")]
-    {
-        use crate::consts::PROCESS_CREATION_NO_WINDOW;
-        use anyhow::Context;
-        let command = format!("taskkill /F /T /PID {}", pid);
+use crate::consts::DEFAULT_SYSTEM_LOCALE_FALLBACK;
 
-        let mut child = tokio::process::Command::new("cmd")
-            .arg("/C")
-            .arg(command)
-            .creation_flags(PROCESS_CREATION_NO_WINDOW)
-            .spawn()
-            .context(format!("Failed to start taskkill for PID {}: {}", pid, pid))?;
+use super::config_ui::ConfigUIContent;
 
-        child.wait().await?;
-    }
+#[test]
+fn set_should_always_use_system_language_true_resolves_application_language() {
+    let mut config = ConfigUIContent::default();
+    let fallback_language = DEFAULT_SYSTEM_LOCALE_FALLBACK.to_string();
+    let expected_language = get_locale().unwrap_or_else(|| fallback_language.clone());
 
-    #[cfg(not(target_os = "windows"))]
-    {
-        use nix::sys::signal::{self, Signal};
-        use nix::unistd::Pid;
+    config.set_should_always_use_system_language_and_resolve_language((true, fallback_language));
 
-        let pid = Pid::from_raw(pid);
+    assert!(*config.should_always_use_system_language());
+    assert!(*config.has_system_language_been_proposed());
+    assert_eq!(config.application_language(), &expected_language);
+}
 
-        let _ = signal::kill(pid, Signal::SIGTERM);
-    }
-    Ok(())
+#[test]
+fn set_should_always_use_system_language_false_keeps_selected_language() {
+    let mut config = ConfigUIContent::default();
+    config.set_application_language("fr".to_string());
+
+    config.set_should_always_use_system_language_and_resolve_language((
+        false,
+        DEFAULT_SYSTEM_LOCALE_FALLBACK.to_string(),
+    ));
+
+    assert!(!*config.should_always_use_system_language());
+    assert!(!*config.has_system_language_been_proposed());
+    assert_eq!(config.application_language(), "fr");
 }

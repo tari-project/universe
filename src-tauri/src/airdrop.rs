@@ -23,7 +23,7 @@
 use anyhow::anyhow;
 use der::Encode;
 use der::asn1::{BitString, ObjectIdentifier};
-use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
+use jsonwebtoken::dangerous::insecure_decode;
 use log::{error, info, warn};
 use ring::signature::{Ed25519KeyPair, KeyPair};
 use ring_compat::pkcs8::SubjectPublicKeyInfo;
@@ -61,11 +61,7 @@ pub struct AirdropMinedBlockMessage {
 }
 
 pub fn decode_jwt_claims(t: &str) -> Option<AirdropAccessToken> {
-    let key = DecodingKey::from_secret(&[]);
-    let mut validation = Validation::new(Algorithm::HS256);
-    validation.insecure_disable_signature_validation();
-
-    match decode::<AirdropAccessToken>(t, &key, &validation) {
+    match insecure_decode::<AirdropAccessToken>(t) {
         Ok(data) => Some(data.claims),
         Err(e) => {
             warn!(target: LOG_TARGET_APP_LOGIC,"Error decoding access token: {e:?}");
@@ -75,12 +71,7 @@ pub fn decode_jwt_claims(t: &str) -> Option<AirdropAccessToken> {
 }
 
 pub fn decode_jwt_claims_without_exp(t: &str) -> Option<AirdropAccessToken> {
-    let key = DecodingKey::from_secret(&[]);
-    let mut validation = Validation::new(Algorithm::HS256);
-    validation.insecure_disable_signature_validation();
-    validation.validate_exp = false;
-
-    match decode::<AirdropAccessToken>(t, &key, &validation) {
+    match insecure_decode::<AirdropAccessToken>(t) {
         Ok(data) => Some(data.claims),
         Err(e) => {
             warn!(target: LOG_TARGET_APP_LOGIC,"Error decoding access token without exp: {e:?}");

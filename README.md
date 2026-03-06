@@ -105,7 +105,7 @@ npm run tauri build
 
 ### Output
 
-Built applications will be in `src-tauri/target/release/bundle/`:
+Built applications will be in `target/release/bundle/`:
 
 - **Linux**: `.deb` and `.AppImage` files
 - **Windows**: `.msi` installer

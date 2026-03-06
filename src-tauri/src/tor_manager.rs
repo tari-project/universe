@@ -31,7 +31,6 @@ use anyhow::anyhow;
 use log::{error, info};
 use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
-use tauri_plugin_sentry::sentry;
 use tokio::sync::{RwLock, watch};
 
 const STARTUP_TIMEOUT: u64 = 180; // 3mins
@@ -123,7 +122,6 @@ impl TorManager {
                 _ = tokio::time::sleep(Duration::from_secs(STARTUP_TIMEOUT)) => {
                     let err_msg = format!("Waiting for Tor to be ready timed out after {STARTUP_TIMEOUT}");
                     log::error!(target: LOG_TARGET_STATUSES, "{err_msg}");
-                    sentry::capture_message(&err_msg, sentry::Level::Error);
                     return Err(anyhow!(err_msg))
                 }
                 _ = tor_status_watch_rx.changed() => {
