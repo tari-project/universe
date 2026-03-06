@@ -182,11 +182,6 @@ pub(crate) trait ProcessInstanceTrait: Sync + Send + 'static {
     async fn start(&mut self, task_tracker: TaskTracker) -> Result<(), anyhow::Error>;
     async fn stop(&mut self) -> Result<i32, anyhow::Error>;
     fn is_shutdown_triggered(&self) -> bool;
-    async fn wait(&mut self) -> Result<i32, anyhow::Error>;
-    async fn start_and_wait_for_output(
-        &mut self,
-        task_tracker: TaskTracker,
-    ) -> Result<(i32, Vec<String>, Vec<String>), anyhow::Error>;
 }
 
 #[derive(Clone)]
@@ -293,58 +288,6 @@ impl ProcessInstanceTrait for ProcessInstance {
         Ok(())
     }
 
-    async fn start_and_wait_for_output(
-        &mut self,
-        _task_tracker: TaskTracker,
-    ) -> Result<(i32, Vec<String>, Vec<String>), anyhow::Error> {
-        if self.handle.is_some() {
-            warn!(target: LOG_TARGET_APP_LOGIC, "Process is already running");
-            return Ok((0, vec![], vec![]));
-        }
-        info!(target: LOG_TARGET_APP_LOGIC, "Starting {} process with args: {}", self.startup_spec.name, self.startup_spec.args.join(" "));
-        let spec = self.startup_spec.clone();
-        self.shutdown = Shutdown::new();
-        let shutdown_signal = self.shutdown.to_signal();
-
-        if shutdown_signal.is_terminated() || shutdown_signal.is_triggered() {
-            warn!(target: LOG_TARGET_APP_LOGIC, "Shutdown signal is triggered. Not starting process");
-            return Ok((0, vec![], vec![]));
-        };
-
-        let child = launch_child_process(
-            &spec.file_path,
-            spec.data_dir.as_path(),
-            spec.envs.as_ref(),
-            &spec.args,
-            true,
-        )?;
-
-        if let Some(id) = child.id() {
-            fs::write(
-                spec.data_dir.join(spec.pid_file_name.clone()),
-                id.to_string(),
-            )?;
-        }
-        let result = child.wait_with_output().await?;
-        let exit_code = result.status.code().unwrap_or(0);
-        let stdout_lines: Vec<String> = String::from_utf8_lossy(&result.stdout)
-            .lines()
-            .map(|line| line.to_string())
-            .collect();
-        let stderr_lines: Vec<String> = String::from_utf8_lossy(&result.stderr)
-            .lines()
-            .map(|line| line.to_string())
-            .collect();
-
-        info!(target: LOG_TARGET_APP_LOGIC, "Stopping {} process with exit code: {}", spec.name, exit_code);
-
-        if let Err(error) = fs::remove_file(spec.data_dir.join(spec.pid_file_name)) {
-            warn!(target: LOG_TARGET_APP_LOGIC, "Could not clear {}'s pid file: {:?}", spec.name, error);
-        }
-
-        Ok((exit_code, stdout_lines, stderr_lines))
-    }
-
     async fn stop(&mut self) -> Result<i32, anyhow::Error> {
         self.shutdown.trigger();
         let handle = self.handle.take();
@@ -355,15 +298,6 @@ impl ProcessInstanceTrait for ProcessInstance {
 
     fn is_shutdown_triggered(&self) -> bool {
         self.shutdown.is_triggered()
-    }
-
-    async fn wait(&mut self) -> Result<i32, anyhow::Error> {
-        let handle = self.handle.take();
-
-        match handle {
-            Some(handle) => handle.await?,
-            None => Err(anyhow!("No process handle available")),
-        }
     }
 }
 
