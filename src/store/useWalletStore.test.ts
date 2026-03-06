@@ -90,19 +90,14 @@ describe('useWalletStore', () => {
 
     describe('balance state', () => {
         it('can set balance', () => {
-            const balance = {
+            const account_balance = {
                 total: 1000000,
                 available: 50000,
                 locked: 100,
                 unconfirmed: 10000,
             };
-            useWalletStore.setState({ balance });
-            expect(useWalletStore.getState().balance).toEqual(balance);
-        });
-
-        it('can set calculated_balance', () => {
-            useWalletStore.setState({ calculated_balance: 1500000 });
-            expect(useWalletStore.getState().calculated_balance).toBe(1500000);
+            useWalletStore.setState({ account_balance });
+            expect(useWalletStore.getState().account_balance).toEqual(account_balance);
         });
     });
 

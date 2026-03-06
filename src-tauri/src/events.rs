@@ -27,13 +27,11 @@ use crate::{
     setup::{listeners::AppModule, setup_manager::SetupPhase},
 };
 
-use minotari_wallet::db::AccountBalance;
 use serde::Serialize;
 use std::{
     collections::HashMap,
     hash::{Hash, Hasher},
 };
-use tari_transaction_components::MicroMinotari;
 
 #[derive(Clone, Debug, Serialize)]
 pub enum EventType {
@@ -199,12 +197,6 @@ pub struct TariAddressUpdatePayload {
     pub tari_address_base58: String,
     pub tari_address_emoji: String,
     pub tari_address_type: TariAddressType,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct WalletBalanceUpdatePayload {
-    pub account_balance: AccountBalance,
-    pub display_balance: Option<MicroMinotari>,
 }
 
 #[derive(Debug, Serialize, Clone)]

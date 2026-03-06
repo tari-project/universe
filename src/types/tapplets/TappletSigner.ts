@@ -1,6 +1,6 @@
 import { BackendBridgeTransaction, setError as setStoreError, useConfigUIStore, useWalletStore } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
-import { BaseNodeStatus, BridgeEnvs, WalletBalance } from '../app-status';
+import { AccountBalance, BaseNodeStatus, BridgeEnvs } from '../app-status';
 import { AccountData, BridgeTxDetails, SendOneSidedRequest, TappletSignerParams, WindowSize } from './tapplet.types';
 import {
     useTappletsStore,
@@ -95,13 +95,13 @@ export class TappletSigner {
         return status;
     }
     // TODO - check how minotari-cli updates affect bridge
-    public async getTariBalance(): Promise<WalletBalance> {
-        const walletBalance = useWalletStore.getState().balance;
+    public async getTariBalance(): Promise<AccountBalance> {
+        const accountBalance = useWalletStore.getState().account_balance;
         return {
-            available_balance: walletBalance?.available ?? 0,
-            timelocked_balance: walletBalance?.locked ?? 0,
-            pending_incoming_balance: walletBalance?.total_credits ?? 0,
-            pending_outgoing_balance: walletBalance?.total_debits ?? 0,
+            total: accountBalance?.total || 0,
+            available: accountBalance?.available || 0,
+            locked: accountBalance?.locked || 0,
+            unconfirmed: accountBalance?.unconfirmed || 0,
         };
     }
 
