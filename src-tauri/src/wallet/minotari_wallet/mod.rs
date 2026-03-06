@@ -206,24 +206,12 @@ impl MinotariWalletManager {
         Self::store_pending_transaction(&displayed_transaction).await;
 
         let current_balance = Self::get_latest_account_balance().await;
-        info!(target: LOG_TARGET, "Updated balance BEFORE: {:?}", current_balance);
-
-        let mut updated_balance = current_balance.clone().unwrap_or(EMPTY_BALANCE.clone());
-        let mut temp_total = MicroMinotari(0);
-        if let Some(balance) = current_balance {
-            temp_total = balance.total.saturating_sub(MicroMinotari(amount));
-            updated_balance = AccountBalance {
-                total: temp_total,
-                ..balance
-            }
-        }
-
-        updated_balance = AccountBalance {
-            total: temp_total,
-            ..updated_balance
+        let updated_balance = if let Some(mut balance) = current_balance {
+            balance.total = balance.total.saturating_sub(MicroMinotari(amount));
+            balance
+        } else {
+            EMPTY_BALANCE.clone()
         };
-
-        info!(target: LOG_TARGET, "Updated balance AFTER: {:?}", updated_balance);
 
         BalanceTracker::current()
             .update_from_transactions(Some(updated_balance))
@@ -524,7 +512,15 @@ impl MinotariWalletManager {
                 ProcessingEvent::ScanStatus(status) => {
                     Self::handle_status_event(status).await;
                 }
-                ProcessingEvent::BlockProcessed(_block_event) => {}
+                ProcessingEvent::BlockProcessed(block_event) => {
+                    if Self::is_syncing().await {
+                        return;
+                    }
+                    if !block_event.balance_changes.is_empty() {
+                        info!(target: LOG_TARGET, "Block {} processed with {} balance changes", block_event.height, block_event.balance_changes.len());
+                        info!(target: LOG_TARGET, "Changes: {:?}", block_event.balance_changes);
+                    }
+                }
                 ProcessingEvent::TransactionsReady(transactions_event) => {
                     let transaction_count = transactions_event.transactions.len();
 

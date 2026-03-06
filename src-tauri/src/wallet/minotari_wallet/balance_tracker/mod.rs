@@ -87,21 +87,22 @@ impl BalanceTracker {
         current.clone()
     }
 
-    /// Update balance based on a list of new transactions
-    /// This calculates the net change from transactions and applies it
+    /// Update balance from account after receiving new transactions
     pub async fn update_from_transactions(&self, updated_account_balance: Option<AccountBalance>) {
         let mut account_balance = self.account_balance.write().await;
+        let mut should_emit_balance = false;
         if let Some(updated_balance) = updated_account_balance {
+            should_emit_balance = updated_balance.total != account_balance.total;
             *account_balance = updated_balance;
         }
-
-        info!(
-            target: LOG_TARGET,
-            "Balance updated from DB state and transaction. Total: {}, Available: {}",
-            account_balance.total, account_balance.available
-        );
-
-        Self::emit_balance(account_balance.clone()).await;
+        if should_emit_balance {
+            info!(
+                target: LOG_TARGET,
+                "Balance updated from DB state and transaction. Total: {}, Available: {}",
+                account_balance.total, account_balance.available
+            );
+            Self::emit_balance(account_balance.clone()).await;
+        }
     }
 
     /// Emit balance update to frontend
