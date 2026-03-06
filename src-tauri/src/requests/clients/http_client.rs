@@ -22,6 +22,7 @@
 
 use anyhow::anyhow;
 
+use crate::binaries::binaries_resolver::BinaryDownloadError;
 use crate::requests::utils::create_user_agent;
 
 pub struct HttpClient {
@@ -76,7 +77,10 @@ impl HttpClient {
                 ));
             }
         };
-        head_response.map_err(|e| anyhow!("HEAD request failed with error: {}", e))
+        head_response.map_err(|e| {
+            BinaryDownloadError::NetworkError(format!("HEAD request failed with error: {}", e))
+                .into()
+        })
     }
 
     #[allow(dead_code)]
