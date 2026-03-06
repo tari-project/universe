@@ -884,7 +884,6 @@ impl EventsEmitter {
         }
     }
 
-    #[allow(dead_code)]
     pub async fn emit_wallet_transactions_cleared() {
         let _ = FrontendReadyChannel::current().wait_for_ready().await;
         if let Err(e) = Self::get_app_handle().await.emit(

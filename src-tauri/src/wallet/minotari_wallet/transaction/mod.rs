@@ -20,13 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// let one_sided_tx = OneSidedTransaction::new(pool.clone(), network, password.clone());
-// let result = one_sided_tx
-//     .create_unsigned_transaction(account, recipients, idempotency_key, seconds_to_lock)
-//     .await
-//     .map_err(|e| anyhow!("Failed to create unsigned transaction: {}", e))?;
-
 use anyhow::anyhow;
+use log::info;
 use minotari_wallet::{
     DisplayedTransaction,
     db::SqlitePool,
@@ -87,7 +82,7 @@ impl TransactionManager {
         app_handle: &AppHandle,
         unsigned_tx: PrepareOneSidedTransactionForSigningResult,
     ) -> Result<SignedOneSidedTransactionResult, anyhow::Error> {
-        println!("Signing one-sided transaction...");
+        info!("Signing one-sided transaction...");
         let key_manager = InternalWallet::get_key_manager(app_handle).await?;
         let network = Network::get_current_or_user_setting_or_default();
         let rules = ConsensusManager::builder(network).build();
@@ -107,7 +102,7 @@ impl TransactionManager {
         &mut self,
         signed_transaction: SignedOneSidedTransactionResult,
     ) -> Result<DisplayedTransaction, anyhow::Error> {
-        println!("Finalizing one-sided transaction...");
+        info!("Finalizing one-sided transaction...");
         let displayed_transaction = self
             .transaction_sender
             .finalize_transaction_and_broadcast(signed_transaction, DEFAULT_GRPC_URL.clone())

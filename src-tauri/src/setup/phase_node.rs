@@ -299,7 +299,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     let wallet_is_syncing = MinotariWalletManager::is_syncing().await;
 
                     let all_syncing_complete= !wallet_is_syncing && node_synced;
-                    let latest_needs_update = all_syncing_complete && latest_updated_block_height == 0 || node_status.block_height > latest_updated_block_height;
+                    let latest_needs_update = all_syncing_complete && (latest_updated_block_height == 0 || node_status.block_height > latest_updated_block_height);
 
                    if latest_needs_update {
                         latest_updated_block_height = node_status.block_height;

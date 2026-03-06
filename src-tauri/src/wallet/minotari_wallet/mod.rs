@@ -155,6 +155,11 @@ impl MinotariWalletManager {
         amount: u64,
         payment_id: Option<String>,
     ) -> Result<DisplayedTransaction, anyhow::Error> {
+        if amount == 0 {
+            return Err(anyhow::anyhow!(
+                "Transaction amount must be greater than zero"
+            ));
+        }
         info!(
             "Sending one-sided transaction to address: {}, amount: {}",
             address, amount
@@ -281,24 +286,24 @@ impl MinotariWalletManager {
 
     /// Get cached owner address or fetch if not cached
     async fn get_owner_address() -> String {
-        let owner_address_lock = INSTANCE.owner_tari_address.read().await;
+        // Fast path: read lock
+        {
+            let owner_address_lock = INSTANCE.owner_tari_address.read().await;
+            if let Some(address) = owner_address_lock.as_ref() {
+                return address.clone();
+            }
+        }
+
+        // Slow path: acquire write lock to check-and-init atomically
+        let mut owner_address_lock = INSTANCE.owner_tari_address.write().await;
+        // Double-check after acquiring write lock (another task may have initialized)
         if let Some(address) = owner_address_lock.as_ref() {
             return address.clone();
         }
-        drop(owner_address_lock);
 
-        // Not cached, initialize it
-        let _unused = Self::init_owner_address().await;
-        INSTANCE
-            .owner_tari_address
-            .read()
-            .await
-            .as_ref()
-            .cloned()
-            .unwrap_or_else(|| {
-                error!(target: LOG_TARGET, "Failed to get owner Tari address");
-                String::new()
-            })
+        let address = InternalWallet::tari_address().await.to_base58();
+        *owner_address_lock = Some(address.clone());
+        address
     }
 
     /// Acquire database connection with retry logic
@@ -485,18 +490,6 @@ impl MinotariWalletManager {
             });
 
         Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub async fn stop_scanning() {
-        if let Some(token) = INSTANCE.cancel_token.write().await.take() {
-            token.cancel();
-            // Reset initial sync state when scanning is stopped
-            INSTANCE
-                .initial_sync_complete
-                .store(false, Ordering::SeqCst);
-            info!(target: LOG_TARGET, "Blockchain scanning stopped.");
-        }
     }
 
     async fn process_scan_events(mut rx: tokio::sync::mpsc::UnboundedReceiver<ProcessingEvent>) {

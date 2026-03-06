@@ -134,16 +134,6 @@ impl MinotariWalletDatabaseManager {
                 }
             });
     }
-
-    #[allow(dead_code)]
-    pub async fn get_account_by_name(
-        &self,
-        friendly_name: &str,
-    ) -> Result<Option<minotari_wallet::db::AccountRow>, anyhow::Error> {
-        let conn = self.get_connection().await?;
-        let account = minotari_wallet::db::get_account_by_name(&conn, friendly_name)?;
-        Ok(account)
-    }
 }
 
 impl Default for MinotariWalletDatabaseManager {
