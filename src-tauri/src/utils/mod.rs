@@ -23,7 +23,6 @@
 pub mod address_utils;
 pub mod app_flow_utils;
 pub mod battery_status;
-pub mod commands_builder;
 pub mod cryptography;
 pub mod file_utils;
 pub mod formatting_utils;

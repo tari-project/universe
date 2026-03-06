@@ -8,7 +8,7 @@ import MinerCount from '@app/containers/main/Dashboard/components/BlockExplorerM
 import { Wrapper, StickyEntryWrapper, LoadingPlaceholder, InsideHolder } from './styles';
 
 export default function BlockExplorerMini() {
-    const { data: blockBubblesData, isLoading, isError } = useFetchExplorerData();
+    const { blockBubblesData, isLoading, isError } = useFetchExplorerData();
     const [stickyEntry, setStickyEntry] = useState<BlockBubbleData | null>(null);
     const [scrollList, setScrollList] = useState<BlockBubbleData[]>([]);
 

@@ -48,6 +48,7 @@ pub enum SetupStep {
     // Wallet Phase
     StartWallet,
     SetupBridge,
+    MinotariWallet,
 }
 
 impl SetupStep {
@@ -81,6 +82,7 @@ impl SetupStep {
             Self::BinariesWallet => "binaries-wallet".to_string(),
             Self::StartWallet => "start-wallet".to_string(),
             Self::SetupBridge => "setup-bridge".to_string(),
+            Self::MinotariWallet => "minotari-wallet".to_string(),
         }
     }
 
@@ -114,7 +116,8 @@ impl SetupStep {
             // Wallet Phase 20
             Self::BinariesWallet => 10,
             Self::StartWallet => 5,
-            Self::SetupBridge => 5,
+            Self::SetupBridge => 1,
+            Self::MinotariWallet => 4,
         }
     }
 }

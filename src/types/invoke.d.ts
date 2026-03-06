@@ -1,11 +1,4 @@
-import {
-    ApplicationsVersions,
-    TorConfig,
-    TransactionInfo,
-    BridgeEnvs,
-    TariAddressVariants,
-    BaseNodeStatus,
-} from './app-status';
+import { ApplicationsVersions, TorConfig, BridgeEnvs, TariAddressVariants, BaseNodeStatus } from './app-status';
 import { PaperWalletDetails } from './app-status.ts';
 import { displayMode } from '../store/types.ts';
 import { BasePoolData, ConfigBackendInMemory, PauseOnBatteryModeState } from './configs.ts';
