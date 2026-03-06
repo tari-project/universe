@@ -52,9 +52,6 @@ pub struct WalletStartupConfig {
 
 #[derive(thiserror::Error, Debug)]
 pub enum WalletManagerError {
-    #[error("Wallet not started")]
-    #[allow(dead_code)]
-    WalletNotStarted,
     #[error("Node manager error: {0}")]
     NodeManagerError(#[from] NodeManagerError),
     #[error("Wallet failed to start and was stopped with exit code: {}", .0)]

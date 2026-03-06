@@ -39,10 +39,13 @@ use tauri::AppHandle;
 
 use crate::{
     internal_wallet::InternalWallet,
-    wallet::minotari_wallet::{DEFAULT_GRPC_URL, DEFAULT_PASSWORD},
+    wallet::minotari_wallet::{DEFAULT_PASSWORD, get_grpc_url},
 };
 
 const CONFIRMATION_WINDOW: u64 = 3;
+/// Duration in seconds that UTXOs are locked after transaction creation.
+/// Set to 2 hours to allow recovery if broadcast fails, while preventing double-spend attempts.
+const UTXO_LOCK_DURATION_SECS: u64 = 7200;
 
 pub struct TransactionManager {
     transaction_sender: TransactionSender,
@@ -67,7 +70,7 @@ impl TransactionManager {
         recipient: Recipient,
     ) -> Result<PrepareOneSidedTransactionForSigningResult, anyhow::Error> {
         let idempotency_key = uuid::Uuid::new_v4().to_string();
-        let seconds_to_lock = 86400; // 24 hours
+        let seconds_to_lock = UTXO_LOCK_DURATION_SECS;
 
         let prepared_one_sided_transaction = self
             .transaction_sender
@@ -105,7 +108,7 @@ impl TransactionManager {
         info!("Finalizing one-sided transaction...");
         let displayed_transaction = self
             .transaction_sender
-            .finalize_transaction_and_broadcast(signed_transaction, DEFAULT_GRPC_URL.clone())
+            .finalize_transaction_and_broadcast(signed_transaction, get_grpc_url())
             .await?;
 
         Ok(displayed_transaction)

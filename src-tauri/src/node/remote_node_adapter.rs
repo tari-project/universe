@@ -224,5 +224,4 @@ impl ProcessInstanceTrait for NullProcessInstance {
     fn is_shutdown_triggered(&self) -> bool {
         self.shutdown.is_triggered()
     }
-
 }

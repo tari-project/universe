@@ -68,7 +68,7 @@ use tokio_util::sync::CancellationToken;
 
 static INSTANCE: LazyLock<MinotariWalletManager> = LazyLock::new(MinotariWalletManager::new);
 
-static DEFAULT_GRPC_URL: LazyLock<String> = LazyLock::new(|| {
+pub(crate) fn get_grpc_url() -> String {
     let network = Network::get_current_or_user_setting_or_default();
     let http_api_url = match network {
         Network::MainNet => "https://rpc.tari.com",
@@ -79,7 +79,7 @@ static DEFAULT_GRPC_URL: LazyLock<String> = LazyLock::new(|| {
         Network::Esmeralda => "https://rpc.esmeralda.tari.com",
     };
     http_api_url.to_string()
-});
+}
 static DEFAULT_PASSWORD: &str = "test_password";
 static REQUIRED_CONFIRMATIONS: u64 = 3;
 
@@ -171,8 +171,18 @@ impl MinotariWalletManager {
         )
         .await?;
 
+        let destination_address = TariAddress::from_base58(&address)?;
+        let expected_network = Network::get_current_or_user_setting_or_default();
+        if destination_address.network() != expected_network {
+            return Err(anyhow::anyhow!(
+                "Destination address is for network {:?}, but the wallet is on {:?}",
+                destination_address.network(),
+                expected_network
+            ));
+        }
+
         let recipient: Recipient = Recipient {
-            address: TariAddress::from_base58(&address)?,
+            address: destination_address,
             amount: amount.into(),
             payment_id,
         };
@@ -444,7 +454,7 @@ impl MinotariWalletManager {
         tokio::spawn(async move {
             let (event_rx, scan_future) = Scanner::new(
                 DEFAULT_PASSWORD,
-                DEFAULT_GRPC_URL.as_str(),
+                &get_grpc_url(),
                 database_path_buf,
                 SCAN_BATCH_SIZE,
                 REQUIRED_CONFIRMATIONS,

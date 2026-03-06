@@ -97,11 +97,6 @@ impl BalanceTracker {
         Self::emit_balance(EMPTY_BALANCE.clone(), None).await;
     }
 
-    /// Get current balance
-    async fn get_balance(&self) -> MicroMinotari {
-        *self.current_balance.read().await
-    }
-
     /// Get current account balance
     pub async fn get_account_balance(&self) -> AccountBalance {
         let current = self.account_balance.read().await;
@@ -123,26 +118,26 @@ impl BalanceTracker {
         let mut total_debit: MicroMinotari = MicroMinotari(0);
 
         for tx in transactions {
-            // Use details.total_credit and details.total_debit from DisplayedTransaction
             total_credit = total_credit.saturating_add(tx.details.total_credit);
             total_debit = total_debit.saturating_add(tx.details.total_debit);
         }
 
-        let current = self.get_balance().await;
+        // Acquire both locks atomically to prevent race conditions between concurrent updates
         let mut account_balance = self.account_balance.write().await;
+        let mut balance = self.current_balance.write().await;
+        let current = *balance;
 
         if let Some(updated_balance) = updated_account_balance {
-            *account_balance = updated_balance.clone();
-        } else {
-            *account_balance = self.get_account_balance().await;
+            *account_balance = updated_balance;
         }
+
         match BalanceCalculator::calculate_new_balance(current, total_credit, total_debit) {
             Ok(new_balance) => {
-                let mut display_balance = new_balance;
-                if account_balance.available > new_balance {
-                    display_balance = account_balance.available
-                }
-                let mut balance = self.current_balance.write().await;
+                let display_balance = if account_balance.available > new_balance {
+                    account_balance.available
+                } else {
+                    new_balance
+                };
                 *balance = display_balance;
 
                 info!(
