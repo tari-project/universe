@@ -50,6 +50,7 @@ pub(crate) struct ProcessWatcherStats {
     pub num_restarts: u64,
     pub max_health_check_duration: Duration,
     pub total_health_check_duration: Duration,
+    pub last_failure_reason: String,
 }
 
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
@@ -165,6 +166,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 num_restarts: 0,
                 max_health_check_duration: Duration::from_secs(0),
                 total_health_check_duration: Duration::from_secs(0),
+                last_failure_reason: String::new(),
             };
             // sleep(Duration::from_secs(10)).await;
             info!(target: LOG_TARGET_APP_LOGIC, "Starting process watcher for {name}");
@@ -279,12 +281,18 @@ pub(crate) async fn do_health_check<
         let mut app_shutdown2 = global_shutdown_signal.clone();
         let current_uptime = uptime.elapsed();
 
-        match select! {
+        let (current_status, reason) = match select! {
             r = status_monitor3.check_health(current_uptime, health_timeout) => r,
-            // Watch for shutdown signals
             _ = inner_shutdown2.wait() => HealthStatus::Healthy,
             _ = app_shutdown2.wait() => HealthStatus::Healthy
         } {
+            HealthStatus::WarningWithReason(r) => (HealthStatus::Warning, r),
+            HealthStatus::UnhealthyWithReason(r) => (HealthStatus::Unhealthy, r),
+            other => (other, String::new()),
+        };
+        stats.last_failure_reason = reason;
+
+        match current_status {
             HealthStatus::Healthy => {
                 *warning_count = 0;
                 is_healthy = true;
@@ -311,6 +319,7 @@ pub(crate) async fn do_health_check<
             HealthStatus::Unhealthy => {
                 warn!(target: LOG_TARGET_STATUSES, "{name} is not healthy. Health check returned false");
             }
+            _ => {}
         }
     } else {
         ping_failed = true;
@@ -326,61 +335,22 @@ pub(crate) async fn do_health_check<
         && !child.is_shutdown_triggered()
         && !global_shutdown_signal.is_triggered()
         && !inner_shutdown.is_triggered()
+        && let Some(exit_code) = handle_unhealthy_restart(
+            child,
+            status_monitor3,
+            &name,
+            uptime,
+            duration_since_last_healthy_status,
+            unhealthy_timer,
+            expected_startup_time,
+            ping_failed,
+            task_tracker,
+            stop_on_exit_codes,
+            stats,
+        )
+        .await?
     {
-        stats.num_failures += 1;
-        if uptime.elapsed() < expected_startup_time && !ping_failed {
-            warn!(target: LOG_TARGET_STATUSES, "{name} is not healthy. Waiting for startup time to elapse");
-        } else {
-            match child.stop().await {
-                Ok(exit_code) => {
-                    if exit_code != 0 {
-                        if stop_on_exit_codes.contains(&exit_code) {
-                            return Ok(Some(exit_code));
-                        }
-                        warn!(target: LOG_TARGET_STATUSES, "{name} exited with error code: {exit_code}, restarting because it is not a listed exit code to list for");
-
-                        // return Ok(exit_code);
-                    } else {
-                        info!(target: LOG_TARGET_STATUSES, "{name} exited successfully");
-                    }
-                }
-                Err(e) => {
-                    error!(target: LOG_TARGET_STATUSES, "{name} exited with error: {e}");
-                    //   return Err(e);
-                }
-            }
-
-            // Restart dead app
-            sleep(Duration::from_secs(1)).await;
-            warn!(target: LOG_TARGET_STATUSES, "Restarting {name} after health check failure");
-            *uptime = Instant::now();
-            stats.num_restarts += 1;
-            match status_monitor3
-                .handle_unhealthy(*duration_since_last_healthy_status)
-                .await
-            {
-                Ok(HandleUnhealthyResult::Continue) => {
-                    info!(target: LOG_TARGET_STATUSES, "Continuing after unhealthy state for {name}");
-                }
-                Ok(HandleUnhealthyResult::Stop) => {
-                    info!(target: LOG_TARGET_STATUSES, "Stopping watcher after unhealthy state for {name}");
-                    return Ok(Some(1));
-                }
-                Err(e) => {
-                    error!(target: LOG_TARGET_STATUSES, "Error handling unhealthy state for {name}: {e}");
-                }
-            }
-            child.start(task_tracker).await?;
-            // Wait for a bit before checking health again
-            // sleep(Duration::from_secs(10)).await;
-
-            // We are adding unhealthy_timer.elapsed() to the duration since last healthy status instead of health_timer.elapsed()
-            // because we get there by watcher tick and we want to measure the time since the last healthy status
-            // Time between line executions may be around 10 seconds
-            // health_timer.elapsed() is resolves to around 1 second
-            // unhealthy_timer.elapsed() resolves to around 10 seconds
-            *duration_since_last_healthy_status += unhealthy_timer.elapsed();
-        }
+        return Ok(Some(exit_code));
     }
 
     if is_healthy {
@@ -390,5 +360,76 @@ pub(crate) async fn do_health_check<
 
     stats.current_uptime = uptime.elapsed();
 
+    Ok(None)
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn handle_unhealthy_restart<
+    TStatusMonitor: StatusMonitor,
+    TProcessInstance: ProcessInstanceTrait,
+>(
+    child: &mut TProcessInstance,
+    status_monitor: TStatusMonitor,
+    name: &str,
+    uptime: &mut Instant,
+    duration_since_last_healthy_status: &mut Duration,
+    unhealthy_timer: Instant,
+    expected_startup_time: Duration,
+    ping_failed: bool,
+    task_tracker: TaskTracker,
+    stop_on_exit_codes: &[i32],
+    stats: &mut ProcessWatcherStats,
+) -> Result<Option<i32>, anyhow::Error> {
+    stats.num_failures += 1;
+    if uptime.elapsed() < expected_startup_time && !ping_failed {
+        warn!(target: LOG_TARGET_STATUSES, "{name} is not healthy. Waiting for startup time to elapse");
+    } else {
+        match child.stop().await {
+            Ok(exit_code) => {
+                if exit_code != 0 {
+                    if stop_on_exit_codes.contains(&exit_code) {
+                        return Ok(Some(exit_code));
+                    }
+                    warn!(target: LOG_TARGET_STATUSES, "{name} exited with error code: {exit_code}, restarting because it is not a listed exit code to list for");
+                } else {
+                    info!(target: LOG_TARGET_STATUSES, "{name} exited successfully");
+                }
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET_STATUSES, "{name} exited with error: {e}");
+            }
+        }
+
+        // Restart dead app
+        sleep(Duration::from_secs(1)).await;
+        warn!(target: LOG_TARGET_STATUSES, "Restarting {name} after health check failure");
+        *uptime = Instant::now();
+        stats.num_restarts += 1;
+        match status_monitor
+            .handle_unhealthy(*duration_since_last_healthy_status)
+            .await
+        {
+            Ok(HandleUnhealthyResult::Continue) => {
+                info!(target: LOG_TARGET_STATUSES, "Continuing after unhealthy state for {name}");
+            }
+            Ok(HandleUnhealthyResult::Stop) => {
+                info!(target: LOG_TARGET_STATUSES, "Stopping watcher after unhealthy state for {name}");
+                return Ok(Some(1));
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET_STATUSES, "Error handling unhealthy state for {name}: {e}");
+            }
+        }
+        child.start(task_tracker).await?;
+        // Wait for a bit before checking health again
+        // sleep(Duration::from_secs(10)).await;
+
+        // We are adding unhealthy_timer.elapsed() to the duration since last healthy status instead of health_timer.elapsed()
+        // because we get there by watcher tick and we want to measure the time since the last healthy status
+        // Time between line executions may be around 10 seconds
+        // health_timer.elapsed() is resolves to around 1 second
+        // unhealthy_timer.elapsed() resolves to around 10 seconds
+        *duration_since_last_healthy_status += unhealthy_timer.elapsed();
+    }
     Ok(None)
 }

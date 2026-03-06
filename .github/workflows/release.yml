@@ -328,6 +328,16 @@ jobs:
             # Build for both architectures on macOS universal
             cargo build --release --manifest-path process-wrapper/Cargo.toml --target aarch64-apple-darwin
             cargo build --release --manifest-path process-wrapper/Cargo.toml --target x86_64-apple-darwin
+            # Create universal binary via lipo
+            mkdir -p target/universal-apple-darwin/release
+            lipo -create \
+              target/aarch64-apple-darwin/release/process-wrapper \
+              target/x86_64-apple-darwin/release/process-wrapper \
+              -output target/universal-apple-darwin/release/process-wrapper
+            chmod +x target/universal-apple-darwin/release/process-wrapper
+            # Pre-place the binary for Tauri bundling (build.rs only runs per-arch, not for universal)
+            mkdir -p src-tauri/binaries
+            cp target/universal-apple-darwin/release/process-wrapper src-tauri/binaries/process-wrapper-universal-apple-darwin
           else
             cargo build --release --manifest-path process-wrapper/Cargo.toml
           fi
@@ -377,7 +387,7 @@ jobs:
           # https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
           curl -s --location --remote-name "https://aka.ms/vs/17/release/vc_redist.x64.exe"
           cd ../..
-          ls -la "src-tauri/target/release/bundle/msi"
+          ls -la "target/release/bundle/msi"
           ls -la "tari-win-bundler/executables"
           if [[ "$GITHUB_REF" == refs/heads/release ]]; then
             # release
@@ -410,8 +420,8 @@ jobs:
             -includepath tari-win-bundler/resources \
             -includepath tari-win-bundler/executables \
             -includepath wix \
-            -includepath src-tauri/target/release/bundle/msi
-          ls -la src-tauri/target/release/bundle/msi
+            -includepath target/release/bundle/msi
+          ls -la target/release/bundle/msi
           ls -la tari-win-bundler
           ls -la tari-win-bundler/executables
           mv -v ./tari-win-bundler/Bundle.exe "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe"
@@ -494,7 +504,7 @@ jobs:
 
       - name: BETA Builds bundled Windows installer upload
         if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_x64_en-US
           path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe
@@ -511,24 +521,24 @@ jobs:
 
       - name: BETA Builds - Upload assets
         if: ${{ ! startsWith(github.ref, 'refs/heads/release') && github.event_name != 'workflow_dispatch' }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
 
       - name: Ad-hoc Builds - Upload assets
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari-universe-adhoc_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
 
       - name: Windows debug symbols - Upload asset
         if: startsWith(runner.os,'Windows')
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari_universe.pdb
-          path: '${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb'
+          path: '${{ github.workspace }}/target/release/tari_universe.pdb'
 
       - name: Windows install Sentry CLI
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}
@@ -544,5 +554,5 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
         shell: bash
         run: |
-          sentry-cli debug-files check ./src-tauri/target/release/tari_universe.pdb
-          sentry-cli debug-files upload --org tari-labs --project tari-universe ./src-tauri/target/release/tari_universe.pdb
+          sentry-cli debug-files check ./target/release/tari_universe.pdb
+          sentry-cli debug-files upload --org tari-labs --project tari-universe ./target/release/tari_universe.pdb

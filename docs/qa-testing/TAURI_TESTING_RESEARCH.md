@@ -118,7 +118,7 @@ export const config = {
     capabilities: [
         {
             'tauri:options': {
-                application: '../src-tauri/target/debug/tari-universe',
+                application: '../target/debug/tari-universe',
             },
         },
     ],
