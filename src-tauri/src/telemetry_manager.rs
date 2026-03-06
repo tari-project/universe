@@ -741,6 +741,12 @@ fn add_process_stats(
             .as_secs()
             .to_string(),
     );
+    if !process_stats.last_failure_reason.is_empty() {
+        extra_data.insert(
+            format!("{process}_last_failure_reason"),
+            process_stats.last_failure_reason,
+        );
+    }
 }
 
 async fn handle_data(
