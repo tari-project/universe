@@ -260,7 +260,7 @@ impl CpuManager {
                 )
                 .await?;
 
-            if self.connection_type.is_pool() {
+            if *ConfigPools::content().await.cpu_pool_enabled() {
                 CpuPoolManager::start_stats_watcher().await;
             }
 
