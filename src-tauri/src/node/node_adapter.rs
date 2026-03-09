@@ -60,6 +60,8 @@ use crate::network_utils::{
     NetworkExt, get_best_block_from_block_scan, get_block_info_from_block_scan,
 };
 
+const STALLED_BLOCK_TIMEOUT_SECS: u64 = 15 * 60;
+
 #[async_trait]
 pub trait NodeAdapter {
     fn get_grpc_address(&self) -> Option<(String, u16)>;
@@ -487,7 +489,7 @@ impl StatusMonitor for NodeStatusMonitor {
                             self.node_type,
                             status.clone()
                         );
-                        return HealthStatus::Warning;
+                        return HealthStatus::WarningWithReason("No peers connected".to_string());
                     }
 
                     if self
@@ -496,15 +498,23 @@ impl StatusMonitor for NodeStatusMonitor {
                         == status.block_time
                     {
                         if !self.node_service.is_solo_network()
-                            && uptime.as_secs() > 3600
+                            && uptime.as_secs() > STALLED_BLOCK_TIMEOUT_SECS
                             && EpochTime::now()
                                 .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
                                 .unwrap_or(EpochTime::from(0))
                                 .as_u64()
-                                > 3600
+                                > STALLED_BLOCK_TIMEOUT_SECS
                         {
-                            warn!(target: LOG_TARGET_STATUSES, "Base node height has not changed in an hour");
-                            return HealthStatus::Unhealthy;
+                            warn!(target: LOG_TARGET_STATUSES, "Base node height has not changed in 15 minutes");
+
+                            let mut stalled_status = status;
+                            stalled_status.is_synced = false;
+                            stalled_status.readiness_status = ReadinessStatus::NOT_READY;
+                            let _ = self.status_broadcast.send(stalled_status);
+
+                            return HealthStatus::UnhealthyWithReason(
+                                "Block time stalled for 15 minutes".to_string(),
+                            );
                         }
                     } else {
                         self.last_block_time
@@ -517,7 +527,7 @@ impl StatusMonitor for NodeStatusMonitor {
                         "{:?} Node Health Check Error: checking base node status: {:?}",
                         self.node_type, e
                     );
-                    HealthStatus::Unhealthy
+                    HealthStatus::UnhealthyWithReason(format!("get_network_state failed: {}", e))
                 }
             },
             Err(e) => {
@@ -525,17 +535,28 @@ impl StatusMonitor for NodeStatusMonitor {
                     "{:?} Node Health Check (get_network_state) error: {:?}",
                     self.node_type, e
                 );
+
+                let mut stale_status = *self.status_broadcast.borrow();
+                stale_status.is_synced = false;
+                stale_status.readiness_status = ReadinessStatus::NOT_READY;
+                let _ = self.status_broadcast.send(stale_status);
+
                 match self.node_service.get_identity().await {
                     Ok(identity) => {
                         info!(target: LOG_TARGET_STATUSES, "{:?} Node checking base node identity success: {:?}", self.node_type, identity);
-                        return HealthStatus::Warning;
+                        return HealthStatus::WarningWithReason(
+                            "get_network_state timed out, but identity succeeded".to_string(),
+                        );
                     }
                     Err(e) => {
                         warn!(
                             "{:?} Node Health Check Error: checking base node identity: {:?}",
                             self.node_type, e
                         );
-                        return HealthStatus::Unhealthy;
+                        return HealthStatus::UnhealthyWithReason(format!(
+                            "Both network state and identity timed out: {}",
+                            e
+                        ));
                     }
                 }
             }
