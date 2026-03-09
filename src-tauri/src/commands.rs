@@ -45,6 +45,7 @@ use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
+use crate::network_utils::NetworkExt;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
 use crate::pin::PinManager;
@@ -1640,6 +1641,12 @@ pub async fn set_node_type(
         node_type = NodeType::Local;
     }
 
+    let network = Network::get_current_or_user_setting_or_default();
+    if network.is_solo_network() && node_type != NodeType::Local {
+        info!(target: LOG_TARGET_APP_LOGIC, "[set_node_type] Forcing Local node type for {network} network");
+        node_type = NodeType::Local;
+    }
+
     let prev_node_type = state.node_manager.get_node_type().await;
     info!(target: LOG_TARGET_APP_LOGIC, "[set_node_type] from {prev_node_type:?} to: {node_type:?}");
 
@@ -2021,6 +2028,27 @@ pub async fn get_base_node_status(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<BaseNodeStatus, String> {
     Ok(*state.node_status_watch_rx.borrow())
+}
+
+#[tauri::command]
+pub async fn get_local_block_stats(
+    state: tauri::State<'_, UniverseAppState>,
+    limit: u64,
+) -> Result<Vec<crate::node::node_adapter::LocalBlockStats>, String> {
+    let network = Network::get_current_or_user_setting_or_default();
+    if !network.is_solo_network() {
+        return Err("get_local_block_stats is only available on solo networks".to_string());
+    }
+
+    let node_service = state
+        .node_manager
+        .get_current_service()
+        .await
+        .map_err(|e| e.to_string())?;
+    node_service
+        .get_recent_block_stats(limit)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

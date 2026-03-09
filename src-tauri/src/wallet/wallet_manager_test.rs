@@ -31,9 +31,10 @@ fn calculate_scan_progress(scanned_height: u64, target_height: u64) -> f64 {
     }
 }
 
+// The wallet gRPC bitflag filter uses CORE status numbering, not proto.
+// Core: CoinbaseUnconfirmed=11, CoinbaseConfirmed=12, CoinbaseNotInBlockChain=13
 fn coinbase_statuses_bitflag() -> u32 {
-    (1 << TransactionStatus::CoinbaseConfirmed as u32)
-        | (1 << TransactionStatus::CoinbaseUnconfirmed as u32)
+    (1 << 11) | (1 << 12) | (1 << 13)
 }
 
 fn find_transaction_by_block_height(
@@ -93,11 +94,10 @@ fn test_calculate_scan_progress_edge_cases() {
 fn test_coinbase_statuses_bitflag() {
     let bitflag = coinbase_statuses_bitflag();
 
-    let coinbase_confirmed_bit = 1 << (TransactionStatus::CoinbaseConfirmed as u32);
-    let coinbase_unconfirmed_bit = 1 << (TransactionStatus::CoinbaseUnconfirmed as u32);
-
-    assert!(bitflag & coinbase_confirmed_bit != 0);
-    assert!(bitflag & coinbase_unconfirmed_bit != 0);
+    // Core status values: CoinbaseUnconfirmed=11, CoinbaseConfirmed=12, CoinbaseNotInBlockChain=13
+    assert!(bitflag & (1 << 11) != 0);
+    assert!(bitflag & (1 << 12) != 0);
+    assert!(bitflag & (1 << 13) != 0);
 
     let other_status_bit = 1 << (TransactionStatus::Completed as u32);
     assert!(bitflag & other_status_bit == 0);

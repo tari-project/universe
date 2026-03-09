@@ -142,7 +142,7 @@ impl BinaryManager {
             Network::Esmeralda => "esme",
             Network::StageNet => "nextnet",
             Network::MainNet => "mainnet",
-            Network::LocalNet => "testnet",
+            Network::LocalNet => "esme",
             Network::Igor => "testnet",
         };
 

@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::events_emitter::EventsEmitter;
+use crate::network_utils::NetworkExt;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec};
 use crate::process_adapter_utils::setup_working_directory;
@@ -232,10 +233,14 @@ impl WalletAdapter {
                             EventsEmitter::emit_wallet_status_updated(false, None).await;
                             return Ok(state);
                         }
-                        // Case 2: Wallet is at height 0 but is connected - likely means scan finished already
-                        if state.scanned_height == 0
+                        // Case 2: Wallet is at height 0 but is connected - likely means scan finished already.
+                        // Skip this heuristic on solo/local networks where scanned_height=0
+                        // genuinely means the scan hasn't started yet (wallet connects immediately
+                        // to the local node before scanning begins).
+                        if !Network::get_current_or_user_setting_or_default().is_solo_network()
+                            && state.scanned_height == 0
                             && let Some(network) = &state.network
-                                && matches!(network.status, ConnectivityStatus::Online(3..)) {
+                                && matches!(network.status, ConnectivityStatus::Online(n) if n >= 3) {
                                     zero_scanned_height_count += 1;
                                     if zero_scanned_height_count >= 5 {
                                         warn!(target: LOG_TARGET_STATUSES, "Wallet scanned before gRPC service started");
@@ -371,6 +376,7 @@ impl ProcessAdapter for WalletAdapter {
                         key = network.as_key_str(),
                     ));
                 }
+                Network::LocalNet => {}
                 _ => {
                     args.push(format!(
                         "{key}.p2p.seeds.dns_seeds=seeds.{key}.tari.com",
@@ -392,6 +398,7 @@ impl ProcessAdapter for WalletAdapter {
                         key = network.as_key_str(),
                     ));
                 }
+                Network::LocalNet => {}
                 _ => {
                     args.push(format!(
                         "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",

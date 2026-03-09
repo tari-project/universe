@@ -27,7 +27,7 @@ jobs:
           node-version: lts/*
       - name: Install Node.js dependencies
         run: npm ci
-      - name: check lint/prettier errors
+      - name: Check lint/prettier errors
         run: npm run lint
-      - name: check taplo
+      - name: Check taplo
         run: npm run lint:taplo
