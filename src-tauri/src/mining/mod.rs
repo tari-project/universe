@@ -77,11 +77,6 @@ impl Default for GpuConnectionType {
     }
 }
 
-impl GpuConnectionType {
-    pub fn is_pool(&self) -> bool {
-        matches!(self, GpuConnectionType::Pool { .. })
-    }
-}
 #[derive(Clone, Serialize, PartialEq, Eq, Deserialize, Debug)]
 pub enum CpuConnectionType {
     LocalMMProxy {
@@ -99,11 +94,5 @@ impl Default for CpuConnectionType {
             pool_url: String::new(),
             worker_name: None,
         }
-    }
-}
-
-impl CpuConnectionType {
-    pub fn is_pool(&self) -> bool {
-        matches!(self, CpuConnectionType::Pool { .. })
     }
 }

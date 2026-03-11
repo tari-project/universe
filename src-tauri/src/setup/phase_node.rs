@@ -291,6 +291,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 EventsEmitter::emit_base_node_update(init_node_status).await;
                 let mut latest_updated_block_height = init_node_status.block_height;
 
+
                 loop {
                     tokio::select! {
                 _ = node_status_watch_rx.changed() => {

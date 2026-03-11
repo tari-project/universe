@@ -20,14 +20,14 @@ permissions: {}
 
 jobs:
   changelog-sync:
-    name: changelog sync
+    name: Changelog sync
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v6
 
-      - name: sync assets to S3
+      - name: Sync assets to S3
         continue-on-error: true
         if: ${{ env.AWS_SECRET_ACCESS_KEY != '' && runner.name != 'self-hosted' }}
         env:
@@ -51,7 +51,7 @@ jobs:
                 CHANGELOG.md \
                 s3://${{ env.BASE_URL }}/
 
-      - name: cache invalidation
+      - name: Cache invalidation
         continue-on-error: true
         if: ${{ env.CF_AUTHORIZATION_BEARER != '' && runner.name != 'self-hosted' }}
         env:

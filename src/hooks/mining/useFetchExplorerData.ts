@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { defaultHeaders } from '@app/utils';
-import { getExplorerUrl } from '@app/utils/network.ts';
-import { BlockStats, BlockBubbleData } from '@app/types/mining/blocks.ts';
+import { getExplorerUrl, isLocalNet } from '@app/utils/network.ts';
+import { BlockStats, BlockBubbleData, localBlockStatsToBlockStats } from '@app/types/mining/blocks.ts';
 import { processNewBlock, useBlockchainVisualisationStore, useConfigUIStore, useMiningStore } from '@app/store';
+import { invoke } from '@tauri-apps/api/core';
 
 import { getIsMining } from '@app/store/selectors/miningStoreSelectors.ts';
 import { useEffect, useRef } from 'react';
@@ -12,6 +13,10 @@ export const KEY_EXPLORER = 'block_explorer';
 export const KEY_STATS = 'block_stats';
 
 async function fetchExplorerData({ limit }: { limit?: number }): Promise<BlockStats[]> {
+    if (isLocalNet()) {
+        const localStats = await invoke('get_local_block_stats', { limit: limit ?? LIMIT });
+        return localStats.map(localBlockStatsToBlockStats);
+    }
     const explorerUrl = getExplorerUrl();
     const response = await fetch(`${explorerUrl}/blocks/stats?limit=${limit}`, { headers: defaultHeaders });
 

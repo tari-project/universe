@@ -402,7 +402,7 @@ impl GpuManager {
 
                 info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner process watcher");
 
-                if self.connection_type.is_pool() {
+                if *ConfigPools::content().await.gpu_pool_enabled() {
                     GpuPoolManager::start_stats_watcher().await;
                     info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner pool watcher");
                 }

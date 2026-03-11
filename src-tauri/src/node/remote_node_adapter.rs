@@ -76,9 +76,11 @@ impl RemoteNodeAdapter {
             } else {
                 format!("http://{}:{}", grpc_address.0, grpc_address.1)
             };
+            let network = Network::get_current_or_user_setting_or_default();
             Some(NodeAdapterService::new(
                 address,
                 self.get_http_api_url(),
+                network,
                 1,
                 consensus_manager,
             ))
@@ -128,7 +130,7 @@ impl NodeAdapter for RemoteNodeAdapter {
             Network::MainNet => "https://rpc.tari.com",
             Network::StageNet => "https://rpc.stagenet.tari.com",
             Network::NextNet => "https://rpc.nextnet.tari.com",
-            Network::LocalNet => "https://rpc.localnet.tari.com",
+            Network::LocalNet => "http://127.0.0.1:18142",
             Network::Igor => "https://rpc.igor.tari.com",
             Network::Esmeralda => "https://rpc.esmeralda.tari.com",
         };
@@ -184,6 +186,7 @@ impl ProcessAdapter for RemoteNodeAdapter {
                 NodeAdapterService::new(
                     address,
                     self.get_http_api_url(),
+                    Network::get_current_or_user_setting_or_default(),
                     1,
                     self.consensus_manager.clone(),
                 ),

@@ -42,6 +42,8 @@ use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
+use crate::network_utils::NetworkExt;
+use crate::node::node_manager::NodeType;
 use crate::progress_trackers::progress_plans::SetupStep;
 use crate::setup::utils::pre_setup::{check_data_import, clear_data};
 use crate::setup::{
@@ -72,6 +74,7 @@ use std::{
     sync::LazyLock,
     time::Duration,
 };
+use tari_common::configuration::Network;
 use tauri::{AppHandle, Listener, Manager};
 use tokio::{
     select,
@@ -337,7 +340,12 @@ impl SetupManager {
 
         BatteryStatus::start_battery_listener().await;
 
-        let node_type = ConfigCore::content().await.node_type().clone();
+        let mut node_type = ConfigCore::content().await.node_type().clone();
+        let network = Network::get_current_or_user_setting_or_default();
+        if network.is_solo_network() && node_type != NodeType::Local {
+            info!(target: LOG_TARGET_APP_LOGIC, "Overriding node type to Local for {network} network");
+            node_type = NodeType::Local;
+        }
         info!(target: LOG_TARGET_APP_LOGIC, "Retrieved initial node type: {node_type:?}");
         state.node_manager.set_node_type(node_type).await;
         EventsManager::handle_node_type_update(&app_handle).await;
@@ -359,6 +367,13 @@ impl SetupManager {
         if !*config_minig.is_lolminer_tested() {
             let _unused =
                 ConfigMining::update_field(ConfigMiningContent::set_is_lolminer_tested, true).await;
+        }
+
+        // On solo networks, force pool mining off
+        if network.is_solo_network() {
+            info!(target: LOG_TARGET_APP_LOGIC, "Disabling pool mining for solo network ({network})");
+            drop(ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, false).await);
+            drop(ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, false).await);
         }
 
         EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
@@ -525,8 +540,15 @@ impl SetupManager {
         let exchange_id = ConfigCore::content().await.exchange_id().clone();
         let is_exchange_miner_build = exchange_id.ne(DEFAULT_EXCHANGE_ID);
 
-        let is_cpu_pool_enabled = *ConfigPools::content().await.cpu_pool_enabled();
-        let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
+        let network = Network::get_current_or_user_setting_or_default();
+        let is_cpu_pool_enabled =
+            *ConfigPools::content().await.cpu_pool_enabled() && !network.is_solo_network();
+        let is_gpu_pool_enabled =
+            *ConfigPools::content().await.gpu_pool_enabled() && !network.is_solo_network();
+
+        if network.is_solo_network() {
+            info!(target: LOG_TARGET_APP_LOGIC, "Pool mining disabled for solo network ({network})");
+        }
 
         if is_cpu_pool_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Cpu Pool feature enabled");

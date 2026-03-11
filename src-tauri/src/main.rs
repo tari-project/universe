@@ -283,7 +283,7 @@ fn main() {
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         cpu_miner_status_watch_rx.clone(),
         app_in_memory_config.clone(),
-        Some(Network::default()),
+        Some(Network::get_current()),
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
         tor_watch_rx.clone(),
@@ -339,7 +339,7 @@ fn main() {
         deprecated,
         reason = "This is a temporary fix until the new tauri API is released"
     )]
-    let app = tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
@@ -366,7 +366,8 @@ fn main() {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
-        .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_http::init());
+    let app = builder
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
@@ -473,6 +474,7 @@ fn main() {
             commands::parse_tari_address,
             commands::refresh_wallet_history,
             commands::get_base_node_status,
+            commands::get_local_block_stats,
             commands::create_pin,
             commands::forgot_pin,
             commands::set_seed_backed_up,
@@ -498,7 +500,6 @@ fn main() {
             commands::update_shutdown_mode_selection,
             commands::set_pause_on_battery_mode,
             commands::set_custom_node_directory,
-            // Scheduler commands
             commands::add_scheduler_event,
             commands::remove_scheduler_event,
             commands::pause_scheduler_event,
