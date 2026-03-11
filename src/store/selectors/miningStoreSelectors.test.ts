@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getSelectedMiner } from './minningStoreSelectors';
+import { getSelectedMiner } from './miningStoreSelectors';
 import { MiningStoreState } from '../useMiningStore';
 import { GpuMiner, GpuMinerType, GpuMinerFeature, GpuMiningAlgorithm } from '@app/types/events-payloads';
 
@@ -10,7 +10,7 @@ const createMockMiner = (minerType: GpuMinerType): GpuMiner => ({
     is_healthy: true,
 });
 
-describe('minningStoreSelectors', () => {
+describe('miningStoreSelectors', () => {
     describe('getSelectedMiner', () => {
         it('returns undefined when selectedMiner is not set', () => {
             const state: Partial<MiningStoreState> = {

@@ -34,7 +34,7 @@ export const TooltipTitle = styled.div`
 `;
 
 export const TooltipDescription = styled.div`
-    color: ${({ theme }) => theme.palette.text.secondary};
+    color: ${({ theme }) => theme.palette.text.accent};
     font-family: Poppins, sans-serif;
     font-size: 12px;
     font-style: normal;

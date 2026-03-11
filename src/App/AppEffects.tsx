@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import setupLogger from '../utils/shared-logger';
 
@@ -19,7 +19,11 @@ import useMiningTime from '@app/hooks/app/useMiningTime.ts';
 setupLogger();
 
 export default function AppEffects() {
+    const initializationRef = useRef(false);
+
     useEffect(() => {
+        if (initializationRef.current) return;
+        initializationRef.current = true;
         async function initialize() {
             await fetchBackendInMemoryConfig();
             await getMiningNetwork();
