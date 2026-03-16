@@ -48,6 +48,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tari_common::configuration::Network;
 use tari_transaction_components::consensus::ConsensusManager;
+#[cfg(feature = "test-mode")]
+use tauri::Listener;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
@@ -367,6 +369,8 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_http::init());
+    #[cfg(feature = "test-mode")]
+    let builder = builder.plugin(tauri_remote_ui::init());
     let app = builder
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -534,6 +538,15 @@ fn main() {
         app.package_info().version
     );
 
+    let is_headless = {
+        use tauri_plugin_cli::CliExt;
+        app.cli().matches().as_ref().is_ok_and(|m| {
+            m.args
+                .get("headless")
+                .is_some_and(|arg| arg.occurrences > 0)
+        })
+    };
+
     let power_monitor = SystemStatus::current().start_listener();
 
     let is_restart_requested = Arc::new(AtomicBool::new(false));
@@ -559,20 +572,81 @@ fn main() {
                     warn!(target: LOG_TARGET_APP_LOGIC, "Failed to initialize process wrapper sidecar: {}. Processes will spawn without orphan protection.", e);
                 }
 
-                block_on(state.updates_manager.initial_try_update(&handle_clone));
+                #[cfg(feature = "test-mode")]
+                if is_headless {
+                    keyring::set_default_credential_builder(
+                        keyring::mock::default_credential_builder(),
+                    );
+                    info!(target: LOG_TARGET_APP_LOGIC, "Headless: using mock credential store (no OS keychain)");
+                }
 
-                tauri::async_runtime::spawn(async move {
-                    SetupManager::get_instance()
-                        .start_setup(handle_clone.clone())
-                        .await;
-                    SetupManager::spawn_sleep_mode_handler().await;
-                });
+                if is_headless {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Headless mode: starting backend with remote-ui");
+                    tauri::async_runtime::spawn(async move {
+                        EventsEmitter::load_app_handle(handle_clone.clone()).await;
+                        #[cfg(feature = "test-mode")]
+                        {
+                            use tauri_remote_ui::RemoteUiExt;
+                            let mut config = tauri_remote_ui::RemoteUiConfig::default()
+                                .set_port(Some(9515))
+                                .enable_application_ui();
+                            if std::env::var("REMOTE_UI_BIND_ALL").as_deref() == Ok("1") {
+                                info!(target: LOG_TARGET_APP_LOGIC, "REMOTE_UI_BIND_ALL set: binding remote-ui to 0.0.0.0");
+                                config = config
+                                    .set_allowed_origin(tauri_remote_ui::OriginType::Any);
+                            }
+                            if let Err(e) = handle_clone.start_remote_ui(config).await {
+                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to start remote UI: {e:?}");
+                            } else {
+                                info!(target: LOG_TARGET_APP_LOGIC, "Remote UI available at http://localhost:9515");
+                                let forward_handle = handle_clone.clone();
+                                handle_clone.listen("backend_state_update", move |event| {
+                                    let handle = forward_handle.clone();
+                                    let payload_str = event.payload().to_string();
+                                    tauri::async_runtime::spawn(async move {
+                                        let remote_ui_state = handle
+                                            .state::<Arc<RwLock<tauri_remote_ui::RemoteUi>>>();
+                                        let remote_ui = remote_ui_state.read().await;
+                                        if let Ok(value) =
+                                            serde_json::from_str::<serde_json::Value>(&payload_str)
+                                        {
+                                            remote_ui.emit("backend_state_update", value).ok();
+                                        }
+                                    });
+                                });
+                            }
+                        }
+                        utils::app_flow_utils::FrontendReadyChannel::current().set_ready();
+                        info!(target: LOG_TARGET_APP_LOGIC, "Headless: frontend ready channel set (after remote-ui)");
+                        SetupManager::get_instance()
+                            .start_setup(handle_clone.clone())
+                            .await;
+                        SetupManager::spawn_sleep_mode_handler().await;
+                    });
+                } else {
+                    block_on(state.updates_manager.initial_try_update(&handle_clone));
+
+                    tauri::async_runtime::spawn(async move {
+                        SetupManager::get_instance()
+                            .start_setup(handle_clone.clone())
+                            .await;
+                        SetupManager::spawn_sleep_mode_handler().await;
+                    });
+                }
             }
-            tauri::RunEvent::ExitRequested { api: _, code, .. } => {
+            tauri::RunEvent::ExitRequested { api, code, .. } => {
                 info!(
                     target: LOG_TARGET_APP_LOGIC,
                     "App shutdown request [ExitRequested] caught with code: {code:#?}"
                 );
+
+                // In headless mode there are no windows, so Tauri fires ExitRequested
+                // immediately. Prevent exit so the backend keeps running for tests.
+                if is_headless && code.is_none() {
+                    api.prevent_exit();
+                    return;
+                }
+
                 if let Some(exit_code) = code
                     && exit_code == RESTART_EXIT_CODE {
                         // RunEvent does not hold the exit code so we store it separately
