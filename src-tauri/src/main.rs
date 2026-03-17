@@ -92,6 +92,8 @@ mod events;
 mod events_emitter;
 mod events_manager;
 mod feedback;
+#[cfg(feature = "test-mode")]
+mod file_credential_store;
 mod hardware;
 mod internal_wallet;
 #[cfg(test)]
@@ -574,10 +576,16 @@ fn main() {
 
                 #[cfg(feature = "test-mode")]
                 if is_headless {
+                    let credential_dir = handle_clone
+                        .path()
+                        .app_config_dir()
+                        .expect("Could not get app config dir")
+                        .join("credentials");
+                    file_credential_store::set_store_dir(credential_dir.clone());
                     keyring::set_default_credential_builder(
-                        keyring::mock::default_credential_builder(),
+                        file_credential_store::default_credential_builder(),
                     );
-                    info!(target: LOG_TARGET_APP_LOGIC, "Headless: using mock credential store (no OS keychain)");
+                    info!(target: LOG_TARGET_APP_LOGIC, "Headless: using file-backed credential store at {:?}", credential_dir);
                 }
 
                 if is_headless {

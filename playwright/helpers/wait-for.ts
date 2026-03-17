@@ -35,10 +35,18 @@ export async function clickStartMining(page: Page) {
   const start = page.locator(sel.mining.startButton);
   const resume = page.locator(sel.mining.resumeButton);
   const btn = start.or(resume);
-  // Use dispatchEvent to trigger React's synthetic event system
-  // force:true + Playwright click can miss the React handler when
-  // framer-motion AnimatePresence wraps the button
-  await btn.dispatchEvent('click');
+
+  // Retry click — framer-motion animations can cause the first attempt to
+  // miss if the element is mid-opacity transition
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await page.waitForTimeout(1_000);
+      await btn.click({ timeout: 10_000 });
+      return;
+    } catch {
+      if (attempt === 2) throw new Error('Failed to click start/resume mining button after 3 attempts');
+    }
+  }
 }
 
 /**

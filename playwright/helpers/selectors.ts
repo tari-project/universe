@@ -1,4 +1,13 @@
 export const sel = {
+  settings: {
+    open: '[data-testid="settings-open"]',
+    tab: (name: string) => `[data-testid="settings-tab-${name}"]`,
+    walletTab: '[data-testid="settings-tab-wallet"]',
+    tariAddress: '[data-testid="wallet-tari-address"]',
+    seedWordsDisplay: '[data-testid="wallet-seed-words"]',
+    seedToggle: '[data-testid="wallet-seed-toggle"]',
+  },
+
   mining: {
     startButton: '[data-testid="mining-button-start"]',
     resumeButton: '[data-testid="mining-button-resume"]',
