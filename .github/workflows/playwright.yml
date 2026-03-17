@@ -68,6 +68,9 @@ jobs:
         run: cargo install tauri-cli
         working-directory: ./src-tauri
 
+      - name: Build process-wrapper
+        run: cargo build --manifest-path process-wrapper/Cargo.toml
+
       - name: Create dist dir
         run: mkdir -p dist
 
