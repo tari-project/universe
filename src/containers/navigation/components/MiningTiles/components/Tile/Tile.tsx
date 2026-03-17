@@ -153,7 +153,7 @@ export default function Tile({
             {...getReferenceProps?.()}
             onClick={handleClick}
             $isModuleFailed={isModuleFailed}
-            data-testid={`mining-tile-${title}`}
+            data-testid={`mining-tile-${title.toLowerCase()}`}
         >
             <Inside $isSyncing={syncing || isLoading}>
                 <HeadingRow>

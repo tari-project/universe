@@ -236,9 +236,16 @@ impl WebsocketManager {
             }
         });
 
-        info!(target:LOG_TARGET_APP_LOGIC,"waiting for websocket startup");
-        match tokio::time::timeout(Duration::from_secs(15), status_update_channel_rx.changed())
-            .await
+        let ws_timeout_secs: u64 = std::env::var("WS_CONNECT_TIMEOUT_SECS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(15);
+        info!(target:LOG_TARGET_APP_LOGIC,"waiting for websocket startup (timeout={}s)", ws_timeout_secs);
+        match tokio::time::timeout(
+            Duration::from_secs(ws_timeout_secs),
+            status_update_channel_rx.changed(),
+        )
+        .await
         {
             Ok(Ok(())) => {
                 let value = status_update_channel_rx.borrow().clone();
@@ -253,8 +260,10 @@ impl WebsocketManager {
             }
             Ok(Err(e)) => Err(anyhow::anyhow!("Websocket status channel closed: {e}")),
             Err(_) => {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Websocket initial connection timed out after 15s, continuing with background retries");
-                Err(anyhow::anyhow!("Websocket initial connection timed out"))
+                warn!(target: LOG_TARGET_APP_LOGIC, "Websocket initial connection timed out after {ws_timeout_secs}s, continuing with background retries");
+                Err(anyhow::anyhow!(
+                    "Websocket initial connection timed out after {ws_timeout_secs}s"
+                ))
             }
         }
     }

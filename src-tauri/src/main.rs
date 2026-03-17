@@ -23,6 +23,11 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+// test-mode must never be enabled in release builds — it exposes a remote-UI
+// WebSocket and a file-backed credential store that bypass normal security.
+#[cfg(all(feature = "test-mode", not(debug_assertions)))]
+compile_error!("test-mode feature must not be enabled in release builds");
+
 use app_in_memory_config::AppInMemoryConfig;
 use events_emitter::EventsEmitter;
 use log::{error, info, warn};
@@ -48,8 +53,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tari_common::configuration::Network;
 use tari_transaction_components::consensus::ConsensusManager;
-#[cfg(feature = "test-mode")]
-use tauri::Listener;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
@@ -95,6 +98,8 @@ mod feedback;
 #[cfg(feature = "test-mode")]
 mod file_credential_store;
 mod hardware;
+#[cfg(feature = "test-mode")]
+mod headless;
 mod internal_wallet;
 #[cfg(test)]
 mod internal_wallet_test;
@@ -541,12 +546,17 @@ fn main() {
     );
 
     let is_headless = {
-        use tauri_plugin_cli::CliExt;
-        app.cli().matches().as_ref().is_ok_and(|m| {
-            m.args
-                .get("headless")
-                .is_some_and(|arg| arg.occurrences > 0)
-        })
+        #[cfg(feature = "test-mode")]
+        {
+            use tauri_plugin_cli::CliExt;
+            app.cli().matches().as_ref().is_ok_and(|m| {
+                m.args
+                    .get("headless")
+                    .is_some_and(|arg| arg.occurrences > 0)
+            })
+        }
+        #[cfg(not(feature = "test-mode"))]
+        false
     };
 
     let power_monitor = SystemStatus::current().start_listener();
@@ -574,63 +584,12 @@ fn main() {
                     warn!(target: LOG_TARGET_APP_LOGIC, "Failed to initialize process wrapper sidecar: {}. Processes will spawn without orphan protection.", e);
                 }
 
-                #[cfg(feature = "test-mode")]
                 if is_headless {
-                    let credential_dir = handle_clone
-                        .path()
-                        .app_config_dir()
-                        .expect("Could not get app config dir")
-                        .join("credentials");
-                    file_credential_store::set_store_dir(credential_dir.clone());
-                    keyring::set_default_credential_builder(
-                        file_credential_store::default_credential_builder(),
-                    );
-                    info!(target: LOG_TARGET_APP_LOGIC, "Headless: using file-backed credential store at {:?}", credential_dir);
-                }
-
-                if is_headless {
-                    info!(target: LOG_TARGET_APP_LOGIC, "Headless mode: starting backend with remote-ui");
-                    tauri::async_runtime::spawn(async move {
-                        EventsEmitter::load_app_handle(handle_clone.clone()).await;
-                        #[cfg(feature = "test-mode")]
-                        {
-                            use tauri_remote_ui::RemoteUiExt;
-                            let mut config = tauri_remote_ui::RemoteUiConfig::default()
-                                .set_port(Some(9515))
-                                .enable_application_ui();
-                            if std::env::var("REMOTE_UI_BIND_ALL").as_deref() == Ok("1") {
-                                info!(target: LOG_TARGET_APP_LOGIC, "REMOTE_UI_BIND_ALL set: binding remote-ui to 0.0.0.0");
-                                config = config
-                                    .set_allowed_origin(tauri_remote_ui::OriginType::Any);
-                            }
-                            if let Err(e) = handle_clone.start_remote_ui(config).await {
-                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to start remote UI: {e:?}");
-                            } else {
-                                info!(target: LOG_TARGET_APP_LOGIC, "Remote UI available at http://localhost:9515");
-                                let forward_handle = handle_clone.clone();
-                                handle_clone.listen("backend_state_update", move |event| {
-                                    let handle = forward_handle.clone();
-                                    let payload_str = event.payload().to_string();
-                                    tauri::async_runtime::spawn(async move {
-                                        let remote_ui_state = handle
-                                            .state::<Arc<RwLock<tauri_remote_ui::RemoteUi>>>();
-                                        let remote_ui = remote_ui_state.read().await;
-                                        if let Ok(value) =
-                                            serde_json::from_str::<serde_json::Value>(&payload_str)
-                                        {
-                                            remote_ui.emit("backend_state_update", value).ok();
-                                        }
-                                    });
-                                });
-                            }
-                        }
-                        utils::app_flow_utils::FrontendReadyChannel::current().set_ready();
-                        info!(target: LOG_TARGET_APP_LOGIC, "Headless: frontend ready channel set (after remote-ui)");
-                        SetupManager::get_instance()
-                            .start_setup(handle_clone.clone())
-                            .await;
-                        SetupManager::spawn_sleep_mode_handler().await;
-                    });
+                    #[cfg(feature = "test-mode")]
+                    {
+                        headless::init_credential_store(&handle_clone);
+                        headless::start_headless(handle_clone);
+                    }
                 } else {
                     block_on(state.updates_manager.initial_try_update(&handle_clone));
 

@@ -32,6 +32,7 @@ use keyring::credential::{
 };
 use keyring::error::Result;
 use std::fs;
+use std::io::Write;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
@@ -40,7 +41,7 @@ static STORE_DIR: OnceLock<PathBuf> = OnceLock::new();
 /// Set the directory where credential files are stored.
 /// Must be called before any keyring operations.
 pub fn set_store_dir(dir: PathBuf) {
-    let _ = STORE_DIR.set(dir);
+    drop(STORE_DIR.set(dir));
 }
 
 fn store_dir() -> &'static PathBuf {
@@ -57,8 +58,12 @@ struct FileCredential {
 
 impl FileCredential {
     fn new(_target: Option<&str>, service: &str, user: &str) -> Result<Self> {
-        let filename = format!("{}_{}.bin", service, user);
-        let safe_filename = filename.replace(['/', '\\', ':'], "_");
+        use sha2::{Digest, Sha256};
+        let mut hasher = Sha256::new();
+        hasher.update(format!("{service}_{user}").as_bytes());
+        let hash = hasher.finalize();
+        // Use first 16 bytes (32 hex chars) for a short but unique filename
+        let safe_filename = format!("{}.bin", hex::encode(&hash[..16]));
         Ok(Self {
             path: store_dir().join(safe_filename),
         })
@@ -72,7 +77,23 @@ impl CredentialApi for FileCredential {
 
     fn set_secret(&self, secret: &[u8]) -> Result<()> {
         fs::create_dir_all(store_dir()).map_err(|e| Error::PlatformFailure(Box::new(e)))?;
-        fs::write(&self.path, secret).map_err(|e| Error::PlatformFailure(Box::new(e)))?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            let mut file = fs::OpenOptions::new()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .mode(0o600)
+                .open(&self.path)
+                .map_err(|e| Error::PlatformFailure(Box::new(e)))?;
+            file.write_all(secret)
+                .map_err(|e| Error::PlatformFailure(Box::new(e)))?;
+        }
+        #[cfg(not(unix))]
+        {
+            fs::write(&self.path, secret).map_err(|e| Error::PlatformFailure(Box::new(e)))?;
+        }
         Ok(())
     }
 
@@ -82,17 +103,19 @@ impl CredentialApi for FileCredential {
     }
 
     fn get_secret(&self) -> Result<Vec<u8>> {
-        if !self.path.exists() {
-            return Err(Error::NoEntry);
+        match fs::read(&self.path) {
+            Ok(v) => Ok(v),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(Error::NoEntry),
+            Err(e) => Err(Error::PlatformFailure(Box::new(e))),
         }
-        fs::read(&self.path).map_err(|e| Error::PlatformFailure(Box::new(e)))
     }
 
     fn delete_credential(&self) -> Result<()> {
-        if !self.path.exists() {
-            return Err(Error::NoEntry);
+        match fs::remove_file(&self.path) {
+            Ok(()) => Ok(()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Err(Error::NoEntry),
+            Err(e) => Err(Error::PlatformFailure(Box::new(e))),
         }
-        fs::remove_file(&self.path).map_err(|e| Error::PlatformFailure(Box::new(e)))
     }
 
     fn as_any(&self) -> &dyn std::any::Any {

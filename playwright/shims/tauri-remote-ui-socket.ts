@@ -9,6 +9,13 @@ let connecting = false;
 let lastAttempt = 0;
 const MIN_RETRY_MS = 2000;
 
+function rejectAllInFlight(reason: string) {
+  for (const id of Object.keys(filterCollection)) {
+    try { filterCollection[Number(id)]({ status: 'error', payload: reason }); } catch {}
+    delete filterCollection[Number(id)];
+  }
+}
+
 function initWebSocket() {
   if (
     ((window as any).__TAURI_INTERNALS__ && (window as any).__TAURI_INTERNALS__.invoke) ||
@@ -37,26 +44,39 @@ function initWebSocket() {
     };
     socket.onclose = (e) => {
       console.info(`[SHIM] WS closed: code=${e.code} wasClean=${e.wasClean}`);
+      rejectAllInFlight('WebSocket closed');
       ws = null;
       wsReady = null;
       connecting = false;
       lastAttempt = Date.now();
+      reject(new Error(`WebSocket closed: code=${e.code}`));
     };
     socket.onerror = () => {
       console.error('[SHIM] WS error');
+      rejectAllInFlight('WebSocket error');
       ws = null;
       wsReady = null;
       connecting = false;
       lastAttempt = Date.now();
+      reject(new Error('WebSocket connection failed'));
     };
     socket.onmessage = ({ data }) => {
-      const json_data = JSON.parse(data);
-      if (json_data.id && filterCollection[json_data.id]) {
-        filterCollection[json_data.id](JSON.parse(json_data.payload));
-      }
-      // Forward events to registered listeners
-      for (const listener of eventListeners) {
-        try { listener(json_data); } catch {}
+      try {
+        const json_data = JSON.parse(data);
+        if (json_data.id && filterCollection[json_data.id]) {
+          try {
+            filterCollection[json_data.id](JSON.parse(json_data.payload));
+          } catch {
+            filterCollection[json_data.id]({ status: 'error', payload: 'Invalid payload JSON' });
+          }
+          delete filterCollection[json_data.id];
+        }
+        // Forward events to registered listeners (snapshot to avoid splice-during-iteration)
+        for (const listener of [...eventListeners]) {
+          try { listener(json_data); } catch {}
+        }
+      } catch (e) {
+        console.error('[SHIM] Failed to parse WebSocket message:', e);
       }
     };
   });

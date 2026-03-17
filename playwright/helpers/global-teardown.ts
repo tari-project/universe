@@ -3,16 +3,6 @@ import os from 'os';
 
 const isWin = os.platform() === 'win32';
 
-const TARI_PROCESS_NAMES = ['minotari_node', 'minotari_wallet', 'mmproxy', 'xmrig'];
-
-function trySpawn(cmd: string, args: string[]): void {
-  try {
-    spawnSync(cmd, args, { stdio: 'pipe', timeout: 10_000 });
-  } catch {
-    // ignore – process may not exist or already exited
-  }
-}
-
 function killPid(pid: number): void {
   try {
     if (isWin) {
@@ -25,7 +15,7 @@ function killPid(pid: number): void {
   }
 }
 
-function killEnvPids(): void {
+function killTrackedPids(): void {
   for (const envKey of ['TEST_APP_PID', 'TEST_VITE_PID']) {
     const pid = process.env[envKey];
     if (pid) {
@@ -34,17 +24,34 @@ function killEnvPids(): void {
   }
 }
 
-function killOrphanedProcesses(): void {
-  for (const name of TARI_PROCESS_NAMES) {
-    if (isWin) {
-      trySpawn('taskkill', ['/F', '/IM', `${name}.exe`]);
-    } else {
-      trySpawn('pkill', ['-f', name]);
+function killChildProcessTree(pid: number): void {
+  if (isWin) {
+    // /T flag kills the process tree
+    try {
+      spawnSync('taskkill', ['/F', '/T', '/PID', String(pid)], { stdio: 'pipe' });
+    } catch {
+      // ignore
+    }
+  } else {
+    // Find and kill child processes using the parent PID
+    try {
+      const result = spawnSync('pgrep', ['-P', String(pid)], { stdio: 'pipe' });
+      const childPids = result.stdout?.toString().trim().split('\n').filter(Boolean);
+      for (const childPid of childPids) {
+        killChildProcessTree(Number(childPid));
+      }
+      process.kill(pid, 'SIGTERM');
+    } catch {
+      // already exited
     }
   }
 }
 
 export default async function globalTeardown() {
-  killEnvPids();
-  killOrphanedProcesses();
+  const appPid = process.env.TEST_APP_PID;
+  if (appPid) {
+    // Kill the app and its child processes (minotari_node, wallet, etc.)
+    killChildProcessTree(Number(appPid));
+  }
+  killTrackedPids();
 }
