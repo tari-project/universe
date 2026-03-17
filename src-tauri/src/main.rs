@@ -25,7 +25,8 @@
 
 // test-mode must never be enabled in release builds — it exposes a remote-UI
 // WebSocket and a file-backed credential store that bypass normal security.
-#[cfg(all(feature = "test-mode", not(debug_assertions)))]
+// Allow `cargo test --release --all-features` (cfg(test) is set for test builds).
+#[cfg(all(feature = "test-mode", not(debug_assertions), not(test)))]
 compile_error!("test-mode feature must not be enabled in release builds");
 
 use app_in_memory_config::AppInMemoryConfig;

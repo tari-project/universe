@@ -37,7 +37,7 @@ vi.mock('i18next', () => {
 
 // Mock @tauri-apps/api/core
 vi.mock('@tauri-apps/api/core', () => ({
-    invoke: vi.fn().mockResolvedValue(undefined),
+    invoke: vi.fn().mockResolvedValue([]),
 }));
 
 // Mock react-i18next
