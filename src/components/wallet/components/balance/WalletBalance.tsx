@@ -102,7 +102,13 @@ export const WalletBalance = () => {
     );
 
     return (
-        <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
+        <Wrapper
+            onMouseEnter={() => setHovering(true)}
+            onMouseLeave={() => setHovering(false)}
+            data-testid="wallet-balance"
+            data-balance={balance}
+            data-balance-total={removeXTMCryptoDecimals(total || 0)}
+        >
             <BalanceWrapper>
                 <BalanceTextWrapper>
                     {hideBalance ? (

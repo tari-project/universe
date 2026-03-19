@@ -90,6 +90,7 @@ const HistoryListItem = memo(function ListItem({ item, index, setDetailsItem }: 
         <ItemWrapper
             ref={ref}
             data-index={index}
+            data-testid={`tx-row-${itemType}`}
             style={{ height: 48 }}
             onMouseEnter={() => setHovering(true)}
             onMouseLeave={() => setHovering(false)}

@@ -12,7 +12,8 @@ const config: KnipConfig = {
         enumMembers: 'off',
         unresolved: 'warn',
     },
-    ignoreBinaries: ['commitlint'],
+    ignore: ['playwright/**'],
+    ignoreBinaries: ['commitlint', 'playwright'],
     ignoreDependencies: ['babel-plugin-styled-components', 'babel-plugin-react-compiler', '@tauri-apps/cli'],
     ignoreExportsUsedInFile: true,
 };
