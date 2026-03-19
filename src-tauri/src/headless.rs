@@ -33,6 +33,13 @@ use tauri::Manager;
 use tokio::sync::RwLock;
 
 use crate::LOG_TARGET_APP_LOGIC;
+use crate::configs::config_core::ConfigCore;
+use crate::configs::config_mining::ConfigMining;
+use crate::configs::config_ui::ConfigUI;
+use crate::configs::config_wallet::ConfigWallet;
+use crate::configs::config_pools::ConfigPools;
+use crate::configs::config_mcp::ConfigMcp;
+use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::file_credential_store;
 use crate::internal_wallet::InternalWallet;
@@ -64,37 +71,36 @@ pub fn start_headless(handle_clone: AppHandle) {
             .await;
         SetupManager::spawn_sleep_mode_handler().await;
 
-        // Re-emit wallet address for late-connecting WS clients.
-        // The SelectedTariAddressChanged event fires during setup, but
-        // remote-ui WS clients may not be connected yet at that point.
-        // Spawn a background task that periodically re-emits until a
-        // WS client has had a chance to receive it.
+        // Re-emit initial state for late-connecting WS clients.
+        // Config and wallet events fire during setup before any remote-ui
+        // WS client is connected. Periodically replay them so late
+        // joiners get the full picture.
         tauri::async_runtime::spawn(async {
-            // Wait for the wallet to be initialized
-            for _ in 0..60 {
-                if InternalWallet::is_initialized() {
-                    break;
-                }
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-            }
-            if !InternalWallet::is_initialized() {
-                return;
-            }
-            let address = InternalWallet::tari_address().await;
-            let address_type = if InternalWallet::is_internal().await {
-                crate::internal_wallet::TariAddressType::Internal
-            } else {
-                crate::internal_wallet::TariAddressType::External
-            };
-            // Re-emit periodically for the first 30 seconds to catch
-            // late-connecting WS clients
             for i in 0..6 {
                 tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-                EventsEmitter::emit_selected_tari_address_changed(&address, address_type.clone())
-                    .await;
+
+                // Re-emit all config events
+                EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
+                EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
+                EventsEmitter::emit_ui_config_loaded(&ConfigUI::content().await).await;
+                EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
+                EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
+                EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
+
+                // Re-emit wallet address
+                if InternalWallet::is_initialized() {
+                    let address = InternalWallet::tari_address().await;
+                    let address_type = if InternalWallet::is_internal().await {
+                        crate::internal_wallet::TariAddressType::Internal
+                    } else {
+                        crate::internal_wallet::TariAddressType::External
+                    };
+                    EventsEmitter::emit_selected_tari_address_changed(&address, address_type).await;
+                }
+
                 if i == 0 {
                     info!(target: LOG_TARGET_APP_LOGIC,
-                        "Headless: re-emitting wallet address for WS clients (every 5s for 30s)");
+                        "Headless: re-emitting initial state for WS clients (every 5s for 30s)");
                 }
             }
         });

@@ -10,6 +10,7 @@ import {
   getWalletBalance,
   waitForWalletBalance,
 } from '../helpers/wait-for';
+import { sel } from '../helpers/selectors';
 
 let context: BrowserContext;
 let page: Page;
@@ -35,18 +36,76 @@ test.describe('Mining Flow', () => {
     await expect(startBtn.or(resumeBtn)).toBeVisible();
   });
 
-  test('start mining via UI, verify active state, then stop', async () => {
-    await waitForMiningReady(page, 60_000);
+  test('start mining and cycle through Eco, Turbo, Ludicrous modes', async () => {
+    await waitForMiningReady(page, 120_000);
     await clickStartMining(page);
-
     await waitForMiningActive(page, 120_000);
-    await expect(page.locator('[data-testid="mining-button-pause"]')).toBeVisible();
+
+    const cpuTile = page.locator(sel.mining.tileCpu);
+    // There are two mode triggers (mining sidebar + scheduler).
+    // Use nth(1) — the second one is in the mining sidebar.
+    const modeTrigger = page.locator(sel.mode.trigger).nth(1);
+
+    // Helper: wait for hashrate to appear in the CPU tile
+    const waitForHashrate = async (timeout = 30_000) => {
+      const start = Date.now();
+      while (Date.now() - start < timeout) {
+        const text = await cpuTile.textContent({ timeout: 2_000 }).catch(() => '');
+        if (/[HGMk]\/s/.test(text ?? '') && !/\.\.\./.test(text ?? '')) return;
+        await page.waitForTimeout(1_000);
+      }
+      throw new Error(`Hashrate did not appear within ${timeout}ms`);
+    };
+
+    // Helper: select a mining mode from the dropdown
+    const selectMode = async (modeName: string) => {
+      const option = page.locator(`[data-testid="mining-mode-${modeName}"]`);
+      // Retry: open dropdown, check if option is visible, click it.
+      // The dropdown may be empty initially while config events
+      // haven't arrived yet from the backend state replay.
+      const start = Date.now();
+      while (Date.now() - start < 60_000) {
+        try {
+          await modeTrigger.click({ timeout: 10_000 });
+        } catch {
+          await page.waitForTimeout(2_000);
+          continue;
+        }
+        await page.waitForTimeout(500);
+        if (await option.isVisible().catch(() => false)) {
+          await option.click({ timeout: 5_000 });
+          return;
+        }
+        // Close the empty dropdown by clicking elsewhere, then retry
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(3_000);
+      }
+      throw new Error(`Could not select mining mode: ${modeName}`);
+    };
+
+    // --- Eco (default) ---
+    await waitForHashrate();
+
+    // --- Turbo ---
+    await selectMode('Turbo');
+    await waitForMiningActive(page, 60_000);
+    await waitForHashrate(60_000);
+
+    // --- Ludicrous (requires confirmation dialog) ---
+    await selectMode('Ludicrous');
+    const confirmBtn = page.locator(sel.mode.ludicrousConfirm);
+    await confirmBtn.waitFor({ state: 'visible', timeout: 5_000 });
+    await confirmBtn.click({ timeout: 5_000 });
+    await waitForMiningActive(page, 60_000);
+    await waitForHashrate(60_000);
+
+    // --- Back to Eco ---
+    await selectMode('Eco');
+    await waitForMiningActive(page, 60_000);
+    await waitForHashrate(60_000);
 
     await clickStopMining(page);
     await waitForMiningStopped(page, 60_000);
-    const startBtn = page.locator('[data-testid="mining-button-start"]');
-    const resumeBtn = page.locator('[data-testid="mining-button-resume"]');
-    await expect(startBtn.or(resumeBtn)).toBeVisible();
   });
 
   test('wallet shows balance after mining', async () => {
@@ -69,6 +128,59 @@ test.describe('Mining Flow', () => {
     // hundreds of blocks may have been produced.
     const balance = await waitForWalletBalance(page, Math.floor(balanceBefore) + 1, 120_000);
     expect(balance).toBeGreaterThan(balanceBefore);
+  });
+
+  test('mining recovers after xmrig process is killed', async () => {
+    await waitForMiningReady(page, 60_000);
+    await clickStartMining(page);
+    await waitForMiningActive(page);
+
+    const cpuTile = page.locator('[data-testid="mining-tile-cpu"]');
+
+    // Check if the CPU tile shows a hashrate (unit like H/s or G/s visible)
+    const hasHashrate = async () => {
+      const text = await cpuTile.textContent({ timeout: 2_000 }).catch(() => '');
+      return /[HGMk]\/s/.test(text ?? '') && !/\.\.\./.test(text ?? '');
+    };
+
+    const hrStart = Date.now();
+    while (Date.now() - hrStart < 30_000) {
+      if (await hasHashrate()) break;
+      await page.waitForTimeout(1_000);
+    }
+    expect(await hasHashrate()).toBe(true);
+
+    // Read the xmrig PID from the PID file written by the process watcher
+    const fs = await import('fs');
+    const path = await import('path');
+    const os = await import('os');
+    const appDir = process.platform === 'darwin'
+      ? path.join(os.homedir(), 'Library/Application Support/com.tari.universe.alpha')
+      : path.join(os.homedir(), '.local/share/com.tari.universe.alpha');
+    const pidFilePath = path.join(appDir, 'xmrig_pid');
+    const xmrigPid = parseInt(fs.readFileSync(pidFilePath, 'utf-8').trim(), 10);
+    expect(xmrigPid).toBeGreaterThan(0);
+
+    // Kill xmrig
+    process.kill(xmrigPid, 'SIGKILL');
+
+    // Wait for the hashrate to disappear (process is dead)
+    const deadStart = Date.now();
+    while (Date.now() - deadStart < 15_000) {
+      if (!(await hasHashrate())) break;
+      await page.waitForTimeout(1_000);
+    }
+
+    // Now wait for the hashrate to come back (process watcher restarts xmrig)
+    const recoveryStart = Date.now();
+    while (Date.now() - recoveryStart < 120_000) {
+      if (await hasHashrate()) break;
+      await page.waitForTimeout(2_000);
+    }
+    expect(await hasHashrate()).toBe(true);
+
+    await clickStopMining(page);
+    await waitForMiningStopped(page, 60_000);
   });
 
   test('coinbase transactions appear in the transaction list', async () => {
