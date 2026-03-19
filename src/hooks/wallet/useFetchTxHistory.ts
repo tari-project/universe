@@ -12,18 +12,12 @@ async function baseQuery({ pageParam, filter, walletAddress }) {
     const offset = limit * (pageParam as number);
     try {
         const walletTransactions = await fetchTransactionsHistory({ offset, limit, filter });
-        let bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress).catch((e) => {
-            console.warn('Bridge tx fetch failed:', e);
-            return [];
-        });
+        let bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress).catch(() => []);
         let mergedList = mergeTransactionLists({ walletTransactions, bridgeTransactions });
         const shouldRefetch = shouldRefetchBridgeItems({ walletTransactions: mergedList, bridgeTransactions });
 
         if (shouldRefetch) {
-            bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress).catch((e) => {
-                console.warn('Bridge tx fetch failed:', e);
-                return [];
-            });
+            bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress).catch(() => []);
             mergedList = mergeTransactionLists({ walletTransactions, bridgeTransactions });
         }
 

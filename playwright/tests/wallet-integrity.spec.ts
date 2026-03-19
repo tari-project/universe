@@ -1,8 +1,8 @@
 import { test, expect, Page, BrowserContext } from '@playwright/test';
 import { initReadinessMarker, waitForTauriReady } from '../helpers/state';
-import { dismissDialogs, waitForMiningReady } from '../helpers/wait-for';
+import { dismissDialogs } from '../helpers/wait-for';
 import { sel } from '../helpers/selectors';
-import { TEST_WALLET } from '../helpers/global-setup';
+import { TEST_WALLET } from '../helpers/test-wallet';
 
 /**
  * Wallet integrity test — validates that a pre-seeded wallet vault
@@ -28,7 +28,6 @@ test.beforeAll(async ({ browser }) => {
   await page.goto('http://localhost:1420/');
   await waitForTauriReady(page);
   await dismissDialogs(page);
-  await waitForMiningReady(page, 120_000);
 });
 
 test.afterAll(async () => {

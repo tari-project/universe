@@ -23,6 +23,8 @@ export async function openMiningSidebar(page: Page) {
  * This indicates that all setup phases have completed and mining is unlocked.
  */
 export async function waitForMiningReady(page: Page, timeout = 120_000) {
+  // Dismiss any dialog that may have appeared after initial page load
+  await dismissDialogs(page);
   await openMiningSidebar(page);
   const start = page.locator(`${sel.mining.startButton}:not([disabled])`);
   const resume = page.locator(`${sel.mining.resumeButton}:not([disabled])`);
@@ -90,9 +92,24 @@ function parseBalanceText(text: string | null): number {
   return isNaN(value) ? 0 : value;
 }
 
-/** Read the current wallet balance from the UI. Returns 0 if not yet rendered. */
+/** Read the current wallet balance from the UI. Returns 0 if not yet rendered.
+ *  Reads data-balance-total (live calculated balance) which updates even during
+ *  wallet scanning, unlike the displayed balance which freezes to a cached value.
+ */
 export async function getWalletBalance(page: Page): Promise<number> {
   try {
+    // Prefer the live total which updates during scanning
+    const total = await page.locator(sel.wallet.balance).getAttribute('data-balance-total', { timeout: 2_000 });
+    if (total) {
+      const value = parseFloat(total);
+      if (!isNaN(value) && value > 0) return value;
+    }
+    // Fall back to displayed balance (frozen during scanning)
+    const raw = await page.locator(sel.wallet.balance).getAttribute('data-balance', { timeout: 2_000 });
+    if (raw) {
+      const value = parseFloat(raw);
+      if (!isNaN(value)) return value;
+    }
     const text = await page.locator(sel.wallet.balance).textContent({ timeout: 2_000 });
     return parseBalanceText(text);
   } catch {
@@ -132,7 +149,10 @@ export async function waitForWalletReady(page: Page, timeout = 120_000) {
 export async function dismissDialogs(page: Page) {
   const dismiss = page.locator(sel.dialogs.releaseNotesDismiss);
   try {
-    await dismiss.click({ timeout: 3_000 });
+    await dismiss.waitFor({ state: 'visible', timeout: 10_000 });
+    await dismiss.click({ timeout: 5_000 });
+    // Wait for dialog to fully close
+    await dismiss.waitFor({ state: 'hidden', timeout: 5_000 });
   } catch {
     // dialog not present – nothing to dismiss
   }

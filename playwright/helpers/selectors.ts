@@ -29,6 +29,8 @@ export const sel = {
 
   wallet: {
     balance: '[data-testid="wallet-balance"]',
+    txRowMined: '[data-testid="tx-row-mined"]',
+    txListEmpty: '[data-testid="tx-list-empty"]',
   },
 
   node: {

@@ -35,6 +35,7 @@ use tokio::sync::RwLock;
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::events_emitter::EventsEmitter;
 use crate::file_credential_store;
+use crate::internal_wallet::InternalWallet;
 use crate::setup::setup_manager::SetupManager;
 use crate::utils;
 
@@ -62,6 +63,41 @@ pub fn start_headless(handle_clone: AppHandle) {
             .start_setup(handle_clone.clone())
             .await;
         SetupManager::spawn_sleep_mode_handler().await;
+
+        // Re-emit wallet address for late-connecting WS clients.
+        // The SelectedTariAddressChanged event fires during setup, but
+        // remote-ui WS clients may not be connected yet at that point.
+        // Spawn a background task that periodically re-emits until a
+        // WS client has had a chance to receive it.
+        tauri::async_runtime::spawn(async {
+            // Wait for the wallet to be initialized
+            for _ in 0..60 {
+                if InternalWallet::is_initialized() {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+            }
+            if !InternalWallet::is_initialized() {
+                return;
+            }
+            let address = InternalWallet::tari_address().await;
+            let address_type = if InternalWallet::is_internal().await {
+                crate::internal_wallet::TariAddressType::Internal
+            } else {
+                crate::internal_wallet::TariAddressType::External
+            };
+            // Re-emit periodically for the first 30 seconds to catch
+            // late-connecting WS clients
+            for i in 0..6 {
+                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                EventsEmitter::emit_selected_tari_address_changed(&address, address_type.clone())
+                    .await;
+                if i == 0 {
+                    info!(target: LOG_TARGET_APP_LOGIC,
+                        "Headless: re-emitting wallet address for WS clients (every 5s for 30s)");
+                }
+            }
+        });
     });
 }
 

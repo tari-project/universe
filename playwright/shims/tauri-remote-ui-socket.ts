@@ -90,4 +90,12 @@ function addEventCallback(listener: EventListener) {
   };
 }
 
+// Expose a test helper to inject synthetic events into the listener pipeline
+(window as any).__PLAYWRIGHT_DISPATCH_EVENT__ = (event: string, payload: unknown) => {
+  const data = { event, payload };
+  for (const listener of [...eventListeners]) {
+    try { listener(data); } catch {}
+  }
+};
+
 export { filterCollection, initWebSocket, ws, wsReady, addEventCallback };

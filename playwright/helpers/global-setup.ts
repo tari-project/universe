@@ -91,7 +91,7 @@ function getMiningConfig() {
 }
 
 // Known test wallet fixture for localnet only.
-// Seed: SEED_BINARY_HEX="02ff05219f6747f52f75a152e8ced75ce9fc502cadf48ec8"
+// Canonical source: ./test-wallet.ts (keep in sync)
 export const TEST_WALLET = {
   walletId: 'test01',
   address: 'H27bCbHq55SZio4NcNQvTVdGKjMnVfeHPBfQ7N744iGyi34z5nv4zXKFzy8sug4VyWfndMCwjtpN9TXZUhVjeKFkJp9',
@@ -103,7 +103,6 @@ export const TEST_WALLET = {
   ],
   spendKeyHex: '8ee08ece531fdf67ff574234e085bcd25e7d986ad60a4c1dee8147473a2ae543',
   viewKeyHex: 'bba72d1e62d91ef18bb55bd4260ed63ac7b2c54de0efa2765e555ae4a4d1c40f',
-  // CBOR-serialized Credential { encrypted_seed } — the raw vault bytes
   cborHex: 'a16e656e637279707465645f7365656498180218ff051821189f1867184718f5182f187518a1185218e818ce18d7185c18e918fc1850182c18ad18f4188e18c8',
 };
 
