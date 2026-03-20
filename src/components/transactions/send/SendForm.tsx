@@ -169,7 +169,7 @@ export function SendForm({ isBack }: Props) {
                 />
             </FormFieldsWrapper>
             <BottomWrapper>
-                <Button disabled={isSubmitting || !isValid} type="submit" fluid variant="green" size="xlarge">
+                <Button disabled={isSubmitting || !isValid} type="submit" fluid variant="green" size="xlarge" data-testid="send-review-button">
                     {t('send.cta-review')}
                 </Button>
             </BottomWrapper>

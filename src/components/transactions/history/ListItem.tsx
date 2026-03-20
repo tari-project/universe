@@ -76,6 +76,7 @@ const HistoryListItem = memo(function ListItem({ item, index, setDetailsItem }: 
             <Button
                 size="xs"
                 variant="outlined"
+                data-testid="tx-row-details"
                 onClick={(e) => {
                     e.stopPropagation();
                     setDetailsItem?.(item);

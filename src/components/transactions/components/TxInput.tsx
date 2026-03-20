@@ -95,6 +95,7 @@ export function TxInput({
                     ref={ref}
                     id={name}
                     name={name}
+                    data-testid={`send-input-${name}`}
                     value={displayValue ?? ''}
                     onChange={onChange}
                     onBlur={handleBlur}

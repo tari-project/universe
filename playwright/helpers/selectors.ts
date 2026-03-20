@@ -52,6 +52,20 @@ export const sel = {
 
   copyAddress: '[data-testid="wallet-copy-address"]',
 
+  send: {
+    button: '[data-testid="wallet-send-button"]',
+    addressInput: '[data-testid="send-input-address"]',
+    amountInput: '[data-testid="send-input-amount"]',
+    messageInput: '[data-testid="send-input-message"]',
+    reviewButton: '[data-testid="send-review-button"]',
+    confirmButton: '[data-testid="send-confirm-button"]',
+    doneButton: '[data-testid="send-done-button"]',
+    status: '[data-testid="send-status"]',
+    txDetailsModal: '[data-testid="tx-details-modal"]',
+    copyRaw: '[data-testid="tx-details-copy-raw"]',
+    rowDetails: '[data-testid="tx-row-details"]',
+  },
+
   dialogs: {
     releaseNotesDismiss: '[data-testid="release-notes-dismiss"]',
   },
