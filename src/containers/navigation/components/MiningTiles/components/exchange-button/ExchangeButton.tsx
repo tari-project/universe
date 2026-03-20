@@ -14,7 +14,7 @@ export default function ExchangeButton() {
     if (!exchanges?.length) return null;
 
     return (
-        <Button onClick={handleClick}>
+        <Button onClick={handleClick} data-testid="exchange-mine-button">
             {t('xc.mine-directly-to')}{' '}
             <LogosWrapper>
                 <Logos exchanges={exchanges} variant="mini" />

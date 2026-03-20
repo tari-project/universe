@@ -49,7 +49,9 @@ function initWebSocket() {
       wsReady = null;
       connecting = false;
       lastAttempt = Date.now();
-      reject(new Error(`WebSocket closed: code=${e.code}`));
+      // Don't reject — silently reconnect after a delay
+      resolve();
+      setTimeout(() => initWebSocket(), MIN_RETRY_MS);
     };
     socket.onerror = () => {
       console.error('[SHIM] WS error');

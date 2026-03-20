@@ -17,12 +17,22 @@ export default defineConfig({
 
   projects: [
     {
-      name: 'playwright',
-      testMatch: /tests\/.*\.spec\.ts/,
+      name: 'wallet-integrity',
+      testMatch: /01-wallet-integrity\.spec\.ts/,
       timeout: 180_000,
-      expect: {
-        timeout: 30_000,
-      },
+      expect: { timeout: 30_000 },
+    },
+    {
+      name: 'mining-flow',
+      testMatch: /02-mining-flow\.spec\.ts/,
+      timeout: 180_000,
+      expect: { timeout: 30_000 },
+    },
+    {
+      name: 'exchange-miner',
+      testMatch: /03-exchange-miner\.spec\.ts/,
+      timeout: 180_000,
+      expect: { timeout: 30_000 },
     },
   ],
 

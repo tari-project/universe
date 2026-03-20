@@ -51,7 +51,7 @@ export default function ActionCopyAddress() {
                     </div>
                 )}
             </AnimatePresence>
-            <ActionButton ref={refs.setReference} onClick={handleCopyClick} disabled={!tariWalletAddress}>
+            <ActionButton ref={refs.setReference} onClick={handleCopyClick} disabled={!tariWalletAddress} data-testid="wallet-copy-address">
                 <CopySVG />
             </ActionButton>
         </>

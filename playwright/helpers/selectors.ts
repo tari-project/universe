@@ -41,6 +41,17 @@ export const sel = {
     mineButton: '[data-testid="sidebar-mine-button"]',
   },
 
+  exchange: {
+    mineButton: '[data-testid="exchange-mine-button"]',
+    option: (slug: string) => `[data-testid="exchange-option-${slug}"]`,
+    addressInput: '[data-testid="exchange-address-input"]',
+    confirm: '[data-testid="exchange-confirm"]',
+    revertConfirm: '[data-testid="exchange-revert-confirm"]',
+    optionUniversal: '[data-testid="exchange-option-universal"]',
+  },
+
+  copyAddress: '[data-testid="wallet-copy-address"]',
+
   dialogs: {
     releaseNotesDismiss: '[data-testid="release-notes-dismiss"]',
   },

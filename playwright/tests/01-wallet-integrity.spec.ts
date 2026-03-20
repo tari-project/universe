@@ -47,12 +47,12 @@ test.describe('Wallet Integrity', () => {
     //   3. Converts to mnemonic words
     // If the vault is corrupted or the binary handles seeds differently,
     // this will return different words (or fail entirely).
-    const seedToggle = page.locator(sel.settings.seedToggle);
+    const seedToggle = page.locator(sel.settings.seedToggle).first();
     await seedToggle.waitFor({ state: 'visible', timeout: 10_000 });
     await seedToggle.click({ timeout: 5_000 });
 
     // Wait for seed words to load from backend and render
-    const seedDisplay = page.locator(sel.settings.seedWordsDisplay);
+    const seedDisplay = page.locator(sel.settings.seedWordsDisplay).first();
 
     // Poll until we see actual words (not just the toggle button)
     const start = Date.now();

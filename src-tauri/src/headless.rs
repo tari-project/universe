@@ -76,7 +76,10 @@ pub fn start_headless(handle_clone: AppHandle) {
         // WS client is connected. Periodically replay them so late
         // joiners get the full picture.
         tauri::async_runtime::spawn(async {
-            for i in 0..6 {
+            // Run indefinitely — new WS clients can connect at any time
+            // during the test session and need the initial state.
+            let mut i = 0u64;
+            loop {
                 tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 
                 // Re-emit all config events
@@ -100,8 +103,9 @@ pub fn start_headless(handle_clone: AppHandle) {
 
                 if i == 0 {
                     info!(target: LOG_TARGET_APP_LOGIC,
-                        "Headless: re-emitting initial state for WS clients (every 5s for 30s)");
+                        "Headless: re-emitting initial state for WS clients (every 5s)");
                 }
+                i += 1;
             }
         });
     });
