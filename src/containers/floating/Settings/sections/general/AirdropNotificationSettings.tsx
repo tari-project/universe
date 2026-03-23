@@ -30,7 +30,7 @@ export default function AirdropNotificationsSettings() {
                     <Typography>{t('push-notifications.text')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <ToggleSwitch checked={allowNotifications} onChange={handleChange} />
+                    <ToggleSwitch data-testid="settings-toggle-notifications" checked={allowNotifications} onChange={handleChange} />
                 </SettingsGroupAction>
             </SettingsGroup>
         </SettingsGroupWrapper>

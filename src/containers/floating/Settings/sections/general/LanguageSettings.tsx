@@ -29,6 +29,7 @@ export default function LanguageSettings() {
                         </SettingsGroupContent>
                         <SettingsGroupAction>
                             <ToggleSwitch
+                                data-testid="settings-toggle-system-language"
                                 checked={shouldAlwaysUseSystemLanguage}
                                 onChange={(event) => setShouldAlwaysUseSystemLanguage(event.target.checked)}
                             />

@@ -13,7 +13,7 @@ export default function AppDataSettings() {
     const anon_id = useConfigCoreStore((s) => s.anon_id);
 
     return (
-        <SettingsGroup>
+        <SettingsGroup data-testid="settings-app-info">
             <SettingsGroupContent>
                 <SettingsGroupTitle>
                     <Typography variant="h6">{t('application-info')}</Typography>
@@ -24,7 +24,7 @@ export default function AppDataSettings() {
                         <Typography variant="p">
                             Anon ID: <strong>{anon_id}</strong>
                         </Typography>
-                        <IconButton onClick={() => copyToClipboard(anon_id)} size="small">
+                        <IconButton data-testid="settings-app-info-copy" onClick={() => copyToClipboard(anon_id)} size="small">
                             {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
                         </IconButton>
                     </Stack>

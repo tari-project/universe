@@ -40,6 +40,12 @@ export default defineConfig({
       timeout: 180_000,
       expect: { timeout: 30_000 },
     },
+    {
+      name: 'settings',
+      testMatch: /05-settings\.spec\.ts/,
+      timeout: 180_000,
+      expect: { timeout: 30_000 },
+    },
   ],
 
   globalSetup: './helpers/global-setup.ts',
