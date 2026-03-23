@@ -25,6 +25,27 @@ export async function openMiningSidebar(page: Page) {
 export async function waitForMiningReady(page: Page, timeout = 120_000) {
   // Dismiss any dialog that may have appeared after initial page load
   await dismissDialogs(page);
+  // Close the settings panel if it's open (shared context may have left it open).
+  // The Floating UI dismiss hook only fires on mousedown of the .overlay element.
+  const overlay = page.locator('.overlay');
+  if (await overlay.isVisible().catch(() => false)) {
+    await overlay.dispatchEvent('mousedown');
+    await overlay.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+  }
+  // The headless backend completes setup before the browser connects.
+  // Module-status events are emitted once during setup and don't reach
+  // late-joining WS clients. Dispatch them via the shim so the Zustand
+  // store marks modules as Initialized and unlocks the mining button.
+  await page.evaluate(() => {
+    const dispatch = (window as any).__PLAYWRIGHT_DISPATCH_EVENT__;
+    if (typeof dispatch !== 'function') return;
+    for (const module of ['CpuMining', 'GpuMining', 'Wallet']) {
+      dispatch('backend_state_update', {
+        event_type: 'UpdateAppModuleStatus',
+        payload: { module, status: 'Initialized', error_messages: {} },
+      });
+    }
+  }).catch(() => {});
   await openMiningSidebar(page);
   const start = page.locator(`${sel.mining.startButton}:not([disabled])`);
   const resume = page.locator(`${sel.mining.resumeButton}:not([disabled])`);

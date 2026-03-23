@@ -6,6 +6,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   workers: 1,
+  timeout: 180_000,
+  expect: { timeout: 30_000 },
   reporter: [['html', { open: 'never' }], ['list']],
 
   use: {
@@ -14,39 +16,6 @@ export default defineConfig({
     video: 'off',
     reducedMotion: 'reduce',
   },
-
-  projects: [
-    {
-      name: 'wallet-integrity',
-      testMatch: /01-wallet-integrity\.spec\.ts/,
-      timeout: 180_000,
-      expect: { timeout: 30_000 },
-    },
-    {
-      name: 'mining-flow',
-      testMatch: /02-mining-flow\.spec\.ts/,
-      timeout: 180_000,
-      expect: { timeout: 30_000 },
-    },
-    {
-      name: 'exchange-miner',
-      testMatch: /03-exchange-miner\.spec\.ts/,
-      timeout: 180_000,
-      expect: { timeout: 30_000 },
-    },
-    {
-      name: 'send-flow',
-      testMatch: /04-send-flow\.spec\.ts/,
-      timeout: 180_000,
-      expect: { timeout: 30_000 },
-    },
-    {
-      name: 'settings',
-      testMatch: /05-settings\.spec\.ts/,
-      timeout: 180_000,
-      expect: { timeout: 30_000 },
-    },
-  ],
 
   globalSetup: './helpers/global-setup.ts',
   globalTeardown: './helpers/global-teardown.ts',

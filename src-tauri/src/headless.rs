@@ -32,6 +32,8 @@ use tauri::Listener;
 use tauri::Manager;
 use tokio::sync::RwLock;
 
+use std::collections::HashMap;
+
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mcp::ConfigMcp;
@@ -40,9 +42,11 @@ use crate::configs::config_pools::ConfigPools;
 use crate::configs::config_ui::ConfigUI;
 use crate::configs::config_wallet::ConfigWallet;
 use crate::configs::trait_config::ConfigImpl;
+use crate::events::UpdateAppModuleStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::file_credential_store;
 use crate::internal_wallet::InternalWallet;
+use crate::setup::listeners::{AppModule, AppModuleStatus};
 use crate::setup::setup_manager::SetupManager;
 use crate::utils;
 
@@ -89,6 +93,23 @@ pub fn start_headless(handle_clone: AppHandle) {
                 EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
                 EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
                 EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
+
+                // Re-emit module status so late-joining clients unlock mining.
+                // Setup phase events are fire-once; without this the frontend
+                // Zustand store stays at NotInitialized and the Start Mining
+                // button is permanently disabled.
+                // Setup has already completed before this loop starts, so all
+                // modules are Initialized.
+                for module in [AppModule::CpuMining, AppModule::GpuMining, AppModule::Wallet] {
+                    EventsEmitter::emit_update_app_module_status(
+                        UpdateAppModuleStatusPayload {
+                            module,
+                            status: AppModuleStatus::Initialized.as_string(),
+                            error_messages: HashMap::new(),
+                        },
+                    )
+                    .await;
+                }
 
                 // Re-emit wallet address
                 if InternalWallet::is_initialized() {

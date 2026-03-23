@@ -94,5 +94,13 @@ test.describe('Wallet Integrity', () => {
     // Address derivation from the same seed is deterministic — if seeds match,
     // the address is guaranteed correct.
     expect(address).toBe('seed-verified');
+
+    // Close settings so subsequent tests see the main UI.
+    // Floating UI dismiss fires on mousedown of the .overlay element.
+    const overlay = page.locator('.overlay');
+    if (await overlay.isVisible().catch(() => false)) {
+      await overlay.dispatchEvent('mousedown');
+      await overlay.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+    }
   });
 });
