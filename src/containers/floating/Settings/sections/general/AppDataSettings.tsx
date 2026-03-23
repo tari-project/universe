@@ -24,7 +24,11 @@ export default function AppDataSettings() {
                         <Typography variant="p">
                             Anon ID: <strong>{anon_id}</strong>
                         </Typography>
-                        <IconButton data-testid="settings-app-info-copy" onClick={() => copyToClipboard(anon_id)} size="small">
+                        <IconButton
+                            data-testid="settings-app-info-copy"
+                            onClick={() => copyToClipboard(anon_id)}
+                            size="small"
+                        >
                             {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
                         </IconButton>
                     </Stack>

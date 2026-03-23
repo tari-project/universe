@@ -128,7 +128,11 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
                             </Countdown>
                         ) : null}
                     </SeasonReward>
-                    <ConfirmButton onClick={handleRevertToInternalWallet} disabled={isSubmitting} data-testid="exchange-revert-confirm">
+                    <ConfirmButton
+                        onClick={handleRevertToInternalWallet}
+                        disabled={isSubmitting}
+                        data-testid="exchange-revert-confirm"
+                    >
                         {isSubmitting ? (
                             <LoadingDots />
                         ) : (

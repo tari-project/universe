@@ -109,7 +109,13 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
                         alignItems="center"
                         style={{ width: '70%', gap: 8 }}
                     >
-                        <Button size="medium" data-testid="settings-reset-cancel" disabled={isPending} onClick={handleClose} fluid>
+                        <Button
+                            size="medium"
+                            data-testid="settings-reset-cancel"
+                            disabled={isPending}
+                            onClick={handleClose}
+                            fluid
+                        >
                             {t('cancel')}
                         </Button>
                         <Button

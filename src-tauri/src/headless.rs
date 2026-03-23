@@ -34,11 +34,11 @@ use tokio::sync::RwLock;
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_core::ConfigCore;
+use crate::configs::config_mcp::ConfigMcp;
 use crate::configs::config_mining::ConfigMining;
+use crate::configs::config_pools::ConfigPools;
 use crate::configs::config_ui::ConfigUI;
 use crate::configs::config_wallet::ConfigWallet;
-use crate::configs::config_pools::ConfigPools;
-use crate::configs::config_mcp::ConfigMcp;
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::file_credential_store;

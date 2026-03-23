@@ -42,7 +42,11 @@ export default function PreReleaseSettings() {
                     <Typography>{t('pre-release.description')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <ToggleSwitch data-testid="settings-toggle-prerelease" checked={isPreRelease} onChange={askForConfirmation} />
+                    <ToggleSwitch
+                        data-testid="settings-toggle-prerelease"
+                        checked={isPreRelease}
+                        onChange={askForConfirmation}
+                    />
                 </SettingsGroupAction>
             </SettingsGroup>
 

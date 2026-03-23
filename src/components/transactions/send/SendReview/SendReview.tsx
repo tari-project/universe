@@ -113,7 +113,14 @@ export function SendReview({
                     )}
 
                     {status === 'completed' && (
-                        <Button type="button" fluid size="xlarge" variant="purple" onClick={handleClose} data-testid="send-done-button">
+                        <Button
+                            type="button"
+                            fluid
+                            size="xlarge"
+                            variant="purple"
+                            onClick={handleClose}
+                            data-testid="send-done-button"
+                        >
                             {t('send.done-button')}
                         </Button>
                     )}

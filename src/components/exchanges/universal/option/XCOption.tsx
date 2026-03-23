@@ -174,7 +174,11 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
                         ) : null}
 
                         {isAddressValid ? (
-                            <ConfirmButton onClick={handleExchangeMiner} disabled={isSubmitting || !isAddressValid} data-testid="exchange-confirm">
+                            <ConfirmButton
+                                onClick={handleExchangeMiner}
+                                disabled={isSubmitting || !isAddressValid}
+                                data-testid="exchange-confirm"
+                            >
                                 {isSubmitting ? (
                                     <LoadingDots />
                                 ) : (

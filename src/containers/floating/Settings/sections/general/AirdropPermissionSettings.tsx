@@ -30,7 +30,11 @@ export default function AirdropPermissionSettings() {
                     <Typography>{t('permissionNoGems.text')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <ToggleSwitch data-testid="settings-toggle-telemetry" checked={allowTelemetry} onChange={handleChange} />
+                    <ToggleSwitch
+                        data-testid="settings-toggle-telemetry"
+                        checked={allowTelemetry}
+                        onChange={handleChange}
+                    />
                 </SettingsGroupAction>
             </SettingsGroup>
         </SettingsGroupWrapper>

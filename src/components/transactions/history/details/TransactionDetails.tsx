@@ -23,11 +23,22 @@ export const TransactionDetails = ({ item, expanded, handleClose }: TransactionD
     const copyIcon = !isCopied ? <IoCopyOutline size={14} /> : <IoCheckmarkOutline size={14} />;
 
     return (
-        <TransactionModal show={expanded} title={t(`history.transaction-details`)} handleClose={handleClose} data-testid="tx-details-modal">
+        <TransactionModal
+            show={expanded}
+            title={t(`history.transaction-details`)}
+            handleClose={handleClose}
+            data-testid="tx-details-modal"
+        >
             <Wrapper>
                 <StatusList entries={entries} />
             </Wrapper>
-            <Button size="large" fluid icon={copyIcon} onClick={() => copyToClipboard(JSON.stringify(item))} data-testid="tx-details-copy-raw">
+            <Button
+                size="large"
+                fluid
+                icon={copyIcon}
+                onClick={() => copyToClipboard(JSON.stringify(item))}
+                data-testid="tx-details-copy-raw"
+            >
                 {t('send.transaction-copy-raw')}
             </Button>
         </TransactionModal>
