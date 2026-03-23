@@ -272,7 +272,7 @@ jobs:
           args: ${{ matrix.platforms.args }} --features "${{ env.TS_FEATURES }}"
 
       - name: Add msbuild to PATH (windows)
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@v3
         if: startsWith(runner.os,'Windows')
 
       - name: Build bundled WiX Windows installer
@@ -500,7 +500,7 @@ jobs:
           pattern: '${{ matrix.exchange.id }}*'
 
       - name: Delete artifacts
-        uses: geekyeggo/delete-artifact@v5
+        uses: geekyeggo/delete-artifact@v6
         with:
           name: '${{ matrix.exchange.id }}*'
 
