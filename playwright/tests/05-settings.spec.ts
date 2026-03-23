@@ -1,26 +1,9 @@
-import { test, expect, Page, BrowserContext } from '@playwright/test';
-import { initReadinessMarker, waitForTauriReady } from '../helpers/state';
-import { dismissDialogs } from '../helpers/wait-for';
+import { test, expect } from '../helpers/shared-context';
 import { sel } from '../helpers/selectors';
-
-let context: BrowserContext;
-let page: Page;
-
-test.beforeAll(async ({ browser }) => {
-  context = await browser.newContext();
-  page = await context.newPage();
-  await initReadinessMarker(page);
-  await page.goto('http://localhost:1420/');
-  await waitForTauriReady(page);
-  await dismissDialogs(page);
-});
-
-test.afterAll(async () => {
-  await context?.close();
-});
+import type { Page } from '@playwright/test';
 
 /** Ensure settings panel is open on the General tab. */
-async function ensureSettingsOpen() {
+async function ensureSettingsOpen(page: Page) {
   // Dismiss any overlay/dialog that may be blocking
   const overlay = page.locator('.overlay');
   if (await overlay.isVisible().catch(() => false)) {
@@ -40,8 +23,8 @@ async function ensureSettingsOpen() {
  * switch area), then verify the hidden input changed state. Restores
  * the original value afterwards.
  */
-async function toggleAndVerify(testId: string) {
-  await ensureSettingsOpen();
+async function toggleAndVerify(page: Page, testId: string) {
+  await ensureSettingsOpen(page);
   const input = page.locator(`[data-testid="${testId}"]`);
   const wrapper = input.locator('..');
   const initial = await input.isChecked();
@@ -60,7 +43,7 @@ async function toggleAndVerify(testId: string) {
 }
 
 test.describe('Settings', () => {
-  test('opens on General tab by default with all expected sections', async () => {
+  test('opens on General tab by default with all expected sections', async ({ sharedPage: page }) => {
     await page.locator(sel.settings.open).click({ timeout: 5_000 });
     await page.waitForTimeout(1_000);
 
@@ -81,18 +64,18 @@ test.describe('Settings', () => {
     }
   });
 
-  test('toggle: auto-start on system boot', async () => {
+  test('toggle: auto-start on system boot', async ({ sharedPage: page }) => {
     const input = page.locator('[data-testid="settings-toggle-autostart"]');
     await expect(input).not.toBeChecked();
-    await toggleAndVerify('settings-toggle-autostart');
+    await toggleAndVerify(page, 'settings-toggle-autostart');
   });
 
-  test('toggle: auto-update', async () => {
-    await toggleAndVerify('settings-toggle-autoupdate');
+  test('toggle: auto-update', async ({ sharedPage: page }) => {
+    await toggleAndVerify(page, 'settings-toggle-autoupdate');
   });
 
-  test('toggle: pre-release shows confirmation dialog', async () => {
-    await ensureSettingsOpen();
+  test('toggle: pre-release shows confirmation dialog', async ({ sharedPage: page }) => {
+    await ensureSettingsOpen(page);
     const input = page.locator('[data-testid="settings-toggle-prerelease"]');
     await expect(input).not.toBeChecked();
 
@@ -113,16 +96,16 @@ test.describe('Settings', () => {
     await expect(input).not.toBeChecked();
   });
 
-  test('toggle: notifications', async () => {
-    await toggleAndVerify('settings-toggle-notifications');
+  test('toggle: notifications', async ({ sharedPage: page }) => {
+    await toggleAndVerify(page, 'settings-toggle-notifications');
   });
 
-  test('toggle: earn gems / telemetry', async () => {
-    await toggleAndVerify('settings-toggle-telemetry');
+  test('toggle: earn gems / telemetry', async ({ sharedPage: page }) => {
+    await toggleAndVerify(page, 'settings-toggle-telemetry');
   });
 
-  test('language: system language toggle and language selector', async () => {
-    await ensureSettingsOpen();
+  test('language: system language toggle and language selector', async ({ sharedPage: page }) => {
+    await ensureSettingsOpen(page);
     const input = page.locator('[data-testid="settings-toggle-system-language"]');
     const wrapper = input.locator('..');
 
@@ -142,8 +125,8 @@ test.describe('Settings', () => {
     }
   });
 
-  test('theme: system, light, dark options', async () => {
-    await ensureSettingsOpen();
+  test('theme: system, light, dark options', async ({ sharedPage: page }) => {
+    await ensureSettingsOpen(page);
     const systemRadio = page.locator('input[name="theme_select"][value="system"]');
     const lightRadio = page.locator('input[name="theme_select"][value="light"]');
     const darkRadio = page.locator('input[name="theme_select"][value="dark"]');
@@ -168,18 +151,18 @@ test.describe('Settings', () => {
     await expect(systemRadio).toBeChecked();
   });
 
-  test('toggle: visual mode', async () => {
-    await toggleAndVerify('settings-toggle-visual-mode');
+  test('toggle: visual mode', async ({ sharedPage: page }) => {
+    await toggleAndVerify(page, 'settings-toggle-visual-mode');
   });
 
-  test('report an issue: buttons visible', async () => {
-    await ensureSettingsOpen();
+  test('report an issue: buttons visible', async ({ sharedPage: page }) => {
+    await ensureSettingsOpen(page);
     await expect(page.locator('[data-testid="settings-open-logs"]')).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid="settings-submit-logs"]')).toBeVisible({ timeout: 5_000 });
   });
 
-  test('application information: visible and copyable', async () => {
-    await ensureSettingsOpen();
+  test('application information: visible and copyable', async ({ sharedPage: page }) => {
+    await ensureSettingsOpen(page);
     const appInfo = page.locator('[data-testid="settings-app-info"]');
     await expect(appInfo).toBeVisible({ timeout: 5_000 });
     await expect(page.getByText(/Anon ID/i).first()).toBeVisible({ timeout: 5_000 });
@@ -191,8 +174,8 @@ test.describe('Settings', () => {
     expect(clipboard.length).toBeGreaterThan(0);
   });
 
-  test('reset settings: opens confirmation dialog with cancel', async () => {
-    await ensureSettingsOpen();
+  test('reset settings: opens confirmation dialog with cancel', async ({ sharedPage: page }) => {
+    await ensureSettingsOpen(page);
     const resetBtn = page.locator('[data-testid="settings-reset-button"]');
     await expect(resetBtn).toBeVisible({ timeout: 5_000 });
     await resetBtn.click({ timeout: 5_000 });

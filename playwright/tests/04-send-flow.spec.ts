@@ -1,33 +1,14 @@
-import { test, expect, Page, BrowserContext } from '@playwright/test';
-import { initReadinessMarker, waitForTauriReady } from '../helpers/state';
+import { test, expect } from '../helpers/shared-context';
 import {
-  dismissDialogs,
   waitForMiningReady,
   clickStartMining,
   waitForMiningActive,
   clickStopMining,
   waitForMiningStopped,
-  getWalletBalance,
   waitForWalletBalance,
 } from '../helpers/wait-for';
 import { sel } from '../helpers/selectors';
 import { TEST_WALLET } from '../helpers/test-wallet';
-
-let context: BrowserContext;
-let page: Page;
-
-test.beforeAll(async ({ browser }) => {
-  context = await browser.newContext();
-  page = await context.newPage();
-  await initReadinessMarker(page);
-  await page.goto('http://localhost:1420/');
-  await waitForTauriReady(page);
-  await dismissDialogs(page);
-});
-
-test.afterAll(async () => {
-  await context?.close();
-});
 
 test.describe('Send Transaction Flow', () => {
   const SEND_AMOUNT = '1';
@@ -35,7 +16,7 @@ test.describe('Send Transaction Flow', () => {
   const INVALID_ADDRESS = 'this-is-not-a-valid-tari-address';
   const VALID_ADDRESS = TEST_WALLET.address;
 
-  test('mine some blocks first to have a balance', async () => {
+  test('mine some blocks first to have a balance', async ({ sharedPage: page }) => {
     await waitForMiningReady(page, 120_000);
     await clickStartMining(page);
     await waitForMiningActive(page);
@@ -47,7 +28,7 @@ test.describe('Send Transaction Flow', () => {
     await waitForWalletBalance(page, 1, 120_000);
   });
 
-  test('open send modal and validate address input', async () => {
+  test('open send modal and validate address input', async ({ sharedPage: page }) => {
     // Click Send button
     const sendBtn = page.locator(sel.send.button);
     await sendBtn.waitFor({ state: 'visible', timeout: 10_000 });
@@ -86,7 +67,7 @@ test.describe('Send Transaction Flow', () => {
     await expect(amountInput).toBeEnabled({ timeout: 5_000 });
   });
 
-  test('validate amount input and enter transaction details', async () => {
+  test('validate amount input and enter transaction details', async ({ sharedPage: page }) => {
     const amountInput = page.locator(sel.send.amountInput);
     const reviewBtn = page.locator(sel.send.reviewButton);
 
@@ -122,7 +103,7 @@ test.describe('Send Transaction Flow', () => {
     await expect(reviewBtn).toBeEnabled({ timeout: 5_000 });
   });
 
-  test('review and confirm the transaction', async () => {
+  test('review and confirm the transaction', async ({ sharedPage: page }) => {
     const reviewBtn = page.locator(sel.send.reviewButton);
 
     // Click Review
@@ -167,7 +148,7 @@ test.describe('Send Transaction Flow', () => {
     await expect(page.getByText(/Send Tari/i).first()).not.toBeVisible({ timeout: 5_000 });
   });
 
-  test('verify pending transaction in history', async () => {
+  test('verify pending transaction in history', async ({ sharedPage: page }) => {
     // After Done, ensure we're viewing the transaction history
     // The "All activity" filter should be visible
     await page.waitForTimeout(2_000);
@@ -220,7 +201,7 @@ test.describe('Send Transaction Flow', () => {
     // in the list — that's enough to confirm it was sent.
   });
 
-  test('mine blocks to confirm the transaction', async () => {
+  test('mine blocks to confirm the transaction', async ({ sharedPage: page }) => {
     // Mine briefly to confirm the pending transaction
     await waitForMiningReady(page, 60_000);
     await clickStartMining(page);

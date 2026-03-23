@@ -1,7 +1,5 @@
-import { test, expect, Page, BrowserContext } from '@playwright/test';
-import { initReadinessMarker, waitForTauriReady } from '../helpers/state';
+import { test, expect } from '../helpers/shared-context';
 import {
-  dismissDialogs,
   waitForMiningReady,
   clickStartMining,
   waitForMiningActive,
@@ -12,31 +10,15 @@ import {
 } from '../helpers/wait-for';
 import { sel } from '../helpers/selectors';
 
-let context: BrowserContext;
-let page: Page;
-
-test.beforeAll(async ({ browser }) => {
-  context = await browser.newContext();
-  page = await context.newPage();
-  await initReadinessMarker(page);
-  await page.goto('http://localhost:1420/');
-  await waitForTauriReady(page);
-  await dismissDialogs(page);
-});
-
-test.afterAll(async () => {
-  await context?.close();
-});
-
 test.describe('Mining Flow', () => {
-  test('app launches and mining controls become ready', async () => {
+  test('app launches and mining controls become ready', async ({ sharedPage: page }) => {
     await waitForMiningReady(page, 120_000);
     const startBtn = page.locator('[data-testid="mining-button-start"]');
     const resumeBtn = page.locator('[data-testid="mining-button-resume"]');
     await expect(startBtn.or(resumeBtn)).toBeVisible();
   });
 
-  test('start mining and cycle through Eco, Turbo, Ludicrous modes', async () => {
+  test('start mining and cycle through Eco, Turbo, Ludicrous modes', async ({ sharedPage: page }) => {
     await waitForMiningReady(page, 120_000);
     await clickStartMining(page);
     await waitForMiningActive(page, 120_000);
@@ -113,7 +95,7 @@ test.describe('Mining Flow', () => {
     await waitForMiningStopped(page, 60_000);
   });
 
-  test('wallet shows balance after mining', async () => {
+  test('wallet shows balance after mining', async ({ sharedPage: page }) => {
     await waitForMiningReady(page, 60_000);
     const balanceBefore = await getWalletBalance(page);
 
@@ -135,7 +117,7 @@ test.describe('Mining Flow', () => {
     expect(balance).toBeGreaterThan(balanceBefore);
   });
 
-  test('mining recovers after xmrig process is killed', async () => {
+  test('mining recovers after xmrig process is killed', async ({ sharedPage: page }) => {
     await waitForMiningReady(page, 60_000);
     await clickStartMining(page);
     await waitForMiningActive(page);
@@ -188,7 +170,7 @@ test.describe('Mining Flow', () => {
     await waitForMiningStopped(page, 60_000);
   });
 
-  test('coinbase transactions appear in the transaction list', async () => {
+  test('coinbase transactions appear in the transaction list', async ({ sharedPage: page }) => {
     // After the previous test, blocks have been mined and the wallet
     // scan has caught up. The coinbase transactions should appear in
     // the UI transaction list.

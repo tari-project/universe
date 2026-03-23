@@ -1,6 +1,4 @@
-import { test, expect, Page, BrowserContext } from '@playwright/test';
-import { initReadinessMarker, waitForTauriReady } from '../helpers/state';
-import { dismissDialogs } from '../helpers/wait-for';
+import { test, expect } from '../helpers/shared-context';
 import { sel } from '../helpers/selectors';
 import { TEST_WALLET } from '../helpers/test-wallet';
 
@@ -18,24 +16,8 @@ import { TEST_WALLET } from '../helpers/test-wallet';
  * the mnemonic. If ANY part of that chain breaks, the words won't match.
  */
 
-let context: BrowserContext;
-let page: Page;
-
-test.beforeAll(async ({ browser }) => {
-  context = await browser.newContext();
-  page = await context.newPage();
-  await initReadinessMarker(page);
-  await page.goto('http://localhost:1420/');
-  await waitForTauriReady(page);
-  await dismissDialogs(page);
-});
-
-test.afterAll(async () => {
-  await context?.close();
-});
-
 test.describe('Wallet Integrity', () => {
-  test('seed words displayed in settings match the pre-seeded vault', async () => {
+  test('seed words displayed in settings match the pre-seeded vault', async ({ sharedPage: page }) => {
     // Open Settings → Wallet tab
     await page.locator(sel.settings.open).click({ timeout: 5_000 });
     await page.locator(sel.settings.walletTab).click({ timeout: 5_000 });
@@ -71,7 +53,7 @@ test.describe('Wallet Integrity', () => {
     expect(words).toEqual(TEST_WALLET.seedWords);
   });
 
-  test('wallet address matches the pre-seeded vault', async () => {
+  test('wallet address matches the pre-seeded vault', async ({ sharedPage: page }) => {
     // The mining address logged by the backend uses the address from the
     // pre-seeded wallet config. Here we verify the address is correct by
     // checking what the settings UI shows.

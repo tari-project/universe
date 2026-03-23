@@ -1,7 +1,5 @@
-import { test, expect, Page, BrowserContext } from '@playwright/test';
-import { initReadinessMarker, waitForTauriReady } from '../helpers/state';
+import { test, expect } from '../helpers/shared-context';
 import {
-  dismissDialogs,
   waitForMiningReady,
   clickStartMining,
   waitForMiningActive,
@@ -12,26 +10,10 @@ import {
 } from '../helpers/wait-for';
 import { sel } from '../helpers/selectors';
 
-let context: BrowserContext;
-let page: Page;
-
-test.beforeAll(async ({ browser }) => {
-  context = await browser.newContext();
-  page = await context.newPage();
-  await initReadinessMarker(page);
-  await page.goto('http://localhost:1420/');
-  await waitForTauriReady(page);
-  await dismissDialogs(page);
-});
-
-test.afterAll(async () => {
-  await context?.close();
-});
-
 test.describe('Exchange Miner', () => {
   let balanceBeforeExchange = 0;
 
-  test('copy wallet address and switch to exchange mining', async () => {
+  test('copy wallet address and switch to exchange mining', async ({ sharedPage: page }) => {
     await waitForMiningReady(page, 120_000);
 
     // --- Copy the wallet's own address via the UI copy button ---
@@ -114,7 +96,7 @@ test.describe('Exchange Miner', () => {
     await expect(exchangeName).toBeVisible({ timeout: 10_000 });
   });
 
-  test('mining works in exchange mode', async () => {
+  test('mining works in exchange mode', async ({ sharedPage: page }) => {
     await waitForMiningReady(page, 120_000);
     await clickStartMining(page);
     await waitForMiningActive(page, 120_000);
@@ -133,7 +115,7 @@ test.describe('Exchange Miner', () => {
     await waitForMiningStopped(page, 60_000);
   });
 
-  test('switch back to Tari Universe wallet and verify balance', async () => {
+  test('switch back to Tari Universe wallet and verify balance', async ({ sharedPage: page }) => {
     // Use invoke to revert — the exchange modal UI in exchange mode
     // may not have the "Mine directly to exchange" button visible.
     await page.evaluate(async () => {
@@ -162,7 +144,7 @@ test.describe('Exchange Miner', () => {
     expect(balanceAfter).toBeGreaterThanOrEqual(balanceBeforeExchange);
   });
 
-  test('mining works after switching back to wallet', async () => {
+  test('mining works after switching back to wallet', async ({ sharedPage: page }) => {
     await waitForMiningReady(page, 120_000);
 
     const balanceBefore = await getWalletBalance(page);
