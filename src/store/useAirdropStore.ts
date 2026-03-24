@@ -205,13 +205,13 @@ export interface AirdropStoreState {
     trancheStatus?: TrancheStatus;
     balanceSummary?: BalanceSummary;
 
-    // VIP tranche state
-    vipTrancheStatus?: TrancheStatus;
-    vipBalanceSummary?: BalanceSummary;
+    // Investor tranche state
+    investorTrancheStatus?: TrancheStatus;
+    investorBalanceSummary?: BalanceSummary;
 
     // Modal state
     showTrancheModal: boolean;
-    showVipTrancheModal: boolean;
+    showInvestorTrancheModal: boolean;
 }
 
 const initialState: AirdropStoreState = {
@@ -230,7 +230,7 @@ const initialState: AirdropStoreState = {
         limit: 20,
     },
     showTrancheModal: false,
-    showVipTrancheModal: false,
+    showInvestorTrancheModal: false,
 };
 
 export const useAirdropStore = create<AirdropStoreState>()(() => ({

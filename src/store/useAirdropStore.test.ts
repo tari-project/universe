@@ -32,9 +32,9 @@ describe('useAirdropStore', () => {
             claim: undefined,
             trancheStatus: undefined,
             balanceSummary: undefined,
-            vipTrancheStatus: undefined,
-            vipBalanceSummary: undefined,
-            showVipTrancheModal: false,
+            investorTrancheStatus: undefined,
+            investorBalanceSummary: undefined,
+            showInvestorTrancheModal: false,
         });
     });
 
@@ -396,14 +396,14 @@ describe('useAirdropStore', () => {
                         claimed: false,
                         claimedAt: null,
                         canClaim: true,
-                        program: 'vip',
+                        program: 'investor',
                     },
                 ],
             };
             useAirdropStore.setState({ trancheStatus });
             const stored = useAirdropStore.getState().trancheStatus;
             expect(stored?.tranches[0].program).toBe('airdrop');
-            expect(stored?.tranches[1].program).toBe('vip');
+            expect(stored?.tranches[1].program).toBe('investor');
         });
     });
 
@@ -421,12 +421,12 @@ describe('useAirdropStore', () => {
         });
     });
 
-    describe('VIP tranche state', () => {
-        it('has vipTrancheStatus as undefined initially', () => {
-            expect(useAirdropStore.getState().vipTrancheStatus).toBeUndefined();
+    describe('Investor tranche state', () => {
+        it('has investorTrancheStatus as undefined initially', () => {
+            expect(useAirdropStore.getState().investorTrancheStatus).toBeUndefined();
         });
 
-        it('can set vipTrancheStatus independently from trancheStatus', () => {
+        it('can set investorTrancheStatus independently from trancheStatus', () => {
             const airdropStatus: TrancheStatus = {
                 totalTranches: 1,
                 claimedCount: 0,
@@ -446,7 +446,7 @@ describe('useAirdropStore', () => {
                     },
                 ],
             };
-            const vipStatus: TrancheStatus = {
+            const investorStatus: TrancheStatus = {
                 totalTranches: 1,
                 claimedCount: 0,
                 availableCount: 1,
@@ -461,56 +461,56 @@ describe('useAirdropStore', () => {
                         claimed: false,
                         claimedAt: null,
                         canClaim: true,
-                        program: 'vip',
+                        program: 'investor',
                     },
                 ],
             };
-            useAirdropStore.setState({ trancheStatus: airdropStatus, vipTrancheStatus: vipStatus });
+            useAirdropStore.setState({ trancheStatus: airdropStatus, investorTrancheStatus: investorStatus });
 
             expect(useAirdropStore.getState().trancheStatus?.tranches[0].program).toBe('airdrop');
-            expect(useAirdropStore.getState().vipTrancheStatus?.tranches[0].program).toBe('vip');
+            expect(useAirdropStore.getState().investorTrancheStatus?.tranches[0].program).toBe('investor');
         });
 
-        it('has vipBalanceSummary as undefined initially', () => {
-            expect(useAirdropStore.getState().vipBalanceSummary).toBeUndefined();
+        it('has investorBalanceSummary as undefined initially', () => {
+            expect(useAirdropStore.getState().investorBalanceSummary).toBeUndefined();
         });
 
-        it('can set vipBalanceSummary', () => {
+        it('can set investorBalanceSummary', () => {
             const summary = {
                 totalXtm: 5000,
                 totalClaimed: 1000,
                 totalPending: 4000,
                 totalExpired: 0,
             };
-            useAirdropStore.setState({ vipBalanceSummary: summary });
-            expect(useAirdropStore.getState().vipBalanceSummary).toEqual(summary);
+            useAirdropStore.setState({ investorBalanceSummary: summary });
+            expect(useAirdropStore.getState().investorBalanceSummary).toEqual(summary);
         });
     });
 
-    describe('showVipTrancheModal state', () => {
-        it('has showVipTrancheModal as false initially', () => {
-            expect(useAirdropStore.getState().showVipTrancheModal).toBe(false);
+    describe('showInvestorTrancheModal state', () => {
+        it('has showInvestorTrancheModal as false initially', () => {
+            expect(useAirdropStore.getState().showInvestorTrancheModal).toBe(false);
         });
 
-        it('can open VIP modal', () => {
-            useAirdropStore.setState({ showVipTrancheModal: true });
-            expect(useAirdropStore.getState().showVipTrancheModal).toBe(true);
+        it('can open Investor modal', () => {
+            useAirdropStore.setState({ showInvestorTrancheModal: true });
+            expect(useAirdropStore.getState().showInvestorTrancheModal).toBe(true);
         });
 
-        it('can close VIP modal', () => {
-            useAirdropStore.setState({ showVipTrancheModal: true });
-            useAirdropStore.setState({ showVipTrancheModal: false });
-            expect(useAirdropStore.getState().showVipTrancheModal).toBe(false);
+        it('can close Investor modal', () => {
+            useAirdropStore.setState({ showInvestorTrancheModal: true });
+            useAirdropStore.setState({ showInvestorTrancheModal: false });
+            expect(useAirdropStore.getState().showInvestorTrancheModal).toBe(false);
         });
 
-        it('airdrop and VIP modals are independent', () => {
-            useAirdropStore.setState({ showTrancheModal: true, showVipTrancheModal: false });
+        it('airdrop and Investor modals are independent', () => {
+            useAirdropStore.setState({ showTrancheModal: true, showInvestorTrancheModal: false });
             expect(useAirdropStore.getState().showTrancheModal).toBe(true);
-            expect(useAirdropStore.getState().showVipTrancheModal).toBe(false);
+            expect(useAirdropStore.getState().showInvestorTrancheModal).toBe(false);
 
-            useAirdropStore.setState({ showVipTrancheModal: true });
+            useAirdropStore.setState({ showInvestorTrancheModal: true });
             expect(useAirdropStore.getState().showTrancheModal).toBe(true);
-            expect(useAirdropStore.getState().showVipTrancheModal).toBe(true);
+            expect(useAirdropStore.getState().showInvestorTrancheModal).toBe(true);
         });
     });
 

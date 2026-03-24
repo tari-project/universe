@@ -377,15 +377,15 @@ export const closeTrancheModal = () => {
     setShowTrancheModal(false);
 };
 
-// VIP Modal state actions
-export const setShowVipTrancheModal = (show: boolean) => {
-    useAirdropStore.setState({ showVipTrancheModal: show });
+// Investor Modal state actions
+export const setShowInvestorTrancheModal = (show: boolean) => {
+    useAirdropStore.setState({ showInvestorTrancheModal: show });
 };
 
-export const openVipTrancheModal = () => {
-    setShowVipTrancheModal(true);
+export const openInvestorTrancheModal = () => {
+    setShowInvestorTrancheModal(true);
 };
 
-export const closeVipTrancheModal = () => {
-    setShowVipTrancheModal(false);
+export const closeInvestorTrancheModal = () => {
+    setShowInvestorTrancheModal(false);
 };

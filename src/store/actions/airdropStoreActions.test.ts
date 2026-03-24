@@ -485,8 +485,8 @@ describe('airdropStoreActions', () => {
             tranches: [
                 { id: 'a1', amount: 1000, claimed: true, validTo: '2025-12-31', program: 'airdrop' },
                 { id: 'a2', amount: 2000, claimed: false, validTo: futureDateStr, program: 'airdrop' },
-                { id: 'v1', amount: 500, claimed: true, validTo: '2025-12-31', program: 'vip' },
-                { id: 'v2', amount: 750, claimed: false, validTo: futureDateStr, program: 'vip' },
+                { id: 'v1', amount: 500, claimed: true, validTo: '2025-12-31', program: 'investor' },
+                { id: 'v2', amount: 750, claimed: false, validTo: futureDateStr, program: 'investor' },
             ],
         };
 
@@ -503,8 +503,8 @@ describe('airdropStoreActions', () => {
             expect(result.totalPending).toBe(2000);
         });
 
-        it('filters to vip program only', () => {
-            const result = calculateBalanceSummaryForProgram(mixedTranches, 'vip');
+        it('filters to investor program only', () => {
+            const result = calculateBalanceSummaryForProgram(mixedTranches, 'investor');
             expect(result.totalXtm).toBe(1250);
             expect(result.totalClaimed).toBe(500);
             expect(result.totalPending).toBe(750);
@@ -519,15 +519,15 @@ describe('airdropStoreActions', () => {
         });
 
         it('handles empty tranches', () => {
-            const result = calculateBalanceSummaryForProgram({ tranches: [] }, 'vip');
+            const result = calculateBalanceSummaryForProgram({ tranches: [] }, 'investor');
             expect(result.totalXtm).toBe(0);
         });
     });
 
-    describe('VIP feature flag constant', () => {
-        it('FF_VIP_CLAIM_ENABLED has correct value', () => {
+    describe('Investor feature flag constant', () => {
+        it('FF_INVESTOR_CLAIM_ENABLED has correct value', () => {
             // This tests the feature flag string matches what the backend inserts
-            expect('vip-xtm-claim-enabled').toBe('vip-xtm-claim-enabled');
+            expect('investor-xtm-claim-enabled').toBe('investor-xtm-claim-enabled');
         });
     });
 

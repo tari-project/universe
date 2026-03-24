@@ -74,7 +74,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose, program }: Monthl
         }
     }, [showModal]);
 
-    const i18nPrefix = program === 'vip' ? 'vip.claim-modal' : 'tranche.claim-modal';
+    const i18nPrefix = program === 'investor' ? 'investor.claim-modal' : 'tranche.claim-modal';
     const displayTitle = t(`${i18nPrefix}.title`, { context: isFuture || !currentTranche ? 'future' : '' });
     const isClaiming = trancheLoading || isClaimingOptimistic;
 
