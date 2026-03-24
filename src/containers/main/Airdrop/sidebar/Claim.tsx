@@ -136,11 +136,12 @@ export default function Claim() {
     const investorAvailableAmount = hasInvestorAvailable
         ? investorTranches?.tranches.filter((t) => t.canClaim).reduce((sum, t) => sum + t.amount, 0)
         : undefined;
-    const claimAmount = canClaim && claimStatus?.amount
-        ? `${formatAmountWithKM(claimStatus.amount)} XTM`
-        : investorAvailableAmount
-          ? `${formatAmountWithKM(investorAvailableAmount)} XTM`
-          : undefined;
+    const claimAmount =
+        canClaim && claimStatus?.amount
+            ? `${formatAmountWithKM(claimStatus.amount)} XTM`
+            : investorAvailableAmount
+              ? `${formatAmountWithKM(investorAvailableAmount)} XTM`
+              : undefined;
 
     useEffect(() => {
         if (initialFetched.current) return;
