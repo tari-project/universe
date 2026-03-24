@@ -32,6 +32,9 @@ describe('useAirdropStore', () => {
             claim: undefined,
             trancheStatus: undefined,
             balanceSummary: undefined,
+            vipTrancheStatus: undefined,
+            vipBalanceSummary: undefined,
+            showVipTrancheModal: false,
         });
     });
 
@@ -365,6 +368,43 @@ describe('useAirdropStore', () => {
             useAirdropStore.setState({ trancheStatus: trancheStatus as unknown as TrancheStatus });
             expect(useAirdropStore.getState().trancheStatus?.tranches).toHaveLength(2);
         });
+
+        it('tranches can include program field', () => {
+            const trancheStatus = {
+                totalTranches: 2,
+                claimedCount: 0,
+                availableCount: 1,
+                nextAvailable: null,
+                tranches: [
+                    {
+                        id: 't1',
+                        trancheNumber: 1,
+                        amount: 1000,
+                        validFrom: '2026-01-01',
+                        validTo: '2026-12-31',
+                        claimed: false,
+                        claimedAt: null,
+                        canClaim: true,
+                        program: 'airdrop',
+                    },
+                    {
+                        id: 't2',
+                        trancheNumber: 1,
+                        amount: 500,
+                        validFrom: '2026-01-01',
+                        validTo: '2026-12-31',
+                        claimed: false,
+                        claimedAt: null,
+                        canClaim: true,
+                        program: 'vip',
+                    },
+                ],
+            };
+            useAirdropStore.setState({ trancheStatus });
+            const stored = useAirdropStore.getState().trancheStatus;
+            expect(stored?.tranches[0].program).toBe('airdrop');
+            expect(stored?.tranches[1].program).toBe('vip');
+        });
     });
 
     describe('balanceSummary state', () => {
@@ -378,6 +418,99 @@ describe('useAirdropStore', () => {
             useAirdropStore.setState({ balanceSummary: summary });
             expect(useAirdropStore.getState().balanceSummary).toEqual(summary);
             expect(useAirdropStore.getState().balanceSummary?.totalXtm).toBe(10000);
+        });
+    });
+
+    describe('VIP tranche state', () => {
+        it('has vipTrancheStatus as undefined initially', () => {
+            expect(useAirdropStore.getState().vipTrancheStatus).toBeUndefined();
+        });
+
+        it('can set vipTrancheStatus independently from trancheStatus', () => {
+            const airdropStatus: TrancheStatus = {
+                totalTranches: 1,
+                claimedCount: 0,
+                availableCount: 1,
+                nextAvailable: null,
+                tranches: [
+                    {
+                        id: 'a1',
+                        trancheNumber: 1,
+                        amount: 1000,
+                        validFrom: '2026-01-01',
+                        validTo: '2026-12-31',
+                        claimed: false,
+                        claimedAt: null,
+                        canClaim: true,
+                        program: 'airdrop',
+                    },
+                ],
+            };
+            const vipStatus: TrancheStatus = {
+                totalTranches: 1,
+                claimedCount: 0,
+                availableCount: 1,
+                nextAvailable: null,
+                tranches: [
+                    {
+                        id: 'v1',
+                        trancheNumber: 1,
+                        amount: 500,
+                        validFrom: '2026-01-01',
+                        validTo: '2026-12-31',
+                        claimed: false,
+                        claimedAt: null,
+                        canClaim: true,
+                        program: 'vip',
+                    },
+                ],
+            };
+            useAirdropStore.setState({ trancheStatus: airdropStatus, vipTrancheStatus: vipStatus });
+
+            expect(useAirdropStore.getState().trancheStatus?.tranches[0].program).toBe('airdrop');
+            expect(useAirdropStore.getState().vipTrancheStatus?.tranches[0].program).toBe('vip');
+        });
+
+        it('has vipBalanceSummary as undefined initially', () => {
+            expect(useAirdropStore.getState().vipBalanceSummary).toBeUndefined();
+        });
+
+        it('can set vipBalanceSummary', () => {
+            const summary = {
+                totalXtm: 5000,
+                totalClaimed: 1000,
+                totalPending: 4000,
+                totalExpired: 0,
+            };
+            useAirdropStore.setState({ vipBalanceSummary: summary });
+            expect(useAirdropStore.getState().vipBalanceSummary).toEqual(summary);
+        });
+    });
+
+    describe('showVipTrancheModal state', () => {
+        it('has showVipTrancheModal as false initially', () => {
+            expect(useAirdropStore.getState().showVipTrancheModal).toBe(false);
+        });
+
+        it('can open VIP modal', () => {
+            useAirdropStore.setState({ showVipTrancheModal: true });
+            expect(useAirdropStore.getState().showVipTrancheModal).toBe(true);
+        });
+
+        it('can close VIP modal', () => {
+            useAirdropStore.setState({ showVipTrancheModal: true });
+            useAirdropStore.setState({ showVipTrancheModal: false });
+            expect(useAirdropStore.getState().showVipTrancheModal).toBe(false);
+        });
+
+        it('airdrop and VIP modals are independent', () => {
+            useAirdropStore.setState({ showTrancheModal: true, showVipTrancheModal: false });
+            expect(useAirdropStore.getState().showTrancheModal).toBe(true);
+            expect(useAirdropStore.getState().showVipTrancheModal).toBe(false);
+
+            useAirdropStore.setState({ showVipTrancheModal: true });
+            expect(useAirdropStore.getState().showTrancheModal).toBe(true);
+            expect(useAirdropStore.getState().showVipTrancheModal).toBe(true);
         });
     });
 
