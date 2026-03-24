@@ -12,9 +12,7 @@ interface TrancheStatusResponse {
 
 async function fetchTrancheStatus(program?: string): Promise<TrancheStatus | undefined> {
     try {
-        const path = program
-            ? `/tari/airdrop/tranches/status?program=${program}`
-            : '/tari/airdrop/tranches/status';
+        const path = program ? `/tari/airdrop/tranches/status?program=${program}` : '/tari/airdrop/tranches/status';
 
         const response = await handleAirdropRequest<TrancheStatusResponse>({
             path,
@@ -73,10 +71,7 @@ export function useTrancheStatus(enabled = true, program?: string) {
 }
 
 // Pure function to calculate balance summary from tranche data (exported for testing)
-export function calculateBalanceSummary(
-    trancheStatus: TrancheStatus,
-    nextTrancheAmount?: number
-): BalanceSummary {
+export function calculateBalanceSummary(trancheStatus: TrancheStatus, nextTrancheAmount?: number): BalanceSummary {
     const totalXtm = trancheStatus.tranches.reduce((sum, tranche) => sum + tranche.amount, 0);
     const totalClaimed = trancheStatus.tranches
         .filter((tranche) => tranche.claimed)

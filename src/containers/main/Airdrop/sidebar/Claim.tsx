@@ -101,7 +101,8 @@ function ClaimTooltip({ claimStatus, claimStatusLoading, nextAvailable }: ClaimT
                 {t('tranche.status.total-airdrop')} <strong>{formatAmount(investorBalanceSummary.totalXtm)}</strong>
             </RewardTooltipItem>
             <RewardTooltipItem>
-                {t('tranche.status.total-claimed')}: <strong> {formatAmount(investorBalanceSummary.totalClaimed)} XTM</strong>
+                {t('tranche.status.total-claimed')}:{' '}
+                <strong> {formatAmount(investorBalanceSummary.totalClaimed)} XTM</strong>
             </RewardTooltipItem>
         </RewardTooltipItems>
     );
@@ -142,12 +143,16 @@ export default function Claim() {
     }, [canClaim, refreshTranches]);
 
     const handleClick = () => {
+        // Open both modals if both have available claims
         if (canClaim) {
             openTrancheModal();
-        } else if (hasInvestorAvailable) {
+        }
+        if (hasInvestorAvailable) {
             openInvestorTrancheModal();
         }
     };
+
+    const hasAnyClaim = canClaim || hasInvestorAvailable;
 
     const tooltipContent = (
         <ClaimTooltip
@@ -158,11 +163,7 @@ export default function Claim() {
     );
 
     return (
-        <SidebarItem
-            tooltipContent={tooltipContent}
-            onClick={canClaim || hasInvestorAvailable ? handleClick : undefined}
-            text={claimAmount}
-        >
+        <SidebarItem tooltipContent={tooltipContent} onClick={hasAnyClaim ? handleClick : undefined} text={claimAmount}>
             <ActionImgWrapper>
                 <ParachuteSVG />
             </ActionImgWrapper>
