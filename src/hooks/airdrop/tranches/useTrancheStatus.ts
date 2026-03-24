@@ -10,10 +10,14 @@ interface TrancheStatusResponse {
     data: TrancheStatus;
 }
 
-async function fetchTrancheStatus(): Promise<TrancheStatus | undefined> {
+async function fetchTrancheStatus(program?: string): Promise<TrancheStatus | undefined> {
     try {
+        const path = program
+            ? `/tari/airdrop/tranches/status?program=${program}`
+            : '/tari/airdrop/tranches/status';
+
         const response = await handleAirdropRequest<TrancheStatusResponse>({
-            path: '/tari/airdrop/tranches/status',
+            path,
             method: 'GET',
         });
 
@@ -28,12 +32,12 @@ async function fetchTrancheStatus(): Promise<TrancheStatus | undefined> {
     }
 }
 
-export function useTrancheStatus(enabled = true) {
+export function useTrancheStatus(enabled = true, program?: string) {
     const user = useAirdropStore((state) => state.userDetails?.user?.id);
 
     return useQuery({
-        queryKey: [KEY_TRANCHE_STATUS, user],
-        queryFn: fetchTrancheStatus,
+        queryKey: [KEY_TRANCHE_STATUS, user, program],
+        queryFn: () => fetchTrancheStatus(program),
         enabled: !!user && enabled,
         staleTime: 2 * 60 * 1000, // 2 minutes
         gcTime: 10 * 60 * 1000, // 10 minutes
@@ -68,13 +72,11 @@ export function useTrancheStatus(enabled = true) {
     });
 }
 
-// Helper hook to calculate balance summary from tranche data
-export function useBalanceSummary(): BalanceSummary | null {
-    const { data: trancheStatus } = useTrancheStatus();
-    const { nextTranche } = useAvailableTranches();
-
-    if (!trancheStatus) return null;
-
+// Pure function to calculate balance summary from tranche data (exported for testing)
+export function calculateBalanceSummary(
+    trancheStatus: TrancheStatus,
+    nextTrancheAmount?: number
+): BalanceSummary {
     const totalXtm = trancheStatus.tranches.reduce((sum, tranche) => sum + tranche.amount, 0);
     const totalClaimed = trancheStatus.tranches
         .filter((tranche) => tranche.claimed)
@@ -92,13 +94,23 @@ export function useBalanceSummary(): BalanceSummary | null {
         totalClaimed,
         totalPending,
         totalExpired,
-        nextAvailableAmount: nextTranche?.amount,
+        nextAvailableAmount: nextTrancheAmount,
     };
 }
 
+// Helper hook to calculate balance summary from tranche data
+export function useBalanceSummary(program?: string): BalanceSummary | null {
+    const { data: trancheStatus } = useTrancheStatus(true, program);
+    const { nextTranche } = useAvailableTranches(program);
+
+    if (!trancheStatus) return null;
+
+    return calculateBalanceSummary(trancheStatus, nextTranche?.amount);
+}
+
 // Helper hook to get available tranches
-export function useAvailableTranches() {
-    const { data: trancheStatus, ...rest } = useTrancheStatus();
+export function useAvailableTranches(program?: string) {
+    const { data: trancheStatus, ...rest } = useTrancheStatus(true, program);
     const availableTranches = trancheStatus?.tranches.filter((tranche) => tranche.canClaim) || [];
     const currentTranche = availableTranches.length > 0 ? availableTranches[0] : null;
 

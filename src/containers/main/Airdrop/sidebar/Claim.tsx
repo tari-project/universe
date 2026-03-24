@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAirdropStore } from '@app/store';
-import { openTrancheModal } from '@app/store/actions/airdropStoreActions';
+import { openTrancheModal, openVipTrancheModal } from '@app/store/actions/airdropStoreActions';
 
 import { SidebarItem } from './components/SidebarItem';
 import {
@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
 
 import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
-import { useBalanceSummary } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
+import { useBalanceSummary, useTrancheStatus } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
 import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
 import { formatNumber, FormatPreset, formatAmountWithKM } from '@app/utils';
 import { ClaimStatus } from '@app/types/airdrop-claim.ts';
@@ -38,6 +38,11 @@ const formatAmount = (amount: number | undefined | null): string => {
 function ClaimTooltip({ claimStatus, claimStatusLoading, nextAvailable }: ClaimTooltipProps) {
     const { t } = useTranslation('airdrop');
     const balanceSummary = useBalanceSummary();
+
+    // VIP balance
+    const features = useAirdropStore((s) => s.features);
+    const vipEnabled = !!features?.includes(FEATURE_FLAGS.FF_VIP_CLAIM_ENABLED);
+    const vipBalanceSummary = useBalanceSummary(vipEnabled ? 'vip' : undefined);
 
     const claimTotal = claimStatus?.amount || 0;
     const values = useMemo(() => {
@@ -86,12 +91,28 @@ function ClaimTooltip({ claimStatus, claimStatusLoading, nextAvailable }: ClaimT
         </RewardTooltipItems>
     );
 
+    const hasVipBalance = vipBalanceSummary && vipBalanceSummary.totalXtm > 0;
+    const vipMarkup = vipEnabled && hasVipBalance && (
+        <RewardTooltipItems>
+            <RewardTooltipItem>
+                <strong>{t('vip.sidebar.label')}</strong>
+            </RewardTooltipItem>
+            <RewardTooltipItem>
+                {t('tranche.status.total-airdrop')} <strong>{formatAmount(vipBalanceSummary.totalXtm)}</strong>
+            </RewardTooltipItem>
+            <RewardTooltipItem>
+                {t('tranche.status.total-claimed')}: <strong> {formatAmount(vipBalanceSummary.totalClaimed)} XTM</strong>
+            </RewardTooltipItem>
+        </RewardTooltipItems>
+    );
+
     return (
         <RewardTooltipContent>
             {ineligibleMarkup}
             {!isIneligible && <TooltipHeader>{t('loggedInTitle')}</TooltipHeader>}
             {loadingMarkup}
             {markup}
+            {vipMarkup}
         </RewardTooltipContent>
     );
 }
@@ -99,10 +120,16 @@ function ClaimTooltip({ claimStatus, claimStatusLoading, nextAvailable }: ClaimT
 export default function Claim() {
     const features = useAirdropStore((s) => s.features);
     const claimEnabled = !!features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
+    const vipEnabled = !!features?.includes(FEATURE_FLAGS.FF_VIP_CLAIM_ENABLED);
     const initialFetched = useRef(false);
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
     const { data: claimStatus, isLoading: claimStatusLoading } = useClaimStatus();
     const { refreshTranches } = useTrancheAutoRefresh({ enabled: claimEnabled });
+
+    // VIP tranches
+    const { data: vipTranches } = useTrancheStatus(vipEnabled, 'vip');
+    const hasVipTranches = vipEnabled && vipTranches && vipTranches.totalTranches > 0;
+    const hasVipAvailable = hasVipTranches && (vipTranches?.availableCount ?? 0) > 0;
 
     const canClaim = claimEnabled && !!claimStatus?.hasClaim && !!trancheStatus?.availableCount;
     const claimAmount = canClaim && claimStatus?.amount ? `${formatAmountWithKM(claimStatus?.amount)} XTM` : undefined;
@@ -113,6 +140,14 @@ export default function Claim() {
             refreshTranches().then(() => (initialFetched.current = true));
         }
     }, [canClaim, refreshTranches]);
+
+    const handleClick = () => {
+        if (canClaim) {
+            openTrancheModal();
+        } else if (hasVipAvailable) {
+            openVipTrancheModal();
+        }
+    };
 
     const tooltipContent = (
         <ClaimTooltip
@@ -125,7 +160,7 @@ export default function Claim() {
     return (
         <SidebarItem
             tooltipContent={tooltipContent}
-            onClick={canClaim ? openTrancheModal : undefined}
+            onClick={canClaim || hasVipAvailable ? handleClick : undefined}
             text={claimAmount}
         >
             <ActionImgWrapper>

@@ -159,6 +159,20 @@
       "tranches": "tranches"
     }
   },
+  "vip": {
+    "claim-modal": {
+      "claim-button": "Claim",
+      "claiming": "Claiming...",
+      "description": "Your VIP tokens are ready to claim",
+      "description-complete": "You've claimed your VIP tokens. It may take a few hours to appear in your balance.",
+      "title": "Your VIP Tokens Are Ready",
+      "title-complete": "VIP Tokens Claimed!",
+      "title-future": "Your Next VIP Payment"
+    },
+    "sidebar": {
+      "label": "VIP"
+    }
+  },
   "unclaimedGems": "Unclaimed Gems",
   "update-username": "Update username",
   "username-error": "Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens",
