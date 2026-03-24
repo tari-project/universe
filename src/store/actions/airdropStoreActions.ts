@@ -376,3 +376,16 @@ export const openTrancheModal = () => {
 export const closeTrancheModal = () => {
     setShowTrancheModal(false);
 };
+
+// VIP Modal state actions
+export const setShowVipTrancheModal = (show: boolean) => {
+    useAirdropStore.setState({ showVipTrancheModal: show });
+};
+
+export const openVipTrancheModal = () => {
+    setShowVipTrancheModal(true);
+};
+
+export const closeVipTrancheModal = () => {
+    setShowVipTrancheModal(false);
+};
