@@ -19,6 +19,24 @@ export async function openMiningSidebar(page: Page) {
 }
 
 /**
+ * Dispatch module-status events via the Playwright shim so the Zustand store
+ * marks modules as Initialized. This is cheap and idempotent — it just tells
+ * the frontend that setup is complete so the mining button becomes enabled.
+ */
+async function dispatchModuleStatus(page: Page) {
+  await page.evaluate(() => {
+    const dispatch = (window as any).__PLAYWRIGHT_DISPATCH_EVENT__;
+    if (typeof dispatch !== 'function') return;
+    for (const module of ['CpuMining', 'GpuMining', 'Wallet']) {
+      dispatch('backend_state_update', {
+        event_type: 'UpdateAppModuleStatus',
+        payload: { module, status: 'Initialized', error_messages: {} },
+      });
+    }
+  }).catch(() => {});
+}
+
+/**
  * Wait for the mining start or resume button to be visible and enabled.
  * This indicates that all setup phases have completed and mining is unlocked.
  */
@@ -32,25 +50,21 @@ export async function waitForMiningReady(page: Page, timeout = 120_000) {
     await overlay.dispatchEvent('mousedown');
     await overlay.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
   }
-  // The headless backend completes setup before the browser connects.
-  // Module-status events are emitted once during setup and don't reach
-  // late-joining WS clients. Dispatch them via the shim so the Zustand
-  // store marks modules as Initialized and unlocks the mining button.
-  await page.evaluate(() => {
-    const dispatch = (window as any).__PLAYWRIGHT_DISPATCH_EVENT__;
-    if (typeof dispatch !== 'function') return;
-    for (const module of ['CpuMining', 'GpuMining', 'Wallet']) {
-      dispatch('backend_state_update', {
-        event_type: 'UpdateAppModuleStatus',
-        payload: { module, status: 'Initialized', error_messages: {} },
-      });
-    }
-  }).catch(() => {});
   await openMiningSidebar(page);
   const start = page.locator(`${sel.mining.startButton}:not([disabled])`);
   const resume = page.locator(`${sel.mining.resumeButton}:not([disabled])`);
   const btn = start.or(resume);
-  await btn.waitFor({ state: 'visible', timeout });
+
+  // Poll until the mining button is visible and enabled, dispatching module
+  // status events on every iteration. The backend may reset modules after an
+  // exchange-mode switch, so a one-shot dispatch at the top is not enough.
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    await dispatchModuleStatus(page);
+    if (await btn.isVisible().catch(() => false)) return;
+    await page.waitForTimeout(1_000);
+  }
+  throw new Error(`Mining button not ready within ${timeout}ms`);
 }
 
 /** Click the Start or Resume mining button. Sidebar must already be open. */

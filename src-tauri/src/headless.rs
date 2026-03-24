@@ -100,14 +100,16 @@ pub fn start_headless(handle_clone: AppHandle) {
                 // button is permanently disabled.
                 // Setup has already completed before this loop starts, so all
                 // modules are Initialized.
-                for module in [AppModule::CpuMining, AppModule::GpuMining, AppModule::Wallet] {
-                    EventsEmitter::emit_update_app_module_status(
-                        UpdateAppModuleStatusPayload {
-                            module,
-                            status: AppModuleStatus::Initialized.as_string(),
-                            error_messages: HashMap::new(),
-                        },
-                    )
+                for module in [
+                    AppModule::CpuMining,
+                    AppModule::GpuMining,
+                    AppModule::Wallet,
+                ] {
+                    EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
+                        module,
+                        status: AppModuleStatus::Initialized.as_string(),
+                        error_messages: HashMap::new(),
+                    })
                     .await;
                 }
 
