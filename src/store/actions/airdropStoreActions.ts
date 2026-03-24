@@ -59,6 +59,7 @@ const clearState: AirdropStoreState = {
         limit: 20,
     },
     showTrancheModal: false,
+    showInvestorTrancheModal: false,
 };
 
 const getAirdropInMemoryConfig = async () => {

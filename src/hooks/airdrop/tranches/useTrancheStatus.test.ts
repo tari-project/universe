@@ -2,18 +2,18 @@
  * @vitest-environment jsdom
  */
 import { describe, it, expect, vi, beforeAll } from 'vitest';
-import type { TrancheStatus } from '@app/types/airdrop-claim';
+import type { TrancheStatus, BalanceSummary } from '@app/types/airdrop-claim';
 
 // Mock Tauri internals before any imports that trigger store barrel
 beforeAll(() => {
-    (window as any).__TAURI_INTERNALS__ = {
+    (window as unknown as Record<string, unknown>).__TAURI_INTERNALS__ = {
         metadata: { currentWindow: { label: 'main' } },
         invoke: vi.fn(),
     };
 });
 
-// Must be imported after Tauri mock is set up — use dynamic import
-let calculateBalanceSummary: (trancheStatus: TrancheStatus, nextTrancheAmount?: number) => any;
+// Must be imported after Tauri mock is set up, use dynamic import
+let calculateBalanceSummary: (trancheStatus: TrancheStatus, nextTrancheAmount?: number) => BalanceSummary;
 
 beforeAll(async () => {
     const mod = await import('./useTrancheStatus');
