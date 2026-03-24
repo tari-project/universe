@@ -133,7 +133,14 @@ export default function Claim() {
     const hasInvestorAvailable = hasInvestorTranches && (investorTranches?.availableCount ?? 0) > 0;
 
     const canClaim = claimEnabled && !!claimStatus?.hasClaim && !!trancheStatus?.availableCount;
-    const claimAmount = canClaim && claimStatus?.amount ? `${formatAmountWithKM(claimStatus?.amount)} XTM` : undefined;
+    const investorAvailableAmount = hasInvestorAvailable
+        ? investorTranches?.tranches.filter((t) => t.canClaim).reduce((sum, t) => sum + t.amount, 0)
+        : undefined;
+    const claimAmount = canClaim && claimStatus?.amount
+        ? `${formatAmountWithKM(claimStatus.amount)} XTM`
+        : investorAvailableAmount
+          ? `${formatAmountWithKM(investorAvailableAmount)} XTM`
+          : undefined;
 
     useEffect(() => {
         if (initialFetched.current) return;
@@ -143,11 +150,10 @@ export default function Claim() {
     }, [canClaim, refreshTranches]);
 
     const handleClick = () => {
-        // Open both modals if both have available claims
+        // Prioritize airdrop claim modal; only show investor modal if no airdrop claim
         if (canClaim) {
             openTrancheModal();
-        }
-        if (hasInvestorAvailable) {
+        } else if (hasInvestorAvailable) {
             openInvestorTrancheModal();
         }
     };
