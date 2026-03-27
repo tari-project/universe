@@ -39,6 +39,7 @@ function VisualMode() {
                 </SettingsGroupContent>
                 <SettingsGroupAction style={{ alignItems: 'center' }}>
                     <ToggleSwitch
+                        data-testid="settings-toggle-visual-mode"
                         disabled={isWebglNotSupported}
                         checked={visualMode}
                         onChange={handleSwitch}

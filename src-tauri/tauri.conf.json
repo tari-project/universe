@@ -120,6 +120,11 @@
                     "name": "import-backup",
                     "description": "Imports a minotari node backup file",
                     "takesValue": true
+                },
+                {
+                    "name": "headless",
+                    "description": "Run headless with remote-ui WebSocket bridge instead of a native window",
+                    "takesValue": false
                 }
             ]
         }

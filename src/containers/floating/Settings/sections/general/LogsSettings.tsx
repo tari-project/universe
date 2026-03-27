@@ -61,8 +61,12 @@ export default function LogsSettings() {
                         )}
                     </SettingsGroupContent>
                     <SettingsGroupAction>
-                        <Button onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</Button>
-                        <Button onClick={() => setDialogToShow('logs')}>{t('send-logs', { ns: 'settings' })}</Button>
+                        <Button data-testid="settings-open-logs" onClick={openLogsDirectory}>
+                            {t('open-logs-directory', { ns: 'settings' })}
+                        </Button>
+                        <Button data-testid="settings-submit-logs" onClick={() => setDialogToShow('logs')}>
+                            {t('send-logs', { ns: 'settings' })}
+                        </Button>
                     </SettingsGroupAction>
                 </SettingsGroup>
             </SettingsGroupWrapper>

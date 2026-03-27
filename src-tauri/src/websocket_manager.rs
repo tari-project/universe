@@ -123,20 +123,19 @@ impl WebsocketManager {
         self.app = Some(app.clone());
         log::info!(target: LOG_TARGET_APP_LOGIC, "websocket manager app handle set");
         let mut status_channel_rx = self.status_update_channel_rx.clone();
-        let main_window = app
-            .get_webview_window("main")
-            .expect("main window must exist");
 
-        tokio::spawn(async move {
-            while status_channel_rx.changed().await.is_ok() {
-                let new_state = status_channel_rx.borrow();
-                drop(main_window
-                    .clone()
-                    .emit("ws-status-change", new_state.clone()).inspect_err(|e|{
-                        error!(target:LOG_TARGET_APP_LOGIC,"could not send ws-status-change event: {new_state:?} error: {e}");
-                    }));
-            }
-        });
+        if let Some(main_window) = app.get_webview_window("main") {
+            tokio::spawn(async move {
+                while status_channel_rx.changed().await.is_ok() {
+                    let new_state = status_channel_rx.borrow();
+                    drop(main_window
+                        .clone()
+                        .emit("ws-status-change", new_state.clone()).inspect_err(|e|{
+                            error!(target:LOG_TARGET_APP_LOGIC,"could not send ws-status-change event: {new_state:?} error: {e}");
+                        }));
+                }
+            });
+        }
     }
 
     pub fn is_websocket_manager_ready(&self) -> bool {
@@ -237,20 +236,36 @@ impl WebsocketManager {
             }
         });
 
-        info!(target:LOG_TARGET_APP_LOGIC,"waiting for websocket startup");
-        if status_update_channel_rx.changed().await.is_ok() {
-            let value = status_update_channel_rx.borrow().clone();
-            if value == WebsocketManagerStatusMessage::Connected {
-                return Ok(());
-            } else {
-                return Err(anyhow::anyhow!(
-                    "Websocket could not connect to backend as its status is {:?}",
-                    value
-                ));
+        let ws_timeout_secs: u64 = std::env::var("WS_CONNECT_TIMEOUT_SECS")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(15);
+        info!(target:LOG_TARGET_APP_LOGIC,"waiting for websocket startup (timeout={}s)", ws_timeout_secs);
+        match tokio::time::timeout(
+            Duration::from_secs(ws_timeout_secs),
+            status_update_channel_rx.changed(),
+        )
+        .await
+        {
+            Ok(Ok(())) => {
+                let value = status_update_channel_rx.borrow().clone();
+                if value == WebsocketManagerStatusMessage::Connected {
+                    Ok(())
+                } else {
+                    Err(anyhow::anyhow!(
+                        "Websocket could not connect to backend as its status is {:?}",
+                        value
+                    ))
+                }
             }
-        };
-
-        Ok(())
+            Ok(Err(e)) => Err(anyhow::anyhow!("Websocket status channel closed: {e}")),
+            Err(_) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Websocket initial connection timed out after {ws_timeout_secs}s, continuing with background retries");
+                Err(anyhow::anyhow!(
+                    "Websocket initial connection timed out after {ws_timeout_secs}s"
+                ))
+            }
+        }
     }
 
     pub async fn listen(
