@@ -2,6 +2,7 @@ import { useAirdropStore } from '@app/store';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
 import { closeTrancheModal } from '@app/store/actions/airdropStoreActions';
 import { MonthlyTrancheClaimModal } from '@app/components/airdrop/MonthlyTrancheClaimModal.tsx';
+import InvestorClaimModal from './InvestorClaimModal.tsx';
 
 export default function AirdropClaimModal() {
     const features = useAirdropStore((s) => s.features);
@@ -12,10 +13,10 @@ export default function AirdropClaimModal() {
         closeTrancheModal();
     };
 
-    if (!claimEnabled) {
-        return null;
-    }
-
-    // Always use the new modal design - it handles both tranche and legacy claims
-    return <MonthlyTrancheClaimModal showModal={showModal} onClose={onClose} />;
+    return (
+        <>
+            {claimEnabled && <MonthlyTrancheClaimModal showModal={showModal} onClose={onClose} />}
+            <InvestorClaimModal />
+        </>
+    );
 }

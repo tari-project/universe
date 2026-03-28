@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useAirdropStore } from '@app/store';
-import { openTrancheModal } from '@app/store/actions/airdropStoreActions';
+import { openTrancheModal, openInvestorTrancheModal } from '@app/store/actions/airdropStoreActions';
 
 import { SidebarItem } from './components/SidebarItem';
 import {
@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
 
 import { useClaimStatus } from '@app/hooks/airdrop/claim/useClaimStatus';
-import { useBalanceSummary } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
+import { useBalanceSummary, useTrancheStatus } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
 import { useTrancheAutoRefresh } from '@app/hooks/airdrop/tranches/useTrancheAutoRefresh.ts';
 import { formatNumber, FormatPreset, formatAmountWithKM } from '@app/utils';
 import { ClaimStatus } from '@app/types/airdrop-claim.ts';
@@ -38,6 +38,11 @@ const formatAmount = (amount: number | undefined | null): string => {
 function ClaimTooltip({ claimStatus, claimStatusLoading, nextAvailable }: ClaimTooltipProps) {
     const { t } = useTranslation('airdrop');
     const balanceSummary = useBalanceSummary();
+
+    // Investor balance
+    const features = useAirdropStore((s) => s.features);
+    const investorEnabled = !!features?.includes(FEATURE_FLAGS.FF_INVESTOR_CLAIM_ENABLED);
+    const investorBalanceSummary = useBalanceSummary(investorEnabled ? 'investor' : undefined);
 
     const claimTotal = claimStatus?.amount || 0;
     const values = useMemo(() => {
@@ -86,12 +91,29 @@ function ClaimTooltip({ claimStatus, claimStatusLoading, nextAvailable }: ClaimT
         </RewardTooltipItems>
     );
 
+    const hasInvestorBalance = investorBalanceSummary && investorBalanceSummary.totalXtm > 0;
+    const investorMarkup = investorEnabled && hasInvestorBalance && (
+        <RewardTooltipItems>
+            <RewardTooltipItem>
+                <strong>{t('investor.sidebar.label')}</strong>
+            </RewardTooltipItem>
+            <RewardTooltipItem>
+                {t('tranche.status.total-airdrop')} <strong>{formatAmount(investorBalanceSummary.totalXtm)}</strong>
+            </RewardTooltipItem>
+            <RewardTooltipItem>
+                {t('tranche.status.total-claimed')}:{' '}
+                <strong> {formatAmount(investorBalanceSummary.totalClaimed)} XTM</strong>
+            </RewardTooltipItem>
+        </RewardTooltipItems>
+    );
+
     return (
         <RewardTooltipContent>
             {ineligibleMarkup}
             {!isIneligible && <TooltipHeader>{t('loggedInTitle')}</TooltipHeader>}
             {loadingMarkup}
             {markup}
+            {investorMarkup}
         </RewardTooltipContent>
     );
 }
@@ -99,13 +121,27 @@ function ClaimTooltip({ claimStatus, claimStatusLoading, nextAvailable }: ClaimT
 export default function Claim() {
     const features = useAirdropStore((s) => s.features);
     const claimEnabled = !!features?.includes(FEATURE_FLAGS.FF_AD_CLAIM_ENABLED);
+    const investorEnabled = !!features?.includes(FEATURE_FLAGS.FF_INVESTOR_CLAIM_ENABLED);
     const initialFetched = useRef(false);
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
     const { data: claimStatus, isLoading: claimStatusLoading } = useClaimStatus();
     const { refreshTranches } = useTrancheAutoRefresh({ enabled: claimEnabled });
 
+    // Investor tranches
+    const { data: investorTranches } = useTrancheStatus(investorEnabled, 'investor');
+    const hasInvestorTranches = investorEnabled && investorTranches && investorTranches.totalTranches > 0;
+    const hasInvestorAvailable = hasInvestorTranches && (investorTranches?.availableCount ?? 0) > 0;
+
     const canClaim = claimEnabled && !!claimStatus?.hasClaim && !!trancheStatus?.availableCount;
-    const claimAmount = canClaim && claimStatus?.amount ? `${formatAmountWithKM(claimStatus?.amount)} XTM` : undefined;
+    const investorAvailableAmount = hasInvestorAvailable
+        ? investorTranches?.tranches.filter((t) => t.canClaim).reduce((sum, t) => sum + t.amount, 0)
+        : undefined;
+    const claimAmount =
+        canClaim && claimStatus?.amount
+            ? `${formatAmountWithKM(claimStatus.amount)} XTM`
+            : investorAvailableAmount
+              ? `${formatAmountWithKM(investorAvailableAmount)} XTM`
+              : undefined;
 
     useEffect(() => {
         if (initialFetched.current) return;
@@ -113,6 +149,17 @@ export default function Claim() {
             refreshTranches().then(() => (initialFetched.current = true));
         }
     }, [canClaim, refreshTranches]);
+
+    const handleClick = () => {
+        // Prioritize airdrop claim modal; only show investor modal if no airdrop claim
+        if (canClaim) {
+            openTrancheModal();
+        } else if (hasInvestorAvailable) {
+            openInvestorTrancheModal();
+        }
+    };
+
+    const hasAnyClaim = canClaim || hasInvestorAvailable;
 
     const tooltipContent = (
         <ClaimTooltip
@@ -123,11 +170,7 @@ export default function Claim() {
     );
 
     return (
-        <SidebarItem
-            tooltipContent={tooltipContent}
-            onClick={canClaim ? openTrancheModal : undefined}
-            text={claimAmount}
-        >
+        <SidebarItem tooltipContent={tooltipContent} onClick={hasAnyClaim ? handleClick : undefined} text={claimAmount}>
             <ActionImgWrapper>
                 <ParachuteSVG />
             </ActionImgWrapper>

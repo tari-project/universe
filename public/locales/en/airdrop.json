@@ -159,6 +159,20 @@
       "tranches": "tranches"
     }
   },
+  "investor": {
+    "claim-modal": {
+      "claim-button": "Claim",
+      "claiming": "Claiming...",
+      "description": "Your investor tokens are ready to claim",
+      "description-complete": "You've claimed your investor tokens. It may take a few hours to appear in your balance.",
+      "title": "Your Investor Tokens Are Ready",
+      "title-complete": "Investor Tokens Claimed!",
+      "title-future": "Your Next Investor Payment"
+    },
+    "sidebar": {
+      "label": "Investor"
+    }
+  },
   "unclaimedGems": "Unclaimed Gems",
   "update-username": "Update username",
   "username-error": "Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens",

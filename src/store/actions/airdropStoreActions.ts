@@ -16,7 +16,8 @@ import {
 } from '@app/store';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import type { XSpaceEvent } from '@app/types/ws.ts';
-import type { TrancheStatus, BalanceSummary } from '@app/types/airdrop-claim.ts';
+import type { TrancheStatus } from '@app/types/airdrop-claim.ts';
+import { calculateBalanceSummary } from '@app/hooks/airdrop/tranches/useTrancheStatus.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 import { setAirdropTokensInConfig } from '@app/store/actions/config/core.ts';
@@ -59,6 +60,7 @@ const clearState: AirdropStoreState = {
         limit: 20,
     },
     showTrancheModal: false,
+    showInvestorTrancheModal: false,
 };
 
 const getAirdropInMemoryConfig = async () => {
@@ -338,31 +340,9 @@ export const setTrancheStatus = (trancheStatus: TrancheStatus) => {
     useAirdropStore.setState((_state) => ({
         trancheStatus,
         // Calculate balance summary from tranche data
-        balanceSummary: calculateBalanceSummaryFromTranches(trancheStatus),
+        balanceSummary: calculateBalanceSummary(trancheStatus),
     }));
 };
-
-// Helper function to calculate balance summary from tranche data
-function calculateBalanceSummaryFromTranches(trancheStatus: TrancheStatus): BalanceSummary {
-    const totalXtm = trancheStatus.tranches.reduce((sum, tranche) => sum + tranche.amount, 0);
-    const totalClaimed = trancheStatus.tranches
-        .filter((tranche) => tranche.claimed)
-        .reduce((sum, tranche) => sum + tranche.amount, 0);
-
-    const now = new Date();
-    const totalExpired = trancheStatus.tranches
-        .filter((tranche) => !tranche.claimed && new Date(tranche.validTo) < now)
-        .reduce((sum, tranche) => sum + tranche.amount, 0);
-
-    const totalPending = totalXtm - totalClaimed - totalExpired;
-
-    return {
-        totalXtm,
-        totalClaimed,
-        totalPending,
-        totalExpired,
-    };
-}
 
 // Modal state actions
 export const setShowTrancheModal = (show: boolean) => {
@@ -375,4 +355,17 @@ export const openTrancheModal = () => {
 
 export const closeTrancheModal = () => {
     setShowTrancheModal(false);
+};
+
+// Investor Modal state actions
+export const setShowInvestorTrancheModal = (show: boolean) => {
+    useAirdropStore.setState({ showInvestorTrancheModal: show });
+};
+
+export const openInvestorTrancheModal = () => {
+    setShowInvestorTrancheModal(true);
+};
+
+export const closeInvestorTrancheModal = () => {
+    setShowInvestorTrancheModal(false);
 };

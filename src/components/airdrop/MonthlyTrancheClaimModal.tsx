@@ -21,15 +21,16 @@ import Countdown from '@app/components/airdrop/Countdown.tsx';
 interface MonthlyTrancheClaimModalProps {
     showModal: boolean;
     onClose: () => void;
+    program?: string;
 }
 
-export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheClaimModalProps) {
+export function MonthlyTrancheClaimModal({ showModal, onClose, program }: MonthlyTrancheClaimModalProps) {
     const { t } = useTranslation(['airdrop', 'common']);
     const [isClaimingOptimistic, setIsClaimingOptimistic] = useState(false);
     const [isClaimed, setIsClaimed] = useState(false);
 
     const trancheStatus = useAirdropStore((state) => state.trancheStatus);
-    const { currentTranche, nextTranche } = useAvailableTranches();
+    const { currentTranche, nextTranche } = useAvailableTranches(program);
 
     const {
         submitTrancheClaimWithOtp,
@@ -73,10 +74,11 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
         }
     }, [showModal]);
 
-    const displayTitle = t('tranche.claim-modal.title', { context: isFuture || !currentTranche ? 'future' : '' });
+    const i18nPrefix = program === 'investor' ? 'investor.claim-modal' : 'tranche.claim-modal';
+    const displayTitle = t(`${i18nPrefix}.title`, { context: isFuture || !currentTranche ? 'future' : '' });
     const isClaiming = trancheLoading || isClaimingOptimistic;
 
-    const displayDescription = t('tranche.claim-modal.description', { emojis: `💜🐢` });
+    const displayDescription = t(`${i18nPrefix}.description`, { emojis: `💜🐢` });
     const countdownTime = isCurrentUnclaimed ? currentTranche?.validTo : undefined;
 
     function handleClose() {
@@ -94,15 +96,15 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
             <CoinWrapper>
                 <DotLottieReact src="/assets/animation/coin_drop/coindrop.lottie" autoplay loop />
             </CoinWrapper>
-            <ClaimButton disabled>{t('tranche.claim-modal.claiming')}</ClaimButton>
+            <ClaimButton disabled>{t(`${i18nPrefix}.claiming`)}</ClaimButton>
         </ClaimWrapper>
     );
     const postClaimMarkup = isClaimed && (
         <>
             <ModalHeader>
-                <ModalTitle variant="h2">{t('tranche.claim-modal.title-complete')}</ModalTitle>
+                <ModalTitle variant="h2">{t(`${i18nPrefix}.title-complete`)}</ModalTitle>
             </ModalHeader>
-            <ModalBody>{t('tranche.claim-modal.description-complete')}</ModalBody>
+            <ModalBody>{t(`${i18nPrefix}.description-complete`)}</ModalBody>
             <ClaimButton onClick={handleClose}>{t('common:close')}</ClaimButton>
         </>
     );
@@ -116,7 +118,7 @@ export function MonthlyTrancheClaimModal({ showModal, onClose }: MonthlyTrancheC
                 {currentTranche?.amount ? <ClaimDetails displayAmount={currentTranche?.amount} /> : null}
                 {!isFuture && !!currentTranche && (
                     <ClaimButton onClick={handleClaim} disabled={!trancheCanClaim || isClaiming}>
-                        {t('tranche.claim-modal.claim-button')}
+                        {t(`${i18nPrefix}.claim-button`)}
                     </ClaimButton>
                 )}
                 {!isClaiming && (

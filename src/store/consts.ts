@@ -5,6 +5,7 @@ export enum FEATURE_FLAGS {
     FE_UI_ECO_ALERT = 'ui-eco-alert',
     FE_UNWRAP = 'unwrap-enabled',
     FF_AD_CLAIM_ENABLED = 'airdrop-xtm-claim-enabled',
+    FF_INVESTOR_CLAIM_ENABLED = 'investor-xtm-claim-enabled',
 }
 
 export const BRIDGE_TAPPLET_ID = 0;

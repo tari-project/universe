@@ -68,6 +68,7 @@ export interface Tranche {
     claimed: boolean;
     claimedAt: string | null;
     canClaim: boolean;
+    program?: string;
 }
 
 export interface TrancheStatus {
