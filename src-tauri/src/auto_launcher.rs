@@ -60,12 +60,22 @@ impl AutoLauncher {
         info!(target: LOG_TARGET_APP_LOGIC, "Building auto-launcher with app_name: {app_name} and app_path: {app_path}");
 
         match PlatformUtils::detect_current_os() {
-            CurrentOperatingSystem::Windows => AutoLaunchBuilder::new()
-                .set_app_name(app_name)
-                .set_app_path(app_path)
-                .set_use_launch_agent(false)
-                .build()
-                .map_err(|e| e.into()),
+            CurrentOperatingSystem::Windows => {
+                // The auto-launch crate writes the path directly to the Windows registry
+                // without quoting. Paths with spaces (e.g. "C:\Program Files\...") must be
+                // quoted or Windows will interpret the space as an argument separator.
+                let quoted_path = if app_path.contains(' ') && !app_path.starts_with('"') {
+                    format!("\"{}\"", app_path)
+                } else {
+                    app_path.to_string()
+                };
+                AutoLaunchBuilder::new()
+                    .set_app_name(app_name)
+                    .set_app_path(&quoted_path)
+                    .set_use_launch_agent(false)
+                    .build()
+                    .map_err(|e| e.into())
+            }
             CurrentOperatingSystem::Linux => AutoLaunchBuilder::new()
                 .set_app_name(app_name)
                 .set_app_path(app_path)
