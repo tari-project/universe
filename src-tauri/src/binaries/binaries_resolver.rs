@@ -288,6 +288,9 @@ impl BinaryResolver {
                 .await?;
         }
 
+        // Clean up stale version directories to free disk space
+        manager.cleanup_old_versions();
+
         Ok(())
     }
 
