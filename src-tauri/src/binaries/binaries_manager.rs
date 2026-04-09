@@ -485,6 +485,46 @@ impl BinaryManager {
     }
 }
 
+    /// Removes all old version directories under the binary folder, keeping only the selected version.
+    /// Called automatically after a successful download to reclaim disk space.
+    pub fn cleanup_old_versions(&self) {
+        let binary_folder = match self.adapter.get_binary_folder() {
+            Ok(p) => p,
+            Err(e) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "cleanup_old_versions: could not get binary folder for {}: {:?}", self.binary_name, e);
+                return;
+            }
+        };
+
+        if !binary_folder.exists() {
+            return;
+        }
+
+        let current_version = self.selected_version.as_str();
+        let entries = match std::fs::read_dir(&binary_folder) {
+            Ok(e) => e,
+            Err(e) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "cleanup_old_versions: could not read dir {:?}: {:?}", binary_folder, e);
+                return;
+            }
+        };
+
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            if let Some(dir_name) = path.file_name().and_then(|n| n.to_str()) {
+                if dir_name != current_version {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Removing old binary version directory: {:?}", path);
+                    if let Err(e) = std::fs::remove_dir_all(&path) {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove old version dir {:?}: {:?}", path, e);
+                    }
+                }
+            }
+        }
+    }
+
 fn check_binary_exists(path: &std::path::Path) -> bool {
     path.try_exists().unwrap_or_else(|e| {
         warn!(target: LOG_TARGET_APP_LOGIC, "Error checking if binary file exists at path: {:?}. Error: {:?}", path, e);
