@@ -30,6 +30,7 @@ export interface MiningStoreState {
     sessionMiningTime: SessionMiningTime;
     showEcoAlert: boolean;
     selectedResumeDuration?: ResumeMiningTime;
+    userManuallyStopped: boolean;
     eventSchedulerLastSelectedMiningModeName?: string; // Mining mode selector handles some modes in external dialogs and cannot pass callbacks to them, so we store the last selected mode name here temporarily
     // Its needed in Scheduler component, we pass callback to trigger updating this value when mode is selected instead of the main mining mode value
 }
@@ -46,6 +47,7 @@ const initialState: MiningStoreState = {
     isChangingMode: false,
     isExcludingGpuDevices: false,
     miningControlsEnabled: true,
+    userManuallyStopped: false,
     network: undefined,
     availableMiners: undefined,
     selectedMiner: undefined,
