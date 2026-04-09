@@ -88,6 +88,15 @@ export const setMonerodConfig = async (useMoneroFail: boolean, moneroNodes: stri
         }));
     });
 };
+export const setRemoteBaseNodeAddress = async (address: string) => {
+    const previousAddress = store.getState().remote_base_node_address;
+    store.setState((c) => ({ ...c, remote_base_node_address: address }));
+    invoke('set_remote_base_node_address', { address }).catch((e) => {
+        console.error('Could not set remote base node address', e);
+        setError('Could not change remote base node address');
+        store.setState((c) => ({ ...c, remote_base_node_address: previousAddress }));
+    });
+};
 export const setNodeType = async (nodeType: NodeType) => {
     const previousNodeType = store.getState().node_type;
     store.setState((c) => ({ ...c, node_type: nodeType }));

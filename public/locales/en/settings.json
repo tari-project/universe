@@ -141,6 +141,8 @@
     "data-subtitle": "Set a custom location to store the base node data",
     "data-title": "Node data settings"
   },
+  "custom-remote-node-address": "Custom remote node address (gRPC)",
+  "custom-remote-node-address-error": "Address must start with http:// or https://",
   "node-configuration": "Node configuration",
   "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
   "node-connection-address": "Connection address",

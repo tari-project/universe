@@ -1683,6 +1683,41 @@ pub async fn set_node_type(
 }
 
 #[tauri::command]
+pub async fn set_remote_base_node_address(address: String) -> Result<(), InvokeError> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET_APP_LOGIC, "[set_remote_base_node_address] called with address: {address:?}");
+
+    let trimmed = address.trim().to_string();
+    if !trimmed.is_empty() {
+        // Validate the address format by attempting to parse it
+        let has_scheme = trimmed.starts_with("http://") || trimmed.starts_with("https://");
+        if !has_scheme {
+            return Err(InvokeError::from_anyhow(anyhow::anyhow!(
+                "Invalid address: must start with http:// or https://"
+            )));
+        }
+    }
+
+    ConfigCore::update_field_requires_restart(
+        ConfigCoreContent::set_remote_base_node_address,
+        trimmed,
+        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::CpuMining],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue()
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET_APP_LOGIC, "set_remote_base_node_address took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn change_cpu_pool(cpu_pool: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[change_cpu_pool] called with cpu_pool: {cpu_pool:?}");
