@@ -144,7 +144,12 @@ function handleEcoAlertCheck(diffSeconds?: number) {
 
 export const startMining = async () => {
     console.info('Mining starting....');
-    useMiningStore.setState({ userManuallyStopped: false });
+    // Note: the `userManuallyStopped` flag is cleared centrally by the
+    // `handleCpuMinerControlsStateChanged` / `handleGpuMinerControlsStateChanged`
+    // handlers when the `MinerControlsState.Started` event arrives from the
+    // backend, so no setState is needed here. Keeping the clear in a single
+    // place guarantees that the scheduler `ResumeMining` path and any other
+    // non-user-triggered starts also reset the flag consistently.
     handleEcoAlertCheck();
     try {
         await startCpuMining();
