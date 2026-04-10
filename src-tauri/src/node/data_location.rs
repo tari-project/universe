@@ -62,6 +62,24 @@ pub fn detect_network_filesystem(path: &Path) -> Option<String> {
     // user-facing caller has already validated existence.
     let canonical: PathBuf = canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
 
+    // On Windows, a UNC path such as `\\server\share\folder` is a network
+    // location that is NOT mapped to a drive letter, so `sysinfo::Disks`
+    // (which iterates drive-letter mounts) will not report it. Detect the
+    // `\\?\UNC\...` (verbatim) and `\\server\share` prefixes directly from
+    // the canonical path before falling through to the disk enumeration.
+    #[cfg(windows)]
+    {
+        use std::path::{Component, Prefix};
+        if let Some(Component::Prefix(prefix_component)) = canonical.components().next() {
+            match prefix_component.kind() {
+                Prefix::UNC(_, _) | Prefix::VerbatimUNC(_, _) => {
+                    return Some("unc".to_string());
+                }
+                _ => {}
+            }
+        }
+    }
+
     let disks = Disks::new_with_refreshed_list();
     let mut best: Option<(usize, String)> = None;
 
