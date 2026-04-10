@@ -31,8 +31,64 @@ use fs_more::directory::{
 use fs_more::file::CollidingFileBehaviour;
 use log::{error, info, warn};
 use std::fs;
+use std::path::{Path, PathBuf};
+use sysinfo::Disks;
 use tari_common::configuration::Network;
 use tauri::ipc::InvokeError;
+
+/// Filesystem type names that indicate a network / remote volume.
+///
+/// These values are normalised to lowercase and covers the common remote
+/// filesystem names reported by sysinfo across platforms:
+/// - macOS:   `smbfs`, `nfs`, `afpfs`, `webdav`, `ftp`
+/// - Linux:   `cifs`, `smb3`, `nfs`, `nfs4`, `fuse.sshfs`, `sshfs`, `9p`,
+///            `ceph`, `glusterfs`, `beegfs`, `lustre`
+/// - Windows: sysinfo reports remote drives with a filesystem string that
+///            frequently contains `remote` or the underlying SMB/NFS name.
+const NETWORK_FILESYSTEMS: &[&str] = &[
+    "smbfs", "cifs", "smb", "smb2", "smb3", "nfs", "nfs3", "nfs4", "afpfs", "webdav", "davfs",
+    "ftp", "sshfs", "fuse.sshfs", "9p", "ceph", "glusterfs", "beegfs", "lustre", "remote",
+];
+
+/// Returns `Some(fs_name)` if `path` resolves to a location on a network /
+/// remote filesystem, or `None` if it's on a local volume (or we can't tell).
+///
+/// We pick the mount point whose path is the longest prefix of `path`, then
+/// check whether its filesystem type is one of the known remote types. This
+/// is how GNU `df`, `findmnt`, and similar tools resolve a path to its mount.
+pub fn detect_network_filesystem(path: &Path) -> Option<String> {
+    // Canonicalise so symlinks and `..` components don't confuse the prefix
+    // match. Fall back to the original path if canonicalisation fails — the
+    // user-facing caller has already validated existence.
+    let canonical: PathBuf = canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+
+    let disks = Disks::new_with_refreshed_list();
+    let mut best: Option<(usize, String)> = None;
+
+    for disk in disks.list() {
+        let mount = disk.mount_point();
+        if !canonical.starts_with(mount) {
+            continue;
+        }
+        let mount_len = mount.as_os_str().len();
+        let fs_name = disk.file_system().to_string_lossy().to_ascii_lowercase();
+
+        match &best {
+            Some((len, _)) if *len >= mount_len => {}
+            _ => best = Some((mount_len, fs_name)),
+        }
+    }
+
+    let (_, fs_name) = best?;
+    if NETWORK_FILESYSTEMS
+        .iter()
+        .any(|known| fs_name == *known || fs_name.contains(known))
+    {
+        Some(fs_name)
+    } else {
+        None
+    }
+}
 
 pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
     let move_options = DirectoryMoveOptions {
@@ -48,7 +104,29 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
         },
     };
     match canonicalize(to_path) {
-        Ok(new_dir) => match ConfigCore::update_node_data_directory(new_dir.clone()).await {
+        Ok(new_dir) => {
+            // Refuse network-mounted destinations up front. fs_more's
+            // move_directory has historically failed with confusing errors
+            // on SMB / NFS / AFP mounts (see issue #3178 — macOS with a NAS
+            // SMB mount) because those filesystems don't support all the
+            // metadata operations (rename-across-volume, fsync on
+            // directories, extended attributes) the node LMDB database
+            // relies on. Detect this before we shut down the node phase and
+            // return a clear, actionable error instead of a cryptic fs_more
+            // failure.
+            if let Some(fs_name) = detect_network_filesystem(&new_dir) {
+                let message = format!(
+                    "Selected directory is on a network filesystem ({fs_name}), which is not \
+                     supported for the node data location. The node database requires a local \
+                     disk (HDD/SSD) because network filesystems such as SMB, NFS, AFP and WebDAV \
+                     do not reliably support the operations LMDB needs. Please choose a local \
+                     directory instead."
+                );
+                error!(target: LOG_TARGET_APP_LOGIC, "{message}");
+                return Err(InvokeError::from(message));
+            }
+
+            match ConfigCore::update_node_data_directory(new_dir.clone()).await {
             Ok(previous) => {
                 if let Some(previous) = previous {
                     SetupManager::get_instance()
@@ -101,7 +179,8 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
                 error!(target: LOG_TARGET_APP_LOGIC, "Could not update node data location: {e}");
                 return Err(InvokeError::from(e.to_string()));
             }
-        },
+            }
+        }
         Err(e) => {
             error!(target: LOG_TARGET_APP_LOGIC, "New node directory does not exist: {e}");
             return Err(InvokeError::from(e.to_string()));
