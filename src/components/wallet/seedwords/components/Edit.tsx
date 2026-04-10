@@ -3,12 +3,16 @@ import { useTranslation } from 'react-i18next';
 import { useFormContext } from 'react-hook-form';
 import { EditWrapper, StyledTextArea } from './edit.styles.ts';
 
-// Matches 24 alphabetic words separated by any run of whitespace (spaces,
-// tabs, newlines) or commas, with optional leading/trailing whitespace. This
-// means validation — and therefore the confirmation tick — works whether the
-// user types words separated by spaces, presses Enter between words, or
-// pastes a comma-separated list.
-const SEEDWORD_REGEX = /^\s*([a-zA-Z]+)([\s,]+[a-zA-Z]+){23}\s*$/;
+// Matches 24 BIP-39 seed words separated by any run of whitespace (spaces,
+// tabs, newlines) or commas, with optional leading/trailing whitespace. Each
+// "word" is matched as `[^\s,]+`, i.e. any run of characters that is not a
+// separator. The wallet backend supports Japanese, Chinese (Simplified and
+// Traditional), Korean, Spanish, French, and Italian BIP-39 wordlists in
+// addition to English; a narrower `[a-zA-Z]+` class would reject those
+// non-ASCII phrases in the frontend tick even though the backend would
+// happily import them. The `u` flag turns on Unicode mode so the engine
+// treats the input as a stream of code points rather than UTF-16 code units.
+const SEEDWORD_REGEX = /^\s*([^\s,]+)([\s,]+[^\s,]+){23}\s*$/u;
 
 /**
  * Normalize a raw seed-words string into the canonical space-separated form
@@ -19,7 +23,7 @@ export const normalizeSeedWordsInput = (value: string): string => value.replace(
 
 export const Edit = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const { register, setValue, formState, trigger } = useFormContext<{ seedWords: string }>();
+    const { register, setValue, formState } = useFormContext<{ seedWords: string }>();
 
     const registerOptions = {
         required: true,
@@ -34,10 +38,13 @@ export const Edit = () => {
             e.preventDefault();
             const text = e.clipboardData.getData('text/plain');
             const formattedSeedText = normalizeSeedWordsInput(text);
+            // `setValue` with `shouldValidate: true` already runs the field
+            // validator, so an extra `trigger('seedWords')` would just
+            // re-validate synchronously. Dropping it keeps the dependency
+            // array minimal and avoids a redundant form re-render.
             setValue('seedWords', formattedSeedText, { shouldValidate: true, shouldDirty: true });
-            trigger('seedWords');
         },
-        [setValue, trigger]
+        [setValue]
     );
 
     return (
