@@ -95,11 +95,21 @@ npm run tauri build
 
 ### Output
 
-Built applications will be in `target/release/bundle/`:
+Packaged installers land under `target/release/bundle/`:
 
-- **Linux**: Binary in `target/release/tari-universe`
-- **Windows**: `.msi` installer
-- **macOS**: `.dmg` and `.app` bundle
+- **Windows**: `.msi` installer in `target/release/bundle/msi/`
+- **macOS**: `.dmg` and `.app` bundle in `target/release/bundle/dmg/` and
+  `target/release/bundle/macos/`
+
+Linux packaging (`.deb` / `.AppImage`) is not currently produced by
+`npm run tauri build`; the plain Cargo binary is written to
+`target/release/tari-universe` at the workspace root (the Cargo workspace
+is declared at the repository root — `src-tauri/` is a member, so there
+is no `src-tauri/target/`). Run it with:
+
+```bash
+./target/release/tari-universe
+```
 
 ## Contributing
 
