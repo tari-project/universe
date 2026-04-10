@@ -515,11 +515,12 @@ impl BinaryManager {
                 continue;
             }
             if let Some(dir_name) = path.file_name().and_then(|n| n.to_str()) {
-                if dir_name != current_version {
-                    info!(target: LOG_TARGET_APP_LOGIC, "Removing old binary version directory: {:?}", path);
-                    if let Err(e) = std::fs::remove_dir_all(&path) {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove old version dir {:?}: {:?}", path, e);
-                    }
+                if dir_name == current_version {
+                    continue;
+                }
+                info!(target: LOG_TARGET_APP_LOGIC, "Removing old binary version directory: {:?}", path);
+                if let Err(e) = std::fs::remove_dir_all(&path) {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove old version dir {:?}: {:?}", path, e);
                 }
             }
         }
