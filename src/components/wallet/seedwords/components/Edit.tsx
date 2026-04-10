@@ -3,7 +3,19 @@ import { useTranslation } from 'react-i18next';
 import { useFormContext } from 'react-hook-form';
 import { EditWrapper, StyledTextArea } from './edit.styles.ts';
 
-const SEEDWORD_REGEX = /^(([a-zA-Z]+)\s){23}([a-zA-Z]+)$/;
+// Matches 24 alphabetic words separated by any run of whitespace (spaces,
+// tabs, newlines) or commas, with optional leading/trailing whitespace. This
+// means validation — and therefore the confirmation tick — works whether the
+// user types words separated by spaces, presses Enter between words, or
+// pastes a comma-separated list.
+const SEEDWORD_REGEX = /^\s*([a-zA-Z]+)([\s,]+[a-zA-Z]+){23}\s*$/;
+
+/**
+ * Normalize a raw seed-words string into the canonical space-separated form
+ * expected by the Tauri backend. Collapses any run of whitespace or commas
+ * into a single space and trims the result.
+ */
+export const normalizeSeedWordsInput = (value: string): string => value.replace(/[\s,]+/g, ' ').trim();
 
 export const Edit = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
@@ -18,12 +30,11 @@ export const Edit = () => {
     };
 
     const handlePaste = useCallback(
-        (e) => {
+        (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
             e.preventDefault();
-            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-            const formattedSeedText = text.trim().replaceAll(', ', ' ').replaceAll(',', ' ').replaceAll('\n', ' ');
-            setValue('seedWords', formattedSeedText);
-
+            const text = e.clipboardData.getData('text/plain');
+            const formattedSeedText = normalizeSeedWordsInput(text);
+            setValue('seedWords', formattedSeedText, { shouldValidate: true, shouldDirty: true });
             trigger('seedWords');
         },
         [setValue, trigger]

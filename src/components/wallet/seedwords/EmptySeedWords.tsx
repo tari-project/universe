@@ -34,7 +34,10 @@ export default function EmptySeedWords() {
     }, [isValid, newSeedWords]);
 
     const handleApply = (data: { seedWords: string }) => {
-        const resolvedSeedWords = data.seedWords.split(' ');
+        // Split on any run of whitespace or commas so words typed one-per-line
+        // (newline-separated) or pasted as a comma-separated list are parsed
+        // correctly. See issue #3128.
+        const resolvedSeedWords = data.seedWords.trim().split(/[\s,]+/).filter(Boolean);
         setNewSeedWords(resolvedSeedWords);
         setShowConfirm(true);
     };

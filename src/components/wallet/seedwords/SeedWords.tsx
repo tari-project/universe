@@ -77,7 +77,10 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     }, [isValid, newSeedWords]);
 
     const handleApply = (data: { seedWords: string }) => {
-        setNewSeedWords(data.seedWords.split(' '));
+        // Split on any run of whitespace or commas so words typed one-per-line
+        // (newline-separated) or pasted as a comma-separated list are parsed
+        // correctly. See issue #3128.
+        setNewSeedWords(data.seedWords.trim().split(/[\s,]+/).filter(Boolean));
         setShowConfirm(true);
     };
 
