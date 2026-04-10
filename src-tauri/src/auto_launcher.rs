@@ -56,19 +56,43 @@ impl AutoLauncher {
         }
     }
 
+    /// Wrap a Windows executable path in double quotes when it contains any
+    /// whitespace character so that code which interprets the path as a
+    /// shell command line (the Windows registry `Run` key handled by the
+    /// `auto-launch` crate, and the `planif` Task Scheduler action command)
+    /// does not split the path on the space and launch a different (or
+    /// non-existent) executable.
+    ///
+    /// * Uses `char::is_whitespace` rather than `contains(' ')` so paths
+    ///   containing tabs, no-break spaces, or other Unicode whitespace
+    ///   (which Windows `CreateProcess` also treats as argument separators)
+    ///   are covered.
+    /// * Skips paths that are already quoted — `canonicalize` never produces
+    ///   one, but this makes the helper safe to call on caller-provided
+    ///   strings too.
+    ///
+    /// Defined cross-platform so both compile-time-gated and runtime-gated
+    /// `CurrentOperatingSystem::Windows` match arms can reference it without
+    /// needing `#[cfg]` dances at every call site.
+    fn quote_windows_path_if_needed(app_path: &str) -> String {
+        if app_path.chars().any(char::is_whitespace) && !app_path.starts_with('"') {
+            format!("\"{app_path}\"")
+        } else {
+            app_path.to_string()
+        }
+    }
+
     fn build_auto_launcher(app_name: &str, app_path: &str) -> Result<AutoLaunch, anyhow::Error> {
         info!(target: LOG_TARGET_APP_LOGIC, "Building auto-launcher with app_name: {app_name} and app_path: {app_path}");
 
         match PlatformUtils::detect_current_os() {
             CurrentOperatingSystem::Windows => {
                 // The auto-launch crate writes the path directly to the Windows registry
-                // without quoting. Paths with spaces (e.g. "C:\Program Files\...") must be
-                // quoted or Windows will interpret the space as an argument separator.
-                let quoted_path = if app_path.contains(' ') && !app_path.starts_with('"') {
-                    format!("\"{}\"", app_path)
-                } else {
-                    app_path.to_string()
-                };
+                // `Run` key as a single command string without quoting. Paths with
+                // whitespace (e.g. "C:\Program Files\...") must therefore be wrapped in
+                // double quotes or Windows will interpret the whitespace as an argument
+                // separator and silently fail to launch on boot.
+                let quoted_path = Self::quote_windows_path_if_needed(app_path);
                 AutoLaunchBuilder::new()
                     .set_app_name(app_name)
                     .set_app_path(&quoted_path)
@@ -194,6 +218,16 @@ impl AutoLauncher {
         info!(target: LOG_TARGET_APP_LOGIC, "Creating task scheduler for admin startup with app_path: {}", app_path);
         info!(target: LOG_TARGET_APP_LOGIC, "UserName: {}", username());
 
+        // The Task Scheduler `Exec` action stores the command in a single
+        // field that is passed through the shell-style tokenizer when the
+        // task fires, so whitespace in the install directory (e.g.
+        // "C:\Program Files\Tari Universe\tari-universe.exe") must be
+        // quoted for the same reason the `Run` registry key does — otherwise
+        // the elevated admin auto-start silently fails to launch and the
+        // "self-healing on next startup" promise in the PR description
+        // never runs for users who have the admin auto-start enabled.
+        let quoted_app_path = Self::quote_windows_path_if_needed(&app_path);
+
         let mut retry_interval = Duration::new();
         retry_interval.minutes = Some(1);
 
@@ -205,7 +239,7 @@ impl AutoLauncher {
             .create_logon()
             .author("Tari Universe")?
             .trigger("startup_trigger", is_triggered)?
-            .action(Action::new("startup_action", &app_path, "", ""))?
+            .action(Action::new("startup_action", &quoted_app_path, "", ""))?
             .principal(PrincipalSettings {
                 display_name: "Tari Universe".to_string(),
                 group_id: None,
@@ -311,5 +345,49 @@ impl AutoLauncher {
 
     pub fn current() -> &'static AutoLauncher {
         &INSTANCE
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quote_windows_path_wraps_paths_with_spaces() {
+        assert_eq!(
+            AutoLauncher::quote_windows_path_if_needed("C:\\Program Files\\Tari Universe\\tari-universe.exe"),
+            "\"C:\\Program Files\\Tari Universe\\tari-universe.exe\"",
+        );
+    }
+
+    #[test]
+    fn quote_windows_path_wraps_paths_with_tabs_and_nbsp() {
+        // Windows' command-line parsing treats any whitespace as an argument
+        // separator, not just U+0020, so the helper must quote tabs and
+        // non-breaking spaces too.
+        assert_eq!(
+            AutoLauncher::quote_windows_path_if_needed("C:\\Tari\tUniverse\\app.exe"),
+            "\"C:\\Tari\tUniverse\\app.exe\"",
+        );
+        assert_eq!(
+            AutoLauncher::quote_windows_path_if_needed("C:\\Tari\u{00A0}Universe\\app.exe"),
+            "\"C:\\Tari\u{00A0}Universe\\app.exe\"",
+        );
+    }
+
+    #[test]
+    fn quote_windows_path_leaves_space_free_path_alone() {
+        assert_eq!(
+            AutoLauncher::quote_windows_path_if_needed("C:\\Tari\\Universe\\tari-universe.exe"),
+            "C:\\Tari\\Universe\\tari-universe.exe",
+        );
+    }
+
+    #[test]
+    fn quote_windows_path_does_not_double_quote_an_already_quoted_path() {
+        assert_eq!(
+            AutoLauncher::quote_windows_path_if_needed("\"C:\\Program Files\\Tari Universe\\app.exe\""),
+            "\"C:\\Program Files\\Tari Universe\\app.exe\"",
+        );
     }
 }
