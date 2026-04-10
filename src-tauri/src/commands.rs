@@ -1687,20 +1687,48 @@ pub async fn set_remote_base_node_address(address: String) -> Result<(), InvokeE
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[set_remote_base_node_address] called with address: {address:?}");
 
-    let trimmed = address.trim().to_string();
-    if !trimmed.is_empty() {
-        // Validate the address format by attempting to parse it
-        let has_scheme = trimmed.starts_with("http://") || trimmed.starts_with("https://");
-        if !has_scheme {
+    // The PR description promises "Clear the field — reverts to default
+    // remote node address". An empty string however is not a valid gRPC
+    // endpoint: persisting it would make the node phase fail to dial on
+    // the next restart and leave the user stuck until they manually
+    // re-enter an address. Substituting the network-appropriate default
+    // from `ConfigCoreContent::default()` preserves the documented
+    // "clear to reset" UX without storing a known-broken value.
+    //
+    // For non-empty input we parse the address with `url::Url` instead of
+    // a raw `starts_with` prefix check: the previous version accepted
+    // `"http://"` on its own, mis-scheme URLs like `"https:foo"`, and any
+    // string that happened to begin with `http://` without a host. Using
+    // the real parser catches those and guarantees the persisted value
+    // actually round-trips through `Url::parse`.
+    let trimmed_address = address.trim();
+    let resolved = if trimmed_address.is_empty() {
+        ConfigCoreContent::default().remote_base_node_address().clone()
+    } else {
+        let parsed = url::Url::parse(trimmed_address).map_err(|e| {
+            InvokeError::from_anyhow(anyhow::anyhow!(
+                "Invalid remote base node address {trimmed_address:?}: {e}"
+            ))
+        })?;
+        match parsed.scheme() {
+            "http" | "https" => {},
+            other => {
+                return Err(InvokeError::from_anyhow(anyhow::anyhow!(
+                    "Invalid remote base node address scheme {other:?}: must be http or https"
+                )));
+            },
+        }
+        if parsed.host_str().is_none_or(str::is_empty) {
             return Err(InvokeError::from_anyhow(anyhow::anyhow!(
-                "Invalid address: must start with http:// or https://"
+                "Invalid remote base node address {trimmed_address:?}: missing host"
             )));
         }
-    }
+        trimmed_address.to_string()
+    };
 
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_remote_base_node_address,
-        trimmed,
+        resolved,
         vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::CpuMining],
     )
     .await
