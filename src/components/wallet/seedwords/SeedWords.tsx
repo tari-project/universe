@@ -77,7 +77,8 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     }, [isValid, newSeedWords]);
 
     const handleApply = (data: { seedWords: string }) => {
-        setNewSeedWords(data.seedWords.split(' '));
+        // Split by any whitespace (spaces, newlines, tabs) to support multiple input formats
+        setNewSeedWords(data.seedWords.trim().split(/\s+/));
         setShowConfirm(true);
     };
 

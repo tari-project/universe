@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useFormContext } from 'react-hook-form';
 import { EditWrapper, StyledTextArea } from './edit.styles.ts';
 
-const SEEDWORD_REGEX = /^(([a-zA-Z]+)\s){23}([a-zA-Z]+)$/;
+// Allow multiple whitespace (spaces, newlines, tabs) between words, and trim input
+const SEEDWORD_REGEX = /^\s*(([a-zA-Z]+)\s+){23}([a-zA-Z]+)\s*$/;
 
 export const Edit = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
