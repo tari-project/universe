@@ -49,6 +49,7 @@ keyring = { version = "3.0.5", features = [
   "linux-native-sync-persistent",
   "windows-native",
 ] }
+libc = "0.2"
 log = "0.4.22"
 log4rs = "1.3.0"
 minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", tag = "v5.2.1" }
