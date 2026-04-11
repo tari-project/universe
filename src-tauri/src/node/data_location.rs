@@ -74,16 +74,21 @@ fn is_network_mount(path: &Path) -> bool {
         };
         let rest = &line[on_pos + 4..];
 
-        // Mount point ends just before " ("
-        let mount_point = if let Some(paren) = rest.find(" (") {
+        // Mount point ends just before the trailing " (<options>)" block.
+        // Use rfind so that paths containing spaces or parentheses (e.g.
+        // "/Volumes/My Share (2)") are handled correctly — the options block
+        // is always the last parenthesised group on the line.
+        let mount_point = if let Some(paren) = rest.rfind(" (") {
             rest[..paren].trim()
         } else {
             rest.trim()
         };
 
-        // Filesystem type is the first comma-separated token inside the parens
+        // Filesystem type is the first comma-separated token inside the trailing
+        // options block.  Use rfind so paths with parentheses in their name
+        // don't confuse us into reading the wrong group.
         let fs_type = rest
-            .find('(')
+            .rfind('(')
             .and_then(|s| {
                 rest[s + 1..]
                     .find(|c| c == ',' || c == ')')
@@ -126,105 +131,94 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
         },
     };
 
-    match canonicalize(to_path) {
-        Ok(new_dir) => {
-            // Reject network-mounted paths (SMB/NFS/AFP/WebDAV on macOS) before
-            // attempting the directory move.  The copy-and-delete strategy used by
-            // `move_directory` fails on remote volumes with confusing errors; it is
-            // cleaner to surface a human-readable message at this point instead.
-            if is_network_mount(&new_dir) {
-                let msg = "The selected directory is on a network-mounted volume \
-                           (e.g. SMB/NAS). Network-mounted paths are not supported \
-                           as a node data location because the filesystem does not \
-                           support the operations required by the Tari node. \
-                           Please choose a path on a local drive.";
-                error!(target: LOG_TARGET_APP_LOGIC, "{msg}");
-                return Err(InvokeError::from(msg));
-            }
+    let new_dir = canonicalize(to_path).map_err(|e| {
+        error!(target: LOG_TARGET_APP_LOGIC, "New node directory does not exist: {e}");
+        InvokeError::from(e.to_string())
+    })?;
 
-            match ConfigCore::update_node_data_directory(new_dir.clone()).await {
-                Ok(previous) => {
-                    if let Some(previous) = previous {
-                        SetupManager::get_instance()
-                            .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
-                            .await;
+    // Reject network-mounted paths (SMB/NFS/AFP/WebDAV on macOS) before
+    // attempting the directory move.  The copy-and-delete strategy used by
+    // `move_directory` fails on remote volumes with confusing errors; it is
+    // cleaner to surface a human-readable message at this point instead.
+    if is_network_mount(&new_dir) {
+        let msg = "The selected directory is on a network-mounted volume \
+                   (e.g. SMB/NAS). Network-mounted paths are not supported \
+                   as a node data location because the filesystem does not \
+                   support the operations required by the Tari node. \
+                   Please choose a path on a local drive.";
+        error!(target: LOG_TARGET_APP_LOGIC, "{msg}");
+        return Err(InvokeError::from(msg));
+    }
 
-                        let network = Network::get_current().to_string().to_lowercase();
-                        let source_dir = previous.join("node").join(&network);
-                        let destination_dir = new_dir.join("node").join(&network);
+    let previous = ConfigCore::update_node_data_directory(new_dir.clone())
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET_APP_LOGIC, "Could not update node data location: {e}");
+            InvokeError::from(e.to_string())
+        })?;
 
-                        if let Some(parent) = destination_dir.parent() {
-                            fs::create_dir_all(parent)
-                                .map_err(|e| InvokeError::from(e.to_string()))?;
-                        }
+    let Some(previous) = previous else {
+        return Ok(());
+    };
 
-                        let dest_existed = destination_dir.exists();
+    SetupManager::get_instance()
+        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
+        .await;
 
-                        match move_directory(source_dir, destination_dir.clone(), move_options) {
-                            Ok(res) => {
-                                info!(
-                                    target: LOG_TARGET_APP_LOGIC,
-                                    "Successfully moved items - Total bytes: {}, Directories: {:?}",
-                                    res.total_bytes_moved,
-                                    res.directories_moved
-                                );
-                            }
-                            Err(e) => {
-                                error!(
-                                    target: LOG_TARGET_APP_LOGIC,
-                                    "Could not move items, reverting config change: {e}"
-                                );
+    let network = Network::get_current().to_string().to_lowercase();
+    let source_dir = previous.join("node").join(&network);
+    let destination_dir = new_dir.join("node").join(&network);
 
-                                if !dest_existed
-                                    && destination_dir.exists()
-                                    && let Err(cleanup_err) =
-                                        fs::remove_dir_all(&destination_dir)
-                                {
-                                    warn!(
-                                        target: LOG_TARGET_APP_LOGIC,
-                                        "Failed to clean up destination after failed move: \
-                                         {cleanup_err}"
-                                    );
-                                }
+    if let Some(parent) = destination_dir.parent() {
+        fs::create_dir_all(parent).map_err(|e| InvokeError::from(e.to_string()))?;
+    }
 
-                                ConfigCore::update_node_data_directory(previous)
-                                    .await
-                                    .map_err(|e| InvokeError::from(e.to_string()))?;
+    let dest_existed = destination_dir.exists();
 
-                                SetupManager::get_instance()
-                                    .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
-                                    .await;
-
-                                return Err(InvokeError::from(e.to_string()));
-                            }
-                        };
-
-                        info!(
-                            target: LOG_TARGET_APP_LOGIC,
-                            "[ set_custom_node_directory ] restarting phases"
-                        );
-                        SetupManager::get_instance()
-                            .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
-                            .await;
-                    }
-                }
-                Err(e) => {
-                    error!(
-                        target: LOG_TARGET_APP_LOGIC,
-                        "Could not update node data location: {e}"
-                    );
-                    return Err(InvokeError::from(e.to_string()));
-                }
-            }
+    match move_directory(source_dir, destination_dir.clone(), move_options) {
+        Ok(res) => {
+            info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Successfully moved items - Total bytes: {}, Directories: {:?}",
+                res.total_bytes_moved,
+                res.directories_moved
+            );
         }
         Err(e) => {
             error!(
                 target: LOG_TARGET_APP_LOGIC,
-                "New node directory does not exist: {e}"
+                "Could not move items, reverting config change: {e}"
             );
+
+            if !dest_existed
+                && destination_dir.exists()
+                && let Err(cleanup_err) = fs::remove_dir_all(&destination_dir)
+            {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Failed to clean up destination after failed move: {cleanup_err}"
+                );
+            }
+
+            ConfigCore::update_node_data_directory(previous)
+                .await
+                .map_err(|e| InvokeError::from(e.to_string()))?;
+
+            SetupManager::get_instance()
+                .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
+                .await;
+
             return Err(InvokeError::from(e.to_string()));
         }
-    }
+    };
+
+    info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "[ set_custom_node_directory ] restarting phases"
+    );
+    SetupManager::get_instance()
+        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
+        .await;
 
     Ok(())
 }
