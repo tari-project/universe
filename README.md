@@ -18,7 +18,7 @@ The Tari Universe ecosystem includes:
 
 ### Download
 
-[Download binaries](https://www.tari.com/downloads/) from [tari.com](https://www.tari.com/). This is the easiest way to run Tari Universe.
+[Download binaries](https://www.tari.com/downloads/) from [tari.com](https://www.tari.com/). This is the easiest way to run Tari Universe on Windows and macOS.
 
 ### Install
 
@@ -34,18 +34,8 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Install the `.deb` package:
-
-```bash
-sudo dpkg -i tari-universe_*.deb
-```
-
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
+Official Linux prebuilt binaries are not currently published.
+Build from source using the Linux dependency and build steps in [Building from source](#building-from-source).
 
 ### Run
 
@@ -107,9 +97,9 @@ npm run tauri build
 
 Built applications will be in `target/release/bundle/`:
 
-- **Linux**: `.deb` and `.AppImage` files
-- **Windows**: `.msi` installer
-- **macOS**: `.dmg` and `.app` bundle
+- **Windows**: `.msi` installer (official release artifact)
+- **macOS**: `.dmg` and `.app` bundle (official release artifacts)
+- **Linux**: build from source only (no official prebuilt release artifacts). Local Linux builds may produce distro-specific bundles depending on your environment.
 
 ## Contributing
 
