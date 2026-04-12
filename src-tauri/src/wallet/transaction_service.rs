@@ -131,7 +131,6 @@ impl<'a> TransactionService<'a> {
     /// * `Result<(), anyhow::Error>` - A result indicating success or failure
     pub async fn cancel_transaction(&self, tx_id: String) -> Result<(), anyhow::Error> {
         let wallet_txs_dir = get_transactions_directory(self.app_handle)?;
-        ensure_transactions_directory(&wallet_txs_dir)?;
         let unsigned_tx_file = wallet_txs_dir.join(format!("{tx_id}-unsigned.json"));
         let signed_tx_file = wallet_txs_dir.join(format!("{tx_id}.json"));
 
