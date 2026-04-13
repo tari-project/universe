@@ -34,6 +34,61 @@ use std::fs;
 use tari_common::configuration::Network;
 use tauri::ipc::InvokeError;
 
+/// On macOS, checks whether `path` resides on a network-mounted filesystem
+/// (SMB, NFS, AFP, WebDAV, etc.) and returns an error if so.
+///
+/// Network volumes have historically caused failures during the directory-move
+/// phase because the underlying `fs_more` library first attempts a rename(2)
+/// (which fails across filesystem boundaries) and then falls back to a
+/// recursive copy-and-delete, which itself may fail on SMB mounts due to
+/// attribute incompatibilities, permission model differences, or macOS kernel
+/// restrictions on certain network file systems.
+///
+/// Returning a clear error *before* attempting the move avoids leaving the
+/// config and the on-disk state in a half-migrated condition.
+#[cfg(target_os = "macos")]
+fn check_network_mount(path: &std::path::Path) -> Result<(), InvokeError> {
+    use nix::sys::statfs::statfs;
+
+    // Filesystem type names that indicate a remote/network mount on macOS.
+    const NETWORK_FS_TYPES: &[&str] = &["smbfs", "nfs", "afpfs", "afp", "webdav", "ftpfs", "nfsv3", "nfsv4"];
+
+    match statfs(path) {
+        Ok(stat) => {
+            let fs_type_name = stat.filesystem_type_name().to_lowercase();
+            if NETWORK_FS_TYPES.iter().any(|t| fs_type_name.contains(t)) {
+                let msg = format!(
+                    "Network-mounted volumes (filesystem type: \"{fs_type_name}\") are not \
+                     supported as the node data location. This is a known limitation on macOS \
+                     when using SMB, NFS, AFP, or WebDAV mounts. Please select a local \
+                     directory (e.g. on your Mac's internal SSD or an externally attached \
+                     USB/Thunderbolt drive)."
+                );
+                error!(target: LOG_TARGET_APP_LOGIC, "{msg}");
+                return Err(InvokeError::from(msg));
+            }
+        }
+        Err(e) => {
+            // Treat a stat failure as a warning rather than a hard error so
+            // that unusual but valid local paths are not incorrectly blocked.
+            warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Could not determine filesystem type for path {:?}: {e} — proceeding without network-mount check",
+                path
+            );
+        }
+    }
+    Ok(())
+}
+
+/// On non-macOS platforms the network-mount check is a no-op; the same
+/// limitation may theoretically exist on Linux/Windows, but the bug reports
+/// are macOS-specific and the `statfs` API surface differs per OS.
+#[cfg(not(target_os = "macos"))]
+fn check_network_mount(_path: &std::path::Path) -> Result<(), InvokeError> {
+    Ok(())
+}
+
 pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
     let move_options = DirectoryMoveOptions {
         destination_directory_rule: DestinationDirectoryRule::AllowNonEmpty {
@@ -48,7 +103,11 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
         },
     };
     match canonicalize(to_path) {
-        Ok(new_dir) => match ConfigCore::update_node_data_directory(new_dir.clone()).await {
+        Ok(new_dir) => {
+            // Reject network-mounted volumes early (macOS SMB/NFS/AFP) to avoid
+            // a half-migrated state when the subsequent directory move fails.
+            check_network_mount(&new_dir)?;
+            match ConfigCore::update_node_data_directory(new_dir.clone()).await {
             Ok(previous) => {
                 if let Some(previous) = previous {
                     SetupManager::get_instance()
@@ -100,6 +159,7 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
             Err(e) => {
                 error!(target: LOG_TARGET_APP_LOGIC, "Could not update node data location: {e}");
                 return Err(InvokeError::from(e.to_string()));
+            }
             }
         },
         Err(e) => {
