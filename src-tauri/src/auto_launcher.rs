@@ -100,12 +100,20 @@ impl AutoLauncher {
                     .build()
                     .map_err(|e| e.into())
             }
-            CurrentOperatingSystem::Linux => AutoLaunchBuilder::new()
-                .set_app_name(app_name)
-                .set_app_path(app_path)
-                .set_use_launch_agent(false)
-                .build()
-                .map_err(|e| e.into()),
+            CurrentOperatingSystem::Linux => {
+                // The `auto-launch` crate writes a `.desktop` file whose
+                // `Exec=` value is parsed by the freedesktop.org tokenizer.
+                // Whitespace in the install path must be quoted, otherwise
+                // the desktop entry will fail to launch — same root cause as
+                // the Windows registry fix above.
+                let quoted_path = Self::quote_windows_path_if_needed(app_path);
+                AutoLaunchBuilder::new()
+                    .set_app_name(app_name)
+                    .set_app_path(&quoted_path)
+                    .set_use_launch_agent(false)
+                    .build()
+                    .map_err(|e| e.into())
+            }
             CurrentOperatingSystem::MacOS => AutoLaunchBuilder::new()
                 .set_app_name(app_name)
                 .set_app_path(app_path)
