@@ -31,8 +31,73 @@ use fs_more::directory::{
 use fs_more::file::CollidingFileBehaviour;
 use log::{error, info, warn};
 use std::fs;
+use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tauri::ipc::InvokeError;
+
+/// Check if the given path is on a network-mounted filesystem (SMB, NFS, etc.)
+/// On macOS, this checks if the path is under /Volumes and is a mounted filesystem
+#[cfg(target_os = "macos")]
+fn is_network_mount(path: &PathBuf) -> bool {
+    // Check if path is under /Volumes (common mount point on macOS)
+    let is_volumes = path.starts_with("/Volumes");
+
+    // Try to detect if it's a network filesystem by checking mount info
+    if is_volumes {
+        // Use mount command to check filesystem type
+        if let Ok(output) = std::process::Command::new("mount").args(["-v"]).output() {
+            let mount_output = String::from_utf8_lossy(&output.stdout);
+            let path_str = path.to_string_lossy();
+
+            for line in mount_output.lines() {
+                // Check if this mount line contains our path
+                if line.contains(path_str.as_ref())
+                    || path_str.starts_with(line.split_whitespace().nth(2).unwrap_or(""))
+                {
+                    // Check for SMB or NFS filesystems
+                    if line.contains("smbfs") || line.contains("nfs") || line.contains("afpfs") {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+
+    false
+}
+
+#[cfg(not(target_os = "macos"))]
+fn is_network_mount(_path: &PathBuf) -> bool {
+    false
+}
+
+/// Safely canonicalize a path, with fallback for network mounts
+/// Network mounts (SMB, NFS) may fail canonicalization due to symlink resolution issues
+fn safe_canonicalize(path: String) -> Result<PathBuf, String> {
+    // First try standard canonicalize
+    match canonicalize(&path) {
+        Ok(canonical) => Ok(canonical),
+        Err(e) => {
+            // If canonicalize fails, check if path exists and is accessible
+            let path_buf = PathBuf::from(&path);
+
+            if !path_buf.exists() {
+                return Err(format!("Path does not exist: {e}"));
+            }
+
+            // Check if it's a network mount
+            if is_network_mount(&path_buf) {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Network mount detected at {path}, using non-canonicalized path");
+                // For network mounts, return the path as-is without canonicalization
+                // This avoids issues with SMB/NFS symlink resolution
+                Ok(path_buf)
+            } else {
+                // Not a network mount, return the original error
+                Err(format!("Failed to canonicalize path: {e}"))
+            }
+        }
+    }
+}
 
 pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
     let move_options = DirectoryMoveOptions {
@@ -47,7 +112,7 @@ pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
             },
         },
     };
-    match canonicalize(to_path) {
+    match safe_canonicalize(to_path) {
         Ok(new_dir) => match ConfigCore::update_node_data_directory(new_dir.clone()).await {
             Ok(previous) => {
                 if let Some(previous) = previous {
