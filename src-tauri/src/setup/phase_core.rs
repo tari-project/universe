@@ -31,6 +31,7 @@ use tokio_util::task::TaskTracker;
 use crate::{
     UniverseAppState,
     auto_launcher::AutoLauncher,
+    binaries::BinaryResolver,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     progress_trackers::{
         progress_plans::SetupStep,
@@ -167,6 +168,14 @@ impl SetupPhaseImpl for CoreSetupPhase {
                     .write()
                     .await
                     .set_app_handle(&self.app_handle);
+
+                // Clean up old binary versions on startup
+                // This runs asynchronously and doesn't block initialization
+                tokio::spawn(async move {
+                    BinaryResolver::current()
+                        .cleanup_all_old_binary_versions()
+                        .await;
+                });
 
                 Ok(())
             })

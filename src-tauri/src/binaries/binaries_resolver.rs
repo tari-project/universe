@@ -23,7 +23,7 @@ use crate::LOG_TARGET_APP_LOGIC;
 use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use anyhow::{Error, anyhow};
 use async_trait::async_trait;
-use log::debug;
+use log::{debug, info, warn};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -288,6 +288,18 @@ impl BinaryResolver {
                 .await?;
         }
 
+        // Clean up old binary versions after successful download
+        // This runs asynchronously and doesn't block the initialization
+        let binary_clone = binary;
+        tokio::spawn(async move {
+            if let Err(e) = Self::current()
+                .cleanup_old_binary_versions(binary_clone)
+                .await
+            {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old binary versions for {}: {}", binary_clone.name(), e);
+            }
+        });
+
         Ok(())
     }
 
@@ -296,5 +308,102 @@ impl BinaryResolver {
             .get(&binary)
             .unwrap_or_else(|| panic!("Couldn't find manager for binary: {}", binary.name()))
             .get_selected_version()
+    }
+
+    /// Clean up old binary versions after a successful update
+    /// Retains only the current (latest) version and removes all others
+    pub async fn cleanup_old_binary_versions(&self, binary: Binaries) -> Result<(), Error> {
+        let manager = self
+            .managers
+            .get(&binary)
+            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
+
+        let current_version = manager.get_selected_version();
+        let binary_folder = manager.get_base_dir().map_err(|e| {
+            anyhow!(
+                "Failed to get base directory for binary {}: {}",
+                binary.name(),
+                e
+            )
+        })?;
+
+        // Get the parent directory (the folder containing all version folders)
+        let versions_dir = binary_folder.parent().ok_or_else(|| {
+            anyhow!(
+                "Failed to get parent directory for binary {}",
+                binary.name()
+            )
+        })?;
+
+        if !versions_dir.exists() {
+            debug!(target: LOG_TARGET_APP_LOGIC, "Versions directory does not exist for binary: {}", binary.name());
+            return Ok(());
+        }
+
+        let mut cleaned_count = 0;
+        let mut retained_version = String::new();
+
+        // Read all entries in the versions directory
+        let entries = std::fs::read_dir(versions_dir)?;
+        for entry in entries {
+            let entry = entry?;
+            let path = entry.path();
+
+            // Skip if not a directory
+            if !path.is_dir() {
+                continue;
+            }
+
+            // Get the version folder name
+            let version_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+
+            // Skip the current version
+            if version_name == current_version {
+                retained_version = version_name.to_string();
+                debug!(target: LOG_TARGET_APP_LOGIC, "Retaining current version for binary {}: {}", binary.name(), version_name);
+                continue;
+            }
+
+            // Remove old version directory
+            match tokio::fs::remove_dir_all(&path).await {
+                Ok(_) => {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Cleaned up old binary version for {}: {}", binary.name(), version_name);
+                    cleaned_count += 1;
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove old binary version for {} at {:?}: {}", binary.name(), path, e);
+                }
+            }
+        }
+
+        if cleaned_count > 0 {
+            info!(target: LOG_TARGET_APP_LOGIC, "Binary cleanup completed for {}: removed {} old version(s), retained: {}", binary.name(), cleaned_count, retained_version);
+        } else {
+            debug!(target: LOG_TARGET_APP_LOGIC, "No old binary versions to clean up for {}", binary.name());
+        }
+
+        Ok(())
+    }
+
+    /// Clean up old binary versions for all managed binaries
+    /// This should be called on application startup
+    pub async fn cleanup_all_old_binary_versions(&self) {
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting cleanup of all old binary versions");
+
+        let binaries: Vec<Binaries> = self.managers.keys().copied().collect();
+        let mut total_cleaned = 0;
+
+        for binary in binaries {
+            match self.cleanup_old_binary_versions(binary).await {
+                Ok(_) => {
+                    total_cleaned += 1;
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old versions for {}: {}", binary.name(), e);
+                }
+            }
+        }
+
+        info!(target: LOG_TARGET_APP_LOGIC, "Completed cleanup of all old binary versions, processed {} binaries", total_cleaned);
     }
 }
