@@ -67,6 +67,7 @@ use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
 use base64::prelude::*;
 
 use crate::node::data_location::update_data_location;
+use crate::node::data_location::validate_destination_path;
 use log::{debug, error, info, warn};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -2201,4 +2202,12 @@ pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> 
     }
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn validate_node_data_path(path: String) -> Result<(), InvokeError> {
+    let canonical_path = dunce::canonicalize(&path)
+        .map_err(|e| InvokeError::from(format!("Invalid path: {e}")))?;
+
+    validate_destination_path(&canonical_path)
 }

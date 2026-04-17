@@ -501,6 +501,7 @@ fn main() {
             commands::update_shutdown_mode_selection,
             commands::set_pause_on_battery_mode,
             commands::set_custom_node_directory,
+            commands::validate_node_data_path,
             commands::add_scheduler_event,
             commands::remove_scheduler_event,
             commands::pause_scheduler_event,

@@ -34,10 +34,12 @@ function PathDisplay({ path, action }: { path: string; action?: ReactNode }) {
 
 export default function NodeDataLocationSettings() {
     const { t } = useTranslation('settings');
-    const { loading, selected, handleSelect, handleSave, handleClear, currentDir } = useSetCustomDir();
+    const { loading, selected, handleSelect, handleSave, handleClear, currentDir, validationError } =
+        useSetCustomDir();
 
     const showCurrent = currentDir?.length && !selected?.length;
     const showSelected = selected?.length && selected !== currentDir;
+    const hasError = !!validationError;
 
     const currentMarkup = (
         <Activity mode={showCurrent ? 'visible' : 'hidden'}>
@@ -56,8 +58,15 @@ export default function NodeDataLocationSettings() {
                         </RemoveCTA>
                     }
                 />
+                {hasError && (
+                    <SettingsGroupContent>
+                        <Typography style={{ color: 'var(--color-error, #ff4444)', fontSize: '0.85em' }}>
+                            {validationError}
+                        </Typography>
+                    </SettingsGroupContent>
+                )}
                 <SettingsGroupAction>
-                    <Button size="xs" onClick={handleSave} disabled={loading}>
+                    <Button size="xs" onClick={handleSave} disabled={loading || hasError}>
                         {loading ? <CircularProgress /> : t('save')}
                     </Button>
                 </SettingsGroupAction>
