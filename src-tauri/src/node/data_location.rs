@@ -31,20 +31,68 @@ use fs_more::directory::{
 use fs_more::file::CollidingFileBehaviour;
 use log::{error, info, warn};
 use std::fs;
+use std::path::Path;
 use tari_common::configuration::Network;
 use tauri::ipc::InvokeError;
 
+/// Returns true if the given path is on a network-mounted filesystem.
+///
+/// On macOS, SMB/NFS mounts typically appear under /Volumes/ or /Network/.
+#[cfg(target_os = "macos")]
+fn is_network_filesystem(path: &Path) -> bool {
+    use std::path::Component;
+
+    // Convert to components and collect first two to check for /Volumes/<name> or /Network/<name>
+    let mut components = path.components();
+    match components.next() {
+        Some(Component::RootDir) => {
+            match components.next() {
+                Some(Component::Normal(s)) => {
+                    let name = s.to_string_lossy();
+                    name == "Volumes" || name == "Network"
+                }
+                _ => false,
+            }
+        }
+        _ => false,
+    }
+}
+
+/// Returns true if the given path is on a network-mounted filesystem.
+/// Stub for non-macOS platforms.
+#[cfg(not(target_os = "macos"))]
+fn is_network_filesystem(_path: &Path) -> bool {
+    false
+}
+
 pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
+    // Network filesystems (SMB/NFS on macOS) don't support atomic rename for
+    // cross-device moves. Force copy-and-delete strategy when destination is
+    // on a network mount to avoid EXDEV errors.
+    let is_dest_network = is_network_filesystem(Path::new(&to_path));
+    if is_dest_network {
+        info!(target: LOG_TARGET_APP_LOGIC, "Destination is on a network filesystem, forcing copy-and-delete move strategy");
+    }
+
     let move_options = DirectoryMoveOptions {
         destination_directory_rule: DestinationDirectoryRule::AllowNonEmpty {
             colliding_file_behaviour: CollidingFileBehaviour::Abort,
             colliding_subdirectory_behaviour: CollidingSubDirectoryBehaviour::Continue,
         },
-        allowed_strategies: DirectoryMoveAllowedStrategies::Either {
-            copy_and_delete_options: DirectoryMoveByCopyOptions {
-                broken_symlink_behaviour: BrokenSymlinkBehaviour::Abort,
-                symlink_behaviour: SymlinkBehaviour::Keep,
-            },
+        allowed_strategies: if is_dest_network {
+            DirectoryMoveAllowedStrategies::CopyAndDelete {
+                options: DirectoryMoveByCopyOptions {
+                    broken_symlink_behaviour: BrokenSymlinkBehaviour::Abort,
+                    symlink_behaviour: SymlinkBehaviour::Keep,
+                },
+            }
+        } else {
+            DirectoryMoveAllowedStrategies::Either {
+                copy_and_delete_options: DirectoryMoveByCopyOptions {
+                    broken_symlink_behaviour: BrokenSymlinkBehaviour::Abort,
+                    symlink_behaviour: SymlinkBehaviour::Keep,
+                },
+            }
         },
     };
     match canonicalize(to_path) {
