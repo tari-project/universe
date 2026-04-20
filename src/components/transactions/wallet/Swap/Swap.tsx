@@ -9,7 +9,7 @@ import {
     ProcessingTransaction,
 } from '@app/containers/floating/SwapDialogs/sections/ProcessingTransaction/ProcessingTransaction';
 
-import { useState, memo, useRef, useEffect, useCallback } from 'react'; // Added useRef
+import { useState, useRef, useEffect, useCallback } from 'react'; // Added useRef
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
 import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
@@ -18,7 +18,7 @@ import { useUIStore } from '@app/store';
 import { useIframeUrl } from '@app/hooks/swap/useIframeUrl';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 
-export const Swap = memo(function Swap() {
+export const Swap = () => {
     const theme = useUIStore((s) => s.theme);
     const [processingOpen, setProcessingOpen] = useState(false);
     const [processingTransaction, setProcessingTransaction] = useState<ProccessingTransactionProps | null>(null);
@@ -58,7 +58,6 @@ export const Swap = memo(function Swap() {
         setConfirmingTransaction(null);
         setProcessingTransaction(null);
     };
-
     useIframeMessage((event) => {
         switch (event.data.type) {
             case MessageType.CONFIRM_REQUEST:
@@ -166,4 +165,4 @@ export const Swap = memo(function Swap() {
             <SignApprovalMessage isOpen={approving} setIsOpen={setApproving} />
         </SwapsContainer>
     );
-});
+};

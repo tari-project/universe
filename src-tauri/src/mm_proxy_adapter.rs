@@ -222,8 +222,14 @@ impl MergeMiningProxyStatusMonitor {
             }
         });
 
-        // Create an HTTP client
-        let client = Client::new();
+        // Create an HTTP client without automatic gzip to prevent the mmproxy from
+        // forwarding accept-encoding: gzip to monerod (via Cloudflare), which returns
+        // compressed responses the mmproxy binary cannot decompress.
+        let client = Client::builder()
+            .no_gzip()
+            .no_brotli()
+            .no_deflate()
+            .build()?;
 
         // Send the POST request
         let response = client.post(rpc_url).json(&request_body).send().await?;

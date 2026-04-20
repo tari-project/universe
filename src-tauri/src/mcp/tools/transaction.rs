@@ -31,7 +31,7 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::rate_limiter::TransactionRateLimiter;
 use crate::pin::PinManager;
-use crate::wallet::wallet_manager::WalletManager;
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 use log::{info, warn};
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
@@ -119,8 +119,6 @@ pub async fn send_transaction(
     destination: String,
     amount: String,
     payment_id: Option<String>,
-    wallet_manager: &WalletManager,
-    app_handle: &tauri::AppHandle,
 ) -> Result<String, TransactionError> {
     // 1. Check transactions enabled
     let config = ConfigMcp::content().await;
@@ -192,17 +190,15 @@ pub async fn send_transaction(
 
     // 11. Execute transaction (PIN dialog is triggered by PinManager during signing)
     info!(target: LOG_TARGET_APP_LOGIC, "MCP: executing send_transaction (destination={}, amount={})", destination, amount_display);
-    let tx_result = wallet_manager
-        .send_one_sided_to_stealth_address(
-            amount.clone(),
-            destination.clone(),
-            payment_id,
-            app_handle,
-        )
-        .await;
+    let tx_result = MinotariWalletManager::send_one_sided_transaction(
+        destination.clone(),
+        amount_u64,
+        payment_id,
+    )
+    .await;
 
     match tx_result {
-        Ok(()) => {
+        Ok(_displayed_tx) => {
             EventsEmitter::emit_mcp_transaction_result(
                 crate::events::McpTransactionResultPayload {
                     request_id,
@@ -211,10 +207,6 @@ pub async fn send_transaction(
                 },
             )
             .await;
-
-            if let Ok(balance) = wallet_manager.get_balance().await {
-                EventsEmitter::emit_wallet_balance_update(balance).await;
-            }
 
             let result = SendTransactionSuccess {
                 status: "success",
