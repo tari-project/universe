@@ -1697,9 +1697,9 @@ pub async fn set_node_type(
 /// - Path, query, fragment, username and password are all rejected to
 ///   keep the persisted value a bare gRPC endpoint (no `/v1`, no
 ///   `user:pass@`, no `?x=y`).
-///
-/// IPv6 literals are preserved in their bracketed form (`[::1]`) so the
-/// canonical string remains parseable.
+/// - IPv6 literals are rejected. `RemoteNodeAdapter::set_grpc_address`
+///   splits on `:` to recover the port, which is unrecoverably ambiguous
+///   for `https://[::1]:443`. Hostnames and IPv4 literals are fine.
 fn canonicalise_remote_base_node_address(input: &str) -> Result<String, anyhow::Error> {
     let parsed = url::Url::parse(input)
         .map_err(|e| anyhow::anyhow!("Invalid remote base node address {input:?}: {e}"))?;
@@ -1715,10 +1715,15 @@ fn canonicalise_remote_base_node_address(input: &str) -> Result<String, anyhow::
         );
     }
 
-    let host = parsed
-        .host_str()
-        .filter(|h| !h.is_empty())
-        .ok_or_else(|| anyhow::anyhow!("Invalid remote base node address {input:?}: missing host"))?;
+    let host = parsed.host_str().filter(|h| !h.is_empty()).ok_or_else(|| {
+        anyhow::anyhow!("Invalid remote base node address {input:?}: missing host")
+    })?;
+
+    if matches!(parsed.host(), Some(url::Host::Ipv6(_))) {
+        anyhow::bail!(
+            "Invalid remote base node address {input:?}: IPv6 literals are not supported; use a hostname or IPv4 address"
+        );
+    }
 
     let port = parsed.port().ok_or_else(|| {
         anyhow::anyhow!(
@@ -1742,13 +1747,7 @@ fn canonicalise_remote_base_node_address(input: &str) -> Result<String, anyhow::
         anyhow::bail!("Invalid remote base node address {input:?}: fragments are not permitted");
     }
 
-    // Preserve IPv6 brackets: `url` gives the unbracketed form via `host_str`.
-    let host_for_url = match parsed.host() {
-        Some(url::Host::Ipv6(addr)) => format!("[{addr}]"),
-        _ => host.to_string(),
-    };
-
-    Ok(format!("{scheme}://{host_for_url}:{port}"))
+    Ok(format!("{scheme}://{host}:{port}"))
 }
 
 /// Validate a candidate remote base node address without persisting it.
@@ -1764,7 +1763,9 @@ fn canonicalise_remote_base_node_address(input: &str) -> Result<String, anyhow::
 pub fn validate_remote_base_node_address(address: String) -> Result<String, InvokeError> {
     let trimmed = address.trim();
     if trimmed.is_empty() {
-        return Ok(ConfigCoreContent::default().remote_base_node_address().clone());
+        return Ok(ConfigCoreContent::default()
+            .remote_base_node_address()
+            .clone());
     }
     canonicalise_remote_base_node_address(trimmed).map_err(InvokeError::from_anyhow)
 }
@@ -1795,7 +1796,9 @@ pub async fn set_remote_base_node_address(address: String) -> Result<String, Inv
     // the empty string the user typed.
     let trimmed_address = address.trim();
     let resolved = if trimmed_address.is_empty() {
-        ConfigCoreContent::default().remote_base_node_address().clone()
+        ConfigCoreContent::default()
+            .remote_base_node_address()
+            .clone()
     } else {
         canonicalise_remote_base_node_address(trimmed_address).map_err(InvokeError::from_anyhow)?
     };
