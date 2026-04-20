@@ -1,5 +1,14 @@
 import styled from 'styled-components';
 import { StyledInput as BaseStyledInput } from '@app/components/elements/inputs/Input.styles.ts';
+import { SettingsGroup, SettingsGroupContent } from '../../components/SettingsGroup.styles.ts';
+
+export const AddressSettingsGroup = styled(SettingsGroup)`
+    padding-top: 0;
+`;
+
+export const AddressSettingsGroupContent = styled(SettingsGroupContent)`
+    width: 100%;
+`;
 
 export const AddressFieldWrapper = styled.div`
     display: flex;

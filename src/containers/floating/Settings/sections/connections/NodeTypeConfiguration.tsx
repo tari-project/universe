@@ -22,6 +22,8 @@ import {
     AddressFieldLabel,
     AddressFieldWrapper,
     AddressInput,
+    AddressSettingsGroup,
+    AddressSettingsGroupContent,
 } from './NodeTypeConfiguration.styles.ts';
 
 export default function NodeTypeConfiguration() {
@@ -120,8 +122,8 @@ export default function NodeTypeConfiguration() {
                 </SettingsGroupAction>
             </SettingsGroup>
             {showAddressInput && (
-                <SettingsGroup style={{ paddingTop: 0 }}>
-                    <SettingsGroupContent style={{ width: '100%' }}>
+                <AddressSettingsGroup>
+                    <AddressSettingsGroupContent>
                         <AddressFieldWrapper>
                             <AddressFieldLabel htmlFor={addressInputId}>
                                 {t('custom-remote-node-address')}
@@ -144,12 +146,12 @@ export default function NodeTypeConfiguration() {
                             />
                             {addressError && (
                                 <AddressErrorMessage id={addressErrorId} role="alert">
-                                    {t('custom-remote-node-address-error')}
+                                    {addressError}
                                 </AddressErrorMessage>
                             )}
                         </AddressFieldWrapper>
-                    </SettingsGroupContent>
-                </SettingsGroup>
+                    </AddressSettingsGroupContent>
+                </AddressSettingsGroup>
             )}
         </SettingsGroupWrapper>
     );
