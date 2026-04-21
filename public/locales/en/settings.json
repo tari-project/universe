@@ -142,7 +142,7 @@
     "data-title": "Node data settings"
   },
   "custom-remote-node-address": "Custom remote node address (gRPC)",
-  "custom-remote-node-address-error": "Address must start with http:// or https://",
+  "custom-remote-node-address-error": "Invalid address: {{reason}}",
   "node-configuration": "Node configuration",
   "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
   "node-connection-address": "Connection address",
