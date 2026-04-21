@@ -7,7 +7,7 @@ import { IoCheckmarkOutline, IoCloseOutline, IoCopyOutline, IoPencil } from 'rea
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import { Wrapper } from './styles.ts';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
-import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
+import { Edit, splitSeedWordsInput } from '@app/components/wallet/seedwords/components/Edit.tsx';
 import { FormProvider, useForm } from 'react-hook-form';
 import { importSeedWords, useWalletStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
@@ -77,10 +77,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     }, [isValid, newSeedWords]);
 
     const handleApply = (data: { seedWords: string }) => {
-        // Split on any run of whitespace or commas so words typed one-per-line
-        // (newline-separated) or pasted as a comma-separated list are parsed
-        // correctly. See issue #3128.
-        setNewSeedWords(data.seedWords.trim().split(/[\s,]+/).filter(Boolean));
+        setNewSeedWords(splitSeedWordsInput(data.seedWords));
         setShowConfirm(true);
     };
 

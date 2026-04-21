@@ -21,6 +21,19 @@ const SEEDWORD_REGEX = /^\s*([^\s,]+)([\s,]+[^\s,]+){23}\s*$/u;
  */
 export const normalizeSeedWordsInput = (value: string): string => value.replace(/[\s,]+/g, ' ').trim();
 
+/**
+ * Split a raw seed-words string into the clean `string[]` expected by the
+ * Tauri `import_seed_words` / `forgot_pin` commands. Accepts any mix of
+ * whitespace (spaces, tabs, newlines) and commas as separators and filters
+ * out empty tokens so one-word-per-line or comma-separated input parses
+ * correctly. See issue #3128.
+ */
+export const splitSeedWordsInput = (value: string): string[] =>
+    value
+        .trim()
+        .split(/[\s,]+/)
+        .filter(Boolean);
+
 export const Edit = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const { register, setValue, formState } = useFormContext<{ seedWords: string }>();
