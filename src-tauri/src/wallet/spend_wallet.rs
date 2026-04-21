@@ -128,11 +128,11 @@ impl SpendWallet {
         let data_dir = self.get_data_dir(app_handle)?;
         let working_dir = data_dir.join("spend_wallet");
         // Clean up spend wallet working directory
-        if let Err(err) = std::fs::remove_dir_all(&working_dir) {
-            if err.kind() != ErrorKind::NotFound {
-                return Err(anyhow::anyhow!(err))
-                    .context("Failed to clean up Spend Wallet working directory");
-            }
+        if let Err(err) = std::fs::remove_dir_all(&working_dir)
+            && err.kind() != ErrorKind::NotFound
+        {
+            return Err(anyhow::anyhow!(err))
+                .context("Failed to clean up Spend Wallet working directory");
         }
         std::fs::create_dir_all(&working_dir)
             .context("Failed to clean up Spend Wallet working directory")?;
