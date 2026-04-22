@@ -38,17 +38,36 @@ use tauri::ipc::InvokeError;
 
 /// Filesystem type names that indicate a network / remote volume.
 ///
-/// These values are normalised to lowercase and covers the common remote
-/// filesystem names reported by sysinfo across platforms:
-/// - macOS:   `smbfs`, `nfs`, `afpfs`, `webdav`, `ftp`
+/// Values are matched case-insensitively against the filesystem string
+/// reported by sysinfo (see `is_network_fs`). Covers the common remote
+/// filesystem names across platforms:
+/// - macOS:   `smbfs`, `nfs`, `afpfs`, `webdav`
 /// - Linux:   `cifs`, `smb3`, `nfs`, `nfs4`, `fuse.sshfs`, `sshfs`, `9p`,
 ///            `ceph`, `glusterfs`, `beegfs`, `lustre`
 /// - Windows: sysinfo reports remote drives with a filesystem string that
-///            frequently contains `remote` or the underlying SMB/NFS name.
+///            frequently contains `remote` or the underlying SMB/NFS name,
+///            but for SMB drive-letter mappings `GetVolumeInformationW`
+///            typically returns `NTFS` — so the `cfg(windows)` branch in
+///            `detect_network_filesystem` additionally calls
+///            `GetDriveTypeW` to catch that case.
+///
+/// `"ftp"` is intentionally *not* in this list: on modern macOS (post Big
+/// Sur) Finder's FTP mount was removed; on Linux, `curlftpfs` reports as
+/// `fuse` / `fuse.curlftpfs`; Windows doesn't expose FTP as a drive. There
+/// is no current OS where sysinfo's `file_system()` returns `"ftp"`.
 const NETWORK_FILESYSTEMS: &[&str] = &[
     "smbfs", "cifs", "smb", "smb2", "smb3", "nfs", "nfs3", "nfs4", "afpfs", "webdav", "davfs",
-    "ftp", "sshfs", "fuse.sshfs", "9p", "ceph", "glusterfs", "beegfs", "lustre", "remote",
+    "sshfs", "fuse.sshfs", "9p", "ceph", "glusterfs", "beegfs", "lustre", "remote",
 ];
+
+/// True if `fs_name` (already lowercased) indicates a network / remote
+/// filesystem. Extracted so the match can be unit-tested without touching
+/// real disks.
+fn is_network_fs(fs_name: &str) -> bool {
+    NETWORK_FILESYSTEMS
+        .iter()
+        .any(|known| fs_name == *known || fs_name.contains(known))
+}
 
 /// Returns `Some(fs_name)` if `path` resolves to a location on a network /
 /// remote filesystem, or `None` if it's on a local volume (or we can't tell).
@@ -75,6 +94,17 @@ pub fn detect_network_filesystem(path: &Path) -> Option<String> {
                 Prefix::UNC(_, _) | Prefix::VerbatimUNC(_, _) => {
                     return Some("unc".to_string());
                 }
+                // For drive-letter prefixes (e.g. `Z:\`), sysinfo reports
+                // `GetVolumeInformationW`'s filesystem string which for an
+                // SMB-mapped drive is usually `NTFS` (the share's backing
+                // FS) rather than anything matching `NETWORK_FILESYSTEMS`.
+                // Check `GetDriveTypeW` directly so we catch `DRIVE_REMOTE`
+                // regardless of the volume's reported filesystem.
+                Prefix::Disk(letter) | Prefix::VerbatimDisk(letter) => {
+                    if is_windows_remote_drive(letter) {
+                        return Some("remote".to_string());
+                    }
+                }
                 _ => {}
             }
         }
@@ -98,13 +128,94 @@ pub fn detect_network_filesystem(path: &Path) -> Option<String> {
     }
 
     let (_, fs_name) = best?;
-    if NETWORK_FILESYSTEMS
-        .iter()
-        .any(|known| fs_name == *known || fs_name.contains(known))
-    {
+    if is_network_fs(&fs_name) {
         Some(fs_name)
     } else {
         None
+    }
+}
+
+/// Windows helper: returns true if the drive letter maps to a remote
+/// (network) volume per `GetDriveTypeW`. `letter` is the ASCII byte for
+/// the drive (e.g. `b'Z'`).
+#[cfg(windows)]
+fn is_windows_remote_drive(letter: u8) -> bool {
+    use windows_sys::Win32::Storage::FileSystem::{DRIVE_REMOTE, GetDriveTypeW};
+    // Build `"X:\0"` as a UTF-16 null-terminated string.
+    let root: [u16; 4] = [u16::from(letter), u16::from(b':'), u16::from(b'\\'), 0];
+    // Safety: `root` is a valid null-terminated wide string; the Win32
+    // API reads it and returns a small integer code.
+    let drive_type = unsafe { GetDriveTypeW(root.as_ptr()) };
+    drive_type == DRIVE_REMOTE
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_network_fs;
+
+    // Cases brianp called out in code review; extended with a few more so
+    // regressions in NETWORK_FILESYSTEMS show up in `cargo test` without
+    // needing a real mounted volume.
+    #[test]
+    fn local_filesystems_are_not_flagged() {
+        assert!(!is_network_fs("ntfs"));
+        assert!(!is_network_fs("apfs"));
+        assert!(!is_network_fs("hfs+"));
+        assert!(!is_network_fs("ext4"));
+        assert!(!is_network_fs("btrfs"));
+        assert!(!is_network_fs("xfs"));
+        assert!(!is_network_fs("exfat"));
+        assert!(!is_network_fs("zfs"));
+    }
+
+    #[test]
+    fn smb_family_is_flagged() {
+        // Note the matcher is invoked post-lowercase; sysinfo reports e.g.
+        // `"SMB3"` on some Linux kernels — callers must lowercase first.
+        assert!(is_network_fs("smbfs"));
+        assert!(is_network_fs("smb"));
+        assert!(is_network_fs("smb2"));
+        assert!(is_network_fs("smb3"));
+        assert!(is_network_fs("cifs"));
+    }
+
+    #[test]
+    fn nfs_family_is_flagged() {
+        assert!(is_network_fs("nfs"));
+        assert!(is_network_fs("nfs3"));
+        assert!(is_network_fs("nfs4"));
+    }
+
+    #[test]
+    fn macos_network_mounts_are_flagged() {
+        assert!(is_network_fs("afpfs"));
+        assert!(is_network_fs("webdav"));
+    }
+
+    #[test]
+    fn linux_clustered_mounts_are_flagged() {
+        assert!(is_network_fs("ceph"));
+        assert!(is_network_fs("glusterfs"));
+        assert!(is_network_fs("beegfs"));
+        assert!(is_network_fs("lustre"));
+        assert!(is_network_fs("9p"));
+        assert!(is_network_fs("fuse.sshfs"));
+        assert!(is_network_fs("sshfs"));
+    }
+
+    #[test]
+    fn generic_remote_token_is_flagged() {
+        // sysinfo sometimes reports network drives on Windows with a FS
+        // string that embeds `remote` — the contains() branch catches that.
+        assert!(is_network_fs("remote"));
+        assert!(is_network_fs("something-remote"));
+    }
+
+    #[test]
+    fn ftp_is_deliberately_not_flagged() {
+        // Kept as an explicit regression guard. See NETWORK_FILESYSTEMS
+        // rustdoc: no current OS reports "ftp" via sysinfo.
+        assert!(!is_network_fs("ftp"));
     }
 }
 
