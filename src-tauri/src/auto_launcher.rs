@@ -56,26 +56,30 @@ impl AutoLauncher {
         }
     }
 
-    /// Wrap a Windows executable path in double quotes when it contains any
+    /// Wrap an executable path in double quotes when it contains any
     /// whitespace character so that code which interprets the path as a
-    /// shell command line (the Windows registry `Run` key handled by the
-    /// `auto-launch` crate, and the `planif` Task Scheduler action command)
-    /// does not split the path on the space and launch a different (or
-    /// non-existent) executable.
+    /// shell command line — the Windows registry `Run` key handled by the
+    /// `auto-launch` crate, the `planif` Task Scheduler action command, and
+    /// the freedesktop.org `.desktop` file `Exec=` line on Linux — does not
+    /// split the path on the space and launch a different (or non-existent)
+    /// executable.
     ///
     /// * Uses `char::is_whitespace` rather than `contains(' ')` so paths
     ///   containing tabs, no-break spaces, or other Unicode whitespace
     ///   (which Windows `CreateProcess` also treats as argument separators)
     ///   are covered.
-    /// * Skips paths that are already quoted — `canonicalize` never produces
-    ///   one, but this makes the helper safe to call on caller-provided
-    ///   strings too.
+    /// * Skips paths that are *fully* already quoted (start AND end with
+    ///   `"`). An unbalanced leading quote like `"C:\oops` falls through and
+    ///   gets wrapped again — callers should never produce such input, but
+    ///   requiring a matching pair means a malformed value does not silently
+    ///   propagate into the registry / desktop entry as-is.
     ///
     /// Defined cross-platform so both compile-time-gated and runtime-gated
-    /// `CurrentOperatingSystem::Windows` match arms can reference it without
-    /// needing `#[cfg]` dances at every call site.
-    fn quote_windows_path_if_needed(app_path: &str) -> String {
-        if app_path.chars().any(char::is_whitespace) && !app_path.starts_with('"') {
+    /// `CurrentOperatingSystem::{Windows, Linux}` match arms can reference it
+    /// without needing `#[cfg]` dances at every call site.
+    fn quote_exec_path_if_needed(app_path: &str) -> String {
+        let already_quoted = app_path.starts_with('"') && app_path.ends_with('"') && app_path.len() >= 2;
+        if app_path.chars().any(char::is_whitespace) && !already_quoted {
             format!("\"{app_path}\"")
         } else {
             app_path.to_string()
@@ -92,7 +96,7 @@ impl AutoLauncher {
                 // whitespace (e.g. "C:\Program Files\...") must therefore be wrapped in
                 // double quotes or Windows will interpret the whitespace as an argument
                 // separator and silently fail to launch on boot.
-                let quoted_path = Self::quote_windows_path_if_needed(app_path);
+                let quoted_path = Self::quote_exec_path_if_needed(app_path);
                 AutoLaunchBuilder::new()
                     .set_app_name(app_name)
                     .set_app_path(&quoted_path)
@@ -106,7 +110,7 @@ impl AutoLauncher {
                 // Whitespace in the install path must be quoted, otherwise
                 // the desktop entry will fail to launch — same root cause as
                 // the Windows registry fix above.
-                let quoted_path = Self::quote_windows_path_if_needed(app_path);
+                let quoted_path = Self::quote_exec_path_if_needed(app_path);
                 AutoLaunchBuilder::new()
                     .set_app_name(app_name)
                     .set_app_path(&quoted_path)
@@ -234,7 +238,7 @@ impl AutoLauncher {
         // the elevated admin auto-start silently fails to launch and the
         // "self-healing on next startup" promise in the PR description
         // never runs for users who have the admin auto-start enabled.
-        let quoted_app_path = Self::quote_windows_path_if_needed(&app_path);
+        let quoted_app_path = Self::quote_exec_path_if_needed(&app_path);
 
         let mut retry_interval = Duration::new();
         retry_interval.minutes = Some(1);
@@ -363,7 +367,7 @@ mod tests {
     #[test]
     fn quote_windows_path_wraps_paths_with_spaces() {
         assert_eq!(
-            AutoLauncher::quote_windows_path_if_needed("C:\\Program Files\\Tari Universe\\tari-universe.exe"),
+            AutoLauncher::quote_exec_path_if_needed("C:\\Program Files\\Tari Universe\\tari-universe.exe"),
             "\"C:\\Program Files\\Tari Universe\\tari-universe.exe\"",
         );
     }
@@ -374,11 +378,11 @@ mod tests {
         // separator, not just U+0020, so the helper must quote tabs and
         // non-breaking spaces too.
         assert_eq!(
-            AutoLauncher::quote_windows_path_if_needed("C:\\Tari\tUniverse\\app.exe"),
+            AutoLauncher::quote_exec_path_if_needed("C:\\Tari\tUniverse\\app.exe"),
             "\"C:\\Tari\tUniverse\\app.exe\"",
         );
         assert_eq!(
-            AutoLauncher::quote_windows_path_if_needed("C:\\Tari\u{00A0}Universe\\app.exe"),
+            AutoLauncher::quote_exec_path_if_needed("C:\\Tari\u{00A0}Universe\\app.exe"),
             "\"C:\\Tari\u{00A0}Universe\\app.exe\"",
         );
     }
@@ -386,7 +390,7 @@ mod tests {
     #[test]
     fn quote_windows_path_leaves_space_free_path_alone() {
         assert_eq!(
-            AutoLauncher::quote_windows_path_if_needed("C:\\Tari\\Universe\\tari-universe.exe"),
+            AutoLauncher::quote_exec_path_if_needed("C:\\Tari\\Universe\\tari-universe.exe"),
             "C:\\Tari\\Universe\\tari-universe.exe",
         );
     }
@@ -394,8 +398,21 @@ mod tests {
     #[test]
     fn quote_windows_path_does_not_double_quote_an_already_quoted_path() {
         assert_eq!(
-            AutoLauncher::quote_windows_path_if_needed("\"C:\\Program Files\\Tari Universe\\app.exe\""),
+            AutoLauncher::quote_exec_path_if_needed("\"C:\\Program Files\\Tari Universe\\app.exe\""),
             "\"C:\\Program Files\\Tari Universe\\app.exe\"",
+        );
+    }
+
+    #[test]
+    fn quote_exec_path_wraps_unbalanced_leading_quote() {
+        // `"C:\Program Files\oops` (leading `"` without matching trailing `"`)
+        // must NOT be treated as already-quoted. Letting it pass through would
+        // push a malformed value into the registry / desktop entry. We'd
+        // rather produce visibly-wrong double-wrapped output than silently
+        // ship a broken auto-start command.
+        assert_eq!(
+            AutoLauncher::quote_exec_path_if_needed("\"C:\\Program Files\\oops"),
+            "\"\"C:\\Program Files\\oops\"",
         );
     }
 }
