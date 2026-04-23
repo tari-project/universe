@@ -46,7 +46,7 @@
         "react-markdown": "^10.1.0",
         "styled-components": "^6.3.8",
         "use-sync-external-store": "^1.6.0",
-        "uuid": "^13.0.0",
+        "uuid": "^14.0.0",
         "vite-tsconfig-paths": "^5.1.4",
         "zustand": "^5.0.10"
     },
