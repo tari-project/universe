@@ -41,23 +41,39 @@ use tauri::ipc::InvokeError;
 /// Values are matched case-insensitively against the filesystem string
 /// reported by sysinfo (see `is_network_fs`). Covers the common remote
 /// filesystem names across platforms:
-/// - macOS:   `smbfs`, `nfs`, `afpfs`, `webdav`
-/// - Linux:   `cifs`, `smb3`, `nfs`, `nfs4`, `fuse.sshfs`, `sshfs`, `9p`,
-///            `ceph`, `glusterfs`, `beegfs`, `lustre`
+/// - macOS: `smbfs`, `nfs`, `afpfs`, `webdav`
+/// - Linux: `cifs`, `smb3`, `nfs`, `nfs4`, `fuse.sshfs`, `sshfs`, `9p`, `ceph`,
+///   `glusterfs`, `beegfs`, `lustre`
 /// - Windows: sysinfo reports remote drives with a filesystem string that
-///            frequently contains `remote` or the underlying SMB/NFS name,
-///            but for SMB drive-letter mappings `GetVolumeInformationW`
-///            typically returns `NTFS` — so the `cfg(windows)` branch in
-///            `detect_network_filesystem` additionally calls
-///            `GetDriveTypeW` to catch that case.
+///   frequently contains `remote` or the underlying SMB/NFS name, but for SMB
+///   drive-letter mappings `GetVolumeInformationW` typically returns `NTFS` —
+///   so the `cfg(windows)` branch in `detect_network_filesystem` additionally
+///   calls `GetDriveTypeW` to catch that case.
 ///
 /// `"ftp"` is intentionally *not* in this list: on modern macOS (post Big
 /// Sur) Finder's FTP mount was removed; on Linux, `curlftpfs` reports as
 /// `fuse` / `fuse.curlftpfs`; Windows doesn't expose FTP as a drive. There
 /// is no current OS where sysinfo's `file_system()` returns `"ftp"`.
 const NETWORK_FILESYSTEMS: &[&str] = &[
-    "smbfs", "cifs", "smb", "smb2", "smb3", "nfs", "nfs3", "nfs4", "afpfs", "webdav", "davfs",
-    "sshfs", "fuse.sshfs", "9p", "ceph", "glusterfs", "beegfs", "lustre", "remote",
+    "smbfs",
+    "cifs",
+    "smb",
+    "smb2",
+    "smb3",
+    "nfs",
+    "nfs3",
+    "nfs4",
+    "afpfs",
+    "webdav",
+    "davfs",
+    "sshfs",
+    "fuse.sshfs",
+    "9p",
+    "ceph",
+    "glusterfs",
+    "beegfs",
+    "lustre",
+    "remote",
 ];
 
 /// True if `fs_name` (already lowercased) indicates a network / remote
@@ -149,6 +165,106 @@ fn is_windows_remote_drive(letter: u8) -> bool {
     drive_type == DRIVE_REMOTE
 }
 
+pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
+    let move_options = DirectoryMoveOptions {
+        destination_directory_rule: DestinationDirectoryRule::AllowNonEmpty {
+            colliding_file_behaviour: CollidingFileBehaviour::Abort,
+            colliding_subdirectory_behaviour: CollidingSubDirectoryBehaviour::Continue,
+        },
+        allowed_strategies: DirectoryMoveAllowedStrategies::Either {
+            copy_and_delete_options: DirectoryMoveByCopyOptions {
+                broken_symlink_behaviour: BrokenSymlinkBehaviour::Abort,
+                symlink_behaviour: SymlinkBehaviour::Keep,
+            },
+        },
+    };
+    match canonicalize(to_path) {
+        Ok(new_dir) => {
+            // Refuse network-mounted destinations up front. fs_more's
+            // move_directory has historically failed with confusing errors
+            // on SMB / NFS / AFP mounts (see issue #3178 — macOS with a NAS
+            // SMB mount) because those filesystems don't support all the
+            // metadata operations (rename-across-volume, fsync on
+            // directories, extended attributes) the node LMDB database
+            // relies on. Detect this before we shut down the node phase and
+            // return a clear, actionable error instead of a cryptic fs_more
+            // failure.
+            if let Some(fs_name) = detect_network_filesystem(&new_dir) {
+                let message = format!(
+                    "Selected directory is on a network filesystem ({fs_name}), which is not \
+                     supported for the node data location. The node database requires a local \
+                     disk (HDD/SSD) because network filesystems such as SMB, NFS, AFP and WebDAV \
+                     do not reliably support the operations LMDB needs. Please choose a local \
+                     directory instead."
+                );
+                error!(target: LOG_TARGET_APP_LOGIC, "{message}");
+                return Err(InvokeError::from(message));
+            }
+
+            match ConfigCore::update_node_data_directory(new_dir.clone()).await {
+                Ok(previous) => {
+                    if let Some(previous) = previous {
+                        SetupManager::get_instance()
+                            .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
+                            .await;
+
+                        let network = Network::get_current().to_string().to_lowercase();
+                        let source_dir = previous.join("node").join(&network);
+                        let destination_dir = new_dir.join("node").join(&network);
+
+                        if let Some(parent) = destination_dir.parent() {
+                            fs::create_dir_all(parent)
+                                .map_err(|e| InvokeError::from(e.to_string()))?;
+                        }
+
+                        let dest_existed = destination_dir.exists();
+
+                        match move_directory(source_dir, destination_dir.clone(), move_options) {
+                            Ok(res) => {
+                                info!(target: LOG_TARGET_APP_LOGIC, "Successfully moved items - Total bytes: {}, Directories: {:?}", res.total_bytes_moved, res.directories_moved);
+                            }
+                            Err(e) => {
+                                error!(target: LOG_TARGET_APP_LOGIC, "Could not move items, reverting config change: {e}");
+
+                                if !dest_existed
+                                    && destination_dir.exists()
+                                    && let Err(cleanup_err) = fs::remove_dir_all(&destination_dir)
+                                {
+                                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up destination after failed move: {cleanup_err}");
+                                }
+
+                                ConfigCore::update_node_data_directory(previous)
+                                    .await
+                                    .map_err(|e| InvokeError::from(e.to_string()))?;
+
+                                SetupManager::get_instance()
+                                    .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
+                                    .await;
+
+                                return Err(InvokeError::from(e.to_string()));
+                            }
+                        };
+
+                        info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] restarting phases");
+                        SetupManager::get_instance()
+                            .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
+                            .await;
+                    }
+                }
+                Err(e) => {
+                    error!(target: LOG_TARGET_APP_LOGIC, "Could not update node data location: {e}");
+                    return Err(InvokeError::from(e.to_string()));
+                }
+            }
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET_APP_LOGIC, "New node directory does not exist: {e}");
+            return Err(InvokeError::from(e.to_string()));
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::is_network_fs;
@@ -217,103 +333,4 @@ mod tests {
         // rustdoc: no current OS reports "ftp" via sysinfo.
         assert!(!is_network_fs("ftp"));
     }
-}
-
-pub async fn update_data_location(to_path: String) -> Result<(), InvokeError> {
-    let move_options = DirectoryMoveOptions {
-        destination_directory_rule: DestinationDirectoryRule::AllowNonEmpty {
-            colliding_file_behaviour: CollidingFileBehaviour::Abort,
-            colliding_subdirectory_behaviour: CollidingSubDirectoryBehaviour::Continue,
-        },
-        allowed_strategies: DirectoryMoveAllowedStrategies::Either {
-            copy_and_delete_options: DirectoryMoveByCopyOptions {
-                broken_symlink_behaviour: BrokenSymlinkBehaviour::Abort,
-                symlink_behaviour: SymlinkBehaviour::Keep,
-            },
-        },
-    };
-    match canonicalize(to_path) {
-        Ok(new_dir) => {
-            // Refuse network-mounted destinations up front. fs_more's
-            // move_directory has historically failed with confusing errors
-            // on SMB / NFS / AFP mounts (see issue #3178 — macOS with a NAS
-            // SMB mount) because those filesystems don't support all the
-            // metadata operations (rename-across-volume, fsync on
-            // directories, extended attributes) the node LMDB database
-            // relies on. Detect this before we shut down the node phase and
-            // return a clear, actionable error instead of a cryptic fs_more
-            // failure.
-            if let Some(fs_name) = detect_network_filesystem(&new_dir) {
-                let message = format!(
-                    "Selected directory is on a network filesystem ({fs_name}), which is not \
-                     supported for the node data location. The node database requires a local \
-                     disk (HDD/SSD) because network filesystems such as SMB, NFS, AFP and WebDAV \
-                     do not reliably support the operations LMDB needs. Please choose a local \
-                     directory instead."
-                );
-                error!(target: LOG_TARGET_APP_LOGIC, "{message}");
-                return Err(InvokeError::from(message));
-            }
-
-            match ConfigCore::update_node_data_directory(new_dir.clone()).await {
-            Ok(previous) => {
-                if let Some(previous) = previous {
-                    SetupManager::get_instance()
-                        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
-                        .await;
-
-                    let network = Network::get_current().to_string().to_lowercase();
-                    let source_dir = previous.join("node").join(&network);
-                    let destination_dir = new_dir.join("node").join(&network);
-
-                    if let Some(parent) = destination_dir.parent() {
-                        fs::create_dir_all(parent).map_err(|e| InvokeError::from(e.to_string()))?;
-                    }
-
-                    let dest_existed = destination_dir.exists();
-
-                    match move_directory(source_dir, destination_dir.clone(), move_options) {
-                        Ok(res) => {
-                            info!(target: LOG_TARGET_APP_LOGIC, "Successfully moved items - Total bytes: {}, Directories: {:?}", res.total_bytes_moved, res.directories_moved);
-                        }
-                        Err(e) => {
-                            error!(target: LOG_TARGET_APP_LOGIC, "Could not move items, reverting config change: {e}");
-
-                            if !dest_existed
-                                && destination_dir.exists()
-                                && let Err(cleanup_err) = fs::remove_dir_all(&destination_dir)
-                            {
-                                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up destination after failed move: {cleanup_err}");
-                            }
-
-                            ConfigCore::update_node_data_directory(previous)
-                                .await
-                                .map_err(|e| InvokeError::from(e.to_string()))?;
-
-                            SetupManager::get_instance()
-                                .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
-                                .await;
-
-                            return Err(InvokeError::from(e.to_string()));
-                        }
-                    };
-
-                    info!(target: LOG_TARGET_APP_LOGIC, "[ set_custom_node_directory ] restarting phases");
-                    SetupManager::get_instance()
-                        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::Node])
-                        .await;
-                }
-            }
-            Err(e) => {
-                error!(target: LOG_TARGET_APP_LOGIC, "Could not update node data location: {e}");
-                return Err(InvokeError::from(e.to_string()));
-            }
-            }
-        }
-        Err(e) => {
-            error!(target: LOG_TARGET_APP_LOGIC, "New node directory does not exist: {e}");
-            return Err(InvokeError::from(e.to_string()));
-        }
-    }
-    Ok(())
 }
