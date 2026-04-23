@@ -2676,7 +2676,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "835c052cb0c08c1acf6ffd71c022172e18723949c8282f2b9f27efbc51e64534"
 dependencies = [
  "byteorder",
- "rand 0.8.5",
+ "rand 0.8.6",
  "rustc-hex",
  "static_assertions",
 ]
@@ -4814,7 +4814,7 @@ dependencies = [
  "borsh",
  "log",
  "prost 0.13.5",
- "rand 0.8.5",
+ "rand 0.8.6",
  "rcgen",
  "subtle",
  "tari_common_types",
@@ -4961,7 +4961,7 @@ dependencies = [
  "base58-monero",
  "crc 1.8.1",
  "curve25519-dalek",
- "rand 0.8.5",
+ "rand 0.8.6",
  "sha3",
  "thiserror 1.0.69",
 ]
@@ -6076,7 +6076,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d5285893bb5eb82e6aaf5d59ee909a06a16737a8970984dd7746ba9283498d6"
 dependencies = [
  "phf_shared 0.10.0",
- "rand 0.8.5",
+ "rand 0.8.6",
 ]
 
 [[package]]
@@ -6086,7 +6086,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3c80231409c20246a13fddb31776fb942c38553c51e871f8cbd687a4cfb5843d"
 dependencies = [
  "phf_shared 0.11.3",
- "rand 0.8.5",
+ "rand 0.8.6",
 ]
 
 [[package]]
@@ -6821,9 +6821,9 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.8.5"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
+checksum = "5ca0ecfa931c29007047d1bc58e623ab12e5590e8c7cc53200d5202b69266d8a"
 dependencies = [
  "libc",
  "rand_chacha 0.3.1",
@@ -7240,7 +7240,7 @@ version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5875471e6cab2871bc150ecb8c727db5113c9338cc3354dc5ee3425b6aa40a1c"
 dependencies = [
- "rand 0.8.5",
+ "rand 0.8.6",
 ]
 
 [[package]]
@@ -7524,9 +7524,9 @@ checksum = "f87165f0995f63a9fbeea62b64d10b4d9d8e78ec6d7d51fb2125fda7bb36788f"
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.10"
+version = "0.103.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df33b2b81ac578cabaf06b89b0631153a3f416b0a886e8a7a1707fb51abbd1ef"
+checksum = "61c429a8649f110dddef65e2a5ad240f747e85f7758a6bccc7e5777bd33f756e"
 dependencies = [
  "ring",
  "rustls-pki-types",
@@ -7829,7 +7829,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9f8b6dcd4fbae1e3e22b447f32670360b27e31b62ab040f7fb04e0f80c04d92"
 dependencies = [
  "once_cell",
- "rand 0.8.5",
+ "rand 0.8.6",
  "sentry-types",
  "serde",
  "serde_json",
@@ -7887,7 +7887,7 @@ checksum = "a71ed3a389948a6a6d92b98e997a2723ca22f09660c5a7b7388ecd509a70a527"
 dependencies = [
  "debugid",
  "hex",
- "rand 0.8.5",
+ "rand 0.8.6",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
@@ -8908,7 +8908,7 @@ dependencies = [
  "phraze",
  "planif",
  "psp",
- "rand 0.8.5",
+ "rand 0.10.0",
  "regex",
  "reqwest 0.12.28",
  "reqwest-middleware",
@@ -9023,7 +9023,7 @@ dependencies = [
  "diesel_migrations",
  "lazy_static",
  "log",
- "rand 0.8.5",
+ "rand 0.8.6",
  "serde",
  "serde_json",
  "tari_utilities",
@@ -9051,7 +9051,7 @@ dependencies = [
  "newtype-ops",
  "once_cell",
  "primitive-types",
- "rand 0.8.5",
+ "rand 0.8.6",
  "serde",
  "serde_json",
  "strum 0.22.0",
@@ -9092,7 +9092,7 @@ dependencies = [
  "once_cell",
  "pin-project 1.1.10",
  "prost 0.13.5",
- "rand 0.8.5",
+ "rand 0.8.6",
  "serde",
  "serde_derive",
  "serde_json",
@@ -9133,7 +9133,7 @@ dependencies = [
  "log",
  "pin-project 0.4.30",
  "prost 0.13.5",
- "rand 0.8.5",
+ "rand 0.8.6",
  "serde",
  "tari_common",
  "tari_common_sqlite",
@@ -9184,7 +9184,7 @@ dependencies = [
  "once_cell",
  "primitive-types",
  "prost 0.13.5",
- "rand 0.8.5",
+ "rand 0.8.6",
  "randomx-rs",
  "serde",
  "serde_json",
@@ -9327,7 +9327,7 @@ dependencies = [
  "hickory-resolver",
  "log",
  "prost 0.13.5",
- "rand 0.8.5",
+ "rand 0.8.6",
  "serde",
  "tari_common",
  "tari_common_sqlite",
@@ -9418,7 +9418,7 @@ version = "5.2.1"
 source = "git+https://github.com/tari-project/tari.git?tag=v5.2.1#c79f5557b1d214cdca7b4e52f02ddb729600e7cd"
 dependencies = [
  "futures",
- "rand 0.8.5",
+ "rand 0.8.6",
  "tari_comms",
  "tari_shutdown",
  "tempfile",
@@ -9449,7 +9449,7 @@ dependencies = [
  "num-format",
  "num-traits",
  "primitive-types",
- "rand 0.8.5",
+ "rand 0.8.6",
  "semver",
  "serde",
  "serde_json",
@@ -10481,7 +10481,7 @@ dependencies = [
  "indexmap 1.9.3",
  "pin-project 1.1.10",
  "pin-project-lite",
- "rand 0.8.5",
+ "rand 0.8.6",
  "slab",
  "tokio",
  "tokio-util 0.7.18",
@@ -12397,7 +12397,7 @@ dependencies = [
  "nix 0.24.3",
  "once_cell",
  "ordered-stream 0.0.1",
- "rand 0.8.5",
+ "rand 0.8.6",
  "serde",
  "serde_repr",
  "sha1 0.6.1",
