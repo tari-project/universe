@@ -42,6 +42,7 @@ use updates_manager::UpdatesManager;
 use utils::system_status::SystemStatus;
 use websocket_events_manager::WebsocketEventsManager;
 use websocket_manager::{WebsocketManager, WebsocketManagerStatusMessage, WebsocketMessage};
+use binaries::BinaryResolver;
 
 use log4rs::config::RawConfig;
 use std::sync::Arc;
@@ -564,6 +565,8 @@ fn main() {
                 block_on(state.updates_manager.initial_try_update(&handle_clone));
 
                 tauri::async_runtime::spawn(async move {
+                    BinaryResolver::current().cleanup_all_old_versions().await;
+
                     SetupManager::get_instance()
                         .start_setup(handle_clone.clone())
                         .await;

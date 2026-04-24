@@ -454,6 +454,31 @@ impl BinaryManager {
         Ok(binary_folder_path.join(selected_version))
     }
 
+    /// Cleanup old binary versions from the download directory, keeping only the selected version
+    pub async fn cleanup_old_versions(&self) -> Result<(), Error> {
+        let binary_folder = self.adapter.get_binary_folder()?;
+        let current_version = self.get_selected_version();
+
+        debug!(target: LOG_TARGET_APP_LOGIC, "Scanning for old versions of {} in {}", self.binary_name, binary_folder.display());
+
+        let mut entries = tokio::fs::read_dir(binary_folder).await?;
+        while let Some(entry) = entries.next_entry().await? {
+            let path = entry.path();
+            if path.is_dir() {
+                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                    // Check if the directory name looks like a version and is not the current version
+                    if name != current_version && (name.chars().next().map_or(false, |c| c.is_ascii_digit()) || name.starts_with('v')) {
+                        info!(target: LOG_TARGET_APP_LOGIC, "Cleaning up old binary version for {}: {} at {}", self.binary_name, name, path.display());
+                        if let Err(e) = tokio::fs::remove_dir_all(&path).await {
+                             warn!(target: LOG_TARGET_APP_LOGIC, "Failed to delete old binary version {}: {}", name, e);
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// Add Windows Defender exclusions for the downloaded binary
     #[cfg(target_os = "windows")]
     async fn add_windows_defender_exclusions(&self) -> Result<(), Error> {

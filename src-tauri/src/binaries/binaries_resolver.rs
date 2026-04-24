@@ -262,6 +262,10 @@ impl BinaryResolver {
             .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
 
         if manager.check_if_files_for_version_exist() {
+            // Trigger cleanup of old versions even if current version exists
+            if let Err(e) = manager.cleanup_old_versions().await {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old versions for {}: {}", binary.name(), e);
+            }
             // If files already exist, we can skip the download
             return Ok(());
         }
@@ -277,6 +281,10 @@ impl BinaryResolver {
             let _lock = TARI_SUITE_DOWNLOAD_LOCK.lock().await;
 
             if manager.check_if_files_for_version_exist() {
+                // Trigger cleanup here too
+                if let Err(e) = manager.cleanup_old_versions().await {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old versions for {}: {}", binary.name(), e);
+                }
                 return Ok(());
             }
             manager
@@ -288,7 +296,21 @@ impl BinaryResolver {
                 .await?;
         }
 
+        // After successful download, cleanup old versions
+        if let Err(e) = manager.cleanup_old_versions().await {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old versions for {}: {}", binary.name(), e);
+        }
+
         Ok(())
+    }
+
+    pub async fn cleanup_all_old_versions(&self) {
+        info!(target: LOG_TARGET_APP_LOGIC, "Starting global cleanup of old binary versions");
+        for (binary, manager) in &self.managers {
+            if let Err(e) = manager.cleanup_old_versions().await {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old versions for {}: {}", binary.name(), e);
+            }
+        }
     }
 
     pub async fn get_binary_version(&self, binary: Binaries) -> String {
