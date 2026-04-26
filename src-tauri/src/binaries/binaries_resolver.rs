@@ -263,9 +263,7 @@ impl BinaryResolver {
 
         if manager.check_if_files_for_version_exist() {
             // Trigger cleanup of old versions even if current version exists
-            if let Err(e) = manager.cleanup_old_versions().await {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old versions for {}: {}", binary.name(), e);
-            }
+            self.cleanup_manager_versions(&binary, manager).await;
             // If files already exist, we can skip the download
             return Ok(());
         }
@@ -282,9 +280,7 @@ impl BinaryResolver {
 
             if manager.check_if_files_for_version_exist() {
                 // Trigger cleanup here too
-                if let Err(e) = manager.cleanup_old_versions().await {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old versions for {}: {}", binary.name(), e);
-                }
+                self.cleanup_manager_versions(&binary, manager).await;
                 return Ok(());
             }
             manager
@@ -297,9 +293,7 @@ impl BinaryResolver {
         }
 
         // After successful download, cleanup old versions
-        if let Err(e) = manager.cleanup_old_versions().await {
-            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old versions for {}: {}", binary.name(), e);
-        }
+        self.cleanup_manager_versions(&binary, manager).await;
 
         Ok(())
     }
@@ -307,9 +301,13 @@ impl BinaryResolver {
     pub async fn cleanup_all_old_versions(&self) {
         info!(target: LOG_TARGET_APP_LOGIC, "Starting global cleanup of old binary versions");
         for (binary, manager) in &self.managers {
-            if let Err(e) = manager.cleanup_old_versions().await {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old versions for {}: {}", binary.name(), e);
-            }
+            self.cleanup_manager_versions(binary, manager).await;
+        }
+    }
+
+    async fn cleanup_manager_versions(&self, binary: &Binaries, manager: &BinaryManager) {
+        if let Err(e) = manager.cleanup_old_versions().await {
+            log::warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old versions for {}: {}", binary.name(), e);
         }
     }
 
