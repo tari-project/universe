@@ -181,3 +181,11 @@ Configuration files are stored at:
 ## License
 
 Tari Universe is open source software licensed under the [Enhanced Common Public Attribution License Version 1.0](LICENSE).
+
+## 💰 Bounty Contribution
+
+- **Task:** [BUG] No Linux Support
+- **Reward:** $5
+- **Source:** GitHub-Bounty
+- **Date:** 2026-04-28
+
