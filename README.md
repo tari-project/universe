@@ -57,7 +57,7 @@ brew install git node cmake protobuf openssl npm
 ```bash
 sudo apt-get update
 sudo apt-get install -y git nodejs npm build-essential \
-    libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
+    libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
     patchelf libprotobuf-dev protobuf-compiler libssl-dev \
     pkg-config cmake
 ```
@@ -93,6 +93,17 @@ npm install
 npm run tauri build
 ```
 
+By default the build targets **testnet**. To build for mainnet, prefix the
+command with the `TARI_TARGET_NETWORK` environment variable:
+
+```bash
+# Linux / macOS
+TARI_TARGET_NETWORK=mainnet npm run tauri build
+
+# Windows (PowerShell)
+$env:TARI_TARGET_NETWORK="mainnet"; npm run tauri build
+```
+
 ### Output
 
 Packaged installers land under `target/release/bundle/`:
@@ -101,11 +112,11 @@ Packaged installers land under `target/release/bundle/`:
 - **macOS**: `.dmg` and `.app` bundle in `target/release/bundle/dmg/` and
   `target/release/bundle/macos/`
 
-Linux packaging (`.deb` / `.AppImage`) is not currently produced by
-`npm run tauri build`; the plain Cargo binary is written to
-`target/release/tari-universe` at the workspace root (the Cargo workspace
-is declared at the repository root — `src-tauri/` is a member, so there
-is no `src-tauri/target/`). Run it with:
+**Linux note:** the final bundling step (`.deb` / `.AppImage` / `.rpm`)
+currently hangs indefinitely on most Ubuntu/Debian systems. The Rust binary
+itself compiles successfully. Once the Cargo build phase completes and
+bundling begins, press `Ctrl+C` - the binary is already written and fully
+usable. It lands at the workspace root (not under `src-tauri/`):
 
 ```bash
 ./target/release/tari-universe
