@@ -116,10 +116,11 @@ Packaged installers land under `target/release/bundle/`:
 currently hangs indefinitely on most Ubuntu/Debian systems. The Rust binary
 itself compiles successfully. Once the Cargo build phase completes and
 bundling begins, press `Ctrl+C` - the binary is already written and fully
-usable. It lands at the workspace root (not under `src-tauri/`):
+usable. Tauri renames the output using the `productName` from
+`src-tauri/tauri.conf.json`, so the file lands at the workspace root as:
 
 ```bash
-./target/release/tari-universe
+'./target/release/Tari Universe (Alpha)'
 ```
 
 ## Contributing
