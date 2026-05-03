@@ -467,14 +467,21 @@ impl BinaryManager {
 
         debug!(target: LOG_TARGET_APP_LOGIC, "Scanning {} for stale versions (keeping {})", binary_folder.display(), current_version);
 
-        let mut entries = tokio::fs::read_dir(&binary_folder).await?;
+        // On a fresh install the binary folder may not yet exist; treat that as
+        // "nothing to clean up" rather than propagating an error.
+        let mut entries = match tokio::fs::read_dir(&binary_folder).await {
+            Ok(rd) => rd,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+            Err(e) => return Err(e.into()),
+        };
+
         while let Some(entry) = entries.next_entry().await? {
             // `DirEntry::metadata()` does NOT follow symlinks (it uses lstat
             // under the hood), so we can safely detect and skip symlinks here.
             let metadata = match entry.metadata().await {
                 Ok(m) => m,
                 Err(e) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "Skipping {:?}: could not read metadata: {}", entry.path(), e);
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Skipping {:?}: could not read metadata: {}", entry.file_name(), e);
                     continue;
                 }
             };
@@ -485,9 +492,11 @@ impl BinaryManager {
                 continue;
             }
 
-            let path = entry.path();
-            let name = match path.file_name().and_then(|n| n.to_str()) {
-                Some(n) => n.to_owned(),
+            // Use entry.file_name() (an OsString) to get the directory name without
+            // allocating a full PathBuf; only call entry.path() when deletion is needed.
+            let os_name = entry.file_name();
+            let name = match os_name.to_str() {
+                Some(n) => n,
                 None => continue,
             };
 
@@ -497,6 +506,7 @@ impl BinaryManager {
                 name.starts_with(|c: char| c.is_ascii_digit()) || name.starts_with('v');
 
             if looks_like_version && name != current_version {
+                let path = entry.path();
                 info!(target: LOG_TARGET_APP_LOGIC, "Removing stale {} version directory: {}", self.binary_name, name);
                 if let Err(e) = tokio::fs::remove_dir_all(&path).await {
                     warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove stale {} version {}: {}", self.binary_name, name, e);
