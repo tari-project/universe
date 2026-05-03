@@ -65,6 +65,11 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub stop_on_exit_codes: Vec<i32>,
     stats_broadcast: watch::Sender<ProcessWatcherStats>,
     is_first_start: Arc<AtomicBool>,
+    /// The on-disk path of the binary that was passed to the most recent `start()` call.
+    /// `None` if `start()` has never been called for this watcher instance.
+    /// Used by `ensure_no_hanging_process_is_running` to target only TU-owned
+    /// processes rather than killing by name (which would kill external instances).
+    last_started_binary_path: Option<PathBuf>,
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
@@ -80,6 +85,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             stop_on_exit_codes: Vec::new(),
             stats_broadcast,
             is_first_start: Arc::new(AtomicBool::new(true)),
+            last_started_binary_path: None,
         }
     }
 }
@@ -94,6 +100,22 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             .kill_previous_instances(base_path, binary_path)
             .await?;
         Ok(())
+    }
+
+    /// Kills any still-running instance of the binary this watcher last launched.
+    ///
+    /// Targets only the exact on-disk path that was used when `start()` was called,
+    /// so externally-launched binaries with the same name (e.g. a user-run `xmrig`)
+    /// are left untouched. If `start()` was never called on this watcher the method
+    /// is a no-op.
+    pub async fn ensure_no_hanging_process_is_running(&self) -> Result<(), anyhow::Error> {
+        let Some(ref binary_path) = self.last_started_binary_path else {
+            // This watcher never started a process; nothing to clean up.
+            return Ok(());
+        };
+        self.adapter
+            .ensure_no_hanging_process_by_path(binary_path)
+            .await
     }
 
     pub async fn start(
@@ -116,6 +138,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         }
         info!(target: LOG_TARGET_APP_LOGIC, "Starting process watcher for {name}");
         let binary_path = BinaryResolver::current().get_binary_path(binary).await?;
+        // Record the exact path so that shutdown cleanup can target only our child
+        // process and leave externally-launched instances of the same binary alone.
+        self.last_started_binary_path = Some(binary_path.clone());
         self.kill_previous_instances(base_path.clone(), &binary_path)
             .await?;
 

@@ -444,16 +444,8 @@ impl NodeManager {
     }
 
     pub async fn on_app_exit(&self) {
-        if let Some(local_node_adapter) = {
-            let watcher_guard = self.local_node_watcher.read().await;
-            watcher_guard
-                .as_ref()
-                .map(|watcher| watcher.adapter.clone())
-        } {
-            match local_node_adapter
-                .ensure_no_hanging_processes_are_running()
-                .await
-            {
+        if let Some(watcher) = self.local_node_watcher.read().await.as_ref() {
+            match watcher.ensure_no_hanging_process_is_running().await {
                 Ok(_) => {
                     info!(target: LOG_TARGET_APP_LOGIC, "LocalNodeAdapter::on_app_exit completed successfully");
                 }
@@ -463,16 +455,8 @@ impl NodeManager {
             }
         }
 
-        if let Some(remote_node_adapter) = {
-            let watcher_guard = self.remote_node_watcher.read().await;
-            watcher_guard
-                .as_ref()
-                .map(|watcher| watcher.adapter.clone())
-        } {
-            match remote_node_adapter
-                .ensure_no_hanging_processes_are_running()
-                .await
-            {
+        if let Some(watcher) = self.remote_node_watcher.read().await.as_ref() {
+            match watcher.ensure_no_hanging_process_is_running().await {
                 Ok(_) => {
                     info!(target: LOG_TARGET_APP_LOGIC, "RemoteNodeAdapter::on_app_exit completed successfully");
                 }

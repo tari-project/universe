@@ -321,8 +321,7 @@ impl CpuManager {
     pub async fn on_app_exit(&self) {
         match self
             .process_watcher
-            .adapter
-            .ensure_no_hanging_processes_are_running()
+            .ensure_no_hanging_process_is_running()
             .await
         {
             Ok(_) => {

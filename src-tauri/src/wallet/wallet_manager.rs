@@ -198,8 +198,7 @@ impl WalletManager {
             .watcher
             .read()
             .await
-            .adapter
-            .ensure_no_hanging_processes_are_running()
+            .ensure_no_hanging_process_is_running()
             .await
         {
             Ok(_) => {

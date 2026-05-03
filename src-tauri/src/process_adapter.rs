@@ -25,11 +25,10 @@ use async_trait::async_trait;
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::collections::HashMap;
-use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-use sysinfo::System;
+use sysinfo::{ProcessesToUpdate, System};
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
@@ -87,25 +86,48 @@ pub(crate) trait ProcessAdapter {
             .exists()
     }
 
-    fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
-        let mut sys = System::new_all();
-        sys.refresh_all();
+    /// Searches for a running process whose executable path matches `binary_path`.
+    ///
+    /// File-name comparison is performed first to avoid the cost of canonicalization for
+    /// every process on the system. Canonicalization is only applied when the file names
+    /// match, making the common case (no match) cheap while handling symlinks and
+    /// relative-path components correctly.
+    fn find_process_pid_by_path(binary_path: &Path) -> Option<u32> {
+        let mut sys = System::new();
+        sys.refresh_processes(ProcessesToUpdate::All);
+
+        let target = fs::canonicalize(binary_path).unwrap_or_else(|_| binary_path.to_path_buf());
+        let target_file_name = target.file_name();
 
         for (pid, process) in sys.processes() {
-            if process.name() == binary_name {
-                return Some(pid.as_u32());
+            if let Some(exe) = process.exe() {
+                if exe.file_name() == target_file_name {
+                    let candidate = fs::canonicalize(exe).unwrap_or_else(|_| exe.to_path_buf());
+                    if candidate == target {
+                        return Some(pid.as_u32());
+                    }
+                }
             }
         }
         None
     }
 
-    async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
-        let binary_name = OsStr::new(self.name());
-        if let Some(process) = Self::find_process_pid_by_name(binary_name) {
-            let parsed_id =
-                i32::try_from(process).expect("Failed to parse process ID from u32 to i32");
-            warn!(target: LOG_TARGET_APP_LOGIC, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
-            kill_process(parsed_id).await?;
+    /// Kills any still-running instance of this adapter's binary at `binary_path`.
+    ///
+    /// Only the process whose on-disk executable matches `binary_path` exactly is
+    /// targeted. Externally-launched instances of the same binary (e.g. a user-run
+    /// `xmrig`) have a different path and are therefore left untouched.
+    async fn ensure_no_hanging_process_by_path(&self, binary_path: &Path) -> Result<(), Error> {
+        if let Some(pid) = Self::find_process_pid_by_path(binary_path) {
+            match i32::try_from(pid) {
+                Ok(parsed_id) => {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "{} is still running with PID {} at path {:?}. Killing.", self.name(), parsed_id, binary_path);
+                    kill_process(parsed_id).await?;
+                }
+                Err(_) => {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "{} PID {} does not fit into i32; skipping.", self.name(), pid);
+                }
+            }
         }
         Ok(())
     }
@@ -116,9 +138,6 @@ pub(crate) trait ProcessAdapter {
         binary_path: &Path,
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET_APP_LOGIC, "Killing previous instances of {}", self.name());
-        let binary_name = binary_path
-            .file_name()
-            .expect("binary path must have a file name");
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {
             Ok(pid) => match pid.trim().parse::<i32>() {
                 Ok(pid) => {
@@ -126,14 +145,18 @@ pub(crate) trait ProcessAdapter {
                     kill_process(pid).await?;
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
-                    let pid_by_name = Self::find_process_pid_by_name(binary_name);
-                    if let Some(process) = pid_by_name {
-                        let parsed_id = i32::try_from(process)
-                            .expect("Failed to parse process ID from u32 to i32");
-                        kill_process(parsed_id).await?;
+                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to find process by path");
+                    if let Some(process) = Self::find_process_pid_by_path(binary_path) {
+                        match i32::try_from(process) {
+                            Ok(parsed_id) => {
+                                kill_process(parsed_id).await?;
+                            }
+                            Err(_) => {
+                                warn!(target: LOG_TARGET_APP_LOGIC, "{} PID {} does not fit into i32; skipping.", self.name(), process);
+                            }
+                        }
                     } else {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "No process found with name {}", binary_name.to_str().unwrap_or_default());
+                        warn!(target: LOG_TARGET_APP_LOGIC, "No process found at path {:?}", binary_path);
                     }
                 }
             },
