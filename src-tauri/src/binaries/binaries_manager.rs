@@ -454,6 +454,60 @@ impl BinaryManager {
         Ok(binary_folder_path.join(selected_version))
     }
 
+    /// Removes version directories in this binary's folder that are no longer selected,
+    /// reclaiming disk space accumulated by successive updates.
+    ///
+    /// Safety:
+    /// - Symlinks are never followed or deleted; only plain directories are removed.
+    /// - Only entries whose names start with a digit or `v` are treated as version
+    ///   directories; other files and directories are left untouched.
+    pub async fn cleanup_old_versions(&self) -> Result<(), Error> {
+        let binary_folder = self.adapter.get_binary_folder()?;
+        let current_version = self.get_selected_version();
+
+        debug!(target: LOG_TARGET_APP_LOGIC, "Scanning {} for stale versions (keeping {})", binary_folder.display(), current_version);
+
+        let mut entries = tokio::fs::read_dir(&binary_folder).await?;
+        while let Some(entry) = entries.next_entry().await? {
+            // `DirEntry::metadata()` does NOT follow symlinks (it uses lstat
+            // under the hood), so we can safely detect and skip symlinks here.
+            let metadata = match entry.metadata().await {
+                Ok(m) => m,
+                Err(e) => {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Skipping {:?}: could not read metadata: {}", entry.path(), e);
+                    continue;
+                }
+            };
+
+            // Skip symlinks entirely to avoid remove_dir_all traversing out of the binary folder.
+            // Skip non-directories (e.g. the versions.json manifest or lock files).
+            if metadata.is_symlink() || !metadata.is_dir() {
+                continue;
+            }
+
+            let path = entry.path();
+            let name = match path.file_name().and_then(|n| n.to_str()) {
+                Some(n) => n.to_owned(),
+                None => continue,
+            };
+
+            // Only target entries that look like version strings to avoid
+            // accidentally removing unrelated directories.
+            let looks_like_version =
+                name.starts_with(|c: char| c.is_ascii_digit()) || name.starts_with('v');
+
+            if looks_like_version && name != current_version {
+                info!(target: LOG_TARGET_APP_LOGIC, "Removing stale {} version directory: {}", self.binary_name, name);
+                if let Err(e) = tokio::fs::remove_dir_all(&path).await {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove stale {} version {}: {}", self.binary_name, name, e);
+                    // Non-fatal: log and continue to clean up remaining versions.
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     /// Add Windows Defender exclusions for the downloaded binary
     #[cfg(target_os = "windows")]
     async fn add_windows_defender_exclusions(&self) -> Result<(), Error> {

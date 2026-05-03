@@ -23,7 +23,7 @@ use crate::LOG_TARGET_APP_LOGIC;
 use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use anyhow::{Error, anyhow};
 use async_trait::async_trait;
-use log::debug;
+use log::{debug, info, warn};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -288,7 +288,26 @@ impl BinaryResolver {
                 .await?;
         }
 
+        // A new version was successfully downloaded; remove stale versions now so
+        // disk space is reclaimed promptly.  Failures here are non-fatal.
+        if let Err(e) = manager.cleanup_old_versions().await {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Post-download cleanup failed for {}: {}", binary.name(), e);
+        }
+
         Ok(())
+    }
+
+    /// Removes stale version directories for every managed binary.
+    ///
+    /// Should be called once at app startup to reclaim disk space from any
+    /// previous update where the post-download cleanup was interrupted.
+    pub async fn cleanup_all_old_versions(&self) {
+        info!(target: LOG_TARGET_APP_LOGIC, "Cleaning up stale binary version directories");
+        for (binary, manager) in &self.managers {
+            if let Err(e) = manager.cleanup_old_versions().await {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Cleanup failed for {}: {}", binary.name(), e);
+            }
+        }
     }
 
     pub async fn get_binary_version(&self, binary: Binaries) -> String {

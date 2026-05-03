@@ -66,6 +66,7 @@ use crate::mining::gpu::consts::GpuMinerStatus;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mm_proxy_manager::MmProxyManager;
 use crate::node::node_manager::NodeManager;
+use crate::binaries::BinaryResolver;
 use crate::shutdown_manager::ShutdownManager;
 use crate::systemtray_manager::SystemTrayManager;
 use crate::tor_manager::TorManager;
@@ -564,6 +565,10 @@ fn main() {
                 block_on(state.updates_manager.initial_try_update(&handle_clone));
 
                 tauri::async_runtime::spawn(async move {
+                    // Clean up any stale binary version directories left from prior
+                    // updates before starting setup so disk usage is kept low.
+                    BinaryResolver::current().cleanup_all_old_versions().await;
+
                     SetupManager::get_instance()
                         .start_setup(handle_clone.clone())
                         .await;
