@@ -114,7 +114,6 @@ pub(crate) trait ProcessAdapter {
     async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
         let binary_name = OsStr::new(self.name());
         let our_pid = sysinfo::Pid::from(std::process::id() as usize);
-        // Use a targeted refresh (processes only) rather than a full system refresh
         let mut sys = System::new_all();
 
         for (pid, process) in sys.processes() {
