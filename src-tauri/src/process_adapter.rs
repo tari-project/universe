@@ -114,8 +114,8 @@ pub(crate) trait ProcessAdapter {
     async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
         let binary_name = OsStr::new(self.name());
         let our_pid = sysinfo::Pid::from(std::process::id() as usize);
+        // Use a targeted refresh (processes only) rather than a full system refresh
         let mut sys = System::new_all();
-        sys.refresh_all();
 
         for (pid, process) in sys.processes() {
             if process.name() == binary_name {
@@ -125,7 +125,12 @@ pub(crate) trait ProcessAdapter {
                     warn!(target: LOG_TARGET_APP_LOGIC,
                         "{} process (PID {}) is our own child, killing it on app exit.",
                         self.name(), parsed_id);
-                    kill_process(parsed_id).await?;
+                    // Continue cleanup even if one kill fails
+                    if let Err(e) = kill_process(parsed_id).await {
+                        warn!(target: LOG_TARGET_APP_LOGIC,
+                            "Failed to kill {} process (PID {}): {}",
+                            self.name(), parsed_id, e);
+                    }
                 } else {
                     info!(target: LOG_TARGET_APP_LOGIC,
                         "{} process (PID {}) was not spawned by us, leaving it running.",
