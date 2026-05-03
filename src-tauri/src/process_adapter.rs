@@ -99,13 +99,39 @@ pub(crate) trait ProcessAdapter {
         None
     }
 
+    fn is_descendant_of(pid: sysinfo::Pid, ancestor: sysinfo::Pid, sys: &System) -> bool {
+        let mut current = pid;
+        for _ in 0..32 {
+            match sys.process(current).and_then(|p| p.parent()) {
+                Some(parent) if parent == ancestor => return true,
+                Some(parent) => current = parent,
+                None => break,
+            }
+        }
+        false
+    }
+
     async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
         let binary_name = OsStr::new(self.name());
-        if let Some(process) = Self::find_process_pid_by_name(binary_name) {
-            let parsed_id =
-                i32::try_from(process).expect("Failed to parse process ID from u32 to i32");
-            warn!(target: LOG_TARGET_APP_LOGIC, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
-            kill_process(parsed_id).await?;
+        let our_pid = sysinfo::Pid::from(std::process::id() as usize);
+        let mut sys = System::new_all();
+        sys.refresh_all();
+
+        for (pid, process) in sys.processes() {
+            if process.name() == binary_name {
+                if Self::is_descendant_of(*pid, our_pid, &sys) {
+                    let parsed_id = i32::try_from(pid.as_u32())
+                        .expect("Failed to parse process ID from u32 to i32");
+                    warn!(target: LOG_TARGET_APP_LOGIC,
+                        "{} process (PID {}) is our own child, killing it on app exit.",
+                        self.name(), parsed_id);
+                    kill_process(parsed_id).await?;
+                } else {
+                    info!(target: LOG_TARGET_APP_LOGIC,
+                        "{} process (PID {}) was not spawned by us, leaving it running.",
+                        self.name(), pid.as_u32());
+                }
+            }
         }
         Ok(())
     }
