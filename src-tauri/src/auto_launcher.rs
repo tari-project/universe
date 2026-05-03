@@ -248,11 +248,24 @@ impl AutoLauncher {
             .and_then(|file| file.to_str())
             .ok_or(anyhow!("Failed to get file stem"))?;
 
-        let app_path = app_exe
+        let app_path_raw = app_exe
             .as_os_str()
             .to_str()
             .ok_or(anyhow!("Failed to convert path to string"))?
             .to_string();
+
+        // On Windows, the installed executable path can contain spaces and parens
+        // (e.g. `C:\Users\<user>\AppData\Local\Programs\Tari Universe (Alpha)\Tari Universe (Alpha).exe`).
+        // The `auto-launch` crate writes the path verbatim to `HKCU\...\Run` without quoting it.
+        // `winlogon` then tokenises the value on whitespace and silently fails to launch the app
+        // because the parens/spaces break parsing. Wrapping the path in double quotes makes the
+        // registry value a single token (`"C:\...\app.exe"`) which `winlogon` parses correctly.
+        // See issue #1588.
+        let app_path = if cfg!(target_os = "windows") {
+            format!("\"{app_path_raw}\"")
+        } else {
+            app_path_raw
+        };
 
         info!(target: LOG_TARGET_APP_LOGIC, "Building auto-launcher with app_name: {app_name} and app_path: {app_path}");
         let auto_launcher = AutoLauncher::build_auto_launcher(app_name, &app_path)?;
