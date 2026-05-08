@@ -87,6 +87,15 @@ pub(crate) trait ProcessAdapter {
             .exists()
     }
 
+    /// Look up a PID for a process matching the given binary name.
+    ///
+    /// **Caution:** matches ANY process on the system whose binary name
+    /// matches — including processes started independently of Tari Universe.
+    /// Callers must verify the PID belongs to a TU child (e.g. by reading
+    /// TU's own PID file) before passing the result to `kill_process`.
+    /// Killing a PID returned here without that check terminates user-owned
+    /// processes (this was the cause of #3204 — TU was killing user-started
+    /// xmrig instances on shutdown).
     fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
         let mut sys = System::new_all();
         sys.refresh_all();
@@ -99,14 +108,38 @@ pub(crate) trait ProcessAdapter {
         None
     }
 
+    /// Verify that the running process at `pid` currently has binary name
+    /// `expected_name`. Used to confirm a PID file points at the process we
+    /// actually started, not a recycled PID belonging to something unrelated.
+    fn pid_matches_binary_name(pid: u32, expected_name: &OsStr) -> bool {
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        sys.processes()
+            .get(&sysinfo::Pid::from_u32(pid))
+            .map(|p| p.name() == expected_name)
+            .unwrap_or(false)
+    }
+
+    /// Best-effort cleanup of a hanging child process Tari Universe itself
+    /// spawned earlier. Intentionally a no-op when we can't prove the process
+    /// is ours — the previous implementation walked every process on the system
+    /// looking for a binary-name match and killed it, which terminated
+    /// user-started instances of xmrig / sha-p2pool / minotari_node etc.
+    /// (#3204).
+    ///
+    /// We can no longer safely identify our child here without a PID file (the
+    /// trait method does not have access to the data dir). Removing the kill
+    /// path is the safe move — the actual child process is already cleanly
+    /// terminated by `ProcessInstance::stop` / `kill_on_drop(true)` /
+    /// `graceful_kill` along the normal shutdown path. This function remains
+    /// only as an extension point for adapters that have access to the data
+    /// dir; the default impl logs and returns.
     async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
-        let binary_name = OsStr::new(self.name());
-        if let Some(process) = Self::find_process_pid_by_name(binary_name) {
-            let parsed_id =
-                i32::try_from(process).expect("Failed to parse process ID from u32 to i32");
-            warn!(target: LOG_TARGET_APP_LOGIC, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
-            kill_process(parsed_id).await?;
-        }
+        info!(
+            target: LOG_TARGET_APP_LOGIC,
+            "{}::ensure_no_hanging_processes_are_running: skipping name-based kill (see #3204); rely on PID-file path via kill_previous_instances at startup",
+            self.name(),
+        );
         Ok(())
     }
 
@@ -119,22 +152,31 @@ pub(crate) trait ProcessAdapter {
         let binary_name = binary_path
             .file_name()
             .expect("binary path must have a file name");
-        match fs::read_to_string(base_folder.join(self.pid_file_name())) {
-            Ok(pid) => match pid.trim().parse::<i32>() {
+        let pid_file_path = base_folder.join(self.pid_file_name());
+        match fs::read_to_string(&pid_file_path) {
+            Ok(pid) => match pid.trim().parse::<u32>() {
                 Ok(pid) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
-                    kill_process(pid).await?;
-                }
-                Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
-                    let pid_by_name = Self::find_process_pid_by_name(binary_name);
-                    if let Some(process) = pid_by_name {
-                        let parsed_id = i32::try_from(process)
+                    // Cross-check the PID against the binary name to guard
+                    // against PID recycling (a fresh process unrelated to TU
+                    // could be at the same PID after reboot).
+                    if Self::pid_matches_binary_name(pid, binary_name) {
+                        let parsed_id = i32::try_from(pid)
                             .expect("Failed to parse process ID from u32 to i32");
+                        warn!(target: LOG_TARGET_APP_LOGIC, "{} process did not shut down cleanly: PID {} from {} matches; terminating", self.name(), pid, self.pid_file_name());
                         kill_process(parsed_id).await?;
                     } else {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "No process found with name {}", binary_name.to_str().unwrap_or_default());
+                        info!(target: LOG_TARGET_APP_LOGIC, "{} pid file points at PID {} but no matching {:?} process is running; cleaning up stale pid file", self.name(), pid, binary_name);
                     }
+                    let _ = fs::remove_file(&pid_file_path);
+                }
+                Err(_) => {
+                    // Previously we fell back to `find_process_pid_by_name`
+                    // here, but that scanned the whole system and could kill
+                    // processes started independently of TU (#3204). Drop the
+                    // fallback: log, remove the bogus pid file, and leave any
+                    // system processes alone.
+                    warn!(target: LOG_TARGET_APP_LOGIC, "{} pid file at {:?} is not a valid integer ({:?}); skipping kill to avoid terminating an unrelated process", self.name(), pid_file_path, pid);
+                    let _ = fs::remove_file(&pid_file_path);
                 }
             },
             Err(e) => {
