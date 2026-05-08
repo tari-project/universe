@@ -111,13 +111,72 @@ pub(crate) trait ProcessAdapter {
     /// Verify that the running process at `pid` currently has binary name
     /// `expected_name`. Used to confirm a PID file points at the process we
     /// actually started, not a recycled PID belonging to something unrelated.
+    ///
+    /// Implementation notes (per #3217 review):
+    ///   - We refresh only the single PID we care about (`refresh_processes_specifics`)
+    ///     instead of the whole system — `System::new_all()` + `refresh_all()` would
+    ///     scan CPU/memory/disks/network just to look up one PID, which is wasteful
+    ///     in a frequently-called path.
+    ///   - On Linux, `Process::name()` is read from `/proc/<pid>/stat`'s `comm`
+    ///     field which is **truncated to 15 chars** (TASK_COMM_LEN). Binary names
+    ///     longer than that (e.g. `minotari_node`, `sha-p2pool-rs`) won't compare
+    ///     equal verbatim. We handle this by also accepting a prefix match against
+    ///     the first 15 bytes of `expected_name`, and as a final fallback compare
+    ///     the file_name() of the executable path (which is NOT truncated).
     fn pid_matches_binary_name(pid: u32, expected_name: &OsStr) -> bool {
-        let mut sys = System::new_all();
-        sys.refresh_all();
-        sys.processes()
-            .get(&sysinfo::Pid::from_u32(pid))
-            .map(|p| p.name() == expected_name)
-            .unwrap_or(false)
+        let sys_pid = sysinfo::Pid::from_u32(pid);
+        let mut sys = System::new();
+        // Refresh only the single PID; falls back to nothing if the PID isn't there.
+        sys.refresh_processes_specifics(
+            sysinfo::ProcessesToUpdate::Some(&[sys_pid]),
+            true,
+            sysinfo::ProcessRefreshKind::nothing().with_exe(sysinfo::UpdateKind::Always),
+        );
+
+        let Some(process) = sys.process(sys_pid) else {
+            return false;
+        };
+
+        // Fast path: exact match on the (possibly-truncated) `comm` name.
+        let actual = process.name();
+        if actual == expected_name {
+            return true;
+        }
+
+        // Linux fallback: `comm` is truncated to TASK_COMM_LEN (16, including NUL ⇒ 15 visible).
+        // Compare expected_name's first 15 bytes against the actual.
+        #[cfg(target_os = "linux")]
+        {
+            const TASK_COMM_LEN: usize = 15;
+            let expected_bytes = expected_name.as_encoded_bytes();
+            if expected_bytes.len() > TASK_COMM_LEN {
+                let truncated = &expected_bytes[..TASK_COMM_LEN];
+                if actual.as_encoded_bytes() == truncated {
+                    return true;
+                }
+            }
+        }
+
+        // Final fallback: compare against the executable path's file name, which is
+        // not truncated by the kernel on any platform we support.
+        if let Some(exe) = process.exe() {
+            if let Some(file) = exe.file_name() {
+                if file == expected_name {
+                    return true;
+                }
+                // Strip an .exe suffix on Windows for the comparison.
+                #[cfg(target_os = "windows")]
+                {
+                    let file_str = file.to_string_lossy();
+                    let exp_str = expected_name.to_string_lossy();
+                    if file_str.eq_ignore_ascii_case(&format!("{exp_str}.exe")) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        false
     }
 
     /// Best-effort cleanup of a hanging child process Tari Universe itself
