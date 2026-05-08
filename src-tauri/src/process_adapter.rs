@@ -29,7 +29,7 @@ use std::ffi::{OsStr, OsString};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-use sysinfo::System;
+use sysinfo::{Pid, ProcessesToUpdate, System};
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
@@ -108,6 +108,14 @@ pub(crate) trait ProcessAdapter {
         expected_executable: &Path,
         process_executable: Option<&Path>,
     ) -> bool {
+        let expected = Self::canonicalized_or_original_path(expected_executable);
+        Self::process_executable_matches_canonicalized(&expected, process_executable)
+    }
+
+    fn process_executable_matches_canonicalized(
+        expected_executable: &Path,
+        process_executable: Option<&Path>,
+    ) -> bool {
         let Some(process_executable) = process_executable else {
             return false;
         };
@@ -116,41 +124,44 @@ pub(crate) trait ProcessAdapter {
             return false;
         }
 
-        let expected = Self::canonicalized_or_original_path(expected_executable);
         let actual = Self::canonicalized_or_original_path(process_executable);
-        Self::paths_are_equivalent(&expected, &actual)
+        Self::paths_are_equivalent(expected_executable, &actual)
     }
 
     fn command_contains_executable_arg(command: &[OsString], expected_executable: &Path) -> bool {
-        command
-            .iter()
-            .any(|arg| Self::process_executable_matches(expected_executable, Some(Path::new(arg))))
+        let expected = Self::canonicalized_or_original_path(expected_executable);
+        command.iter().any(|arg| {
+            Self::process_executable_matches_canonicalized(&expected, Some(Path::new(arg)))
+        })
     }
 
     fn process_pid_matches_executable(pid_to_match: i32, expected_executable: &Path) -> bool {
         let Ok(pid_to_match) = u32::try_from(pid_to_match) else {
             return false;
         };
+        let pid_to_match = Pid::from_u32(pid_to_match);
+        let pids_to_update = [pid_to_match];
 
-        let mut sys = System::new_all();
-        sys.refresh_all();
+        let mut sys = System::new();
+        if sys.refresh_processes(ProcessesToUpdate::Some(&pids_to_update)) == 0 {
+            return false;
+        }
 
-        for (pid, process) in sys.processes() {
-            if pid.as_u32() == pid_to_match {
-                if Self::process_executable_matches(expected_executable, process.exe()) {
-                    return true;
-                }
+        let Some(process) = sys.process(pid_to_match) else {
+            return false;
+        };
 
-                if let Some(wrapper_path) = process_wrapper::get_wrapper_path() {
-                    return Self::process_executable_matches(&wrapper_path, process.exe())
-                        && Self::command_contains_executable_arg(
-                            process.cmd(),
-                            expected_executable,
-                        );
-                }
+        let expected = Self::canonicalized_or_original_path(expected_executable);
+        if Self::process_executable_matches_canonicalized(&expected, process.exe()) {
+            return true;
+        }
 
-                return false;
-            }
+        if let Some(wrapper_path) = process_wrapper::get_wrapper_path() {
+            let wrapper_path = Self::canonicalized_or_original_path(&wrapper_path);
+            return Self::process_executable_matches_canonicalized(&wrapper_path, process.exe())
+                && process.cmd().iter().any(|arg| {
+                    Self::process_executable_matches_canonicalized(&expected, Some(Path::new(arg)))
+                });
         }
 
         false
@@ -160,12 +171,13 @@ pub(crate) trait ProcessAdapter {
         binary_name: &OsStr,
         expected_executable: &Path,
     ) -> Option<u32> {
-        let mut sys = System::new_all();
-        sys.refresh_all();
+        let mut sys = System::new();
+        sys.refresh_processes(ProcessesToUpdate::All);
+        let expected = Self::canonicalized_or_original_path(expected_executable);
 
         for (pid, process) in sys.processes() {
             if process.name() == binary_name
-                && Self::process_executable_matches(expected_executable, process.exe())
+                && Self::process_executable_matches_canonicalized(&expected, process.exe())
             {
                 return Some(pid.as_u32());
             }
