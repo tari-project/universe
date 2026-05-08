@@ -156,15 +156,8 @@ pub(crate) trait ProcessAdapter {
                     kill_process(pid).await?;
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
-                    let pid_by_name = Self::find_process_pid_by_name(binary_name);
-                    if let Some(process) = pid_by_name {
-                        let parsed_id = i32::try_from(process)
-                            .expect("Failed to parse process ID from u32 to i32");
-                        kill_process(parsed_id).await?;
-                    } else {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "No process found with name {}", binary_name.to_str().unwrap_or_default());
-                    }
+                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Removing stale pid file.");
+                    let _ = fs::remove_file(base_folder.join(self.pid_file_name()));
                 }
             },
             Err(e) => {
