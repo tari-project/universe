@@ -105,7 +105,7 @@ This mirrors the Linux CI test build and verifies the application compiles witho
 
 ### Output
 
-Bundled Windows and macOS installers will be in `target/release/bundle/`:
+Bundled Windows and macOS installers will be in `src-tauri/target/release/bundle/`:
 
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
