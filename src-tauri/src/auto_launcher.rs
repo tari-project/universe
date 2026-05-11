@@ -62,7 +62,7 @@ impl AutoLauncher {
         match PlatformUtils::detect_current_os() {
             CurrentOperatingSystem::Windows => AutoLaunchBuilder::new()
                 .set_app_name(app_name)
-                .set_app_path(app_path)
+                .set_app_path(&quote_windows_run_key_app_path(app_path))
                 .set_use_launch_agent(false)
                 .build()
                 .map_err(|e| e.into()),
@@ -301,5 +301,35 @@ impl AutoLauncher {
 
     pub fn current() -> &'static AutoLauncher {
         &INSTANCE
+    }
+}
+
+fn quote_windows_run_key_app_path(app_path: &str) -> String {
+    let trimmed = app_path.trim();
+    if trimmed.starts_with('"') && trimmed.ends_with('"') {
+        return trimmed.to_string();
+    }
+
+    format!("\"{trimmed}\"")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::quote_windows_run_key_app_path;
+
+    #[test]
+    fn quote_windows_run_key_app_path_wraps_unquoted_paths() {
+        assert_eq!(
+            quote_windows_run_key_app_path(r"C:\Program Files\Tari Universe\Tari Universe.exe"),
+            r#""C:\Program Files\Tari Universe\Tari Universe.exe""#
+        );
+    }
+
+    #[test]
+    fn quote_windows_run_key_app_path_preserves_already_quoted_paths() {
+        assert_eq!(
+            quote_windows_run_key_app_path(r#""C:\Program Files\Tari Universe\Tari Universe.exe""#),
+            r#""C:\Program Files\Tari Universe\Tari Universe.exe""#
+        );
     }
 }
