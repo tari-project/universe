@@ -34,18 +34,9 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Install the `.deb` package:
-
-```bash
-sudo dpkg -i tari-universe_*.deb
-```
-
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
+Official Linux release binaries are not currently published. Linux users should
+build Tari Universe from source by following the Linux instructions in the
+[Building from source](#building-from-source) section.
 
 ### Run
 
@@ -96,18 +87,22 @@ cargo install tauri-cli --locked
 
 ### Build
 
+On Linux, build the application from source:
+
 ```bash
 git clone https://github.com/tari-project/universe.git
 cd universe
 npm install
-npm run tauri build
+npm run tauri build -- --no-bundle
 ```
+
+This builds the Linux application without creating installer packages.
 
 ### Output
 
-Built applications will be in `target/release/bundle/`:
+Build outputs are generated in the Tauri target directory:
 
-- **Linux**: `.deb` and `.AppImage` files
+- **Linux**: the application binary is built from source under `src-tauri/target/release/`
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
 
