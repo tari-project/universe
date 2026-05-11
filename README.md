@@ -1,7 +1,7 @@
 # Tari Universe v1
 
 [![Downloads](https://img.shields.io/badge/downloads-700k%2B-brightgreen)](https://www.tari.com/downloads/)
-[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://www.tari.com/downloads/)
+[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)](https://www.tari.com/downloads/)
 
 # Desktop Mining Application for Tari
 
@@ -11,14 +11,14 @@ Tari Universe is a desktop application that allows users to mine Tari tokens (XT
 
 The Tari Universe ecosystem includes:
 
-- **Tari Universe Desktop App** - Mining application for Windows, macOS, and Linux
+- **Tari Universe Desktop App** - Mining application for Windows and macOS. Linux users can build and run the app from source.
 - **Tari Universe Wallet** - Mobile companion app for tracking earnings
 
 ## Installing using binaries
 
 ### Download
 
-[Download binaries](https://www.tari.com/downloads/) from [tari.com](https://www.tari.com/). This is the easiest way to run Tari Universe.
+[Download official binaries](https://www.tari.com/downloads/) from [tari.com](https://www.tari.com/). This is the easiest way to run Tari Universe on Windows and macOS.
 
 ### Install
 
@@ -34,18 +34,7 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Install the `.deb` package:
-
-```bash
-sudo dpkg -i tari-universe_*.deb
-```
-
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
+Official Linux binaries are not currently published. Linux users should build from source instead.
 
 ### Run
 
@@ -100,16 +89,28 @@ cargo install tauri-cli --locked
 git clone https://github.com/tari-project/universe.git
 cd universe
 npm install
-npm run tauri build
+npm run tauri -- build
 ```
+
+On Linux, the CI-supported source build path is:
+
+```bash
+git clone https://github.com/tari-project/universe.git
+cd universe
+npm ci
+npm run tauri -- build --ci --no-bundle
+```
+
+This mirrors the Linux CI test build and verifies the application compiles without producing installer packages.
 
 ### Output
 
-Built applications will be in `target/release/bundle/`:
+Bundled Windows and macOS installers will be in `target/release/bundle/`:
 
-- **Linux**: `.deb` and `.AppImage` files
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
+
+Linux source builds place the application binary under the Rust release target directory instead of producing an official installer artifact. If you need a local Linux package for your own machine, you can ask Tauri to create one with a command such as `npm run tauri -- build --bundles deb,appimage`, but those self-built packages are not official release downloads.
 
 ## Contributing
 
