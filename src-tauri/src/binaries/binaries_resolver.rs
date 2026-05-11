@@ -23,7 +23,7 @@ use crate::LOG_TARGET_APP_LOGIC;
 use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use anyhow::{Error, anyhow};
 use async_trait::async_trait;
-use log::debug;
+use log::{debug, warn};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -263,6 +263,7 @@ impl BinaryResolver {
 
         if manager.check_if_files_for_version_exist() {
             // If files already exist, we can skip the download
+            self.cleanup_old_binary_versions(manager);
             return Ok(());
         }
 
@@ -277,6 +278,7 @@ impl BinaryResolver {
             let _lock = TARI_SUITE_DOWNLOAD_LOCK.lock().await;
 
             if manager.check_if_files_for_version_exist() {
+                self.cleanup_old_binary_versions(manager);
                 return Ok(());
             }
             manager
@@ -288,6 +290,8 @@ impl BinaryResolver {
                 .await?;
         }
 
+        self.cleanup_old_binary_versions(manager);
+
         Ok(())
     }
 
@@ -296,5 +300,32 @@ impl BinaryResolver {
             .get(&binary)
             .unwrap_or_else(|| panic!("Couldn't find manager for binary: {}", binary.name()))
             .get_selected_version()
+    }
+
+    fn cleanup_old_binary_versions(&self, manager: &BinaryManager) {
+        let binary_folder = match manager.get_binary_folder() {
+            Ok(path) => path,
+            Err(e) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Unable to get binary folder for old version cleanup. Error: {e:?}");
+                return;
+            }
+        };
+
+        let retained_versions = self.retained_versions_for_binary_folder(&binary_folder);
+        manager.cleanup_old_binary_versions(&retained_versions);
+    }
+
+    fn retained_versions_for_binary_folder(&self, binary_folder: &PathBuf) -> Vec<String> {
+        self.managers
+            .values()
+            .filter_map(|manager| match manager.get_binary_folder() {
+                Ok(folder) if folder == *binary_folder => Some(manager.get_selected_version()),
+                Ok(_) => None,
+                Err(e) => {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Unable to inspect binary folder while collecting retained versions. Error: {e:?}");
+                    None
+                }
+            })
+            .collect()
     }
 }
