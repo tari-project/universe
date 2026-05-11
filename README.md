@@ -34,7 +34,7 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Official Linux binaries are not currently published. Linux users should build from source instead.
+Official Linux binaries are not currently published. Linux users should [build from source](#building-from-source) instead.
 
 ### Run
 
