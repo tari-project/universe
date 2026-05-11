@@ -34,18 +34,7 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Install the `.deb` package:
-
-```bash
-sudo dpkg -i tari-universe_*.deb
-```
-
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
+Official prebuilt Linux release artifacts are not currently published. Linux users can still run Tari Universe by building it from source with the instructions below.
 
 ### Run
 
@@ -71,6 +60,8 @@ sudo apt-get install -y git nodejs npm build-essential \
     patchelf libprotobuf-dev protobuf-compiler libssl-dev \
     pkg-config cmake
 ```
+
+These packages provide the Node.js, Rust/Tauri, WebKitGTK, AppIndicator, SVG, protobuf, OpenSSL, and build-tool dependencies required for local Linux builds.
 
 #### Windows
 
@@ -103,11 +94,13 @@ npm install
 npm run tauri build
 ```
 
+On Linux, this is the supported path for producing a local Tari Universe build. If the build completes successfully, launch the generated application from the bundle output for your distribution/environment.
+
 ### Output
 
 Built applications will be in `target/release/bundle/`:
 
-- **Linux**: `.deb` and `.AppImage` files
+- **Linux**: locally built bundle output only; official `.deb` / `.AppImage` release artifacts are not currently published
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
 
