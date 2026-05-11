@@ -110,7 +110,7 @@ Bundled Windows and macOS installers will be in `target/release/bundle/`:
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
 
-Linux source builds place the application binary under the Rust release target directory instead of producing an official installer artifact. If you need a local Linux package for your own machine, you can ask Tauri to create one with a command such as `npm run tauri -- build --bundles deb,appimage`, but those self-built packages are not official release downloads.
+Linux source builds place the application binary in `src-tauri/target/release/` instead of producing an official installer artifact. If you need a local Linux package for your own machine, you can ask Tauri to create one with a command such as `npm run tauri -- build --bundles deb,appimage`, but those self-built packages are not official release downloads.
 
 ## Contributing
 
