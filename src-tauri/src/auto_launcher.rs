@@ -305,14 +305,12 @@ impl AutoLauncher {
 }
 
 fn quote_windows_auto_launch_path(app_path: &str) -> String {
-    let trimmed_path = app_path.trim();
-
     // auto-launch 0.5.0 writes the Run value as `app_path + args`.
     // Quote the executable so Windows does not split installed paths at spaces.
-    if trimmed_path.starts_with('"') && trimmed_path.ends_with('"') {
-        trimmed_path.to_string()
+    if app_path.len() >= 2 && app_path.starts_with('"') && app_path.ends_with('"') {
+        app_path.to_string()
     } else {
-        format!("\"{trimmed_path}\"")
+        format!("\"{app_path}\"")
     }
 }
 
@@ -335,5 +333,15 @@ mod tests {
         let app_path = r#""C:\Program Files\Tari Universe\Tari Universe.exe""#;
 
         assert_eq!(quote_windows_auto_launch_path(app_path), app_path);
+    }
+
+    #[test]
+    fn preserves_path_whitespace_when_quoting_windows_auto_launch_paths() {
+        let app_path = r" C:\Program Files\Tari Universe\Tari Universe.exe ";
+
+        assert_eq!(
+            quote_windows_auto_launch_path(app_path),
+            r#"" C:\Program Files\Tari Universe\Tari Universe.exe ""#
+        );
     }
 }
