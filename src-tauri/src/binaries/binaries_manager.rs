@@ -22,7 +22,11 @@
 use anyhow::{Error, anyhow};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+};
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
@@ -370,6 +374,23 @@ impl BinaryManager {
         Err(last_error.context(format!("Failed to download binary: {}", self.binary_name)))
     }
 
+    pub async fn cleanup_old_binary_versions(
+        &self,
+        retained_versions: Vec<String>,
+    ) -> Result<usize, Error> {
+        let binary_folder = self
+            .adapter
+            .get_binary_folder()
+            .map_err(|e| anyhow!("Error getting binary folder: {:?}", e))?;
+        let binary_name = self.binary_name.clone();
+
+        tokio::task::spawn_blocking(move || {
+            cleanup_old_binary_version_dirs(&binary_folder, &retained_versions, &binary_name)
+        })
+        .await
+        .map_err(|e| anyhow!("Old binary cleanup task failed: {e:?}"))?
+    }
+
     pub async fn download_selected_version(
         &self,
         progress_channel: Option<IncrementalProgressTracker>,
@@ -448,6 +469,10 @@ impl BinaryManager {
         self.selected_version.clone()
     }
 
+    pub fn get_binary_folder(&self) -> Result<PathBuf, Error> {
+        self.adapter.get_binary_folder()
+    }
+
     pub fn get_base_dir(&self) -> Result<PathBuf, Error> {
         let selected_version = self.selected_version.clone();
         let binary_folder_path = self.adapter.get_binary_folder()?;
@@ -490,4 +515,134 @@ fn check_binary_exists(path: &std::path::Path) -> bool {
         warn!(target: LOG_TARGET_APP_LOGIC, "Error checking if binary file exists at path: {:?}. Error: {:?}", path, e);
         false
     })
+}
+
+fn cleanup_old_binary_version_dirs(
+    binary_folder: &Path,
+    retained_versions: &[String],
+    binary_name: &str,
+) -> Result<usize, Error> {
+    if !binary_folder.try_exists()? {
+        return Ok(0);
+    }
+
+    let mut removed_count = 0;
+
+    for entry in fs::read_dir(binary_folder)? {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(e) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Unable to read binary folder entry for {binary_name}. Error: {e:?}");
+                continue;
+            }
+        };
+
+        let file_type = match entry.file_type() {
+            Ok(file_type) => file_type,
+            Err(e) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Unable to read binary folder entry type for {binary_name}. Path: {:?}, Error: {e:?}", entry.path());
+                continue;
+            }
+        };
+
+        if !file_type.is_dir() {
+            continue;
+        }
+
+        let folder_name = entry.file_name();
+        let folder_name = folder_name.to_string_lossy();
+
+        if retained_versions
+            .iter()
+            .any(|version| version == folder_name.as_ref())
+            || !is_binary_version_folder_name(&folder_name)
+        {
+            continue;
+        }
+
+        let old_version_path = entry.path();
+        match fs::remove_dir_all(&old_version_path) {
+            Ok(()) => {
+                removed_count += 1;
+                info!(target: LOG_TARGET_APP_LOGIC, "Removed old binary version folder for {binary_name}: {:?}", old_version_path);
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Unable to remove old binary version folder for {binary_name}. Path: {:?}, Error: {e:?}", old_version_path);
+            }
+        }
+    }
+
+    Ok(removed_count)
+}
+
+fn is_binary_version_folder_name(folder_name: &str) -> bool {
+    let version = folder_name
+        .strip_prefix('v')
+        .or_else(|| folder_name.strip_prefix('V'))
+        .unwrap_or(folder_name);
+
+    version.contains('.')
+        && version.chars().next().is_some_and(|c| c.is_ascii_digit())
+        && version
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | '+'))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{cleanup_old_binary_version_dirs, is_binary_version_folder_name};
+    use std::fs;
+    use tempfile::tempdir;
+
+    #[test]
+    fn cleanup_old_binary_version_dirs_removes_stale_versions_only() {
+        let temp_dir = tempdir().expect("temp dir should be created");
+        let current_version = temp_dir.path().join("5.2.1");
+        let shared_version = temp_dir.path().join("5.1.0");
+        let old_version = temp_dir.path().join("4.9.0");
+        let non_version_dir = temp_dir.path().join("download-cache");
+        let download_marker = temp_dir.path().join("download.lock");
+
+        fs::create_dir_all(&current_version).expect("current version should be created");
+        fs::create_dir_all(&shared_version).expect("shared version should be created");
+        fs::create_dir_all(&old_version).expect("old version should be created");
+        fs::create_dir_all(&non_version_dir).expect("non-version dir should be created");
+        fs::write(old_version.join("old-binary"), "stale").expect("old binary should be written");
+        fs::write(&download_marker, "not a version folder").expect("marker should be written");
+
+        let retained_versions = vec!["5.2.1".to_string(), "5.1.0".to_string()];
+        let removed_count =
+            cleanup_old_binary_version_dirs(temp_dir.path(), &retained_versions, "test-binary")
+                .expect("cleanup should succeed");
+
+        assert_eq!(removed_count, 1);
+        assert!(current_version.exists());
+        assert!(shared_version.exists());
+        assert!(!old_version.exists());
+        assert!(non_version_dir.exists());
+        assert!(download_marker.exists());
+    }
+
+    #[test]
+    fn cleanup_old_binary_version_dirs_ignores_missing_base_folder() {
+        let temp_dir = tempdir().expect("temp dir should be created");
+        let missing_folder = temp_dir.path().join("missing");
+
+        let retained_versions = vec!["5.2.1".to_string()];
+        let removed_count =
+            cleanup_old_binary_version_dirs(&missing_folder, &retained_versions, "test-binary")
+                .expect("missing folder should not fail cleanup");
+
+        assert_eq!(removed_count, 0);
+    }
+
+    #[test]
+    fn is_binary_version_folder_name_only_accepts_version_like_names() {
+        assert!(is_binary_version_folder_name("5.2.1"));
+        assert!(is_binary_version_folder_name("v6.25.0"));
+        assert!(is_binary_version_folder_name("1.0.0-rc.1"));
+        assert!(!is_binary_version_folder_name("download-cache"));
+        assert!(!is_binary_version_folder_name("2026-backup"));
+        assert!(!is_binary_version_folder_name("latest"));
+    }
 }
