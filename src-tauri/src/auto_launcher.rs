@@ -22,6 +22,8 @@
 
 use std::sync::LazyLock;
 
+#[cfg(target_os = "windows")]
+use anyhow::Context;
 use anyhow::anyhow;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use dunce::canonicalize;
@@ -29,7 +31,7 @@ use log::{info, warn};
 #[cfg(target_os = "windows")]
 use planif::{
     enums::TaskCreationFlags,
-    schedule::TaskScheduler,
+    schedule::TaskScheduler as PlanifTaskScheduler,
     schedule_builder::{Action, ScheduleBuilder},
     settings::{LogonType, PrincipalSettings, RunLevel, Settings},
 };
@@ -37,6 +39,14 @@ use tauri::utils::platform::current_exe;
 use tokio::sync::RwLock;
 #[cfg(target_os = "windows")]
 use whoami::username;
+#[cfg(target_os = "windows")]
+use windows::{
+    Win32::System::{
+        Com::{CLSCTX_ALL, CoCreateInstance, VARIANT},
+        TaskScheduler::{ITaskFolder, ITaskService, TaskScheduler as WindowsTaskScheduler},
+    },
+    core::{BSTR, Error as WindowsError},
+};
 
 use crate::{
     LOG_TARGET_APP_LOGIC,
@@ -44,6 +54,10 @@ use crate::{
 };
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
+#[cfg(target_os = "windows")]
+const WINDOWS_STARTUP_TASK_NAME: &str = "Tari Universe startup";
+#[cfg(target_os = "windows")]
+const HRESULT_FROM_WIN32_FILE_NOT_FOUND: i32 = -2147024894;
 
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
@@ -97,43 +111,61 @@ impl AutoLauncher {
         let should_toggle_to_disabled =
             !config_is_auto_launcher_enabled && auto_launcher_is_enabled;
 
-        if should_toggle_to_enabled || should_ensure_to_enable_at_first_startup {
-            info!(target: LOG_TARGET_APP_LOGIC, "Enabling auto-launcher");
-            match PlatformUtils::detect_current_os() {
-                CurrentOperatingSystem::MacOS => {
+        match PlatformUtils::detect_current_os() {
+            CurrentOperatingSystem::Windows => {
+                if config_is_auto_launcher_enabled {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Enabling Windows auto-launcher");
+                    let did_enable_auto_launcher = !auto_launcher_is_enabled;
+                    if !auto_launcher_is_enabled {
+                        auto_launcher.enable()?;
+                    }
+
+                    #[cfg(target_os = "windows")]
+                    if let Err(error) = self.toggle_windows_admin_auto_launcher(true).await {
+                        if did_enable_auto_launcher {
+                            let _unused = auto_launcher.disable().inspect_err(|disable_error| {
+                                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to roll back Windows auto-launcher after task scheduler error: {}", disable_error)
+                            });
+                        }
+
+                        return Err(error);
+                    }
+                } else {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Disabling Windows auto-launcher");
+
+                    #[cfg(target_os = "windows")]
+                    self.toggle_windows_admin_auto_launcher(false).await?;
+
+                    if auto_launcher_is_enabled {
+                        auto_launcher.disable()?;
+                    }
+                }
+            }
+            CurrentOperatingSystem::MacOS => {
+                if should_toggle_to_enabled || should_ensure_to_enable_at_first_startup {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Enabling auto-launcher");
                     // This for some reason fixes the issue where macOS starts two instances of the app
                     // when auto-launcher is enabled and when during shutdown user selects to reopen the apps after restart
                     auto_launcher.disable()?;
                     auto_launcher.enable()?;
-                }
-                CurrentOperatingSystem::Windows => {
-                    auto_launcher.enable()?;
-                    // To startup application as admin on windows, we need to create a task scheduler
-                    #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(true).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to enable admin auto-launcher: {}", e)
-                    });
-                }
-                _ => {
-                    auto_launcher.enable()?;
+                } else if should_toggle_to_disabled {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Disabling auto-launcher");
+                    auto_launcher.disable()?;
+                } else {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is already in the desired state");
                 }
             }
-        } else if should_toggle_to_disabled {
-            info!(target: LOG_TARGET_APP_LOGIC, "Disabling auto-launcher");
-            match PlatformUtils::detect_current_os() {
-                CurrentOperatingSystem::Windows => {
-                    #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(false).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher: {}", e)
-                    });
+            _ => {
+                if should_toggle_to_enabled || should_ensure_to_enable_at_first_startup {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Enabling auto-launcher");
+                    auto_launcher.enable()?;
+                } else if should_toggle_to_disabled {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Disabling auto-launcher");
                     auto_launcher.disable()?;
-                }
-                _ => {
-                    auto_launcher.disable()?;
+                } else {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is already in the desired state");
                 }
             }
-        } else {
-            warn!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is already in the desired state");
         }
 
         Ok(())
@@ -146,29 +178,106 @@ impl AutoLauncher {
     ) -> Result<(), anyhow::Error> {
         if should_be_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Enabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(true)
+            if let Err(error) = self
+                .create_task_scheduler_for_admin_startup_with_run_level(RunLevel::Highest)
                 .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
+            {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to create highest-privilege admin auto-launcher: {}. Retrying with least privileges", error);
+                self.create_task_scheduler_for_admin_startup_with_run_level(RunLevel::LUA)
+                    .await
+                    .map_err(|fallback_error| {
+                        anyhow!(
+                            "Failed to create task scheduler for admin startup: {}; fallback also failed: {}",
+                            error,
+                            fallback_error
+                        )
+                    })?;
+            }
+
+            if !self.windows_startup_task_exists()? {
+                return Err(anyhow!(
+                    "Task scheduler entry '{}' was not found after registration",
+                    WINDOWS_STARTUP_TASK_NAME
+                ));
+            }
         };
 
         if !should_be_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Disabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(false)
-                .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
+            self.delete_task_scheduler_for_admin_startup()
+                .context("Failed to delete task scheduler for admin startup")?;
         };
 
         Ok(())
     }
 
     #[cfg(target_os = "windows")]
+    fn with_windows_task_folder<T>(
+        &self,
+        operation: impl FnOnce(&ITaskFolder) -> Result<T, WindowsError>,
+    ) -> Result<T, anyhow::Error> {
+        let task_scheduler = PlanifTaskScheduler::new()?;
+        let _com_runtime = task_scheduler.get_com();
+
+        let task_service: ITaskService =
+            unsafe { CoCreateInstance(&WindowsTaskScheduler, None, CLSCTX_ALL)? };
+        unsafe {
+            task_service.Connect(
+                VARIANT::default(),
+                VARIANT::default(),
+                VARIANT::default(),
+                VARIANT::default(),
+            )?;
+
+            let task_folder = task_service.GetFolder(&BSTR::from("\\"))?;
+            Ok(operation(&task_folder)?)
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    fn windows_startup_task_exists(&self) -> Result<bool, anyhow::Error> {
+        self.with_windows_task_folder(|task_folder| unsafe {
+            match task_folder.GetTask(&BSTR::from(WINDOWS_STARTUP_TASK_NAME)) {
+                Ok(_) => Ok(true),
+                Err(error) if error.code().0 == HRESULT_FROM_WIN32_FILE_NOT_FOUND => Ok(false),
+                Err(error) => Err(error),
+            }
+        })
+    }
+
+    #[cfg(target_os = "windows")]
+    fn delete_task_scheduler_for_admin_startup(&self) -> Result<(), anyhow::Error> {
+        self.with_windows_task_folder(|task_folder| unsafe {
+            match task_folder.DeleteTask(&BSTR::from(WINDOWS_STARTUP_TASK_NAME), 0) {
+                Ok(()) => {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup deleted");
+                    Ok(())
+                }
+                Err(error) if error.code().0 == HRESULT_FROM_WIN32_FILE_NOT_FOUND => {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup was already absent");
+                    Ok(())
+                }
+                Err(error) => Err(error),
+            }
+        })
+    }
+
+    #[cfg(target_os = "windows")]
     pub async fn create_task_scheduler_for_admin_startup(
         &self,
-        is_triggered: bool,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        self.create_task_scheduler_for_admin_startup_with_run_level(RunLevel::Highest)
+            .await
+    }
+
+    #[cfg(target_os = "windows")]
+    async fn create_task_scheduler_for_admin_startup_with_run_level(
+        &self,
+        run_level: RunLevel,
     ) -> Result<(), Box<dyn std::error::Error>> {
         use planif::settings::{Duration, IdleSettings, InstancesPolicy};
 
-        let task_scheduler = TaskScheduler::new()?;
+        let task_scheduler = PlanifTaskScheduler::new()?;
         let com_runtime = task_scheduler.get_com();
         let schedule_builder = ScheduleBuilder::new(&com_runtime)?;
 
@@ -194,7 +303,7 @@ impl AutoLauncher {
         schedule_builder
             .create_logon()
             .author("Tari Universe")?
-            .trigger("startup_trigger", is_triggered)?
+            .trigger("startup_trigger", true)?
             .action(Action::new("startup_action", &app_path, "", ""))?
             .principal(PrincipalSettings {
                 display_name: "Tari Universe".to_string(),
@@ -202,7 +311,7 @@ impl AutoLauncher {
                 user_id: Some(username()),
                 id: "Tari universe principal".to_string(),
                 logon_type: LogonType::InteractiveToken,
-                run_level: RunLevel::Highest,
+                run_level,
             })?
             .settings(Settings {
                 stop_if_going_on_batteries: Some(false),
@@ -226,7 +335,7 @@ impl AutoLauncher {
             .delay(delay_duration)?
             .build()?
             .register(
-                "Tari Universe startup",
+                WINDOWS_STARTUP_TASK_NAME,
                 TaskCreationFlags::CreateOrUpdate as i32,
             )?;
 

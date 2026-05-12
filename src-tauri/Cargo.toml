@@ -131,6 +131,10 @@ openssl = { version = "0.10", features = [
 ] } # temporary fix for openssl
 planif = "1.0.0"
 whoami = "1.5.2"
+windows = { version = "0.48.0", features = [
+  "Win32_System_Com",
+  "Win32_System_TaskScheduler",
+] }
 windows-sys = { version = "0.52", features = [
   "Win32_Storage_FileSystem",
 ] } # GetDriveTypeW for SMB-mapped drive-letter detection in data_location

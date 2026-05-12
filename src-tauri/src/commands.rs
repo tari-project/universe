@@ -1227,17 +1227,17 @@ pub async fn set_should_always_use_system_language(
 
 #[tauri::command]
 pub async fn set_should_auto_launch(should_auto_launch: bool) -> Result<(), InvokeError> {
+    AutoLauncher::current()
+        .update_auto_launcher(should_auto_launch)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+
     ConfigCore::update_field(
         ConfigCoreContent::set_should_auto_launch,
         should_auto_launch,
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
-
-    AutoLauncher::current()
-        .update_auto_launcher(should_auto_launch)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
 
     Ok(())
 }
