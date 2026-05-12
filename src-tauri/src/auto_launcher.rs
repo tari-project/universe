@@ -27,6 +27,8 @@ use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use dunce::canonicalize;
 use log::{info, warn};
 #[cfg(target_os = "windows")]
+use std::{os::windows::process::CommandExt, process::Command};
+#[cfg(target_os = "windows")]
 use planif::{
     enums::TaskCreationFlags,
     schedule::TaskScheduler,
@@ -39,11 +41,16 @@ use tokio::sync::RwLock;
 use whoami::username;
 
 use crate::{
+    #[cfg(target_os = "windows")]
+    consts::PROCESS_CREATION_NO_WINDOW,
     LOG_TARGET_APP_LOGIC,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
+
+#[cfg(target_os = "windows")]
+const ADMIN_STARTUP_TASK_NAME: &str = "Tari Universe startup";
 
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
@@ -62,7 +69,7 @@ impl AutoLauncher {
         match PlatformUtils::detect_current_os() {
             CurrentOperatingSystem::Windows => AutoLaunchBuilder::new()
                 .set_app_name(app_name)
-                .set_app_path(app_path)
+                .set_app_path(&quote_windows_run_key_app_path(app_path))
                 .set_use_launch_agent(false)
                 .build()
                 .map_err(|e| e.into()),
@@ -153,12 +160,41 @@ impl AutoLauncher {
 
         if !should_be_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Disabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(false)
+            self.remove_task_scheduler_for_admin_startup()
                 .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
+                .map_err(|e| anyhow!("Failed to remove task scheduler for admin startup: {}", e))?;
         };
 
         Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    async fn remove_task_scheduler_for_admin_startup(
+        &self,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let query_output = Command::new("schtasks")
+            .args(["/Query", "/TN", ADMIN_STARTUP_TASK_NAME])
+            .creation_flags(PROCESS_CREATION_NO_WINDOW)
+            .output()?;
+
+        if !query_output.status.success() {
+            info!(target: LOG_TARGET_APP_LOGIC, "Admin startup task is already absent");
+            return Ok(());
+        }
+
+        let delete_output = Command::new("schtasks")
+            .args(["/Delete", "/TN", ADMIN_STARTUP_TASK_NAME, "/F"])
+            .creation_flags(PROCESS_CREATION_NO_WINDOW)
+            .output()?;
+
+        if delete_output.status.success() {
+            info!(target: LOG_TARGET_APP_LOGIC, "Admin startup task removed");
+            Ok(())
+        } else {
+            let stdout = String::from_utf8_lossy(&delete_output.stdout);
+            let stderr = String::from_utf8_lossy(&delete_output.stderr);
+            Err(anyhow!("schtasks delete failed. stdout: {stdout}, stderr: {stderr}").into())
+        }
     }
 
     #[cfg(target_os = "windows")]
@@ -184,6 +220,8 @@ impl AutoLauncher {
         info!(target: LOG_TARGET_APP_LOGIC, "Creating task scheduler for admin startup with app_path: {}", app_path);
         info!(target: LOG_TARGET_APP_LOGIC, "UserName: {}", username());
 
+        let task_action_path = quote_windows_run_key_app_path(&app_path);
+
         let mut retry_interval = Duration::new();
         retry_interval.minutes = Some(1);
 
@@ -195,7 +233,7 @@ impl AutoLauncher {
             .create_logon()
             .author("Tari Universe")?
             .trigger("startup_trigger", is_triggered)?
-            .action(Action::new("startup_action", &app_path, "", ""))?
+            .action(Action::new("startup_action", &task_action_path, "", ""))?
             .principal(PrincipalSettings {
                 display_name: "Tari Universe".to_string(),
                 group_id: None,
@@ -226,7 +264,7 @@ impl AutoLauncher {
             .delay(delay_duration)?
             .build()?
             .register(
-                "Tari Universe startup",
+                ADMIN_STARTUP_TASK_NAME,
                 TaskCreationFlags::CreateOrUpdate as i32,
             )?;
 
@@ -301,5 +339,35 @@ impl AutoLauncher {
 
     pub fn current() -> &'static AutoLauncher {
         &INSTANCE
+    }
+}
+
+fn quote_windows_run_key_app_path(app_path: &str) -> String {
+    let trimmed = app_path.trim();
+    if trimmed.starts_with('"') && trimmed.ends_with('"') {
+        return trimmed.to_string();
+    }
+
+    format!("\"{trimmed}\"")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::quote_windows_run_key_app_path;
+
+    #[test]
+    fn quote_windows_run_key_app_path_wraps_unquoted_paths() {
+        assert_eq!(
+            quote_windows_run_key_app_path(r"C:\Program Files\Tari Universe\Tari Universe.exe"),
+            r#""C:\Program Files\Tari Universe\Tari Universe.exe""#
+        );
+    }
+
+    #[test]
+    fn quote_windows_run_key_app_path_preserves_already_quoted_paths() {
+        assert_eq!(
+            quote_windows_run_key_app_path(r#""C:\Program Files\Tari Universe\Tari Universe.exe""#),
+            r#""C:\Program Files\Tari Universe\Tari Universe.exe""#
+        );
     }
 }
