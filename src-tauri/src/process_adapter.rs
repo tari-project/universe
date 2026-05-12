@@ -111,6 +111,9 @@ pub(crate) trait ProcessAdapter {
                 Err(_) => {
                     warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Cannot kill by PID safely. Ignoring and deleting corrupted PID file.");
                     // No fallback to kill by name to prevent killing external processes with the same name.
+                    if let Err(e) = fs::remove_file(base_folder.join(self.pid_file_name())) {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to delete corrupted pid file: {}", e);
+                    }
                 }
             },
             Err(e) => {
