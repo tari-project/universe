@@ -25,11 +25,9 @@ use async_trait::async_trait;
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::collections::HashMap;
-use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-use sysinfo::System;
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
@@ -87,38 +85,23 @@ pub(crate) trait ProcessAdapter {
             .exists()
     }
 
-    fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
-        let mut sys = System::new_all();
-        sys.refresh_all();
 
-        for (pid, process) in sys.processes() {
-            if process.name() == binary_name {
-                return Some(pid.as_u32());
-            }
-        }
-        None
-    }
 
     async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
-        let binary_name = OsStr::new(self.name());
-        if let Some(process) = Self::find_process_pid_by_name(binary_name) {
-            let parsed_id =
-                i32::try_from(process).expect("Failed to parse process ID from u32 to i32");
-            warn!(target: LOG_TARGET_APP_LOGIC, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
-            kill_process(parsed_id).await?;
-        }
+        // We no longer kill processes blindly by name, as this can terminate 
+        // independently started processes (like external xmrig instances).
+        // The graceful_kill mechanism during shutdown and kill_previous_instances 
+        // during startup are sufficient for managing Tari Universe child processes.
         Ok(())
     }
 
     async fn kill_previous_instances(
         &self,
         base_folder: PathBuf,
-        binary_path: &Path,
+        _binary_path: &Path,
     ) -> Result<(), Error> {
         info!(target: LOG_TARGET_APP_LOGIC, "Killing previous instances of {}", self.name());
-        let binary_name = binary_path
-            .file_name()
-            .expect("binary path must have a file name");
+
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {
             Ok(pid) => match pid.trim().parse::<i32>() {
                 Ok(pid) => {
@@ -126,15 +109,8 @@ pub(crate) trait ProcessAdapter {
                     kill_process(pid).await?;
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
-                    let pid_by_name = Self::find_process_pid_by_name(binary_name);
-                    if let Some(process) = pid_by_name {
-                        let parsed_id = i32::try_from(process)
-                            .expect("Failed to parse process ID from u32 to i32");
-                        kill_process(parsed_id).await?;
-                    } else {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "No process found with name {}", binary_name.to_str().unwrap_or_default());
-                    }
+                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Cannot kill by PID safely. Ignoring and deleting corrupted PID file.");
+                    // No fallback to kill by name to prevent killing external processes with the same name.
                 }
             },
             Err(e) => {
