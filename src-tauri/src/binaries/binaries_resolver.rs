@@ -297,4 +297,24 @@ impl BinaryResolver {
             .unwrap_or_else(|| panic!("Couldn't find manager for binary: {}", binary.name()))
             .get_selected_version()
     }
+
+    /// Clean up old version folders for all binaries, keeping only the current versions.
+    /// Returns the total number of directories removed across all binaries.
+    pub fn cleanup_all_old_binaries(&self) -> usize {
+        let mut total_removed = 0;
+        for (binary, manager) in &self.managers {
+            let removed = manager.cleanup_old_versions();
+            if removed > 0 {
+                info!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Cleaned up {} old folder(s) for {}", removed, binary.name()
+                );
+            }
+            total_removed += removed;
+        }
+        if total_removed > 0 {
+            info!(target: LOG_TARGET_APP_LOGIC, "Total binary cleanup: {} old folder(s) removed", total_removed);
+        }
+        total_removed
+    }
 }

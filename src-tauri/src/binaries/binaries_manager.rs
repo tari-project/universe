@@ -491,3 +491,73 @@ fn check_binary_exists(path: &std::path::Path) -> bool {
         false
     })
 }
+
+/// Clean up old version folders, keeping only the current version.
+/// Returns the number of directories removed.
+pub fn cleanup_old_versions(&self) -> usize {
+    let binary_folder = match self.adapter.get_binary_folder() {
+        Ok(path) => path,
+        Err(e) => {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to get binary folder for cleanup of {}: {:?}", self.binary_name, e);
+            return 0;
+        }
+    };
+
+    if !binary_folder.exists() {
+        return 0;
+    }
+
+    let current_version = &self.selected_version;
+    let mut removed_count = 0;
+
+    let entries = match std::fs::read_dir(&binary_folder) {
+        Ok(entries) => entries,
+        Err(e) => {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to read directory {} for cleanup: {:?}", binary_folder.display(), e);
+            return 0;
+        }
+    };
+
+    for entry in entries {
+        let entry = match entry {
+            Ok(e) => e,
+            Err(e) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to read directory entry: {:?}", e);
+                continue;
+            }
+        };
+
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+
+        let dir_name = match path.file_name().and_then(|n| n.to_str()) {
+            Some(name) => name.to_string(),
+            None => continue,
+        };
+
+        // Skip the current version folder
+        if dir_name == *current_version {
+            continue;
+        }
+
+        // Skip any folder that doesn't look like a version (e.g., hidden files, temp dirs)
+        if dir_name.starts_with('.') || dir_name.starts_with('_') {
+            continue;
+        }
+
+        info!(target: LOG_TARGET_APP_LOGIC, "Cleaning up old binary version folder: {} ({:?})", dir_name, path.display());
+        if let Err(e) = std::fs::remove_dir_all(&path) {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove old binary folder {:?}: {:?}", path, e);
+        } else {
+            removed_count += 1;
+        }
+    }
+
+    if removed_count > 0 {
+        info!(target: LOG_TARGET_APP_LOGIC, "Cleaned up {} old version folder(s) for {}", removed_count, self.binary_name);
+    }
+
+    removed_count
+}

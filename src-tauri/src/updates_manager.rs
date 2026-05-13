@@ -93,6 +93,9 @@ impl UpdatesManager {
     }
 
     pub async fn init_periodic_updates(&self, app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
+        // Run binary cleanup on startup to remove old version folders
+        Self::cleanup_old_binaries();
+
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let app_clone = app.clone();
         let self_clone = self.clone();
@@ -298,6 +301,23 @@ impl UpdatesManager {
             )
             .await?;
 
+        // Clean up old binary version folders after successful update
+        Self::cleanup_old_binaries();
+
         app.restart();
+    }
+
+    /// Clean up old binary version folders after a successful update.
+    /// Called automatically after the update is downloaded and installed.
+    pub fn cleanup_old_binaries() {
+        use crate::binaries::BinaryResolver;
+
+        info!(target: LOG_TARGET_APP_LOGIC, "Running post-update binary cleanup...");
+        let removed = BinaryResolver::current().cleanup_all_old_binaries();
+        if removed > 0 {
+            info!(target: LOG_TARGET_APP_LOGIC, "Post-update cleanup complete: {} old folder(s) removed", removed);
+        } else {
+            info!(target: LOG_TARGET_APP_LOGIC, "Post-update cleanup: no old binary folders found");
+        }
     }
 }
