@@ -90,10 +90,37 @@ pub(crate) trait ProcessAdapter {
     fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
         let mut sys = System::new_all();
         sys.refresh_all();
+        let my_pid = std::process::id();
 
         for (pid, process) in sys.processes() {
             if process.name() == binary_name {
-                return Some(pid.as_u32());
+                // Don't return our own process
+                if pid.as_u32() != my_pid {
+                    return Some(pid.as_u32());
+                }
+            }
+        }
+        None
+    }
+
+    /// Finds a child process with the given binary name that was spawned by this process.
+    /// This ensures we only kill OUR spawned processes, not external ones with the same name.
+    fn find_child_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
+        let mut sys = System::new_all();
+        sys.refresh_all();
+        let my_pid = std::process::id();
+
+        for (pid, process) in sys.processes() {
+            if process.name() == binary_name {
+                // Skip our own process
+                if pid.as_u32() != my_pid {
+                    // Check if this process is a child of our process
+                    if let Some(parent_pid) = process.parent() {
+                        if parent_pid == my_pid {
+                            return Some(pid.as_u32());
+                        }
+                    }
+                }
             }
         }
         None
@@ -101,7 +128,7 @@ pub(crate) trait ProcessAdapter {
 
     async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
         let binary_name = OsStr::new(self.name());
-        if let Some(process) = Self::find_process_pid_by_name(binary_name) {
+        if let Some(process) = Self::find_child_process_pid_by_name(binary_name) {
             let parsed_id =
                 i32::try_from(process).expect("Failed to parse process ID from u32 to i32");
             warn!(target: LOG_TARGET_APP_LOGIC, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
@@ -127,13 +154,13 @@ pub(crate) trait ProcessAdapter {
                 }
                 Err(_) => {
                     warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
-                    let pid_by_name = Self::find_process_pid_by_name(binary_name);
+                    let pid_by_name = Self::find_child_process_pid_by_name(binary_name);
                     if let Some(process) = pid_by_name {
                         let parsed_id = i32::try_from(process)
                             .expect("Failed to parse process ID from u32 to i32");
                         kill_process(parsed_id).await?;
                     } else {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "No process found with name {}", binary_name.to_str().unwrap_or_default());
+                        warn!(target: LOG_TARGET_APP_LOGIC, "No child process found with name {}", binary_name.to_str().unwrap_or_default());
                     }
                 }
             },
