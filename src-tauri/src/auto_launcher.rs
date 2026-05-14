@@ -26,17 +26,8 @@ use anyhow::anyhow;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use dunce::canonicalize;
 use log::{info, warn};
-#[cfg(target_os = "windows")]
-use planif::{
-    enums::TaskCreationFlags,
-    schedule::TaskScheduler,
-    schedule_builder::{Action, ScheduleBuilder},
-    settings::{LogonType, PrincipalSettings, RunLevel, Settings},
-};
 use tauri::utils::platform::current_exe;
 use tokio::sync::RwLock;
-#[cfg(target_os = "windows")]
-use whoami::username;
 
 use crate::{
     LOG_TARGET_APP_LOGIC,
@@ -44,6 +35,8 @@ use crate::{
 };
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
+#[cfg(target_os = "windows")]
+const WINDOWS_STARTUP_TASK_NAME: &str = "Tari Universe startup";
 
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
@@ -96,6 +89,11 @@ impl AutoLauncher {
 
         let should_toggle_to_disabled =
             !config_is_auto_launcher_enabled && auto_launcher_is_enabled;
+        let should_ensure_windows_task_disabled = !config_is_auto_launcher_enabled
+            && matches!(
+                PlatformUtils::detect_current_os(),
+                CurrentOperatingSystem::Windows
+            );
 
         if should_toggle_to_enabled || should_ensure_to_enable_at_first_startup {
             info!(target: LOG_TARGET_APP_LOGIC, "Enabling auto-launcher");
@@ -108,25 +106,22 @@ impl AutoLauncher {
                 }
                 CurrentOperatingSystem::Windows => {
                     auto_launcher.enable()?;
-                    // To startup application as admin on windows, we need to create a task scheduler
                     #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(true).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to enable admin auto-launcher: {}", e)
-                    });
+                    self.toggle_windows_admin_auto_launcher(true).await?;
                 }
                 _ => {
                     auto_launcher.enable()?;
                 }
             }
-        } else if should_toggle_to_disabled {
+        } else if should_toggle_to_disabled || should_ensure_windows_task_disabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Disabling auto-launcher");
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => {
                     #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(false).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher: {}", e)
-                    });
-                    auto_launcher.disable()?;
+                    self.toggle_windows_admin_auto_launcher(false).await?;
+                    if auto_launcher_is_enabled {
+                        auto_launcher.disable()?;
+                    }
                 }
                 _ => {
                     auto_launcher.disable()?;
@@ -146,35 +141,23 @@ impl AutoLauncher {
     ) -> Result<(), anyhow::Error> {
         if should_be_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Enabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(true)
+            self.create_task_scheduler_for_admin_startup()
                 .await
                 .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
-        };
-
-        if !should_be_enabled {
+        } else {
             info!(target: LOG_TARGET_APP_LOGIC, "Disabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(false)
+            self.delete_task_scheduler_for_admin_startup()
                 .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
+                .map_err(|e| anyhow!("Failed to delete task scheduler for admin startup: {}", e))?;
         };
 
         Ok(())
     }
 
     #[cfg(target_os = "windows")]
-    pub async fn create_task_scheduler_for_admin_startup(
-        &self,
-        is_triggered: bool,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        use planif::settings::{Duration, IdleSettings, InstancesPolicy};
-
-        let task_scheduler = TaskScheduler::new()?;
-        let com_runtime = task_scheduler.get_com();
-        let schedule_builder = ScheduleBuilder::new(&com_runtime)?;
-
+    pub async fn create_task_scheduler_for_admin_startup(&self) -> Result<(), anyhow::Error> {
         let app_exe = current_exe()?;
         let app_exe = canonicalize(&app_exe)?;
-
         let app_path = app_exe
             .as_os_str()
             .to_str()
@@ -182,55 +165,39 @@ impl AutoLauncher {
             .to_string();
 
         info!(target: LOG_TARGET_APP_LOGIC, "Creating task scheduler for admin startup with app_path: {}", app_path);
-        info!(target: LOG_TARGET_APP_LOGIC, "UserName: {}", username());
 
-        let mut retry_interval = Duration::new();
-        retry_interval.minutes = Some(1);
-
-        let mut delay_duration = Duration::new();
-        delay_duration.seconds = Some(30);
-        delay_duration.minutes = Some(0);
-
-        schedule_builder
-            .create_logon()
-            .author("Tari Universe")?
-            .trigger("startup_trigger", is_triggered)?
-            .action(Action::new("startup_action", &app_path, "", ""))?
-            .principal(PrincipalSettings {
-                display_name: "Tari Universe".to_string(),
-                group_id: None,
-                user_id: Some(username()),
-                id: "Tari universe principal".to_string(),
-                logon_type: LogonType::InteractiveToken,
-                run_level: RunLevel::Highest,
-            })?
-            .settings(Settings {
-                stop_if_going_on_batteries: Some(false),
-                start_when_available: Some(true),
-                run_only_if_network_available: Some(false),
-                run_only_if_idle: Some(false),
-                enabled: Some(true),
-                disallow_start_if_on_batteries: Some(false),
-                hidden: Some(false),
-                multiple_instances_policy: Some(InstancesPolicy::Parallel),
-                restart_count: Some(3),
-                restart_interval: Some(retry_interval.to_string()),
-                idle_settings: Some(IdleSettings {
-                    stop_on_idle_end: Some(false),
-                    restart_on_idle: Some(false),
-                    ..Default::default()
-                }),
-                allow_demand_start: Some(true),
-                ..Default::default()
-            })?
-            .delay(delay_duration)?
-            .build()?
-            .register(
-                "Tari Universe startup",
-                TaskCreationFlags::CreateOrUpdate as i32,
-            )?;
+        let task_run_command = quote_schtasks_task_run_path(&app_path);
+        run_schtasks(&[
+            "/Create",
+            "/TN",
+            WINDOWS_STARTUP_TASK_NAME,
+            "/TR",
+            &task_run_command,
+            "/SC",
+            "ONLOGON",
+            "/RL",
+            "HIGHEST",
+            "/F",
+        ])
+        .await?;
 
         info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup created");
+
+        Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    pub async fn delete_task_scheduler_for_admin_startup(&self) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET_APP_LOGIC, "Deleting task scheduler for admin startup");
+
+        match delete_windows_startup_task().await? {
+            WindowsStartupTaskDeleteResult::Deleted => {
+                info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup deleted");
+            }
+            WindowsStartupTaskDeleteResult::NotFound => {
+                info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup does not exist");
+            }
+        }
 
         Ok(())
     }
@@ -301,5 +268,96 @@ impl AutoLauncher {
 
     pub fn current() -> &'static AutoLauncher {
         &INSTANCE
+    }
+}
+
+#[cfg(target_os = "windows")]
+enum WindowsStartupTaskDeleteResult {
+    Deleted,
+    NotFound,
+}
+
+#[cfg(target_os = "windows")]
+async fn delete_windows_startup_task() -> Result<WindowsStartupTaskDeleteResult, anyhow::Error> {
+    match run_schtasks(&["/Delete", "/TN", WINDOWS_STARTUP_TASK_NAME, "/F"]).await {
+        Ok(()) => Ok(WindowsStartupTaskDeleteResult::Deleted),
+        Err(error) if is_schtasks_not_found_error(&error.to_string()) => {
+            Ok(WindowsStartupTaskDeleteResult::NotFound)
+        }
+        Err(error) => Err(error),
+    }
+}
+
+#[cfg(target_os = "windows")]
+async fn run_schtasks(args: &[&str]) -> Result<(), anyhow::Error> {
+    let output = tokio::process::Command::new("schtasks")
+        .args(args)
+        .output()
+        .await?;
+
+    if output.status.success() {
+        return Ok(());
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+
+    Err(anyhow!(
+        "schtasks {:?} failed with status {:?}. stdout: {} stderr: {}",
+        args,
+        output.status.code(),
+        stdout.trim(),
+        stderr.trim()
+    ))
+}
+
+#[cfg(any(target_os = "windows", test))]
+fn quote_schtasks_task_run_path(app_path: &str) -> String {
+    format!("\"{}\"", app_path.replace('"', "\\\""))
+}
+
+#[cfg(any(target_os = "windows", test))]
+fn is_schtasks_not_found_error(error: &str) -> bool {
+    let error = error.to_ascii_lowercase();
+
+    error.contains("cannot find the file")
+        || error.contains("the system cannot find the file")
+        || error.contains("could not find")
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn quote_schtasks_task_run_path_wraps_executable_paths() {
+        let path = r"C:\Program Files\Tari Universe\Tari Universe.exe";
+
+        assert_eq!(
+            super::quote_schtasks_task_run_path(path),
+            r#""C:\Program Files\Tari Universe\Tari Universe.exe""#
+        );
+    }
+
+    #[test]
+    fn quote_schtasks_task_run_path_escapes_embedded_quotes() {
+        let path = r#"C:\Apps\Tari "Beta"\Tari Universe.exe"#;
+
+        assert_eq!(
+            super::quote_schtasks_task_run_path(path),
+            r#""C:\Apps\Tari \"Beta\"\Tari Universe.exe""#
+        );
+    }
+
+    #[test]
+    fn is_schtasks_not_found_error_matches_windows_message() {
+        assert!(super::is_schtasks_not_found_error(
+            "schtasks failed. ERROR: The system cannot find the file specified."
+        ));
+    }
+
+    #[test]
+    fn is_schtasks_not_found_error_rejects_permission_errors() {
+        assert!(!super::is_schtasks_not_found_error(
+            "schtasks failed. ERROR: Access is denied."
+        ));
     }
 }

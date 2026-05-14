@@ -1227,17 +1227,29 @@ pub async fn set_should_always_use_system_language(
 
 #[tauri::command]
 pub async fn set_should_auto_launch(should_auto_launch: bool) -> Result<(), InvokeError> {
-    ConfigCore::update_field(
-        ConfigCoreContent::set_should_auto_launch,
-        should_auto_launch,
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
-
     AutoLauncher::current()
         .update_auto_launcher(should_auto_launch)
         .await
         .map_err(InvokeError::from_anyhow)?;
+
+    if let Err(error) = ConfigCore::update_field(
+        ConfigCoreContent::set_should_auto_launch,
+        should_auto_launch,
+    )
+    .await
+    {
+        if let Err(rollback_error) = AutoLauncher::current()
+            .update_auto_launcher(!should_auto_launch)
+            .await
+        {
+            warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Failed to rollback auto-launcher after config update failed: {rollback_error}"
+            );
+        }
+
+        return Err(InvokeError::from_anyhow(error));
+    }
 
     Ok(())
 }
