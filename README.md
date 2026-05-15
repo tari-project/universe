@@ -59,7 +59,7 @@ Launch Tari Universe from your applications menu or desktop shortcut.
 
 ```bash
 brew update
-brew install git node cmake protobuf openssl npm
+brew install git node cmake protobuf openssl pnpm
 ```
 
 #### Ubuntu/Debian
@@ -99,8 +99,8 @@ cargo install tauri-cli --locked
 ```bash
 git clone https://github.com/tari-project/universe.git
 cd universe
-npm install
-npm run tauri build
+pnpm install
+pnpm run tauri build
 ```
 
 ### Output
@@ -124,9 +124,9 @@ The project uses comprehensive linting tools to maintain code quality:
 
 ```bash
 # Frontend linting
-npm run lint          # Run all linters (knip + eslint)
-npm run lint:fix      # Auto-fix ESLint issues
-npm run lint:taplo    # Check TOML file formatting
+pnpm run lint          # Run all linters (knip + eslint)
+pnpm run lint:fix      # Auto-fix ESLint issues
+pnpm run lint:taplo    # Check TOML file formatting
 
 # Backend linting (from src-tauri directory)
 cd src-tauri

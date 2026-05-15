@@ -248,6 +248,12 @@ Starting package install...
 Successfully installed
 ```
 
+# Install pnpm
+
+```PowerShell
+winget install -e --id pnpm.pnpm
+```
+
 # Get the Tari Universe code base
 
 ```PowerShell
@@ -274,16 +280,16 @@ Updating files: 100% (684/684), done.
 
 ```PowerShell
 cd src/universe
-npm.cmd --version
-npm.cmd install
+pnpm --version
+pnpm install
 ```
 
 sample output:
 
 ```
-PS C:\Users\leet\src\universe> npm.cmd --version
+PS C:\Users\leet\src\universe> pnpm --version
 10.9.0
-PS C:\Users\leet\src\universe> npm.cmd install
+PS C:\Users\leet\src\universe> pnpm install
 (node:9292) ExperimentalWarning: CommonJS module C:\Program Files\nodejs\node_modules\npm\node_modules\debug\src\node.js is loading ES Module C:\Program Files\nodejs\node_modules\npm\node_modules\supports-color\index.js using require().
 Support for loading ES Module in require() is an experimental feature and might change at any time
 (Use `node --trace-warnings ...` to show where the warning was created)
