@@ -5,6 +5,7 @@ import MinerTile from './Miner.tsx';
 import { useEffect, useRef } from 'react';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
+import { HashrateAlgorithm } from '@app/utils';
 
 export default function CPUTile() {
     const cpuPoolStats = useMiningPoolsStore((s) => s.cpuPoolStats);
@@ -39,6 +40,7 @@ export default function CPUTile() {
             progressDiff={rewardsRef.current?.rewardValue}
             unpaidFMT={rewardsRef.current?.unpaidFMT || '-'}
             minerModuleState={cpuMiningModuleState}
+            algo={HashrateAlgorithm.RandomX}
         />
     );
 }

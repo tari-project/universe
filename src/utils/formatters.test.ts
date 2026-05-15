@@ -8,6 +8,7 @@ import {
     fmtTimePartString,
     formatAmountWithKM,
     formatDecimalCompact,
+    HashrateAlgorithm,
     roundToTwoDecimals,
     removeDecimals,
     removeXTMCryptoDecimals,
@@ -196,6 +197,16 @@ describe('formatters', () => {
         it('formats hashrates >= 1000 with kG/s', () => {
             const result = formatHashrate(1500);
             expect(result).toEqual({ value: 1.5, unit: ' kG/s' });
+        });
+
+        it('formats RandomX hashrates with H/s units', () => {
+            expect(formatHashrate(500, true, HashrateAlgorithm.RandomX)).toEqual({ value: 500, unit: 'H/s' });
+            expect(formatHashrate(1500, true, HashrateAlgorithm.RandomX)).toEqual({ value: 1.5, unit: ' kH/s' });
+        });
+
+        it('returns prefix-only unit for RandomX when joinUnit is false', () => {
+            const result = formatHashrate(1_500_000, false, HashrateAlgorithm.RandomX);
+            expect(result).toEqual({ value: 1.5, unit: 'M' });
         });
 
         it('formats hashrates >= 1000000 with MG/s', () => {

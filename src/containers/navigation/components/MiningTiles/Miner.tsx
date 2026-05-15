@@ -1,5 +1,5 @@
 import { PoolStats } from '@app/types/app-status';
-import { formatHashrate, formatNumber, FormatPreset } from '@app/utils';
+import { formatHashrate, formatNumber, FormatPreset, HashrateAlgorithm } from '@app/utils';
 import { Trans, useTranslation } from 'react-i18next';
 import Tile from './components/Tile/Tile';
 import { AnimatePresence } from 'motion/react';
@@ -31,7 +31,7 @@ export interface MinerTileProps {
     progressDiff?: number | null;
     unpaidFMT?: string;
     minerModuleState: AppModuleState;
-    algo?: GpuMiningAlgorithm;
+    algo?: GpuMiningAlgorithm | HashrateAlgorithm;
 }
 
 export default function MinerTile({
@@ -48,7 +48,7 @@ export default function MinerTile({
     progressDiff,
     unpaidFMT,
     minerModuleState,
-    algo = GpuMiningAlgorithm.C29,
+    algo = HashrateAlgorithm.C29,
 }: MinerTileProps) {
     const { t } = useTranslation(['mining-view', 'p2p'], { useSuspense: false });
 
