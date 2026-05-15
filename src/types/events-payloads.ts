@@ -104,6 +104,7 @@ export enum GpuMinerFeature {
 
 export enum GpuMiningAlgorithm {
     C29 = 'C29',
+    SHA3 = 'SHA3',
 }
 
 export enum MinerControlsState {

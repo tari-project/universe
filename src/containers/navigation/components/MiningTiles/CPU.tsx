@@ -1,4 +1,5 @@
 import { useConfigMiningStore, useConfigPoolsStore, useMiningMetricsStore, useMiningStore } from '@app/store';
+import { GpuMiningAlgorithm } from '@app/types/events-payloads';
 
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import MinerTile from './Miner.tsx';
@@ -26,6 +27,7 @@ export default function CPUTile() {
 
     return (
         <MinerTile
+            algo={GpuMiningAlgorithm.SHA3}
             title="CPU"
             mainLabelKey="cpu-power"
             enabled={cpuEnabled}
