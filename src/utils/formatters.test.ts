@@ -209,6 +209,11 @@ describe('formatters', () => {
             expect(result).toEqual({ value: 1.5, unit: 'M' });
         });
 
+        it('returns empty unit for unscaled RandomX when joinUnit is false', () => {
+            const result = formatHashrate(500, false, HashrateAlgorithm.RandomX);
+            expect(result).toEqual({ value: 500, unit: '' });
+        });
+
         it('formats hashrates >= 1000000 with MG/s', () => {
             const result = formatHashrate(1_500_000);
             expect(result).toEqual({ value: 1.5, unit: ' MG/s' });
@@ -232,6 +237,11 @@ describe('formatters', () => {
         it('returns short unit when joinUnit is false', () => {
             const result = formatHashrate(1_500_000, false);
             expect(result).toEqual({ value: 1.5, unit: 'M' });
+        });
+
+        it('returns empty unit for unscaled hashrate when joinUnit is false', () => {
+            const result = formatHashrate(500, false);
+            expect(result).toEqual({ value: 500, unit: '' });
         });
 
         it('handles edge case at exactly 1000', () => {

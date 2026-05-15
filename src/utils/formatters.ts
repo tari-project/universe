@@ -143,7 +143,7 @@ export function formatHashrate(
     if (hashrate < 1000) {
         return {
             value: fixed(hashrate, 1),
-            unit: `${unit}/s`,
+            unit: joinUnit ? `${unit}/s` : '',
         };
     }
     if (hashrate < 1000000) {
