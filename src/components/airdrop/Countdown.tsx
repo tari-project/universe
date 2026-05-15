@@ -70,7 +70,7 @@ export default function Countdown({ isCurrent = false, compact = false, futureTi
             <CountdownText $compact={compact}>
                 {isCurrent
                     ? t('tranche.status.closes-prefix')
-                    : t('tranche.status.available-in', { context: compact && 'compact' })}
+                    : t('tranche.status.available-in', { context: compact ? 'compact' : '' })}
             </CountdownText>
             <CountdownText $compact={compact}>
                 <strong>

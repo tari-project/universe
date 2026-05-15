@@ -14,6 +14,7 @@ import { useAirdropStore } from '@app/store';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
 import { TimeUnit } from '@app/types/mining/schedule.ts';
 
+// TODO: This function is detected by linting as unused. Should we remove it?
 const restartMining = async () => {
     const isMining =
         useMiningMetricsStore.getState().cpu_mining_status.is_mining ||

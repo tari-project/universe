@@ -37,7 +37,7 @@ export default function SyncLoading({ children }: { children: ReactNode }) {
                             >
                                 <TooltipTitle>{t('sync-message.tooltip-title')}</TooltipTitle>
                                 <TooltipDescription>
-                                    {t('sync-message.tooltip-description', { context: isMining && 'mining' })}
+                                    {t('sync-message.tooltip-description', { context: isMining ? 'mining' : '' })}
                                 </TooltipDescription>
                             </TooltipContent>
                         </TooltipPosition>
