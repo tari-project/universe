@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { PoolType } from '@app/store/useMiningPoolsStore.ts';
 import { AppModuleState, AppModuleStatus } from '@app/store/types/setup.ts';
 import { GpuMiningAlgorithm } from '@app/types/events-payloads.ts';
+import type { HashrateAlgorithm } from '@app/utils/formatters.ts';
 export interface MinerTileProps {
     title: PoolType;
     mainLabelKey: string;
@@ -31,7 +32,7 @@ export interface MinerTileProps {
     progressDiff?: number | null;
     unpaidFMT?: string;
     minerModuleState: AppModuleState;
-    algo?: GpuMiningAlgorithm;
+    algo?: HashrateAlgorithm;
 }
 
 export default function MinerTile({
