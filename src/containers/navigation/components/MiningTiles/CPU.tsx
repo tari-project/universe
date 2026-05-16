@@ -1,5 +1,5 @@
 import { useConfigMiningStore, useConfigPoolsStore, useMiningMetricsStore, useMiningStore } from '@app/store';
-import { GpuMiningAlgorithm } from '@app/types/events-payloads';
+import { GpuMiningAlgorithm } from '@app/types/events-payloads.ts';
 
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import MinerTile from './Miner.tsx';
