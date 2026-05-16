@@ -128,12 +128,17 @@ interface Hashrate {
 
 export type HashrateAlgorithm = GpuMiningAlgorithm | 'RandomX';
 
+const HASHRATE_BASE_UNITS: Record<HashrateAlgorithm, 'G' | 'H'> = {
+    [GpuMiningAlgorithm.C29]: 'G',
+    RandomX: 'H',
+};
+
 export function formatHashrate(
     hashrate: number,
     joinUnit = true,
     algo: HashrateAlgorithm = GpuMiningAlgorithm.C29
 ): Hashrate {
-    const unit = algo === GpuMiningAlgorithm.C29 ? 'G' : 'H';
+    const unit = HASHRATE_BASE_UNITS[algo];
     const fixed = (val: number, dec = 2) => Number(val.toFixed(val >= 100 ? 1 : dec));
     if (hashrate < 1000) {
         return {
