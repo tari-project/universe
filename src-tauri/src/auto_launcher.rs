@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #[cfg(target_os = "windows")]
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::sync::LazyLock;
 
 use anyhow::anyhow;
@@ -63,6 +63,11 @@ fn windows_query_task_args() -> [&'static str; 3] {
 #[cfg(target_os = "windows")]
 fn windows_delete_task_args() -> [&'static str; 4] {
     ["/Delete", "/TN", windows_startup_task_name(), "/F"]
+}
+
+#[cfg(target_os = "windows")]
+fn windows_startup_run_level() -> RunLevel {
+    RunLevel::Highest
 }
 
 pub struct AutoLauncher {
@@ -190,6 +195,8 @@ impl AutoLauncher {
     fn startup_task_exists(&self) -> Result<bool, Box<dyn std::error::Error>> {
         let status = Command::new("schtasks")
             .args(windows_query_task_args())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .status()?;
 
         Ok(status.success())
@@ -262,7 +269,7 @@ impl AutoLauncher {
                 user_id: Some(username()),
                 id: "Tari universe principal".to_string(),
                 logon_type: LogonType::InteractiveToken,
-                run_level: RunLevel::LUA,
+                run_level: windows_startup_run_level(),
             })?
             .settings(Settings {
                 stop_if_going_on_batteries: Some(false),
@@ -387,5 +394,10 @@ mod tests {
             windows_query_task_args(),
             ["/Query", "/TN", "Tari Universe startup"]
         );
+    }
+
+    #[test]
+    fn windows_startup_task_run_level_matches_admin_manifest() {
+        assert_eq!(windows_startup_run_level() as i32, RunLevel::Highest as i32);
     }
 }
