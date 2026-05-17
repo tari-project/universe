@@ -34,18 +34,9 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Install the `.deb` package:
+Official prebuilt binaries for Linux (.deb / .AppImage) are no longer provided. However, Tari Universe fully supports Linux and can be easily built from source.
 
-```bash
-sudo dpkg -i tari-universe_*.deb
-```
-
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
+Follow the [Build from Source](#build-from-source) instructions below to compile and run the application on your machine.
 
 ### Run
 
@@ -107,9 +98,9 @@ npm run tauri build
 
 Built applications will be in `target/release/bundle/`:
 
-- **Linux**: `.deb` and `.AppImage` files
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
+- **Linux**: Build output only (e.g. executable in `target/release/`)
 
 ## Contributing
 
