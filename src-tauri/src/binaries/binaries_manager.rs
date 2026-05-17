@@ -57,7 +57,44 @@ pub(crate) struct BinaryManager {
 }
 
 impl BinaryManager {
-    pub fn new(
+    
+    pub fn cleanup_old_versions(&self) {
+        let binary_folder = match self.adapter.get_binary_folder() {
+            Ok(folder) => folder,
+            Err(e) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to get binary folder for cleanup of {}: {:?}", self.binary_name, e);
+                return;
+            }
+        };
+
+        let current_version = &self.selected_version;
+
+        if !binary_folder.exists() {
+            return;
+        }
+
+        match std::fs::read_dir(&binary_folder) {
+            Ok(entries) => {
+                for entry in entries.flatten() {
+                    if let Ok(file_type) = entry.file_type() {
+                        if file_type.is_dir() {
+                            let dir_name = entry.file_name().to_string_lossy().to_string();
+                            if dir_name != *current_version {
+                                info!(target: LOG_TARGET_APP_LOGIC, "Cleaning up old binary version '{}' for {}", dir_name, self.binary_name);
+                                if let Err(e) = std::fs::remove_dir_all(entry.path()) {
+                                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove old binary folder {:?}: {:?}", entry.path(), e);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to read binary directory for cleanup of {}: {:?}", self.binary_name, e);
+            }
+        }
+    }
+pub fn new(
         binary_name: String,
         binary_subfolder: Option<String>,
         adapter: Box<dyn LatestVersionApiAdapter>,
@@ -342,6 +379,7 @@ impl BinaryManager {
             {
                 Ok(_) => {
                     info!(target: LOG_TARGET_APP_LOGIC, "Successfully downloaded binary: {} on retry: {}", self.binary_name, retry);
+                    self.cleanup_old_versions();
                     return Ok(());
                 }
                 Err(error) => {
