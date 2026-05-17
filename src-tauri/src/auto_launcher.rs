@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#[cfg(target_os = "windows")]
+use std::process::Command;
 use std::sync::LazyLock;
 
 use anyhow::anyhow;
@@ -44,6 +46,24 @@ use crate::{
 };
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
+
+#[cfg(target_os = "windows")]
+const WINDOWS_STARTUP_TASK_NAME: &str = "Tari Universe startup";
+
+#[cfg(target_os = "windows")]
+fn windows_startup_task_name() -> &'static str {
+    WINDOWS_STARTUP_TASK_NAME
+}
+
+#[cfg(target_os = "windows")]
+fn windows_query_task_args() -> [&'static str; 3] {
+    ["/Query", "/TN", windows_startup_task_name()]
+}
+
+#[cfg(target_os = "windows")]
+fn windows_delete_task_args() -> [&'static str; 4] {
+    ["/Delete", "/TN", windows_startup_task_name(), "/F"]
+}
 
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
@@ -87,56 +107,62 @@ impl AutoLauncher {
         config_is_auto_launcher_enabled: bool,
     ) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET_APP_LOGIC, "Toggling auto-launcher");
-        let auto_launcher_is_enabled = auto_launcher.is_enabled()?;
-        info!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is enabled: {auto_launcher_is_enabled}, config_is_auto_launcher_enabled: {config_is_auto_launcher_enabled}");
 
-        let should_toggle_to_enabled = config_is_auto_launcher_enabled && !auto_launcher_is_enabled;
-        let should_ensure_to_enable_at_first_startup =
-            auto_launcher_is_enabled && config_is_auto_launcher_enabled;
-
-        let should_toggle_to_disabled =
-            !config_is_auto_launcher_enabled && auto_launcher_is_enabled;
-
-        if should_toggle_to_enabled || should_ensure_to_enable_at_first_startup {
-            info!(target: LOG_TARGET_APP_LOGIC, "Enabling auto-launcher");
-            match PlatformUtils::detect_current_os() {
-                CurrentOperatingSystem::MacOS => {
-                    // This for some reason fixes the issue where macOS starts two instances of the app
-                    // when auto-launcher is enabled and when during shutdown user selects to reopen the apps after restart
-                    auto_launcher.disable()?;
-                    auto_launcher.enable()?;
+        #[cfg(target_os = "windows")]
+        {
+            match auto_launcher.is_enabled() {
+                Ok(true) => {
+                    if let Err(e) = auto_launcher.disable() {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove legacy Windows registry auto-launch entry: {}", e);
+                    }
                 }
-                CurrentOperatingSystem::Windows => {
-                    auto_launcher.enable()?;
-                    // To startup application as admin on windows, we need to create a task scheduler
-                    #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(true).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to enable admin auto-launcher: {}", e)
-                    });
-                }
-                _ => {
-                    auto_launcher.enable()?;
+                Ok(false) => {}
+                Err(e) => {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Failed to inspect legacy Windows registry auto-launch entry: {}", e);
                 }
             }
-        } else if should_toggle_to_disabled {
-            info!(target: LOG_TARGET_APP_LOGIC, "Disabling auto-launcher");
-            match PlatformUtils::detect_current_os() {
-                CurrentOperatingSystem::Windows => {
-                    #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(false).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher: {}", e)
-                    });
-                    auto_launcher.disable()?;
-                }
-                _ => {
-                    auto_launcher.disable()?;
-                }
-            }
-        } else {
-            warn!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is already in the desired state");
+
+            self.toggle_windows_admin_auto_launcher(config_is_auto_launcher_enabled)
+                .await?;
+
+            return Ok(());
         }
 
-        Ok(())
+        #[cfg(not(target_os = "windows"))]
+        {
+            let auto_launcher_is_enabled = auto_launcher.is_enabled()?;
+            info!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is enabled: {auto_launcher_is_enabled}, config_is_auto_launcher_enabled: {config_is_auto_launcher_enabled}");
+
+            let should_toggle_to_enabled =
+                config_is_auto_launcher_enabled && !auto_launcher_is_enabled;
+            let should_ensure_to_enable_at_first_startup =
+                auto_launcher_is_enabled && config_is_auto_launcher_enabled;
+
+            let should_toggle_to_disabled =
+                !config_is_auto_launcher_enabled && auto_launcher_is_enabled;
+
+            if should_toggle_to_enabled || should_ensure_to_enable_at_first_startup {
+                info!(target: LOG_TARGET_APP_LOGIC, "Enabling auto-launcher");
+                match PlatformUtils::detect_current_os() {
+                    CurrentOperatingSystem::MacOS => {
+                        // This for some reason fixes the issue where macOS starts two instances of the app
+                        // when auto-launcher is enabled and when during shutdown user selects to reopen the apps after restart
+                        auto_launcher.disable()?;
+                        auto_launcher.enable()?;
+                    }
+                    _ => {
+                        auto_launcher.enable()?;
+                    }
+                }
+            } else if should_toggle_to_disabled {
+                info!(target: LOG_TARGET_APP_LOGIC, "Disabling auto-launcher");
+                auto_launcher.disable()?;
+            } else {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is already in the desired state");
+            }
+
+            Ok(())
+        }
     }
 
     #[cfg(target_os = "windows")]
@@ -153,10 +179,44 @@ impl AutoLauncher {
 
         if !should_be_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Disabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(false)
-                .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
+            self.delete_task_scheduler_for_admin_startup()
+                .map_err(|e| anyhow!("Failed to delete task scheduler for admin startup: {}", e))?;
         };
+
+        Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    fn startup_task_exists(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        let status = Command::new("schtasks")
+            .args(windows_query_task_args())
+            .status()?;
+
+        Ok(status.success())
+    }
+
+    #[cfg(target_os = "windows")]
+    fn delete_task_scheduler_for_admin_startup(&self) -> Result<(), Box<dyn std::error::Error>> {
+        if !self.startup_task_exists()? {
+            info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup is already absent");
+            return Ok(());
+        }
+
+        let output = Command::new("schtasks")
+            .args(windows_delete_task_args())
+            .output()?;
+
+        if !output.status.success() {
+            return Err(anyhow!(
+                "schtasks delete failed with status {:?}: {}{}",
+                output.status.code(),
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            )
+            .into());
+        }
+
+        info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup deleted");
 
         Ok(())
     }
@@ -202,7 +262,7 @@ impl AutoLauncher {
                 user_id: Some(username()),
                 id: "Tari universe principal".to_string(),
                 logon_type: LogonType::InteractiveToken,
-                run_level: RunLevel::Highest,
+                run_level: RunLevel::LUA,
             })?
             .settings(Settings {
                 stop_if_going_on_batteries: Some(false),
@@ -226,7 +286,7 @@ impl AutoLauncher {
             .delay(delay_duration)?
             .build()?
             .register(
-                "Tari Universe startup",
+                windows_startup_task_name(),
                 TaskCreationFlags::CreateOrUpdate as i32,
             )?;
 
@@ -301,5 +361,31 @@ impl AutoLauncher {
 
     pub fn current() -> &'static AutoLauncher {
         &INSTANCE
+    }
+}
+
+#[cfg(all(test, target_os = "windows"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn windows_startup_task_name_is_stable() {
+        assert_eq!(windows_startup_task_name(), "Tari Universe startup");
+    }
+
+    #[test]
+    fn windows_delete_task_args_force_delete_the_startup_task() {
+        assert_eq!(
+            windows_delete_task_args(),
+            ["/Delete", "/TN", "Tari Universe startup", "/F"]
+        );
+    }
+
+    #[test]
+    fn windows_query_task_args_find_the_startup_task() {
+        assert_eq!(
+            windows_query_task_args(),
+            ["/Query", "/TN", "Tari Universe startup"]
+        );
     }
 }
