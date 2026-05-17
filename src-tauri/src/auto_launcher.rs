@@ -25,7 +25,7 @@ use std::sync::LazyLock;
 use anyhow::anyhow;
 use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use dunce::canonicalize;
-use log::{info, warn};
+use log::{info, warn, error};
 #[cfg(target_os = "windows")]
 use planif::{
     enums::TaskCreationFlags,
@@ -33,6 +33,10 @@ use planif::{
     schedule_builder::{Action, ScheduleBuilder},
     settings::{LogonType, PrincipalSettings, RunLevel, Settings},
 };
+#[cfg(target_os = "windows")]
+use winreg::enums::*;
+#[cfg(target_os = "windows")]
+use winreg::RegKey;
 use tauri::utils::platform::current_exe;
 use tokio::sync::RwLock;
 #[cfg(target_os = "windows")]
@@ -44,6 +48,10 @@ use crate::{
 };
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
+
+const TASK_NAME: &str = "TariUniverseStartup";
+const REGISTRY_KEY_PATH: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
+const APP_REGISTRY_VALUE_NAME: &str = "TariUniverse";
 
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
@@ -87,15 +95,29 @@ impl AutoLauncher {
         config_is_auto_launcher_enabled: bool,
     ) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET_APP_LOGIC, "Toggling auto-launcher");
-        let auto_launcher_is_enabled = auto_launcher.is_enabled()?;
-        info!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is enabled: {auto_launcher_is_enabled}, config_is_auto_launcher_enabled: {config_is_auto_launcher_enabled}");
 
-        let should_toggle_to_enabled = config_is_auto_launcher_enabled && !auto_launcher_is_enabled;
+        // On Windows, the auto_launcher.is_enabled() may not accurately reflect the state
+        // because the auto-launch crate uses different mechanisms. We need to also check
+        // our registry fallback state to get an accurate picture.
+        let auto_launcher_is_enabled = auto_launcher.is_enabled()?;
+
+        // For Windows, also check our registry fallback as a secondary indicator
+        #[cfg(target_os = "windows")]
+        let windows_registry_enabled = self.is_registry_auto_start_enabled();
+
+        #[cfg(target_os = "windows")]
+        let effective_is_enabled = auto_launcher_is_enabled || windows_registry_enabled;
+        #[cfg(not(target_os = "windows"))]
+        let effective_is_enabled = auto_launcher_is_enabled;
+
+        info!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is enabled: {auto_launcher_is_enabled} (auto-launch), registry: {windows_registry_enabled}, effective: {effective_is_enabled}, config_is_auto_launcher_enabled: {config_is_auto_launcher_enabled}");
+
+        let should_toggle_to_enabled = config_is_auto_launcher_enabled && !effective_is_enabled;
         let should_ensure_to_enable_at_first_startup =
-            auto_launcher_is_enabled && config_is_auto_launcher_enabled;
+            effective_is_enabled && config_is_auto_launcher_enabled;
 
         let should_toggle_to_disabled =
-            !config_is_auto_launcher_enabled && auto_launcher_is_enabled;
+            !config_is_auto_launcher_enabled && effective_is_enabled;
 
         if should_toggle_to_enabled || should_ensure_to_enable_at_first_startup {
             info!(target: LOG_TARGET_APP_LOGIC, "Enabling auto-launcher");
@@ -109,10 +131,17 @@ impl AutoLauncher {
                 CurrentOperatingSystem::Windows => {
                     auto_launcher.enable()?;
                     // To startup application as admin on windows, we need to create a task scheduler
+                    // Use registry fallback if task scheduler fails
                     #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(true).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to enable admin auto-launcher: {}", e)
-                    });
+                    {
+                        if let Err(e) = self.toggle_windows_admin_auto_launcher(true).await {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to enable admin auto-launcher via Task Scheduler: {}, attempting registry fallback", e);
+                            if let Err(reg_err) = self.set_registry_auto_start(true) {
+                                warn!(target: LOG_TARGET_APP_LOGIC, "Failed registry fallback for auto-launcher: {}", reg_err);
+                                return Err(anyhow!("Failed to enable auto-launcher: Task Scheduler error: {}, Registry fallback error: {}", e, reg_err));
+                            }
+                        }
+                    }
                 }
                 _ => {
                     auto_launcher.enable()?;
@@ -123,9 +152,15 @@ impl AutoLauncher {
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => {
                     #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(false).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher: {}", e)
-                    });
+                    {
+                        if let Err(e) = self.toggle_windows_admin_auto_launcher(false).await {
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher via Task Scheduler: {}", e);
+                        }
+                        // Also clean up registry entry if it exists
+                        if let Err(e) = self.set_registry_auto_start(false) {
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove registry auto-start entry: {}", e);
+                        }
+                    }
                     auto_launcher.disable()?;
                 }
                 _ => {
@@ -226,13 +261,50 @@ impl AutoLauncher {
             .delay(delay_duration)?
             .build()?
             .register(
-                "Tari Universe startup",
+                TASK_NAME,
                 TaskCreationFlags::CreateOrUpdate as i32,
             )?;
 
         info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup created");
 
         Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn set_registry_auto_start(&self, enable: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let app_exe = current_exe()?;
+        let app_exe = canonicalize(&app_exe)?;
+        let app_path = app_exe
+            .as_os_str()
+            .to_str()
+            .ok_or("Failed to convert path to string")?;
+
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        let (run_key, _) = hkcu.create_subkey(REGISTRY_KEY_PATH)?;
+
+        if enable {
+            info!(target: LOG_TARGET_APP_LOGIC, "Adding Tari Universe to Windows registry auto-start: {}", app_path);
+            run_key.set_value(APP_REGISTRY_VALUE_NAME, &app_path)?;
+            info!(target: LOG_TARGET_APP_LOGIC, "Registry auto-start entry created successfully");
+        } else {
+            info!(target: LOG_TARGET_APP_LOGIC, "Removing Tari Universe from Windows registry auto-start");
+            // Ignore error if value doesn't exist
+            let _ = run_key.delete_value(APP_REGISTRY_VALUE_NAME);
+            info!(target: LOG_TARGET_APP_LOGIC, "Registry auto-start entry removed");
+        }
+
+        Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    pub fn is_registry_auto_start_enabled(&self) -> bool {
+        let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+        if let Ok(run_key) = hkcu.open_subkey(REGISTRY_KEY_PATH) {
+            if let Ok(_value) = run_key.get_value::<String, _>(APP_REGISTRY_VALUE_NAME) {
+                return true;
+            }
+        }
+        false
     }
 
     pub async fn initialize_auto_launcher(
