@@ -192,16 +192,16 @@ impl AutoLauncher {
         delay_duration.minutes = Some(0);
 
         schedule_builder
-            .create_logon()
+            .create_boot()
             .author("Tari Universe")?
-            .trigger("startup_trigger", is_triggered)?
+            .trigger("boot_trigger", is_triggered)?
             .action(Action::new("startup_action", &app_path, "", ""))?
             .principal(PrincipalSettings {
                 display_name: "Tari Universe".to_string(),
                 group_id: None,
                 user_id: Some(username()),
                 id: "Tari universe principal".to_string(),
-                logon_type: LogonType::InteractiveToken,
+                logon_type: LogonType::S4U,
                 run_level: RunLevel::Highest,
             })?
             .settings(Settings {
