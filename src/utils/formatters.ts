@@ -1,12 +1,13 @@
 import { GpuMiningAlgorithm } from '@app/types/events-payloads';
 import i18n from 'i18next';
 import { TimeParts } from '@app/types/mining/schedule.ts';
+import { getHashrateUnit } from './HashrateAlgorithm';
 
 export enum FormatPreset {
     PERCENT = 'percent',
     XTM_DECIMALS = 'xtm-decimals',
     XTM_COMPACT = 'xtm-compact',
-    XTM_LONG = 'xtm-crypto',
+    XTM_LONG = 'xtm-long',
     XTM_LONG_DEC = 'xtm-long',
     DECIMAL_COMPACT = 'decimal-compact',
     COMPACT = 'compact',
@@ -126,8 +127,19 @@ interface Hashrate {
     unit: string;
 }
 
-export function formatHashrate(hashrate: number, joinUnit = true, _algo = GpuMiningAlgorithm.C29): Hashrate {
-    const unit = 'G';
+/**
+ * Format hashrate with correct units based on mining algorithm.
+ * 
+ * - RandomX algorithm → H/s (hashes per second)
+ * - C29 algorithm    → G/s (graphs per second)
+ * - macOS only supports RandomX, so unit is always H/s on macOS
+ * 
+ * @param hashrate - Hashrate value (H/s or G/s depending on algorithm)
+ * @param joinUnit - Whether to join unit with value (default: true)
+ * @param algo     - Mining algorithm (default: C29 for backward compat)
+ */
+export function formatHashrate(hashrate: number, joinUnit = true, algo: GpuMiningAlgorithm = GpuMiningAlgorithm.C29): Hashrate {
+    const unit = getHashrateUnit(algo);
     const fixed = (val: number, dec = 2) => Number(val.toFixed(val >= 100 ? 1 : dec));
     if (hashrate < 1000) {
         return {
