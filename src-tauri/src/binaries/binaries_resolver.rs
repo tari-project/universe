@@ -298,3 +298,98 @@ impl BinaryResolver {
             .get_selected_version()
     }
 }
+
+    /// Clean up old binary versions, keeping only the current version.
+    /// This should be called after a successful update to free disk space.
+    pub async fn cleanup_old_binaries(&self, binary_version_path: &PathBuf) -> Result<(), Error> {
+        let binary_dir = binary_version_path.parent().ok_or_else(|| {
+            anyhow!("Binary version path has no parent directory")
+        })?;
+
+        if !binary_dir.exists() {
+            debug!(target: LOG_TARGET_APP_LOGIC, "Binary directory does not exist, nothing to clean up");
+            return Ok(());
+        }
+
+        let current_version_folder = binary_version_path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(|| anyhow!("Cannot extract current version folder name"))?;
+
+        let mut entries = tokio::fs::read_dir(binary_dir).await.map_err(|e| {
+            anyhow!("Failed to read binary directory: {}", e)
+        })?;
+
+        let mut removed_count = 0;
+        let mut removed_size: u64 = 0;
+
+        while let Some(entry) = entries.next_entry().await.map_err(|e| {
+            anyhow!("Failed to read directory entry: {}", e)
+        })? {
+            let entry_name = entry.file_name();
+            let entry_name_str = entry_name.to_string_lossy();
+
+            // Skip the current version folder
+            if entry_name_str == current_version_folder {
+                continue;
+            }
+
+            // Only remove directories that look like version folders
+            // (start with a digit, e.g., "1.6.11", "0.39.0")
+            if !entry_name_str.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                continue;
+            }
+
+            let entry_path = entry.path();
+            if entry_path.is_dir() {
+                // Calculate size before removal
+                let size = self.calculate_dir_size(&entry_path).await;
+                match tokio::fs::remove_dir_all(&entry_path).await {
+                    Ok(()) => {
+                        debug!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "Cleaned up old binary version: {} (freed {} bytes)",
+                            entry_name_str, size
+                        );
+                        removed_count += 1;
+                        removed_size += size;
+                    }
+                    Err(e) => {
+                        debug!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "Failed to clean up old binary version {}: {}",
+                            entry_name_str, e
+                        );
+                    }
+                }
+            }
+        }
+
+        if removed_count > 0 {
+            debug!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Binary cleanup complete: removed {} old versions, freed {} bytes",
+                removed_count, removed_size
+            );
+        }
+
+        Ok(())
+    }
+
+    /// Recursively calculate the size of a directory
+    async fn calculate_dir_size(&self, path: &PathBuf) -> u64 {
+        let mut total_size: u64 = 0;
+        if let Ok(mut entries) = tokio::fs::read_dir(path).await {
+            while let Ok(Some(entry)) = entries.next_entry().await {
+                let entry_path = entry.path();
+                if let Ok(metadata) = entry.metadata().await {
+                    if metadata.is_dir() {
+                        total_size += self.calculate_dir_size(&entry_path).await;
+                    } else {
+                        total_size += metadata.len();
+                    }
+                }
+            }
+        }
+        total_size
+    }
