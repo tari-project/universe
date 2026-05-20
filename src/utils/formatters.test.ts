@@ -13,6 +13,7 @@ import {
     removeXTMCryptoDecimals,
     formatValue,
 } from './formatters';
+import { GpuMiningAlgorithm } from '@app/types/events-payloads';
 
 vi.mock('i18next', () => ({
     default: {
@@ -188,7 +189,17 @@ describe('formatters', () => {
     });
 
     describe('formatHashrate', () => {
-        it('formats small hashrates with G/s unit', () => {
+        it('formats small hashrates with G/s unit for C29', () => {
+            const result = formatHashrate(500, true, GpuMiningAlgorithm.C29);
+            expect(result).toEqual({ value: 500, unit: 'G/s' });
+        });
+
+        it('formats small hashrates with H/s unit for RandomX (macOS)', () => {
+            const result = formatHashrate(500, true, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 500, unit: 'H/s' });
+        });
+
+        it('defaults to C29 G/s when no algorithm specified', () => {
             const result = formatHashrate(500);
             expect(result).toEqual({ value: 500, unit: 'G/s' });
         });
