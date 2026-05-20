@@ -13,6 +13,7 @@ import {
     removeXTMCryptoDecimals,
     formatValue,
 } from './formatters';
+import { GpuMiningAlgorithm } from '../types/events-payloads';
 import { GpuMiningAlgorithm } from '@app/types/events-payloads';
 
 vi.mock('i18next', () => ({
