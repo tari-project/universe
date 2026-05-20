@@ -112,57 +112,6 @@ Built applications will be in `target/release/bundle/`:
 - **macOS**: `.dmg` and `.app` bundle
 
 
-## Building on Linux
-
-Official prebuilt Linux releases (`.deb`, `.AppImage`) are **not currently provided**. Linux users should build from source following the instructions below.
-
-### Prerequisites
-
-```bash
-# Ubuntu/Debian
-sudo apt update
-sudo apt install -y libwebkit2gtk-4.1-dev     build-essential     curl     wget     file     libxdo-dev     libssl-dev     libayatana-appindicator3-dev     librsvg2-dev
-
-# Fedora
-sudo dnf install -y webkit2gtk4.1-devel     openssl-devel     curl     wget     file     libxdo-devel     libappindicator-gtk3-devel     librsvg2-devel
-
-# Arch
-sudo pacman -S --needed webkit2gtk-4.1     base-devel     curl     wget     file     openssl     libxdo     libappindicator-gtk3     librsvg
-```
-
-### Install Rust and Node.js
-
-```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source $HOME/.cargo/env
-
-# Install Node.js (via nvm)
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-source ~/.bashrc
-nvm install --lts
-```
-
-### Build from Source
-
-```bash
-# Clone the repository
-git clone https://github.com/tari-project/universe.git
-cd universe
-
-# Install frontend dependencies
-npm install
-
-# Build and run in development mode
-npm run tauri dev
-
-# Or create a production build
-npm run tauri build
-```
-
-The built binary will be available in `src-tauri/target/release/`.
-
-> **Note:** Linux builds are confirmed working in CI and by team members who use Linux daily. The official prebuilt releases were discontinued due to low Linux user base (<1%), but the application works correctly when built from source.
 
 ## Contributing
 
