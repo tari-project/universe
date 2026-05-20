@@ -1,5 +1,6 @@
 import { useConfigMiningStore, useConfigPoolsStore, useMiningMetricsStore, useMiningStore } from '@app/store';
 import { GpuMiningAlgorithm } from '@app/types/events-payloads';
+import { HashrateAlgorithm } from '@app/utils';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import MinerTile from './Miner.tsx';
 import { useEffect, useRef } from 'react';
@@ -32,7 +33,7 @@ export default function CPUTile() {
             isMining={is_mining}
             isMiningInitiated={miningInitiated}
             hashRate={hash_rate}
-            algo={GpuMiningAlgorithm.RandomX}
+            algo={HashrateAlgorithm.RandomX}
             isPoolEnabled={isCpuPoolEnabled}
             poolStats={statsRef.current}
             rewardThreshold={statsRef.current?.min_payout || 2000000} // 2.0 XTM in micro units
