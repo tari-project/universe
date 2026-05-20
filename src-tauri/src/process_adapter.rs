@@ -99,14 +99,33 @@ pub(crate) trait ProcessAdapter {
         None
     }
 
-    async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
-        let binary_name = OsStr::new(self.name());
-        if let Some(process) = Self::find_process_pid_by_name(binary_name) {
-            let parsed_id =
-                i32::try_from(process).expect("Failed to parse process ID from u32 to i32");
-            warn!(target: LOG_TARGET_APP_LOGIC, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
-            kill_process(parsed_id).await?;
+    /// Find a process by name but only return it if it was spawned from the
+    /// given base folder (i.e. its working directory or cmd matches our install path).
+    /// This prevents killing independently-spawned xmrig instances.
+    fn find_process_pid_by_name_and_path(binary_name: &OsStr, base_folder: &Path) -> Option<u32> {
+        let mut sys = System::new_all();
+        sys.refresh_all();
+
+        for (pid, process) in sys.processes() {
+            if process.name() == binary_name {
+                // Check if the process's executable path is within our base folder.
+                // TU-spawned processes will have their binary under the TU data directory.
+                if let Some(exe_path) = process.exe() {
+                    // If the executable path contains the base folder, it's our process
+                    if exe_path.starts_with(base_folder) {
+                        return Some(pid.as_u32());
+                    }
+                }
+            }
         }
+        None
+    }
+
+    async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
+        // NOTE: We no longer kill processes by name alone, as this would
+        // terminate independently-spawned xmrig instances (see #3204).
+        // Instead, we rely on the PID file to identify our own processes.
+        // The kill_previous_instances method handles cleanup using the PID file.
         Ok(())
     }
 
