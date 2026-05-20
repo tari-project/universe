@@ -88,8 +88,8 @@ pub(crate) trait ProcessAdapter {
     }
 
     fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
-        let mut sys = System::new_all();
-        sys.refresh_all();
+        let mut sys = System::new();
+        sys.refresh_processes();
 
         for (pid, process) in sys.processes() {
             if process.name() == binary_name {
@@ -103,8 +103,8 @@ pub(crate) trait ProcessAdapter {
     /// given base folder (i.e. its working directory or cmd matches our install path).
     /// This prevents killing independently-spawned xmrig instances.
     fn find_process_pid_by_name_and_path(binary_name: &OsStr, base_folder: &Path) -> Option<u32> {
-        let mut sys = System::new_all();
-        sys.refresh_all();
+        let mut sys = System::new();
+        sys.refresh_processes();
 
         for (pid, process) in sys.processes() {
             if process.name() == binary_name {
@@ -145,8 +145,8 @@ pub(crate) trait ProcessAdapter {
                     kill_process(pid).await?;
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
-                    let pid_by_name = Self::find_process_pid_by_name(binary_name);
+                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name and path");
+                    let pid_by_name = Self::find_process_pid_by_name_and_path(binary_name, &base_folder);
                     if let Some(process) = pid_by_name {
                         let parsed_id = i32::try_from(process)
                             .expect("Failed to parse process ID from u32 to i32");
