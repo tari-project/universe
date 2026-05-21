@@ -66,7 +66,8 @@ brew install git node cmake protobuf openssl npm
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y git nodejs npm build-essential \
+sudo apt-get install -y git nodejs npm build-essential \ cmake \
+    protobuf-compiler
     libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
     patchelf libprotobuf-dev protobuf-compiler libssl-dev \
     pkg-config cmake
