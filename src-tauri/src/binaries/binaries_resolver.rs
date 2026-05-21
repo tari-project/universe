@@ -333,7 +333,7 @@ impl BinaryResolver {
             }
 
             let entry_path = entry.path();
-            if entry_path.is_dir() {
+            if entry.file_type().await.map(|ft| ft.is_dir()).unwrap_or(false) {
                 match tokio::fs::remove_dir_all(&entry_path).await {
                     Ok(()) => {
                         debug!(
