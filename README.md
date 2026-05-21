@@ -34,7 +34,16 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Linux builds are no longer published as official release artifacts. If you want to run Tari Universe on Linux, build it from source using the instructions in [Building from source](#building-from-source).
+Linux builds are no longer published as official release artifacts. If you want to run Tari Universe on Linux, build it from source using the instructions in [Building from source](#building-from-source), then install or run the local bundle you generated:
+
+```bash
+# Install the local .deb bundle
+sudo dpkg -i target/release/bundle/deb/tari-universe_*.deb
+
+# Or run the local AppImage bundle
+chmod +x target/release/bundle/appimage/Tari-Universe-*.AppImage
+./target/release/bundle/appimage/Tari-Universe-*.AppImage
+```
 
 ### Run
 
