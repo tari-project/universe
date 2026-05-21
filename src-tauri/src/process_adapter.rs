@@ -87,7 +87,7 @@ pub(crate) trait ProcessAdapter {
             .exists()
     }
 
-    fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
+    fn find_process_pid_by_name_and_path(binary_name: &OsStr) -> Option<u32> {
         let mut sys = System::new();
         sys.refresh_processes();
 
