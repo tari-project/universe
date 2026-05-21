@@ -1,5 +1,4 @@
 import { useConfigMiningStore, useConfigPoolsStore, useMiningMetricsStore, useMiningStore } from '@app/store';
-import { GpuMiningAlgorithm } from '@app/types/events-payloads';
 import { HashrateAlgorithm } from '@app/utils';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import MinerTile from './Miner.tsx';
