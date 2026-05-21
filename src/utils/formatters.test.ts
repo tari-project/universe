@@ -196,7 +196,7 @@ describe('formatters', () => {
         });
 
         it('formats small hashrates with H/s unit for RandomX (macOS)', () => {
-            const result = formatHashrate(500, true, GpuMiningAlgorithm.RandomX);
+            const result = formatHashrate(500, true, HashrateAlgorithm.RandomX);
             expect(result).toEqual({ value: 500, unit: 'H/s' });
         });
 
