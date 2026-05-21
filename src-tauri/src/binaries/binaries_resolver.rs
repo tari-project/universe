@@ -231,9 +231,10 @@ impl BinaryResolver {
             base_dir.join(binary.binary_file_name(version.clone()))
         };
 
-        if binary_path.exists() {
+        if tokio::fs::metadata(&binary_path).await.is_ok() {
             debug!(target: LOG_TARGET_APP_LOGIC, "Binary found at: {}", binary_path.display());
             return Ok(binary_path);
+        self.cleanup_old_binaries(&binary_dir).await;
         }
 
         Err(BinaryResolveError::AntivirusIssue {
