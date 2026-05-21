@@ -319,18 +319,33 @@ impl CpuManager {
     }
 
     pub async fn on_app_exit(&self) {
-        match self
-            .process_watcher
-            .adapter
-            .ensure_no_hanging_processes_are_running()
-            .await
-        {
-            Ok(_) => {
-                info!(target: LOG_TARGET_APP_LOGIC, "CpuMiner processes cleaned up successfully on app exit");
+        if let Some(app_handle) = &self.app_handle {
+            let base_path = match app_handle.path().app_local_data_dir() {
+                Ok(path) => path,
+                Err(e) => {
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up CpuMiner process on app exit: could not get data dir: {}", e);
+                    return;
+                }
+            };
+
+            match self
+                .process_watcher
+                .adapter
+                .kill_tracked_process_from_pid_file(base_path)
+                .await
+            {
+                Ok(true) => {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Tracked CpuMiner process cleaned up successfully on app exit");
+                }
+                Ok(false) => {
+                    info!(target: LOG_TARGET_APP_LOGIC, "No tracked CpuMiner process found on app exit");
+                }
+                Err(e) => {
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up tracked CpuMiner process on app exit: {}", e);
+                }
             }
-            Err(e) => {
-                error!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up CpuMiner processes on app exit: {}", e);
-            }
+        } else {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up CpuMiner process on app exit: app handle is not loaded");
         }
     }
 

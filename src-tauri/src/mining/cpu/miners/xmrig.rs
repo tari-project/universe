@@ -179,6 +179,10 @@ impl ProcessAdapter for XmrigAdapter {
     fn pid_file_name(&self) -> &str {
         "xmrig_pid"
     }
+
+    fn allow_process_name_fallback(&self) -> bool {
+        false
+    }
 }
 
 // This is a flag to indicate if the fallback to solo mining has been triggered

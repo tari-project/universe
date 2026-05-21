@@ -99,7 +99,53 @@ pub(crate) trait ProcessAdapter {
         None
     }
 
+    fn allow_process_name_fallback(&self) -> bool {
+        true
+    }
+
+    async fn kill_tracked_process_from_pid_file(
+        &self,
+        base_folder: PathBuf,
+    ) -> Result<bool, Error> {
+        let pid_file_path = base_folder.join(self.pid_file_name());
+
+        match fs::read_to_string(&pid_file_path) {
+            Ok(pid) => {
+                let pid = match pid.trim().parse::<i32>() {
+                    Ok(pid) => pid,
+                    Err(_) => {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "{} pid file is not a valid integer: {}", self.name(), pid);
+                        if let Err(error) = fs::remove_file(&pid_file_path) {
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Could not clear invalid {} pid file: {:?}", self.name(), error);
+                        }
+                        return Ok(false);
+                    }
+                };
+
+                warn!(target: LOG_TARGET_APP_LOGIC, "Killing tracked {} process with PID {}", self.name(), pid);
+                kill_process(pid).await?;
+
+                if let Err(error) = fs::remove_file(&pid_file_path) {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Could not clear {}'s pid file after killing tracked process: {:?}", self.name(), error);
+                }
+
+                Ok(true)
+            }
+            Err(e) => {
+                if let Ok(true) = pid_file_path.try_exists() {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "{} pid file exists, but the error occurred while reading it: {}", self.name(), e);
+                }
+                Ok(false)
+            }
+        }
+    }
+
     async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
+        if !self.allow_process_name_fallback() {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Process-name fallback is disabled for {}; skipping process-name cleanup", self.name());
+            return Ok(());
+        }
+
         let binary_name = OsStr::new(self.name());
         if let Some(process) = Self::find_process_pid_by_name(binary_name) {
             let parsed_id =
@@ -126,14 +172,18 @@ pub(crate) trait ProcessAdapter {
                     kill_process(pid).await?;
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
-                    let pid_by_name = Self::find_process_pid_by_name(binary_name);
-                    if let Some(process) = pid_by_name {
-                        let parsed_id = i32::try_from(process)
-                            .expect("Failed to parse process ID from u32 to i32");
-                        kill_process(parsed_id).await?;
+                    if self.allow_process_name_fallback() {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
+                        let pid_by_name = Self::find_process_pid_by_name(binary_name);
+                        if let Some(process) = pid_by_name {
+                            let parsed_id = i32::try_from(process)
+                                .expect("Failed to parse process ID from u32 to i32");
+                            kill_process(parsed_id).await?;
+                        } else {
+                            warn!(target: LOG_TARGET_APP_LOGIC, "No process found with name {}", binary_name.to_str().unwrap_or_default());
+                        }
                     } else {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "No process found with name {}", binary_name.to_str().unwrap_or_default());
+                        warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Skipping process-name cleanup for {}", self.name());
                     }
                 }
             },
