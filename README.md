@@ -1,7 +1,7 @@
 # Tari Universe v1
 
 [![Downloads](https://img.shields.io/badge/downloads-700k%2B-brightgreen)](https://www.tari.com/downloads/)
-[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://www.tari.com/downloads/)
+[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20(source)-lightgrey)](https://www.tari.com/downloads/)
 
 # Desktop Mining Application for Tari
 
@@ -11,14 +11,14 @@ Tari Universe is a desktop application that allows users to mine Tari tokens (XT
 
 The Tari Universe ecosystem includes:
 
-- **Tari Universe Desktop App** - Mining application for Windows, macOS, and Linux
+- **Tari Universe Desktop App** - Mining application with official downloads for Windows and macOS, plus source builds for Linux
 - **Tari Universe Wallet** - Mobile companion app for tracking earnings
 
 ## Installing using binaries
 
 ### Download
 
-[Download binaries](https://www.tari.com/downloads/) from [tari.com](https://www.tari.com/). This is the easiest way to run Tari Universe.
+[Download binaries](https://www.tari.com/downloads/) from [tari.com](https://www.tari.com/). This is the easiest way to run Tari Universe on officially supported desktop platforms.
 
 ### Install
 
@@ -34,18 +34,7 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Install the `.deb` package:
-
-```bash
-sudo dpkg -i tari-universe_*.deb
-```
-
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
+Linux builds are no longer published as official release artifacts. If you want to run Tari Universe on Linux, build it from source using the instructions in [Building from source](#building-from-source).
 
 ### Run
 
@@ -107,7 +96,7 @@ npm run tauri build
 
 Built applications will be in `target/release/bundle/`:
 
-- **Linux**: `.deb` and `.AppImage` files
+- **Linux**: local `.deb` and `.AppImage` bundles when building on Linux; these are build outputs, not official release downloads
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
 
