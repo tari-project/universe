@@ -7,3 +7,4 @@ export * from './truncateString.ts';
 export const defaultHeaders = {
     'X-Requested-With': `TariUniverse/${import.meta.env.VITE_TARI_UNIVERSE_VERSION || 'unknown'}`,
 };
+export * from './HashrateAlgorithm.ts';
