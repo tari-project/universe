@@ -55,7 +55,7 @@ export function getHashrateUnit(algorithm: string): HashrateUnit {
   const normalizedAlgo = algorithm.toLowerCase().replace(/[-_]/g, '');
   
   for (const [key, unit] of Object.entries(ALGORITHM_UNITS)) {
-    if (normalizedAlgo.includes(key.toLowerCase())) {
+    if (normalizedAlgo.includes(key)) {
       return unit;
     }
   }
