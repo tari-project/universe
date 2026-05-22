@@ -363,3 +363,10 @@ describe('formatters', () => {
         });
     });
 });
+
+    test('formats large hashrates with correct unit prefix', () => {
+        // 1.5 GH/s = 1,500,000,000 H/s
+        const result = formatHashrate(1500000000, true, GpuMiningAlgorithm.RandomX);
+        expect(result.unit).toBe('H/s');  // RandomX uses H/s
+        expect(result.value).toBeGreaterThan(1);  // Should be ~1.5
+    });
