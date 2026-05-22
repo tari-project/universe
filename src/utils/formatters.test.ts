@@ -12,7 +12,6 @@ import {
     removeDecimals,
     removeXTMCryptoDecimals,
     formatValue,
-,
     formatHashrate,
 } from './formatters';
 import {
