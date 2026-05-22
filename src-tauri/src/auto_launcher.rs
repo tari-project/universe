@@ -50,6 +50,21 @@ pub struct AutoLauncher {
 }
 
 impl AutoLauncher {
+    #[cfg(target_os = "windows")]
+    fn resolve_windows_task_user_id() -> String {
+        let raw_username = username();
+        if raw_username.contains('\\') || raw_username.contains('@') {
+            return raw_username;
+        }
+
+        let domain = std::env::var("USERDOMAIN").unwrap_or_default();
+        if domain.is_empty() {
+            raw_username
+        } else {
+            format!("{domain}\\{raw_username}")
+        }
+    }
+
     fn new() -> Self {
         Self {
             auto_launcher: RwLock::new(None),
@@ -110,9 +125,9 @@ impl AutoLauncher {
                     auto_launcher.enable()?;
                     // To startup application as admin on windows, we need to create a task scheduler
                     #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(true).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to enable admin auto-launcher: {}", e)
-                    });
+                    self.toggle_windows_admin_auto_launcher(true)
+                        .await
+                        .map_err(|e| anyhow!("Failed to enable admin auto-launcher: {}", e))?;
                 }
                 _ => {
                     auto_launcher.enable()?;
@@ -123,9 +138,9 @@ impl AutoLauncher {
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => {
                     #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(false).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher: {}", e)
-                    });
+                    self.toggle_windows_admin_auto_launcher(false)
+                        .await
+                        .map_err(|e| anyhow!("Failed to disable admin auto-launcher: {}", e))?;
                     auto_launcher.disable()?;
                 }
                 _ => {
@@ -182,7 +197,8 @@ impl AutoLauncher {
             .to_string();
 
         info!(target: LOG_TARGET_APP_LOGIC, "Creating task scheduler for admin startup with app_path: {}", app_path);
-        info!(target: LOG_TARGET_APP_LOGIC, "UserName: {}", username());
+        let task_user_id = AutoLauncher::resolve_windows_task_user_id();
+        info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler user id: {}", task_user_id);
 
         let mut retry_interval = Duration::new();
         retry_interval.minutes = Some(1);
@@ -199,7 +215,7 @@ impl AutoLauncher {
             .principal(PrincipalSettings {
                 display_name: "Tari Universe".to_string(),
                 group_id: None,
-                user_id: Some(username()),
+                user_id: Some(task_user_id),
                 id: "Tari universe principal".to_string(),
                 logon_type: LogonType::InteractiveToken,
                 run_level: RunLevel::Highest,
