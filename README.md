@@ -65,8 +65,10 @@ brew install git node cmake protobuf openssl npm
 #### Ubuntu/Debian
 
 ```bash
+
+**For other distributions**, install the equivalent packages (`git`, `nodejs`, `npm`, `cmake`, `protobuf-compiler`) using your package manager.
 sudo apt-get update
-sudo apt-get install -y git nodejs npm build-essential \ cmake \
+sudo apt-get install -y git nodejs npm build-essential \ cmake protobuf-compiler \
     protobuf-compiler
     libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
     patchelf libprotobuf-dev protobuf-compiler libssl-dev \
