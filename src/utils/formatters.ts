@@ -1,4 +1,3 @@
-import { HashrateAlgorithm } from '@app/types/events-payloads';
 import i18n from 'i18next';
 import { TimeParts } from '@app/types/mining/schedule.ts';
 import { getHashrateUnit, HashrateAlgorithm } from './HashrateAlgorithm';
