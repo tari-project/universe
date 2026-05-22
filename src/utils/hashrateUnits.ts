@@ -127,7 +127,7 @@ export function validateHashrateUnit(
   displayed: string,
   expected: HashrateUnit
 ): boolean {
-  return displayed.trim().endsWith(expected);
+  return displayed.trim() === expected;
 }
 
 export default {
