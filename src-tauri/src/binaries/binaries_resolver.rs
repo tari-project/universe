@@ -262,7 +262,9 @@ impl BinaryResolver {
             .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
 
         if manager.check_if_files_for_version_exist() {
-            // If files already exist, we can skip the download
+            let _unused = manager.cleanup_old_versions().await.inspect_err(|e| {
+                log::warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old versions for {}: {e}", binary.name());
+            });
             return Ok(());
         }
 
@@ -277,6 +279,9 @@ impl BinaryResolver {
             let _lock = TARI_SUITE_DOWNLOAD_LOCK.lock().await;
 
             if manager.check_if_files_for_version_exist() {
+                let _unused = manager.cleanup_old_versions().await.inspect_err(|e| {
+                    log::warn!(target: LOG_TARGET_APP_LOGIC, "Failed to cleanup old versions for {}: {e}", binary.name());
+                });
                 return Ok(());
             }
             manager
@@ -288,6 +293,13 @@ impl BinaryResolver {
                 .await?;
         }
 
+        Ok(())
+    }
+
+    pub async fn cleanup_old_versions(&self) -> Result<(), Error> {
+        for (_binary, manager) in &self.managers {
+            manager.cleanup_old_versions().await?;
+        }
         Ok(())
     }
 

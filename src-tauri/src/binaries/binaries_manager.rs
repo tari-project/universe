@@ -441,11 +441,41 @@ impl BinaryManager {
             .await?;
         }
 
+        self.cleanup_old_versions().await?;
+
         Ok(())
     }
 
     pub fn get_selected_version(&self) -> String {
         self.selected_version.clone()
+    }
+
+    pub fn get_binary_folder(&self) -> Result<PathBuf, Error> {
+        self.adapter.get_binary_folder()
+    }
+
+    pub async fn cleanup_old_versions(&self) -> Result<(), Error> {
+        let binary_folder = self.adapter.get_binary_folder()?;
+        if !binary_folder.exists() {
+            return Ok(());
+        }
+
+        let entries = std::fs::read_dir(&binary_folder)?;
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                if let Some(dir_name) = path.file_name().and_then(|n| n.to_str()) {
+                    if dir_name != self.selected_version {
+                        info!(target: LOG_TARGET_APP_LOGIC, "Cleaning up old binary version: {path:?}");
+                        if let Err(e) = std::fs::remove_dir_all(&path) {
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove old version directory {path:?}: {e}");
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub fn get_base_dir(&self) -> Result<PathBuf, Error> {
