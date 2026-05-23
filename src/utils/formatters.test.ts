@@ -13,6 +13,7 @@ import {
     removeXTMCryptoDecimals,
     formatValue,
 } from './formatters';
+import { MiningAlgorithm } from '@app/types/events-payloads';
 
 vi.mock('i18next', () => ({
     default: {
@@ -193,9 +194,19 @@ describe('formatters', () => {
             expect(result).toEqual({ value: 500, unit: 'G/s' });
         });
 
+        it('formats RandomX hashrates with H/s unit', () => {
+            const result = formatHashrate(500, true, MiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 500, unit: 'H/s' });
+        });
+
         it('formats hashrates >= 1000 with kG/s', () => {
             const result = formatHashrate(1500);
             expect(result).toEqual({ value: 1.5, unit: ' kG/s' });
+        });
+
+        it('formats scaled RandomX hashrates with H/s suffixes', () => {
+            const result = formatHashrate(1500, true, MiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 1.5, unit: ' kH/s' });
         });
 
         it('formats hashrates >= 1000000 with MG/s', () => {
