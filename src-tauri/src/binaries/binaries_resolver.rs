@@ -23,7 +23,7 @@ use crate::LOG_TARGET_APP_LOGIC;
 use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use anyhow::{Error, anyhow};
 use async_trait::async_trait;
-use log::debug;
+use log::{debug, warn};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -263,6 +263,7 @@ impl BinaryResolver {
 
         if manager.check_if_files_for_version_exist() {
             // If files already exist, we can skip the download
+            self.cleanup_old_binary_versions_for_manager(manager).await;
             return Ok(());
         }
 
@@ -277,6 +278,7 @@ impl BinaryResolver {
             let _lock = TARI_SUITE_DOWNLOAD_LOCK.lock().await;
 
             if manager.check_if_files_for_version_exist() {
+                self.cleanup_old_binary_versions_for_manager(manager).await;
                 return Ok(());
             }
             manager
@@ -288,6 +290,8 @@ impl BinaryResolver {
                 .await?;
         }
 
+        self.cleanup_old_binary_versions_for_manager(manager).await;
+
         Ok(())
     }
 
@@ -296,5 +300,55 @@ impl BinaryResolver {
             .get(&binary)
             .unwrap_or_else(|| panic!("Couldn't find manager for binary: {}", binary.name()))
             .get_selected_version()
+    }
+
+    async fn cleanup_old_binary_versions_for_manager(&self, manager: &BinaryManager) {
+        let retained_versions = self.retained_versions_for_binary_folder(manager);
+
+        match manager.cleanup_old_binary_versions(retained_versions).await {
+            Ok(removed_paths) => {
+                if !removed_paths.is_empty() {
+                    debug!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "Removed {} old binary version folder(s)",
+                        removed_paths.len()
+                    );
+                }
+            }
+            Err(error) => {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Old binary version cleanup failed. Error: {error:?}"
+                );
+            }
+        }
+    }
+
+    fn retained_versions_for_binary_folder(&self, manager: &BinaryManager) -> Vec<String> {
+        let binary_folder = match manager.get_binary_folder() {
+            Ok(path) => path,
+            Err(error) => {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Unable to get binary folder for retained version lookup. Error: {error:?}"
+                );
+                return vec![manager.get_selected_version()];
+            }
+        };
+
+        self.managers
+            .values()
+            .filter_map(|candidate| match candidate.get_binary_folder() {
+                Ok(folder) if folder == binary_folder => Some(candidate.get_selected_version()),
+                Ok(_) => None,
+                Err(error) => {
+                    warn!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "Unable to inspect binary folder while collecting retained versions. Error: {error:?}"
+                    );
+                    None
+                }
+            })
+            .collect()
     }
 }
