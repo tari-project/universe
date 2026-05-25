@@ -233,6 +233,12 @@ describe('formatters', () => {
             expect(result).toEqual({ value: 0, unit: 'G/s' });
         });
 
+        it('formats CPU RandomX hashrates with H/s units', () => {
+            expect(formatHashrate(500, true, 'H')).toEqual({ value: 500, unit: 'H/s' });
+            expect(formatHashrate(1500, true, 'H')).toEqual({ value: 1.5, unit: ' kH/s' });
+            expect(formatHashrate(1_500_000, true, 'H')).toEqual({ value: 1.5, unit: ' MH/s' });
+        });
+
         it('rounds large values to 1 decimal', () => {
             const result = formatHashrate(150);
             expect(result).toEqual({ value: 150, unit: 'G/s' });
