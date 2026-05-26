@@ -129,39 +129,40 @@ export type HashrateUnit = 'H' | 'G';
 
 export function formatHashrate(hashrate: number, joinUnit = true, unit: HashrateUnit = 'G'): Hashrate {
     const fixed = (val: number, dec = 2) => Number(val.toFixed(val >= 100 ? 1 : dec));
+    const formatUnit = (prefix = '') => (joinUnit ? `${prefix}${unit}/s` : prefix);
     if (hashrate < 1000) {
         return {
             value: fixed(hashrate, 1),
-            unit: `${unit}/s`,
+            unit: formatUnit(),
         };
     }
     if (hashrate < 1000000) {
         return {
             value: fixed(hashrate / 1000),
-            unit: joinUnit ? ` k${unit}/s` : 'k',
+            unit: formatUnit('k'),
         };
     }
     if (hashrate < 1000000000) {
         return {
             value: fixed(hashrate / 1000000),
-            unit: joinUnit ? ` M${unit}/s` : 'M',
+            unit: formatUnit('M'),
         };
     }
     if (hashrate < 1000000000000) {
         return {
             value: fixed(hashrate / 1000000000),
-            unit: joinUnit ? ` G${unit}/s` : 'G',
+            unit: formatUnit('G'),
         };
     }
     if (hashrate < 1000000000000000) {
         return {
             value: fixed(hashrate / 1000000000000),
-            unit: joinUnit ? ` T${unit}/s` : 'T',
+            unit: formatUnit('T'),
         };
     } else {
         return {
             value: fixed(hashrate / 1000000000000000),
-            unit: joinUnit ? ` P${unit}/s` : 'P',
+            unit: formatUnit('P'),
         };
     }
 }

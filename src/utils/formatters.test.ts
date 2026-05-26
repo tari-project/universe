@@ -195,27 +195,27 @@ describe('formatters', () => {
 
         it('formats hashrates >= 1000 with kG/s', () => {
             const result = formatHashrate(1500);
-            expect(result).toEqual({ value: 1.5, unit: ' kG/s' });
+            expect(result).toEqual({ value: 1.5, unit: 'kG/s' });
         });
 
         it('formats hashrates >= 1000000 with MG/s', () => {
             const result = formatHashrate(1_500_000);
-            expect(result).toEqual({ value: 1.5, unit: ' MG/s' });
+            expect(result).toEqual({ value: 1.5, unit: 'MG/s' });
         });
 
         it('formats hashrates >= 1000000000 with GG/s', () => {
             const result = formatHashrate(1_500_000_000);
-            expect(result).toEqual({ value: 1.5, unit: ' GG/s' });
+            expect(result).toEqual({ value: 1.5, unit: 'GG/s' });
         });
 
         it('formats hashrates >= 1000000000000 with TG/s', () => {
             const result = formatHashrate(1_500_000_000_000);
-            expect(result).toEqual({ value: 1.5, unit: ' TG/s' });
+            expect(result).toEqual({ value: 1.5, unit: 'TG/s' });
         });
 
         it('formats hashrates >= 1000000000000000 with PG/s', () => {
             const result = formatHashrate(1_500_000_000_000_000);
-            expect(result).toEqual({ value: 1.5, unit: ' PG/s' });
+            expect(result).toEqual({ value: 1.5, unit: 'PG/s' });
         });
 
         it('returns short unit when joinUnit is false', () => {
@@ -225,7 +225,7 @@ describe('formatters', () => {
 
         it('handles edge case at exactly 1000', () => {
             const result = formatHashrate(1000);
-            expect(result).toEqual({ value: 1, unit: ' kG/s' });
+            expect(result).toEqual({ value: 1, unit: 'kG/s' });
         });
 
         it('handles zero hashrate', () => {
@@ -235,8 +235,13 @@ describe('formatters', () => {
 
         it('formats CPU RandomX hashrates with H/s units', () => {
             expect(formatHashrate(500, true, 'H')).toEqual({ value: 500, unit: 'H/s' });
-            expect(formatHashrate(1500, true, 'H')).toEqual({ value: 1.5, unit: ' kH/s' });
-            expect(formatHashrate(1_500_000, true, 'H')).toEqual({ value: 1.5, unit: ' MH/s' });
+            expect(formatHashrate(1500, true, 'H')).toEqual({ value: 1.5, unit: 'kH/s' });
+            expect(formatHashrate(1_500_000, true, 'H')).toEqual({ value: 1.5, unit: 'MH/s' });
+        });
+
+        it('respects joinUnit for hashrates under 1000', () => {
+            const result = formatHashrate(500, false);
+            expect(result).toEqual({ value: 500, unit: '' });
         });
 
         it('rounds large values to 1 decimal', () => {
