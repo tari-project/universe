@@ -263,6 +263,9 @@ impl BinaryResolver {
 
         if manager.check_if_files_for_version_exist() {
             // If files already exist, we can skip the download
+            manager.cleanup_old_versions().await.unwrap_or_else(|e| {
+                log::warn!(target: crate::LOG_TARGET_APP_LOGIC, "Failed to clean up old versions: {}", e);
+            });
             return Ok(());
         }
 
@@ -277,6 +280,9 @@ impl BinaryResolver {
             let _lock = TARI_SUITE_DOWNLOAD_LOCK.lock().await;
 
             if manager.check_if_files_for_version_exist() {
+                manager.cleanup_old_versions().await.unwrap_or_else(|e| {
+                    log::warn!(target: crate::LOG_TARGET_APP_LOGIC, "Failed to clean up old versions: {}", e);
+                });
                 return Ok(());
             }
             manager
@@ -287,6 +293,10 @@ impl BinaryResolver {
                 .download_version_with_retries(progress_channel.clone())
                 .await?;
         }
+
+        manager.cleanup_old_versions().await.unwrap_or_else(|e| {
+            log::warn!(target: crate::LOG_TARGET_APP_LOGIC, "Failed to clean up old versions: {}", e);
+        });
 
         Ok(())
     }

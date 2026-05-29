@@ -483,6 +483,34 @@ impl BinaryManager {
         info!(target: LOG_TARGET_APP_LOGIC, "Added Windows Defender exclusions for binary: {} at path: {}", self.binary_name, binary_path.display());
         Ok(())
     }
+
+    /// Cleans up old binary version folders, retaining only the currently selected version.
+    pub async fn cleanup_old_versions(&self) -> Result<(), Error> {
+        let binary_folder = self.adapter.get_binary_folder()?;
+        if !binary_folder.exists() {
+            return Ok(());
+        }
+
+        let current_version = &self.selected_version;
+        
+        let mut entries = tokio::fs::read_dir(&binary_folder).await?;
+        while let Ok(Some(entry)) = entries.next_entry().await {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            if let Some(folder_name) = path.file_name().and_then(|n| n.to_str()) {
+                if folder_name != current_version {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Cleaning up old binary version directory: {}", path.display());
+                    if let Err(e) = tokio::fs::remove_dir_all(&path).await {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove old binary version directory {}: {}", path.display(), e);
+                    }
+                }
+            }
+        }
+        
+        Ok(())
+    }
 }
 
 fn check_binary_exists(path: &std::path::Path) -> bool {
