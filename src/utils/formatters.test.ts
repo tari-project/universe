@@ -237,6 +237,23 @@ describe('formatters', () => {
             const result = formatHashrate(150);
             expect(result).toEqual({ value: 150, unit: 'G/s' });
         });
+
+        describe('when algorithm is RandomX', () => {
+            it('formats small hashrates with H/s unit', () => {
+                const result = formatHashrate(500, true, 'RandomX');
+                expect(result).toEqual({ value: 500, unit: 'H/s' });
+            });
+
+            it('formats hashrates >= 1000 with kH/s', () => {
+                const result = formatHashrate(1500, true, 'RandomX');
+                expect(result).toEqual({ value: 1.5, unit: ' kH/s' });
+            });
+
+            it('formats hashrates >= 1000000 with MH/s', () => {
+                const result = formatHashrate(1_500_000, true, 'RandomX');
+                expect(result).toEqual({ value: 1.5, unit: ' MH/s' });
+            });
+        });
     });
 
     describe('formatCountdown', () => {

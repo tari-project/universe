@@ -39,6 +39,7 @@ export default function CPUTile() {
             progressDiff={rewardsRef.current?.rewardValue}
             unpaidFMT={rewardsRef.current?.unpaidFMT || '-'}
             minerModuleState={cpuMiningModuleState}
+            algo="RandomX"
         />
     );
 }
