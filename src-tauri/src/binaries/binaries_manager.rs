@@ -487,23 +487,27 @@ impl BinaryManager {
     /// Cleans up old binary version folders, retaining only the currently selected version.
     pub async fn cleanup_old_versions(&self) -> Result<(), Error> {
         let binary_folder = self.adapter.get_binary_folder()?;
-        if !binary_folder.exists() {
+        if !tokio::fs::try_exists(&binary_folder).await.unwrap_or(false) {
             return Ok(());
         }
 
         let current_version = &self.selected_version;
         
         let mut entries = tokio::fs::read_dir(&binary_folder).await?;
-        while let Ok(Some(entry)) = entries.next_entry().await {
-            let path = entry.path();
-            if !path.is_dir() {
+        while let Some(entry) = entries.next_entry().await? {
+            let file_type = entry.file_type().await?;
+            if !file_type.is_dir() {
                 continue;
             }
-            if let Some(folder_name) = path.file_name().and_then(|n| n.to_str()) {
+            
+            if let Some(folder_name) = entry.file_name().to_str() {
                 if folder_name != current_version {
+                    let path = entry.path();
                     info!(target: LOG_TARGET_APP_LOGIC, "Cleaning up old binary version directory: {}", path.display());
                     if let Err(e) = tokio::fs::remove_dir_all(&path).await {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove old binary version directory {}: {}", path.display(), e);
+                        if e.kind() != std::io::ErrorKind::NotFound {
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove old binary version directory {}: {}", path.display(), e);
+                        }
                     }
                 }
             }
