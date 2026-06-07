@@ -29,7 +29,7 @@ use std::ffi::OsStr;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-use sysinfo::System;
+use sysinfo::{ProcessRefreshKind, ProcessesToUpdate, System, UpdateKind};
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
@@ -87,26 +87,60 @@ pub(crate) trait ProcessAdapter {
             .exists()
     }
 
-    fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
-        let mut sys = System::new_all();
-        sys.refresh_all();
+    fn pid_matches_binary_name(pid: u32, expected_name: &OsStr) -> bool {
+        let sys_pid = sysinfo::Pid::from_u32(pid);
+        let mut sys = System::new();
+        sys.refresh_processes_specifics(
+            ProcessesToUpdate::Some(&[sys_pid]),
+            ProcessRefreshKind::new().with_exe(UpdateKind::Always),
+        );
 
-        for (pid, process) in sys.processes() {
-            if process.name() == binary_name {
-                return Some(pid.as_u32());
+        let Some(process) = sys.process(sys_pid) else {
+            return false;
+        };
+
+        let actual_name = process.name();
+        if expected_name == actual_name {
+            return true;
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            const TASK_COMM_LEN_VISIBLE: usize = 15;
+            let expected_bytes = expected_name.as_encoded_bytes();
+            if expected_bytes.len() > TASK_COMM_LEN_VISIBLE
+                && actual_name.as_bytes() == &expected_bytes[..TASK_COMM_LEN_VISIBLE]
+            {
+                return true;
             }
         }
-        None
+
+        process
+            .exe()
+            .and_then(|path| path.file_name())
+            .map(|file_name| {
+                file_name == expected_name || {
+                    #[cfg(target_os = "windows")]
+                    {
+                        let file_name = file_name.to_string_lossy();
+                        let expected_name = expected_name.to_string_lossy();
+                        file_name.eq_ignore_ascii_case(&format!("{expected_name}.exe"))
+                    }
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        false
+                    }
+                }
+            })
+            .unwrap_or(false)
     }
 
     async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
-        let binary_name = OsStr::new(self.name());
-        if let Some(process) = Self::find_process_pid_by_name(binary_name) {
-            let parsed_id =
-                i32::try_from(process).expect("Failed to parse process ID from u32 to i32");
-            warn!(target: LOG_TARGET_APP_LOGIC, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
-            kill_process(parsed_id).await?;
-        }
+        info!(
+            target: LOG_TARGET_APP_LOGIC,
+            "{}::ensure_no_hanging_processes_are_running: skipping process-name cleanup; cleanup must use a tracked PID file",
+            self.name()
+        );
         Ok(())
     }
 
@@ -119,22 +153,28 @@ pub(crate) trait ProcessAdapter {
         let binary_name = binary_path
             .file_name()
             .expect("binary path must have a file name");
-        match fs::read_to_string(base_folder.join(self.pid_file_name())) {
-            Ok(pid) => match pid.trim().parse::<i32>() {
+        let pid_file_path = base_folder.join(self.pid_file_name());
+        match fs::read_to_string(&pid_file_path) {
+            Ok(pid) => match pid.trim().parse::<u32>() {
                 Ok(pid) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
-                    kill_process(pid).await?;
+                    if Self::pid_matches_binary_name(pid, binary_name) {
+                        match i32::try_from(pid) {
+                            Ok(parsed_id) => {
+                                warn!(target: LOG_TARGET_APP_LOGIC, "{} process did not shut down cleanly: PID {} from {} still matches {:?}; terminating", self.name(), pid, self.pid_file_name(), binary_name);
+                                kill_process(parsed_id).await?;
+                            }
+                            Err(_) => {
+                                error!(target: LOG_TARGET_APP_LOGIC, "Failed to parse process ID {} from u32 to i32", pid);
+                            }
+                        }
+                    } else {
+                        info!(target: LOG_TARGET_APP_LOGIC, "{} pid file points at PID {}, but no matching {:?} process is running; removing stale pid file", self.name(), pid, binary_name);
+                    }
+                    let _ = fs::remove_file(&pid_file_path);
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
-                    let pid_by_name = Self::find_process_pid_by_name(binary_name);
-                    if let Some(process) = pid_by_name {
-                        let parsed_id = i32::try_from(process)
-                            .expect("Failed to parse process ID from u32 to i32");
-                        kill_process(parsed_id).await?;
-                    } else {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "No process found with name {}", binary_name.to_str().unwrap_or_default());
-                    }
+                    warn!(target: LOG_TARGET_APP_LOGIC, "{} pid file at {:?} is not a valid integer ({:?}); removing it without scanning by process name", self.name(), pid_file_path, pid);
+                    let _ = fs::remove_file(&pid_file_path);
                 }
             },
             Err(e) => {
@@ -147,6 +187,125 @@ pub(crate) trait ProcessAdapter {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::process;
+
+    #[derive(Clone)]
+    struct TestAdapter;
+
+    #[derive(Clone)]
+    struct TestStatusMonitor;
+
+    struct TestProcessInstance;
+
+    #[async_trait]
+    impl StatusMonitor for TestStatusMonitor {
+        async fn check_health(
+            &self,
+            _uptime: Duration,
+            _timeout_duration: Duration,
+        ) -> HealthStatus {
+            HealthStatus::Healthy
+        }
+    }
+
+    #[async_trait]
+    impl ProcessInstanceTrait for TestProcessInstance {
+        fn ping(&self) -> bool {
+            false
+        }
+
+        async fn start(&mut self, _task_tracker: TaskTracker) -> Result<(), anyhow::Error> {
+            Ok(())
+        }
+
+        async fn stop(&mut self) -> Result<i32, anyhow::Error> {
+            Ok(0)
+        }
+
+        fn is_shutdown_triggered(&self) -> bool {
+            false
+        }
+
+        async fn wait(&mut self) -> Result<i32, anyhow::Error> {
+            Ok(0)
+        }
+
+        async fn start_and_wait_for_output(
+            &mut self,
+            _task_tracker: TaskTracker,
+        ) -> Result<(i32, Vec<String>, Vec<String>), anyhow::Error> {
+            Ok((0, vec![], vec![]))
+        }
+    }
+
+    impl ProcessAdapter for TestAdapter {
+        type StatusMonitor = TestStatusMonitor;
+        type ProcessInstance = TestProcessInstance;
+
+        fn spawn_inner(
+            &self,
+            _base_folder: PathBuf,
+            _config_folder: PathBuf,
+            _log_folder: PathBuf,
+            _binary_version_path: PathBuf,
+            _is_first_start: bool,
+        ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
+            Ok((TestProcessInstance, TestStatusMonitor))
+        }
+
+        fn name(&self) -> &str {
+            "test-process"
+        }
+
+        fn pid_file_name(&self) -> &str {
+            "test-process.pid"
+        }
+    }
+
+    #[tokio::test]
+    async fn invalid_pid_file_is_removed_without_name_based_kill() {
+        let temp_dir = tempfile::tempdir().expect("temp dir");
+        let pid_file = temp_dir.path().join("test-process.pid");
+        fs::write(&pid_file, "not-a-pid").expect("write pid file");
+
+        TestAdapter
+            .kill_previous_instances(
+                temp_dir.path().to_path_buf(),
+                Path::new("/bin/test-process"),
+            )
+            .await
+            .expect("invalid pid cleanup should not fail");
+
+        assert!(
+            !pid_file.exists(),
+            "invalid pid files are stale and should be removed"
+        );
+    }
+
+    #[tokio::test]
+    async fn stale_pid_file_is_removed_when_pid_is_not_matching_binary() {
+        let temp_dir = tempfile::tempdir().expect("temp dir");
+        let pid_file = temp_dir.path().join("test-process.pid");
+        fs::write(&pid_file, process::id().to_string()).expect("write pid file");
+
+        TestAdapter
+            .kill_previous_instances(
+                temp_dir.path().to_path_buf(),
+                Path::new("/bin/test-process"),
+            )
+            .await
+            .expect("stale pid cleanup should not fail");
+
+        assert!(
+            !pid_file.exists(),
+            "pid files for unrelated processes should be removed as stale"
+        );
     }
 }
 
