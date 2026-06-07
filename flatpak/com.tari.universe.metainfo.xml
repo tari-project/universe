@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.tari.universe</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <name>Tari Universe</name>
+  <summary>Mine Tari (XTM) with your CPU and GPU</summary>
+
+  <description>
+    <p>
+      Tari Universe is a desktop mining application for the Tari network. It
+      provides a one-click interface for mining Tari (XTM) using your computer's
+      CPU (via RandomX) and/or GPU, runs a Tari base node and wallet, and tracks
+      your earnings.
+    </p>
+    <p>
+      Mining and node sidecars are downloaded on first run and stored in the
+      application's sandboxed data directory.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">com.tari.universe.desktop</launchable>
+
+  <url type="homepage">https://www.tari.com/</url>
+  <url type="bugtracker">https://github.com/tari-project/universe/issues</url>
+  <url type="vcs-browser">https://github.com/tari-project/universe</url>
+
+  <developer id="com.tari">
+    <name>Tari Labs, LLC</name>
+  </developer>
+
+  <content_rating type="oars-1.1">
+    <content_attribute id="money-purchasing">moderate</content_attribute>
+  </content_rating>
+
+  <categories>
+    <category>Network</category>
+    <category>Utility</category>
+  </categories>
+
+  <releases>
+    <release version="1.6.11" date="2026-06-06"/>
+  </releases>
+</component>
