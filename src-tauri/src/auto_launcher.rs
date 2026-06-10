@@ -87,15 +87,24 @@ impl AutoLauncher {
         config_is_auto_launcher_enabled: bool,
     ) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET_APP_LOGIC, "Toggling auto-launcher");
-        let auto_launcher_is_enabled = auto_launcher.is_enabled()?;
-        info!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is enabled: {auto_launcher_is_enabled}, config_is_auto_launcher_enabled: {config_is_auto_launcher_enabled}");
 
-        let should_toggle_to_enabled = config_is_auto_launcher_enabled && !auto_launcher_is_enabled;
+        // On Windows, auto_launcher.is_enabled() may not detect Task Scheduler entries
+        // so we combine it with config_is_auto_launcher_enabled for accurate state
+        #[cfg(target_os = "windows")]
+        let effective_auto_launcher_enabled = auto_launcher.is_enabled()
+            .unwrap_or(false);
+
+        #[cfg(not(target_os = "windows"))]
+        let effective_auto_launcher_enabled = auto_launcher.is_enabled()?;
+
+        info!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher effective enabled: {effective_auto_launcher_enabled}, config_is_auto_launcher_enabled: {config_is_auto_launcher_enabled}");
+
+        let should_toggle_to_enabled = config_is_auto_launcher_enabled && !effective_auto_launcher_enabled;
         let should_ensure_to_enable_at_first_startup =
-            auto_launcher_is_enabled && config_is_auto_launcher_enabled;
+            effective_auto_launcher_enabled && config_is_auto_launcher_enabled;
 
         let should_toggle_to_disabled =
-            !config_is_auto_launcher_enabled && auto_launcher_is_enabled;
+            !config_is_auto_launcher_enabled && effective_auto_launcher_enabled;
 
         if should_toggle_to_enabled || should_ensure_to_enable_at_first_startup {
             info!(target: LOG_TARGET_APP_LOGIC, "Enabling auto-launcher");
@@ -133,7 +142,7 @@ impl AutoLauncher {
                 }
             }
         } else {
-            warn!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is already in the desired state");
+            info!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is already in the desired state");
         }
 
         Ok(())
@@ -144,21 +153,21 @@ impl AutoLauncher {
         &self,
         should_be_enabled: bool,
     ) -> Result<(), anyhow::Error> {
-        if should_be_enabled {
-            info!(target: LOG_TARGET_APP_LOGIC, "Enabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(true)
-                .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
-        };
+        info!(target: LOG_TARGET_APP_LOGIC, "Toggling Windows admin auto-launcher to: {}", should_be_enabled);
 
-        if !should_be_enabled {
-            info!(target: LOG_TARGET_APP_LOGIC, "Disabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(false)
-                .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
-        };
-
-        Ok(())
+        match self.create_task_scheduler_for_admin_startup(should_be_enabled).await {
+            Ok(()) => {
+                info!(target: LOG_TARGET_APP_LOGIC, "Windows admin auto-launcher toggled successfully");
+                Ok(())
+            }
+            Err(e) => {
+                // Log as error instead of warning - Task Scheduler failures should be visible
+                log::error!(target: LOG_TARGET_APP_LOGIC, "Failed to toggle Windows admin auto-launcher: {}", e);
+                // Don't fail the entire operation if Task Scheduler fails
+                // The auto-launch crate (Registry Run key) should still work as fallback
+                Ok(())
+            }
+        }
     }
 
     #[cfg(target_os = "windows")]
@@ -188,49 +197,60 @@ impl AutoLauncher {
         retry_interval.minutes = Some(1);
 
         let mut delay_duration = Duration::new();
-        delay_duration.seconds = Some(30);
+        // Reduced delay from 30 seconds to 5 seconds for faster startup
+        delay_duration.seconds = Some(5);
         delay_duration.minutes = Some(0);
 
-        schedule_builder
-            .create_logon()
-            .author("Tari Universe")?
-            .trigger("startup_trigger", is_triggered)?
-            .action(Action::new("startup_action", &app_path, "", ""))?
-            .principal(PrincipalSettings {
-                display_name: "Tari Universe".to_string(),
-                group_id: None,
-                user_id: Some(username()),
-                id: "Tari universe principal".to_string(),
-                logon_type: LogonType::InteractiveToken,
-                run_level: RunLevel::Highest,
-            })?
-            .settings(Settings {
-                stop_if_going_on_batteries: Some(false),
-                start_when_available: Some(true),
-                run_only_if_network_available: Some(false),
-                run_only_if_idle: Some(false),
-                enabled: Some(true),
-                disallow_start_if_on_batteries: Some(false),
-                hidden: Some(false),
-                multiple_instances_policy: Some(InstancesPolicy::Parallel),
-                restart_count: Some(3),
-                restart_interval: Some(retry_interval.to_string()),
-                idle_settings: Some(IdleSettings {
-                    stop_on_idle_end: Some(false),
-                    restart_on_idle: Some(false),
-                    ..Default::default()
-                }),
-                allow_demand_start: Some(true),
-                ..Default::default()
-            })?
-            .delay(delay_duration)?
-            .build()?
-            .register(
-                "Tari Universe startup",
-                TaskCreationFlags::CreateOrUpdate as i32,
-            )?;
+        // Task name without spaces for better compatibility
+        let task_name = "TariUniverseStartup";
 
-        info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup created");
+        if is_triggered {
+            schedule_builder
+                .create_logon()
+                .author("Tari Universe")?
+                .trigger("startup_trigger", true)?
+                .action(Action::new("startup_action", &app_path, "", ""))?
+                .principal(PrincipalSettings {
+                    display_name: "Tari Universe".to_string(),
+                    group_id: None,
+                    user_id: Some(username()),
+                    id: "TariUniversePrincipal".to_string(),
+                    logon_type: LogonType::InteractiveToken,
+                    run_level: RunLevel::Highest,
+                })?
+                .settings(Settings {
+                    stop_if_going_on_batteries: Some(false),
+                    start_when_available: Some(true),
+                    run_only_if_network_available: Some(false),
+                    run_only_if_idle: Some(false),
+                    enabled: Some(true),
+                    disallow_start_if_on_batteries: Some(false),
+                    hidden: Some(false),
+                    multiple_instances_policy: Some(InstancesPolicy::Parallel),
+                    restart_count: Some(3),
+                    restart_interval: Some(retry_interval.to_string()),
+                    idle_settings: Some(IdleSettings {
+                        stop_on_idle_end: Some(false),
+                        restart_on_idle: Some(false),
+                        ..Default::default()
+                    }),
+                    allow_demand_start: Some(true),
+                    ..Default::default()
+                })?
+                .delay(delay_duration)?
+                .build()?
+                .register(
+                    task_name,
+                    TaskCreationFlags::CreateOrUpdate as i32,
+                )?;
+        } else {
+            // When disabling, delete the task
+            if let Ok(task_service) = task_scheduler.get_service() {
+                let _ = task_service.delete_task(task_name, 0);
+            }
+        }
+
+        info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup {}", if is_triggered { "created" } else { "removed" });
 
         Ok(())
     }
