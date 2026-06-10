@@ -1,7 +1,7 @@
 # Tari Universe v1
 
 [![Downloads](https://img.shields.io/badge/downloads-700k%2B-brightgreen)](https://www.tari.com/downloads/)
-[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://www.tari.com/downloads/)
+[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20binaries%20%7C%20Linux%20source-lightgrey)](https://www.tari.com/downloads/)
 
 # Desktop Mining Application for Tari
 
@@ -11,7 +11,7 @@ Tari Universe is a desktop application that allows users to mine Tari tokens (XT
 
 The Tari Universe ecosystem includes:
 
-- **Tari Universe Desktop App** - Mining application for Windows, macOS, and Linux
+- **Tari Universe Desktop App** - Mining application for Windows and macOS binaries, with Linux supported by building from source
 - **Tari Universe Wallet** - Mobile companion app for tracking earnings
 
 ## Installing using binaries
@@ -34,18 +34,9 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Install the `.deb` package:
-
-```bash
-sudo dpkg -i tari-universe_*.deb
-```
-
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
+Official Linux `.deb` and `.AppImage` downloads are not currently published.
+Linux users can still run Tari Universe by building it from source with the
+instructions below.
 
 ### Run
 
@@ -71,6 +62,10 @@ sudo apt-get install -y git nodejs npm build-essential \
     patchelf libprotobuf-dev protobuf-compiler libssl-dev \
     pkg-config cmake
 ```
+
+For other Linux distributions, install the equivalent Node.js, npm, Rust,
+C/C++ build tools, CMake, Protobuf, OpenSSL, pkg-config, and Tauri WebKit/AppIndicator
+development packages from your distro package manager.
 
 #### Windows
 
@@ -103,11 +98,16 @@ npm install
 npm run tauri build
 ```
 
+Linux builds are source builds. Run the build command on the Linux machine or
+container where you plan to use the application so Tauri can link against the
+system WebKit and AppIndicator libraries installed above.
+
 ### Output
 
-Built applications will be in `target/release/bundle/`:
+Built applications will be in `src-tauri/target/release/bundle/`:
 
-- **Linux**: `.deb` and `.AppImage` files
+- **Linux**: locally generated bundle artifacts when built on Linux; no official
+  Linux release artifact is currently published
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
 
