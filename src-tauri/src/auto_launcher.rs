@@ -27,6 +27,8 @@ use auto_launch::{AutoLaunch, AutoLaunchBuilder};
 use dunce::canonicalize;
 use log::{info, warn};
 #[cfg(target_os = "windows")]
+use std::process::Command;
+#[cfg(target_os = "windows")]
 use planif::{
     enums::TaskCreationFlags,
     schedule::TaskScheduler,
@@ -44,6 +46,8 @@ use crate::{
 };
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
+#[cfg(target_os = "windows")]
+const WINDOWS_STARTUP_TASK_NAME: &str = "Tari Universe startup";
 
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
@@ -108,11 +112,9 @@ impl AutoLauncher {
                 }
                 CurrentOperatingSystem::Windows => {
                     auto_launcher.enable()?;
-                    // To startup application as admin on windows, we need to create a task scheduler
+                    // To startup application as admin on windows, we need to create a task scheduler.
                     #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(true).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to enable admin auto-launcher: {}", e)
-                    });
+                    self.toggle_windows_admin_auto_launcher(true).await?;
                 }
                 _ => {
                     auto_launcher.enable()?;
@@ -123,9 +125,7 @@ impl AutoLauncher {
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => {
                     #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(false).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher: {}", e)
-                    });
+                    self.toggle_windows_admin_auto_launcher(false).await?;
                     auto_launcher.disable()?;
                 }
                 _ => {
@@ -149,15 +149,66 @@ impl AutoLauncher {
             self.create_task_scheduler_for_admin_startup(true)
                 .await
                 .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
+            self.verify_task_scheduler_entry_exists()?;
         };
 
         if !should_be_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Disabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(false)
+            self.delete_task_scheduler_for_admin_startup()
                 .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
+                .map_err(|e| anyhow!("Failed to delete task scheduler for admin startup: {}", e))?;
         };
 
+        Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    fn verify_task_scheduler_entry_exists(&self) -> Result<(), anyhow::Error> {
+        if self.task_scheduler_entry_exists()? {
+            info!(target: LOG_TARGET_APP_LOGIC, "Verified task scheduler entry exists");
+            return Ok(());
+        }
+
+        Err(anyhow!(
+            "Scheduled task '{}' was not found after creation",
+            WINDOWS_STARTUP_TASK_NAME
+        ))
+    }
+
+    #[cfg(target_os = "windows")]
+    fn task_scheduler_entry_exists(&self) -> Result<bool, anyhow::Error> {
+        let output = Command::new("schtasks")
+            .args(["/Query", "/TN", WINDOWS_STARTUP_TASK_NAME])
+            .output()
+            .map_err(|e| anyhow!("Failed to query scheduled task: {}", e))?;
+
+        Ok(output.status.success())
+    }
+
+    #[cfg(target_os = "windows")]
+    async fn delete_task_scheduler_for_admin_startup(
+        &self,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        if !self.task_scheduler_entry_exists()? {
+            info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler entry was already removed");
+            return Ok(());
+        }
+
+        let output = Command::new("schtasks")
+            .args(["/Delete", "/TN", WINDOWS_STARTUP_TASK_NAME, "/F"])
+            .output()?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(anyhow!(
+                "Failed to delete scheduled task '{}': {}",
+                WINDOWS_STARTUP_TASK_NAME,
+                stderr
+            )
+            .into());
+        }
+
+        info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler entry removed");
         Ok(())
     }
 
@@ -226,7 +277,7 @@ impl AutoLauncher {
             .delay(delay_duration)?
             .build()?
             .register(
-                "Tari Universe startup",
+                WINDOWS_STARTUP_TASK_NAME,
                 TaskCreationFlags::CreateOrUpdate as i32,
             )?;
 
