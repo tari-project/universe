@@ -31,7 +31,7 @@ export interface MinerTileProps {
     progressDiff?: number | null;
     unpaidFMT?: string;
     minerModuleState: AppModuleState;
-    algo?: GpuMiningAlgorithm | string;
+    algo?: GpuMiningAlgorithm | 'RandomX';
 }
 
 export default function MinerTile({
