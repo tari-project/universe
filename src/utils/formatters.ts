@@ -126,8 +126,12 @@ interface Hashrate {
     unit: string;
 }
 
-export function formatHashrate(hashrate: number, joinUnit = true, _algo = GpuMiningAlgorithm.C29): Hashrate {
-    const unit = 'G';
+export function formatHashrate(
+    hashrate: number,
+    joinUnit = true,
+    algo: string | GpuMiningAlgorithm = GpuMiningAlgorithm.C29
+): Hashrate {
+    const unit = algo === 'RandomX' ? 'H' : 'G';
     const fixed = (val: number, dec = 2) => Number(val.toFixed(val >= 100 ? 1 : dec));
     if (hashrate < 1000) {
         return {

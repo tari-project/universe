@@ -31,7 +31,7 @@ export interface MinerTileProps {
     progressDiff?: number | null;
     unpaidFMT?: string;
     minerModuleState: AppModuleState;
-    algo?: GpuMiningAlgorithm;
+    algo?: GpuMiningAlgorithm | string;
 }
 
 export default function MinerTile({
