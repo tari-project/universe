@@ -180,8 +180,12 @@ impl AutoLauncher {
                 .ok_or_else(|| anyhow!("Failed to convert path to string"))?
                 .to_string();
 
-            if app_path.starts_with(r"\\?\") {
-                app_path = app_path.trim_start_matches(r"\\?\").to_string();
+            if let Some(stripped) = app_path.strip_prefix(r#"\\?\UNC\"#) {
+                app_path = format!(r#"\\{}"#, stripped);
+            } else if let Some(stripped) = app_path.strip_prefix(r#"\\?\"#) {
+                app_path = stripped.to_string();
+            } else {
+                // No prefix stripping needed
             }
 
             info!(target: LOG_TARGET_APP_LOGIC, "Creating task scheduler for admin startup with app_path: {}", app_path);
