@@ -106,10 +106,23 @@ pub(crate) trait ProcessAdapter {
 
         #[cfg(target_os = "linux")]
         {
+            use std::os::unix::ffi::OsStrExt;
             const TASK_COMM_LEN_VISIBLE: usize = 15;
-            let expected_bytes = expected_name.as_encoded_bytes();
+            let expected_bytes = expected_name.as_bytes();
             if expected_bytes.len() > TASK_COMM_LEN_VISIBLE
                 && actual_name.as_bytes() == &expected_bytes[..TASK_COMM_LEN_VISIBLE]
+            {
+                return true;
+            }
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            let actual_str = actual_name.to_string_lossy();
+            let expected_str = expected_name.to_string_lossy();
+            if actual_str.eq_ignore_ascii_case(&expected_str)
+                || actual_str.eq_ignore_ascii_case(&format!("{expected_str}.exe"))
+                || expected_str.eq_ignore_ascii_case(&format!("{actual_str}.exe"))
             {
                 return true;
             }
@@ -119,12 +132,16 @@ pub(crate) trait ProcessAdapter {
             .exe()
             .and_then(|path| path.file_name())
             .map(|file_name| {
-                file_name == expected_name || {
+                if file_name == expected_name {
+                    true
+                } else {
                     #[cfg(target_os = "windows")]
                     {
-                        let file_name = file_name.to_string_lossy();
-                        let expected_name = expected_name.to_string_lossy();
-                        file_name.eq_ignore_ascii_case(&format!("{expected_name}.exe"))
+                        let file_str = file_name.to_string_lossy();
+                        let expected_str = expected_name.to_string_lossy();
+                        file_str.eq_ignore_ascii_case(&expected_str)
+                            || file_str.eq_ignore_ascii_case(&format!("{expected_str}.exe"))
+                            || expected_str.eq_ignore_ascii_case(&format!("{file_str}.exe"))
                     }
                     #[cfg(not(target_os = "windows"))]
                     {
