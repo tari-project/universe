@@ -35,8 +35,6 @@ use planif::{
 };
 use tauri::utils::platform::current_exe;
 use tokio::sync::RwLock;
-#[cfg(target_os = "windows")]
-use whoami::username;
 
 use crate::{
     LOG_TARGET_APP_LOGIC,
@@ -165,74 +163,81 @@ impl AutoLauncher {
     pub async fn create_task_scheduler_for_admin_startup(
         &self,
         is_triggered: bool,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        use planif::settings::{Duration, IdleSettings, InstancesPolicy};
+    ) -> Result<(), anyhow::Error> {
+        tokio::task::spawn_blocking(move || {
+            use planif::settings::{Duration, IdleSettings, InstancesPolicy};
 
-        let task_scheduler = TaskScheduler::new()?;
-        let com_runtime = task_scheduler.get_com();
-        let schedule_builder = ScheduleBuilder::new(&com_runtime)?;
+            let task_scheduler = TaskScheduler::new().map_err(|e| anyhow!("Failed to create TaskScheduler: {}", e))?;
+            let com_runtime = task_scheduler.get_com();
+            let schedule_builder = ScheduleBuilder::new(&com_runtime).map_err(|e| anyhow!("Failed to create ScheduleBuilder: {}", e))?;
 
-        let app_exe = current_exe()?;
-        let app_exe = canonicalize(&app_exe)?;
+            let app_exe = current_exe().map_err(|e| anyhow!("Failed to get current exe: {}", e))?;
+            let app_exe = canonicalize(&app_exe).map_err(|e| anyhow!("Failed to canonicalize exe: {}", e))?;
 
-        let app_path = app_exe
-            .as_os_str()
-            .to_str()
-            .ok_or(anyhow!("Failed to convert path to string"))?
-            .to_string();
+            let mut app_path = app_exe
+                .as_os_str()
+                .to_str()
+                .ok_or_else(|| anyhow!("Failed to convert path to string"))?
+                .to_string();
 
-        info!(target: LOG_TARGET_APP_LOGIC, "Creating task scheduler for admin startup with app_path: {}", app_path);
-        info!(target: LOG_TARGET_APP_LOGIC, "UserName: {}", username());
+            if app_path.starts_with(r"\\?\") {
+                app_path = app_path.trim_start_matches(r"\\?\").to_string();
+            }
 
-        let mut retry_interval = Duration::new();
-        retry_interval.minutes = Some(1);
+            info!(target: LOG_TARGET_APP_LOGIC, "Creating task scheduler for admin startup with app_path: {}", app_path);
 
-        let mut delay_duration = Duration::new();
-        delay_duration.seconds = Some(30);
-        delay_duration.minutes = Some(0);
+            let mut retry_interval = Duration::new();
+            retry_interval.minutes = Some(1);
 
-        schedule_builder
-            .create_logon()
-            .author("Tari Universe")?
-            .trigger("startup_trigger", is_triggered)?
-            .action(Action::new("startup_action", &app_path, "", ""))?
-            .principal(PrincipalSettings {
-                display_name: "Tari Universe".to_string(),
-                group_id: None,
-                user_id: Some(username()),
-                id: "Tari universe principal".to_string(),
-                logon_type: LogonType::InteractiveToken,
-                run_level: RunLevel::Highest,
-            })?
-            .settings(Settings {
-                stop_if_going_on_batteries: Some(false),
-                start_when_available: Some(true),
-                run_only_if_network_available: Some(false),
-                run_only_if_idle: Some(false),
-                enabled: Some(true),
-                disallow_start_if_on_batteries: Some(false),
-                hidden: Some(false),
-                multiple_instances_policy: Some(InstancesPolicy::Parallel),
-                restart_count: Some(3),
-                restart_interval: Some(retry_interval.to_string()),
-                idle_settings: Some(IdleSettings {
-                    stop_on_idle_end: Some(false),
-                    restart_on_idle: Some(false),
+            let mut delay_duration = Duration::new();
+            delay_duration.seconds = Some(30);
+            delay_duration.minutes = Some(0);
+
+            schedule_builder
+                .create_logon()
+                .author("Tari Universe").map_err(|e| anyhow!("Failed to set author: {}", e))?
+                .trigger("startup_trigger", is_triggered).map_err(|e| anyhow!("Failed to set trigger: {}", e))?
+                .action(Action::new("startup_action", &app_path, "", "")).map_err(|e| anyhow!("Failed to set action: {}", e))?
+                .principal(PrincipalSettings {
+                    display_name: "Tari Universe".to_string(),
+                    group_id: None,
+                    user_id: None,
+                    id: "Tari universe principal".to_string(),
+                    logon_type: LogonType::InteractiveToken,
+                    run_level: RunLevel::Highest,
+                }).map_err(|e| anyhow!("Failed to set principal: {}", e))?
+                .settings(Settings {
+                    stop_if_going_on_batteries: Some(false),
+                    start_when_available: Some(true),
+                    run_only_if_network_available: Some(false),
+                    run_only_if_idle: Some(false),
+                    enabled: Some(true),
+                    disallow_start_if_on_batteries: Some(false),
+                    hidden: Some(false),
+                    multiple_instances_policy: Some(InstancesPolicy::Parallel),
+                    restart_count: Some(3),
+                    restart_interval: Some(retry_interval.to_string()),
+                    idle_settings: Some(IdleSettings {
+                        stop_on_idle_end: Some(false),
+                        restart_on_idle: Some(false),
+                        ..Default::default()
+                    }),
+                    allow_demand_start: Some(true),
                     ..Default::default()
-                }),
-                allow_demand_start: Some(true),
-                ..Default::default()
-            })?
-            .delay(delay_duration)?
-            .build()?
-            .register(
-                "Tari Universe startup",
-                TaskCreationFlags::CreateOrUpdate as i32,
-            )?;
+                }).map_err(|e| anyhow!("Failed to set settings: {}", e))?
+                .delay(delay_duration).map_err(|e| anyhow!("Failed to set delay: {}", e))?
+                .build().map_err(|e| anyhow!("Failed to build task: {}", e))?
+                .register(
+                    "Tari Universe startup",
+                    TaskCreationFlags::CreateOrUpdate as i32,
+                ).map_err(|e| anyhow!("Failed to register task: {}", e))?;
 
-        info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup created");
+            info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup created");
 
-        Ok(())
+            Ok(())
+        })
+        .await
+        .map_err(|e| anyhow!("spawn_blocking join error: {}", e))?
     }
 
     pub async fn initialize_auto_launcher(
