@@ -23,7 +23,7 @@ use crate::LOG_TARGET_APP_LOGIC;
 use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use anyhow::{Error, anyhow};
 use async_trait::async_trait;
-use log::debug;
+use log::{debug, warn};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -263,6 +263,15 @@ impl BinaryResolver {
 
         if manager.check_if_files_for_version_exist() {
             // If files already exist, we can skip the download
+            // Clean up old versions after confirming current version exists
+            if let Err(e) = self.cleanup_old_binary_versions_for_manager(binary).await {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Failed to clean up old binary versions for {}: {}",
+                    binary.name(),
+                    e
+                );
+            }
             return Ok(());
         }
 
@@ -277,6 +286,15 @@ impl BinaryResolver {
             let _lock = TARI_SUITE_DOWNLOAD_LOCK.lock().await;
 
             if manager.check_if_files_for_version_exist() {
+                // Clean up old versions after confirming current version exists (post-lock)
+                if let Err(e) = self.cleanup_old_binary_versions_for_manager(binary).await {
+                    warn!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "Failed to clean up old binary versions for {}: {}",
+                        binary.name(),
+                        e
+                    );
+                }
                 return Ok(());
             }
             manager
@@ -288,6 +306,16 @@ impl BinaryResolver {
                 .await?;
         }
 
+        // Clean up old versions after successful download
+        if let Err(e) = self.cleanup_old_binary_versions_for_manager(binary).await {
+            warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Failed to clean up old binary versions for {}: {}",
+                binary.name(),
+                e
+            );
+        }
+
         Ok(())
     }
 
@@ -296,5 +324,63 @@ impl BinaryResolver {
             .get(&binary)
             .unwrap_or_else(|| panic!("Couldn't find manager for binary: {}", binary.name()))
             .get_selected_version()
+    }
+
+    /// Cleans up old binary versions for a specific binary manager.
+    ///
+    /// This method collects all retained versions (current versions of all managers
+    /// that share the same binary folder) to avoid deleting versions that are still
+    /// needed by other binaries.
+    async fn cleanup_old_binary_versions_for_manager(
+        &self,
+        binary: Binaries,
+    ) -> Result<(), Error> {
+        let manager = self
+            .managers
+            .get(&binary)
+            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
+
+        let binary_folder = manager.get_binary_folder()?;
+        let retained_versions = self.retained_versions_for_binary_folder(&binary_folder);
+
+        manager
+            .cleanup_old_binary_versions(retained_versions)
+            .await?;
+
+        Ok(())
+    }
+
+    /// Collects all versions that should be retained for a given binary folder.
+    ///
+    /// This is important for shared directories (like tari-suite where MergeMiningProxy,
+    /// MinotariNode, and Wallet all share the same download directory).
+    fn retained_versions_for_binary_folder(&self, binary_folder: &PathBuf) -> Vec<String> {
+        let mut retained = Vec::new();
+
+        for (binary_type, manager) in &self.managers {
+            match manager.get_binary_folder() {
+                Ok(folder) => {
+                    // Check if this manager shares the same binary folder
+                    if folder == *binary_folder {
+                        let version = manager.get_selected_version();
+                        if !version.is_empty() {
+                            retained.push(version);
+                        }
+                    }
+                }
+                Err(e) => {
+                    warn!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "Could not get binary folder for {}: {}",
+                        binary_type.name(),
+                        e
+                    );
+                }
+            }
+        }
+
+        // Remove duplicates while preserving order
+        retained.dedup();
+        retained
     }
 }

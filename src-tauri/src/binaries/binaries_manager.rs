@@ -22,7 +22,7 @@
 use anyhow::{Error, anyhow};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::{Path, PathBuf}};
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
@@ -269,6 +269,32 @@ impl BinaryManager {
         binary_file_exists
     }
 
+    /// Returns the binary folder path for this manager's adapter.
+    pub fn get_binary_folder(&self) -> Result<PathBuf, Error> {
+        self.adapter.get_binary_folder()
+    }
+
+    /// Cleans up old binary versions, keeping only the specified retained versions.
+    ///
+    /// This method uses `spawn_blocking` to avoid blocking the async executor
+    /// during file system operations.
+    ///
+    /// # Arguments
+    /// * `retained_versions` - List of version folder names that should NOT be deleted
+    pub async fn cleanup_old_binary_versions(
+        &self,
+        retained_versions: Vec<String>,
+    ) -> Result<Vec<PathBuf>, Error> {
+        let binary_folder = self.get_binary_folder()?;
+        let binary_name = self.binary_name.clone();
+
+        tokio::task::spawn_blocking(move || {
+            cleanup_old_binary_version_dirs(&binary_folder, &retained_versions, &binary_name)
+        })
+        .await
+        .map_err(|error| anyhow!("Old binary cleanup task failed for {binary_name}: {error:?}"))?
+    }
+
     async fn resolve_progress_channel(
         &self,
         progress_channel: Option<IncrementalProgressTracker>,
@@ -490,4 +516,275 @@ fn check_binary_exists(path: &std::path::Path) -> bool {
         warn!(target: LOG_TARGET_APP_LOGIC, "Error checking if binary file exists at path: {:?}. Error: {:?}", path, e);
         false
     })
+}
+
+/// Validates if a folder name looks like a version string.
+///
+/// Examples of valid version folder names:
+///   - "v1.0.0", "v1.2.3-alpha", "v2.0.0+build.123"
+///   - "1.0.0", "1.2.3", "0.5.0-beta"
+///
+/// This prevents accidental deletion of non-version folders like "logs", "cache", "config", etc.
+pub fn is_binary_version_folder_name(folder_name: &str) -> bool {
+    // Strip optional 'v' or 'V' prefix
+    let version = folder_name
+        .strip_prefix('v')
+        .or_else(|| folder_name.strip_prefix('V'))
+        .unwrap_or(folder_name);
+
+    // Must contain at least one dot (semantic versioning)
+    if !version.contains('.') {
+        return false;
+    }
+
+    // Must start with a digit
+    let first_char = version.chars().next();
+    if !first_char.map_or(false, |c| c.is_ascii_digit()) {
+        return false;
+    }
+
+    // Only allow alphanumeric characters and common version separators
+    version
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | '+'))
+}
+
+/// Cleans up old binary version directories, keeping only the retained versions.
+///
+/// # Safety
+/// - Uses `symlink_metadata` to avoid following symbolic links (prevents symlink traversal attacks)
+/// - Only deletes directories that pass `is_binary_version_folder_name()` validation
+/// - Skips entries that are not directories or are symbolic links
+/// - Logs warnings for individual deletion failures without aborting the entire cleanup
+///
+/// # Arguments
+/// * `binary_folder` - The base directory containing version subdirectories
+/// * `retained_versions` - List of version strings that should NOT be deleted
+/// * `binary_name` - Name of the binary (for logging purposes)
+///
+/// # Returns
+/// * `Ok(Vec<PathBuf>)` - List of directories that were successfully deleted
+/// * `Err(Error)` - If the binary folder cannot be read
+pub fn cleanup_old_binary_version_dirs(
+    binary_folder: &Path,
+    retained_versions: &[String],
+    binary_name: &str,
+) -> Result<Vec<PathBuf>, Error> {
+    if !binary_folder.exists() {
+        debug!(
+            target: LOG_TARGET_APP_LOGIC,
+            "Binary folder does not exist yet, skipping cleanup: {}",
+            binary_folder.display()
+        );
+        return Ok(Vec::new());
+    }
+
+    let mut deleted_dirs = Vec::new();
+
+    let entries = std::fs::read_dir(binary_folder).map_err(|e| {
+        anyhow!(
+            "Failed to read binary folder {} for {}: {}",
+            binary_folder.display(),
+            binary_name,
+            e
+        )
+    })?;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+
+        // Use metadata to check if it's a directory (not following symlinks)
+        let metadata = match entry.metadata() {
+            Ok(m) => m,
+            Err(e) => {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Could not get metadata for {} during cleanup of {}: {}",
+                    path.display(),
+                    binary_name,
+                    e
+                );
+                continue;
+            }
+        };
+
+        // Skip if not a directory or if it's a symbolic link
+        if !metadata.is_dir() || metadata.file_type().is_symlink() {
+            continue;
+        }
+
+        let dir_name = match path.file_name().and_then(|n| n.to_str()) {
+            Some(name) => name,
+            None => continue,
+        };
+
+        // Skip if not a version folder
+        if !is_binary_version_folder_name(dir_name) {
+            debug!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Skipping non-version folder during cleanup of {}: {}",
+                binary_name,
+                dir_name
+            );
+            continue;
+        }
+
+        // Skip if this version should be retained
+        if retained_versions.iter().any(|v| v == dir_name) {
+            debug!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Retaining version folder for {}: {}",
+                binary_name,
+                dir_name
+            );
+            continue;
+        }
+
+        // Delete the old version directory
+        match std::fs::remove_dir_all(&path) {
+            Ok(_) => {
+                info!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Cleaned up old binary version for {}: {}",
+                    binary_name,
+                    dir_name
+                );
+                deleted_dirs.push(path);
+            }
+            Err(e) => {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Failed to remove old binary version directory for {} at {}: {}",
+                    binary_name,
+                    path.display(),
+                    e
+                );
+            }
+        }
+    }
+
+    if !deleted_dirs.is_empty() {
+        info!(
+            target: LOG_TARGET_APP_LOGIC,
+            "Cleanup complete for {}: removed {} old version(s)",
+            binary_name,
+            deleted_dirs.len()
+        );
+    } else {
+        debug!(
+            target: LOG_TARGET_APP_LOGIC,
+            "No old versions to clean up for {}",
+            binary_name
+        );
+    }
+
+    Ok(deleted_dirs)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_is_binary_version_folder_name() {
+        // Valid version names
+        assert!(is_binary_version_folder_name("v1.0.0"));
+        assert!(is_binary_version_folder_name("V1.0.0"));
+        assert!(is_binary_version_folder_name("1.0.0"));
+        assert!(is_binary_version_folder_name("1.2.3-alpha"));
+        assert!(is_binary_version_folder_name("v2.0.0+build.123"));
+        assert!(is_binary_version_folder_name("0.5.0-beta.2"));
+        assert!(is_binary_version_folder_name("1.0"));
+
+        // Invalid (non-version) names
+        assert!(!is_binary_version_folder_name("logs"));
+        assert!(!is_binary_version_folder_name("cache"));
+        assert!(!is_binary_version_folder_name("config"));
+        assert!(!is_binary_version_folder_name("data"));
+        assert!(!is_binary_version_folder_name("tmp"));
+        assert!(!is_binary_version_folder_name(""));
+        assert!(!is_binary_version_folder_name("abc"));
+        assert!(!is_binary_version_folder_name("v"));
+        assert!(!is_binary_version_folder_name("1"));
+        assert!(!is_binary_version_folder_name("latest"));
+        assert!(!is_binary_version_folder_name("current"));
+    }
+
+    #[test]
+    fn test_cleanup_old_binary_version_dirs() {
+        let temp_dir = TempDir::new().unwrap();
+        let binary_folder = temp_dir.path();
+
+        // Create version directories
+        fs::create_dir(binary_folder.join("v1.0.0")).unwrap();
+        fs::create_dir(binary_folder.join("v1.1.0")).unwrap();
+        fs::create_dir(binary_folder.join("v2.0.0")).unwrap();
+
+        // Create a non-version directory (should be preserved)
+        fs::create_dir(binary_folder.join("logs")).unwrap();
+
+        // Create a file (should be ignored)
+        fs::write(binary_folder.join("some-file.txt"), "test").unwrap();
+
+        // Clean up, retaining only v2.0.0
+        let retained = vec!["v2.0.0".to_string()];
+        let deleted = cleanup_old_binary_version_dirs(binary_folder, &retained, "test-binary").unwrap();
+
+        // Verify old versions were deleted
+        assert_eq!(deleted.len(), 2);
+        assert!(!binary_folder.join("v1.0.0").exists());
+        assert!(!binary_folder.join("v1.1.0").exists());
+
+        // Verify current version is retained
+        assert!(binary_folder.join("v2.0.0").exists());
+
+        // Verify non-version folder is preserved
+        assert!(binary_folder.join("logs").exists());
+
+        // Verify file is preserved
+        assert!(binary_folder.join("some-file.txt").exists());
+    }
+
+    #[test]
+    fn test_cleanup_with_shared_directory() {
+        let temp_dir = TempDir::new().unwrap();
+        let shared_folder = temp_dir.path();
+
+        // Simulate tari-suite shared directory scenario
+        fs::create_dir(shared_folder.join("v1.0.0")).unwrap();
+        fs::create_dir(shared_folder.join("v1.1.0")).unwrap();
+        fs::create_dir(shared_folder.join("v2.0.0")).unwrap();
+
+        // Multiple binaries share this directory, retain multiple versions
+        let retained = vec!["v1.1.0".to_string(), "v2.0.0".to_string()];
+        let deleted = cleanup_old_binary_version_dirs(shared_folder, &retained, "tari-suite").unwrap();
+
+        // Only v1.0.0 should be deleted
+        assert_eq!(deleted.len(), 1);
+        assert!(!shared_folder.join("v1.0.0").exists());
+        assert!(shared_folder.join("v1.1.0").exists());
+        assert!(shared_folder.join("v2.0.0").exists());
+    }
+
+    #[test]
+    fn test_cleanup_empty_folder() {
+        let temp_dir = TempDir::new().unwrap();
+        let binary_folder = temp_dir.path();
+
+        let retained: Vec<String> = vec![];
+        let deleted = cleanup_old_binary_version_dirs(binary_folder, &retained, "test-binary").unwrap();
+
+        assert!(deleted.is_empty());
+    }
+
+    #[test]
+    fn test_cleanup_nonexistent_folder() {
+        let nonexistent = PathBuf::from("/nonexistent/path/that/does/not/exist");
+        let retained: Vec<String> = vec![];
+        let deleted = cleanup_old_binary_version_dirs(&nonexistent, &retained, "test-binary").unwrap();
+
+        assert!(deleted.is_empty());
+    }
 }
