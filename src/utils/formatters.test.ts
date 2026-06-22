@@ -13,6 +13,7 @@ import {
     removeXTMCryptoDecimals,
     formatValue,
 } from './formatters';
+import { GpuMiningAlgorithm } from '@app/types/events-payloads';
 
 vi.mock('i18next', () => ({
     default: {
@@ -236,6 +237,46 @@ describe('formatters', () => {
         it('rounds large values to 1 decimal', () => {
             const result = formatHashrate(150);
             expect(result).toEqual({ value: 150, unit: 'G/s' });
+        });
+
+        it('formats RandomX hashrates with H/s unit', () => {
+            const result = formatHashrate(500, true, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 500, unit: 'H/s' });
+        });
+
+        it('formats RandomX hashrates >= 1000 with kH/s', () => {
+            const result = formatHashrate(1500, true, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 1.5, unit: ' kH/s' });
+        });
+
+        it('formats RandomX hashrates >= 1000000 with MH/s', () => {
+            const result = formatHashrate(1_500_000, true, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 1.5, unit: ' MH/s' });
+        });
+
+        it('formats RandomX hashrates >= 1000000000 with GH/s', () => {
+            const result = formatHashrate(1_500_000_000, true, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 1.5, unit: ' GH/s' });
+        });
+
+        it('formats RandomX hashrates >= 1000000000000 with TH/s', () => {
+            const result = formatHashrate(1_500_000_000_000, true, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 1.5, unit: ' TH/s' });
+        });
+
+        it('formats RandomX hashrates >= 1000000000000000 with PH/s', () => {
+            const result = formatHashrate(1_500_000_000_000_000, true, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 1.5, unit: ' PH/s' });
+        });
+
+        it('returns short unit for RandomX when joinUnit is false', () => {
+            const result = formatHashrate(1_500_000, false, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 1.5, unit: 'M' });
+        });
+
+        it('handles zero RandomX hashrate', () => {
+            const result = formatHashrate(0, true, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 0, unit: 'H/s' });
         });
     });
 

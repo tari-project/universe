@@ -104,6 +104,7 @@ export enum GpuMinerFeature {
 
 export enum GpuMiningAlgorithm {
     C29 = 'C29',
+    RandomX = 'RandomX',
 }
 
 export enum MinerControlsState {
