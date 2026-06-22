@@ -1,7 +1,7 @@
 # Tari Universe v1
 
 [![Downloads](https://img.shields.io/badge/downloads-700k%2B-brightgreen)](https://www.tari.com/downloads/)
-[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://www.tari.com/downloads/)
+[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)](https://www.tari.com/downloads/)
 
 # Desktop Mining Application for Tari
 
@@ -32,21 +32,8 @@ Double-click the installer and follow the prompts.
 
 Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
-#### On Linux
 
-Install the `.deb` package:
-
-```bash
-sudo dpkg -i tari-universe_*.deb
-```
-
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
-
+Official pre-built binaries (.deb/.AppImage) have been discontinued due to low usage (<1% of user base) and high maintenance burden. Linux users should build from source (see below).
 ### Run
 
 Launch Tari Universe from your applications menu or desktop shortcut.
@@ -107,7 +94,7 @@ npm run tauri build
 
 Built applications will be in `target/release/bundle/`:
 
-- **Linux**: `.deb` and `.AppImage` files
+- **Linux**: Source builds only (pre-built binaries discontinued)
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
 
