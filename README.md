@@ -11,7 +11,7 @@ Tari Universe is a desktop application that allows users to mine Tari tokens (XT
 
 The Tari Universe ecosystem includes:
 
-- **Tari Universe Desktop App** - Mining application for Windows, macOS, and Linux
+- **Tari Universe Desktop App** - Mining application for Windows and macOS. Linux builds from source only.
 - **Tari Universe Wallet** - Mobile companion app for tracking earnings
 
 ## Installing using binaries
@@ -34,18 +34,7 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Install the `.deb` package:
-
-```bash
-sudo dpkg -i tari-universe_*.deb
-```
-
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
+Official pre-built binaries (.deb/.AppImage) have been discontinued. Linux users should build from source (see below).
 
 ### Run
 
@@ -107,7 +96,7 @@ npm run tauri build
 
 Built applications will be in `target/release/bundle/`:
 
-- **Linux**: `.deb` and `.AppImage` files
+- **Linux**: Source builds only (pre-built binaries discontinued)
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
 
