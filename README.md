@@ -1,7 +1,7 @@
 # Tari Universe v1
 
 [![Downloads](https://img.shields.io/badge/downloads-700k%2B-brightgreen)](https://www.tari.com/downloads/)
-[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://www.tari.com/downloads/)
+[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)](https://www.tari.com/downloads/)
 
 # Desktop Mining Application for Tari
 
@@ -11,7 +11,7 @@ Tari Universe is a desktop application that allows users to mine Tari tokens (XT
 
 The Tari Universe ecosystem includes:
 
-- **Tari Universe Desktop App** - Mining application for Windows, macOS, and Linux
+- **Tari Universe Desktop App** - Mining application for Windows and macOS (binaries), Linux (build from source)
 - **Tari Universe Wallet** - Mobile companion app for tracking earnings
 
 ## Installing using binaries
@@ -34,18 +34,29 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Install the `.deb` package:
+Official prebuilt Linux binaries (`.deb`/`.AppImage`) are no longer distributed due to low usage. Build from source instead:
 
 ```bash
-sudo dpkg -i tari-universe_*.deb
+# Install system dependencies (Ubuntu/Debian)
+sudo apt-get update
+sudo apt-get install -y git nodejs npm build-essential \
+    libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
+    patchelf libprotobuf-dev protobuf-compiler libssl-dev \
+    pkg-config cmake
+
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
+
+# Install Tauri CLI
+cargo install tauri-cli --locked
+
+# Build
+npm install
+npm run tauri build
 ```
 
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
+Built artifacts will be in `target/release/bundle/linux/`.
 
 ### Run
 
@@ -107,7 +118,7 @@ npm run tauri build
 
 Built applications will be in `target/release/bundle/`:
 
-- **Linux**: `.deb` and `.AppImage` files
+- **Linux**: `.deb` and `.AppImage` files (built from source; see Linux instructions above)
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
 
