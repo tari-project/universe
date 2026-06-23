@@ -441,7 +441,35 @@ impl BinaryManager {
             .await?;
         }
 
+        // Clean up old binary versions after successful download
+        Self::cleanup_old_binaries(&binary_folder, &version).await;
+
         Ok(())
+    }
+
+    /// Remove old binary version folders, keeping only the current version
+    async fn cleanup_old_binaries(binary_folder: &std::path::Path, keep_version: &str) {
+        if let Ok(entries) = std::fs::read_dir(binary_folder) {
+            for entry in entries.flatten() {
+                let entry_path = entry.path();
+                if entry_path.is_dir() {
+                    let dir_name = entry_path.file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("");
+                    // Skip the version we just downloaded
+                    if dir_name != keep_version {
+                        match std::fs::remove_dir_all(&entry_path) {
+                            Ok(_) => {
+                                info!(target: LOG_TARGET_APP_LOGIC, "Cleaned up old binary folder: {}", dir_name);
+                            }
+                            Err(e) => {
+                                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up old binary folder {}: {}", dir_name, e);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     pub fn get_selected_version(&self) -> String {
