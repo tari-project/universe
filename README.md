@@ -102,7 +102,7 @@ Built applications will be in `target/release/bundle/`:
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
 
-> **Note:** Linux `.deb`/`.AppImage` artifacts are built by the build process but are not officially published or supported as releases. See [Building from source](#building-from-source) for instructions.
+> **Note:** Linux `.deb`/`.AppImage` artifacts are built by the build process but are not officially published or supported as releases.
 
 ## Contributing
 
