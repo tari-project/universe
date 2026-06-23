@@ -48,7 +48,7 @@ export default function MinerTile({
     progressDiff,
     unpaidFMT,
     minerModuleState,
-    algo = GpuMiningAlgorithm.C29,
+    algo,
 }: MinerTileProps) {
     const { t } = useTranslation(['mining-view', 'p2p'], { useSuspense: false });
 
