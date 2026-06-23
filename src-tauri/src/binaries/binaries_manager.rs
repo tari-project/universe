@@ -447,29 +447,81 @@ impl BinaryManager {
         Ok(())
     }
 
-    /// Remove old binary version folders, keeping only the current version
+    /// Remove old binary version folders, keeping only the current version.
+    /// Only deletes directories that look like version numbers (e.g. "1.2.3", "v2.0.0").
+    /// Non-version directories (caches, checksums, etc.) are preserved.
     async fn cleanup_old_binaries(binary_folder: &std::path::Path, keep_version: &str) {
-        if let Ok(entries) = std::fs::read_dir(binary_folder) {
+        let result = tokio::task::spawn_blocking(move || {
+            if !binary_folder.try_exists().unwrap_or(false) {
+                return;
+            }
+
+            let Ok(entries) = std::fs::read_dir(binary_folder) else {
+                return;
+            };
+
             for entry in entries.flatten() {
                 let entry_path = entry.path();
-                if entry_path.is_dir() {
-                    let dir_name = entry_path.file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("");
-                    // Skip the version we just downloaded
-                    if dir_name != keep_version {
-                        match std::fs::remove_dir_all(&entry_path) {
-                            Ok(_) => {
-                                info!(target: LOG_TARGET_APP_LOGIC, "Cleaned up old binary folder: {}", dir_name);
-                            }
-                            Err(e) => {
-                                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to clean up old binary folder {}: {}", dir_name, e);
-                            }
-                        }
+                if !entry_path.is_dir() {
+                    continue;
+                }
+
+                let dir_name = entry_path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("");
+
+                // Skip the version we just downloaded
+                if dir_name == keep_version {
+                    continue;
+                }
+
+                // Only remove directories that look like version numbers
+                // This preserves non-version directories like caches, checksums, etc.
+                if !is_version_like_folder(dir_name) {
+                    continue;
+                }
+
+                match std::fs::remove_dir_all(&entry_path) {
+                    Ok(()) => {
+                        info!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "Cleaned up old binary version folder: {} (kept {})",
+                            dir_name,
+                            keep_version
+                        );
+                    }
+                    Err(e) => {
+                        warn!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "Failed to clean up old binary version folder {}: {}",
+                            dir_name,
+                            e
+                        );
                     }
                 }
             }
+        })
+        .await;
+
+        if let Err(e) = result {
+            error!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Binary cleanup task panicked: {:?}",
+                e
+            );
         }
+    }
+
+    /// Check if a directory name looks like a binary version (e.g. "1.2.3", "v2.0.0", "0.0.1-beta").
+    fn is_version_like_folder(name: &str) -> bool {
+        let stripped = name.strip_prefix('v').or_else(|| name.strip_prefix('V')).unwrap_or(name);
+        // Must start with a digit, contain at least one dot, and be mostly alphanumeric
+        stripped.starts_with(|c: char| c.is_ascii_digit())
+            && stripped.contains('.')
+            && stripped
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | '+'))
     }
 
     pub fn get_selected_version(&self) -> String {
@@ -482,6 +534,19 @@ impl BinaryManager {
         Ok(binary_folder_path.join(selected_version))
     }
 
+
+    /// Public wrapper for cleanup_old_binaries, callable from BinaryResolver.
+    pub async fn run_cleanup(&self) {
+        let version = self.get_selected_version();
+        let binary_folder = match self.adapter.get_binary_folder() {
+            Ok(path) => path,
+            Err(e) => {
+                error!(target: LOG_TARGET_APP_LOGIC, "Cannot get binary folder for cleanup: {:?}", e);
+                return;
+            }
+        };
+        self.cleanup_old_binaries(&binary_folder, &version).await;
+    }
     /// Add Windows Defender exclusions for the downloaded binary
     #[cfg(target_os = "windows")]
     async fn add_windows_defender_exclusions(&self) -> Result<(), Error> {

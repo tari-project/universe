@@ -23,7 +23,7 @@ use crate::LOG_TARGET_APP_LOGIC;
 use crate::progress_trackers::progress_stepper::IncrementalProgressTracker;
 use anyhow::{Error, anyhow};
 use async_trait::async_trait;
-use log::debug;
+use log::{debug, warn};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -262,7 +262,8 @@ impl BinaryResolver {
             .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
 
         if manager.check_if_files_for_version_exist() {
-            // If files already exist, we can skip the download
+            // If files already exist, skip the download but still clean up old versions
+            manager.run_cleanup().await;
             return Ok(());
         }
 
@@ -277,6 +278,7 @@ impl BinaryResolver {
             let _lock = TARI_SUITE_DOWNLOAD_LOCK.lock().await;
 
             if manager.check_if_files_for_version_exist() {
+                manager.run_cleanup().await;
                 return Ok(());
             }
             manager
@@ -287,6 +289,9 @@ impl BinaryResolver {
                 .download_version_with_retries(progress_channel.clone())
                 .await?;
         }
+
+        // Clean up old binary versions after successful download
+        manager.run_cleanup().await;
 
         Ok(())
     }
