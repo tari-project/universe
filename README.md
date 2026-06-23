@@ -1,7 +1,7 @@
 # Tari Universe v1
 
 [![Downloads](https://img.shields.io/badge/downloads-700k%2B-brightgreen)](https://www.tari.com/downloads/)
-[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://www.tari.com/downloads/)
+[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-lightgrey)](https://www.tari.com/downloads/)
 
 # Desktop Mining Application for Tari
 
@@ -11,7 +11,7 @@ Tari Universe is a desktop application that allows users to mine Tari tokens (XT
 
 The Tari Universe ecosystem includes:
 
-- **Tari Universe Desktop App** - Mining application for Windows, macOS, and Linux
+- **Tari Universe Desktop App** - Mining application for Windows and macOS (Linux: build from source)
 - **Tari Universe Wallet** - Mobile companion app for tracking earnings
 
 ## Installing using binaries
@@ -34,18 +34,9 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Install the `.deb` package:
+Official Linux binaries are no longer published. Linux users must **build from source** (see [Building from source](#building-from-source) below).
 
-```bash
-sudo dpkg -i tari-universe_*.deb
-```
-
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
+> **Note:** Linux builds still pass in CI and several team members use Linux daily. The application should work when built from source, though distribution-specific support is not guaranteed.
 
 ### Run
 
@@ -107,9 +98,11 @@ npm run tauri build
 
 Built applications will be in `target/release/bundle/`:
 
-- **Linux**: `.deb` and `.AppImage` files
+- **Linux**: `.deb` and `.AppImage` files (usable on compatible distributions)
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
+
+> **Note:** Linux `.deb`/`.AppImage` artifacts are built by the build process but are not officially published or supported as releases. See [Building from source](#building-from-source) for instructions.
 
 ## Contributing
 
