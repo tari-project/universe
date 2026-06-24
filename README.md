@@ -96,7 +96,7 @@ npm run tauri build
 
 Built applications will be in `target/release/bundle/`:
 
-- **Linux**: Source builds only (pre-built binaries discontinued)
+- **Linux**: `.deb` and `.AppImage` files (built from source)
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
 
