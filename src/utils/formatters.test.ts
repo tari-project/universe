@@ -238,6 +238,16 @@ describe('formatters', () => {
             const result = formatHashrate(150);
             expect(result).toEqual({ value: 150, unit: 'H/s' });
         });
+
+        it('formats C29 hashrates with G/s unit', () => {
+            const result = formatHashrate(500, true, GpuMiningAlgorithm.C29);
+            expect(result).toEqual({ value: 500, unit: 'G/s' });
+        });
+
+        it('formats C29 large hashrates with GG/s unit', () => {
+            const result = formatHashrate(1_500_000_000, true, GpuMiningAlgorithm.C29);
+            expect(result).toEqual({ value: 1.5, unit: ' GG/s' });
+        });
     });
 
     describe('formatCountdown', () => {
