@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { GpuMiningAlgorithm } from '@app/types/events-payloads';
 import {
     formatNumber,
     FormatPreset,
@@ -188,34 +189,34 @@ describe('formatters', () => {
     });
 
     describe('formatHashrate', () => {
-        it('formats small hashrates with G/s unit', () => {
+        it('formats small hashrates with H/s by default (CPU/RandomX) unit', () => {
             const result = formatHashrate(500);
-            expect(result).toEqual({ value: 500, unit: 'G/s' });
+            expect(result).toEqual({ value: 500, unit: 'H/s' });
         });
 
-        it('formats hashrates >= 1000 with kG/s', () => {
+        it('formats hashrates >= 1000 with kH/s by default', () => {
             const result = formatHashrate(1500);
-            expect(result).toEqual({ value: 1.5, unit: ' kG/s' });
+            expect(result).toEqual({ value: 1.5, unit: ' kH/s' });
         });
 
-        it('formats hashrates >= 1000000 with MG/s', () => {
+        it('formats hashrates >= 1000000 with MH/s by default', () => {
             const result = formatHashrate(1_500_000);
-            expect(result).toEqual({ value: 1.5, unit: ' MG/s' });
+            expect(result).toEqual({ value: 1.5, unit: ' MH/s' });
         });
 
-        it('formats hashrates >= 1000000000 with GG/s', () => {
+        it('formats hashrates >= 1000000000 with GH/s by default', () => {
             const result = formatHashrate(1_500_000_000);
-            expect(result).toEqual({ value: 1.5, unit: ' GG/s' });
+            expect(result).toEqual({ value: 1.5, unit: ' GH/s' });
         });
 
-        it('formats hashrates >= 1000000000000 with TG/s', () => {
+        it('formats hashrates >= 1000000000000 with TH/s by default', () => {
             const result = formatHashrate(1_500_000_000_000);
-            expect(result).toEqual({ value: 1.5, unit: ' TG/s' });
+            expect(result).toEqual({ value: 1.5, unit: ' TH/s' });
         });
 
-        it('formats hashrates >= 1000000000000000 with PG/s', () => {
+        it('formats hashrates >= 1000000000000000 with PH/s by default', () => {
             const result = formatHashrate(1_500_000_000_000_000);
-            expect(result).toEqual({ value: 1.5, unit: ' PG/s' });
+            expect(result).toEqual({ value: 1.5, unit: ' PH/s' });
         });
 
         it('returns short unit when joinUnit is false', () => {
@@ -225,17 +226,27 @@ describe('formatters', () => {
 
         it('handles edge case at exactly 1000', () => {
             const result = formatHashrate(1000);
-            expect(result).toEqual({ value: 1, unit: ' kG/s' });
+            expect(result).toEqual({ value: 1, unit: ' kH/s' });
         });
 
         it('handles zero hashrate', () => {
             const result = formatHashrate(0);
-            expect(result).toEqual({ value: 0, unit: 'G/s' });
+            expect(result).toEqual({ value: 0, unit: 'H/s' });
         });
 
         it('rounds large values to 1 decimal', () => {
             const result = formatHashrate(150);
-            expect(result).toEqual({ value: 150, unit: 'G/s' });
+            expect(result).toEqual({ value: 150, unit: 'H/s' });
+        });
+
+        it('formats C29 hashrates with G/s unit', () => {
+            const result = formatHashrate(500, true, GpuMiningAlgorithm.C29);
+            expect(result).toEqual({ value: 500, unit: 'G/s' });
+        });
+
+        it('formats C29 large hashrates with GG/s unit', () => {
+            const result = formatHashrate(1_500_000_000, true, GpuMiningAlgorithm.C29);
+            expect(result).toEqual({ value: 1.5, unit: ' GG/s' });
         });
     });
 
