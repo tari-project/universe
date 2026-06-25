@@ -87,15 +87,10 @@ pub(crate) trait ProcessAdapter {
             .exists()
     }
 
-    fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
-        let mut sys = System::new_all();
-        sys.refresh_all();
-
-        for (pid, process) in sys.processes() {
-            if process.name() == binary_name {
-                return Some(pid.as_u32());
-            }
-        }
+    fn find_process_pid_by_name(_binary_name: &OsStr) -> Option<u32> {
+        // Deprecated: Do not use. This method scans all system processes by name
+        // and would kill externally-started processes with the same binary name.
+        // Use pid_file-based targeting instead.
         None
     }
 
