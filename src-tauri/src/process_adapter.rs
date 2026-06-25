@@ -87,25 +87,28 @@ pub(crate) trait ProcessAdapter {
             .exists()
     }
 
-    fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
-        let mut sys = System::new_all();
-        sys.refresh_all();
-
-        for (pid, process) in sys.processes() {
-            if process.name() == binary_name {
-                return Some(pid.as_u32());
-            }
-        }
+    fn find_process_pid_by_name(_binary_name: &OsStr) -> Option<u32> {
+        // Deprecated: Do not use. This method scans all system processes by name
+        // and would kill externally-started processes with the same binary name.
+        // Use pid_file-based targeting instead.
         None
     }
 
     async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
-        let binary_name = OsStr::new(self.name());
-        if let Some(process) = Self::find_process_pid_by_name(binary_name) {
-            let parsed_id =
-                i32::try_from(process).expect("Failed to parse process ID from u32 to i32");
-            warn!(target: LOG_TARGET_APP_LOGIC, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
-            kill_process(parsed_id).await?;
+        // Only check our own PID file - never scan by process name to avoid
+        // killing unrelated processes (e.g., external xmrig instances).
+        // Fixes tari-project/universe#3204
+        let pid_file_path = std::path::Path::new(self.pid_file_name());
+        if let Ok(pid_content) = fs::read_to_string(pid_file_path) {
+            if let Ok(pid) = pid_content.trim().parse::<i32>() {
+                // Verify the process actually exists before killing
+                let mut sys = System::new_all();
+                sys.refresh_all();
+                if sys.processes().contains_key(&std::process::Id::from(pid as u32)) {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "{} orphan process detected with PID {}. Attempting to kill it.", self.name(), pid);
+                    kill_process(pid).await?;
+                }
+            }
         }
         Ok(())
     }
@@ -126,15 +129,9 @@ pub(crate) trait ProcessAdapter {
                     kill_process(pid).await?;
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
-                    let pid_by_name = Self::find_process_pid_by_name(binary_name);
-                    if let Some(process) = pid_by_name {
-                        let parsed_id = i32::try_from(process)
-                            .expect("Failed to parse process ID from u32 to i32");
-                        kill_process(parsed_id).await?;
-                    } else {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "No process found with name {}", binary_name.to_str().unwrap_or_default());
-                    }
+                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Skipping kill as we cannot safely identify the process.");
+                    // Do not fall back to name-based scanning - it would kill unrelated processes.
+                    // Fixes tari-project/universe#3204
                 }
             },
             Err(e) => {
