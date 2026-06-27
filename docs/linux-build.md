@@ -1,41 +1,46 @@
-# Linux Build Documentation
+# Linux Build Guide
 
-## Official Release Status
+> **Note:** Official `.deb` and `.AppImage` release artifacts are no longer published
+> as of late 2024. Linux builds work fully from source.
 
-As of late 2024, Tari Universe **no longer produces official `.deb` or `.AppImage` release artifacts** for Linux. Official Linux releases were discontinued due to low usage and high maintenance overhead.
-
-## Building from Source on Linux
-
-Linux builds still work and are fully supported via the source build path:
-
-### Prerequisites
+## Prerequisites
 
 ```bash
-# Install Rust
+# Rust toolchain
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source ~/.cargo/env
+rustup default stable
 
-# Install system dependencies (Ubuntu/Debian)
-sudo apt-get update && sudo apt-get install -y   build-essential   libssl-dev   pkg-config   libwebkit2gtk-4.1-dev   libgtk-3-dev   libayatana-appindicator3-dev   librsvg2-dev
+# System libraries (Ubuntu 22.04 / Debian 12)
+sudo apt-get update && sudo apt-get install -y   build-essential curl git pkg-config libssl-dev   libwebkit2gtk-4.1-dev libgtk-3-dev   libayatana-appindicator3-dev librsvg2-dev   patchelf
 
-# Install Node.js (v20+)
+# Node.js v20+ and pnpm
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt-get install -y nodejs
+npm install -g pnpm
 ```
 
-### Build
+## Build
 
 ```bash
 git clone https://github.com/tari-project/universe.git
 cd universe
-npm install
-npm run tauri build
+pnpm install
+pnpm tauri build
 ```
 
-The compiled binary will be at `src-tauri/target/release/tari-universe`.
+The binary will be at `src-tauri/target/release/tari-universe`.
 
-### Notes
+## Distribution
 
-- Pre-built `.deb`/`.AppImage` packages referenced in older documentation are **no longer published**
-- For production use, build from source using the instructions above
-- Community-maintained packages may exist but are not officially supported
+Pre-built packages are **not officially published** for Linux.
+Build from source using the instructions above.
+Community-maintained packages may exist but are not officially supported.
+
+## Troubleshooting
+
+| Error | Fix |
+|-------|-----|
+| `webkit2gtk not found` | Install `libwebkit2gtk-4.1-dev` |
+| `appindicator not found` | Install `libayatana-appindicator3-dev` |
+| Linker errors | Run `sudo apt-get install build-essential` |
