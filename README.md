@@ -1,7 +1,7 @@
 # Tari Universe v1
 
 [![Downloads](https://img.shields.io/badge/downloads-700k%2B-brightgreen)](https://www.tari.com/downloads/)
-[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://www.tari.com/downloads/)
+[![Platform Support](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux%20source-lightgrey)](https://www.tari.com/downloads/)
 
 # Desktop Mining Application for Tari
 
@@ -11,14 +11,14 @@ Tari Universe is a desktop application that allows users to mine Tari tokens (XT
 
 The Tari Universe ecosystem includes:
 
-- **Tari Universe Desktop App** - Mining application for Windows, macOS, and Linux
+- **Tari Universe Desktop App** - Mining application for Windows and macOS, with Linux support available by building from source
 - **Tari Universe Wallet** - Mobile companion app for tracking earnings
 
 ## Installing using binaries
 
 ### Download
 
-[Download binaries](https://www.tari.com/downloads/) from [tari.com](https://www.tari.com/). This is the easiest way to run Tari Universe.
+[Download binaries](https://www.tari.com/downloads/) from [tari.com](https://www.tari.com/). This is the easiest way to run Tari Universe on Windows and macOS. Official prebuilt Linux packages are not currently published; Linux users should build from source.
 
 ### Install
 
@@ -34,18 +34,7 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Install the `.deb` package:
-
-```bash
-sudo dpkg -i tari-universe_*.deb
-```
-
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
+Official Linux `.deb` and `.AppImage` downloads are not currently published. Linux is supported by building Tari Universe from source. Follow the Linux instructions in [Building from source](#building-from-source).
 
 ### Run
 
@@ -63,6 +52,8 @@ brew install git node cmake protobuf openssl npm
 ```
 
 #### Ubuntu/Debian
+
+These packages install the JavaScript, Rust, WebKitGTK, protobuf, OpenSSL, and packaging dependencies used by the Tauri desktop build:
 
 ```bash
 sudo apt-get update
@@ -103,11 +94,13 @@ npm install
 npm run tauri build
 ```
 
+On Linux, this is the supported path for running Tari Universe. The command builds the web frontend and then runs the Tauri desktop build from `src-tauri`.
+
 ### Output
 
-Built applications will be in `target/release/bundle/`:
+Built applications are written under `src-tauri/target/release/bundle/` for the current platform and configured Tauri bundle targets:
 
-- **Linux**: `.deb` and `.AppImage` files
+- **Linux**: local source builds create Linux bundle outputs when the required system packaging tools are installed; these are not official release artifacts
 - **Windows**: `.msi` installer
 - **macOS**: `.dmg` and `.app` bundle
 
