@@ -177,7 +177,7 @@ impl AutoLauncher {
     /// creation, and did not fall back to the Registry Run key when Task Scheduler fails
     /// (e.g. on Windows Home editions where Task Scheduler has stricter UAC policies).
     #[cfg(target_os = "windows")]
-    fn create_task_scheduler_entry(is_triggered: bool) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    fn create_task_scheduler_entry(is_triggered: bool) -> Result<(), anyhow::Error> {
         use planif::settings::{Duration, IdleSettings, InstancesPolicy};
         use std::time::Duration as StdDuration;
 
@@ -190,8 +190,7 @@ impl AutoLauncher {
         let app_path = app_exe
             .as_os_str()
             .to_str()
-            .ok_or("Failed to convert path to string")
-            .map_err(|e| anyhow!("{}", e))?
+            .ok_or_else(|| anyhow!("Failed to convert path to string"))?
             .to_string();
 
         info!(target: LOG_TARGET_APP_LOGIC, "Creating Task Scheduler entry for: {}", app_path);
@@ -253,7 +252,7 @@ impl AutoLauncher {
 
     /// Delete the Task Scheduler auto-start entry.
     #[cfg(target_os = "windows")]
-    fn delete_task_scheduler_entry() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    fn delete_task_scheduler_entry() -> Result<(), anyhow::Error> {
         let task_scheduler = TaskScheduler::new()?;
         let com_runtime = task_scheduler.get_com();
         // Attempt deletion — not an error if the task doesn\'t exist
@@ -266,7 +265,7 @@ impl AutoLauncher {
     /// Verify the Task Scheduler entry was actually registered.
     /// Reads back the task by name to confirm it exists in the scheduler.
     #[cfg(target_os = "windows")]
-    fn verify_task_registered() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    fn verify_task_registered() -> Result<(), anyhow::Error> {
         let task_scheduler = TaskScheduler::new()?;
         // A successful TaskScheduler::new() after registration confirms the COM
         // context is still alive and the registration was not silently dropped.
@@ -279,7 +278,7 @@ impl AutoLauncher {
     /// Fallback: write the auto-start entry to the Windows Registry Run key.
     /// Used when Task Scheduler fails (e.g. on Home editions with UAC restrictions).
     #[cfg(target_os = "windows")]
-    fn set_registry_autostart(enabled: bool) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    fn set_registry_autostart(enabled: bool) -> Result<(), anyhow::Error> {
         use std::process::Command;
         let app_exe = current_exe()?;
         let app_exe = canonicalize(&app_exe)?;
@@ -363,7 +362,7 @@ impl AutoLauncher {
         Ok(())
     }
 
-    pub fn current() -> &\'static AutoLauncher {
+    pub fn current() -> &'static AutoLauncher {
         &INSTANCE
     }
 }
