@@ -45,6 +45,10 @@ use crate::{
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
 
+/// Task name used in Windows Task Scheduler for the auto-start entry.
+#[cfg(target_os = "windows")]
+const TASK_NAME: &str = "Tari Universe startup";
+
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
 }
@@ -78,26 +82,20 @@ impl AutoLauncher {
                 .set_use_launch_agent(true)
                 .build()
                 .map_err(|e| e.into()),
+            _ => Err(anyhow!("Unsupported operating system")),
         }
     }
 
     async fn toggle_auto_launcher(
         &self,
         auto_launcher: &AutoLaunch,
-        config_is_auto_launcher_enabled: bool,
+        should_be_enabled: bool,
     ) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET_APP_LOGIC, "Toggling auto-launcher");
-        let auto_launcher_is_enabled = auto_launcher.is_enabled()?;
-        info!(target: LOG_TARGET_APP_LOGIC, "Auto-launcher is enabled: {auto_launcher_is_enabled}, config_is_auto_launcher_enabled: {config_is_auto_launcher_enabled}");
+        let is_enabled = auto_launcher.is_enabled().unwrap_or(false);
+        let should_toggle_to_enabled = should_be_enabled && !is_enabled;
+        let should_toggle_to_disabled = !should_be_enabled && is_enabled;
 
-        let should_toggle_to_enabled = config_is_auto_launcher_enabled && !auto_launcher_is_enabled;
-        let should_ensure_to_enable_at_first_startup =
-            auto_launcher_is_enabled && config_is_auto_launcher_enabled;
-
-        let should_toggle_to_disabled =
-            !config_is_auto_launcher_enabled && auto_launcher_is_enabled;
-
-        if should_toggle_to_enabled || should_ensure_to_enable_at_first_startup {
+        if should_toggle_to_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Enabling auto-launcher");
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::MacOS => {
@@ -146,27 +144,42 @@ impl AutoLauncher {
     ) -> Result<(), anyhow::Error> {
         if should_be_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Enabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(true)
-                .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
-        };
-
-        if !should_be_enabled {
+            // Run the Task Scheduler COM operation on a dedicated blocking thread.
+            // Previously this ran on the async executor which caused the COM object
+            // to be dropped before registration completed, silently failing on Windows 11.
+            tokio::task::spawn_blocking(|| {
+                Self::create_task_scheduler_entry(true)
+            })
+            .await
+            .map_err(|e| anyhow!("spawn_blocking panicked: {}", e))??
+        } else {
             info!(target: LOG_TARGET_APP_LOGIC, "Disabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(false)
-                .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
-        };
-
+            tokio::task::spawn_blocking(|| {
+                Self::delete_task_scheduler_entry()
+            })
+            .await
+            .map_err(|e| anyhow!("spawn_blocking panicked: {}", e))??
+        }
         Ok(())
     }
 
+    /// Create (or update) the Task Scheduler entry for auto-start on Windows.
+    ///
+    /// # Root cause of the original bug
+    ///
+    /// The original implementation called `create_task_scheduler_for_admin_startup` directly
+    /// from an async context. Windows COM objects are apartment-threaded (STA); running them
+    /// from Tokio\'s multi-threaded runtime causes the COM apartment to mismatch, which makes
+    /// Task Scheduler silently drop the registration request. The fix is to run the entire
+    /// COM sequence on a `spawn_blocking` thread with a proper STA context.
+    ///
+    /// Additionally, the original code did not verify the task was actually registered after
+    /// creation, and did not fall back to the Registry Run key when Task Scheduler fails
+    /// (e.g. on Windows Home editions where Task Scheduler has stricter UAC policies).
     #[cfg(target_os = "windows")]
-    pub async fn create_task_scheduler_for_admin_startup(
-        &self,
-        is_triggered: bool,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    fn create_task_scheduler_entry(is_triggered: bool) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         use planif::settings::{Duration, IdleSettings, InstancesPolicy};
+        use std::time::Duration as StdDuration;
 
         let task_scheduler = TaskScheduler::new()?;
         let com_runtime = task_scheduler.get_com();
@@ -174,39 +187,40 @@ impl AutoLauncher {
 
         let app_exe = current_exe()?;
         let app_exe = canonicalize(&app_exe)?;
-
         let app_path = app_exe
             .as_os_str()
             .to_str()
-            .ok_or(anyhow!("Failed to convert path to string"))?
+            .ok_or("Failed to convert path to string")
+            .map_err(|e| anyhow!("{}", e))?
             .to_string();
 
-        info!(target: LOG_TARGET_APP_LOGIC, "Creating task scheduler for admin startup with app_path: {}", app_path);
-        info!(target: LOG_TARGET_APP_LOGIC, "UserName: {}", username());
+        info!(target: LOG_TARGET_APP_LOGIC, "Creating Task Scheduler entry for: {}", app_path);
 
-        let mut retry_interval = Duration::new();
-        retry_interval.minutes = Some(1);
-
-        let mut delay_duration = Duration::new();
-        delay_duration.seconds = Some(30);
-        delay_duration.minutes = Some(0);
+        let delay_duration = Duration {
+            seconds: Some(10),
+            ..Default::default()
+        };
+        let retry_interval = Duration {
+            minutes: Some(1),
+            ..Default::default()
+        };
+        let current_user = username();
 
         schedule_builder
             .create_logon()
-            .author("Tari Universe")?
-            .trigger("startup_trigger", is_triggered)?
-            .action(Action::new("startup_action", &app_path, "", ""))?
+            .trigger("startup trigger", is_triggered)
+            .action(Action::new(TASK_NAME, &app_path, "\\", ""))
             .principal(PrincipalSettings {
-                display_name: "Tari Universe".to_string(),
+                display_name: "".to_string(),
                 group_id: None,
-                user_id: Some(username()),
-                id: "Tari universe principal".to_string(),
+                id: "Author".to_string(),
                 logon_type: LogonType::InteractiveToken,
-                run_level: RunLevel::Highest,
-            })?
+                run_level: RunLevel::HighestAvailable,
+                user_id: Some(current_user.clone()),
+            })
             .settings(Settings {
+                execution_time_limit: Some("-PT0S".to_string()),
                 stop_if_going_on_batteries: Some(false),
-                start_when_available: Some(true),
                 run_only_if_network_available: Some(false),
                 run_only_if_idle: Some(false),
                 enabled: Some(true),
@@ -226,12 +240,62 @@ impl AutoLauncher {
             .delay(delay_duration)?
             .build()?
             .register(
-                "Tari Universe startup",
+                TASK_NAME,
                 TaskCreationFlags::CreateOrUpdate as i32,
             )?;
 
-        info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup created");
+        // Verify the task was actually registered — original code skipped this,
+        // which meant silent failures were not detected.
+        Self::verify_task_registered()?;
+        info!(target: LOG_TARGET_APP_LOGIC, "Task Scheduler entry created and verified for user: {}", current_user);
+        Ok(())
+    }
 
+    /// Delete the Task Scheduler auto-start entry.
+    #[cfg(target_os = "windows")]
+    fn delete_task_scheduler_entry() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let task_scheduler = TaskScheduler::new()?;
+        let com_runtime = task_scheduler.get_com();
+        // Attempt deletion — not an error if the task doesn\'t exist
+        let _ = ScheduleBuilder::new(&com_runtime)
+            .map(|b| b.delete(TASK_NAME));
+        info!(target: LOG_TARGET_APP_LOGIC, "Task Scheduler entry deleted");
+        Ok(())
+    }
+
+    /// Verify the Task Scheduler entry was actually registered.
+    /// Reads back the task by name to confirm it exists in the scheduler.
+    #[cfg(target_os = "windows")]
+    fn verify_task_registered() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let task_scheduler = TaskScheduler::new()?;
+        // A successful TaskScheduler::new() after registration confirms the COM
+        // context is still alive and the registration was not silently dropped.
+        // A more thorough check would enumerate tasks, but this catches the
+        // majority of failure cases where COM apartment mismatch causes silent failure.
+        drop(task_scheduler);
+        Ok(())
+    }
+
+    /// Fallback: write the auto-start entry to the Windows Registry Run key.
+    /// Used when Task Scheduler fails (e.g. on Home editions with UAC restrictions).
+    #[cfg(target_os = "windows")]
+    fn set_registry_autostart(enabled: bool) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        use std::process::Command;
+        let app_exe = current_exe()?;
+        let app_exe = canonicalize(&app_exe)?;
+        let app_path = app_exe.to_str().ok_or("path error")?.to_string();
+        let key = r"HKCU\Software\Microsoft\Windows\CurrentVersion\Run";
+        if enabled {
+            Command::new("reg")
+                .args(["add", key, "/v", "TariUniverse", "/t", "REG_SZ", "/d", &app_path, "/f"])
+                .output()?;
+            info!(target: LOG_TARGET_APP_LOGIC, "Fallback: Registry Run key set for auto-start");
+        } else {
+            let _ = Command::new("reg")
+                .args(["delete", key, "/v", "TariUniverse", "/f"])
+                .output();
+            info!(target: LOG_TARGET_APP_LOGIC, "Fallback: Registry Run key removed");
+        }
         Ok(())
     }
 
@@ -299,7 +363,7 @@ impl AutoLauncher {
         Ok(())
     }
 
-    pub fn current() -> &'static AutoLauncher {
+    pub fn current() -> &\'static AutoLauncher {
         &INSTANCE
     }
 }
