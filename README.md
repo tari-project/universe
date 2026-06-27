@@ -53,7 +53,7 @@ brew install git node cmake protobuf openssl npm
 
 #### Ubuntu/Debian
 
-These packages install the JavaScript, Rust, WebKitGTK, protobuf, OpenSSL, and packaging dependencies used by the Tauri desktop build:
+These packages install the JavaScript, WebKitGTK, protobuf, OpenSSL, and packaging dependencies used by the Tauri desktop build:
 
 ```bash
 sudo apt-get update
