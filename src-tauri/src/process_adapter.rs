@@ -88,8 +88,9 @@ pub(crate) trait ProcessAdapter {
     }
 
     fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
-        let mut sys = System::new_all();
-        sys.refresh_all();
+        // System::new_all() already populates all process info — no need for
+        // a redundant refresh_all() call which re-scans everything.
+        let sys = System::new_all();
 
         for (pid, process) in sys.processes() {
             if process.name() == binary_name {
