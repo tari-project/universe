@@ -13,6 +13,7 @@ import {
     removeXTMCryptoDecimals,
     formatValue,
 } from './formatters';
+import { GpuMiningAlgorithm } from '@app/types/events-payloads';
 
 vi.mock('i18next', () => ({
     default: {
@@ -188,54 +189,81 @@ describe('formatters', () => {
     });
 
     describe('formatHashrate', () => {
-        it('formats small hashrates with G/s unit', () => {
+        // ── C29 (default) — unit base is G ──────────────────────────────────
+        it('C29: formats small hashrates with G/s unit', () => {
             const result = formatHashrate(500);
             expect(result).toEqual({ value: 500, unit: 'G/s' });
         });
 
-        it('formats hashrates >= 1000 with kG/s', () => {
+        it('C29: formats hashrates >= 1000 with kG/s', () => {
             const result = formatHashrate(1500);
             expect(result).toEqual({ value: 1.5, unit: ' kG/s' });
         });
 
-        it('formats hashrates >= 1000000 with MG/s', () => {
+        it('C29: formats hashrates >= 1000000 with MG/s', () => {
             const result = formatHashrate(1_500_000);
             expect(result).toEqual({ value: 1.5, unit: ' MG/s' });
         });
 
-        it('formats hashrates >= 1000000000 with GG/s', () => {
+        it('C29: formats hashrates >= 1000000000 with GG/s', () => {
             const result = formatHashrate(1_500_000_000);
             expect(result).toEqual({ value: 1.5, unit: ' GG/s' });
         });
 
-        it('formats hashrates >= 1000000000000 with TG/s', () => {
+        it('C29: formats hashrates >= 1000000000000 with TG/s', () => {
             const result = formatHashrate(1_500_000_000_000);
             expect(result).toEqual({ value: 1.5, unit: ' TG/s' });
         });
 
-        it('formats hashrates >= 1000000000000000 with PG/s', () => {
+        it('C29: formats hashrates >= 1000000000000000 with PG/s', () => {
             const result = formatHashrate(1_500_000_000_000_000);
             expect(result).toEqual({ value: 1.5, unit: ' PG/s' });
         });
 
-        it('returns short unit when joinUnit is false', () => {
+        it('C29: returns short unit when joinUnit is false', () => {
             const result = formatHashrate(1_500_000, false);
             expect(result).toEqual({ value: 1.5, unit: 'M' });
         });
 
-        it('handles edge case at exactly 1000', () => {
+        it('C29: handles edge case at exactly 1000', () => {
             const result = formatHashrate(1000);
             expect(result).toEqual({ value: 1, unit: ' kG/s' });
         });
 
-        it('handles zero hashrate', () => {
+        it('C29: handles zero hashrate', () => {
             const result = formatHashrate(0);
             expect(result).toEqual({ value: 0, unit: 'G/s' });
         });
 
-        it('rounds large values to 1 decimal', () => {
+        it('C29: rounds large values to 1 decimal', () => {
             const result = formatHashrate(150);
             expect(result).toEqual({ value: 150, unit: 'G/s' });
+        });
+
+        // ── RandomX (CPU mining, H/s) ────────────────────────────────────────
+        it('RandomX: formats small hashrates with H/s unit', () => {
+            const result = formatHashrate(500, true, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 500, unit: 'H/s' });
+        });
+
+        it('RandomX: formats hashrates >= 1000 with kH/s', () => {
+            const result = formatHashrate(1500, true, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 1.5, unit: ' kH/s' });
+        });
+
+        it('RandomX: formats hashrates >= 1000000 with MH/s', () => {
+            const result = formatHashrate(1_500_000, true, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 1.5, unit: ' MH/s' });
+        });
+
+        it('RandomX: handles zero hashrate with H/s', () => {
+            const result = formatHashrate(0, true, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 0, unit: 'H/s' });
+        });
+
+        it('RandomX: short unit when joinUnit false', () => {
+            const result = formatHashrate(1_500_000, false, GpuMiningAlgorithm.RandomX);
+            expect(result).toEqual({ value: 1.5, unit: 'M' });
         });
     });
 

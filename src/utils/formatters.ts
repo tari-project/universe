@@ -126,8 +126,20 @@ interface Hashrate {
     unit: string;
 }
 
-export function formatHashrate(hashrate: number, joinUnit = true, _algo = GpuMiningAlgorithm.C29): Hashrate {
-    const unit = 'G';
+/**
+ * Returns the base unit letter for a mining algorithm.
+ * - C29 (Cuckoo Cycle) uses G (graphs/sec)
+ * - All other algorithms (RandomX, SHA-3, …) use H (hashes/sec)
+ *
+ * macOS does not support C29 mining at all, so CPU tiles always pass
+ * `GpuMiningAlgorithm.RandomX` and will correctly show H/s.
+ */
+export function hashrateBaseUnit(algo: GpuMiningAlgorithm): 'G' | 'H' {
+    return algo === GpuMiningAlgorithm.C29 ? 'G' : 'H';
+}
+
+export function formatHashrate(hashrate: number, joinUnit = true, algo = GpuMiningAlgorithm.C29): Hashrate {
+    const unit = hashrateBaseUnit(algo);
     const fixed = (val: number, dec = 2) => Number(val.toFixed(val >= 100 ? 1 : dec));
     if (hashrate < 1000) {
         return {
