@@ -107,12 +107,18 @@ impl AutoLauncher {
                     auto_launcher.enable()?;
                 }
                 CurrentOperatingSystem::Windows => {
-                    auto_launcher.enable()?;
-                    // To startup application as admin on windows, we need to create a task scheduler
+                    // Windows: 先通过auto_launch crate设置Run key（对非管理员用户有效）
+                    if let Err(e) = auto_launcher.enable() {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to enable Run key auto-start: {}", e);
+                    }
+                    // 额外尝试Task Scheduler（对管理员用户有效），不影响主流程
                     #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(true).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to enable admin auto-launcher: {}", e)
-                    });
+                    {
+                        let result = self.toggle_windows_admin_auto_launcher(true).await;
+                        if let Err(e) = &result {
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Task Scheduler auto-start not set (non-admin or denied): {}", e);
+                        }
+                    }
                 }
                 _ => {
                     auto_launcher.enable()?;
