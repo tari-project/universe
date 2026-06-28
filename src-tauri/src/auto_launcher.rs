@@ -172,16 +172,19 @@ impl AutoLauncher {
         &self,
         is_triggered: bool,
     ) -> Result<(), anyhow::Error> {
-        // ── Windows COM STA fix ──────────────────────────────────────────────
+        // ── Windows COM STA fix (v2) ─────────────────────────────────────────
         // Task Scheduler COM objects are apartment-threaded (STA).
-        // Tokio's async executor is multi-threaded (MTA). Calling COM STA
-        // objects from an MTA thread causes registration to be silently
-        // dropped on Windows 11 — the task never appears in Task Scheduler
-        // and the app never starts on boot.
         //
-        // Fix: run all COM calls inside spawn_blocking, which dispatches to
-        // Tokio's blocking-thread pool. Each blocking thread initialises
-        // COM independently under STA, making Task Scheduler calls safe.
+        // spawn_blocking is NOT sufficient: Tokio reuses threads in its
+        // blocking pool.  If any prior task on the same thread initialised COM
+        // as MTA, a subsequent STA CoInitialize call fails with
+        // RPC_E_CHANGED_MODE (0x80010106) and registration is silently dropped.
+        //
+        // Fix: spawn a fresh OS thread with std::thread::spawn and relay the
+        // result back over a oneshot channel.  Each std::thread starts with
+        // no prior COM state, so planif's internal CoInitialize(STA) always
+        // succeeds deterministically, and the COM runtime is cleaned up when
+        // the thread exits.
         // ─────────────────────────────────────────────────────────────────────
         let app_exe = current_exe()?;
         let app_exe = canonicalize(&app_exe)?;
@@ -192,75 +195,80 @@ impl AutoLauncher {
             .to_string();
         let user = username();
 
-        tokio::task::spawn_blocking(move || -> Result<(), anyhow::Error> {
-            use planif::settings::{Duration, IdleSettings, InstancesPolicy};
+        let (tx, rx) = tokio::sync::oneshot::channel::<Result<(), anyhow::Error>>();
+        std::thread::spawn(move || {
+            let result = (move || -> Result<(), anyhow::Error> {
+                use planif::settings::{Duration, IdleSettings, InstancesPolicy};
 
-            info!(target: LOG_TARGET_APP_LOGIC,
-                "Creating task scheduler entry (is_triggered={}) for: {}", is_triggered, app_path);
-            info!(target: LOG_TARGET_APP_LOGIC, "UserName: {}", user);
+                info!(target: LOG_TARGET_APP_LOGIC,
+                    "Creating task scheduler entry (is_triggered={}) for: {}", is_triggered, app_path);
+                info!(target: LOG_TARGET_APP_LOGIC, "UserName: {}", user);
 
-            let mut retry_interval = Duration::new();
-            retry_interval.minutes = Some(1);
+                let mut retry_interval = Duration::new();
+                retry_interval.minutes = Some(1);
 
-            let mut delay_duration = Duration::new();
-            delay_duration.seconds = Some(30);
-            delay_duration.minutes = Some(0);
+                let mut delay_duration = Duration::new();
+                delay_duration.seconds = Some(30);
+                delay_duration.minutes = Some(0);
 
-            let task_scheduler = TaskScheduler::new()
-                .map_err(|e| anyhow!("TaskScheduler::new failed: {}", e))?;
-            let com_runtime = task_scheduler.get_com();
-            let schedule_builder = ScheduleBuilder::new(&com_runtime)
-                .map_err(|e| anyhow!("ScheduleBuilder::new failed: {}", e))?;
+                let task_scheduler = TaskScheduler::new()
+                    .map_err(|e| anyhow!("TaskScheduler::new failed: {}", e))?;
+                let com_runtime = task_scheduler.get_com();
+                let schedule_builder = ScheduleBuilder::new(&com_runtime)
+                    .map_err(|e| anyhow!("ScheduleBuilder::new failed: {}", e))?;
 
-            schedule_builder
-                .create_logon()
-                .author("Tari Universe")
-                .map_err(|e| anyhow!("author failed: {}", e))?
-                .trigger("startup_trigger", is_triggered)
-                .map_err(|e| anyhow!("trigger failed: {}", e))?
-                .action(Action::new("startup_action", &app_path, "", ""))
-                .map_err(|e| anyhow!("action failed: {}", e))?
-                .principal(PrincipalSettings {
-                    display_name: "Tari Universe".to_string(),
-                    group_id: None,
-                    user_id: Some(user.clone()),
-                    id: "Tari universe principal".to_string(),
-                    logon_type: LogonType::InteractiveToken,
-                    run_level: RunLevel::Highest,
-                })
-                .map_err(|e| anyhow!("principal failed: {}", e))?
-                .settings(Settings {
-                    stop_if_going_on_batteries: Some(false),
-                    start_when_available: Some(true),
-                    run_only_if_network_available: Some(false),
-                    run_only_if_idle: Some(false),
-                    enabled: Some(true),
-                    disallow_start_if_on_batteries: Some(false),
-                    hidden: Some(false),
-                    multiple_instances_policy: Some(InstancesPolicy::Parallel),
-                    restart_count: Some(3),
-                    restart_interval: Some(retry_interval.to_string()),
-                    idle_settings: Some(IdleSettings {
-                        stop_on_idle_end: Some(false),
-                        restart_on_idle: Some(false),
+                schedule_builder
+                    .create_logon()
+                    .author("Tari Universe")
+                    .map_err(|e| anyhow!("author failed: {}", e))?
+                    .trigger("startup_trigger", is_triggered)
+                    .map_err(|e| anyhow!("trigger failed: {}", e))?
+                    .action(Action::new("startup_action", &app_path, "", ""))
+                    .map_err(|e| anyhow!("action failed: {}", e))?
+                    .principal(PrincipalSettings {
+                        display_name: "Tari Universe".to_string(),
+                        group_id: None,
+                        user_id: Some(user.clone()),
+                        id: "Tari universe principal".to_string(),
+                        logon_type: LogonType::InteractiveToken,
+                        run_level: RunLevel::Highest,
+                    })
+                    .map_err(|e| anyhow!("principal failed: {}", e))?
+                    .settings(Settings {
+                        stop_if_going_on_batteries: Some(false),
+                        start_when_available: Some(true),
+                        run_only_if_network_available: Some(false),
+                        run_only_if_idle: Some(false),
+                        enabled: Some(true),
+                        disallow_start_if_on_batteries: Some(false),
+                        hidden: Some(false),
+                        multiple_instances_policy: Some(InstancesPolicy::Parallel),
+                        restart_count: Some(3),
+                        restart_interval: Some(retry_interval.to_string()),
+                        idle_settings: Some(IdleSettings {
+                            stop_on_idle_end: Some(false),
+                            restart_on_idle: Some(false),
+                            ..Default::default()
+                        }),
+                        allow_demand_start: Some(true),
                         ..Default::default()
-                    }),
-                    allow_demand_start: Some(true),
-                    ..Default::default()
-                })
-                .map_err(|e| anyhow!("settings failed: {}", e))?
-                .delay(delay_duration)
-                .map_err(|e| anyhow!("delay failed: {}", e))?
-                .build()
-                .map_err(|e| anyhow!("build failed: {}", e))?
-                .register(TASK_NAME, TaskCreationFlags::CreateOrUpdate as i32)
-                .map_err(|e| anyhow!("register failed: {}", e))?;
+                    })
+                    .map_err(|e| anyhow!("settings failed: {}", e))?
+                    .delay(delay_duration)
+                    .map_err(|e| anyhow!("delay failed: {}", e))?
+                    .build()
+                    .map_err(|e| anyhow!("build failed: {}", e))?
+                    .register(TASK_NAME, TaskCreationFlags::CreateOrUpdate as i32)
+                    .map_err(|e| anyhow!("register failed: {}", e))?;
 
-            info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler entry '{}' created", TASK_NAME);
-            Ok(())
-        })
-        .await
-        .map_err(|e| anyhow!("spawn_blocking join error: {}", e))??;
+                info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler entry '{}' created", TASK_NAME);
+                Ok(())
+            })();
+            let _ = tx.send(result);
+        });
+
+        rx.await
+            .map_err(|e| anyhow!("Dedicated STA thread channel error: {}", e))??;
 
         Ok(())
     }
