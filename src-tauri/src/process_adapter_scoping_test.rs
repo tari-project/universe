@@ -53,8 +53,9 @@ mod scoping_tests {
     /// Simulates the binary-path guard in kill_previous_instances: when the
     /// pid file is corrupt we fall back to name-based lookup, but only kill
     /// if the found executable path lives under our own binary directory.
+    /// Uses Path::starts_with (path-component matching) not string starts_with.
     fn should_kill_by_path(found_exe: &str, our_binary_dir: &str) -> bool {
-        found_exe.starts_with(our_binary_dir)
+        std::path::Path::new(found_exe).starts_with(std::path::Path::new(our_binary_dir))
     }
 
     #[test]
@@ -71,6 +72,17 @@ mod scoping_tests {
             "/usr/local/bin/xmrig",
             "/home/user/.local/tari",
         ), "Independently installed xmrig must be preserved");
+    }
+
+    #[test]
+    fn path_component_not_prefix_substring() {
+        // "/home/user/tari-universe" must NOT match "/home/user/tari" as a
+        // string prefix, but Path::starts_with correctly rejects it too since
+        // "tari-universe" != "tari" as a path component.
+        assert!(!should_kill_by_path(
+            "/home/user/tari-universe/xmrig",
+            "/home/user/tari",
+        ), "Path component boundary must be respected");
     }
 
     #[test]

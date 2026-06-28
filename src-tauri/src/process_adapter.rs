@@ -88,8 +88,11 @@ pub(crate) trait ProcessAdapter {
     }
 
     fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
-        let mut sys = System::new_all();
-        sys.refresh_all();
+        // Use a targeted refresh: System::new() creates an empty struct;
+        // refresh_processes() loads only process info (skips CPU, memory,
+        // disks, networks) — much cheaper than System::new_all() + refresh_all().
+        let mut sys = System::new();
+        sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
 
         for (pid, process) in sys.processes() {
             if process.name() == binary_name {
@@ -100,26 +103,18 @@ pub(crate) trait ProcessAdapter {
     }
 
     async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
-        // SAFETY: We must never kill a process we did not spawn.  External xmrig
-        // (or any other process with the same binary name) must be left alone.
+        // This method is intentionally a lightweight no-op.
         //
-        // Strategy:
-        //   1. Read our own PID file (`<base_folder>/<pid_file_name>`).
-        //      If the file is absent, TU never launched this binary in this
-        //      run, so nothing needs cleaning up.
-        //   2. When a PID is found in the file, confirm via sysinfo that a
-        //      process with that exact PID still carries our binary name.
-        //      Only then kill — otherwise the PID may have been reused.
+        // The real ownership-scoped cleanup happens in `kill_previous_instances`,
+        // which has access to `base_folder` and can cross-check any found PID
+        // against the pid file before killing.
         //
-        // NOTE: `ensure_no_hanging_processes_are_running` is called at
-        // `on_app_exit` time.  At that point we no longer need a base_folder
-        // argument because the process_watcher already cleaned things up via
-        // `kill_previous_instances` (which has the base_folder).  If there is
-        // genuinely nothing in the pid file we simply do nothing.
-        //
-        // Callers that have a base_folder should prefer `kill_previous_instances`.
+        // `ensure_no_hanging_processes_are_running` is called at `on_app_exit`
+        // time, after `kill_previous_instances` has already run.  There is
+        // nothing left to do here without the base_folder context, so we log
+        // and return Ok rather than falling back to an unsafe kill-by-name scan.
         info!(target: LOG_TARGET_APP_LOGIC,
-            "ensure_no_hanging: checking for TU-owned {} processes via pid file", self.name());
+            "ensure_no_hanging: {} processes cleaned up by kill_previous_instances", self.name());
         Ok(())
     }
 
@@ -147,8 +142,8 @@ pub(crate) trait ProcessAdapter {
                     warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name with path verification");
                     let pid_by_name = Self::find_process_pid_by_name(binary_name);
                     if let Some(process) = pid_by_name {
-                        let mut sys = System::new_all();
-                        sys.refresh_all();
+                        let mut sys = System::new();
+                        sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
                         let is_our_process = sys
                             .processes()
                             .get(&sysinfo::Pid::from_u32(process))
