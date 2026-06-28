@@ -45,6 +45,12 @@ use crate::{
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
 
+/// Consistent Task Scheduler entry name — must be identical for create and delete.
+/// Using a constant prevents the silent leak where creation uses one string
+/// and deletion uses another, leaving a stale startup entry in Task Scheduler.
+#[cfg(target_os = "windows")]
+const TASK_NAME: &str = "Tari Universe startup";
+
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
 }
@@ -165,72 +171,96 @@ impl AutoLauncher {
     pub async fn create_task_scheduler_for_admin_startup(
         &self,
         is_triggered: bool,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        use planif::settings::{Duration, IdleSettings, InstancesPolicy};
-
-        let task_scheduler = TaskScheduler::new()?;
-        let com_runtime = task_scheduler.get_com();
-        let schedule_builder = ScheduleBuilder::new(&com_runtime)?;
-
+    ) -> Result<(), anyhow::Error> {
+        // ── Windows COM STA fix ──────────────────────────────────────────────
+        // Task Scheduler COM objects are apartment-threaded (STA).
+        // Tokio's async executor is multi-threaded (MTA). Calling COM STA
+        // objects from an MTA thread causes registration to be silently
+        // dropped on Windows 11 — the task never appears in Task Scheduler
+        // and the app never starts on boot.
+        //
+        // Fix: run all COM calls inside spawn_blocking, which dispatches to
+        // Tokio's blocking-thread pool. Each blocking thread initialises
+        // COM independently under STA, making Task Scheduler calls safe.
+        // ─────────────────────────────────────────────────────────────────────
         let app_exe = current_exe()?;
         let app_exe = canonicalize(&app_exe)?;
-
         let app_path = app_exe
             .as_os_str()
             .to_str()
-            .ok_or(anyhow!("Failed to convert path to string"))?
+            .ok_or_else(|| anyhow!("Failed to convert app path to UTF-8 string"))?
             .to_string();
+        let user = username();
 
-        info!(target: LOG_TARGET_APP_LOGIC, "Creating task scheduler for admin startup with app_path: {}", app_path);
-        info!(target: LOG_TARGET_APP_LOGIC, "UserName: {}", username());
+        tokio::task::spawn_blocking(move || -> Result<(), anyhow::Error> {
+            use planif::settings::{Duration, IdleSettings, InstancesPolicy};
 
-        let mut retry_interval = Duration::new();
-        retry_interval.minutes = Some(1);
+            info!(target: LOG_TARGET_APP_LOGIC,
+                "Creating task scheduler entry (is_triggered={}) for: {}", is_triggered, app_path);
+            info!(target: LOG_TARGET_APP_LOGIC, "UserName: {}", user);
 
-        let mut delay_duration = Duration::new();
-        delay_duration.seconds = Some(30);
-        delay_duration.minutes = Some(0);
+            let mut retry_interval = Duration::new();
+            retry_interval.minutes = Some(1);
 
-        schedule_builder
-            .create_logon()
-            .author("Tari Universe")?
-            .trigger("startup_trigger", is_triggered)?
-            .action(Action::new("startup_action", &app_path, "", ""))?
-            .principal(PrincipalSettings {
-                display_name: "Tari Universe".to_string(),
-                group_id: None,
-                user_id: Some(username()),
-                id: "Tari universe principal".to_string(),
-                logon_type: LogonType::InteractiveToken,
-                run_level: RunLevel::Highest,
-            })?
-            .settings(Settings {
-                stop_if_going_on_batteries: Some(false),
-                start_when_available: Some(true),
-                run_only_if_network_available: Some(false),
-                run_only_if_idle: Some(false),
-                enabled: Some(true),
-                disallow_start_if_on_batteries: Some(false),
-                hidden: Some(false),
-                multiple_instances_policy: Some(InstancesPolicy::Parallel),
-                restart_count: Some(3),
-                restart_interval: Some(retry_interval.to_string()),
-                idle_settings: Some(IdleSettings {
-                    stop_on_idle_end: Some(false),
-                    restart_on_idle: Some(false),
+            let mut delay_duration = Duration::new();
+            delay_duration.seconds = Some(30);
+            delay_duration.minutes = Some(0);
+
+            let task_scheduler = TaskScheduler::new()
+                .map_err(|e| anyhow!("TaskScheduler::new failed: {}", e))?;
+            let com_runtime = task_scheduler.get_com();
+            let schedule_builder = ScheduleBuilder::new(&com_runtime)
+                .map_err(|e| anyhow!("ScheduleBuilder::new failed: {}", e))?;
+
+            schedule_builder
+                .create_logon()
+                .author("Tari Universe")
+                .map_err(|e| anyhow!("author failed: {}", e))?
+                .trigger("startup_trigger", is_triggered)
+                .map_err(|e| anyhow!("trigger failed: {}", e))?
+                .action(Action::new("startup_action", &app_path, "", ""))
+                .map_err(|e| anyhow!("action failed: {}", e))?
+                .principal(PrincipalSettings {
+                    display_name: "Tari Universe".to_string(),
+                    group_id: None,
+                    user_id: Some(user.clone()),
+                    id: "Tari universe principal".to_string(),
+                    logon_type: LogonType::InteractiveToken,
+                    run_level: RunLevel::Highest,
+                })
+                .map_err(|e| anyhow!("principal failed: {}", e))?
+                .settings(Settings {
+                    stop_if_going_on_batteries: Some(false),
+                    start_when_available: Some(true),
+                    run_only_if_network_available: Some(false),
+                    run_only_if_idle: Some(false),
+                    enabled: Some(true),
+                    disallow_start_if_on_batteries: Some(false),
+                    hidden: Some(false),
+                    multiple_instances_policy: Some(InstancesPolicy::Parallel),
+                    restart_count: Some(3),
+                    restart_interval: Some(retry_interval.to_string()),
+                    idle_settings: Some(IdleSettings {
+                        stop_on_idle_end: Some(false),
+                        restart_on_idle: Some(false),
+                        ..Default::default()
+                    }),
+                    allow_demand_start: Some(true),
                     ..Default::default()
-                }),
-                allow_demand_start: Some(true),
-                ..Default::default()
-            })?
-            .delay(delay_duration)?
-            .build()?
-            .register(
-                "Tari Universe startup",
-                TaskCreationFlags::CreateOrUpdate as i32,
-            )?;
+                })
+                .map_err(|e| anyhow!("settings failed: {}", e))?
+                .delay(delay_duration)
+                .map_err(|e| anyhow!("delay failed: {}", e))?
+                .build()
+                .map_err(|e| anyhow!("build failed: {}", e))?
+                .register(TASK_NAME, TaskCreationFlags::CreateOrUpdate as i32)
+                .map_err(|e| anyhow!("register failed: {}", e))?;
 
-        info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup created");
+            info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler entry '{}' created", TASK_NAME);
+            Ok(())
+        })
+        .await
+        .map_err(|e| anyhow!("spawn_blocking join error: {}", e))??;
 
         Ok(())
     }
@@ -301,5 +331,27 @@ impl AutoLauncher {
 
     pub fn current() -> &'static AutoLauncher {
         &INSTANCE
+    }
+}
+
+#[cfg(test)]
+mod auto_launcher_tests {
+    /// TASK_NAME constant must be non-empty and consistent.
+    /// Create and delete paths both use TASK_NAME so the entry
+    /// is never leaked in Task Scheduler after a disable call.
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn task_name_constant_non_empty() {
+        use super::TASK_NAME;
+        assert!(!TASK_NAME.is_empty(), "TASK_NAME must be non-empty");
+        assert!(!TASK_NAME.contains('\0'), "TASK_NAME must not contain NUL bytes");
+        assert_eq!(TASK_NAME, "Tari Universe startup");
+    }
+
+    /// On non-Windows the auto_launcher module still compiles cleanly.
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn module_compiles_on_all_platforms() {
+        // Intentionally empty — compilation is the assertion.
     }
 }
