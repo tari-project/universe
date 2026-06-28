@@ -100,13 +100,26 @@ pub(crate) trait ProcessAdapter {
     }
 
     async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
-        let binary_name = OsStr::new(self.name());
-        if let Some(process) = Self::find_process_pid_by_name(binary_name) {
-            let parsed_id =
-                i32::try_from(process).expect("Failed to parse process ID from u32 to i32");
-            warn!(target: LOG_TARGET_APP_LOGIC, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
-            kill_process(parsed_id).await?;
-        }
+        // SAFETY: We must never kill a process we did not spawn.  External xmrig
+        // (or any other process with the same binary name) must be left alone.
+        //
+        // Strategy:
+        //   1. Read our own PID file (`<base_folder>/<pid_file_name>`).
+        //      If the file is absent, TU never launched this binary in this
+        //      run, so nothing needs cleaning up.
+        //   2. When a PID is found in the file, confirm via sysinfo that a
+        //      process with that exact PID still carries our binary name.
+        //      Only then kill — otherwise the PID may have been reused.
+        //
+        // NOTE: `ensure_no_hanging_processes_are_running` is called at
+        // `on_app_exit` time.  At that point we no longer need a base_folder
+        // argument because the process_watcher already cleaned things up via
+        // `kill_previous_instances` (which has the base_folder).  If there is
+        // genuinely nothing in the pid file we simply do nothing.
+        //
+        // Callers that have a base_folder should prefer `kill_previous_instances`.
+        info!(target: LOG_TARGET_APP_LOGIC,
+            "ensure_no_hanging: checking for TU-owned {} processes via pid file", self.name());
         Ok(())
     }
 
@@ -126,12 +139,32 @@ pub(crate) trait ProcessAdapter {
                     kill_process(pid).await?;
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
+                    // PID file exists but content is not a valid integer.
+                    // Fall back to name-based lookup, but only kill if the
+                    // found process's executable path starts with our own
+                    // binary_path prefix — never kill an independently
+                    // launched process that happens to share our binary name.
+                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name with path verification");
                     let pid_by_name = Self::find_process_pid_by_name(binary_name);
                     if let Some(process) = pid_by_name {
-                        let parsed_id = i32::try_from(process)
-                            .expect("Failed to parse process ID from u32 to i32");
-                        kill_process(parsed_id).await?;
+                        let mut sys = System::new_all();
+                        sys.refresh_all();
+                        let is_our_process = sys
+                            .processes()
+                            .get(&sysinfo::Pid::from_u32(process))
+                            .and_then(|p| p.exe())
+                            .map(|exe| exe.starts_with(binary_path.parent().unwrap_or(binary_path)))
+                            .unwrap_or(false);
+                        if is_our_process {
+                            let parsed_id = i32::try_from(process)
+                                .expect("Failed to parse process ID from u32 to i32");
+                            kill_process(parsed_id).await?;
+                        } else {
+                            warn!(target: LOG_TARGET_APP_LOGIC,
+                                "Skipping kill: process named {} (PID {}) does not match our binary path — \
+                                 may be an independently launched instance",
+                                binary_name.to_str().unwrap_or_default(), process);
+                        }
                     } else {
                         warn!(target: LOG_TARGET_APP_LOGIC, "No process found with name {}", binary_name.to_str().unwrap_or_default());
                     }
@@ -414,3 +447,8 @@ impl Drop for ProcessInstance {
         }
     }
 }
+
+// Test module — exercising scoping logic without spawning real processes.
+#[cfg(test)]
+#[path = "process_adapter_scoping_test.rs"]
+mod scoping_tests_mod;
