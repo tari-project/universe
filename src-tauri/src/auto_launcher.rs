@@ -107,17 +107,25 @@ impl AutoLauncher {
                     auto_launcher.enable()?;
                 }
                 CurrentOperatingSystem::Windows => {
-                    // Windows: 先通过auto_launch crate设置Run key（对非管理员用户有效）
-                    if let Err(e) = auto_launcher.enable() {
+                    // Windows: First set the Run key via the auto_launch crate (effective for non-admin users)
+                    let run_key_result = auto_launcher.enable();
+                    if let Err(ref e) = run_key_result {
                         warn!(target: LOG_TARGET_APP_LOGIC, "Failed to enable Run key auto-start: {}", e);
                     }
-                    // 额外尝试Task Scheduler（对管理员用户有效），不影响主流程
+                    // Additionally try Task Scheduler (effective for admin users) without affecting the main flow
                     #[cfg(target_os = "windows")]
                     {
-                        let result = self.toggle_windows_admin_auto_launcher(true).await;
-                        if let Err(e) = &result {
+                        let scheduler_result = self.toggle_windows_admin_auto_launcher(true).await;
+                        if let Err(ref e) = scheduler_result {
                             warn!(target: LOG_TARGET_APP_LOGIC, "Task Scheduler auto-start not set (non-admin or denied): {}", e);
                         }
+                        if run_key_result.is_err() && scheduler_result.is_err() {
+                            return Err(anyhow!("Failed to enable auto-start via both Run key and Task Scheduler"));
+                        }
+                    }
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        run_key_result?;
                     }
                 }
                 _ => {
