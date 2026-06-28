@@ -33,15 +33,23 @@ pub fn cleanup_old_binaries(
             continue;
         }
         let fname = match path.file_name().and_then(|n| n.to_str()) {
-            Some(n) => n.to_string(),
+            Some(n) => n,
             None => continue,
         };
         // Only touch files matching our binary prefix
         if !fname.starts_with(binary_prefix) {
             continue;
         }
-        // Keep the current version
-        if fname.contains(current_version) {
+        // Keep the current version — use exact segment match to prevent
+        // substring false positives (e.g. "1.6.1" matching "1.6.10").
+        // After stripping the prefix, the remaining string must either
+        // equal the version exactly or start with version + a non-digit
+        // separator (like "-" or ".ext").
+        let after_prefix = &fname[binary_prefix.len()..];
+        let is_current = after_prefix == current_version
+            || after_prefix.starts_with(&format!("{}-", current_version))
+            || after_prefix.starts_with(&format!("{}.", current_version));
+        if is_current {
             info!("Keeping current binary: {:?}", path);
             continue;
         }
@@ -110,5 +118,26 @@ mod tests {
             dir.path(), "1.6.11", "tari-universe-"
         ).unwrap();
         assert_eq!(removed, 0);
+    }
+
+    #[test]
+    fn substring_version_not_falsely_kept() {
+        // Regression: "1.6.1" must NOT protect "tari-universe-1.6.10" or "1.6.11"
+        let dir = tempdir().unwrap();
+        make_file(dir.path(), "tari-universe-1.6.1");   // current
+        make_file(dir.path(), "tari-universe-1.6.10");  // old — must be removed
+        make_file(dir.path(), "tari-universe-1.6.11");  // old — must be removed
+
+        let removed = cleanup_old_binaries(
+            dir.path(), "1.6.1", "tari-universe-"
+        ).unwrap();
+
+        assert_eq!(removed, 2, "Only exact version match should be kept");
+        assert!(dir.path().join("tari-universe-1.6.1").exists(),
+            "Current 1.6.1 must be kept");
+        assert!(!dir.path().join("tari-universe-1.6.10").exists(),
+            "1.6.10 must be removed — not a substring match of 1.6.1");
+        assert!(!dir.path().join("tari-universe-1.6.11").exists(),
+            "1.6.11 must be removed — not a substring match of 1.6.1");
     }
 }
