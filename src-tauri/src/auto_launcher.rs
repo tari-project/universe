@@ -44,6 +44,8 @@ use crate::{
 };
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
+#[cfg(any(target_os = "windows", test))]
+const WINDOWS_ADMIN_AUTO_START_TASK_NAME: &str = "Tari Universe startup";
 
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
@@ -200,12 +202,46 @@ impl AutoLauncher {
 
         if !should_be_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Disabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(false)
+            self.delete_task_scheduler_for_admin_startup()
                 .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
+                .map_err(|e| anyhow!("Failed to delete task scheduler for admin startup: {}", e))?;
         };
 
         Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    pub async fn delete_task_scheduler_for_admin_startup(
+        &self,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        info!(target: LOG_TARGET_APP_LOGIC, "Deleting task scheduler for admin startup");
+
+        let output = tokio::process::Command::new("schtasks")
+            .args(windows_admin_auto_start_delete_args())
+            .output()
+            .await?;
+
+        if output.status.success() {
+            info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup deleted");
+            return Ok(());
+        }
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let output_text = format!("{stdout}\n{stderr}");
+
+        if is_missing_admin_auto_start_task_error(&output_text) {
+            info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup was already absent");
+            return Ok(());
+        }
+
+        Err(anyhow!(
+            "schtasks failed with status {:?}. stdout: {} stderr: {}",
+            output.status.code(),
+            stdout.trim(),
+            stderr.trim()
+        )
+        .into())
     }
 
     #[cfg(target_os = "windows")]
@@ -283,7 +319,7 @@ impl AutoLauncher {
             .delay(delay_duration)?
             .build()?
             .register(
-                "Tari Universe startup",
+                WINDOWS_ADMIN_AUTO_START_TASK_NAME,
                 TaskCreationFlags::CreateOrUpdate as i32,
             )?;
 
@@ -361,9 +397,53 @@ impl AutoLauncher {
     }
 }
 
+#[cfg(any(target_os = "windows", test))]
+fn windows_admin_auto_start_delete_args() -> [&'static str; 4] {
+    ["/Delete", "/TN", WINDOWS_ADMIN_AUTO_START_TASK_NAME, "/F"]
+}
+
+#[cfg(any(target_os = "windows", test))]
+fn is_missing_admin_auto_start_task_error(output: &str) -> bool {
+    let output = output.to_ascii_lowercase();
+    output.contains("cannot find")
+        || output.contains("does not exist")
+        || output.contains("not found")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn missing_admin_auto_start_task_errors_are_idempotent() {
+        assert!(is_missing_admin_auto_start_task_error(
+            "ERROR: The system cannot find the file specified."
+        ));
+        assert!(is_missing_admin_auto_start_task_error(
+            "ERROR: The specified task name \"Tari Universe startup\" does not exist in the system."
+        ));
+        assert!(is_missing_admin_auto_start_task_error(
+            "ERROR: The scheduled task was not found."
+        ));
+    }
+
+    #[test]
+    fn delete_args_target_the_admin_auto_start_task() {
+        assert_eq!(
+            windows_admin_auto_start_delete_args(),
+            ["/Delete", "/TN", "Tari Universe startup", "/F",]
+        );
+    }
+
+    #[test]
+    fn non_missing_admin_auto_start_task_errors_are_not_ignored() {
+        assert!(!is_missing_admin_auto_start_task_error(
+            "ERROR: Access is denied."
+        ));
+        assert!(!is_missing_admin_auto_start_task_error(
+            "ERROR: Invalid argument/option - '/TN'."
+        ));
+    }
 
     #[test]
     fn quote_windows_path_wraps_paths_with_spaces() {
