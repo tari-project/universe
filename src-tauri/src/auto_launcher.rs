@@ -78,7 +78,8 @@ impl AutoLauncher {
     /// `CurrentOperatingSystem::{Windows, Linux}` match arms can reference it
     /// without needing `#[cfg]` dances at every call site.
     fn quote_exec_path_if_needed(app_path: &str) -> String {
-        let already_quoted = app_path.starts_with('"') && app_path.ends_with('"') && app_path.len() >= 2;
+        let already_quoted =
+            app_path.starts_with('"') && app_path.ends_with('"') && app_path.len() >= 2;
         if app_path.chars().any(char::is_whitespace) && !already_quoted {
             format!("\"{app_path}\"")
         } else {
@@ -367,7 +368,9 @@ mod tests {
     #[test]
     fn quote_windows_path_wraps_paths_with_spaces() {
         assert_eq!(
-            AutoLauncher::quote_exec_path_if_needed("C:\\Program Files\\Tari Universe\\tari-universe.exe"),
+            AutoLauncher::quote_exec_path_if_needed(
+                "C:\\Program Files\\Tari Universe\\tari-universe.exe"
+            ),
             "\"C:\\Program Files\\Tari Universe\\tari-universe.exe\"",
         );
     }
@@ -398,7 +401,9 @@ mod tests {
     #[test]
     fn quote_windows_path_does_not_double_quote_an_already_quoted_path() {
         assert_eq!(
-            AutoLauncher::quote_exec_path_if_needed("\"C:\\Program Files\\Tari Universe\\app.exe\""),
+            AutoLauncher::quote_exec_path_if_needed(
+                "\"C:\\Program Files\\Tari Universe\\app.exe\""
+            ),
             "\"C:\\Program Files\\Tari Universe\\app.exe\"",
         );
     }
