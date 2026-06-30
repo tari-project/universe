@@ -172,10 +172,17 @@ impl AutoLauncher {
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => {
                     #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(false).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher: {}", e)
-                    });
-                    auto_launcher.disable()?;
+                    {
+                        let admin_auto_launcher_result = self.toggle_windows_admin_auto_launcher(false).await;
+                        auto_launcher.disable()?;
+                        admin_auto_launcher_result.inspect_err(|e| {
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher: {}", e)
+                        })?;
+                    }
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        auto_launcher.disable()?;
+                    }
                 }
                 _ => {
                     auto_launcher.disable()?;
