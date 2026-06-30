@@ -173,7 +173,8 @@ impl AutoLauncher {
                 CurrentOperatingSystem::Windows => {
                     #[cfg(target_os = "windows")]
                     {
-                        let admin_auto_launcher_result = self.toggle_windows_admin_auto_launcher(false).await;
+                        let admin_auto_launcher_result =
+                            self.toggle_windows_admin_auto_launcher(false).await;
                         auto_launcher.disable()?;
                         admin_auto_launcher_result.inspect_err(|e| {
                             warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher: {}", e)
