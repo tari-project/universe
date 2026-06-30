@@ -26,6 +26,7 @@ need (network, GPU device nodes, secret storage, tray).
 | `patches/0001-*.patch` | Disables the bundled self-updater + crate autostart under Flatpak |
 | `generate-sources.sh` | (Re)generates the offline dependency manifests |
 | `requirements.txt` | Hash-locked pins for the generator toolchain (used by `generate-sources.sh`) |
+| `enable-amd-gpu.sh` | Opt-in helper to expose a host AMD OpenCL/ROCm stack to the installed app (experimental) |
 | `cargo-sources.json` | Vendored Rust crates (generated) |
 | `node-sources.json` | Vendored npm packages (generated) |
 
@@ -80,15 +81,71 @@ local default. To produce a production-identical build locally, apply the same
 - **GPU NVIDIA (lolMiner):** works. The runtime auto-pulls the matching
   `org.freedesktop.Platform.GL.nvidia-<driver>` extension, which provides a real
   CUDA/OpenCL/NVML stack. `--device=all` exposes `/dev/nvidia*`.
-- **GPU AMD (lolMiner): not supported under Flatpak.** `--device=all` exposes
-  `/dev/kfd` + `/dev/dri` correctly, but the GNOME runtime's GL extension ships
-  only Mesa **Rusticl** OpenCL, which lolMiner does not enumerate (it reports 0
-  OpenCL GPUs). lolMiner's AMD path needs a vendor compute runtime (ROCm /
-  amdgpu-pro), and there is **no Flathub ROCm GL extension** to pull in
-  (freedesktop-sdk [issue #1181](https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/issues/1181)
-  is still open); bundling a ROCm OpenCL stack from source is multi-GB and, for
-  current RDNA4 / `gfx1201` cards, not viable as of 2026-06. On AMD, use **CPU
-  mining**; GPU mining requires the native (non-Flatpak) build.
+- **GPU AMD (lolMiner): off by default; experimental opt-in below.**
+  `--device=all` exposes `/dev/kfd` + `/dev/dri` correctly, but the GNOME
+  runtime's GL extension ships only Mesa **Rusticl** OpenCL, which lolMiner does
+  not enumerate (it reports 0 OpenCL GPUs). lolMiner's AMD path needs a real
+  vendor compute runtime (ROCm / amdgpu-pro). We do **not bundle** one (it would
+  be multi-GB, and there is no Flathub ROCm GL extension to pull in —
+  freedesktop-sdk [issue #1181](https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/issues/1181)
+  is still open). You can instead expose a working **host** ROCm stack to the
+  sandbox; see below.
+
+### AMD GPU mining (experimental, host-provided ROCm)
+
+The default sandbox is unchanged — this is a per-machine, user-applied opt-in
+that grants the installed app access to *your host's* AMD OpenCL stack. Nothing
+is bundled and nobody else's install is affected.
+
+> **Unsupported and ABI-fragile.** The host ROCm libraries must load against the
+> GNOME 50 runtime's glibc; if your host glibc is newer they may fail to load.
+> RDNA4 / `gfx1201` ROCm support is still very raw across the ecosystem. Treat
+> this as "try it on your card", not a guarantee. If it doesn't light up, use
+> CPU mining.
+
+Why it can work at all: the runtime's OpenCL **ICD loader** already functions
+(it loads Rusticl and reports 0 devices) — the only missing piece is a *working
+AMD ICD*. Exposing one is enough; lolMiner auto-detects it. No app change needed.
+
+**Prerequisites (host side):** a working host ROCm OpenCL install for your card
+(confirm `clinfo` / `rocminfo` see the GPU on the host), and your user in the
+`render` + `video` groups.
+
+**Two paths**, both via the helper `./enable-amd-gpu.sh`:
+
+- **(A) Host passthrough** (default, usable today) — exposes `/opt/rocm` + the
+  host OpenCL ICD read-only and sets `OCL_ICD_VENDORS` / `LD_LIBRARY_PATH`:
+
+  ```bash
+  ./enable-amd-gpu.sh            # or: ROCM_PATH=/opt/rocm ICD_DIR=/etc/OpenCL/vendors ./enable-amd-gpu.sh
+  ```
+
+  Equivalent manual override:
+  ```bash
+  flatpak override --user com.tari.universe \
+    --filesystem=/opt/rocm:ro --filesystem=/etc/OpenCL:ro \
+    --env=OCL_ICD_VENDORS=/etc/OpenCL/vendors \
+    --env=LD_LIBRARY_PATH=/opt/rocm/lib
+  ```
+
+- **(B) GL.ROCm extension** (forward path) — if an
+  `org.freedesktop.Platform.GL.ROCm` runtime extension matching the base
+  (`25.08`) is ever installed, the runtime's inherited
+  `org.freedesktop.Platform.GL` extension point auto-merges its OpenCL ICD and
+  puts its libs on the loader path (its `merge-dirs` already includes
+  `OpenCL/vendors`). No manifest change is needed — just select it:
+
+  ```bash
+  ./enable-amd-gpu.sh --ext     # sets FLATPAK_GL_DRIVERS=ROCm:default
+  ```
+
+  No such extension is published on Flathub today, so (A) is the realistic path
+  for now.
+
+For an unsupported gfx target you may also need
+`--env=HSA_OVERRIDE_GFX_VERSION=<x.y.z>`. Verify with lolMiner's startup line
+`Number of OpenCL supported GPUs: N`. Undo with
+`flatpak override --user --reset com.tari.universe`.
 
 ## What the patch changes
 

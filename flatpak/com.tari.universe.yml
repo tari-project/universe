@@ -31,12 +31,17 @@ finish-args:
   # device option for these.
   #   NVIDIA: works. The runtime auto-pulls org.freedesktop.Platform.GL.nvidia-*,
   #     which ships a real CUDA/OpenCL/NVML stack lolMiner can use.
-  #   AMD: GPU mining does NOT work under this runtime. The GNOME GL extension
-  #     provides only Mesa Rusticl OpenCL, which lolMiner does not enumerate
-  #     (reports 0 OpenCL GPUs); lolMiner's AMD path needs a vendor compute
-  #     runtime (ROCm / amdgpu-pro) and there is no Flathub ROCm GL extension to
-  #     pull in. So on AMD this exposes the device nodes but yields no GPU mining
-  #     — AMD is CPU-mining only under Flatpak. See README "Mining capability".
+  #   AMD: off by default. The GNOME GL extension provides only Mesa Rusticl
+  #     OpenCL, which lolMiner does not enumerate (reports 0 OpenCL GPUs);
+  #     lolMiner's AMD path needs a real vendor compute runtime (ROCm /
+  #     amdgpu-pro). We bundle none. A user can opt in by exposing a HOST ROCm
+  #     stack to the sandbox (flatpak/enable-amd-gpu.sh) — no manifest change
+  #     and the default sandbox stays tight. The proper future path is an
+  #     org.freedesktop.Platform.GL.ROCm extension: the runtime's inherited
+  #     org.freedesktop.Platform.GL point already merges a GL.<driver>'s
+  #     OpenCL/vendors ICD and adds its lib to the loader path, so no
+  #     add-extensions block is needed here; none is published yet. See README
+  #     "AMD GPU mining".
   - --device=all
   # Tray icon (StatusNotifierItem) + desktop notifications
   - --talk-name=org.kde.StatusNotifierWatcher
