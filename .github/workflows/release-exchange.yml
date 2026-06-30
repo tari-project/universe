@@ -125,11 +125,13 @@ jobs:
             --output-format=json -i tauri.conf.json
           echo "APP_VERSION=${TU_VERSION}" >> $GITHUB_OUTPUT
 
+      - uses: pnpm/action-setup@v6
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: lts/*
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Rust Setup
         uses: dtolnay/rust-toolchain@stable
@@ -218,8 +220,8 @@ jobs:
 
       - name: Install Dependencies - Node
         run: |
-          npm --version
-          npm install
+          pnpm --version
+          pnpm install
 
       - name: Build process-wrapper
         shell: bash
@@ -470,7 +472,7 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
         shell: bash
-        run: npm install @sentry/cli@2.42.2 -g
+        run: pnpm install @sentry/cli@2.42.2 -g
 
       - name: Windows debug symbols - Upload to Sentry
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}

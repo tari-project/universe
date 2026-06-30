@@ -27,15 +27,21 @@ jobs:
     name: Check title
     runs-on: ubuntu-latest
     steps:
-      - name: Install dependencies
-        run: |
-          npm install -g @commitlint/cli @commitlint/config-conventional
-          echo "module.exports = {extends: ['@commitlint/config-conventional']}" > commitlint.config.js
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
       - name: Lint title
         env:
           PR_TITLE: ${{github.event.pull_request.title}}
         run: |
-          echo "$PR_TITLE" | commitlint
+          echo "module.exports = {extends: ['@commitlint/config-conventional']}" > commitlint.config.js
+          echo "$PR_TITLE" | pnpm dlx \
+            --package @commitlint/cli \
+            --package @commitlint/config-conventional \
+            commitlint
   check-i18n:
     name: Check i18n
     runs-on: ubuntu-latest

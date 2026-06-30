@@ -65,7 +65,8 @@ export default function MinerTile({
 
     let mainLabel: string;
     if (enabled && isPoolEnabled) {
-        const context = isMining && currentUnpaid === 0 && 'zero';
+        const isZero = isMining && currentUnpaid === 0;
+        const context = isZero ? 'zero' : '';
         mainLabel = t('stats.tile-heading', { context, ns: 'p2p' });
     } else if (enabled) {
         mainLabel = t(mainLabelKey);
