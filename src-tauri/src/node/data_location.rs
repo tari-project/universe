@@ -156,7 +156,8 @@ pub fn detect_network_filesystem(path: &Path) -> Option<String> {
 /// the drive (e.g. `b'Z'`).
 #[cfg(windows)]
 fn is_windows_remote_drive(letter: u8) -> bool {
-    use windows_sys::Win32::Storage::FileSystem::{DRIVE_REMOTE, GetDriveTypeW};
+    use windows_sys::Win32::Storage::FileSystem::GetDriveTypeW;
+    use windows_sys::Win32::System::WindowsProgramming::DRIVE_REMOTE;
     // Build `"X:\0"` as a UTF-16 null-terminated string.
     let root: [u16; 4] = [u16::from(letter), u16::from(b':'), u16::from(b'\\'), 0];
     // Safety: `root` is a valid null-terminated wide string; the Win32

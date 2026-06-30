@@ -26,10 +26,12 @@ use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::collections::HashMap;
 use std::ffi::OsStr;
+#[cfg(test)]
+use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
-use sysinfo::System;
+use sysinfo::{Pid, ProcessesToUpdate, System};
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
@@ -43,6 +45,7 @@ use crate::events::CriticalProblemPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::process_killer::kill_process;
 use crate::process_utils::{graceful_kill, launch_child_process, write_pid_file};
+use crate::process_wrapper;
 
 const SPACE_ERROR_MESSAGE: &str = "No space left on device";
 
@@ -87,12 +90,99 @@ pub(crate) trait ProcessAdapter {
             .exists()
     }
 
-    fn find_process_pid_by_name(binary_name: &OsStr) -> Option<u32> {
-        let mut sys = System::new_all();
-        sys.refresh_all();
+    fn canonicalized_or_original_path(path: &Path) -> PathBuf {
+        fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf())
+    }
+
+    #[cfg(windows)]
+    fn paths_are_equivalent(left: &Path, right: &Path) -> bool {
+        left.as_os_str()
+            .to_string_lossy()
+            .eq_ignore_ascii_case(&right.as_os_str().to_string_lossy())
+    }
+
+    #[cfg(not(windows))]
+    fn paths_are_equivalent(left: &Path, right: &Path) -> bool {
+        left == right
+    }
+
+    #[cfg(test)]
+    fn process_executable_matches(
+        expected_executable: &Path,
+        process_executable: Option<&Path>,
+    ) -> bool {
+        let expected = Self::canonicalized_or_original_path(expected_executable);
+        Self::process_executable_matches_canonicalized(&expected, process_executable)
+    }
+
+    fn process_executable_matches_canonicalized(
+        expected_executable: &Path,
+        process_executable: Option<&Path>,
+    ) -> bool {
+        let Some(process_executable) = process_executable else {
+            return false;
+        };
+
+        if expected_executable.as_os_str().is_empty() || process_executable.as_os_str().is_empty() {
+            return false;
+        }
+
+        let actual = Self::canonicalized_or_original_path(process_executable);
+        Self::paths_are_equivalent(expected_executable, &actual)
+    }
+
+    #[cfg(test)]
+    fn command_contains_executable_arg(command: &[OsString], expected_executable: &Path) -> bool {
+        let expected = Self::canonicalized_or_original_path(expected_executable);
+        command.iter().any(|arg| {
+            Self::process_executable_matches_canonicalized(&expected, Some(Path::new(arg)))
+        })
+    }
+
+    fn process_pid_matches_executable(pid_to_match: i32, expected_executable: &Path) -> bool {
+        let Ok(pid_to_match) = u32::try_from(pid_to_match) else {
+            return false;
+        };
+        let pid_to_match = Pid::from_u32(pid_to_match);
+        let pids_to_update = [pid_to_match];
+
+        let mut sys = System::new();
+        if sys.refresh_processes(ProcessesToUpdate::Some(&pids_to_update)) == 0 {
+            return false;
+        }
+
+        let Some(process) = sys.process(pid_to_match) else {
+            return false;
+        };
+
+        let expected = Self::canonicalized_or_original_path(expected_executable);
+        if Self::process_executable_matches_canonicalized(&expected, process.exe()) {
+            return true;
+        }
+
+        if let Some(wrapper_path) = process_wrapper::get_wrapper_path() {
+            let wrapper_path = Self::canonicalized_or_original_path(&wrapper_path);
+            return Self::process_executable_matches_canonicalized(&wrapper_path, process.exe())
+                && process.cmd().iter().any(|arg| {
+                    Self::process_executable_matches_canonicalized(&expected, Some(Path::new(arg)))
+                });
+        }
+
+        false
+    }
+
+    fn find_process_pid_by_name_and_executable(
+        binary_name: &OsStr,
+        expected_executable: &Path,
+    ) -> Option<u32> {
+        let mut sys = System::new();
+        sys.refresh_processes(ProcessesToUpdate::All);
+        let expected = Self::canonicalized_or_original_path(expected_executable);
 
         for (pid, process) in sys.processes() {
-            if process.name() == binary_name {
+            if process.name() == binary_name
+                && Self::process_executable_matches_canonicalized(&expected, process.exe())
+            {
                 return Some(pid.as_u32());
             }
         }
@@ -100,13 +190,11 @@ pub(crate) trait ProcessAdapter {
     }
 
     async fn ensure_no_hanging_processes_are_running(&self) -> Result<(), Error> {
-        let binary_name = OsStr::new(self.name());
-        if let Some(process) = Self::find_process_pid_by_name(binary_name) {
-            let parsed_id =
-                i32::try_from(process).expect("Failed to parse process ID from u32 to i32");
-            warn!(target: LOG_TARGET_APP_LOGIC, "{} process is already running with PID {}. Attempting to kill it.", self.name(), parsed_id);
-            kill_process(parsed_id).await?;
-        }
+        info!(
+            target: LOG_TARGET_APP_LOGIC,
+            "Skipping name-only cleanup for {}; process cleanup requires a PID file or exact executable path match",
+            self.name()
+        );
         Ok(())
     }
 
@@ -123,17 +211,33 @@ pub(crate) trait ProcessAdapter {
             Ok(pid) => match pid.trim().parse::<i32>() {
                 Ok(pid) => {
                     warn!(target: LOG_TARGET_APP_LOGIC, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
-                    kill_process(pid).await?;
+                    if Self::process_pid_matches_executable(pid, binary_path) {
+                        kill_process(pid).await?;
+                    } else {
+                        warn!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "Pid file for {} points to PID {}, but that process is not running from {:?}; leaving it untouched",
+                            self.name(),
+                            pid,
+                            binary_path
+                        );
+                    }
                 }
                 Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting to kill process by name");
-                    let pid_by_name = Self::find_process_pid_by_name(binary_name);
+                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting path-scoped process lookup");
+                    let pid_by_name =
+                        Self::find_process_pid_by_name_and_executable(binary_name, binary_path);
                     if let Some(process) = pid_by_name {
                         let parsed_id = i32::try_from(process)
                             .expect("Failed to parse process ID from u32 to i32");
                         kill_process(parsed_id).await?;
                     } else {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "No process found with name {}", binary_name.to_str().unwrap_or_default());
+                        warn!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "No process found for {} at {:?}",
+                            binary_name.to_str().unwrap_or_default(),
+                            binary_path
+                        );
                     }
                 }
             },
@@ -412,5 +516,90 @@ impl Drop for ProcessInstance {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::testing::mocks::process_mocks::{MockProcessInstance, MockStatusMonitor};
+
+    struct TestAdapter;
+
+    impl ProcessAdapter for TestAdapter {
+        type StatusMonitor = MockStatusMonitor;
+        type ProcessInstance = MockProcessInstance;
+
+        fn spawn_inner(
+            &self,
+            _base_folder: PathBuf,
+            _config_folder: PathBuf,
+            _log_folder: PathBuf,
+            _binary_version_path: PathBuf,
+            _is_first_start: bool,
+        ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
+            Ok((MockProcessInstance::new(), MockStatusMonitor::new()))
+        }
+
+        fn name(&self) -> &str {
+            "test-process"
+        }
+
+        fn pid_file_name(&self) -> &str {
+            "test-process.pid"
+        }
+    }
+
+    #[test]
+    fn executable_match_rejects_missing_process_path() {
+        assert!(
+            !<TestAdapter as ProcessAdapter>::process_executable_matches(
+                Path::new("app/bin/xmrig"),
+                None,
+            )
+        );
+    }
+
+    #[test]
+    fn executable_match_rejects_same_name_in_different_folder() {
+        assert!(
+            !<TestAdapter as ProcessAdapter>::process_executable_matches(
+                Path::new("app/bin/xmrig"),
+                Some(Path::new("external/bin/xmrig")),
+            )
+        );
+    }
+
+    #[test]
+    fn executable_match_accepts_same_path() {
+        assert!(<TestAdapter as ProcessAdapter>::process_executable_matches(
+            Path::new("app/bin/xmrig"),
+            Some(Path::new("app/bin/xmrig")),
+        ));
+    }
+
+    #[test]
+    fn command_match_accepts_wrapped_binary_path_arg() {
+        let command = vec![
+            OsString::from("12345"),
+            OsString::from("app/bin/xmrig"),
+            OsString::from("--config"),
+        ];
+
+        assert!(
+            <TestAdapter as ProcessAdapter>::command_contains_executable_arg(
+                &command,
+                Path::new("app/bin/xmrig"),
+            )
+        );
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn executable_match_is_case_insensitive_on_windows() {
+        assert!(<TestAdapter as ProcessAdapter>::process_executable_matches(
+            Path::new(r"C:\App\Bin\xmrig.exe"),
+            Some(Path::new(r"c:\app\bin\XMRIG.EXE")),
+        ));
     }
 }

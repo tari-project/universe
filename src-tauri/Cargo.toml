@@ -133,6 +133,7 @@ planif = "1.0.0"
 whoami = "1.5.2"
 windows-sys = { version = "0.52", features = [
   "Win32_Storage_FileSystem",
+  "Win32_System_WindowsProgramming",
 ] } # GetDriveTypeW for SMB-mapped drive-letter detection in data_location
 winreg = "0.52.0"
 

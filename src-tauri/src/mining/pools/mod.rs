@@ -37,14 +37,14 @@ pub mod gpu_pool_manager;
 pub mod pools_manager;
 
 #[derive(Clone, Debug, Serialize, Default)]
-pub struct PoolStatus {
+pub(crate) struct PoolStatus {
     pub accepted_shares: u64,
     pub unpaid: f64,
     pub balance: f64,
     pub min_payout: u64,
 }
 
-pub trait PoolManagerInterfaceTrait<T> {
+pub(crate) trait PoolManagerInterfaceTrait<T> {
     // =============== Getters ===============
 
     async fn get_write_manager() -> RwLockWriteGuard<'static, PoolManager>;
