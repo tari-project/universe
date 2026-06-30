@@ -1,4 +1,4 @@
-import { GpuMiningAlgorithm } from '@app/types/events-payloads';
+import { MiningAlgorithm } from '@app/types/events-payloads';
 import i18n from 'i18next';
 import { TimeParts } from '@app/types/mining/schedule.ts';
 
@@ -126,8 +126,13 @@ interface Hashrate {
     unit: string;
 }
 
-export function formatHashrate(hashrate: number, joinUnit = true, _algo = GpuMiningAlgorithm.C29): Hashrate {
-    const unit = 'G';
+const HASHRATE_BASE_UNITS: Record<MiningAlgorithm, 'G' | 'H'> = {
+    [MiningAlgorithm.C29]: 'G',
+    [MiningAlgorithm.RandomX]: 'H',
+};
+
+export function formatHashrate(hashrate: number, joinUnit = true, algo = MiningAlgorithm.C29): Hashrate {
+    const unit = HASHRATE_BASE_UNITS[algo];
     const fixed = (val: number, dec = 2) => Number(val.toFixed(val >= 100 ? 1 : dec));
     if (hashrate < 1000) {
         return {
