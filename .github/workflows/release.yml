@@ -233,8 +233,6 @@ jobs:
             --output-format=json -i tauri.conf.json
 
       - uses: pnpm/action-setup@v6
-        with:
-          version: 11
 
       - name: Setup Node
         uses: actions/setup-node@v6
