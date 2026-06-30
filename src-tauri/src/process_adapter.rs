@@ -221,7 +221,10 @@ pub(crate) trait ProcessAdapter {
         let expected = Self::canonicalized_or_original_path(expected_executable);
 
         for (pid, process) in sys.processes() {
-            if process.name() == binary_name
+            // Case-insensitive name pre-filter on Windows (process/file names
+            // are case-insensitive there); exact elsewhere. The authoritative
+            // check remains the canonicalized executable-path comparison.
+            if Self::paths_are_equivalent(Path::new(process.name()), Path::new(binary_name))
                 && Self::process_executable_matches_canonicalized(&expected, process.exe())
             {
                 return Some(pid.as_u32());
