@@ -226,14 +226,25 @@ impl AutoLauncher {
             return Ok(());
         }
 
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let output_text = format!("{stdout}\n{stderr}");
+        let task_exists = match tokio::process::Command::new("schtasks")
+            .args(windows_admin_auto_start_query_args())
+            .output()
+            .await
+        {
+            Ok(output) => output.status.success(),
+            Err(error) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to query admin auto-start task after delete failure: {error}");
+                true
+            }
+        };
 
-        if is_missing_admin_auto_start_task_error(&output_text) {
+        if !task_exists {
             info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup was already absent");
             return Ok(());
         }
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
 
         Err(anyhow!(
             "schtasks failed with status {:?}. stdout: {} stderr: {}",
@@ -403,29 +414,13 @@ fn windows_admin_auto_start_delete_args() -> [&'static str; 4] {
 }
 
 #[cfg(any(target_os = "windows", test))]
-fn is_missing_admin_auto_start_task_error(output: &str) -> bool {
-    let output = output.to_ascii_lowercase();
-    output.contains("cannot find")
-        || output.contains("does not exist")
-        || output.contains("not found")
+fn windows_admin_auto_start_query_args() -> [&'static str; 3] {
+    ["/Query", "/TN", WINDOWS_ADMIN_AUTO_START_TASK_NAME]
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn missing_admin_auto_start_task_errors_are_idempotent() {
-        assert!(is_missing_admin_auto_start_task_error(
-            "ERROR: The system cannot find the file specified."
-        ));
-        assert!(is_missing_admin_auto_start_task_error(
-            "ERROR: The specified task name \"Tari Universe startup\" does not exist in the system."
-        ));
-        assert!(is_missing_admin_auto_start_task_error(
-            "ERROR: The scheduled task was not found."
-        ));
-    }
 
     #[test]
     fn delete_args_target_the_admin_auto_start_task() {
@@ -436,13 +431,11 @@ mod tests {
     }
 
     #[test]
-    fn non_missing_admin_auto_start_task_errors_are_not_ignored() {
-        assert!(!is_missing_admin_auto_start_task_error(
-            "ERROR: Access is denied."
-        ));
-        assert!(!is_missing_admin_auto_start_task_error(
-            "ERROR: Invalid argument/option - '/TN'."
-        ));
+    fn query_args_target_the_admin_auto_start_task() {
+        assert_eq!(
+            windows_admin_auto_start_query_args(),
+            ["/Query", "/TN", "Tari Universe startup",]
+        );
     }
 
     #[test]
