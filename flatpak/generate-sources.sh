@@ -13,20 +13,29 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-CARGO_GEN_URL="https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/master/cargo/flatpak-cargo-generator.py"
+# Pin the cargo generator to an exact commit (not `master`) so the script we
+# fetch-and-execute can't shift under us between runs. In CI this runs in a job
+# holding a release-write token, so an unpinned upstream is a supply-chain risk.
+# Bump this SHA deliberately when you want a newer generator.
+CARGO_GEN_REF="737c0085912f9f7dabf9341d4608e2a77a51a73a"
+CARGO_GEN_URL="https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/${CARGO_GEN_REF}/cargo/flatpak-cargo-generator.py"
 
 # Isolated venv for the generator tooling.
 if [ ! -d .venv ]; then
   python3 -m venv .venv
 fi
-# aiohttp+toml+tomlkit: flatpak-cargo-generator;  flatpak-node-generator: npm/yarn
+# Hash-locked install (see requirements.txt): every package + transitive dep is
+# pinned to an exact version and sha256, so the toolchain is reproducible and
+# can't drift under the release token. --require-hashes is implied by the file.
 ./.venv/bin/pip install --quiet --upgrade pip
-./.venv/bin/pip install --quiet aiohttp toml tomlkit flatpak-node-generator
+./.venv/bin/pip install --quiet --require-hashes -r requirements.txt
 
 # --- Rust ---
-if [ ! -f flatpak-cargo-generator.py ]; then
-  curl -sSL -o flatpak-cargo-generator.py "$CARGO_GEN_URL"
-fi
+# Always (re)fetch from the pinned ref and verify the content hash before
+# executing it. A stale or tampered local copy is rejected rather than run.
+CARGO_GEN_SHA256="b373c8ab1a05378ec5d8ed0645c7b127bcec7d2f7a1798694fbc627d570d856c"
+curl -sSL -o flatpak-cargo-generator.py "$CARGO_GEN_URL"
+echo "${CARGO_GEN_SHA256}  flatpak-cargo-generator.py" | sha256sum -c -
 echo "==> Generating cargo-sources.json from ../Cargo.lock"
 ./.venv/bin/python flatpak-cargo-generator.py ../Cargo.lock -o cargo-sources.json
 

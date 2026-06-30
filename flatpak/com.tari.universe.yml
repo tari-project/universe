@@ -25,11 +25,18 @@ finish-args:
   - --device=dri                 # GPU rendering for the webview
   # Networking: mining pools, node p2p, Tor, binary downloads, exchange APIs
   - --share=network
-  # GPU mining (lolMiner). --device=all exposes the vendor compute nodes the
-  # miner needs: /dev/nvidia* (NVIDIA CUDA/OpenCL/NVML) and /dev/kfd + /dev/dri
-  # (AMD ROCm/Rusticl OpenCL). There is no finer-grained Flatpak device option
-  # for these. The matching GL driver (org.freedesktop.Platform.GL.nvidia-*)
-  # is pulled in automatically by the runtime when a GPU is present.
+  # GPU mining (lolMiner, which auto-detects whichever GPU compute runtime is
+  # present). --device=all exposes the vendor compute nodes: /dev/nvidia* for
+  # NVIDIA and /dev/kfd + /dev/dri for AMD. There is no finer-grained Flatpak
+  # device option for these.
+  #   NVIDIA: works. The runtime auto-pulls org.freedesktop.Platform.GL.nvidia-*,
+  #     which ships a real CUDA/OpenCL/NVML stack lolMiner can use.
+  #   AMD: GPU mining does NOT work under this runtime. The GNOME GL extension
+  #     provides only Mesa Rusticl OpenCL, which lolMiner does not enumerate
+  #     (reports 0 OpenCL GPUs); lolMiner's AMD path needs a vendor compute
+  #     runtime (ROCm / amdgpu-pro) and there is no Flathub ROCm GL extension to
+  #     pull in. So on AMD this exposes the device nodes but yields no GPU mining
+  #     — AMD is CPU-mining only under Flatpak. See README "Mining capability".
   - --device=all
   # Tray icon (StatusNotifierItem) + desktop notifications
   - --talk-name=org.kde.StatusNotifierWatcher
@@ -165,11 +172,14 @@ modules:
       - type: patch
         path: patches/0003-linux-tray-icon-png-not-template.patch
 
-      # Drop the "(Alpha)" branding and align the internal bundle identifier with
-      # the Flatpak app-id (com.tari.universe), so the window title is clean and
-      # the data/config dirs no longer carry a vestigial ".alpha" suffix.
-      - type: patch
-        path: patches/0004-drop-alpha-branding-stable-identifier.patch
+      # NOTE: the "(Alpha)" branding / .alpha identifier strip is NOT a patch.
+      # The app source (tauri.conf.json) keeps `(Alpha)` + com.tari.universe.alpha
+      # as the local/default, exactly as a normal dev build does. The production
+      # Flatpak identity (com.tari.universe, no Alpha) is applied by CI in
+      # .github/workflows/flatpak.yml — the SAME `yq` rewrite release.yml uses for
+      # its RELEASE builds — so there is one source of truth for production naming
+      # and nothing to drift. A local `flatpak-builder` therefore yields an
+      # Alpha-branded build; that is intended.
 
       # Packaging assets that don't live in the app's git tree. type:file copies
       # them to the build root, where the install steps above pick them up.

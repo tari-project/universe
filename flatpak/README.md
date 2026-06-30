@@ -25,6 +25,7 @@ need (network, GPU device nodes, secret storage, tray).
 | `com.tari.universe.metainfo.xml` | AppStream metadata |
 | `patches/0001-*.patch` | Disables the bundled self-updater + crate autostart under Flatpak |
 | `generate-sources.sh` | (Re)generates the offline dependency manifests |
+| `requirements.txt` | Hash-locked pins for the generator toolchain (used by `generate-sources.sh`) |
 | `cargo-sources.json` | Vendored Rust crates (generated) |
 | `node-sources.json` | Vendored npm packages (generated) |
 
@@ -62,6 +63,14 @@ lockfiles each run, and the manifest builds the checked-out commit — so new
 releases need no manual updates here. It's standalone and doesn't touch the
 existing `release.yml`. Trigger it manually via *Actions → Flatpak → Run workflow*.
 
+Before building, CI strips the `(Alpha)` branding / `.alpha` identifier with the
+**same `yq` rewrite `release.yml` uses for its RELEASE builds** (one source of
+truth for the production naming), and writes the AppStream `<release>` version +
+date from `tauri.conf.json` / the release date. None of that is checked in, so a
+**local** `flatpak-builder` build keeps the Alpha branding — that's the intended
+local default. To produce a production-identical build locally, apply the same
+`yq`/`sed` rewrites from the *Set production identity* step before building.
+
 ## Mining capability notes
 
 - **CPU (xmrig / RandomX):** works. Peak hashrate optimisations that need root —
@@ -69,11 +78,17 @@ existing `release.yml`. Trigger it manually via *Actions → Flatpak → Run wor
   in the sandbox, so expect standard (non-MSR) hashrate. This matches what any
   non-root Linux miner gets.
 - **GPU NVIDIA (lolMiner):** works. The runtime auto-pulls the matching
-  `org.freedesktop.Platform.GL.nvidia-<driver>` extension, which provides
-  CUDA/OpenCL/NVML. `--device=all` exposes `/dev/nvidia*`.
-- **GPU AMD (lolMiner):** the weakest link. Needs OpenCL via Mesa Rusticl (in the
-  runtime GL extension) or a ROCm stack; `--device=all` exposes `/dev/kfd` and
-  `/dev/dri`. Test on your specific card before relying on it.
+  `org.freedesktop.Platform.GL.nvidia-<driver>` extension, which provides a real
+  CUDA/OpenCL/NVML stack. `--device=all` exposes `/dev/nvidia*`.
+- **GPU AMD (lolMiner): not supported under Flatpak.** `--device=all` exposes
+  `/dev/kfd` + `/dev/dri` correctly, but the GNOME runtime's GL extension ships
+  only Mesa **Rusticl** OpenCL, which lolMiner does not enumerate (it reports 0
+  OpenCL GPUs). lolMiner's AMD path needs a vendor compute runtime (ROCm /
+  amdgpu-pro), and there is **no Flathub ROCm GL extension** to pull in
+  (freedesktop-sdk [issue #1181](https://gitlab.com/freedesktop-sdk/freedesktop-sdk/-/issues/1181)
+  is still open); bundling a ROCm OpenCL stack from source is multi-GB and, for
+  current RDNA4 / `gfx1201` cards, not viable as of 2026-06. On AMD, use **CPU
+  mining**; GPU mining requires the native (non-Flatpak) build.
 
 ## What the patch changes
 
