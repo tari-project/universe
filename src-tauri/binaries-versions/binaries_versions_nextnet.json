@@ -1,6 +1,6 @@
 {
     "binaries": {
-        "bridge": "0.4.1",
+        "bridge": "0.4.2",
         "lolminer": "1.98a",
         "minotari_node": "5.2.1 | c79f555",
         "mmproxy": "5.2.1 | c79f555",
