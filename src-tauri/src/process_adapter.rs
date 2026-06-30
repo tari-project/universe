@@ -174,15 +174,27 @@ pub(crate) trait ProcessAdapter {
         };
 
         let expected = Self::canonicalized_or_original_path(expected_executable);
+        let expected_file_name = expected.file_name();
         let executable_matches =
             Self::process_executable_matches_canonicalized(&expected, process.exe())
                 || process_wrapper::get_wrapper_path().is_some_and(|wrapper_path| {
                     let wrapper_path = Self::canonicalized_or_original_path(&wrapper_path);
                     Self::process_executable_matches_canonicalized(&wrapper_path, process.exe())
                         && process.cmd().iter().any(|arg| {
-                            Self::process_executable_matches_canonicalized(
+                            let arg_path = Path::new(arg);
+                            // Cheap file-name pre-filter so we only pay for the
+                            // canonicalize syscall on arguments that could match.
+                            let (Some(expected_file_name), Some(arg_file_name)) =
+                                (expected_file_name, arg_path.file_name())
+                            else {
+                                return false;
+                            };
+                            Self::paths_are_equivalent(
+                                Path::new(expected_file_name),
+                                Path::new(arg_file_name),
+                            ) && Self::process_executable_matches_canonicalized(
                                 &expected,
-                                Some(Path::new(arg)),
+                                Some(arg_path),
                             )
                         })
                 });
