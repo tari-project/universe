@@ -16,7 +16,7 @@ import { offset, useFloating, useHover, useInteractions } from '@floating-ui/rea
 import { useState } from 'react';
 import { PoolType } from '@app/store/useMiningPoolsStore.ts';
 import { AppModuleState, AppModuleStatus } from '@app/store/types/setup.ts';
-import { GpuMiningAlgorithm } from '@app/types/events-payloads.ts';
+import { MiningAlgorithm } from '@app/types/events-payloads.ts';
 export interface MinerTileProps {
     title: PoolType;
     mainLabelKey: string;
@@ -31,7 +31,7 @@ export interface MinerTileProps {
     progressDiff?: number | null;
     unpaidFMT?: string;
     minerModuleState: AppModuleState;
-    algo?: GpuMiningAlgorithm;
+    algo?: MiningAlgorithm;
 }
 
 export default function MinerTile({
@@ -48,7 +48,7 @@ export default function MinerTile({
     progressDiff,
     unpaidFMT,
     minerModuleState,
-    algo = GpuMiningAlgorithm.C29,
+    algo = MiningAlgorithm.C29,
 }: MinerTileProps) {
     const { t } = useTranslation(['mining-view', 'p2p'], { useSuspense: false });
 
