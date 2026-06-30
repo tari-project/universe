@@ -15,7 +15,11 @@
         "knip": "knip",
         "test": "vitest run",
         "test:watch": "vitest",
-        "test:coverage": "vitest run --coverage"
+        "test:coverage": "vitest run --coverage",
+        "playwright": "npm --prefix playwright run test",
+        "playwright:ui": "npm --prefix playwright run test:ui",
+        "playwright:headed": "npm --prefix playwright run test:headed",
+        "playwright:install": "cd playwright && npm ci && npx playwright install chromium"
     },
     "dependencies": {
         "@floating-ui/react": "^0.27.17",

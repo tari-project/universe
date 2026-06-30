@@ -52,7 +52,7 @@ const Display = memo(function Display({ isVisible, words, onToggleClick, isLoadi
 
     const toggleCTA = (
         <CTAWrapper>
-            <IconButton onClick={() => handleToggleClick()} disabled={isLoading}>
+            <IconButton onClick={() => handleToggleClick()} disabled={isLoading} data-testid="wallet-seed-toggle">
                 {isLoading ? <LoadingDots /> : toggleIcon}
             </IconButton>
         </CTAWrapper>
@@ -61,7 +61,7 @@ const Display = memo(function Display({ isVisible, words, onToggleClick, isLoadi
     const generatedDisplay = isVisible && !isLoading ? wordMarkup : hiddenMarkup;
 
     return (
-        <DisplayWrapper $rows={rowCount} $isHidden={!isVisible || isLoading}>
+        <DisplayWrapper $rows={rowCount} $isHidden={!isVisible || isLoading} data-testid="wallet-seed-words">
             {!isSeedlessUI && toggleCTA}
             {isSeedlessUI ? emptySeedWords : generatedDisplay}
         </DisplayWrapper>

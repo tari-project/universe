@@ -29,6 +29,7 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
                             onClick={() => handleClick(type)}
                             variant={isActiveSection ? 'secondary' : 'primary'}
                             disableColour
+                            data-testid={`settings-tab-${type}`}
                         >
                             {name}
                         </SectionButton>

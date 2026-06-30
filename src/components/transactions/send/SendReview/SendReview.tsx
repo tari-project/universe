@@ -80,12 +80,12 @@ export function SendReview({
 
                     <StatusList entries={reviewEntries} />
 
-                    <Button type="submit" fluid size="xlarge" variant="green">
+                    <Button type="submit" fluid size="xlarge" variant="green" data-testid="send-confirm-button">
                         {t('send.cta-confirm')}
                     </Button>
                 </>
             ) : (
-                <>
+                <div data-testid="send-status">
                     {status === 'processing' && (
                         <StatusHero icon={<ProcessingIcon />} title={t('send.processing-title')}>
                             {t('send.processing-text')}
@@ -113,11 +113,18 @@ export function SendReview({
                     )}
 
                     {status === 'completed' && (
-                        <Button type="button" fluid size="xlarge" variant="purple" onClick={handleClose}>
+                        <Button
+                            type="button"
+                            fluid
+                            size="xlarge"
+                            variant="purple"
+                            onClick={handleClose}
+                            data-testid="send-done-button"
+                        >
                             {t('send.done-button')}
                         </Button>
                     )}
-                </>
+                </div>
             )}
         </Wrapper>
     );
