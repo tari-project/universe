@@ -25,7 +25,9 @@ use async_trait::async_trait;
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::collections::HashMap;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
+#[cfg(test)]
+use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -104,6 +106,7 @@ pub(crate) trait ProcessAdapter {
         left == right
     }
 
+    #[cfg(test)]
     fn process_executable_matches(
         expected_executable: &Path,
         process_executable: Option<&Path>,
@@ -128,6 +131,7 @@ pub(crate) trait ProcessAdapter {
         Self::paths_are_equivalent(expected_executable, &actual)
     }
 
+    #[cfg(test)]
     fn command_contains_executable_arg(command: &[OsString], expected_executable: &Path) -> bool {
         let expected = Self::canonicalized_or_original_path(expected_executable);
         command.iter().any(|arg| {
