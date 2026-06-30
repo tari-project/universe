@@ -620,12 +620,9 @@ mod tests {
         std::fs::write(&checksum_file, "checksum").expect("create sibling file");
 
         let retained_versions = vec!["1.2.3".to_string(), "1.2.2".to_string()];
-        let removed_paths = cleanup_old_binary_versions(
-            binaries_dir,
-            &retained_versions,
-            "test-binary",
-        )
-        .expect("cleanup succeeds");
+        let removed_paths =
+            cleanup_old_binary_versions(binaries_dir, &retained_versions, "test-binary")
+                .expect("cleanup succeeds");
 
         assert!(current_dir.exists());
         assert!(shared_current_dir.exists());
