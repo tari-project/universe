@@ -139,7 +139,25 @@ pub(crate) trait ProcessAdapter {
         })
     }
 
-    fn process_pid_matches_executable(pid_to_match: i32, expected_executable: &Path) -> bool {
+    /// Parse a pid file. Supports the legacy single-line `<pid>` format and the
+    /// newer `<pid>\n<start_time>` format. Returns the parsed PID (if any) and
+    /// the recorded process start time (if present).
+    fn parse_pid_file(contents: &str) -> (Option<i32>, Option<u64>) {
+        let mut lines = contents.lines();
+        let pid = lines
+            .next()
+            .and_then(|line| line.trim().parse::<i32>().ok());
+        let start_time = lines
+            .next()
+            .and_then(|line| line.trim().parse::<u64>().ok());
+        (pid, start_time)
+    }
+
+    fn process_pid_matches_executable(
+        pid_to_match: i32,
+        expected_executable: &Path,
+        expected_start_time: Option<u64>,
+    ) -> bool {
         let Ok(pid_to_match) = u32::try_from(pid_to_match) else {
             return false;
         };
@@ -156,19 +174,42 @@ pub(crate) trait ProcessAdapter {
         };
 
         let expected = Self::canonicalized_or_original_path(expected_executable);
-        if Self::process_executable_matches_canonicalized(&expected, process.exe()) {
-            return true;
-        }
-
-        if let Some(wrapper_path) = process_wrapper::get_wrapper_path() {
-            let wrapper_path = Self::canonicalized_or_original_path(&wrapper_path);
-            return Self::process_executable_matches_canonicalized(&wrapper_path, process.exe())
-                && process.cmd().iter().any(|arg| {
-                    Self::process_executable_matches_canonicalized(&expected, Some(Path::new(arg)))
+        let expected_file_name = expected.file_name();
+        let executable_matches =
+            Self::process_executable_matches_canonicalized(&expected, process.exe())
+                || process_wrapper::get_wrapper_path().is_some_and(|wrapper_path| {
+                    let wrapper_path = Self::canonicalized_or_original_path(&wrapper_path);
+                    Self::process_executable_matches_canonicalized(&wrapper_path, process.exe())
+                        && process.cmd().iter().any(|arg| {
+                            let arg_path = Path::new(arg);
+                            // Cheap file-name pre-filter so we only pay for the
+                            // canonicalize syscall on arguments that could match.
+                            let (Some(expected_file_name), Some(arg_file_name)) =
+                                (expected_file_name, arg_path.file_name())
+                            else {
+                                return false;
+                            };
+                            Self::paths_are_equivalent(
+                                Path::new(expected_file_name),
+                                Path::new(arg_file_name),
+                            ) && Self::process_executable_matches_canonicalized(
+                                &expected,
+                                Some(arg_path),
+                            )
+                        })
                 });
+
+        if !executable_matches {
+            return false;
         }
 
-        false
+        // If the pid file recorded the process start time, require it to match.
+        // This rejects a PID that was recycled to a different process (even one
+        // running from the same path) after the pid file was written.
+        match expected_start_time {
+            Some(expected_start_time) => process.start_time() == expected_start_time,
+            None => true,
+        }
     }
 
     fn find_process_pid_by_name_and_executable(
@@ -208,39 +249,51 @@ pub(crate) trait ProcessAdapter {
             .file_name()
             .expect("binary path must have a file name");
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {
-            Ok(pid) => match pid.trim().parse::<i32>() {
-                Ok(pid) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
-                    if Self::process_pid_matches_executable(pid, binary_path) {
-                        kill_process(pid).await?;
-                    } else {
-                        warn!(
-                            target: LOG_TARGET_APP_LOGIC,
-                            "Pid file for {} points to PID {}, but that process is not running from {:?}; leaving it untouched",
-                            self.name(),
+            Ok(contents) => {
+                let (pid, expected_start_time) = Self::parse_pid_file(&contents);
+                match pid {
+                    Some(pid) => {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "{} process did not shut down cleanly: {} pid file was created", pid, self.pid_file_name());
+                        if Self::process_pid_matches_executable(
                             pid,
-                            binary_path
-                        );
+                            binary_path,
+                            expected_start_time,
+                        ) {
+                            kill_process(pid).await?;
+                        } else {
+                            warn!(
+                                target: LOG_TARGET_APP_LOGIC,
+                                "Pid file for {} points to PID {}, but that process is not running from {:?} (or the PID was recycled); leaving it untouched",
+                                self.name(),
+                                pid,
+                                binary_path
+                            );
+                        }
+                    }
+                    None => {
+                        warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {contents:?}. Attempting path-scoped process lookup");
+                        let pid_by_name =
+                            Self::find_process_pid_by_name_and_executable(binary_name, binary_path);
+                        if let Some(process) = pid_by_name {
+                            match i32::try_from(process) {
+                                Ok(parsed_id) => kill_process(parsed_id).await?,
+                                Err(_) => warn!(
+                                    target: LOG_TARGET_APP_LOGIC,
+                                    "Found process PID {process} for {} but it does not fit into i32; skipping kill",
+                                    self.name()
+                                ),
+                            }
+                        } else {
+                            warn!(
+                                target: LOG_TARGET_APP_LOGIC,
+                                "No process found for {} at {:?}",
+                                binary_name.to_str().unwrap_or_default(),
+                                binary_path
+                            );
+                        }
                     }
                 }
-                Err(_) => {
-                    warn!(target: LOG_TARGET_APP_LOGIC, "pid file is not a valid integer: {pid}. Attempting path-scoped process lookup");
-                    let pid_by_name =
-                        Self::find_process_pid_by_name_and_executable(binary_name, binary_path);
-                    if let Some(process) = pid_by_name {
-                        let parsed_id = i32::try_from(process)
-                            .expect("Failed to parse process ID from u32 to i32");
-                        kill_process(parsed_id).await?;
-                    } else {
-                        warn!(
-                            target: LOG_TARGET_APP_LOGIC,
-                            "No process found for {} at {:?}",
-                            binary_name.to_str().unwrap_or_default(),
-                            binary_path
-                        );
-                    }
-                }
-            },
+            }
             Err(e) => {
                 if let Ok(true) = std::path::Path::new(&base_folder)
                     .join(self.pid_file_name())
@@ -601,5 +654,34 @@ mod tests {
             Path::new(r"C:\App\Bin\xmrig.exe"),
             Some(Path::new(r"c:\app\bin\XMRIG.EXE")),
         ));
+    }
+
+    #[test]
+    fn parse_pid_file_reads_legacy_single_line() {
+        let (pid, start) = <TestAdapter as ProcessAdapter>::parse_pid_file("12345");
+        assert_eq!(pid, Some(12345));
+        assert_eq!(start, None);
+    }
+
+    #[test]
+    fn parse_pid_file_reads_pid_and_start_time() {
+        let (pid, start) = <TestAdapter as ProcessAdapter>::parse_pid_file("12345\n1699999999");
+        assert_eq!(pid, Some(12345));
+        assert_eq!(start, Some(1699999999));
+    }
+
+    #[test]
+    fn parse_pid_file_trims_whitespace_and_trailing_newline() {
+        let (pid, start) =
+            <TestAdapter as ProcessAdapter>::parse_pid_file("  12345  \n  1699999999  \n");
+        assert_eq!(pid, Some(12345));
+        assert_eq!(start, Some(1699999999));
+    }
+
+    #[test]
+    fn parse_pid_file_rejects_garbage() {
+        let (pid, start) = <TestAdapter as ProcessAdapter>::parse_pid_file("not-a-pid");
+        assert_eq!(pid, None);
+        assert_eq!(start, None);
     }
 }
