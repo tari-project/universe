@@ -92,6 +92,12 @@ tari_crypto = "0.23.1"
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v5.4.0-rc.1" }
 tari_transaction_components = { git = "https://github.com/tari-project/tari.git", tag = "v5.4.0-rc.1" }
 tari_utilities = "0.10.0"
+# Wallet-side tari crates pinned to the version used by the `minotari` crate
+# (crates.io 5.3.1). These are distinct from the git v5.4.0-rc.1 crates above,
+# which the rest of the app uses. The wallet module bridges between the two.
+tari_common_wallet = { package = "tari_common", version = "5.3.1" }
+tari_common_types_wallet = { package = "tari_common_types", version = "5.3.1" }
+tari_transaction_components_wallet = { package = "tari_transaction_components", version = "5.3.1" }
 tauri = { version = "2", features = [
   "protocol-asset",
   "isolation",

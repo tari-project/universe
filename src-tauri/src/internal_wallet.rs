@@ -36,6 +36,13 @@ use tari_transaction_components::key_manager::wallet_types::{SeedWordsWallet, Wa
 use tari_transaction_components::key_manager::{
     KeyManager, SecretTransactionKeyManagerInterface, TransactionKeyManagerInterface,
 };
+// Wallet-side (tari 5.3.1) key manager types, used only for signing transactions
+// via the `minotari` crate. See `wallet::minotari_wallet::wallet_network`.
+use tari_common_types_wallet::seeds::cipher_seed::CipherSeed as WalletCipherSeed;
+use tari_transaction_components_wallet::key_manager::KeyManager as WalletKeyManager;
+use tari_transaction_components_wallet::key_manager::wallet_types::{
+    SeedWordsWallet as WalletSeedWordsWallet, WalletType as WalletWalletType,
+};
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
@@ -768,7 +775,9 @@ impl InternalWallet {
         Ok((tari_wallet_details.id, tari_seed_binary, monero_seed_binary))
     }
 
-    pub async fn get_key_manager(app_handle: &AppHandle) -> Result<KeyManager, anyhow::Error> {
+    pub async fn get_key_manager(
+        app_handle: &AppHandle,
+    ) -> Result<WalletKeyManager, anyhow::Error> {
         let tari_wallet_details = Self::tari_wallet_details().await;
 
         if tari_wallet_details.is_some() {
@@ -780,11 +789,22 @@ impl InternalWallet {
 
             let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password).await?;
 
-            let seed_words_wallet = SeedWordsWallet::construct_new(tari_cipher_seed.clone())
+            // The `minotari` signing crate uses tari 5.3.1, so rebuild the cipher seed
+            // as a 5.3.1 `CipherSeed`. The binary form is identical across the two
+            // versions (CIPHER_SEED_VERSION == 2), so this round-trip is lossless.
+            let wallet_cipher_seed = WalletCipherSeed::from_binary(
+                &tari_cipher_seed
+                    .to_binary()
+                    .map_err(|e| anyhow!(e.to_string()))?,
+            )
+            .map_err(|e| anyhow!(e.to_string()))?;
+
+            let seed_words_wallet = WalletSeedWordsWallet::construct_new(wallet_cipher_seed)
                 .map_err(|e| anyhow!(e.to_string()))?;
 
-            let tx_key_manager = KeyManager::new(WalletType::SeedWords(seed_words_wallet))
-                .map_err(|e| anyhow!(e.to_string()))?;
+            let tx_key_manager =
+                WalletKeyManager::new(WalletWalletType::SeedWords(seed_words_wallet))
+                    .map_err(|e| anyhow!(e.to_string()))?;
 
             Ok(tx_key_manager)
         } else {

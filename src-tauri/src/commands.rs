@@ -1567,7 +1567,9 @@ pub async fn validate_minotari_amount(amount: String) -> Result<(), InvokeError>
         .await
         .available;
 
-    match m_amount.cmp(&available_balance) {
+    // `m_amount` is a v5.4.0-rc.1 MicroMinotari while `available_balance` comes from
+    // the minotari wallet (tari 5.3.1); compare by raw micro-Tari value.
+    match m_amount.as_u64().cmp(&available_balance.as_u64()) {
         std::cmp::Ordering::Less => Ok(()),
         _ => Err(InvokeError::from("Insufficient balance".to_string())),
     }

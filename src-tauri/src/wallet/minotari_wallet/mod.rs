@@ -60,9 +60,10 @@ use std::{
     time::{Duration, Instant},
 };
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::TariAddress;
-use tari_common_types::transaction::TxId;
-use tari_transaction_components::MicroMinotari;
+use tari_common_types_wallet::tari_address::TariAddress;
+use tari_common_types_wallet::transaction::TxId;
+use tari_common_wallet::configuration::Network as WalletNetwork;
+use tari_transaction_components_wallet::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
@@ -81,6 +82,21 @@ pub(crate) fn get_grpc_url() -> String {
         Network::Esmeralda => "https://rpc.esmeralda.tari.com",
     };
     http_api_url.to_string()
+}
+
+/// The `minotari` wallet crate depends on tari 5.3.1, while the rest of the app
+/// uses tari v5.4.0-rc.1. Derive the wallet-side (`5.3.1`) network from the app's
+/// canonical network so the two can never diverge (e.g. sending to the wrong
+/// network). The variant sets are identical across both versions.
+pub(crate) fn wallet_network() -> WalletNetwork {
+    match Network::get_current_or_user_setting_or_default() {
+        Network::MainNet => WalletNetwork::MainNet,
+        Network::StageNet => WalletNetwork::StageNet,
+        Network::NextNet => WalletNetwork::NextNet,
+        Network::LocalNet => WalletNetwork::LocalNet,
+        Network::Igor => WalletNetwork::Igor,
+        Network::Esmeralda => WalletNetwork::Esmeralda,
+    }
 }
 static DEFAULT_PASSWORD: &str = "test_password";
 static REQUIRED_CONFIRMATIONS: u64 = 3;
@@ -174,7 +190,7 @@ impl MinotariWalletManager {
         .await?;
 
         let destination_address = TariAddress::from_base58(&address)?;
-        let expected_network = Network::get_current_or_user_setting_or_default();
+        let expected_network = wallet_network();
         if destination_address.network() != expected_network {
             return Err(anyhow::anyhow!(
                 "Destination address is for network {:?}, but the wallet is on {:?}",

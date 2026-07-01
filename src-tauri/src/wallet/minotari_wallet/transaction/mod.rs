@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::wallet::minotari_wallet::wallet_network;
 use anyhow::anyhow;
 use log::info;
 use minotari_wallet::{
@@ -27,8 +28,7 @@ use minotari_wallet::{
     db::SqlitePool,
     transactions::{manager::TransactionSender, one_sided_transaction::Recipient},
 };
-use tari_common::configuration::Network;
-use tari_transaction_components::{
+use tari_transaction_components_wallet::{
     consensus::ConsensusManager,
     offline_signing::{
         models::{PrepareOneSidedTransactionForSigningResult, SignedOneSidedTransactionResult},
@@ -53,7 +53,7 @@ pub struct TransactionManager {
 
 impl TransactionManager {
     pub async fn new(pool: SqlitePool, sender_address: String) -> Result<Self, anyhow::Error> {
-        let network = Network::get_current_or_user_setting_or_default();
+        let network = wallet_network();
         let transaction_sender = TransactionSender::new(
             pool,
             sender_address,
@@ -87,7 +87,7 @@ impl TransactionManager {
     ) -> Result<SignedOneSidedTransactionResult, anyhow::Error> {
         info!("Signing one-sided transaction...");
         let key_manager = InternalWallet::get_key_manager(app_handle).await?;
-        let network = Network::get_current_or_user_setting_or_default();
+        let network = wallet_network();
         let rules = ConsensusManager::builder(network).build();
 
         let signed_transaction = sign_locked_transaction(
