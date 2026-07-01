@@ -714,6 +714,7 @@ impl From<ReadinessStatus> for minotari_node_grpc_client::grpc::ReadinessStatus 
                     progress_percentage: migration.progress_percentage,
                     current_db_version: migration.current_db_version,
                     target_db_version: migration.target_db_version,
+                    phase: minotari_node_grpc_client::grpc::MigrationPhase::Unspecified as i32,
                 };
                 minotari_node_grpc_client::grpc::readiness_status::Status::Migration(
                     migration_proto,
