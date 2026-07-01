@@ -88,6 +88,25 @@ export const setMonerodConfig = async (useMoneroFail: boolean, moneroNodes: stri
         }));
     });
 };
+export const setRemoteBaseNodeAddress = async (address: string) => {
+    const previousAddress = store.getState().remote_base_node_address;
+    // Intentionally pessimistic: the backend canonicalises the address
+    // (validates scheme/host/port, trims trailing slashes, substitutes the
+    // network default for an empty string) and returns what it actually
+    // persisted. Writing that value into the store — rather than the raw
+    // input — keeps the store and the persisted config in sync so the
+    // "clear to reset to default" flow actually reflects in the UI on the
+    // next render.
+    try {
+        const resolved = await invoke<string>('set_remote_base_node_address', { address });
+        store.setState((c) => ({ ...c, remote_base_node_address: resolved }));
+    } catch (e) {
+        console.error('Could not set remote base node address', e);
+        setError('Could not change remote base node address');
+        store.setState((c) => ({ ...c, remote_base_node_address: previousAddress }));
+        throw e;
+    }
+};
 export const setNodeType = async (nodeType: NodeType) => {
     const previousNodeType = store.getState().node_type;
     store.setState((c) => ({ ...c, node_type: nodeType }));

@@ -158,15 +158,15 @@ assert(success, 'Language change failed');
 
 ```bash
 # Install Appium
-npm install -g appium
-npm install -g @appium/doctor
+pnpm install -g appium
+pnpm install -g @appium/doctor
 
 # Install platform drivers
 appium driver install mac2      # macOS
 appium driver install windows   # Windows
 
 # Install WebDriverIO
-npm install webdriverio @wdio/cli
+pnpm install webdriverio @wdio/cli
 ```
 
 **Pros:**

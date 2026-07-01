@@ -734,8 +734,8 @@ jobs:
 
             - name: Setup Tari Universe
               run: |
-                  npm install
-                  npm run tauri build
+                  pnpm install
+                  pnpm run tauri build
 
             - name: Run E2E Language Tests
               run: |

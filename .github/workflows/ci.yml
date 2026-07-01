@@ -28,7 +28,7 @@ jobs:
     name: Cargo checks (fmt, clippy, check)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Create empty dist dir
         run: |
           mkdir dist
@@ -90,7 +90,7 @@ jobs:
     name: Machete
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2.7.5
         with:
@@ -110,7 +110,7 @@ jobs:
     name: Tauri build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Install dependencies (linux)
         run: |
           sudo apt-get update
@@ -128,13 +128,15 @@ jobs:
             opencl-headers \
             ocl-icd-opencl-dev
 
+      - uses: pnpm/action-setup@v6
+
       - uses: actions/setup-node@v6
         with:
           node-version: lts/*
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies (Node)
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2.7.5
@@ -157,7 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Install ripgrep
         run: |
           # https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb.sha256
@@ -171,7 +173,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Create empty dist dir
         run: |
           mkdir dist
@@ -215,18 +217,20 @@ jobs:
     name: Frontend Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v6
         with:
           node-version: lts/*
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Run frontend tests
-        run: npm run test
+        run: pnpm run test
 
       - name: Run frontend tests with coverage
-        run: npm run test:coverage
+        run: pnpm run test:coverage

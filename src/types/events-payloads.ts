@@ -104,8 +104,9 @@ export enum GpuMinerFeature {
     EngineSelection = 'EngineSelection',
 }
 
-export enum GpuMiningAlgorithm {
+export enum MiningAlgorithm {
     C29 = 'C29',
+    RandomX = 'RandomX',
 }
 
 export enum MinerControlsState {
@@ -119,7 +120,7 @@ export enum MinerControlsState {
 export interface GpuMiner {
     miner_type: GpuMinerType;
     features: GpuMinerFeature[];
-    supported_algorithms: GpuMiningAlgorithm[];
+    supported_algorithms: MiningAlgorithm[];
     is_healthy: boolean;
     last_error?: string;
 }

@@ -65,14 +65,14 @@ Add this to your VSCode `settings.json`:
 ```bash
 # Verify playwright MCP server is installed globally
 which @executeautomation/playwright-mcp-server
-npm list -g @executeautomation/playwright-mcp-server
+pnpm list -g @executeautomation/playwright-mcp-server
 ```
 
 **2. "Permission denied" error:**
 
 ```bash
 # Check npm global path
-npm config get prefix
+pnpm config get prefix
 # Ensure it's in your PATH
 echo $PATH
 ```
@@ -87,7 +87,7 @@ echo $PATH
 
 ```bash
 # Test MCP server directly
-npx @executeautomation/playwright-mcp-server --help
+pnpm dlx @executeautomation/playwright-mcp-server --help
 
 # Check Amp extension logs
 # In VSCode: Help > Toggle Developer Tools > Console

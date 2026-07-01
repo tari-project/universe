@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { getSelectedMiner } from './miningStoreSelectors';
 import { MiningStoreState } from '../useMiningStore';
-import { GpuMiner, GpuMinerType, GpuMinerFeature, GpuMiningAlgorithm } from '@app/types/events-payloads';
+import { GpuMiner, GpuMinerType, GpuMinerFeature, MiningAlgorithm } from '@app/types/events-payloads';
 
 const createMockMiner = (minerType: GpuMinerType): GpuMiner => ({
     miner_type: minerType,
     features: [GpuMinerFeature.PoolMining],
-    supported_algorithms: [GpuMiningAlgorithm.C29],
+    supported_algorithms: [MiningAlgorithm.C29],
     is_healthy: true,
 });
 

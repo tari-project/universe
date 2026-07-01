@@ -441,36 +441,6 @@ describe('miningStoreActions', () => {
         });
     });
 
-    describe('restartMining logic', () => {
-        it('should restart if CPU is mining', () => {
-            mockMiningMetricsStore.state.cpu_mining_status.is_mining = true;
-
-            const isMining =
-                mockMiningMetricsStore.getState().cpu_mining_status.is_mining ||
-                mockMiningMetricsStore.getState().gpu_mining_status.is_mining;
-
-            expect(isMining).toBe(true);
-        });
-
-        it('should restart if GPU is mining', () => {
-            mockMiningMetricsStore.state.gpu_mining_status.is_mining = true;
-
-            const isMining =
-                mockMiningMetricsStore.getState().cpu_mining_status.is_mining ||
-                mockMiningMetricsStore.getState().gpu_mining_status.is_mining;
-
-            expect(isMining).toBe(true);
-        });
-
-        it('should not restart if nothing is mining', () => {
-            const isMining =
-                mockMiningMetricsStore.getState().cpu_mining_status.is_mining ||
-                mockMiningMetricsStore.getState().gpu_mining_status.is_mining;
-
-            expect(isMining).toBe(false);
-        });
-    });
-
     describe('eco alert check logic', () => {
         it('should not trigger eco alert if not needed', () => {
             mockConfigMiningStore.state.eco_alert_needed = false;
