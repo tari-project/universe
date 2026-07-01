@@ -34,18 +34,8 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Install the `.deb` package:
-
-```bash
-sudo dpkg -i tari-universe_*.deb
-```
-
-Or run the `.AppImage`:
-
-```bash
-chmod +x Tari-Universe-*.AppImage
-./Tari-Universe-*.AppImage
-```
+Official prebuilt binaries are not currently distributed for Linux. Please see the
+[Building from source](#building-from-source) section below to compile and run on Linux.
 
 ### Run
 
@@ -59,7 +49,7 @@ Launch Tari Universe from your applications menu or desktop shortcut.
 
 ```bash
 brew update
-brew install git node cmake protobuf openssl npm
+brew install git node cmake protobuf openssl pnpm
 ```
 
 #### Ubuntu/Debian
@@ -67,7 +57,7 @@ brew install git node cmake protobuf openssl npm
 ```bash
 sudo apt-get update
 sudo apt-get install -y git nodejs npm build-essential \
-    libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev \
+    libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
     patchelf libprotobuf-dev protobuf-compiler libssl-dev \
     pkg-config cmake
 ```
@@ -99,17 +89,39 @@ cargo install tauri-cli --locked
 ```bash
 git clone https://github.com/tari-project/universe.git
 cd universe
-npm install
-npm run tauri build
+pnpm install
+pnpm run tauri build
+```
+
+By default the build targets **testnet**. To build for mainnet, prefix the
+command with the `TARI_TARGET_NETWORK` environment variable:
+
+```bash
+# Linux / macOS
+TARI_TARGET_NETWORK=mainnet pnpm run tauri build
+
+# Windows (PowerShell)
+$env:TARI_TARGET_NETWORK="mainnet"; pnpm run tauri build
 ```
 
 ### Output
 
-Built applications will be in `target/release/bundle/`:
+Packaged installers land under `target/release/bundle/`:
 
-- **Linux**: `.deb` and `.AppImage` files
-- **Windows**: `.msi` installer
-- **macOS**: `.dmg` and `.app` bundle
+- **Windows**: `.msi` installer in `target/release/bundle/msi/`
+- **macOS**: `.dmg` and `.app` bundle in `target/release/bundle/dmg/` and
+  `target/release/bundle/macos/`
+
+**Linux note:** the final bundling step (`.deb` / `.AppImage` / `.rpm`)
+currently hangs indefinitely on most Ubuntu/Debian systems. The Rust binary
+itself compiles successfully. Once the Cargo build phase completes and
+bundling begins, press `Ctrl+C` - the binary is already written and fully
+usable. Tauri renames the output using the `productName` from
+`src-tauri/tauri.conf.json`, so the file lands at the workspace root as:
+
+```bash
+'./target/release/Tari Universe (Alpha)'
+```
 
 ## Contributing
 
@@ -124,9 +136,9 @@ The project uses comprehensive linting tools to maintain code quality:
 
 ```bash
 # Frontend linting
-npm run lint          # Run all linters (knip + eslint)
-npm run lint:fix      # Auto-fix ESLint issues
-npm run lint:taplo    # Check TOML file formatting
+pnpm run lint          # Run all linters (knip + eslint)
+pnpm run lint:fix      # Auto-fix ESLint issues
+pnpm run lint:taplo    # Check TOML file formatting
 
 # Backend linting (from src-tauri directory)
 cd src-tauri

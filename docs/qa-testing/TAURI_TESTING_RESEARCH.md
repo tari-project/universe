@@ -130,7 +130,7 @@ export const config = {
 
     onPrepare: () => {
         // Build Tauri app in debug mode
-        spawnSync('npm', ['run', 'tauri', 'build', '--debug']);
+        spawnSync('pnpm', ['run', 'tauri', 'build', '--debug']);
     },
 };
 ```
@@ -237,8 +237,8 @@ class TauriMCPServer {
 
 ```bash
 # Setup component testing
-npm install --save-dev @testing-library/react @testing-library/jest-dom
-npm install --save-dev jest-environment-jsdom
+pnpm install --save-dev @testing-library/react @testing-library/jest-dom
+pnpm install --save-dev jest-environment-jsdom
 
 # Create test file
 touch src/components/LanguageSelector.test.jsx
@@ -259,7 +259,7 @@ touch tests/system/language_test.py
 
 ```bash
 # Setup for Windows/Linux CI
-npm install --save-dev @wdio/cli @wdio/local-runner @wdio/mocha-framework
+pnpm install --save-dev @wdio/cli @wdio/local-runner @wdio/mocha-framework
 cargo install tauri-driver --locked
 ```
 

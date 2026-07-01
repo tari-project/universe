@@ -44,7 +44,7 @@ pub struct PoolStatus {
     pub min_payout: u64,
 }
 
-pub trait PoolManagerInterfaceTrait<T> {
+pub(crate) trait PoolManagerInterfaceTrait<T> {
     // =============== Getters ===============
 
     async fn get_write_manager() -> RwLockWriteGuard<'static, PoolManager>;

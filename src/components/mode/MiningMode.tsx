@@ -156,7 +156,7 @@ export const MiningMode = ({
                 role="combobox"
                 aria-expanded={isOpen}
                 aria-haspopup="listbox"
-                label={t('modes.mode', { context: variant === 'secondary' && 'long' })}
+                label={t('modes.mode', { context: variant === 'secondary' ? 'long' : '' })}
                 variant={variant}
                 isOpen={isOpen}
                 selectedMode={selectedMiningMode?.mode_type || ('Eco' as MiningModeType)}
