@@ -263,6 +263,13 @@ modules:
 
   - name: ayatana-ido
     buildsystem: cmake-ninja
+    config-opts:
+      # The GNOME 50 SDK's CMake defaults CMAKE_INSTALL_LIBDIR to lib64, but
+      # flatpak's PKG_CONFIG_PATH and loader path only cover /app/lib. Without
+      # this, ayatana-ido installs its .pc/.so under /app/lib64, the next module
+      # fails pkg-config (libayatana-ido3-0.4 not found), and the tray lib would
+      # be off the runtime loader path. Force lib.
+      - -DCMAKE_INSTALL_LIBDIR=lib
     cleanup:
       - /include
       - /lib/pkgconfig
@@ -273,6 +280,8 @@ modules:
 
   - name: libayatana-indicator
     buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_INSTALL_LIBDIR=lib
     cleanup:
       - /include
       - /lib/pkgconfig
@@ -284,6 +293,7 @@ modules:
   - name: libayatana-appindicator
     buildsystem: cmake-ninja
     config-opts:
+      - -DCMAKE_INSTALL_LIBDIR=lib
       - -DENABLE_BINDINGS_MONO=NO
       - -DENABLE_BINDINGS_VALA=NO
       - -DENABLE_GTKDOC=NO
