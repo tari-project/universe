@@ -55,9 +55,12 @@ pub struct TariMcpHandler {
 }
 
 // rmcp 2.0's `#[tool_handler]` defaults to rebuilding the router via
-// `Self::tool_router()`; point it at the prebuilt field so it's constructed
-// once and cloned per request (and to keep the `tool_router` field live).
-#[tool_handler(router = self.tool_router.clone())]
+// `Self::tool_router()`; point it at the prebuilt field by reference so it's
+// constructed once and borrowed per request (and to keep the `tool_router`
+// field live). ToolRouter::{call,list_all,get} all take `&self`. The parens
+// are required: the macro expands `#router.call(..)`, so a bare
+// `&self.tool_router` would bind `&` to the call result, not the field.
+#[tool_handler(router = (&self.tool_router))]
 impl ServerHandler for TariMcpHandler {
     fn get_info(&self) -> ServerInfo {
         // rmcp 2.0 marked ServerInfo (InitializeResult) and Implementation as
