@@ -58,18 +58,41 @@ else
     exit 1
   fi
 
+  # We cannot just bind $ICD_DIR: the usual location (/etc/OpenCL/vendors) is
+  # under /etc, which flatpak refuses to share ("Path /etc is reserved"), so the
+  # ICD would never reach the sandbox. And ROCm's libamdocl64.so pulls in host
+  # libraries the GNOME runtime doesn't ship (e.g. libnuma.so.1), so even a
+  # reachable ICD fails to load. So stage the ICD(s) + those extra host libs
+  # into a plain dir the sandbox CAN mount, and point the loader there. The .icd
+  # names libamdocl64.so relatively; it resolves from $ROCM_PATH/lib via
+  # LD_LIBRARY_PATH below.
+  STAGE="${XDG_DATA_HOME:-$HOME/.local/share}/tari-universe/rocm-shim"
+  mkdir -p "$STAGE"
+  cp -f "$ICD_DIR"/*.icd "$STAGE"/
+  # Host libs libamdocl64.so needs that aren't in the runtime. If ldd shows more
+  # "not found" against $ROCM_PATH/lib/libamdocl64.so on your system, add them here.
+  for lib in libnuma.so.1; do
+    p=""
+    for d in /usr/lib/x86_64-linux-gnu /usr/lib64 /usr/lib /lib/x86_64-linux-gnu; do
+      if [ -e "$d/$lib" ]; then p="$d/$lib"; break; fi
+    done
+    if [ -n "$p" ]; then cp -Lf "$p" "$STAGE"/; else
+      echo "WARN: $lib not found on host; ROCm OpenCL may fail to load." >&2
+    fi
+  done
+
   # LD_LIBRARY_PATH is heavy-handed (it applies to the whole app), but ROCm's
-  # libamdocl64.so usually needs its sibling libs on the path. Adjust if it
-  # shadows a runtime lib.
+  # libamdocl64.so needs its sibling libs on the path. Adjust if it shadows a
+  # runtime lib.
   set -x
   flatpak override --user "$APP" \
     --filesystem="${ROCM_PATH}:ro" \
-    --filesystem="${ICD_DIR}:ro" \
-    --env=OCL_ICD_VENDORS="${ICD_DIR}" \
-    --env=LD_LIBRARY_PATH="${ROCM_PATH}/lib"
+    --filesystem="${STAGE}:ro" \
+    --env=OCL_ICD_VENDORS="${STAGE}" \
+    --env=LD_LIBRARY_PATH="${ROCM_PATH}/lib:${STAGE}"
   set +x
   echo
-  echo "Exposed host ROCm ($ROCM_PATH) + ICD ($ICD_DIR) to $APP."
+  echo "Exposed host ROCm ($ROCM_PATH) + staged ICD/libs ($STAGE) to $APP."
 fi
 
 echo "(--device=all, needed for /dev/kfd + /dev/dri, is already granted by the manifest.)"
