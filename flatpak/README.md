@@ -28,7 +28,7 @@ need (network, GPU device nodes, secret storage, tray).
 | `requirements.txt` | Hash-locked pins for the generator toolchain (used by `generate-sources.sh`) |
 | `enable-amd-gpu.sh` | Opt-in helper to expose a host AMD OpenCL/ROCm stack to the installed app (experimental) |
 | `cargo-sources.json` | Vendored Rust crates (generated) |
-| `node-sources.json` | Vendored npm packages (generated) |
+| `node-sources.json` | Vendored npm packages, from pnpm-lock.yaml (generated) |
 
 ## Build
 
@@ -53,7 +53,7 @@ flatpak run com.tari.universe
 > **whatever is checked out** — no commit/version pinning. The vendored offline
 > sources (`cargo-sources.json` / `node-sources.json`) must match the checked-out
 > tree's lockfiles; run `./generate-sources.sh` after any `Cargo.lock` /
-> `package-lock.json` change (CI does this automatically — see below).
+> `pnpm-lock.yaml` change (CI does this automatically — see below).
 
 ## CI / future releases
 

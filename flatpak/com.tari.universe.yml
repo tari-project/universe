@@ -68,8 +68,8 @@ build-options:
   append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node22/bin
   env:
     CARGO_HOME: /run/build/tari-universe/cargo
-    npm_config_cache: /run/build/tari-universe/flatpak-node/npm-cache
-    npm_config_offline: 'true'
+    # node-gyp / tool caches staged by the offline node sources live here.
+    XDG_CACHE_HOME: /run/build/tari-universe/flatpak-node/cache
     # The Tari crates compile .proto definitions with prost-build, which shells
     # out to protoc (provided by the protobuf module below).
     PROTOC: /app/bin/protoc
@@ -107,9 +107,15 @@ modules:
   - name: tari-universe
     buildsystem: simple
     build-commands:
-      # 1. Frontend: install npm deps from the offline cache, then build to ../dist
-      - npm ci --offline --no-audit --no-fund
-      - npm run build
+      # 1. Frontend: install deps from the offline pnpm store (populated during
+      #    the source phase from node-sources.json) with the vendored pnpm, then
+      #    build to ../dist. node22 ships no pnpm, hence the bundled binary.
+      #    --config.trustLockfile=true skips pnpm 11's lockfile supply-chain
+      #    verification pass, which reaches the registry and so cannot run offline
+      #    (--offline alone does not disable it); the vendored store is already the
+      #    trusted, pinned dependency set.
+      - flatpak-node/pnpm/pnpm install --offline --frozen-lockfile --config.trustLockfile=true
+      - flatpak-node/pnpm/pnpm run build
 
       # 2. process-wrapper sidecar (built first so src-tauri/build.rs can pick it
       #    up and satisfy the Tauri externalBin check)
@@ -139,7 +145,7 @@ modules:
       # the same manifest builds whatever release/branch is checked out. CI builds
       # the exact tagged commit; locally it builds your working tree. The vendored
       # dependency manifests below MUST match this tree's Cargo.lock /
-      # package-lock.json — regenerate them with generate-sources.sh (CI does this
+      # pnpm-lock.yaml — regenerate them with generate-sources.sh (CI does this
       # automatically each run). Big/generated dirs are skipped so the copy stays
       # lean and doesn't drag in build artifacts.
       - type: dir
@@ -196,6 +202,16 @@ modules:
       # Vendored offline dependency trees (generated — see generate-sources.sh)
       - cargo-sources.json
       - node-sources.json
+
+      # pnpm itself. node22 provides node/npm/yarn/corepack but no pnpm, and
+      # corepack can't fetch it offline, so vendor the standalone binary (pinned
+      # to packageManager in package.json). strip-components: 0 keeps the archive's
+      # `pnpm` launcher + `dist/` layout. Build-time only; not shipped in the app.
+      - type: archive
+        dest: flatpak-node/pnpm
+        strip-components: 0
+        url: https://github.com/pnpm/pnpm/releases/download/v11.9.0/pnpm-linux-x64.tar.gz
+        sha256: 8d987d82585453bcf260ea5d0bae346d298f1a5e71bcde8d99976521408ad895
 
   # ---------------------------------------------------------------------------
   # System-tray runtime dependency: the Ayatana AppIndicator stack.

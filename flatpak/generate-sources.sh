@@ -4,9 +4,9 @@
 # These two files let `flatpak-builder` build with no network access:
 #   cargo-sources.json  - every Rust crate (incl. the tari-project git deps),
 #                         vendored from ../Cargo.lock
-#   node-sources.json   - every npm package, from ../package-lock.json
+#   node-sources.json   - every npm package, from ../pnpm-lock.yaml
 #
-# Re-run this whenever Cargo.lock or package-lock.json changes.
+# Re-run this whenever Cargo.lock or pnpm-lock.yaml changes.
 #
 # Requirements: python3, and network access (this step fetches sources; the
 # subsequent flatpak-builder step does not).
@@ -40,8 +40,18 @@ echo "==> Generating cargo-sources.json from ../Cargo.lock"
 ./.venv/bin/python flatpak-cargo-generator.py ../Cargo.lock -o cargo-sources.json
 
 # --- Node ---
-echo "==> Generating node-sources.json from ../package-lock.json"
-./.venv/bin/flatpak-node-generator npm ../package-lock.json -o node-sources.json
+# pnpm support only exists in the upstream (git) flatpak-node-generator, not in
+# the PyPI package, so it is pinned to a commit and installed from git. This is
+# the one part of the toolchain that is NOT hash-locked (a v9 pnpm-lock.yaml
+# cannot be processed otherwise); the commit pin bounds what runs. Bump it
+# deliberately alongside CARGO_GEN_REF.
+NODE_GEN_REF="737c0085912f9f7dabf9341d4608e2a77a51a73a"
+./.venv/bin/pip install --quiet \
+  "flatpak-node-generator @ git+https://github.com/flatpak/flatpak-builder-tools@${NODE_GEN_REF}#subdirectory=node"
+echo "==> Generating node-sources.json from ../pnpm-lock.yaml"
+# --pnpm-store-version v11 matches pnpm 11.x's store layout; the generator's
+# default (v10) mis-keys peer-dependent packages and pnpm then can't find them.
+./.venv/bin/flatpak-node-generator pnpm --pnpm-store-version v11 ../pnpm-lock.yaml -o node-sources.json
 
 echo "==> Done. Generated:"
 ls -la cargo-sources.json node-sources.json

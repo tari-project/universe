@@ -2600,14 +2600,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/diesel/diesel-2.3.6.crate",
-        "sha256": "d9b6c2fc184a6fb6ebcf5f9a5e3bbfa84d8fd268cdfcce4ed508979a6259494d",
-        "dest": "cargo/vendor/diesel-2.3.6"
+        "url": "https://static.crates.io/crates/diesel/diesel-2.3.10.crate",
+        "sha256": "29fe29a87fb84c631ffb3ba21798c4b1f3a964701ba78f0dce4bf8668562ec88",
+        "dest": "cargo/vendor/diesel-2.3.10"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"d9b6c2fc184a6fb6ebcf5f9a5e3bbfa84d8fd268cdfcce4ed508979a6259494d\", \"files\": {}}",
-        "dest": "cargo/vendor/diesel-2.3.6",
+        "contents": "{\"package\": \"29fe29a87fb84c631ffb3ba21798c4b1f3a964701ba78f0dce4bf8668562ec88\", \"files\": {}}",
+        "dest": "cargo/vendor/diesel-2.3.10",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -7037,14 +7037,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/openssl/openssl-0.10.78.crate",
-        "sha256": "f38c4372413cdaaf3cc79dd92d29d7d9f5ab09b51b10dded508fb90bb70b9222",
-        "dest": "cargo/vendor/openssl-0.10.78"
+        "url": "https://static.crates.io/crates/openssl/openssl-0.10.81.crate",
+        "sha256": "77823a27f0babb03091cb9ed9ef80af3b39dbc82f97e8fa530374b7dafd87a45",
+        "dest": "cargo/vendor/openssl-0.10.81"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"f38c4372413cdaaf3cc79dd92d29d7d9f5ab09b51b10dded508fb90bb70b9222\", \"files\": {}}",
-        "dest": "cargo/vendor/openssl-0.10.78",
+        "contents": "{\"package\": \"77823a27f0babb03091cb9ed9ef80af3b39dbc82f97e8fa530374b7dafd87a45\", \"files\": {}}",
+        "dest": "cargo/vendor/openssl-0.10.81",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -7102,14 +7102,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/openssl-sys/openssl-sys-0.9.114.crate",
-        "sha256": "13ce1245cd07fcc4cfdb438f7507b0c7e4f3849a69fd84d52374c66d83741bb6",
-        "dest": "cargo/vendor/openssl-sys-0.9.114"
+        "url": "https://static.crates.io/crates/openssl-sys/openssl-sys-0.9.117.crate",
+        "sha256": "b47e7e6bb2c38cd930d25a23b40fa52e068c10e85f3e03a7f5ba5aaca5713695",
+        "dest": "cargo/vendor/openssl-sys-0.9.117"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"13ce1245cd07fcc4cfdb438f7507b0c7e4f3849a69fd84d52374c66d83741bb6\", \"files\": {}}",
-        "dest": "cargo/vendor/openssl-sys-0.9.114",
+        "contents": "{\"package\": \"b47e7e6bb2c38cd930d25a23b40fa52e068c10e85f3e03a7f5ba5aaca5713695\", \"files\": {}}",
+        "dest": "cargo/vendor/openssl-sys-0.9.117",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -9005,27 +9005,27 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/rmcp/rmcp-0.15.0.crate",
-        "sha256": "1bef41ebc9ebed2c1b1d90203e9d1756091e8a00bbc3107676151f39868ca0ee",
-        "dest": "cargo/vendor/rmcp-0.15.0"
+        "url": "https://static.crates.io/crates/rmcp/rmcp-2.0.0.crate",
+        "sha256": "d52d21e5b342699bc4de690e6104fc4e43255e4e8420ff0f2cbb963aac09da6f",
+        "dest": "cargo/vendor/rmcp-2.0.0"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"1bef41ebc9ebed2c1b1d90203e9d1756091e8a00bbc3107676151f39868ca0ee\", \"files\": {}}",
-        "dest": "cargo/vendor/rmcp-0.15.0",
+        "contents": "{\"package\": \"d52d21e5b342699bc4de690e6104fc4e43255e4e8420ff0f2cbb963aac09da6f\", \"files\": {}}",
+        "dest": "cargo/vendor/rmcp-2.0.0",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/rmcp-macros/rmcp-macros-0.15.0.crate",
-        "sha256": "0e88ad84b8b6237a934534a62b379a5be6388915663c0cc598ceb9b3292bbbfe",
-        "dest": "cargo/vendor/rmcp-macros-0.15.0"
+        "url": "https://static.crates.io/crates/rmcp-macros/rmcp-macros-2.0.0.crate",
+        "sha256": "6c68cec74c5b3ac73ff46375ae49e161637bda80bba70f0d5db641583bb308ee",
+        "dest": "cargo/vendor/rmcp-macros-2.0.0"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"0e88ad84b8b6237a934534a62b379a5be6388915663c0cc598ceb9b3292bbbfe\", \"files\": {}}",
-        "dest": "cargo/vendor/rmcp-macros-0.15.0",
+        "contents": "{\"package\": \"6c68cec74c5b3ac73ff46375ae49e161637bda80bba70f0d5db641583bb308ee\", \"files\": {}}",
+        "dest": "cargo/vendor/rmcp-macros-2.0.0",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -10773,14 +10773,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tar/tar-0.4.45.crate",
-        "sha256": "22692a6476a21fa75fdfc11d452fda482af402c008cdbaf3476414e122040973",
-        "dest": "cargo/vendor/tar-0.4.45"
+        "url": "https://static.crates.io/crates/tar/tar-0.4.46.crate",
+        "sha256": "3f6221d9a6003c78398e3b239969f352578258df48c8eb051caadae0015bc840",
+        "dest": "cargo/vendor/tar-0.4.46"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"22692a6476a21fa75fdfc11d452fda482af402c008cdbaf3476414e122040973\", \"files\": {}}",
-        "dest": "cargo/vendor/tar-0.4.45",
+        "contents": "{\"package\": \"3f6221d9a6003c78398e3b239969f352578258df48c8eb051caadae0015bc840\", \"files\": {}}",
+        "dest": "cargo/vendor/tar-0.4.46",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -13460,19 +13460,6 @@
         "type": "inline",
         "contents": "{\"package\": \"c0fdd3ddb90610c7638aa2b3a3ab2904fb9e5cdbecc643ddb3647212781c4ae3\", \"files\": {}}",
         "dest": "cargo/vendor/windows-core-0.61.2",
-        "dest-filename": ".cargo-checksum.json"
-    },
-    {
-        "type": "archive",
-        "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/windows-core/windows-core-0.62.2.crate",
-        "sha256": "b8e83a14d34d0623b51dce9581199302a221863196a1dde71a7663a4c2be9deb",
-        "dest": "cargo/vendor/windows-core-0.62.2"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": \"b8e83a14d34d0623b51dce9581199302a221863196a1dde71a7663a4c2be9deb\", \"files\": {}}",
-        "dest": "cargo/vendor/windows-core-0.62.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {

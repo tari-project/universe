@@ -51,7 +51,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: flatpak/.flatpak-builder
-          key: flatpak-builder-${{ hashFiles('Cargo.lock', 'package-lock.json') }}
+          key: flatpak-builder-${{ hashFiles('Cargo.lock', 'pnpm-lock.yaml') }}
           restore-keys: |
             flatpak-builder-
 
