@@ -54,28 +54,27 @@ pub struct TariMcpHandler {
     wallet_manager: WalletManager,
 }
 
-#[tool_handler]
+// rmcp 2.0's `#[tool_handler]` defaults to rebuilding the router via
+// `Self::tool_router()`; point it at the prebuilt field so it's constructed
+// once and cloned per request (and to keep the `tool_router` field live).
+#[tool_handler(router = self.tool_router.clone())]
 impl ServerHandler for TariMcpHandler {
     fn get_info(&self) -> ServerInfo {
-        ServerInfo {
-            protocol_version: ProtocolVersion::V_2025_03_26,
-            capabilities: ServerCapabilities::builder().enable_tools().build(),
-            server_info: Implementation {
-                name: "tari-universe".to_string(),
-                version: env!("CARGO_PKG_VERSION").to_string(),
-                title: Some("Tari Universe MCP Server".to_string()),
-                description: Some(
-                    "MCP server for controlling mining, querying wallet state, and reading chain data."
-                        .to_string(),
-                ),
-                website_url: None,
-                icons: None,
-            },
-            instructions: Some(
-                "Tari Universe MCP server. Available tool categories: mining (start/stop/mode), wallet (address/balance), chain (block height/sync status), and scheduler (scheduled mining events). Use get_mining_status, get_wallet_address, and get_chain_status to get an overview."
-                    .to_string(),
-            ),
-        }
+        // rmcp 2.0 marked ServerInfo (InitializeResult) and Implementation as
+        // #[non_exhaustive], so they must be built via constructors + `with_*`
+        // setters rather than struct literals.
+        ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
+            .with_protocol_version(ProtocolVersion::V_2025_03_26)
+            .with_server_info(
+                Implementation::new("tari-universe", env!("CARGO_PKG_VERSION"))
+                    .with_title("Tari Universe MCP Server")
+                    .with_description(
+                        "MCP server for controlling mining, querying wallet state, and reading chain data.",
+                    ),
+            )
+            .with_instructions(
+                "Tari Universe MCP server. Available tool categories: mining (start/stop/mode), wallet (address/balance), chain (block height/sync status), and scheduler (scheduled mining events). Use get_mining_status, get_wallet_address, and get_chain_status to get an overview.",
+            )
     }
 }
 
