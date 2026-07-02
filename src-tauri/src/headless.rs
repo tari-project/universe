@@ -22,33 +22,141 @@
 
 //! Headless mode support for test-mode builds.
 //! Starts the backend with remote-ui WebSocket and file-backed credentials.
+//!
+//! # State replay
+//!
+//! Backend events are fire-once: config loads and module-status changes are
+//! emitted while setup runs, before any WebSocket client has connected. So
+//! that late-joining clients (fresh Playwright browser contexts, reconnects)
+//! see correct state, every replayable `backend_state_update` event that
+//! flows through the forwarder is cached — the *last real payload* per event
+//! type. The cache is replayed:
+//!
+//! - when a WebSocket client connects (covers reconnects, where frontend
+//!   listeners are already registered), and
+//! - when the frontend invokes `frontend_ready` (covers fresh page loads,
+//!   deterministically after the frontend has registered its listeners).
+//!
+//! Replayed events are real state, never synthesized — if a module failed,
+//! clients see `Failed`, not a hardcoded `Initialized`.
 
 #![cfg(feature = "test-mode")]
 
 use log::{error, info};
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, LazyLock};
 use tauri::AppHandle;
 use tauri::Listener;
 use tauri::Manager;
 use tokio::sync::RwLock;
 
-use std::collections::HashMap;
-
 use crate::LOG_TARGET_APP_LOGIC;
-use crate::configs::config_core::ConfigCore;
-use crate::configs::config_mcp::ConfigMcp;
-use crate::configs::config_mining::ConfigMining;
-use crate::configs::config_pools::ConfigPools;
-use crate::configs::config_ui::ConfigUI;
-use crate::configs::config_wallet::ConfigWallet;
-use crate::configs::trait_config::ConfigImpl;
-use crate::events::UpdateAppModuleStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::file_credential_store;
-use crate::internal_wallet::InternalWallet;
-use crate::setup::listeners::{AppModule, AppModuleStatus};
 use crate::setup::setup_manager::SetupManager;
 use crate::utils;
+
+/// Last real payload seen for each replayable event, keyed by event type
+/// (plus a discriminator for per-module / per-phase events).
+static REPLAY_CACHE: LazyLock<RwLock<HashMap<String, serde_json::Value>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
+
+/// Returns the cache key for a `backend_state_update` event, or `None` if
+/// the event is transient (dialog triggers, one-shot prompts) and must not
+/// be replayed to late-joining clients.
+fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
+    let event_type = event.get("event_type")?.as_str()?;
+    let key = match event_type {
+        // Keyed per module — one entry each for CpuMining / GpuMining / Wallet.
+        "UpdateAppModuleStatus" => {
+            let module = event.pointer("/payload/module")?.as_str()?;
+            format!("{event_type}:{module}")
+        }
+        // Keyed per setup phase.
+        "SetupProgressUpdate" => {
+            let phase = event.pointer("/payload/setup_phase")?.as_str()?;
+            format!("{event_type}:{phase}")
+        }
+        // Singleton state events — last one wins.
+        "ConfigCoreLoaded"
+        | "ConfigUILoaded"
+        | "ConfigWalletLoaded"
+        | "ConfigMiningLoaded"
+        | "ConfigPoolsLoaded"
+        | "ConfigMcpLoaded"
+        | "SelectedTariAddressChanged"
+        | "WalletBalanceUpdate"
+        | "WalletStatusUpdate"
+        | "WalletUIModeChanged"
+        | "BaseNodeUpdate"
+        | "NodeTypeUpdate"
+        | "CpuMiningUpdate"
+        | "GpuMiningUpdate"
+        | "UpdateCpuMinerControlsState"
+        | "UpdateGpuMinerControlsState"
+        | "GpuDevicesUpdate"
+        | "DetectedDevices"
+        | "NewBlockHeight"
+        | "NetworkStatus"
+        | "ConnectionStatus"
+        | "ExchangeIdChanged"
+        | "DisabledPhases"
+        | "StuckOnOrphanChain"
+        | "AvailableMiners"
+        | "UpdateSelectedMiner"
+        | "CpuPoolsStatsUpdate"
+        | "GpuPoolsStatsUpdate"
+        | "InitWalletScanningProgress"
+        | "CloseSplashscreen" => event_type.to_string(),
+        // Everything else (ShowReleaseNotes, AskForRestart, PIN dialogs,
+        // shutdown prompts, ...) is intentionally not replayed.
+        _ => return None,
+    };
+    Some(key)
+}
+
+/// Replay priority: configs first so stores are populated before dependent
+/// state (module status, balances) lands. Within a group the order is the
+/// sorted cache key, which keeps replay deterministic run-to-run.
+fn replay_priority(key: &str) -> u8 {
+    if key.starts_with("Config") {
+        0
+    } else if key.starts_with("UpdateAppModuleStatus") {
+        2
+    } else if key.starts_with("CloseSplashscreen") {
+        3
+    } else {
+        1
+    }
+}
+
+/// Broadcast the cached state snapshot to all connected WebSocket clients.
+/// Safe to call at any time; a no-op when remote-ui isn't running.
+pub async fn replay_state_snapshot(app_handle: &AppHandle) {
+    let Some(remote_ui_state) = app_handle.try_state::<Arc<RwLock<tauri_remote_ui::RemoteUi>>>()
+    else {
+        return;
+    };
+    let mut entries: Vec<(String, serde_json::Value)> = REPLAY_CACHE
+        .read()
+        .await
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+    entries.sort_by(|a, b| {
+        replay_priority(&a.0)
+            .cmp(&replay_priority(&b.0))
+            .then_with(|| a.0.cmp(&b.0))
+    });
+    let count = entries.len();
+    let remote_ui = remote_ui_state.read().await;
+    for (_key, event) in entries {
+        if let Err(e) = remote_ui.emit("backend_state_update", event) {
+            error!(target: LOG_TARGET_APP_LOGIC, "Headless: failed to replay event: {e:?}");
+        }
+    }
+    info!(target: LOG_TARGET_APP_LOGIC, "Headless: replayed {count} cached state events");
+}
 
 /// Initialize the file-backed credential store for headless mode.
 pub fn init_credential_store(app_handle: &AppHandle) {
@@ -74,63 +182,6 @@ pub fn start_headless(handle_clone: AppHandle) {
             .start_setup(handle_clone.clone())
             .await;
         SetupManager::spawn_sleep_mode_handler().await;
-
-        // Re-emit initial state for late-connecting WS clients.
-        // Config and wallet events fire during setup before any remote-ui
-        // WS client is connected. Periodically replay them so late
-        // joiners get the full picture.
-        tauri::async_runtime::spawn(async {
-            // Run indefinitely — new WS clients can connect at any time
-            // during the test session and need the initial state.
-            let mut i = 0u64;
-            loop {
-                tokio::time::sleep(std::time::Duration::from_secs(5)).await;
-
-                // Re-emit all config events
-                EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
-                EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;
-                EventsEmitter::emit_ui_config_loaded(&ConfigUI::content().await).await;
-                EventsEmitter::emit_pools_config_loaded(&ConfigPools::content().await).await;
-                EventsEmitter::emit_mcp_config_loaded(&ConfigMcp::content().await).await;
-                EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
-
-                // Re-emit module status so late-joining clients unlock mining.
-                // Setup phase events are fire-once; without this the frontend
-                // Zustand store stays at NotInitialized and the Start Mining
-                // button is permanently disabled.
-                // Setup has already completed before this loop starts, so all
-                // modules are Initialized.
-                for module in [
-                    AppModule::CpuMining,
-                    AppModule::GpuMining,
-                    AppModule::Wallet,
-                ] {
-                    EventsEmitter::emit_update_app_module_status(UpdateAppModuleStatusPayload {
-                        module,
-                        status: AppModuleStatus::Initialized.as_string(),
-                        error_messages: HashMap::new(),
-                    })
-                    .await;
-                }
-
-                // Re-emit wallet address
-                if InternalWallet::is_initialized() {
-                    let address = InternalWallet::tari_address().await;
-                    let address_type = if InternalWallet::is_internal().await {
-                        crate::internal_wallet::TariAddressType::Internal
-                    } else {
-                        crate::internal_wallet::TariAddressType::External
-                    };
-                    EventsEmitter::emit_selected_tari_address_changed(&address, address_type).await;
-                }
-
-                if i == 0 {
-                    info!(target: LOG_TARGET_APP_LOGIC,
-                        "Headless: re-emitting initial state for WS clients (every 5s)");
-                }
-                i += 1;
-            }
-        });
     });
 }
 
@@ -145,19 +196,38 @@ async fn start_remote_ui(handle: &AppHandle) {
     }
     if let Err(e) = handle.start_remote_ui(config).await {
         error!(target: LOG_TARGET_APP_LOGIC, "Failed to start remote UI: {e:?}");
-    } else {
-        info!(target: LOG_TARGET_APP_LOGIC, "Remote UI available at http://localhost:9515");
-        let forward_handle = handle.clone();
-        handle.listen("backend_state_update", move |event| {
-            let fwd = forward_handle.clone();
-            let payload_str = event.payload().to_string();
-            tauri::async_runtime::spawn(async move {
-                let remote_ui_state = fwd.state::<Arc<RwLock<tauri_remote_ui::RemoteUi>>>();
-                let remote_ui = remote_ui_state.read().await;
-                if let Ok(value) = serde_json::from_str::<serde_json::Value>(&payload_str) {
-                    remote_ui.emit("backend_state_update", value).ok();
-                }
-            });
-        });
+        return;
     }
+    info!(target: LOG_TARGET_APP_LOGIC, "Remote UI available at http://localhost:9515");
+
+    // Forward every backend event over the WebSocket and record replayable
+    // ones in the cache so they can be re-sent to late-joining clients.
+    let forward_handle = handle.clone();
+    handle.listen("backend_state_update", move |event| {
+        let fwd = forward_handle.clone();
+        let payload_str = event.payload().to_string();
+        tauri::async_runtime::spawn(async move {
+            let Ok(value) = serde_json::from_str::<serde_json::Value>(&payload_str) else {
+                return;
+            };
+            if let Some(key) = replay_cache_key(&value) {
+                REPLAY_CACHE.write().await.insert(key, value.clone());
+            }
+            let remote_ui_state = fwd.state::<Arc<RwLock<tauri_remote_ui::RemoteUi>>>();
+            let remote_ui = remote_ui_state.read().await;
+            remote_ui.emit("backend_state_update", value).ok();
+        });
+    });
+
+    // When a WebSocket client connects, replay the current state snapshot.
+    // This covers reconnects (listeners already registered on the page).
+    // Fresh page loads are additionally covered by the frontend_ready hook,
+    // which fires after the frontend has registered its event listeners.
+    let connect_handle = handle.clone();
+    handle.listen(tauri_remote_ui::CLIENT_CONNECTED_EVENT, move |_event| {
+        let handle = connect_handle.clone();
+        tauri::async_runtime::spawn(async move {
+            replay_state_snapshot(&handle).await;
+        });
+    });
 }

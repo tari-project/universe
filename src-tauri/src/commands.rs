@@ -162,6 +162,13 @@ pub async fn frontend_ready(
     app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    // In test mode every page load calls frontend_ready after registering
+    // its event listeners — replay the cached backend state so fresh
+    // Playwright contexts see current (real) module/config/wallet state.
+    // Deliberately before the once-guard: it must run for every page.
+    #[cfg(feature = "test-mode")]
+    crate::headless::replay_state_snapshot(&app).await;
+
     static FRONTEND_READY_CALLED: std::sync::atomic::AtomicBool =
         std::sync::atomic::AtomicBool::new(false);
     if FRONTEND_READY_CALLED.load(Ordering::SeqCst) {

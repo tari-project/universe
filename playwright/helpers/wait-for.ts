@@ -19,26 +19,14 @@ export async function openMiningSidebar(page: Page) {
 }
 
 /**
- * Dispatch module-status events via the Playwright shim so the Zustand store
- * marks modules as Initialized. This is cheap and idempotent — it just tells
- * the frontend that setup is complete so the mining button becomes enabled.
- */
-async function dispatchModuleStatus(page: Page) {
-  await page.evaluate(() => {
-    const dispatch = (window as any).__PLAYWRIGHT_DISPATCH_EVENT__;
-    if (typeof dispatch !== 'function') return;
-    for (const module of ['CpuMining', 'GpuMining', 'Wallet']) {
-      dispatch('backend_state_update', {
-        event_type: 'UpdateAppModuleStatus',
-        payload: { module, status: 'Initialized', error_messages: {} },
-      });
-    }
-  }).catch(() => {});
-}
-
-/**
  * Wait for the mining start or resume button to be visible and enabled.
  * This indicates that all setup phases have completed and mining is unlocked.
+ *
+ * The button enables when the backend emits real UpdateAppModuleStatus
+ * events. Late-joining pages receive them via the headless state replay
+ * (on WS connect and on frontend_ready) — no synthetic events needed.
+ * If this times out, the backend genuinely isn't ready: check module
+ * status in the backend logs rather than working around it here.
  */
 export async function waitForMiningReady(page: Page, timeout = 120_000) {
   // Dismiss any dialog that may have appeared after initial page load
@@ -55,12 +43,8 @@ export async function waitForMiningReady(page: Page, timeout = 120_000) {
   const resume = page.locator(`${sel.mining.resumeButton}:not([disabled])`);
   const btn = start.or(resume);
 
-  // Poll until the mining button is visible and enabled, dispatching module
-  // status events on every iteration. The backend may reset modules after an
-  // exchange-mode switch, so a one-shot dispatch at the top is not enough.
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    await dispatchModuleStatus(page);
     if (await btn.isVisible().catch(() => false)) return;
     await page.waitForTimeout(1_000);
   }
