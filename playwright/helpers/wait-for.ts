@@ -53,23 +53,27 @@ export async function waitForMiningReady(page: Page, timeout = 120_000) {
   throw new Error(`Mining button not ready within ${timeout}ms`);
 }
 
-/** Click the Start or Resume mining button. Sidebar must already be open. */
-export async function clickStartMining(page: Page) {
+/**
+ * Click Start/Resume and converge until mining actually reacts.
+ * A single Playwright click can land on a node that AnimatePresence
+ * remounts before React's handler fires (observed: 3 "successful" clicks,
+ * zero start_cpu_mining invokes) — so keep dispatching until the pause
+ * button materializes. dispatchEvent is the reliable path for these
+ * framer-motion buttons (per the harness docs).
+ */
+export async function clickStartMining(page: Page, timeout = 60_000) {
   const start = page.locator(sel.mining.startButton);
   const resume = page.locator(sel.mining.resumeButton);
+  const pause = page.locator(sel.mining.pauseButton);
   const btn = start.or(resume);
 
-  // Retry click — framer-motion animations can cause the first attempt to
-  // miss if the element is mid-opacity transition
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      await page.waitForTimeout(1_000);
-      await btn.click({ timeout: 10_000 });
-      return;
-    } catch {
-      if (attempt === 2) throw new Error('Failed to click start/resume mining button after 3 attempts');
-    }
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    if (await pause.isVisible().catch(() => false)) return;
+    await btn.dispatchEvent('click').catch(() => {});
+    await page.waitForTimeout(2_000);
   }
+  throw new Error(`Mining did not react to start clicks within ${timeout}ms`);
 }
 
 /**
