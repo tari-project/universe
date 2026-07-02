@@ -1,4 +1,4 @@
-import { test, expect } from '../helpers/shared-context';
+import { test, expect } from '../helpers/fixtures';
 import { sel } from '../helpers/selectors';
 import type { Page } from '@playwright/test';
 
@@ -43,7 +43,7 @@ async function toggleAndVerify(page: Page, testId: string) {
 }
 
 test.describe('Settings', () => {
-  test('opens on General tab by default with all expected sections', async ({ sharedPage: page }) => {
+  test('opens on General tab by default with all expected sections', async ({ appPage: page }) => {
     await page.locator(sel.settings.open).click({ timeout: 5_000 });
     await page.waitForTimeout(1_000);
 
@@ -64,17 +64,17 @@ test.describe('Settings', () => {
     }
   });
 
-  test('toggle: auto-start on system boot', async ({ sharedPage: page }) => {
+  test('toggle: auto-start on system boot', async ({ appPage: page }) => {
     const input = page.locator('[data-testid="settings-toggle-autostart"]');
     await expect(input).not.toBeChecked();
     await toggleAndVerify(page, 'settings-toggle-autostart');
   });
 
-  test('toggle: auto-update', async ({ sharedPage: page }) => {
+  test('toggle: auto-update', async ({ appPage: page }) => {
     await toggleAndVerify(page, 'settings-toggle-autoupdate');
   });
 
-  test('toggle: pre-release shows confirmation dialog', async ({ sharedPage: page }) => {
+  test('toggle: pre-release shows confirmation dialog', async ({ appPage: page }) => {
     await ensureSettingsOpen(page);
     const input = page.locator('[data-testid="settings-toggle-prerelease"]');
     await expect(input).not.toBeChecked();
@@ -96,15 +96,15 @@ test.describe('Settings', () => {
     await expect(input).not.toBeChecked();
   });
 
-  test('toggle: notifications', async ({ sharedPage: page }) => {
+  test('toggle: notifications', async ({ appPage: page }) => {
     await toggleAndVerify(page, 'settings-toggle-notifications');
   });
 
-  test('toggle: earn gems / telemetry', async ({ sharedPage: page }) => {
+  test('toggle: earn gems / telemetry', async ({ appPage: page }) => {
     await toggleAndVerify(page, 'settings-toggle-telemetry');
   });
 
-  test('language: system language toggle and language selector', async ({ sharedPage: page }) => {
+  test('language: system language toggle and language selector', async ({ appPage: page }) => {
     await ensureSettingsOpen(page);
     const input = page.locator('[data-testid="settings-toggle-system-language"]');
     const wrapper = input.locator('..');
@@ -125,7 +125,7 @@ test.describe('Settings', () => {
     }
   });
 
-  test('theme: system, light, dark options', async ({ sharedPage: page }) => {
+  test('theme: system, light, dark options', async ({ appPage: page }) => {
     await ensureSettingsOpen(page);
     const systemRadio = page.locator('input[name="theme_select"][value="system"]');
     const lightRadio = page.locator('input[name="theme_select"][value="light"]');
@@ -151,17 +151,17 @@ test.describe('Settings', () => {
     await expect(systemRadio).toBeChecked();
   });
 
-  test('toggle: visual mode', async ({ sharedPage: page }) => {
+  test('toggle: visual mode', async ({ appPage: page }) => {
     await toggleAndVerify(page, 'settings-toggle-visual-mode');
   });
 
-  test('report an issue: buttons visible', async ({ sharedPage: page }) => {
+  test('report an issue: buttons visible', async ({ appPage: page }) => {
     await ensureSettingsOpen(page);
     await expect(page.locator('[data-testid="settings-open-logs"]')).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('[data-testid="settings-submit-logs"]')).toBeVisible({ timeout: 5_000 });
   });
 
-  test('application information: visible and copyable', async ({ sharedPage: page }) => {
+  test('application information: visible and copyable', async ({ appPage: page }) => {
     await ensureSettingsOpen(page);
     const appInfo = page.locator('[data-testid="settings-app-info"]');
     await expect(appInfo).toBeVisible({ timeout: 5_000 });
@@ -174,7 +174,7 @@ test.describe('Settings', () => {
     expect(clipboard.length).toBeGreaterThan(0);
   });
 
-  test('reset settings: opens confirmation dialog with cancel', async ({ sharedPage: page }) => {
+  test('reset settings: opens confirmation dialog with cancel', async ({ appPage: page }) => {
     await ensureSettingsOpen(page);
     const resetBtn = page.locator('[data-testid="settings-reset-button"]');
     await expect(resetBtn).toBeVisible({ timeout: 5_000 });

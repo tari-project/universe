@@ -1,6 +1,5 @@
-// Known test wallet fixture for localnet only.
-// Duplicated from global-setup.ts to avoid importing the globalSetup
-// entry point from test files (which breaks Playwright's module loading).
+// Known test wallet fixture for localnet only. Canonical source —
+// imported by both global-setup.ts and the test specs.
 export const TEST_WALLET = {
   walletId: 'test01',
   address: 'H27bCbHq55SZio4NcNQvTVdGKjMnVfeHPBfQ7N744iGyi34z5nv4zXKFzy8sug4VyWfndMCwjtpN9TXZUhVjeKFkJp9',

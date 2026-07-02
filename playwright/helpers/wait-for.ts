@@ -29,15 +29,6 @@ export async function openMiningSidebar(page: Page) {
  * status in the backend logs rather than working around it here.
  */
 export async function waitForMiningReady(page: Page, timeout = 120_000) {
-  // Dismiss any dialog that may have appeared after initial page load
-  await dismissDialogs(page);
-  // Close the settings panel if it's open (shared context may have left it open).
-  // The Floating UI dismiss hook only fires on mousedown of the .overlay element.
-  const overlay = page.locator('.overlay');
-  if (await overlay.isVisible().catch(() => false)) {
-    await overlay.dispatchEvent('mousedown');
-    await overlay.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
-  }
   await openMiningSidebar(page);
   const start = page.locator(`${sel.mining.startButton}:not([disabled])`);
   const resume = page.locator(`${sel.mining.resumeButton}:not([disabled])`);
@@ -163,15 +154,49 @@ export async function waitForWalletReady(page: Page, timeout = 120_000) {
   await balanceLabel.waitFor({ state: 'visible', timeout });
 }
 
+/**
+ * Mine until the wallet balance exceeds `target`, then stop mining.
+ * Condition-based: no fixed mining duration — on localnet the first
+ * blocks appear within seconds, so this is both faster and more
+ * deterministic than "mine for N seconds and hope".
+ */
+export async function mineUntilBalanceExceeds(page: Page, target: number, timeout = 180_000) {
+  await waitForMiningReady(page, timeout);
+  await clickStartMining(page);
+  await waitForMiningActive(page, 120_000);
+  try {
+    await waitForWalletBalance(page, target, timeout);
+  } finally {
+    await clickStopMining(page);
+    await waitForMiningStopped(page, 60_000);
+  }
+}
+
+/**
+ * Make sure the wallet holds at least `min` XTM, mining to get there if
+ * needed. Every test that needs funds creates its own — no dependence on
+ * a previous test having mined.
+ */
+export async function ensureBalance(page: Page, min: number, timeout = 180_000): Promise<number> {
+  const current = await getWalletBalance(page);
+  if (current >= min) return current;
+  await mineUntilBalanceExceeds(page, min, timeout);
+  return getWalletBalance(page);
+}
+
 // ===========================================================================
 // Dialog helpers
 // ===========================================================================
 
-/** Dismiss the Release Notes dialog if it appears. */
+/**
+ * Dismiss the Release Notes dialog if it appears. With the state replay
+ * excluding ShowReleaseNotes, fresh pages should never see it — this is a
+ * short defensive check, not a wait.
+ */
 export async function dismissDialogs(page: Page) {
   const dismiss = page.locator(sel.dialogs.releaseNotesDismiss);
   try {
-    await dismiss.waitFor({ state: 'visible', timeout: 10_000 });
+    await dismiss.waitFor({ state: 'visible', timeout: 3_000 });
     await dismiss.click({ timeout: 5_000 });
     // Wait for dialog to fully close
     await dismiss.waitFor({ state: 'hidden', timeout: 5_000 });
@@ -184,12 +209,16 @@ export async function dismissDialogs(page: Page) {
 // Cleanup — direct invoke for reliable teardown only
 // ===========================================================================
 
-/** Stop CPU mining via direct invoke. Used only for afterEach cleanup. */
-export async function stopCpuMiningDirect(page: Page) {
+/**
+ * Stop all mining via direct invoke. Fixture-teardown backstop ONLY —
+ * never call this from a test body; tests stop mining through the UI.
+ */
+export async function stopMiningDirect(page: Page) {
   try {
     await page.evaluate(async () => {
       const fn = (window as any).__PLAYWRIGHT_INVOKE__;
-      if (typeof fn === 'function') await fn('stop_cpu_mining');
+      if (typeof fn !== 'function') return;
+      await Promise.allSettled([fn('stop_cpu_mining'), fn('stop_gpu_mining')]);
     });
   } catch {
     // best-effort cleanup

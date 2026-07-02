@@ -1,5 +1,7 @@
 import { Page } from '@playwright/test';
+import { sel } from './selectors';
 
+/** Wait until the Tauri invoke shim is installed (page JS has booted). */
 export async function waitForTauriReady(page: Page, timeout = 30_000) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
@@ -16,6 +18,13 @@ export async function waitForTauriReady(page: Page, timeout = 30_000) {
   throw new Error(`Tauri invoke not available after ${timeout}ms`);
 }
 
-export async function initReadinessMarker(_page: Page) {
-  // no-op: readiness is detected in waitForTauriReady via __PLAYWRIGHT_INVOKE__
+/**
+ * Wait until the main app UI has rendered (splashscreen gone). The state
+ * replay delivers CloseSplashscreen and the config events right after the
+ * page's WebSocket connects, so this resolves within a few seconds.
+ */
+export async function waitForAppReady(page: Page, timeout = 60_000) {
+  await page
+    .locator(sel.sidebar.mineButton)
+    .waitFor({ state: 'visible', timeout });
 }
