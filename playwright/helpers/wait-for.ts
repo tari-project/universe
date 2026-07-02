@@ -85,12 +85,25 @@ export async function clickStopMining(page: Page) {
   // The sidebar can close during long condition waits — make sure the
   // controls are on screen before interacting.
   await openMiningSidebar(page);
+  const pauseButton = page.locator(sel.mining.pauseButton);
+  const stopOption = page.locator(sel.mining.stopOption);
   // Wait for the pause button to be visible — it can briefly disappear
   // during mode-change transitions (isMiningLoading flip).
-  await page.locator(sel.mining.pauseButton).waitFor({ state: 'visible', timeout: 30_000 });
-  await page.locator(sel.mining.pauseButton).click({ timeout: 10_000, force: true });
-  await page.locator(sel.mining.stopOption).waitFor({ state: 'visible', timeout: 5_000 });
-  await page.locator(sel.mining.stopOption).click({ timeout: 5_000 });
+  await pauseButton.waitFor({ state: 'visible', timeout: 30_000 });
+  // The dropdown can render slower than the click under load; the click
+  // toggles the menu, so a converging retry (like openMiningSidebar)
+  // beats a single shot.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await pauseButton.click({ timeout: 10_000, force: true }).catch(() => {});
+    const visible = await stopOption
+      .waitFor({ state: 'visible', timeout: 5_000 })
+      .then(() => true, () => false);
+    if (visible) {
+      await stopOption.click({ timeout: 5_000 });
+      return;
+    }
+  }
+  throw new Error('Pause menu did not open after 3 attempts');
 }
 
 /**
