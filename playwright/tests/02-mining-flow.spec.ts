@@ -190,6 +190,26 @@ test.describe('Mining Flow', () => {
     expect(balance).toBeGreaterThan(balanceBefore);
   });
 
+  test('coinbase transactions appear in the transaction list', async ({ appPage: page }) => {
+    test.setTimeout(600_000);
+    // Scan-complete FIRST: the balance renders 0 while the wallet is
+    // still scanning, so an ensureBalance run now would mine — extending
+    // the very scan it then waits on (circular). Once the scan converges
+    // on the static tip, the real balance appears and ensureBalance is a
+    // no-op (earlier tests in this file mined and confirmed funds).
+    await waitForWalletReady(page, 300_000);
+    await ensureBalance(page, 1, 180_000);
+
+    // Coinbase rows render as "mined" transactions in the history list.
+    const minedRow = page.locator(sel.wallet.txRowMined);
+    await minedRow.first().waitFor({ state: 'visible', timeout: 60_000 });
+    expect(await minedRow.count()).toBeGreaterThan(0);
+
+    // Verify the first mined row contains a "Block #" title
+    const firstTitle = await minedRow.first().textContent();
+    expect(firstTitle).toMatch(/Block\s*#\d+/i);
+  });
+
   test('mining recovers after xmrig process is killed', async ({ appPage: page }) => {
     // NOTE: hashrate is NOT a reliable mining signal on localnet — at
     // minimum difficulty xmrig storms submits ("Block not accepted" /
@@ -234,23 +254,4 @@ test.describe('Mining Flow', () => {
     await waitForMiningStopped(page, 60_000);
   });
 
-  test('coinbase transactions appear in the transaction list', async ({ appPage: page }) => {
-    test.setTimeout(600_000);
-    // Scan-complete FIRST: the balance renders 0 while the wallet is
-    // still scanning, so an ensureBalance run now would mine — extending
-    // the very scan it then waits on (circular). Once the scan converges
-    // on the static tip, the real balance appears and ensureBalance is a
-    // no-op (earlier tests in this file mined and confirmed funds).
-    await waitForWalletReady(page, 300_000);
-    await ensureBalance(page, 1, 180_000);
-
-    // Coinbase rows render as "mined" transactions in the history list.
-    const minedRow = page.locator(sel.wallet.txRowMined);
-    await minedRow.first().waitFor({ state: 'visible', timeout: 60_000 });
-    expect(await minedRow.count()).toBeGreaterThan(0);
-
-    // Verify the first mined row contains a "Block #" title
-    const firstTitle = await minedRow.first().textContent();
-    expect(firstTitle).toMatch(/Block\s*#\d+/i);
-  });
 });
