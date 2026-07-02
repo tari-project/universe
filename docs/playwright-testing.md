@@ -199,22 +199,22 @@ await confirm.click({ timeout: 5_000 });
 
 ```bash
 # First time setup
-npm run playwright:install
+pnpm run playwright:install
 
 # Build the binary (takes a few minutes)
 cargo tauri build --debug --no-bundle --features test-mode
 
 # Run tests (launches vite + backend automatically)
-npm run playwright
+pnpm run playwright
 
 # Run with pre-built binary (skip rebuild)
-SKIP_BUILD=1 npm run playwright
+SKIP_BUILD=1 pnpm run playwright
 
 # Headed mode (see the browser)
-SKIP_BUILD=1 npm run playwright:headed
+SKIP_BUILD=1 pnpm run playwright:headed
 
 # Playwright UI mode (interactive test runner)
-SKIP_BUILD=1 npm run playwright:ui
+SKIP_BUILD=1 pnpm run playwright:ui
 ```
 
 ### Pre-seeded config

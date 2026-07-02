@@ -45,16 +45,12 @@ jobs:
             gnome-keyring \
             dbus-x11
 
-      - name: Fix npm cache permissions (self-hosted runner)
-        run: |
-          if [ -d ~/.npm ]; then
-            sudo chown -R "$(id -u):$(id -g)" ~/.npm
-          fi
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: lts/*
-          cache: npm
+          cache: 'pnpm'
 
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2.7.5
@@ -62,7 +58,7 @@ jobs:
           workspaces: './src-tauri -> target'
 
       - name: Install Node dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli
@@ -78,26 +74,22 @@ jobs:
         working-directory: ./src-tauri
         run: cargo tauri build --debug --no-bundle --features test-mode
 
-      - name: Install Playwright dependencies
-        working-directory: playwright
-        run: npm ci
-
       - name: Cache Playwright browsers
         id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('playwright/package-lock.json') }}
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - name: Install Playwright browsers
         working-directory: playwright
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Install Playwright system deps (cache hit)
         working-directory: playwright
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+        run: pnpm exec playwright install-deps chromium
 
       - name: Start D-Bus and unlock gnome-keyring
         run: |
@@ -110,7 +102,7 @@ jobs:
         working-directory: playwright
         env:
           SKIP_BUILD: '1'
-        run: xvfb-run --auto-servernum npx playwright test
+        run: xvfb-run --auto-servernum pnpm exec playwright test
 
       - name: Upload test results
         if: failure()

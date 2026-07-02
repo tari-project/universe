@@ -17,10 +17,10 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage",
-        "playwright": "npm --prefix playwright run test",
-        "playwright:ui": "npm --prefix playwright run test:ui",
-        "playwright:headed": "npm --prefix playwright run test:headed",
-        "playwright:install": "cd playwright && npm ci && npx playwright install chromium"
+        "playwright": "pnpm --dir playwright run test",
+        "playwright:ui": "pnpm --dir playwright run test:ui",
+        "playwright:headed": "pnpm --dir playwright run test:headed",
+        "playwright:install": "pnpm install && pnpm --dir playwright exec playwright install chromium"
     },
     "dependencies": {
         "@floating-ui/react": "^0.27.17",

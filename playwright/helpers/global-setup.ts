@@ -230,7 +230,7 @@ export default async function globalSetup() {
   }
 
   console.log('Starting Vite dev server for Playwright...');
-  const viteProcess = spawn('npx', ['vite', '--config', 'vite.config.playwright.ts'], {
+  const viteProcess = spawn('pnpm', ['exec', 'vite', '--config', 'vite.config.playwright.ts'], {
     cwd: projectRoot,
     stdio: 'pipe',
     env: { ...process.env },
