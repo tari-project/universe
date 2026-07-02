@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { APP_ID, getAppConfigDir, getAppDataRoots } from './app-dirs';
+import { APP_ID, getAppConfigDir, getAppDataRoots, getAppCacheDir } from './app-dirs';
 import { TEST_WALLET } from './test-wallet';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -52,8 +52,19 @@ function wipeTestData(): void {
     console.log('KEEP_TEST_DATA set: keeping existing test data.');
     return;
   }
+  const cacheDir = getAppCacheDir();
   for (const dir of getAppDataRoots()) {
-    if (fs.existsSync(dir)) {
+    if (!fs.existsSync(dir)) continue;
+    if (path.resolve(dir) === path.resolve(cacheDir)) {
+      // Keep downloaded sidecar binaries (node, wallet, xmrig, ...) —
+      // re-downloading them every run is slow and a network flake source.
+      // Wipe everything else in the cache dir.
+      for (const entry of fs.readdirSync(dir)) {
+        if (entry === 'binaries') continue;
+        fs.rmSync(path.join(dir, entry), { recursive: true, force: true });
+      }
+      console.log(`Wiped test cache dir (kept binaries/): ${dir}`);
+    } else {
       console.log(`Wiping test data dir: ${dir}`);
       fs.rmSync(dir, { recursive: true, force: true });
     }
@@ -154,7 +165,7 @@ function preSeedCredentials(): void {
   fs.mkdirSync(credentialDir, { recursive: true });
 
   // The file-backed credential store hashes service+user to generate filenames.
-  // service = "com.tari.universe.alpha"
+  // service = APP_ID (the test profile identifier / APPLICATION_FOLDER_ID)
   // username = "inner_wallet_credentials_localnet_{walletId}"
   const service = APP_ID;
   const user = `inner_wallet_credentials_localnet_${TEST_WALLET.walletId}`;

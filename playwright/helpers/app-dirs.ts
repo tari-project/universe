@@ -52,3 +52,16 @@ export function getAppDataRoots(): string[] {
       ];
   }
 }
+
+/** The app's cache dir, where downloaded sidecar binaries live. */
+export function getAppCacheDir(): string {
+  const home = os.homedir();
+  switch (os.platform()) {
+    case 'darwin':
+      return path.join(home, 'Library', 'Caches', APP_ID);
+    case 'win32':
+      return path.join(process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local'), APP_ID);
+    default:
+      return path.join(home, '.cache', APP_ID);
+  }
+}
