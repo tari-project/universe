@@ -209,6 +209,12 @@ impl StatusMonitor for XmrigStatusMonitor {
         &self,
         duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        // The watcher reuses this monitor across restarts and calls this
+        // right before restarting xmrig. The fresh instance begins with
+        // dataset init again — reset the hashing state so its zeros read
+        // as Initializing, not as a stall of the previous instance.
+        self.has_hashed.store(false, Ordering::Relaxed);
+        self.zero_streak.store(0, Ordering::Relaxed);
         // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
         info!(target: LOG_TARGET_STATUSES, "Handling unhealthy status for Xmrig | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
         if duration_since_last_healthy_status.as_secs().gt(&(60 * 30))
