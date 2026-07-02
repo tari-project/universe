@@ -8,6 +8,7 @@ import {
   getWalletBalance,
   mineUntilBalanceExceeds,
   ensureBalance,
+  waitForWalletReady,
 } from '../helpers/wait-for';
 import { sel } from '../helpers/selectors';
 import { getAppDataDir } from '../helpers/app-dirs';
@@ -189,8 +190,15 @@ test.describe('Mining Flow', () => {
   });
 
   test('coinbase transactions appear in the transaction list', async ({ appPage: page }) => {
+    test.setTimeout(600_000);
     // Self-sufficient: mine if this run hasn't produced a balance yet.
     await ensureBalance(page, 1, 180_000);
+
+    // The history list only populates once the wallet SCAN completes —
+    // the balance ticks up during scanning (data-balance-total), so a
+    // balance alone doesn't imply the list is ready. Wait for the
+    // "My balance" label that replaces the scanning indicator.
+    await waitForWalletReady(page, 300_000);
 
     // Coinbase rows render as "mined" transactions in the history list.
     const minedRow = page.locator(sel.wallet.txRowMined);
