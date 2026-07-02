@@ -176,8 +176,12 @@ Global setup wipes the test profile, then writes config files to the localnet ap
 Global teardown kills the app's whole process group (node, wallet, xmrig included) and the Vite server — including when global setup itself fails. If something still survives a hard crash:
 
 ```bash
-pkill -f 'tari-universe.*--headless'
-pkill -f 'vite.*vite.config.playwright'
+# NB: the debug binary is "Tari Universe (Alpha)" on disk, not tari-universe
+pkill -9 -f '[T]ari Universe.*--headless'
+pkill -9 -f '[t]ari-universe.*--headless'
+pkill -9 -f '[p]rocess-wrapper'
+pkill -9 -f '[m]inotari'
+pkill -9 -f '[v]ite.*vite.config.playwright'
 lsof -ti:1420,9515 | xargs kill -9
 ```
 

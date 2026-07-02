@@ -109,8 +109,15 @@ jobs:
         run: |
           # A crashed previous run can leave the app tree and dev server
           # behind, holding ports 1420/9515 and the test data dir.
-          pkill -f 'tari-universe.*--headless' || true
-          pkill -f 'vite.*vite.config.playwright' || true
+          # NOTE: the debug binary is named "Tari Universe (Alpha)", not
+          # tari-universe. Bracketed patterns avoid pkill matching this
+          # step's own shell command line.
+          pkill -9 -f '[t]ari-universe.*--headless' || true
+          pkill -9 -f '[T]ari Universe.*--headless' || true
+          pkill -9 -f '[p]rocess-wrapper' || true
+          pkill -9 -f '[m]inotari' || true
+          pkill -9 -f '[x]mrig.*com.tari.universe.test' || true
+          pkill -9 -f '[v]ite.*vite.config.playwright' || true
           for port in 1420 9515; do
             pid="$(lsof -ti tcp:$port || true)"
             if [ -n "$pid" ]; then
