@@ -15,7 +15,7 @@ export function AddressQRCode({ useEmoji, setUseEmoji }: Props) {
     return (
         <QRContainer>
             <QROutside>
-                <QRSizer>
+                <QRSizer data-testid="receive-qr">
                     <QRCode
                         value={`tari://${network}/transactions/send?tariAddress=${walletAddress}`}
                         ecLevel="H"

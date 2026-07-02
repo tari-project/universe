@@ -52,7 +52,7 @@ export default function Peers() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('connected-peers')}</Typography>
                         {connectedPeers?.length ? (
-                            <Count $count={connectedPeers.length}>
+                            <Count $count={connectedPeers.length} data-testid="connected-peers-count">
                                 <Typography>{connectedPeers.length}</Typography>
                             </Count>
                         ) : null}
