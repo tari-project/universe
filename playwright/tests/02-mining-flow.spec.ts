@@ -70,7 +70,11 @@ test.describe('Mining Flow', () => {
     await expect(startBtn.or(resumeBtn)).toBeVisible();
   });
 
-  test('start mining and cycle through Eco and Turbo modes', async ({ appPage: page }) => {
+  // @heavy: the mode cycle rides the most environment-coupled paths in the
+  // suite (xmrig restarts, RandomX fast-mode init, dropdown-during-mining
+  // interactions). It has caught real product bugs and stays runnable —
+  // INCLUDE_HEAVY=1 or a nightly lane — but it does not gate every PR.
+  test('start mining and cycle through Eco and Turbo modes @heavy', async ({ appPage: page }) => {
     // Turbo's fast-mode dataset init alone can take minutes; this test's
     // condition waits legitimately sum past the suite default.
     test.setTimeout(600_000);

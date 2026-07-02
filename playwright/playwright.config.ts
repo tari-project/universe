@@ -4,6 +4,10 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
+  // @heavy tests exercise the most environment-coupled real-chain paths
+  // (mode cycling, fast-mode dataset init). They run in a nightly/manual
+  // lane (INCLUDE_HEAVY=1), not on every PR.
+  grepInvert: process.env.INCLUDE_HEAVY ? undefined : /@heavy/,
   // Retries mask flakiness — the suite must pass deterministically.
   // Diagnostics below capture everything needed when a test does fail.
   retries: 0,
