@@ -189,9 +189,15 @@ pub async fn frontend_ready(
             // Give the splash screen a few seconds to show before closing it
             sleep(Duration::from_secs(3));
             EventsEmitter::emit_close_splashscreen().await;
-            let _unused = ReleaseNotes::current()
-                .handle_release_notes_event_emit(state_inner, app)
-                .await;
+            // In test mode the release-notes dialog would land on whichever
+            // test page happens to trigger the once-guard, seconds after it
+            // finished dialog dismissal — a nondeterministic overlay that
+            // blocks clicks. Suppress it; it is not part of any E2E flow.
+            if !cfg!(feature = "test-mode") {
+                let _unused = ReleaseNotes::current()
+                    .handle_release_notes_event_emit(state_inner, app)
+                    .await;
+            }
         });
 
     Ok(())
