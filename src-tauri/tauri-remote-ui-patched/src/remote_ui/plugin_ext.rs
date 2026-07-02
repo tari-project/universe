@@ -91,8 +91,10 @@ impl RemoteUi {
                 }});
             "#,
             ws_payload.cmd,
-            serde_json::to_string(&ws_payload.args).unwrap(),
-            serde_json::to_string(&ws_payload.option).unwrap(),
+            // Serializing a serde_json::Value cannot realistically fail
+            // (keys are always strings); fall back to null defensively.
+            serde_json::to_string(&ws_payload.args).unwrap_or_else(|_| "null".to_string()),
+            serde_json::to_string(&ws_payload.option).unwrap_or_else(|_| "null".to_string()),
             &req_unique_id,
             &req_unique_id
         );

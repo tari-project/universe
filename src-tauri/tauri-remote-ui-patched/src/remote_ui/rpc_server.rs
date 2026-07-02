@@ -247,16 +247,13 @@ async fn handle_request(
     match (request.method().as_str(), path.as_str()) {
         ("GET", "/remote_ui_info") => {
             let remote_ui = app_handle.state::<Arc<RwLock<RemoteUi>>>();
-            if !remote_ui
+            if remote_ui
                 .read()
                 .await
                 .rpc_server
                 .remote_ui_config
                 .enable_info_url
             {
-                not_found()
-                    .map_err(|err| Error::AssetNotFound(format!("File serving failed. {:?}", err)))
-            } else {
                 let app = app_handle.state::<Arc<RwLock<RemoteUi>>>();
                 let remote_ui_config = app.read().await.rpc_server.remote_ui_config.clone();
                 let info_html = include_str!("information.html")
@@ -280,6 +277,9 @@ async fn handle_request(
                         Error::AssetNotFound(format!("Failed to Load Info Page. Err:{err}"))
                     })?;
                 Ok(response)
+            } else {
+                not_found()
+                    .map_err(|err| Error::AssetNotFound(format!("File serving failed. {err:?}")))
             }
         }
         ("GET", "/remote_ui_disconnect") => {
@@ -317,11 +317,15 @@ async fn handle_request(
                         Ok(response)
                     }
                     Err(e) => {
-                        println!("WebSocket upgrade error: {}", e);
-                        Ok(Response::builder()
+                        println!("WebSocket upgrade error: {e}");
+                        Response::builder()
                             .status(StatusCode::BAD_REQUEST)
                             .body(Full::new(Bytes::from("WebSocket upgrade failed")))
-                            .unwrap())
+                            .map_err(|err| {
+                                Error::AssetNotFound(format!(
+                                    "Failed to build upgrade-error response: {err}"
+                                ))
+                            })
                     }
                 }
             } else {
