@@ -248,13 +248,11 @@ export async function mineUntilBalanceExceeds(page: Page, target: number, timeou
  * a previous test having mined.
  */
 export async function ensureBalance(page: Page, min: number, timeout = 180_000): Promise<number> {
-  // On a fresh page the balance element renders only after the state
-  // replay lands — wait for it before reading, or a 0 misread triggers
-  // pointless mining.
-  await page
-    .locator(sel.wallet.balance)
-    .waitFor({ state: 'attached', timeout: 30_000 })
-    .catch(() => {});
+  // The balance renders 0 while the wallet scan runs — reading it then
+  // would trigger pointless mining, which extends the very scan being
+  // waited on (circular). Gate on scan completion first: afterwards the
+  // real balance is visible and mining only happens when truly needed.
+  await waitForWalletReady(page, 300_000);
   const current = await getWalletBalance(page);
   if (current >= min) return current;
   await mineUntilBalanceExceeds(page, min, timeout);
