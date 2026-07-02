@@ -7,15 +7,28 @@ import { sel } from './selectors';
 
 /** Open the mining sidebar by clicking the mine icon (if not already open). */
 export async function openMiningSidebar(page: Page) {
-  // If any mining button is already visible, the sidebar is open
   const anyButton = page.locator(
     `${sel.mining.startButton}, ${sel.mining.resumeButton}, ${sel.mining.pauseButton}`
   );
-  if (await anyButton.first().isVisible().catch(() => false)) return;
-
-  await page.locator(sel.sidebar.mineButton).click({ timeout: 10_000 });
-  // Wait for sidebar animation to complete
-  await anyButton.first().waitFor({ state: 'visible', timeout: 10_000 });
+  // The sidebar open/closed state persists in config, so a fresh page may
+  // load with it already open but still animating in — give it a moment
+  // before concluding it's closed (clicking then would toggle it shut).
+  if (
+    await anyButton.first().waitFor({ state: 'visible', timeout: 3_000 }).then(() => true, () => false)
+  ) {
+    return;
+  }
+  // The mine button toggles: if a click raced the opening animation and
+  // closed it instead, the retry reopens it.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.locator(sel.sidebar.mineButton).click({ timeout: 10_000 });
+    const visible = await anyButton
+      .first()
+      .waitFor({ state: 'visible', timeout: 5_000 })
+      .then(() => true, () => false);
+    if (visible) return;
+  }
+  throw new Error('Mining sidebar did not open after 3 attempts');
 }
 
 /**
@@ -178,6 +191,13 @@ export async function mineUntilBalanceExceeds(page: Page, target: number, timeou
  * a previous test having mined.
  */
 export async function ensureBalance(page: Page, min: number, timeout = 180_000): Promise<number> {
+  // On a fresh page the balance element renders only after the state
+  // replay lands — wait for it before reading, or a 0 misread triggers
+  // pointless mining.
+  await page
+    .locator(sel.wallet.balance)
+    .waitFor({ state: 'attached', timeout: 30_000 })
+    .catch(() => {});
   const current = await getWalletBalance(page);
   if (current >= min) return current;
   await mineUntilBalanceExceeds(page, min, timeout);

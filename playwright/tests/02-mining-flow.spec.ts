@@ -77,7 +77,9 @@ test.describe('Mining Flow', () => {
     // --- Turbo ---
     await selectMode('Turbo');
     await waitForMiningActive(page, 60_000);
-    await waitForHashrate(page, 60_000);
+    // Turbo runs xmrig with randomx-mode=fast: the ~2.3 GB dataset init
+    // reports hashrate 0 until it completes, which can exceed a minute.
+    await waitForHashrate(page, 180_000);
 
     // --- Ludicrous — deliberately not exercised ---
     // Ludicrous requests all cores with randomx-mode=fast, which exceeds

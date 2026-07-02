@@ -170,11 +170,37 @@ pub fn init_credential_store(app_handle: &AppHandle) {
     info!(target: LOG_TARGET_APP_LOGIC, "Headless: using file-backed credential store at {:?}", credential_dir);
 }
 
+/// Make the hidden native webview inert. The webview must stay alive —
+/// tauri-remote-ui evals invoke() calls through it — but it must NOT run
+/// the app frontend: a second live frontend reacts to backend events
+/// (auto stop/start mining, config writes) and races the test-driven
+/// page. Navigating to blank.html kills the app's JS context; Tauri
+/// re-injects `__TAURI_INTERNALS__` on the new page, so the invoke
+/// bridge keeps working.
+fn neutralize_webview(handle: &AppHandle) {
+    if let Some(window) = handle.get_webview_window("main") {
+        match window.url() {
+            Ok(mut url) => {
+                url.set_path("/blank.html");
+                if let Err(e) = window.navigate(url) {
+                    error!(target: LOG_TARGET_APP_LOGIC, "Headless: failed to navigate webview to blank.html: {e:?}");
+                } else {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Headless: webview navigated to blank.html (app frontend inert)");
+                }
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET_APP_LOGIC, "Headless: could not read webview URL: {e:?}");
+            }
+        }
+    }
+}
+
 /// Start the headless backend: remote-ui WebSocket + setup pipeline.
 pub fn start_headless(handle_clone: AppHandle) {
     info!(target: LOG_TARGET_APP_LOGIC, "Headless mode: starting backend with remote-ui");
     tauri::async_runtime::spawn(async move {
         EventsEmitter::load_app_handle(handle_clone.clone()).await;
+        neutralize_webview(&handle_clone);
         start_remote_ui(&handle_clone).await;
         utils::app_flow_utils::FrontendReadyChannel::current().set_ready();
         info!(target: LOG_TARGET_APP_LOGIC, "Headless: frontend ready channel set (after remote-ui)");

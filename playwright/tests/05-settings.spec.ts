@@ -65,6 +65,7 @@ test.describe('Settings', () => {
   });
 
   test('toggle: auto-start on system boot', async ({ appPage: page }) => {
+    await ensureSettingsOpen(page);
     const input = page.locator('[data-testid="settings-toggle-autostart"]');
     await expect(input).not.toBeChecked();
     await toggleAndVerify(page, 'settings-toggle-autostart');
