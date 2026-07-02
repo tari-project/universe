@@ -81,17 +81,16 @@ pub struct CpuManager {
 
 impl CpuManager {
     pub fn new() -> Self {
-        // xmrig reports hashrate 0 until the RandomX dataset is initialized,
-        // which in fast mode (Turbo/Ludicrous) can take minutes on modest
-        // hardware. With the default 20s grace the watcher kills and
-        // restarts xmrig before init ever completes — restarting the init
-        // from scratch, forever. Process death is detected separately, so a
-        // long grace does not slow down crash recovery.
+        // RandomX dataset init (minutes in fast mode) is handled by the
+        // health check returning Initializing until the first nonzero
+        // hashrate — the watcher never restarts an Initializing process.
+        // This grace only covers the window before the HTTP API answers,
+        // and bounds how fast a stalled miner is restarted.
         let mut process_watcher = ProcessWatcher::new(
             XmrigAdapter::new(Sender::new(CpuMinerStatus::default())),
             Sender::new(ProcessWatcherStats::default()),
         );
-        process_watcher.expected_startup_time = std::time::Duration::from_secs(300);
+        process_watcher.expected_startup_time = std::time::Duration::from_secs(30);
         Self {
             app_handle: None,
             // ======= Process watcher =======

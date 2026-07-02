@@ -150,6 +150,14 @@ test.describe('Send Transaction Flow', () => {
     // --- Mine so the pending transaction confirms, then re-check history ---
     const balanceNow = await getWalletBalance(page);
     await mineUntilBalanceExceeds(page, Math.floor(balanceNow) + 1, 180_000);
+
+    // The confirmation mining adds a pile of coinbase rows above the send
+    // row, pushing it below the virtualized fold where locators can't see
+    // it. Filter the history to Transactions so the send row is on top
+    // (which also exercises the filter itself).
+    const filterTrigger = page.locator('[data-testid="tx-history-filter"]');
+    await filterTrigger.click({ timeout: 10_000 });
+    await page.getByText(/^transactions$/i).first().click({ timeout: 5_000 });
     await txRow.waitFor({ state: 'visible', timeout: 60_000 });
   });
 });

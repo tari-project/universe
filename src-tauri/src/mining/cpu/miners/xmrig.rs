@@ -25,7 +25,8 @@ use async_trait::async_trait;
 use log::{info, warn};
 use serde::Deserialize;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::time::Duration;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
@@ -168,6 +169,8 @@ impl ProcessAdapter for XmrigAdapter {
                 summary_broadcast: self.summary_broadcast.clone(),
                 access_token: self.http_api_token.clone(),
                 http_api_port: self.http_api_port.to_string(),
+                has_hashed: Arc::new(AtomicBool::new(false)),
+                zero_streak: Arc::new(AtomicU32::new(0)),
             },
         ))
     }
@@ -190,6 +193,14 @@ pub struct XmrigStatusMonitor {
     http_api_port: String,
     access_token: String,
     summary_broadcast: Sender<CpuMinerStatus>,
+    /// Whether this xmrig instance has ever reported a nonzero hashrate.
+    /// Before that, a 0 reading means the RandomX dataset is still
+    /// initializing (minutes in fast mode) — Initializing, not Unhealthy.
+    /// After it, a sustained 0 means the miner stalled and needs a restart.
+    has_hashed: Arc<AtomicBool>,
+    /// Consecutive zero-hashrate readings after having hashed; a single
+    /// zero sample is a normal transient (e.g. around a mode change).
+    zero_streak: Arc<AtomicU32>,
 }
 
 #[async_trait]
@@ -229,10 +240,26 @@ impl StatusMonitor for XmrigStatusMonitor {
                     let _result = self.summary_broadcast.send(status.clone());
 
                     if status.hash_rate.le(&0.0) {
-                        warn!(target: LOG_TARGET_STATUSES, "Xmrig hash rate is 0");
+                        if !self.has_hashed.load(Ordering::Relaxed) {
+                            // RandomX dataset init reports 0 until complete —
+                            // minutes in fast mode. Restarting here restarts
+                            // the init from scratch, forever.
+                            warn!(target: LOG_TARGET_STATUSES, "Xmrig hash rate is 0 (still initializing)");
+                            return HealthStatus::Initializing;
+                        }
+                        let streak = self.zero_streak.fetch_add(1, Ordering::Relaxed) + 1;
+                        if streak < 3 {
+                            // Single zero samples are normal transients
+                            // (e.g. around a mode change) — don't restart.
+                            warn!(target: LOG_TARGET_STATUSES, "Xmrig hash rate is 0 (transient, streak {streak})");
+                            return HealthStatus::Warning;
+                        }
+                        warn!(target: LOG_TARGET_STATUSES, "Xmrig hash rate is 0 after having hashed (streak {streak}) — miner stalled");
                         return HealthStatus::Unhealthy;
                     }
 
+                    self.has_hashed.store(true, Ordering::Relaxed);
+                    self.zero_streak.store(0, Ordering::Relaxed);
                     HealthStatus::Healthy
                 }
                 Err(e) => {

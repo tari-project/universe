@@ -34,7 +34,7 @@ export const FilterSelect = React.memo(({ filter, handleFilterChange }: FilterSe
     )();
 
     return (
-        <FilterWrapper>
+        <FilterWrapper data-testid="tx-history-filter">
             <Select
                 options={filterOptions}
                 selectedValue={filter}
