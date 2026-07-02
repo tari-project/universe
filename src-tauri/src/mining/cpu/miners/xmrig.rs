@@ -239,7 +239,7 @@ impl StatusMonitor for XmrigStatusMonitor {
         }
     }
 
-    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(status) => match status {
                 Ok(status) => {
@@ -249,9 +249,15 @@ impl StatusMonitor for XmrigStatusMonitor {
                         if !self.has_hashed.load(Ordering::Relaxed) {
                             // RandomX dataset init reports 0 until complete —
                             // minutes in fast mode. Restarting here restarts
-                            // the init from scratch, forever.
-                            warn!(target: LOG_TARGET_STATUSES, "Xmrig hash rate is 0 (still initializing)");
-                            return HealthStatus::Initializing;
+                            // the init from scratch, forever. Degrade to
+                            // Unhealthy only past a generous cap so a truly
+                            // wedged init still recovers eventually.
+                            if uptime < Duration::from_secs(600) {
+                                warn!(target: LOG_TARGET_STATUSES, "Xmrig hash rate is 0 (still initializing)");
+                                return HealthStatus::Initializing;
+                            }
+                            warn!(target: LOG_TARGET_STATUSES, "Xmrig never produced a hashrate within 10 minutes — treating as wedged");
+                            return HealthStatus::Unhealthy;
                         }
                         let streak = self.zero_streak.fetch_add(1, Ordering::Relaxed) + 1;
                         if streak < 3 {
