@@ -14,25 +14,27 @@ import { getAppDataDir } from '../helpers/app-dirs';
 import type { Page } from '@playwright/test';
 
 /**
- * Parse the CPU tile text into a numeric hashrate, or null when the tile
- * shows no rate (loading dots, no unit). IMPORTANT: "0 H/s" is a real
- * rendering during miner startup — treat only a NONZERO value as mining.
+ * Read the CPU tile's hashrate. The digits render inside a NumberFlow
+ * shadow root (invisible to text content), so the tile exposes the raw
+ * value via data-rate. Returns null when no rate is shown (loading /
+ * syncing). IMPORTANT: 0 is a real value during miner startup — treat
+ * only a NONZERO value as mining.
  */
-function parseHashrate(text: string | null): number | null {
-  if (!text || /\.\.\./.test(text)) return null;
-  const match = text.match(/([\d,]+(?:\.\d+)?)\s*[kMG]?H\/s/i);
-  if (!match) return null;
-  const value = parseFloat(match[1].replace(/,/g, ''));
+async function readHashrate(page: Page): Promise<number | null> {
+  const raw = await page
+    .locator(sel.mining.tileCpu)
+    .getAttribute('data-rate', { timeout: 2_000 })
+    .catch(() => null);
+  if (raw === null || raw === '') return null;
+  const value = parseFloat(raw);
   return Number.isNaN(value) ? null : value;
 }
 
-/** Wait for a real, nonzero hashrate (e.g. "1.2 kH/s") in the CPU tile. */
+/** Wait for a real, nonzero hashrate in the CPU tile. */
 async function waitForHashrate(page: Page, timeout = 60_000) {
-  const cpuTile = page.locator(sel.mining.tileCpu);
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const text = await cpuTile.textContent({ timeout: 2_000 }).catch(() => '');
-    const rate = parseHashrate(text);
+    const rate = await readHashrate(page);
     if (rate !== null && rate > 0) return;
     await page.waitForTimeout(1_000);
   }
@@ -46,11 +48,9 @@ async function waitForHashrate(page: Page, timeout = 60_000) {
  * from satisfying the next waitForHashrate.
  */
 async function waitForHashrateReset(page: Page, timeout = 30_000) {
-  const cpuTile = page.locator(sel.mining.tileCpu);
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const text = await cpuTile.textContent({ timeout: 2_000 }).catch(() => '');
-    const rate = parseHashrate(text);
+    const rate = await readHashrate(page);
     if (rate === null || rate === 0) return;
     await page.waitForTimeout(1_000);
   }
@@ -58,11 +58,7 @@ async function waitForHashrateReset(page: Page, timeout = 30_000) {
 }
 
 async function hasHashrate(page: Page): Promise<boolean> {
-  const text = await page
-    .locator(sel.mining.tileCpu)
-    .textContent({ timeout: 2_000 })
-    .catch(() => '');
-  const rate = parseHashrate(text ?? '');
+  const rate = await readHashrate(page);
   return rate !== null && rate > 0;
 }
 
@@ -140,6 +136,9 @@ test.describe('Mining Flow', () => {
   });
 
   test('wallet balance increases from mining', async ({ appPage: page }) => {
+    // The balance reflects the WALLET SCAN, which can lag minutes behind
+    // the chain tip after a heavy mining session in an earlier test.
+    test.setTimeout(600_000);
     await waitForMiningReady(page, 120_000);
     const balanceBefore = await getWalletBalance(page);
 
@@ -149,7 +148,7 @@ test.describe('Mining Flow', () => {
     await waitForMiningActive(page, 120_000);
     let balance: number;
     try {
-      balance = await waitForWalletBalance(page, Math.floor(balanceBefore) + 1, 180_000);
+      balance = await waitForWalletBalance(page, Math.floor(balanceBefore) + 1, 420_000);
     } finally {
       await clickStopMining(page);
       await waitForMiningStopped(page, 60_000);
