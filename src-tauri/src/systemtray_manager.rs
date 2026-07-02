@@ -470,9 +470,10 @@ impl SystemTrayManager {
         // app/$FLATPAK_ID is shared at an identical path inside and outside the
         // sandbox, so redirect the icon there and (re)set it to the colour app
         // icon shipped by the Flatpak.
-        if let (Some(flatpak_id), Some(runtime_dir)) =
-            (std::env::var_os("FLATPAK_ID"), std::env::var_os("XDG_RUNTIME_DIR"))
-        {
+        if let (Some(flatpak_id), Some(runtime_dir)) = (
+            std::env::var_os("FLATPAK_ID"),
+            std::env::var_os("XDG_RUNTIME_DIR"),
+        ) {
             let icon_dir = std::path::Path::new(&runtime_dir)
                 .join("app")
                 .join(&flatpak_id)
