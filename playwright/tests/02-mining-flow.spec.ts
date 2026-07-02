@@ -13,21 +13,35 @@ import { sel } from '../helpers/selectors';
 import { getAppDataDir } from '../helpers/app-dirs';
 import type { Page } from '@playwright/test';
 
-/** Wait for a real hashrate (e.g. "1.2 kH/s") to render in the CPU tile. */
+/**
+ * Parse the CPU tile text into a numeric hashrate, or null when the tile
+ * shows no rate (loading dots, no unit). IMPORTANT: "0 H/s" is a real
+ * rendering during miner startup — treat only a NONZERO value as mining.
+ */
+function parseHashrate(text: string | null): number | null {
+  if (!text || /\.\.\./.test(text)) return null;
+  const match = text.match(/([\d,]+(?:\.\d+)?)\s*[kMG]?H\/s/i);
+  if (!match) return null;
+  const value = parseFloat(match[1].replace(/,/g, ''));
+  return Number.isNaN(value) ? null : value;
+}
+
+/** Wait for a real, nonzero hashrate (e.g. "1.2 kH/s") in the CPU tile. */
 async function waitForHashrate(page: Page, timeout = 60_000) {
   const cpuTile = page.locator(sel.mining.tileCpu);
   const start = Date.now();
   while (Date.now() - start < timeout) {
     const text = await cpuTile.textContent({ timeout: 2_000 }).catch(() => '');
-    if (/[HGMk]\/s/.test(text ?? '') && !/\.\.\./.test(text ?? '')) return;
+    const rate = parseHashrate(text);
+    if (rate !== null && rate > 0) return;
     await page.waitForTimeout(1_000);
   }
   throw new Error(`Hashrate did not appear within ${timeout}ms`);
 }
 
 /**
- * Wait for the CPU tile to STOP showing a hashrate. Used after a mode
- * change: the tile keeps the previous session's value until the miner
+ * Wait for the CPU tile to STOP showing a nonzero hashrate. Used after a
+ * mode change: the tile keeps the previous session's value until the miner
  * restart propagates, so waiting for reset first prevents a stale value
  * from satisfying the next waitForHashrate.
  */
@@ -36,7 +50,8 @@ async function waitForHashrateReset(page: Page, timeout = 30_000) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
     const text = await cpuTile.textContent({ timeout: 2_000 }).catch(() => '');
-    if (!/[HGMk]\/s/.test(text ?? '') || /\.\.\./.test(text ?? '')) return;
+    const rate = parseHashrate(text);
+    if (rate === null || rate === 0) return;
     await page.waitForTimeout(1_000);
   }
   throw new Error(`Hashrate did not reset within ${timeout}ms`);
@@ -47,7 +62,8 @@ async function hasHashrate(page: Page): Promise<boolean> {
     .locator(sel.mining.tileCpu)
     .textContent({ timeout: 2_000 })
     .catch(() => '');
-  return /[HGMk]\/s/.test(text ?? '') && !/\.\.\./.test(text ?? '');
+  const rate = parseHashrate(text ?? '');
+  return rate !== null && rate > 0;
 }
 
 test.describe('Mining Flow', () => {

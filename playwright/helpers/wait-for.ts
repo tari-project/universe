@@ -8,15 +8,18 @@ import { sel } from './selectors';
 /** Open the mining sidebar by clicking the mine icon (if not already open). */
 export async function openMiningSidebar(page: Page, timeout = 30_000) {
   const mineButton = page.locator(sel.sidebar.mineButton);
-  const anyButton = page.locator(
-    `${sel.mining.startButton}, ${sel.mining.resumeButton}, ${sel.mining.pauseButton}`
+  // NOTE: start/resume and pause are BOTH kept mounted (React <Activity>),
+  // with the inactive one hidden — so never use .first() on this list; ask
+  // whether ANY of them is visible.
+  const anyVisibleButton = page.locator(
+    `${sel.mining.startButton}:visible, ${sel.mining.resumeButton}:visible, ${sel.mining.pauseButton}:visible`
   );
   // The mine button TOGGLES the sidebar, so blind re-clicks can close what
   // a previous click opened. Read the real open state from data-active and
   // only click when it says closed; when open, just wait out the animation.
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    if (await anyButton.first().isVisible().catch(() => false)) return;
+    if ((await anyVisibleButton.count().catch(() => 0)) > 0) return;
     const active = await mineButton.getAttribute('data-active').catch(() => null);
     if (active !== 'true') {
       await mineButton.click({ timeout: 10_000 }).catch(() => {});
