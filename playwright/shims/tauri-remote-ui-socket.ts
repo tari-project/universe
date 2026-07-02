@@ -73,6 +73,16 @@ function initWebSocket() {
           }
           delete filterCollection[json_data.id];
         }
+        // Forensics: console messages are captured in Playwright traces, so
+        // log which backend events reached this page (and key payloads).
+        if (json_data.event) {
+          const et = json_data.payload?.event_type ?? json_data.event;
+          if (et === 'CpuMiningUpdate' || et === 'GpuMiningUpdate') {
+            console.debug(`[SHIM] evt ${et} is_mining=${json_data.payload?.payload?.is_mining}`);
+          } else {
+            console.debug(`[SHIM] evt ${et}`);
+          }
+        }
         // Forward events to registered listeners (snapshot to avoid splice-during-iteration)
         for (const listener of [...eventListeners]) {
           try { listener(json_data); } catch {}

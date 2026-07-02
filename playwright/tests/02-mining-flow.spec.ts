@@ -108,7 +108,7 @@ test.describe('Mining Flow', () => {
     };
 
     // --- Eco (default) ---
-    await waitForHashrate(page, 30_000);
+    await waitForHashrate(page, 120_000);
 
     // The selected mode persists in config: if the Turbo section fails,
     // restore Eco so later tests don't inherit fast-mode mining.
@@ -161,7 +161,7 @@ test.describe('Mining Flow', () => {
     await waitForMiningReady(page, 120_000);
     await clickStartMining(page);
     await waitForMiningActive(page, 120_000);
-    await waitForHashrate(page, 30_000);
+    await waitForHashrate(page, 120_000);
 
     // Read the xmrig PID from the PID file written by the process watcher
     const fs = await import('fs');

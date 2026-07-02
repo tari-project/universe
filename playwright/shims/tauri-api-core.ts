@@ -15,6 +15,8 @@ async function _invoke(cmd: string, args?: Record<string, unknown>, options?: un
     await wsReady;
   }
   if (ws && ws.readyState === WebSocket.OPEN) {
+    // Forensics: captured in Playwright traces — attributes backend calls.
+    console.debug(`[SHIM] invoke ${cmd}`);
     return new Promise((resolve, reject) => {
       const id = ++msg_id;
       const msg = { id, cmd, args, options };
