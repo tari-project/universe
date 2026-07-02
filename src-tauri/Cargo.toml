@@ -53,12 +53,15 @@ log = "0.4.22"
 log4rs = "1.3.0"
 minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", tag = "v5.4.0-rc.1" }
 minotari_node_wallet_client = { git = "https://github.com/tari-project/tari.git", tag = "v5.4.0-rc.1" }
+minotari-wallet = { package = "minotari", git = "https://github.com/tari-project/minotari-cli.git", rev = "360c4848a" }
 monero-address-creator = { git = "https://github.com/tari-project/monero-address-creator.git", rev = "6129ca0" }
 nix = { version = "0.29.0", features = ["signal"] }
 nvml-wrapper = "0.10.0"
 open = "5"
 phraze = "0.3.15"
 psp = { git = "https://github.com/tari-project/psp.git", rev = "ddef0c6" }
+r2d2 = "0.8.10"
+r2d2_sqlite = "0.31.0"
 rand = "0.10.1"
 regex = "1.10.5"
 reqwest = { version = "0.12.5", features = ["stream", "json", "multipart"] }
@@ -89,6 +92,12 @@ tari_crypto = "0.23.1"
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v5.4.0-rc.1" }
 tari_transaction_components = { git = "https://github.com/tari-project/tari.git", tag = "v5.4.0-rc.1" }
 tari_utilities = "0.10.0"
+# Wallet-side tari crates pinned to the version used by the `minotari` crate
+# (crates.io 5.3.1). These are distinct from the git v5.4.0-rc.1 crates above,
+# which the rest of the app uses. The wallet module bridges between the two.
+tari_common_wallet = { package = "tari_common", version = "5.3.1" }
+tari_common_types_wallet = { package = "tari_common_types", version = "5.3.1" }
+tari_transaction_components_wallet = { package = "tari_transaction_components", version = "5.3.1" }
 tauri = { version = "2", features = [
   "protocol-asset",
   "isolation",
@@ -123,7 +132,7 @@ zip = "2.2.0"
 
 [target.'cfg(windows)'.dependencies]
 device_query = "2.1.0"
-libsqlite3-sys = { version = "0.25.1", features = [
+libsqlite3-sys = { version = "0.35.0", features = [
   "bundled",
 ] } # Required for tari_wallet
 openssl = { version = "0.10", features = [
