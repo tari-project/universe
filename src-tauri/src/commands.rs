@@ -157,29 +157,6 @@ pub async fn select_exchange_miner(
     Ok(())
 }
 
-/// Test-mode bridge for frontend→backend Tauri events. The remote-ui
-/// WebSocket only carries invokes, so headless pages cannot reach backend
-/// listeners registered with `app_handle.once(...)` (e.g. the PIN dialogs'
-/// `pin-dialog-response`). This relays the emit through the invoke channel
-/// onto the real event bus. No-op outside test-mode builds.
-#[tauri::command]
-pub async fn emit_frontend_event(
-    app: tauri::AppHandle,
-    event: String,
-    payload: serde_json::Value,
-) -> Result<(), String> {
-    #[cfg(feature = "test-mode")]
-    {
-        use tauri::Emitter;
-        app.emit(&event, payload).map_err(|e| e.to_string())
-    }
-    #[cfg(not(feature = "test-mode"))]
-    {
-        let _unused = (app, event, payload);
-        Err("emit_frontend_event is only available in test-mode builds".to_string())
-    }
-}
-
 #[tauri::command]
 pub async fn frontend_ready(
     app: tauri::AppHandle,

@@ -492,7 +492,6 @@ fn main() {
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
             commands::frontend_ready,
-            commands::emit_frontend_event,
             commands::start_mining_status,
             commands::stop_mining_status,
             commands::websocket_get_status,
