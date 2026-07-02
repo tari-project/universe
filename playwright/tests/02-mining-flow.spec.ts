@@ -58,9 +58,45 @@ async function waitForHashrateReset(page: Page, timeout = 30_000) {
   throw new Error(`Hashrate did not reset within ${timeout}ms`);
 }
 
-async function hasHashrate(page: Page): Promise<boolean> {
-  const rate = await readHashrate(page);
-  return rate !== null && rate > 0;
+/**
+ * Read the highest block height visible in the UI — the accent counter
+ * when rendered, otherwise the "Block: #N" cards in the miners strip.
+ */
+async function readBlockHeight(page: Page): Promise<number | null> {
+  const accent = await page
+    .locator(sel.node.blockHeight)
+    .textContent({ timeout: 2_000 })
+    .catch(() => null);
+  if (accent) {
+    const n = parseInt(accent.replace(/\D/g, ''), 10);
+    if (!Number.isNaN(n) && n > 0) return n;
+  }
+  const cards = await page
+    .getByText(/Block: #[\d,]+/)
+    .allTextContents()
+    .catch(() => [] as string[]);
+  const nums = cards
+    .map((t) => parseInt(t.replace(/\D/g, ''), 10))
+    .filter((n) => !Number.isNaN(n) && n > 0);
+  return nums.length ? Math.max(...nums) : null;
+}
+
+/** Wait until the chain tip visibly advances — the honest "mining works" signal. */
+async function waitForBlockHeightIncrease(page: Page, timeout = 120_000) {
+  const start = Date.now();
+  let base: number | null = null;
+  while (Date.now() - start < timeout) {
+    const h = await readBlockHeight(page);
+    if (h !== null) {
+      if (base === null) {
+        base = h;
+      } else if (h > base) {
+        return;
+      }
+    }
+    await page.waitForTimeout(2_000);
+  }
+  throw new Error(`Block height did not increase within ${timeout}ms`);
 }
 
 test.describe('Mining Flow', () => {
@@ -155,10 +191,16 @@ test.describe('Mining Flow', () => {
   });
 
   test('mining recovers after xmrig process is killed', async ({ appPage: page }) => {
+    // NOTE: hashrate is NOT a reliable mining signal on localnet — at
+    // minimum difficulty xmrig storms submits ("Block not accepted" /
+    // "no active pools" churn) and its reported rate reads 0 while the
+    // chain grows briskly. Mining evidence = block height increasing;
+    // recovery evidence = the watcher writes a NEW pid.
+    test.setTimeout(600_000);
     await waitForMiningReady(page, 120_000);
     await clickStartMining(page);
     await waitForMiningActive(page, 120_000);
-    await waitForHashrate(page, 120_000);
+    await waitForBlockHeightIncrease(page, 120_000);
 
     // Read the xmrig PID from the PID file written by the process watcher
     const fs = await import('fs');
@@ -170,20 +212,23 @@ test.describe('Mining Flow', () => {
     // Kill xmrig
     process.kill(xmrigPid, 'SIGKILL');
 
-    // Wait for the hashrate to disappear (process is dead)
-    const deadStart = Date.now();
-    while (Date.now() - deadStart < 15_000) {
-      if (!(await hasHashrate(page))) break;
-      await page.waitForTimeout(1_000);
-    }
-
-    // Now wait for the hashrate to come back (process watcher restarts xmrig)
-    const recoveryStart = Date.now();
-    while (Date.now() - recoveryStart < 120_000) {
-      if (await hasHashrate(page)) break;
+    // The process watcher must detect the death and restart the miner —
+    // observable as a NEW pid in the pid file.
+    const restartDeadline = Date.now() + 120_000;
+    let newPid = xmrigPid;
+    while (Date.now() < restartDeadline) {
+      try {
+        newPid = parseInt(fs.readFileSync(pidFilePath, 'utf-8').trim(), 10);
+        if (newPid > 0 && newPid !== xmrigPid) break;
+      } catch {
+        // pid file momentarily absent during the restart
+      }
       await page.waitForTimeout(2_000);
     }
-    expect(await hasHashrate(page)).toBe(true);
+    expect(newPid).not.toBe(xmrigPid);
+
+    // And the chain keeps growing under the restarted miner.
+    await waitForBlockHeightIncrease(page, 180_000);
 
     await clickStopMining(page);
     await waitForMiningStopped(page, 60_000);
