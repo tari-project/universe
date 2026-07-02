@@ -55,8 +55,16 @@ export async function once(
   return unlisten;
 }
 
+/**
+ * Frontend→backend events matter: backend flows block on them (the PIN
+ * dialogs' `pin-dialog-response` is awaited by `app_handle.once` in
+ * pin_manager.rs). The WS bridge only carries invokes, so relay the emit
+ * through the test-mode `emit_frontend_event` command onto the real
+ * Tauri event bus.
+ */
 export async function emit(event: string, payload?: unknown): Promise<void> {
-  console.info(`[SHIM] emit event: ${event}`);
+  const { invoke } = await import('./tauri-api-core');
+  await invoke('emit_frontend_event', { event, payload: payload ?? null });
 }
 
 export async function emitTo(

@@ -79,9 +79,10 @@ test.describe.serial('Security PIN', () => {
     await expect(page.getByText(/all done/i).first()).toBeVisible({ timeout: 15_000 });
     await page.getByText('Continue to Tari Universe').first().click({ timeout: 5_000 });
 
-    // The setup section disappears once a PIN exists.
+    // The setup section disappears once a PIN exists. Creating the PIN
+    // re-encrypts the seed (argon2) — allow it real time.
     await openSettingsTab(page, 'wallet');
-    await expect(page.locator(sel.settings.setupPin)).not.toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(sel.settings.setupPin)).not.toBeVisible({ timeout: 60_000 });
   });
 
   test('seed words are PIN-gated: wrong PIN keeps them hidden', async ({ appPage: page }) => {
