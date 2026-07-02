@@ -43,6 +43,10 @@ test.describe('Send Transaction Flow', () => {
     await expect(amountInput).toBeEnabled({ timeout: 5_000 });
 
     // --- Non-numeric amount is rejected (field filters or errors) ---
+    // NOTE: the Review button is enabled once the address validates (the
+    // form validates amounts on submit), so button state proves nothing
+    // here. Assert the actual containment: the characters never make it
+    // into the field, or an inline error shows.
     const reviewBtn = page.locator(sel.send.reviewButton);
     await amountInput.click();
     await amountInput.pressSequentially('abc', { delay: 50 });
@@ -51,8 +55,7 @@ test.describe('Send Transaction Flow', () => {
       .waitFor({ state: 'visible', timeout: 3_000 })
       .then(() => true, () => false);
     if (!hasAmountError) {
-      // The input filtered the characters — review must still be disabled.
-      await expect(reviewBtn).toBeDisabled({ timeout: 3_000 });
+      expect(await amountInput.inputValue()).not.toContain('abc');
     }
 
     // --- Valid amount + message enables Review ---
@@ -106,13 +109,17 @@ test.describe('Send Transaction Flow', () => {
     await expect(page.getByText(/Send Tari/i).first()).not.toBeVisible({ timeout: 5_000 });
 
     // --- The transaction appears in history ---
-    const txRow = page.getByText(new RegExp(TX_MESSAGE)).first();
+    // The row TRUNCATES the message ("pw-send-...") — match on a prefix
+    // that survives truncation. The profile is wiped per run and this is
+    // the only test that sends, so the prefix is unambiguous.
+    const TX_PREFIX = 'pw-send-';
+    const txRow = page.getByText(new RegExp(TX_PREFIX)).first();
     await txRow.waitFor({ state: 'visible', timeout: 30_000 });
 
     // --- Transaction details open from the row (hover-revealed button) ---
     const rowContainer = page
       .locator('[data-index]')
-      .filter({ hasText: new RegExp(TX_MESSAGE) })
+      .filter({ hasText: new RegExp(TX_PREFIX) })
       .first();
     await rowContainer.hover({ force: true });
     const detailsBtn = page.locator(sel.send.rowDetails).first();
