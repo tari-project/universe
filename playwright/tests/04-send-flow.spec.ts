@@ -22,22 +22,47 @@ async function openSendModal(page: Page) {
   return addressInput;
 }
 
+/**
+ * Fill the address and wait for validation to RESOLVE. The validation is
+ * a backend call — during a wallet phase restart (e.g. right after the
+ * exchange revert) it goes unanswered and no outcome renders. Re-fill to
+ * re-trigger it until the expected outcome appears.
+ */
+async function fillAddressAwaitValidation(
+  page: Page,
+  address: string,
+  expected: 'valid' | 'invalid',
+  timeout = 120_000
+) {
+  const addressInput = page.locator(sel.send.addressInput);
+  const outcome =
+    expected === 'invalid'
+      ? page.getByText(/address is invalid/i).first()
+      : page.locator('svg[fill="#009E54"], svg path[fill="#009E54"]').first();
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    await addressInput.fill('');
+    await addressInput.fill(address);
+    const ok = await outcome
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .then(() => true, () => false);
+    if (ok) return;
+  }
+  throw new Error(`Address validation (${expected}) did not resolve within ${timeout}ms`);
+}
+
 test.describe('Send Transaction Flow', () => {
   test('send form validates address and amount inputs', async ({ appPage: page }) => {
     // A balance is required so the amount field becomes usable.
     await ensureBalance(page, 2, 180_000);
 
-    const addressInput = await openSendModal(page);
+    await openSendModal(page);
 
     // --- Invalid address shows an error ---
-    await addressInput.fill(INVALID_ADDRESS);
-    await expect(page.getByText(/address is invalid/i)).toBeVisible({ timeout: 10_000 });
+    await fillAddressAwaitValidation(page, INVALID_ADDRESS, 'invalid');
 
     // --- Valid address shows the green checkmark and unlocks the rest ---
-    await addressInput.fill('');
-    await addressInput.fill(VALID_ADDRESS);
-    const checkmark = page.locator('svg[fill="#009E54"], svg path[fill="#009E54"]');
-    await expect(checkmark.first()).toBeVisible({ timeout: 10_000 });
+    await fillAddressAwaitValidation(page, VALID_ADDRESS, 'valid');
 
     const amountInput = page.locator(sel.send.amountInput);
     await expect(amountInput).toBeEnabled({ timeout: 5_000 });
@@ -76,8 +101,8 @@ test.describe('Send Transaction Flow', () => {
     await ensureBalance(page, 2, 180_000);
 
     // --- Fill the form ---
-    const addressInput = await openSendModal(page);
-    await addressInput.fill(VALID_ADDRESS);
+    await openSendModal(page);
+    await fillAddressAwaitValidation(page, VALID_ADDRESS, 'valid');
     const amountInput = page.locator(sel.send.amountInput);
     await expect(amountInput).toBeEnabled({ timeout: 10_000 });
     await amountInput.fill(SEND_AMOUNT);
