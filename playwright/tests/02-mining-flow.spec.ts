@@ -42,6 +42,9 @@ test.describe('Mining Flow', () => {
   });
 
   test('start mining and cycle through Eco and Turbo modes', async ({ appPage: page }) => {
+    // Turbo's fast-mode dataset init alone can take minutes; this test's
+    // condition waits legitimately sum past the suite default.
+    test.setTimeout(600_000);
     await waitForMiningReady(page, 120_000);
     await clickStartMining(page);
     await waitForMiningActive(page, 120_000);
@@ -74,21 +77,25 @@ test.describe('Mining Flow', () => {
     // --- Eco (default) ---
     await waitForHashrate(page, 30_000);
 
-    // --- Turbo ---
-    await selectMode('Turbo');
-    await waitForMiningActive(page, 60_000);
-    // Turbo runs xmrig with randomx-mode=fast: the ~2.3 GB dataset init
-    // reports hashrate 0 until it completes, which can exceed a minute.
-    await waitForHashrate(page, 180_000);
+    // The selected mode persists in config: if the Turbo section fails,
+    // restore Eco so later tests don't inherit fast-mode mining.
+    try {
+      // --- Turbo ---
+      await selectMode('Turbo');
+      await waitForMiningActive(page, 60_000);
+      // Turbo runs xmrig with randomx-mode=fast: the ~2.3 GB dataset init
+      // reports hashrate 0 until it completes, which can take minutes.
+      await waitForHashrate(page, 240_000);
 
-    // --- Ludicrous — deliberately not exercised ---
-    // Ludicrous requests all cores with randomx-mode=fast, which exceeds
-    // CI runner memory (~2 GB per thread for the RandomX dataset). xmrig
-    // starts but reports hashrate 0 indefinitely.
-
-    // --- Back to Eco ---
-    await selectMode('Eco');
-    await waitForMiningActive(page, 60_000);
+      // --- Ludicrous — deliberately not exercised ---
+      // Ludicrous requests all cores with randomx-mode=fast, which exceeds
+      // CI runner memory (~2 GB per thread for the RandomX dataset). xmrig
+      // starts but reports hashrate 0 indefinitely.
+    } finally {
+      // --- Back to Eco ---
+      await selectMode('Eco');
+      await waitForMiningActive(page, 60_000).catch(() => {});
+    }
     await waitForHashrate(page, 60_000);
 
     await clickStopMining(page);
