@@ -160,6 +160,7 @@ export const MiningMode = ({
                 variant={variant}
                 isOpen={isOpen}
                 selectedMode={selectedMiningMode?.mode_type || ('Eco' as MiningModeType)}
+                data-testid="mining-mode-trigger"
             >
                 {selectedMiningMode?.mode_name}
                 <OptionIcon
@@ -184,6 +185,7 @@ export const MiningMode = ({
                                             ref={(node) => {
                                                 listRef.current[index] = node;
                                             }}
+                                            data-testid={`mining-mode-${mode.name}`}
                                             onClick={() => handleSelectMode(mode)}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' || e.key === ' ') {

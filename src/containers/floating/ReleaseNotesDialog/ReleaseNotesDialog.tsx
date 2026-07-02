@@ -22,7 +22,7 @@ const ReleaseNotesDialog = memo(function ReleaseNotesDialog() {
                     <Title>{t('releaseNotesDialog.title')}</Title>
                     <ReleaseNotes noHeader={true} showScrollBars={true} />
                     <ButtonWrapper>
-                        <Button onClick={handleClose}>
+                        <Button onClick={handleClose} data-testid="release-notes-dismiss">
                             <span>{t('releaseNotesDialog.close')}</span>
                         </Button>
                     </ButtonWrapper>

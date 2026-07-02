@@ -25,7 +25,8 @@ use async_trait::async_trait;
 use log::{info, warn};
 use serde::Deserialize;
 use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::time::Duration;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch::Sender;
@@ -168,6 +169,8 @@ impl ProcessAdapter for XmrigAdapter {
                 summary_broadcast: self.summary_broadcast.clone(),
                 access_token: self.http_api_token.clone(),
                 http_api_port: self.http_api_port.to_string(),
+                has_hashed: Arc::new(AtomicBool::new(false)),
+                zero_streak: Arc::new(AtomicU32::new(0)),
             },
         ))
     }
@@ -190,6 +193,14 @@ pub struct XmrigStatusMonitor {
     http_api_port: String,
     access_token: String,
     summary_broadcast: Sender<CpuMinerStatus>,
+    /// Whether this xmrig instance has ever reported a nonzero hashrate.
+    /// Before that, a 0 reading means the RandomX dataset is still
+    /// initializing (minutes in fast mode) — Initializing, not Unhealthy.
+    /// After it, a sustained 0 means the miner stalled and needs a restart.
+    has_hashed: Arc<AtomicBool>,
+    /// Consecutive zero-hashrate readings after having hashed; a single
+    /// zero sample is a normal transient (e.g. around a mode change).
+    zero_streak: Arc<AtomicU32>,
 }
 
 #[async_trait]
@@ -198,6 +209,12 @@ impl StatusMonitor for XmrigStatusMonitor {
         &self,
         duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        // The watcher reuses this monitor across restarts and calls this
+        // right before restarting xmrig. The fresh instance begins with
+        // dataset init again — reset the hashing state so its zeros read
+        // as Initializing, not as a stall of the previous instance.
+        self.has_hashed.store(false, Ordering::Relaxed);
+        self.zero_streak.store(0, Ordering::Relaxed);
         // Fallback to solo mining if the miner has been unhealthy for more than 30 minutes
         info!(target: LOG_TARGET_STATUSES, "Handling unhealthy status for Xmrig | Duration since last healthy status: {:?}", duration_since_last_healthy_status.as_secs());
         if duration_since_last_healthy_status.as_secs().gt(&(60 * 30))
@@ -222,17 +239,39 @@ impl StatusMonitor for XmrigStatusMonitor {
         }
     }
 
-    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         match tokio::time::timeout(timeout_duration, self.status()).await {
             Ok(status) => match status {
                 Ok(status) => {
                     let _result = self.summary_broadcast.send(status.clone());
 
                     if status.hash_rate.le(&0.0) {
-                        warn!(target: LOG_TARGET_STATUSES, "Xmrig hash rate is 0");
+                        if !self.has_hashed.load(Ordering::Relaxed) {
+                            // RandomX dataset init reports 0 until complete —
+                            // minutes in fast mode. Restarting here restarts
+                            // the init from scratch, forever. Degrade to
+                            // Unhealthy only past a generous cap so a truly
+                            // wedged init still recovers eventually.
+                            if uptime < Duration::from_secs(600) {
+                                warn!(target: LOG_TARGET_STATUSES, "Xmrig hash rate is 0 (still initializing)");
+                                return HealthStatus::Initializing;
+                            }
+                            warn!(target: LOG_TARGET_STATUSES, "Xmrig never produced a hashrate within 10 minutes — treating as wedged");
+                            return HealthStatus::Unhealthy;
+                        }
+                        let streak = self.zero_streak.fetch_add(1, Ordering::Relaxed) + 1;
+                        if streak < 3 {
+                            // Single zero samples are normal transients
+                            // (e.g. around a mode change) — don't restart.
+                            warn!(target: LOG_TARGET_STATUSES, "Xmrig hash rate is 0 (transient, streak {streak})");
+                            return HealthStatus::Warning;
+                        }
+                        warn!(target: LOG_TARGET_STATUSES, "Xmrig hash rate is 0 after having hashed (streak {streak}) — miner stalled");
                         return HealthStatus::Unhealthy;
                     }
 
+                    self.has_hashed.store(true, Ordering::Relaxed);
+                    self.zero_streak.store(0, Ordering::Relaxed);
                     HealthStatus::Healthy
                 }
                 Err(e) => {

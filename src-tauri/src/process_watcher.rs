@@ -272,6 +272,7 @@ pub(crate) async fn do_health_check<
     stats: &mut ProcessWatcherStats,
 ) -> Result<Option<i32>, anyhow::Error> {
     let mut is_healthy = false;
+    let mut is_initializing = false;
     let mut ping_failed = false;
 
     stats.total_health_checks += 1;
@@ -298,10 +299,13 @@ pub(crate) async fn do_health_check<
                 is_healthy = true;
             }
             HealthStatus::Initializing => {
-                // TODO(testing): If process stays in Initializing forever, no restart occurs.
-                // Consider adding max initialization timeout. See TESTING_ISSUES.md.
+                // An initializing process (e.g. xmrig building the RandomX
+                // dataset) must NOT be restarted — a restart begins the
+                // initialization from scratch, forever. Adapters degrade
+                // Initializing to Unhealthy when it exceeds their cap.
                 *warning_count = 0;
                 is_healthy = false;
+                is_initializing = true;
             }
             HealthStatus::Warning => {
                 stats.num_warnings += 1;
@@ -332,6 +336,7 @@ pub(crate) async fn do_health_check<
     stats.total_health_check_duration += health_check_duration;
 
     if !is_healthy
+        && !is_initializing
         && !child.is_shutdown_triggered()
         && !global_shutdown_signal.is_triggered()
         && !inner_shutdown.is_triggered()
