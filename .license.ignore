@@ -3,6 +3,14 @@
 ./src-tauri/env.localnet
 ./src-tauri/env.mainnet
 ./src-tauri/env.nextnet
+./src-tauri/tauri-remote-ui-patched/build.rs
+./src-tauri/tauri-remote-ui-patched/src/error.rs
+./src-tauri/tauri-remote-ui-patched/src/lib.rs
+./src-tauri/tauri-remote-ui-patched/src/models.rs
+./src-tauri/tauri-remote-ui-patched/src/remote_ui/emmiter_ext.rs
+./src-tauri/tauri-remote-ui-patched/src/remote_ui/mod.rs
+./src-tauri/tauri-remote-ui-patched/src/remote_ui/plugin_ext.rs
+./src-tauri/tauri-remote-ui-patched/src/remote_ui/rpc_server.rs
 ./tari-win-bundler/Bundle.wxs
 ./tari-win-bundler/Tari Universe.wixproj
 ./tari-win-bundler/Tari Universe.wixproj.user
