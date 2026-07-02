@@ -61,7 +61,6 @@ vi.mock('./appStateStoreActions.ts', () => ({
 }));
 
 vi.mock('./miningStoreActions', () => ({
-    restartMining: vi.fn(),
     setLastSelectedMiningModeNameForSchedulerEvent: vi.fn(),
     startCpuMining: vi.fn(),
     startGpuMining: vi.fn(),

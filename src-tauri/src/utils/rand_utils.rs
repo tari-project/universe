@@ -20,16 +20,16 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use rand::Rng;
+use rand::RngExt;
 
 pub fn get_rand_string(length: usize) -> String {
     const CHARSET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let charset: Vec<char> = CHARSET.chars().collect();
 
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let rand_string: String = (0..length)
         .map(|_| {
-            let idx = rng.gen_range(0..charset.len());
+            let idx = rng.random_range(0..charset.len());
             charset[idx]
         })
         .collect();

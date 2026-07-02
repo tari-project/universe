@@ -23,7 +23,7 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
                 if (startedRef.current) {
                     return isComplete ? t('sync-message.completed') : `${hours > 0 ? hours + `h` : ''} ${minutes}m`;
                 } else {
-                    return t('setup-progresses:calculating_time', { context: isCompact && 'compact' });
+                    return t('setup-progresses:calculating_time', { context: isCompact ? 'compact' : '' });
                 }
             },
         [countdown, isCompact, t]
@@ -42,7 +42,7 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
     }, [countdown]);
 
     if (!startedRef.current) {
-        return <LoadingText text={t('setup-progresses:calculating_time', { context: isCompact && 'compact' })} />;
+        return <LoadingText text={t('setup-progresses:calculating_time', { context: isCompact ? 'compact' : '' })} />;
     }
 
     return (

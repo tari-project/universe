@@ -4,7 +4,7 @@ import { IoAddCircleOutline, IoCheckmarkOutline, IoCloseOutline } from 'react-ic
 import { useCallback, useState } from 'react';
 import { Wrapper } from './styles.ts';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
-import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
+import { Edit, splitSeedWordsInput } from '@app/components/wallet/seedwords/components/Edit.tsx';
 import { FormProvider, useForm } from 'react-hook-form';
 import { importSeedWords, useWalletStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
@@ -34,8 +34,7 @@ export default function EmptySeedWords() {
     }, [isValid, newSeedWords]);
 
     const handleApply = (data: { seedWords: string }) => {
-        const resolvedSeedWords = data.seedWords.split(' ');
-        setNewSeedWords(resolvedSeedWords);
+        setNewSeedWords(splitSeedWordsInput(data.seedWords));
         setShowConfirm(true);
     };
 

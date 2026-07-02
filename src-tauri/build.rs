@@ -96,7 +96,7 @@ fn main() {
 
     // Use a default set of env vars
     // This is project specific and doesn't work against our dependencies like tari_common.
-    // It's essentially duplicated work for lints etc that npm already injects when running tauri.
+    // It's essentially duplicated work for lints etc that pnpm already injects when running tauri.
     // TODO: Remove compile time env vars. TU should be network agnostic.
     println!("cargo::rerun-if-changed=env.esmeralda");
     println!("cargo::rerun-if-changed=env.mainnet");

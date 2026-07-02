@@ -22,6 +22,8 @@
 
 use std::{fs, future::Future, io::Write, path::Path, pin::Pin, time::Duration};
 
+use sysinfo::{Pid, ProcessesToUpdate, System};
+
 use crate::process_adapter::ProcessStartupSpec;
 use crate::process_wrapper;
 
@@ -147,9 +149,35 @@ where
 }
 
 pub fn write_pid_file(spec: &ProcessStartupSpec, id: u32) -> Result<(), String> {
+    // Record the process start time alongside the PID. On the next launch this
+    // lets cleanup tell our process apart from an unrelated one that reused the
+    // PID after we exited (the start time would differ). Legacy single-line pid
+    // files remain valid and simply fall back to path-only validation.
+    // A freshly spawned process may not be visible to sysinfo for a few ms, so
+    // retry briefly before falling back to a legacy (start-time-less) pid file.
+    let mut sys = System::new();
+    let mut start_time = None;
+    for _ in 0..5 {
+        sys.refresh_processes(ProcessesToUpdate::Some(&[Pid::from_u32(id)]));
+        if let Some(process) = sys.process(Pid::from_u32(id)) {
+            start_time = Some(process.start_time());
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let contents = match start_time {
+        Some(start_time) => format!("{id}\n{start_time}"),
+        None => {
+            log::warn!(
+                "Could not read start time for process {id}; writing legacy pid file without start-time hardening"
+            );
+            id.to_string()
+        }
+    };
+
     let mut file = fs::File::create(spec.data_dir.join(spec.pid_file_name.clone()))
         .map_err(|e| format!("Failed to create PID file: {e}"))?;
-    file.write_all(id.to_string().as_bytes())
+    file.write_all(contents.as_bytes())
         .map_err(|e| format!("Failed to write PID file: {e}"))?;
     file.flush()
         .map_err(|e| format!("Failed to flush PID file: {e}"))?;

@@ -89,7 +89,7 @@ rustup toolchain list
 
 # Install nodejs from nodeSource
 
-# more info can be found at https://github.com/nodesource/distributions
+More info can be found at https://github.com/nodesource/distributions
 
 ```bash
 mkdir -p ~/temp/
@@ -97,20 +97,26 @@ curl -fsSL https://deb.nodesource.com/setup_22.x -o ~/temp/nodesource_setup.sh
 
 bash ~/temp/nodesource_setup.sh
 apt-get install --assume-yes nodejs
+```
 
-npm --version
+# Install pnpm
+
+More info can be found at https://pnpm.io/installation
+
+```bash
+npm install -g pnpm@latest-11
 ```
 
 # Install node modules
 
 ```bash
-npm install
+pnpm install
 ```
 
 # Build node assets
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 # Install tauri-cli

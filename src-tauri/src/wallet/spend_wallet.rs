@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::collections::HashMap;
+use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -127,8 +128,13 @@ impl SpendWallet {
         let data_dir = self.get_data_dir(app_handle)?;
         let working_dir = data_dir.join("spend_wallet");
         // Clean up spend wallet working directory
-        std::fs::remove_dir_all(&working_dir)
-            .and_then(|_| std::fs::create_dir_all(&working_dir))
+        if let Err(err) = std::fs::remove_dir_all(&working_dir)
+            && err.kind() != ErrorKind::NotFound
+        {
+            return Err(anyhow::anyhow!(err))
+                .context("Failed to clean up Spend Wallet working directory");
+        }
+        std::fs::create_dir_all(&working_dir)
             .context("Failed to clean up Spend Wallet working directory")?;
 
         Ok(())
