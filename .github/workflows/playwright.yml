@@ -105,7 +105,9 @@ jobs:
         run: xvfb-run --auto-servernum pnpm exec playwright test
 
       - name: Upload test results
-        if: failure()
+        # Upload on success too — the HTML report + timing data is how we
+        # measure flakiness trends, not just post-mortem failures.
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: playwright-results

@@ -4,6 +4,8 @@ export default defineConfig({
   testDir: './tests',
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
+  // Retries mask flakiness — the suite must pass deterministically.
+  // Diagnostics below capture everything needed when a test does fail.
   retries: 0,
   workers: 1,
   timeout: 180_000,
@@ -11,10 +13,12 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }], ['list']],
 
   use: {
-    trace: 'off',
-    screenshot: 'off',
-    video: 'off',
-    reducedMotion: 'reduce',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    contextOptions: {
+      reducedMotion: 'reduce',
+    },
   },
 
   globalSetup: './helpers/global-setup.ts',
