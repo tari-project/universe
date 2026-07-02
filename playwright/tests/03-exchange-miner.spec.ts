@@ -91,28 +91,12 @@ test.describe.serial('Exchange Miner', () => {
     await expect(exchangeName).toBeVisible({ timeout: 10_000 });
   });
 
-  test('mining works in exchange mode', async ({ appPage: page }) => {
-    await waitForMiningReady(page, 120_000);
-    await clickStartMining(page);
-    await waitForMiningActive(page, 120_000);
-
-    // Verify hashrate appears
-    const cpuTile = page.locator(sel.mining.tileCpu);
-    const start = Date.now();
-    let sawHashrate = false;
-    while (Date.now() - start < 60_000) {
-      const text = await cpuTile.textContent({ timeout: 2_000 }).catch(() => '');
-      if (/[HGMk]\/s/.test(text ?? '') && !/\.\.\./.test(text ?? '')) {
-        sawHashrate = true;
-        break;
-      }
-      await page.waitForTimeout(1_000);
-    }
-    expect(sawHashrate).toBe(true);
-
-    await clickStopMining(page);
-    await waitForMiningStopped(page, 60_000);
-  });
+  // NOTE: deliberately no "mining works in exchange mode" test. Exchange
+  // mode mines to an external pool (luckypool.io) — a live third-party
+  // network dependency whose availability and status API cannot be
+  // controlled from CI, which makes any assertion on it inherently flaky.
+  // Solo-mining coverage lives in 02-mining-flow; the mode switch and
+  // revert (including mining after revert) are covered here.
 
   test('switch back to Tari Universe wallet and verify balance', async ({ appPage: page }) => {
     // Revert via the exchange modal: select the internal wallet option.

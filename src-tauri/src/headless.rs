@@ -90,8 +90,6 @@ fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
         | "WalletUIModeChanged"
         | "BaseNodeUpdate"
         | "NodeTypeUpdate"
-        | "CpuMiningUpdate"
-        | "GpuMiningUpdate"
         | "UpdateCpuMinerControlsState"
         | "UpdateGpuMinerControlsState"
         | "GpuDevicesUpdate"
@@ -104,12 +102,16 @@ fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
         | "StuckOnOrphanChain"
         | "AvailableMiners"
         | "UpdateSelectedMiner"
-        | "CpuPoolsStatsUpdate"
-        | "GpuPoolsStatsUpdate"
         | "InitWalletScanningProgress"
         | "CloseSplashscreen" => event_type.to_string(),
+        // Periodic metric streams (CpuMiningUpdate, GpuMiningUpdate,
+        // pool stats) are intentionally NOT replayed: their emitters stop
+        // when mining stops, so a cached sample can assert is_mining=true
+        // long after the miner exited. A fresh page correctly defaults to
+        // not-mining and picks the stream up within seconds if it runs.
+        //
         // Everything else (ShowReleaseNotes, AskForRestart, PIN dialogs,
-        // shutdown prompts, ...) is intentionally not replayed.
+        // shutdown prompts, ...) is also intentionally not replayed.
         _ => return None,
     };
     Some(key)

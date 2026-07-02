@@ -84,6 +84,9 @@ export async function waitForMiningActive(page: Page, timeout = 60_000) {
 
 /** Click Pause → "Pause until I Restart" to stop mining via the UI. */
 export async function clickStopMining(page: Page) {
+  // The sidebar can close during long condition waits — make sure the
+  // controls are on screen before interacting.
+  await openMiningSidebar(page);
   // Wait for the pause button to be visible — it can briefly disappear
   // during mode-change transitions (isMiningLoading flip).
   await page.locator(sel.mining.pauseButton).waitFor({ state: 'visible', timeout: 30_000 });

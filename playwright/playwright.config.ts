@@ -8,7 +8,11 @@ export default defineConfig({
   // Diagnostics below capture everything needed when a test does fail.
   retries: 0,
   workers: 1,
-  timeout: 180_000,
+  // The app drives a real localnet chain: after a fast-hashrate session
+  // the wallet scan can lag hundreds of blocks, so condition waits are
+  // long. Individual waits are bounded; this only needs to exceed their
+  // sum for the heaviest test.
+  timeout: 360_000,
   expect: { timeout: 30_000 },
   reporter: [['html', { open: 'never' }], ['list']],
 

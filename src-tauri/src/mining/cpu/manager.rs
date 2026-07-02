@@ -358,6 +358,11 @@ impl CpuManager {
                     },
                     _ = global_shutdown_signal.wait() => {
                         info!(target: LOG_TARGET_STATUSES, "Shutting down cpu miner status updates");
+                        // Emit a final stopped status; otherwise frontends keep
+                        // the last is_mining=true forever when a phase restart
+                        // (e.g. exchange-miner switch) kills this loop.
+                        EventsEmitter::emit_cpu_mining_update(CpuMinerStatus::default()).await;
+                        SystemTrayManager::send_event(SystemTrayEvents::CpuHashrate(0.0)).await;
                         break;
                     },
                     updated_status = cpu_internal_status_reciever.changed() => {
