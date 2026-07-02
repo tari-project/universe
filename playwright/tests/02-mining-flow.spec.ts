@@ -6,7 +6,7 @@ import {
   clickStopMining,
   waitForMiningStopped,
   getWalletBalance,
-  waitForWalletBalance,
+  mineUntilBalanceExceeds,
   ensureBalance,
 } from '../helpers/wait-for';
 import { sel } from '../helpers/selectors';
@@ -142,17 +142,10 @@ test.describe('Mining Flow', () => {
     await waitForMiningReady(page, 120_000);
     const balanceBefore = await getWalletBalance(page);
 
-    // Mine until the balance visibly exceeds where we started, then stop.
-    // Condition-based: no fixed mining duration.
-    await clickStartMining(page);
-    await waitForMiningActive(page, 120_000);
-    let balance: number;
-    try {
-      balance = await waitForWalletBalance(page, Math.floor(balanceBefore) + 1, 420_000);
-    } finally {
-      await clickStopMining(page);
-      await waitForMiningStopped(page, 60_000);
-    }
+    // Mine a burst, stop, then wait for the scan to converge — the
+    // scanner can't catch a tip that grows every second (see helper).
+    await mineUntilBalanceExceeds(page, Math.floor(balanceBefore) + 1, 300_000);
+    const balance = await getWalletBalance(page);
     expect(balance).toBeGreaterThan(balanceBefore);
   });
 

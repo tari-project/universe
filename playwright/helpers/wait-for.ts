@@ -183,20 +183,28 @@ export async function waitForWalletReady(page: Page, timeout = 120_000) {
 
 /**
  * Mine until the wallet balance exceeds `target`, then stop mining.
- * Condition-based: no fixed mining duration — on localnet the first
- * blocks appear within seconds, so this is both faster and more
- * deterministic than "mine for N seconds and hope".
+ *
+ * The balance tracks the WALLET SCAN, and the scanner cannot converge
+ * while localnet keeps producing a block every second or two — it chases
+ * a moving tip indefinitely. So: mine a short burst (with a fast-path
+ * balance check), STOP, and then wait for the scanner to catch up to the
+ * now-static tip.
  */
-export async function mineUntilBalanceExceeds(page: Page, target: number, timeout = 180_000) {
-  await waitForMiningReady(page, timeout);
+export async function mineUntilBalanceExceeds(page: Page, target: number, timeout = 300_000) {
+  await waitForMiningReady(page, 120_000);
   await clickStartMining(page);
   await waitForMiningActive(page, 120_000);
   try {
-    await waitForWalletBalance(page, target, timeout);
+    // Fast path: on a small chain the scan keeps up and the balance
+    // crosses the target while mining.
+    await waitForWalletBalance(page, target, 60_000);
+  } catch {
+    // Slow path: stop below and let the scanner converge.
   } finally {
     await clickStopMining(page);
     await waitForMiningStopped(page, 60_000);
   }
+  await waitForWalletBalance(page, target, timeout);
 }
 
 /**
