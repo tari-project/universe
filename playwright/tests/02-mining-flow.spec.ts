@@ -25,6 +25,23 @@ async function waitForHashrate(page: Page, timeout = 60_000) {
   throw new Error(`Hashrate did not appear within ${timeout}ms`);
 }
 
+/**
+ * Wait for the CPU tile to STOP showing a hashrate. Used after a mode
+ * change: the tile keeps the previous session's value until the miner
+ * restart propagates, so waiting for reset first prevents a stale value
+ * from satisfying the next waitForHashrate.
+ */
+async function waitForHashrateReset(page: Page, timeout = 30_000) {
+  const cpuTile = page.locator(sel.mining.tileCpu);
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const text = await cpuTile.textContent({ timeout: 2_000 }).catch(() => '');
+    if (!/[HGMk]\/s/.test(text ?? '') || /\.\.\./.test(text ?? '')) return;
+    await page.waitForTimeout(1_000);
+  }
+  throw new Error(`Hashrate did not reset within ${timeout}ms`);
+}
+
 async function hasHashrate(page: Page): Promise<boolean> {
   const text = await page
     .locator(sel.mining.tileCpu)
@@ -82,6 +99,9 @@ test.describe('Mining Flow', () => {
     try {
       // --- Turbo ---
       await selectMode('Turbo');
+      // The miner restarts for the new mode: wait for the stale Eco value
+      // to clear so it can't satisfy the Turbo hashrate check.
+      await waitForHashrateReset(page, 30_000);
       await waitForMiningActive(page, 60_000);
       // Turbo runs xmrig with randomx-mode=fast: the ~2.3 GB dataset init
       // reports hashrate 0 until it completes, which can take minutes.
@@ -96,7 +116,8 @@ test.describe('Mining Flow', () => {
       await selectMode('Eco');
       await waitForMiningActive(page, 60_000).catch(() => {});
     }
-    await waitForHashrate(page, 60_000);
+    await waitForHashrateReset(page, 30_000).catch(() => {});
+    await waitForHashrate(page, 120_000);
 
     await clickStopMining(page);
     await waitForMiningStopped(page, 60_000);

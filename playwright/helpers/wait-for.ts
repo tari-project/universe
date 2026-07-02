@@ -6,29 +6,24 @@ import { sel } from './selectors';
 // ===========================================================================
 
 /** Open the mining sidebar by clicking the mine icon (if not already open). */
-export async function openMiningSidebar(page: Page) {
+export async function openMiningSidebar(page: Page, timeout = 30_000) {
+  const mineButton = page.locator(sel.sidebar.mineButton);
   const anyButton = page.locator(
     `${sel.mining.startButton}, ${sel.mining.resumeButton}, ${sel.mining.pauseButton}`
   );
-  // The sidebar open/closed state persists in config, so a fresh page may
-  // load with it already open but still animating in — give it a moment
-  // before concluding it's closed (clicking then would toggle it shut).
-  if (
-    await anyButton.first().waitFor({ state: 'visible', timeout: 3_000 }).then(() => true, () => false)
-  ) {
-    return;
+  // The mine button TOGGLES the sidebar, so blind re-clicks can close what
+  // a previous click opened. Read the real open state from data-active and
+  // only click when it says closed; when open, just wait out the animation.
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    if (await anyButton.first().isVisible().catch(() => false)) return;
+    const active = await mineButton.getAttribute('data-active').catch(() => null);
+    if (active !== 'true') {
+      await mineButton.click({ timeout: 10_000 }).catch(() => {});
+    }
+    await page.waitForTimeout(1_000);
   }
-  // The mine button toggles: if a click raced the opening animation and
-  // closed it instead, the retry reopens it.
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await page.locator(sel.sidebar.mineButton).click({ timeout: 10_000 });
-    const visible = await anyButton
-      .first()
-      .waitFor({ state: 'visible', timeout: 5_000 })
-      .then(() => true, () => false);
-    if (visible) return;
-  }
-  throw new Error('Mining sidebar did not open after 3 attempts');
+  throw new Error(`Mining sidebar did not open within ${timeout}ms`);
 }
 
 /**

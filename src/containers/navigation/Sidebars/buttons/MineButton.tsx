@@ -49,6 +49,7 @@ export default function MineButton() {
                 $isActive={sidebarOpen}
                 $isToggle={true}
                 data-testid="sidebar-mine-button"
+                data-active={sidebarOpen}
             >
                 <svg width="28" height="30" viewBox="0 0 28 30" fill="none">
                     <path
