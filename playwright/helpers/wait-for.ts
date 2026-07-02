@@ -70,7 +70,14 @@ export async function clickStartMining(page: Page, timeout = 60_000) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     if (await pause.isVisible().catch(() => false)) return;
-    await btn.dispatchEvent('click').catch(() => {});
+    // A registered click flips the button into its disabled/loading state
+    // while the miner spins up — do NOT dispatch again then: every extra
+    // click queues another start_cpu_mining invoke, and stale ones landing
+    // after a later stop resurrect mining behind the test's back.
+    const registered = await btn.isDisabled().catch(() => false);
+    if (!registered) {
+      await btn.dispatchEvent('click').catch(() => {});
+    }
     await page.waitForTimeout(2_000);
   }
   throw new Error(`Mining did not react to start clicks within ${timeout}ms`);
@@ -193,11 +200,20 @@ export async function waitForWalletBalance(page: Page, minBalance: number, timeo
   );
 }
 
-/** Wait for the wallet balance loading indicator to disappear ("My balance" text visible). */
+/**
+ * Wait for the wallet scan to complete. The "My balance" label can render
+ * alongside the scanning indicator, so the reliable signal is the
+ * "Wallet is loading NN%" text DISAPPEARING.
+ */
 export async function waitForWalletReady(page: Page, timeout = 120_000) {
-  // The bottom text shows "My balance" when scanning is complete
-  const balanceLabel = page.locator(`${sel.wallet.balance} >> text=My balance`);
-  await balanceLabel.waitFor({ state: 'visible', timeout });
+  const loading = page.getByText(/Wallet is loading/i);
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const count = await loading.count().catch(() => 1);
+    if (count === 0) return;
+    await page.waitForTimeout(2_000);
+  }
+  throw new Error(`Wallet scan did not complete within ${timeout}ms`);
 }
 
 /**
