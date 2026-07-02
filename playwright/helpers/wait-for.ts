@@ -80,30 +80,45 @@ export async function waitForMiningActive(page: Page, timeout = 60_000) {
   await page.locator(sel.mining.pauseButton).waitFor({ state: 'visible', timeout });
 }
 
-/** Click Pause → "Pause until I Restart" to stop mining via the UI. */
+/**
+ * Stop mining via the UI (Pause → "Pause until I Restart").
+ * State-aware: if the start/resume button is showing — including the
+ * transient stopped-looking window while the watcher restarts a stalled
+ * miner — there is nothing to click; the fixture's teardown invoke
+ * backstops any restart that lands afterwards.
+ */
 export async function clickStopMining(page: Page) {
   // The sidebar can close during long condition waits — make sure the
   // controls are on screen before interacting.
   await openMiningSidebar(page);
   const pauseButton = page.locator(sel.mining.pauseButton);
   const stopOption = page.locator(sel.mining.stopOption);
-  // Wait for the pause button to be visible — it can briefly disappear
-  // during mode-change transitions (isMiningLoading flip).
-  await pauseButton.waitFor({ state: 'visible', timeout: 30_000 });
-  // The dropdown can render slower than the click under load; the click
-  // toggles the menu, so a converging retry (like openMiningSidebar)
-  // beats a single shot.
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await pauseButton.click({ timeout: 10_000, force: true }).catch(() => {});
-    const visible = await stopOption
-      .waitFor({ state: 'visible', timeout: 5_000 })
-      .then(() => true, () => false);
-    if (visible) {
-      await stopOption.click({ timeout: 5_000 });
+  const startOrResume = page.locator(
+    `${sel.mining.startButton}:visible, ${sel.mining.resumeButton}:visible`
+  );
+
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    if (await pauseButton.isVisible().catch(() => false)) {
+      // The dropdown can render slower than the click under load; the
+      // click toggles the menu, so retry converges.
+      await pauseButton.click({ timeout: 10_000, force: true }).catch(() => {});
+      const visible = await stopOption
+        .waitFor({ state: 'visible', timeout: 5_000 })
+        .then(() => true, () => false);
+      if (visible) {
+        await stopOption.click({ timeout: 5_000 });
+        return;
+      }
+      continue;
+    }
+    if ((await startOrResume.count().catch(() => 0)) > 0) {
+      // Already stopped (or mid miner-restart) — nothing to click.
       return;
     }
+    await page.waitForTimeout(1_000);
   }
-  throw new Error('Pause menu did not open after 3 attempts');
+  throw new Error('Could not stop mining within 60s (no pause or start button)');
 }
 
 /**
