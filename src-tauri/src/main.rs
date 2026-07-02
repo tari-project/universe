@@ -155,17 +155,37 @@ const IGNORED_SENTRY_ERRORS: [&str; 2] = [
     "SIGABRT / SI_TKILL / 0x0",
 ];
 
-#[cfg(not(any(
-    feature = "release-ci",
-    feature = "release-ci-beta",
-    feature = "exchange-ci"
-)))]
+// test-mode uses a dedicated folder id (paired with the identifier override
+// in tauri.test.conf.json) so E2E runs never touch a real user profile and
+// can be wiped between runs.
+#[cfg(feature = "test-mode")]
+const APPLICATION_FOLDER_ID: &str = "com.tari.universe.test";
+#[cfg(all(
+    not(feature = "test-mode"),
+    not(any(
+        feature = "release-ci",
+        feature = "release-ci-beta",
+        feature = "exchange-ci"
+    ))
+))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.alpha";
-#[cfg(all(feature = "release-ci", feature = "release-ci-beta"))]
+#[cfg(all(
+    not(feature = "test-mode"),
+    feature = "release-ci",
+    feature = "release-ci-beta"
+))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.other";
-#[cfg(all(feature = "release-ci", not(feature = "release-ci-beta")))]
+#[cfg(all(
+    not(feature = "test-mode"),
+    feature = "release-ci",
+    not(feature = "release-ci-beta")
+))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
-#[cfg(all(feature = "release-ci-beta", not(feature = "release-ci")))]
+#[cfg(all(
+    not(feature = "test-mode"),
+    feature = "release-ci-beta",
+    not(feature = "release-ci")
+))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 
 #[derive(Clone)]

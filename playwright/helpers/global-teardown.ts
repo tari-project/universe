@@ -15,43 +15,51 @@ function killPid(pid: number): void {
   }
 }
 
-function killTrackedPids(): void {
-  for (const envKey of ['TEST_APP_PID', 'TEST_VITE_PID']) {
-    const pid = process.env[envKey];
-    if (pid) {
-      killPid(Number(pid));
-    }
-  }
-}
-
-function killChildProcessTree(pid: number): void {
+/**
+ * Kill the app and everything it spawned (minotari_node, wallet, xmrig, ...).
+ * The app is spawned detached (own process group) on POSIX, so signalling
+ * the group (-pid) reaches children even after they reparent. Windows uses
+ * taskkill /T for the tree.
+ */
+function killAppTree(pid: number): void {
   if (isWin) {
-    // /T flag kills the process tree
     try {
       spawnSync('taskkill', ['/F', '/T', '/PID', String(pid)], { stdio: 'pipe' });
     } catch {
       // ignore
     }
-  } else {
-    // Find and kill child processes using the parent PID
+    return;
+  }
+  try {
+    process.kill(-pid, 'SIGTERM');
+  } catch {
+    // group gone (or app was not spawned detached) — try the pid directly
+    killPid(pid);
+  }
+  // Give the group a moment to exit gracefully, then force-kill leftovers.
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
     try {
-      const result = spawnSync('pgrep', ['-P', String(pid)], { stdio: 'pipe' });
-      const childPids = result.stdout?.toString().trim().split('\n').filter(Boolean);
-      for (const childPid of childPids) {
-        killChildProcessTree(Number(childPid));
-      }
-      process.kill(pid, 'SIGTERM');
+      process.kill(-pid, 0); // probe: throws once the group is gone
     } catch {
-      // already exited
+      return;
     }
+    spawnSync('sleep', ['0.5']);
+  }
+  try {
+    process.kill(-pid, 'SIGKILL');
+  } catch {
+    // gone
   }
 }
 
 export default async function globalTeardown() {
   const appPid = process.env.TEST_APP_PID;
   if (appPid) {
-    // Kill the app and its child processes (minotari_node, wallet, etc.)
-    killChildProcessTree(Number(appPid));
+    killAppTree(Number(appPid));
   }
-  killTrackedPids();
+  const vitePid = process.env.TEST_VITE_PID;
+  if (vitePid) {
+    killPid(Number(vitePid));
+  }
 }

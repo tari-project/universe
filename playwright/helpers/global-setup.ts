@@ -39,7 +39,10 @@ function getBinaryPath(projectRoot: string): string {
   return candidates[0];
 }
 
-const APP_ID = 'com.tari.universe.alpha';
+// Dedicated test identifier — must match APPLICATION_FOLDER_ID under the
+// test-mode feature and the identifier in src-tauri/tauri.test.conf.json.
+// Never a real user profile, so it is safe to wipe between runs.
+const APP_ID = 'com.tari.universe.test';
 
 function getAppConfigDir(): string {
   switch (os.platform()) {
@@ -49,6 +52,49 @@ function getAppConfigDir(): string {
       return path.join(process.env.APPDATA || path.join(os.homedir(), 'AppData', 'Roaming'), APP_ID);
     default:
       return path.join(os.homedir(), '.config', APP_ID);
+  }
+}
+
+/** All per-identifier data roots the app writes to (config, data, cache, logs). */
+function getAppDataRoots(): string[] {
+  const home = os.homedir();
+  switch (os.platform()) {
+    case 'darwin':
+      return [
+        path.join(home, 'Library', 'Application Support', APP_ID),
+        path.join(home, 'Library', 'Caches', APP_ID),
+        path.join(home, 'Library', 'Logs', APP_ID),
+      ];
+    case 'win32': {
+      const roaming = process.env.APPDATA || path.join(home, 'AppData', 'Roaming');
+      const local = process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local');
+      return [path.join(roaming, APP_ID), path.join(local, APP_ID)];
+    }
+    default:
+      return [
+        path.join(home, '.config', APP_ID),
+        path.join(home, '.local', 'share', APP_ID),
+        path.join(home, '.cache', APP_ID),
+      ];
+  }
+}
+
+/**
+ * Wipe all test-app data (chain DB, wallet DB, configs, logs) so every run
+ * starts from a clean, deterministic state. Guarded by the dedicated test
+ * identifier — this never touches a real Tari Universe profile.
+ * Set KEEP_TEST_DATA=1 to skip (e.g. when iterating on a long-synced chain).
+ */
+function wipeTestData(): void {
+  if (process.env.KEEP_TEST_DATA) {
+    console.log('KEEP_TEST_DATA set: keeping existing test data.');
+    return;
+  }
+  for (const dir of getAppDataRoots()) {
+    if (fs.existsSync(dir)) {
+      console.log(`Wiping test data dir: ${dir}`);
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   }
 }
 
@@ -200,6 +246,18 @@ async function waitForWebSocket(port: number, timeout: number): Promise<void> {
 }
 
 export default async function globalSetup() {
+  // Playwright does NOT run globalTeardown when globalSetup throws, so any
+  // failure after spawning processes must clean them up here before rethrow.
+  try {
+    await runGlobalSetup();
+  } catch (err) {
+    const { default: globalTeardown } = await import('./global-teardown');
+    await globalTeardown().catch(() => {});
+    throw err;
+  }
+}
+
+async function runGlobalSetup() {
   const projectRoot = path.resolve(__dirname, '../..');
   const skipBackend = !!process.env.SKIP_BACKEND;
 
@@ -219,11 +277,24 @@ export default async function globalSetup() {
       TARI_NETWORK: 'localnet',
     };
     // Using spawnSync with explicit args array to avoid shell injection
-    const result = spawnSync('cargo', ['tauri', 'build', '--debug', '--no-bundle', '--features', 'test-mode'], {
-      cwd: projectRoot,
-      stdio: 'inherit',
-      env: buildEnv,
-    });
+    const result = spawnSync(
+      'cargo',
+      [
+        'tauri',
+        'build',
+        '--debug',
+        '--no-bundle',
+        '--features',
+        'test-mode',
+        '--config',
+        'src-tauri/tauri.test.conf.json',
+      ],
+      {
+        cwd: projectRoot,
+        stdio: 'inherit',
+        env: buildEnv,
+      }
+    );
     if (result.status !== 0) {
       throw new Error(`Build failed with exit code ${result.status}`);
     }
@@ -257,6 +328,7 @@ export default async function globalSetup() {
   if (skipBackend) {
     console.log('SKIP_BACKEND set: assuming backend is already running.');
   } else {
+    wipeTestData();
     preSeedConfig();
     preSeedCredentials();
 
@@ -269,8 +341,12 @@ export default async function globalSetup() {
     }
 
     console.log(`Launching Tauri backend: ${binaryPath} --headless`);
+    // detached: own process group on POSIX, so teardown can kill the whole
+    // tree (minotari_node, wallet, xmrig, ...) with one group signal even
+    // if children reparented.
     const appProcess = spawn(binaryPath, ['--headless'], {
       stdio: 'pipe',
+      detached: os.platform() !== 'win32',
       env: { ...process.env, RUST_LOG: 'info', TARI_NETWORK: 'localnet' },
     });
 
