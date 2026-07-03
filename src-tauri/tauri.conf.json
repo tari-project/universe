@@ -96,7 +96,7 @@
                 "resizable": true,
                 "fullscreen": false,
                 "transparent": false,
-                "visible": true,
+                "visible": false,
                 "center": true,
                 "useHttpsScheme": true,
                 "width": 1280,

@@ -21,6 +21,7 @@ export interface ConfigCore {
     remote_base_node_address: string;
     scheduler_events?: Record<string, SchedulerEvent> | null;
     should_auto_launch: boolean;
+    show_window_on_startup: boolean;
     use_tor: boolean;
     shutdown_mode: ShutdownMode;
     node_data_directory?: string;

@@ -475,6 +475,7 @@ fn main() {
             commands::confirm_exchange_address,
             commands::select_exchange_miner,
             commands::set_show_experimental_settings,
+            commands::set_show_window_on_startup,
             commands::set_should_always_use_system_language,
             commands::set_should_auto_launch,
             commands::set_tor_config,

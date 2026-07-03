@@ -77,6 +77,7 @@ pub struct ConfigCoreContent {
     exchange_id: String,
     scheduler_events: HashMap<String, ScheduledEventInfo>,
     shutdown_mode: ShutdownMode,
+    show_window_on_startup: bool,
     node_data_directory: Option<PathBuf>,
 }
 
@@ -137,6 +138,7 @@ impl Default for ConfigCoreContent {
             exchange_id: DEFAULT_EXCHANGE_ID.to_string(),
             scheduler_events: HashMap::new(),
             shutdown_mode: ShutdownMode::Tasktray,
+            show_window_on_startup: true,
             node_data_directory: None,
         }
     }
