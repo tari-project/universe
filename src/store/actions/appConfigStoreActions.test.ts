@@ -16,7 +16,11 @@ import i18next, { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
 import { MiningModeType, PauseOnBatteryModeState } from '@app/types/configs';
 import { setError } from './appStateStoreActions.ts';
-import { setApplicationLanguage, setShouldAlwaysUseSystemLanguage } from './appConfigStoreActions.ts';
+import {
+    setApplicationLanguage,
+    setShouldAlwaysUseSystemLanguage,
+    setShowWindowOnStartup,
+} from './appConfigStoreActions.ts';
 import { useConfigUIStore } from '../useAppConfigStore.ts';
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -533,6 +537,46 @@ describe('appConfigStoreActions', () => {
             expect(useConfigUIStore.getState().application_language).toBe('en');
             expect(changeLanguageMock).not.toHaveBeenCalled();
             expect(setErrorMock).toHaveBeenCalledWith('Could not resolve system language');
+        });
+    });
+
+    describe('show window on startup action', () => {
+        const invokeMock = invoke as unknown as ReturnType<typeof vi.fn>;
+        const setErrorMock = setError as unknown as ReturnType<typeof vi.fn>;
+
+        beforeEach(() => {
+            vi.clearAllMocks();
+            useConfigUIStore.setState((state) => ({ ...state, show_window_on_startup: true }));
+        });
+
+        it('optimistically updates the setting and persists it', async () => {
+            invokeMock.mockResolvedValue(undefined);
+
+            await setShowWindowOnStartup(false);
+
+            expect(useConfigUIStore.getState().show_window_on_startup).toBe(false);
+            expect(invokeMock).toHaveBeenCalledWith('set_show_window_on_startup', { showWindowOnStartup: false });
+        });
+
+        it('rolls back and surfaces an error when persistence fails', async () => {
+            invokeMock.mockRejectedValue(new Error('failed'));
+
+            await setShowWindowOnStartup(false);
+            await Promise.resolve();
+
+            expect(useConfigUIStore.getState().show_window_on_startup).toBe(true);
+            expect(setErrorMock).toHaveBeenCalledWith('Could not change startup window setting');
+        });
+
+        it('restores the previous value when persistence fails without a value change', async () => {
+            invokeMock.mockRejectedValue(new Error('failed'));
+            useConfigUIStore.setState((state) => ({ ...state, show_window_on_startup: false }));
+
+            await setShowWindowOnStartup(false);
+            await Promise.resolve();
+
+            expect(useConfigUIStore.getState().show_window_on_startup).toBe(false);
+            expect(setErrorMock).toHaveBeenCalledWith('Could not change startup window setting');
         });
     });
 

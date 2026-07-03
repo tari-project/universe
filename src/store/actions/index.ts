@@ -15,6 +15,7 @@ export {
     setMoneroAddress,
     setShouldAlwaysUseSystemLanguage,
     setShowExperimentalSettings,
+    setShowWindowOnStartup,
     setVisualMode,
 } from './appConfigStoreActions.ts';
 

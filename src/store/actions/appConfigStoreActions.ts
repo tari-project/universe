@@ -366,6 +366,16 @@ export const setShowExperimentalSettings = async (showExperimentalSettings: bool
     });
 };
 
+export const setShowWindowOnStartup = async (showWindowOnStartup: boolean) => {
+    const previousShowWindowOnStartup = useConfigUIStore.getState().show_window_on_startup;
+    useConfigUIStore.setState((c) => ({ ...c, show_window_on_startup: showWindowOnStartup }));
+    invoke('set_show_window_on_startup', { showWindowOnStartup }).catch((e) => {
+        console.error('Could not set show window on startup', e);
+        setError('Could not change startup window setting');
+        useConfigUIStore.setState((c) => ({ ...c, show_window_on_startup: previousShowWindowOnStartup }));
+    });
+};
+
 export const setDisplayMode = async (displayMode: displayMode) => {
     const previousDisplayMode = useConfigUIStore.getState().display_mode;
     useConfigUIStore.setState((c) => ({ ...c, display_mode: displayMode }));

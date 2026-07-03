@@ -96,6 +96,7 @@ describe('useAppConfigStore', () => {
             has_system_language_been_proposed: false,
             sharing_enabled: true,
             show_experimental_settings: false,
+            show_window_on_startup: true,
             should_always_use_system_language: false,
             visual_mode: true,
             wallet_ui_mode: WalletUIMode.Standard,
@@ -121,6 +122,10 @@ describe('useAppConfigStore', () => {
 
         it('has show_experimental_settings as false by default', () => {
             expect(configUIInitialState.show_experimental_settings).toBe(false);
+        });
+
+        it('has show_window_on_startup as true by default', () => {
+            expect(configUIInitialState.show_window_on_startup).toBe(true);
         });
 
         it('has visual_mode as true by default', () => {

@@ -207,6 +207,10 @@
     "description": "When enabled, the app will start automatically when you log in to your computer.",
     "title": "Auto-start on system boot"
   },
+  "show-window-on-startup": {
+    "description": "When enabled, Tari Universe opens its main window after startup. Turn this off to launch directly to the task tray.",
+    "title": "Show window on startup"
+  },
   "should-use-system-language": "Use system language",
   "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
   "stats-server-port": "Stats server port",

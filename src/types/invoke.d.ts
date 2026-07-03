@@ -26,6 +26,7 @@ declare module '@tauri-apps/api/core' {
     ): Promise<void>;
     function invoke(param: 'get_application_language'): Promise<string>;
     function invoke(param: 'set_should_auto_launch', payload: { shouldAutoLaunch: boolean }): Promise<void>;
+    function invoke(param: 'set_show_window_on_startup', payload: { showWindowOnStartup: boolean }): Promise<void>;
     function invoke(param: 'set_application_language', payload: { applicationLanguage: Language }): Promise<void>;
     function invoke(param: 'frontend_ready'): Promise<void>;
     function invoke(param: 'download_and_start_installer', payload: { id: string }): Promise<void>;

@@ -44,6 +44,7 @@ const configUIInitialState: UIConfigStoreState = {
     has_system_language_been_proposed: false,
     sharing_enabled: true,
     show_experimental_settings: false,
+    show_window_on_startup: true,
     should_always_use_system_language: false,
     visual_mode: true,
     wallet_ui_mode: WalletUIMode.Standard,

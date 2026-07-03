@@ -86,6 +86,7 @@ pub struct ConfigUIContent {
     sharing_enabled: bool,
     visual_mode: bool,
     show_experimental_settings: bool,
+    show_window_on_startup: bool,
     was_staged_security_modal_shown: bool, // TODO: Migrated to ConfigWallet, remove after some time
     wallet_ui_mode: WalletUIMode,
     feedback: HashMap<String, FeedbackPrompt>,
@@ -104,6 +105,7 @@ impl Default for ConfigUIContent {
             sharing_enabled: true,
             visual_mode: true,
             show_experimental_settings: false,
+            show_window_on_startup: true,
             was_staged_security_modal_shown: false,
             wallet_ui_mode: WalletUIMode::Standard,
             feedback: HashMap::from([
