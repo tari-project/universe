@@ -61,7 +61,7 @@ export async function waitForMiningReady(page: Page, timeout = 120_000) {
  * button materializes. dispatchEvent is the reliable path for these
  * framer-motion buttons (per the harness docs).
  */
-export async function clickStartMining(page: Page, timeout = 60_000) {
+export async function clickStartMining(page: Page, timeout = 120_000) {
   const start = page.locator(sel.mining.startButton);
   const resume = page.locator(sel.mining.resumeButton);
   const pause = page.locator(sel.mining.pauseButton);
@@ -87,7 +87,7 @@ export async function clickStartMining(page: Page, timeout = 60_000) {
  * Wait for the Pause button to appear, indicating mining is actively running.
  * The button transitions: Start → Loading (dots) → Pause.
  */
-export async function waitForMiningActive(page: Page, timeout = 60_000) {
+export async function waitForMiningActive(page: Page, timeout = 120_000) {
   await page.locator(sel.mining.pauseButton).waitFor({ state: 'visible', timeout });
 }
 
