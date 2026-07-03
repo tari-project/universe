@@ -220,21 +220,29 @@ playwright/
     ├── 08-receive-and-sync.spec.ts
     ├── 09-settings-sweep.spec.ts   # wallet/mining/pools/connections/experimental/release-notes tabs
     ├── 10-mcp-server.spec.ts       # describe.serial — token flows over real HTTP
-    └── 95-security-pin.spec.ts     # describe.serial — MUST run last (PIN is irreversible)
+    ├── 95-security-pin.spec.ts     # describe.serial — PIN gates (PIN is irreversible)
+    ├── 98-wallet-import.spec.ts    # replaces the wallet — after all history tests
+    └── 99-shutdown.spec.ts         # quits the backend — strictly last
 ```
 
 ### Suite ordering is load-bearing
 
-Files run alphabetically with `workers: 1`. Two constraints are encoded in
-the numbering, mirroring the QA suite's hard ordering rules
+Files run alphabetically with `workers: 1`. Several constraints are encoded
+in the numbering, mirroring the QA suite's hard ordering rules
 (`playwright/COVERAGE.md` maps the whole QA suite to these specs):
 
-1. **`95-security-pin.spec.ts` must stay last.** Setting the PIN is
-   irreversible for the profile; every earlier spec exercises the no-PIN
-   paths, then 95 verifies the PIN gates (send, seed words, sync with
-   phone, MCP reveal/transaction tier). New specs must sort before it.
+1. **`95-security-pin.spec.ts` runs after the no-PIN specs.** Setting the
+   PIN is irreversible for the profile; every earlier spec exercises the
+   no-PIN paths, then 95 verifies the PIN gates (send, seed words, sync
+   with phone, MCP reveal/transaction tier).
 2. **`10-mcp-server.spec.ts` runs pre-PIN deliberately** — it proves token
    reveal/copy work ungated while no PIN exists; the PIN-gated variants
    live in 95.
+3. **`98-wallet-import.spec.ts` runs after every history-dependent test.**
+   Import replaces the active wallet and its history with `SECOND_WALLET`,
+   so nothing that needs the main wallet's history can follow it.
+4. **`99-shutdown.spec.ts` is strictly last.** It drives the app's graceful
+   quit and asserts the backend + sidecars exit, so no test can run after
+   it. New specs must sort before 98/99.
 
 `vite.config.playwright.ts` at the repo root defines the import aliases that point `@tauri-apps/api/*` to the shim files. `src-tauri/tauri-remote-ui-patched/` is the vendored WS bridge plugin.

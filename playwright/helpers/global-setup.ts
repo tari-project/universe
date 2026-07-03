@@ -4,7 +4,7 @@ import path from 'path';
 import os from 'os';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { APP_ID, getAppConfigDir, getAppDataRoots, getAppCacheDir } from './app-dirs';
+import { APP_ID, getAppConfigDir, getAppDataDir, getAppDataRoots, getAppCacheDir } from './app-dirs';
 import { TEST_WALLET } from './test-wallet';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -12,10 +12,7 @@ const __dirname = path.dirname(__filename);
 
 function getBinaryPath(projectRoot: string): string {
   // cargo tauri build outputs to <project_root>/target, not src-tauri/target
-  const debugDirs = [
-    path.join(projectRoot, 'target', 'debug'),
-    path.join(projectRoot, 'src-tauri', 'target', 'debug'),
-  ];
+  const debugDirs = [path.join(projectRoot, 'target', 'debug'), path.join(projectRoot, 'src-tauri', 'target', 'debug')];
 
   const candidates: string[] = [];
   for (const debugDir of debugDirs) {
@@ -235,7 +232,7 @@ async function runGlobalSetup() {
   if (!skipBackend && !process.env.SKIP_BUILD) {
     console.log('Building Tauri app with test-mode feature (TARI_NETWORK=localnet)...');
     const buildEnv: Record<string, string> = {
-      ...process.env as Record<string, string>,
+      ...(process.env as Record<string, string>),
       CARGO_TERM_COLOR: 'always',
       TARI_NETWORK: 'localnet',
     };
@@ -314,6 +311,17 @@ async function runGlobalSetup() {
     });
 
     process.env.TEST_APP_PID = String(appProcess.pid);
+    // Also persist the pid to disk: env vars set here reach the workers by
+    // inheritance, but a file is the same worker-safe channel the harness
+    // already uses for xmrig_pid, and the shutdown spec reads it from a
+    // worker. Written under the app data dir (created on launch).
+    try {
+      const dataDir = getAppDataDir();
+      fs.mkdirSync(dataDir, { recursive: true });
+      fs.writeFileSync(path.join(dataDir, 'test_app_pid'), String(appProcess.pid));
+    } catch (e) {
+      console.warn(`Could not write test_app_pid file: ${(e as Error).message}`);
+    }
 
     appProcess.stdout?.on('data', (d: Buffer) => {
       process.stdout.write(`[tauri] ${d}`);

@@ -109,16 +109,38 @@ runs last** (file naming keeps it last; `workers: 1`, no shuffle).
 | Sync with Phone (desktop side: QR + identification code) | automated | `08-receive-and-sync` |
 | Wallet Connect / Aurora | manual | needs mobile device |
 
-## §8 Wallet Import — manual (for now)
+## §8 Wallet Import — automated, runs second-to-last
 
-Import needs a *second* valid localnet wallet's seed words. The app offers
-no "create wallet" path that hands back seed words without replacing the
-active wallet, so a static second test wallet must be generated and checked
-in (same process that produced `helpers/test-wallet.ts`). Tracked as a
-follow-up; until then import stays in the manual run.
+`98-wallet-import.spec.ts`. Import replaces the active wallet and its
+history, so it runs after every history-dependent test (right after
+`95-security-pin`, before `99-shutdown`). It types `SECOND_WALLET`'s seed
+words into Settings → Wallet, confirms the "Import new wallet" dialog,
+answers the PIN gate, and asserts the active address switches to the
+imported wallet's — in both the settings field and the Receive modal.
 
-## §9 Shutdown — partial
+`SECOND_WALLET` (in `helpers/test-wallet.ts`) is a fresh localnet wallet
+generated once via `CipherSeed::random()` through the same derivation the
+app uses on import (`SeedWordsWallet` → `KeyManager` →
+`TariAddress::new_dual_address` on LocalNet), so its address is exactly
+what the app produces. Recent birthday → fast scan; no history, which is
+fine because import runs last.
 
-Global teardown SIGTERMs the app and would surface hung children as a
-timeout, but there is no explicit assertion that every sidecar exited.
-The manual check (Activity Monitor sweep) stays.
+| QA item | Status | Where |
+|---|---|---|
+| Import replaces the wallet; address updates to the imported wallet | automated | `98-wallet-import` |
+| Balance updates to the imported wallet after scan | manual | fresh wallet has no funds; the address switch is the deterministic signal |
+| Importing an *old* wallet (hours-long scan) | manual | impractical to automate; fresh-wallet trick used instead |
+
+## §9 Shutdown — automated, runs last
+
+`99-shutdown.spec.ts`. Starts mining to bring the sidecars up, then drives
+the app's own graceful-quit command (`exit_application`) and asserts the
+app process **and** every sidecar exit. The app is spawned detached (its
+own process group), so the check is name-agnostic: after the quit, the
+app's process group must be empty. A lingering sidecar fails the test with
+the offending process names, rather than being silently reaped by teardown.
+
+| QA item | Status | Where |
+|---|---|---|
+| Graceful quit stops node, proxy, wallet, xmrig (+ tor/GPU when present) | automated | `99-shutdown` |
+| Windows process-tree teardown | manual | the pgid check is POSIX-only (`test.skip` on win32) |
