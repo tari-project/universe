@@ -78,8 +78,9 @@ test.describe.serial('MCP Server', () => {
     const client = new McpClient(baseUrl(MCP_PORT), token);
     await client.initialize();
 
-    const tools = await client.listTools();
-    for (const expected of [
+    // Poll the listing until the full tool set is registered: on a cold
+    // backend the first tools/list can land before every tool is wired up.
+    const expectedTools = [
       'get_wallet_address',
       'get_wallet_balance',
       'get_transaction_history',
@@ -89,10 +90,21 @@ test.describe.serial('MCP Server', () => {
       'start_mining',
       'stop_mining',
       'send_transaction',
-    ]) {
-      expect(tools).toContain(expected);
-    }
+    ];
+    await expect
+      .poll(() => client.listTools().catch(() => [] as string[]), { timeout: 30_000 })
+      .toEqual(expect.arrayContaining(expectedTools));
 
+    // A read-tier tool depends on the WALLET being started. On a cold
+    // backend (every CI run is one) the wallet is still spinning up when
+    // this test runs, so get_wallet_balance transiently returns an error
+    // result — poll until it succeeds rather than asserting on the first
+    // call. This is the read an agent would retry too.
+    await expect
+      .poll(async () => (await client.callTool('get_wallet_balance').catch(() => ({ isError: true }))).isError, {
+        timeout: 120_000,
+      })
+      .toBe(false);
     const balance = await client.callTool('get_wallet_balance');
     expect(balance.isError).toBe(false);
     expect(balance.text.length).toBeGreaterThan(0);
