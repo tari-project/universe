@@ -5,7 +5,9 @@ import { openSettingsTab } from '../helpers/settings';
 import type { Page } from '@playwright/test';
 
 async function readClipboard(page: Page): Promise<string> {
-  return page.evaluate(() => (window as unknown as { __PLAYWRIGHT_CLIPBOARD__?: string }).__PLAYWRIGHT_CLIPBOARD__ ?? '');
+  return page.evaluate(
+    () => (window as unknown as { __PLAYWRIGHT_CLIPBOARD__?: string }).__PLAYWRIGHT_CLIPBOARD__ ?? ''
+  );
 }
 
 test.describe('Receive Flow', () => {

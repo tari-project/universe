@@ -1,10 +1,5 @@
 import { test, expect } from '../helpers/fixtures';
-import {
-  ensureBalance,
-  getWalletBalance,
-  waitForWalletReady,
-  dismissDialogs,
-} from '../helpers/wait-for';
+import { ensureBalance, getWalletBalance, waitForWalletReady, dismissDialogs } from '../helpers/wait-for';
 import { waitForTauriReady, waitForAppReady } from '../helpers/state';
 import { sel } from '../helpers/selectors';
 import type { Page } from '@playwright/test';
@@ -63,9 +58,7 @@ test.describe('Wallet Basics', () => {
     expect(after).toBeGreaterThanOrEqual(before - 1);
   });
 
-  test('history filters: all activity by default, rewards and transactions filter rows', async ({
-    appPage: page,
-  }) => {
+  test('history filters: all activity by default, rewards and transactions filter rows', async ({ appPage: page }) => {
     test.setTimeout(600_000);
     // Mining guarantees coinbase (reward) rows exist.
     await ensureBalance(page, 1, 300_000);

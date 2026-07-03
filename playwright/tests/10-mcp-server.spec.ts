@@ -2,11 +2,7 @@ import { test, expect } from '../helpers/fixtures';
 import { sel } from '../helpers/selectors';
 import { openSettingsTab } from '../helpers/settings';
 import { McpClient } from '../helpers/mcp-client';
-import {
-  waitForMiningReady,
-  waitForMiningActive,
-  waitForMiningStopped,
-} from '../helpers/wait-for';
+import { waitForMiningReady, waitForMiningActive, waitForMiningStopped } from '../helpers/wait-for';
 import type { Page } from '@playwright/test';
 
 const MCP_PORT = 19222;
@@ -157,9 +153,7 @@ test.describe.serial('MCP Server', () => {
     await waitForServerStatus(page, new RegExp(`running.*${ALT_PORT}`, 'i'), 60_000);
 
     // Old port refuses connections; new port serves the same token.
-    await expect(
-      fetch(`${baseUrl(MCP_PORT)}/mcp`, { method: 'POST' })
-    ).rejects.toThrow();
+    await expect(fetch(`${baseUrl(MCP_PORT)}/mcp`, { method: 'POST' })).rejects.toThrow();
 
     const client = new McpClient(baseUrl(ALT_PORT), token);
     await client.initialize();
@@ -182,8 +176,6 @@ test.describe.serial('MCP Server', () => {
     await expect(page.locator(sel.mcp.tokenValue)).not.toBeVisible({ timeout: 10_000 });
 
     // The server is really gone.
-    await expect(
-      fetch(`${baseUrl(MCP_PORT)}/mcp`, { method: 'POST' })
-    ).rejects.toThrow();
+    await expect(fetch(`${baseUrl(MCP_PORT)}/mcp`, { method: 'POST' })).rejects.toThrow();
   });
 });

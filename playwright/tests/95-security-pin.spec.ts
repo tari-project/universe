@@ -34,9 +34,10 @@ test.describe.serial('Security PIN', () => {
     while (Date.now() < deadline) {
       await addressInput.fill('');
       await addressInput.fill(TEST_WALLET.address);
-      const ok = await valid
-        .waitFor({ state: 'visible', timeout: 10_000 })
-        .then(() => true, () => false);
+      const ok = await valid.waitFor({ state: 'visible', timeout: 10_000 }).then(
+        () => true,
+        () => false
+      );
       if (ok) return;
     }
     throw new Error(`Address validation did not resolve within ${timeout}ms`);
@@ -202,11 +203,7 @@ test.describe.serial('Security PIN', () => {
     await client.initialize();
 
     // --- Deny: the tool call returns an error, no PIN is ever asked ---
-    const denyCall = client.callTool(
-      'send_transaction',
-      { destination: TEST_WALLET.address, amount: '1' },
-      150_000
-    );
+    const denyCall = client.callTool('send_transaction', { destination: TEST_WALLET.address, amount: '1' }, 150_000);
     const denyCountdown = page.locator(sel.mcp.txCountdown);
     await denyCountdown.waitFor({ state: 'visible', timeout: 30_000 });
     await page.locator('[data-testid="modal-back"]').click({ timeout: 10_000 });
@@ -215,11 +212,7 @@ test.describe.serial('Security PIN', () => {
     expect(denied.text).toMatch(/denied/i);
 
     // --- Approve: confirm → PIN → the transaction goes through ---
-    const approveCall = client.callTool(
-      'send_transaction',
-      { destination: TEST_WALLET.address, amount: '1' },
-      150_000
-    );
+    const approveCall = client.callTool('send_transaction', { destination: TEST_WALLET.address, amount: '1' }, 150_000);
     await denyCountdown.waitFor({ state: 'visible', timeout: 30_000 });
     await page.locator(sel.send.confirmButton).click({ timeout: 10_000 });
 

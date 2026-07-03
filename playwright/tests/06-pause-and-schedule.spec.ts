@@ -27,9 +27,10 @@ async function clickPauseOption(page: Page, optionSelector: string) {
       return;
     }
     await pauseButton.click({ timeout: 10_000, force: true }).catch(() => {});
-    const visible = await option
-      .waitFor({ state: 'visible', timeout: 5_000 })
-      .then(() => true, () => false);
+    const visible = await option.waitFor({ state: 'visible', timeout: 5_000 }).then(
+      () => true,
+      () => false
+    );
     if (visible) {
       await option.click({ timeout: 5_000 });
       return;
@@ -72,7 +73,10 @@ async function setTimePicker(page: Page, pickerSelector: string, time: PickerTim
 
   // Close the floating options (click-outside dismiss).
   await page.keyboard.press('Escape');
-  await options.first().waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
+  await options
+    .first()
+    .waitFor({ state: 'hidden', timeout: 5_000 })
+    .catch(() => {});
 }
 
 /** Open the scheduler modal from the mining sidebar. */
