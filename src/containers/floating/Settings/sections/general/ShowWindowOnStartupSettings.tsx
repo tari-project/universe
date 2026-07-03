@@ -12,7 +12,7 @@ import {
 
 export default function ShowWindowOnStartupSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-    const showWindowOnStartup = useConfigUIStore((s) => s.show_window_on_startup);
+    const showWindowOnStartup = useConfigUIStore((s) => s.show_window_on_startup) ?? true;
 
     return (
         <SettingsGroupWrapper>
