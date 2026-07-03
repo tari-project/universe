@@ -43,8 +43,10 @@ test.describe('Wallet Import', () => {
     await expect(page.getByText(/Import new wallet/i).first()).toBeVisible({ timeout: 10_000 });
     await page.locator(sel.settings.importConfirm).click({ timeout: 5_000 });
 
-    // Signing the imported seed prompts for the PIN when one is set.
-    await answerPinPromptIfShown(page, TEST_PIN);
+    // Signing the imported seed prompts for the PIN when one is set — but
+    // import_seed_words runs shutdown_phases FIRST, so the prompt can arrive
+    // tens of seconds after the confirm click, not immediately.
+    await answerImportPin(page, TEST_PIN, addressInput);
 
     // --- The active address becomes the imported wallet's ---
     // Derived from the seed immediately on import (before the scan), so
@@ -61,17 +63,22 @@ test.describe('Wallet Import', () => {
 });
 
 /**
- * Answer the PIN prompt if it appears within a short window; otherwise
- * assume no PIN is set and move on. Keeps the spec valid both in the full
- * suite (PIN set by 95) and when run alone.
+ * Answer the PIN prompt raised during import. The gate only appears after
+ * import_seed_words has torn down the wallet/mining phases, so it can lag
+ * the confirm click by tens of seconds — poll for it generously. If instead
+ * the address switches first (no PIN set, e.g. running this spec alone),
+ * the import already completed and there is nothing to answer.
  */
-async function answerPinPromptIfShown(page: Page, pin: string) {
-  const shown = await page
-    .locator(sel.pin.input)
-    .waitFor({ state: 'visible', timeout: 15_000 })
-    .then(
-      () => true,
-      () => false
-    );
-  if (shown) await answerPinPrompt(page, pin);
+async function answerImportPin(page: Page, pin: string, addressInput: ReturnType<Page['locator']>) {
+  const pinInput = page.locator(sel.pin.input);
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    if (await pinInput.isVisible().catch(() => false)) {
+      await answerPinPrompt(page, pin);
+      return;
+    }
+    const value = await addressInput.inputValue().catch(() => '');
+    if (value && value !== TEST_WALLET.address) return; // imported without a PIN
+    await page.waitForTimeout(1_000);
+  }
 }
