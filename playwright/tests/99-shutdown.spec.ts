@@ -21,26 +21,27 @@ function readAppPid(): number {
 /**
  * Shutdown — the LAST test in the suite. Exercises the QA "Closing/Quit
  * Miner" sweep: a graceful quit must stop every sidecar (minotari node +
- * merge-mining proxy, wallet, xmrig, tor, GPU miner), not leave them
- * orphaned. Because this kills the shared backend, nothing can run after
- * it (file name keeps it last; global teardown then finds nothing to do).
+ * merge-mining proxy, wallet, xmrig, tor, GPU miner), leaving nothing
+ * orphaned. Because it quits the shared backend, nothing can run after it
+ * (file name keeps it last; global teardown then finds nothing to do).
  *
- * The app is spawned detached in global-setup, so it leads its own process
- * group and every sidecar inherits that pgid (this is exactly what lets
- * teardown reap the whole tree with one group-signal). So "did the quit
- * clean up?" = "is the app's process group empty afterwards?" — a
- * name-agnostic check that survives child reparenting.
+ * Each sidecar runs under a `process-wrapper` that calls setpgid(0,0), so
+ * the sidecars sit in their OWN process groups — the app's group only
+ * holds the app and the wrappers. A process-group check would therefore
+ * miss an orphaned miner. So instead we snapshot the app's whole descendant
+ * tree (wrappers AND the real sidecars) while it's intact, then assert
+ * every one of those exact processes is gone after the quit. Keying on the
+ * recorded (pid, comm) pair also guards against PID reuse.
  */
 
 interface Proc {
   pid: number;
-  pgid: number;
+  ppid: number;
   comm: string;
 }
 
-/** Processes currently in the given process group (POSIX). */
-function groupMembers(pgid: number): Proc[] {
-  const out = execFileSync('ps', ['-o', 'pid=,pgid=,comm=', '-ax'], {
+function snapshotProcs(): Proc[] {
+  const out = execFileSync('ps', ['-o', 'pid=,ppid=,comm=', '-ax'], {
     encoding: 'utf-8',
     maxBuffer: 8 * 1024 * 1024,
   });
@@ -48,10 +49,41 @@ function groupMembers(pgid: number): Proc[] {
   for (const line of out.split('\n')) {
     const m = line.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
     if (!m) continue;
-    const p = { pid: Number(m[1]), pgid: Number(m[2]), comm: m[3] };
-    if (p.pgid === pgid) procs.push(p);
+    procs.push({ pid: Number(m[1]), ppid: Number(m[2]), comm: m[3] });
   }
   return procs;
+}
+
+/** All descendants of `rootPid` (children, grandchildren, ...) as pid→comm. */
+function descendantsOf(rootPid: number): Map<number, string> {
+  const procs = snapshotProcs();
+  const childrenByParent = new Map<number, Proc[]>();
+  for (const p of procs) {
+    const arr = childrenByParent.get(p.ppid) ?? [];
+    arr.push(p);
+    childrenByParent.set(p.ppid, arr);
+  }
+  const found = new Map<number, string>();
+  const queue = [rootPid];
+  while (queue.length) {
+    const pid = queue.shift()!;
+    for (const child of childrenByParent.get(pid) ?? []) {
+      if (found.has(child.pid)) continue;
+      found.set(child.pid, child.comm);
+      queue.push(child.pid);
+    }
+  }
+  return found;
+}
+
+/** Current comm for a pid, or null if it is no longer running. */
+function commOf(pid: number): string | null {
+  try {
+    const out = execFileSync('ps', ['-o', 'comm=', '-p', String(pid)], { encoding: 'utf-8' }).trim();
+    return out || null;
+  } catch {
+    return null;
+  }
 }
 
 function isAlive(pid: number): boolean {
@@ -64,7 +96,7 @@ function isAlive(pid: number): boolean {
 }
 
 /** Fire the app's graceful-quit command; the app exits mid-call, so the
- *  invoke never resolves — don't await a response, just dispatch it. */
+ *  invoke never resolves — dispatch it without awaiting a response. */
 async function quitApp(page: Page) {
   await page
     .evaluate(() => {
@@ -78,13 +110,11 @@ async function quitApp(page: Page) {
 
 test.describe('Shutdown', () => {
   test('graceful quit stops the app and every sidecar', async ({ appPage: page }) => {
-    test.skip(process.platform === 'win32', 'process-group reaping is POSIX-only');
+    test.skip(process.platform === 'win32', 'descendant reaping check is POSIX-only');
     test.setTimeout(300_000);
 
     const appPid = readAppPid();
     expect(appPid, 'app pid is recorded by global-setup').toBeGreaterThan(0);
-    // Detached spawn makes the app its own group leader: pgid == its pid.
-    const pgid = appPid;
 
     // --- Bring the sidecars up: mining guarantees xmrig alongside the
     //     node, proxy and wallet. ---
@@ -92,29 +122,31 @@ test.describe('Shutdown', () => {
     await clickStartMining(page);
     await waitForMiningActive(page, 120_000);
 
-    // Precondition: the app has spawned sidecars in its group. If this is
-    // empty the test proves nothing, so assert real children exist first.
-    const before = groupMembers(pgid).filter((p) => p.pid !== appPid);
-    expect(before.length, `sidecars in the app group: ${before.map((p) => p.comm).join(', ')}`).toBeGreaterThan(0);
+    // Snapshot the full tree while it is intact. Precondition: the app has
+    // actually spawned sidecars (otherwise the test proves nothing).
+    const tree = descendantsOf(appPid);
+    expect(tree.size, `descendants of the app: ${[...tree.values()].join(', ')}`).toBeGreaterThan(0);
 
     // --- Graceful quit (the app's own shutdown path) ---
     await quitApp(page);
 
-    // --- The app process and every sidecar must be gone ---
+    // --- The app and every recorded descendant must exit ---
     const deadline = Date.now() + 120_000;
-    let lingering: Proc[] = [];
     let appGone = false;
+    let leaks: string[] = [];
     while (Date.now() < deadline) {
       appGone = !isAlive(appPid);
-      lingering = groupMembers(pgid).filter((p) => p.pid !== appPid);
-      if (appGone && lingering.length === 0) break;
+      // A recorded pid leaks only if it is still alive AND still the same
+      // process (its comm is unchanged) — this ignores PID reuse.
+      leaks = [];
+      for (const [pid, comm] of tree) {
+        if (isAlive(pid) && commOf(pid) === comm) leaks.push(`${comm}(${pid})`);
+      }
+      if (appGone && leaks.length === 0) break;
       await new Promise((r) => setTimeout(r, 2_000));
     }
 
     expect(appGone, 'app process exited after graceful quit').toBe(true);
-    expect(
-      lingering.length,
-      `orphaned sidecars after quit: ${lingering.map((p) => `${p.comm}(${p.pid})`).join(', ')}`
-    ).toBe(0);
+    expect(leaks.length, `orphaned processes after quit: ${leaks.join(', ')}`).toBe(0);
   });
 });
