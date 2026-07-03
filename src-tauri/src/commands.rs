@@ -184,7 +184,21 @@ pub async fn frontend_ready(
     EventsEmitter::load_app_handle(app.clone()).await;
     FrontendReadyChannel::current().set_ready();
 
-    if *ConfigCore::content().await.show_window_on_startup() {
+    let is_headless = {
+        #[cfg(feature = "test-mode")]
+        {
+            use tauri_plugin_cli::CliExt;
+            app.cli().matches().as_ref().is_ok_and(|m| {
+                m.args
+                    .get("headless")
+                    .is_some_and(|arg| arg.occurrences > 0)
+            })
+        }
+        #[cfg(not(feature = "test-mode"))]
+        false
+    };
+
+    if !is_headless && *ConfigCore::content().await.show_window_on_startup() {
         match app.get_webview_window("main") {
             Some(window) => {
                 if let Err(err) = window.show() {
