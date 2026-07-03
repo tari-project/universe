@@ -25,13 +25,30 @@ export interface ToolResult {
  * HTTP response (even a 401) means the listener is up; only a
  * connection-level error keeps us waiting.
  */
+
+/**
+ * The connection error code for a fetch failure, or undefined for anything
+ * that isn't a network error. Node's fetch wraps a refused connection as a
+ * TypeError whose `cause.code` is ECONNREFUSED, so key off cause.code, not
+ * the error name.
+ */
+function connErrorCode(err: unknown): string | undefined {
+  const e = err as { cause?: { code?: string }; code?: string } | undefined;
+  return e?.cause?.code ?? e?.code;
+}
+
+const RETRYABLE_CONN_CODES = new Set(['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT']);
+
 export async function waitForMcpUp(port: number, timeoutMs = 30_000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
       await fetch(`http://127.0.0.1:${port}/mcp`, { method: 'POST' });
       return; // connected — the socket is listening
-    } catch {
+    } catch (err) {
+      // Retry only on connection errors (server not up yet); let a real bug
+      // (e.g. a malformed URL → TypeError with no cause.code) surface fast.
+      if (!RETRYABLE_CONN_CODES.has(connErrorCode(err) ?? '')) throw err;
       await new Promise((r) => setTimeout(r, 500));
     }
   }
@@ -45,8 +62,13 @@ export async function waitForMcpDown(port: number, timeoutMs = 30_000): Promise<
     try {
       await fetch(`http://127.0.0.1:${port}/mcp`, { method: 'POST' });
       await new Promise((r) => setTimeout(r, 500)); // still up
-    } catch {
-      return; // connection refused — the listener is gone
+    } catch (err) {
+      const code = connErrorCode(err);
+      if (code === 'ECONNREFUSED') return; // listener is gone
+      // A transient network blip is not proof the server stopped — keep
+      // polling; anything that isn't a connection error is a real bug.
+      if (code !== 'ECONNRESET' && code !== 'ETIMEDOUT') throw err;
+      await new Promise((r) => setTimeout(r, 500));
     }
   }
   throw new Error(`MCP server still listening on port ${port} after ${timeoutMs}ms`);
@@ -150,7 +172,7 @@ export class McpClient {
         return await fn();
       } catch (e) {
         lastErr = e;
-        await new Promise((r) => setTimeout(r, delayMs));
+        if (i < attempts - 1) await new Promise((r) => setTimeout(r, delayMs));
       }
     }
     throw new Error(`${label} failed after ${attempts} attempts: ${String(lastErr)}`);
