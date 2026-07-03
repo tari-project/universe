@@ -1,7 +1,7 @@
 import { test, expect } from '../helpers/fixtures';
 import { sel } from '../helpers/selectors';
-import { openSettingsTab } from '../helpers/settings';
-import { McpClient } from '../helpers/mcp-client';
+import { openSettingsTab, setToggleState } from '../helpers/settings';
+import { McpClient, waitForMcpUp, waitForMcpDown } from '../helpers/mcp-client';
 import { waitForMiningReady, waitForMiningActive, waitForMiningStopped } from '../helpers/wait-for';
 import type { Page } from '@playwright/test';
 
@@ -33,9 +33,11 @@ test.describe.serial('MCP Server', () => {
     await toggle.waitFor({ state: 'visible', timeout: 15_000 });
     await expect(toggle).not.toBeChecked(); // off by default
 
-    await toggle.locator('..').click({ timeout: 5_000 });
-    await expect(toggle).toBeChecked({ timeout: 15_000 });
+    await setToggleState(page, sel.mcp.serverToggle, true);
     await waitForServerStatus(page, new RegExp(`running.*${MCP_PORT}`, 'i'));
+    // Gate on the real listener, not just the UI status text: later tests
+    // (and the token below) act against the socket.
+    await waitForMcpUp(MCP_PORT, 30_000);
 
     // Token renders redacted: tu_ prefix + bullets, no full token in the DOM.
     const tokenValue = page.locator(sel.mcp.tokenValue);
@@ -127,15 +129,13 @@ test.describe.serial('MCP Server', () => {
     const client = new McpClient(baseUrl(MCP_PORT), token);
     await client.initialize();
 
-    await readTier.locator('..').click({ timeout: 5_000 });
-    await expect(readTier).not.toBeChecked({ timeout: 10_000 });
+    await setToggleState(page, sel.mcp.tierRead, false);
 
     const blocked = await client.callTool('get_wallet_balance');
     expect(blocked.isError).toBe(true);
     expect(blocked.text).toMatch(/read tier is disabled/i);
 
-    await readTier.locator('..').click({ timeout: 5_000 });
-    await expect(readTier).toBeChecked({ timeout: 10_000 });
+    await setToggleState(page, sel.mcp.tierRead, true);
 
     const allowed = await client.callTool('get_wallet_balance');
     expect(allowed.isError).toBe(false);
@@ -152,17 +152,22 @@ test.describe.serial('MCP Server', () => {
     await portInput.press('Enter');
     await waitForServerStatus(page, new RegExp(`running.*${ALT_PORT}`, 'i'), 60_000);
 
-    // Old port refuses connections; new port serves the same token.
-    await expect(fetch(`${baseUrl(MCP_PORT)}/mcp`, { method: 'POST' })).rejects.toThrow();
+    // Wait for the real listeners to settle: the new port must be up and the
+    // old one refused before we probe them (the socket lags the UI text).
+    await waitForMcpUp(ALT_PORT, 60_000);
+    await waitForMcpDown(MCP_PORT, 60_000);
 
     const client = new McpClient(baseUrl(ALT_PORT), token);
     await client.initialize();
     expect(await client.listTools()).toContain('get_wallet_balance');
 
-    // Restore the default port.
+    // Restore the default port and confirm it is actually serving again, so
+    // the following tests start from a live socket on MCP_PORT.
     await portInput.fill(String(MCP_PORT));
     await portInput.press('Enter');
     await waitForServerStatus(page, new RegExp(`running.*${MCP_PORT}`, 'i'), 60_000);
+    await waitForMcpUp(MCP_PORT, 60_000);
+    await waitForMcpDown(ALT_PORT, 60_000);
   });
 
   test('revoke clears the token, disables MCP and stops the server', async ({ appPage: page }) => {
@@ -175,7 +180,7 @@ test.describe.serial('MCP Server', () => {
     await expect(page.locator(sel.mcp.serverToggle)).not.toBeChecked({ timeout: 15_000 });
     await expect(page.locator(sel.mcp.tokenValue)).not.toBeVisible({ timeout: 10_000 });
 
-    // The server is really gone.
-    await expect(fetch(`${baseUrl(MCP_PORT)}/mcp`, { method: 'POST' })).rejects.toThrow();
+    // The server is really gone (poll until the listener actually stops).
+    await waitForMcpDown(MCP_PORT, 30_000);
   });
 });

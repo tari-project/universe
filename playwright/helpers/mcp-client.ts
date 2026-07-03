@@ -17,6 +17,41 @@ export interface ToolResult {
   text: string;
 }
 
+/**
+ * Poll until the MCP server is actually accepting connections on `port`.
+ * The in-app UI status text ("running on port N") flips when the config
+ * updates, which can lead the real socket by a beat — on a loaded runner
+ * that gap is enough for an immediate client call to hit ECONNREFUSED. Any
+ * HTTP response (even a 401) means the listener is up; only a
+ * connection-level error keeps us waiting.
+ */
+export async function waitForMcpUp(port: number, timeoutMs = 30_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      await fetch(`http://127.0.0.1:${port}/mcp`, { method: 'POST' });
+      return; // connected — the socket is listening
+    } catch {
+      await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+  throw new Error(`MCP server did not start listening on port ${port} within ${timeoutMs}ms`);
+}
+
+/** Poll until the MCP server on `port` stops accepting connections. */
+export async function waitForMcpDown(port: number, timeoutMs = 30_000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      await fetch(`http://127.0.0.1:${port}/mcp`, { method: 'POST' });
+      await new Promise((r) => setTimeout(r, 500)); // still up
+    } catch {
+      return; // connection refused — the listener is gone
+    }
+  }
+  throw new Error(`MCP server still listening on port ${port} after ${timeoutMs}ms`);
+}
+
 export class McpClient {
   private sessionId: string | null = null;
   private nextId = 1;

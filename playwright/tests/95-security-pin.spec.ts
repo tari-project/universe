@@ -1,10 +1,10 @@
 import { test, expect } from '../helpers/fixtures';
 import { sel } from '../helpers/selectors';
 import { TEST_WALLET } from '../helpers/test-wallet';
-import { openSettingsTab } from '../helpers/settings';
+import { openSettingsTab, setToggleState } from '../helpers/settings';
 import { enterPinDigits, answerPinPrompt, TEST_PIN, WRONG_PIN } from '../helpers/pin';
 import { ensureBalance } from '../helpers/wait-for';
-import { McpClient } from '../helpers/mcp-client';
+import { McpClient, waitForMcpUp } from '../helpers/mcp-client';
 import type { Page } from '@playwright/test';
 
 /**
@@ -169,13 +169,11 @@ test.describe.serial('Security PIN', () => {
     await openSettingsTab(page, 'mcp');
 
     // 10-mcp-server revoked the token, so MCP is disabled — enable it
-    // fresh; a new token gets generated.
-    const toggle = page.locator(sel.mcp.serverToggle);
-    await toggle.waitFor({ state: 'visible', timeout: 15_000 });
-    if (!(await toggle.isChecked())) {
-      await toggle.locator('..').click({ timeout: 5_000 });
-      await expect(toggle).toBeChecked({ timeout: 15_000 });
-    }
+    // fresh; a new token gets generated. Gate on the real listener so the
+    // send test's client (below) doesn't race the socket coming up.
+    await page.locator(sel.mcp.serverToggle).waitFor({ state: 'visible', timeout: 15_000 });
+    await setToggleState(page, sel.mcp.serverToggle, true);
+    await waitForMcpUp(19222, 30_000);
 
     // Reveal now runs through the PIN prompt.
     await page.locator(sel.mcp.tokenReveal).click({ timeout: 10_000 });
@@ -189,6 +187,9 @@ test.describe.serial('Security PIN', () => {
     const txTier = page.locator(sel.mcp.tierTransactions);
     await txTier.waitFor({ state: 'visible', timeout: 15_000 });
     await expect(txTier).not.toBeChecked(); // off by default
+    // The tier toggle opens a PIN prompt; click once and answer it, then
+    // confirm the state took. (Don't use the converging helper here — each
+    // extra click would raise another PIN prompt.)
     await txTier.locator('..').click({ timeout: 5_000 });
     await page.locator(sel.pin.input).waitFor({ state: 'visible', timeout: 15_000 });
     await answerPinPrompt(page, TEST_PIN);
@@ -199,6 +200,10 @@ test.describe.serial('Security PIN', () => {
     test.setTimeout(600_000);
     expect(mcpToken, 'token captured by the reveal test').toMatch(/^tu_/);
 
+    // Fresh page (fixture): make sure the server socket is up before the
+    // client connects — the UI enabled it in the previous test, but the
+    // listener readiness is what this raw HTTP client actually needs.
+    await waitForMcpUp(19222, 30_000);
     const client = new McpClient('http://127.0.0.1:19222', mcpToken);
     await client.initialize();
 
