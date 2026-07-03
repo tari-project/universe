@@ -68,7 +68,11 @@ export const CpuPoolsSettings = () => {
                 </SettingsGroupContent>
 
                 <SettingsGroupAction>
-                    <ToggleSwitch checked={isCpuPoolEnabled} onChange={(e) => handleToggleCpuPool(e.target.checked)} />
+                    <ToggleSwitch
+                        checked={isCpuPoolEnabled}
+                        onChange={(e) => handleToggleCpuPool(e.target.checked)}
+                        data-testid="pool-toggle-cpu"
+                    />
                 </SettingsGroupAction>
             </SettingsGroup>
 

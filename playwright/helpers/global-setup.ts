@@ -115,7 +115,13 @@ function getWalletConfig() {
     tari_wallets: [TEST_WALLET.walletId],
     monero_address: '49aN3cwox5jCz9grdZmd5KTYggXrtVKRAdpr4wTba27HBxw4d29qfMj6rMNPNgAPhPgEyXEGWiNyZYLAKdPjn7CUPybeYYA',
     wxtm_addresses: {},
-    monero_address_is_generated: true,
+    // The fixture uses an EXTERNAL Monero address (no generated Monero
+    // seed in the credential store). If this were `true`, create_pin would
+    // try to encipher a Monero seed that was never seeded and fail
+    // ("Keyring had no entry for ... monero"). PIN validation still keys
+    // off the Tari seed (tari_wallet_details is set), so every PIN gate
+    // works; only Monero-seed reveal is out of scope (see COVERAGE.md).
+    monero_address_is_generated: false,
     keyring_accessed: false,
     wallet_migration_nonce: 1,
     external_tari_addresses_book: {},

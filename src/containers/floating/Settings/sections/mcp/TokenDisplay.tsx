@@ -131,19 +131,37 @@ export default function TokenDisplay() {
                     </SettingsGroupTitle>
                     <Typography variant="p">{t('mcp.token-display.description')}</Typography>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                        <code style={{ fontSize: 12, wordBreak: 'break-all' }}>{displayToken}</code>
+                        <code style={{ fontSize: 12, wordBreak: 'break-all' }} data-testid="mcp-token-value">
+                            {displayToken}
+                        </code>
                     </div>
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                        <button onClick={handleReveal} style={{ fontSize: 11, cursor: 'pointer' }}>
+                        <button
+                            onClick={handleReveal}
+                            style={{ fontSize: 11, cursor: 'pointer' }}
+                            data-testid="mcp-token-reveal"
+                        >
                             {revealed ? t('mcp.token-display.hide') : t('mcp.token-display.reveal')}
                         </button>
-                        <button onClick={handleCopy} style={{ fontSize: 11, cursor: 'pointer' }}>
+                        <button
+                            onClick={handleCopy}
+                            style={{ fontSize: 11, cursor: 'pointer' }}
+                            data-testid="mcp-token-copy"
+                        >
                             {copied ? t('mcp.token-display.copied') : t('mcp.token-display.copy')}
                         </button>
-                        <button onClick={handleRefreshExpiry} style={{ fontSize: 11, cursor: 'pointer' }}>
+                        <button
+                            onClick={handleRefreshExpiry}
+                            style={{ fontSize: 11, cursor: 'pointer' }}
+                            data-testid="mcp-token-refresh"
+                        >
                             {t('mcp.token-display.refresh-expiry')}
                         </button>
-                        <button onClick={handleRevoke} style={{ fontSize: 11, cursor: 'pointer', color: '#e55' }}>
+                        <button
+                            onClick={handleRevoke}
+                            style={{ fontSize: 11, cursor: 'pointer', color: '#e55' }}
+                            data-testid="mcp-token-revoke"
+                        >
                             {t('mcp.token-display.revoke')}
                         </button>
                     </div>

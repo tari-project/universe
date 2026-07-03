@@ -199,6 +199,9 @@ playwright/
 │   ├── app-dirs.ts            # test profile identifier + data dir paths
 │   ├── test-wallet.ts         # canonical TEST_WALLET fixture
 │   ├── selectors.ts           # data-testid → CSS selector map
+│   ├── settings.ts            # openSettingsTab / toggleAndRestore
+│   ├── pin.ts                 # PIN fixtures + digit-input helpers
+│   ├── mcp-client.ts          # streamable-HTTP MCP client (agent-realistic)
 │   ├── state.ts               # waitForTauriReady / waitForAppReady
 │   └── wait-for.ts            # condition-based UI wait helpers
 ├── shims/                     # Vite aliases redirect @tauri-apps/api/* here
@@ -211,7 +214,27 @@ playwright/
     ├── 02-mining-flow.spec.ts
     ├── 03-exchange-miner.spec.ts   # describe.serial — backend mode chain
     ├── 04-send-flow.spec.ts
-    └── 05-settings.spec.ts
+    ├── 05-settings.spec.ts         # General tab
+    ├── 06-pause-and-schedule.spec.ts
+    ├── 07-wallet-basics.spec.ts
+    ├── 08-receive-and-sync.spec.ts
+    ├── 09-settings-sweep.spec.ts   # wallet/mining/pools/connections/experimental/release-notes tabs
+    ├── 10-mcp-server.spec.ts       # describe.serial — token flows over real HTTP
+    └── 95-security-pin.spec.ts     # describe.serial — MUST run last (PIN is irreversible)
 ```
+
+### Suite ordering is load-bearing
+
+Files run alphabetically with `workers: 1`. Two constraints are encoded in
+the numbering, mirroring the QA suite's hard ordering rules
+(`playwright/COVERAGE.md` maps the whole QA suite to these specs):
+
+1. **`95-security-pin.spec.ts` must stay last.** Setting the PIN is
+   irreversible for the profile; every earlier spec exercises the no-PIN
+   paths, then 95 verifies the PIN gates (send, seed words, sync with
+   phone, MCP reveal/transaction tier). New specs must sort before it.
+2. **`10-mcp-server.spec.ts` runs pre-PIN deliberately** — it proves token
+   reveal/copy work ungated while no PIN exists; the PIN-gated variants
+   live in 95.
 
 `vite.config.playwright.ts` at the repo root defines the import aliases that point `@tauri-apps/api/*` to the shim files. `src-tauri/tauri-remote-ui-patched/` is the vendored WS bridge plugin.
