@@ -20,14 +20,15 @@ jobs:
     name: Run linters
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
-          cache: 'npm'
+          cache: 'pnpm'
           node-version: lts/*
       - name: Install Node.js dependencies
-        run: npm ci
-      - name: check lint/prettier errors
-        run: npm run lint
-      - name: check taplo
-        run: npm run lint:taplo
+        run: pnpm install --frozen-lockfile
+      - name: Check lint/prettier errors
+        run: pnpm run lint
+      - name: Check taplo
+        run: pnpm run lint:taplo

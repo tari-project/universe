@@ -1,11 +1,11 @@
 {
-    "version": "1.6.11",
+    "version": "1.6.12",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
     "build": {
-        "beforeDevCommand": "npm run dev",
-        "beforeBuildCommand": "npm run build",
+        "beforeDevCommand": "pnpm run dev",
+        "beforeBuildCommand": "pnpm run build",
         "frontendDist": "../dist",
         "devUrl": "http://localhost:1420"
     },
@@ -120,6 +120,11 @@
                     "name": "import-backup",
                     "description": "Imports a minotari node backup file",
                     "takesValue": true
+                },
+                {
+                    "name": "headless",
+                    "description": "Run headless with remote-ui WebSocket bridge instead of a native window",
+                    "takesValue": false
                 }
             ]
         }

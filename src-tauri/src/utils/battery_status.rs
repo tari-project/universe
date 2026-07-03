@@ -75,8 +75,13 @@ impl BatteryStatus {
                 .is_enabled()
         {
             info!(target: LOG_TARGET, "Battery switched to charging state.");
-            let _unused = GpuManager::write().await.start_mining().await;
-            let _unused = CpuManager::write().await.start_mining().await;
+            let config = ConfigMining::content().await;
+            if *config.gpu_mining_enabled() {
+                let _unused = GpuManager::write().await.start_mining().await;
+            }
+            if *config.cpu_mining_enabled() {
+                let _unused = CpuManager::write().await.start_mining().await;
+            }
             EventsEmitter::emit_set_show_battery_alert(false).await;
         }
         INSTANCE

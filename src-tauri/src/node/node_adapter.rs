@@ -28,10 +28,11 @@ use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use anyhow::{Error, anyhow};
 use async_trait::async_trait;
 use chrono::{NaiveDateTime, TimeZone, Utc};
+use futures::StreamExt;
 use log::{error, info, warn};
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use minotari_node_grpc_client::grpc::{
-    Empty, GetNetworkStateRequest, SyncProgressResponse, SyncState,
+    Empty, GetNetworkStateRequest, ListHeadersRequest, SyncProgressResponse, SyncState,
 };
 use minotari_node_wallet_client::BaseNodeWalletClient;
 use serde::Serialize;
@@ -55,7 +56,11 @@ use tokio::sync::watch;
 use tokio::time::timeout;
 use url::Url;
 
-use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
+use crate::network_utils::{
+    NetworkExt, get_best_block_from_block_scan, get_block_info_from_block_scan,
+};
+
+const STALLED_BLOCK_TIMEOUT_SECS: u64 = 15 * 60;
 
 #[async_trait]
 pub trait NodeAdapter {
@@ -75,6 +80,7 @@ pub trait NodeAdapter {
 pub(crate) struct NodeAdapterService {
     connection_address: String,
     http_address: String,
+    network: Network,
     required_sync_peers: u32,
     consensus_manager: ConsensusManager,
 }
@@ -83,15 +89,23 @@ impl NodeAdapterService {
     pub fn new(
         connection_address: String,
         http_address: String,
+        network: Network,
         required_sync_peers: u32,
         consensus_manager: ConsensusManager,
     ) -> Self {
         Self {
             connection_address,
             http_address,
+            network,
             required_sync_peers,
             consensus_manager,
         }
+    }
+
+    /// A solo network (e.g. LocalNet) has no peers and no external block explorer.
+    /// The node is considered synced as soon as it is ready.
+    pub fn is_solo_network(&self) -> bool {
+        self.network.is_solo_network()
     }
 
     pub async fn get_network_state(
@@ -136,11 +150,13 @@ impl NodeAdapterService {
                 .unwrap_or(ReadinessStatus::NOT_READY);
             (status, res.num_connections)
         };
+        let is_synced =
+            (!remote && self.is_solo_network() && readiness_status.is_ready()) || tip.is_synced;
         Ok(BaseNodeStatus {
             block_reward,
             block_height,
             block_time,
-            is_synced: tip.is_synced,
+            is_synced,
             num_connections,
             readiness_status,
         })
@@ -163,6 +179,61 @@ impl NodeAdapterService {
             };
         }
         Ok(blocks)
+    }
+
+    pub async fn get_recent_block_stats(&self, limit: u64) -> Result<Vec<LocalBlockStats>, Error> {
+        let limit = limit.min(100);
+        let mut grpc_client = BaseNodeGrpcClient::connect(self.connection_address.clone())
+            .await
+            .map_err(|e| anyhow!("Failed to connect to gRPC: {e}"))?;
+
+        let request = ListHeadersRequest {
+            from_height: 0,
+            num_headers: limit,
+            sorting: 0, // SORTING_DESC (newest first)
+        };
+
+        let response = grpc_client
+            .list_headers(request)
+            .await
+            .map_err(|e| anyhow!("Failed to list headers: {e}"))?;
+
+        let mut stream = response.into_inner();
+        let mut stats = Vec::new();
+
+        while let Some(header_resp) = stream.next().await {
+            let header_resp = header_resp.map_err(|e| anyhow!("Stream error: {e}"))?;
+            let header = header_resp
+                .header
+                .ok_or_else(|| anyhow!("Missing header in response"))?;
+
+            let pow_algo = header
+                .pow
+                .map(|p| match p.pow_algo {
+                    0 => "RandomX".to_string(),
+                    1 => "Sha3x".to_string(),
+                    2 => "RandomXT".to_string(),
+                    3 => "Cuckaroo".to_string(),
+                    _ => "Unknown".to_string(),
+                })
+                .unwrap_or_else(|| "Unknown".to_string());
+
+            let reward_micro = MicroMinotari(header_resp.reward);
+            let reward_xtm = reward_micro.as_u64() as f64 / 1_000_000.0;
+            let total_coinbase_xtm = format!("{reward_xtm:.6}");
+
+            stats.push(LocalBlockStats {
+                height: header.height,
+                total_coinbase_xtm,
+                num_coinbases: 1, // Approximation: ListHeaders doesn't provide coinbase counts
+                num_outputs_no_coinbases: u64::from(header_resp.num_transactions.saturating_sub(1)),
+                num_inputs: 0, // Not available from header-only data (ListHeaders)
+                pow_algo,
+                timestamp: header.timestamp,
+            });
+        }
+
+        Ok(stats)
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
@@ -273,11 +344,15 @@ impl NodeAdapterService {
             progress_percentage_tx.send(sync_info.percentage).ok();
             progress_params_tx.send(sync_info.progress_params).ok();
 
-            if initial_sync_achieved
-                && metadata.clone().is_some_and(|metadata| {
-                    metadata.best_block_height() > 0 && sync_info.percentage >= 1.0
-                })
-            {
+            let sync_complete = if self.is_solo_network() {
+                metadata.clone().is_some_and(|m| m.best_block_height() > 0)
+            } else {
+                initial_sync_achieved
+                    && metadata.clone().is_some_and(|metadata| {
+                        metadata.best_block_height() > 0 && sync_info.percentage >= 1.0
+                    })
+            };
+            if sync_complete {
                 info!(target: LOG_TARGET_APP_LOGIC, "Initial sync achieved");
                 let tip_height = match metadata {
                     Some(metadata) => metadata.best_block_height(),
@@ -324,8 +399,10 @@ impl NodeAdapterService {
     }
 
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
-        let network = Network::get_current_or_user_setting_or_default();
-        let block_scan_tip = get_best_block_from_block_scan(network).await?;
+        if self.is_solo_network() {
+            return Ok(false);
+        }
+        let block_scan_tip = get_best_block_from_block_scan(self.network).await?;
         let heights: Vec<u64> = vec![
             block_scan_tip.saturating_sub(50),
             block_scan_tip.saturating_sub(100),
@@ -334,7 +411,7 @@ impl NodeAdapterService {
         let mut block_scan_blocks: Vec<(u64, String)> = vec![];
 
         for height in &heights {
-            let block_scan_block = get_block_info_from_block_scan(network, height).await?;
+            let block_scan_block = get_block_info_from_block_scan(self.network, height).await?;
             block_scan_blocks.push(block_scan_block);
         }
 
@@ -406,13 +483,13 @@ impl StatusMonitor for NodeStatusMonitor {
                         return HealthStatus::Initializing;
                     }
 
-                    if status.num_connections == 0 {
+                    if status.num_connections == 0 && !self.node_service.is_solo_network() {
                         warn!(
                             "{:?} Node Health Check Warning: No connections | status: {:?}",
                             self.node_type,
                             status.clone()
                         );
-                        return HealthStatus::Warning;
+                        return HealthStatus::WarningWithReason("No peers connected".to_string());
                     }
 
                     if self
@@ -420,15 +497,24 @@ impl StatusMonitor for NodeStatusMonitor {
                         .load(std::sync::atomic::Ordering::SeqCst)
                         == status.block_time
                     {
-                        if uptime.as_secs() > 3600
+                        if !self.node_service.is_solo_network()
+                            && uptime.as_secs() > STALLED_BLOCK_TIMEOUT_SECS
                             && EpochTime::now()
                                 .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
                                 .unwrap_or(EpochTime::from(0))
                                 .as_u64()
-                                > 3600
+                                > STALLED_BLOCK_TIMEOUT_SECS
                         {
-                            warn!(target: LOG_TARGET_STATUSES, "Base node height has not changed in an hour");
-                            return HealthStatus::Unhealthy;
+                            warn!(target: LOG_TARGET_STATUSES, "Base node height has not changed in 15 minutes");
+
+                            let mut stalled_status = status;
+                            stalled_status.is_synced = false;
+                            stalled_status.readiness_status = ReadinessStatus::NOT_READY;
+                            let _ = self.status_broadcast.send(stalled_status);
+
+                            return HealthStatus::UnhealthyWithReason(
+                                "Block time stalled for 15 minutes".to_string(),
+                            );
                         }
                     } else {
                         self.last_block_time
@@ -441,7 +527,7 @@ impl StatusMonitor for NodeStatusMonitor {
                         "{:?} Node Health Check Error: checking base node status: {:?}",
                         self.node_type, e
                     );
-                    HealthStatus::Unhealthy
+                    HealthStatus::UnhealthyWithReason(format!("get_network_state failed: {}", e))
                 }
             },
             Err(e) => {
@@ -449,17 +535,28 @@ impl StatusMonitor for NodeStatusMonitor {
                     "{:?} Node Health Check (get_network_state) error: {:?}",
                     self.node_type, e
                 );
+
+                let mut stale_status = *self.status_broadcast.borrow();
+                stale_status.is_synced = false;
+                stale_status.readiness_status = ReadinessStatus::NOT_READY;
+                let _ = self.status_broadcast.send(stale_status);
+
                 match self.node_service.get_identity().await {
                     Ok(identity) => {
                         info!(target: LOG_TARGET_STATUSES, "{:?} Node checking base node identity success: {:?}", self.node_type, identity);
-                        return HealthStatus::Warning;
+                        return HealthStatus::WarningWithReason(
+                            "get_network_state timed out, but identity succeeded".to_string(),
+                        );
                     }
                     Err(e) => {
                         warn!(
                             "{:?} Node Health Check Error: checking base node identity: {:?}",
                             self.node_type, e
                         );
-                        return HealthStatus::Unhealthy;
+                        return HealthStatus::UnhealthyWithReason(format!(
+                            "Both network state and identity timed out: {}",
+                            e
+                        ));
                     }
                 }
             }
@@ -617,6 +714,7 @@ impl From<ReadinessStatus> for minotari_node_grpc_client::grpc::ReadinessStatus 
                     progress_percentage: migration.progress_percentage,
                     current_db_version: migration.current_db_version,
                     target_db_version: migration.target_db_version,
+                    phase: minotari_node_grpc_client::grpc::MigrationPhase::Unspecified as i32,
                 };
                 minotari_node_grpc_client::grpc::readiness_status::Status::Migration(
                     migration_proto,
@@ -671,6 +769,17 @@ impl std::fmt::Display for ReadinessStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.detailed_str())
     }
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub(crate) struct LocalBlockStats {
+    pub height: u64,
+    pub total_coinbase_xtm: String,
+    pub num_coinbases: u64,
+    pub num_outputs_no_coinbases: u64,
+    pub num_inputs: u64,
+    pub pow_algo: String,
+    pub timestamp: u64,
 }
 
 #[derive(Clone, Copy, Debug, Serialize)]

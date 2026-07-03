@@ -70,13 +70,22 @@ export default function CreatePin({ onClose, onSubmit }: { onClose?: () => void;
                 </TextWrapper>
                 <PinInput isConfirm={isConfirm} hasError={noMatch} />
                 {!isConfirm && <HelpWrapper>{t('security.pin.explainer')}</HelpWrapper>}
-                {isConfirm && noMatch && <HelpWrapper>{t('security.pin.error-match')}</HelpWrapper>}
+                {isConfirm && noMatch && (
+                    <HelpWrapper data-testid="pin-error">{t('security.pin.error-match')}</HelpWrapper>
+                )}
 
                 <CTAWrapper>
-                    <Button size="xlarge" disabled={submitDisabled} type="submit" fluid variant="black">
+                    <Button
+                        size="xlarge"
+                        disabled={submitDisabled}
+                        type="submit"
+                        fluid
+                        variant="black"
+                        data-testid="pin-create-submit"
+                    >
                         {t('security.pin.create', { context })}
                     </Button>
-                    <TextButton onClick={handleSecondary}>
+                    <TextButton onClick={handleSecondary} data-testid="pin-create-secondary">
                         {t('security.pin.enter', { context: isConfirm ? 'new' : 'skip' })}
                     </TextButton>
                 </CTAWrapper>

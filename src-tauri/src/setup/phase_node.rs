@@ -290,12 +290,25 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 EventsEmitter::emit_base_node_update(init_node_status).await;
 
                 let mut latest_updated_block_height = init_node_status.block_height;
+                let mut was_initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
                 loop {
                     tokio::select! {
                 _ = node_status_watch_rx.changed() => {
                     let node_status = *node_status_watch_rx.borrow();
                     let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
                     let node_synced = node_status.is_synced;
+
+                    if initial_sync_finished && !was_initial_sync_finished {
+                        let height = node_status.block_height;
+                        latest_updated_block_height = height;
+                        info!(target: LOG_TARGET_APP_LOGIC,
+                            "Initial wallet scan completed at height {height}, triggering transaction refresh");
+                        let app_for_refresh = app_handle_clone.clone();
+                        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
+                            let _ = EventsManager::handle_new_block_height(&app_for_refresh, height).await;
+                        });
+                    }
+                    was_initial_sync_finished = initial_sync_finished;
 
                     if node_status.block_height > latest_updated_block_height && initial_sync_finished && node_synced {
                         while latest_updated_block_height < node_status.block_height {

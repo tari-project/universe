@@ -14,26 +14,6 @@ import { useAirdropStore } from '@app/store';
 import { FEATURE_FLAGS } from '@app/store/consts.ts';
 import { TimeUnit } from '@app/types/mining/schedule.ts';
 
-export const restartMining = async () => {
-    const isMining =
-        useMiningMetricsStore.getState().cpu_mining_status.is_mining ||
-        useMiningMetricsStore.getState().gpu_mining_status.is_mining;
-
-    if (isMining) {
-        console.info('Restarting mining...');
-        try {
-            await stopMining();
-        } catch (e) {
-            console.error('Failed to pause(restart) mining: ', e);
-        }
-
-        try {
-            await startMining();
-        } catch (e) {
-            console.error('Failed to start(restart) mining: ', e);
-        }
-    }
-};
 export const setCustomLevelsDialogOpen = (customLevelsDialogOpen: boolean) =>
     useMiningStore.setState({ customLevelsDialogOpen });
 
@@ -144,6 +124,12 @@ function handleEcoAlertCheck(diffSeconds?: number) {
 
 export const startMining = async () => {
     console.info('Mining starting....');
+    // Note: the `userManuallyStopped` flag is cleared centrally by the
+    // `handleCpuMinerControlsStateChanged` / `handleGpuMinerControlsStateChanged`
+    // handlers when the `MinerControlsState.Started` event arrives from the
+    // backend, so no setState is needed here. Keeping the clear in a single
+    // place guarantees that the scheduler `ResumeMining` path and any other
+    // non-user-triggered starts also reset the flag consistently.
     handleEcoAlertCheck();
     try {
         await startCpuMining();
@@ -157,6 +143,7 @@ export const startMining = async () => {
 
 export const stopMining = async () => {
     console.info('Mining stopping...');
+    useMiningStore.setState({ userManuallyStopped: true });
     try {
         await stopCpuMining();
         await stopGpuMining();
@@ -235,7 +222,7 @@ export const handleCpuMinerControlsStateChanged = (state: MinerControlsState) =>
             useMiningStore.setState({ isCpuMiningInitiated: false });
             break;
         case MinerControlsState.Started: {
-            useMiningStore.setState({ isCpuMiningInitiated: true });
+            useMiningStore.setState({ isCpuMiningInitiated: true, userManuallyStopped: false });
             handleStartSideEffects();
             break;
         }
@@ -252,7 +239,7 @@ export const handleGpuMinerControlsStateChanged = (state: MinerControlsState) =>
             useMiningStore.setState({ isGpuMiningInitiated: false });
             break;
         case MinerControlsState.Started:
-            useMiningStore.setState({ isGpuMiningInitiated: true });
+            useMiningStore.setState({ isGpuMiningInitiated: true, userManuallyStopped: false });
             handleStartSideEffects();
             break;
         case MinerControlsState.Stopped:

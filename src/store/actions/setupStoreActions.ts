@@ -128,6 +128,11 @@ const handleCpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             const gpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
             const wasMineOnAppStartExecuted = useMiningStore.getState().wasMineOnAppStartExecuted;
             const resumeAfterRestart = useMiningStore.getState().resumeAfterRestart;
+            const userManuallyStopped = useMiningStore.getState().userManuallyStopped;
+
+            if (userManuallyStopped) {
+                break;
+            }
 
             if (resumeAfterRestart.cpu) {
                 useMiningStore.setState((c) => ({ ...c, resumeAfterRestart: { ...c.resumeAfterRestart, cpu: false } }));
@@ -166,6 +171,11 @@ const handleGpuMiningModuleUpdateSideEffects = async (state: AppModuleState) => 
             const cpuMiningInitiated = useMiningStore.getState().isCpuMiningInitiated;
             const wasMineOnAppStartExecuted = useMiningStore.getState().wasMineOnAppStartExecuted;
             const resumeAfterRestart = useMiningStore.getState().resumeAfterRestart;
+            const userManuallyStopped = useMiningStore.getState().userManuallyStopped;
+
+            if (userManuallyStopped) {
+                break;
+            }
 
             if (resumeAfterRestart.gpu) {
                 useMiningStore.setState((c) => ({ ...c, resumeAfterRestart: { ...c.resumeAfterRestart, gpu: false } }));

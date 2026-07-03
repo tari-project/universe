@@ -22,7 +22,11 @@
 use anyhow::{Error, anyhow};
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+};
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
@@ -40,7 +44,7 @@ use crate::{
 use super::{
     Binaries,
     binaries_list::BinaryPlatformAssets,
-    binaries_resolver::{BinaryDownloadInfo, LatestVersionApiAdapter},
+    binaries_resolver::{BinaryDownloadError, BinaryDownloadInfo, LatestVersionApiAdapter},
 };
 
 #[derive(Deserialize, Serialize, Default)]
@@ -142,7 +146,7 @@ impl BinaryManager {
             Network::Esmeralda => "esme",
             Network::StageNet => "nextnet",
             Network::MainNet => "mainnet",
-            Network::LocalNet => "testnet",
+            Network::LocalNet => "esme",
             Network::Igor => "testnet",
         };
 
@@ -334,7 +338,7 @@ impl BinaryManager {
             }
         }
 
-        let mut last_error_message = String::new();
+        let mut last_error: Option<anyhow::Error> = None;
         for retry in 0..3 {
             match self
                 .download_selected_version(progress_channel.clone())
@@ -345,18 +349,29 @@ impl BinaryManager {
                     return Ok(());
                 }
                 Err(error) => {
-                    last_error_message = format!(
-                        "Failed to download binary: {}. Error: {:?}",
-                        self.binary_name, error
-                    );
                     warn!(target: LOG_TARGET_APP_LOGIC, "Failed to download binary: {} at retry: {}", self.binary_name, retry);
+                    last_error = Some(error);
                     continue;
                 }
             }
         }
-        sentry::capture_message(&last_error_message, sentry::Level::Error);
-        error!(target: LOG_TARGET_APP_LOGIC, "{last_error_message}");
-        Err(anyhow!(last_error_message))
+        let last_error = last_error.unwrap_or_else(|| anyhow!("Unknown download error"));
+        let last_error_message = format!(
+            "Failed to download binary: {}. Error: {:?}",
+            self.binary_name, last_error
+        );
+
+        let is_user_env = last_error
+            .chain()
+            .any(|c| c.downcast_ref::<BinaryDownloadError>().is_some());
+
+        if is_user_env {
+            info!(target: LOG_TARGET_APP_LOGIC, "Binary download failed due to user environment issue: {last_error_message}");
+        } else {
+            sentry::capture_message(&last_error_message, sentry::Level::Error);
+            error!(target: LOG_TARGET_APP_LOGIC, "{last_error_message}");
+        }
+        Err(last_error.context(format!("Failed to download binary: {}", self.binary_name)))
     }
 
     pub async fn download_selected_version(
@@ -392,8 +407,7 @@ impl BinaryManager {
             .with_download_resume()
             .build(download_url.clone(), destination_dir.clone())?
             .execute()
-            .await
-            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e));
+            .await;
 
         if main_file_download_result.is_err() {
             info!(target: LOG_TARGET_APP_LOGIC, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
@@ -438,6 +452,24 @@ impl BinaryManager {
         self.selected_version.clone()
     }
 
+    pub fn get_binary_folder(&self) -> Result<PathBuf, Error> {
+        self.adapter.get_binary_folder()
+    }
+
+    pub async fn cleanup_old_binary_versions(
+        &self,
+        retained_versions: Vec<String>,
+    ) -> Result<Vec<PathBuf>, Error> {
+        let binary_folder = self.get_binary_folder()?;
+        let binary_name = self.binary_name.clone();
+
+        tokio::task::spawn_blocking(move || {
+            cleanup_old_binary_versions(&binary_folder, &retained_versions, &binary_name)
+        })
+        .await
+        .map_err(|error| anyhow!("Old binary cleanup task failed: {error:?}"))?
+    }
+
     pub fn get_base_dir(&self) -> Result<PathBuf, Error> {
         let selected_version = self.selected_version.clone();
         let binary_folder_path = self.adapter.get_binary_folder()?;
@@ -480,4 +512,146 @@ fn check_binary_exists(path: &std::path::Path) -> bool {
         warn!(target: LOG_TARGET_APP_LOGIC, "Error checking if binary file exists at path: {:?}. Error: {:?}", path, e);
         false
     })
+}
+
+fn cleanup_old_binary_versions(
+    binary_folder: &Path,
+    retained_versions: &[String],
+    binary_name: &str,
+) -> Result<Vec<PathBuf>, Error> {
+    if !binary_folder.try_exists()? {
+        return Ok(Vec::new());
+    }
+
+    let mut removed_paths = Vec::new();
+    for entry in fs::read_dir(binary_folder)? {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(error) => {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Unable to read binary folder entry for {binary_name}. Error: {error:?}"
+                );
+                continue;
+            }
+        };
+
+        let file_type = match entry.file_type() {
+            Ok(file_type) => file_type,
+            Err(error) => {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Unable to read binary folder entry type for {binary_name}. Path: {:?}, Error: {error:?}",
+                    entry.path()
+                );
+                continue;
+            }
+        };
+
+        if !file_type.is_dir() {
+            continue;
+        }
+
+        let folder_name = entry.file_name();
+        let folder_name = folder_name.to_string_lossy();
+        if retained_versions
+            .iter()
+            .any(|version| version == folder_name.as_ref())
+            || !is_binary_version_folder_name(&folder_name)
+        {
+            continue;
+        }
+
+        let path = entry.path();
+        match fs::remove_dir_all(&path) {
+            Ok(()) => {
+                info!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Removed old binary version folder for {binary_name}: {}",
+                    path.display()
+                );
+                removed_paths.push(path);
+            }
+            Err(error) => {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Failed to remove old binary version folder for {binary_name}: {}. Error: {error:?}",
+                    path.display()
+                );
+            }
+        }
+    }
+
+    Ok(removed_paths)
+}
+
+fn is_binary_version_folder_name(folder_name: &str) -> bool {
+    let version = folder_name
+        .strip_prefix('v')
+        .or_else(|| folder_name.strip_prefix('V'))
+        .unwrap_or(folder_name);
+
+    version.contains('.')
+        && version.chars().next().is_some_and(|c| c.is_ascii_digit())
+        && version
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '-' | '_' | '+'))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{cleanup_old_binary_versions, is_binary_version_folder_name};
+    use tempfile::tempdir;
+
+    #[test]
+    fn cleanup_old_binary_versions_keeps_retained_versions() {
+        let temp_dir = tempdir().expect("create temp dir");
+        let binaries_dir = temp_dir.path();
+        let current_dir = binaries_dir.join("1.2.3");
+        let shared_current_dir = binaries_dir.join("1.2.2");
+        let another_old_dir = binaries_dir.join("1.2.1");
+        let cache_dir = binaries_dir.join("download-cache");
+        let checksum_file = binaries_dir.join("latest.sha256");
+
+        std::fs::create_dir_all(&current_dir).expect("create current version dir");
+        std::fs::create_dir_all(&shared_current_dir).expect("create shared current version dir");
+        std::fs::create_dir_all(&another_old_dir).expect("create another old version dir");
+        std::fs::create_dir_all(&cache_dir).expect("create non-version dir");
+        std::fs::write(&checksum_file, "checksum").expect("create sibling file");
+
+        let retained_versions = vec!["1.2.3".to_string(), "1.2.2".to_string()];
+        let removed_paths =
+            cleanup_old_binary_versions(binaries_dir, &retained_versions, "test-binary")
+                .expect("cleanup succeeds");
+
+        assert!(current_dir.exists());
+        assert!(shared_current_dir.exists());
+        assert!(cache_dir.exists());
+        assert!(checksum_file.exists());
+        assert!(!another_old_dir.exists());
+        assert_eq!(removed_paths.len(), 1);
+    }
+
+    #[test]
+    fn cleanup_old_binary_versions_ignores_missing_parent() {
+        let temp_dir = tempdir().expect("create temp dir");
+        let missing_dir = temp_dir.path().join("missing");
+        let retained_versions = vec!["1.2.3".to_string()];
+
+        let removed_paths =
+            cleanup_old_binary_versions(&missing_dir, &retained_versions, "test-binary")
+                .expect("cleanup succeeds");
+
+        assert!(removed_paths.is_empty());
+    }
+
+    #[test]
+    fn is_binary_version_folder_name_only_accepts_version_like_names() {
+        assert!(is_binary_version_folder_name("5.2.1"));
+        assert!(is_binary_version_folder_name("v6.25.0"));
+        assert!(is_binary_version_folder_name("1.0.0-rc.1"));
+        assert!(!is_binary_version_folder_name("download-cache"));
+        assert!(!is_binary_version_folder_name("2026-backup"));
+        assert!(!is_binary_version_folder_name("latest"));
+    }
 }

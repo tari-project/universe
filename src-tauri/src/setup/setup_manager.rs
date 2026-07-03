@@ -42,6 +42,8 @@ use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
+use crate::network_utils::NetworkExt;
+use crate::node::node_manager::NodeType;
 use crate::progress_trackers::progress_plans::SetupStep;
 use crate::setup::utils::pre_setup::{check_data_import, clear_data};
 use crate::setup::{
@@ -72,6 +74,7 @@ use std::{
     sync::LazyLock,
     time::Duration,
 };
+use tari_common::configuration::Network;
 use tauri::{AppHandle, Listener, Manager};
 use tokio::{
     select,
@@ -238,10 +241,6 @@ impl SetupManager {
         websocket_manager_write.set_app_handle(app_handle.clone());
         drop(websocket_manager_write);
 
-        let webview = app_handle
-            .get_webview_window("main")
-            .expect("main window must exist");
-
         let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
         if let Err(e) = websocket_events_manager_guard
             .set_app_handle(app_handle.clone(), state.websocket_manager.clone())
@@ -261,47 +260,58 @@ impl SetupManager {
             .load_app_handle(app_handle.clone())
             .await;
 
-        // Listen for websocket reconnection events to restart events manager
-        let websocket_event_manager_clone = state.websocket_event_manager.clone();
-        let websocket_manager_clone = state.websocket_manager.clone();
-        let app_handle_clone = app_handle.clone();
-        webview.listen("websocket-reconnected", move |_event| {
-            let websocket_event_manager_clone = websocket_event_manager_clone.clone();
-            let websocket_manager_clone = websocket_manager_clone.clone();
-            let app_handle_clone = app_handle_clone.clone();
+        // Webview listeners are only needed when a native window exists.
+        // In headless mode the app runs without a window (remote-ui only), so there is no webview.
+        if let Some(webview) = app_handle.get_webview_window("main") {
+            // Listen for websocket reconnection events to restart events manager
+            let websocket_event_manager_clone = state.websocket_event_manager.clone();
+            let websocket_manager_clone = state.websocket_manager.clone();
+            let app_handle_clone = app_handle.clone();
+            webview.listen("websocket-reconnected", move |_event| {
+                let websocket_event_manager_clone = websocket_event_manager_clone.clone();
+                let websocket_manager_clone = websocket_manager_clone.clone();
+                let app_handle_clone = app_handle_clone.clone();
 
-            tauri::async_runtime::spawn(async move {
-                info!(target: LOG_TARGET_APP_LOGIC, "Restarting websocket events manager after reconnection");
-                let mut events_manager_guard = websocket_event_manager_clone.write().await;
-                match events_manager_guard
-                    .set_app_handle(app_handle_clone, websocket_manager_clone)
-                    .await
-                { Err(e) => {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to restart websocket events manager: {e}");
-                } _ => {
-                    info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager restarted successfully");
-                }}
-            });
-        });
-        let websocket_tx = state.websocket_message_tx.clone();
-        webview.listen("ws-tx", move |event: tauri::Event| {
-            let event_cloned = event.clone();
-            let websocket_tx_clone = websocket_tx.clone();
-
-            tauri::async_runtime::spawn(async move {
-                let message = event_cloned.payload();
-                if let Ok(message) = serde_json::from_str::<WebsocketMessage>(message)
-                    .inspect_err(|e| error!("websocket malformatted: {e}"))
-                    && websocket_tx_clone
-                        .send(message.clone())
+                tauri::async_runtime::spawn(async move {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Restarting websocket events manager after reconnection");
+                    let mut events_manager_guard = websocket_event_manager_clone.write().await;
+                    match events_manager_guard
+                        .set_app_handle(app_handle_clone, websocket_manager_clone)
                         .await
-                        .inspect_err(|e| error!("too many messages in websocket send queue {e}"))
-                        .is_ok()
-                {
-                    log::trace!("websocket message sent {message:?}");
-                }
+                    {
+                        Err(e) => {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to restart websocket events manager: {e}");
+                        }
+                        _ => {
+                            info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager restarted successfully");
+                        }
+                    }
+                });
             });
-        });
+            let websocket_tx = state.websocket_message_tx.clone();
+            webview.listen("ws-tx", move |event: tauri::Event| {
+                let event_cloned = event.clone();
+                let websocket_tx_clone = websocket_tx.clone();
+
+                tauri::async_runtime::spawn(async move {
+                    let message = event_cloned.payload();
+                    if let Ok(message) = serde_json::from_str::<WebsocketMessage>(message)
+                        .inspect_err(|e| error!("websocket malformatted: {e}"))
+                        && websocket_tx_clone
+                            .send(message.clone())
+                            .await
+                            .inspect_err(|e| {
+                                error!("too many messages in websocket send queue {e}")
+                            })
+                            .is_ok()
+                    {
+                        log::trace!("websocket message sent {message:?}");
+                    }
+                });
+            });
+        } else {
+            info!(target: LOG_TARGET_APP_LOGIC, "No main webview window — skipping webview event listeners (headless mode)");
+        }
         EventsManager::handle_node_type_update(&app_handle).await;
 
         ConfigCore::initialize(app_handle.clone()).await;
@@ -341,7 +351,12 @@ impl SetupManager {
 
         BatteryStatus::start_battery_listener().await;
 
-        let node_type = ConfigCore::content().await.node_type().clone();
+        let mut node_type = ConfigCore::content().await.node_type().clone();
+        let network = Network::get_current_or_user_setting_or_default();
+        if network.is_solo_network() && node_type != NodeType::Local {
+            info!(target: LOG_TARGET_APP_LOGIC, "Overriding node type to Local for {network} network");
+            node_type = NodeType::Local;
+        }
         info!(target: LOG_TARGET_APP_LOGIC, "Retrieved initial node type: {node_type:?}");
         state.node_manager.set_node_type(node_type).await;
         EventsManager::handle_node_type_update(&app_handle).await;
@@ -363,6 +378,13 @@ impl SetupManager {
         if !*config_minig.is_lolminer_tested() {
             let _unused =
                 ConfigMining::update_field(ConfigMiningContent::set_is_lolminer_tested, true).await;
+        }
+
+        // On solo networks, force pool mining off
+        if network.is_solo_network() {
+            info!(target: LOG_TARGET_APP_LOGIC, "Disabling pool mining for solo network ({network})");
+            drop(ConfigPools::update_field(ConfigPoolsContent::set_cpu_pool_enabled, false).await);
+            drop(ConfigPools::update_field(ConfigPoolsContent::set_gpu_pool_enabled, false).await);
         }
 
         EventsEmitter::emit_core_config_loaded(&ConfigCore::content().await).await;
@@ -529,8 +551,15 @@ impl SetupManager {
         let exchange_id = ConfigCore::content().await.exchange_id().clone();
         let is_exchange_miner_build = exchange_id.ne(DEFAULT_EXCHANGE_ID);
 
-        let is_cpu_pool_enabled = *ConfigPools::content().await.cpu_pool_enabled();
-        let is_gpu_pool_enabled = *ConfigPools::content().await.gpu_pool_enabled();
+        let network = Network::get_current_or_user_setting_or_default();
+        let is_cpu_pool_enabled =
+            *ConfigPools::content().await.cpu_pool_enabled() && !network.is_solo_network();
+        let is_gpu_pool_enabled =
+            *ConfigPools::content().await.gpu_pool_enabled() && !network.is_solo_network();
+
+        if network.is_solo_network() {
+            info!(target: LOG_TARGET_APP_LOGIC, "Pool mining disabled for solo network ({network})");
+        }
 
         if is_cpu_pool_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Cpu Pool feature enabled");

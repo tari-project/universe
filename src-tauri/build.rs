@@ -65,7 +65,10 @@ fn copy_process_wrapper() {
         let aarch64_bin = "binaries/process-wrapper-aarch64-apple-darwin";
         let x86_64_bin = "binaries/process-wrapper-x86_64-apple-darwin";
 
-        if Path::new(aarch64_bin).exists() && Path::new(x86_64_bin).exists() && !Path::new(universal_dst).exists() {
+        if Path::new(aarch64_bin).exists()
+            && Path::new(x86_64_bin).exists()
+            && !Path::new(universal_dst).exists()
+        {
             let output = std::process::Command::new("lipo")
                 .args(["-create", aarch64_bin, x86_64_bin, "-output", universal_dst])
                 .output();
@@ -93,10 +96,13 @@ fn main() {
 
     // Use a default set of env vars
     // This is project specific and doesn't work against our dependencies like tari_common.
-    // It's essentially duplicated work for lints etc that npm already injects when running tauri.
+    // It's essentially duplicated work for lints etc that pnpm already injects when running tauri.
     // TODO: Remove compile time env vars. TU should be network agnostic.
-    println!("cargo::rerun-if-changed=env.esme");
+    println!("cargo::rerun-if-changed=env.esmeralda");
     println!("cargo::rerun-if-changed=env.mainnet");
+    println!("cargo::rerun-if-changed=env.nextnet");
+    println!("cargo::rerun-if-changed=env.localnet");
+    println!("cargo::rerun-if-changed=env.igor");
     println!("cargo::rerun-if-env-changed=TARI_NETWORK");
     println!("cargo::rerun-if-env-changed=TARI_TARGET_NETWORK");
 

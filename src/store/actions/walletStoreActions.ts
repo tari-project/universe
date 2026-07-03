@@ -15,8 +15,10 @@ import { queryClient } from '@app/App/queryClient.ts';
 import { KEY_EXPLORER } from '@app/hooks/mining/useFetchExplorerData.ts';
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 
-// NOTE: Tx status differ for core and proto(grpc)
-export const COINBASE_BITFLAG = 6144;
+// NOTE: The wallet gRPC bitflag filter uses CORE status numbering (not proto).
+// Core: CoinbaseUnconfirmed=11, CoinbaseConfirmed=12, CoinbaseNotInBlockChain=13
+// Proto (what the response returns): CoinbaseUnconfirmed=12, CoinbaseConfirmed=13, CoinbaseNotInBlockChain=14
+export const COINBASE_BITFLAG = (1 << 11) | (1 << 12) | (1 << 13);
 export const NON_COINBASE_BITFLAG = 2015;
 
 export interface TxArgs {
@@ -120,15 +122,17 @@ export const setWalletBalance = async (balance: WalletBalance) => {
     const currentBalance = useWalletStore.getState().balance;
     const isEqual = deepEqual(currentBalance, balance);
 
-    if (isEqual) return;
+    if (!isEqual) {
+        useWalletStore.setState({ balance });
+        const calculated_balance =
+            balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
+        useWalletStore.setState({ calculated_balance });
+        await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
+    }
 
-    useWalletStore.setState({ balance });
-
-    const calculated_balance =
-        balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
-
-    useWalletStore.setState({ calculated_balance });
-    await queryClient.invalidateQueries({ queryKey: [KEY_EXPLORER] });
+    // Always refresh transactions — wallet validation may complete
+    // independently of balance changes, making transactions available
+    // even when the balance hasn't changed.
     await refreshTransactions();
 };
 

@@ -8,7 +8,7 @@ import { Header, Heading, Wrapper } from './styles.ts';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { InputArea } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
-import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
+import { Edit, splitSeedWordsInput } from '@app/components/wallet/seedwords/components/Edit.tsx';
 import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -32,7 +32,7 @@ export default function ForgotPinDialog() {
         }
 
         try {
-            await invoke('forgot_pin', { seedWords: data.seedWords.split(' ') });
+            await invoke('forgot_pin', { seedWords: splitSeedWordsInput(data.seedWords) });
         } catch (error) {
             setError('Could not reset PIN: ' + error);
         }

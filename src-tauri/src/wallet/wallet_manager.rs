@@ -24,6 +24,7 @@ use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::internal_wallet::InternalWallet;
+use crate::network_utils::NetworkExt;
 use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
@@ -31,7 +32,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::wallet::wallet_adapter::WalletAdapter;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
-use crate::wallet::wallet_types::{TransactionInfo, TransactionStatus, WalletBalance, WalletState};
+use crate::wallet::wallet_types::{TransactionInfo, WalletBalance, WalletState};
 use crate::{BaseNodeStatus, LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use futures_util::future::FusedFuture;
 use log::{error, info};
@@ -309,8 +310,9 @@ impl WalletManager {
         &self,
         block_height: u64,
     ) -> Result<Option<TransactionInfo>, WalletManagerError> {
-        const COINBASE_STATUSES_BITFLAG: u32 = (1 << TransactionStatus::CoinbaseConfirmed as u32)
-            | (1 << TransactionStatus::CoinbaseUnconfirmed as u32);
+        // The wallet gRPC bitflag filter uses CORE status numbering, not proto.
+        // Core: CoinbaseUnconfirmed=11, CoinbaseConfirmed=12, CoinbaseNotInBlockChain=13
+        const COINBASE_STATUSES_BITFLAG: u32 = (1 << 11) | (1 << 12) | (1 << 13);
 
         // Get a small batch of recent coinbase transactions
         let coinbase_txs = self
@@ -423,7 +425,8 @@ impl WalletManager {
                         match result {
                             Ok(scanned_wallet_state) => {
                                 let node_status = *node_status_watch_rx_scan.borrow();
-                                if !node_status.is_synced {
+                                let network = Network::get_current_or_user_setting_or_default();
+                                if !node_status.is_synced && !network.is_solo_network() {
                                     log::info!(target: LOG_TARGET_APP_LOGIC,
                                         "Node is not synced, continuing..");
                                     continue;

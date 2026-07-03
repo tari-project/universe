@@ -1,5 +1,5 @@
 ---
-name: Security audit - daily
+name: Security Audit - Daily
 
 'on':
   push:
@@ -30,25 +30,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v7
 
-      - name: Setup Node.js
+      - uses: pnpm/action-setup@v6
+
+      - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - name: Install dependencies (CI clean)
-        run: npm ci
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run npm audit
         run: |
-          echo "Running npm audit..."
-          npm audit --audit-level=high --json > audit-report.json || true
+          echo "Running pnpm audit..."
+          pnpm audit --audit-level=high --json > audit-report.json || true
 
       - name: Upload audit report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: npm-audit-report
           path: audit-report.json

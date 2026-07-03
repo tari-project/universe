@@ -26,6 +26,34 @@ pub mod cpu;
 pub mod gpu;
 pub mod pools;
 
+/// Errors that represent user-environment issues rather than application bugs.
+/// These should never be reported to Sentry.
+#[derive(Debug, thiserror::Error)]
+pub enum MiningError {
+    #[error("GPU mining is disabled")]
+    GpuMiningDisabled,
+    #[error("CPU mining is disabled")]
+    CpuMiningDisabled,
+    #[error("All GPU devices are excluded. Cannot start lolminer.")]
+    AllDevicesExcluded,
+}
+
+impl MiningError {
+    /// Returns true if the error is a user-environment issue rather than an application bug.
+    pub fn is_user_environment_error(e: &anyhow::Error) -> bool {
+        e.downcast_ref::<MiningError>().is_some()
+            || e.downcast_ref::<crate::binaries::binaries_resolver::BinaryResolveError>()
+                .is_some_and(|e| {
+                    matches!(
+                        e,
+                        crate::binaries::binaries_resolver::BinaryResolveError::AntivirusIssue {
+                            ..
+                        }
+                    )
+                })
+    }
+}
+
 #[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub enum MinerControlsState {
     Initiated,
@@ -49,11 +77,6 @@ impl Default for GpuConnectionType {
     }
 }
 
-impl GpuConnectionType {
-    pub fn is_pool(&self) -> bool {
-        matches!(self, GpuConnectionType::Pool { .. })
-    }
-}
 #[derive(Clone, Serialize, PartialEq, Eq, Deserialize, Debug)]
 pub enum CpuConnectionType {
     LocalMMProxy {
@@ -71,11 +94,5 @@ impl Default for CpuConnectionType {
             pool_url: String::new(),
             worker_name: None,
         }
-    }
-}
-
-impl CpuConnectionType {
-    pub fn is_pool(&self) -> bool {
-        matches!(self, CpuConnectionType::Pool { .. })
     }
 }

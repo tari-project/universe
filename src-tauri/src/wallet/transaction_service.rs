@@ -31,6 +31,8 @@ use minotari_node_grpc_client::grpc::{
     PrepareOneSidedTransactionForSigningRequest, UserPaymentId,
 };
 use std::fs;
+use std::io::ErrorKind;
+use std::path::Path;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tauri::Manager;
@@ -98,13 +100,8 @@ impl<'a> TransactionService<'a> {
             ));
         };
 
-        // Create directory for transaction files if it doesn't exist
         let wallet_txs_dir = get_transactions_directory(self.app_handle)?;
-        if !wallet_txs_dir.exists() {
-            std::fs::create_dir_all(&wallet_txs_dir).unwrap_or_else(|e| {
-                log::error!(target: LOG_TARGET_APP_LOGIC, "Failed to create transactions directory: {e}");
-            });
-        }
+        ensure_transactions_directory(&wallet_txs_dir)?;
 
         // Extract transaction ID from the JSON response
         let parsed: serde_json::Value = serde_json::from_str(&unsigned_tx_json)
@@ -160,8 +157,8 @@ impl<'a> TransactionService<'a> {
         };
 
         // Remove unsigned and signed transaction files
-        fs::remove_file(&unsigned_tx_file)?;
-        fs::remove_file(&signed_tx_file)?;
+        remove_file_if_exists(&unsigned_tx_file)?;
+        remove_file_if_exists(&signed_tx_file)?;
 
         Ok(())
     }
@@ -181,6 +178,7 @@ impl<'a> TransactionService<'a> {
     ) -> Result<PathBuf, anyhow::Error> {
         // Define the output file path for the signed transaction
         let wallet_txs_dir = get_transactions_directory(self.app_handle)?;
+        ensure_transactions_directory(&wallet_txs_dir)?;
         let signed_tx_destination_file = wallet_txs_dir.join(format!("{tx_id}.json"));
 
         // Sign the transaction using SpendWallet
@@ -253,4 +251,43 @@ pub fn get_transactions_directory(app_handle: &tauri::AppHandle) -> Result<PathB
         .join("sent_transactions");
 
     Ok(dir)
+}
+
+fn ensure_transactions_directory(dir: &Path) -> Result<(), anyhow::Error> {
+    fs::create_dir_all(dir)?;
+    Ok(())
+}
+
+fn remove_file_if_exists(path: &Path) -> Result<(), anyhow::Error> {
+    match fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(err) if err.kind() == ErrorKind::NotFound => Ok(()),
+        Err(err) => Err(err.into()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    #[test]
+    fn ensure_transactions_directory_creates_nested_directory() {
+        let temp_dir = tempdir().expect("failed to create temp dir");
+        let target_dir = temp_dir.path().join("testnet").join("sent_transactions");
+
+        ensure_transactions_directory(&target_dir)
+            .expect("failed to create transactions directory");
+
+        assert!(target_dir.exists());
+        assert!(target_dir.is_dir());
+    }
+
+    #[test]
+    fn remove_file_if_exists_ignores_missing_files() {
+        let temp_dir = tempdir().expect("failed to create temp dir");
+        let missing_file = temp_dir.path().join("missing.json");
+
+        remove_file_if_exists(&missing_file).expect("missing file should be ignored");
+    }
 }

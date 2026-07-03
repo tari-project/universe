@@ -1,0 +1,153 @@
+---
+name: Playwright Tests
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - 'ci-*'
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+  merge_group:
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.ref }}'
+  cancel-in-progress: true
+
+permissions: {}
+
+env:
+  TARI_NETWORK: localnet
+
+jobs:
+  playwright:
+    name: Playwright (ubuntu)
+    runs-on: [self-hosted, ubuntu-high-cpu]
+    # The suite binds fixed ports (1420, 9515) and a shared test data dir,
+    # so only one playwright job may run on the runner pool at a time.
+    # Runs from other refs queue instead of colliding.
+    concurrency:
+      group: playwright-e2e-runner-mutex
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies (linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --assume-yes \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libprotobuf-dev \
+            protobuf-compiler \
+            opencl-headers \
+            ocl-icd-opencl-dev \
+            xvfb \
+            dbus-x11
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2.7.5
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install Node dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Typecheck the e2e sources before the expensive Tauri build so a type
+      # error fails in seconds. `playwright test` transpiles via esbuild and
+      # does NOT type-check, and the root `pnpm run lint` scopes tsc to src/,
+      # so this is the only gate on the playwright/ TypeScript.
+      - name: Typecheck Playwright suite
+        working-directory: playwright
+        run: pnpm run typecheck
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli
+        working-directory: ./src-tauri
+
+      - name: Build process-wrapper
+        run: cargo build --manifest-path process-wrapper/Cargo.toml
+
+      - name: Create dist dir
+        run: mkdir -p dist
+
+      - name: Build Tauri binary (test-mode)
+        working-directory: ./src-tauri
+        run: cargo tauri build --debug --no-bundle --features test-mode --config tauri.test.conf.json
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright browsers
+        working-directory: playwright
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Install Playwright system deps (cache hit)
+        working-directory: playwright
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      # Note: no gnome-keyring needed — test-mode uses the file-backed
+      # credential store, never the OS keychain. D-Bus session is still
+      # provided for WebKitGTK.
+      - name: Start D-Bus session
+        run: |
+          eval "$(dbus-launch --sh-syntax)"
+          echo "DBUS_SESSION_BUS_ADDRESS=$DBUS_SESSION_BUS_ADDRESS" >> "$GITHUB_ENV"
+          echo "DBUS_SESSION_BUS_PID=$DBUS_SESSION_BUS_PID" >> "$GITHUB_ENV"
+
+      - name: Clean up orphaned test processes (self-hosted runner)
+        run: |
+          # A crashed previous run can leave the app tree and dev server
+          # behind, holding ports 1420/9515 and the test data dir.
+          # NOTE: the debug binary is named "Tari Universe (Alpha)", not
+          # tari-universe. Bracketed patterns avoid pkill matching this
+          # step's own shell command line.
+          pkill -9 -f '[t]ari-universe.*--headless' || true
+          pkill -9 -f '[T]ari Universe.*--headless' || true
+          pkill -9 -f '[p]rocess-wrapper' || true
+          pkill -9 -f '[m]inotari' || true
+          pkill -9 -f '[x]mrig.*com.tari.universe.test' || true
+          pkill -9 -f '[v]ite.*vite.config.playwright' || true
+          for port in 1420 9515; do
+            pid="$(lsof -ti tcp:$port || true)"
+            if [ -n "$pid" ]; then
+              echo "Killing process on port $port: $pid"
+              kill -9 $pid || true
+            fi
+          done
+
+      - name: Run Playwright tests
+        working-directory: playwright
+        env:
+          SKIP_BUILD: '1'
+        run: xvfb-run --auto-servernum pnpm exec playwright test
+
+      - name: Upload test results
+        # Upload on success too — the HTML report + timing data is how we
+        # measure flakiness trends, not just post-mortem failures.
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            playwright/test-results/
+            playwright/playwright-report/
+          retention-days: 14

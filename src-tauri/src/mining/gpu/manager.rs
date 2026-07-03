@@ -46,7 +46,7 @@ use crate::{
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     mining::{
-        GpuConnectionType, MinerControlsState,
+        GpuConnectionType, MinerControlsState, MiningError,
         gpu::{
             consts::{GpuMiner, GpuMinerStatus, GpuMinerType, MINERS_PRIORITY},
             interface::{GpuMinerInterface, GpuMinerInterfaceTrait},
@@ -287,8 +287,14 @@ impl GpuManager {
             }
             Err(e) => {
                 let err_msg = format!("Could not start GPU mining: {e}");
-                error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}", );
-                sentry::capture_message(&err_msg, sentry::Level::Error);
+
+                // Only report genuine operational failures to Sentry, not user-environment issues
+                if MiningError::is_user_environment_error(&e) {
+                    info!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
+                } else {
+                    error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
+                    sentry::capture_message(&err_msg, sentry::Level::Error);
+                }
 
                 EventsEmitter::emit_update_gpu_miner_state(MinerControlsState::Stopped).await;
                 SystemTrayManager::send_event(SystemTrayEvents::GpuMiningActivity(false)).await;
@@ -301,7 +307,7 @@ impl GpuManager {
         let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
 
         if !gpu_mining_enabled {
-            return Err(anyhow::anyhow!("GPU mining is disabled"));
+            return Err(MiningError::GpuMiningDisabled.into());
         }
 
         if self.process_watcher.is_running() {
@@ -396,7 +402,7 @@ impl GpuManager {
 
                 info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner process watcher");
 
-                if self.connection_type.is_pool() {
+                if *ConfigPools::content().await.gpu_pool_enabled() {
                     GpuPoolManager::start_stats_watcher().await;
                     info!(target: LOG_TARGET_APP_LOGIC, "Started gpu miner pool watcher");
                 }
@@ -614,6 +620,13 @@ impl GpuManager {
                     },
                     _ = global_shutdown_signal.wait() => {
                         info!(target: LOG_TARGET_STATUSES, "Shutting down gpu miner status updates");
+                        // Emit a final stopped status; otherwise frontends keep
+                        // the last is_mining=true forever when a phase restart
+                        // (e.g. exchange-miner switch) kills this loop.
+                        EventsEmitter::emit_gpu_mining_update(GpuMinerStatus::default_with_algorithm(
+                            last_known_status.algorithm.clone(),
+                        )).await;
+                        SystemTrayManager::send_event(SystemTrayEvents::GpuHashrate(0.0)).await;
                         break;
                     },
                     updated_status = gpu_internal_status_reciever.changed() => {

@@ -46,7 +46,7 @@ use crate::{
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     mining::{
-        CpuConnectionType, MinerControlsState,
+        CpuConnectionType, MinerControlsState, MiningError,
         cpu::{CpuMinerStatus, miners::xmrig::XmrigAdapter},
         pools::{PoolManagerInterfaceTrait, cpu_pool_manager::CpuPoolManager},
     },
@@ -81,13 +81,20 @@ pub struct CpuManager {
 
 impl CpuManager {
     pub fn new() -> Self {
+        // RandomX dataset init (minutes in fast mode) is handled by the
+        // health check returning Initializing until the first nonzero
+        // hashrate — the watcher never restarts an Initializing process.
+        // This grace only covers the window before the HTTP API answers,
+        // and bounds how fast a stalled miner is restarted.
+        let mut process_watcher = ProcessWatcher::new(
+            XmrigAdapter::new(Sender::new(CpuMinerStatus::default())),
+            Sender::new(ProcessWatcherStats::default()),
+        );
+        process_watcher.expected_startup_time = std::time::Duration::from_secs(30);
         Self {
             app_handle: None,
             // ======= Process watcher =======
-            process_watcher: ProcessWatcher::new(
-                XmrigAdapter::new(Sender::new(CpuMinerStatus::default())),
-                Sender::new(ProcessWatcherStats::default()),
-            ),
+            process_watcher,
             // ======= Parameters tracking =======
             status_thread_shutdown: Shutdown::new(),
             process_stats_collector: Sender::new(ProcessWatcherStats::default()),
@@ -140,8 +147,14 @@ impl CpuManager {
             }
             Err(e) => {
                 let err_msg = format!("Could not start CPU mining: {e}");
-                error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
-                sentry::capture_message(&err_msg, sentry::Level::Error);
+
+                // Only report genuine operational failures to Sentry, not user-environment issues
+                if MiningError::is_user_environment_error(&e) {
+                    info!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
+                } else {
+                    error!(target: LOG_TARGET_APP_LOGIC, "{err_msg}");
+                    sentry::capture_message(&err_msg, sentry::Level::Error);
+                }
 
                 EventsEmitter::emit_update_cpu_miner_state(MinerControlsState::Stopped).await;
                 SystemTrayManager::send_event(SystemTrayEvents::CpuMiningActivity(false)).await;
@@ -154,7 +167,7 @@ impl CpuManager {
         let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
 
         if !cpu_mining_enabled {
-            return Err(anyhow::anyhow!("CPU mining is disabled"));
+            return Err(MiningError::CpuMiningDisabled.into());
         }
 
         if self.process_watcher.is_running() {
@@ -254,7 +267,7 @@ impl CpuManager {
                 )
                 .await?;
 
-            if self.connection_type.is_pool() {
+            if *ConfigPools::content().await.cpu_pool_enabled() {
                 CpuPoolManager::start_stats_watcher().await;
             }
 
@@ -352,6 +365,11 @@ impl CpuManager {
                     },
                     _ = global_shutdown_signal.wait() => {
                         info!(target: LOG_TARGET_STATUSES, "Shutting down cpu miner status updates");
+                        // Emit a final stopped status; otherwise frontends keep
+                        // the last is_mining=true forever when a phase restart
+                        // (e.g. exchange-miner switch) kills this loop.
+                        EventsEmitter::emit_cpu_mining_update(CpuMinerStatus::default()).await;
+                        SystemTrayManager::send_event(SystemTrayEvents::CpuHashrate(0.0)).await;
                         break;
                     },
                     updated_status = cpu_internal_status_reciever.changed() => {

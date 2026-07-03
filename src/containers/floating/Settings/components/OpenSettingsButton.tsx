@@ -5,7 +5,7 @@ import { ButtonSize } from '@app/components/elements/buttons/button.types.ts';
 
 export default function OpenSettingsButton({ size, iconSize = 16 }: { iconSize?: number; size?: ButtonSize }) {
     return (
-        <IconButton onClick={() => setIsSettingsOpen(true)} size={size}>
+        <IconButton onClick={() => setIsSettingsOpen(true)} size={size} data-testid="settings-open">
             <IoSettingsOutline size={iconSize} />
         </IconButton>
     );

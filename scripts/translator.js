@@ -118,15 +118,15 @@ function sortObjectKeys(obj) {
  * by merging them with the default English translations and sorting the keys.
  *
  * Usage:
- *   `npm run translate <fileName> [<key="value">]`
+ *   `pnpm run translate <fileName> [<key="value">]`
  *
  * Arguments:
  *   *fileName* - The name of the scope file to search for (without extension).
  *   *key="value"* (optional) - The key-value pair to set in the translation files.
  *
  * Examples:
- *   `npm run translate common` - Cleans up and formats the translation files for the 'common' scope.
- *   `npm run translate common greeting.hello="Hello, world!"` - Sets the value of 'greeting.hello' to "Hello, world!" in the 'common' scope.
+ *   `pnpm run translate common` - Cleans up and formats the translation files for the 'common' scope.
+ *   `pnpm run translate common greeting.hello="Hello, world!"` - Sets the value of 'greeting.hello' to "Hello, world!" in the 'common' scope.
  */
 async function main() {
     const args = process.argv.slice(2);
@@ -139,8 +139,8 @@ async function main() {
     if (!args.length) {
         console.error(`
             Usage:
-            npm run translate <fileName> - to prettify and create english templates for all locales
-            npm run translate <fileName> <key="value"> - create translations template based on en
+            pnpm run translate <fileName> - to prettify and create english templates for all locales
+            pnpm run translate <fileName> <key="value"> - create translations template based on en
         `);
         process.exit(1);
     }

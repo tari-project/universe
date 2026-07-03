@@ -27,36 +27,42 @@ jobs:
     name: Check title
     runs-on: ubuntu-latest
     steps:
-      - name: Install Dependencies
-        run: |
-          npm install -g @commitlint/cli @commitlint/config-conventional
-          echo "module.exports = {extends: ['@commitlint/config-conventional']}" > commitlint.config.js
-      - name: Lint Title
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 11
+      - uses: actions/setup-node@v6
+        with:
+          node-version: lts/*
+      - name: Lint title
         env:
           PR_TITLE: ${{github.event.pull_request.title}}
         run: |
-          echo "$PR_TITLE" | commitlint
+          echo "module.exports = {extends: ['@commitlint/config-conventional']}" > commitlint.config.js
+          echo "$PR_TITLE" | pnpm dlx \
+            --package @commitlint/cli \
+            --package @commitlint/config-conventional \
+            commitlint
   check-i18n:
     name: Check i18n
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - name: Install jsonlint
+      - uses: actions/checkout@v7
+      - name: Install Jsonlint
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends --assume-yes \
             python3-demjson
 
-      - name: Basic jsonlint
+      - name: Basic Jsonlint
         run: |
           find public -iname '*.json'  -print0 | \
             xargs -0 -n1 jsonlint -v
 
-      - name: setup folder for logs
+      - name: Setup folder for logs
         run: |
           mkdir -p ${{ runner.temp }}/i18n_logs
 
-      - name: i18n compare
+      - name: I18n compare
         continue-on-error: true
         working-directory: ./public/locales
         run: |
@@ -66,7 +72,7 @@ jobs:
             --search-path .. \
             --output-dir ${{ runner.temp }}/i18n_logs
 
-      - name: i18n unused
+      - name: I18n unused
         continue-on-error: true
         working-directory: ./public/locales
         run: |
@@ -77,7 +83,7 @@ jobs:
             --output-dir ${{ runner.temp }}/i18n_logs
 
       - name: Artifact upload for i18n checks
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: i18n-logs
           path: ${{ runner.temp }}/i18n_logs

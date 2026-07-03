@@ -38,6 +38,8 @@ name: Release
           - esmeralda
           - nextnet
           - mainnet
+          - localnet
+          - igor
 
 concurrency:
   # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
@@ -69,7 +71,12 @@ jobs:
           elif [ "${{ github.event_name }}" == "workflow_dispatch" ] ; then
             echo "Ad-hoc Build - selective"
             echo "tari_network=${{ github.event.inputs.tari_network }}" >> $GITHUB_OUTPUT
-            echo "tari_target_network=${{ github.event.inputs.tari_network == 'esmeralda' && 'testnet' || github.event.inputs.tari_network }}" >> $GITHUB_OUTPUT
+            NETWORK="${{ github.event.inputs.tari_network }}"
+            if [ "$NETWORK" = "esmeralda" ] || [ "$NETWORK" = "localnet" ] || [ "$NETWORK" = "igor" ]; then
+              echo "tari_target_network=testnet" >> $GITHUB_OUTPUT
+            else
+              echo "tari_target_network=$NETWORK" >> $GITHUB_OUTPUT
+            fi
           else
             echo "Other builds"
             echo "tari_network=esmeralda" >> $GITHUB_OUTPUT
@@ -130,7 +137,7 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Builds - Install dependencies (windows) [yq]
         if: ${{ startsWith(runner.os,'Windows') }}
@@ -189,7 +196,7 @@ jobs:
           yq eval ".productName = \"${{ env.OS_BINARY_NAME }}${OS_BETA_STRING}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
           yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}${OS_BETA_STRING_BinName}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
           yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | ${{ needs.set-matrix.outputs.tari_network }}\"" --output-format=json -i tauri.conf.json
-          yq eval ".build.beforeBuildCommand = \"npm run build -- --mode development\"" --output-format=json -i tauri.conf.json
+          yq eval ".build.beforeBuildCommand = \"pnpm run build -- --mode development\"" --output-format=json -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe.beta\"" --output-format=json -i tauri.conf.json
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/beta-latest.json\"]" \
             --output-format=json -i tauri.conf.json
@@ -225,11 +232,13 @@ jobs:
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\", \"https://cdn-universe.tari.com/tari-project/universe/updater/latest.json\"]" \
             --output-format=json -i tauri.conf.json
 
+      - uses: pnpm/action-setup@v6
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: lts/*
-          cache: 'npm'
+          cache: 'pnpm'
 
       - name: Rust Setup
         uses: dtolnay/rust-toolchain@stable
@@ -318,8 +327,8 @@ jobs:
 
       - name: Install Dependencies - Node
         run: |
-          npm --version
-          npm install
+          pnpm --version
+          pnpm install
 
       - name: Build process-wrapper
         shell: bash
@@ -342,6 +351,12 @@ jobs:
             cargo build --release --manifest-path process-wrapper/Cargo.toml
           fi
 
+      - name: Prepare macOS notary API key
+        if: ${{ startsWith(runner.os, 'macOS') }}
+        env:
+          MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+        run: printf '%s' "$MACOS_NOTARY_KEY" > "$RUNNER_TEMP/notary_key.p8"
+
       - name: Build Tauri Apps
         id: build
         uses: tauri-apps/tauri-action@v0
@@ -351,9 +366,9 @@ jobs:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_ISSUER: ${{ secrets.MACOS_NOTARY_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          APPLE_API_KEY_PATH: ${{ runner.temp }}/notary_key.p8
           AZURE_TENANT_ID: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_CLIENT_SECRET }}
@@ -372,7 +387,7 @@ jobs:
           args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
       - name: Add msbuild to PATH (windows)
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@v3
         if: startsWith(runner.os,'Windows')
 
       - name: Build bundled WiX Windows installer
@@ -504,7 +519,7 @@ jobs:
 
       - name: BETA Builds bundled Windows installer upload
         if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_x64_en-US
           path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe
@@ -521,21 +536,21 @@ jobs:
 
       - name: BETA Builds - Upload assets
         if: ${{ ! startsWith(github.ref, 'refs/heads/release') && github.event_name != 'workflow_dispatch' }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
 
       - name: Ad-hoc Builds - Upload assets
         if: ${{ github.event_name == 'workflow_dispatch' }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari-universe-adhoc_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
 
       - name: Windows debug symbols - Upload asset
         if: startsWith(runner.os,'Windows')
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tari_universe.pdb
           path: '${{ github.workspace }}/target/release/tari_universe.pdb'
