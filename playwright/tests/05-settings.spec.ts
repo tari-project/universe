@@ -155,6 +155,19 @@ test.describe('Settings', () => {
   });
 
   test('toggle: visual mode', async ({ appPage: page }) => {
+    await ensureSettingsOpen(page);
+    const input = page.locator('[data-testid="settings-toggle-visual-mode"]');
+    await input.waitFor({ state: 'attached', timeout: 10_000 });
+
+    // Visual Mode renders a WebGL scene, so the app DISABLES the toggle when
+    // WebGL is unavailable (headless runners under load routinely fail to
+    // create a GL context). A disabled toggle can never flip — treat "no
+    // WebGL" as N/A (same as GPU features on unsupported hardware) and
+    // assert the not-supported state instead of forcing the toggle.
+    if (await input.isDisabled().catch(() => true)) {
+      await expect(page.getByText(/webgl.*not.*support/i).first()).toBeVisible({ timeout: 10_000 });
+      return;
+    }
     await toggleAndVerify(page, 'settings-toggle-visual-mode');
   });
 
