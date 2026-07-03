@@ -46,8 +46,8 @@ test.describe('Wallet Integrity', () => {
       // Parse "1.park2.visit..." or "1. park 2. visit ..." format
       words = (seedText ?? '')
         .split(/\d+\./)
-        .map(w => w.trim())
-        .filter(w => w.length > 0);
+        .map((w) => w.trim())
+        .filter((w) => w.length > 0);
       if (words.length === 24) break;
       await page.waitForTimeout(1_000);
     }

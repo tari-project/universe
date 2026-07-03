@@ -104,9 +104,7 @@ export async function clickStopMining(page: Page) {
   await openMiningSidebar(page);
   const pauseButton = page.locator(sel.mining.pauseButton);
   const stopOption = page.locator(sel.mining.stopOption);
-  const startOrResume = page.locator(
-    `${sel.mining.startButton}:visible, ${sel.mining.resumeButton}:visible`
-  );
+  const startOrResume = page.locator(`${sel.mining.startButton}:visible, ${sel.mining.resumeButton}:visible`);
 
   const deadline = Date.now() + 60_000;
   while (Date.now() < deadline) {
@@ -114,9 +112,10 @@ export async function clickStopMining(page: Page) {
       // The dropdown can render slower than the click under load; the
       // click toggles the menu, so retry converges.
       await pauseButton.click({ timeout: 10_000, force: true }).catch(() => {});
-      const visible = await stopOption
-        .waitFor({ state: 'visible', timeout: 5_000 })
-        .then(() => true, () => false);
+      const visible = await stopOption.waitFor({ state: 'visible', timeout: 5_000 }).then(
+        () => true,
+        () => false
+      );
       if (visible) {
         await stopOption.click({ timeout: 5_000 });
         return;
@@ -195,9 +194,7 @@ export async function waitForWalletBalance(page: Page, minBalance: number, timeo
     if (lastBalance >= minBalance) return lastBalance;
     await page.waitForTimeout(2_000);
   }
-  throw new Error(
-    `Wallet balance did not reach ${minBalance} within ${timeout}ms (last seen: ${lastBalance})`
-  );
+  throw new Error(`Wallet balance did not reach ${minBalance} within ${timeout}ms (last seen: ${lastBalance})`);
 }
 
 /**

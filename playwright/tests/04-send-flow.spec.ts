@@ -1,9 +1,5 @@
 import { test, expect } from '../helpers/fixtures';
-import {
-  ensureBalance,
-  mineUntilBalanceExceeds,
-  getWalletBalance,
-} from '../helpers/wait-for';
+import { ensureBalance, mineUntilBalanceExceeds, getWalletBalance } from '../helpers/wait-for';
 import { sel } from '../helpers/selectors';
 import { TEST_WALLET } from '../helpers/test-wallet';
 import type { Page } from '@playwright/test';
@@ -43,9 +39,10 @@ async function fillAddressAwaitValidation(
   while (Date.now() < deadline) {
     await addressInput.fill('');
     await addressInput.fill(address);
-    const ok = await outcome
-      .waitFor({ state: 'visible', timeout: 10_000 })
-      .then(() => true, () => false);
+    const ok = await outcome.waitFor({ state: 'visible', timeout: 10_000 }).then(
+      () => true,
+      () => false
+    );
     if (ok) return;
   }
   throw new Error(`Address validation (${expected}) did not resolve within ${timeout}ms`);
@@ -76,9 +73,10 @@ test.describe('Send Transaction Flow', () => {
     await amountInput.click();
     await amountInput.pressSequentially('abc', { delay: 50 });
     const amountError = page.getByText(/amount is invalid/i);
-    const hasAmountError = await amountError
-      .waitFor({ state: 'visible', timeout: 3_000 })
-      .then(() => true, () => false);
+    const hasAmountError = await amountError.waitFor({ state: 'visible', timeout: 3_000 }).then(
+      () => true,
+      () => false
+    );
     if (!hasAmountError) {
       expect(await amountInput.inputValue()).not.toContain('abc');
     }
@@ -148,22 +146,33 @@ test.describe('Send Transaction Flow', () => {
       .first();
     await rowContainer.hover({ force: true });
     const detailsBtn = page.locator(sel.send.rowDetails).first();
-    const detailsVisible = await detailsBtn
-      .waitFor({ state: 'visible', timeout: 5_000 })
-      .then(() => true, () => false);
+    const detailsVisible = await detailsBtn.waitFor({ state: 'visible', timeout: 5_000 }).then(
+      () => true,
+      () => false
+    );
     if (detailsVisible) {
       await detailsBtn.click({ timeout: 5_000 });
       await expect(page.getByText('Transaction Details').first()).toBeVisible({ timeout: 5_000 });
       await expect(page.getByText(TX_MESSAGE).first()).toBeVisible({ timeout: 5_000 });
 
-      // Copy raw details and verify the clipboard holds valid JSON
+      // Copy raw details and verify the clipboard holds valid JSON.
+      // Converge on a non-empty clipboard — a lost click would leave it empty.
       const copyRawBtn = page.locator(sel.send.copyRaw);
       await copyRawBtn.waitFor({ state: 'visible', timeout: 5_000 });
-      await copyRawBtn.click({ timeout: 5_000 });
-      const clipboard = await page.evaluate(() => {
-        return (window as any).__PLAYWRIGHT_CLIPBOARD__ || '';
-      });
-      expect(clipboard.length).toBeGreaterThan(0);
+      await expect
+        .poll(
+          async () => {
+            await copyRawBtn.click({ timeout: 5_000, force: true }).catch(() => {});
+            return page.evaluate(
+              () => (window as unknown as { __PLAYWRIGHT_CLIPBOARD__?: string }).__PLAYWRIGHT_CLIPBOARD__ ?? ''
+            );
+          },
+          { timeout: 15_000, intervals: [400, 800, 1000] }
+        )
+        .not.toBe('');
+      const clipboard = await page.evaluate(
+        () => (window as unknown as { __PLAYWRIGHT_CLIPBOARD__?: string }).__PLAYWRIGHT_CLIPBOARD__ ?? ''
+      );
       expect(() => JSON.parse(clipboard)).not.toThrow();
 
       await page.keyboard.press('Escape');
@@ -182,7 +191,10 @@ test.describe('Send Transaction Flow', () => {
     // (which also exercises the filter itself).
     const filterTrigger = page.locator('[data-testid="tx-history-filter"]');
     await filterTrigger.click({ timeout: 10_000 });
-    await page.getByText(/^transactions$/i).first().click({ timeout: 5_000 });
+    await page
+      .getByText(/^transactions$/i)
+      .first()
+      .click({ timeout: 5_000 });
     await txRow.waitFor({ state: 'visible', timeout: 60_000 });
   });
 });

@@ -75,9 +75,7 @@ async function readBlockHeight(page: Page): Promise<number | null> {
     .getByText(/Block: #[\d,]+/)
     .allTextContents()
     .catch(() => [] as string[]);
-  const nums = cards
-    .map((t) => parseInt(t.replace(/\D/g, ''), 10))
-    .filter((n) => !Number.isNaN(n) && n > 0);
+  const nums = cards.map((t) => parseInt(t.replace(/\D/g, ''), 10)).filter((n) => !Number.isNaN(n) && n > 0);
   return nums.length ? Math.max(...nums) : null;
 }
 
@@ -253,5 +251,4 @@ test.describe('Mining Flow', () => {
     await clickStopMining(page);
     await waitForMiningStopped(page, 60_000);
   });
-
 });

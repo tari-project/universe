@@ -24,7 +24,5 @@ export async function waitForTauriReady(page: Page, timeout = 30_000) {
  * page's WebSocket connects, so this resolves within a few seconds.
  */
 export async function waitForAppReady(page: Page, timeout = 60_000) {
-  await page
-    .locator(sel.sidebar.mineButton)
-    .waitFor({ state: 'visible', timeout });
+  await page.locator(sel.sidebar.mineButton).waitFor({ state: 'visible', timeout });
 }

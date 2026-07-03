@@ -153,9 +153,24 @@ test.describe.serial('Security PIN', () => {
     await page.locator(sel.settings.syncWithPhone).click({ timeout: 10_000 });
     const haveApp = page.locator(sel.sync.haveApp);
     await haveApp.waitFor({ state: 'visible', timeout: 15_000 });
-    await haveApp.click({ timeout: 5_000 });
 
-    await page.locator(sel.pin.input).waitFor({ state: 'visible', timeout: 30_000 });
+    // Converge on the PIN prompt: re-click "I have the app" if the first
+    // click was lost.
+    const pinInput = page.locator(sel.pin.input);
+    const deadline = Date.now() + 45_000;
+    while (Date.now() < deadline) {
+      if (await pinInput.isVisible().catch(() => false)) break;
+      if (await haveApp.isVisible().catch(() => false)) {
+        await haveApp.click({ timeout: 5_000, force: true }).catch(() => {});
+      }
+      if (
+        await pinInput.waitFor({ state: 'visible', timeout: 10_000 }).then(
+          () => true,
+          () => false
+        )
+      )
+        break;
+    }
     await answerPinPrompt(page, TEST_PIN);
 
     await expect(page.locator(sel.sync.qr)).toBeVisible({ timeout: 60_000 });

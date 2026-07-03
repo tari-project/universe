@@ -27,10 +27,6 @@ export async function openSettingsTab(page: Page, tab: string) {
 }
 
 /**
- * Toggle a ToggleSwitch (checkbox input carrying the testid) by clicking
- * its wrapper, verify the checked state flipped, then restore it.
- */
-/**
  * Drive a ToggleSwitch to a desired checked state and converge on it. A
  * single wrapper click can be lost (framer-motion remount, or the store
  * update lagging behind under load), leaving the state unflipped — so poll
@@ -48,24 +44,16 @@ export async function setToggleState(page: Page, selector: string, desired: bool
   throw new Error(`Toggle ${selector} did not reach checked=${desired} within ${timeout}ms`);
 }
 
+/**
+ * Flip a ToggleSwitch to the opposite of its current state and back, each
+ * step converging on the target (never a single unchecked click). Verifies
+ * the flip happened and the original state is restored.
+ */
 export async function toggleAndRestore(page: Page, selector: string) {
   const input = page.locator(selector);
-  const wrapper = input.locator('..');
   const initial = await input.isChecked();
-
-  await wrapper.click({ timeout: 5_000 });
-  await page.waitForTimeout(500);
-  if (initial) {
-    await expect(input).not.toBeChecked();
-  } else {
-    await expect(input).toBeChecked();
-  }
-
-  await wrapper.click({ timeout: 5_000 });
-  await page.waitForTimeout(500);
-  if (initial) {
-    await expect(input).toBeChecked();
-  } else {
-    await expect(input).not.toBeChecked();
-  }
+  await setToggleState(page, selector, !initial);
+  await expect(input).toBeChecked({ checked: !initial });
+  await setToggleState(page, selector, initial);
+  await expect(input).toBeChecked({ checked: initial });
 }

@@ -24,14 +24,23 @@ test.describe.serial('Exchange Miner', () => {
     await waitForMiningReady(page, 120_000);
 
     // --- Copy the wallet's own address via the UI copy button ---
+    // Converge: a lost click would leave the clipboard empty.
     const copyBtn = page.locator(sel.copyAddress);
     await copyBtn.waitFor({ state: 'visible', timeout: 30_000 });
-    await copyBtn.click({ timeout: 5_000 });
-
-    const walletAddress = await page.evaluate(() => {
-      return (window as any).__PLAYWRIGHT_CLIPBOARD__ || '';
-    });
-    expect(walletAddress.length).toBeGreaterThan(0);
+    await expect
+      .poll(
+        async () => {
+          await copyBtn.click({ timeout: 5_000, force: true }).catch(() => {});
+          return page.evaluate(
+            () => (window as unknown as { __PLAYWRIGHT_CLIPBOARD__?: string }).__PLAYWRIGHT_CLIPBOARD__ ?? ''
+          );
+        },
+        { timeout: 15_000, intervals: [400, 800, 1000] }
+      )
+      .not.toBe('');
+    const walletAddress = await page.evaluate(
+      () => (window as unknown as { __PLAYWRIGHT_CLIPBOARD__?: string }).__PLAYWRIGHT_CLIPBOARD__ ?? ''
+    );
 
     // Record balance before switching
     balanceBeforeExchange = await getWalletBalance(page);
@@ -104,7 +113,10 @@ test.describe.serial('Exchange Miner', () => {
     const internalOption = page.locator(sel.exchange.optionUniversal);
     let revertedViaUi = false;
     const becomesVisible = (locator: ReturnType<typeof page.locator>, timeout: number) =>
-      locator.waitFor({ state: 'visible', timeout }).then(() => true, () => false);
+      locator.waitFor({ state: 'visible', timeout }).then(
+        () => true,
+        () => false
+      );
     if (await becomesVisible(exchangeBtn, 10_000)) {
       await exchangeBtn.click({ timeout: 5_000 });
       if (await becomesVisible(internalOption, 5_000)) {
@@ -122,12 +134,16 @@ test.describe.serial('Exchange Miner', () => {
     if (!revertedViaUi) {
       // Fallback: revert via invoke — the exchange modal UI does not
       // always expose the internal-wallet option in exchange mode.
-      await page.evaluate(async () => {
-        const fn = (window as any).__PLAYWRIGHT_INVOKE__;
-        if (typeof fn === 'function') {
-          await fn('revert_to_internal_wallet', {});
-        }
-      }).catch(() => { /* invoke may fail if WS drops during revert */ });
+      await page
+        .evaluate(async () => {
+          const fn = (window as any).__PLAYWRIGHT_INVOKE__;
+          if (typeof fn === 'function') {
+            await fn('revert_to_internal_wallet', {});
+          }
+        })
+        .catch(() => {
+          /* invoke may fail if WS drops during revert */
+        });
     }
 
     // Backend restarts wallet phases; WS auto-reconnects and the state
@@ -139,9 +155,7 @@ test.describe.serial('Exchange Miner', () => {
     while (Date.now() - start < 180_000) {
       try {
         if (await normalBalance.isVisible().catch(() => false)) {
-          const attr = await normalBalance
-            .getAttribute('data-balance-total', { timeout: 2_000 })
-            .catch(() => null);
+          const attr = await normalBalance.getAttribute('data-balance-total', { timeout: 2_000 }).catch(() => null);
           if (attr && parseFloat(attr) > 0) break;
         }
       } catch {
