@@ -218,7 +218,10 @@ test.describe('Mining Flow', () => {
     await waitForMiningReady(page, 120_000);
     await clickStartMining(page);
     await waitForMiningActive(page, 120_000);
-    await waitForBlockHeightIncrease(page, 120_000);
+    // Localnet block production is CPU-bound; on a busy/contended runner the
+    // first block can lag, so give chain growth generous headroom (this is
+    // throughput, not a race).
+    await waitForBlockHeightIncrease(page, 240_000);
 
     // Read the xmrig PID from the PID file written by the process watcher
     const fs = await import('fs');
@@ -246,7 +249,7 @@ test.describe('Mining Flow', () => {
     expect(newPid).not.toBe(xmrigPid);
 
     // And the chain keeps growing under the restarted miner.
-    await waitForBlockHeightIncrease(page, 180_000);
+    await waitForBlockHeightIncrease(page, 240_000);
 
     await clickStopMining(page);
     await waitForMiningStopped(page, 60_000);
