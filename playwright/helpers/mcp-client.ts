@@ -136,12 +136,34 @@ export class McpClient {
     return json?.result;
   }
 
+  /**
+   * Retry an idempotent call a few times. A freshly (re)started server can
+   * transiently reject the first authenticated request even after its socket
+   * accepts connections (session table / auth layer still settling), so the
+   * handshake and read-only listing are retried; effectful tool calls are
+   * NOT routed through here.
+   */
+  private async withRetry<T>(label: string, fn: () => Promise<T>, attempts = 4, delayMs = 750): Promise<T> {
+    let lastErr: unknown;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        return await fn();
+      } catch (e) {
+        lastErr = e;
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+    throw new Error(`${label} failed after ${attempts} attempts: ${String(lastErr)}`);
+  }
+
   async initialize(): Promise<void> {
-    await this.rpc('initialize', {
-      protocolVersion: '2025-03-26',
-      capabilities: {},
-      clientInfo: { name: 'playwright-suite', version: '1.0.0' },
-    });
+    await this.withRetry('initialize', () =>
+      this.rpc('initialize', {
+        protocolVersion: '2025-03-26',
+        capabilities: {},
+        clientInfo: { name: 'playwright-suite', version: '1.0.0' },
+      })
+    );
     // Fire-and-forget per spec: notifications get 202 Accepted, no body.
     await fetch(`${this.baseUrl}/mcp`, {
       method: 'POST',
@@ -151,7 +173,9 @@ export class McpClient {
   }
 
   async listTools(): Promise<string[]> {
-    const result = (await this.rpc('tools/list')) as { tools?: { name: string }[] };
+    const result = (await this.withRetry('tools/list', () => this.rpc('tools/list'))) as {
+      tools?: { name: string }[];
+    };
     return (result.tools ?? []).map((t) => t.name);
   }
 
