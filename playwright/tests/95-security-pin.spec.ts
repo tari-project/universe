@@ -103,18 +103,18 @@ test.describe.serial('Security PIN', () => {
     await page.locator(sel.pin.input).waitFor({ state: 'visible', timeout: 15_000 });
     await answerPinPrompt(page, TEST_PIN);
 
-    const deadline = Date.now() + 30_000;
-    let words: string[] = [];
-    while (Date.now() < deadline) {
-      const text = (await seedDisplay.textContent().catch(() => '')) ?? '';
-      words = text
-        .split(/\d+\./)
-        .map((w) => w.trim())
-        .filter((w) => w.length > 0);
-      if (words.length === 24) break;
-      await page.waitForTimeout(1_000);
-    }
-    expect(words).toEqual(TEST_WALLET.seedWords);
+    await expect
+      .poll(
+        async () => {
+          const text = (await seedDisplay.textContent().catch(() => '')) ?? '';
+          return text
+            .split(/\d+\./)
+            .map((w) => w.trim())
+            .filter((w) => w.length > 0);
+        },
+        { timeout: 30_000 }
+      )
+      .toEqual(TEST_WALLET.seedWords);
   });
 
   test('send prompts for the PIN before broadcasting', async ({ appPage: page }) => {

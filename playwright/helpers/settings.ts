@@ -9,10 +9,11 @@ import { sel } from './selectors';
  */
 export async function openSettingsTab(page: Page, tab: string) {
   // Dismiss any overlay/dialog that may be blocking the settings button.
-  const overlay = page.locator('.overlay');
+  // (.overlay can resolve to more than one node, so scope to the first.)
+  const overlay = page.locator('.overlay').first();
   if (await overlay.isVisible().catch(() => false)) {
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(500);
+    await overlay.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {});
   }
 
   const tabButton = page.locator(sel.settings.tab(tab));

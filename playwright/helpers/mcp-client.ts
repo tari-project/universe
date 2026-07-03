@@ -56,14 +56,20 @@ export class McpClient {
         if (Date.now() > deadline) throw new Error(`SSE response for id ${id} timed out after ${timeoutMs}ms`);
         const { done, value } = await reader.read();
         if (value) buffer += decoder.decode(value, { stream: true });
-        for (const line of buffer.split('\n')) {
+        // Process only COMPLETE lines this pass; keep the trailing partial
+        // line in `buffer` for the next chunk. Re-splitting the whole
+        // accumulated buffer every read (without consuming it) would be
+        // O(N^2) and re-parse already-seen events.
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
           const trimmed = line.trim();
           if (!trimmed.startsWith('data:')) continue;
           let msg: { id?: number; error?: unknown; result?: unknown };
           try {
             msg = JSON.parse(trimmed.slice(5).trim());
           } catch {
-            continue; // partial line — wait for more bytes
+            continue; // malformed event line — skip it
           }
           if (msg.id === id) {
             if (msg.error) throw new Error(`MCP error: ${JSON.stringify(msg.error)}`);
