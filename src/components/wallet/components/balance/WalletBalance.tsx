@@ -125,6 +125,7 @@ export const WalletBalance = () => {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 10 }}
                             onClick={toggleHideWalletBalance}
+                            data-testid="balance-visibility-toggle"
                         >
                             {hideBalance ? <IoEyeOutline /> : <IoEyeOffOutline />}
                         </ActionButton>

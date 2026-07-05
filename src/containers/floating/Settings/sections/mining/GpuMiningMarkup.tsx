@@ -61,6 +61,7 @@ const GpuMiningMarkup = () => {
                         checked={isGpuMiningEnabled && !isMac}
                         disabled={isDisabled}
                         onChange={handleGpuMiningEnabled}
+                        data-testid="settings-toggle-gpu-mining"
                     />
                 </SettingsGroupAction>
             </SettingsGroup>

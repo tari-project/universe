@@ -65,6 +65,14 @@ jobs:
       - name: Install Node dependencies
         run: pnpm install --frozen-lockfile
 
+      # Typecheck the e2e sources before the expensive Tauri build so a type
+      # error fails in seconds. `playwright test` transpiles via esbuild and
+      # does NOT type-check, and the root `pnpm run lint` scopes tsc to src/,
+      # so this is the only gate on the playwright/ TypeScript.
+      - name: Typecheck Playwright suite
+        working-directory: playwright
+        run: pnpm run typecheck
+
       - name: Install Tauri CLI
         run: cargo install tauri-cli
         working-directory: ./src-tauri

@@ -46,6 +46,7 @@ export default function EnterPin({ onSubmit }: EnterPinProps) {
                         size="xlarge"
                         disabled={currentCode.length !== DEFAULT_PIN_LENGTH}
                         type="submit"
+                        data-testid="pin-enter-submit"
                     >
                         {t('security.pin.enter')}
                     </Button>

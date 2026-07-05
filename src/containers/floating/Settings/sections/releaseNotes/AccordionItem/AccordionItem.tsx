@@ -12,7 +12,7 @@ interface AccordionItemProps {
 export const AccordionItem = ({ title, subtitle, content, isOpen, onToggle }: AccordionItemProps) => {
     return (
         <Wrapper>
-            <Header onClick={onToggle}>
+            <Header onClick={onToggle} data-testid="release-note-item" data-open={isOpen}>
                 <TextWrapper>
                     <Title>{title}</Title>
                     {subtitle && <Subtitle>{subtitle}</Subtitle>}
