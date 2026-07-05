@@ -45,7 +45,7 @@ export default function ServerToggle() {
                         <Typography variant="h6">{t('mcp.server-toggle.title')}</Typography>
                     </SettingsGroupTitle>
                     <Typography variant="p">{t('mcp.server-toggle.description')}</Typography>
-                    <Typography variant="p" style={{ opacity: 0.7 }}>
+                    <Typography variant="p" style={{ opacity: 0.7 }} data-testid="mcp-server-status">
                         {statusText}
                     </Typography>
                 </SettingsGroupContent>
@@ -54,6 +54,7 @@ export default function ServerToggle() {
                         checked={enabled}
                         onChange={(e) => handleToggle(e.target.checked)}
                         disabled={loading}
+                        data-testid="mcp-server-toggle"
                     />
                 </SettingsGroupAction>
             </SettingsGroup>

@@ -27,6 +27,7 @@ export default function MineOnStartMarkup() {
                     <ToggleSwitch
                         checked={mineOnAppStart}
                         onChange={(event) => setMineOnAppStart(event.target.checked)}
+                        data-testid="settings-toggle-mine-on-start"
                     />
                 </SettingsGroupAction>
             </SettingsGroup>

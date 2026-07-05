@@ -103,6 +103,11 @@ fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
         | "AvailableMiners"
         | "UpdateSelectedMiner"
         | "InitWalletScanningProgress"
+        // PinLocked is a one-shot STATE event (emitted when a PIN is
+        // created/cleared), not a dialog trigger. Fresh pages must learn a
+        // PIN is set, or frontend-gated flows (e.g. MCP token reveal) skip
+        // their PIN prompt. Replaying the last value is correct.
+        | "PinLocked"
         | "CloseSplashscreen" => event_type.to_string(),
         // Periodic metric streams (CpuMiningUpdate, GpuMiningUpdate,
         // pool stats) are intentionally NOT replayed: their emitters stop

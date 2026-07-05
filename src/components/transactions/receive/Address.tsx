@@ -87,12 +87,15 @@ export function Address({ useEmoji, setUseEmoji }: Props) {
             <AddressContainer>
                 <Label>{t('receive.label-address')}</Label>
                 <ContentWrapper ref={refs.setReference}>
-                    <AddressWrapper>{useEmoji ? emojiMarkup : displayAddress}</AddressWrapper>
+                    <AddressWrapper data-testid="receive-address" title={useEmoji ? emojiAddress : walletAddress}>
+                        {useEmoji ? emojiMarkup : displayAddress}
+                    </AddressWrapper>
                     <ToggleWrapper>
                         <ToggleSwitch
                             checked={useEmoji}
                             onChange={toggleEmoji}
                             customDecorators={{ first: textOptionMarkup, second: emojiOptionMarkup }}
+                            data-testid="receive-emoji-toggle"
                         />
                     </ToggleWrapper>
                 </ContentWrapper>

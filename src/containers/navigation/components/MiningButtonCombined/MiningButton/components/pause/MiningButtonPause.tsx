@@ -62,7 +62,7 @@ export default function MiningButtonPause({ children, isMining, isMiningButtonDi
 
     function renderDurationOption(hours: number) {
         return (
-            <OptionWrapper variants={item} onClick={() => handlePause(hours)}>
+            <OptionWrapper variants={item} onClick={() => handlePause(hours)} data-testid={`mining-pause-${hours}h`}>
                 <IconWrapper>
                     <TimerIcon />
                     <TimerAccent>{hours}</TimerAccent>

@@ -103,7 +103,11 @@ export default function McpTransactionDialog() {
             <Wrapper $isLoading={submitting}>
                 <StyledForm ref={formRef} onSubmit={handleFormSubmit}>
                     {mcpTxStatus === 'reviewing' && (
-                        <Typography variant="p" style={{ opacity: 0.5, fontSize: 11, textAlign: 'center' }}>
+                        <Typography
+                            variant="p"
+                            style={{ opacity: 0.5, fontSize: 11, textAlign: 'center' }}
+                            data-testid="mcp-tx-countdown"
+                        >
                             {t('settings:mcp.transaction-dialog.remaining', { countdown })}
                         </Typography>
                     )}

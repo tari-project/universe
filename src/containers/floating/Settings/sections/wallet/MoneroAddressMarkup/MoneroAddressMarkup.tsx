@@ -31,6 +31,7 @@ const MoneroAddressMarkup = () => {
                 initialAddress={moneroAddress || ''}
                 onApply={handleMoneroAddressChange}
                 rules={validationRules}
+                testId="wallet-monero-address"
             />
         </SettingsGroupWrapper>
     );
