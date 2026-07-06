@@ -4,7 +4,7 @@
 
 Hey Tari fam,
 
-This release is also a first for us: it includes contributions from the wider Tari community. Thank you for building this alongside us. 💜
+This release is a first for us: it includes contributions from the wider Tari community. Thank you for building this alongside us. 💜
 
 ✨ WHAT'S NEW
 
