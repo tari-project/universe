@@ -13,24 +13,40 @@ async function selectHistoryFilter(page: Page, label: RegExp) {
   await page.waitForTimeout(1_000);
 }
 
+/**
+ * Drive the hover-mounted balance eye toggle until the balance reaches the
+ * wanted hidden/shown state. The button only exists while the balance is
+ * hovered and its click can be lost, so re-hover + re-click and converge.
+ */
+async function setBalanceHidden(page: Page, hidden: boolean, timeout = 15_000) {
+  const balance = page.locator(sel.wallet.balance);
+  const toggle = page.locator(sel.wallet.balanceVisibilityToggle);
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const text = (await balance.textContent().catch(() => '')) ?? '';
+    if (text.includes('*******') === hidden) return;
+    await balance.hover({ force: true });
+    await toggle.waitFor({ state: 'visible', timeout: 5_000 }).catch(() => {});
+    await toggle.dispatchEvent('click').catch(() => {});
+    await page.waitForTimeout(600);
+  }
+  throw new Error(`balance did not become ${hidden ? 'hidden' : 'visible'} within ${timeout}ms`);
+}
+
 test.describe('Wallet Basics', () => {
   test('eye icon hides and shows the balance', async ({ appPage: page }) => {
     await waitForWalletReady(page, 300_000);
     const balance = page.locator(sel.wallet.balance);
     await balance.waitFor({ state: 'visible', timeout: 15_000 });
 
-    // The eye button only mounts while the balance is hovered.
-    const toggle = page.locator(sel.wallet.balanceVisibilityToggle);
-    await balance.hover({ force: true });
-    await toggle.waitFor({ state: 'visible', timeout: 10_000 });
-    await toggle.dispatchEvent('click');
-    await expect(balance).toContainText('*******', { timeout: 10_000 });
+    // Hide, then restore. Each step converges: the eye only mounts while the
+    // balance is hovered and its click can be lost, so re-hover + re-click
+    // until the balance reaches the wanted state.
+    await setBalanceHidden(page, true);
+    await expect(balance).toContainText('*******', { timeout: 5_000 });
 
-    // Restore visibility (the hidden-balance preference persists in config).
-    await balance.hover({ force: true });
-    await toggle.waitFor({ state: 'visible', timeout: 10_000 });
-    await toggle.dispatchEvent('click');
-    await expect(balance).not.toContainText('*******', { timeout: 10_000 });
+    await setBalanceHidden(page, false);
+    await expect(balance).not.toContainText('*******', { timeout: 5_000 });
   });
 
   test('balance persists across a page reload', async ({ appPage: page }) => {

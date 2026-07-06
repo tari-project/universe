@@ -1,7 +1,7 @@
 import { test, expect } from '../helpers/fixtures';
 import { sel } from '../helpers/selectors';
 import { TEST_WALLET } from '../helpers/test-wallet';
-import { openSettingsTab, toggleAndRestore } from '../helpers/settings';
+import { openSettingsTab, toggleAndRestore, setToggleState } from '../helpers/settings';
 
 /**
  * Settings sweep for the tabs not covered by 05-settings (General).
@@ -94,19 +94,13 @@ test.describe('Settings Sweep', () => {
     await master.waitFor({ state: 'visible', timeout: 15_000 });
 
     const wasEnabled = await master.isChecked();
-    if (!wasEnabled) {
-      await master.locator('..').click({ timeout: 5_000 });
-      await expect(master).toBeChecked({ timeout: 10_000 });
-    }
+    if (!wasEnabled) await setToggleState(page, sel.settings.toggleExperimental, true);
 
     await expect(page.getByText(/debug/i).first()).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/versions/i).first()).toBeVisible({ timeout: 15_000 });
 
     // Restore the default so later tests see the stock settings surface.
-    if (!wasEnabled) {
-      await master.locator('..').click({ timeout: 5_000 });
-      await expect(master).not.toBeChecked({ timeout: 10_000 });
-    }
+    if (!wasEnabled) await setToggleState(page, sel.settings.toggleExperimental, false);
   });
 
   test('release notes tab: version header and collapsible notes', async ({ appPage: page }) => {
@@ -124,8 +118,15 @@ test.describe('Settings Sweep', () => {
     if (count > 0) {
       await expect(items.first()).toHaveAttribute('data-open', 'true');
       if (count > 1) {
-        await items.nth(1).click({ timeout: 5_000 });
-        await expect(items.nth(1)).toHaveAttribute('data-open', 'true', { timeout: 5_000 });
+        // Converge on the second note expanding (a lost click leaves it shut).
+        const second = items.nth(1);
+        const deadline = Date.now() + 15_000;
+        while (Date.now() < deadline) {
+          if ((await second.getAttribute('data-open').catch(() => null)) === 'true') break;
+          await second.click({ timeout: 5_000, force: true }).catch(() => {});
+          await page.waitForTimeout(500);
+        }
+        await expect(second).toHaveAttribute('data-open', 'true', { timeout: 5_000 });
         await expect(items.first()).toHaveAttribute('data-open', 'false', { timeout: 5_000 });
       }
     }

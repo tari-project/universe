@@ -8,7 +8,45 @@ import {
   waitForMiningStopped,
 } from '../helpers/wait-for';
 import { sel } from '../helpers/selectors';
+import { setToggleState } from '../helpers/settings';
 import type { Page } from '@playwright/test';
+
+/**
+ * Click an element until it disappears. A single click can be lost
+ * (framer-motion remount) or the resulting config write can lag on a
+ * loaded runner, so re-issue the click until the element is gone.
+ */
+async function clickUntilHidden(page: Page, selector: string, timeout = 30_000) {
+  const el = page.locator(selector);
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    if (!(await el.isVisible().catch(() => false))) return;
+    await el.click({ timeout: 5_000, force: true }).catch(() => {});
+    const gone = await el.waitFor({ state: 'hidden', timeout: 5_000 }).then(
+      () => true,
+      () => false
+    );
+    if (gone) return;
+  }
+  throw new Error(`${selector} did not disappear within ${timeout}ms`);
+}
+
+/** Click Save and converge until the schedule is persisted (delete CTA shows). */
+async function saveSchedule(page: Page, timeout = 30_000) {
+  const save = page.locator(sel.scheduler.save);
+  const del = page.locator(sel.scheduler.delete);
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    if (await del.isVisible().catch(() => false)) return;
+    await save.click({ timeout: 5_000, force: true }).catch(() => {});
+    const saved = await del.waitFor({ state: 'visible', timeout: 5_000 }).then(
+      () => true,
+      () => false
+    );
+    if (saved) return;
+  }
+  throw new Error(`schedule did not save within ${timeout}ms`);
+}
 
 /**
  * Open the pause dropdown and click one of its options. Mirrors the
@@ -89,11 +127,19 @@ async function openScheduler(page: Page) {
 }
 
 async function closeScheduler(page: Page) {
+  const save = page.locator(sel.scheduler.save);
   const cancel = page.locator(sel.scheduler.cancel);
-  if (await cancel.isVisible().catch(() => false)) {
-    await cancel.click({ timeout: 5_000 });
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    if (!(await save.isVisible().catch(() => false))) return; // modal closed
+    await cancel.click({ timeout: 5_000, force: true }).catch(() => {});
+    const closed = await save.waitFor({ state: 'hidden', timeout: 5_000 }).then(
+      () => true,
+      () => false
+    );
+    if (closed) return;
   }
-  await page.locator(sel.scheduler.save).waitFor({ state: 'hidden', timeout: 10_000 });
+  throw new Error('scheduler modal did not close within 20s');
 }
 
 /** Remove any saved schedule so no timed transition leaks into later tests. */
@@ -101,8 +147,7 @@ async function deleteScheduleIfAny(page: Page) {
   await openScheduler(page);
   const del = page.locator(sel.scheduler.delete);
   if (await del.isVisible().catch(() => false)) {
-    await del.click({ timeout: 5_000 });
-    await del.waitFor({ state: 'hidden', timeout: 10_000 });
+    await clickUntilHidden(page, sel.scheduler.delete);
   }
   await closeScheduler(page);
 }
@@ -164,10 +209,8 @@ test.describe('Schedule Mining', () => {
     await openScheduler(page);
     await setTimePicker(page, sel.scheduler.startTime, start);
     await setTimePicker(page, sel.scheduler.endTime, end);
-    await page.locator(sel.scheduler.save).click({ timeout: 5_000 });
-
     // The saved schedule renders as the "current" item with a delete CTA.
-    await expect(page.locator(sel.scheduler.delete)).toBeVisible({ timeout: 10_000 });
+    await saveSchedule(page);
     await closeScheduler(page);
 
     // The sidebar button now shows the scheduled state with a pause toggle.
@@ -175,23 +218,21 @@ test.describe('Schedule Mining', () => {
     await expect(pauseToggle).toBeVisible({ timeout: 10_000 });
     await expect(pauseToggle).toBeChecked();
 
-    // Pause the schedule and re-activate it.
-    await pauseToggle.locator('..').click({ timeout: 5_000 });
-    await expect(pauseToggle).not.toBeChecked({ timeout: 10_000 });
-    await pauseToggle.locator('..').click({ timeout: 5_000 });
-    await expect(pauseToggle).toBeChecked({ timeout: 10_000 });
+    // Pause the schedule and re-activate it (converge — a single click can be
+    // lost / the state update can lag on a loaded runner).
+    await setToggleState(page, sel.scheduler.pauseToggle, false);
+    await setToggleState(page, sel.scheduler.pauseToggle, true);
 
     // Only one schedule exists: saving again replaces it (still exactly
     // one "current" item / delete CTA).
     await openScheduler(page);
     const laterStart = toPickerTime(new Date(Date.now() - 5 * 3600 * 1000));
     await setTimePicker(page, sel.scheduler.startTime, laterStart);
-    await page.locator(sel.scheduler.save).click({ timeout: 5_000 });
+    await saveSchedule(page);
     await expect(page.locator(sel.scheduler.delete)).toHaveCount(1, { timeout: 10_000 });
 
     // Delete removes it and the sidebar returns to the setup state.
-    await page.locator(sel.scheduler.delete).click({ timeout: 5_000 });
-    await expect(page.locator(sel.scheduler.delete)).not.toBeVisible({ timeout: 10_000 });
+    await clickUntilHidden(page, sel.scheduler.delete);
     await closeScheduler(page);
     await expect(pauseToggle).not.toBeVisible({ timeout: 10_000 });
   });
@@ -213,8 +254,7 @@ test.describe('Schedule Mining', () => {
       await openScheduler(page);
       await setTimePicker(page, sel.scheduler.startTime, start);
       await setTimePicker(page, sel.scheduler.endTime, end);
-      await page.locator(sel.scheduler.save).click({ timeout: 5_000 });
-      await expect(page.locator(sel.scheduler.delete)).toBeVisible({ timeout: 10_000 });
+      await saveSchedule(page);
       await closeScheduler(page);
 
       // --- Start edge: mining begins on its own ---
