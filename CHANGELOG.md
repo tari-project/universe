@@ -4,8 +4,6 @@
 
 Hey Tari fam,
 
-This one's a big stability-and-polish drop. We chased down random crashes, made mining respect your choices, smoothed out wallet import, and gave folks who run their own nodes the option they've been asking for. Mac users, we've got good news for you too.
-
 This release is also a first for us: it includes contributions from the wider Tari community. Thank you for building this alongside us. 💜
 
 ✨ WHAT'S NEW
