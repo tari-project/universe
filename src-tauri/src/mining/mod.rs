@@ -51,6 +51,24 @@ impl MiningError {
                         }
                     )
                 })
+            || Self::is_insufficient_disk_space(e)
+    }
+
+    /// Detects an out-of-disk-space condition anywhere in the error chain. A full disk is the
+    /// user's environment, not an application bug, so it must never be reported to Sentry.
+    fn is_insufficient_disk_space(e: &anyhow::Error) -> bool {
+        e.chain().any(|cause| {
+            // Preferred: typed, cross-platform, locale-independent detection.
+            if let Some(io_err) = cause.downcast_ref::<std::io::Error>()
+                && io_err.kind() == std::io::ErrorKind::StorageFull
+            {
+                return true;
+            }
+            // Fallback for errors stringified before reaching us: std emits a raw, non-localized
+            // "(os error N)" suffix. ENOSPC = 28 on Unix, ERROR_DISK_FULL = 112 on Windows.
+            let msg = cause.to_string();
+            msg.contains("(os error 28)") || msg.contains("(os error 112)")
+        })
     }
 }
 
