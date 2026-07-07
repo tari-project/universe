@@ -150,9 +150,13 @@ pub static LOG_TARGET_STATUSES: &str = "tari::universe::statuses"; // Status upd
 pub static LOG_TARGET_APP_LOGIC: &str = "tari::universe::app_logic"; // App logic logs, like setup, Binary downloads, etc.
 
 const RESTART_EXIT_CODE: i32 = i32::MAX;
-const IGNORED_SENTRY_ERRORS: [&str; 2] = [
+const IGNORED_SENTRY_ERRORS: [&str; 4] = [
     "Failed to initialize gtk backend",
     "SIGABRT / SI_TKILL / 0x0",
+    // Broken-pipe-on-stdio panics: the app's stdout/stderr was closed by the parent
+    // process. This is the user's environment, not a bug, so it must not reach Sentry.
+    "panic: failed printing to stdout: Broken pipe",
+    "panic: failed printing to stderr: Broken pipe",
 ];
 
 // test-mode uses a dedicated folder id (paired with the identifier override
