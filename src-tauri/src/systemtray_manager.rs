@@ -463,6 +463,44 @@ impl SystemTrayManager {
         let tray = app.tray_by_id("universe-tray-id").expect("tray not found");
         self.app_handle = Some(app.clone());
 
+        // Under Flatpak, tray-icon writes the icon into $XDG_RUNTIME_DIR/tray-icon
+        // and advertises that path to the StatusNotifier host (e.g. KDE). But
+        // Flatpak remaps $XDG_RUNTIME_DIR to a per-app backing dir, so that path
+        // doesn't exist on the host and the icon renders blank. $XDG_RUNTIME_DIR/
+        // app/$FLATPAK_ID is shared at an identical path inside and outside the
+        // sandbox, so redirect the icon there and (re)set it to the colour app
+        // icon shipped by the Flatpak.
+        if let (Some(flatpak_id), Some(runtime_dir)) = (
+            std::env::var_os("FLATPAK_ID"),
+            std::env::var_os("XDG_RUNTIME_DIR"),
+        ) {
+            let icon_dir = std::path::Path::new(&runtime_dir)
+                .join("app")
+                .join(&flatpak_id)
+                .join("tray-icon");
+            if let Err(e) = std::fs::create_dir_all(&icon_dir) {
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to create Flatpak tray icon dir: {e}");
+            }
+            if let Err(e) = tray.set_temp_dir_path(Some(&icon_dir)) {
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to set Flatpak tray temp dir: {e}");
+            }
+            if let Err(e) = tray.set_icon_as_template(false) {
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to set Flatpak tray icon template: {e}");
+            }
+            match tauri::image::Image::from_path(
+                "/app/share/icons/hicolor/512x512/apps/com.tari.universe.png",
+            ) {
+                Ok(image) => {
+                    if let Err(e) = tray.set_icon(Some(image)) {
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to set Flatpak tray icon: {e}");
+                    }
+                }
+                Err(e) => {
+                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to load Flatpak tray icon: {e}");
+                }
+            }
+        }
+
         match self.initialize_menu().await {
             Ok(menu) => {
                 tray.set_menu(Some(menu.clone())).unwrap_or_else(|e| {

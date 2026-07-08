@@ -1,0 +1,13 @@
+diff --git a/vite.config.ts b/vite.config.ts
+index 0264ee007..9369c19df 100644
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -25,7 +25,7 @@ const plugins: UserConfig['plugins'] = [
+             ],
+         },
+     }),
+-    tsconfigPaths(),
++    tsconfigPaths({ ignoreConfigErrors: true }),
+     eslintPlugin({ eslintOptions: { cache: false } }),
+ ];
+ const baseOptions: UserConfig = {

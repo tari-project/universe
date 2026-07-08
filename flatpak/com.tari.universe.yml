@@ -1,0 +1,322 @@
+app-id: com.tari.universe
+runtime: org.gnome.Platform
+runtime-version: '50'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node22
+command: tari-universe
+
+# ---------------------------------------------------------------------------
+# Sandbox permissions
+#
+# Tari Universe downloads its mining/node sidecars (xmrig, lolMiner, minotari
+# node/wallet, mmproxy, sha-p2pool, tor) at runtime into the per-app cache and
+# executes them. Flatpak does NOT mount the per-app data/cache noexec, so this
+# download-and-run model works inside the sandbox. The permissions below are
+# what those sidecars need:
+# ---------------------------------------------------------------------------
+finish-args:
+  # UI
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio          # in-app videos / sound
+  - --share=ipc
+  - --device=dri                 # GPU rendering for the webview
+  # Networking: mining pools, node p2p, Tor, binary downloads, exchange APIs
+  - --share=network
+  # GPU mining (lolMiner, which auto-detects whichever GPU compute runtime is
+  # present). --device=all exposes the vendor compute nodes: /dev/nvidia* for
+  # NVIDIA and /dev/kfd + /dev/dri for AMD. There is no finer-grained Flatpak
+  # device option for these.
+  #   NVIDIA: works. The runtime auto-pulls org.freedesktop.Platform.GL.nvidia-*,
+  #     which ships a real CUDA/OpenCL/NVML stack lolMiner can use.
+  #   AMD: off by default. The GNOME GL extension provides only Mesa Rusticl
+  #     OpenCL, which lolMiner does not enumerate (reports 0 OpenCL GPUs);
+  #     lolMiner's AMD path needs a real vendor compute runtime (ROCm /
+  #     amdgpu-pro). We bundle none. A user can opt in by exposing a HOST ROCm
+  #     stack to the sandbox (flatpak/enable-amd-gpu.sh) — no manifest change
+  #     and the default sandbox stays tight. The proper future path is an
+  #     org.freedesktop.Platform.GL.ROCm extension: the runtime's inherited
+  #     org.freedesktop.Platform.GL point already merges a GL.<driver>'s
+  #     OpenCL/vendors ICD and adds its lib to the loader path, so no
+  #     add-extensions block is needed here; none is published yet. See README
+  #     "AMD GPU mining".
+  - --device=all
+  # Tray icon (StatusNotifierItem) + desktop notifications
+  - --talk-name=org.kde.StatusNotifierWatcher
+  - --talk-name=org.freedesktop.Notifications
+  # Wallet seed-phrase / PIN storage via the Secret Service (keyring crate)
+  - --talk-name=org.freedesktop.secrets
+  # Wallet backup import/export + log bundle export
+  - --filesystem=xdg-download
+  # Read-only access to the host GTK config so the window chrome follows the
+  # system theme (e.g. Breeze dark on KDE) and WebKitGTK reports the right
+  # prefers-color-scheme to the app's "system" theme setting.
+  - --filesystem=xdg-config/gtk-3.0:ro
+  - --filesystem=xdg-config/gtk-4.0:ro
+
+# ---------------------------------------------------------------------------
+# Build
+#
+# Fully offline build. The two generated source manifests vendor every Rust
+# crate (cargo-sources.json) and npm package (node-sources.json); see
+# generate-sources.sh for how to (re)produce them. No network is used or
+# allowed during `flatpak-builder`.
+# ---------------------------------------------------------------------------
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node22/bin
+  env:
+    CARGO_HOME: /run/build/tari-universe/cargo
+    # node-gyp / tool caches staged by the offline node sources live here.
+    XDG_CACHE_HOME: /run/build/tari-universe/flatpak-node/cache
+    # The Tari crates compile .proto definitions with prost-build, which shells
+    # out to protoc (provided by the protobuf module below).
+    PROTOC: /app/bin/protoc
+    # Build the mainnet/production variant. This selects env.mainnet at compile
+    # time and sets the app data folder id to `com.tari.universe`.
+    TARI_NETWORK: mainnet
+    TARI_TARGET_NETWORK: mainnet
+
+# protoc is a build-time-only tool; drop it from the shipped app.
+cleanup:
+  - /bin/protoc
+  - /include
+
+modules:
+  # Build-time dependency: the protobuf compiler. Tari's gRPC/comms crates
+  # generate code from .proto files at compile time via prost-build, which
+  # requires a protoc binary on PATH. The GNOME SDK does not ship one, so we
+  # drop in the official prebuilt release (fetched during flatpak-builder's
+  # source phase). The bundled include/ dir carries the well-known types.
+  - name: protobuf
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 bin/protoc /app/bin/protoc
+      - install -d /app/include
+      - cp -r include/google /app/include/google
+    sources:
+      - type: archive
+        # protoc's zip has no top-level dir (it's bin/ + include/ at the root),
+        # so disable the default leading-path strip to keep that layout.
+        archive-type: zip
+        strip-components: 0
+        url: https://github.com/protocolbuffers/protobuf/releases/download/v28.3/protoc-28.3-linux-x86_64.zip
+        sha256: 0ad949f04a6a174da83cdcbdb36dee0a4925272a5b6d83f79a6bf9852076d53f
+
+  - name: tari-universe
+    buildsystem: simple
+    build-commands:
+      # 1. Frontend: install deps from the offline pnpm store (populated during
+      #    the source phase from node-sources.json) with the vendored pnpm, then
+      #    build to ../dist. node22 ships no pnpm, hence the bundled binary.
+      #    --config.trustLockfile=true skips pnpm 11's lockfile supply-chain
+      #    verification pass, which reaches the registry and so cannot run offline
+      #    (--offline alone does not disable it); the vendored store is already the
+      #    trusted, pinned dependency set.
+      - flatpak-node/pnpm/pnpm install --offline --frozen-lockfile --config.trustLockfile=true
+      - flatpak-node/pnpm/pnpm run build
+
+      # 2. process-wrapper sidecar (built first so src-tauri/build.rs can pick it
+      #    up and satisfy the Tauri externalBin check)
+      - cargo build --release --offline -p process-wrapper
+
+      # 3. Main Tauri binary. `release-ci` pulls in the required `custom-protocol`
+      #    feature for a production (no dev-server) build.
+      - cargo build --release --offline --manifest-path src-tauri/Cargo.toml --features release-ci
+
+      # 4. Install binaries. process-wrapper MUST sit next to the main binary:
+      #    resolve_sidecar_path() looks for `<exe_dir>/process-wrapper`.
+      - install -Dm755 target/release/tari-universe /app/bin/tari-universe
+      - install -Dm755 target/release/process-wrapper /app/bin/process-wrapper
+
+      # 5. Desktop integration. The .desktop and metainfo come from this packaging
+      #    dir (added as `file` sources below) since they aren't in the app's git
+      #    tree; the icons ship in the app source under src-tauri/icons.
+      - install -Dm644 com.tari.universe.desktop /app/share/applications/com.tari.universe.desktop
+      - install -Dm644 com.tari.universe.metainfo.xml /app/share/metainfo/com.tari.universe.metainfo.xml
+      - install -Dm644 src-tauri/icons/icon.png /app/share/icons/hicolor/512x512/apps/com.tari.universe.png
+      - install -Dm644 src-tauri/icons/128x128@2x.png /app/share/icons/hicolor/256x256/apps/com.tari.universe.png
+      - install -Dm644 src-tauri/icons/128x128.png /app/share/icons/hicolor/128x128/apps/com.tari.universe.png
+      - install -Dm644 src-tauri/icons/32x32.png /app/share/icons/hicolor/32x32/apps/com.tari.universe.png
+
+    sources:
+      # The application source = this checked-out repo (not a pinned commit), so
+      # the same manifest builds whatever release/branch is checked out. CI builds
+      # the exact tagged commit; locally it builds your working tree. The vendored
+      # dependency manifests below MUST match this tree's Cargo.lock /
+      # pnpm-lock.yaml — regenerate them with generate-sources.sh (CI does this
+      # automatically each run). Big/generated dirs are skipped so the copy stays
+      # lean and doesn't drag in build artifacts.
+      - type: dir
+        path: ..
+        skip:
+          - flatpak
+          - target
+          - node_modules
+          - .git
+          - dist
+
+      # NOTE: Two former patches are now committed directly in the app source
+      # (they're genuine, platform-agnostic/FLATPAK_ID-gated fixes, not packaging
+      # quirks): the Rust 1.96 E0446 fix (PoolStatus -> pub) and the Flatpak tray
+      # icon shared-path + colour-icon fix in systemtray_manager.rs. Only the
+      # packaging-specific accommodations remain as patches below.
+
+      # Neutralise the bundled self-updater and the crate-based autostart when
+      # running under Flatpak (both are impossible/meaningless in the sandbox).
+      - type: patch
+        path: patches/0001-disable-updater-and-autostart-under-flatpak.patch
+
+      # Because CARGO_HOME lives inside the build tree (cargo/vendor), the
+      # frontend's vite-tsconfig-paths plugin recursively discovers tsconfig.json
+      # files shipped by vendored Rust crates (e.g. tauri-plugin-updater) and
+      # crashes on them. This is order-dependent and thus flaky. Tell the plugin
+      # to skip tsconfigs it can't resolve instead of throwing.
+      - type: patch
+        path: patches/0002-vite-tsconfig-paths-ignore-vendor-configs.patch
+
+      # The default tray icon is a Windows .ico flagged as a macOS "template"
+      # image (a black silhouette the OS recolors). On Linux/appindicator there's
+      # no recoloring, so it renders as an invisible black icon on dark panels.
+      # Use the real PNG and disable template mode.
+      - type: patch
+        path: patches/0003-linux-tray-icon-png-not-template.patch
+
+      # NOTE: the "(Alpha)" branding / .alpha identifier strip is NOT a patch.
+      # The app source (tauri.conf.json) keeps `(Alpha)` + com.tari.universe.alpha
+      # as the local/default, exactly as a normal dev build does. The production
+      # Flatpak identity (com.tari.universe, no Alpha) is applied by CI in
+      # .github/workflows/flatpak.yml — the SAME `yq` rewrite release.yml uses for
+      # its RELEASE builds — so there is one source of truth for production naming
+      # and nothing to drift. A local `flatpak-builder` therefore yields an
+      # Alpha-branded build; that is intended.
+
+      # Packaging assets that don't live in the app's git tree. type:file copies
+      # them to the build root, where the install steps above pick them up.
+      - type: file
+        path: com.tari.universe.desktop
+      - type: file
+        path: com.tari.universe.metainfo.xml
+
+      # Vendored offline dependency trees (generated — see generate-sources.sh)
+      - cargo-sources.json
+      - node-sources.json
+
+      # pnpm itself. node22 provides node/npm/yarn/corepack but no pnpm, and
+      # corepack can't fetch it offline, so vendor the standalone binary (pinned
+      # to packageManager in package.json). strip-components: 0 keeps the archive's
+      # `pnpm` launcher + `dist/` layout. Build-time only; not shipped in the app.
+      - type: archive
+        dest: flatpak-node/pnpm
+        strip-components: 0
+        url: https://github.com/pnpm/pnpm/releases/download/v11.9.0/pnpm-linux-x64.tar.gz
+        sha256: 8d987d82585453bcf260ea5d0bae346d298f1a5e71bcde8d99976521408ad895
+
+  # ---------------------------------------------------------------------------
+  # System-tray runtime dependency: the Ayatana AppIndicator stack.
+  #
+  # Tauri's tray dlopens libayatana-appindicator3.so.1 at startup; the GNOME
+  # runtime doesn't ship it (it's deprecated), so the app panics on launch
+  # without these. The host distro is irrelevant — the sandbox is glibc and the
+  # host may be anything (e.g. Alpine/musl), so the only correct way to satisfy
+  # this is to build the libs from source into /app/lib.
+  #
+  # The tray itself speaks StatusNotifierItem (SNI), which KDE Plasma implements
+  # natively (--talk-name=org.kde.StatusNotifierWatcher above); on GNOME it needs
+  # a shell extension. These modules come AFTER tari-universe on purpose: the
+  # libs are dlopened at runtime (not linked at build), so ordering them last
+  # keeps the expensive Rust build cached when only the tray stack changes.
+  # ---------------------------------------------------------------------------
+
+  # Build-time only: libdbusmenu's autotools configure needs intltool, which the
+  # GNOME SDK lacks. (The SDK does provide perl XML::Parser, so this builds.)
+  - name: intltool
+    cleanup:
+      - '*'
+    sources:
+      - type: archive
+        url: https://launchpad.net/intltool/trunk/0.51.0/+download/intltool-0.51.0.tar.gz
+        sha256: 67c74d94196b153b774ab9f89b2fa6c6ba79352407037c8c14d5aeb334e959cd
+
+  # Provides libdbusmenu-gtk3.so.4, a DT_NEEDED of libayatana-appindicator3.
+  - name: libdbusmenu
+    buildsystem: autotools
+    build-options:
+      cflags: -Wno-error
+      cxxflags: -Wno-error
+    config-opts:
+      - --with-gtk=3            # build the GTK3 lib (libdbusmenu-gtk3 + its .pc)
+      - --enable-introspection=no  # else it installs a typelib to read-only /usr
+      - --disable-vala          # vala bindings would require introspection (above)
+      - --disable-maintainer-mode  # don't re-run automake (HAVE_VALGRIND bug)
+      - --disable-dumper        # avoids a json-glib dependency
+      - --disable-static
+      - --disable-tests
+      - --disable-gtk-doc
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+      - '*.la'
+    sources:
+      - type: archive
+        url: https://launchpad.net/libdbusmenu/16.04/16.04.0/+download/libdbusmenu-16.04.0.tar.gz
+        sha256: b9cc4a2acd74509435892823607d966d424bd9ad5d0b00938f27240a1bfa878a
+      - type: shell
+        commands:
+          # libdbusmenu 16.04.0 only defines the HAVE_VALGRIND automake
+          # conditional inside its (now disabled) tests block, but Makefile.in
+          # references it unconditionally, so config.status aborts. Define the
+          # conditional vars (as false — no valgrind) just before configure's
+          # self-check so substitution succeeds.
+          - sed -i "/HAVE_VALGRIND_TRUE.*HAVE_VALGRIND_FALSE/i HAVE_VALGRIND_TRUE='#'; HAVE_VALGRIND_FALSE='';" configure
+          # Also bump generated-file mtimes (sources oldest -> Makefile.in newest)
+          # so configure never tries to regenerate them via the SDK's automake.
+          - find . \( -name '*.ac' -o -name '*.am' -o -name 'acinclude.m4' \) -exec touch -d '2000-01-01' {} +
+          - touch -d '2001-01-01' aclocal.m4
+          - touch -d '2002-01-01' configure config.h.in
+          - find . -name Makefile.in -exec touch -d '2003-01-01' {} +
+
+  - name: ayatana-ido
+    buildsystem: cmake-ninja
+    config-opts:
+      # The GNOME 50 SDK's CMake defaults CMAKE_INSTALL_LIBDIR to lib64, but
+      # flatpak's PKG_CONFIG_PATH and loader path only cover /app/lib. Without
+      # this, ayatana-ido installs its .pc/.so under /app/lib64, the next module
+      # fails pkg-config (libayatana-ido3-0.4 not found), and the tray lib would
+      # be off the runtime loader path. Force lib.
+      - -DCMAKE_INSTALL_LIBDIR=lib
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+    sources:
+      - type: archive
+        url: https://github.com/AyatanaIndicators/ayatana-ido/archive/refs/tags/0.10.4.tar.gz
+        sha256: bd59abd5f1314e411d0d55ce3643e91cef633271f58126be529de5fb71c5ab38
+
+  - name: libayatana-indicator
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_INSTALL_LIBDIR=lib
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+    sources:
+      - type: archive
+        url: https://github.com/AyatanaIndicators/libayatana-indicator/archive/refs/tags/0.9.4.tar.gz
+        sha256: a18d3c682e29afd77db24366f8475b26bda22b0e16ff569a2ec71cd6eb4eac95
+
+  - name: libayatana-appindicator
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_INSTALL_LIBDIR=lib
+      - -DENABLE_BINDINGS_MONO=NO
+      - -DENABLE_BINDINGS_VALA=NO
+      - -DENABLE_GTKDOC=NO
+    cleanup:
+      - /include
+      - /lib/pkgconfig
+    sources:
+      - type: archive
+        url: https://github.com/AyatanaIndicators/libayatana-appindicator/archive/refs/tags/0.5.94.tar.gz
+        sha256: 884a6bc77994c0b58c961613ca4c4b974dc91aa0f804e70e92f38a542d0d0f90
