@@ -93,6 +93,9 @@ function getCoreConfig() {
     auto_update: false,
     pre_release: false,
     should_auto_launch: false,
+    // Keep the neutralized headless webview hidden — frontend_ready would
+    // otherwise show() the blank.html window during e2e runs.
+    show_window_on_startup: false,
     remote_base_node_address: 'http://127.0.0.1:18142',
   };
 }

@@ -184,6 +184,19 @@ pub async fn frontend_ready(
     EventsEmitter::load_app_handle(app.clone()).await;
     FrontendReadyChannel::current().set_ready();
 
+    if *ConfigCore::content().await.show_window_on_startup() {
+        match app.get_webview_window("main") {
+            Some(window) => {
+                if let Err(err) = window.show() {
+                    error!(target: LOG_TARGET_APP_LOGIC, "Couldn't show the main window on startup {err:?}");
+                }
+            }
+            None => {
+                error!(target: LOG_TARGET_APP_LOGIC, "Could not find main window to show on startup");
+            }
+        }
+    }
+
     let state_inner = state.inner().clone();
 
     TasksTrackers::current()
@@ -1256,6 +1269,18 @@ pub async fn set_should_auto_launch(should_auto_launch: bool) -> Result<(), Invo
         .update_auto_launcher(should_auto_launch)
         .await
         .map_err(InvokeError::from_anyhow)?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_show_window_on_startup(show_window_on_startup: bool) -> Result<(), InvokeError> {
+    ConfigCore::update_field(
+        ConfigCoreContent::set_show_window_on_startup,
+        show_window_on_startup,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     Ok(())
 }
