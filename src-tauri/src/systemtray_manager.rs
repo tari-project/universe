@@ -484,7 +484,9 @@ impl SystemTrayManager {
             if let Err(e) = tray.set_temp_dir_path(Some(&icon_dir)) {
                 error!(target: LOG_TARGET_APP_LOGIC, "Failed to set Flatpak tray temp dir: {e}");
             }
-            let _ = tray.set_icon_as_template(false);
+            if let Err(e) = tray.set_icon_as_template(false) {
+                error!(target: LOG_TARGET_APP_LOGIC, "Failed to set Flatpak tray icon template: {e}");
+            }
             match tauri::image::Image::from_path(
                 "/app/share/icons/hicolor/512x512/apps/com.tari.universe.png",
             ) {
