@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "1.6.11",
+    "version": "1.6.12",
     "type": "module",
     "packageManager": "pnpm@11.9.0",
     "scripts": {
@@ -16,7 +16,11 @@
         "knip": "knip",
         "test": "vitest run",
         "test:watch": "vitest",
-        "test:coverage": "vitest run --coverage"
+        "test:coverage": "vitest run --coverage",
+        "playwright": "pnpm --dir playwright run test",
+        "playwright:ui": "pnpm --dir playwright run test:ui",
+        "playwright:headed": "pnpm --dir playwright run test:headed",
+        "playwright:install": "pnpm install && pnpm --dir playwright exec playwright install chromium"
     },
     "dependencies": {
         "@floating-ui/react": "^0.27.17",

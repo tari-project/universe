@@ -23,6 +23,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+// test-mode must never be enabled in release builds — it exposes a remote-UI
+// WebSocket and a file-backed credential store that bypass normal security.
+// Allow `cargo test --release --all-features` (cfg(test) is set for test builds).
+#[cfg(all(feature = "test-mode", not(debug_assertions), not(test)))]
+compile_error!("test-mode feature must not be enabled in release builds");
+
 use app_in_memory_config::AppInMemoryConfig;
 use events_emitter::EventsEmitter;
 use log::{error, info, warn};
@@ -90,7 +96,11 @@ mod events;
 mod events_emitter;
 mod events_manager;
 mod feedback;
+#[cfg(feature = "test-mode")]
+mod file_credential_store;
 mod hardware;
+#[cfg(feature = "test-mode")]
+mod headless;
 mod internal_wallet;
 #[cfg(test)]
 mod internal_wallet_test;
@@ -140,22 +150,46 @@ pub static LOG_TARGET_STATUSES: &str = "tari::universe::statuses"; // Status upd
 pub static LOG_TARGET_APP_LOGIC: &str = "tari::universe::app_logic"; // App logic logs, like setup, Binary downloads, etc.
 
 const RESTART_EXIT_CODE: i32 = i32::MAX;
-const IGNORED_SENTRY_ERRORS: [&str; 2] = [
+const IGNORED_SENTRY_ERRORS: [&str; 4] = [
     "Failed to initialize gtk backend",
     "SIGABRT / SI_TKILL / 0x0",
+    // Broken-pipe-on-stdio panics: the app's stdout/stderr was closed by the parent
+    // process. This is the user's environment, not a bug, so it must not reach Sentry.
+    "panic: failed printing to stdout: Broken pipe",
+    "panic: failed printing to stderr: Broken pipe",
 ];
 
-#[cfg(not(any(
-    feature = "release-ci",
-    feature = "release-ci-beta",
-    feature = "exchange-ci"
-)))]
+// test-mode uses a dedicated folder id (paired with the identifier override
+// in tauri.test.conf.json) so E2E runs never touch a real user profile and
+// can be wiped between runs.
+#[cfg(feature = "test-mode")]
+const APPLICATION_FOLDER_ID: &str = "com.tari.universe.test";
+#[cfg(all(
+    not(feature = "test-mode"),
+    not(any(
+        feature = "release-ci",
+        feature = "release-ci-beta",
+        feature = "exchange-ci"
+    ))
+))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.alpha";
-#[cfg(all(feature = "release-ci", feature = "release-ci-beta"))]
+#[cfg(all(
+    not(feature = "test-mode"),
+    feature = "release-ci",
+    feature = "release-ci-beta"
+))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.other";
-#[cfg(all(feature = "release-ci", not(feature = "release-ci-beta")))]
+#[cfg(all(
+    not(feature = "test-mode"),
+    feature = "release-ci",
+    not(feature = "release-ci-beta")
+))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
-#[cfg(all(feature = "release-ci-beta", not(feature = "release-ci")))]
+#[cfg(all(
+    not(feature = "test-mode"),
+    feature = "release-ci-beta",
+    not(feature = "release-ci")
+))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 
 #[derive(Clone)]
@@ -367,6 +401,8 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_http::init());
+    #[cfg(feature = "test-mode")]
+    let builder = builder.plugin(tauri_remote_ui::init());
     let app = builder
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
@@ -443,6 +479,7 @@ fn main() {
             commands::confirm_exchange_address,
             commands::select_exchange_miner,
             commands::set_show_experimental_settings,
+            commands::set_show_window_on_startup,
             commands::set_should_always_use_system_language,
             commands::set_should_auto_launch,
             commands::set_tor_config,
@@ -536,6 +573,20 @@ fn main() {
         app.package_info().version
     );
 
+    let is_headless = {
+        #[cfg(feature = "test-mode")]
+        {
+            use tauri_plugin_cli::CliExt;
+            app.cli().matches().as_ref().is_ok_and(|m| {
+                m.args
+                    .get("headless")
+                    .is_some_and(|arg| arg.occurrences > 0)
+            })
+        }
+        #[cfg(not(feature = "test-mode"))]
+        false
+    };
+
     let power_monitor = SystemStatus::current().start_listener();
 
     let is_restart_requested = Arc::new(AtomicBool::new(false));
@@ -561,20 +612,36 @@ fn main() {
                     warn!(target: LOG_TARGET_APP_LOGIC, "Failed to initialize process wrapper sidecar: {}. Processes will spawn without orphan protection.", e);
                 }
 
-                block_on(state.updates_manager.initial_try_update(&handle_clone));
+                if is_headless {
+                    #[cfg(feature = "test-mode")]
+                    {
+                        headless::init_credential_store(&handle_clone);
+                        headless::start_headless(handle_clone);
+                    }
+                } else {
+                    block_on(state.updates_manager.initial_try_update(&handle_clone));
 
-                tauri::async_runtime::spawn(async move {
-                    SetupManager::get_instance()
-                        .start_setup(handle_clone.clone())
-                        .await;
-                    SetupManager::spawn_sleep_mode_handler().await;
-                });
+                    tauri::async_runtime::spawn(async move {
+                        SetupManager::get_instance()
+                            .start_setup(handle_clone.clone())
+                            .await;
+                        SetupManager::spawn_sleep_mode_handler().await;
+                    });
+                }
             }
-            tauri::RunEvent::ExitRequested { api: _, code, .. } => {
+            tauri::RunEvent::ExitRequested { api, code, .. } => {
                 info!(
                     target: LOG_TARGET_APP_LOGIC,
                     "App shutdown request [ExitRequested] caught with code: {code:#?}"
                 );
+
+                // In headless mode there are no windows, so Tauri fires ExitRequested
+                // immediately. Prevent exit so the backend keeps running for tests.
+                if is_headless && code.is_none() {
+                    api.prevent_exit();
+                    return;
+                }
+
                 if let Some(exit_code) = code
                     && exit_code == RESTART_EXIT_CODE {
                         // RunEvent does not hold the exit code so we store it separately

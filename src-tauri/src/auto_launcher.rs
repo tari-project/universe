@@ -44,6 +44,8 @@ use crate::{
 };
 
 static INSTANCE: LazyLock<AutoLauncher> = LazyLock::new(AutoLauncher::new);
+#[cfg(any(target_os = "windows", test))]
+const WINDOWS_ADMIN_AUTO_START_TASK_NAME: &str = "Tari Universe startup";
 
 pub struct AutoLauncher {
     auto_launcher: RwLock<Option<AutoLaunch>>,
@@ -170,10 +172,18 @@ impl AutoLauncher {
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => {
                     #[cfg(target_os = "windows")]
-                    let _unused = self.toggle_windows_admin_auto_launcher(false).await.inspect_err(|e| {
-                        warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher: {}", e)
-                    });
-                    auto_launcher.disable()?;
+                    {
+                        let admin_auto_launcher_result =
+                            self.toggle_windows_admin_auto_launcher(false).await;
+                        auto_launcher.disable()?;
+                        admin_auto_launcher_result.inspect_err(|e| {
+                            warn!(target: LOG_TARGET_APP_LOGIC, "Failed to disable admin auto-launcher: {}", e)
+                        })?;
+                    }
+                    #[cfg(not(target_os = "windows"))]
+                    {
+                        auto_launcher.disable()?;
+                    }
                 }
                 _ => {
                     auto_launcher.disable()?;
@@ -200,12 +210,57 @@ impl AutoLauncher {
 
         if !should_be_enabled {
             info!(target: LOG_TARGET_APP_LOGIC, "Disabling admin auto-launcher");
-            self.create_task_scheduler_for_admin_startup(false)
+            self.delete_task_scheduler_for_admin_startup()
                 .await
-                .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
+                .map_err(|e| anyhow!("Failed to delete task scheduler for admin startup: {}", e))?;
         };
 
         Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    pub async fn delete_task_scheduler_for_admin_startup(
+        &self,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        info!(target: LOG_TARGET_APP_LOGIC, "Deleting task scheduler for admin startup");
+
+        let output = tokio::process::Command::new("schtasks")
+            .args(windows_admin_auto_start_delete_args())
+            .output()
+            .await?;
+
+        if output.status.success() {
+            info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup deleted");
+            return Ok(());
+        }
+
+        let task_exists = match tokio::process::Command::new("schtasks")
+            .args(windows_admin_auto_start_query_args())
+            .output()
+            .await
+        {
+            Ok(output) => output.status.success(),
+            Err(error) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Failed to query admin auto-start task after delete failure: {error}");
+                true
+            }
+        };
+
+        if !task_exists {
+            info!(target: LOG_TARGET_APP_LOGIC, "Task scheduler for admin startup was already absent");
+            return Ok(());
+        }
+
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+
+        Err(anyhow!(
+            "schtasks failed with status {:?}. stdout: {} stderr: {}",
+            output.status.code(),
+            stdout.trim(),
+            stderr.trim()
+        )
+        .into())
     }
 
     #[cfg(target_os = "windows")]
@@ -283,7 +338,7 @@ impl AutoLauncher {
             .delay(delay_duration)?
             .build()?
             .register(
-                "Tari Universe startup",
+                WINDOWS_ADMIN_AUTO_START_TASK_NAME,
                 TaskCreationFlags::CreateOrUpdate as i32,
             )?;
 
@@ -361,9 +416,35 @@ impl AutoLauncher {
     }
 }
 
+#[cfg(any(target_os = "windows", test))]
+fn windows_admin_auto_start_delete_args() -> [&'static str; 4] {
+    ["/Delete", "/TN", WINDOWS_ADMIN_AUTO_START_TASK_NAME, "/F"]
+}
+
+#[cfg(any(target_os = "windows", test))]
+fn windows_admin_auto_start_query_args() -> [&'static str; 3] {
+    ["/Query", "/TN", WINDOWS_ADMIN_AUTO_START_TASK_NAME]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn delete_args_target_the_admin_auto_start_task() {
+        assert_eq!(
+            windows_admin_auto_start_delete_args(),
+            ["/Delete", "/TN", "Tari Universe startup", "/F",]
+        );
+    }
+
+    #[test]
+    fn query_args_target_the_admin_auto_start_task() {
+        assert_eq!(
+            windows_admin_auto_start_query_args(),
+            ["/Query", "/TN", "Tari Universe startup",]
+        );
+    }
 
     #[test]
     fn quote_windows_path_wraps_paths_with_spaces() {

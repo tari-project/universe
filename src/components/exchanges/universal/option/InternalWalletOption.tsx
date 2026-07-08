@@ -70,7 +70,7 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
     const showExpand = isTari ? !isCurrent && universalExchangeMinerOption.id : universalExchangeMinerOption.id;
 
     return (
-        <Wrapper ref={ref} $isCurrent={isCurrent} $isActive={isActive}>
+        <Wrapper ref={ref} $isCurrent={isCurrent} $isActive={isActive} data-testid="exchange-option-universal">
             <ContentHeaderWrapper
                 onClick={() => {
                     onActiveClick(!isActive ? universalExchangeMinerOption.id : '');
@@ -128,7 +128,11 @@ export const InternalWalletOption = ({ isCurrent = false, isActive, onActiveClic
                             </Countdown>
                         ) : null}
                     </SeasonReward>
-                    <ConfirmButton onClick={handleRevertToInternalWallet} disabled={isSubmitting}>
+                    <ConfirmButton
+                        onClick={handleRevertToInternalWallet}
+                        disabled={isSubmitting}
+                        data-testid="exchange-revert-confirm"
+                    >
                         {isSubmitting ? (
                             <LoadingDots />
                         ) : (

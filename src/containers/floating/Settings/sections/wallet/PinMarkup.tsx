@@ -37,7 +37,7 @@ export const PinMarkup = () => {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Button variant="black" onClick={setPin}>
+                        <Button variant="black" onClick={setPin} data-testid="wallet-setup-pin">
                             {t('setup-pin', { ns: 'settings' })}
                         </Button>
                     </SettingsGroupTitle>

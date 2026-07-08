@@ -81,13 +81,20 @@ pub struct CpuManager {
 
 impl CpuManager {
     pub fn new() -> Self {
+        // RandomX dataset init (minutes in fast mode) is handled by the
+        // health check returning Initializing until the first nonzero
+        // hashrate — the watcher never restarts an Initializing process.
+        // This grace only covers the window before the HTTP API answers,
+        // and bounds how fast a stalled miner is restarted.
+        let mut process_watcher = ProcessWatcher::new(
+            XmrigAdapter::new(Sender::new(CpuMinerStatus::default())),
+            Sender::new(ProcessWatcherStats::default()),
+        );
+        process_watcher.expected_startup_time = std::time::Duration::from_secs(30);
         Self {
             app_handle: None,
             // ======= Process watcher =======
-            process_watcher: ProcessWatcher::new(
-                XmrigAdapter::new(Sender::new(CpuMinerStatus::default())),
-                Sender::new(ProcessWatcherStats::default()),
-            ),
+            process_watcher,
             // ======= Parameters tracking =======
             status_thread_shutdown: Shutdown::new(),
             process_stats_collector: Sender::new(ProcessWatcherStats::default()),
@@ -358,6 +365,11 @@ impl CpuManager {
                     },
                     _ = global_shutdown_signal.wait() => {
                         info!(target: LOG_TARGET_STATUSES, "Shutting down cpu miner status updates");
+                        // Emit a final stopped status; otherwise frontends keep
+                        // the last is_mining=true forever when a phase restart
+                        // (e.g. exchange-miner switch) kills this loop.
+                        EventsEmitter::emit_cpu_mining_update(CpuMinerStatus::default()).await;
+                        SystemTrayManager::send_event(SystemTrayEvents::CpuHashrate(0.0)).await;
                         break;
                     },
                     updated_status = cpu_internal_status_reciever.changed() => {

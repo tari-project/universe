@@ -132,5 +132,6 @@ fn node_manager_error_unknown_error_display() {
 fn stop_on_error_codes_contains_expected_values() {
     assert!(STOP_ON_ERROR_CODES.contains(&114));
     assert!(STOP_ON_ERROR_CODES.contains(&102));
-    assert_eq!(STOP_ON_ERROR_CODES.len(), 2);
+    assert!(STOP_ON_ERROR_CODES.contains(&101));
+    assert_eq!(STOP_ON_ERROR_CODES.len(), 3);
 }

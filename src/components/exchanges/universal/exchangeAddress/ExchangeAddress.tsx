@@ -89,6 +89,7 @@ export const ExchangeAddress = ({
                                         disabled={disabled}
                                         type="text"
                                         placeholder={t('wallet-address')}
+                                        data-testid="exchange-address-input"
                                         hasError={!!errors.address}
                                         onFocus={handleFocus}
                                     />

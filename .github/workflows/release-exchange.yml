@@ -244,18 +244,24 @@ jobs:
             cargo build --release --manifest-path process-wrapper/Cargo.toml
           fi
 
+      - name: Prepare macOS notary API key
+        if: ${{ startsWith(runner.os, 'macOS') }}
+        env:
+          MACOS_NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
+        run: printf '%s' "$MACOS_NOTARY_KEY" > "$RUNNER_TEMP/notary_key.p8"
+
       - name: Build Tauri Apps
         id: build
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE || secrets.AZURE_TENANT_ID }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_API_ISSUER: ${{ secrets.MACOS_NOTARY_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          APPLE_API_KEY_PATH: ${{ runner.temp }}/notary_key.p8
           AZURE_TENANT_ID: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_CLIENT_SECRET }}

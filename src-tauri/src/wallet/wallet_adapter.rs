@@ -364,13 +364,16 @@ impl ProcessAdapter for WalletAdapter {
             .join("peer_db");
 
         // Always use direct connections with the local node
+        // NOTE: localnet has no DNS seeds — "-p" must only be pushed
+        // together with its value, otherwise the wallet exits with a clap
+        // usage error (code 2) and crash-loops.
         if self.use_tor && !self.connect_with_local_node {
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string());
-            args.push("-p".to_string());
             let network = Network::get_current_or_user_setting_or_default();
             match network {
                 Network::MainNet => {
+                    args.push("-p".to_string());
                     args.push(format!(
                         "{key}.p2p.seeds.dns_seeds=seeds.tari.com",
                         key = network.as_key_str(),
@@ -378,6 +381,7 @@ impl ProcessAdapter for WalletAdapter {
                 }
                 Network::LocalNet => {}
                 _ => {
+                    args.push("-p".to_string());
                     args.push(format!(
                         "{key}.p2p.seeds.dns_seeds=seeds.{key}.tari.com",
                         key = network.as_key_str(),
@@ -389,10 +393,10 @@ impl ProcessAdapter for WalletAdapter {
                 args.push("-p".to_string());
                 args.push("wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string());
             }
-            args.push("-p".to_string());
             let network = Network::get_current_or_user_setting_or_default();
             match network {
                 Network::MainNet => {
+                    args.push("-p".to_string());
                     args.push(format!(
                         "{key}.p2p.seeds.dns_seeds=ip4.seeds.tari.com,ip6.seeds.tari.com",
                         key = network.as_key_str(),
@@ -400,6 +404,7 @@ impl ProcessAdapter for WalletAdapter {
                 }
                 Network::LocalNet => {}
                 _ => {
+                    args.push("-p".to_string());
                     args.push(format!(
                         "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
                         key = network.as_key_str(),

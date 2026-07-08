@@ -620,6 +620,13 @@ impl GpuManager {
                     },
                     _ = global_shutdown_signal.wait() => {
                         info!(target: LOG_TARGET_STATUSES, "Shutting down gpu miner status updates");
+                        // Emit a final stopped status; otherwise frontends keep
+                        // the last is_mining=true forever when a phase restart
+                        // (e.g. exchange-miner switch) kills this loop.
+                        EventsEmitter::emit_gpu_mining_update(GpuMinerStatus::default_with_algorithm(
+                            last_known_status.algorithm.clone(),
+                        )).await;
+                        SystemTrayManager::send_event(SystemTrayEvents::GpuHashrate(0.0)).await;
                         break;
                     },
                     updated_status = gpu_internal_status_reciever.changed() => {
