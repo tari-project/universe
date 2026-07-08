@@ -1,7 +1,7 @@
 # Tari Universe — Flatpak packaging
 
 > **Community supported.** Linux and this Flatpak are maintained by contributors,
-> not officially supported by the Tari team. Found a bug? Open an issue, but
+> not officially supported by the Tari Core team. Found a bug? Open an issue, but
 > preferably a PR.
 
 A proper, offline `flatpak-builder` package for Tari Universe that **retains CPU

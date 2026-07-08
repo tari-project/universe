@@ -34,8 +34,8 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-> **Linux is community supported.** The Tari team does not officially support the
-> Linux build, it's maintained by contributors. Hit a problem? Please
+> **Linux is community supported.** The Tari Core team does not officially support
+> the Linux build, it's maintained by contributors. Hit a problem? Please
 > [open an issue](https://github.com/tari-project/universe/issues), but
 > preferably a PR.
 
