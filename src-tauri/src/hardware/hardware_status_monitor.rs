@@ -30,6 +30,7 @@ use crate::{
     },
     events_emitter::EventsEmitter,
     hardware::{cpu_readers::DefaultCpuParametersReader, gpu_readers::DefaultGpuParametersReader},
+    mining::gpu::miners::GpuCommonInformation,
 };
 
 use super::{
@@ -360,34 +361,69 @@ impl HardwareStatusMonitor {
         Ok(platform_devices)
     }
 
-    // This method will decide if gpu mining is recommended by which we mean if it should be enabled by default in config mining
-    // It checks system memory with sysinfo
-    // If system memory is above 16GB we recommend enabling gpu mining
-    pub async fn decide_if_gpu_mining_is_recommended(&self) -> Result<(), Error> {
-        let mut is_system_memory_above_16gb = false;
+    /// The system memory below which mining alongside everyday use gets uncomfortable.
+    const RECOMMENDED_SYSTEM_MEMORY_MB: u64 = 16384;
 
+    /// Records whether GPU mining is possible at all, and whether it should be on by default.
+    ///
+    /// These are separate questions. Whether a GPU *can* mine C29 is the miner's to answer, and
+    /// a refusal forbids mining. Whether we *should* mine by default is ours, and a "no" only
+    /// changes the default: a user who asks for GPU mining on a modest machine gets it.
+    ///
+    /// Conflating the two is how an integrated GPU ends up presented as a working miner, and
+    /// how a capable card ends up disabled for living in a machine with 8 GB of RAM.
+    pub async fn decide_if_gpu_mining_is_recommended(
+        &self,
+        devices: &[GpuCommonInformation],
+    ) -> Result<(), Error> {
         let system = System::new_all();
-        let total_memory_mb = system.total_memory() / 1024; // Convert KB to MB
-        if total_memory_mb >= 16384 {
-            is_system_memory_above_16gb = true;
-        }
+        // sysinfo reports memory in bytes.
+        let total_memory_mb = system.total_memory() / 1024 / 1024;
+        let has_enough_system_memory = total_memory_mb >= Self::RECOMMENDED_SYSTEM_MEMORY_MB;
 
-        info!(target: LOG_TARGET_APP_LOGIC, "System total memory: {} MB", total_memory_mb);
+        info!(target: LOG_TARGET_APP_LOGIC, "System total memory: {total_memory_mb} MB");
 
-        let is_gpu_mining_recommended = *ConfigMining::content().await.is_gpu_mining_recommended();
-        let should_recommend_gpu_mining = is_system_memory_above_16gb;
+        // Only an explicit refusal forbids mining. A device whose capability could not be
+        // established stays usable.
+        let refusal = devices
+            .iter()
+            .find(|device| device.is_known_unmineable())
+            .and_then(|device| device.unsupported_reason.clone());
+        let is_available = devices.is_empty() || devices.iter().any(GpuCommonInformation::can_mine);
 
-        // is_gpu_mining_recommended is by default true on first run
-        // This check handles first time check and cases when something change on the machine which caused to gpu not work
-        // If there is change from recommended to not recommended we turn off gpu mining
-        if is_gpu_mining_recommended && !should_recommend_gpu_mining {
+        let should_recommend = is_available
+            && has_enough_system_memory
+            && devices
+                .iter()
+                .any(GpuCommonInformation::is_recommended_for_mining);
+
+        if !is_available {
+            warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "No detected GPU can mine C29: {}",
+                refusal.as_deref().unwrap_or("no reason given")
+            );
             ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, false).await?;
         }
 
-        // Always update the recommendation flag
+        ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_available, is_available)
+            .await?;
+        ConfigMining::update_field(
+            ConfigMiningContent::set_gpu_mining_unavailable_reason,
+            (!is_available).then_some(refusal).flatten(),
+        )
+        .await?;
+
+        // A recommendation seeds the default. It must not overrule a user who has already
+        // decided for themselves.
+        let config = ConfigMining::content().await.clone();
+        if !should_recommend && !*config.has_user_chosen_gpu_mining() {
+            ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, false).await?;
+        }
+
         ConfigMining::update_field(
             ConfigMiningContent::set_is_gpu_mining_recommended,
-            should_recommend_gpu_mining,
+            should_recommend,
         )
         .await?;
         EventsEmitter::emit_mining_config_loaded(&ConfigMining::content().await).await;

@@ -32,6 +32,9 @@ const configMininigInitialState: ConfigMining = {
     selected_mining_mode: 'Eco',
     gpu_devices_settings: {},
     is_gpu_mining_recommended: true,
+    gpu_mining_available: true,
+    gpu_mining_unavailable_reason: null,
+    has_user_chosen_gpu_mining: false,
     eco_alert_needed: false,
     pause_on_battery_mode: PauseOnBatteryModeState.Enabled,
 };
