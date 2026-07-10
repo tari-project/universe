@@ -55,6 +55,10 @@ export interface GpuDevice {
     vendor: string;
     /** Memory reported by the miner, in MB. `null` when it could not be determined. */
     memory_mb: number | null;
+    /** Whether lolMiner will mine on this device. `null` when it has not been established. */
+    is_mineable: boolean | null;
+    /** Why lolMiner refuses this device, in its own words. */
+    unsupported_reason: string | null;
 }
 
 export interface CpuMinerStatus {

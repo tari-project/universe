@@ -453,12 +453,18 @@ static DEVICE_HEADER: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^Device\s+(\d+):$").expect("valid device header regex"));
 static MEMORY_MBYTE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^(\d+)\s*MByte").expect("valid memory regex"));
+/// `true (Selected Algorithm: Cuckaroo 29 (Tari))` or `false (Unsupported device or driver
+/// version.)`. The reason itself may contain brackets, so match to the final one.
+static ACTIVE_VERDICT: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(true|false)(?:\s*\((.*)\))?$").expect("valid active regex"));
 
 struct PartialDevice {
     device_id: u32,
     name: Option<String>,
     vendor: Option<String>,
     memory_mb: Option<u64>,
+    is_mineable: Option<bool>,
+    unsupported_reason: Option<String>,
 }
 
 impl PartialDevice {
@@ -468,6 +474,8 @@ impl PartialDevice {
             name: None,
             vendor: None,
             memory_mb: None,
+            is_mineable: None,
+            unsupported_reason: None,
         }
     }
 
@@ -478,6 +486,8 @@ impl PartialDevice {
             device_id: self.device_id,
             vendor: self.vendor.unwrap_or_default(),
             memory_mb: self.memory_mb,
+            is_mineable: self.is_mineable,
+            unsupported_reason: self.unsupported_reason,
         })
     }
 }
@@ -528,6 +538,18 @@ fn parse_device_list(output_str: &str) -> Vec<GpuCommonInformation> {
                     .and_then(|caps| caps.get(1))
                     .and_then(|mb| mb.as_str().parse().ok());
             }
+            // Only emitted once lolminer sets up for an algorithm, so it is absent from
+            // `--list-devices` and present in a benchmark or mining run.
+            "Active" => {
+                if let Some(caps) = ACTIVE_VERDICT.captures(value.trim()) {
+                    let is_mineable = caps.get(1).is_some_and(|v| v.as_str() == "true");
+                    device.is_mineable = Some(is_mineable);
+                    device.unsupported_reason = match caps.get(2) {
+                        Some(reason) if !is_mineable => Some(reason.as_str().trim().to_string()),
+                        _ => None,
+                    };
+                }
+            }
             _ => {}
         }
     }
@@ -535,55 +557,43 @@ fn parse_device_list(output_str: &str) -> Vec<GpuCommonInformation> {
     devices.extend(current.and_then(PartialDevice::build));
     devices
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    /// Verbatim `lolMiner 1.98a --list-devices` output, captured on a Linux host with a
-    /// dedicated Radeon RX 9070 XT and an integrated GPU. Retains the banner, the ANSI
-    /// colour codes and the trailing whitespace lolminer emits.
+    /// Verbatim `lolMiner 1.98a --list-devices`, captured on a Linux host with a dedicated
+    /// Radeon RX 9070 XT and an integrated GPU. Retains the banner, the ANSI colour codes and
+    /// the trailing whitespace lolminer emits. Note it carries no `Active:` field.
     const LIST_DEVICES_AMD: &str = include_str!("test_fixtures/lolminer_198a_list_devices_amd.txt");
 
-    /// `lolMiner 1.98a --list-devices` on a Ryzen laptop whose only GPU is integrated.
-    /// Note it reports no Cuda runtime at all, and that its shared memory sits just above
-    /// lolminer's documented 6 GB floor.
+    /// `lolMiner 1.98a --list-devices` on a Ryzen laptop whose only GPU is integrated. It
+    /// reports no Cuda runtime at all, and its shared memory sits just above lolminer's
+    /// documented 6 GB floor.
     const LIST_DEVICES_AMD_IGPU: &str =
         include_str!("test_fixtures/lolminer_198a_list_devices_amd_igpu.txt");
 
-    #[test]
-    fn parses_output_from_a_host_with_no_cuda_runtime() {
-        let devices = parse_device_list(LIST_DEVICES_AMD_IGPU);
+    /// Verbatim `lolMiner 1.98a --benchmark CR29` on the same host as [`LIST_DEVICES_AMD`],
+    /// up to the point mining starts. This is where the `Active:` verdict appears.
+    const BENCHMARK_C29_AMD: &str =
+        include_str!("test_fixtures/lolminer_198a_benchmark_c29_amd.txt");
 
-        assert_eq!(
-            devices,
-            vec![GpuCommonInformation {
-                name: "AMD Radeon (TM) Graphics".to_string(),
-                device_id: 0,
-                vendor: "Advanced Micro Devices (AMD)".to_string(),
-                memory_mb: Some(6211),
-            }]
-        );
-    }
-
-    /// Guards the trap: an integrated GPU reports shared system memory, which can sit just
-    /// over lolminer's 6 GB floor. This device cannot mine C29, yet a memory threshold alone
-    /// says it can. Whether a device is mineable must come from lolminer itself.
-    #[test]
-    fn memory_alone_does_not_prove_an_integrated_gpu_can_mine() {
-        let devices = parse_device_list(LIST_DEVICES_AMD_IGPU);
-
-        assert_eq!(devices[0].memory_mb, Some(6211));
-        assert!(
-            devices[0]
-                .memory_mb
-                .is_some_and(|mb| mb > MIN_GPU_MEMORY_MB_FOR_C29)
-        );
-        assert!(devices[0].has_enough_memory_for_c29());
+    fn device(
+        name: &str,
+        memory_mb: Option<u64>,
+        is_mineable: Option<bool>,
+    ) -> GpuCommonInformation {
+        GpuCommonInformation {
+            name: name.to_string(),
+            device_id: 0,
+            vendor: String::new(),
+            memory_mb,
+            is_mineable,
+            unsupported_reason: None,
+        }
     }
 
     #[test]
-    fn parses_real_lolminer_output() {
+    fn parses_real_list_devices_output() {
         let devices = parse_device_list(LIST_DEVICES_AMD);
 
         assert_eq!(
@@ -594,15 +604,89 @@ mod tests {
                     device_id: 0,
                     vendor: "Advanced Micro Devices (AMD), ROCm".to_string(),
                     memory_mb: Some(32624),
+                    is_mineable: None,
+                    unsupported_reason: None,
                 },
                 GpuCommonInformation {
                     name: "RDNA 2".to_string(),
                     device_id: 1,
                     vendor: "Advanced Micro Devices (AMD), ROCm".to_string(),
                     memory_mb: Some(30825),
+                    is_mineable: None,
+                    unsupported_reason: None,
                 },
             ]
         );
+    }
+
+    #[test]
+    fn parses_output_from_a_host_with_no_cuda_runtime() {
+        let devices = parse_device_list(LIST_DEVICES_AMD_IGPU);
+
+        assert_eq!(devices.len(), 1);
+        assert_eq!(devices[0].name, "AMD Radeon (TM) Graphics");
+        assert_eq!(devices[0].vendor, "Advanced Micro Devices (AMD)");
+        assert_eq!(devices[0].memory_mb, Some(6211));
+    }
+
+    /// `--list-devices` never reports supportability, so capability must stay unknown.
+    #[test]
+    fn list_devices_leaves_capability_unknown() {
+        for device in parse_device_list(LIST_DEVICES_AMD) {
+            assert_eq!(device.is_mineable, None);
+            assert!(device.can_mine(), "unknown capability must fail open");
+        }
+    }
+
+    #[test]
+    fn parses_the_active_verdict_from_a_benchmark_run() {
+        let devices = parse_device_list(BENCHMARK_C29_AMD);
+
+        assert_eq!(devices.len(), 2);
+
+        assert_eq!(devices[0].name, "Radeon RX 9070 XT");
+        assert_eq!(devices[0].is_mineable, Some(true));
+        assert_eq!(devices[0].unsupported_reason, None);
+
+        assert_eq!(devices[1].name, "RDNA 2");
+        assert_eq!(devices[1].is_mineable, Some(false));
+        assert_eq!(
+            devices[1].unsupported_reason.as_deref(),
+            Some("Unsupported device or driver version.")
+        );
+        assert!(devices[1].is_known_unmineable());
+        assert!(!devices[1].can_mine());
+    }
+
+    /// `Active: true (Selected Algorithm: Cuckaroo 29 (Tari))` closes two brackets.
+    #[test]
+    fn active_reason_may_itself_contain_brackets() {
+        let devices = parse_device_list(
+            "Device 0:\n    Name: A\n    Active:  true (Selected Algorithm: Cuckaroo 29 (Tari))\n",
+        );
+
+        assert_eq!(devices[0].is_mineable, Some(true));
+    }
+
+    /// A refused device keeps lolminer's wording so it can be shown to the user verbatim.
+    #[test]
+    fn a_refused_device_keeps_lolminers_reason() {
+        let devices = parse_device_list(
+            "Device 0:\n    Name: A\n    Active:  false (Unsupported device or driver version.)\n",
+        );
+
+        assert_eq!(
+            devices[0].unsupported_reason.as_deref(),
+            Some("Unsupported device or driver version.")
+        );
+    }
+
+    #[test]
+    fn an_accepted_device_carries_no_reason() {
+        let devices = parse_device_list("Device 0:\n    Name: A\n    Active:  true\n");
+
+        assert_eq!(devices[0].is_mineable, Some(true));
+        assert_eq!(devices[0].unsupported_reason, None);
     }
 
     #[test]
@@ -628,7 +712,6 @@ mod tests {
 
     #[test]
     fn ignores_the_banner_and_summary_lines() {
-        // The banner and the "supported GPUs" summary both contain colons.
         let devices = parse_device_list(
             "|  Made by Lolliedieb: 2025 |\nOpenCL driver detected. Number of OpenCL supported GPUs: 2 \nName: not a device\n",
         );
@@ -638,9 +721,7 @@ mod tests {
 
     #[test]
     fn a_device_without_a_name_is_dropped() {
-        let devices = parse_device_list("Device 0:\n    Memory:  8192 MByte\n");
-
-        assert!(devices.is_empty());
+        assert!(parse_device_list("Device 0:\n    Memory:  8192 MByte\n").is_empty());
     }
 
     #[test]
@@ -653,25 +734,78 @@ mod tests {
     }
 
     #[test]
-    fn memory_is_none_when_lolminer_does_not_report_it() {
+    fn unknown_memory_never_disqualifies_a_device() {
         let devices = parse_device_list("Device 0:\n    Name: A\n");
 
         assert_eq!(devices[0].memory_mb, None);
-        // Unknown memory must not disqualify a device.
         assert!(devices[0].has_enough_memory_for_c29());
+        assert!(devices[0].has_comfortable_memory());
     }
 
     #[test]
     fn memory_requirement_matches_lolminers_documented_6gb_floor() {
-        let device = |memory_mb| GpuCommonInformation {
-            name: "GPU".to_string(),
-            device_id: 0,
-            vendor: String::new(),
-            memory_mb,
-        };
+        assert!(!device("GPU", Some(4096), None).has_enough_memory_for_c29());
+        assert!(device("GPU", Some(6144), None).has_enough_memory_for_c29());
+    }
 
-        assert!(!device(Some(4096)).has_enough_memory_for_c29());
-        assert!(device(Some(6144)).has_enough_memory_for_c29());
-        assert!(device(Some(12288)).has_enough_memory_for_c29());
+    /// The gap between "lolminer will run" and "you want this on by default".
+    #[test]
+    fn a_device_at_the_memory_floor_is_allowed_but_not_recommended() {
+        let marginal = device("Radeon RX 480", Some(6211), Some(true));
+
+        assert!(marginal.can_mine());
+        assert!(marginal.has_enough_memory_for_c29());
+        assert!(!marginal.has_comfortable_memory());
+        assert!(!marginal.is_recommended_for_mining());
+    }
+
+    #[test]
+    fn integrated_gpus_are_detected_by_name() {
+        for name in [
+            "AMD Radeon (TM) Graphics",
+            "Intel(R) UHD Graphics 620",
+            "Intel(R) Iris(R) Xe Graphics",
+            "AMD Radeon Graphics",
+        ] {
+            assert!(
+                device(name, Some(16384), Some(true)).is_probably_integrated(),
+                "{name} should be seen as integrated"
+            );
+        }
+
+        for name in ["Radeon RX 9070 XT", "NVIDIA GeForce RTX 3060"] {
+            assert!(
+                !device(name, Some(16384), Some(true)).is_probably_integrated(),
+                "{name} should be seen as dedicated"
+            );
+        }
+    }
+
+    /// An integrated GPU that lolminer would accept is still not switched on by default:
+    /// it shares memory with the host and would make the machine unpleasant to use.
+    #[test]
+    fn an_integrated_gpu_is_never_recommended() {
+        let igpu = device("AMD Radeon (TM) Graphics", Some(16384), Some(true));
+
+        assert!(igpu.can_mine());
+        assert!(igpu.has_comfortable_memory());
+        assert!(!igpu.is_recommended_for_mining());
+    }
+
+    #[test]
+    fn a_dedicated_gpu_with_headroom_is_recommended() {
+        let gpu = device("NVIDIA GeForce RTX 3060", Some(12288), Some(true));
+
+        assert!(gpu.can_mine());
+        assert!(gpu.is_recommended_for_mining());
+    }
+
+    /// Absence of evidence must not lock anyone out, but it must not enable them either.
+    #[test]
+    fn a_refused_device_is_neither_usable_nor_recommended() {
+        let refused = device("RDNA 2", Some(30825), Some(false));
+
+        assert!(!refused.can_mine());
+        assert!(!refused.is_recommended_for_mining());
     }
 }

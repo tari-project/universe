@@ -70,6 +70,8 @@ describe('app-status types', () => {
                 device_id: 0,
                 vendor: 'NVIDIA',
                 memory_mb: 24564,
+                is_mineable: true,
+                unsupported_reason: null,
             };
 
             expect(device.name).toBe('NVIDIA GeForce RTX 4090');
@@ -83,6 +85,8 @@ describe('app-status types', () => {
                 device_id: 0,
                 vendor: 'NVIDIA',
                 memory_mb: null,
+                is_mineable: null,
+                unsupported_reason: null,
             };
 
             expect(device.memory_mb).toBeNull();
