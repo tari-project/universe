@@ -71,10 +71,7 @@ impl HttpClient {
             if response.status().is_success() {
                 return Ok(response);
             } else {
-                return Err(anyhow!(
-                    "HEAD request failed with status code: {}",
-                    response.status()
-                ));
+                return Err(classify_status_error("HEAD", response.status()));
             }
         };
         head_response.map_err(|e| {
@@ -91,13 +88,27 @@ impl HttpClient {
             if response.status().is_success() {
                 return Ok(response);
             } else {
-                return Err(anyhow!(
-                    "GET request failed with status code: {}",
-                    response.status()
-                ));
+                return Err(classify_status_error("GET", response.status()));
             }
         };
 
         get_response.map_err(|e| anyhow!("GET request failed with error: {}", e))
+    }
+}
+
+/// Classify a non-success HTTP status returned while probing a download URL.
+/// Transient/server-side statuses (request timeout, rate limiting, 5xx such as
+/// 504 Gateway Timeout) are user-environment/CDN issues that must not be
+/// reported to Sentry. Other statuses (e.g. a genuinely wrong 404 release URL)
+/// stay as plain errors so they continue to surface as real bugs.
+fn classify_status_error(method: &str, status: reqwest::StatusCode) -> anyhow::Error {
+    let message = format!("{method} request failed with status code: {status}");
+    if status.is_server_error()
+        || status == reqwest::StatusCode::REQUEST_TIMEOUT
+        || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+    {
+        BinaryDownloadError::NetworkError(message).into()
+    } else {
+        anyhow!(message)
     }
 }
