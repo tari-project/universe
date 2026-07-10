@@ -24,8 +24,30 @@ use serde::{Deserialize, Serialize};
 
 pub mod lolminer;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// lolMiner mines Cuckaroo29 (Tari) on Nvidia GTX 1000 and newer, and AMD RX 400 and newer,
+/// with at least 6 GB of GPU memory.
+/// See <https://github.com/Lolliedieb/lolMiner-releases/releases/tag/1.98>
+pub const MIN_GPU_MEMORY_MB_FOR_C29: u64 = 6144;
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GpuCommonInformation {
     pub name: String,
     pub device_id: u32,
+    pub vendor: String,
+    /// Memory reported by the miner, in MB. `None` when it could not be determined.
+    pub memory_mb: Option<u64>,
+}
+
+impl GpuCommonInformation {
+    /// Whether this device has enough memory to mine C29.
+    ///
+    /// A device whose memory could not be determined is treated as eligible, so a gap in
+    /// parsing never silently disables a rig that was previously mining.
+    ///
+    /// Integrated GPUs report shared system memory here, so this is necessary but not
+    /// sufficient for a device to actually mine.
+    pub fn has_enough_memory_for_c29(&self) -> bool {
+        self.memory_mb
+            .is_none_or(|mb| mb >= MIN_GPU_MEMORY_MB_FOR_C29)
+    }
 }

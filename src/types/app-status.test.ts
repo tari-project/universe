@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SystemDependencyStatus } from './app-status';
+import { GpuDevice, SystemDependencyStatus } from './app-status';
 
 describe('app-status types', () => {
     describe('SystemDependencyStatus enum', () => {
@@ -65,13 +65,27 @@ describe('app-status types', () => {
 
     describe('GpuDevice structure', () => {
         it('can create a GPU device object', () => {
-            const device = {
+            const device: GpuDevice = {
                 name: 'NVIDIA GeForce RTX 4090',
                 device_id: 0,
+                vendor: 'NVIDIA',
+                memory_mb: 24564,
             };
 
             expect(device.name).toBe('NVIDIA GeForce RTX 4090');
             expect(device.device_id).toBe(0);
+            expect(device.memory_mb).toBe(24564);
+        });
+
+        it('allows memory_mb to be null when the miner does not report it', () => {
+            const device: GpuDevice = {
+                name: 'NVIDIA GeForce RTX 4090',
+                device_id: 0,
+                vendor: 'NVIDIA',
+                memory_mb: null,
+            };
+
+            expect(device.memory_mb).toBeNull();
         });
     });
 

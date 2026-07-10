@@ -68,6 +68,8 @@ describe('useMiningMetricsStore', () => {
             const device = {
                 device_id: 0,
                 name: 'NVIDIA RTX 4090',
+                vendor: 'NVIDIA',
+                memory_mb: 24564,
             };
             useMiningMetricsStore.setState({ gpu_devices: [device] });
             expect(useMiningMetricsStore.getState().gpu_devices).toHaveLength(1);
@@ -76,8 +78,8 @@ describe('useMiningMetricsStore', () => {
 
         it('can add multiple GPU devices', () => {
             const devices = [
-                { device_id: 0, name: 'NVIDIA RTX 4090' },
-                { device_id: 1, name: 'AMD RX 7900 XTX' },
+                { device_id: 0, name: 'NVIDIA RTX 4090', vendor: 'NVIDIA', memory_mb: 24564 },
+                { device_id: 1, name: 'AMD RX 7900 XTX', vendor: 'AMD', memory_mb: 24560 },
             ];
             useMiningMetricsStore.setState({ gpu_devices: devices });
             expect(useMiningMetricsStore.getState().gpu_devices).toHaveLength(2);
@@ -85,7 +87,7 @@ describe('useMiningMetricsStore', () => {
 
         it('can clear gpu_devices', () => {
             useMiningMetricsStore.setState({
-                gpu_devices: [{ device_id: 0, name: 'Test GPU' }],
+                gpu_devices: [{ device_id: 0, name: 'Test GPU', vendor: 'Test', memory_mb: null }],
             });
             useMiningMetricsStore.setState({ gpu_devices: [] });
             expect(useMiningMetricsStore.getState().gpu_devices).toEqual([]);

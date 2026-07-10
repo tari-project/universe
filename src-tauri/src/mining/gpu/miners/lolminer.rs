@@ -20,7 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use std::{
-    sync::atomic::{AtomicBool, Ordering},
+    sync::{
+        LazyLock,
+        atomic::{AtomicBool, Ordering},
+    },
     time::Duration,
 };
 
@@ -48,7 +51,7 @@ use crate::{
             consts::{GpuMinerStatus, GpuMinerType},
             interface::{GpuMinerInterfaceTrait, GpuMinerStatusInterface},
             manager::GpuManager,
-            miners::GpuCommonInformation,
+            miners::{GpuCommonInformation, MIN_GPU_MEMORY_MB_FOR_C29},
         },
     },
     port_allocator::PortAllocator,
@@ -131,8 +134,6 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         crate::download_utils::set_permissions(&gpu_miner_binary).await?;
         let result = launch_child_process(&gpu_miner_binary, &config_dir, None, &args, true)?;
 
-        let mut gpu_devices: Vec<GpuCommonInformation> = vec![];
-
         let output = result.wait_with_output().await?;
         let output_str = String::from_utf8_lossy(&output.stdout);
         if output_str.contains("Number of Cuda supported GPUs: 0")
@@ -141,14 +142,26 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
             return Err(anyhow::anyhow!("No supported GPU devices found"));
         }
 
-        for device_name in extract_device_names(&output_str) {
-            info!(target: LOG_TARGET_APP_LOGIC,"Lolminer detected device name: {device_name}");
-            #[allow(clippy::cast_possible_truncation)]
-            let device_id = gpu_devices.len() as u32;
-            gpu_devices.push(GpuCommonInformation {
-                name: device_name.trim().to_string(),
-                device_id,
-            });
+        let gpu_devices = parse_device_list(&output_str);
+        if gpu_devices.is_empty() {
+            return Err(anyhow::anyhow!(
+                "Could not parse any GPU devices from lolminer --list-devices output"
+            ));
+        }
+
+        for device in &gpu_devices {
+            info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Lolminer detected device {}: {} (vendor: {}, memory: {:?} MB)",
+                device.device_id, device.name, device.vendor, device.memory_mb
+            );
+            if !device.has_enough_memory_for_c29() {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Device {} ({}) reports {:?} MB, below the {} MB lolminer requires to mine C29",
+                    device.device_id, device.name, device.memory_mb, MIN_GPU_MEMORY_MB_FOR_C29
+                );
+            }
         }
 
         self.gpu_devices = gpu_devices;
@@ -437,33 +450,194 @@ struct Algorithm {
     total_performance: f64,
 }
 
-fn extract_device_names(output_str: &str) -> Vec<String> {
-    let lines: Vec<&str> = output_str.lines().collect();
-    let mut device_names = Vec::new();
-    let mut found_device = false;
+static ANSI_ESCAPE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"\x1b\[[0-9;]*m").expect("valid ANSI escape regex"));
+static DEVICE_HEADER: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^Device\s+(\d+):$").expect("valid device header regex"));
+static MEMORY_MBYTE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(\d+)\s*MByte").expect("valid memory regex"));
 
-    let regex =
-        Regex::new(r"\x1b\[[0-9;]*m").expect("Failed to create regex for lolminer devices names");
+struct PartialDevice {
+    device_id: u32,
+    name: Option<String>,
+    vendor: Option<String>,
+    memory_mb: Option<u64>,
+}
 
-    for line in lines {
-        let trimmed = line.trim();
-        // Check for any device marker (Device 0:, Device 1:, etc.)
-        if trimmed.starts_with("Device ") && trimmed.ends_with(':') {
-            found_device = true;
-            continue;
-        }
-        if found_device && trimmed.starts_with("Name:") {
-            // Regex to match ANSI escape codes
-
-            // Extract the name after "Name:    "
-            let parts: Vec<&str> = trimmed.splitn(2, ':').collect();
-            if parts.len() == 2 {
-                let name = parts[1].trim().to_string();
-                let plain_name = regex.replace_all(&name, "").to_string();
-                device_names.push(plain_name);
-            }
-            found_device = false; // Reset for next device
+impl PartialDevice {
+    fn new(device_id: u32) -> Self {
+        Self {
+            device_id,
+            name: None,
+            vendor: None,
+            memory_mb: None,
         }
     }
-    device_names
+
+    /// A device without a name is not usable, and not worth reporting.
+    fn build(self) -> Option<GpuCommonInformation> {
+        Some(GpuCommonInformation {
+            name: self.name?,
+            device_id: self.device_id,
+            vendor: self.vendor.unwrap_or_default(),
+            memory_mb: self.memory_mb,
+        })
+    }
+}
+
+/// Parses the device blocks emitted by `lolMiner --list-devices`.
+///
+/// The output is ANSI-coloured, human-oriented text. A block looks like:
+///
+/// ```text
+/// Device 0:
+///     Name:    Radeon RX 9070 XT
+///     Address: 3:0
+///     Vendor:  Advanced Micro Devices (AMD), ROCm
+///     Drivers: OpenCL
+///     Memory:  32624 MByte (32558 MByte free)
+/// ```
+///
+/// `device_id` is taken from the `Device N:` header rather than the position in the list,
+/// because it is passed back to lolminer via `--devices` and must match its numbering.
+fn parse_device_list(output_str: &str) -> Vec<GpuCommonInformation> {
+    let mut devices = Vec::new();
+    let mut current: Option<PartialDevice> = None;
+
+    for raw_line in output_str.lines() {
+        let stripped = ANSI_ESCAPE.replace_all(raw_line, "");
+        let line = stripped.trim();
+
+        if let Some(device_id) = DEVICE_HEADER
+            .captures(line)
+            .and_then(|caps| caps.get(1))
+            .and_then(|id| id.as_str().parse().ok())
+        {
+            devices.extend(current.take().and_then(PartialDevice::build));
+            current = Some(PartialDevice::new(device_id));
+            continue;
+        }
+
+        let (Some(device), Some((field, value))) = (current.as_mut(), line.split_once(':')) else {
+            continue;
+        };
+
+        match field.trim() {
+            "Name" => device.name = Some(value.trim().to_string()),
+            "Vendor" => device.vendor = Some(value.trim().to_string()),
+            "Memory" => {
+                device.memory_mb = MEMORY_MBYTE
+                    .captures(value.trim())
+                    .and_then(|caps| caps.get(1))
+                    .and_then(|mb| mb.as_str().parse().ok());
+            }
+            _ => {}
+        }
+    }
+
+    devices.extend(current.and_then(PartialDevice::build));
+    devices
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Verbatim `lolMiner 1.98a --list-devices` output, captured on a Linux host with a
+    /// dedicated Radeon RX 9070 XT and an integrated GPU. Retains the banner, the ANSI
+    /// colour codes and the trailing whitespace lolminer emits.
+    const LIST_DEVICES_AMD: &str = include_str!("test_fixtures/lolminer_198a_list_devices_amd.txt");
+
+    #[test]
+    fn parses_real_lolminer_output() {
+        let devices = parse_device_list(LIST_DEVICES_AMD);
+
+        assert_eq!(
+            devices,
+            vec![
+                GpuCommonInformation {
+                    name: "Radeon RX 9070 XT".to_string(),
+                    device_id: 0,
+                    vendor: "Advanced Micro Devices (AMD), ROCm".to_string(),
+                    memory_mb: Some(32624),
+                },
+                GpuCommonInformation {
+                    name: "RDNA 2".to_string(),
+                    device_id: 1,
+                    vendor: "Advanced Micro Devices (AMD), ROCm".to_string(),
+                    memory_mb: Some(30825),
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn strips_ansi_colour_codes_embedded_in_the_name() {
+        let devices = parse_device_list(
+            "Device 0: \n    Name:    \x1b[38;2;255;069;000mNVIDIA GeForce RTX 3060 \n\x1b[0m    Memory:  12288 MByte (12000 MByte free) \n",
+        );
+
+        assert_eq!(devices.len(), 1);
+        assert_eq!(devices[0].name, "NVIDIA GeForce RTX 3060");
+        assert_eq!(devices[0].memory_mb, Some(12288));
+    }
+
+    #[test]
+    fn device_id_comes_from_the_header_not_the_position() {
+        let devices = parse_device_list("Device 3:\n    Name: A\nDevice 7:\n    Name: B\n");
+
+        assert_eq!(
+            devices.iter().map(|d| d.device_id).collect::<Vec<_>>(),
+            vec![3, 7]
+        );
+    }
+
+    #[test]
+    fn ignores_the_banner_and_summary_lines() {
+        // The banner and the "supported GPUs" summary both contain colons.
+        let devices = parse_device_list(
+            "|  Made by Lolliedieb: 2025 |\nOpenCL driver detected. Number of OpenCL supported GPUs: 2 \nName: not a device\n",
+        );
+
+        assert!(devices.is_empty());
+    }
+
+    #[test]
+    fn a_device_without_a_name_is_dropped() {
+        let devices = parse_device_list("Device 0:\n    Memory:  8192 MByte\n");
+
+        assert!(devices.is_empty());
+    }
+
+    #[test]
+    fn address_field_containing_a_colon_does_not_confuse_the_parser() {
+        let devices =
+            parse_device_list("Device 0:\n    Name: A\n    Address: 3:0\n    Memory: 8192 MByte\n");
+
+        assert_eq!(devices[0].name, "A");
+        assert_eq!(devices[0].memory_mb, Some(8192));
+    }
+
+    #[test]
+    fn memory_is_none_when_lolminer_does_not_report_it() {
+        let devices = parse_device_list("Device 0:\n    Name: A\n");
+
+        assert_eq!(devices[0].memory_mb, None);
+        // Unknown memory must not disqualify a device.
+        assert!(devices[0].has_enough_memory_for_c29());
+    }
+
+    #[test]
+    fn memory_requirement_matches_lolminers_documented_6gb_floor() {
+        let device = |memory_mb| GpuCommonInformation {
+            name: "GPU".to_string(),
+            device_id: 0,
+            vendor: String::new(),
+            memory_mb,
+        };
+
+        assert!(!device(Some(4096)).has_enough_memory_for_c29());
+        assert!(device(Some(6144)).has_enough_memory_for_c29());
+        assert!(device(Some(12288)).has_enough_memory_for_c29());
+    }
 }

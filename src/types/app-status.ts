@@ -52,6 +52,9 @@ export interface TransactionInfo {
 export interface GpuDevice {
     name: string;
     device_id: number;
+    vendor: string;
+    /** Memory reported by the miner, in MB. `null` when it could not be determined. */
+    memory_mb: number | null;
 }
 
 export interface CpuMinerStatus {
