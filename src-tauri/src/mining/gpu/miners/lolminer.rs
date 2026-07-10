@@ -692,6 +692,11 @@ mod tests {
     const BENCHMARK_C29_AMD: &str =
         include_str!("test_fixtures/lolminer_198a_benchmark_c29_amd.txt");
 
+    /// `lolminer.txt` from a real mining run on a Ryzen laptop with only an integrated GPU.
+    /// lolminer refuses the device and exits without ever hashing.
+    const ALL_DEVICES_DESELECTED: &str =
+        include_str!("test_fixtures/lolminer_198a_all_devices_deselected.txt");
+
     fn device(
         name: &str,
         memory_mb: Option<u64>,
@@ -922,5 +927,52 @@ mod tests {
 
         assert!(!refused.can_mine());
         assert!(!refused.is_recommended_for_mining());
+    }
+    /// The machine that motivated this change: one integrated GPU, refused outright. Its 6211 MB
+    /// of shared memory clears lolminer's 6 GB floor, so nothing short of asking lolminer would
+    /// have caught it.
+    #[test]
+    fn a_machine_whose_only_gpu_is_refused_has_nothing_to_mine_on() {
+        let devices = parse_device_list(ALL_DEVICES_DESELECTED);
+
+        assert_eq!(devices.len(), 1);
+        assert!(devices[0].has_enough_memory_for_c29());
+        assert!(devices[0].is_known_unmineable());
+        assert!(!devices.iter().any(GpuCommonInformation::can_mine));
+        assert_eq!(
+            devices[0].unsupported_reason.as_deref(),
+            Some("Unsupported device or driver version.")
+        );
+    }
+
+    /// One usable device is enough, even when another is refused alongside it.
+    #[test]
+    fn a_refused_device_does_not_disqualify_its_healthy_neighbour() {
+        let devices = parse_device_list(BENCHMARK_C29_AMD);
+
+        assert!(devices.iter().any(GpuCommonInformation::can_mine));
+        assert!(
+            devices
+                .iter()
+                .any(GpuCommonInformation::is_recommended_for_mining)
+        );
+    }
+
+    /// Every line lolminer prints when it has finished choosing devices must stop the probe,
+    /// otherwise it would read on into the benchmark, or hang waiting for a miner that has quit.
+    #[test]
+    fn the_device_table_end_markers_appear_in_real_output() {
+        assert!(
+            BENCHMARK_C29_AMD
+                .lines()
+                .any(|line| DEVICE_TABLE_END_MARKERS.iter().any(|m| line.contains(m))),
+            "a benchmark run must hit an end marker"
+        );
+        assert!(
+            ALL_DEVICES_DESELECTED
+                .lines()
+                .any(|line| DEVICE_TABLE_END_MARKERS.iter().any(|m| line.contains(m))),
+            "a refused run must hit an end marker"
+        );
     }
 }
