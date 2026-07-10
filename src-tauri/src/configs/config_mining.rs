@@ -147,7 +147,18 @@ pub struct ConfigMiningContent {
     squad_override: Option<String>,
     pause_on_battery_mode: PauseOnBatteryModeState,
     is_lolminer_tested: bool,
+    /// Whether GPU mining should be switched on by default. A soft signal about whether mining
+    /// would make the machine unpleasant to use. Never a reason to forbid mining.
     is_gpu_mining_recommended: bool,
+    /// Whether any detected GPU can mine at all, as judged by the miner itself. Unlike
+    /// [`Self::is_gpu_mining_recommended`], this does forbid mining, so it is only ever set
+    /// false on an explicit refusal from the miner.
+    gpu_mining_available: bool,
+    /// The miner's own words for why it will not mine on this machine.
+    gpu_mining_unavailable_reason: Option<String>,
+    /// Set once the user has toggled GPU mining themselves. Their choice then outranks any
+    /// recommendation we would otherwise apply.
+    has_user_chosen_gpu_mining: bool,
 
     eco_alert_needed: bool,
     mode_mining_times: HashMap<String, Duration>, // we only need Eco for now, but we can add to this if needed
@@ -205,6 +216,9 @@ impl Default for ConfigMiningContent {
             squad_override: None,
             is_lolminer_tested: false,
             is_gpu_mining_recommended: true,
+            gpu_mining_available: true,
+            gpu_mining_unavailable_reason: None,
+            has_user_chosen_gpu_mining: false,
             eco_alert_needed: true,
             mode_mining_times: HashMap::from([("Eco".to_string(), Duration::new(0, 0))]),
         }

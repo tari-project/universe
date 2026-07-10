@@ -27,7 +27,10 @@ use axum::async_trait;
 use crate::{
     mining::{
         GpuConnectionType,
-        gpu::miners::lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
+        gpu::miners::{
+            GpuCommonInformation,
+            lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
+        },
     },
     process_adapter::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor,
@@ -46,6 +49,8 @@ pub trait GpuMinerInterfaceTrait: Send + Sync {
         connection_type: GpuConnectionType,
     ) -> Result<(), anyhow::Error>;
     async fn detect_devices(&mut self) -> Result<(), anyhow::Error>;
+    /// The devices found by the last [`Self::detect_devices`] call, empty before it has run.
+    fn get_gpu_devices(&self) -> &[GpuCommonInformation];
     async fn load_excluded_devices(
         &mut self,
         _excluded_devices: Vec<u32>,
@@ -91,6 +96,12 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
     async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.detect_devices().await,
+        }
+    }
+
+    fn get_gpu_devices(&self) -> &[GpuCommonInformation] {
+        match self {
+            GpuMinerInterface::LolMiner(miner) => miner.get_gpu_devices(),
         }
     }
 

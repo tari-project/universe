@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use std::{
+    path::Path,
     sync::{
         LazyLock,
         atomic::{AtomicBool, Ordering},
@@ -32,7 +33,11 @@ use log::{info, warn};
 use regex::Regex;
 use serde::Deserialize;
 use tari_shutdown::Shutdown;
-use tokio::sync::watch::Sender;
+use tokio::{
+    io::{AsyncBufReadExt, BufReader},
+    sync::watch::Sender,
+    time::timeout,
+};
 
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
@@ -162,6 +167,9 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         }
 
         self.gpu_devices = gpu_devices;
+        self.probe_device_capabilities(&gpu_miner_binary, &config_dir)
+            .await;
+
         let devices_indexes: Vec<u32> = self.gpu_devices.iter().map(|d| d.device_id).collect();
         EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
         ConfigMining::update_field(
@@ -176,6 +184,113 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         .await;
 
         Ok(())
+    }
+
+    fn get_gpu_devices(&self) -> &[GpuCommonInformation] {
+        &self.gpu_devices
+    }
+}
+
+/// How long to wait for lolminer to print its device table before giving up on establishing
+/// device capability.
+const CAPABILITY_PROBE_TIMEOUT: Duration = Duration::from_secs(60);
+
+/// Lines lolminer prints once it has finished deciding which devices it will use.
+const DEVICE_TABLE_END_MARKERS: &[&str] = &[
+    "Start Benchmark",
+    "Start Mining",
+    "All devices deselected",
+    "Closing lolMiner",
+];
+
+impl LolMinerGpuMiner {
+    /// Asks lolminer which of the detected devices it will actually mine C29 on.
+    ///
+    /// `--list-devices` reports every device with an OpenCL or Cuda driver, whether or not it
+    /// can mine, and offers no way to tell the difference. Setting up for an algorithm is what
+    /// makes lolminer print its `Active:` verdict, so run a benchmark and read the device table
+    /// it prints on the way in, then stop it before it benchmarks anything.
+    ///
+    /// Failure here is not fatal and deliberately leaves capability unknown, which
+    /// [`GpuCommonInformation::can_mine`] reads as "allowed". A probe that cannot run must
+    /// never be the reason someone is locked out of mining.
+    async fn probe_device_capabilities(&mut self, binary: &std::path::Path, config_dir: &Path) {
+        match self.read_device_table(binary, config_dir).await {
+            Ok(probed) => {
+                for device in &mut self.gpu_devices {
+                    let Some(verdict) = probed.iter().find(|p| p.device_id == device.device_id)
+                    else {
+                        warn!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "Lolminer did not report device {} while probing; leaving capability unknown",
+                            device.device_id
+                        );
+                        continue;
+                    };
+                    device.is_mineable = verdict.is_mineable;
+                    device.unsupported_reason = verdict.unsupported_reason.clone();
+
+                    if device.is_known_unmineable() {
+                        warn!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "Lolminer refuses device {} ({}): {}",
+                            device.device_id,
+                            device.name,
+                            device.unsupported_reason.as_deref().unwrap_or("no reason given")
+                        );
+                    }
+                }
+            }
+            Err(error) => {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Could not establish GPU capability, assuming devices are usable: {error}"
+                );
+            }
+        }
+    }
+
+    /// Runs `lolminer --benchmark CR29` and returns the devices in the table it prints during
+    /// setup, killing it as soon as that table is complete.
+    async fn read_device_table(
+        &self,
+        binary: &std::path::Path,
+        config_dir: &Path,
+    ) -> Result<Vec<GpuCommonInformation>, anyhow::Error> {
+        let args = vec!["--benchmark".to_string(), "CR29".to_string()];
+        let mut child = launch_child_process(binary, config_dir, None, &args, true)?;
+
+        let stdout = child
+            .stdout
+            .take()
+            .ok_or_else(|| anyhow::anyhow!("Lolminer produced no stdout to probe"))?;
+
+        let mut output = String::new();
+        let read_device_table = async {
+            let mut lines = BufReader::new(stdout).lines();
+            while let Some(line) = lines.next_line().await? {
+                let reached_end = DEVICE_TABLE_END_MARKERS
+                    .iter()
+                    .any(|marker| line.contains(marker));
+                output.push_str(&line);
+                output.push('\n');
+                if reached_end {
+                    break;
+                }
+            }
+            Ok::<(), anyhow::Error>(())
+        };
+
+        let outcome = timeout(CAPABILITY_PROBE_TIMEOUT, read_device_table).await;
+
+        // The benchmark itself is of no interest, and neither is a hung device init.
+        if let Err(error) = child.kill().await {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Could not stop lolminer after probing: {error}");
+        }
+
+        outcome.map_err(|_| anyhow::anyhow!("Lolminer did not report its devices in time"))??;
+
+        Ok(parse_device_list(&output))
     }
 }
 

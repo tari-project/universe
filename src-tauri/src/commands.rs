@@ -1082,6 +1082,9 @@ pub async fn toggle_device_exclusion(device_index: u32, excluded: bool) -> Resul
 pub async fn set_gpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
+    ConfigMining::update_field(ConfigMiningContent::set_has_user_chosen_gpu_mining, true)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
     ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, enabled)
         .await
         .map_err(InvokeError::from_anyhow)?;
