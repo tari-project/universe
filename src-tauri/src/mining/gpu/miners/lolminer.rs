@@ -136,17 +136,14 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
 
         let output = result.wait_with_output().await?;
         let output_str = String::from_utf8_lossy(&output.stdout);
-        if output_str.contains("Number of Cuda supported GPUs: 0")
-            && output_str.contains("Number of OpenCL supported GPUs: 0")
-        {
-            return Err(anyhow::anyhow!("No supported GPU devices found"));
-        }
 
+        // The device blocks are the only reliable signal here. lolminer's summary line varies
+        // with what is installed: a host with the Cuda runtime but no Nvidia card prints
+        // "Number of Cuda supported GPUs: 0", while a host with no Cuda runtime at all prints
+        // "No Cuda driver or GPUs detected." The same holds for OpenCL.
         let gpu_devices = parse_device_list(&output_str);
         if gpu_devices.is_empty() {
-            return Err(anyhow::anyhow!(
-                "Could not parse any GPU devices from lolminer --list-devices output"
-            ));
+            return Err(anyhow::anyhow!("No supported GPU devices found"));
         }
 
         for device in &gpu_devices {
@@ -547,6 +544,43 @@ mod tests {
     /// dedicated Radeon RX 9070 XT and an integrated GPU. Retains the banner, the ANSI
     /// colour codes and the trailing whitespace lolminer emits.
     const LIST_DEVICES_AMD: &str = include_str!("test_fixtures/lolminer_198a_list_devices_amd.txt");
+
+    /// `lolMiner 1.98a --list-devices` on a Ryzen laptop whose only GPU is integrated.
+    /// Note it reports no Cuda runtime at all, and that its shared memory sits just above
+    /// lolminer's documented 6 GB floor.
+    const LIST_DEVICES_AMD_IGPU: &str =
+        include_str!("test_fixtures/lolminer_198a_list_devices_amd_igpu.txt");
+
+    #[test]
+    fn parses_output_from_a_host_with_no_cuda_runtime() {
+        let devices = parse_device_list(LIST_DEVICES_AMD_IGPU);
+
+        assert_eq!(
+            devices,
+            vec![GpuCommonInformation {
+                name: "AMD Radeon (TM) Graphics".to_string(),
+                device_id: 0,
+                vendor: "Advanced Micro Devices (AMD)".to_string(),
+                memory_mb: Some(6211),
+            }]
+        );
+    }
+
+    /// Guards the trap: an integrated GPU reports shared system memory, which can sit just
+    /// over lolminer's 6 GB floor. This device cannot mine C29, yet a memory threshold alone
+    /// says it can. Whether a device is mineable must come from lolminer itself.
+    #[test]
+    fn memory_alone_does_not_prove_an_integrated_gpu_can_mine() {
+        let devices = parse_device_list(LIST_DEVICES_AMD_IGPU);
+
+        assert_eq!(devices[0].memory_mb, Some(6211));
+        assert!(
+            devices[0]
+                .memory_mb
+                .is_some_and(|mb| mb > MIN_GPU_MEMORY_MB_FOR_C29)
+        );
+        assert!(devices[0].has_enough_memory_for_c29());
+    }
 
     #[test]
     fn parses_real_lolminer_output() {

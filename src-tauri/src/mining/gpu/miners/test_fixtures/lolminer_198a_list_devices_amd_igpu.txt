@@ -1,0 +1,8 @@
+OpenCL driver detected. Number of OpenCL supported GPUs: 1
+No Cuda driver or GPUs detected.
+Device 0:
+    Name:    AMD Radeon (TM) Graphics
+    Address: 3:0
+    Vendor:  Advanced Micro Devices (AMD)
+    Drivers: OpenCL
+    Memory:  6211 MByte (6131 MByte free)
