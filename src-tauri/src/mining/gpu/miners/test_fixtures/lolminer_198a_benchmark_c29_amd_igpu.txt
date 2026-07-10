@@ -1,0 +1,13 @@
+Setup Miner...
+No Cuda driver or GPUs detected.
+OpenCL driver detected.
+Number of OpenCL supported GPUs: 1
+Device 0:
+    Name:    AMD Radeon (TM) Graphics
+    Address: 3:0
+    Vendor:  Advanced Micro Devices (AMD)
+    Drivers: OpenCL
+    Memory:  6211 MByte (6131 MByte free)
+    Active:  false (Unsupported device or driver version.)
+Start Benchmark...
+All devices deselected or failed compatiblity check. Closing lolMiner

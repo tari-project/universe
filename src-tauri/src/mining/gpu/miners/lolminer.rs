@@ -195,6 +195,16 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
 /// device capability.
 const CAPABILITY_PROBE_TIMEOUT: Duration = Duration::from_secs(60);
 
+/// Whether lolminer has finished printing its device table and there is nothing more to learn.
+///
+/// `Start Benchmark...` arrives before `All devices deselected...`, so stopping at the first
+/// marker is enough: the `Active:` verdicts precede both.
+fn is_device_table_end(line: &str) -> bool {
+    DEVICE_TABLE_END_MARKERS
+        .iter()
+        .any(|marker| line.contains(marker))
+}
+
 /// Lines lolminer prints once it has finished deciding which devices it will use.
 const DEVICE_TABLE_END_MARKERS: &[&str] = &[
     "Start Benchmark",
@@ -269,9 +279,7 @@ impl LolMinerGpuMiner {
         let read_device_table = async {
             let mut lines = BufReader::new(stdout).lines();
             while let Some(line) = lines.next_line().await? {
-                let reached_end = DEVICE_TABLE_END_MARKERS
-                    .iter()
-                    .any(|marker| line.contains(marker));
+                let reached_end = is_device_table_end(&line);
                 output.push_str(&line);
                 output.push('\n');
                 if reached_end {
@@ -697,6 +705,26 @@ mod tests {
     const ALL_DEVICES_DESELECTED: &str =
         include_str!("test_fixtures/lolminer_198a_all_devices_deselected.txt");
 
+    /// Verbatim `lolMiner.exe --benchmark CR29` on Windows, on that same laptop. This is exactly
+    /// what the capability probe reads. Note `Start Benchmark...` precedes the bail-out.
+    const BENCHMARK_C29_AMD_IGPU: &str =
+        include_str!("test_fixtures/lolminer_198a_benchmark_c29_amd_igpu.txt");
+
+    /// Replays what `read_device_table` does to a stdout stream: keep lines until one says the
+    /// device table is over, inclusive.
+    fn read_until_device_table_end(output: &str) -> String {
+        let mut kept = String::new();
+        for line in output.lines() {
+            let reached_end = is_device_table_end(line);
+            kept.push_str(line);
+            kept.push('\n');
+            if reached_end {
+                break;
+            }
+        }
+        kept
+    }
+
     fn device(
         name: &str,
         memory_mb: Option<u64>,
@@ -974,5 +1002,48 @@ mod tests {
                 .any(|line| DEVICE_TABLE_END_MARKERS.iter().any(|m| line.contains(m))),
             "a refused run must hit an end marker"
         );
+    }
+    /// The probe stops at `Start Benchmark...`, so it must already have the verdict by then.
+    /// If it did not, lolminer would be left running a benchmark nobody asked for.
+    #[test]
+    fn the_probe_captures_the_verdict_before_it_stops_reading() {
+        let seen = read_until_device_table_end(BENCHMARK_C29_AMD_IGPU);
+
+        assert!(seen.contains("Start Benchmark"));
+        assert!(
+            !seen.contains("All devices deselected"),
+            "reading should stop at the first marker"
+        );
+
+        let devices = parse_device_list(&seen);
+        assert_eq!(devices.len(), 1);
+        assert_eq!(devices[0].name, "AMD Radeon (TM) Graphics");
+        assert!(devices[0].is_known_unmineable());
+        assert_eq!(
+            devices[0].unsupported_reason.as_deref(),
+            Some("Unsupported device or driver version.")
+        );
+    }
+
+    /// A healthy rig's table must survive the same truncation.
+    #[test]
+    fn the_probe_captures_every_device_on_a_healthy_rig() {
+        let seen = read_until_device_table_end(BENCHMARK_C29_AMD);
+        let devices = parse_device_list(&seen);
+
+        assert_eq!(devices.len(), 2);
+        assert_eq!(devices[0].is_mineable, Some(true));
+        assert_eq!(devices[1].is_mineable, Some(false));
+    }
+
+    /// lolminer exits on its own when it refuses everything, so the stream simply ends. The
+    /// probe must cope with reaching EOF without ever seeing a marker.
+    #[test]
+    fn a_truncated_stream_still_yields_what_was_read() {
+        let devices = parse_device_list(
+            "Setup Miner...\nDevice 0:\n    Name: A\n    Active:  false (Unsupported device or driver version.)\n",
+        );
+
+        assert!(devices[0].is_known_unmineable());
     }
 }
