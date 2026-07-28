@@ -1,4 +1,4 @@
-import { useConfigPoolsStore, useMiningMetricsStore } from '@app/store';
+import { useConfigPoolsStore, useMiningMetricsStore, useMiningStore } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import {
     SettingsGroup,
@@ -18,6 +18,7 @@ import {
 import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore.ts';
 import { PoolStats } from '@app/containers/floating/Settings/sections/pools/PoolStats.tsx';
 import { getAvailableGpuPools, getSelectedGpuPool } from '@app/store/selectors/appConfigStoreSelectors';
+import { getIsGpuSoloMiningSupported } from '@app/store/selectors/minningStoreSelectors';
 import { useShallow } from 'zustand/react/shallow';
 import { useCallback, useMemo } from 'react';
 import { Select } from '@app/components/elements/inputs/Select';
@@ -31,6 +32,11 @@ export const GpuPoolsSettings = () => {
     const isMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const selectedGpuPoolData = useConfigPoolsStore(getSelectedGpuPool);
     const availableGpuPools = useConfigPoolsStore(useShallow(getAvailableGpuPools));
+    const isSoloMiningSupported = useMiningStore(getIsGpuSoloMiningSupported);
+
+    // Turning the GPU pool off switches GPU mining to a direct node connection. Only gate
+    // the toggle once the miner list has actually arrived, so an unknown list never blocks it.
+    const isSoloMiningUnsupported = isSoloMiningSupported === false;
 
     const handleToggleGpuPool = (enabled: boolean) => {
         void toggleGpuPool(enabled);
@@ -64,11 +70,13 @@ export const GpuPoolsSettings = () => {
                         <Typography variant="h6">{'GPU pool'}</Typography>
                     </SettingsGroupTitle>
                     <Typography>{t('mining-toggle-warning')}</Typography>
+                    {isSoloMiningUnsupported && <Typography>{t('gpu-solo-mining-unavailable')}</Typography>}
                 </SettingsGroupContent>
 
                 <SettingsGroupAction>
                     <ToggleSwitch
                         checked={isGpuPoolEnabled}
+                        disabled={isSoloMiningUnsupported}
                         onChange={(e) => handleToggleGpuPool(e.target.checked)}
                         data-testid="pool-toggle-gpu"
                     />

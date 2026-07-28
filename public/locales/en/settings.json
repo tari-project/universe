@@ -49,6 +49,7 @@
   "gpu-mining-enabled": "GPU Mining",
   "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
   "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
+  "gpu-solo-mining-unavailable": "⚠️ Required because no installed GPU miner supports solo mining",
   "gpu-unavailable": "⚠️ GPU disabled because your hardware does not support it",
   "hardware-status": "Hardware status",
   "idle-timeout": {
