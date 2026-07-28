@@ -49,7 +49,8 @@ use crate::{
         GpuConnectionType, MinerControlsState, MiningError,
         gpu::{
             consts::{
-                GpuMiner, GpuMinerStatus, GpuMinerType, MINERS_PRIORITY, resolve_selected_miner,
+                GpuMiner, GpuMinerFeature, GpuMinerStatus, GpuMinerType, MINERS_PRIORITY,
+                resolve_selected_miner,
             },
             interface::{GpuMinerInterface, GpuMinerInterfaceTrait},
             miners::{
@@ -598,6 +599,21 @@ impl GpuManager {
             .unwrap_or(false)
     }
 
+    /// Whether any available GPU miner advertises solo (node) mining.
+    ///
+    /// Disabling the GPU pool switches mining to a direct node connection, which
+    /// [`Self::handle_node_connection_load`] can only satisfy when some miner supports
+    /// it. When nothing does, that path always fails, so callers should refuse to enter
+    /// it rather than leave GPU mining unable to start.
+    ///
+    /// Reads each miner's advertised `features` rather than re-deriving them from its
+    /// type, so this matches exactly what was registered and emitted to the frontend.
+    pub fn is_solo_mining_supported(&self) -> bool {
+        self.available_miners
+            .values()
+            .any(|miner| miner.features.contains(&GpuMinerFeature::SoloMining))
+    }
+
     /// Will need to mark current seleceted miner as healthy if it was unhealthy before
     /// If the miner was healthy before, we do nothing
     /// Mainly for cases when the miner was unhealthy and user want to try again and this time it works
@@ -830,5 +846,67 @@ mod tests {
         let mut manager = GpuManager::new();
         manager.load_miner(GpuMinerType::LolMiner, true, None).await;
         assert!(manager.has_healthy_miner());
+    }
+
+    use crate::mining::gpu::consts::GpuMiningAlgorithm;
+
+    fn miner_advertising(features: Vec<GpuMinerFeature>) -> GpuMiner {
+        GpuMiner {
+            miner_type: GpuMinerType::LolMiner,
+            is_healthy: true,
+            last_error: None,
+            features,
+            supported_algorithms: vec![GpuMiningAlgorithm::C29],
+        }
+    }
+
+    #[test]
+    fn solo_mining_unsupported_when_no_miners_are_available() {
+        let manager = GpuManager::new();
+
+        assert!(!manager.is_solo_mining_supported());
+    }
+
+    #[test]
+    fn solo_mining_unsupported_when_no_miner_advertises_it() {
+        let mut manager = GpuManager::new();
+        manager.available_miners.insert(
+            GpuMinerType::LolMiner,
+            miner_advertising(vec![
+                GpuMinerFeature::PoolMining,
+                GpuMinerFeature::DeviceExclusion,
+            ]),
+        );
+
+        assert!(!manager.is_solo_mining_supported());
+    }
+
+    #[test]
+    fn solo_mining_supported_when_a_miner_advertises_it() {
+        let mut manager = GpuManager::new();
+        manager.available_miners.insert(
+            GpuMinerType::LolMiner,
+            miner_advertising(vec![
+                GpuMinerFeature::SoloMining,
+                GpuMinerFeature::PoolMining,
+            ]),
+        );
+
+        assert!(manager.is_solo_mining_supported());
+    }
+
+    /// An unhealthy miner still advertises its capabilities, so the gate stays open on
+    /// capability alone - health is a transient runtime concern handled separately by
+    /// the fallback search in `handle_node_connection_load`.
+    #[test]
+    fn solo_mining_support_ignores_miner_health() {
+        let mut manager = GpuManager::new();
+        let mut miner = miner_advertising(vec![GpuMinerFeature::SoloMining]);
+        miner.is_healthy = false;
+        manager
+            .available_miners
+            .insert(GpuMinerType::LolMiner, miner);
+
+        assert!(manager.is_solo_mining_supported());
     }
 }
