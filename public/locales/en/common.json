@@ -24,6 +24,7 @@
   "minimize": "Minimize",
   "mode": "Mode",
   "module-initialization-failed": "Module initialization failed",
+  "new_update": "New update",
   "not-available": "Not available",
   "not-initialized": "Not initialized",
   "not-installed-in-applications-directory": "Oops! Tari Universe needs to live in the Applications directory. Mind installing it there?",

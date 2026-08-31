@@ -44,9 +44,9 @@ use crate::{
         config_wallet::ConfigWalletContent,
     },
     events::{
-        DetectedDevicesPayload, Event, EventType, NetworkStatusPayload, NewBlockHeightPayload,
-        NodeTypeUpdatePayload, ProgressTrackerUpdatePayload, ShowReleaseNotesPayload,
-        TariAddressUpdatePayload,
+        DetectedDevicesPayload, Event, EventType, LatestUpdatePayload, NetworkStatusPayload,
+        NewBlockHeightPayload, NodeTypeUpdatePayload, ProgressTrackerUpdatePayload,
+        ShowReleaseNotesPayload, TariAddressUpdatePayload,
     },
     hardware::hardware_status_monitor::PublicDeviceGpuProperties,
     setup::setup_manager::SetupPhase,
@@ -132,6 +132,20 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit ShowReleaseNotesPayload event: {e:?}");
+        }
+    }
+
+    pub async fn emit_latest_update(payload: LatestUpdatePayload) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::LatestUpdate,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit LatestUpdate event: {e:?}");
         }
     }
     #[cfg(target_os = "windows")]

@@ -24,6 +24,7 @@
   "minimize": "最小化",
   "mode": "模式",
   "module-initialization-failed": "模块初始化失败",
+  "new_update": "新更新",
   "not-available": "不可用",
   "not-initialized": "未初始化",
   "not-installed-in-applications-directory": "哎呀！Tari Universe 需要安装在应用程序目录中。请考虑安装在那里？",

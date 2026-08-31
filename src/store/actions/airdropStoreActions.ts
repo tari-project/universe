@@ -15,7 +15,6 @@ import {
     useUIStore,
 } from '@app/store';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
-import type { XSpaceEvent } from '@app/types/ws.ts';
 import type { TrancheStatus, BalanceSummary } from '@app/types/airdrop-claim.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
@@ -185,16 +184,10 @@ export const setBonusTiers = (bonusTiers: BonusTier[]) => useAirdropStore.setSta
 export const setFlareAnimationType = (flareAnimationType?: AnimationType) =>
     useAirdropStore.setState({ flareAnimationType });
 
-export const setLatestXSpaceEvent = (latestXSpaceEvent: XSpaceEvent | null) =>
-    useAirdropStore.setState({ latestXSpaceEvent });
 export const setUserDetails = (userDetails?: UserDetails) => useAirdropStore.setState({ userDetails });
 
 export const setUserPoints = (userPoints: UserPoints) => {
     useAirdropStore.setState({ userPoints });
-};
-
-export const setXSpaceEvent = (xSpaceEvent: XSpaceEvent | null) => {
-    useAirdropStore.setState({ latestXSpaceEvent: xSpaceEvent });
 };
 
 export const handleUsernameChange = async (username: string, onError?: (e: unknown) => void) => {
@@ -249,23 +242,6 @@ export async function fetchCommunityMessages() {
 
     if (response) {
         useAirdropStore.setState({ communityMessages: response });
-    }
-
-    return response;
-}
-
-export async function fetchLatestXSpaceEvent() {
-    const response = await handleAirdropRequest<XSpaceEvent | null>({
-        publicRequest: true,
-        path: '/miner/x-space-events/latest',
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
-    if (response) {
-        useAirdropStore.setState({ latestXSpaceEvent: response });
     }
 
     return response;

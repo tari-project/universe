@@ -67,7 +67,7 @@ export const IconContainer = styled(m.div)`
     height: 38px;
 `;
 
-export const DateLabel = styled(m.span)`
+export const Label = styled(m.span)`
     color: #ffffffb2;
     font-family: Poppins, sans-serif;
     font-weight: 500;
@@ -125,47 +125,6 @@ export const Title = styled(m.span)`
     font-family: Poppins, sans-serif;
     font-weight: 500;
     font-size: 12px;
-    line-height: 17px;
-    letter-spacing: 1%;
-`;
-
-export const LiveBadgeWrapper = styled(m.div)`
-    display: flex;
-    justify-content: space-evenly;
-    align-items: center;
-    background-color: #ef4444;
-    padding: 1px 7px;
-    border-radius: 12px;
-    gap: 12px;
-`;
-
-export const LiveBadgeText = styled(m.div)`
-    font-family: Poppins, sans-serif;
-    font-weight: 600;
-    font-size: 10px;
-    line-height: 17px;
-    letter-spacing: 1%;
-`;
-
-export const LiveWrapper = styled(m.div)`
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    row-gap: 12px;
-    column-gap: 12px;
-`;
-
-export const JoinSpaceWrapper = styled(m.div)`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    border-radius: 30px;
-    border: 1px solid #ffffff33;
-    padding: 0 5px;
-    font-weight: 600;
-    font-size: 10px;
     line-height: 17px;
     letter-spacing: 1%;
 `;

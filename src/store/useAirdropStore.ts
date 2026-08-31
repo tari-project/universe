@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { ConfigBackendInMemory } from '@app/types/configs.ts';
-import type { XSpaceEvent } from '@app/types/ws';
 import type { AirdropClaimState, TrancheStatus, BalanceSummary } from '@app/types/airdrop-claim';
 
 export const GIFT_GEMS = 5000;
@@ -182,7 +181,6 @@ export interface AirdropStoreState {
     flareAnimationType?: AnimationType;
     bonusTiers?: BonusTier[];
     miningRewardPoints?: MiningPoint;
-    latestXSpaceEvent?: XSpaceEvent | null;
     uiSendRecvEnabled: boolean;
     communityMessages?: CommunityMessage[];
     features?: string[];
@@ -217,7 +215,6 @@ const initialState: AirdropStoreState = {
     userPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
-    latestXSpaceEvent: null,
     uiSendRecvEnabled: true,
     crewQueryParams: {
         status: 'active',

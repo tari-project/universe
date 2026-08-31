@@ -2,8 +2,7 @@ import { useAirdropStore } from '@app/store';
 import { listen } from '@tauri-apps/api/event';
 import { useEffect } from 'react';
 import { useHandleWsUserIdEvent } from './useHandleWsUserIdEvent';
-import { GLOBAL_EVENT_NAME, WebsocketGlobalEvent, WebsocketUserEvent } from '@app/types/ws';
-import { useHandleWsGlobalEvent } from './useHandleWsGlobalEvent';
+import { WebsocketUserEvent } from '@app/types/ws';
 import './useSendWsMessage'; // dummy import to bypass knip
 
 export interface WebsocketEventType {
@@ -16,7 +15,6 @@ export interface WebsocketEventType {
 export default function useAirdropWebsocket() {
     const userId = useAirdropStore((s) => s.userDetails?.user?.id);
     const userEventHandler = useHandleWsUserIdEvent();
-    const globalEventHandler = useHandleWsGlobalEvent();
 
     useEffect(() => {
         const unlistenPromise = listen('ws-status-change', (event) => {
@@ -39,24 +37,15 @@ export default function useAirdropWebsocket() {
                 console.error('Failed to parse WebSocket data:', error);
                 return;
             }
-            switch (payload.event) {
-                case GLOBAL_EVENT_NAME: {
-                    globalEventHandler(data as WebsocketGlobalEvent);
-                    break;
-                }
-                case `${userId}`: {
-                    userEventHandler(data as WebsocketUserEvent);
-                    break;
-                }
-                default: {
-                    console.warn(`unknown websocket user event ${payload.event}`);
-                    break;
-                }
+            if (payload.event === `${userId}`) {
+                userEventHandler(data as WebsocketUserEvent);
+            } else {
+                console.warn(`unknown websocket user event ${payload.event}`);
             }
         });
 
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [globalEventHandler, userEventHandler, userId]);
+    }, [userEventHandler, userId]);
 }

@@ -49,6 +49,7 @@ pub enum EventType {
     RestartingPhases,
     AskForRestart,
     ShowReleaseNotes,
+    LatestUpdate,
     CriticalProblem,
     #[cfg(target_os = "windows")]
     SystemDependenciesLoaded,
@@ -153,6 +154,12 @@ pub struct ShowReleaseNotesPayload {
     pub release_notes: String,
     pub is_app_update_available: bool,
     pub should_show_dialog: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct LatestUpdatePayload {
+    pub url: String,
+    pub title: String,
 }
 
 #[derive(Debug, Serialize, Clone)]

@@ -104,6 +104,7 @@ mod headless;
 mod internal_wallet;
 #[cfg(test)]
 mod internal_wallet_test;
+mod latest_update;
 mod mcp;
 mod mining;
 mod mining_status_manager;
@@ -515,6 +516,7 @@ fn main() {
             commands::refresh_wallet_history,
             commands::get_base_node_status,
             commands::get_local_block_stats,
+            commands::get_latest_update,
             commands::create_pin,
             commands::forgot_pin,
             commands::set_seed_backed_up,

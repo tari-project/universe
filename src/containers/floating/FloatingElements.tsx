@@ -28,7 +28,7 @@ import SeedPhrase from './security/seedphrase/SeedPhrase.tsx';
 import SettingsModal from './Settings/SettingsModal.tsx';
 import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 import UniversalEXSelectorModal from './UniversalEXSelectorModal/UniversalEXSelectorModal.tsx';
-import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
+import NewsletterBanner from './NewsletterBanner/NewsletterBanner.tsx';
 import AirdropClaimModal from '../main/Airdrop/AirdropClaim/AirdropClaimModal.tsx';
 import McpTransactionDialog from './mcp/McpTransactionDialog.tsx';
 import SchedulerModal from './scheduler/SchedulerModal.tsx';
@@ -51,7 +51,7 @@ const FloatingElements = () => {
             <ToastStack />
             <CriticalProblemDialog />
             <ReleaseNotesDialog />
-            <XSpaceEventBanner />
+            <NewsletterBanner />
             <CustomPowerLevelsDialogContainer />
             <EXModal />
             <UniversalEXSelectorModal />

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 
 import { BACKEND_STATE_UPDATE, BackendStateUpdateEvent } from '@app/types/backend-state.ts';
+import { LatestUpdatePayload } from '@app/types/events-payloads.ts';
 
 import { handleNewBlockPayload, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { setCpuMiningStatus, setGpuDevices, setGpuMiningStatus } from '@app/store/actions/miningMetricsStoreActions';
@@ -77,6 +78,7 @@ import {
 } from '@app/store/actions/walletStoreActions';
 import { handleConfigCoreLoaded } from '@app/store/actions/config/core.ts';
 import { handleFeedbackExitSurveyRequested } from '@app/store/stores/userFeedbackStore';
+import { setLatestUpdate } from '@app/store/useLatestUpdateStore';
 
 const LOG_EVENT_TYPES = ['WalletAddressUpdate', 'CriticalProblem', 'MissingApplications'];
 
@@ -207,6 +209,9 @@ const useTauriEventsListener = () => {
                         case 'ShowReleaseNotes':
                             handleShowRelesaeNotes(event.payload);
                             break;
+                        case 'LatestUpdate':
+                            setLatestUpdate(event.payload);
+                            break;
                         case `NetworkStatus`:
                             setNetworkStatus(event.payload);
                             break;
@@ -303,6 +308,15 @@ const useTauriEventsListener = () => {
                 console.info('Successfully called frontend_ready');
             } catch (e) {
                 console.error('Failed to call frontend_ready: ', e);
+            }
+
+            try {
+                const latestUpdate = await invoke<LatestUpdatePayload | null>('get_latest_update');
+                if (latestUpdate) {
+                    setLatestUpdate(latestUpdate);
+                }
+            } catch (e) {
+                console.error('Failed to fetch latest update: ', e);
             }
 
             return unlisten;

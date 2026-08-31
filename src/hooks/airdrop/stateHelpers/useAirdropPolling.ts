@@ -1,10 +1,5 @@
 import { useAirdropStore } from '@app/store';
-import {
-    fetchAllUserData,
-    fetchCommunityMessages,
-    fetchFeatures,
-    fetchLatestXSpaceEvent,
-} from '@app/store/actions/airdropStoreActions';
+import { fetchAllUserData, fetchCommunityMessages, fetchFeatures } from '@app/store/actions/airdropStoreActions';
 import { FEATURE_FLAGS } from '@app/store/consts';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { useCallback, useEffect, useRef } from 'react';
@@ -24,7 +19,6 @@ export const useAirdropPolling = () => {
         airdropTimeoutRef.current = setTimeout(async () => {
             await fetchCommunityMessages();
             await fetchAllUserData();
-            await fetchLatestXSpaceEvent();
         }, DEBOUNCE_DELAY);
     }, []);
 

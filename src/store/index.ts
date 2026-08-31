@@ -5,6 +5,7 @@ export * from './types.ts';
 export * from './useAirdropStore.ts';
 export * from './useAppConfigStore.ts';
 export * from './useBlockchainVisualisationStore.ts';
+export * from './useLatestUpdateStore.ts';
 export * from './useMiningMetricsStore.ts';
 export * from './useMiningStore.ts';
 export * from './usePaperWalletStore.ts';

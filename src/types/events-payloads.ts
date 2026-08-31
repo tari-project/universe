@@ -46,6 +46,11 @@ export interface ShowReleaseNotesPayload {
     should_show_dialog: boolean;
 }
 
+export interface LatestUpdatePayload {
+    url: string;
+    title: string;
+}
+
 export interface NodeTypeUpdatePayload {
     node_type?: 'Local' | 'Remote' | 'RemoteUntilLocal' | 'LocalAfterRemote';
     node_identity?: {

@@ -37,9 +37,11 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::consts::DEFAULT_SYSTEM_LOCALE_FALLBACK;
 use crate::event_scheduler::{EventScheduler, SchedulerEventTiming, SchedulerEventType};
 use crate::events::ConnectionStatusPayload;
+use crate::events::LatestUpdatePayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig, mnemonic_to_tari_cipher_seed};
+use crate::latest_update::LatestUpdate;
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
@@ -215,6 +217,16 @@ pub async fn frontend_ready(
                 let _unused = ReleaseNotes::current()
                     .handle_release_notes_event_emit(state_inner, app)
                     .await;
+                // Re-check for a new newsletter update every hour so the banner
+                // picks up newly published updates without an app restart.
+                let mut interval = tokio::time::interval(Duration::from_secs(60 * 60));
+                interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+                loop {
+                    let _unused = LatestUpdate::current()
+                        .handle_latest_update_event_emit()
+                        .await;
+                    interval.tick().await;
+                }
             }
         });
 
@@ -2230,6 +2242,19 @@ pub async fn get_local_block_stats(
         .get_recent_block_stats(limit)
         .await
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn get_latest_update() -> Result<LatestUpdatePayload, String> {
+    let latest_update = LatestUpdate::current()
+        .get_latest_update()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(LatestUpdatePayload {
+        url: latest_update.url,
+        title: latest_update.title,
+    })
 }
 
 #[tauri::command]

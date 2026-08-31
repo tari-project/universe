@@ -24,6 +24,7 @@
   "minimize": "最小化",
   "mode": "モード",
   "module-initialization-failed": "モジュールの初期化に失敗しました",
+  "new_update": "新着アップデート",
   "not-available": "利用不可",
   "not-initialized": "初期化されていません",
   "not-installed-in-applications-directory": "おっと！Tari Universe はアプリケーションディレクトリに配置する必要があります。そこにインストールしてもらえますか？",

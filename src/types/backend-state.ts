@@ -11,6 +11,7 @@ import {
     ProgressTrackerUpdatePayload,
     SetupPhase,
     ShowReleaseNotesPayload,
+    LatestUpdatePayload,
     TariAddressUpdatePayload,
     WalletUIMode,
 } from './events-payloads.ts';
@@ -85,6 +86,10 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ShowReleaseNotes';
           payload: ShowReleaseNotesPayload;
+      }
+    | {
+          event_type: 'LatestUpdate';
+          payload: LatestUpdatePayload;
       }
     | {
           event_type: 'NetworkStatus';

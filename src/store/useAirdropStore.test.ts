@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useAirdropStore, GIFT_GEMS } from './useAirdropStore';
-import type { XSpaceEvent } from '@app/types/ws.ts';
 import type { TrancheStatus } from '@app/types/airdrop-claim.ts';
 
 describe('useAirdropStore', () => {
@@ -13,7 +12,6 @@ describe('useAirdropStore', () => {
             userPoints: undefined,
             bonusTiers: undefined,
             flareAnimationType: undefined,
-            latestXSpaceEvent: null,
             uiSendRecvEnabled: true,
             crewQueryParams: {
                 status: 'active',
@@ -64,10 +62,6 @@ describe('useAirdropStore', () => {
 
         it('has flareAnimationType as undefined', () => {
             expect(useAirdropStore.getState().flareAnimationType).toBeUndefined();
-        });
-
-        it('has latestXSpaceEvent as null', () => {
-            expect(useAirdropStore.getState().latestXSpaceEvent).toBeNull();
         });
 
         it('has uiSendRecvEnabled as true', () => {
@@ -226,25 +220,6 @@ describe('useAirdropStore', () => {
             useAirdropStore.setState({ flareAnimationType: 'GoalComplete' });
             useAirdropStore.setState({ flareAnimationType: undefined });
             expect(useAirdropStore.getState().flareAnimationType).toBeUndefined();
-        });
-    });
-
-    describe('latestXSpaceEvent state', () => {
-        it('can set XSpace event', () => {
-            const event = {
-                id: 'event-123',
-                text: 'Tari Community Call',
-                visibilityStart: '2024-01-15T18:00:00Z',
-                url: 'https://x.com/spaces/abc123',
-            };
-            useAirdropStore.setState({ latestXSpaceEvent: event as unknown as XSpaceEvent | null });
-            expect(useAirdropStore.getState().latestXSpaceEvent).toEqual(event);
-        });
-
-        it('can clear XSpace event', () => {
-            useAirdropStore.setState({ latestXSpaceEvent: { id: 'event' } as unknown as XSpaceEvent | null });
-            useAirdropStore.setState({ latestXSpaceEvent: null });
-            expect(useAirdropStore.getState().latestXSpaceEvent).toBeNull();
         });
     });
 
