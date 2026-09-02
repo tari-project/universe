@@ -43,7 +43,14 @@
   "gpu-device-enabled": "GPUマイニングデバイス",
   "gpu-device-enabled-description": "特定のGPUデバイスを有効または無効にします。",
   "gpu-device-no-found": "⚠️ GPUデバイスが見つかりません",
+  "gpu-device-single-device-note": "{{miner}} mines on one GPU at a time — the first enabled device is used.",
   "gpu-engine": "GPUエンジン",
+  "gpu-miner-description": {
+    "LolMiner": "Closed source C29 miner for AMD and NVIDIA GPUs",
+    "TariMiner": "Open source C29 miner for NVIDIA GPUs"
+  },
+  "gpu-miner-failed-with": "Failed with: {{error}}",
+  "gpu-miner-select-placeholder": "Select GPU miner",
   "gpu-miners": "GPUマイナー",
   "gpu-miners-not-found": "GPUマイナーが見つかりません",
   "gpu-mining-enabled": "GPUマイニング",

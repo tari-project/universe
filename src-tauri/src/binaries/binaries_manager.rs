@@ -201,7 +201,12 @@ impl BinaryManager {
         let expected_checksum = self
             .adapter
             .get_expected_checksum(checksum_file.clone(), &download_info.name)
-            .await?;
+            .await
+            .inspect_err(|_| {
+                // Same cleanup as the mismatch branch below: leaving the half downloaded archive
+                // behind would have the next run treat it as already present.
+                std::fs::remove_dir_all(destination_dir.clone()).ok();
+            })?;
 
         info!(target: LOG_TARGET_APP_LOGIC, "In-progress file zip path: {in_progress_file_zip:?}");
 
@@ -287,6 +292,7 @@ impl BinaryManager {
                 Binaries::MergeMiningProxy => &TasksTrackers::current().cpu_mining_phase,
                 Binaries::BridgeTapplet => &TasksTrackers::current().wallet_phase,
                 Binaries::LolMiner => &TasksTrackers::current().gpu_mining_phase,
+                Binaries::TariMiner => &TasksTrackers::current().gpu_mining_phase,
             };
             let binary_name = self.binary_name.clone();
             let shutdown_signal = task_tacker.get_signal().await;
@@ -393,7 +399,6 @@ impl BinaryManager {
         let fallback_url = download_info.fallback_url.clone();
 
         info!(target: LOG_TARGET_APP_LOGIC, "Downloading binary: {} from url: {}", self.binary_name, &download_url);
-        let archive_destination_path: PathBuf;
 
         let (chunk_progress_sender, main_progress_sender_shutdown) = self
             .resolve_progress_channel(progress_channel.clone())
@@ -409,7 +414,7 @@ impl BinaryManager {
             .execute()
             .await;
 
-        if main_file_download_result.is_err() {
+        let archive_destination_path: PathBuf = if main_file_download_result.is_err() {
             info!(target: LOG_TARGET_APP_LOGIC, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
             if let Some(mut progress_sender_shutdown) = main_progress_sender_shutdown {
                 progress_sender_shutdown.trigger();
@@ -420,7 +425,7 @@ impl BinaryManager {
                 .await
                 .map_err(|e| anyhow!("Error resolving progress channel: {:?}", e))?;
 
-            archive_destination_path = HttpFileClient::builder()
+            HttpFileClient::builder()
                 .with_file_extract()
                 .with_progress_status_sender(chunk_progress_sender.clone())
                 .with_download_resume()
@@ -431,10 +436,10 @@ impl BinaryManager {
                     if let Some(mut progress_sender_shutdown) = fallback_progress_sender_shutdown {
                         progress_sender_shutdown.trigger();
                     }
-                })?;
+                })?
         } else {
-            archive_destination_path = main_file_download_result?;
-        }
+            main_file_download_result?
+        };
 
         if self.should_validate_checksum {
             self.validate_checksum(

@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::configs::config_mining::GpuDevicesSettings;
+use crate::configs::config_mining::GpuDevicesSettingsByMiner;
 use crate::configs::config_pools::ConfigPoolsContent;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
@@ -735,7 +735,7 @@ impl EventsEmitter {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit EnterPin event: {e:?}");
         }
     }
-    pub async fn emit_update_gpu_devices_settings(payload: GpuDevicesSettings) {
+    pub async fn emit_update_gpu_devices_settings(payload: GpuDevicesSettingsByMiner) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::UpdateGpuDevicesSettings,

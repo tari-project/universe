@@ -578,3 +578,70 @@ async fn shutdown_signal_prevents_restart() {
     assert!(result.is_none());
     assert_eq!(stats.num_restarts, 0);
 }
+
+/// A stuck `handle_unhealthy` must not outlive the shutdown that is waiting for this watcher.
+/// Real adapters call back into their manager from there, and the code shutting the watcher down
+/// is usually the one already holding that manager's lock: without racing the two, the watcher
+/// parks on the lock and its stopper parks on the watcher.
+///
+/// The exit code matters as much as the timing: callers turn what this returns into the process
+/// exit code, so giving up on `handle_unhealthy` must report why the child actually died rather
+/// than a synthetic failure.
+#[tokio::test]
+async fn a_stuck_handle_unhealthy_gives_up_when_the_watcher_is_shut_down() {
+    let (
+        mut child,
+        _status_monitor,
+        mut uptime,
+        mut duration_since_last_healthy,
+        global_shutdown,
+        tracker,
+        inner_shutdown,
+        mut stats,
+    ) = setup_test_context().await;
+
+    let status_monitor = MockStatusMonitor::new()
+        .with_health_status(HealthStatus::Unhealthy)
+        .block_handle_unhealthy();
+
+    // A code that is neither 0 nor the synthetic 1 a shutdown used to report.
+    const CHILD_EXIT_CODE: i32 = 7;
+    child.exit_code.store(CHILD_EXIT_CODE, Ordering::SeqCst);
+
+    let mut stopper = inner_shutdown.clone();
+    tokio::spawn(async move {
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        stopper.trigger();
+    });
+
+    let mut warning_count = 0u32;
+    let result = tokio::time::timeout(
+        Duration::from_secs(5),
+        do_health_check(
+            &mut child,
+            status_monitor,
+            "test_process".to_string(),
+            &mut uptime,
+            &mut duration_since_last_healthy,
+            Instant::now(),
+            // Already past the startup window, so the unhealthy status restarts the child.
+            Duration::from_secs(0),
+            Duration::from_secs(10),
+            global_shutdown.to_signal(),
+            tracker,
+            inner_shutdown.to_signal(),
+            &mut warning_count,
+            &[],
+            &mut stats,
+        ),
+    )
+    .await
+    .expect("do_health_check must not outlive the shutdown")
+    .unwrap();
+
+    assert_eq!(
+        result,
+        Some(CHILD_EXIT_CODE),
+        "the watcher should stop and report the child's own exit code"
+    );
+}

@@ -45,6 +45,8 @@
     "binaries-cpu-miner-download": "Подготовка бинарного файла майнера на CPU | Загрузка: {{ progress }}%",
     "binaries-gpu-miner": "Подготовка бинарного файла майнера для GPU",
     "binaries-gpu-miner-download": "Подготовка бинарного файла майнера на GPU | Загрузка: {{ progress }}%",
+    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
+    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
     "binaries-merge-mining-proxy": "Подготовка бинарного файла прокси для объединенного майнинга",
     "binaries-merge-mining-proxy-download": "Подготовка бинарного файла прокси для объединенного майнинга | Загрузка: {{ progress }}%",
     "binaries-node": "Подготовка бинарного файла узла",

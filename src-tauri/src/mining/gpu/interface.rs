@@ -27,7 +27,10 @@ use axum::async_trait;
 use crate::{
     mining::{
         GpuConnectionType,
-        gpu::miners::lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
+        gpu::miners::{
+            lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
+            tariminer::{TariMinerGpuMiner, TariMinerGpuMinerStatusMonitor},
+        },
     },
     process_adapter::{
         HandleUnhealthyResult, HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor,
@@ -56,17 +59,20 @@ pub trait GpuMinerInterfaceTrait: Send + Sync {
 
 pub enum GpuMinerInterface {
     LolMiner(LolMinerGpuMiner),
+    TariMiner(TariMinerGpuMiner),
 }
 
 impl GpuMinerInterfaceTrait for GpuMinerInterface {
     async fn load_tari_address(&mut self, tari_address: &str) -> Result<(), anyhow::Error> {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.load_tari_address(tari_address).await,
+            GpuMinerInterface::TariMiner(miner) => miner.load_tari_address(tari_address).await,
         }
     }
     async fn load_worker_name(&mut self, worker_name: Option<&str>) -> Result<(), anyhow::Error> {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.load_worker_name(worker_name).await,
+            GpuMinerInterface::TariMiner(miner) => miner.load_worker_name(worker_name).await,
         }
     }
     async fn load_intensity_percentage(
@@ -77,6 +83,9 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
             GpuMinerInterface::LolMiner(miner) => {
                 miner.load_intensity_percentage(intensity_percentage).await
             }
+            GpuMinerInterface::TariMiner(miner) => {
+                miner.load_intensity_percentage(intensity_percentage).await
+            }
         }
     }
     async fn load_connection_type(
@@ -85,12 +94,16 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
     ) -> Result<(), anyhow::Error> {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.load_connection_type(connection_type).await,
+            GpuMinerInterface::TariMiner(miner) => {
+                miner.load_connection_type(connection_type).await
+            }
         }
     }
 
     async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.detect_devices().await,
+            GpuMinerInterface::TariMiner(miner) => miner.detect_devices().await,
         }
     }
 
@@ -102,6 +115,9 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
             GpuMinerInterface::LolMiner(miner) => {
                 miner.load_excluded_devices(excluded_devices).await
             }
+            GpuMinerInterface::TariMiner(miner) => {
+                miner.load_excluded_devices(excluded_devices).await
+            }
         }
     }
 }
@@ -109,6 +125,7 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
 #[derive(Clone)]
 pub enum GpuMinerStatusInterface {
     LolMiner(LolMinerGpuMinerStatusMonitor),
+    TariMiner(TariMinerGpuMinerStatusMonitor),
 }
 
 #[async_trait]
@@ -123,11 +140,19 @@ impl StatusMonitor for GpuMinerStatusInterface {
                     .handle_unhealthy(duration_since_last_healthy_status)
                     .await
             }
+            GpuMinerStatusInterface::TariMiner(monitor) => {
+                monitor
+                    .handle_unhealthy(duration_since_last_healthy_status)
+                    .await
+            }
         }
     }
     async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         match self {
             GpuMinerStatusInterface::LolMiner(monitor) => {
+                monitor.check_health(uptime, timeout_duration).await
+            }
+            GpuMinerStatusInterface::TariMiner(monitor) => {
                 monitor.check_health(uptime, timeout_duration).await
             }
         }
@@ -153,16 +178,25 @@ impl ProcessAdapter for GpuMinerInterface {
                 binary_version_path,
                 is_first_start,
             ),
+            GpuMinerInterface::TariMiner(miner) => miner.spawn_inner(
+                base_folder,
+                config_folder,
+                log_folder,
+                binary_version_path,
+                is_first_start,
+            ),
         }
     }
     fn name(&self) -> &str {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.name(),
+            GpuMinerInterface::TariMiner(miner) => miner.name(),
         }
     }
     fn pid_file_name(&self) -> &str {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.pid_file_name(),
+            GpuMinerInterface::TariMiner(miner) => miner.pid_file_name(),
         }
     }
 }

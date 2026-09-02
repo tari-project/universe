@@ -44,7 +44,7 @@ describe('useAppConfigStore', () => {
             mine_on_app_start: false,
             mining_modes: {},
             selected_mining_mode: 'Eco',
-            gpu_devices_settings: {},
+            gpu_devices_settings_by_miner: {},
             is_gpu_mining_recommended: true,
             eco_alert_needed: false,
             pause_on_battery_mode: PauseOnBatteryModeState.Enabled,
@@ -70,8 +70,8 @@ describe('useAppConfigStore', () => {
             expect(configMiningInitialState.mining_modes).toEqual({});
         });
 
-        it('has empty gpu_devices_settings by default', () => {
-            expect(configMiningInitialState.gpu_devices_settings).toEqual({});
+        it('has empty gpu_devices_settings_by_miner by default', () => {
+            expect(configMiningInitialState.gpu_devices_settings_by_miner).toEqual({});
         });
 
         it('has is_gpu_mining_recommended as true by default', () => {

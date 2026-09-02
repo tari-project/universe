@@ -45,6 +45,8 @@
     "binaries-cpu-miner-download": "CPU Madenci İkili Dosyası Hazırlanıyor | İndiriliyor: {{ progress }}%",
     "binaries-gpu-miner": "GPU Madenci İkili Dosyası Hazırlanıyor",
     "binaries-gpu-miner-download": "GPU Madenci İkili Dosyası Hazırlanıyor | İndiriliyor: {{ progress }}%",
+    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
+    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
     "binaries-merge-mining-proxy": "Birleştirme Madenciliği Proxy İkili Dosyası Hazırlanıyor",
     "binaries-merge-mining-proxy-download": "Birleştirme Madenciliği Proxy İkili Dosyası Hazırlanıyor | İndiriliyor: {{ progress }}%",
     "binaries-node": "Düğüm İkili Dosyası Hazırlanıyor",

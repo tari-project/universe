@@ -23,8 +23,9 @@
 use serde::{Deserialize, Serialize};
 
 pub mod lolminer;
+pub mod tariminer;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GpuCommonInformation {
     pub name: String,
     pub device_id: u32,

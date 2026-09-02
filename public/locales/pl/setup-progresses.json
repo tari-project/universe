@@ -45,6 +45,8 @@
     "binaries-cpu-miner-download": "Przygotowywanie binariów kopacza CPU | Pobieranie: {{ progress }}%",
     "binaries-gpu-miner": "Przygotowywanie Pliku Wykonywalnego Koparki GPU",
     "binaries-gpu-miner-download": "Przygotowywanie binariów kopacza GPU | Pobieranie: {{ progress }}%",
+    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
+    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
     "binaries-merge-mining-proxy": "Przygotowywanie Pliku Wykonywalnego Proxy Do Merge Mining",
     "binaries-merge-mining-proxy-download": "Przygotowywanie binariów proxy do kopania łączonego | Pobieranie: {{ progress }}%",
     "binaries-node": "Przygotowywanie Pliku Wykonywalnego Węzła",

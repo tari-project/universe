@@ -43,7 +43,14 @@
   "gpu-device-enabled": "Устройства для майнинга на GPU",
   "gpu-device-enabled-description": "Включить или отключить конкретное устройство GPU.",
   "gpu-device-no-found": "⚠️ Устройства GPU не найдены",
+  "gpu-device-single-device-note": "{{miner}} mines on one GPU at a time — the first enabled device is used.",
   "gpu-engine": "Движок GPU",
+  "gpu-miner-description": {
+    "LolMiner": "Closed source C29 miner for AMD and NVIDIA GPUs",
+    "TariMiner": "Open source C29 miner for NVIDIA GPUs"
+  },
+  "gpu-miner-failed-with": "Failed with: {{error}}",
+  "gpu-miner-select-placeholder": "Select GPU miner",
   "gpu-miners": "Майнеры на GPU",
   "gpu-miners-not-found": "Майнеры на GPU не найдены",
   "gpu-mining-enabled": "Майнинг на GPU",

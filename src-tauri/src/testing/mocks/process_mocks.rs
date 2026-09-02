@@ -109,6 +109,10 @@ pub struct MockStatusMonitor {
     pub health_status: Arc<std::sync::RwLock<HealthStatus>>,
     /// The result to return from handle_unhealthy
     pub unhealthy_result: Arc<std::sync::RwLock<HandleUnhealthyResult>>,
+    /// When set, handle_unhealthy never returns.
+    /// Real adapters reach back into their manager from there and can block on a lock the caller
+    /// that is shutting the watcher down already holds.
+    pub block_handle_unhealthy: Arc<AtomicBool>,
 }
 
 impl Default for MockStatusMonitor {
@@ -116,6 +120,7 @@ impl Default for MockStatusMonitor {
         Self {
             health_status: Arc::new(std::sync::RwLock::new(HealthStatus::Healthy)),
             unhealthy_result: Arc::new(std::sync::RwLock::new(HandleUnhealthyResult::Continue)),
+            block_handle_unhealthy: Arc::new(AtomicBool::new(false)),
         }
     }
 }
@@ -133,6 +138,11 @@ impl MockStatusMonitor {
     pub fn set_health_status(&self, status: HealthStatus) {
         *self.health_status.write().unwrap() = status;
     }
+
+    pub fn block_handle_unhealthy(self) -> Self {
+        self.block_handle_unhealthy.store(true, Ordering::SeqCst);
+        self
+    }
 }
 
 #[async_trait]
@@ -145,6 +155,9 @@ impl StatusMonitor for MockStatusMonitor {
         &self,
         _duration_since_last_healthy_status: Duration,
     ) -> Result<HandleUnhealthyResult, anyhow::Error> {
+        if self.block_handle_unhealthy.load(Ordering::SeqCst) {
+            std::future::pending::<()>().await;
+        }
         Ok(self.unhealthy_result.read().unwrap().clone())
     }
 }

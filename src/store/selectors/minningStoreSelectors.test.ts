@@ -57,6 +57,21 @@ describe('minningStoreSelectors', () => {
             expect(result).toBe(lolMiner);
         });
 
+        it('picks the miner out of a multi miner list', () => {
+            const lolMiner = createMockMiner(GpuMinerType.LolMiner);
+            const tariMiner = createMockMiner(GpuMinerType.TariMiner);
+            const state: Partial<MiningStoreState> = {
+                selectedMiner: GpuMinerType.TariMiner,
+                availableMiners: {
+                    [GpuMinerType.LolMiner]: lolMiner,
+                    [GpuMinerType.TariMiner]: tariMiner,
+                },
+            };
+
+            const result = getSelectedMiner(state as MiningStoreState);
+            expect(result).toBe(tariMiner);
+        });
+
         it('returns undefined when selected miner not in available miners', () => {
             const state: Partial<MiningStoreState> = {
                 selectedMiner: 'NonExistent' as GpuMinerType,

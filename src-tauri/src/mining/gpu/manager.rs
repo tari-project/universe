@@ -38,7 +38,7 @@ use crate::{
     LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES, UniverseAppState,
     binaries::Binaries,
     configs::{
-        config_mining::ConfigMining,
+        config_mining::{ConfigMining, ConfigMiningContent},
         config_pools::ConfigPools,
         pools::{PoolOrigin, gpu_pools::GpuPool},
         trait_config::ConfigImpl,
@@ -48,9 +48,11 @@ use crate::{
     mining::{
         GpuConnectionType, MinerControlsState, MiningError,
         gpu::{
-            consts::{GpuMiner, GpuMinerStatus, GpuMinerType, MINERS_PRIORITY},
+            consts::{
+                GpuMiner, GpuMinerStatus, GpuMinerType, MINERS_PRIORITY, resolve_selected_miner,
+            },
             interface::{GpuMinerInterface, GpuMinerInterfaceTrait},
-            miners::lolminer::LolMinerGpuMiner,
+            miners::{lolminer::LolMinerGpuMiner, tariminer::TariMinerGpuMiner},
         },
         pools::{PoolManagerInterfaceTrait, gpu_pool_manager::GpuPoolManager},
     },
@@ -127,6 +129,13 @@ impl GpuManager {
         INSTANCE.write().await
     }
 
+    /// The miner that is currently loaded into the process watcher.
+    /// This is not always the miner saved in the config: an automatic fallback changes this one and
+    /// deliberately leaves the saved choice alone.
+    pub fn selected_miner(&self) -> &GpuMinerType {
+        &self.selected_miner
+    }
+
     pub async fn load_app_handle(&mut self, app_handle: AppHandle) {
         self.app_handle = Some(app_handle);
     }
@@ -143,14 +152,20 @@ impl GpuManager {
         instance.node_status_channel = node_status_channel;
     }
 
-    // Loads the saved miner - always uses LolMiner since it's the only GPU miner
+    // Loads the miner the user picked, or the highest priority healthy one when that miner cannot
+    // be used on this machine
     pub async fn load_saved_miner(&mut self) -> Result<(), anyhow::Error> {
-        let selected_gpu_miner_type = GpuMinerType::LolMiner;
-
-        if self.available_miners.contains_key(&selected_gpu_miner_type) {
-            info!(target: LOG_TARGET_APP_LOGIC, "Loaded gpu miner: {selected_gpu_miner_type}");
-        } else {
+        let saved_gpu_miner_type = ConfigMining::content().await.gpu_miner_type().clone();
+        let Some(selected_gpu_miner_type) =
+            resolve_selected_miner(&saved_gpu_miner_type, &self.available_miners)
+        else {
             return Err(anyhow::anyhow!("No available gpu miners to load"));
+        };
+
+        if selected_gpu_miner_type == saved_gpu_miner_type {
+            info!(target: LOG_TARGET_APP_LOGIC, "Loaded saved gpu miner: {selected_gpu_miner_type}");
+        } else {
+            info!(target: LOG_TARGET_APP_LOGIC, "Saved gpu miner {saved_gpu_miner_type} is not usable, falling back to: {selected_gpu_miner_type}");
         }
 
         self.switch_miner(selected_gpu_miner_type).await?;
@@ -355,6 +370,7 @@ impl GpuManager {
 
                 let binary = match self.selected_miner {
                     GpuMinerType::LolMiner => Binaries::LolMiner,
+                    GpuMinerType::TariMiner => Binaries::TariMiner,
                 };
 
                 // Worker name format depends on the pool
@@ -368,7 +384,9 @@ impl GpuManager {
                     PoolOrigin::Kryptex => Some("/Tari-universe"),
                 };
 
-                let excluded_devices = ConfigMining::content().await.get_excluded_devices();
+                let excluded_devices = ConfigMining::content()
+                    .await
+                    .get_excluded_devices(&self.selected_miner);
 
                 self.process_watcher
                     .adapter
@@ -470,6 +488,21 @@ impl GpuManager {
         Ok(())
     }
 
+    /// Switches to the miner the user picked and remembers it as their choice.
+    ///
+    /// Only this path writes the config. Every automatic switch (start-up resolution, pool and node
+    /// capability fallbacks, health fallbacks) goes through `switch_miner`, so a fallback never
+    /// silently rewrites what the user asked for and the saved choice is honoured again as soon as
+    /// the miner works.
+    pub async fn select_miner_by_user(
+        &mut self,
+        new_miner: GpuMinerType,
+    ) -> Result<(), anyhow::Error> {
+        self.switch_miner(new_miner.clone()).await?;
+        ConfigMining::update_field(ConfigMiningContent::set_gpu_miner_type, new_miner).await?;
+        Ok(())
+    }
+
     /// Will need to mark current seleceted miner as unhealthy and switch to another one based on priority
     /// If no other miners are available, we will just mark the current one as unhealthy and emit the status
     pub async fn handle_unhealthy_miner(&mut self) -> Result<(), anyhow::Error> {
@@ -481,6 +514,10 @@ impl GpuManager {
             current_miner.last_error =
                 Some("Miner process crashed or became unresponsive".to_string());
         }
+        // Publish it straight away. This call can be cancelled (the watcher races it against
+        // shutdown), and leaving the frontend showing a miner as healthy after we stopped treating
+        // it as such is worse than emitting the same state twice.
+        EventsEmitter::emit_available_gpu_miners(self.available_miners.clone()).await;
 
         let fallback_miner = MINERS_PRIORITY
             .iter()
@@ -502,14 +539,23 @@ impl GpuManager {
                 .get_task_tracker()
                 .await
                 .spawn(async move {
-                    GpuManager::write().await.switch_miner(fallback_miner).await.unwrap_or_else(
-                        |e| {
-                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to switch to fallback gpu miner: {e}");
-                        },
-                    );
-                    GpuManager::write().await.start_mining().await.unwrap_or_else(|e| {
+                    // One critical section for both halves: taking the lock twice lets a queued
+                    // stop_gpu_mining land in between, so the user's stop would be undone by the
+                    // start below.
+                    let mut manager = GpuManager::write().await;
+
+                    // The switch fails when the fallback cannot be used either, and the adapter is
+                    // then still the miner we just marked unhealthy. Starting anyway would restart
+                    // exactly that miner, and the fallback latch is already set, so nothing would
+                    // ever get it out of that loop.
+                    if let Err(e) = manager.switch_miner(fallback_miner).await {
+                        error!(target: LOG_TARGET_APP_LOGIC, "Failed to switch to fallback gpu miner, leaving mining stopped: {e}");
+                        return;
+                    }
+
+                    if let Err(e) = manager.start_mining().await {
                         error!(target: LOG_TARGET_APP_LOGIC, "Failed to start mining with fallback gpu miner: {e}");
-                    });
+                    }
                 });
         } else {
             error!(target: LOG_TARGET_APP_LOGIC, "No healthy gpu miners left to switch to");
@@ -554,7 +600,12 @@ impl GpuManager {
         let mut successful_detection = false;
         let mut unhealthy_miners = vec![];
 
-        for miner_type in self.available_miners.keys() {
+        // Iterate in priority order so the devices the highest priority miner sees are the ones
+        // that end up published last, instead of depending on the hash map iteration order
+        for miner_type in MINERS_PRIORITY.iter().rev() {
+            if !self.available_miners.contains_key(miner_type) {
+                continue;
+            }
             let mut adapter = self.resolve_miner_interface(miner_type);
             let detection_result = adapter.detect_devices().await;
             match detection_result {
@@ -588,6 +639,9 @@ impl GpuManager {
     fn resolve_miner_interface(&self, miner_type: &GpuMinerType) -> GpuMinerInterface {
         match miner_type {
             GpuMinerType::LolMiner => GpuMinerInterface::LolMiner(LolMinerGpuMiner::new(
+                self.gpu_internal_status_channel.clone(),
+            )),
+            GpuMinerType::TariMiner => GpuMinerInterface::TariMiner(TariMinerGpuMiner::new(
                 self.gpu_internal_status_channel.clone(),
             )),
         }

@@ -175,8 +175,42 @@ export const handleSelectedMinerChanged = (miner: GpuMinerType) => {
     useMiningStore.setState({ selectedMiner: miner });
 };
 
-export const handleAvailableMinersChanged = (miners: Record<GpuMinerType, GpuMiner>) => {
+export const handleAvailableMinersChanged = (miners: Partial<Record<GpuMinerType, GpuMiner>>) => {
     useMiningStore.setState({ availableMiners: miners });
+};
+
+export const switchSelectedMiner = async (newGpuMiner: GpuMinerType) => {
+    const oldMiner = useMiningStore.getState().selectedMiner;
+    if (oldMiner === newGpuMiner || useMiningStore.getState().isSwitchingMiner) return;
+
+    // Until the backend has switched, its selected miner is still the old one. Device ids are
+    // scoped per miner, so anything writing device settings in that window would write them
+    // against the wrong miner - the picker and the device toggles stay disabled for the duration.
+    // Tearing the old miner down takes seconds, so the flag has to be set before that and cleared
+    // only once the backend has caught up.
+    useMiningStore.setState({ selectedMiner: newGpuMiner, isSwitchingMiner: true });
+
+    const anyMiningInitiated =
+        useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
+    const isGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
+    const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
+
+    try {
+        if (gpuMining || isGpuMiningInitiated) {
+            await stopGpuMining();
+        }
+        await invoke('switch_gpu_miner', { gpuMinerType: newGpuMiner });
+
+        if (anyMiningInitiated) {
+            await startGpuMining();
+        }
+    } catch (e) {
+        useMiningStore.setState({ selectedMiner: oldMiner });
+        console.error('Could not switch selected miner: ', e);
+        setError(e as string);
+    } finally {
+        useMiningStore.setState({ isSwitchingMiner: false });
+    }
 };
 
 export const handleSessionMiningTime = ({ startTimestamp, stopTimestamp }: SessionMiningTime) => {

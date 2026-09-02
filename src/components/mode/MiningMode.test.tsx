@@ -52,7 +52,7 @@ function setupStore() {
         gpu_mining_enabled: true,
         mine_on_app_start: false,
         created_at: '',
-        gpu_devices_settings: {},
+        gpu_devices_settings_by_miner: {},
         is_gpu_mining_recommended: true,
         eco_alert_needed: false,
         pause_on_battery_mode: PauseOnBatteryModeState.Enabled,

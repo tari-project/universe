@@ -43,7 +43,14 @@
   "gpu-device-enabled": "GPU 挖矿设备",
   "gpu-device-enabled-description": "启用或禁用特定的 GPU 设备。",
   "gpu-device-no-found": "⚠️ 未找到 GPU 设备",
+  "gpu-device-single-device-note": "{{miner}} mines on one GPU at a time — the first enabled device is used.",
   "gpu-engine": "Gpu 引擎",
+  "gpu-miner-description": {
+    "LolMiner": "Closed source C29 miner for AMD and NVIDIA GPUs",
+    "TariMiner": "Open source C29 miner for NVIDIA GPUs"
+  },
+  "gpu-miner-failed-with": "Failed with: {{error}}",
+  "gpu-miner-select-placeholder": "Select GPU miner",
   "gpu-miners": "GPU 矿工",
   "gpu-miners-not-found": "未找到 GPU 矿工",
   "gpu-mining-enabled": "GPU 挖矿",

@@ -333,6 +333,7 @@ impl ProcessAdapter for SpendWallet {
                 pid_file_name: self.pid_file_name().to_string(),
                 data_dir,
                 name: self.name().to_string(),
+                output_sink: None,
             },
         };
 
