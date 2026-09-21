@@ -68,6 +68,20 @@ impl WalletId {
 #[derive(Getters, Setters)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct ConfigWalletContent {
+    /// In-memory only: set when `_load_or_create` had to fall back to a default
+    /// because neither `config_wallet.json` nor its `.backup` could be parsed.
+    ///
+    /// `#[serde(skip)]` is deliberate. If this were a normal field it would be
+    /// written into `config_wallet.json` by the next save and a later launch
+    /// would read back `corrupted_recovery: false` from a file that was in fact
+    /// born out of a recovery, which is exactly the misleading state we must not
+    /// create. Durability across launches is carried by a separate marker file,
+    /// `config_wallet.json.recovery_required` (see `load_from_path`): it is
+    /// written before the damaged file is quarantined and removed again as soon
+    /// as a valid config is loaded. That marker, not this flag, is what stops a
+    /// post-quarantine launch from looking like a fresh install and silently
+    /// creating a new wallet.
+    #[serde(skip)]
     #[getset(get = "pub")]
     corrupted_recovery: bool,
     #[getset(get = "pub", set = "pub")]
@@ -156,6 +170,10 @@ impl<'a> From<&'a ConfigWalletContent> for ConfigWalletFrontend<'a> {
 }
 
 impl ConfigWalletContent {
+    /// `Err` while this content is the recovery placeholder rather than the
+    /// user's real config. Callers that would create wallets, write keyring
+    /// entries or persist the config must check this first: acting on the
+    /// placeholder would orphan the seed the unreadable file pointed at.
     pub fn ensure_available(&self) -> Result<(), anyhow::Error> {
         anyhow::ensure!(
             !self.corrupted_recovery,
@@ -223,9 +241,18 @@ pub struct ConfigWallet {
 }
 
 impl ConfigWallet {
-    /// Load only validated data. The marker is persisted before quarantine so a
-    /// crash between renaming the damaged file and the next launch cannot look
-    /// like a fresh installation. A manually restored valid primary takes priority.
+    /// Loads the wallet config, never panicking and never trusting unvalidated
+    /// bytes.
+    ///
+    /// Order: parse the primary file, else parse `.backup` and restore it, else
+    /// quarantine the damaged primary as `.corrupted.<ts>` and enter recovery.
+    /// `.backup` is only ever written *after* a successful parse, so it always
+    /// holds the last content this build could read; the pre-parse copy that
+    /// used to live here destroyed the backup in exactly the case it existed
+    /// for. The recovery marker is persisted *before* the quarantine rename so a
+    /// crash in between cannot make the next launch look like a fresh install
+    /// (which would silently create a new wallet and orphan the keyring seed).
+    /// A manually restored valid primary takes priority and clears the marker.
     pub(super) fn load_from_path(path: &Path) -> ConfigWalletContent {
         let backup = path.with_extension("json.backup");
         let marker = path.with_extension("json.recovery_required");
@@ -238,6 +265,7 @@ impl ConfigWallet {
                 if atomic_write(&backup, serialized.as_bytes()).is_err() {
                     log::warn!(target: LOG_TARGET_APP_LOGIC, "wallet.config_backup_failed");
                 }
+                Self::clear_recovery_marker(&marker);
                 return content;
             }
             Err(_) => {
@@ -245,6 +273,7 @@ impl ConfigWallet {
                 if let Ok((content, serialized, _)) = Self::read_validated(&backup) {
                     if atomic_write(path, serialized.as_bytes()).is_ok() {
                         log::warn!(target: LOG_TARGET_APP_LOGIC, "wallet.config_restored_from_backup");
+                        Self::clear_recovery_marker(&marker);
                         return content;
                     }
                     log::error!(target: LOG_TARGET_APP_LOGIC, "wallet.config_restore_failed");
@@ -288,6 +317,9 @@ impl ConfigWallet {
         Self::recovery_content()
     }
 
+    /// The in-memory default handed out while the real config is unreadable.
+    /// `_save_config` refuses to persist it, so it can never overwrite or
+    /// recreate `config_wallet.json` behind the user's back.
     fn recovery_content() -> ConfigWalletContent {
         ConfigWalletContent {
             corrupted_recovery: true,
@@ -295,6 +327,19 @@ impl ConfigWallet {
         }
     }
 
+    /// Removes the durable recovery marker once a valid config is in place
+    /// again. Best effort: a marker we cannot delete only costs us the
+    /// fresh-install shortcut, which is the safe direction to fail in.
+    fn clear_recovery_marker(marker: &Path) {
+        if marker.exists() && fs::remove_file(marker).is_err() {
+            log::warn!(target: LOG_TARGET_APP_LOGIC, "wallet.config_recovery_marker_cleanup_failed");
+        }
+    }
+
+    /// Reads and fully parses `path`, applying the `payment_id_user_data`
+    /// rename. Returns the parsed content, the bytes that should be on disk and
+    /// whether the rename actually changed anything, so the caller can skip the
+    /// write when it did not.
     fn read_validated(path: &Path) -> Result<(ConfigWalletContent, String, bool), anyhow::Error> {
         let serialized = fs::read_to_string(path)?;
         let mut value: serde_json::Value = serde_json::from_str(&serialized)?;
@@ -305,7 +350,6 @@ impl ConfigWallet {
             serialized
         };
         let content: ConfigWalletContent = serde_json::from_str(&serialized)?;
-        content.ensure_available()?;
         Ok((content, serialized, migrated))
     }
 
@@ -341,8 +385,15 @@ impl ConfigWallet {
     }
 }
 
-/// Rename JSON keys only, including older files with whitespace before the
-/// colon. User-entered string values containing the old name are untouched.
+/// Renames the `DualAddress` field that the core repo renamed from
+/// `payment_id_user_data` to `memo_field_payment_id` (#2743).
+///
+/// Operates on JSON object *keys* only, at any depth, and reports whether
+/// anything changed so the caller can avoid rewriting the file when it did not.
+/// The predecessor was a blanket string replace over the whole file, which also
+/// rewrote user-entered string values, and it ran on every single launch
+/// whether or not the old key was present - that unconditional rewrite is what
+/// kept the secret-bearing file permanently dirty on disk.
 fn migrate_payment_id(value: &mut serde_json::Value) -> bool {
     let mut migrated = false;
     match value {

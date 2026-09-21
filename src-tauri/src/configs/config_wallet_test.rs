@@ -153,18 +153,42 @@ use super::config_wallet::ConfigWallet;
 use super::trait_config::{ConfigImpl, atomic_write};
 use std::fs;
 
-#[test_case::test_case(b"not json"; "invalid")]
-#[test_case::test_case(b""; "empty")]
-#[test_case::test_case(b"\0\0\0\0"; "nul filled")]
-#[test_case::test_case(b"{\"tari_wallets\":[\"original"; "truncated")]
-#[test_case::test_case(b"\xef\xbb\xbf{}"; "bom prefixed")]
-fn corrupt_wallet_config_is_preserved_and_recovery_survives_restart(corrupt: &[u8]) {
+/// The shapes `config_wallet.json` was found in on the crashing machines.
+///
+/// "nul filled" and "truncated" are derived from a *real* serialized config so
+/// they have the length NTFS would report after an unclean shutdown (metadata
+/// journaled, data not), which is what produced ~11,700 of the reported panics.
+fn damaged_fixture(kind: &str) -> Vec<u8> {
+    let valid = serde_json::to_vec_pretty(&sentinel_config_content()).unwrap();
+    match kind {
+        "invalid" => b"not json".to_vec(),
+        "empty" => Vec::new(),
+        "nul filled" => vec![0u8; valid.len()],
+        "truncated" => valid[..valid.len() / 2].to_vec(),
+        "bom prefixed" => {
+            let mut bytes = vec![0xef, 0xbb, 0xbf];
+            bytes.extend_from_slice(&valid);
+            bytes
+        }
+        other => unreachable!("unknown fixture {other}"),
+    }
+}
+
+#[test_case::test_case("invalid")]
+#[test_case::test_case("empty")]
+#[test_case::test_case("nul filled")]
+#[test_case::test_case("truncated")]
+#[test_case::test_case("bom prefixed")]
+fn corrupt_wallet_config_is_preserved_and_recovery_survives_restart(kind: &str) {
+    let corrupt = damaged_fixture(kind);
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("config_wallet.json");
-    fs::write(&path, corrupt).unwrap();
+    fs::write(&path, &corrupt).unwrap();
     let config = ConfigWallet::load_from_path(&path);
     assert!(*config.corrupted_recovery());
     assert!(config.ensure_available().is_err());
+    // Refused on the flag alone, before `_get_config_path` is consulted, so the
+    // recovery placeholder can never be written over a real wallet config.
     assert!(ConfigWallet::_save_config(config).is_err());
     assert!(!path.exists());
     let quarantined = fs::read_dir(directory.path())
@@ -266,14 +290,40 @@ fn failed_recovery_marker_write_keeps_corrupt_primary() {
 fn manually_restored_primary_can_leave_recovery() {
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("config_wallet.json");
+    let marker = path.with_extension("json.recovery_required");
     fs::write(&path, b"bad config").unwrap();
     assert!(*ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert!(marker.exists(), "recovery must be recorded durably");
     fs::write(
         &path,
         serde_json::to_vec(&sentinel_config_content()).unwrap(),
     )
     .unwrap();
     assert!(!ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert!(
+        !marker.exists(),
+        "a valid config must clear the recovery marker"
+    );
+}
+
+#[test]
+fn recovery_flag_is_never_written_into_the_config_file() {
+    // The flag lives in memory only; the durable record is the marker file.
+    // A serialized `corrupted_recovery: false` in a file that was born out of a
+    // recovery would be worse than no flag at all.
+    let serialized = serde_json::to_value(ConfigWalletContent::default()).unwrap();
+    assert!(
+        serialized.get("corrupted_recovery").is_none(),
+        "recovery flag must not be a persisted field: {serialized}"
+    );
+
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    fs::write(&path, br#"{"corrupted_recovery": true}"#).unwrap();
+    assert!(
+        !ConfigWallet::load_from_path(&path).corrupted_recovery(),
+        "a file claiming recovery must not put a parseable config into recovery"
+    );
 }
 
 #[test]
