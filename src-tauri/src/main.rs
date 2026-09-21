@@ -215,21 +215,40 @@ struct UniverseAppState {
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
 }
 
-/// The panic message, but only when it is actually a string.
+/// Longest panic message that may reach a log line.
+///
+/// A `&'static str` payload is a literal from our own source and is short. A
+/// `String` payload is `expect`/`unwrap` formatting someone's error with
+/// `{:?}`, and a `Debug` impl can print bytes: `keyring::Error::BadEncoding`
+/// carries a `Vec<u8>` that, for a credential, would be the seed blob. No
+/// `expect`/`unwrap` on a keyring or seed-bearing `Result` exists outside
+/// `#[cfg(test)]` in this crate today, so that is defence in depth rather than
+/// a live path - but the hook is the one place where text from an arbitrary
+/// failure reaches the log, and a cap keeps a pathological payload from
+/// emptying a blob into it. It is generous enough to keep a real panic message
+/// readable, which is what makes a Windows crash triageable from a bundle.
+const MAX_PANIC_MESSAGE_LEN: usize = 256;
+
+/// The panic message, but only when it is actually a string, and bounded.
 ///
 /// `panic!`/`expect`/`unwrap` always produce a `&'static str` or a `String`, so
 /// this covers every panic the app can realistically raise. A payload of any
 /// other type (`panic_any(SomeStruct)`) is deliberately *not* formatted: the
 /// whole point is that no struct is ever dumped into a log line, because the
 /// wallet structs carry seeds and view keys.
-fn panic_message<'a>(panic_info: &'a std::panic::PanicHookInfo<'_>) -> &'a str {
+fn panic_message(panic_info: &std::panic::PanicHookInfo<'_>) -> String {
     let payload = panic_info.payload();
-    if let Some(message) = payload.downcast_ref::<&'static str>() {
+    let message: &str = if let Some(message) = payload.downcast_ref::<&'static str>() {
         message
     } else if let Some(message) = payload.downcast_ref::<String>() {
         message.as_str()
     } else {
         "<non-string panic payload>"
+    };
+    // Truncate on a character boundary, never mid-UTF-8.
+    match message.char_indices().nth(MAX_PANIC_MESSAGE_LEN) {
+        Some((end, _)) => format!("{}<truncated>", &message[..end]),
+        None => message.to_string(),
     }
 }
 

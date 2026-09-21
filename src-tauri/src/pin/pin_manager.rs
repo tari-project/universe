@@ -96,11 +96,16 @@ impl PinManager {
                 }
             }
         } else {
+            // There is nothing to validate the PIN against: no cached Tari wallet details and a
+            // Monero address the user supplied themselves, so neither seed is ours to read.
+            // Reachable from a config restored from a backup that predates the wallet details.
+            // This used to `panic!`, which killed whichever Tauri command task asked - including
+            // `reset_settings`, the one thing such a user would try. An error leaves the app
+            // alive and the seeds untouched.
             log::error!(target: LOG_TARGET_APP_LOGIC, "Neither Tari Seed nor Monero Seed available to validate against.");
-            panic!("Neither Tari Seed nor Monero Seed available to validate against.");
-            // Edge case, we can't actually validate the pin
-            // because we don't have neither a Tari wallet nor a Monero wallet
-            // to check against.
+            return Err(anyhow::anyhow!(
+                "No wallet seed is available to validate the PIN against"
+            ));
         }
 
         pin_locker.reset_pin_attempts().await?;
