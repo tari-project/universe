@@ -50,6 +50,8 @@
   "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
   "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
   "gpu-unavailable": "⚠️ GPU disabled because your hardware does not support it",
+  "gpu-cannot-mine": "⚠️ Your GPU cannot mine Tari: {{reason}}",
+  "gpu-cannot-mine-unknown": "the miner does not support this device",
   "hardware-status": "Hardware status",
   "idle-timeout": {
     "max": "Maximum is 21600 seconds",

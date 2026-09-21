@@ -1,0 +1,20 @@
+Setup Miner... 
+Cuda driver detected.
+Number of Cuda supported GPUs: 0 
+OpenCL driver detected.
+Number of OpenCL supported GPUs: 2 
+Device 0: 
+    Name:    [38;2;255;069;000mRadeon RX 9070 XT 
+[0m    Address: 3:0 
+    Vendor:  Advanced Micro Devices (AMD), ROCm
+    Drivers: OpenCL
+    Memory:  32624 MByte (32558 MByte free) 
+    Active:  true (Selected Algorithm: Cuckaroo 29 (Tari)) 
+Device 1: 
+    Name:    [38;2;255;069;000mRDNA 2 
+[0m    Address: 115:0 
+    Vendor:  Advanced Micro Devices (AMD), ROCm
+    Drivers: OpenCL
+    Memory:  30825 MByte (30819 MByte free) 
+    Active:  false (Unsupported device or driver version.) 
+Start Benchmark... 
