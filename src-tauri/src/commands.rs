@@ -64,6 +64,7 @@ use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::wallet_manager::WalletManagerError;
 use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
+use crate::wallet_recovery::{FindWalletsResult, find_my_wallets, relink_tari_wallet};
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
 
 use base64::prelude::*;
@@ -651,6 +652,48 @@ pub async fn forgot_pin(
 
     info!(target: LOG_TARGET_APP_LOGIC, "PIN recovery completed successfully");
     Ok(())
+}
+
+/// List the wallet seeds this machine's credential store still holds.
+///
+/// The recovery for a seed the config no longer points at: a config that was lost or recreated,
+/// or a wallet pushed out of view by an import. Returns an id, an 8-character address prefix and
+/// whether the config lists it - never a seed, a blob or a view key. A platform that cannot
+/// enumerate its credential store answers `unsupported` rather than failing.
+#[tauri::command]
+pub async fn find_my_wallets_command(
+    app_handle: tauri::AppHandle,
+) -> Result<FindWalletsResult, String> {
+    let timer = Instant::now();
+    let result = find_my_wallets(&app_handle).await;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET_APP_LOGIC, "find_my_wallets took too long: {:?}", timer.elapsed());
+    }
+    Ok(result)
+}
+
+/// Point the app at one of the wallets `find_my_wallets_command` found.
+///
+/// Returns the 8-character prefix of the address now in use. Writes nothing to the keyring: the
+/// seed is already there, and the previously selected wallet stays in the list.
+#[tauri::command]
+pub async fn relink_wallet(
+    wallet_id: String,
+    app_handle: tauri::AppHandle,
+) -> Result<String, String> {
+    SetupManager::get_instance()
+        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+        .await;
+
+    let address_prefix = relink_tari_wallet(&app_handle, WalletId::new(wallet_id))
+        .await
+        .map_err(|e| {
+            error!(target: LOG_TARGET_APP_LOGIC, "Error re-linking wallet: {e}");
+            e.to_string()
+        })?;
+
+    info!(target: LOG_TARGET_APP_LOGIC, "Wallet re-linked successfully");
+    Ok(address_prefix)
 }
 
 #[tauri::command]

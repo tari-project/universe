@@ -545,7 +545,7 @@ fn best<T>(candidates: &[SeedCandidate<T>]) -> &SeedCandidate<T> {
 }
 
 #[test]
-fn a_plain_tari_blob_under_a_locked_config_is_offered_unauthenticated() {
+fn a_plain_tari_blob_under_a_locked_config_repairs_the_flag() {
     // Path P4 with a plaintext blob: the config claims a PIN, the keyring holds a plain seed.
     // Before the repair this was "Wrong PIN entered!" forever, with a lockout after three tries.
     let seed = CipherSeed::random();
@@ -555,8 +555,8 @@ fn a_plain_tari_blob_under_a_locked_config_is_offered_unauthenticated() {
     let candidate = best(&candidates);
     assert_eq!(candidate.seed.entropy(), seed.entropy());
     assert!(
-        !candidate.authenticated,
-        "a bincode decode proves nothing and must be address-checked"
+        candidate.authenticated,
+        "a blob that re-serializes to itself really is a plain seed"
     );
     assert!(
         !candidate.pin_locked_actual,

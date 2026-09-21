@@ -1923,9 +1923,18 @@ pub fn tari_seed_candidates(
         });
     }
     if let Ok(seed) = CipherSeed::from_binary(blob) {
+        // Bincode carries no tag, but a round-trip does prove the bytes really are a serialized
+        // `CipherSeed` and not something else that happened to deserialize: a serialized seed is
+        // 24 bytes and an enciphered one 60, so an enciphered blob can never re-serialize to
+        // itself. That is proof of the *interpretation*, not of whose wallet it is, which is why
+        // an unauthenticated candidate still has to derive the recorded address.
+        let authenticated = seed
+            .to_binary()
+            .map(|round_trip| round_trip == blob)
+            .unwrap_or(false);
         candidates.push(SeedCandidate {
             seed,
-            authenticated: false,
+            authenticated,
             pin_locked_actual: false,
         });
     }

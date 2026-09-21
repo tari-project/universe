@@ -90,6 +90,10 @@ const WRITE_PROBE_VALUE: &[u8] = b"tari-universe-write-probe";
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum KeyringListing {
     /// Usernames (not target names) of every entry that carried the requested prefix.
+    ///
+    /// Only Windows and macOS can produce this; on other platforms the variant exists so callers
+    /// and tests have one shape to handle, which is what the `allow` below is for.
+    #[cfg_attr(not(any(target_os = "windows", target_os = "macos")), allow(dead_code))]
     Entries(Vec<String>),
     /// This platform cannot enumerate its credential store from here.
     Unsupported,
