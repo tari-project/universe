@@ -432,9 +432,12 @@ mod platform_listing {
         };
 
         // The `keyring` crate stores generic credentials under the target name
-        // "{username}.{service}" (keyring-3.6.3/src/windows.rs). `CredEnumerateW` only supports a
-        // trailing `*`, which is enough because the username prefix is a real prefix of the
-        // target name.
+        // "{username}.{service}": `Entry::new` builds with no explicit target, and the `None`
+        // arm of `WinCredential::new_with_target` sets `target_name: format!("{user}.{service}")`
+        // (keyring-3.6.3/src/windows.rs:378, the version pinned in Cargo.lock). `CredEnumerateW`
+        // only supports a trailing `*`, which is enough because the username prefix is a real
+        // prefix of the target name. If a future keyring release flips the order, this filter
+        // matches nothing and "find my wallets" reports an empty list - wrong, but harmless.
         let filter: Vec<u16> = format!("{username_prefix}*")
             .encode_utf16()
             .chain(std::iter::once(0))
@@ -493,10 +496,12 @@ mod platform_listing {
         service: &str,
         username_prefix: &str,
     ) -> Result<KeyringListing, CredentialError> {
-        use core_foundation_sys::array::{CFArrayGetCount, CFArrayGetValueAtIndex, CFArrayRef};
+        use core_foundation_sys::array::{
+            CFArrayGetCount, CFArrayGetTypeID, CFArrayGetValueAtIndex, CFArrayRef,
+        };
         use core_foundation_sys::base::{CFGetTypeID, CFRelease, CFTypeRef, kCFAllocatorDefault};
         use core_foundation_sys::dictionary::{
-            CFDictionaryCreate, CFDictionaryGetValue, CFDictionaryRef,
+            CFDictionaryCreate, CFDictionaryGetTypeID, CFDictionaryGetValue, CFDictionaryRef,
             kCFTypeDictionaryKeyCallBacks, kCFTypeDictionaryValueCallBacks,
         };
         use core_foundation_sys::number::kCFBooleanTrue;
@@ -562,13 +567,22 @@ mod platform_listing {
                 return Ok(KeyringListing::Unsupported);
             }
 
+            // `kSecMatchLimitAll` is documented to return a CFArray of CFDictionaries, but the
+            // cast is what decides whether the loop below walks a real array or arbitrary memory,
+            // so it is checked rather than assumed. A result of any other shape is reported as
+            // "cannot enumerate", which is the fail-closed answer.
+            if CFGetTypeID(result) != CFArrayGetTypeID() {
+                CFRelease(result);
+                return Ok(KeyringListing::Unsupported);
+            }
             let mut usernames = Vec::new();
             let array = result as CFArrayRef;
             for index in 0..CFArrayGetCount(array) {
-                let entry = CFArrayGetValueAtIndex(array, index) as CFDictionaryRef;
-                if entry.is_null() {
+                let entry = CFArrayGetValueAtIndex(array, index);
+                if entry.is_null() || CFGetTypeID(entry as CFTypeRef) != CFDictionaryGetTypeID() {
                     continue;
                 }
+                let entry = entry as CFDictionaryRef;
                 let account = CFDictionaryGetValue(entry, kSecAttrAccount as *const c_void);
                 if account.is_null() || CFGetTypeID(account as CFTypeRef) != CFStringGetTypeID() {
                     continue;
