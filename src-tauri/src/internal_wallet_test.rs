@@ -115,3 +115,107 @@ fn internal_wallet_is_initialized_before_set() {
 fn current_panics_before_initialization() {
     let _ = InternalWallet::current();
 }
+
+// --- Redaction of the wallet view private key (GHSA-3wv6-9vwg-865r) ---
+//
+// The key stays in `config_wallet.json` as a plain hex string, so the JSON
+// shape must not change; it may only never show up in `Debug` output.
+
+use super::configs::config_wallet::WalletId;
+use super::internal_wallet::{TariWalletDetails, ViewPrivateKeyHex};
+use std::str::FromStr;
+use tari_common_types::tari_address::TariAddress;
+
+/// A valid dual (one-sided) address, same fixture as `utils::address_utils`.
+const TEST_TARI_ADDRESS: &str =
+    "f25eNHz2YnBVKHaqNuacGyDFB321RwwCnTr4vb2SjQCgDZVXyNNthc7zftQKRDu6evLjvSUD8W5akpPMdhS4HQ9kF3g";
+const VIEW_KEY_SENTINEL: &str = "view_key_sentinel_0123";
+
+fn sentinel_wallet_details() -> TariWalletDetails {
+    TariWalletDetails {
+        id: WalletId::new("wallet_sentinel_id".to_string()),
+        tari_address: TariAddress::from_str(TEST_TARI_ADDRESS).expect("valid test address"),
+        wallet_birthday: 1234,
+        view_private_key_hex: ViewPrivateKeyHex::new(VIEW_KEY_SENTINEL.to_string()),
+        spend_public_key_hex: "spend_public_key_not_secret".to_string(),
+    }
+}
+
+/// The on-disk JSON, exactly as `config_wallet.json` stores it.
+fn sentinel_wallet_details_json() -> String {
+    format!(
+        r#"{{"id":"wallet_sentinel_id","tari_address":"{TEST_TARI_ADDRESS}","wallet_birthday":1234,"view_private_key_hex":"{VIEW_KEY_SENTINEL}","spend_public_key_hex":"spend_public_key_not_secret"}}"#
+    )
+}
+
+#[test]
+fn tari_wallet_details_debug_redacts_view_private_key() {
+    let debug_output = format!("{:?}", sentinel_wallet_details());
+
+    assert!(
+        !debug_output.contains("view_key_sentinel"),
+        "view private key leaked into Debug output: {debug_output}"
+    );
+    assert!(debug_output.contains("REDACTED"), "{debug_output}");
+    // Non-secret fields are still useful for debugging.
+    assert!(
+        debug_output.contains("wallet_sentinel_id"),
+        "{debug_output}"
+    );
+    assert!(
+        debug_output.contains("spend_public_key_not_secret"),
+        "{debug_output}"
+    );
+}
+
+#[test]
+fn view_private_key_hex_debug_and_display_redact() {
+    let key = ViewPrivateKeyHex::new(VIEW_KEY_SENTINEL.to_string());
+
+    assert!(!format!("{key:?}").contains("view_key_sentinel"));
+    assert!(!format!("{key}").contains("view_key_sentinel"));
+    assert_eq!(key.reveal(), VIEW_KEY_SENTINEL);
+}
+
+#[test]
+fn tari_wallet_details_deserializes_the_on_disk_shape() {
+    let details: TariWalletDetails =
+        serde_json::from_str(&sentinel_wallet_details_json()).expect("fixture should deserialize");
+
+    assert_eq!(details.view_private_key_hex.reveal(), VIEW_KEY_SENTINEL);
+    assert_eq!(details.id.as_str(), "wallet_sentinel_id");
+    assert_eq!(details.wallet_birthday, 1234);
+}
+
+#[test]
+fn tari_wallet_details_serializes_the_key_as_a_plain_hex_string() {
+    let details: TariWalletDetails =
+        serde_json::from_str(&sentinel_wallet_details_json()).expect("fixture should deserialize");
+
+    let value = serde_json::to_value(&details).expect("should serialize");
+
+    assert_eq!(
+        value
+            .get("view_private_key_hex")
+            .and_then(serde_json::Value::as_str),
+        Some(VIEW_KEY_SENTINEL),
+        "the config file must keep the plain hex string"
+    );
+    // The whole document must round-trip byte for byte.
+    assert_eq!(
+        serde_json::to_string(&details).expect("should serialize"),
+        sentinel_wallet_details_json()
+    );
+}
+
+#[test]
+fn tari_wallet_details_round_trip_preserves_the_key() {
+    let serialized = serde_json::to_string(&sentinel_wallet_details()).expect("should serialize");
+    let deserialized: TariWalletDetails =
+        serde_json::from_str(&serialized).expect("should deserialize");
+
+    assert_eq!(
+        deserialized.view_private_key_hex.reveal(),
+        VIEW_KEY_SENTINEL
+    );
+}
