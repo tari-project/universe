@@ -306,6 +306,10 @@ impl InternalWallet {
     /// `INSTANCE` is only published by `post_init`, which is the last step, and the keyring is
     /// only written by `add_tari_wallet` / `add_monero_wallet`, which are the seed's *only*
     /// copies at that point and must therefore never be rolled back.
+    ///
+    /// The Monero address and id written by `adopt_legacy_monero_seed` are deliberately not in
+    /// the snapshot either, for the same reason: they are the only pointer to the keyring entry
+    /// holding the migrated Monero seed, and undoing them would orphan it.
     pub async fn initialize_with_seed(app_handle: &tauri::AppHandle) -> Result<(), anyhow::Error> {
         let config_before = ConfigWallet::content().await;
         let external_address_before = config_before.selected_external_tari_address().clone();
