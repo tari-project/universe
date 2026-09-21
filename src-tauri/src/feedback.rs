@@ -660,6 +660,22 @@ impl WalletStatus {
 /// here - the only things shipped about the configuration are the allowlisted
 /// `diagnostics` and `wallet_status` values.
 ///
+/// What ends up in the archive:
+///
+/// * `logs/**/*.log`, with home-directory paths scrubbed of the OS user name.
+///   Only `.log` is matched, so a `.zip` left behind by a failed upload is not
+///   nested into the next bundle.
+/// * `configs/diagnostics.json` - [`SupportDiagnostics`], an explicit
+///   allowlist of non-secret settings.
+/// * `configs/wallet_status.json` - [`WalletStatus`], presence/verdict/length
+///   metadata about the wallet.
+///
+/// What never does, and must not be added: `config_wallet.json`, its
+/// `.backup`, any `*.corrupted.*` copy, the legacy `wallet_config.json`, the
+/// legacy `credentials_backup.bin`, or any other file from the app config
+/// directory. Those four wallet files are reported by name, presence and byte
+/// length only, through [`WalletStatus::files`].
+///
 /// Returns the path of the archive and its file name.
 pub fn create_support_archive(
     logs_dir: &Path,
