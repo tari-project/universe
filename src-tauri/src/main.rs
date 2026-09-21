@@ -214,21 +214,60 @@ struct UniverseAppState {
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
 }
 
+/// The panic message, but only when it is actually a string.
+///
+/// `panic!`/`expect`/`unwrap` always produce a `&'static str` or a `String`, so
+/// this covers every panic the app can realistically raise. A payload of any
+/// other type (`panic_any(SomeStruct)`) is deliberately *not* formatted: the
+/// whole point is that no struct is ever dumped into a log line, because the
+/// wallet structs carry seeds and view keys.
+fn panic_message<'a>(panic_info: &'a std::panic::PanicHookInfo<'_>) -> &'a str {
+    let payload = panic_info.payload();
+    if let Some(message) = payload.downcast_ref::<&'static str>() {
+        message
+    } else if let Some(message) = payload.downcast_ref::<String>() {
+        message.as_str()
+    } else {
+        "<non-string panic payload>"
+    }
+}
+
+/// Makes any panic fatal for the whole process.
+///
+/// Without this, a panic inside a task spawned on the tokio runtime only kills
+/// that task. The app kept running with a `LazyLock` poisoned by the panicking
+/// initializer, a splash screen that never closes, and every later access to
+/// that singleton panicking in turn - a half-alive process that users can only
+/// escape by force-quitting, and which re-reports on every relaunch. Exiting
+/// non-zero turns that into an honest crash.
+///
+/// Only the message and the source location are logged. Sentry gets a constant
+/// string, never the payload: the Sentry panic integration would otherwise ship
+/// whatever an `expect` was formatted with.
 fn install_fatal_panic_hook() {
     std::panic::set_hook(Box::new(|panic_info| {
-        // Never forward the panic payload to the default/Sentry hook: an error
-        // or assertion can contain wallet secrets. Source locations are safe.
-        if let Some(location) = panic_info.location() {
-            log::error!(target: LOG_TARGET_APP_LOGIC, "app.panic at {}:{}:{}", location.file(), location.line(), location.column());
-        } else {
-            log::error!(target: LOG_TARGET_APP_LOGIC, "app.panic");
+        let message = panic_message(panic_info);
+        match panic_info.location() {
+            Some(location) => {
+                log::error!(target: LOG_TARGET_APP_LOGIC, "app.panic at {}:{}:{}: {message}", location.file(), location.line(), location.column());
+                // The logger may not be initialized yet this early in startup.
+                eprintln!(
+                    "app.panic at {}:{}:{}: {message}",
+                    location.file(),
+                    location.line(),
+                    location.column()
+                );
+            }
+            None => {
+                log::error!(target: LOG_TARGET_APP_LOGIC, "app.panic: {message}");
+                eprintln!("app.panic: {message}");
+            }
         }
         sentry::capture_message("app.panic", sentry::Level::Fatal);
         if let Some(client) = sentry::Hub::current().client() {
             client.flush(Some(std::time::Duration::from_secs(2)));
         }
-        // Tokio catches unwinds in spawned tasks. Exit here instead of leaving
-        // poisoned singletons and a half-initialized process running.
+        // Exit from the hook, before unwinding, so tokio cannot swallow it.
         std::process::exit(1);
     }));
 }
@@ -696,34 +735,89 @@ fn main() {
     });
 }
 
+/// The hook can only be tested by letting it run, and it ends the process, so
+/// each case re-executes this test binary as a child and inspects the exit
+/// status. Nothing here installs the hook in the parent, so the rest of the
+/// test suite keeps the default panic behaviour and `#[should_panic]` tests
+/// elsewhere are unaffected.
 #[cfg(test)]
 mod fatal_panic_tests {
+    const CHILD: &str = "TARI_TEST_FATAL_PANIC_CHILD";
+    const MESSAGE: &str = "deliberate_panic_for_the_hook_test";
+    const SECRET: &str = "struct_payload_secret_sentinel";
+
+    struct SecretPayload {
+        #[allow(dead_code)]
+        seed: &'static str,
+    }
+
+    /// Runs `test_name` again in a child process with `CHILD` set to `mode`.
+    fn run_child(test_name: &str, mode: &str) -> std::process::Output {
+        std::process::Command::new(std::env::current_exe().expect("test binary path"))
+            .args(["--exact", test_name, "--nocapture", "--test-threads=1"])
+            .env(CHILD, mode)
+            .output()
+            .expect("child test process should run")
+    }
+
     #[test]
-    fn spawned_task_panic_exits_nonzero_without_exposing_payload() {
-        const CHILD: &str = "TARI_TEST_FATAL_PANIC_CHILD";
-        const SECRET: &str = "panic_payload_secret_sentinel";
+    fn spawned_task_panic_exits_nonzero_and_logs_message_and_location() {
         if std::env::var_os(CHILD).is_some() {
             super::install_fatal_panic_hook();
             tokio::runtime::Builder::new_current_thread()
                 .build()
-                .unwrap()
+                .expect("runtime")
                 .block_on(async {
-                    let _ = tokio::spawn(async { panic!("{SECRET}") }).await;
+                    let _unused = tokio::spawn(async { panic!("{MESSAGE}") }).await;
                 });
-            // Reaching this point means Tokio swallowed the panic.
+            // Only reachable if tokio swallowed the panic, i.e. the hook failed
+            // to terminate the process. Exit 0 so the assertions below fail.
             std::process::exit(0);
         }
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "fatal_panic_tests::spawned_task_panic_exits_nonzero_without_exposing_payload",
-                "--nocapture",
-            ])
-            .env(CHILD, "1")
-            .output()
-            .unwrap();
-        assert_eq!(output.status.code(), Some(1));
-        assert!(!String::from_utf8_lossy(&output.stderr).contains(SECRET));
-        assert!(!String::from_utf8_lossy(&output.stdout).contains(SECRET));
+        let output = run_child(
+            "fatal_panic_tests::spawned_task_panic_exits_nonzero_and_logs_message_and_location",
+            "message",
+        );
+        let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+        assert_eq!(
+            output.status.code(),
+            Some(1),
+            "a panic in a spawned task must terminate the process: {stderr}"
+        );
+        assert!(
+            stderr.contains(MESSAGE),
+            "panic message not logged: {stderr}"
+        );
+        assert!(
+            stderr.contains("app.panic at ") && stderr.contains("main.rs:"),
+            "panic location not logged: {stderr}"
+        );
+    }
+
+    #[test]
+    fn non_string_panic_payload_is_never_dumped() {
+        if std::env::var_os(CHILD).is_some() {
+            super::install_fatal_panic_hook();
+            std::panic::panic_any(SecretPayload { seed: SECRET });
+        }
+        let output = run_child(
+            "fatal_panic_tests::non_string_panic_payload_is_never_dumped",
+            "payload",
+        );
+        let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+        let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+        assert_eq!(output.status.code(), Some(1), "{stderr}");
+        assert!(
+            !stderr.contains(SECRET),
+            "payload leaked to stderr: {stderr}"
+        );
+        assert!(
+            !stdout.contains(SECRET),
+            "payload leaked to stdout: {stdout}"
+        );
+        assert!(
+            stderr.contains("<non-string panic payload>"),
+            "hook did not run: {stderr}"
+        );
     }
 }
