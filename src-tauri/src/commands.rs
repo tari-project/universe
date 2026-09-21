@@ -62,6 +62,7 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
+use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send};
 use crate::wallet::wallet_manager::WalletManagerError;
 use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
 use crate::wallet_recovery::{
@@ -130,7 +131,7 @@ pub async fn select_exchange_miner(
         TariAddress::from_str(&mining_address).map_err(|e| format!("Invalid Tari address: {e}"))?;
 
     // Validate PIN if pin locked
-    let _unused = PinManager::get_validated_pin_if_defined(&app_handle)
+    let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -408,7 +409,7 @@ pub async fn get_network(
 pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    let pin_password = PinManager::get_validated_pin_if_defined(&app_handle)
+    let pin_password = PinManager::get_validated_pin_if_defined(&app_handle, None)
         .await
         .map_err(|e| e.to_string())?;
     let monero_seed = InternalWallet::get_monero_seed(pin_password)
@@ -443,7 +444,7 @@ pub async fn get_paper_wallet_details(
     warn!(target: LOG_TARGET_APP_LOGIC, "auth_uuid {auth_uuid:?}");
     let anon_id = ConfigCore::content().await.anon_id().clone();
 
-    let pin_password = PinManager::get_validated_pin_if_defined(&app_handle)
+    let pin_password = PinManager::get_validated_pin_if_defined(&app_handle, None)
         .await
         .map_err(|e| e.to_string())?;
     let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password)
@@ -494,7 +495,7 @@ pub async fn get_paper_wallet_details(
 pub async fn get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    let pin_password = PinManager::get_validated_pin_if_defined(&app_handle)
+    let pin_password = PinManager::get_validated_pin_if_defined(&app_handle, None)
         .await
         .map_err(|e| e.to_string())?;
     let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password)
@@ -532,7 +533,7 @@ pub async fn set_external_tari_address(
         .await;
 
     // Validate PIN if pin locked
-    let _unused = PinManager::get_validated_pin_if_defined(&app_handle)
+    let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
         .await
         .map_err(InvokeError::from_anyhow)?;
 
@@ -840,7 +841,7 @@ pub async fn reset_settings(
 ) -> Result<(), String> {
     if reset_wallet {
         // Validate PIN if pin locked
-        let _unused = PinManager::get_validated_pin_if_defined(&app_handle)
+        let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
             .await
             .map_err(|e| e.to_string())?;
         log::info!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Pin successfully validated");
@@ -1636,6 +1637,21 @@ pub async fn reconnect() -> Result<(), String> {
     Ok(())
 }
 
+/// Spend funds. Reachable from anything that can call `invoke` — the in-app send UI,
+/// the tapplet bridge, the dev console — so the user-consent gate has to live here in
+/// the backend rather than in the calling UI.
+///
+/// The gate is `wallet::send_gate::gated_send`, shared with the MCP `send_transaction`
+/// tool:
+/// * With a PIN configured, the PIN is requested and validated further down the stack
+///   (`WalletAdapter::send_one_sided_to_stealth_address` -> `TransactionService::sign_one_sided_tx`
+///   -> `SpendWallet::sign_one_sided_transaction` -> `SpendWallet::get_seed_words` ->
+///   `PinManager::get_validated_pin_if_defined`). The prompt carries the amount and
+///   destination. A wrong or cancelled PIN aborts the send and the prepared transaction
+///   is cancelled.
+/// * With no PIN configured there is nothing secret to ask for, so the gate emits a
+///   backend-driven confirmation dialog (amount + destination + payment id, 120s timeout)
+///   that the user must approve.
 #[tauri::command]
 pub async fn send_one_sided_to_stealth_address(
     state: tauri::State<'_, UniverseAppState>,
@@ -1646,11 +1662,19 @@ pub async fn send_one_sided_to_stealth_address(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
-    state
-        .wallet_manager
-        .send_one_sided_to_stealth_address(amount, destination, payment_id, &app_handle)
-        .await
-        .map_err(|e| e.to_string())?;
+    gated_send(
+        GatedSendRequest {
+            origin: SendOrigin::App,
+            request_id: SendOrigin::App.new_request_id(),
+            amount,
+            destination,
+            payment_id,
+        },
+        &state.wallet_manager,
+        &app_handle,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
     let balance = state.wallet_manager.get_balance().await;
     if let Ok(balance) = balance {

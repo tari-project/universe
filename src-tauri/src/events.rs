@@ -228,6 +228,22 @@ pub struct McpTransactionConfirmationPayload {
     pub destination: String,
     pub amount_micro_minotari: u64,
     pub amount_display: String,
+    /// Which caller asked for the transaction: `"app"` (in-app UI, tapplet bridge,
+    /// anything reaching the Tauri command) or `"mcp"` (MCP transaction tool).
+    pub origin: String,
+    pub payment_id: Option<String>,
+}
+
+/// Optional context attached to the `EnterPin` event so the PIN dialog can tell the
+/// user *what* they are authorising instead of asking for a PIN out of the blue.
+#[derive(Debug, Serialize, Clone)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum PinPromptContext {
+    Send {
+        amount_micro_minotari: u64,
+        destination: String,
+        payment_id: Option<String>,
+    },
 }
 
 #[derive(Debug, Serialize, Clone)]

@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/store';
 import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { runTappletTransaction } from '@app/store/useTappletSignerStore.ts';
+import { isAllowedExternalUrl } from '@app/utils/externalUrl.ts';
+import { getIframeOrigin } from '@app/utils/iframeOrigin.ts';
 
 interface TappletProps {
     source: string;
@@ -10,14 +12,17 @@ interface TappletProps {
 
 export const Tapplet = ({ source }: TappletProps) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
+    const untrustedMessageWarned = useRef(false);
     const appLanguage = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
+    const tappletOrigin = useMemo(() => getIframeOrigin(source), [source]);
 
     const openExternalLink = useCallback(async (event: MessageEvent) => {
-        if (!event.data.url || typeof event.data.url !== 'string') {
-            console.error('Invalid external tapplet URL');
-        }
         const url = event.data?.url;
+        if (!isAllowedExternalUrl(url)) {
+            console.warn('Blocked tapplet request to open an invalid external URL');
+            return;
+        }
         console.info('Opening external tapplet URL:', url);
         try {
             await open(url);
@@ -27,23 +32,47 @@ export const Tapplet = ({ source }: TappletProps) => {
     }, []);
 
     const sendAppLanguage = useCallback(() => {
-        if (tappletRef.current) {
+        if (tappletRef.current && tappletOrigin) {
             tappletRef.current.contentWindow?.postMessage(
                 { type: 'SET_LANGUAGE', payload: { language: appLanguage } },
-                '*'
+                tappletOrigin
             );
         }
-    }, [appLanguage]);
+    }, [appLanguage, tappletOrigin]);
 
     const sendTheme = useCallback(() => {
-        if (tappletRef.current) {
-            tappletRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
+        if (tappletRef.current && tappletOrigin) {
+            tappletRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, tappletOrigin);
         }
-    }, [theme]);
+    }, [theme, tappletOrigin]);
+
+    /**
+     * Only the tapplet we embedded may talk to us: the message has to come from the iframe's own
+     * window and carry the exact origin the iframe was pointed at. Anything else (other frames,
+     * opened windows, the app itself) is dropped before it can reach the signer.
+     */
+    const isTrustedTappletMessage = useCallback(
+        (event: MessageEvent) => {
+            const tappletWindow = tappletRef.current?.contentWindow;
+            if (!tappletOrigin || !tappletWindow) return false;
+            return event.source === tappletWindow && event.origin === tappletOrigin;
+        },
+        [tappletOrigin]
+    );
 
     const handleMessage = useCallback(
         async (event: MessageEvent) => {
-            switch (event.data.type) {
+            if (!isTrustedTappletMessage(event)) {
+                if (!untrustedMessageWarned.current) {
+                    untrustedMessageWarned.current = true;
+                    console.warn(
+                        `Ignoring tapplet message from untrusted sender (origin: "${event.origin}", expected: "${tappletOrigin}"). Further messages will be dropped silently.`
+                    );
+                }
+                return;
+            }
+
+            switch (event.data?.type) {
                 case 'signer-call':
                     await runTappletTransaction(event);
                     break;
@@ -56,19 +85,24 @@ export const Tapplet = ({ source }: TappletProps) => {
                     break;
                 }
                 case 'ERROR':
-                    setStoreError(`${event.data.payload.message}`, true);
+                    setStoreError(`${event.data.payload?.message}`, true);
                     break;
             }
         },
-        [openExternalLink, sendAppLanguage, sendTheme]
+        [isTrustedTappletMessage, openExternalLink, sendAppLanguage, sendTheme, tappletOrigin]
     );
 
     useEffect(() => {
+        // Without a valid tapplet origin there is nothing we could ever trust, so don't listen at all.
+        if (!tappletOrigin) {
+            console.warn('Tapplet source is missing or invalid, message handling is disabled');
+            return;
+        }
         window.addEventListener('message', handleMessage);
         return () => {
             window.removeEventListener('message', handleMessage);
         };
-    }, [handleMessage]);
+    }, [handleMessage, tappletOrigin]);
 
     return (
         <TappletContainer>

@@ -114,7 +114,11 @@ impl BinaryResolver {
                     repo: "wxtm-bridge-frontend".to_string(),
                     owner: "tari-project".to_string(),
                 }),
-                false,
+                // The bridge tapplet is served into an iframe that talks to the wallet
+                // bridge, so a substituted archive is arbitrary code next to the wallet.
+                // Upstream ships `bridge-v<version>.zip.sha256` next to the archive on
+                // every release, so validation is required, like every other binary.
+                true,
             ),
         );
 

@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::events::PinPromptContext;
 use crate::events_emitter::EventsEmitter;
 use crate::network_utils::NetworkExt;
 use crate::port_allocator::PortAllocator;
@@ -192,11 +193,19 @@ impl WalletAdapter {
     ) -> Result<(), anyhow::Error> {
         let tx_service = TransactionService::new(self, app_handle);
 
+        // Context for the PIN dialog raised while signing, so the user sees what they
+        // are authorising rather than a bare "enter your PIN" prompt.
+        let pin_context = PinPromptContext::Send {
+            amount_micro_minotari: amount,
+            destination: address.clone(),
+            payment_id: payment_id.clone(),
+        };
+
         let (unsigned_tx_file, tx_id) = tx_service
             .prepare_one_sided_transaction_for_signing(amount, address, payment_id)
             .await?;
         let sign_result = tx_service
-            .sign_one_sided_tx(unsigned_tx_file, tx_id.clone())
+            .sign_one_sided_tx(unsigned_tx_file, tx_id.clone(), Some(pin_context))
             .await;
         match sign_result {
             Ok(signed_tx_file) => tx_service.broadcast_one_sided_tx(signed_tx_file).await,

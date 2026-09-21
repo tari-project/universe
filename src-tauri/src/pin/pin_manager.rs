@@ -27,6 +27,7 @@ use tokio::sync::oneshot;
 use crate::{
     LOG_TARGET_APP_LOGIC,
     configs::{config_wallet::ConfigWallet, trait_config::ConfigImpl},
+    events::PinPromptContext,
     events_emitter::EventsEmitter,
     internal_wallet::InternalWallet,
     pin::pin_locker::PinLocker,
@@ -42,8 +43,17 @@ impl PinManager {
             .pin_locked()
     }
 
-    pub async fn get_validated_pin(app_handle: &AppHandle) -> Result<SafePassword, anyhow::Error> {
-        let pin = enter_pin_dialog(app_handle).await?;
+    /// Ask the user for their PIN and validate it.
+    ///
+    /// `context` is optional metadata describing what the PIN is being requested for
+    /// (e.g. an outgoing transaction). It is forwarded to the frontend dialog so the
+    /// user can see what they are authorising; callers with no meaningful context
+    /// pass `None` and the dialog looks exactly as it always has.
+    pub async fn get_validated_pin(
+        app_handle: &AppHandle,
+        context: Option<PinPromptContext>,
+    ) -> Result<SafePassword, anyhow::Error> {
+        let pin = enter_pin_dialog(app_handle, context).await?;
         let pin_password = SafePassword::from(pin);
         PinManager::validate_pin(pin_password.clone()).await?;
         Ok(pin_password)
@@ -51,9 +61,12 @@ impl PinManager {
 
     pub async fn get_validated_pin_if_defined(
         app_handle: &AppHandle,
+        context: Option<PinPromptContext>,
     ) -> Result<Option<SafePassword>, anyhow::Error> {
         if PinManager::pin_locked().await {
-            Ok(Some(PinManager::get_validated_pin(app_handle).await?))
+            Ok(Some(
+                PinManager::get_validated_pin(app_handle, context).await?,
+            ))
         } else {
             Ok(None)
         }
@@ -177,8 +190,14 @@ where
     }
 }
 
-async fn enter_pin_dialog(app_handle: &AppHandle) -> Result<String, anyhow::Error> {
-    pin_dialog_with_emitter(app_handle, EventsEmitter::emit_ask_for_pin).await
+async fn enter_pin_dialog(
+    app_handle: &AppHandle,
+    context: Option<PinPromptContext>,
+) -> Result<String, anyhow::Error> {
+    pin_dialog_with_emitter(app_handle, || {
+        EventsEmitter::emit_ask_for_pin(context.clone())
+    })
+    .await
 }
 
 async fn create_pin_dialog(app_handle: &AppHandle) -> Result<String, anyhow::Error> {

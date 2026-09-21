@@ -273,7 +273,15 @@ impl SetupPhaseImpl for GpuMiningSetupPhase {
         let _unused = HardwareStatusMonitor::current()
             .decide_if_gpu_mining_is_recommended(&detected_devices)
             .await;
-        GpuManager::write().await.load_saved_miner().await?;
+        // A machine without a usable GPU is not a setup failure. When every miner failed device
+        // detection there is nothing to load, and switching to one would only run that detection
+        // again and fail the whole phase on its error. GPU mining was already disabled above; the
+        // rest of the app carries on without it.
+        if GpuManager::read().await.has_healthy_miner() {
+            GpuManager::write().await.load_saved_miner().await?;
+        } else {
+            info!(target: LOG_TARGET_APP_LOGIC, "No GPU miner passed device detection, leaving GPU mining unavailable");
+        }
 
         Ok(())
     }

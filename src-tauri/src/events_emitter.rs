@@ -751,11 +751,11 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_ask_for_pin() {
+    pub async fn emit_ask_for_pin(context: Option<crate::events::PinPromptContext>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::EnterPin,
-            payload: (),
+            payload: context,
         };
         if let Err(e) = Self::get_app_handle()
             .await

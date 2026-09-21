@@ -9,10 +9,12 @@ import {
     MinerControlsState,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
+    PinPromptContext,
     ProgressTrackerUpdatePayload,
     SetupPhase,
     ShowReleaseNotesPayload,
     TariAddressUpdatePayload,
+    TransactionOrigin,
     WalletUIMode,
 } from './events-payloads.ts';
 import {
@@ -185,7 +187,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'EnterPin';
-          payload: undefined;
+          payload?: PinPromptContext | null;
       }
     | {
           event_type: 'UpdateGpuDevicesSettings';
@@ -265,6 +267,8 @@ export type BackendStateUpdateEvent =
               destination: string;
               amount_micro_minotari: number;
               amount_display: string;
+              origin?: TransactionOrigin;
+              payment_id?: string | null;
           };
       }
     | {
