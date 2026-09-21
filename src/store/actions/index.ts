@@ -24,6 +24,7 @@ export {
     loadSystemDependencies as loadExternalDependencies,
     setCriticalError,
     setCriticalProblem,
+    setWalletRecovery,
     setError,
     setIsAppUpdateAvailable,
     setIsSettingsOpen,

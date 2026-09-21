@@ -2,7 +2,12 @@ import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '../appStateStore.ts';
 import { NetworkStatus, SystemDependency, SystemDependencyStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
-import { CriticalProblemPayload, SetupPhase, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
+import {
+    CriticalProblemPayload,
+    SetupPhase,
+    ShowReleaseNotesPayload,
+    WalletRecoveryPayload,
+} from '@app/types/events-payloads.ts';
 import { setDialogToShow, useMiningStore, useUIStore } from '../index.ts';
 
 import { setIsReconnecting, setShowExternalDependenciesDialog, setShowResumeAppModal } from './uiStoreActions.ts';
@@ -62,6 +67,8 @@ export const handleCriticalProblemEvent = (payload?: CriticalProblemPayload) => 
 };
 export const setCriticalProblem = (criticalProblem?: Partial<CriticalProblemPayload>) =>
     useAppStateStore.setState({ criticalProblem });
+export const setWalletRecovery = (walletRecovery?: WalletRecoveryPayload) =>
+    useAppStateStore.setState({ walletRecovery });
 export const setError = (error: string | undefined, log = false) => {
     useAppStateStore.setState({ error });
     if (log) {
