@@ -59,12 +59,63 @@ use crate::pin::PinManager;
 use crate::utils::{cryptography, rand_utils};
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState};
 
+/// The wallet's view private key, in hex.
+///
+/// The key has to keep living in `config_wallet.json` as a plain hex string, so
+/// `Serialize`/`Deserialize` stay transparent and the on-disk shape is exactly
+/// what it was before. Only `Debug`/`Display` are masked, so the key can never
+/// be written to a log line or a telemetry payload through a `{:?}` formatter.
+/// The value is held in a `tari_utilities::Hidden` so it is zeroized on drop as
+/// well, matching how the seeds are handled on `InternalWallet`.
+///
+/// `Hidden` is not used directly on the field because `Hidden` only implements
+/// `Deserialize`; serialization is left to the caller by design.
+#[derive(Clone, Deserialize)]
+#[serde(transparent)]
+pub struct ViewPrivateKeyHex(Hidden<String>);
+
+impl ViewPrivateKeyHex {
+    pub fn new(view_private_key_hex: String) -> Self {
+        ViewPrivateKeyHex(Hidden::hide(view_private_key_hex))
+    }
+
+    /// Read the key. Callers must keep it out of logs and telemetry.
+    pub fn reveal(&self) -> &str {
+        self.0.reveal().as_str()
+    }
+}
+
+impl From<String> for ViewPrivateKeyHex {
+    fn from(view_private_key_hex: String) -> Self {
+        ViewPrivateKeyHex::new(view_private_key_hex)
+    }
+}
+
+/// Transparent serialization: the config file keeps the plain hex string.
+impl Serialize for ViewPrivateKeyHex {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(self.reveal())
+    }
+}
+
+impl std::fmt::Debug for ViewPrivateKeyHex {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("[REDACTED]")
+    }
+}
+
+impl std::fmt::Display for ViewPrivateKeyHex {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("[REDACTED]")
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TariWalletDetails {
     pub id: WalletId,
     pub tari_address: TariAddress,
     pub wallet_birthday: u16,
-    pub view_private_key_hex: String,
+    pub view_private_key_hex: ViewPrivateKeyHex,
     pub spend_public_key_hex: String,
 }
 
@@ -284,7 +335,7 @@ impl InternalWallet {
             state
                 .wallet_manager
                 .set_view_private_key_and_spend_key(
-                    wallet_details.view_private_key_hex.clone(),
+                    wallet_details.view_private_key_hex.reveal().to_string(),
                     wallet_details.spend_public_key_hex.clone(),
                 )
                 .await;
@@ -895,7 +946,7 @@ impl InternalWallet {
             tari_address,
             wallet_birthday,
             spend_public_key_hex: comms_pub_key.to_hex(),
-            view_private_key_hex: view_key_private.to_hex(),
+            view_private_key_hex: ViewPrivateKeyHex::new(view_key_private.to_hex()),
         })
     }
 

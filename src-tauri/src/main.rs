@@ -96,6 +96,8 @@ mod events;
 mod events_emitter;
 mod events_manager;
 mod feedback;
+#[cfg(test)]
+mod feedback_test;
 #[cfg(feature = "test-mode")]
 mod file_credential_store;
 mod hardware;
