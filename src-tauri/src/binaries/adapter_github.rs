@@ -159,17 +159,42 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
 
     fn get_base_main_download_url(&self, version: &str) -> String {
         let base_url = get_mirror_download_url(&self.owner, &self.repo);
-        format!("{base_url}/v{version}")
+        format!("{base_url}/{}", release_tag(version))
     }
     fn get_base_fallback_download_url(&self, version: &str) -> String {
         let base_url = get_gh_download_url(&self.owner, &self.repo);
-        format!("{base_url}/v{version}")
+        format!("{base_url}/{}", release_tag(version))
+    }
+}
+
+/// Release tag for a configured version.
+///
+/// Asset file names embed the version verbatim, so a release whose assets are named
+/// `tari_suite-v5.7.0-pre.10-...` has to be configured as `v5.7.0-pre.10`. The tag is then
+/// already prefixed and must not be prefixed a second time.
+fn release_tag(version: &str) -> String {
+    if version.starts_with('v') {
+        version.to_string()
+    } else {
+        format!("v{version}")
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn release_tag_prefixes_a_bare_version() {
+        assert_eq!(release_tag("5.4.0"), "v5.4.0");
+        assert_eq!(release_tag("5.4.0-rc.1"), "v5.4.0-rc.1");
+        assert_eq!(release_tag("1.98a"), "v1.98a");
+    }
+
+    #[test]
+    fn release_tag_leaves_an_already_prefixed_version_alone() {
+        assert_eq!(release_tag("v5.7.0-pre.10"), "v5.7.0-pre.10");
+    }
 
     /// The real manifest published with TARI.Miner v1.1.6.
     const SHARED_MANIFEST: &str = "\
