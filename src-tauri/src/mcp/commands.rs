@@ -190,5 +190,5 @@ pub async fn mcp_transaction_dialog_response(
     request_id: String,
     approved: bool,
 ) -> Result<(), String> {
-    crate::mcp::tools::transaction::respond_to_transaction(request_id, approved).await
+    crate::wallet::send_gate::respond_to_transaction(request_id, approved).await
 }

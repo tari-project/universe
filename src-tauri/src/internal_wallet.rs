@@ -390,7 +390,7 @@ impl InternalWallet {
         app_handle: &AppHandle,
     ) -> Result<(WalletId, Vec<u8>), anyhow::Error> {
         let tari_cipher_seed = mnemonic_to_tari_cipher_seed(seed_words).await?;
-        let pin_password = PinManager::get_validated_pin_if_defined(app_handle).await?;
+        let pin_password = PinManager::get_validated_pin_if_defined(app_handle, None).await?;
 
         let (tari_wallet_details, tari_seed_binary) =
             InternalWallet::add_tari_wallet(app_handle, tari_cipher_seed, pin_password).await?;
@@ -415,7 +415,7 @@ impl InternalWallet {
         let encrypted_seed = if PinManager::pin_locked().await {
             let pin_password = match pin_password_provided {
                 Some(p) => p,
-                None => PinManager::get_validated_pin(app_handle).await?,
+                None => PinManager::get_validated_pin(app_handle, None).await?,
             };
             tari_seed.encipher(Some(pin_password))?
         } else {
@@ -707,7 +707,7 @@ impl InternalWallet {
                         }
                     };
                     let tari_cipher_seed = if PinManager::pin_locked().await {
-                        let pin_password = PinManager::get_validated_pin(app_handle).await?;
+                        let pin_password = PinManager::get_validated_pin(app_handle, None).await?;
                         match CipherSeed::from_enciphered_bytes(
                             &encrypted_tari_seed,
                             Some(pin_password),

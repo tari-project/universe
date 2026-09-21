@@ -223,7 +223,7 @@ impl McpServerManager {
 
         EventsEmitter::emit_mcp_server_status_update(false, None).await;
 
-        crate::mcp::tools::transaction::clear_inflight().await;
+        crate::wallet::send_gate::clear_inflight().await;
     }
 
     pub async fn restart() -> Result<u16, anyhow::Error> {

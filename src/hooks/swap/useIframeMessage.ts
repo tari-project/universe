@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { SelectableTokenInfo, SwapDirection, SwapStatus } from './lib/types';
 
 export enum MessageType {
@@ -100,11 +100,40 @@ export type IframeMessage =
     | SetFullscreenMessage
     | ProcessingMessage;
 
-// Hook to listen for messages from the parent window
+/**
+ * A message is only trusted when it comes from a window we embedded ourselves - i.e. the swap
+ * iframe - and when it speaks from the exact origin that iframe was pointed at. Random windows,
+ * popups and nested frames are dropped.
+ */
+function isTrustedIframeMessage(event: MessageEvent): boolean {
+    if (!event.source) return false;
+
+    const frames = Array.from(document.querySelectorAll('iframe'));
+    const sender = frames.find((frame) => frame.contentWindow && frame.contentWindow === event.source);
+    if (!sender?.src) return false;
+
+    try {
+        return event.origin === new URL(sender.src, window.location.href).origin;
+    } catch {
+        return false;
+    }
+}
+
+// Hook to listen for messages from the swap iframe
 export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>) => void) {
+    const untrustedMessageWarned = useRef(false);
+
     useEffect(() => {
         function handleMessage(event: MessageEvent<IframeMessage>) {
-            // Optionally, add origin checks here for security
+            if (!isTrustedIframeMessage(event)) {
+                if (!untrustedMessageWarned.current) {
+                    untrustedMessageWarned.current = true;
+                    console.warn(
+                        `Ignoring iframe message from untrusted sender (origin: "${event.origin}"). Further messages will be dropped silently.`
+                    );
+                }
+                return;
+            }
             onMessage(event);
         }
         window.addEventListener('message', handleMessage);

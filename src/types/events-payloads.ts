@@ -122,3 +122,19 @@ export interface GpuMiner {
     is_healthy: boolean;
     last_error?: string;
 }
+
+/** Which caller asked for a transaction: the in-app/tapplet bridge path, or the MCP tool. */
+export type TransactionOrigin = 'app' | 'mcp';
+
+/**
+ * Optional context attached to the `EnterPin` event, so the PIN dialog can tell the user
+ * what they are authorising instead of asking for a PIN out of the blue.
+ */
+export interface SendPinPromptContext {
+    kind: 'send';
+    amount_micro_minotari: number;
+    destination: string;
+    payment_id?: string | null;
+}
+
+export type PinPromptContext = SendPinPromptContext;

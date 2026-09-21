@@ -7,13 +7,226 @@
 </head>
 
 <body>
-    <script>
-        window.__TAURI_ISOLATION_HOOK__ = (payload) => {
-            // TODO: Prevent command execution
-            // TODO: Perhaps whitelist commands
-            return payload;
-        };
+    <!--
+        Tauri "Isolation" pattern secure frame.
 
+        Every `invoke()` the main (application) frame makes is postMessage'd into this
+        sandboxed frame before it is encrypted and handed to the Rust backend. This file
+        is the only JavaScript that sees IPC traffic in plaintext *outside* the main
+        frame, so it is the last place we can drop a command the app should never send.
+
+        HONEST THREAT MODEL - read this before trusting it:
+
+          * This hook filters WHICH commands may reach the backend. It does not and
+            cannot tell apart "the user clicked Send" from "injected script called
+            invoke('send_one_sided_to_stealth_address')". A compromised main frame can
+            still call anything on the allowlist below, with any arguments.
+          * Therefore this is NOT the gate for moving funds. The real gate is the
+            backend-side PIN / confirmation check on the spend commands.
+          * What it does buy: an injected script cannot reach commands the UI never
+            uses, and every blocked attempt is logged, which makes exploitation noisier
+            and narrows the reachable command surface.
+          * The allowlist is only as good as its freshness. `scripts/check-isolation-allowlist.mjs`
+            (wired into `pnpm lint`) fails the build if a command is registered in
+            `src-tauri/src/main.rs` but missing here, or listed here but no longer
+            registered.
+
+        Constraints on this file (Tauri requirements, do not "modernise" away):
+          * Must be a classic inline <script>. ES modules do not load in the sandboxed
+            isolation frame, and external <script src> does not load on Windows.
+          * The isolation frame is served with `default-src 'none'` plus a sha256 hash
+            of this script that Tauri computes at compile time. Editing the script is
+            fine; adding network access, imports or eval is not.
+          * The literal string `__TAURI_ISOLATION_HOOK__` must appear here or the Tauri
+            build panics.
+          * `dist-isolation/` is embedded by `tauri::generate_context!` straight from the
+            source tree (`app.security.pattern.options.dir`). There is no build step -
+            editing this file is enough for it to ship.
+    -->
+    <script>
+        (function () {
+            'use strict';
+
+            /**
+             * Set to false to log-only instead of blocking. Useful when a legitimate
+             * command is missing from the list and you need to find all of them in one
+             * run. Must be true in anything that ships.
+             */
+            var ENFORCE = true;
+
+            /**
+             * Commands rewritten to this name are guaranteed not to resolve in the Rust
+             * `generate_handler!` table, so the backend answers with an error and the
+             * caller's `invoke()` promise rejects. Rejecting is deliberate: throwing from
+             * this hook would leave the promise pending forever and hang the UI.
+             */
+            var DENIED_COMMAND = '__blocked_by_isolation_allowlist__';
+
+            /**
+             * Application commands. Mirrors `tauri::generate_handler![...]` in
+             * src-tauri/src/main.rs; kept in sync by scripts/check-isolation-allowlist.mjs.
+             */
+            var ALLOWED_APP_COMMANDS = [
+                'download_and_start_installer',
+                'exit_application',
+                'fetch_tor_bridges',
+                'get_app_in_memory_config',
+                'get_applications_versions',
+                'get_application_language',
+                'get_monero_seed_words',
+                'get_network',
+                'get_paper_wallet_details',
+                'get_seed_words',
+                'get_tor_config',
+                'get_transactions',
+                'import_seed_words',
+                'revert_to_internal_wallet',
+                'log_web_message',
+                'open_log_dir',
+                'reset_settings',
+                'restart_application',
+                'send_feedback',
+                'set_allow_telemetry',
+                'set_application_language',
+                'set_auto_update',
+                'set_cpu_mining_enabled',
+                'set_display_mode',
+                'set_gpu_mining_enabled',
+                'set_mine_on_app_start',
+                'set_monero_address',
+                'set_monerod_config',
+                'set_external_tari_address',
+                'confirm_exchange_address',
+                'select_exchange_miner',
+                'set_show_experimental_settings',
+                'set_show_window_on_startup',
+                'set_should_always_use_system_language',
+                'set_should_auto_launch',
+                'set_tor_config',
+                'set_use_tor',
+                'set_visual_mode',
+                'start_cpu_mining',
+                'start_gpu_mining',
+                'stop_cpu_mining',
+                'stop_gpu_mining',
+                'toggle_cpu_pool_mining',
+                'toggle_gpu_pool_mining',
+                'proceed_with_update',
+                'set_pre_release',
+                'toggle_device_exclusion',
+                'set_airdrop_tokens',
+                'get_airdrop_tokens',
+                'frontend_ready',
+                'start_mining_status',
+                'stop_mining_status',
+                'websocket_get_status',
+                'reconnect',
+                'send_one_sided_to_stealth_address',
+                'verify_address_for_send',
+                'validate_minotari_amount',
+                'trigger_phases_restart',
+                'set_node_type',
+                'set_remote_base_node_address',
+                'validate_remote_base_node_address',
+                'set_allow_notifications',
+                'launch_builtin_tapplet',
+                'get_bridge_envs',
+                'parse_tari_address',
+                'refresh_wallet_history',
+                'get_base_node_status',
+                'get_local_block_stats',
+                'create_pin',
+                'forgot_pin',
+                'set_seed_backed_up',
+                'select_mining_mode',
+                'update_custom_mining_mode',
+                'encode_payment_id_to_address',
+                'save_wxtm_address',
+                'set_security_warning_dismissed',
+                'change_cpu_pool',
+                'change_gpu_pool',
+                'update_selected_gpu_pool_config',
+                'update_selected_cpu_pool_config',
+                'reset_gpu_pool_config',
+                'reset_cpu_pool_config',
+                'restart_phases',
+                'list_connected_peers',
+                'set_feedback_fields',
+                'send_otp_request',
+                'set_mode_mining_time',
+                'set_eco_alert_needed',
+                'mark_shutdown_selection_as_completed',
+                'mark_feedback_survey_as_completed',
+                'update_shutdown_mode_selection',
+                'set_pause_on_battery_mode',
+                'set_custom_node_directory',
+                'add_scheduler_event',
+                'remove_scheduler_event',
+                'pause_scheduler_event',
+                'resume_scheduler_event',
+                'get_mcp_config',
+                'get_mcp_token',
+                'set_mcp_enabled',
+                'refresh_mcp_token_expiry',
+                'revoke_mcp_token',
+                'set_mcp_port',
+                'set_mcp_max_transaction_amount',
+                'set_mcp_tier_enabled',
+                'get_mcp_audit_log',
+                'export_mcp_audit_log',
+                'set_mcp_transactions_enabled',
+                'mcp_transaction_dialog_response',
+            ];
+
+            /**
+             * Plugin commands, by exact `plugin:<plugin>|<command>` string. Only the ones
+             * the frontend (or Tauri's own plumbing) actually issues are listed - never a
+             * blanket `plugin:` prefix match. Adding a Tauri plugin API to src/ means
+             * adding its command here too.
+             */
+            var ALLOWED_PLUGIN_COMMANDS = [
+                'plugin:event|listen', // listen()/Window.listen() - core event plumbing, required at boot
+                'plugin:event|unlisten', // listener teardown
+                'plugin:event|emit', // emit() - used by the airdrop websocket bridge
+                'plugin:event|emit_to', // WebviewWindow.emitTo('main', ...)
+                'plugin:__TAURI_CHANNEL__|fetch', // Tauri internal: pulls oversized event/channel payloads
+                'plugin:resources|close', // Tauri internal: releases Resource/Channel handles
+                'plugin:window|is_minimized', // useBlockchainVisualisationStore
+                'plugin:shell|open', // @tauri-apps/plugin-shell open() - external links + tapplet links
+                'plugin:clipboard-manager|read_text', // @tauri-apps/plugin-clipboard-manager readText()
+                'plugin:clipboard-manager|write_text', // @tauri-apps/plugin-clipboard-manager writeText()
+                'plugin:dialog|open', // @tauri-apps/plugin-dialog open() - file picker
+            ];
+
+            var allowed = Object.create(null);
+            var i;
+            for (i = 0; i < ALLOWED_APP_COMMANDS.length; i++) {
+                allowed[ALLOWED_APP_COMMANDS[i]] = true;
+            }
+            for (i = 0; i < ALLOWED_PLUGIN_COMMANDS.length; i++) {
+                allowed[ALLOWED_PLUGIN_COMMANDS[i]] = true;
+            }
+
+            window.__TAURI_ISOLATION_HOOK__ = function (payload) {
+                var cmd = payload && payload.cmd;
+
+                if (typeof cmd === 'string' && allowed[cmd] === true) {
+                    return payload;
+                }
+
+                // Only the command name is logged. Payloads carry seed words, PINs and
+                // addresses and must never be written to the console.
+                console.warn('[tauri-isolation] IPC command not on allowlist:', String(cmd));
+
+                if (!ENFORCE) {
+                    return payload;
+                }
+
+                payload.cmd = DENIED_COMMAND;
+                payload.payload = { blockedCommand: String(cmd) };
+                return payload;
+            };
+        })();
     </script>
 </body>
 

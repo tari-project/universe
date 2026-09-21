@@ -8,6 +8,54 @@ import {
     removeOngoingBridgeTx as removeTx,
 } from '@app/store/useTappletsStore';
 
+/**
+ * Methods a tapplet is allowed to call over `postMessage` (`signer-call`). Mirrors the signer
+ * client shipped in the built-in wXTM bridge tapplet - do not widen without a security review.
+ */
+export type TappletCallableMethod =
+    | 'isConnected'
+    | 'getAccount'
+    | 'getAppLanguage'
+    | 'getBackendBridgeTxs'
+    | 'getBaseNodeStatus'
+    | 'getBridgeEnvs'
+    | 'getNetwork'
+    | 'getOngoingBridgeTx'
+    | 'getTariBalance'
+    | 'removeOngoingBridgeTx'
+    | 'setOngoingBridgeTx'
+    | 'sendOneSided';
+
+function invalidArgsResult(method: string): { error: string } {
+    console.warn(`Blocked tapplet signer call to "${method}" with invalid arguments`);
+    return { error: `Invalid arguments for tapplet signer method: ${method}` };
+}
+
+function isNonEmptyString(value: unknown): value is string {
+    return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isSendOneSidedRequest(value: unknown): value is SendOneSidedRequest {
+    if (!value || typeof value !== 'object') return false;
+    const req = value as Record<string, unknown>;
+    return (
+        isNonEmptyString(req.amount) &&
+        isNonEmptyString(req.address) &&
+        (req.paymentId === undefined || req.paymentId === null || typeof req.paymentId === 'string')
+    );
+}
+
+function isBridgeTxDetails(value: unknown): value is BridgeTxDetails {
+    if (!value || typeof value !== 'object') return false;
+    const tx = value as Record<string, unknown>;
+    return (
+        isNonEmptyString(tx.amount) &&
+        typeof tx.amountToReceive === 'string' &&
+        isNonEmptyString(tx.destinationAddress) &&
+        typeof tx.paymentId === 'string'
+    );
+}
+
 export class TappletSigner {
     public providerName = 'TappletSigner';
     id: string;
@@ -39,15 +87,48 @@ export class TappletSigner {
     }
 
     /* eslint-disable @typescript-eslint/no-explicit-any */
-    async runOne(method: any, args: any[]): Promise<any> {
-        // Check if method exists on the class prototype
-        if (method in TappletSigner.prototype) {
-            // Call the method with the correct 'this' context and args
-            const res = (this[method] as (...args: any) => Promise<any>)(...args);
-            return res;
-        } else {
-            console.warn(`Method "${method}" does not exist on TappletSigner.`);
-            return undefined;
+    /**
+     * Entry point for `signer-call` messages coming from a tapplet. Dispatch is an explicit
+     * allowlist - never a dynamic lookup on the prototype - so a tapplet can't reach anything
+     * beyond the methods below, and argument shapes are validated before any Tauri command runs.
+     */
+    async runOne(method: unknown, args: unknown): Promise<any> {
+        const callArgs: unknown[] = Array.isArray(args) ? args : [];
+
+        switch (method) {
+            case 'isConnected':
+                return this.isConnected();
+            case 'getAccount':
+                return this.getAccount();
+            case 'getAppLanguage':
+                return this.getAppLanguage();
+            case 'getBackendBridgeTxs':
+                return this.getBackendBridgeTxs();
+            case 'getBaseNodeStatus':
+                return this.getBaseNodeStatus();
+            case 'getBridgeEnvs':
+                return this.getBridgeEnvs();
+            case 'getNetwork':
+                return this.getNetwork();
+            case 'getOngoingBridgeTx':
+                return this.getOngoingBridgeTx();
+            case 'getTariBalance':
+                return this.getTariBalance();
+            case 'removeOngoingBridgeTx':
+                return this.removeOngoingBridgeTx();
+            case 'setOngoingBridgeTx': {
+                const tx = callArgs[0];
+                if (!isBridgeTxDetails(tx)) return invalidArgsResult(method);
+                return this.setOngoingBridgeTx(tx);
+            }
+            case 'sendOneSided': {
+                const req = callArgs[0];
+                if (!isSendOneSidedRequest(req)) return invalidArgsResult(method);
+                return this.sendOneSided(req);
+            }
+            default:
+                console.warn(`Blocked tapplet signer call to unsupported method "${String(method)}"`);
+                return { error: `Unsupported tapplet signer method: ${String(method)}` };
         }
     }
 

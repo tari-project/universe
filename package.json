@@ -9,7 +9,7 @@
         "build": "tsc && vite build",
         "preview": "vite preview",
         "tauri": "node ./scripts/tauri-wrapper.js",
-        "lint": "eslint src/ && knip && tsc",
+        "lint": "eslint src/ && node ./scripts/check-isolation-allowlist.mjs && knip && tsc",
         "lint:fix": "eslint src/ --fix",
         "lint:taplo": "taplo format --check",
         "translate": "node ./scripts/translator.js",

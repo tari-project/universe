@@ -52,20 +52,34 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
         let mut file_sha256 = File::open(checksum_path.clone()).await?;
         let mut buffer_sha256 = Vec::new();
         file_sha256.read_to_end(&mut buffer_sha256).await?;
-        let contents =
-            String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
+        let contents = String::from_utf8(buffer_sha256)
+            .map_err(|e| anyhow!("Checksum file is not valid UTF-8: {}", e))?;
         let mut expected_hash = "";
-        let regex = Regex::new(&format!(r"([a-f0-9]+)\s.{asset_name}"))
+        let escaped_asset_name = regex::escape(asset_name);
+        let regex = Regex::new(&format!(r"([a-fA-F0-9]{{64}})\s+\*?{escaped_asset_name}$"))
             .map_err(|e| anyhow!("Failed to create regex: {}", e))?;
 
         for line in contents.lines() {
-            if let Some(caps) = regex.captures(line) {
+            if let Some(caps) = regex.captures(line.trim()) {
                 expected_hash = caps
                     .get(1)
                     .map(|hash| hash.as_str())
                     .ok_or_else(|| anyhow!("Failed to extract hash from line: {}", line))?;
             }
         }
+
+        // Fail closed: an empty expected hash would otherwise be compared against the
+        // real digest and produce a confusing "checksums mismatched" error, and any
+        // future change that treats an empty expectation as "skip" would silently serve
+        // unverified tapplet content into the wallet-connected iframe.
+        if expected_hash.is_empty() {
+            error!(target: LOG_TARGET_APP_LOGIC, "No checksum entry for asset {asset_name} in {checksum_path:?}");
+            return Err(anyhow!(
+                "Checksum file does not contain an entry for asset '{}'",
+                asset_name
+            ));
+        }
+
         Ok(expected_hash.to_string())
     }
     async fn download_and_get_checksum_path(
@@ -123,5 +137,117 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
     fn get_base_fallback_download_url(&self, version: &str) -> String {
         let base_url = get_gh_download_url(&self.owner, &self.repo);
         format!("{base_url}/v{version}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    fn adapter() -> BridgeTappletAdapter {
+        BridgeTappletAdapter {
+            repo: "wxtm-bridge-frontend".to_string(),
+            owner: "tari-project".to_string(),
+        }
+    }
+
+    fn checksum_file(contents: &str) -> tempfile::NamedTempFile {
+        let mut file = tempfile::NamedTempFile::new().expect("temp file");
+        file.write_all(contents.as_bytes()).expect("write");
+        file.flush().expect("flush");
+        file
+    }
+
+    /// The format actually published on `tari-project/wxtm-bridge-frontend` releases.
+    #[tokio::test]
+    async fn parses_sha256sum_output() {
+        let file = checksum_file(
+            "8d33b2e49eb7ca91684fe358db1aac1b07e4e3a87d0cae993c6f48b6a1aee97b  bridge-v0.4.2.zip\n",
+        );
+        let hash = adapter()
+            .get_expected_checksum(file.path().to_path_buf(), "bridge-v0.4.2.zip")
+            .await
+            .expect("checksum parsed");
+
+        assert_eq!(
+            hash,
+            "8d33b2e49eb7ca91684fe358db1aac1b07e4e3a87d0cae993c6f48b6a1aee97b"
+        );
+    }
+
+    #[tokio::test]
+    async fn parses_binary_mode_entry() {
+        let file = checksum_file(
+            "8d33b2e49eb7ca91684fe358db1aac1b07e4e3a87d0cae993c6f48b6a1aee97b *bridge-v0.4.2.zip\n",
+        );
+        let hash = adapter()
+            .get_expected_checksum(file.path().to_path_buf(), "bridge-v0.4.2.zip")
+            .await
+            .expect("checksum parsed");
+
+        assert_eq!(
+            hash,
+            "8d33b2e49eb7ca91684fe358db1aac1b07e4e3a87d0cae993c6f48b6a1aee97b"
+        );
+    }
+
+    #[tokio::test]
+    async fn picks_the_entry_for_the_requested_asset() {
+        let file = checksum_file(
+            "1111111111111111111111111111111111111111111111111111111111111111  bridge-v0.4.1.zip\n\
+             2222222222222222222222222222222222222222222222222222222222222222  bridge-v0.4.2.zip\n",
+        );
+        let hash = adapter()
+            .get_expected_checksum(file.path().to_path_buf(), "bridge-v0.4.2.zip")
+            .await
+            .expect("checksum parsed");
+
+        assert_eq!(
+            hash,
+            "2222222222222222222222222222222222222222222222222222222222222222"
+        );
+    }
+
+    /// An unparseable or wrong checksum file must fail closed rather than yield an empty
+    /// expectation that a future refactor could read as "nothing to verify".
+    #[tokio::test]
+    async fn missing_entry_is_an_error() {
+        let file = checksum_file(
+            "8d33b2e49eb7ca91684fe358db1aac1b07e4e3a87d0cae993c6f48b6a1aee97b  some-other-asset.zip\n",
+        );
+        let err = adapter()
+            .get_expected_checksum(file.path().to_path_buf(), "bridge-v0.4.2.zip")
+            .await
+            .expect_err("no entry for the asset");
+
+        assert!(err.to_string().contains("does not contain an entry"));
+    }
+
+    #[tokio::test]
+    async fn html_error_page_is_an_error() {
+        let file = checksum_file("<!doctype html><html><body>404</body></html>");
+        assert!(
+            adapter()
+                .get_expected_checksum(file.path().to_path_buf(), "bridge-v0.4.2.zip")
+                .await
+                .is_err(),
+            "a mirror error page must never be accepted as a checksum"
+        );
+    }
+
+    /// The asset name is interpolated into a regex, so it must be escaped: `.` and `-`
+    /// in `bridge-v0.4.2.zip` must not match arbitrary characters.
+    #[tokio::test]
+    async fn asset_name_is_not_treated_as_a_pattern() {
+        let file = checksum_file(
+            "8d33b2e49eb7ca91684fe358db1aac1b07e4e3a87d0cae993c6f48b6a1aee97b  bridgeXv0X4X2Xzip\n",
+        );
+        assert!(
+            adapter()
+                .get_expected_checksum(file.path().to_path_buf(), "bridge-v0.4.2.zip")
+                .await
+                .is_err()
+        );
     }
 }
