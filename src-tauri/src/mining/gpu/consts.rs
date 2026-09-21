@@ -162,3 +162,40 @@ impl GpuMiner {
 /// The first miner in the list has the highest priority
 /// Used for selecting default or fallback miner
 pub const MINERS_PRIORITY: &[GpuMinerType] = &[GpuMinerType::LolMiner];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Documents the invariant the GPU pool toggle is gated on.
+    ///
+    /// Disabling the GPU pool routes mining through `handle_node_connection_load`, which
+    /// requires a miner advertising `SoloMining`. While no shipped miner does, that path
+    /// can never succeed and the toggle is disabled in the UI and refused in
+    /// `toggle_gpu_pool_mining`.
+    ///
+    /// If this test starts failing, a miner has gained solo support - which is good news,
+    /// but the gating in both places should then be revisited.
+    #[test]
+    fn no_shipped_gpu_miner_supports_solo_mining() {
+        let solo_capable: Vec<&GpuMinerType> = MINERS_PRIORITY
+            .iter()
+            .filter(|miner_type| miner_type.is_solo_mining_supported())
+            .collect();
+
+        assert!(
+            solo_capable.is_empty(),
+            "expected no solo-capable GPU miner, found: {solo_capable:?}"
+        );
+    }
+
+    #[test]
+    fn every_shipped_gpu_miner_supports_pool_mining() {
+        for miner_type in MINERS_PRIORITY {
+            assert!(
+                miner_type.is_pool_mining_supported(),
+                "{miner_type} must support pool mining, as it is the only working connection type"
+            );
+        }
+    }
+}

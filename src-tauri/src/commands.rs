@@ -1482,6 +1482,20 @@ pub async fn toggle_cpu_pool_mining(enabled: bool) -> Result<(), String> {
 pub async fn toggle_gpu_pool_mining(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
 
+    // Disabling the pool switches GPU mining to a direct node connection, which only
+    // works when an available miner advertises solo mining. Refuse up front rather than
+    // leaving GPU mining unable to start. The read guard is bound to a local so it is
+    // not held across the awaits below.
+    if !enabled {
+        let is_solo_mining_supported = GpuManager::read().await.is_solo_mining_supported();
+        if !is_solo_mining_supported {
+            return Err(
+                "Cannot disable GPU pool mining: no available GPU miner supports solo mining"
+                    .to_string(),
+            );
+        }
+    }
+
     if enabled {
         SetupManager::get_instance()
             .turn_on_gpu_pool_feature()
