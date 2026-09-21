@@ -47,6 +47,23 @@ const COPY_KEYS: Record<WalletRecoveryReason, { title: string; description: stri
 };
 
 /**
+ * Reasons for which searching the credential store is a plausible next step.
+ *
+ * All four describe a wallet whose seed may well still be on this computer under an id the app
+ * has lost track of: secure storage could not be read for the configured id, the settings file
+ * that held the id list was destroyed, or a pre-migration wallet could not be adopted.
+ * `initialization_failed` is deliberately absent - it means the wallet the config points at
+ * failed to open for some other reason, and offering to re-link the id it is already using would
+ * only be confusing. The dialog is still reachable from Settings there.
+ */
+const FIND_MY_WALLETS_REASONS: readonly WalletRecoveryReason[] = [
+    'seed_unavailable',
+    'config_corrupted',
+    'legacy_seed_undecryptable',
+    'legacy_config_unreadable',
+];
+
+/**
  * Shown when the app cannot vouch for the wallet. Deliberately not `CriticalProblemDialog`: the
  * app is not broken, so the primary action is "open settings" (where the user can export logs and
  * send a support bundle) rather than "restart" or "quit". Telemetry is not running and neither
@@ -61,6 +78,7 @@ const WalletRecoveryDialog = memo(function WalletRecoveryDialog() {
     const [isFindingWallets, setIsFindingWallets] = useState(false);
 
     const copy = walletRecovery ? COPY_KEYS[walletRecovery.reason] : undefined;
+    const canFindWallets = !!walletRecovery && FIND_MY_WALLETS_REASONS.includes(walletRecovery.reason);
 
     return (
         <Dialog open={!!walletRecovery}>
@@ -78,13 +96,15 @@ const WalletRecoveryDialog = memo(function WalletRecoveryDialog() {
                         ) : (
                             <Stack direction="row" gap={8} justifyContent="space-between" style={{ width: '100%' }}>
                                 <Stack direction="row" gap={8}>
-                                    <Button
-                                        size="smaller"
-                                        backgroundColor="warning"
-                                        onClick={() => setIsFindingWallets(true)}
-                                    >
-                                        {t('common:find-my-wallets')}
-                                    </Button>
+                                    {canFindWallets && (
+                                        <Button
+                                            size="smaller"
+                                            backgroundColor="warning"
+                                            onClick={() => setIsFindingWallets(true)}
+                                        >
+                                            {t('common:find-my-wallets')}
+                                        </Button>
+                                    )}
                                     <Button
                                         size="smaller"
                                         backgroundColor="info"
@@ -106,7 +126,7 @@ const WalletRecoveryDialog = memo(function WalletRecoveryDialog() {
                     </Stack>
                 </Wrapper>
             </DialogContent>
-            <FindMyWalletsDialog open={isFindingWallets} onOpenChange={setIsFindingWallets} />
+            {canFindWallets && <FindMyWalletsDialog open={isFindingWallets} onOpenChange={setIsFindingWallets} />}
         </Dialog>
     );
 });
