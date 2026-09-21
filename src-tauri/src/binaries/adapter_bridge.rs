@@ -80,7 +80,9 @@ impl LatestVersionApiAdapter for BridgeTappletAdapter {
             ));
         }
 
-        Ok(expected_hash.to_string())
+        // `validate_checksum` compares against a lowercase `{:x}` digest byte for byte, so
+        // an uppercase entry (accepted by the regex above) has to be folded first.
+        Ok(expected_hash.to_ascii_lowercase())
     }
     async fn download_and_get_checksum_path(
         &self,
@@ -164,6 +166,22 @@ mod tests {
     async fn parses_sha256sum_output() {
         let file = checksum_file(
             "8d33b2e49eb7ca91684fe358db1aac1b07e4e3a87d0cae993c6f48b6a1aee97b  bridge-v0.4.2.zip\n",
+        );
+        let hash = adapter()
+            .get_expected_checksum(file.path().to_path_buf(), "bridge-v0.4.2.zip")
+            .await
+            .expect("checksum parsed");
+
+        assert_eq!(
+            hash,
+            "8d33b2e49eb7ca91684fe358db1aac1b07e4e3a87d0cae993c6f48b6a1aee97b"
+        );
+    }
+
+    #[tokio::test]
+    async fn folds_uppercase_digest_to_lowercase() {
+        let file = checksum_file(
+            "8D33B2E49EB7CA91684FE358DB1AAC1B07E4E3A87D0CAE993C6F48B6A1AEE97B  bridge-v0.4.2.zip\n",
         );
         let hash = adapter()
             .get_expected_checksum(file.path().to_path_buf(), "bridge-v0.4.2.zip")

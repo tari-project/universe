@@ -16,19 +16,23 @@
  *   - a command is on the hook's list but no longer registered      -> dead entry, and a
  *     hint that the list is being edited without being read.
  *
- * It also refuses blanket plugin matches (e.g. a bare `plugin:shell`), which would hand
- * an injected script the whole plugin surface.
+ * Plugin commands are checked the same way from the other direction: every named import
+ * from an `@tauri-apps/plugin-*` package in `src/` maps to `plugin:<plugin>|<snake_case
+ * name>` (that is how the plugin JS bindings invoke), and each of those must be on the
+ * hook's plugin allowlist. It also refuses blanket plugin matches (e.g. a bare
+ * `plugin:shell`), which would hand an injected script the whole plugin surface.
  *
  * Run directly with: node ./scripts/check-isolation-allowlist.mjs
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const MAIN_RS = resolve(repoRoot, 'src-tauri/src/main.rs');
 const HOOK_HTML = resolve(repoRoot, 'dist-isolation/index.html');
+const SRC_DIR = resolve(repoRoot, 'src');
 
 const errors = [];
 
@@ -93,6 +97,46 @@ function diff(a, b) {
     return [...a].filter((x) => !b.has(x));
 }
 
+function listSourceFiles(dir) {
+    const out = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const path = resolve(dir, entry.name);
+        if (entry.isDirectory()) {
+            out.push(...listSourceFiles(path));
+        } else if (/\.(ts|tsx)$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) {
+            out.push(path);
+        }
+    }
+    return out;
+}
+
+const snakeCase = (name) => name.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+
+/**
+ * Every `plugin:<plugin>|<command>` the frontend can issue through an `@tauri-apps/plugin-*`
+ * named import, keyed by command with the importing files as evidence. Type-only imports
+ * don't invoke anything and are skipped.
+ */
+function collectPluginCommandsFromSource(files) {
+    const used = new Map();
+    const importRe = /import\s+(?!type\s)\{([^}]*)\}\s+from\s+'@tauri-apps\/plugin-([a-z0-9-]+)'/g;
+    for (const file of files) {
+        const source = readFileSync(file, 'utf8');
+        for (const match of source.matchAll(importRe)) {
+            const [, names, plugin] = match;
+            for (const raw of names.split(',')) {
+                const spec = raw.trim();
+                if (!spec || spec.startsWith('type ')) continue;
+                const original = spec.split(/\s+as\s+/)[0].trim();
+                const cmd = `plugin:${plugin}|${snakeCase(original)}`;
+                const rel = file.slice(repoRoot.length + 1);
+                used.set(cmd, [...(used.get(cmd) ?? []), rel]);
+            }
+        }
+    }
+    return used;
+}
+
 const mainRs = read(MAIN_RS);
 const hookHtml = read(HOOK_HTML);
 
@@ -131,6 +175,18 @@ if (mainRs !== null && hookHtml !== null) {
                     '`plugin:<plugin>|<command>` string. Blanket plugin matches are not allowed.'
             );
         }
+    }
+
+    const pluginAllowedSet = new Set(pluginAllowed);
+    const pluginUsed = collectPluginCommandsFromSource(listSourceFiles(SRC_DIR));
+    const missingPlugin = [...pluginUsed.keys()].filter((cmd) => !pluginAllowedSet.has(cmd)).sort();
+    if (missingPlugin.length) {
+        errors.push(
+            `${missingPlugin.length} plugin command(s) imported in src/ but missing from ALLOWED_PLUGIN_COMMANDS ` +
+                `(they would be blocked at runtime):\n    ${missingPlugin
+                    .map((cmd) => `${cmd}  <- ${[...new Set(pluginUsed.get(cmd))].join(', ')}`)
+                    .join('\n    ')}`
+        );
     }
 
     if (!errors.length) {

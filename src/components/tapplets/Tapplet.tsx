@@ -4,25 +4,10 @@ import { useConfigUIStore, useUIStore, setError as setStoreError } from '@app/st
 import { TappletContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 import { runTappletTransaction } from '@app/store/useTappletSignerStore.ts';
 import { isAllowedExternalUrl } from '@app/utils/externalUrl.ts';
+import { getIframeOrigin } from '@app/utils/iframeOrigin.ts';
 
 interface TappletProps {
     source: string;
-}
-
-/**
- * The tapplet is served from a local http server, so its origin is exactly the origin of the
- * iframe source. Returns `null` when the source is empty or cannot be parsed, in which case no
- * message channel may be trusted.
- */
-function getTappletOrigin(source: string): string | null {
-    if (!source) return null;
-
-    try {
-        const { origin } = new URL(source);
-        return origin && origin !== 'null' ? origin : null;
-    } catch {
-        return null;
-    }
 }
 
 export const Tapplet = ({ source }: TappletProps) => {
@@ -30,7 +15,7 @@ export const Tapplet = ({ source }: TappletProps) => {
     const untrustedMessageWarned = useRef(false);
     const appLanguage = useConfigUIStore((s) => s.application_language);
     const theme = useUIStore((s) => s.theme);
-    const tappletOrigin = useMemo(() => getTappletOrigin(source), [source]);
+    const tappletOrigin = useMemo(() => getIframeOrigin(source), [source]);
 
     const openExternalLink = useCallback(async (event: MessageEvent) => {
         const url = event.data?.url;

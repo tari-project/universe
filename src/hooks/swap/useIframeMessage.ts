@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import type { RefObject } from 'react';
+import { getIframeOrigin } from '@app/utils/iframeOrigin';
 import { SelectableTokenInfo, SwapDirection, SwapStatus } from './lib/types';
 
 export enum MessageType {
@@ -101,31 +103,29 @@ export type IframeMessage =
     | ProcessingMessage;
 
 /**
- * A message is only trusted when it comes from a window we embedded ourselves - i.e. the swap
- * iframe - and when it speaks from the exact origin that iframe was pointed at. Random windows,
- * popups and nested frames are dropped.
+ * Only the swap iframe we embedded may talk to us: the message has to come from that
+ * iframe's own window and carry the exact origin the iframe was pointed at. Any other
+ * frame (including the tapplet iframe), popup or window is dropped.
  */
-function isTrustedIframeMessage(event: MessageEvent): boolean {
-    if (!event.source) return false;
+export function isTrustedIframeMessage(event: MessageEvent, iframe: HTMLIFrameElement | null): boolean {
+    if (!iframe || !event.source) return false;
 
-    const frames = Array.from(document.querySelectorAll('iframe'));
-    const sender = frames.find((frame) => frame.contentWindow && frame.contentWindow === event.source);
-    if (!sender?.src) return false;
+    const expectedOrigin = getIframeOrigin(iframe.src);
+    if (!expectedOrigin) return false;
 
-    try {
-        return event.origin === new URL(sender.src, window.location.href).origin;
-    } catch {
-        return false;
-    }
+    return event.source === iframe.contentWindow && event.origin === expectedOrigin;
 }
 
-// Hook to listen for messages from the swap iframe
-export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>) => void) {
+// Hook to listen for messages from the swap iframe owned by `iframeRef`
+export function useIframeMessage(
+    iframeRef: RefObject<HTMLIFrameElement | null>,
+    onMessage: (event: MessageEvent<IframeMessage>) => void
+) {
     const untrustedMessageWarned = useRef(false);
 
     useEffect(() => {
         function handleMessage(event: MessageEvent<IframeMessage>) {
-            if (!isTrustedIframeMessage(event)) {
+            if (!isTrustedIframeMessage(event, iframeRef.current)) {
                 if (!untrustedMessageWarned.current) {
                     untrustedMessageWarned.current = true;
                     console.warn(
@@ -140,5 +140,5 @@ export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>)
         return () => {
             window.removeEventListener('message', handleMessage);
         };
-    }, [onMessage]);
+    }, [iframeRef, onMessage]);
 }

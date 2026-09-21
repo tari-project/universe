@@ -149,6 +149,7 @@ static TXN_RATE_LIMITER: LazyLock<tokio::sync::Mutex<TransactionRateLimiter>> =
     LazyLock::new(|| tokio::sync::Mutex::new(TransactionRateLimiter::new()));
 
 struct InFlightTxn {
+    origin: SendOrigin,
     request_id: String,
     tx: tokio::sync::oneshot::Sender<TxnDialogResponse>,
 }
@@ -199,13 +200,19 @@ pub async fn gated_send(
         origin.as_str()
     );
 
-    if needs_confirmation {
-        // One dialog at a time, so concurrent requests can't race over INFLIGHT.
-        let _permit = TXN_DIALOG_GATE
-            .acquire()
-            .await
-            .map_err(|_| TransactionError::InternalError("Transaction gate closed".to_string()))?;
+    // One send at a time, held until the transaction has been signed and broadcast. This
+    // does two jobs: concurrent requests can't race over INFLIGHT, and, when a PIN is
+    // configured, the PIN prompt raised while signing is guaranteed to belong to exactly
+    // one send. The prompt is answered through a single `pin-dialog-response` event that
+    // is delivered to every listener registered at that moment, so without this permit a
+    // burst of sends would all be signed by the one PIN entry the user typed for the
+    // transaction they could see.
+    let _permit = TXN_DIALOG_GATE
+        .acquire()
+        .await
+        .map_err(|_| TransactionError::InternalError("Transaction gate closed".to_string()))?;
 
+    if needs_confirmation {
         // Rate limit check (after acquiring gate to avoid burning quota)
         if origin.enforces_rate_limit()
             && !TXN_RATE_LIMITER
@@ -223,6 +230,7 @@ pub async fn gated_send(
         {
             let mut inflight = INFLIGHT.lock().await;
             *inflight = Some(InFlightTxn {
+                origin,
                 request_id: request_id.clone(),
                 tx,
             });
@@ -306,13 +314,36 @@ pub async fn respond_to_transaction(request_id: String, approved: bool) -> Resul
     }
 }
 
-/// Clear any in-flight transaction (e.g., on server shutdown).
+/// Deny and clear any in-flight transaction dialog, whoever asked for it (used when a
+/// dialog times out or its channel is gone).
 pub async fn clear_inflight() {
     let mut inflight = INFLIGHT.lock().await;
     if let Some(txn) = inflight.take() {
-        drop(txn.tx.send(TxnDialogResponse { approved: false }));
-        warn!(target: LOG_TARGET_APP_LOGIC, "send gate: cleared in-flight transaction dialog (request_id={})", txn.request_id);
+        deny_and_log(txn);
     }
+}
+
+/// Deny and clear the in-flight transaction dialog only if it was raised by `origin`.
+///
+/// The MCP server calls this on shutdown so an agent's pending request doesn't outlive
+/// the server; an in-app send that happens to have its dialog open at the same time
+/// must not be knocked over by that.
+pub async fn clear_inflight_from(origin: SendOrigin) {
+    let mut inflight = INFLIGHT.lock().await;
+    match inflight.take() {
+        Some(txn) if txn.origin == origin => deny_and_log(txn),
+        other => *inflight = other,
+    }
+}
+
+fn deny_and_log(txn: InFlightTxn) {
+    drop(txn.tx.send(TxnDialogResponse { approved: false }));
+    warn!(
+        target: LOG_TARGET_APP_LOGIC,
+        "send gate: cleared in-flight transaction dialog (origin={}, request_id={})",
+        txn.origin.as_str(),
+        txn.request_id
+    );
 }
 
 #[cfg(test)]
@@ -417,6 +448,7 @@ mod tests {
         {
             let mut inflight = INFLIGHT.lock().await;
             *inflight = Some(InFlightTxn {
+                origin: SendOrigin::App,
                 request_id: "correct_id".to_string(),
                 tx,
             });
@@ -439,6 +471,7 @@ mod tests {
         {
             let mut inflight = INFLIGHT.lock().await;
             *inflight = Some(InFlightTxn {
+                origin: SendOrigin::App,
                 request_id: "match_id".to_string(),
                 tx,
             });
@@ -458,6 +491,7 @@ mod tests {
         {
             let mut inflight = INFLIGHT.lock().await;
             *inflight = Some(InFlightTxn {
+                origin: SendOrigin::App,
                 request_id: "deny_id".to_string(),
                 tx,
             });
@@ -510,6 +544,7 @@ mod tests {
         {
             let mut inflight = INFLIGHT.lock().await;
             *inflight = Some(InFlightTxn {
+                origin: SendOrigin::App,
                 request_id: "clear_test".to_string(),
                 tx,
             });
@@ -532,5 +567,80 @@ mod tests {
         clear_inflight().await;
 
         assert!(INFLIGHT.lock().await.is_none());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn clear_inflight_from_leaves_other_origin_alone() {
+        let (tx, mut rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
+        {
+            let mut inflight = INFLIGHT.lock().await;
+            *inflight = Some(InFlightTxn {
+                origin: SendOrigin::App,
+                request_id: "app_pending".to_string(),
+                tx,
+            });
+        }
+
+        clear_inflight_from(SendOrigin::Mcp).await;
+
+        assert!(
+            rx.try_recv().is_err(),
+            "an MCP shutdown must not answer the app's dialog"
+        );
+        let still_pending = INFLIGHT.lock().await;
+        assert_eq!(
+            still_pending.as_ref().map(|txn| txn.request_id.as_str()),
+            Some("app_pending")
+        );
+        drop(still_pending);
+
+        clear_inflight().await;
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn clear_inflight_from_denies_matching_origin() {
+        let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
+        {
+            let mut inflight = INFLIGHT.lock().await;
+            *inflight = Some(InFlightTxn {
+                origin: SendOrigin::Mcp,
+                request_id: "mcp_pending".to_string(),
+                tx,
+            });
+        }
+
+        clear_inflight_from(SendOrigin::Mcp).await;
+
+        assert!(!rx.await.expect("response delivered").approved);
+        assert!(INFLIGHT.lock().await.is_none());
+    }
+
+    // =========================================================================
+    // Gate permit
+    // =========================================================================
+
+    /// The permit must cover the whole send, not just the confirmation dialog: a second
+    /// request has to wait until the first has released it, PIN or no PIN.
+    #[tokio::test]
+    #[serial]
+    async fn gate_permit_serialises_sends() {
+        let first = TXN_DIALOG_GATE.acquire().await.expect("gate open");
+
+        let second =
+            tokio::time::timeout(Duration::from_millis(50), TXN_DIALOG_GATE.acquire()).await;
+        assert!(
+            second.is_err(),
+            "second send must block while the first holds the permit"
+        );
+
+        drop(first);
+
+        let reacquired = tokio::time::timeout(Duration::from_millis(50), TXN_DIALOG_GATE.acquire())
+            .await
+            .expect("permit released")
+            .expect("gate open");
+        drop(reacquired);
     }
 }
