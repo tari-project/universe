@@ -27,7 +27,7 @@ use std::{
 };
 
 use crate::{
-    internal_wallet::TariAddressType,
+    internal_wallet::{TariAddressType, WalletRecoveryReason},
     mining::gpu::miners::GpuCommonInformation,
     node::{node_adapter::NodeIdentity, node_manager::NodeType},
     setup::{listeners::AppModule, setup_manager::SetupPhase},
@@ -74,6 +74,7 @@ pub enum EventType {
     WalletUIModeChanged,
     #[cfg(target_os = "macos")]
     ShowKeyringDialog,
+    WalletRecoveryRequired,
     CreatePin,
     EnterPin,
     UpdateGpuDevicesSettings,
@@ -160,6 +161,17 @@ pub struct CriticalProblemPayload {
     pub title: Option<String>,
     pub description: Option<String>,
     pub error_message: Option<String>,
+}
+
+/// The app cannot vouch for the wallet and must show the recovery UI instead of running.
+///
+/// Distinct from `CriticalProblem` on purpose: a critical problem is "the app is broken", while
+/// this is "the app is fine, your wallet needs attention", and the two need different copy and
+/// different actions. The payload carries an enum-like reason only - never an error string, a
+/// path, an id or anything derived from a secret.
+#[derive(Debug, Serialize, Clone)]
+pub struct WalletRecoveryPayload {
+    pub reason: WalletRecoveryReason,
 }
 
 #[derive(Debug, Serialize, Clone)]

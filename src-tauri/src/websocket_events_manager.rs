@@ -199,12 +199,15 @@ impl WebsocketEventsManager {
             return None;
         }
 
-        // Check if wallet is initialized before trying to get address
-        if !InternalWallet::is_initialized() {
-            warn!(target: LOG_TARGET_APP_LOGIC, "Wallet has not been initialized");
-            return None;
-        }
-        let tari_address = InternalWallet::tari_address().await;
+        // Skip the message when there is no usable wallet: nothing here is worth reporting
+        // and the websocket payload is keyed on the address.
+        let tari_address = match InternalWallet::tari_address().await {
+            Ok(address) => address,
+            Err(e) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Skipping websocket mining status, wallet not available: {e}");
+                return None;
+            }
+        };
 
         let pools_config = ConfigPools::content().await;
         let gpu_pool_name = pools_config.current_gpu_pool().pool_name;

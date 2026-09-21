@@ -39,7 +39,9 @@ use crate::event_scheduler::{EventScheduler, SchedulerEventTiming, SchedulerEven
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
-use crate::internal_wallet::{InternalWallet, PaperWalletConfig, mnemonic_to_tari_cipher_seed};
+use crate::internal_wallet::{
+    InternalWallet, PaperWalletConfig, clear_wallet_recovery, mnemonic_to_tari_cipher_seed,
+};
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
@@ -635,7 +637,10 @@ pub async fn forgot_pin(
     .await
     .map_err(|e| e.to_string())?;
 
-    if extracted_wallet_details.tari_address != InternalWallet::tari_address().await {
+    let current_tari_address = InternalWallet::tari_address()
+        .await
+        .map_err(|e| e.to_string())?;
+    if extracted_wallet_details.tari_address != current_tari_address {
         error!(target: LOG_TARGET_APP_LOGIC, "Seed words do not match current wallet address");
         return Err("Seed words do not match".to_string());
     }
@@ -669,6 +674,9 @@ pub async fn import_seed_words(
             .await
             .map_err(InvokeError::from_anyhow)?;
             EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
+            // The import is the way out of the wallet recovery state: the user just proved they
+            // hold a seed and it is now in the keyring, so mining and telemetry may run again.
+            clear_wallet_recovery();
             log::info!(target: LOG_TARGET_APP_LOGIC, "Seed words imported successfully for wallet #{wallet_id:?}");
         }
         Err(e) => {

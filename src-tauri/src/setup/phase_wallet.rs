@@ -258,7 +258,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        if InternalWallet::is_internal().await {
+        if InternalWallet::is_internal().await? {
             app_state.wallet_manager.reset_initial_scan_completed();
             app_state
                 .wallet_manager

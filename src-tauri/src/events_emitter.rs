@@ -25,7 +25,8 @@ use crate::configs::config_pools::ConfigPoolsContent;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
     ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
-    InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload, WalletStatusUpdatePayload,
+    InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload, WalletRecoveryPayload,
+    WalletStatusUpdatePayload,
 };
 use crate::internal_wallet::TariAddressType;
 use crate::mining::MinerControlsState;
@@ -160,6 +161,23 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit CriticalProblem event: {e:?}");
+        }
+    }
+
+    /// Tell the frontend to show the wallet recovery UI. Deliberately separate from
+    /// `emit_critical_problem`: the app is still usable (settings, log export, support bundle),
+    /// only the wallet needs attention.
+    pub async fn emit_wallet_recovery_required(payload: WalletRecoveryPayload) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::WalletRecoveryRequired,
+            payload,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletRecoveryRequired event: {e:?}");
         }
     }
 

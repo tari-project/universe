@@ -1,0 +1,80 @@
+import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { CircularProgress } from '@app/components/elements/CircularProgress';
+import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
+import { Stack } from '@app/components/elements/Stack';
+import { Typography } from '@app/components/elements/Typography';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { useErrorDialogsButtonsLogic } from '@app/hooks/app/useErrorDialogsButtonsLogic';
+import { useAppStateStore } from '@app/store/appStateStore';
+import { setIsSettingsOpen } from '@app/store';
+import { WalletRecoveryReason } from '@app/types/events-payloads.ts';
+
+import { TextWrapper, Wrapper } from './styles.ts';
+
+/**
+ * Copy per recovery reason. The backend never sends a message, only an enum-like reason, so the
+ * wording (and therefore the redaction) lives entirely here: no path, id or error string from the
+ * backend can reach the screen through this dialog.
+ */
+const COPY_KEYS: Record<WalletRecoveryReason, { title: string; description: string }> = {
+    initialization_failed: {
+        title: 'common:wallet-recovery-init-failed-title',
+        description: 'common:wallet-recovery-init-failed-description',
+    },
+    seed_unavailable: {
+        title: 'common:wallet-recovery-seed-unavailable-title',
+        description: 'common:wallet-recovery-seed-unavailable-description',
+    },
+};
+
+/**
+ * Shown when the app cannot vouch for the wallet. Deliberately not `CriticalProblemDialog`: the
+ * app is not broken, so the primary action is "open settings" (where the user can export logs and
+ * send a support bundle) rather than "restart" or "quit". Telemetry is not running and neither
+ * miner will start while this is up; both are gated in the backend.
+ */
+const WalletRecoveryDialog = memo(function WalletRecoveryDialog() {
+    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const walletRecovery = useAppStateStore((s) => s.walletRecovery);
+    const { isExiting, handleClose, handleRestart } = useErrorDialogsButtonsLogic();
+
+    const copy = walletRecovery ? COPY_KEYS[walletRecovery.reason] : undefined;
+
+    return (
+        <Dialog open={!!walletRecovery}>
+            <DialogContent>
+                <Wrapper>
+                    <TextWrapper>
+                        <Typography variant="h3">{t(copy?.title || 'common:wallet-recovery-title')}</Typography>
+                        <Typography variant="p">
+                            {t(copy?.description || 'common:wallet-recovery-description')}
+                        </Typography>
+                    </TextWrapper>
+                    <Stack direction="row" justifyContent="center" gap={8}>
+                        {isExiting ? (
+                            <CircularProgress />
+                        ) : (
+                            <Stack direction="row" gap={8} justifyContent="space-between" style={{ width: '100%' }}>
+                                <Button size="smaller" backgroundColor="info" onClick={() => setIsSettingsOpen(true)}>
+                                    {t('settings:settings')}
+                                </Button>
+                                <Stack direction="row" gap={8} justifyContent="space-around">
+                                    <Button backgroundColor="error" size="smaller" onClick={handleClose}>
+                                        {t('close-tari-universe')}
+                                    </Button>
+                                    <Button backgroundColor="warning" size="smaller" onClick={handleRestart}>
+                                        {t('restart')}
+                                    </Button>
+                                </Stack>
+                            </Stack>
+                        )}
+                    </Stack>
+                </Wrapper>
+            </DialogContent>
+        </Dialog>
+    );
+});
+
+export default WalletRecoveryDialog;

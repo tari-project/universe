@@ -110,10 +110,16 @@ fn internal_wallet_is_initialized_before_set() {
     );
 }
 
+/// `current()` is fallible so that a missing wallet cannot take down whichever task touched it
+/// first. Before initialisation it must return the error, not panic.
 #[test]
-#[should_panic(expected = "InternalWallet is not initialized")]
-fn current_panics_before_initialization() {
-    let _ = InternalWallet::current();
+fn current_returns_error_before_initialization() {
+    let error = InternalWallet::current()
+        .expect_err("current() must fail before the wallet is initialized");
+    assert_eq!(
+        error.to_string(),
+        super::internal_wallet::WALLET_NOT_INITIALIZED
+    );
 }
 
 // --- Redaction of the wallet view private key (GHSA-3wv6-9vwg-865r) ---
@@ -280,4 +286,165 @@ fn wipe_and_remove_file_unlinks_symlink_without_touching_target() {
     );
 
     std::fs::remove_file(&target).expect("clean up target");
+}
+
+// --- Startup keyring probe (kmbt) ---------------------------------------------------------
+//
+// The probe itself needs a live keyring, but its two decisions do not: whether to run at all
+// (macOS rate limiting) and how to classify a failure. Both are pure functions and are what the
+// user-visible behaviour hangs off, so both are covered here.
+
+use super::credential_manager::CredentialError;
+use super::internal_wallet::{
+    SeedProbeDecision, SeedProbeErrorKind, SeedProbeOutcome, WalletRecoveryReason,
+    classify_seed_probe_error, decide_seed_probe, ensure_wallet_usable, wallet_usability,
+};
+
+const DAY: u64 = 60 * 60 * 24;
+
+#[test]
+fn probe_runs_every_launch_when_not_rate_limited() {
+    // Windows and Linux: the read is silent, so a recent probe must not stop the next one.
+    assert_eq!(
+        decide_seed_probe(false, Some(1_000), 1_001, DAY),
+        SeedProbeDecision::Run
+    );
+    assert_eq!(
+        decide_seed_probe(false, None, 1_001, DAY),
+        SeedProbeDecision::Run
+    );
+}
+
+#[test]
+fn probe_runs_on_first_launch_when_rate_limited() {
+    // macOS with no marker yet: probe once so a missing seed is still found at launch.
+    assert_eq!(
+        decide_seed_probe(true, None, 10 * DAY, DAY),
+        SeedProbeDecision::Run
+    );
+}
+
+#[test]
+fn probe_is_skipped_within_the_interval_when_rate_limited() {
+    // The point of the limit: a user who chose "Allow" is not re-prompted on every launch.
+    assert_eq!(
+        decide_seed_probe(true, Some(10 * DAY), 10 * DAY + 1, DAY),
+        SeedProbeDecision::Skip
+    );
+    assert_eq!(
+        decide_seed_probe(true, Some(10 * DAY), 11 * DAY - 1, DAY),
+        SeedProbeDecision::Skip
+    );
+}
+
+#[test]
+fn probe_runs_again_once_the_interval_elapsed() {
+    assert_eq!(
+        decide_seed_probe(true, Some(10 * DAY), 11 * DAY, DAY),
+        SeedProbeDecision::Run
+    );
+}
+
+#[test]
+fn probe_runs_when_the_marker_is_in_the_future() {
+    // A clock moved backwards must not lock the check out until the clock catches up.
+    assert_eq!(
+        decide_seed_probe(true, Some(100 * DAY), 10 * DAY, DAY),
+        SeedProbeDecision::Run
+    );
+}
+
+#[test]
+fn no_entry_is_always_reported_as_unavailable() {
+    // The "my seeds are gone" case: report it on every platform, macOS included.
+    let error = CredentialError::NoEntry("inner_wallet_credentials_esme_abc123".to_string());
+    assert_eq!(
+        classify_seed_probe_error(&error, false),
+        SeedProbeOutcome::Unavailable(SeedProbeErrorKind::NoEntry)
+    );
+    assert_eq!(
+        classify_seed_probe_error(&error, true),
+        SeedProbeOutcome::Unavailable(SeedProbeErrorKind::NoEntry)
+    );
+}
+
+#[test]
+fn keyring_platform_failure_is_unavailable_off_macos_and_inconclusive_on_macos() {
+    // Windows: VaultSvc down or credentials wiped - a real signal, report it.
+    // macOS: the same variant is what a cancelled or denied keychain prompt looks like, and a
+    // user declining a prompt must never reach Sentry.
+    let error = CredentialError::Keyring(keyring::Error::PlatformFailure(Box::new(
+        std::io::Error::other("vault unavailable"),
+    )));
+    assert_eq!(
+        classify_seed_probe_error(&error, false),
+        SeedProbeOutcome::Unavailable(SeedProbeErrorKind::KeyringPlatform)
+    );
+    assert_eq!(
+        classify_seed_probe_error(&error, true),
+        SeedProbeOutcome::Inconclusive(SeedProbeErrorKind::KeyringPlatform)
+    );
+}
+
+#[test]
+fn locked_credential_store_classifies_as_a_platform_failure() {
+    let error = CredentialError::Keyring(keyring::Error::NoStorageAccess(Box::new(
+        std::io::Error::other("collection is locked"),
+    )));
+    assert_eq!(
+        classify_seed_probe_error(&error, false),
+        SeedProbeOutcome::Unavailable(SeedProbeErrorKind::KeyringPlatform)
+    );
+}
+
+#[test]
+fn other_keyring_errors_are_reported_as_keyring_other() {
+    let error = CredentialError::Keyring(keyring::Error::Invalid(
+        "service".to_string(),
+        "empty".to_string(),
+    ));
+    assert_eq!(
+        classify_seed_probe_error(&error, true),
+        SeedProbeOutcome::Unavailable(SeedProbeErrorKind::KeyringOther)
+    );
+}
+
+#[test]
+fn probe_error_tags_are_enum_like_and_carry_no_user_data() {
+    // These strings go into Sentry tags, so they must be a fixed, closed set.
+    for (kind, tag) in [
+        (SeedProbeErrorKind::NoEntry, "no_entry"),
+        (SeedProbeErrorKind::KeyringPlatform, "keyring_platform"),
+        (SeedProbeErrorKind::KeyringOther, "keyring_other"),
+        (SeedProbeErrorKind::Io, "io"),
+        (SeedProbeErrorKind::Decode, "decode"),
+    ] {
+        assert_eq!(kind.as_tag(), tag);
+    }
+}
+
+#[test]
+fn mining_is_allowed_while_the_app_is_not_in_recovery() {
+    // The guarded callers: with no recovery state set (the default in a test binary) the gate
+    // must not stand in the way of a normal start.
+    assert!(ensure_wallet_usable().is_ok());
+    assert!(wallet_usability(None).is_ok());
+}
+
+#[test]
+fn mining_is_refused_in_every_recovery_state() {
+    // Both miners call this before doing any work, so both recovery reasons must refuse.
+    for reason in [
+        WalletRecoveryReason::InitializationFailed,
+        WalletRecoveryReason::SeedUnavailable,
+    ] {
+        let error = wallet_usability(Some(reason))
+            .expect_err("mining must be refused while the wallet needs recovery");
+        assert!(
+            matches!(error, crate::mining::MiningError::WalletNotReady),
+            "unexpected error for {reason:?}"
+        );
+        // The reason is an enum-like tag, fit for a log line or a Sentry tag.
+        assert!(!reason.as_tag().is_empty());
+    }
 }

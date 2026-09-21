@@ -2,6 +2,7 @@ import {
     BackgroundNodeSyncUpdatePayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
+    WalletRecoveryPayload,
     DetectedDevicesPayload,
     GpuMiner,
     GpuMinerType,
@@ -173,6 +174,10 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ShowKeyringDialog';
           payload: undefined;
+      }
+    | {
+          event_type: 'WalletRecoveryRequired';
+          payload: WalletRecoveryPayload;
       }
     | {
           event_type: 'CreatePin';

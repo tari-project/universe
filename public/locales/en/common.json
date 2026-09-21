@@ -53,6 +53,12 @@
   "version": "Version",
   "versions": "Versions",
   "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
+  "wallet-recovery-description": "Tari Universe could not verify your wallet. Mining and telemetry are paused until this is resolved. Open Settings to export your logs or contact support.",
+  "wallet-recovery-init-failed-description": "Tari Universe could not open your wallet, so it has not started mining. Nothing has been changed or deleted. Open Settings to export your logs, or restore your wallet with your seed words.",
+  "wallet-recovery-init-failed-title": "Wallet could not be opened",
+  "wallet-recovery-seed-unavailable-description": "Your wallet's seed could not be read from this computer's secure storage, so sending and seed word backup are unavailable and mining is paused. Nothing has been changed or deleted. Open Settings to export your logs, or restore your wallet with your seed words.",
+  "wallet-recovery-seed-unavailable-title": "Wallet seed is unavailable",
+  "wallet-recovery-title": "Wallet needs attention",
   "webgl-not-supported": "WebGL not supported. Disabled visual mode.",
   "xtm": "XTM"
 }

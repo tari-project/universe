@@ -29,6 +29,7 @@ import {
     handleShowRelesaeNotes,
     loadSystemDependencies,
     handleCriticalProblemEvent,
+    setWalletRecovery,
     setCriticalError,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
@@ -245,6 +246,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ShowKeyringDialog':
                             setDialogToShow('keychain');
+                            break;
+                        case 'WalletRecoveryRequired':
+                            setWalletRecovery(event.payload);
                             break;
                         case 'CreatePin':
                             useSecurityStore.setState({ modal: 'create_pin' });
