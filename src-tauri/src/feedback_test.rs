@@ -41,6 +41,9 @@ const REFRESH_TOKEN_SENTINEL: &str = "refresh_token_sentinel";
 const VIEW_KEY_SENTINEL: &str = "view_key_sentinel";
 const MCP_BEARER_SENTINEL: &str = "mcp_bearer_sentinel";
 const LEGACY_WALLET_SENTINEL: &str = "legacy_wallet_sentinel";
+/// An OS user name embedded in an absolute path inside a log line. It is not a
+/// config secret, but uploaded logs must not identify the user either.
+const USERNAME_SENTINEL: &str = "doxxed_user_name";
 
 const SENTINELS: [&str; 5] = [
     AIRDROP_TOKEN_SENTINEL,
@@ -102,7 +105,10 @@ fn setup_app_dirs(root: &Path) -> std::io::Result<std::path::PathBuf> {
 
     fs::write(
         logs_dir.join("universe.log"),
-        "INFO harmless log line, nothing secret here\n",
+        format!(
+            "INFO harmless log line, nothing secret here\n\
+             INFO config path: \"C:\\\\Users\\\\{USERNAME_SENTINEL}\\\\AppData\\\\Local\\\\com.tari.universe\"\n"
+        ),
     )?;
     // A bundle left behind by a failed upload must not be nested into the next one.
     fs::write(
@@ -206,6 +212,21 @@ fn support_archive_contains_no_config_files_or_secrets() {
         contents.names.contains(&"logs/universe.log".to_string()),
         "log file missing from archive: {:?}",
         contents.names
+    );
+    // ...with the OS user name scrubbed out of any absolute paths they contain...
+    let (_, log_bytes) = contents
+        .files
+        .iter()
+        .find(|(name, _)| name == "logs/universe.log")
+        .expect("log member present");
+    let log_text = String::from_utf8_lossy(log_bytes);
+    assert!(
+        !log_text.contains(USERNAME_SENTINEL),
+        "OS user name leaked into archived log: {log_text}"
+    );
+    assert!(
+        log_text.contains("C:\\\\Users\\\\<user>\\\\AppData"),
+        "scrubbed path placeholder missing from archived log: {log_text}"
     );
     // ...but a stale bundle from a failed upload is not nested into this one,
     // and neither is the archive being written.

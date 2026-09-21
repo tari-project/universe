@@ -44,6 +44,7 @@ use crate::configs::config_ui::ConfigUI;
 use crate::configs::config_wallet::ConfigWallet;
 use crate::configs::trait_config::ConfigImpl;
 use crate::utils::file_utils::{make_relative_path, path_as_string};
+use crate::utils::log_path_scrub::scrub_user_paths_bytes;
 
 const MAX_FILE_SIZE: u64 = 100 * 1024 * 1024; // 100MB in bytes
 /// Path of the diagnostics document inside the support archive.
@@ -264,7 +265,7 @@ fn zip_create_from_directories(
                     let prefixed_path =
                         format!("{}/{}", folder_name, path_as_string(&relative_path));
                     zip.start_file(prefixed_path, file_options)?;
-                    zip.write_all(buffer.as_ref())?;
+                    zip.write_all(&scrub_user_paths_bytes(&buffer))?;
                     buffer.clear();
                 } else if entry_metadata.is_dir() {
                     let relative_path = make_relative_path(directory, &entry_path);

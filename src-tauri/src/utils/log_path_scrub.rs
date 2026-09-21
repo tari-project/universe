@@ -107,7 +107,9 @@ fn scrub_inner(input: &[u8]) -> Option<Vec<u8>> {
 /// Replaces the username in any home-directory path with `<user>`.
 ///
 /// Returns [`Cow::Borrowed`] when the input contains nothing to scrub.
-#[allow(dead_code)] // wired into the support bundle archiver
+/// The archiver works on raw file bytes via [`scrub_user_paths_bytes`]; this
+/// string form exists for tests and any future caller holding a `&str`.
+#[cfg(test)]
 pub fn scrub_user_paths(input: &str) -> Cow<'_, str> {
     match scrub_inner(input.as_bytes()) {
         None => Cow::Borrowed(input),
@@ -126,7 +128,6 @@ pub fn scrub_user_paths(input: &str) -> Cow<'_, str> {
 /// Invalid byte sequences are preserved verbatim; only username segments are
 /// rewritten. Returns [`Cow::Borrowed`] when the input contains nothing to
 /// scrub.
-#[allow(dead_code)] // wired into the support bundle archiver
 pub fn scrub_user_paths_bytes(input: &[u8]) -> Cow<'_, [u8]> {
     match scrub_inner(input) {
         None => Cow::Borrowed(input),
