@@ -53,6 +53,8 @@
   "version": "Version",
   "versions": "Versions",
   "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
+  "wallet-recovery-config-corrupted-description": "Tari Universe could not read your wallet settings file, so it did not open your wallet and did not create a new one. The damaged file was kept as config_wallet.json.corrupted.<timestamp> and a config_wallet.json.recovery_required marker keeps this screen up until valid settings are restored. Your seed words are untouched in this computer's secure storage. Mining and telemetry are paused. Open Settings to export your logs, or restore your wallet with your seed words.",
+  "wallet-recovery-config-corrupted-title": "Wallet settings could not be read",
   "wallet-recovery-description": "Tari Universe could not verify your wallet. Mining and telemetry are paused until this is resolved. Open Settings to export your logs or contact support.",
   "wallet-recovery-init-failed-description": "Tari Universe could not open your wallet, so it has not started mining. Nothing has been changed or deleted. Open Settings to export your logs, or restore your wallet with your seed words.",
   "wallet-recovery-init-failed-title": "Wallet could not be opened",

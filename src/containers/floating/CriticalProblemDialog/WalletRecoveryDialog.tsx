@@ -27,6 +27,14 @@ const COPY_KEYS: Record<WalletRecoveryReason, { title: string; description: stri
         title: 'common:wallet-recovery-seed-unavailable-title',
         description: 'common:wallet-recovery-seed-unavailable-description',
     },
+    // The wallet config could not be parsed and neither could its backup. The copy names the two
+    // files the backend leaves behind (`config_wallet.json.corrupted.<ts>` and
+    // `config_wallet.json.recovery_required`) and says outright that no new wallet was created,
+    // because "my wallet is empty" is what this state looks like from the outside.
+    config_corrupted: {
+        title: 'common:wallet-recovery-config-corrupted-title',
+        description: 'common:wallet-recovery-config-corrupted-description',
+    },
 };
 
 /**
