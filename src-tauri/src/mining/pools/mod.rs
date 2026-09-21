@@ -37,7 +37,7 @@ pub mod gpu_pool_manager;
 pub mod pools_manager;
 
 #[derive(Clone, Debug, Serialize, Default)]
-pub(crate) struct PoolStatus {
+pub struct PoolStatus {
     pub accepted_shares: u64,
     pub unpaid: f64,
     pub balance: f64,

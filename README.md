@@ -34,8 +34,17 @@ Open the `.dmg` file and drag Tari Universe to your Applications folder.
 
 #### On Linux
 
-Official prebuilt binaries are not currently distributed for Linux. Please see the
-[Building from source](#building-from-source) section below to compile and run on Linux.
+> **Linux is community supported.** The Tari Core team does not officially support
+> the Linux build, it's maintained by contributors. Hit a problem? Please
+> [open an issue](https://github.com/tari-project/universe/issues), but
+> preferably a PR.
+
+The suggested way to run Tari Universe on Linux is the **Flatpak** package. One
+runtime works across distros, and both CPU and GPU mining stay intact. Full build
+and install steps live in [`flatpak/README.md`](flatpak/README.md).
+
+Prefer to run the app directly? The [Building from source](#building-from-source)
+steps below still work.
 
 ### Run
 

@@ -1,0 +1,123 @@
+name: Flatpak
+
+# Builds a Linux Flatpak bundle of Tari Universe and (on release) attaches it as
+# a release asset. Designed to need zero per-release maintenance:
+#   * the manifest builds the checked-out tree (no pinned commit/version), and
+#   * the offline cargo/npm sources are regenerated here from this commit's
+#     lockfiles, so they can never drift out of sync with a release.
+#
+# Standalone — does not touch the existing release pipeline. It produces a
+# sideload bundle (`flatpak install <file>.flatpak`); it does not auto-update.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to build (default: current branch)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write # upload the bundle to the triggering release
+
+concurrency:
+  group: flatpak-${{ github.event.inputs.ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flatpak:
+    name: Flatpak (x86_64)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Install Flatpak tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder python3-venv python3-pip jq
+          # yq: used below to apply the production identity, the same way
+          # release.yml does (single source of truth for the prod naming).
+          sudo bash ./scripts/check-get-yq.sh
+          flatpak remote-add --if-not-exists --user flathub \
+            https://dl.flathub.org/repo/flathub.flatpakrepo
+
+      # Caches downloaded git/crate/npm sources + the build tree across runs.
+      # Keyed on the lockfiles so it busts exactly when dependencies change.
+      - name: Cache flatpak-builder state
+        uses: actions/cache@v4
+        with:
+          path: flatpak/.flatpak-builder
+          key: flatpak-builder-${{ hashFiles('Cargo.lock', 'pnpm-lock.yaml') }}
+          restore-keys: |
+            flatpak-builder-
+
+      # Regenerate the vendored offline sources from THIS commit's lockfiles.
+      # This is what keeps the build correct for every future release without
+      # anyone having to hand-update the committed *-sources.json files.
+      - name: Regenerate offline dependency sources
+        run: ./flatpak/generate-sources.sh
+
+      # Apply the production identity + AppStream release metadata to the working
+      # tree BEFORE flatpak-builder copies it (the manifest's app source is
+      # `type: dir` over this checkout). Source files keep their Alpha/local
+      # defaults; the strip lives only here, so a local build stays Alpha and we
+      # never hand-maintain the production naming or the metainfo version/date.
+      - name: Set production identity and release metadata
+        env:
+          RELEASE_DATE: ${{ github.event.release.published_at }}
+        run: |
+          set -euo pipefail
+          conf=src-tauri/tauri.conf.json
+          VERSION="$(jq -r .version "$conf")"
+
+          # Mirror release.yml's "RELEASE Builds" yq rewrite (Linux naming) so the
+          # production identity has a single source of truth.
+          yq eval ".productName = \"tari_universe\"" --output-format=json -i "$conf"
+          yq eval ".mainBinaryName = \"tari_universe\"" --output-format=json -i "$conf"
+          yq eval ".identifier = \"com.tari.universe\"" --output-format=json -i "$conf"
+          yq eval ".app.windows[0].title = \"Tari Universe v${VERSION}\"" --output-format=json -i "$conf"
+
+          # AppStream <release>: derive version + date from the build rather than
+          # hand-editing the metainfo each release (it would otherwise drift from
+          # tauri.conf.json). On a release event use its publish date; otherwise
+          # today's UTC date.
+          DATE="${RELEASE_DATE%%T*}"
+          [ -n "$DATE" ] || DATE="$(date -u +%F)"
+          sed -i -E "s|<release version=\"[^\"]*\" date=\"[^\"]*\"[[:space:]]*/>|<release version=\"${VERSION}\" date=\"${DATE}\"/>|" \
+            flatpak/com.tari.universe.metainfo.xml
+
+          echo "Production identity set to com.tari.universe; release v${VERSION} (${DATE})"
+          grep -n '<release' flatpak/com.tari.universe.metainfo.xml
+
+      - name: Build Flatpak
+        working-directory: flatpak
+        run: |
+          flatpak-builder --user --install-deps-from=flathub --force-clean \
+            --state-dir=.flatpak-builder --repo=repo \
+            build-dir com.tari.universe.yml
+
+      - name: Bundle .flatpak
+        working-directory: flatpak
+        run: |
+          VERSION="$(jq -r .version ../src-tauri/tauri.conf.json)"
+          OUT="tari-universe-${VERSION}-x86_64.flatpak"
+          flatpak build-bundle repo "${OUT}" com.tari.universe
+          echo "OUT=${OUT}" >> "$GITHUB_ENV"
+          echo "BUNDLE=flatpak/${OUT}" >> "$GITHUB_ENV"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ env.OUT }}
+          path: ${{ env.BUNDLE }}
+          if-no-files-found: error
+
+      - name: Attach to release
+        if: github.event_name == 'release'
+        run: gh release upload "${{ github.event.release.tag_name }}" "${{ env.BUNDLE }}" --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
