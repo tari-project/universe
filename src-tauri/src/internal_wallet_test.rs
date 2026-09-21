@@ -489,12 +489,11 @@ fn mining_is_refused_in_every_recovery_state() {
 
 use super::credential_manager::LegacyCredential;
 use super::internal_wallet::{
-    LEGACY_DECRYPT_FAILED_SUFFIX, LEGACY_FALLBACK_FILE_NAME, LEGACY_MIGRATED_SUFFIX,
-    LEGACY_WALLET_CONFIG_FILE_NAME, LegacyConfigProblemKind, LegacyDecryptErrorKind,
-    LegacyFileKind, LegacyPassphraseSource, LegacyPurgeDecision, LegacySeedProof,
-    LegacyWalletEvidence, decrypt_legacy_tari_seed, get_old_wallet_config,
-    legacy_passphrase_candidates, legacy_purge_decision, locate_legacy_wallet,
-    quarantine_legacy_file, quarantined_path,
+    LEGACY_DECRYPT_FAILED_SUFFIX, LEGACY_FALLBACK_FILE_NAME, LEGACY_WALLET_CONFIG_FILE_NAME,
+    LegacyConfigProblemKind, LegacyDecryptErrorKind, LegacyFileKind, LegacyPassphraseSource,
+    LegacyPurgeDecision, LegacySeedProof, LegacyWalletEvidence, decrypt_legacy_tari_seed,
+    get_old_wallet_config, legacy_passphrase_candidates, legacy_purge_decision,
+    locate_legacy_wallet, quarantine_legacy_file, quarantined_path,
 };
 use tari_utilities::encoding::MBase58;
 
@@ -762,14 +761,14 @@ fn quarantining_never_overwrites_an_earlier_quarantined_file() {
     let dir = tempfile::tempdir().expect("temp dir");
     let path = dir.path().join(LEGACY_WALLET_CONFIG_FILE_NAME);
     std::fs::write(&path, b"first").expect("write the first fixture");
-    quarantine_legacy_file(&path, LEGACY_MIGRATED_SUFFIX).expect("first quarantine");
+    quarantine_legacy_file(&path, LEGACY_DECRYPT_FAILED_SUFFIX).expect("first quarantine");
 
     std::fs::write(&path, b"second").expect("write the second fixture");
-    let second = quarantine_legacy_file(&path, LEGACY_MIGRATED_SUFFIX)
+    let second = quarantine_legacy_file(&path, LEGACY_DECRYPT_FAILED_SUFFIX)
         .expect("second quarantine")
         .expect("the file was there");
 
-    let first = quarantined_path(&path, LEGACY_MIGRATED_SUFFIX);
+    let first = quarantined_path(&path, LEGACY_DECRYPT_FAILED_SUFFIX);
     assert_ne!(second, first);
     assert_eq!(std::fs::read(&first).expect("read the first"), b"first");
     assert_eq!(std::fs::read(&second).expect("read the second"), b"second");
@@ -870,34 +869,57 @@ fn purge_proceeds_when_the_passphrase_can_no_longer_open_anything() {
     );
 }
 
+/// A proven-migrated legacy wallet leaves nothing behind. An Era-1 `wallet_config.json` carries
+/// the passphrase in the same document as the seed it opens, so a renamed copy is self-decrypting
+/// recovery material; the purge only runs once the seed is proven to be in the credential store.
 #[test]
-fn the_enciphered_legacy_config_is_renamed_while_the_plaintext_file_is_destroyed() {
-    // The two files get different treatment on purpose: `wallet_config.json` is enciphered and
-    // may be the last copy of a seed, `credentials_backup.bin` is plaintext CBOR.
+fn both_legacy_files_are_destroyed_once_the_migration_is_proven() {
     let dir = tempfile::tempdir().expect("temp dir");
     let seed_base58 = enciphered_legacy_seed(Some("passphrase"));
-    let config =
-        write_legacy_wallet_config(dir.path(), &legacy_wallet_config_json(&seed_base58, None));
+    let config = write_legacy_wallet_config(
+        dir.path(),
+        &legacy_wallet_config_json(&seed_base58, Some("passphrase")),
+    );
     let fallback = dir.path().join(LEGACY_FALLBACK_FILE_NAME);
     std::fs::write(&fallback, b"PLAINTEXT-CBOR-CREDENTIAL").expect("write the fallback fixture");
 
-    quarantine_legacy_file(&config, LEGACY_MIGRATED_SUFFIX).expect("rename the legacy config");
+    assert!(wipe_and_remove_file(&config).expect("wipe the legacy wallet config"));
     assert!(wipe_and_remove_file(&fallback).expect("wipe the plaintext credential file"));
 
-    assert!(!config.exists(), "the migration path must be clear");
+    assert!(!config.exists(), "the enciphered seed must be gone");
     assert!(
         !fallback.exists(),
         "the plaintext credential file must be gone"
     );
-    let migrated = quarantined_path(&config, LEGACY_MIGRATED_SUFFIX);
-    assert!(
-        migrated.exists(),
-        "the enciphered seed must be kept, not destroyed"
+    // Nothing is renamed aside, either: a `.migrated` copy would carry both the enciphered seed
+    // and the passphrase that opens it.
+    let leftovers: Vec<_> = std::fs::read_dir(dir.path())
+        .expect("read the directory")
+        .flatten()
+        .map(|entry| entry.file_name().to_string_lossy().into_owned())
+        .collect();
+    assert!(leftovers.is_empty(), "left behind: {leftovers:?}");
+}
+
+/// The undecryptable case is the opposite trade-off: the quarantined file is the only copy of a
+/// seed nothing here could read, so it is kept despite carrying its own passphrase.
+#[test]
+fn an_undecryptable_legacy_config_is_kept_rather_than_destroyed() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let seed_base58 = enciphered_legacy_seed(Some("passphrase"));
+    let config = write_legacy_wallet_config(
+        dir.path(),
+        &legacy_wallet_config_json(&seed_base58, Some("passphrase")),
     );
+
+    let quarantined = quarantine_legacy_file(&config, LEGACY_DECRYPT_FAILED_SUFFIX)
+        .expect("quarantine")
+        .expect("the file was there");
+
+    assert!(!config.exists(), "the migration path must be clear");
     assert!(
-        String::from_utf8_lossy(&std::fs::read(&migrated).expect("read the renamed config"))
-            .contains(&seed_base58),
-        "the renamed file must still carry the enciphered seed"
+        String::from_utf8_lossy(&std::fs::read(&quarantined).expect("read it"))
+            .contains(&seed_base58)
     );
 }
 

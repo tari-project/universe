@@ -754,6 +754,27 @@ impl InternalWallet {
             .unwrap_or_else(|| WalletId::new(MONERO_WALLET_ID_LEGACY.to_string()))
     }
 
+    /// Are these exact seed bytes stored under one of this app's Monero credential ids?
+    ///
+    /// The purge gate's proof that destroying `credentials_backup.bin` does not take the last
+    /// copy of a Monero seed with it. Walks the id sequence and compares bytes: an entry that is
+    /// PIN-enciphered, or that the store will not hand over, cannot be compared and so proves
+    /// nothing, which leaves the answer `false` and the files where they are.
+    async fn monero_seed_is_in_the_store(monero_seed: &[u8]) -> bool {
+        let mut candidate = WalletId::new(MONERO_WALLET_ID_LEGACY.to_string());
+        for _ in 0..MONERO_WALLET_ID_MAX_VERSIONS {
+            if let Ok(credential) = CredentialManager::new_default(candidate.clone())
+                .get_credentials()
+                .await
+                && credential.encrypted_seed == monero_seed
+            {
+                return true;
+            }
+            candidate = next_monero_wallet_id(&candidate);
+        }
+        false
+    }
+
     /// The first Monero id in the sequence that holds nothing, starting from the linked one.
     ///
     /// An id whose readability cannot be determined counts as taken: the point is never to write
@@ -1537,9 +1558,12 @@ impl InternalWallet {
             }
         }
 
-        // If the legacy file carried a Monero seed, the migrated Monero entry must be readable too.
-        // The gate fails closed: an unreadable or undecodable file may still hold the only copy of
-        // the Monero seed, so only a genuinely empty file skips the keyring check.
+        // If the legacy file carries a Monero seed, that seed itself must be somewhere in the
+        // credential store. Reading the currently linked Monero entry only proves that *some*
+        // seed is there - after a "forgot PIN" recovery or a config replacement it is a
+        // different one - so the bytes are compared instead. The gate fails closed: an
+        // unreadable or undecodable file may still hold the only copy, so only a genuinely
+        // empty file skips the check.
         if fallback_file.exists() {
             let bytes = match std::fs::read(&fallback_file) {
                 Ok(bytes) => bytes,
@@ -1556,16 +1580,10 @@ impl InternalWallet {
                         return;
                     }
                 };
-                // The id the config points at, not the literal `monero`: a wallet whose Monero
-                // seed was re-generated lives under `monero_2` or later, and checking the
-                // unversioned entry would either pass on a seed this wallet no longer uses or
-                // fail on one that was never written.
-                let monero_wallet_id = InternalWallet::monero_wallet_id().await;
-                if legacy_credential.monero_seed.is_some()
-                    && let Err(e) =
-                        InternalWallet::get_credentials(app_handle, monero_wallet_id, true).await
+                if let Some(monero_seed) = legacy_credential.monero_seed
+                    && !InternalWallet::monero_seed_is_in_the_store(&monero_seed).await
                 {
-                    log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, Monero keyring entry not readable: {e}");
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, the legacy Monero seed is not in the credential store");
                     return;
                 }
             }
@@ -1633,17 +1651,19 @@ impl InternalWallet {
             LegacyPurgeDecision::Purge => {}
         }
 
-        // `wallet_config.json` is renamed, not destroyed: it holds an *enciphered* seed, the
-        // rename is reversible by the user and by support, and the file is worthless once the
-        // passphrase next to it is gone. `credentials_backup.bin` is plaintext CBOR and keeps the
-        // zero-fill-and-unlink treatment.
-        match quarantine_legacy_file(&legacy_wallet_config, LEGACY_MIGRATED_SUFFIX) {
-            Ok(Some(_)) => {
-                log::info!(target: LOG_TARGET_APP_LOGIC, "Renamed the migrated legacy wallet config out of the migration path");
+        // Both files are destroyed, not renamed. `wallet_config.json` holds an enciphered seed
+        // *and*, for Era-1 files, the passphrase that opens it in the same document, so a
+        // renamed copy is self-decrypting recovery material sitting on disk for anything that
+        // can read the directory. Everything above has already proven the seed is in the
+        // credential store and derives an address this config owns, so there is nothing left
+        // here worth keeping.
+        match wipe_and_remove_file(&legacy_wallet_config) {
+            Ok(true) => {
+                log::info!(target: LOG_TARGET_APP_LOGIC, "Removed the migrated legacy wallet config");
             }
-            Ok(None) => {}
+            Ok(false) => {}
             Err(e) => {
-                log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not rename the legacy wallet config: {e}");
+                log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not remove the legacy wallet config: {e}");
             }
         }
         match wipe_and_remove_file(&fallback_file) {
@@ -2793,10 +2813,12 @@ pub(crate) const LEGACY_WALLET_CONFIG_FILE_NAME: &str = "wallet_config.json";
 /// Suffix for a legacy wallet config whose seed no known passphrase opens. Renaming is what
 /// breaks the migration loop: the next launch finds nothing migratable and comes up view-only
 /// instead of attempting - and failing - the same decrypt forever.
+///
+/// Unlike a migrated file this one is kept rather than destroyed, and it does still hold an
+/// enciphered seed next to whatever passphrase failed to open it. That is the trade-off: nothing
+/// here can prove the seed exists anywhere else - by definition, since it could not be read -
+/// and destroying the only copy is worse than leaving it on the user's own disk.
 pub(crate) const LEGACY_DECRYPT_FAILED_SUFFIX: &str = "decrypt_failed";
-/// Suffix for a legacy wallet config that has been proven migrated (T4). The file holds only an
-/// enciphered seed, so it is renamed rather than destroyed.
-pub(crate) const LEGACY_MIGRATED_SUFFIX: &str = "migrated";
 /// Wallet id carried by the view-only fallback wallet. It never enters `config_wallet.json` and
 /// never names a keyring entry: there is no seed to point at, which is the whole reason the
 /// wallet is view-only.
@@ -2869,9 +2891,8 @@ pub(crate) enum LegacyWalletEvidence {
     None,
     /// `wallet_config.json` is present and usable: this launch may migrate it.
     Migratable(LegacyWalletConfig),
-    /// Only a quarantined config is left (`.decrypt_failed` from a previous launch, or
-    /// `.migrated` next to a config that has since lost its wallet list). Its seed is not
-    /// reachable from here, so the wallet can only be brought up view-only.
+    /// Only a `.decrypt_failed` config is left, quarantined by a previous launch. Its seed is
+    /// not reachable from here, so the wallet can only be brought up view-only.
     ViewOnly(LegacyWalletConfig),
     /// A legacy file is present but unusable. Recovery case: never a new wallet.
     Unreadable(LegacyConfigProblem),
@@ -2914,18 +2935,16 @@ pub(crate) fn locate_legacy_wallet(network_dir: &Path) -> LegacyWalletEvidence {
     // A quarantined config still names the wallet and carries its view key, so the app can keep
     // showing it. It is never migrated again: the rename is the record that the decrypt was
     // already tried and failed.
-    for suffix in [LEGACY_DECRYPT_FAILED_SUFFIX, LEGACY_MIGRATED_SUFFIX] {
-        let quarantined = quarantined_path(&primary, suffix);
-        match get_old_wallet_config(&quarantined) {
-            Ok(Some(config)) => return LegacyWalletEvidence::ViewOnly(config),
-            Err(kind) => {
-                return LegacyWalletEvidence::Unreadable(LegacyConfigProblem {
-                    file: LegacyFileKind::QuarantinedWalletConfig,
-                    kind,
-                });
-            }
-            Ok(None) => {}
+    let quarantined = quarantined_path(&primary, LEGACY_DECRYPT_FAILED_SUFFIX);
+    match get_old_wallet_config(&quarantined) {
+        Ok(Some(config)) => return LegacyWalletEvidence::ViewOnly(config),
+        Err(kind) => {
+            return LegacyWalletEvidence::Unreadable(LegacyConfigProblem {
+                file: LegacyFileKind::QuarantinedWalletConfig,
+                kind,
+            });
         }
+        Ok(None) => {}
     }
 
     // No wallet config in any form, but the plaintext credential file is still there: this
