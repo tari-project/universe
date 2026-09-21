@@ -377,10 +377,11 @@ fn no_entry_is_always_reported_as_unavailable() {
 }
 
 #[test]
-fn keyring_platform_failure_is_unavailable_off_macos_and_inconclusive_on_macos() {
-    // Windows: VaultSvc down or credentials wiped - a real signal, report it.
-    // macOS: the same variant is what a cancelled or denied keychain prompt looks like, and a
-    // user declining a prompt must never reach Sentry.
+fn keyring_platform_failure_is_inconclusive_only_where_the_store_can_deny() {
+    // Windows (`store_can_deny == false`): VaultSvc down or credentials wiped - a real signal,
+    // report it. macOS and Linux (`true`): the same variant is what a cancelled or denied
+    // keychain / secret-service prompt looks like, and a user declining a prompt must never
+    // reach Sentry or raise the recovery UI.
     let error = CredentialError::Keyring(keyring::Error::PlatformFailure(Box::new(
         std::io::Error::other("vault unavailable"),
     )));

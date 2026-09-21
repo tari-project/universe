@@ -265,22 +265,47 @@ impl InternalWallet {
                 })?;
                 let tari_seed_binary = tari_seed_binary.encrypted_seed;
                 // The wallet details recorded here become the address the whole session mines
-                // and receives to, so the decode has to be proven rather than assumed. Plain
+                // and receives to, so the decode has to be *proven* rather than assumed. Plain
                 // `from_binary` would also "succeed" on a PIN-enciphered blob and write a wrong
-                // address into the config; `decode_plain_tari_seed` refuses that reading, and a
-                // PIN-locked wallet that lost its cached details ends up in the recovery state
-                // instead - which is the honest answer, because the PIN is needed to read it.
+                // address into the config; `decode_plain_tari_seed` refuses that reading.
+                //
+                // There is no recorded address to check an unauthenticated reading against -
+                // the missing details are the premise - so the only other reading that may be
+                // acted on is an authenticated one. When a PIN is set, asking for it once buys
+                // exactly that: `CipherSeed::from_enciphered_bytes` verifies a tag, so a blob it
+                // opens is provably this wallet's seed. Without the prompt this wallet (a config
+                // restored from a `.backup` older than the PIN, say) would go to the recovery
+                // screen even though one PIN entry brings it up correctly. A dismissed or wrong
+                // PIN falls through to the same error as before, which is the honest answer.
                 let pin_locked = PinManager::pin_locked().await;
-                let tari_cipher_seed = decode_plain_tari_seed(&tari_seed_binary)
-                    .ok_or_else(|| {
-                        log::error!(
-                            target: LOG_TARGET_APP_LOGIC,
-                            "[validate_wallet_config_for_seed] could not parse Tari seed from binary: error=seed_decode wallet_id={} blob_len={} pin_locked={pin_locked}",
-                            wallet_id.as_str(),
-                            tari_seed_binary.len(),
-                        );
-                        anyhow!("Could not parse Tari Seed from binary")
-                    })?;
+                let plain_seed = decode_plain_tari_seed(&tari_seed_binary);
+                let tari_cipher_seed = match plain_seed {
+                    Some(seed) => seed,
+                    None => {
+                        let prompted = if pin_locked {
+                            match PinManager::prompt_pin_unvalidated(app_handle).await {
+                                Ok(pin) => {
+                                    tari_seed_candidates(&tari_seed_binary, Some(pin), pin_locked)
+                                        .into_iter()
+                                        .find(|candidate| candidate.authenticated)
+                                        .map(|candidate| candidate.seed)
+                                }
+                                Err(_) => None,
+                            }
+                        } else {
+                            None
+                        };
+                        prompted.ok_or_else(|| {
+                            log::error!(
+                                target: LOG_TARGET_APP_LOGIC,
+                                "[validate_wallet_config_for_seed] could not parse Tari seed from binary: error=seed_decode wallet_id={} blob_len={} pin_locked={pin_locked}",
+                                wallet_id.as_str(),
+                                tari_seed_binary.len(),
+                            );
+                            anyhow!("Could not parse Tari Seed from binary")
+                        })?
+                    }
+                };
 
                 let tari_wallet_details =
                     InternalWallet::get_tari_wallet_details(wallet_id.clone(), tari_cipher_seed)
@@ -459,6 +484,25 @@ impl InternalWallet {
                     // Create new wallet. The only arm that may, and it is reached only when the
                     // config is not a recovery placeholder (checked above) and nothing legacy is
                     // on disk.
+                    //
+                    // One last structural check first: a config that *names* a wallet must never
+                    // be answered with a new one, whatever led here. Today the only route into
+                    // this branch with a non-empty list is an on-disk `version_counter` below
+                    // `WALLET_VERSION`, which no shipped build writes - but the cost of being
+                    // wrong is the user's seed orphaned under an id nothing points at, so the
+                    // invariant is enforced here rather than inferred from a constant.
+                    if !wallet_config.tari_wallets().is_empty() {
+                        log::error!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "[initialize_with_seed] refusing to create a new wallet: the config already lists {} wallet id(s) but could not be validated",
+                            wallet_config.tari_wallets().len(),
+                        );
+                        enter_wallet_recovery(WalletRecoveryReason::InitializationFailed).await;
+                        return Err(anyhow!(
+                            "The wallet config lists a wallet that could not be loaded; refusing to create a new one"
+                        ));
+                    }
+
                     let tari_seed = CipherSeed::random();
                     let (tari_wallet_details, tari_seed_binary) =
                         InternalWallet::add_tari_wallet(app_handle, tari_seed, None).await?;
@@ -677,8 +721,12 @@ impl InternalWallet {
     /// file, and only on paper if the user exported the seed words. Deleting the entry - which is
     /// what this did, from `clear_all_wallets` - makes every Monero payout ever mined to that
     /// address unrecoverable, and the reset flow that calls it can and does fail halfway on
-    /// Windows. Superseded ids are kept for the same reason. "Find my wallets" is how a user
-    /// reaches an entry the config no longer points at.
+    /// Windows. Superseded ids are kept for the same reason.
+    ///
+    /// Note that "find my wallets" does *not* list these. It enumerates Tari wallets, and a
+    /// Monero seed is 32 raw bytes with no Tari address to derive or re-link, so
+    /// `wallet_recovery::is_tari_wallet_id` filters Monero ids out. Keeping the entry preserves
+    /// the seed for a support-led recovery; it does not make it reachable from the UI.
     async fn remove_monero_wallet() -> Result<(), anyhow::Error> {
         let wallet_id = InternalWallet::monero_wallet_id().await;
         log::info!(
@@ -725,7 +773,8 @@ impl InternalWallet {
     /// the `pin_locked` flag last. The Monero seed cannot be recovered from the Tari seed, so a
     /// new one is generated - but it is written under a *new* credential id, leaving the previous
     /// Monero entry exactly where it is. Anything mined to the old Monero address stays
-    /// recoverable through "find my wallets" instead of being overwritten (path P6).
+    /// recoverable from the credential store instead of being overwritten (path P6). See
+    /// `remove_monero_wallet` for why that recovery is support-led rather than a UI button.
     pub async fn recover_forgotten_pin(
         app_handle: &AppHandle,
         tari_seed: CipherSeed,
@@ -972,7 +1021,7 @@ impl InternalWallet {
         let (encrypted_tari_seed, tari_wallet_details) = {
             match ConfigWallet::content().await.tari_wallet_details() {
                 Some(wallet_details) => {
-                    log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(wallet config file) Tari Wallet Details: {wallet_details:?}");
+                    log_wallet_details("load_latest_version", "wallet_config", wallet_details);
                     // The cached details make every other startup step (address, balance,
                     // scanning, mining) work without ever opening the keyring, which is how a
                     // deleted or unreadable entry used to stay invisible until the user tried
@@ -1036,7 +1085,7 @@ impl InternalWallet {
                         tari_cipher_seed,
                     )
                     .await?;
-                    log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(seed from credentials) Tari Wallet Details: {wallet_details:?}");
+                    log_wallet_details("load_latest_version", "keyring_seed", &wallet_details);
                     (Some(encrypted_tari_seed), wallet_details)
                 }
             }
@@ -1108,7 +1157,7 @@ impl InternalWallet {
                 );
                 SeedProbeOutcome::Ok
             }
-            Err(e) => classify_seed_probe_error(e, SEED_PROBE_IS_RATE_LIMITED),
+            Err(e) => classify_seed_probe_error(e, SEED_PROBE_STORE_CAN_DENY),
         };
 
         // Best effort: a result that cannot be persisted only means the next launch probes
@@ -1332,7 +1381,8 @@ impl InternalWallet {
     /// The literal `monero` id this used to write to is the *legacy, unversioned* entry, and it
     /// may already hold a different seed - from an earlier migration attempt on this machine, or
     /// from a wallet created before the legacy files were found. There is no second copy of a
-    /// generated Monero seed anywhere, so an overwrite there is unrecoverable. Ids are allocated
+    /// generated Monero seed anywhere, and "find my wallets" cannot reach one (see
+    /// `remove_monero_wallet`), so an overwrite there is unrecoverable. Ids are allocated
     /// through the same sequence `add_monero_wallet` uses (`monero`, `monero_2`, ...), which
     /// skips any id that is occupied or whose readability cannot be determined; on a clean
     /// machine that still yields exactly `monero`.
@@ -1918,8 +1968,19 @@ const SENTRY_LEGACY_DECRYPT_FAILED: &str = "wallet.legacy_decrypt_failed";
 /// `InternalWallet::probe_tari_seed_at_startup` for why.
 const SEED_PROBE_MIN_INTERVAL_SECS: u64 = 60 * 60 * 24;
 /// Only macOS re-prompts the user for each read of an item approved with "Allow", so only macOS
-/// needs the rate limit. Windows and Linux reads are silent.
+/// needs the rate limit. Windows and Linux reads are silent once the store is unlocked.
 const SEED_PROBE_IS_RATE_LIMITED: bool = cfg!(target_os = "macos");
+/// Whether this platform's credential store can refuse a read because the *user* said no, as
+/// opposed to because something is broken.
+///
+/// macOS shows the keychain dialog on every read of an item approved with "Allow", and a locked
+/// login keychain refuses outright. Linux secret-service does the same: a locked collection
+/// raises an unlock prompt, and a dismissed prompt comes back as a platform failure. On both,
+/// "the store would not hand it over" says nothing about whether the seed is still there, so it
+/// must not raise the recovery UI, stop mining, or reach Sentry - the brief's "user-cancelled
+/// keychain prompts are non-fatal" rule. Windows has no such prompt: a platform failure there is
+/// a stopped `VaultSvc` or a broken DPAPI state, which is worth surfacing.
+const SEED_PROBE_STORE_CAN_DENY: bool = cfg!(target_os = "macos") || cfg!(target_os = "linux");
 
 /// Why a keyring read failed, as an enum-like value fit for a log line or a Sentry tag.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -1953,9 +2014,10 @@ impl SeedProbeErrorKind {
 /// Log a failed seed read with the fields a support bundle needs and nothing else.
 ///
 /// Level follows the hardening rule "wrong PIN and user-cancelled keychain prompts are
-/// non-fatal": on macOS a keyring platform failure is what a cancelled or denied prompt looks
-/// like, so it warns. Everywhere else, and for every other kind, a seed we cannot read is a real
-/// problem and logs at error level.
+/// non-fatal": where the store can deny a read on the user's say-so (macOS, Linux) a keyring
+/// platform failure is what a cancelled or denied prompt looks like, so it warns. Everywhere
+/// else, and for every other kind, a seed we cannot read is a real problem and logs at error
+/// level.
 fn log_seed_read_failure(
     context: &str,
     wallet_id: &str,
@@ -1963,7 +2025,7 @@ fn log_seed_read_failure(
     pin_locked: bool,
 ) {
     let tag = kind.as_tag();
-    if SEED_PROBE_IS_RATE_LIMITED && kind == SeedProbeErrorKind::KeyringPlatform {
+    if SEED_PROBE_STORE_CAN_DENY && kind == SeedProbeErrorKind::KeyringPlatform {
         log::warn!(
             target: LOG_TARGET_APP_LOGIC,
             "[{context}] keyring read not permitted: error={tag} wallet_id={wallet_id} pin_locked={pin_locked}",
@@ -1974,6 +2036,37 @@ fn log_seed_read_failure(
             "[{context}] keyring read failed: error={tag} wallet_id={wallet_id} pin_locked={pin_locked}",
         );
     }
+}
+
+/// How many characters of a Tari address may appear in a log line or a UI error string.
+///
+/// Enough to tell two wallets apart - which is the only question any of these lines is asking -
+/// and not an address. Same length the support bundle and "find my wallets" use.
+pub(crate) const ADDRESS_LOG_PREFIX_LEN: usize = 8;
+
+/// First [`ADDRESS_LOG_PREFIX_LEN`] characters of an address, for a log line.
+pub(crate) fn address_prefix(address: &TariAddress) -> String {
+    address
+        .to_base58()
+        .chars()
+        .take(ADDRESS_LOG_PREFIX_LEN)
+        .collect()
+}
+
+/// Log that wallet details were established, without printing them.
+///
+/// `TariWalletDetails` redacts the view private key in its `Debug`, but `{wallet_details:?}`
+/// still prints the full Tari address and the spend public key, and the hardening brief forbids
+/// exactly that. The wallet id and an address prefix answer every question these lines were
+/// there to answer ("which wallet came up, and from where").
+fn log_wallet_details(context: &str, source: &str, details: &TariWalletDetails) {
+    log::info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "[{context}] Tari wallet details established: source={source} wallet_id={} birthday={} address_prefix={}",
+        details.id.as_str(),
+        details.wallet_birthday,
+        address_prefix(&details.tari_address),
+    );
 }
 
 impl From<&CredentialError> for SeedProbeErrorKind {
@@ -2067,11 +2160,19 @@ pub fn decide_seed_probe(
     }
 }
 
-/// Pure classification of a probe failure. `rate_limited` doubles as "this is macOS", the only
-/// platform where a platform failure is routinely the user declining a keychain prompt.
-pub fn classify_seed_probe_error(error: &CredentialError, rate_limited: bool) -> SeedProbeOutcome {
+/// Pure classification of a probe failure.
+///
+/// `store_can_deny` is [`SEED_PROBE_STORE_CAN_DENY`]: on a platform whose credential store
+/// prompts the user, a platform failure is routinely just a declined or dismissed prompt, and a
+/// declined prompt is not evidence that a seed is gone. Reporting it as `Unavailable` would put
+/// a Linux user with a locked keyring collection into the recovery UI, stop their mining and
+/// send a Sentry event on every launch, for a seed that is sitting right there.
+pub fn classify_seed_probe_error(
+    error: &CredentialError,
+    store_can_deny: bool,
+) -> SeedProbeOutcome {
     let kind = SeedProbeErrorKind::from(error);
-    if rate_limited && kind == SeedProbeErrorKind::KeyringPlatform {
+    if store_can_deny && kind == SeedProbeErrorKind::KeyringPlatform {
         SeedProbeOutcome::Inconclusive(kind)
     } else {
         SeedProbeOutcome::Unavailable(kind)
@@ -2523,21 +2624,27 @@ async fn handle_critical_problem(
         Ok(instance) => instance.read().await.tari_address_type.to_string(),
         Err(_) => "Uninitialized".to_string(),
     };
+    // Prefixes only, in the log and in the payload alike. The question this message exists to
+    // answer is "do these two addresses differ", which a prefix answers; printing the details
+    // (or even the whole address) puts the user's wallet address into the log file, the webview
+    // and any support bundle built from them.
+    let state_prefix = state_wallet_details
+        .as_ref()
+        .map(|d| address_prefix(&d.tari_address));
+    let extracted_prefix = extracted_wallet_details.map(|d| address_prefix(&d.tari_address));
     log::error!(
         target: LOG_TARGET_APP_LOGIC,
-        "Unexpected {}! {} --- State: {:?} | Extracted from seed: {:?}",
-        address_type,
-        title,
-        state_wallet_details,
-        extracted_wallet_details
+        "Unexpected {address_type}! {title} --- state_wallet_id={:?} state_address_prefix={:?} | extracted_wallet_id={:?} extracted_address_prefix={:?}",
+        state_wallet_details.as_ref().map(|d| d.id.as_str()),
+        state_prefix,
+        extracted_wallet_details.map(|d| d.id.as_str()),
+        extracted_prefix,
     );
     EventsEmitter::emit_critical_problem(CriticalProblemPayload {
         title: Some(title.to_string()),
         description: Some(description.to_string()),
         error_message: Some(format!(
-            "State: {:?}, Extracted: {:?}",
-            state_wallet_details.map(|d| d.tari_address),
-            extracted_wallet_details.map(|d| d.tari_address.clone())
+            "State: {state_prefix:?}, Extracted: {extracted_prefix:?}"
         )),
     })
     .await;
@@ -3175,7 +3282,9 @@ pub(crate) fn wipe_and_remove_file(path: &Path) -> std::io::Result<bool> {
     {
         // The overwrite is best effort. Deletion is the primary control, so an overwrite failure
         // must never leave the plaintext file in place.
-        log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not overwrite {path:?} before removal, deleting anyway: {e}");
+        // The path is deliberately not logged: it is under the user's home directory and
+        // therefore carries their OS account name.
+        log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not overwrite the legacy credential file before removal, deleting anyway: {e}");
     }
     std::fs::remove_file(path)?;
     Ok(true)
