@@ -67,7 +67,7 @@
 //! - Use serial test execution with `serial_test` crate
 //! - Or refactor to use dependency injection instead of static singleton
 
-use super::internal_wallet::{InternalWallet, TariAddressType};
+use super::internal_wallet::{InternalWallet, TariAddressType, wipe_and_remove_file};
 
 #[test]
 fn tari_address_type_display_internal() {
@@ -218,4 +218,66 @@ fn tari_wallet_details_round_trip_preserves_the_key() {
         deserialized.view_private_key_hex.reveal(),
         VIEW_KEY_SENTINEL
     );
+}
+
+#[test]
+fn wipe_and_remove_file_deletes_existing_file_and_is_idempotent() {
+    let path = std::env::temp_dir().join(format!(
+        "tari_universe_legacy_cred_test_{}_{}.bin",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    ));
+    std::fs::write(&path, b"SAFE-DEMO-PASSPHRASE").expect("write fixture");
+    assert!(path.exists());
+
+    assert!(wipe_and_remove_file(&path).expect("first wipe"));
+    assert!(
+        !path.exists(),
+        "legacy file must not survive a successful wipe"
+    );
+
+    assert!(
+        !wipe_and_remove_file(&path).expect("second wipe"),
+        "absent file is not an error"
+    );
+}
+
+#[test]
+#[cfg(unix)]
+fn wipe_and_remove_file_unlinks_symlink_without_touching_target() {
+    let unique = format!(
+        "{}_{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    );
+    let target =
+        std::env::temp_dir().join(format!("tari_universe_symlink_target_test_{}.bin", unique));
+    let link = std::env::temp_dir().join(format!("tari_universe_symlink_test_{}.bin", unique));
+
+    const TARGET_CONTENT: &[u8] = b"UNRELATED-USER-FILE";
+    std::fs::write(&target, TARGET_CONTENT).expect("write target");
+    std::os::unix::fs::symlink(&target, &link).expect("create symlink");
+
+    assert!(
+        wipe_and_remove_file(&link).expect("wipe symlink"),
+        "symlink is present, so the wipe reports a removal"
+    );
+
+    let link_err = std::fs::symlink_metadata(&link).expect_err("symlink must be unlinked");
+    assert_eq!(link_err.kind(), std::io::ErrorKind::NotFound);
+
+    assert!(target.exists(), "symlink target must survive the wipe");
+    assert_eq!(
+        std::fs::read(&target).expect("read target"),
+        TARGET_CONTENT,
+        "symlink target content must not be zeroed"
+    );
+
+    std::fs::remove_file(&target).expect("clean up target");
 }

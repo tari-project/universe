@@ -14,6 +14,12 @@ export const useCountdown = (): CountdownResult => {
     const [countdown, setCountdown] = React.useState(0);
 
     const startConnectionRetry = useCallback((timeout: number) => {
+        // Same reason as the interval below, with a worse symptom: an
+        // abandoned timer still fires `reconnect`, so overlapping retries
+        // stack up reconnect attempts instead of replacing them.
+        if (retryConnectionTimeout.current) {
+            clearTimeout(retryConnectionTimeout.current);
+        }
         retryConnectionTimeout.current = setTimeout(() => {
             invoke('reconnect');
         }, timeout * 1000);
@@ -22,11 +28,19 @@ export const useCountdown = (): CountdownResult => {
     const stopConnectionRetry = useCallback(() => {
         if (retryConnectionTimeout.current) {
             clearTimeout(retryConnectionTimeout.current);
+            retryConnectionTimeout.current = null;
         }
     }, []);
 
     const startCountdown = useCallback((duration: number) => {
         setCountdown(duration);
+        // Clear any interval still running: DisconnectWrapper starts a new
+        // countdown while an earlier one is live (the `disconnected-severe`
+        // branch), and without this both tick, so the timer counts down at
+        // double speed and the old interval leaks.
+        if (countdownInterval.current) {
+            clearInterval(countdownInterval.current);
+        }
         countdownInterval.current = setInterval(() => {
             setCountdown((prev) => {
                 if (prev === 0) {
@@ -44,6 +58,7 @@ export const useCountdown = (): CountdownResult => {
     const stopCountdown = useCallback(() => {
         if (countdownInterval.current) {
             clearInterval(countdownInterval.current);
+            countdownInterval.current = null;
         }
     }, []);
 
