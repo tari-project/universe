@@ -560,11 +560,21 @@ fn wallet_status_file_scan_reports_absent_files_without_failing() {
     let temp_dir = tempfile::tempdir().expect("temp dir");
     let reports = scan_wallet_files(temp_dir.path(), TEST_NETWORK);
 
-    assert_eq!(reports.len(), 4, "{reports:?}");
+    assert_eq!(reports.len(), 6, "{reports:?}");
     for report in &reports {
         assert!(!report.present, "{report:?}");
         assert_eq!(report.len_bytes, None, "{report:?}");
     }
+    // The two that tell "mid-recovery" apart from "fresh install".
+    let names: Vec<&str> = reports.iter().map(|report| report.name.as_str()).collect();
+    assert!(
+        names.contains(&"config_wallet.json.recovery_required"),
+        "{names:?}"
+    );
+    assert!(
+        names.contains(&"wallet_config.json.decrypt_failed"),
+        "{names:?}"
+    );
 }
 
 #[test]

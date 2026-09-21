@@ -204,6 +204,10 @@ const MAX_CORRUPTED_FILES_REPORTED: usize = 20;
 const WALLET_CONFIG_FILE_NAME: &str = "config_wallet.json";
 /// Backup written next to it by the config loader.
 const WALLET_CONFIG_BACKUP_FILE_NAME: &str = "config_wallet.json.backup";
+/// Marker the config loader writes before it quarantines a file it cannot parse.
+const WALLET_CONFIG_RECOVERY_MARKER_FILE_NAME: &str = "config_wallet.json.recovery_required";
+/// Legacy wallet config quarantined because no known passphrase opened its seed.
+const LEGACY_DECRYPT_FAILED_FILE_NAME: &str = "wallet_config.json.decrypt_failed";
 /// Sub-directory of the app config directory that holds the current configs.
 const APP_CONFIGS_DIR_NAME: &str = "app_configs";
 /// Infix used by the config loader when it quarantines a file it cannot parse.
@@ -525,6 +529,21 @@ pub(crate) fn scan_wallet_files(app_config_root: &Path, network: &str) -> Vec<Fi
             WALLET_CONFIG_BACKUP_FILE_NAME,
             LOCATION_APP_CONFIGS_NETWORK_DIR,
         ),
+        // Present means a launch quarantined the config and the next one must not mistake the
+        // absence of `config_wallet.json` for a fresh install. It is the difference between
+        // "this user is mid-recovery" and "this user is new", which nothing else in the bundle
+        // can tell apart.
+        file_report(
+            &configs_dir,
+            WALLET_CONFIG_RECOVERY_MARKER_FILE_NAME,
+            LOCATION_APP_CONFIGS_NETWORK_DIR,
+        ),
+        // Present means a legacy seed no passphrase on this machine could open.
+        file_report(
+            &legacy_dir,
+            LEGACY_DECRYPT_FAILED_FILE_NAME,
+            LOCATION_LEGACY_NETWORK_DIR,
+        ),
     ];
     reports.extend(corrupted_file_reports(
         &configs_dir,
@@ -535,6 +554,21 @@ pub(crate) fn scan_wallet_files(app_config_root: &Path, network: &str) -> Vec<Fi
         LOCATION_LEGACY_NETWORK_DIR,
     ));
     reports
+}
+
+/// Whether this platform's credential store may ask the user before handing an entry over.
+const STORE_CAN_PROMPT: bool = cfg!(target_os = "macos") || cfg!(target_os = "linux");
+
+/// The report for an entry nothing has looked at this run.
+fn unprobed_report(wallet_id: &WalletId) -> KeyringEntryReport {
+    KeyringEntryReport {
+        wallet_id: wallet_id.as_str().to_string(),
+        state: KeyringEntryState::Unknown,
+        error_kind: None,
+        blob_len: None,
+        blob_kind: SeedBlobKind::Unknown,
+        origin: ProbeOrigin::BundleAssembly,
+    }
 }
 
 /// One read-only, non-forced keyring read. Never retries and never forces a
@@ -666,6 +700,11 @@ impl WalletStatus {
             })
             .ok();
 
+        // A placeholder is not a config. `ConfigWallet::content()` hands one back rather than
+        // panicking when neither the file nor its backup parsed, and reporting it as readable -
+        // version 2, no wallets - describes a fresh install rather than the corruption this
+        // document exists to explain.
+        let content = content.filter(|content| content.ensure_available().is_ok());
         let mut status = match content.as_ref() {
             Some(content) => Self::from_config_content(content, &network),
             None => Self::unknown(&network),
@@ -707,6 +746,11 @@ impl WalletStatus {
         for (id, classify_blob) in ids {
             match startup_keyring_probe(id.as_str()) {
                 Some(recorded) => reports.push(recorded),
+                // Where the store can ask the user for permission - macOS keychain, Linux
+                // secret-service - reading here would raise a prompt per entry at the moment
+                // someone clicks "Send Logs". An unknown entry is a worse answer than a
+                // reported one but a better one than an unexpected password dialog.
+                None if STORE_CAN_PROMPT => reports.push(unprobed_report(&id)),
                 None => reports.push(probe_keyring_entry(&id, classify_blob).await),
             }
         }
