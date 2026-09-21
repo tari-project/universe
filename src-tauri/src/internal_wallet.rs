@@ -527,7 +527,7 @@ impl InternalWallet {
         } else {
             tari_seed
                 .to_binary()
-                .expect("[add_tari_wallet] Failed to convert tari seed to binary")
+                .map_err(|e| anyhow!("Could not convert the Tari seed to binary: {e}"))?
         };
 
         let credentials = Credential {
@@ -571,7 +571,7 @@ impl InternalWallet {
         let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
         let monero_seed_binary = (*monero_seed.inner())
             .to_binary()
-            .expect("Failed to convert monero seed to binary");
+            .map_err(|e| anyhow!("Could not convert the Monero seed to binary: {e}"))?;
 
         let credentials = Credential {
             encrypted_seed: monero_seed_binary.clone(),
@@ -786,6 +786,13 @@ impl InternalWallet {
                 anyhow!("Tari wallets field should be defined in the wallet config v{version}")
             })?;
 
+        // Whether the details were already on disk when this launch started, as opposed to being
+        // derived from the keyring moments ago by `validate_wallet_config_for_seed`. Only the
+        // former means "nothing on the startup path reads the keyring", which is the case the
+        // probe exists for; probing right after a successful forced read would just cost the
+        // macOS user a second keychain prompt for an answer we already have.
+        let details_were_cached = wallet_config.tari_wallet_details().is_some();
+
         let mut seed_unavailable = None;
         let (encrypted_tari_seed, tari_wallet_details) = {
             match ConfigWallet::content().await.tari_wallet_details() {
@@ -795,9 +802,11 @@ impl InternalWallet {
                     // scanning, mining) work without ever opening the keyring, which is how a
                     // deleted or unreadable entry used to stay invisible until the user tried
                     // to spend. Probe it once, read-only, right here.
-                    seed_unavailable =
-                        InternalWallet::probe_tari_seed_at_startup(app_handle, &tari_wallet_id)
-                            .await;
+                    if details_were_cached {
+                        seed_unavailable =
+                            InternalWallet::probe_tari_seed_at_startup(app_handle, &tari_wallet_id)
+                                .await;
+                    }
                     (None, wallet_details.clone())
                 }
                 _ => {
@@ -1206,11 +1215,10 @@ impl InternalWallet {
                             // flag. Never the blob, the seed words or the view key. Without
                             // this line a support bundle cannot tell a deleted keyring entry
                             // (P1) from an unreadable one (P2).
-                            log::error!(
-                                target: LOG_TARGET_APP_LOGIC,
-                                "[get_tari_seed] keyring read failed: error={} wallet_id={} pin_locked={}",
-                                SeedProbeErrorKind::from(&e).as_tag(),
+                            log_seed_read_failure(
+                                "get_tari_seed",
                                 wallet_id.as_str(),
+                                SeedProbeErrorKind::from(&e),
                                 PinManager::pin_locked().await,
                             );
                             // Only display once
@@ -1294,10 +1302,10 @@ impl InternalWallet {
                     }
                     Err(e) => {
                         // Same redaction rules as `get_tari_seed`: variant name, id and flag only.
-                        log::error!(
-                            target: LOG_TARGET_APP_LOGIC,
-                            "[get_monero_seed] keyring read failed: error={} wallet_id=monero pin_locked={}",
-                            SeedProbeErrorKind::from(&e).as_tag(),
+                        log_seed_read_failure(
+                            "get_monero_seed",
+                            "monero",
+                            SeedProbeErrorKind::from(&e),
                             PinManager::pin_locked().await,
                         );
                         #[cfg(target_os = "macos")]
@@ -1408,6 +1416,32 @@ impl SeedProbeErrorKind {
             SeedProbeErrorKind::Io => "io",
             SeedProbeErrorKind::Decode => "decode",
         }
+    }
+}
+
+/// Log a failed seed read with the fields a support bundle needs and nothing else.
+///
+/// Level follows the hardening rule "wrong PIN and user-cancelled keychain prompts are
+/// non-fatal": on macOS a keyring platform failure is what a cancelled or denied prompt looks
+/// like, so it warns. Everywhere else, and for every other kind, a seed we cannot read is a real
+/// problem and logs at error level.
+fn log_seed_read_failure(
+    context: &str,
+    wallet_id: &str,
+    kind: SeedProbeErrorKind,
+    pin_locked: bool,
+) {
+    let tag = kind.as_tag();
+    if SEED_PROBE_IS_RATE_LIMITED && kind == SeedProbeErrorKind::KeyringPlatform {
+        log::warn!(
+            target: LOG_TARGET_APP_LOGIC,
+            "[{context}] keyring read not permitted: error={tag} wallet_id={wallet_id} pin_locked={pin_locked}",
+        );
+    } else {
+        log::error!(
+            target: LOG_TARGET_APP_LOGIC,
+            "[{context}] keyring read failed: error={tag} wallet_id={wallet_id} pin_locked={pin_locked}",
+        );
     }
 }
 
