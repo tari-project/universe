@@ -50,6 +50,19 @@ jobs:
             xvfb \
             dbus-x11
 
+      - name: Fix cache ownership (self-hosted runner)
+        # Some runner pods come up with a root-owned ~/.npm and an empty
+        # root-owned /opt/hostedtoolcache. The pnpm self-installer and
+        # setup-node then fail with EACCES before any test runs. Pods with
+        # a pre-populated tool cache never write to it, so this is a no-op
+        # for them.
+        run: |
+          if [ -d "$HOME/.npm" ]; then
+            sudo chown -R "$(id -u):$(id -g)" "$HOME/.npm"
+          fi
+          sudo mkdir -p "${RUNNER_TOOL_CACHE:-/opt/hostedtoolcache}"
+          sudo chown -R "$(id -u):$(id -g)" "${RUNNER_TOOL_CACHE:-/opt/hostedtoolcache}"
+
       - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v6
