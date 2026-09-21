@@ -1147,10 +1147,13 @@ impl InternalWallet {
     /// read, and an unconditional config write on every launch is the habit that produced the
     /// half-written `config_wallet.json` files in the first place.
     async fn probe_tari_seed_at_startup(wallet_id: &WalletId) -> Option<SeedProbeErrorKind> {
-        let last_probe = match *ConfigWallet::content().await.seed_probe_last_unix() {
+        let wallet_config = ConfigWallet::content().await;
+        let last_probe = match *wallet_config.seed_probe_last_unix() {
             0 => None,
             probed_at => Some(probed_at),
         };
+        let last_outcome = wallet_config.seed_probe_last_outcome().clone();
+        drop(wallet_config);
 
         if decide_seed_probe(
             SEED_PROBE_IS_RATE_LIMITED,
@@ -1159,8 +1162,19 @@ impl InternalWallet {
             SEED_PROBE_MIN_INTERVAL_SECS,
         ) == SeedProbeDecision::Skip
         {
-            log::info!(target: LOG_TARGET_APP_LOGIC, "Startup seed probe skipped: rate limited on this platform");
-            return None;
+            // Skipping the read must not also discard what the last read concluded. A launch
+            // that found the entry missing, followed by a restart inside the rate-limit window,
+            // would otherwise come up as if the seed were fine and let mining and telemetry run
+            // against a wallet whose seed is still gone.
+            let remembered = last_outcome
+                .as_deref()
+                .and_then(seed_probe_outcome_from_tag);
+            log::info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Startup seed probe skipped: rate limited on this platform, last outcome={}",
+                last_outcome.as_deref().unwrap_or("none"),
+            );
+            return remembered;
         }
 
         let result = CredentialManager::new_default(wallet_id.clone())
@@ -2222,6 +2236,22 @@ pub fn classify_seed_probe_error(
         SeedProbeOutcome::Inconclusive(kind)
     } else {
         SeedProbeOutcome::Unavailable(kind)
+    }
+}
+
+/// The failure kind behind a recorded `unavailable_*` tag, if it was one.
+///
+/// The inverse of the `unavailable_*` arms of [`SeedProbeOutcome::as_tag`]. `ok` and
+/// `inconclusive_*` deliberately map to `None`: neither is a reason to hold the wallet in
+/// recovery, and an unrecognised tag - written by a newer build - is treated the same way.
+pub fn seed_probe_outcome_from_tag(tag: &str) -> Option<SeedProbeErrorKind> {
+    match tag {
+        "unavailable_no_entry" => Some(SeedProbeErrorKind::NoEntry),
+        "unavailable_keyring_platform" => Some(SeedProbeErrorKind::KeyringPlatform),
+        "unavailable_keyring_other" => Some(SeedProbeErrorKind::KeyringOther),
+        "unavailable_io" => Some(SeedProbeErrorKind::Io),
+        "unavailable_decode" => Some(SeedProbeErrorKind::Decode),
+        _ => None,
     }
 }
 

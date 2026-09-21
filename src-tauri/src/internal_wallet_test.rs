@@ -70,7 +70,7 @@
 use super::internal_wallet::{
     ADDRESS_LOG_PREFIX_LEN, InternalWallet, SeedCandidate, TariAddressType, address_prefix,
     allocate_monero_wallet_id_with, decode_plain_tari_seed, monero_seed_candidates,
-    next_monero_wallet_id, tari_seed_candidates, wipe_and_remove_file,
+    next_monero_wallet_id, seed_probe_outcome_from_tag, tari_seed_candidates, wipe_and_remove_file,
 };
 use std::collections::HashSet;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
@@ -435,6 +435,38 @@ fn other_keyring_errors_are_reported_as_keyring_other() {
     assert_eq!(
         classify_seed_probe_error(&error, true),
         SeedProbeOutcome::Unavailable(SeedProbeErrorKind::KeyringOther)
+    );
+}
+
+/// Skipping the read must not discard what the last read concluded, or a restart inside the
+/// rate-limit window comes up as if a missing seed were fine.
+#[test]
+fn a_recorded_unavailable_outcome_survives_a_rate_limited_launch() {
+    for kind in [
+        SeedProbeErrorKind::NoEntry,
+        SeedProbeErrorKind::KeyringPlatform,
+        SeedProbeErrorKind::KeyringOther,
+        SeedProbeErrorKind::Io,
+        SeedProbeErrorKind::Decode,
+    ] {
+        let tag = SeedProbeOutcome::Unavailable(kind).as_tag();
+        assert_eq!(seed_probe_outcome_from_tag(tag), Some(kind), "{tag}");
+    }
+
+    // Neither of these holds the wallet in recovery, and nor does a tag from a newer build.
+    assert_eq!(
+        seed_probe_outcome_from_tag(SeedProbeOutcome::Ok.as_tag()),
+        None
+    );
+    assert_eq!(
+        seed_probe_outcome_from_tag(
+            SeedProbeOutcome::Inconclusive(SeedProbeErrorKind::KeyringPlatform).as_tag()
+        ),
+        None
+    );
+    assert_eq!(
+        seed_probe_outcome_from_tag("unavailable_from_the_future"),
+        None
     );
 }
 
