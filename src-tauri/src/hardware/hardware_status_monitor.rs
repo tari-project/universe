@@ -384,12 +384,12 @@ impl HardwareStatusMonitor {
         info!(target: LOG_TARGET_APP_LOGIC, "System total memory: {total_memory_mb} MB");
 
         // Only an explicit refusal forbids mining. A device whose capability could not be
-        // established stays usable.
+        // established stays usable. No device at all leaves nothing to mine on.
         let refusal = devices
             .iter()
             .find(|device| device.is_known_unmineable())
             .and_then(|device| device.unsupported_reason.clone());
-        let is_available = devices.is_empty() || devices.iter().any(GpuCommonInformation::can_mine);
+        let is_available = devices.iter().any(GpuCommonInformation::can_mine);
 
         let should_recommend = is_available
             && has_enough_system_memory
@@ -397,7 +397,10 @@ impl HardwareStatusMonitor {
                 .iter()
                 .any(GpuCommonInformation::is_recommended_for_mining);
 
-        if !is_available {
+        if devices.is_empty() {
+            info!(target: LOG_TARGET_APP_LOGIC, "No GPU detected, GPU mining is unavailable");
+            ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, false).await?;
+        } else if !is_available {
             warn!(
                 target: LOG_TARGET_APP_LOGIC,
                 "No detected GPU can mine C29: {}",

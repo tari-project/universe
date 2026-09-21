@@ -38,8 +38,8 @@ const GpuMiningMarkup = () => {
         await setGpuMiningEnabled(!isGpuMiningEnabled);
     }, [isGpuMiningEnabled]);
 
-    // A GPU the miner has explicitly refused cannot mine, so the toggle is not offered.
-    const isDisabled = isMac || !gpuMiningModuleInitialized || !isGpuMiningAvailable;
+    // Without a GPU, or with one the miner has explicitly refused, the toggle is not offered.
+    const isDisabled = isMac || !gpuMiningModuleInitialized || !isGpuMiningAvailable || !hasGpuDevices;
 
     return (
         <SettingsGroupWrapper>
