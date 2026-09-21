@@ -20,67 +20,19 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt;
 use std::str::FromStr;
-use std::sync::LazyLock;
-use std::time::Duration;
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_mcp::ConfigMcp;
 use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
-use crate::mcp::rate_limiter::TransactionRateLimiter;
 use crate::pin::PinManager;
+use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send};
 use crate::wallet::wallet_manager::WalletManager;
-use log::{info, warn};
+use log::info;
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
-const DIALOG_TIMEOUT_SECS: u64 = 120;
-
-#[derive(Debug)]
-pub enum TransactionError {
-    Disabled(String),
-    NoPinConfigured(String),
-    InvalidAmount(String),
-    RateLimited(String),
-    Denied(String),
-    Timeout(String),
-    WalletError(String),
-    InternalError(String),
-}
-
-impl fmt::Display for TransactionError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            TransactionError::Disabled(msg)
-            | TransactionError::NoPinConfigured(msg)
-            | TransactionError::InvalidAmount(msg)
-            | TransactionError::RateLimited(msg)
-            | TransactionError::Denied(msg)
-            | TransactionError::Timeout(msg)
-            | TransactionError::WalletError(msg)
-            | TransactionError::InternalError(msg) => write!(f, "{}", msg),
-        }
-    }
-}
-
-static TXN_DIALOG_GATE: LazyLock<tokio::sync::Semaphore> =
-    LazyLock::new(|| tokio::sync::Semaphore::new(1));
-
-static INFLIGHT: LazyLock<tokio::sync::Mutex<Option<InFlightTxn>>> =
-    LazyLock::new(|| tokio::sync::Mutex::new(None));
-
-static TXN_RATE_LIMITER: LazyLock<tokio::sync::Mutex<TransactionRateLimiter>> =
-    LazyLock::new(|| tokio::sync::Mutex::new(TransactionRateLimiter::new()));
-
-struct InFlightTxn {
-    request_id: String,
-    tx: tokio::sync::oneshot::Sender<TxnDialogResponse>,
-}
-
-pub struct TxnDialogResponse {
-    pub approved: bool,
-}
+pub use crate::wallet::send_gate::TransactionError;
 
 fn validate_amount(
     amount: &str,
@@ -122,6 +74,10 @@ pub async fn send_transaction(
     wallet_manager: &WalletManager,
     app_handle: &tauri::AppHandle,
 ) -> Result<String, TransactionError> {
+    // MCP-specific policy. The user-consent gates (confirmation dialog, rate limiter and
+    // the PIN prompt raised while signing) live in `wallet::send_gate::gated_send`, which
+    // the in-app send command goes through as well.
+
     // 1. Check transactions enabled
     let config = ConfigMcp::content().await;
     if !*config.transactions_enabled() {
@@ -130,78 +86,36 @@ pub async fn send_transaction(
         ));
     }
 
-    // 2. Check PIN is configured
+    // 2. Check PIN is configured. MCP refuses outright without one; a dialog alone is not
+    //    enough of a gate for a remote caller.
     if !PinManager::pin_locked().await {
         return Err(TransactionError::NoPinConfigured(
             "No PIN configured. Set up a PIN before enabling MCP transactions.".to_string(),
         ));
     }
 
-    // 3. Parse and validate amount
+    // 3. Parse and validate amount against the MCP per-transaction maximum
     let amount_u64 = validate_amount(&amount, &config).map_err(TransactionError::InvalidAmount)?;
-
-    // 4. Acquire serialization gate (one dialog at a time)
-    let _permit = TXN_DIALOG_GATE
-        .acquire()
-        .await
-        .map_err(|_| TransactionError::InternalError("Transaction gate closed".to_string()))?;
-
-    // 5. Rate limit check (after acquiring gate to avoid burning quota)
-    if !TXN_RATE_LIMITER
-        .lock()
-        .await
-        .check_transaction_allowed()
-        .await
-    {
-        return Err(TransactionError::RateLimited(
-            "Transaction rate limit exceeded. Try again later.".to_string(),
-        ));
-    }
-
-    // 6. Generate request ID
-    let request_id = format!("mcp_tx_{}", uuid::Uuid::new_v4());
-
-    // 7. Create oneshot channel and set INFLIGHT
-    let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
-    {
-        let mut inflight = INFLIGHT.lock().await;
-        *inflight = Some(InFlightTxn {
-            request_id: request_id.clone(),
-            tx,
-        });
-    }
-
-    // 8. Format display amount
     let amount_display = format!("{} XTM", amount);
+    let request_id = SendOrigin::Mcp.new_request_id();
 
-    info!(target: LOG_TARGET_APP_LOGIC, "MCP: send_transaction dialog emitted (request_id={}, destination={}, amount={})", request_id, destination, amount_display);
+    info!(target: LOG_TARGET_APP_LOGIC, "MCP: send_transaction requested (destination={}, amount={})", destination, amount_display);
 
-    // 9. Emit confirmation event to frontend
-    EventsEmitter::emit_mcp_transaction_confirmation(
-        crate::events::McpTransactionConfirmationPayload {
+    // 4. Rate limit, confirmation dialog, PIN and the actual send
+    let result = gated_send(
+        GatedSendRequest {
+            origin: SendOrigin::Mcp,
             request_id: request_id.clone(),
+            amount,
             destination: destination.clone(),
-            amount_micro_minotari: amount_u64,
-            amount_display: amount_display.clone(),
+            payment_id,
         },
+        wallet_manager,
+        app_handle,
     )
     .await;
 
-    // 10. Wait for user confirmation
-    await_confirmation(rx).await?;
-
-    // 11. Execute transaction (PIN dialog is triggered by PinManager during signing)
-    info!(target: LOG_TARGET_APP_LOGIC, "MCP: executing send_transaction (destination={}, amount={})", destination, amount_display);
-    let tx_result = wallet_manager
-        .send_one_sided_to_stealth_address(
-            amount.clone(),
-            destination.clone(),
-            payment_id,
-            app_handle,
-        )
-        .await;
-
-    match tx_result {
+    match result {
         Ok(()) => {
             EventsEmitter::emit_mcp_transaction_result(
                 crate::events::McpTransactionResultPayload {
@@ -226,70 +140,16 @@ pub async fn send_transaction(
                 .map_err(|e| TransactionError::InternalError(e.to_string()))
         }
         Err(e) => {
-            let error_msg = format!("Transaction failed: {}", e);
             EventsEmitter::emit_mcp_transaction_result(
                 crate::events::McpTransactionResultPayload {
                     request_id,
                     success: false,
-                    error: Some(error_msg.clone()),
+                    error: Some(e.to_string()),
                 },
             )
             .await;
-            Err(TransactionError::WalletError(error_msg))
+            Err(e)
         }
-    }
-}
-
-async fn await_confirmation(
-    rx: tokio::sync::oneshot::Receiver<TxnDialogResponse>,
-) -> Result<(), TransactionError> {
-    let response = match tokio::time::timeout(Duration::from_secs(DIALOG_TIMEOUT_SECS), rx).await {
-        Ok(Ok(response)) => response,
-        Ok(Err(_)) => {
-            clear_inflight().await;
-            return Err(TransactionError::InternalError(
-                "Transaction confirmation channel closed unexpectedly".to_string(),
-            ));
-        }
-        Err(_) => {
-            clear_inflight().await;
-            return Err(TransactionError::Timeout(
-                "Transaction timed out waiting for confirmation (120s)".to_string(),
-            ));
-        }
-    };
-
-    if !response.approved {
-        return Err(TransactionError::Denied(
-            "Transaction denied by user".to_string(),
-        ));
-    }
-
-    Ok(())
-}
-
-/// Called by the Tauri command when the frontend responds to the transaction dialog.
-pub async fn respond_to_transaction(request_id: String, approved: bool) -> Result<(), String> {
-    let mut inflight = INFLIGHT.lock().await;
-    match inflight.take() {
-        Some(txn) => {
-            if txn.request_id != request_id {
-                *inflight = Some(txn);
-                return Err("Request ID mismatch — stale or invalid response".to_string());
-            }
-            drop(txn.tx.send(TxnDialogResponse { approved }));
-            Ok(())
-        }
-        None => Err("No transaction awaiting confirmation".to_string()),
-    }
-}
-
-/// Clear any in-flight transaction (e.g., on server shutdown).
-pub async fn clear_inflight() {
-    let mut inflight = INFLIGHT.lock().await;
-    if let Some(txn) = inflight.take() {
-        drop(txn.tx.send(TxnDialogResponse { approved: false }));
-        warn!(target: LOG_TARGET_APP_LOGIC, "MCP: cleared in-flight transaction dialog (request_id={})", txn.request_id);
     }
 }
 
@@ -297,7 +157,6 @@ pub async fn clear_inflight() {
 mod tests {
     use super::*;
     use crate::configs::config_mcp::ConfigMcpContent;
-    use serial_test::serial;
 
     // =========================================================================
     // validate_amount
@@ -372,116 +231,5 @@ mod tests {
         let config = ConfigMcpContent::default();
         let result = validate_amount("-1", &config);
         assert!(result.is_err());
-    }
-
-    // =========================================================================
-    // respond_to_transaction
-    // =========================================================================
-
-    #[tokio::test]
-    #[serial]
-    async fn respond_to_transaction_no_inflight() {
-        clear_inflight().await;
-
-        let result = respond_to_transaction("test_id".to_string(), true).await;
-        assert!(result.is_err());
-        assert!(
-            result
-                .unwrap_err()
-                .contains("No transaction awaiting confirmation")
-        );
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn respond_to_transaction_mismatched_id() {
-        let (tx, _rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
-        {
-            let mut inflight = INFLIGHT.lock().await;
-            *inflight = Some(InFlightTxn {
-                request_id: "correct_id".to_string(),
-                tx,
-            });
-        }
-
-        let result = respond_to_transaction("wrong_id".to_string(), true).await;
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Request ID mismatch"));
-
-        clear_inflight().await;
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn respond_to_transaction_matching_id_approved() {
-        let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
-        {
-            let mut inflight = INFLIGHT.lock().await;
-            *inflight = Some(InFlightTxn {
-                request_id: "match_id".to_string(),
-                tx,
-            });
-        }
-
-        let result = respond_to_transaction("match_id".to_string(), true).await;
-        assert!(result.is_ok());
-
-        let response = rx.await.unwrap();
-        assert!(response.approved);
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn respond_to_transaction_denied() {
-        let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
-        {
-            let mut inflight = INFLIGHT.lock().await;
-            *inflight = Some(InFlightTxn {
-                request_id: "deny_id".to_string(),
-                tx,
-            });
-        }
-
-        let result = respond_to_transaction("deny_id".to_string(), false).await;
-        assert!(result.is_ok());
-
-        let response = rx.await.unwrap();
-        assert!(!response.approved);
-    }
-
-    // =========================================================================
-    // clear_inflight
-    // =========================================================================
-
-    #[tokio::test]
-    #[serial]
-    async fn clear_inflight_with_pending() {
-        let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
-        {
-            let mut inflight = INFLIGHT.lock().await;
-            *inflight = Some(InFlightTxn {
-                request_id: "clear_test".to_string(),
-                tx,
-            });
-        }
-
-        clear_inflight().await;
-
-        let response = rx.await.unwrap();
-        assert!(!response.approved);
-
-        let inflight = INFLIGHT.lock().await;
-        assert!(inflight.is_none());
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn clear_inflight_when_empty() {
-        clear_inflight().await;
-        // Should not panic on second call
-        clear_inflight().await;
-
-        let inflight = INFLIGHT.lock().await;
-        assert!(inflight.is_none());
     }
 }

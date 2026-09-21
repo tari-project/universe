@@ -4,6 +4,7 @@ import { useSecurityStore } from '@app/store/useSecurityStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import EnterPin from '@app/components/security/pin/EnterPin.tsx';
+import { TransactionContextSummary } from '@app/components/transactions/send/TransactionContextSummary.tsx';
 import { Header, Heading, Wrapper } from './styles.ts';
 
 export default function EnterPinDialog() {
@@ -11,16 +12,21 @@ export default function EnterPinDialog() {
     const modal = useSecurityStore((s) => s.modal);
     const setModal = useSecurityStore((s) => s.setModal);
     const pinResolver = useSecurityStore((s) => s.pinResolver);
+    const pinContext = useSecurityStore((s) => s.pinContext);
 
     const isOpen = modal === 'enter_pin';
+    // Only shown when the backend told us what the PIN is for. Everything else keeps the
+    // plain "Enter your PIN" dialog.
+    const sendContext = pinContext?.kind === 'send' ? pinContext : null;
 
     function handleClose() {
         if (pinResolver) {
             pinResolver(undefined);
-            useSecurityStore.setState({ pinResolver: null });
+            useSecurityStore.setState({ pinResolver: null, pinContext: null });
             setModal(null);
         } else {
             void emit('pin-dialog-response', { pin: undefined });
+            useSecurityStore.setState({ pinContext: null });
             setModal(null);
         }
     }
@@ -28,10 +34,11 @@ export default function EnterPinDialog() {
     function handleSubmit(pin: string) {
         if (pinResolver) {
             pinResolver(pin);
-            useSecurityStore.setState({ pinResolver: null });
+            useSecurityStore.setState({ pinResolver: null, pinContext: null });
             setModal(null);
         } else {
             emit('pin-dialog-response', Number(pin)).finally(() => {
+                useSecurityStore.setState({ pinContext: null });
                 setModal(null);
             });
         }
@@ -42,8 +49,17 @@ export default function EnterPinDialog() {
             <DialogContent variant="transparent">
                 <Wrapper>
                     <Header>
-                        <Heading>{t('security.pin.enter')}</Heading> <CloseButton onClick={handleClose} />
+                        <Heading>{sendContext ? t('security.pin.approve-send') : t('security.pin.enter')}</Heading>{' '}
+                        <CloseButton onClick={handleClose} />
                     </Header>
+                    {sendContext && (
+                        <TransactionContextSummary
+                            amountMicroMinotari={sendContext.amount_micro_minotari}
+                            destination={sendContext.destination}
+                            paymentId={sendContext.payment_id}
+                            subtitle={t('security.pin.approve-send-subtitle')}
+                        />
+                    )}
                     <EnterPin onSubmit={handleSubmit} />
                 </Wrapper>
             </DialogContent>
