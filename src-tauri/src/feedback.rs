@@ -639,7 +639,15 @@ impl WalletStatus {
         // a `CipherSeed`, so it is reported by length only. Skipped when the
         // user supplied their own address: there is then no generated seed.
         if *content.monero_address_is_generated() {
-            ids.push((WalletId::new("monero".to_string()), false));
+            // Monero ids are versioned (`monero`, `monero_2`, ...); `None` means the original
+            // unversioned entry, which is what pre-versioning wallets use.
+            ids.push((
+                content
+                    .monero_wallet_id()
+                    .clone()
+                    .unwrap_or_else(|| WalletId::new("monero".to_string())),
+                false,
+            ));
         }
 
         let mut reports = Vec::with_capacity(ids.len());

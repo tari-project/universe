@@ -95,6 +95,12 @@ impl EventsEmitter {
     pub async fn get_app_handle_public() -> AppHandle {
         Self::get_app_handle().await
     }
+
+    /// The app handle if one has been loaded. Non-panicking counterpart of `get_app_handle`, for
+    /// callers that run before or outside the window lifetime and must degrade instead of dying.
+    pub async fn try_get_app_handle() -> Option<AppHandle> {
+        INSTANCE.app_handle.read().await.clone()
+    }
     pub async fn emit_progress_tracker_update(payload: ProgressTrackerUpdatePayload) {
         let event = Event {
             event_type: EventType::SetupProgressUpdate,

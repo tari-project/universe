@@ -67,7 +67,14 @@
 //! - Use serial test execution with `serial_test` crate
 //! - Or refactor to use dependency injection instead of static singleton
 
-use super::internal_wallet::{InternalWallet, TariAddressType, wipe_and_remove_file};
+use super::internal_wallet::{
+    InternalWallet, SeedCandidate, TariAddressType, allocate_monero_wallet_id_with,
+    monero_seed_candidates, next_monero_wallet_id, tari_seed_candidates, wipe_and_remove_file,
+};
+use std::collections::HashSet;
+use tari_common_types::seeds::cipher_seed::CipherSeed;
+use tari_utilities::SafePassword;
+use tari_utilities::message_format::MessageFormat;
 
 #[test]
 fn tari_address_type_display_internal() {
@@ -447,4 +454,222 @@ fn mining_is_refused_in_every_recovery_state() {
         // The reason is an enum-like tag, fit for a log line or a Sentry tag.
         assert!(!reason.as_tag().is_empty());
     }
+}
+
+// ** Monero credential id versioning **
+
+#[test]
+fn monero_ids_are_versioned_without_ever_reusing_the_previous_one() {
+    let legacy = WalletId::new("monero".to_string());
+    let second = next_monero_wallet_id(&legacy);
+    assert_eq!(second.as_str(), "monero_2");
+    assert_eq!(next_monero_wallet_id(&second).as_str(), "monero_3");
+    assert_eq!(
+        next_monero_wallet_id(&WalletId::new("monero_11".to_string())).as_str(),
+        "monero_12"
+    );
+    // Anything unrecognised restarts at 2 rather than colliding with the id it came from.
+    assert_eq!(
+        next_monero_wallet_id(&WalletId::new("monero_nonsense".to_string())).as_str(),
+        "monero_2"
+    );
+}
+
+#[tokio::test]
+async fn a_fresh_wallet_keeps_the_original_monero_id() {
+    let allocated = allocate_monero_wallet_id_with(WalletId::new("monero".to_string()), |_id| {
+        std::future::ready(false)
+    })
+    .await
+    .expect("an empty store leaves the first id free");
+    assert_eq!(allocated.as_str(), "monero");
+}
+
+#[tokio::test]
+async fn a_new_monero_seed_never_lands_on_an_occupied_id() {
+    let occupied: HashSet<String> = ["monero", "monero_2"]
+        .iter()
+        .map(|id| (*id).to_string())
+        .collect();
+    let allocated = allocate_monero_wallet_id_with(WalletId::new("monero".to_string()), |id| {
+        let occupied = occupied.clone();
+        async move { occupied.contains(id.as_str()) }
+    })
+    .await
+    .expect("a free id exists");
+    assert_eq!(
+        allocated.as_str(),
+        "monero_3",
+        "the existing Monero seeds must be left where they are"
+    );
+}
+
+#[tokio::test]
+async fn an_unreadable_monero_entry_counts_as_occupied() {
+    // `has_credentials` returning an error is mapped to "occupied" by the caller. Here the
+    // closure models a store that refuses to say: the allocation must move past it, never
+    // through it.
+    let allocated = allocate_monero_wallet_id_with(WalletId::new("monero".to_string()), |id| {
+        std::future::ready(id.as_str() == "monero")
+    })
+    .await
+    .expect("a free id exists");
+    assert_eq!(allocated.as_str(), "monero_2");
+}
+
+#[tokio::test]
+async fn allocation_gives_up_instead_of_overwriting() {
+    let result = allocate_monero_wallet_id_with(WalletId::new("monero".to_string()), |_id| {
+        std::future::ready(true)
+    })
+    .await;
+    assert!(
+        result.is_err(),
+        "a store where every id is taken must error, not reuse one"
+    );
+}
+
+// ** Self-healing PIN state **
+
+fn test_pin() -> SafePassword {
+    SafePassword::from("123456".to_string())
+}
+
+fn other_pin() -> SafePassword {
+    SafePassword::from("654321".to_string())
+}
+
+/// The candidate a caller would take first.
+fn best<T>(candidates: &[SeedCandidate<T>]) -> &SeedCandidate<T> {
+    candidates.first().expect("a blob that can be read at all")
+}
+
+#[test]
+fn a_plain_tari_blob_under_a_locked_config_is_offered_unauthenticated() {
+    // Path P4 with a plaintext blob: the config claims a PIN, the keyring holds a plain seed.
+    // Before the repair this was "Wrong PIN entered!" forever, with a lockout after three tries.
+    let seed = CipherSeed::random();
+    let blob = seed.to_binary().expect("serialize");
+
+    let candidates = tari_seed_candidates(&blob, Some(test_pin()), true);
+    let candidate = best(&candidates);
+    assert_eq!(candidate.seed.entropy(), seed.entropy());
+    assert!(
+        !candidate.authenticated,
+        "a bincode decode proves nothing and must be address-checked"
+    );
+    assert!(
+        !candidate.pin_locked_actual,
+        "the recorded state must be corrected to unlocked"
+    );
+}
+
+#[test]
+fn a_plain_decode_is_never_trusted_on_its_own() {
+    // The reason `authenticated` exists. `to_binary`/`from_binary` is bincode with no tag, so an
+    // *enciphered* blob deserializes into a structurally valid seed that is not the user's.
+    // Acting on it without checking the derived address would hand a user who mistyped their PIN
+    // a different, empty wallet - and, before this change, the no-PIN path returned exactly that
+    // seed to the caller.
+    let seed = CipherSeed::random();
+    let enciphered = seed.encipher(Some(test_pin())).expect("encipher");
+
+    let decoded =
+        CipherSeed::from_binary(&enciphered).expect("bincode accepts the enciphered blob");
+    assert_ne!(
+        decoded.entropy(),
+        seed.entropy(),
+        "the unauthenticated decode of an enciphered blob is the wrong seed"
+    );
+    // ... and the candidate list flags it as unauthenticated rather than returning it as fact.
+    let candidates = tari_seed_candidates(&enciphered, None, false);
+    assert!(candidates.iter().all(|candidate| !candidate.authenticated));
+}
+
+#[test]
+fn an_enciphered_tari_blob_is_authenticated_by_the_pin() {
+    // Path P3: `create_pin` wrote the enciphered blob and died before writing the flag. The MAC
+    // in the enciphered format proves the answer, so no address check is needed for this one.
+    let seed = CipherSeed::random();
+    let blob = seed.encipher(Some(test_pin())).expect("encipher");
+
+    let candidates = tari_seed_candidates(&blob, Some(test_pin()), false);
+    let candidate = best(&candidates);
+    assert_eq!(candidate.seed.entropy(), seed.entropy());
+    assert!(candidate.authenticated);
+    assert!(
+        candidate.pin_locked_actual,
+        "the recorded state must be corrected to locked"
+    );
+}
+
+#[test]
+fn the_recorded_interpretation_is_tried_first() {
+    let seed = CipherSeed::random();
+    let enciphered = seed.encipher(Some(test_pin())).expect("encipher");
+
+    // Recorded as locked: the enciphered reading comes first even though the plain one also
+    // "succeeds" (see above).
+    let candidates = tari_seed_candidates(&enciphered, Some(test_pin()), true);
+    assert!(best(&candidates).authenticated);
+    assert!(best(&candidates).pin_locked_actual);
+
+    let plain = seed.to_binary().expect("serialize");
+    let candidates = tari_seed_candidates(&plain, None, false);
+    assert!(!best(&candidates).pin_locked_actual);
+}
+
+#[test]
+fn a_wrong_pin_leaves_only_the_unauthenticated_reading() {
+    // A wrong PIN must never produce an authenticated candidate; the address check is then the
+    // only thing standing between the user and someone else's empty wallet.
+    let seed = CipherSeed::random();
+    let blob = seed.encipher(Some(test_pin())).expect("encipher");
+    let candidates = tari_seed_candidates(&blob, Some(other_pin()), true);
+    assert!(candidates.iter().all(|candidate| !candidate.authenticated));
+}
+
+#[test]
+fn a_plain_monero_blob_under_a_locked_config_is_offered_unauthenticated() {
+    let seed = vec![7u8; 32];
+    let candidates = monero_seed_candidates(&seed, Some(test_pin()), true);
+    let candidate = best(&candidates);
+    assert_eq!(candidate.seed, seed);
+    assert!(!candidate.authenticated);
+    assert!(!candidate.pin_locked_actual);
+}
+
+#[test]
+fn an_encrypted_monero_blob_is_authenticated_by_the_pin() {
+    let seed = vec![9u8; 32];
+    let blob = crate::utils::cryptography::encrypt(&seed, &test_pin()).expect("encrypt");
+
+    // Without a PIN there is no reading at all: the caller prompts once.
+    assert!(monero_seed_candidates(&blob, None, false).is_empty());
+
+    // AES-GCM authenticates, so this direction needs no address check either.
+    let candidates = monero_seed_candidates(&blob, Some(test_pin()), false);
+    let candidate = best(&candidates);
+    assert_eq!(candidate.seed, seed);
+    assert!(candidate.authenticated);
+    assert!(candidate.pin_locked_actual);
+}
+
+#[test]
+fn a_consistent_monero_state_is_left_alone() {
+    let seed = vec![3u8; 32];
+    let candidates = monero_seed_candidates(&seed, None, false);
+    assert!(!best(&candidates).pin_locked_actual);
+
+    let blob = crate::utils::cryptography::encrypt(&seed, &test_pin()).expect("encrypt");
+    let candidates = monero_seed_candidates(&blob, Some(test_pin()), true);
+    assert!(best(&candidates).pin_locked_actual);
+}
+
+#[test]
+fn a_wrong_monero_pin_reads_nothing() {
+    // The ciphertext is longer than a seed, so there is no plain reading to fall back to.
+    let seed = vec![5u8; 32];
+    let blob = crate::utils::cryptography::encrypt(&seed, &test_pin()).expect("encrypt");
+    assert!(monero_seed_candidates(&blob, Some(other_pin()), true).is_empty());
 }

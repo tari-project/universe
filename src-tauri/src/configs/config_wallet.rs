@@ -94,6 +94,15 @@ pub struct ConfigWalletContent {
     wxtm_addresses: HashMap<String, String>, // This is the Ethereum address used for WXTm mode | Maps exchange ID to address
     #[getset(get = "pub")]
     monero_address_is_generated: bool,
+    /// Credential id holding the generated Monero seed.
+    ///
+    /// `None` means the original, unversioned `monero` entry, which is what every wallet created
+    /// before Monero ids were versioned uses. A new seed is never written over an existing entry:
+    /// it gets the next id in the sequence (`monero`, `monero_2`, ...) and this field is moved to
+    /// it, so a seed that was replaced - by "forgot PIN", say - is still in the store and still
+    /// reachable through "find my wallets".
+    #[getset(get = "pub", set = "pub")]
+    monero_wallet_id: Option<WalletId>,
     #[getset(get = "pub", set = "pub")]
     keyring_accessed: bool, // backward compatibility
     #[getset(get = "pub", set = "pub")]
@@ -123,6 +132,7 @@ impl Default for ConfigWalletContent {
             tari_wallets: Vec::new(), // Owned wallets` ids
             monero_address: "".to_string(),
             monero_address_is_generated: false,
+            monero_wallet_id: None, // None == the legacy, unversioned "monero" entry
             keyring_accessed: false,
             wxtm_addresses: HashMap::new(), // Ethereum addresses used for WXTm mode
             wallet_migration_nonce: 0,
@@ -200,9 +210,17 @@ impl ConfigWalletContent {
         self
     }
 
-    pub fn set_generated_monero_address(&mut self, address: String) -> &mut Self {
+    /// Records a generated Monero wallet: its address and the credential id its seed was written
+    /// under, in one update.
+    ///
+    /// The two must never disagree - an address without the id that derives it is an orphaned
+    /// seed - and `update_field` saves once per call, so they are set together rather than in two
+    /// saves with a crash window between them.
+    pub fn set_generated_monero_wallet(&mut self, payload: (String, WalletId)) -> &mut Self {
+        let (address, wallet_id) = payload;
         self.monero_address = address;
         self.monero_address_is_generated = true;
+        self.monero_wallet_id = Some(wallet_id);
 
         self
     }

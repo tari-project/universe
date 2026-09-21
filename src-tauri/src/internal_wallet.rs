@@ -27,6 +27,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tari_common::configuration::Network;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
 use tari_common_types::seeds::mnemonic::Mnemonic;
@@ -515,6 +516,10 @@ impl InternalWallet {
         tari_seed: CipherSeed, // decrypted seed
         pin_password_provided: Option<SafePassword>,
     ) -> Result<(TariWalletDetails, Vec<u8>), anyhow::Error> {
+        // Refuse against a recovery placeholder config: adding a wallet would write the new id
+        // into a config that is not the user's, and the id their seed is actually stored under
+        // would be lost with it.
+        ConfigWallet::content().await.ensure_available()?;
         let wallet_id = rand_utils::get_rand_string(6);
         log::info!(target: LOG_TARGET_APP_LOGIC, "Adding Tari Wallet with id: {wallet_id}");
 
@@ -566,9 +571,18 @@ impl InternalWallet {
         Ok(())
     }
 
+    /// Store a newly generated Monero seed under an id that is not in use.
+    ///
+    /// Never writes over an existing Monero entry. The keyring blob is the only copy of a Monero
+    /// seed there is - there are no seed words on paper unless the user exported them - so a
+    /// second generated seed goes to the next id in the sequence and the previous one stays where
+    /// it is (path P6 of the investigation).
     async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
-        log::info!(target: LOG_TARGET_APP_LOGIC, "Adding new Monero Wallet");
-        let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
+        // Same reason as `add_tari_wallet`: never write a wallet into a placeholder config.
+        ConfigWallet::content().await.ensure_available()?;
+        let wallet_id = InternalWallet::allocate_monero_wallet_id().await?;
+        log::info!(target: LOG_TARGET_APP_LOGIC, "Adding new Monero Wallet with id: {}", wallet_id.as_str());
+        let cm = CredentialManager::new_default(wallet_id.clone());
         let monero_seed_binary = (*monero_seed.inner())
             .to_binary()
             .map_err(|e| anyhow!("Could not convert the Monero seed to binary: {e}"))?;
@@ -576,43 +590,109 @@ impl InternalWallet {
         let credentials = Credential {
             encrypted_seed: monero_seed_binary.clone(),
         };
+        // Keyring first, config second. A crash in between leaves an entry the config does not
+        // point at, which "find my wallets" can still show; the reverse order would leave the
+        // config pointing at an id that holds nothing.
         cm.set_credentials(&credentials).await?;
 
         let monero_address = monero_seed
             .to_address::<Mainnet>()
             .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string());
         ConfigWallet::update_field(
-            ConfigWalletContent::set_generated_monero_address,
-            monero_address,
+            ConfigWalletContent::set_generated_monero_wallet,
+            (monero_address, wallet_id),
         )
         .await?;
 
         Ok(monero_seed_binary)
     }
 
-    fn remove_monero_wallet() -> Result<(), anyhow::Error> {
-        log::info!(target: LOG_TARGET_APP_LOGIC, "Removing Monero Wallet");
-        let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
-        cm.delete_credential()?;
+    /// Deliberately keeps the Monero credential.
+    ///
+    /// There is no second copy of a generated Monero seed anywhere: not in the config, not in a
+    /// file, and only on paper if the user exported the seed words. Deleting the entry - which is
+    /// what this did, from `clear_all_wallets` - makes every Monero payout ever mined to that
+    /// address unrecoverable, and the reset flow that calls it can and does fail halfway on
+    /// Windows. Superseded ids are kept for the same reason. "Find my wallets" is how a user
+    /// reaches an entry the config no longer points at.
+    async fn remove_monero_wallet() -> Result<(), anyhow::Error> {
+        let wallet_id = InternalWallet::monero_wallet_id().await;
+        log::info!(
+            target: LOG_TARGET_APP_LOGIC,
+            "{LOG_MONERO_ENTRY_PRESERVED}: keeping the Monero credential wallet_id={}",
+            wallet_id.as_str(),
+        );
 
         Ok(())
     }
 
+    /// Credential id the generated Monero seed currently lives under.
+    ///
+    /// Wallets created before Monero ids were versioned have no id in the config; they use the
+    /// original `monero` entry and keep working unchanged.
+    pub async fn monero_wallet_id() -> WalletId {
+        ConfigWallet::content()
+            .await
+            .monero_wallet_id()
+            .clone()
+            .unwrap_or_else(|| WalletId::new(MONERO_WALLET_ID_LEGACY.to_string()))
+    }
+
+    /// The first Monero id in the sequence that holds nothing, starting from the linked one.
+    ///
+    /// An id whose readability cannot be determined counts as taken: the point is never to write
+    /// over a seed, and "the store would not tell us" is not proof that an id is free.
+    async fn allocate_monero_wallet_id() -> Result<WalletId, anyhow::Error> {
+        let start = InternalWallet::monero_wallet_id().await;
+        allocate_monero_wallet_id_with(start, |candidate| async move {
+            // "The store would not tell us" is not proof that an id is free, so an unreadable
+            // entry counts as taken.
+            CredentialManager::new_default(candidate)
+                .has_credentials()
+                .await
+                .unwrap_or(true)
+        })
+        .await
+    }
+
+    /// Set a new PIN for a user who lost the old one, proven by their Tari seed words.
+    ///
+    /// Write order is the same as `create_pin` and for the same reason: the seed blobs first,
+    /// the `pin_locked` flag last. The Monero seed cannot be recovered from the Tari seed, so a
+    /// new one is generated - but it is written under a *new* credential id, leaving the previous
+    /// Monero entry exactly where it is. Anything mined to the old Monero address stays
+    /// recoverable through "find my wallets" instead of being overwritten (path P6).
     pub async fn recover_forgotten_pin(
         app_handle: &AppHandle,
         tari_seed: CipherSeed,
     ) -> Result<(), anyhow::Error> {
+        let wallet_id = InternalWallet::tari_wallet_details()
+            .await?
+            .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
+            .id;
         let pin_password = PinManager::create_pin(app_handle).await?;
 
+        // 1. Tari seed, enciphered with the new PIN.
+        let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?;
+        InternalWallet::set_credentials(
+            app_handle,
+            wallet_id,
+            &Credential {
+                encrypted_seed: encrypted_tari_seed.clone(),
+            },
+            false,
+        )
+        .await?;
+
+        // 2. A fresh Monero seed under a fresh id; the old entry is left alone.
         let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
         {
-            // Unfortunately, we cannot recover the Monero seed from the wallet.
-            // We need to create a new one at this point.
+            let monero_wallet_id = InternalWallet::allocate_monero_wallet_id().await?;
             let monero_seed = MoneroSeed::generate()?;
             let encrypted_monero_seed = cryptography::encrypt(monero_seed.inner(), &pin_password)?;
             InternalWallet::set_credentials(
                 app_handle,
-                WalletId::new("monero".to_string()),
+                monero_wallet_id.clone(),
                 &Credential {
                     encrypted_seed: encrypted_monero_seed.clone(),
                 },
@@ -622,10 +702,14 @@ impl InternalWallet {
             let monero_address = monero_seed
                 .to_address::<Mainnet>()
                 .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string());
-            log::info!(target: LOG_TARGET_APP_LOGIC, "New Monero Address generated when recover_forgotten_pin: {monero_address}");
+            log::info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "New Monero wallet generated during PIN recovery: wallet_id={}",
+                monero_wallet_id.as_str(),
+            );
             ConfigWallet::update_field(
-                ConfigWalletContent::set_generated_monero_address,
-                monero_address,
+                ConfigWalletContent::set_generated_monero_wallet,
+                (monero_address, monero_wallet_id),
             )
             .await?;
 
@@ -633,24 +717,8 @@ impl InternalWallet {
         } else {
             None // External Monero address, no seed to recover
         };
-        let encrypted_tari_seed = {
-            // Encrypt Tari Seed with PIN
-            let wallet_id = InternalWallet::tari_wallet_details()
-                .await?
-                .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
-                .id;
-            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password))?;
-            InternalWallet::set_credentials(
-                app_handle,
-                wallet_id.clone(),
-                &Credential {
-                    encrypted_seed: encrypted_tari_seed.clone(),
-                },
-                false,
-            )
-            .await?;
-            encrypted_tari_seed
-        };
+
+        // 3. Only now the flag.
         PinManager::set_pin_locked().await?;
 
         if let Some(instance) = INSTANCE.get() {
@@ -663,52 +731,95 @@ impl InternalWallet {
         Ok(())
     }
 
+    /// Encipher the wallet's seeds with a new PIN.
+    ///
+    /// Refuses to run when a PIN is already set. The old code did not check, and calling it twice
+    /// read the already-enciphered Monero blob as if it were plaintext and encrypted it a second
+    /// time, which no code path can undo (path P5).
+    ///
+    /// Order of writes, and why:
+    ///
+    /// 1. Both seeds are read and the PIN is taken *before* anything is written, so a failure to
+    ///    read - a missing keyring entry, a cancelled prompt - costs nothing.
+    /// 2. The Tari blob, then the Monero blob, then the `pin_locked` flag.
+    ///
+    /// `pin_locked` is the config's claim about how the blobs are encoded, so the flag must be
+    /// the last thing written. A crash before it leaves enciphered blobs with the flag still
+    /// false: the seeds are intact, and the decode path below notices that the blob does not
+    /// parse as plaintext, asks once for the PIN and repairs the flag. The opposite order would
+    /// leave the flag true over plaintext blobs, which sends every later PIN entry through the
+    /// failed-attempt counter and locks the user out of their own wallet for an hour at a time.
+    /// Each blob is individually self-describing, so a crash between the two is recoverable in
+    /// exactly the same way.
     pub async fn create_pin(app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+        if PinManager::pin_locked().await {
+            // Not a defect and not reported: the UI should not have offered this. Returning an
+            // error is what keeps the double-encryption path closed.
+            log::warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "[create_pin] refused: a PIN is already set for this wallet",
+            );
+            return Err(anyhow!("A PIN is already set for this wallet"));
+        }
+
+        let monero_is_generated = *ConfigWallet::content().await.monero_address_is_generated();
+
+        // 1. Read everything first. Nothing has been written at this point, so any failure here
+        //    leaves the wallet exactly as it was.
+        let tari_seed = InternalWallet::get_tari_seed(None).await?;
+        let wallet_id = InternalWallet::tari_wallet_details()
+            .await?
+            .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
+            .id;
+        let monero_seed = if monero_is_generated {
+            Some(InternalWallet::get_monero_seed(None).await?)
+        } else {
+            // External Monero address is used, no seed to encrypt
+            None
+        };
+        if PinManager::pin_locked().await {
+            // Reading the seeds can repair a `pin_locked` flag that was false only because an
+            // earlier `create_pin` died before its last write. In that case a PIN already exists
+            // and this call must stop rather than encipher the blobs a second time.
+            log::warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "[create_pin] refused: the recorded PIN state was repaired while reading the seeds",
+            );
+            return Err(anyhow!("A PIN is already set for this wallet"));
+        }
         let pin_password = PinManager::create_pin(app_handle).await?;
 
-        let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
-        {
-            // Encrypt Monero Seed with PIN
-            let monero_seed = InternalWallet::get_monero_seed(None).await?;
+        // 2. Tari blob.
+        let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?;
+        InternalWallet::set_credentials(
+            app_handle,
+            wallet_id,
+            &Credential {
+                encrypted_seed: encrypted_tari_seed.clone(),
+            },
+            false,
+        )
+        .await?;
+
+        // 3. Monero blob, under the id it already lives at: the bytes are the same seed, only
+        //    enciphered, so this is not a new wallet and must not consume a new id.
+        let encrypted_monero_seed = if let Some(monero_seed) = monero_seed {
             let encrypted_monero_seed = cryptography::encrypt(monero_seed.inner(), &pin_password)?;
             InternalWallet::set_credentials(
                 app_handle,
-                WalletId::new("monero".to_string()),
+                InternalWallet::monero_wallet_id().await,
                 &Credential {
                     encrypted_seed: encrypted_monero_seed.clone(),
                 },
                 false,
             )
             .await?;
-            if let Some(instance) = INSTANCE.get() {
-                let mut internal_wallet_guard = instance.write().await;
-                internal_wallet_guard.encrypted_monero_seed =
-                    Hidden::hide(Some(encrypted_monero_seed.clone()));
-            }
             Some(encrypted_monero_seed)
         } else {
-            // External Monero address is used, no seed to encrypt
             None
         };
-        let encrypted_tari_seed = {
-            // Encrypt Tari Seed with PIN
-            let tari_seed = InternalWallet::get_tari_seed(None).await?;
-            let wallet_id = InternalWallet::tari_wallet_details()
-                .await?
-                .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
-                .id;
-            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password))?;
-            InternalWallet::set_credentials(
-                app_handle,
-                wallet_id,
-                &Credential {
-                    encrypted_seed: encrypted_tari_seed.clone(),
-                },
-                false,
-            )
-            .await?;
-            encrypted_tari_seed
-        };
+
+        // 4. Only now the flag, and only now the cached blobs.
         PinManager::set_pin_locked().await?;
 
         if let Some(instance) = INSTANCE.get() {
@@ -1241,26 +1352,55 @@ impl InternalWallet {
 
         let blob_len = encrypted_tari_seed.len();
         let pin_locked = PinManager::pin_locked().await;
-        if let Some(pin_password) = pin_password {
-            CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, Some(pin_password)).map_err(
-                |_| {
-                    // A wrong PIN is a user mistake, not a defect: warn level, never Sentry.
-                    log::warn!(
-                        target: LOG_TARGET_APP_LOGIC,
-                        "[get_tari_seed] seed did not decipher with the supplied PIN: blob_len={blob_len} pin_locked={pin_locked}",
-                    );
-                    anyhow!("Wrong PIN entered!")
-                },
-            )
+        // Read the blob, trying the interpretation the config recorded first and the other one
+        // only if the first does not hold up. Anything unauthenticated has to derive the
+        // recorded address before it is believed; see `SeedCandidate`.
+        let mut pin_password = pin_password;
+        let supplied_pin = pin_password.is_some();
+        let mut prompted = false;
+        loop {
+            for candidate in
+                tari_seed_candidates(&encrypted_tari_seed, pin_password.clone(), pin_locked)
+            {
+                if !candidate.authenticated
+                    && !tari_seed_matches_recorded_address(&candidate.seed).await
+                {
+                    continue;
+                }
+                if candidate.pin_locked_actual != pin_locked {
+                    repair_pin_state(candidate.pin_locked_actual, SEED_TAG_TARI).await;
+                }
+                return Ok(candidate.seed);
+            }
+
+            // Nothing read the blob. If no PIN was supplied, the blob may be enciphered while the
+            // config says no PIN is set (path P3: `create_pin` wrote the blob and then died
+            // before writing the flag). Ask once - once per run, never in a loop.
+            if supplied_pin || prompted {
+                break;
+            }
+            match prompt_pin_for_repair(SEED_TAG_TARI).await {
+                Some(prompted_pin) => {
+                    pin_password = Some(prompted_pin);
+                    prompted = true;
+                }
+                None => break,
+            }
+        }
+
+        if supplied_pin {
+            // A wrong PIN is a user mistake, not a defect: warn level, never Sentry.
+            log::warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "[get_tari_seed] seed did not decipher with the supplied PIN: blob_len={blob_len} pin_locked={pin_locked}",
+            );
+            Err(anyhow!("Wrong PIN entered!"))
         } else {
-            // Seed not yet encrypted with PIN
-            CipherSeed::from_binary(&encrypted_tari_seed).map_err(|_| {
-                log::error!(
-                    target: LOG_TARGET_APP_LOGIC,
-                    "[get_tari_seed] could not parse Tari seed from binary: error=seed_decode blob_len={blob_len} pin_locked={pin_locked}",
-                );
-                anyhow!("Could not parse Tari Seed from binary")
-            })
+            log::error!(
+                target: LOG_TARGET_APP_LOGIC,
+                "[get_tari_seed] could not parse Tari seed from binary: error=seed_decode blob_len={blob_len} pin_locked={pin_locked}",
+            );
+            Err(anyhow!("Could not parse Tari Seed from binary"))
         }
     }
 
@@ -1287,7 +1427,8 @@ impl InternalWallet {
                 monero_seed
             } else {
                 // Fallback to credentials manager
-                match CredentialManager::new_default(WalletId::new("monero".to_string()))
+                let monero_wallet_id = InternalWallet::monero_wallet_id().await;
+                match CredentialManager::new_default(monero_wallet_id.clone())
                     .get_credentials()
                     .await
                 {
@@ -1304,7 +1445,7 @@ impl InternalWallet {
                         // Same redaction rules as `get_tari_seed`: variant name, id and flag only.
                         log_seed_read_failure(
                             "get_monero_seed",
-                            "monero",
+                            monero_wallet_id.as_str(),
                             SeedProbeErrorKind::from(&e),
                             PinManager::pin_locked().await,
                         );
@@ -1319,24 +1460,66 @@ impl InternalWallet {
 
         let blob_len = encrypted_monero_seed.len();
         let pin_locked = PinManager::pin_locked().await;
-        let decrypted_monero_seed = if let Some(pin_password) = pin_password {
-            cryptography::decrypt(&encrypted_monero_seed, &pin_password).map_err(|_| {
-                // Wrong PIN: user mistake, warn level, never Sentry.
-                log::warn!(
+        // A Monero seed is 32 raw bytes; anything else is ciphertext. That makes each blob
+        // self-describing, which is what lets the two repairs below be safe.
+        let mut pin_password = pin_password;
+        let supplied_pin = pin_password.is_some();
+        let mut prompted = false;
+        let decrypted_monero_seed = loop {
+            let mut accepted = None;
+            for candidate in
+                monero_seed_candidates(&encrypted_monero_seed, pin_password.clone(), pin_locked)
+            {
+                if !candidate.authenticated
+                    && !monero_seed_matches_recorded_address(&candidate.seed).await
+                {
+                    continue;
+                }
+                if candidate.pin_locked_actual != pin_locked {
+                    repair_pin_state(candidate.pin_locked_actual, SEED_TAG_MONERO).await;
+                }
+                accepted = Some(candidate.seed);
+                break;
+            }
+            if let Some(seed) = accepted {
+                break seed;
+            }
+
+            if supplied_pin || prompted {
+                if supplied_pin {
+                    // Wrong PIN: user mistake, warn level, never Sentry.
+                    log::warn!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "[get_monero_seed] seed did not decrypt with the supplied PIN: blob_len={blob_len} pin_locked={pin_locked}",
+                    );
+                    return Err(anyhow!("Wrong PIN entered!"));
+                }
+                log::error!(
                     target: LOG_TARGET_APP_LOGIC,
-                    "[get_monero_seed] seed did not decrypt with the supplied PIN: wallet_id=monero blob_len={blob_len} pin_locked={pin_locked}",
+                    "[get_monero_seed] blob is not a plain Monero seed: error=seed_length blob_len={blob_len} pin_locked={pin_locked}",
                 );
-                anyhow!("Wrong PIN entered!")
-            })
-        } else {
-            // Seed not yet encrypted with PIN
-            Ok(encrypted_monero_seed)
-        }?;
-        let decrypted_monero_seed_bytes: [u8; 32] =
+                return Err(anyhow!("Monero seed is not 32 bytes"));
+            }
+            match prompt_pin_for_repair(SEED_TAG_MONERO).await {
+                Some(prompted_pin) => {
+                    pin_password = Some(prompted_pin);
+                    prompted = true;
+                }
+                None => {
+                    log::error!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "[get_monero_seed] blob is not a plain Monero seed: error=seed_length blob_len={blob_len} pin_locked={pin_locked}",
+                    );
+                    return Err(anyhow!("Monero seed is not 32 bytes"));
+                }
+            }
+        };
+
+        let decrypted_monero_seed_bytes: [u8; MONERO_SEED_LENGTH] =
             decrypted_monero_seed.as_slice().try_into().map_err(|_| {
                 log::error!(
                     target: LOG_TARGET_APP_LOGIC,
-                    "[get_monero_seed] decrypted blob has the wrong length: error=seed_length wallet_id=monero blob_len={blob_len} pin_locked={pin_locked}",
+                    "[get_monero_seed] decrypted blob has the wrong length: error=seed_length blob_len={blob_len} pin_locked={pin_locked}",
                 );
                 anyhow!("Monero seed is not 32 bytes")
             })?;
@@ -1363,7 +1546,7 @@ impl InternalWallet {
         for wallet_id in wallet_config.tari_wallets() {
             InternalWallet::remove_tari_wallet(wallet_id.clone())?
         }
-        InternalWallet::remove_monero_wallet()?;
+        InternalWallet::remove_monero_wallet().await?;
         Ok(())
     }
 }
@@ -1572,6 +1755,245 @@ fn report_seed_unavailable_at_startup(kind: SeedProbeErrorKind) {
             sentry::capture_message(SENTRY_SEED_UNAVAILABLE_AT_STARTUP, sentry::Level::Error);
         },
     );
+}
+
+// ** Monero credential ids and PIN-state repair **
+
+/// The original, unversioned Monero credential id. Wallets created before ids were versioned
+/// store their seed here and keep using it; only a *new* seed gets a new id.
+pub const MONERO_WALLET_ID_LEGACY: &str = "monero";
+/// Upper bound on the `monero`, `monero_2`, ... sequence. Reaching it means something is wrong
+/// with the store, not that the user has 32 Monero wallets, so it errors instead of overwriting.
+const MONERO_WALLET_ID_MAX_VERSIONS: u32 = 32;
+/// A Monero seed is exactly this many raw bytes; anything else is ciphertext.
+const MONERO_SEED_LENGTH: usize = 32;
+/// Constant log string for the Monero entry that is deliberately not deleted.
+const LOG_MONERO_ENTRY_PRESERVED: &str = "wallet.monero_entry_preserved";
+/// Constant message for a repaired `pin_locked` flag. Details go in tags, never in the message.
+const SENTRY_PIN_STATE_REPAIRED: &str = "wallet.pin_state_repaired";
+/// Enum-like tag values naming which seed a repair or prompt concerned.
+const SEED_TAG_TARI: &str = "tari";
+const SEED_TAG_MONERO: &str = "monero";
+
+/// `monero` -> `monero_2` -> `monero_3` ... Anything unrecognised restarts the sequence at 2, so
+/// a hand-edited config can never produce a collision with the id it started from.
+pub fn next_monero_wallet_id(current: &WalletId) -> WalletId {
+    let version = current
+        .as_str()
+        .strip_prefix(MONERO_WALLET_ID_LEGACY)
+        .and_then(|rest| rest.strip_prefix('_'))
+        .and_then(|version| version.parse::<u32>().ok())
+        .unwrap_or(1);
+    WalletId::new(format!(
+        "{MONERO_WALLET_ID_LEGACY}_{}",
+        version.saturating_add(1)
+    ))
+}
+
+/// Walk the `monero`, `monero_2`, ... sequence from `start` and return the first id that
+/// `is_occupied` says is free.
+///
+/// Separate from its only caller so the sequence and the "occupied means skip" rule can be
+/// tested without a keyring.
+pub async fn allocate_monero_wallet_id_with<F, Fut>(
+    start: WalletId,
+    is_occupied: F,
+) -> Result<WalletId, anyhow::Error>
+where
+    F: Fn(WalletId) -> Fut,
+    Fut: std::future::Future<Output = bool>,
+{
+    let mut candidate = start;
+    for _ in 0..MONERO_WALLET_ID_MAX_VERSIONS {
+        if !is_occupied(candidate.clone()).await {
+            return Ok(candidate);
+        }
+        candidate = next_monero_wallet_id(&candidate);
+    }
+    Err(anyhow!(
+        "Could not find a free Monero credential id after {MONERO_WALLET_ID_MAX_VERSIONS} attempts"
+    ))
+}
+
+/// The seed whose recorded PIN state is being repaired. Enum-like tag value, never user data.
+fn repair_prompt_flag(seed_tag: &str) -> &'static AtomicBool {
+    /// One prompt per seed per run. The point of the limit is that a user whose config and
+    /// keyring disagree is asked once and then left alone, rather than being prompted on every
+    /// balance refresh.
+    static TARI_PROMPTED: AtomicBool = AtomicBool::new(false);
+    static MONERO_PROMPTED: AtomicBool = AtomicBool::new(false);
+    if seed_tag == SEED_TAG_MONERO {
+        &MONERO_PROMPTED
+    } else {
+        &TARI_PROMPTED
+    }
+}
+
+/// Record that the config's `pin_locked` flag disagreed with the blob, and correct it.
+///
+/// The correction goes through the normal config update path, which T1 made atomic, so a crash
+/// during the repair leaves either the old flag or the new one and never a truncated file.
+async fn repair_pin_state(should_be_locked: bool, seed_tag: &'static str) {
+    log::warn!(
+        target: LOG_TARGET_APP_LOGIC,
+        "{SENTRY_PIN_STATE_REPAIRED}: seed={seed_tag} pin_locked={should_be_locked}",
+    );
+    if let Err(e) = PinManager::repair_pin_locked(should_be_locked).await {
+        log::error!(
+            target: LOG_TARGET_APP_LOGIC,
+            "[repair_pin_state] could not persist the repaired PIN state: seed={seed_tag} error={e}",
+        );
+        return;
+    }
+    report_pin_state_repaired(seed_tag, should_be_locked);
+}
+
+/// Constant message, enum-like tags only.
+fn report_pin_state_repaired(seed_tag: &'static str, pin_locked: bool) {
+    sentry::with_scope(
+        |scope| {
+            scope.set_tag("platform", std::env::consts::OS);
+            scope.set_tag("wallet.pin_repair_seed", seed_tag);
+            scope.set_tag(
+                "wallet.pin_repair_to",
+                if pin_locked { "locked" } else { "unlocked" },
+            );
+        },
+        || {
+            sentry::capture_message(SENTRY_PIN_STATE_REPAIRED, sentry::Level::Warning);
+        },
+    );
+}
+
+/// Ask for a PIN once per seed per run, for the self-healing decode only.
+///
+/// Deliberately not `PinManager::get_validated_pin`: validation reads the seed, which is the very
+/// thing that is failing here. A cancelled prompt is a normal answer - `None`, no Sentry, no
+/// retry.
+async fn prompt_pin_for_repair(seed_tag: &str) -> Option<SafePassword> {
+    if repair_prompt_flag(seed_tag).swap(true, Ordering::SeqCst) {
+        return None;
+    }
+    let app_handle = EventsEmitter::try_get_app_handle().await?;
+    match PinManager::prompt_pin_unvalidated(&app_handle).await {
+        Ok(pin) => Some(pin),
+        Err(_) => {
+            log::info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "[prompt_pin_for_repair] PIN prompt dismissed, leaving the recorded state alone: seed={seed_tag}",
+            );
+            None
+        }
+    }
+}
+
+/// One way a seed blob could be read.
+///
+/// `authenticated` is the important field. `CipherSeed::from_enciphered_bytes` and
+/// `cryptography::decrypt` (AES-256-GCM) both verify a tag, so a success there is proof that the
+/// blob was read the right way. `CipherSeed::from_binary` is plain bincode with no tag at all: an
+/// *enciphered* blob deserializes into a structurally valid `CipherSeed` carrying the wrong
+/// entropy. Anything unauthenticated must therefore be checked against the address the config
+/// recorded before it is used or before the `pin_locked` flag is changed on the strength of it.
+#[derive(Debug)]
+pub struct SeedCandidate<T> {
+    pub seed: T,
+    pub authenticated: bool,
+    /// What `pin_locked` would have to be for this reading to be the correct one.
+    pub pin_locked_actual: bool,
+}
+
+/// Every reading of a Tari blob worth trying, the recorded interpretation first.
+///
+/// Pure: no config, no keyring, no prompt, which is what makes both directions of the repair
+/// testable. An empty result means the blob cannot be read at all with what was supplied.
+pub fn tari_seed_candidates(
+    blob: &[u8],
+    pin_password: Option<SafePassword>,
+    pin_locked_recorded: bool,
+) -> Vec<SeedCandidate<CipherSeed>> {
+    let mut candidates = Vec::new();
+    if let Some(pin_password) = pin_password
+        && let Ok(seed) = CipherSeed::from_enciphered_bytes(blob, Some(pin_password))
+    {
+        candidates.push(SeedCandidate {
+            seed,
+            authenticated: true,
+            pin_locked_actual: true,
+        });
+    }
+    if let Ok(seed) = CipherSeed::from_binary(blob) {
+        candidates.push(SeedCandidate {
+            seed,
+            authenticated: false,
+            pin_locked_actual: false,
+        });
+    }
+    if pin_locked_recorded {
+        // The recorded interpretation goes first; with a PIN that is already the order above.
+        candidates.sort_by_key(|candidate| !candidate.pin_locked_actual);
+    }
+    candidates
+}
+
+/// The same for a Monero blob.
+///
+/// A Monero seed is exactly [`MONERO_SEED_LENGTH`] raw bytes and a ciphertext never is - it
+/// carries a nonce and a tag - so the length is what distinguishes the two readings here.
+pub fn monero_seed_candidates(
+    blob: &[u8],
+    pin_password: Option<SafePassword>,
+    _pin_locked_recorded: bool,
+) -> Vec<SeedCandidate<Vec<u8>>> {
+    let mut candidates = Vec::new();
+    if let Some(pin_password) = pin_password
+        && let Ok(seed) = cryptography::decrypt(blob, &pin_password)
+        && seed.len() == MONERO_SEED_LENGTH
+    {
+        candidates.push(SeedCandidate {
+            seed,
+            authenticated: true,
+            pin_locked_actual: true,
+        });
+    }
+    if blob.len() == MONERO_SEED_LENGTH {
+        candidates.push(SeedCandidate {
+            seed: blob.to_vec(),
+            authenticated: false,
+            pin_locked_actual: false,
+        });
+    }
+    candidates
+}
+
+/// Does this seed derive the Tari address the config recorded?
+///
+/// The check that makes an unauthenticated decode safe to act on. `None` recorded details means
+/// there is nothing to check against - the pre-init path - and the caller then accepts the decode
+/// exactly as it did before this check existed.
+async fn tari_seed_matches_recorded_address(seed: &CipherSeed) -> bool {
+    let Some(recorded) = ConfigWallet::content().await.tari_wallet_details().clone() else {
+        return true;
+    };
+    match InternalWallet::get_tari_wallet_details(recorded.id.clone(), seed.clone()).await {
+        Ok(derived) => derived.tari_address == recorded.tari_address,
+        Err(_) => false,
+    }
+}
+
+/// Does this seed derive the Monero address the config recorded? Same role as its Tari twin.
+async fn monero_seed_matches_recorded_address(seed: &[u8]) -> bool {
+    let recorded = ConfigWallet::content().await.monero_address().clone();
+    if recorded.is_empty() {
+        return true;
+    }
+    let Ok(seed_bytes) = <[u8; MONERO_SEED_LENGTH]>::try_from(seed) else {
+        return false;
+    };
+    match MoneroSeed::new(seed_bytes).to_address::<Mainnet>() {
+        Ok(derived) => derived == recorded,
+        Err(_) => false,
+    }
 }
 
 /// Why the app is in the wallet recovery state.
