@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{collections::HashMap, fs, sync::LazyLock, time::SystemTime};
+use std::{collections::HashMap, fs, path::Path, sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
@@ -36,7 +36,7 @@ use crate::{
     pin::PinLockerState,
 };
 
-use super::trait_config::{ConfigContentImpl, ConfigImpl};
+use super::trait_config::{ConfigContentImpl, ConfigImpl, atomic_write};
 
 static EXCHANGES_RECORD_NAME_FOR_EXTERNAL_ADDRESS_BOOK: &str = "Exchanges";
 
@@ -68,6 +68,8 @@ impl WalletId {
 #[derive(Getters, Setters)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct ConfigWalletContent {
+    #[getset(get = "pub")]
+    corrupted_recovery: bool,
     #[getset(get = "pub", set = "pub")]
     version_counter: u32,
     #[getset(get = "pub", set = "pub")]
@@ -102,6 +104,7 @@ pub struct ConfigWalletContent {
 impl Default for ConfigWalletContent {
     fn default() -> Self {
         Self {
+            corrupted_recovery: false,
             version_counter: WALLET_VERSION,
             tari_wallets: Vec::new(), // Owned wallets` ids
             monero_address: "".to_string(),
@@ -153,6 +156,14 @@ impl<'a> From<&'a ConfigWalletContent> for ConfigWalletFrontend<'a> {
 }
 
 impl ConfigWalletContent {
+    pub fn ensure_available(&self) -> Result<(), anyhow::Error> {
+        anyhow::ensure!(
+            !self.corrupted_recovery,
+            "Wallet configuration needs recovery. Restore a valid wallet configuration backup before continuing."
+        );
+        Ok(())
+    }
+
     /// Builds the sanitized payload sent to the webview. Never includes
     /// `tari_wallet_details` or anything derived from it.
     pub fn to_frontend_payload(&self) -> ConfigWalletFrontend<'_> {
@@ -212,6 +223,92 @@ pub struct ConfigWallet {
 }
 
 impl ConfigWallet {
+    /// Load only validated data. The marker is persisted before quarantine so a
+    /// crash between renaming the damaged file and the next launch cannot look
+    /// like a fresh installation. A manually restored valid primary takes priority.
+    pub(super) fn load_from_path(path: &Path) -> ConfigWalletContent {
+        let backup = path.with_extension("json.backup");
+        let marker = path.with_extension("json.recovery_required");
+        match Self::read_validated(path) {
+            Ok((content, serialized, migrated)) => {
+                if migrated && atomic_write(path, serialized.as_bytes()).is_err() {
+                    log::warn!(target: LOG_TARGET_APP_LOGIC, "wallet.config_migration_save_failed");
+                    return Self::recovery_content();
+                }
+                if atomic_write(&backup, serialized.as_bytes()).is_err() {
+                    log::warn!(target: LOG_TARGET_APP_LOGIC, "wallet.config_backup_failed");
+                }
+                return content;
+            }
+            Err(_) => {
+                // Do not log parser errors: they can quote secret-bearing values.
+                if let Ok((content, serialized, _)) = Self::read_validated(&backup) {
+                    if atomic_write(path, serialized.as_bytes()).is_ok() {
+                        log::warn!(target: LOG_TARGET_APP_LOGIC, "wallet.config_restored_from_backup");
+                        return content;
+                    }
+                    log::error!(target: LOG_TARGET_APP_LOGIC, "wallet.config_restore_failed");
+                    return Self::recovery_content();
+                }
+            }
+        }
+
+        let primary_missing = matches!(fs::metadata(path), Err(error) if error.kind() == std::io::ErrorKind::NotFound);
+        let backup_missing = matches!(fs::metadata(&backup), Err(error) if error.kind() == std::io::ErrorKind::NotFound);
+        let marker_missing = matches!(fs::metadata(&marker), Err(error) if error.kind() == std::io::ErrorKind::NotFound);
+        if primary_missing && backup_missing && marker_missing {
+            let content = ConfigWalletContent::default();
+            if serde_json::to_vec_pretty(&content)
+                .map_err(anyhow::Error::from)
+                .and_then(|serialized| atomic_write(path, &serialized))
+                .is_ok()
+            {
+                return content;
+            }
+            log::error!(target: LOG_TARGET_APP_LOGIC, "wallet.config_create_failed");
+            return Self::recovery_content();
+        }
+
+        log::error!(target: LOG_TARGET_APP_LOGIC, "wallet.config_corrupted");
+        if atomic_write(&marker, b"recovery required\n").is_ok() {
+            let timestamp = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos();
+            let quarantine = path.with_extension(format!("json.corrupted.{timestamp}"));
+            if fs::metadata(path).is_ok_and(|metadata| metadata.is_file())
+                && fs::rename(path, quarantine).is_err()
+            {
+                log::warn!(target: LOG_TARGET_APP_LOGIC, "wallet.config_quarantine_failed");
+            }
+        } else {
+            // Keep the original in place if we cannot durably mark recovery.
+            log::warn!(target: LOG_TARGET_APP_LOGIC, "wallet.config_recovery_marker_failed");
+        }
+        Self::recovery_content()
+    }
+
+    fn recovery_content() -> ConfigWalletContent {
+        ConfigWalletContent {
+            corrupted_recovery: true,
+            ..ConfigWalletContent::default()
+        }
+    }
+
+    fn read_validated(path: &Path) -> Result<(ConfigWalletContent, String, bool), anyhow::Error> {
+        let serialized = fs::read_to_string(path)?;
+        let mut value: serde_json::Value = serde_json::from_str(&serialized)?;
+        let migrated = migrate_payment_id(&mut value);
+        let serialized = if migrated {
+            serde_json::to_string_pretty(&value)?
+        } else {
+            serialized
+        };
+        let content: ConfigWalletContent = serde_json::from_str(&serialized)?;
+        content.ensure_available()?;
+        Ok((content, serialized, migrated))
+    }
+
     pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
@@ -244,6 +341,30 @@ impl ConfigWallet {
     }
 }
 
+/// Rename JSON keys only, including older files with whitespace before the
+/// colon. User-entered string values containing the old name are untouched.
+fn migrate_payment_id(value: &mut serde_json::Value) -> bool {
+    let mut migrated = false;
+    match value {
+        serde_json::Value::Object(fields) => {
+            if let Some(old) = fields.remove("payment_id_user_data") {
+                fields.entry("memo_field_payment_id").or_insert(old);
+                migrated = true;
+            }
+            for child in fields.values_mut() {
+                migrated |= migrate_payment_id(child);
+            }
+        }
+        serde_json::Value::Array(values) => {
+            for child in values {
+                migrated |= migrate_payment_id(child);
+            }
+        }
+        _ => {}
+    }
+    migrated
+}
+
 impl ConfigImpl for ConfigWallet {
     type Config = ConfigWalletContent;
 
@@ -259,42 +380,15 @@ impl ConfigImpl for ConfigWallet {
     }
 
     fn _load_or_create() -> Self::Config {
-        let config_path = <Self as ConfigImpl>::_get_config_path();
-        if config_path.exists() {
-            let config_content_serialized = fs::read_to_string(&config_path)
-                .expect("[ConfigWallet::_load_or_create] Failed to read config file");
-            // create backup before writing new content
-            fs::copy(&config_path, format!("{}.backup", config_path.display()))
-                .expect("Failed to create backup Config Wallet");
-            // TariAddress type change in the core repo
-            let config_content_migrated =
-                config_content_serialized.replace("payment_id_user_data", "memo_field_payment_id");
-            fs::write(&config_path, config_content_migrated)
-                .expect("[ConfigWallet::_load_or_create] Failed to write config file");
+        Self::load_from_path(&Self::_get_config_path())
+    }
 
-            match Self::_load_config() {
-                Ok(config_content) => {
-                    log::info!(target: LOG_TARGET_APP_LOGIC, "[{}] [load_config] loaded config content", Self::_get_name());
-                    config_content
-                }
-                Err(e) => {
-                    log::error!(target: LOG_TARGET_APP_LOGIC, "[{}] [load_config] error occured when loading config content: {e:?}", Self::_get_name());
-                    // The raw file holds the wallet view private key, so its
-                    // content must never be logged. The serde error above
-                    // already carries the line/column of the problem.
-                    log::info!(target: LOG_TARGET_APP_LOGIC, "* Wallet Config: {} bytes could not be parsed", config_content_serialized.len());
-                    // Panic instead of creating default config
-                    panic!("Failed to load wallet config: {e:?}");
-                }
-            }
-        } else {
-            log::debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [load_config] creating a new config content (file not found)", Self::_get_name());
-            let config_content = Self::Config::default();
-            let _unused = Self::_save_config(config_content.clone()).inspect_err(|error| {
-                log::warn!(target: LOG_TARGET_APP_LOGIC, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
-            });
-            config_content
-        }
+    fn _save_config(content: Self::Config) -> Result<(), anyhow::Error> {
+        content.ensure_available()?;
+        atomic_write(
+            &Self::_get_config_path(),
+            &serde_json::to_vec_pretty(&content)?,
+        )
     }
 
     async fn _get_app_handle(&self) -> Option<AppHandle> {

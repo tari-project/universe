@@ -20,6 +20,7 @@ embed-resource = "2.5.0"
 tauri-build = { version = "2", features = ["isolation"] }
 
 [dependencies]
+tempfile = "3.10"
 anyhow = "1"
 async-trait = "0.1.81"
 async_zip = { version = "0.0.17", features = ["full"] }
@@ -143,7 +144,6 @@ winreg = "0.52.0"
 [dev-dependencies]
 mockall = "0.13"
 serial_test = "3.0"
-tempfile = "3.10"
 test-case = "3.3"
 tokio-test = "0.4"
 wiremock = "0.6"

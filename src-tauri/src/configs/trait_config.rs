@@ -20,7 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{env::temp_dir, fs, path::PathBuf};
+use std::{
+    env::temp_dir,
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Error;
 use dirs::config_dir;
@@ -38,6 +43,23 @@ use crate::{
 };
 
 pub const CONFIG_UPDATE_FIELD_EVENT_NAME: &str = "config-update-field";
+
+/// Persist a complete file before atomically replacing the destination. Unique,
+/// same-directory temporary files also prevent writers from sharing a temp file.
+pub(crate) fn atomic_write(path: &Path, content: &[u8]) -> Result<(), Error> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| anyhow::anyhow!("Config path has no parent"))?;
+    fs::create_dir_all(parent)?;
+    let mut temporary = tempfile::NamedTempFile::new_in(parent)?;
+    temporary.write_all(content)?;
+    temporary.as_file().sync_all()?;
+    temporary.persist(path).map_err(|error| error.error)?;
+    // Persist the directory entry too on platforms that support directory fsync.
+    #[cfg(unix)]
+    fs::File::open(parent)?.sync_all()?;
+    Ok(())
+}
 
 /// Builds the payload for the `config-update-field` telemetry event.
 ///
@@ -113,12 +135,8 @@ pub trait ConfigImpl {
 
     fn _save_config(config_content: Self::Config) -> Result<(), Error> {
         let config_path = Self::_get_config_path();
-        if let Some(parent) = config_path.parent() {
-            fs::create_dir_all(parent)?;
-        }
         let config_content_serialized = serde_json::to_string_pretty(&config_content)?;
-        fs::write(config_path, config_content_serialized)?;
-        Ok(())
+        atomic_write(&config_path, config_content_serialized.as_bytes())
     }
     fn _load_config() -> Result<Self::Config, Error> {
         let config_path = Self::_get_config_path();
@@ -145,13 +163,15 @@ pub trait ConfigImpl {
         Self: 'static,
     {
         debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] with function: {:?} and value of type: {:?}", Self::_get_name(), std::any::type_name::<F>(), std::any::type_name::<I>());
-        setter_callback(
-            Self::current().write().await._get_content_mut(),
-            value.clone(),
-        );
-        Self::_save_config(Self::current().read().await._get_content().clone()).inspect_err(|error|
-            debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] error: {:?}", Self::_get_name(), error)
-        )?;
+        {
+            let mut config = Self::current().write().await;
+            let mut updated = config._get_content().clone();
+            setter_callback(&mut updated, value);
+            Self::_save_config(updated.clone()).inspect_err(|_error|
+                warn!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] failed to persist config", Self::_get_name())
+            )?;
+            *config._get_content_mut() = updated;
+        }
         Self::current()
             .read()
             .await
@@ -178,5 +198,92 @@ pub trait ConfigImpl {
             .add_phases_to_restart_queue(phases_to_restart)
             .await;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod durability_tests {
+    use super::*;
+    use std::sync::{
+        LazyLock,
+        atomic::{AtomicBool, Ordering},
+    };
+
+    static DIRECTORY: LazyLock<tempfile::TempDir> = LazyLock::new(|| tempfile::tempdir().unwrap());
+    static INSTANCE: LazyLock<RwLock<TestConfig>> =
+        LazyLock::new(|| RwLock::new(TestConfig::new()));
+    static FAIL_SAVE: AtomicBool = AtomicBool::new(false);
+
+    #[derive(Clone, Default, Serialize, Deserialize)]
+    struct Content {
+        updates: Vec<u32>,
+    }
+    impl ConfigContentImpl for Content {}
+    struct TestConfig(Content);
+    impl ConfigImpl for TestConfig {
+        type Config = Content;
+        fn new() -> Self {
+            Self(Content::default())
+        }
+        fn current() -> &'static RwLock<Self> {
+            &INSTANCE
+        }
+        async fn _get_app_handle(&self) -> Option<AppHandle> {
+            None
+        }
+        async fn load_app_handle(&mut self, _app_handle: AppHandle) {}
+        fn _get_name() -> String {
+            "durability_test".into()
+        }
+        fn _get_content(&self) -> &Content {
+            &self.0
+        }
+        fn _get_content_mut(&mut self) -> &mut Content {
+            &mut self.0
+        }
+        fn _get_config_path() -> PathBuf {
+            DIRECTORY.path().join("config.json")
+        }
+        fn _save_config(content: Content) -> Result<(), Error> {
+            anyhow::ensure!(!FAIL_SAVE.load(Ordering::SeqCst), "simulated save failure");
+            atomic_write(&Self::_get_config_path(), &serde_json::to_vec(&content)?)
+        }
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn concurrent_updates_persist_every_mutation_and_failed_saves_do_not_publish() {
+        let mut tasks = tokio::task::JoinSet::new();
+        for value in 0..32 {
+            tasks.spawn(TestConfig::update_field(
+                |content, value| {
+                    content.updates.push(value);
+                    content
+                },
+                value,
+            ));
+        }
+        while let Some(result) = tasks.join_next().await {
+            result.unwrap().unwrap();
+        }
+        let memory = TestConfig::content().await;
+        let disk = TestConfig::_load_config().unwrap();
+        assert_eq!(memory.updates, disk.updates);
+        let mut updates = disk.updates;
+        updates.sort_unstable();
+        assert_eq!(updates, (0..32).collect::<Vec<_>>());
+        FAIL_SAVE.store(true, Ordering::SeqCst);
+        assert!(
+            TestConfig::update_field(
+                |content, value| {
+                    content.updates.push(value);
+                    content
+                },
+                99
+            )
+            .await
+            .is_err()
+        );
+        assert_eq!(TestConfig::content().await.updates, memory.updates);
+        assert_eq!(TestConfig::_load_config().unwrap().updates, memory.updates);
     }
 }

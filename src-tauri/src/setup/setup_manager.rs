@@ -316,6 +316,17 @@ impl SetupManager {
 
         ConfigCore::initialize(app_handle.clone()).await;
         ConfigWallet::initialize(app_handle.clone()).await;
+        if ConfigWallet::content().await.ensure_available().is_err() {
+            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
+                title: Some("Wallet configuration needs recovery".to_string()),
+                description: Some(
+                    "The wallet configuration could not be read. Existing wallet data has been preserved. Restore a valid wallet configuration backup before continuing.".to_string(),
+                ),
+                error_message: Some("wallet.config_corrupted".to_string()),
+            })
+            .await;
+            return;
+        }
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
@@ -800,6 +811,9 @@ impl SetupManager {
     pub async fn start_setup(&self, app_handle: AppHandle) {
         *self.app_handle.lock().await = Some(app_handle.clone());
         self.pre_setup(app_handle.clone()).await;
+        if ConfigWallet::content().await.ensure_available().is_err() {
+            return;
+        }
 
         let shutdown_signal = TasksTrackers::current().common.get_signal().await;
         let modal_status_subscriber = self.exchange_modal_status.subscribe();

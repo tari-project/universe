@@ -214,8 +214,28 @@ struct UniverseAppState {
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
 }
 
+fn install_fatal_panic_hook() {
+    std::panic::set_hook(Box::new(|panic_info| {
+        // Never forward the panic payload to the default/Sentry hook: an error
+        // or assertion can contain wallet secrets. Source locations are safe.
+        if let Some(location) = panic_info.location() {
+            log::error!(target: LOG_TARGET_APP_LOGIC, "app.panic at {}:{}:{}", location.file(), location.line(), location.column());
+        } else {
+            log::error!(target: LOG_TARGET_APP_LOGIC, "app.panic");
+        }
+        sentry::capture_message("app.panic", sentry::Level::Fatal);
+        if let Some(client) = sentry::Hub::current().client() {
+            client.flush(Some(std::time::Duration::from_secs(2)));
+        }
+        // Tokio catches unwinds in spawned tasks. Exit here instead of leaving
+        // poisoned singletons and a half-initialized process running.
+        std::process::exit(1);
+    }));
+}
+
 #[allow(clippy::too_many_lines)]
 fn main() {
+    install_fatal_panic_hook();
     #[cfg(target_os = "linux")]
     {
         if std::path::Path::new("/dev/dri").exists()
@@ -259,6 +279,9 @@ fn main() {
         },
     ));
     let _guard = minidump::init(&client);
+    // Sentry installs its own hook during initialization; replace it so panic
+    // payloads cannot be captured and worker-task panics always terminate.
+    install_fatal_panic_hook();
 
     let mut stats_collector = ProcessStatsCollectorBuilder::new();
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
@@ -671,4 +694,36 @@ fn main() {
             _ => {}
         };
     });
+}
+
+#[cfg(test)]
+mod fatal_panic_tests {
+    #[test]
+    fn spawned_task_panic_exits_nonzero_without_exposing_payload() {
+        const CHILD: &str = "TARI_TEST_FATAL_PANIC_CHILD";
+        const SECRET: &str = "panic_payload_secret_sentinel";
+        if std::env::var_os(CHILD).is_some() {
+            super::install_fatal_panic_hook();
+            tokio::runtime::Builder::new_current_thread()
+                .build()
+                .unwrap()
+                .block_on(async {
+                    let _ = tokio::spawn(async { panic!("{SECRET}") }).await;
+                });
+            // Reaching this point means Tokio swallowed the panic.
+            std::process::exit(0);
+        }
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "fatal_panic_tests::spawned_task_panic_exits_nonzero_without_exposing_payload",
+                "--nocapture",
+            ])
+            .env(CHILD, "1")
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(1));
+        assert!(!String::from_utf8_lossy(&output.stderr).contains(SECRET));
+        assert!(!String::from_utf8_lossy(&output.stdout).contains(SECRET));
+    }
 }
