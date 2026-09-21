@@ -1662,8 +1662,8 @@ pub fn wallet_usability(reason: Option<WalletRecoveryReason>) -> Result<(), Mini
 /// and delete the `_` on the parameter. Nothing else has to change: the single call site in
 /// `initialize_with_seed_inner` already turns `true` into an error, which `setup_manager` turns
 /// into the recovery UI.
-fn wallet_config_is_corrupted_recovery(_wallet_config: &ConfigWalletContent) -> bool {
-    false
+fn wallet_config_is_corrupted_recovery(wallet_config: &ConfigWalletContent) -> bool {
+    wallet_config.ensure_available().is_err()
 }
 
 // ** Utils **
