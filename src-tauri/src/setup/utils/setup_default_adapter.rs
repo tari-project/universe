@@ -24,7 +24,7 @@ use crate::{
     LOG_TARGET_APP_LOGIC,
     setup::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl},
 };
-use log::{info, warn};
+use log::{error, info, warn};
 use tokio::select;
 
 pub struct SetupDefaultAdapter {}
@@ -55,9 +55,22 @@ impl SetupDefaultAdapter {
 
                 }
                 result = phase.setup_inner() => {
-                    if result.is_ok() {
-                        info!(target: LOG_TARGET_APP_LOGIC, "[ {} Phase ] Setup completed successfully", phase.get_phase_id());
-                        let _unused = phase.finalize_setup().await;
+                    match result {
+                        Ok(()) => {
+                            info!(target: LOG_TARGET_APP_LOGIC, "[ {} Phase ] Setup completed successfully", phase.get_phase_id());
+                            let _unused = phase.finalize_setup().await;
+                        }
+                        // Steps report their own failures through handle_step_error, but anything
+                        // setup_inner returns outside a step would otherwise leave the phase with
+                        // no status at all - and a phase that never reports stays Initializing
+                        // forever, which reads as a hang rather than as the error it is.
+                        Err(error) => {
+                            let error_message = format!("[ {} Phase ] Setup failed: {error}", phase.get_phase_id());
+                            error!(target: LOG_TARGET_APP_LOGIC, "{error_message}");
+                            phase.get_status_sender().send(PhaseStatus::Failed(error_message.clone())).unwrap_or_else(|_| {
+                                warn!(target: LOG_TARGET_APP_LOGIC, "[ {} Phase ] Failed to send status: {}", phase.get_phase_id(), PhaseStatus::Failed(error_message));
+                            });
+                        }
                     }
                 }
                 _ = shutdown_signal.wait() => {

@@ -45,6 +45,8 @@
     "binaries-cpu-miner-download": "Mempersiapkan Biner Penambang CPU | Mengunduh: {{ progress }}%",
     "binaries-gpu-miner": "Menyiapkan Binary Penambang GPU",
     "binaries-gpu-miner-download": "Mempersiapkan Biner Penambang GPU | Mengunduh: {{ progress }}%",
+    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
+    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
     "binaries-merge-mining-proxy": "Menyiapkan Binary Proxy Merge Mining",
     "binaries-merge-mining-proxy-download": "Mempersiapkan Biner Proxy Penambangan Gabungan | Mengunduh: {{ progress }}%",
     "binaries-node": "Menyiapkan Binary Node",

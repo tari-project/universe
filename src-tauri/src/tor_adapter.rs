@@ -295,6 +295,7 @@ impl ProcessAdapter for TorAdapter {
                     data_dir: data_dir.clone(),
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
+                    output_sink: None,
                 },
             },
             TorStatusMonitor {

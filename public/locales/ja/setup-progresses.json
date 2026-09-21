@@ -45,6 +45,8 @@
     "binaries-cpu-miner-download": "CPUマイナーバイナリの準備中 | ダウンロード中: {{ progress }}%",
     "binaries-gpu-miner": "GPUマイナーバイナリを準備中",
     "binaries-gpu-miner-download": "GPUマイナーバイナリの準備中 | ダウンロード中: {{ progress }}%",
+    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
+    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
     "binaries-merge-mining-proxy": "マージマイニングプロキシバイナリを準備中",
     "binaries-merge-mining-proxy-download": "マージマイニングプロキシバイナリの準備中 | ダウンロード中: {{ progress }}%",
     "binaries-node": "ノードバイナリを準備中",

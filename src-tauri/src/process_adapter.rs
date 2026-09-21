@@ -30,10 +30,12 @@ use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
 use sysinfo::{Pid, ProcessesToUpdate, System};
-use tari_shutdown::Shutdown;
+use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri_plugin_sentry::sentry;
+use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
@@ -351,6 +353,10 @@ pub(crate) trait ProcessInstanceTrait: Sync + Send + 'static {
     ) -> Result<(i32, Vec<String>, Vec<String>), anyhow::Error>;
 }
 
+/// Callback invoked once per line the child process writes to stdout.
+/// Only used by adapters whose binary has no status API and reports its progress on stdout instead.
+pub(crate) type ProcessOutputSink = Arc<dyn Fn(&str) + Send + Sync>;
+
 #[derive(Clone)]
 pub(crate) struct ProcessStartupSpec {
     pub file_path: PathBuf,
@@ -359,6 +365,87 @@ pub(crate) struct ProcessStartupSpec {
     pub pid_file_name: String,
     pub data_dir: PathBuf,
     pub name: String,
+    /// When set, the child's stdout is piped and every line is handed to the sink, and its stderr
+    /// is piped and logged. Leave as `None` to discard both, which is what most binaries want.
+    pub output_sink: Option<ProcessOutputSink>,
+}
+
+/// Drains one of the child's piped streams, handing every line to `on_line`.
+/// Both pipes have to be drained, otherwise the child blocks once the pipe buffer fills up.
+///
+/// The drain ends on end-of-stream, on a read error, or on shutdown. It cannot end on
+/// end-of-stream alone: these tasks run on a task tracker whose `wait()` has no timeout, and the
+/// pipe stays open for as long as anything holds the write end, which includes a grandchild that
+/// inherited it and a child that a failed kill left running. A read error has to be logged rather
+/// than folded into the clean end-of-stream case, because ending the drain closes the pipe and
+/// kills the child on its next write.
+fn drain_child_stream<R>(
+    stream: R,
+    name: String,
+    stream_name: &'static str,
+    mut shutdown_signal: ShutdownSignal,
+    task_tracker: &TaskTracker,
+    on_line: impl Fn(&str) + Send + 'static,
+) where
+    R: tokio::io::AsyncRead + Unpin + Send + 'static,
+{
+    task_tracker.spawn(async move {
+        let mut lines = BufReader::new(stream).lines();
+        loop {
+            let line = select! {
+                line = lines.next_line() => line,
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Shutting down the {name} {stream_name} drain");
+                    break;
+                }
+            };
+
+            match line {
+                Ok(Some(line)) => on_line(&line),
+                Ok(None) => break,
+                Err(e) => {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "{name} {stream_name} read failed, stopping the drain: {e}");
+                    break;
+                }
+            }
+        }
+    });
+}
+
+fn forward_child_output(
+    child: &mut tokio::process::Child,
+    spec: &ProcessStartupSpec,
+    shutdown_signal: &ShutdownSignal,
+    task_tracker: &TaskTracker,
+) {
+    let Some(sink) = spec.output_sink.clone() else {
+        return;
+    };
+
+    if let Some(stdout) = child.stdout.take() {
+        drain_child_stream(
+            stdout,
+            spec.name.clone(),
+            "stdout",
+            shutdown_signal.clone(),
+            task_tracker,
+            move |line| sink(line),
+        );
+    }
+
+    if let Some(stderr) = child.stderr.take() {
+        let name = spec.name.clone();
+        drain_child_stream(
+            stderr,
+            spec.name.clone(),
+            "stderr",
+            shutdown_signal.clone(),
+            task_tracker,
+            move |line| {
+                warn!(target: LOG_TARGET_APP_LOGIC, "{name} stderr: {line}");
+            },
+        );
+    }
 }
 
 pub(crate) struct ProcessInstance {
@@ -392,6 +479,8 @@ impl ProcessInstanceTrait for ProcessInstance {
             return Ok(());
         };
 
+        let output_task_tracker = task_tracker.clone();
+        let output_shutdown_signal = self.shutdown.to_signal();
         self.handle = Some(task_tracker.spawn(async move {
             if let Err(e) = set_permissions(&spec.file_path).await {
                 error!(target: LOG_TARGET_APP_LOGIC, "{e}");
@@ -405,8 +494,15 @@ impl ProcessInstanceTrait for ProcessInstance {
                 spec.data_dir.as_path(),
                 spec.envs.as_ref(),
                 &spec.args,
-                false
+                spec.output_sink.is_some()
             )?;
+
+            forward_child_output(
+                &mut child,
+                &spec,
+                &output_shutdown_signal,
+                &output_task_tracker,
+            );
 
             if let Some(id) = child.id() {
                 let pid_file_res = write_pid_file(&spec, id);

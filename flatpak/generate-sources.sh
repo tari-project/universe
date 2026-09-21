@@ -43,10 +43,11 @@ echo "==> Generating cargo-sources.json from ../Cargo.lock"
 # pnpm support only exists in the upstream (git) flatpak-node-generator, not in
 # the PyPI package, so the generator itself is installed from git at a pinned
 # full-length commit SHA (which content-addresses the source tree, same binding
-# as a sha256). --no-deps means pip fetches nothing else: its only runtime dep
-# is aiohttp, already installed hash-locked from requirements.txt above, so no
-# un-pinned code enters the venv. Bump this SHA deliberately alongside
-# CARGO_GEN_REF (and re-check the generator's deps stay covered by requirements.txt).
+# as a sha256). --no-deps means pip fetches nothing else: its runtime deps are
+# aiohttp and pyyaml (the pnpm provider), both already installed hash-locked
+# from requirements.txt above, so no un-pinned code enters the venv. Bump this
+# SHA deliberately alongside CARGO_GEN_REF (and re-check the generator's deps
+# stay covered by requirements.txt).
 NODE_GEN_REF="737c0085912f9f7dabf9341d4608e2a77a51a73a"
 ./.venv/bin/pip install --quiet --no-deps \
   "flatpak-node-generator @ git+https://github.com/flatpak/flatpak-builder-tools@${NODE_GEN_REF}#subdirectory=node"

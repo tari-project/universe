@@ -28,7 +28,7 @@ const configMininigInitialState: ConfigMining = {
     mine_on_app_start: false,
     mining_modes: {},
     selected_mining_mode: 'Eco',
-    gpu_devices_settings: {},
+    gpu_devices_settings_by_miner: {},
     is_gpu_mining_recommended: true,
     gpu_mining_available: true,
     gpu_mining_unavailable_reason: null,

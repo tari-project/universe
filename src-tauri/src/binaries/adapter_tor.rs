@@ -45,8 +45,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         let mut file_sha256 = File::open(checksum_path.clone()).await?;
         let mut buffer_sha256 = Vec::new();
         file_sha256.read_to_end(&mut buffer_sha256).await?;
-        let contents =
-            String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
+        // Lossy rather than a panic: this runs inside a spawned setup phase task, so a mirror or a
+        // captive portal serving a compressed or HTML body here would abort the task without ever
+        // sending a PhaseStatus, leaving the phase reporting Initializing forever.
+        let contents = String::from_utf8_lossy(&buffer_sha256);
 
         let tor_hash = contents
             .lines()

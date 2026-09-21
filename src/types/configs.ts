@@ -1,4 +1,9 @@
-import { WalletUIMode } from './events-payloads';
+import { GpuMinerType, WalletUIMode } from './events-payloads';
+
+/// Device settings are stored per GPU miner: device ids only mean something inside the
+/// enumeration of the miner that produced them, and only the miners that detected devices are
+/// present.
+export type GpuDevicesSettingsByMiner = Partial<Record<GpuMinerType, Record<number, GpuDeviceSettings>>>;
 
 // Mirrors the sanitized `ConfigWalletFrontend` payload emitted by the backend.
 // The wallet view private key (and the rest of `tari_wallet_details`) never
@@ -49,7 +54,7 @@ export interface ConfigMining {
     selected_mining_mode: string;
     gpu_mining_enabled: boolean;
     mining_modes: Record<string, MiningMode>;
-    gpu_devices_settings: Record<number, GpuDeviceSettings>;
+    gpu_devices_settings_by_miner: GpuDevicesSettingsByMiner;
     cpu_mining_enabled: boolean;
     is_gpu_mining_recommended: boolean;
     /** Whether any detected GPU can mine at all. When false, GPU mining cannot be switched on. */
