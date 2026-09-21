@@ -1197,12 +1197,12 @@ impl InternalWallet {
         Ok((tari_wallet_details.id, tari_seed_binary, monero_seed_binary))
     }
 
-    /// Removes the plaintext legacy credential files left behind after a successful migration to
-    /// the keyring-backed store. Runs on every launch and is a no-op when nothing is left to
-    /// clean, so only users who still have the legacy files ever reach the keyring reads below.
-    /// Those reads are forced: on macOS that shows the app's standard keychain dialog at the
-    /// moment of need instead of silently deferring forever on a locked keychain. A missing
-    /// entry is not retried and simply defers the cleanup to a later launch.
+    /// Retires the legacy credential files left behind after a migration to the keyring-backed
+    /// store. Runs on every launch and is a no-op when nothing is left to clean, so only users who
+    /// still have the legacy files ever reach the keyring reads below. Those reads are forced: on
+    /// macOS that shows the app's standard keychain dialog at the moment of need instead of
+    /// silently deferring forever on a locked keychain. A missing entry is not retried and simply
+    /// defers the cleanup to a later launch.
     ///
     /// It must be called from a path common to all wallet modes (standard, seedless and exchange),
     /// because a user can switch modes after migrating and would otherwise keep these files
@@ -1212,6 +1212,12 @@ impl InternalWallet {
     ///
     /// Only the current network directory is handled, because the keyring entries used as the
     /// safety gate are network-specific. Other networks are cleaned when the app runs on them.
+    ///
+    /// The gate has two halves. The first, inherited from PR #3353, proves that every wallet the
+    /// config lists is readable right now. The second, and the one that makes this safe, proves
+    /// that the wallet *these files describe* is one of them: the legacy seed is decrypted with
+    /// the same multi-source passphrase logic the migration uses and the address it derives must
+    /// match. Anything unprovable leaves both files exactly where they are.
     pub async fn purge_legacy_credential_files(app_handle: &AppHandle) {
         let app_config_dir = match app_handle.path().app_config_dir() {
             Ok(dir) => dir,
@@ -1220,7 +1226,7 @@ impl InternalWallet {
                 return;
             }
         };
-        let legacy_dir = app_config_dir.join(Network::get_current().as_key_str());
+        let legacy_dir = legacy_network_dir(&app_config_dir);
         let fallback_file = legacy_dir.join(LEGACY_FALLBACK_FILE_NAME);
         let legacy_wallet_config = legacy_dir.join(LEGACY_WALLET_CONFIG_FILE_NAME);
 
@@ -1233,10 +1239,10 @@ impl InternalWallet {
             return;
         }
 
-        // Safety gate: never delete the only remaining copy of a seed. The current config must be
-        // at exactly the schema version this code understands and every configured Tari wallet
-        // must be readable from the keyring right now: new wallets are prepended to the list, so
-        // the migrated wallet is not necessarily the first entry.
+        // Safety gate, first half: never delete the only remaining copy of a seed. The current
+        // config must be at exactly the schema version this code understands and every configured
+        // Tari wallet must be readable from the keyring right now: new wallets are prepended to
+        // the list, so the migrated wallet is not necessarily the first entry.
         let wallet_config = ConfigWallet::content().await;
         if *wallet_config.version_counter() != WALLET_VERSION {
             return;
@@ -1244,13 +1250,35 @@ impl InternalWallet {
         if wallet_config.tari_wallets().is_empty() {
             return;
         }
+
+        // The addresses the config can vouch for. The cached details cover the PIN-enciphered
+        // case, where the blob cannot be opened here without prompting; every blob that is not
+        // enciphered contributes its own derived address as well, so a migrated wallet that has
+        // since been pushed down the list by an import still matches.
+        let mut configured_addresses: Vec<TariAddress> = Vec::new();
+        if let Some(details) = wallet_config.tari_wallet_details() {
+            configured_addresses.push(details.tari_address.clone());
+        }
         for wallet_id in wallet_config.tari_wallets() {
-            if let Err(e) =
-                InternalWallet::get_credentials(app_handle, wallet_id.clone(), true).await
+            let credential = match InternalWallet::get_credentials(
+                app_handle,
+                wallet_id.clone(),
+                true,
+            )
+            .await
             {
-                let id = wallet_id.as_str();
-                log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, Tari keyring entry for wallet {id} not readable: {e}");
-                return;
+                Ok(credential) => credential,
+                Err(e) => {
+                    let id = wallet_id.as_str();
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, Tari keyring entry for wallet {id} not readable: {e}");
+                    return;
+                }
+            };
+            if let Ok(seed) = CipherSeed::from_binary(&credential.encrypted_seed)
+                && let Ok(details) =
+                    InternalWallet::get_tari_wallet_details(wallet_id.clone(), seed).await
+            {
+                configured_addresses.push(details.tari_address);
             }
         }
 
@@ -1261,7 +1289,7 @@ impl InternalWallet {
             let bytes = match std::fs::read(&fallback_file) {
                 Ok(bytes) => bytes,
                 Err(e) => {
-                    log::warn!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, cannot read {fallback_file:?}: {e}");
+                    log::warn!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, cannot read the legacy credential file: {e}");
                     return;
                 }
             };
@@ -1269,7 +1297,7 @@ impl InternalWallet {
                 let legacy_credential = match serde_cbor::from_slice::<LegacyCredential>(&bytes) {
                     Ok(credential) => credential,
                     Err(e) => {
-                        log::warn!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, cannot parse legacy credential file {fallback_file:?}: {e}");
+                        log::warn!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, cannot parse the legacy credential file: {e}");
                         return;
                     }
                 };
@@ -1287,15 +1315,88 @@ impl InternalWallet {
             }
         }
 
-        for path in [fallback_file, legacy_wallet_config] {
-            match wipe_and_remove_file(&path) {
-                Ok(true) => {
-                    log::info!(target: LOG_TARGET_APP_LOGIC, "Removed legacy credential file {path:?}");
+        // Safety gate, second half: the address the legacy seed derives must be one the config
+        // owns. Without this, a user whose migration failed and who then created or imported a
+        // different wallet passes everything above, and the last copy of their original seed is
+        // destroyed on the next launch.
+        let proof = match get_old_wallet_config(&legacy_wallet_config) {
+            Err(kind) => {
+                log::warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Legacy credential cleanup deferred, legacy wallet config unusable: error={}",
+                    kind.as_tag(),
+                );
+                return;
+            }
+            Ok(None) => LegacySeedProof::NoLegacyConfig,
+            Ok(Some(legacy_config)) => {
+                let parts =
+                    InternalWallet::legacy_credential_parts(app_handle, &app_config_dir).await;
+                let candidates = legacy_passphrase_candidates(
+                    parts.keyring_passphrase,
+                    parts.fallback_passphrase,
+                    legacy_config.passphrase.clone(),
+                );
+                match decrypt_legacy_tari_seed(
+                    &legacy_config.seed_words_encrypted_base58,
+                    candidates,
+                ) {
+                    Err(kind) => {
+                        log::info!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "Legacy seed could not be decrypted for the cleanup gate: error={}",
+                            kind.as_tag(),
+                        );
+                        LegacySeedProof::Undecryptable
+                    }
+                    Ok((seed, _source)) => {
+                        match InternalWallet::get_tari_wallet_details(
+                            WalletId::new(LEGACY_VIEW_ONLY_WALLET_ID.to_string()),
+                            seed,
+                        )
+                        .await
+                        {
+                            Ok(details) => LegacySeedProof::Address(details.tari_address),
+                            Err(e) => {
+                                log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not derive the legacy address for the cleanup gate: {e}");
+                                LegacySeedProof::Undecryptable
+                            }
+                        }
+                    }
                 }
-                Ok(false) => {}
-                Err(e) => {
-                    log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not remove legacy credential file {path:?}: {e}");
-                }
+            }
+        };
+
+        let quarantined_config_present =
+            quarantined_path(&legacy_wallet_config, LEGACY_DECRYPT_FAILED_SUFFIX).exists();
+        match legacy_purge_decision(&proof, &configured_addresses, quarantined_config_present) {
+            LegacyPurgeDecision::Defer(reason) => {
+                log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred: reason={reason}");
+                return;
+            }
+            LegacyPurgeDecision::Purge => {}
+        }
+
+        // `wallet_config.json` is renamed, not destroyed: it holds an *enciphered* seed, the
+        // rename is reversible by the user and by support, and the file is worthless once the
+        // passphrase next to it is gone. `credentials_backup.bin` is plaintext CBOR and keeps the
+        // zero-fill-and-unlink treatment.
+        match quarantine_legacy_file(&legacy_wallet_config, LEGACY_MIGRATED_SUFFIX) {
+            Ok(Some(_)) => {
+                log::info!(target: LOG_TARGET_APP_LOGIC, "Renamed the migrated legacy wallet config out of the migration path");
+            }
+            Ok(None) => {}
+            Err(e) => {
+                log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not rename the legacy wallet config: {e}");
+            }
+        }
+        match wipe_and_remove_file(&fallback_file) {
+            Ok(true) => {
+                log::info!(target: LOG_TARGET_APP_LOGIC, "Removed the plaintext legacy credential file");
+            }
+            Ok(false) => {}
+            Err(e) => {
+                log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not remove the plaintext legacy credential file: {e}");
             }
         }
     }
@@ -2456,6 +2557,60 @@ impl std::fmt::Display for LegacyMigrationError {
 
 impl std::error::Error for LegacyMigrationError {}
 
+// ** Legacy file purge **
+
+/// Whether the legacy files may be retired.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LegacyPurgeDecision {
+    /// Proven: the files describe a wallet this config owns.
+    Purge,
+    /// Not proven. Carries an enum-like reason for the log line.
+    Defer(&'static str),
+}
+
+/// What this launch could prove about the wallet the legacy files describe.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum LegacySeedProof {
+    /// The legacy seed decrypted and derives this address.
+    Address(TariAddress),
+    /// A legacy wallet config is present but its seed could not be opened, or the address could
+    /// not be derived from it. Nothing about it is proven.
+    Undecryptable,
+    /// There is no legacy wallet config left at all; only the plaintext credential file.
+    NoLegacyConfig,
+}
+
+/// The gate that PR #3353 was missing.
+///
+/// The old gate proved "the wallets the config lists have a readable blob", which is not the same
+/// as "those blobs are the wallet these files describe". A user whose migration failed and who
+/// then created or imported a different wallet passed the old gate, and the last copy of their
+/// original enciphered seed was zero-filled on the next launch.
+///
+/// With no `wallet_config.json` left the plaintext credential file holds a passphrase for a file
+/// that no longer exists, so it may go - unless a `.decrypt_failed` config is sitting next to it,
+/// in which case that passphrase is the only thing that could ever open the quarantined seed.
+pub(crate) fn legacy_purge_decision(
+    proof: &LegacySeedProof,
+    configured_addresses: &[TariAddress],
+    quarantined_config_present: bool,
+) -> LegacyPurgeDecision {
+    match proof {
+        LegacySeedProof::Address(address) => {
+            if configured_addresses.iter().any(|known| known == address) {
+                LegacyPurgeDecision::Purge
+            } else {
+                LegacyPurgeDecision::Defer("address_mismatch")
+            }
+        }
+        LegacySeedProof::Undecryptable => LegacyPurgeDecision::Defer("legacy_seed_undecryptable"),
+        LegacySeedProof::NoLegacyConfig if quarantined_config_present => {
+            LegacyPurgeDecision::Defer("quarantined_config_present")
+        }
+        LegacySeedProof::NoLegacyConfig => LegacyPurgeDecision::Purge,
+    }
+}
+
 /// Best-effort zero-overwrite followed by unlink. Returns `Ok(false)` when the file was absent.
 /// The entry is inspected with `symlink_metadata`, so a symlink is unlinked without overwriting
 /// anything: following it would zero an unrelated target file. Only a regular file is overwritten,
@@ -2464,6 +2619,10 @@ impl std::error::Error for LegacyMigrationError {}
 /// The overwrite is defence in depth only; journaled and copy-on-write filesystems may retain
 /// old blocks, which is why deletion (not overwrite) is the primary control. An overwrite
 /// failure is logged and the unlink still proceeds.
+///
+/// Reserved for the *plaintext* `credentials_backup.bin`. The enciphered `wallet_config.json` is
+/// renamed instead: destroying it would take the last copy of a seed with it, and it is worthless
+/// once the passphrase file above is gone.
 pub(crate) fn wipe_and_remove_file(path: &Path) -> std::io::Result<bool> {
     const ZERO_CHUNK_LEN: usize = 64 * 1024;
 
