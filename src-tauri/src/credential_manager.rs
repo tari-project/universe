@@ -117,12 +117,15 @@ enum PreviousCredential {
     Unknown,
 }
 
+/// Service name and username, the pair that addresses one credential.
+type CredentialKey = (String, String);
+
 /// One mutex per credential id, created on first use and kept for the life of the process.
 ///
 /// The map is tiny and bounded by the number of wallet ids the app has ever addressed in this
 /// run, so the entries are never reclaimed; a `Mutex` is 8 bytes plus the key.
 static CREDENTIAL_LOCKS: LazyLock<
-    std::sync::Mutex<std::collections::HashMap<(String, String), Arc<std::sync::Mutex<()>>>>,
+    std::sync::Mutex<std::collections::HashMap<CredentialKey, Arc<std::sync::Mutex<()>>>>,
 > = LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
 
 /// The lock guarding the write protocol for one credential id.
