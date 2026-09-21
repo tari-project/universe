@@ -369,6 +369,46 @@ fn payment_id_migration_renames_keys_once_and_preserves_string_values() {
     );
 }
 
+/// A config that parsed is a config we can run on. Only *persisting* the `payment_id_user_data`
+/// rename failed here (a read-only directory stands in for a full disk or an antivirus lock),
+/// and the rename is idempotent: the next successful save writes the new form, and a launch that
+/// never saves migrates again. Returning the recovery placeholder instead would put a user whose
+/// wallet id list is intact and in hand behind the recovery screen.
+#[cfg(unix)]
+#[test]
+fn unwritable_directory_does_not_turn_a_readable_config_into_recovery() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    let serialized = br#"{"tari_wallets": ["abc123"], "payment_id_user_data": "x"}"#;
+    fs::write(&path, serialized).unwrap();
+
+    let original = fs::metadata(directory.path()).unwrap().permissions();
+    let mut readonly = original.clone();
+    readonly.set_mode(0o555);
+    fs::set_permissions(directory.path(), readonly).unwrap();
+
+    let content = ConfigWallet::load_from_path(&path);
+
+    fs::set_permissions(directory.path(), original).unwrap();
+
+    assert!(
+        !content.corrupted_recovery(),
+        "a config that parsed must not be replaced by the recovery placeholder"
+    );
+    assert_eq!(
+        content.tari_wallets().len(),
+        1,
+        "the wallet id list survives the failed write"
+    );
+    assert_eq!(
+        fs::read(&path).unwrap(),
+        serialized,
+        "nothing was written, so the original file is untouched"
+    );
+}
+
 #[test]
 fn failed_backup_write_does_not_poison_valid_primary() {
     let directory = tempfile::tempdir().unwrap();

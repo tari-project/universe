@@ -99,8 +99,17 @@ pub struct ConfigWalletContent {
     /// `None` means the original, unversioned `monero` entry, which is what every wallet created
     /// before Monero ids were versioned uses. A new seed is never written over an existing entry:
     /// it gets the next id in the sequence (`monero`, `monero_2`, ...) and this field is moved to
-    /// it, so a seed that was replaced - by "forgot PIN", say - is still in the store and still
-    /// reachable through "find my wallets".
+    /// it, so a seed that was replaced - by "forgot PIN", say - is still in the store.
+    ///
+    /// Downgrade note. A release that predates this field parses the config fine (the struct is
+    /// `#[serde(default)]` and nothing uses `deny_unknown_fields`), but it re-serializes without
+    /// the field, so the first config write by an older build drops it. An older build then
+    /// reads the hardcoded `monero` entry while `monero_address` still names the seed at
+    /// `monero_2`. Coming back to a build with this field, the id reads as `None` again: the
+    /// seed at `monero_2` is not lost, and `allocate_monero_wallet_id` will not overwrite it,
+    /// but `get_monero_seed` refuses the mismatched `monero` entry (its address does not derive
+    /// the recorded one) rather than returning the wrong seed words. Failing closed is the
+    /// deliberate choice; re-linking that entry is a support-led recovery.
     #[getset(get = "pub", set = "pub")]
     monero_wallet_id: Option<WalletId>,
     #[getset(get = "pub", set = "pub")]
@@ -311,8 +320,13 @@ impl ConfigWallet {
         match Self::read_validated(path) {
             Ok((content, serialized, migrated)) => {
                 if migrated && atomic_write(path, serialized.as_bytes()).is_err() {
+                    // The file parsed: the wallet id list and the view key are in hand and the
+                    // rename has been applied in memory. Only persisting it failed (a full disk,
+                    // an antivirus lock). Refusing to run here would put a user whose config is
+                    // perfectly readable into the recovery UI, and the migration is idempotent:
+                    // the next successful save writes the renamed form, and a launch that never
+                    // saves simply migrates again.
                     log::warn!(target: LOG_TARGET_APP_LOGIC, "wallet.config_migration_save_failed");
-                    return Self::recovery_content();
                 }
                 if atomic_write(&backup, serialized.as_bytes()).is_err() {
                     log::warn!(target: LOG_TARGET_APP_LOGIC, "wallet.config_backup_failed");
