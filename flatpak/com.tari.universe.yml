@@ -194,8 +194,10 @@ modules:
             -e 's|"iconPath": "icons/systray_icon.ico"|"iconPath": "icons/systray_icon.png"|'
             -e 's|"iconAsTemplate": true|"iconAsTemplate": false|'
             src-tauri/tauri.conf.json
-          - grep -q '"iconPath": "icons/systray_icon.png"' src-tauri/tauri.conf.json
-          - grep -q '"iconAsTemplate": false' src-tauri/tauri.conf.json
+          - >-
+            grep -q '"iconPath": "icons/systray_icon.png"' src-tauri/tauri.conf.json
+          - >-
+            grep -q '"iconAsTemplate": false' src-tauri/tauri.conf.json
 
       # NOTE: the "(Alpha)" branding / .alpha identifier strip is NOT a patch.
       # The app source (tauri.conf.json) keeps `(Alpha)` + com.tari.universe.alpha
