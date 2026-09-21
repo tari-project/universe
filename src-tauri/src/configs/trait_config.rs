@@ -44,20 +44,41 @@ use crate::{
 
 pub const CONFIG_UPDATE_FIELD_EVENT_NAME: &str = "config-update-field";
 
-/// Persist a complete file before atomically replacing the destination. Unique,
-/// same-directory temporary files also prevent writers from sharing a temp file.
+/// Writes `content` to `path` so that a reader only ever sees the complete old
+/// or the complete new file.
+///
+/// `fs::write` truncates in place, so a power loss, a full disk or an `exit()`
+/// from another thread mid-write leaves a zero-length or NUL-filled file. For
+/// `config_wallet.json` that meant an unparseable file holding the only copy of
+/// the wallet id list, which is the origin of the config-load crash loop.
+///
+/// Instead: a fresh temp file in the *same* directory (so the rename stays on
+/// one filesystem and cannot degrade to a copy), fsync it so the bytes are on
+/// the medium before anything points at them, then rename over the target.
+/// Rename is atomic on POSIX, and `std::fs::rename` uses `MoveFileEx` with
+/// `MOVEFILE_REPLACE_EXISTING` on Windows. Every temp file is uniquely named,
+/// so two concurrent writers can never share one.
 pub(crate) fn atomic_write(path: &Path, content: &[u8]) -> Result<(), Error> {
     let parent = path
         .parent()
         .ok_or_else(|| anyhow::anyhow!("Config path has no parent"))?;
     fs::create_dir_all(parent)?;
+    // Dropping a `NamedTempFile` removes it, so an error on any line below
+    // leaves no stray temp file next to the config.
     let mut temporary = tempfile::NamedTempFile::new_in(parent)?;
     temporary.write_all(content)?;
     temporary.as_file().sync_all()?;
     temporary.persist(path).map_err(|error| error.error)?;
-    // Persist the directory entry too on platforms that support directory fsync.
+    // Also persist the directory entry, so the rename itself survives a crash.
+    // Best effort by design: the data is already durable and the rename has
+    // happened, so failing the save here would report a loss that did not occur.
     #[cfg(unix)]
-    fs::File::open(parent)?.sync_all()?;
+    if fs::File::open(parent)
+        .and_then(|dir| dir.sync_all())
+        .is_err()
+    {
+        debug!(target: LOG_TARGET_APP_LOGIC, "[atomic_write] directory sync unavailable");
+    }
     Ok(())
 }
 
@@ -156,6 +177,17 @@ pub trait ConfigImpl {
     /// The value is never logged or reported: setters carry user secrets such
     /// as airdrop tokens. Only the config name and the setter type name are
     /// recorded.
+    ///
+    /// The write lock is held across both the mutation and the save. It used to
+    /// be taken for the setter, dropped, and then a *read* lock taken for the
+    /// write to disk, which let two tasks updating different fields be inside
+    /// the same file write at once and interleave their bytes. Holding one lock
+    /// serializes writers per config.
+    ///
+    /// The mutation is applied to a copy and only committed to the shared
+    /// content once the save succeeded, so a failed save (disk full, file
+    /// locked by antivirus) leaves memory and disk agreeing on the old value
+    /// instead of silently diverging. The error is returned, not swallowed.
     async fn update_field<F, I>(setter_callback: F, value: I) -> Result<(), Error>
     where
         I: Serialize + Clone,
