@@ -68,9 +68,9 @@
 //! - Or refactor to use dependency injection instead of static singleton
 
 use super::internal_wallet::{
-    InternalWallet, SeedCandidate, TariAddressType, allocate_monero_wallet_id_with,
-    decode_plain_tari_seed, monero_seed_candidates, next_monero_wallet_id, tari_seed_candidates,
-    wipe_and_remove_file,
+    ADDRESS_LOG_PREFIX_LEN, InternalWallet, SeedCandidate, TariAddressType, address_prefix,
+    allocate_monero_wallet_id_with, decode_plain_tari_seed, monero_seed_candidates,
+    next_monero_wallet_id, tari_seed_candidates, wipe_and_remove_file,
 };
 use std::collections::HashSet;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
@@ -180,6 +180,26 @@ fn tari_wallet_details_debug_redacts_view_private_key() {
         debug_output.contains("spend_public_key_not_secret"),
         "{debug_output}"
     );
+}
+
+/// The Debug impl only hides the view key; the full Tari address and the spend public key still
+/// print. That is why no log line may format the details themselves, and why every site that
+/// wants to name a wallet uses `address_prefix` instead. This pins the prefix contract: short
+/// enough not to be an address, long enough to tell two wallets apart.
+#[test]
+fn the_address_prefix_is_all_that_may_stand_in_for_an_address() {
+    let details = sentinel_wallet_details();
+    let prefix = address_prefix(&details.tari_address);
+    let address = details.tari_address.to_base58();
+
+    assert_eq!(prefix.chars().count(), ADDRESS_LOG_PREFIX_LEN);
+    assert!(address.starts_with(&prefix));
+    assert!(
+        address.chars().count() > prefix.chars().count(),
+        "a prefix that is the whole address would redact nothing"
+    );
+    // The two fields the details' own Debug would have printed are not in it.
+    assert!(!prefix.contains("spend_public_key_not_secret"));
 }
 
 #[test]
