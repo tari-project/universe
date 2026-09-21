@@ -325,27 +325,27 @@ fn recovery_pin_opened_something(before: &FindWalletsResult, after: &FindWallets
 
 /// Count a recovery PIN attempt against the same lockout as every other PIN entry.
 ///
+/// Failures count; successes do not clear the counter. The store can hold wallets enciphered
+/// under different historical PINs, so clearing it on any success would hand someone who knows
+/// one PIN an unlimited oracle over the others: two guesses at the second wallet, one correct
+/// entry against the first to reset, repeat. Nothing needs the counter cleared to finish a
+/// recovery, and a working wallet clears it through the normal validation path anyway.
+///
 /// The in-memory mirror is updated first and unconditionally, because the persisted one is
 /// refused while the config is a recovery placeholder - and that is the state in which this
 /// prompt is most likely to be reached.
 async fn record_recovery_pin_attempt(opened: bool) {
+    if opened {
+        return;
+    }
     {
         let mut guard = RECOVERY_PIN_ATTEMPTS
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if opened {
-            *guard = (0, None);
-        } else {
-            guard.0 = guard.0.saturating_add(1);
-            guard.1 = Some(std::time::Instant::now());
-        }
+        guard.0 = guard.0.saturating_add(1);
+        guard.1 = Some(std::time::Instant::now());
     }
-    let result = if opened {
-        PinManager::reset_pin_attempts().await
-    } else {
-        PinManager::register_failed_pin_attempt().await
-    };
-    if let Err(e) = result {
+    if let Err(e) = PinManager::register_failed_pin_attempt().await {
         log::warn!(
             target: LOG_TARGET_APP_LOGIC,
             "[find_my_wallets] could not persist the PIN attempt, the in-memory lockout still applies: {e}",

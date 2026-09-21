@@ -161,12 +161,6 @@ impl PinManager {
             .await
     }
 
-    /// Clear the lockout counter after a PIN that worked.
-    pub async fn reset_pin_attempts() -> Result<(), anyhow::Error> {
-        let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
-        PinLocker::new(pin_locker_state).reset_pin_attempts().await
-    }
-
     /// Persist a corrected `pin_locked` flag. See `PinLocker::repair_pin_locked`.
     pub async fn repair_pin_locked(locked: bool) -> Result<(), anyhow::Error> {
         let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
