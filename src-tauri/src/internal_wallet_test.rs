@@ -67,7 +67,7 @@
 //! - Use serial test execution with `serial_test` crate
 //! - Or refactor to use dependency injection instead of static singleton
 
-use super::internal_wallet::{InternalWallet, TariAddressType};
+use super::internal_wallet::{InternalWallet, TariAddressType, wipe_and_remove_file};
 
 #[test]
 fn tari_address_type_display_internal() {
@@ -114,4 +114,29 @@ fn internal_wallet_is_initialized_before_set() {
 #[should_panic(expected = "InternalWallet is not initialized")]
 fn current_panics_before_initialization() {
     let _ = InternalWallet::current();
+}
+
+#[test]
+fn wipe_and_remove_file_deletes_existing_file_and_is_idempotent() {
+    let path = std::env::temp_dir().join(format!(
+        "tari_universe_legacy_cred_test_{}_{}.bin",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    ));
+    std::fs::write(&path, b"SAFE-DEMO-PASSPHRASE").expect("write fixture");
+    assert!(path.exists());
+
+    assert!(wipe_and_remove_file(&path).expect("first wipe"));
+    assert!(
+        !path.exists(),
+        "legacy file must not survive a successful wipe"
+    );
+
+    assert!(
+        !wipe_and_remove_file(&path).expect("second wipe"),
+        "absent file is not an error"
+    );
 }

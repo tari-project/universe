@@ -25,7 +25,7 @@ use monero_address_creator::Seed as MoneroSeed;
 use monero_address_creator::network::Mainnet;
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use tari_common::configuration::Network;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
@@ -760,6 +760,77 @@ impl InternalWallet {
         Ok((tari_wallet_details.id, tari_seed_binary, monero_seed_binary))
     }
 
+    /// Removes the plaintext legacy credential files left behind after a successful migration to
+    /// the keyring-backed store. Runs on every launch and is a no-op when nothing is left to
+    /// clean, so only users who still have the legacy files ever reach the keyring reads below.
+    /// Those reads are forced: on macOS that shows the app's standard keychain dialog at the
+    /// moment of need instead of silently deferring forever on a locked keychain. A missing
+    /// entry is not retried and simply defers the cleanup to a later launch.
+    ///
+    /// Only the current network directory is handled, because the keyring entries used as the
+    /// safety gate are network-specific. Other networks are cleaned when the app runs on them.
+    pub async fn purge_legacy_credential_files(app_handle: &AppHandle) {
+        let app_config_dir = match app_handle.path().app_config_dir() {
+            Ok(dir) => dir,
+            Err(e) => {
+                log::warn!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup skipped, no app config dir: {e}");
+                return;
+            }
+        };
+        let legacy_dir = app_config_dir.join(Network::get_current().as_key_str());
+        let fallback_file = legacy_dir.join(LEGACY_FALLBACK_FILE_NAME);
+        let legacy_wallet_config = legacy_dir.join(LEGACY_WALLET_CONFIG_FILE_NAME);
+
+        if !fallback_file.exists() && !legacy_wallet_config.exists() {
+            return;
+        }
+
+        // Safety gate: never delete the only remaining copy of a seed. The current config must be
+        // fully migrated and the migrated Tari seed must be readable from the keyring right now.
+        let wallet_config = ConfigWallet::content().await;
+        if *wallet_config.version_counter() < WALLET_VERSION {
+            return;
+        }
+        let Some(wallet_id) = wallet_config.tari_wallets().first().cloned() else {
+            return;
+        };
+        if let Err(e) = InternalWallet::get_credentials(app_handle, wallet_id, true).await {
+            log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, Tari keyring entry not readable: {e}");
+            return;
+        }
+
+        // If the legacy file carried a Monero seed, the migrated Monero entry must be readable too.
+        if fallback_file.exists() {
+            let legacy_has_monero_seed = std::fs::read(&fallback_file)
+                .ok()
+                .and_then(|bytes| serde_cbor::from_slice::<LegacyCredential>(&bytes).ok())
+                .is_some_and(|cred| cred.monero_seed.is_some());
+            if legacy_has_monero_seed
+                && let Err(e) = InternalWallet::get_credentials(
+                    app_handle,
+                    WalletId::new("monero".to_string()),
+                    true,
+                )
+                .await
+            {
+                log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, Monero keyring entry not readable: {e}");
+                return;
+            }
+        }
+
+        for path in [fallback_file, legacy_wallet_config] {
+            match wipe_and_remove_file(&path) {
+                Ok(true) => {
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "Removed legacy credential file {path:?}");
+                }
+                Ok(false) => {}
+                Err(e) => {
+                    log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not remove legacy credential file {path:?}: {e}");
+                }
+            }
+        }
+    }
+
     pub async fn get_tari_wallet_details(
         wallet_id: WalletId,
         tari_cipher_seed: CipherSeed,
@@ -1064,9 +1135,33 @@ pub async fn get_old_wallet_config(config_dir: &Path) -> Result<LegacyWalletConf
     Ok(old_config)
 }
 
+/// Plaintext (CBOR) seed fallback written by pre-keyring versions, see `LegacyCredentialManager`.
+pub(crate) const LEGACY_FALLBACK_FILE_NAME: &str = "credentials_backup.bin";
+/// Pre-migration wallet config holding the Tari seed enciphered with the passphrase above.
+pub(crate) const LEGACY_WALLET_CONFIG_FILE_NAME: &str = "wallet_config.json";
+
 async fn get_legacy_fallback_file(app_config_dir: &Path) -> Result<PathBuf, anyhow::Error> {
-    const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
     let network = Network::get_current().as_key_str();
-    let old_fallback_file = app_config_dir.join(network).join(FALLBACK_FILE_PATH);
+    let old_fallback_file = app_config_dir.join(network).join(LEGACY_FALLBACK_FILE_NAME);
     Ok(old_fallback_file)
+}
+
+/// Best-effort zero-overwrite followed by unlink. Returns `Ok(false)` when the file was absent.
+/// The overwrite is defence in depth only; journaled and copy-on-write filesystems may retain
+/// old blocks, which is why deletion (not overwrite) is the primary control.
+pub(crate) fn wipe_and_remove_file(path: &Path) -> std::io::Result<bool> {
+    let metadata = match std::fs::metadata(path) {
+        Ok(m) => m,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(e) => return Err(e),
+    };
+    if metadata.is_file() && metadata.len() > 0 {
+        let mut file = OpenOptions::new().write(true).open(path)?;
+        let len = usize::try_from(metadata.len()).unwrap_or(usize::MAX);
+        file.write_all(&vec![0u8; len])?;
+        file.sync_all()?;
+        drop(file);
+    }
+    std::fs::remove_file(path)?;
+    Ok(true)
 }
