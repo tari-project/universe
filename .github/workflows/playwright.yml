@@ -50,6 +50,14 @@ jobs:
             xvfb \
             dbus-x11
 
+      - name: Fix npm cache ownership (self-hosted runner)
+        # Some runner pods come up with a root-owned ~/.npm, which makes the
+        # pnpm self-installer fail with EACCES before any test runs.
+        run: |
+          if [ -d "$HOME/.npm" ]; then
+            sudo chown -R "$(id -u):$(id -g)" "$HOME/.npm"
+          fi
+
       - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v6
