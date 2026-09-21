@@ -1184,7 +1184,8 @@ async fn get_legacy_fallback_file(app_config_dir: &Path) -> Result<PathBuf, anyh
 /// and the overwrite is chunked through a fixed 64 KiB zero buffer so a large file cannot make us
 /// allocate unbounded memory.
 /// The overwrite is defence in depth only; journaled and copy-on-write filesystems may retain
-/// old blocks, which is why deletion (not overwrite) is the primary control.
+/// old blocks, which is why deletion (not overwrite) is the primary control. An overwrite
+/// failure is logged and the unlink still proceeds.
 pub(crate) fn wipe_and_remove_file(path: &Path) -> std::io::Result<bool> {
     const ZERO_CHUNK_LEN: usize = 64 * 1024;
 
@@ -1195,20 +1196,28 @@ pub(crate) fn wipe_and_remove_file(path: &Path) -> std::io::Result<bool> {
     };
     // `is_file()` on symlink metadata is false for a symlink, so links fall straight through to
     // the unlink below.
-    if metadata.is_file() && metadata.len() > 0 {
-        let mut file = OpenOptions::new().write(true).open(path)?;
-        let zeros = [0u8; ZERO_CHUNK_LEN];
-        let mut remaining = metadata.len();
-        while remaining > 0 {
-            let chunk = usize::try_from(remaining)
-                .unwrap_or(ZERO_CHUNK_LEN)
-                .min(ZERO_CHUNK_LEN);
-            file.write_all(&zeros[..chunk])?;
-            remaining -= chunk as u64;
-        }
-        file.sync_all()?;
-        drop(file);
+    if metadata.is_file()
+        && metadata.len() > 0
+        && let Err(e) = zero_fill(path, metadata.len(), ZERO_CHUNK_LEN)
+    {
+        // The overwrite is best effort. Deletion is the primary control, so an overwrite failure
+        // must never leave the plaintext file in place.
+        log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not overwrite {path:?} before removal, deleting anyway: {e}");
     }
     std::fs::remove_file(path)?;
     Ok(true)
+}
+
+fn zero_fill(path: &Path, len: u64, chunk_len: usize) -> std::io::Result<()> {
+    let mut file = OpenOptions::new().write(true).open(path)?;
+    let zeros = vec![0u8; chunk_len];
+    let mut remaining = len;
+    while remaining > 0 {
+        let chunk = usize::try_from(remaining)
+            .unwrap_or(chunk_len)
+            .min(chunk_len);
+        file.write_all(&zeros[..chunk])?;
+        remaining -= chunk as u64;
+    }
+    file.sync_all()
 }
