@@ -34,6 +34,7 @@ const COPY_KEYS: Record<WalletRecoveryReason, { title: string; description: stri
     config_corrupted: {
         title: 'common:wallet-recovery-config-corrupted-title',
         description: 'common:wallet-recovery-config-corrupted-description',
+    },
     legacy_seed_undecryptable: {
         title: 'common:wallet-recovery-legacy-seed-title',
         description: 'common:wallet-recovery-legacy-seed-description',

@@ -47,10 +47,10 @@ export interface CriticalProblemPayload {
  * enum-like value only - never an error string, a path or an id - so all user-facing copy is
  * chosen here.
  */
-export type WalletRecoveryReason = 'initialization_failed' | 'seed_unavailable' | 'config_corrupted';
 export type WalletRecoveryReason =
     | 'initialization_failed'
     | 'seed_unavailable'
+    | 'config_corrupted'
     | 'legacy_seed_undecryptable'
     | 'legacy_config_unreadable';
 

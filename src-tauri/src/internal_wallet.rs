@@ -1918,7 +1918,7 @@ pub fn wallet_usability(reason: Option<WalletRecoveryReason>) -> Result<(), Mini
         Some(
             WalletRecoveryReason::InitializationFailed
             | WalletRecoveryReason::SeedUnavailable
-            | WalletRecoveryReason::ConfigCorrupted,
+            | WalletRecoveryReason::ConfigCorrupted
             | WalletRecoveryReason::LegacySeedUndecryptable
             | WalletRecoveryReason::LegacyConfigUnreadable,
         ) => Err(MiningError::WalletNotReady),
