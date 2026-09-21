@@ -22,7 +22,7 @@
 
 use std::{sync::LazyLock, thread};
 
-use log::{error, info};
+use log::{error, info, warn};
 use tari_shutdown::Shutdown;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
@@ -44,7 +44,7 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
-    internal_wallet::InternalWallet,
+    internal_wallet::{InternalWallet, ensure_wallet_usable},
     mining::{
         CpuConnectionType, MinerControlsState, MiningError,
         cpu::{CpuMinerStatus, miners::xmrig::XmrigAdapter},
@@ -164,6 +164,11 @@ impl CpuManager {
     }
 
     async fn start_mining_inner(&mut self) -> Result<(), anyhow::Error> {
+        // Refuse before doing any work: mining to an address the app cannot vouch for is the
+        // failure mode this whole hardening pass exists to stop. Applies to solo/mmproxy mode
+        // too, which mines to the Monero address and would otherwise start without a wallet.
+        ensure_wallet_usable()?;
+
         let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
 
         if !cpu_mining_enabled {
@@ -208,7 +213,10 @@ impl CpuManager {
                     .current_cpu_pool()
                     .pool_url
                     .clone();
-                let tari_address = InternalWallet::tari_address().await;
+                let tari_address = InternalWallet::tari_address().await.map_err(|e| {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Refusing to start CPU pool mining, wallet not available: {e}");
+                    MiningError::WalletNotReady
+                })?;
 
                 // Worker name format depends on the pool
                 // LuckyPool: .Tari-Universe

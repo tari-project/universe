@@ -35,8 +35,7 @@ use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::event_scheduler::EventScheduler;
-use crate::events::CriticalProblemPayload;
-use crate::internal_wallet::InternalWallet;
+use crate::internal_wallet::{InternalWallet, WalletRecoveryReason, enter_wallet_recovery};
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
@@ -413,18 +412,16 @@ impl SetupManager {
         // Or user selected exchange on default app variant and reopened the app
         // In other cases we want to display standard wallet UI
         let mut wallet_initialized = false;
+        // Set when a wallet initialisation actually failed (as opposed to "not attempted yet",
+        // which is the normal exchange-miner first-run state). Telemetry and mining are gated on
+        // it; see the block after the initialisation branches.
+        let mut wallet_recovery_reason: Option<WalletRecoveryReason> = None;
         if built_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
             if is_external_address_selected && is_on_exchange_specific_variant {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
                 if let Err(e) = InternalWallet::initialize_seedless(&app_handle, None).await {
-                    EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                        title: Some("Wallet(Seedless) not initialized!".to_string()),
-                        description: Some(
-                            "Encountered an error while initializing the wallet.".to_string(),
-                        ),
-                        error_message: Some(e.to_string()),
-                    })
-                    .await;
+                    error!(target: LOG_TARGET_APP_LOGIC, "Error initializing seedless wallet: {e:?}");
+                    wallet_recovery_reason = Some(WalletRecoveryReason::InitializationFailed);
                 } else {
                     wallet_initialized = true;
                 }
@@ -433,28 +430,24 @@ impl SetupManager {
                 match InternalWallet::initialize_with_seed(&app_handle).await {
                     Ok(()) => {
                         if let Err(e) = ConfigWallet::migrate().await {
-                            EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                                title: Some("Wallet config migration failed!".to_string()),
-                                description: Some(
-                                    "Encountered an error while migrating the wallet.".to_string(),
-                                ),
-                                error_message: Some(e.to_string()),
-                            })
-                            .await
+                            error!(target: LOG_TARGET_APP_LOGIC, "Wallet config migration failed: {e:?}");
+                            wallet_recovery_reason =
+                                Some(WalletRecoveryReason::InitializationFailed);
                         } else {
                             wallet_initialized = true;
+                            // The wallet is usable, but the startup probe may have found that
+                            // its seed cannot be read. That is a recovery case too: the user
+                            // must be told now, not at their first send.
+                            if let Ok(Some(kind)) = InternalWallet::seed_unavailable().await {
+                                warn!(target: LOG_TARGET_APP_LOGIC, "Wallet seed unavailable at startup: error={}", kind.as_tag());
+                                wallet_recovery_reason =
+                                    Some(WalletRecoveryReason::SeedUnavailable);
+                            }
                         }
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET_APP_LOGIC, "Error loading internal wallet: {e:?}");
-                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                            title: Some("Wallet(seed) not initialized!".to_string()),
-                            description: Some(
-                                "Encountered an error while initializing the wallet.".to_string(),
-                            ),
-                            error_message: Some(e.to_string()),
-                        })
-                        .await;
+                        wallet_recovery_reason = Some(WalletRecoveryReason::InitializationFailed);
                     }
                 };
             }
@@ -474,16 +467,11 @@ impl SetupManager {
             if let Err(e) =
                 InternalWallet::initialize_seedless(&app_handle, external_tari_address).await
             {
-                EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                    title: Some("Wallet(Seedless) not initialized!".to_string()),
-                    description: Some(
-                        "Encountered an error while initializing the wallet.".to_string(),
-                    ),
-                    error_message: Some(e.to_string()),
-                })
-                .await;
+                error!(target: LOG_TARGET_APP_LOGIC, "Error initializing seedless wallet: {e:?}");
+                wallet_recovery_reason = Some(WalletRecoveryReason::InitializationFailed);
             } else {
                 wallet_initialized = true;
+                wallet_recovery_reason = None;
             }
         }
 
@@ -499,7 +487,13 @@ impl SetupManager {
         // We should probably change events to be loaded from internal wallet directly
         EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
 
-        {
+        // Never run with an unverified wallet. A failed initialisation (or a seed the keyring
+        // will not give back) puts the app into the recovery state: telemetry does not start and
+        // `ensure_wallet_usable` refuses to let either miner start. Everything else keeps
+        // running, so the user can still open settings, export logs and send a support bundle.
+        if let Some(reason) = wallet_recovery_reason {
+            enter_wallet_recovery(reason).await;
+        } else {
             let _unused = state
                 .telemetry_manager
                 .write()

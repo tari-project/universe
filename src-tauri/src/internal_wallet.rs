@@ -38,6 +38,7 @@ use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
 use tauri::{AppHandle, Manager};
+use tauri_plugin_sentry::sentry;
 use tokio::fs;
 use tokio::sync::{OnceCell, RwLock};
 
@@ -50,8 +51,9 @@ use crate::consts::DEFAULT_MONERO_ADDRESS;
 use crate::credential_manager::{
     Credential, CredentialError, CredentialManager, LegacyCredential, LegacyCredentialManager,
 };
-use crate::events::CriticalProblemPayload;
+use crate::events::{CriticalProblemPayload, WalletRecoveryPayload};
 use crate::events_emitter::EventsEmitter;
+use crate::mining::MiningError;
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
@@ -129,13 +131,27 @@ pub struct InternalWallet {
     external_tari_address: Option<TariAddress>,
     // Only for an owned(with seed) wallet
     tari_wallet_details: Option<TariWalletDetails>,
+    /// Set by the startup keyring probe when the Tari seed could not be read. The wallet still
+    /// works for everything that does not need the seed (address, balance, scanning, pool
+    /// mining), which is why the app keeps running; the UI uses this to show the recovery state
+    /// at launch instead of at the user's first send.
+    seed_unavailable: Option<SeedProbeErrorKind>,
 }
 
 static INSTANCE: OnceCell<RwLock<InternalWallet>> = OnceCell::const_new();
 
 impl InternalWallet {
-    pub fn current() -> &'static RwLock<InternalWallet> {
-        INSTANCE.get().expect("InternalWallet is not initialized")
+    /// The global wallet instance.
+    ///
+    /// Fallible by design: the instance only exists once `initialize_with_seed` or
+    /// `initialize_seedless` completed, and every failure mode of those (corrupt config,
+    /// missing keyring entry, failed legacy migration) leaves it unset. Callers must decide
+    /// what "no wallet" means for them - skip a telemetry cycle, refuse to start mining,
+    /// return an error to the UI - instead of panicking the task they run on.
+    pub fn current() -> Result<&'static RwLock<InternalWallet>, anyhow::Error> {
+        INSTANCE
+            .get()
+            .ok_or_else(|| anyhow!(WALLET_NOT_INITIALIZED))
     }
 
     pub fn is_initialized() -> bool {
@@ -143,9 +159,9 @@ impl InternalWallet {
     }
 
     async fn set_current(new_internal_wallet: InternalWallet) -> Result<(), anyhow::Error> {
-        if INSTANCE.get().is_some() {
+        if let Some(instance) = INSTANCE.get() {
             // INSTANCE has been initialized
-            let mut internal_wallet_guard = InternalWallet::current().write().await;
+            let mut internal_wallet_guard = instance.write().await;
             *internal_wallet_guard = new_internal_wallet;
         } else {
             INSTANCE
@@ -155,12 +171,12 @@ impl InternalWallet {
         Ok(())
     }
 
-    pub async fn is_internal() -> bool {
-        let internal_wallet_guard = InternalWallet::current().read().await;
-        matches!(
+    pub async fn is_internal() -> Result<bool, anyhow::Error> {
+        let internal_wallet_guard = InternalWallet::current()?.read().await;
+        Ok(matches!(
             internal_wallet_guard.tari_address_type,
             TariAddressType::Internal
-        )
+        ))
     }
 
     pub async fn initialize_seedless(
@@ -197,6 +213,7 @@ impl InternalWallet {
             encrypted_monero_seed: Hidden::hide(monero_seed_binary),
             encrypted_tari_seed: Hidden::hide(None),
             tari_wallet_details: None,
+            seed_unavailable: None,
         };
 
         internal_wallet.post_init(app_handle).await
@@ -225,28 +242,35 @@ impl InternalWallet {
         if wallet_config.tari_wallet_details().is_none() {
             // Try to extract wallet details from seed stored in credentials
             if let Some(wallet_id) = wallet_config.tari_wallets().first() {
-                let tari_seed_binary = match InternalWallet::get_credentials(
+                let tari_seed_binary = InternalWallet::get_credentials(
                     app_handle,
                     wallet_id.clone(),
                     true,
                 )
                 .await
-                {
-                    Ok(cred) => cred.encrypted_seed,
-                    Err(e) => {
-                        // TODO(testing): This panic crashes the app on credential failures.
-                        // Convert to Result and show user-friendly recovery UI.
-                        // See TESTING_ISSUES.md for full analysis.
-                        panic!("Failed to get credentials: {e}")
-                    }
-                };
-                let tari_cipher_seed = CipherSeed::from_binary(&tari_seed_binary)
-                    .expect("Could not convert Tari Seed to binary");
+                .map_err(|e| {
+                    log::error!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "[validate_wallet_config_for_seed] keyring read failed: wallet_id={}",
+                        wallet_id.as_str(),
+                    );
+                    anyhow!("Failed to get credentials: {e}")
+                })?;
+                let tari_seed_binary = tari_seed_binary.encrypted_seed;
+                let tari_cipher_seed =
+                    CipherSeed::from_binary(&tari_seed_binary).map_err(|_| {
+                        log::error!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "[validate_wallet_config_for_seed] could not parse Tari seed from binary: error=seed_decode wallet_id={} blob_len={}",
+                            wallet_id.as_str(),
+                            tari_seed_binary.len(),
+                        );
+                        anyhow!("Could not parse Tari Seed from binary")
+                    })?;
 
                 let tari_wallet_details =
                     InternalWallet::get_tari_wallet_details(wallet_id.clone(), tari_cipher_seed)
-                        .await
-                        .expect("Could not extract Tari Seed to binary");
+                        .await?;
                 ConfigWallet::update_field(
                     ConfigWalletContent::set_tari_wallet_details,
                     Some(tari_wallet_details),
@@ -259,7 +283,60 @@ impl InternalWallet {
         Ok(true)
     }
 
+    /// Initialise the wallet from its seed, all-or-nothing.
+    ///
+    /// The inner routine mutates two config fields before it can know whether it will succeed
+    /// (the external-address reset that switches the app into seed mode, and the wallet details
+    /// derived from the keyring blob). Both are snapshotted here and put back on failure, so a
+    /// launch that ends in the recovery state leaves `config_wallet.json` exactly as it found it.
+    /// `INSTANCE` is only published by `post_init`, which is the last step, and the keyring is
+    /// only written by `add_tari_wallet` / `add_monero_wallet`, which are the seed's *only*
+    /// copies at that point and must therefore never be rolled back.
     pub async fn initialize_with_seed(app_handle: &tauri::AppHandle) -> Result<(), anyhow::Error> {
+        let config_before = ConfigWallet::content().await;
+        let external_address_before = config_before.selected_external_tari_address().clone();
+        let wallet_details_before = config_before.tari_wallet_details().clone();
+        drop(config_before);
+
+        let result = InternalWallet::initialize_with_seed_inner(app_handle).await;
+
+        if result.is_err() {
+            let config_now = ConfigWallet::content().await;
+            let external_address_changed =
+                config_now.selected_external_tari_address() != &external_address_before;
+            let wallet_details_changed = config_now
+                .tari_wallet_details()
+                .as_ref()
+                .map(|d| d.id.clone())
+                != wallet_details_before.as_ref().map(|d| d.id.clone());
+            drop(config_now);
+
+            if external_address_changed
+                && let Err(e) = ConfigWallet::update_field(
+                    ConfigWalletContent::set_selected_external_tari_address,
+                    external_address_before,
+                )
+                .await
+            {
+                log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not roll back the selected external Tari address after a failed wallet init: {e}");
+            }
+            if wallet_details_changed
+                && let Err(e) = ConfigWallet::update_field(
+                    ConfigWalletContent::set_tari_wallet_details,
+                    wallet_details_before,
+                )
+                .await
+            {
+                log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not roll back the cached Tari wallet details after a failed wallet init: {e}");
+            }
+        }
+
+        result
+    }
+
+    async fn initialize_with_seed_inner(
+        app_handle: &tauri::AppHandle,
+    ) -> Result<(), anyhow::Error> {
         ConfigWallet::update_field(
             ConfigWalletContent::set_selected_external_tari_address,
             None,
@@ -267,66 +344,94 @@ impl InternalWallet {
         .await?;
         let wallet_config = ConfigWallet::content().await;
 
-        let internal_wallet =
-            if InternalWallet::validate_wallet_config_for_seed(app_handle, &wallet_config).await? {
-                InternalWallet::load_latest_version(app_handle, wallet_config).await?
-            } else {
-                let monero_address = wallet_config.monero_address().clone();
-                let app_config_dir = app_handle
-                    .path()
-                    .app_config_dir()
-                    .expect("Couldn't get application config directory!");
+        let internal_wallet = if InternalWallet::validate_wallet_config_for_seed(
+            app_handle,
+            &wallet_config,
+        )
+        .await?
+        {
+            InternalWallet::load_latest_version(app_handle, wallet_config).await?
+        } else {
+            let monero_address = wallet_config.monero_address().clone();
+            let app_config_dir = app_handle
+                .path()
+                .app_config_dir()
+                .map_err(|e| anyhow!("Couldn't get application config directory: {e}"))?;
 
-                let old_wallet_config = get_old_wallet_config(&app_config_dir).await.ok();
-                if let Some(old_wallet_config) = old_wallet_config {
-                    // Migrate old wallet config
-                    let (wallet_id, tari_seed_binary, monero_seed_binary) =
-                        InternalWallet::migrate(app_handle, &app_config_dir, old_wallet_config)
-                            .await?;
-                    let tari_wallet_details = InternalWallet::get_tari_wallet_details(
-                        wallet_id,
-                        CipherSeed::from_binary(&tari_seed_binary)
-                            .expect("Could not convert Tari Seed to binary"),
-                    )
-                    .await?;
+            // INTEGRATION POINT (T1, universe-wallet-hardening): once the wallet config
+            // carries the `corrupted_recovery` flag that T1 adds to its default, this is
+            // where it must be read. A config that was replaced by a marked default has an
+            // empty `tari_wallets` list, which reaches exactly this branch and would create
+            // a brand new wallet, orphaning the user's seed in the keyring. When the flag is
+            // set we must instead return an error so `setup_manager` shows the recovery UI.
+            // Replace the body of `wallet_config_is_corrupted_recovery` with the flag read;
+            // no other call site has to change.
+            if wallet_config_is_corrupted_recovery(&wallet_config) {
+                return Err(anyhow!(
+                    "Wallet config was recovered from a corrupt file; refusing to create a new wallet"
+                ));
+            }
 
-                    InternalWallet {
-                        tari_address_type: TariAddressType::Internal,
-                        encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
-                        encrypted_monero_seed: Hidden::hide(monero_seed_binary),
-                        monero_address,
-                        external_tari_address: None,
-                        tari_wallet_details: Some(tari_wallet_details),
-                    }
-                } else {
-                    // Create new wallet
-                    let tari_seed = CipherSeed::random();
-                    let (tari_wallet_details, tari_seed_binary) =
-                        InternalWallet::add_tari_wallet(app_handle, tari_seed, None).await?;
+            let old_wallet_config = get_old_wallet_config(&app_config_dir).await.ok();
+            if let Some(old_wallet_config) = old_wallet_config {
+                // Migrate old wallet config
+                let (wallet_id, tari_seed_binary, monero_seed_binary) =
+                    InternalWallet::migrate(app_handle, &app_config_dir, old_wallet_config).await?;
+                let tari_cipher_seed =
+                        CipherSeed::from_binary(&tari_seed_binary).map_err(|_| {
+                            log::error!(
+                                target: LOG_TARGET_APP_LOGIC,
+                                "[initialize_with_seed] migrated seed did not parse: error=seed_decode wallet_id={} blob_len={}",
+                                wallet_id.as_str(),
+                                tari_seed_binary.len(),
+                            );
+                            anyhow!("Could not parse Tari Seed from binary")
+                        })?;
+                let tari_wallet_details =
+                    InternalWallet::get_tari_wallet_details(wallet_id, tari_cipher_seed).await?;
 
-                    let mut monero_seed_binary = None;
-                    if monero_address.is_empty() {
-                        let monero_seed = MoneroSeed::generate()?;
-                        monero_seed_binary =
-                            Some(InternalWallet::add_monero_wallet(monero_seed).await?);
-                    };
-
-                    InternalWallet {
-                        tari_address_type: TariAddressType::Internal,
-                        encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
-                        encrypted_monero_seed: Hidden::hide(monero_seed_binary),
-                        monero_address,
-                        external_tari_address: None,
-                        tari_wallet_details: Some(tari_wallet_details),
-                    }
+                InternalWallet {
+                    tari_address_type: TariAddressType::Internal,
+                    encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
+                    encrypted_monero_seed: Hidden::hide(monero_seed_binary),
+                    monero_address,
+                    external_tari_address: None,
+                    tari_wallet_details: Some(tari_wallet_details),
+                    seed_unavailable: None,
                 }
-            };
+            } else {
+                // Create new wallet
+                let tari_seed = CipherSeed::random();
+                let (tari_wallet_details, tari_seed_binary) =
+                    InternalWallet::add_tari_wallet(app_handle, tari_seed, None).await?;
+
+                let mut monero_seed_binary = None;
+                if monero_address.is_empty() {
+                    let monero_seed = MoneroSeed::generate()?;
+                    monero_seed_binary =
+                        Some(InternalWallet::add_monero_wallet(monero_seed).await?);
+                };
+
+                InternalWallet {
+                    tari_address_type: TariAddressType::Internal,
+                    encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
+                    encrypted_monero_seed: Hidden::hide(monero_seed_binary),
+                    monero_address,
+                    external_tari_address: None,
+                    tari_wallet_details: Some(tari_wallet_details),
+                    seed_unavailable: None,
+                }
+            }
+        };
 
         internal_wallet.post_init(app_handle).await
     }
 
     // Handle all side effects here
     async fn post_init(&self, app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+        // Validate before publishing the instance: a wallet without an address must never become
+        // the global instance, or every later reader sees a half-built wallet (see `current`).
+        let _ = self.extract_tari_address()?;
         InternalWallet::set_current(self.clone()).await?;
 
         let state = app_handle.state::<UniverseAppState>();
@@ -344,14 +449,15 @@ impl InternalWallet {
         }
 
         ConfigUI::handle_wallet_type_update(self.tari_address_type.clone()).await?;
+        let tari_address = self.extract_tari_address()?;
         EventsEmitter::emit_selected_tari_address_changed(
-            self.extract_tari_address(),
+            tari_address,
             self.tari_address_type.clone(),
         )
         .await;
 
-        CpuPoolManager::handle_wallet_address_change(self.extract_tari_address()).await;
-        GpuPoolManager::handle_wallet_address_change(self.extract_tari_address()).await;
+        CpuPoolManager::handle_wallet_address_change(tari_address).await;
+        GpuPoolManager::handle_wallet_address_change(tari_address).await;
 
         log::info!(
             "Wallet with {} address initialized successfully",
@@ -362,26 +468,26 @@ impl InternalWallet {
 
     // ** Getters
 
-    pub async fn tari_address() -> TariAddress {
-        let internal_wallet_guard = InternalWallet::current().read().await;
-        internal_wallet_guard.extract_tari_address().clone()
+    pub async fn tari_address() -> Result<TariAddress, anyhow::Error> {
+        let internal_wallet_guard = InternalWallet::current()?.read().await;
+        Ok(internal_wallet_guard.extract_tari_address()?.clone())
     }
-    fn extract_tari_address(&self) -> &TariAddress {
+    /// An initialised wallet always has exactly one of the two address sources set. Returning an
+    /// error instead of panicking keeps an inconsistent instance (e.g. a half-applied mode switch)
+    /// from taking down whichever task happened to read the address first.
+    fn extract_tari_address(&self) -> Result<&TariAddress, anyhow::Error> {
         if let Some(ref external_tari_address) = self.external_tari_address {
-            external_tari_address
+            Ok(external_tari_address)
         } else if let Some(ref details) = self.tari_wallet_details {
-            &details.tari_address
+            Ok(&details.tari_address)
         } else {
-            // TODO(testing): This panic can occur if wallet is in invalid state.
-            // Consider returning Result<&TariAddress, WalletError> instead.
-            // See TESTING_ISSUES.md for full analysis.
-            panic!("Internal wallet must have a Tari Address defined!")
+            Err(anyhow!(WALLET_NO_ADDRESS))
         }
     }
 
-    pub async fn tari_wallet_details() -> Option<TariWalletDetails> {
-        let internal_wallet_guard = InternalWallet::current().read().await;
-        internal_wallet_guard.tari_wallet_details.clone()
+    pub async fn tari_wallet_details() -> Result<Option<TariWalletDetails>, anyhow::Error> {
+        let internal_wallet_guard = InternalWallet::current()?.read().await;
+        Ok(internal_wallet_guard.tari_wallet_details.clone())
     }
     // **
 
@@ -443,8 +549,8 @@ impl InternalWallet {
             .await?;
 
         // Modify the instance directly due to circular usage in initialze_seed
-        if INSTANCE.get().is_some() {
-            let mut internal_wallet_guard = InternalWallet::current().write().await;
+        if let Some(instance) = INSTANCE.get() {
+            let mut internal_wallet_guard = instance.write().await;
             internal_wallet_guard.external_tari_address = None;
             internal_wallet_guard.tari_wallet_details = Some(wallet_details.clone());
             internal_wallet_guard.encrypted_tari_seed = Hidden::hide(Some(encrypted_seed.clone()));
@@ -530,7 +636,7 @@ impl InternalWallet {
         let encrypted_tari_seed = {
             // Encrypt Tari Seed with PIN
             let wallet_id = InternalWallet::tari_wallet_details()
-                .await
+                .await?
                 .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
                 .id;
             let encrypted_tari_seed = tari_seed.encipher(Some(pin_password))?;
@@ -547,8 +653,8 @@ impl InternalWallet {
         };
         PinManager::set_pin_locked().await?;
 
-        if InternalWallet::is_initialized() {
-            let mut internal_wallet_guard = InternalWallet::current().write().await;
+        if let Some(instance) = INSTANCE.get() {
+            let mut internal_wallet_guard = instance.write().await;
             internal_wallet_guard.encrypted_monero_seed = Hidden::hide(encrypted_monero_seed);
             internal_wallet_guard.encrypted_tari_seed =
                 Hidden::hide(Some(encrypted_tari_seed.clone()));
@@ -574,8 +680,8 @@ impl InternalWallet {
                 false,
             )
             .await?;
-            if InternalWallet::is_initialized() {
-                let mut internal_wallet_guard = InternalWallet::current().write().await;
+            if let Some(instance) = INSTANCE.get() {
+                let mut internal_wallet_guard = instance.write().await;
                 internal_wallet_guard.encrypted_monero_seed =
                     Hidden::hide(Some(encrypted_monero_seed.clone()));
             }
@@ -588,7 +694,7 @@ impl InternalWallet {
             // Encrypt Tari Seed with PIN
             let tari_seed = InternalWallet::get_tari_seed(None).await?;
             let wallet_id = InternalWallet::tari_wallet_details()
-                .await
+                .await?
                 .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
                 .id;
             let encrypted_tari_seed = tari_seed.encipher(Some(pin_password))?;
@@ -605,8 +711,8 @@ impl InternalWallet {
         };
         PinManager::set_pin_locked().await?;
 
-        if InternalWallet::is_initialized() {
-            let mut internal_wallet_guard = InternalWallet::current().write().await;
+        if let Some(instance) = INSTANCE.get() {
+            let mut internal_wallet_guard = instance.write().await;
             internal_wallet_guard.encrypted_monero_seed = Hidden::hide(encrypted_monero_seed);
             internal_wallet_guard.encrypted_tari_seed =
                 Hidden::hide(Some(encrypted_tari_seed.clone()));
@@ -667,45 +773,49 @@ impl InternalWallet {
     ) -> Result<InternalWallet, anyhow::Error> {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Internal Wallet latest version detected.");
         let monero_address = wallet_config.monero_address().clone();
-        // TODO(testing): These panics can crash the app if config is corrupted.
-        // Convert to Result<InternalWallet, WalletConfigError> with recovery options.
-        // See TESTING_ISSUES.md for full analysis.
+        let version = *wallet_config.version_counter();
         if monero_address.is_empty() {
-            panic!(
-                "Unexpected! Monero address should be accessible for v{:?}",
-                *wallet_config.version_counter()
-            );
+            return Err(anyhow!(
+                "Monero address should be accessible for wallet config v{version}"
+            ));
         }
-        if (*wallet_config.tari_wallets()).is_empty() {
-            panic!(
-                "Unexpected! Tari wallets field should be defined in the config for v{:?}",
-                *wallet_config.version_counter()
-            );
-        }
+        let tari_wallet_id = (*wallet_config.tari_wallets())
+            .first()
+            .cloned()
+            .ok_or_else(|| {
+                anyhow!("Tari wallets field should be defined in the wallet config v{version}")
+            })?;
 
+        let mut seed_unavailable = None;
         let (encrypted_tari_seed, tari_wallet_details) = {
             match ConfigWallet::content().await.tari_wallet_details() {
                 Some(wallet_details) => {
                     log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(wallet config file) Tari Wallet Details: {wallet_details:?}");
+                    // The cached details make every other startup step (address, balance,
+                    // scanning, mining) work without ever opening the keyring, which is how a
+                    // deleted or unreadable entry used to stay invisible until the user tried
+                    // to spend. Probe it once, read-only, right here.
+                    seed_unavailable =
+                        InternalWallet::probe_tari_seed_at_startup(app_handle, &tari_wallet_id)
+                            .await;
                     (None, wallet_details.clone())
                 }
                 _ => {
-                    // If wallet details are not saved in the config file, extract them from the decrypted seed.
-                    let tari_wallet_id = (*wallet_config.tari_wallets())
-                        .first()
-                        .expect("Unexpected! Selected wallet not found in the wallet config!");
-                    let encrypted_tari_seed = match InternalWallet::get_credentials(
-                        app_handle,
-                        tari_wallet_id.clone(),
-                        true,
-                    )
-                    .await
-                    {
-                        Ok(cred) => cred.encrypted_seed,
-                        Err(e) => {
-                            panic!("Failed to get credentials: {e}")
-                        }
-                    };
+                    // If wallet details are not saved in the config file, extract them from the
+                    // decrypted seed. This path already reads the keyring, so it needs no probe.
+                    let encrypted_tari_seed =
+                        InternalWallet::get_credentials(app_handle, tari_wallet_id.clone(), true)
+                            .await
+                            .map_err(|e| {
+                                log::error!(
+                                    target: LOG_TARGET_APP_LOGIC,
+                                    "[load_latest_version] keyring read failed: wallet_id={}",
+                                    tari_wallet_id.as_str(),
+                                );
+                                anyhow!("Failed to get credentials: {e}")
+                            })?
+                            .encrypted_seed;
+                    let blob_len = encrypted_tari_seed.len();
                     let tari_cipher_seed = if PinManager::pin_locked().await {
                         let pin_password = PinManager::get_validated_pin(app_handle).await?;
                         match CipherSeed::from_enciphered_bytes(
@@ -714,13 +824,25 @@ impl InternalWallet {
                         ) {
                             Ok(seed) => seed,
                             Err(_) => {
+                                // Wrong PIN is a user mistake: warn, never Sentry.
+                                log::warn!(
+                                    target: LOG_TARGET_APP_LOGIC,
+                                    "[load_latest_version] seed did not decipher with the supplied PIN: wallet_id={} blob_len={blob_len} pin_locked=true",
+                                    tari_wallet_id.as_str(),
+                                );
                                 return Err(anyhow!("Wrong PIN entered!"));
                             }
                         }
                     } else {
                         // Seed not yet encrypted with PIN
-                        CipherSeed::from_binary(&encrypted_tari_seed)
-                            .expect("Could not parse Tari Seed from binary")
+                        CipherSeed::from_binary(&encrypted_tari_seed).map_err(|_| {
+                            log::error!(
+                                target: LOG_TARGET_APP_LOGIC,
+                                "[load_latest_version] could not parse Tari seed from binary: error=seed_decode wallet_id={} blob_len={blob_len} pin_locked=false",
+                                tari_wallet_id.as_str(),
+                            );
+                            anyhow!("Could not parse Tari Seed from binary")
+                        })?
                     };
                     let wallet_details = InternalWallet::get_tari_wallet_details(
                         tari_wallet_id.clone(),
@@ -740,7 +862,100 @@ impl InternalWallet {
             monero_address,
             external_tari_address: None,
             tari_wallet_details: Some(tari_wallet_details),
+            seed_unavailable,
         })
+    }
+
+    /// One read-only keyring probe for `tari_wallets[0]`, run only when the wallet config already
+    /// carried the wallet details and nothing else on the startup path would touch the keyring.
+    ///
+    /// Read-only on purpose: it never creates a wallet, never writes and never deletes. It
+    /// returns the failure kind to store on the instance; the caller puts it on the wallet so
+    /// the UI and the support bundle can name the cause.
+    ///
+    /// macOS rate-limiting policy: reading a keychain item the user approved with "Allow"
+    /// (rather than "Always Allow") re-shows the system dialog on every read, so an
+    /// unconditional probe would re-prompt those users at every launch - which is exactly what
+    /// the cached-details path was built to avoid. On macOS the probe therefore runs at most
+    /// once per `SEED_PROBE_MIN_INTERVAL` (24h), with the timestamp of the last completed probe
+    /// kept in a non-secret marker file (`wallet_seed_probe.json`: a unix timestamp and an
+    /// enum-like outcome, no ids, no keys). Windows and Linux reads are silent and
+    /// sub-millisecond, so they are probed on every launch.
+    async fn probe_tari_seed_at_startup(
+        app_handle: &AppHandle,
+        wallet_id: &WalletId,
+    ) -> Option<SeedProbeErrorKind> {
+        let marker_path = app_handle
+            .path()
+            .app_config_dir()
+            .ok()
+            .map(|dir| dir.join(SEED_PROBE_MARKER_FILE_NAME));
+        let last_probe = marker_path.as_deref().and_then(read_seed_probe_marker);
+
+        if decide_seed_probe(
+            SEED_PROBE_IS_RATE_LIMITED,
+            last_probe,
+            unix_now(),
+            SEED_PROBE_MIN_INTERVAL_SECS,
+        ) == SeedProbeDecision::Skip
+        {
+            log::info!(target: LOG_TARGET_APP_LOGIC, "Startup seed probe skipped: rate limited on this platform");
+            return None;
+        }
+
+        let outcome = match CredentialManager::new_default(wallet_id.clone())
+            .get_credentials()
+            .await
+        {
+            Ok(credential) => {
+                log::info!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Startup seed probe: outcome=ok wallet_id={} blob_len={} pin_locked={}",
+                    wallet_id.as_str(),
+                    credential.encrypted_seed.len(),
+                    PinManager::pin_locked().await,
+                );
+                SeedProbeOutcome::Ok
+            }
+            Err(e) => classify_seed_probe_error(&e, SEED_PROBE_IS_RATE_LIMITED),
+        };
+
+        if let Some(path) = marker_path.as_deref() {
+            write_seed_probe_marker(path, unix_now(), outcome);
+        }
+
+        match outcome {
+            SeedProbeOutcome::Ok => None,
+            SeedProbeOutcome::Inconclusive(kind) => {
+                // macOS "the user did not let us in" (cancelled prompt, locked keychain). Not a
+                // defect and not proof the seed is gone, so: no Sentry, no recovery state.
+                log::warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Startup seed probe inconclusive: error={} wallet_id={} pin_locked={}",
+                    kind.as_tag(),
+                    wallet_id.as_str(),
+                    PinManager::pin_locked().await,
+                );
+                None
+            }
+            SeedProbeOutcome::Unavailable(kind) => {
+                log::error!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Startup seed probe failed: error={} wallet_id={} pin_locked={}",
+                    kind.as_tag(),
+                    wallet_id.as_str(),
+                    PinManager::pin_locked().await,
+                );
+                report_seed_unavailable_at_startup(kind);
+                Some(kind)
+            }
+        }
+    }
+
+    /// The failure kind recorded by the startup probe, if the seed could not be read.
+    pub async fn seed_unavailable() -> Result<Option<SeedProbeErrorKind>, anyhow::Error> {
+        let internal_wallet_guard = InternalWallet::current()?.read().await;
+        Ok(internal_wallet_guard.seed_unavailable)
     }
 
     async fn get_legacy_credentials_forced(
@@ -955,8 +1170,8 @@ impl InternalWallet {
         pin_password: Option<SafePassword>,
     ) -> Result<CipherSeed, anyhow::Error> {
         let encrypted_tari_seed = {
-            let state_result = if InternalWallet::is_initialized() {
-                let internal_wallet = InternalWallet::current().read().await;
+            let state_result = if let Some(instance) = INSTANCE.get() {
+                let internal_wallet = instance.read().await;
                 internal_wallet.encrypted_tari_seed.reveal().clone()
             } else {
                 None
@@ -976,13 +1191,28 @@ impl InternalWallet {
 
                     match result {
                         Ok(cred) => {
-                            // Update store if not yet set to store
-                            let mut internal_wallet_guard = InternalWallet::current().write().await;
-                            internal_wallet_guard.encrypted_tari_seed =
-                                Hidden::hide(Some(cred.encrypted_seed.clone()));
+                            // Update store if not yet set to store. The instance may not exist
+                            // yet (this method is documented as usable before init), in which
+                            // case there is simply nothing to cache into.
+                            if let Some(instance) = INSTANCE.get() {
+                                let mut internal_wallet_guard = instance.write().await;
+                                internal_wallet_guard.encrypted_tari_seed =
+                                    Hidden::hide(Some(cred.encrypted_seed.clone()));
+                            }
                             cred.encrypted_seed
                         }
                         Err(e) => {
+                            // Diagnostics only: variant name, wallet id, and the config's PIN
+                            // flag. Never the blob, the seed words or the view key. Without
+                            // this line a support bundle cannot tell a deleted keyring entry
+                            // (P1) from an unreadable one (P2).
+                            log::error!(
+                                target: LOG_TARGET_APP_LOGIC,
+                                "[get_tari_seed] keyring read failed: error={} wallet_id={} pin_locked={}",
+                                SeedProbeErrorKind::from(&e).as_tag(),
+                                wallet_id.as_str(),
+                                PinManager::pin_locked().await,
+                            );
                             // Only display once
                             #[cfg(target_os = "macos")]
                             EventsEmitter::emit_show_keyring_dialog().await;
@@ -991,19 +1221,36 @@ impl InternalWallet {
                         }
                     }
                 } else {
+                    log::error!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "[get_tari_seed] no Tari wallet id in the wallet config",
+                    );
                     handle_critical_problem("Can't access seed", "[get_tari_seed]", None).await;
                     return Err(anyhow!("Can't access Tari seed"));
                 }
             }
         };
 
+        let blob_len = encrypted_tari_seed.len();
+        let pin_locked = PinManager::pin_locked().await;
         if let Some(pin_password) = pin_password {
-            CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, Some(pin_password))
-                .map_err(|_| anyhow!("Wrong PIN entered!"))
+            CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, Some(pin_password)).map_err(
+                |_| {
+                    // A wrong PIN is a user mistake, not a defect: warn level, never Sentry.
+                    log::warn!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "[get_tari_seed] seed did not decipher with the supplied PIN: blob_len={blob_len} pin_locked={pin_locked}",
+                    );
+                    anyhow!("Wrong PIN entered!")
+                },
+            )
         } else {
             // Seed not yet encrypted with PIN
             CipherSeed::from_binary(&encrypted_tari_seed).map_err(|_| {
-                log::error!(target: LOG_TARGET_APP_LOGIC, "[get_tari_seed] Could not parse Tari Seed from binary.");
+                log::error!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "[get_tari_seed] could not parse Tari seed from binary: error=seed_decode blob_len={blob_len} pin_locked={pin_locked}",
+                );
                 anyhow!("Could not parse Tari Seed from binary")
             })
         }
@@ -1019,8 +1266,8 @@ impl InternalWallet {
             ));
         }
 
-        let state_result = if InternalWallet::is_initialized() {
-            let internal_wallet = InternalWallet::current().read().await;
+        let state_result = if let Some(instance) = INSTANCE.get() {
+            let internal_wallet = instance.read().await;
             internal_wallet.encrypted_monero_seed.reveal().clone()
         } else {
             None
@@ -1038,14 +1285,21 @@ impl InternalWallet {
                 {
                     Ok(cred) => {
                         // Update store if not yet set
-                        if InternalWallet::is_initialized() {
-                            let mut internal_wallet_guard = InternalWallet::current().write().await;
+                        if let Some(instance) = INSTANCE.get() {
+                            let mut internal_wallet_guard = instance.write().await;
                             internal_wallet_guard.encrypted_monero_seed =
                                 Hidden::hide(Some(cred.encrypted_seed.clone()));
                         }
                         cred.encrypted_seed
                     }
                     Err(e) => {
+                        // Same redaction rules as `get_tari_seed`: variant name, id and flag only.
+                        log::error!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "[get_monero_seed] keyring read failed: error={} wallet_id=monero pin_locked={}",
+                            SeedProbeErrorKind::from(&e).as_tag(),
+                            PinManager::pin_locked().await,
+                        );
                         #[cfg(target_os = "macos")]
                         EventsEmitter::emit_show_keyring_dialog().await;
 
@@ -1055,17 +1309,29 @@ impl InternalWallet {
             }
         };
 
+        let blob_len = encrypted_monero_seed.len();
+        let pin_locked = PinManager::pin_locked().await;
         let decrypted_monero_seed = if let Some(pin_password) = pin_password {
-            cryptography::decrypt(&encrypted_monero_seed, &pin_password)
-                .map_err(|_| anyhow!("Wrong PIN entered!"))
+            cryptography::decrypt(&encrypted_monero_seed, &pin_password).map_err(|_| {
+                // Wrong PIN: user mistake, warn level, never Sentry.
+                log::warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "[get_monero_seed] seed did not decrypt with the supplied PIN: wallet_id=monero blob_len={blob_len} pin_locked={pin_locked}",
+                );
+                anyhow!("Wrong PIN entered!")
+            })
         } else {
             // Seed not yet encrypted with PIN
             Ok(encrypted_monero_seed)
         }?;
-        let decrypted_monero_seed_bytes: [u8; 32] = decrypted_monero_seed
-            .as_slice()
-            .try_into()
-            .map_err(|_| anyhow!("Monero seed is not 32 bytes"))?;
+        let decrypted_monero_seed_bytes: [u8; 32] =
+            decrypted_monero_seed.as_slice().try_into().map_err(|_| {
+                log::error!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "[get_monero_seed] decrypted blob has the wrong length: error=seed_length wallet_id=monero blob_len={blob_len} pin_locked={pin_locked}",
+                );
+                anyhow!("Monero seed is not 32 bytes")
+            })?;
         Ok(MoneroSeed::new(decrypted_monero_seed_bytes))
     }
 
@@ -1076,8 +1342,8 @@ impl InternalWallet {
         )
         .await?;
 
-        if INSTANCE.get().is_some() {
-            let mut internal_wallet_guard = InternalWallet::current().write().await;
+        if let Some(instance) = INSTANCE.get() {
+            let mut internal_wallet_guard = instance.write().await;
             internal_wallet_guard.monero_address = monero_address;
         }
 
@@ -1092,6 +1358,278 @@ impl InternalWallet {
         InternalWallet::remove_monero_wallet()?;
         Ok(())
     }
+}
+
+// ** Wallet availability, startup seed probe and recovery state **
+
+/// Error text for "there is no wallet". A constant so callers can match on it and so it can
+/// never accidentally carry a path, an id or a secret.
+pub const WALLET_NOT_INITIALIZED: &str = "InternalWallet is not initialized";
+/// Error text for an initialised-but-addressless wallet. Should be unreachable; see `post_init`.
+pub const WALLET_NO_ADDRESS: &str = "Internal wallet has no Tari address defined";
+/// The only Sentry message this module sends. Constant by policy: every varying detail goes into
+/// a tag with an enum-like value, never into the message (see the hardening brief).
+const SENTRY_SEED_UNAVAILABLE_AT_STARTUP: &str = "wallet.seed_unavailable_at_startup";
+/// Non-secret marker recording when the startup probe last ran. Holds a unix timestamp and an
+/// enum-like outcome only: no wallet ids, no blobs, no keys. It lives next to the app config dir
+/// rather than in `config_wallet.json` on purpose - the config crate is owned by the durability
+/// work (T1) and this file must not add a field to it.
+const SEED_PROBE_MARKER_FILE_NAME: &str = "wallet_seed_probe.json";
+/// macOS rate limit for the startup probe: at most one keychain read per 24h. See
+/// `InternalWallet::probe_tari_seed_at_startup` for why.
+const SEED_PROBE_MIN_INTERVAL_SECS: u64 = 60 * 60 * 24;
+/// Only macOS re-prompts the user for each read of an item approved with "Allow", so only macOS
+/// needs the rate limit. Windows and Linux reads are silent.
+const SEED_PROBE_IS_RATE_LIMITED: bool = cfg!(target_os = "macos");
+
+/// Why a keyring read failed, as an enum-like value fit for a log line or a Sentry tag.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SeedProbeErrorKind {
+    /// The entry is gone: deleted, never written, or the profile was copied without it.
+    NoEntry,
+    /// The store itself refused: service stopped, keychain locked, prompt denied, ACL mismatch.
+    KeyringPlatform,
+    /// Any other keyring-level failure (ambiguous entry, bad encoding, invalid attribute).
+    KeyringOther,
+    /// The fallback file could not be read.
+    Io,
+    /// The entry was readable but its contents did not decode.
+    Decode,
+}
+
+impl SeedProbeErrorKind {
+    /// Enum-like tag value. Never contains user data.
+    pub fn as_tag(self) -> &'static str {
+        match self {
+            SeedProbeErrorKind::NoEntry => "no_entry",
+            SeedProbeErrorKind::KeyringPlatform => "keyring_platform",
+            SeedProbeErrorKind::KeyringOther => "keyring_other",
+            SeedProbeErrorKind::Io => "io",
+            SeedProbeErrorKind::Decode => "decode",
+        }
+    }
+}
+
+impl From<&CredentialError> for SeedProbeErrorKind {
+    fn from(error: &CredentialError) -> Self {
+        match error {
+            CredentialError::NoEntry(_) => SeedProbeErrorKind::NoEntry,
+            CredentialError::Io(_) => SeedProbeErrorKind::Io,
+            CredentialError::Serialization(_) => SeedProbeErrorKind::Decode,
+            CredentialError::Keyring(keyring_error) => match keyring_error {
+                // `load_from_keyring` maps `NoEntry` before it gets here, but keep the arm so a
+                // future caller that passes the raw error through still classifies it correctly.
+                keyring::Error::NoEntry => SeedProbeErrorKind::NoEntry,
+                keyring::Error::PlatformFailure(_) | keyring::Error::NoStorageAccess(_) => {
+                    SeedProbeErrorKind::KeyringPlatform
+                }
+                _ => SeedProbeErrorKind::KeyringOther,
+            },
+        }
+    }
+}
+
+/// What the startup probe concluded.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SeedProbeOutcome {
+    /// The seed blob was read. Nothing to report.
+    Ok,
+    /// The seed could not be read and that is worth reporting and surfacing.
+    Unavailable(SeedProbeErrorKind),
+    /// The read did not happen on the user's terms (macOS denied/locked keychain). Not proof the
+    /// seed is gone and not a defect, so it is logged and nothing else: criterion "user-cancelled
+    /// keychain prompts are non-fatal, no Sentry".
+    Inconclusive(SeedProbeErrorKind),
+}
+
+/// Whether the probe should run at all on this launch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SeedProbeDecision {
+    Run,
+    Skip,
+}
+
+/// Pure decision: a rate-limited platform probes only when the last probe is older than
+/// `min_interval_secs` (or never happened). Everywhere else the probe is free, so it always runs.
+/// A marker timestamp in the future (clock moved backwards) is treated as "probe now" rather than
+/// locking the user out of the check until the clock catches up.
+pub fn decide_seed_probe(
+    rate_limited: bool,
+    last_probe_unix: Option<u64>,
+    now_unix: u64,
+    min_interval_secs: u64,
+) -> SeedProbeDecision {
+    if !rate_limited {
+        return SeedProbeDecision::Run;
+    }
+    match last_probe_unix {
+        None => SeedProbeDecision::Run,
+        Some(last) if last > now_unix => SeedProbeDecision::Run,
+        Some(last) if now_unix.saturating_sub(last) >= min_interval_secs => SeedProbeDecision::Run,
+        Some(_) => SeedProbeDecision::Skip,
+    }
+}
+
+/// Pure classification of a probe failure. `rate_limited` doubles as "this is macOS", the only
+/// platform where a platform failure is routinely the user declining a keychain prompt.
+pub fn classify_seed_probe_error(error: &CredentialError, rate_limited: bool) -> SeedProbeOutcome {
+    let kind = SeedProbeErrorKind::from(error);
+    if rate_limited && kind == SeedProbeErrorKind::KeyringPlatform {
+        SeedProbeOutcome::Inconclusive(kind)
+    } else {
+        SeedProbeOutcome::Unavailable(kind)
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct SeedProbeMarker {
+    last_probe_unix: u64,
+    last_outcome: SeedProbeOutcome,
+}
+
+fn unix_now() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or_default()
+}
+
+fn read_seed_probe_marker(path: &Path) -> Option<u64> {
+    let bytes = std::fs::read(path).ok()?;
+    serde_json::from_slice::<SeedProbeMarker>(&bytes)
+        .ok()
+        .map(|marker| marker.last_probe_unix)
+}
+
+/// Best effort: a marker that cannot be written only means the next launch probes again, which on
+/// macOS costs one extra prompt and everywhere else costs nothing.
+fn write_seed_probe_marker(path: &Path, now_unix: u64, outcome: SeedProbeOutcome) {
+    let marker = SeedProbeMarker {
+        last_probe_unix: now_unix,
+        last_outcome: outcome,
+    };
+    let Ok(serialized) = serde_json::to_vec(&marker) else {
+        return;
+    };
+    if let Some(parent) = path.parent()
+        && let Err(e) = std::fs::create_dir_all(parent)
+    {
+        log::debug!(target: LOG_TARGET_APP_LOGIC, "Could not create the directory for the seed probe marker: {e}");
+        return;
+    }
+    if let Err(e) = std::fs::write(path, serialized) {
+        log::debug!(target: LOG_TARGET_APP_LOGIC, "Could not write the seed probe marker: {e}");
+    }
+}
+
+/// Constant message, details as enum-like tags only. Never `format!`s an error into the message.
+fn report_seed_unavailable_at_startup(kind: SeedProbeErrorKind) {
+    sentry::with_scope(
+        |scope| {
+            scope.set_tag("platform", std::env::consts::OS);
+            scope.set_tag("wallet.seed_probe_error", kind.as_tag());
+        },
+        || {
+            sentry::capture_message(SENTRY_SEED_UNAVAILABLE_AT_STARTUP, sentry::Level::Error);
+        },
+    );
+}
+
+/// Why the app is in the wallet recovery state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WalletRecoveryReason {
+    /// `initialize_with_seed` / `initialize_seedless` returned an error.
+    InitializationFailed,
+    /// The wallet initialised, but the startup probe could not read its seed.
+    SeedUnavailable,
+}
+
+impl WalletRecoveryReason {
+    pub fn as_tag(self) -> &'static str {
+        match self {
+            WalletRecoveryReason::InitializationFailed => "initialization_failed",
+            WalletRecoveryReason::SeedUnavailable => "seed_unavailable",
+        }
+    }
+}
+
+/// Set once during startup and read by the mining managers. A plain `std::sync::RwLock` around a
+/// `Copy` enum: no `await` is held across it, so it cannot deadlock the async runtime.
+static WALLET_RECOVERY_REASON: std::sync::RwLock<Option<WalletRecoveryReason>> =
+    std::sync::RwLock::new(None);
+
+/// Enter the recovery state and tell the frontend. Idempotent: the first reason wins, so a probe
+/// failure cannot mask an earlier initialisation failure.
+pub async fn enter_wallet_recovery(reason: WalletRecoveryReason) {
+    {
+        let Ok(mut guard) = WALLET_RECOVERY_REASON.write() else {
+            log::error!(target: LOG_TARGET_APP_LOGIC, "Wallet recovery state lock poisoned");
+            return;
+        };
+        if guard.is_some() {
+            return;
+        }
+        *guard = Some(reason);
+    }
+    log::error!(target: LOG_TARGET_APP_LOGIC, "Entering wallet recovery state: reason={}", reason.as_tag());
+    EventsEmitter::emit_wallet_recovery_required(WalletRecoveryPayload { reason }).await;
+}
+
+/// The current recovery reason, if the app is in the recovery state.
+pub fn wallet_recovery_reason() -> Option<WalletRecoveryReason> {
+    WALLET_RECOVERY_REASON
+        .read()
+        .ok()
+        .and_then(|guard| *guard)
+        .or(None)
+}
+
+/// Clear the recovery state after the user recovered (imported seed words, re-linked a wallet).
+pub fn clear_wallet_recovery() {
+    if let Ok(mut guard) = WALLET_RECOVERY_REASON.write() {
+        *guard = None;
+    }
+}
+
+/// Gate for anything that must not run against an unverified wallet. Both mining managers call
+/// this before they start a miner, so a launch that ended in recovery cannot be turned into a
+/// mining session by clicking "Start".
+pub fn ensure_wallet_usable() -> Result<(), MiningError> {
+    wallet_usability(wallet_recovery_reason())
+}
+
+/// Pure half of `ensure_wallet_usable`, split out so both branches are testable without touching
+/// the process-wide recovery state. Every recovery reason refuses: an initialisation failure
+/// means there is no wallet at all, and an unreadable seed means the app cannot prove it owns
+/// the address it would mine to.
+pub fn wallet_usability(reason: Option<WalletRecoveryReason>) -> Result<(), MiningError> {
+    match reason {
+        None => Ok(()),
+        Some(
+            WalletRecoveryReason::InitializationFailed | WalletRecoveryReason::SeedUnavailable,
+        ) => Err(MiningError::WalletNotReady),
+    }
+}
+
+/// INTEGRATION POINT for T1 (universe-wallet-hardening, config durability).
+///
+/// T1 adds a `corrupted_recovery` flag to the wallet config default, set when
+/// `config_wallet.json` could not be parsed and neither could its backup. A config in that state
+/// has an empty `tari_wallets` list, which lands in `initialize_with_seed`'s "create new wallet"
+/// branch and would silently replace the user's wallet, orphaning their seed in the keyring.
+///
+/// To wire it up, replace the body with:
+/// ```ignore
+/// *wallet_config.corrupted_recovery()
+/// ```
+/// and delete the `_` on the parameter. Nothing else has to change: the single call site in
+/// `initialize_with_seed_inner` already turns `true` into an error, which `setup_manager` turns
+/// into the recovery UI.
+fn wallet_config_is_corrupted_recovery(_wallet_config: &ConfigWalletContent) -> bool {
+    false
 }
 
 // ** Utils **
@@ -1127,11 +1665,15 @@ async fn handle_critical_problem(
     description: &str,
     extracted_wallet_details: Option<&TariWalletDetails>,
 ) {
-    let state_wallet_details = InternalWallet::tari_wallet_details().await;
+    let state_wallet_details = InternalWallet::tari_wallet_details().await.ok().flatten();
+    let address_type = match InternalWallet::current() {
+        Ok(instance) => instance.read().await.tari_address_type.to_string(),
+        Err(_) => "Uninitialized".to_string(),
+    };
     log::error!(
         target: LOG_TARGET_APP_LOGIC,
         "Unexpected {}! {} --- State: {:?} | Extracted from seed: {:?}",
-        InternalWallet::current().read().await.tari_address_type,
+        address_type,
         title,
         state_wallet_details,
         extracted_wallet_details

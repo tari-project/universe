@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{error, info};
+use log::{error, info, warn};
 use std::{collections::HashMap, sync::LazyLock};
 use tari_shutdown::Shutdown;
 use tauri::{AppHandle, Manager};
@@ -44,7 +44,7 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events_emitter::EventsEmitter,
-    internal_wallet::InternalWallet,
+    internal_wallet::{InternalWallet, ensure_wallet_usable},
     mining::{
         GpuConnectionType, MinerControlsState, MiningError,
         gpu::{
@@ -306,6 +306,9 @@ impl GpuManager {
     }
 
     async fn start_mining_inner(&mut self) -> Result<(), anyhow::Error> {
+        // Same gate as the CPU manager: never mine against an unverified wallet.
+        ensure_wallet_usable()?;
+
         let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
 
         if !gpu_mining_enabled {
@@ -342,7 +345,10 @@ impl GpuManager {
                     .get_task_tracker()
                     .await;
 
-                let tari_address = InternalWallet::tari_address().await;
+                let tari_address = InternalWallet::tari_address().await.map_err(|e| {
+                    warn!(target: LOG_TARGET_APP_LOGIC, "Refusing to start GPU mining, wallet not available: {e}");
+                    MiningError::WalletNotReady
+                })?;
                 let gpu_usage_percentage = ConfigMining::content()
                     .await
                     .get_selected_gpu_usage_percentage();

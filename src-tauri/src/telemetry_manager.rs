@@ -112,6 +112,11 @@ pub enum TelemetryManagerError {
 
     #[error("TelemetryManagerError::Cancelled")]
     Cancelled,
+
+    /// No usable wallet this cycle: not initialised, or in the recovery state. Skipping is the
+    /// whole handling - it is neither an error to report nor a reason to stop the loop.
+    #[error("TelemetryManagerError::WalletNotAvailable")]
+    WalletNotAvailable,
 }
 
 impl From<Network> for TelemetryNetwork {
@@ -509,14 +514,13 @@ async fn get_telemetry_data_inner(
         );
     }
 
-    // Add payment ID from current tari address
-    if InternalWallet::is_initialized()
-        && let Some(_state) = app_handle.try_state::<crate::UniverseAppState>()
+    // Add payment ID from current tari address. Optional data: a wallet that is not available
+    // simply means the field is omitted.
+    if app_handle.try_state::<crate::UniverseAppState>().is_some()
+        && let Ok(tari_address) = InternalWallet::tari_address().await
+        && let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58())
     {
-        let tari_address = InternalWallet::tari_address().await;
-        if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
-            extra_data.insert("mining_address_payment_id".to_string(), payment_id);
-        }
+        extra_data.insert("mining_address_payment_id".to_string(), payment_id);
         // Note: If no payment ID, we don't add the field (saves space vs empty string)
     }
 
@@ -670,7 +674,16 @@ async fn get_telemetry_data_inner(
         extra_data.insert(format!("disk_{i}_kind"), kind);
     }
 
-    let tari_address = InternalWallet::tari_address().await.to_base58();
+    // The address is a required field of the payload, so a wallet that is missing or
+    // unverified means this cycle is skipped entirely rather than sent with a placeholder.
+    // Without a wallet there is nothing meaningful to attribute the telemetry to anyway.
+    let tari_address = match InternalWallet::tari_address().await {
+        Ok(address) => address.to_base58(),
+        Err(e) => {
+            debug!(target: LOG_TARGET_APP_LOGIC, "Skipping telemetry cycle, wallet not available: {e}");
+            return Err(TelemetryManagerError::WalletNotAvailable);
+        }
+    };
 
     let data = TelemetryData {
         app_id: config.anon_id().to_string(),
@@ -830,6 +843,11 @@ async fn handle_data(
 
         Err(TelemetryManagerError::Cancelled) => {
             debug!(target: LOG_TARGET_APP_LOGIC, "Telemetry manager shutdown – no data sent");
+        }
+        Err(TelemetryManagerError::WalletNotAvailable) => {
+            // Expected while the wallet is missing or in recovery; the loop keeps ticking and
+            // picks up again once a wallet is available. Not an error worth an error log.
+            debug!(target: LOG_TARGET_APP_LOGIC, "Telemetry cycle skipped – wallet not available");
         }
         Err(e) => {
             error!(target: LOG_TARGET_APP_LOGIC,"Error getting telemetry data: {e}");
