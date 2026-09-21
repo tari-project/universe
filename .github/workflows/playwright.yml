@@ -50,6 +50,19 @@ jobs:
             xvfb \
             dbus-x11
 
+      - name: Fix cache ownership (self-hosted runner)
+        # Some runner pods come up with a root-owned ~/.npm and an empty
+        # root-owned /opt/hostedtoolcache. The pnpm self-installer and
+        # setup-node then fail with EACCES before any test runs. Pods with
+        # a pre-populated tool cache never write to it, so this is a no-op
+        # for them.
+        run: |
+          if [ -d "$HOME/.npm" ]; then
+            sudo chown -R "$(id -u):$(id -g)" "$HOME/.npm"
+          fi
+          sudo mkdir -p "${RUNNER_TOOL_CACHE:-/opt/hostedtoolcache}"
+          sudo chown -R "$(id -u):$(id -g)" "${RUNNER_TOOL_CACHE:-/opt/hostedtoolcache}"
+
       - uses: pnpm/action-setup@v6
 
       - uses: actions/setup-node@v6
@@ -61,6 +74,7 @@ jobs:
       - uses: swatinem/rust-cache@v2.7.5
         with:
           workspaces: './src-tauri -> target'
+          shared-key: tari-universe
 
       - name: Install Node dependencies
         run: pnpm install --frozen-lockfile
@@ -73,19 +87,17 @@ jobs:
         working-directory: playwright
         run: pnpm run typecheck
 
-      - name: Install Tauri CLI
-        run: cargo install tauri-cli
-        working-directory: ./src-tauri
-
       - name: Build process-wrapper
         run: cargo build --manifest-path process-wrapper/Cargo.toml
 
       - name: Create dist dir
         run: mkdir -p dist
 
+      # @tauri-apps/cli is already a devDependency — pnpm exec uses its
+      # prebuilt binary instead of compiling tauri-cli from source (~10 min).
       - name: Build Tauri binary (test-mode)
         working-directory: ./src-tauri
-        run: cargo tauri build --debug --no-bundle --features test-mode --config tauri.test.conf.json
+        run: pnpm exec tauri build --debug --no-bundle --features test-mode --config tauri.test.conf.json
 
       - name: Cache Playwright browsers
         id: playwright-cache
