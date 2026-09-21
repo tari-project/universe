@@ -387,15 +387,7 @@ impl InternalWallet {
                     {
                         Ok((wallet_id, tari_seed_binary, monero_seed_binary)) => {
                             let tari_cipher_seed =
-                        CipherSeed::from_binary(&tari_seed_binary).map_err(|_| {
-                            log::error!(
-                                target: LOG_TARGET_APP_LOGIC,
-                                "[initialize_with_seed] migrated seed did not parse: error=seed_decode wallet_id={} blob_len={}",
-                                wallet_id.as_str(),
-                                tari_seed_binary.len(),
-                            );
-                            anyhow!("Could not parse Tari Seed from binary")
-                        })?;
+                                parse_migrated_seed(&wallet_id, &tari_seed_binary)?;
                             let tari_wallet_details = InternalWallet::get_tari_wallet_details(
                                 wallet_id,
                                 tari_cipher_seed,
@@ -2490,6 +2482,24 @@ fn report_legacy_decrypt_failed(kind: LegacyDecryptErrorKind) {
             sentry::capture_message(SENTRY_LEGACY_DECRYPT_FAILED, sentry::Level::Error);
         },
     );
+}
+
+/// Re-reads the blob `migrate` just wrote to the keyring. A failure here means the seed did not
+/// survive its own round trip, which is a defect rather than a user state, so it is logged with
+/// the blob length and the wallet id - never the blob.
+fn parse_migrated_seed(
+    wallet_id: &WalletId,
+    seed_binary: &[u8],
+) -> Result<CipherSeed, anyhow::Error> {
+    CipherSeed::from_binary(seed_binary).map_err(|_| {
+        log::error!(
+            target: LOG_TARGET_APP_LOGIC,
+            "[initialize_with_seed] migrated seed did not parse: error=seed_decode wallet_id={} blob_len={}",
+            wallet_id.as_str(),
+            seed_binary.len(),
+        );
+        anyhow!("Could not parse Tari Seed from binary")
+    })
 }
 
 /// Brings the wallet up read-only from a legacy config whose seed cannot be opened.
