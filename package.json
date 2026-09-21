@@ -29,7 +29,7 @@
         "@tanstack/react-query": "^5.90.20",
         "@tari-project/tari-tower": "^0.2.1",
         "@tari-project/wxtm-bridge-backend-api": "^0.1.64",
-        "@tauri-apps/api": "2.10.1",
+        "@tauri-apps/api": "2.11.1",
         "@tauri-apps/plugin-clipboard-manager": "2.3.2",
         "@tauri-apps/plugin-dialog": "2.6.0",
         "@tauri-apps/plugin-os": "2.3.2",
