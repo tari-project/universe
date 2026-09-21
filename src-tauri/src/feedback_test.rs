@@ -26,31 +26,53 @@
 //! config directory, which shipped the airdrop tokens, the wallet view key and
 //! the MCP bearer token to the feedback endpoint. Nothing from the config
 //! directory may end up in the archive any more: the only configuration that
-//! travels is the allowlisted `SupportDiagnostics` document.
+//! travels is the allowlisted `SupportDiagnostics` document plus the redacted
+//! `WalletStatus` document.
+//!
+//! `WalletStatus` exists so that a "my seeds are gone" report is diagnosable
+//! from the bundle alone. It is built from the same wallet config that holds
+//! the view private key, so every test below plants sentinel secrets in a
+//! fixture config and asserts none of them reach the document.
 
 use std::fs;
 use std::io::Read;
 use std::path::Path;
+use std::str::FromStr;
 
 use serde_json::Value;
+use tari_common_types::tari_address::TariAddress;
 
-use crate::feedback::{SupportDiagnostics, create_support_archive};
+use crate::configs::config_wallet::{ConfigWalletContent, WalletId};
+use crate::feedback::{
+    KeyringEntryReport, KeyringEntryState, ProbeOrigin, SeedBlobKind, SupportDiagnostics,
+    WalletStatus, create_support_archive, scan_wallet_files,
+};
+use crate::internal_wallet::{TariWalletDetails, ViewPrivateKeyHex};
+use crate::pin::PinLockerState;
 
 const AIRDROP_TOKEN_SENTINEL: &str = "airdrop_token_sentinel";
 const REFRESH_TOKEN_SENTINEL: &str = "refresh_token_sentinel";
 const VIEW_KEY_SENTINEL: &str = "view_key_sentinel";
 const MCP_BEARER_SENTINEL: &str = "mcp_bearer_sentinel";
 const LEGACY_WALLET_SENTINEL: &str = "legacy_wallet_sentinel";
+/// Plaintext CBOR seed written by pre-keyring versions.
+const LEGACY_FALLBACK_SENTINEL: &str = "legacy_fallback_sentinel";
+/// A full Tari address. Only its first 8 characters may travel.
+const TEST_TARI_ADDRESS: &str =
+    "f25eNHz2YnBVKHaqNuacGyDFB321RwwCnTr4vb2SjQCgDZVXyNNthc7zftQKRDu6evLjvSUD8W5akpPMdhS4HQ9kF3g";
+/// Network directory used by the file-scan fixtures.
+const TEST_NETWORK: &str = "esmeralda";
 /// An OS user name embedded in an absolute path inside a log line. It is not a
 /// config secret, but uploaded logs must not identify the user either.
 const USERNAME_SENTINEL: &str = "doxxed_user_name";
 
-const SENTINELS: [&str; 5] = [
+const SENTINELS: [&str; 6] = [
     AIRDROP_TOKEN_SENTINEL,
     REFRESH_TOKEN_SENTINEL,
     VIEW_KEY_SENTINEL,
     MCP_BEARER_SENTINEL,
     LEGACY_WALLET_SENTINEL,
+    LEGACY_FALLBACK_SENTINEL,
 ];
 
 fn sample_diagnostics() -> SupportDiagnostics {
@@ -129,7 +151,7 @@ fn setup_app_dirs(root: &Path) -> std::io::Result<std::path::PathBuf> {
         format!(r#"{{"bearer_token":"{MCP_BEARER_SENTINEL}"}}"#),
     )?;
 
-    let network_dir = config_dir.join("esmeralda");
+    let network_dir = config_dir.join(TEST_NETWORK);
     fs::create_dir_all(&network_dir)?;
     fs::write(
         network_dir.join("wallet_config.json"),
@@ -175,7 +197,8 @@ fn support_archive_contains_no_config_files_or_secrets() {
 
     let diagnostics = sample_diagnostics();
     let (archive_file, zip_filename) =
-        create_support_archive(&logs_dir, &diagnostics).expect("archive should be created");
+        create_support_archive(&logs_dir, &diagnostics, &sample_wallet_status())
+            .expect("archive should be created");
 
     assert_eq!(zip_filename, "logs_config_anon_id_for_tests.zip");
     assert_eq!(archive_file, logs_dir.join(&zip_filename));
@@ -201,7 +224,7 @@ fn support_archive_contains_no_config_files_or_secrets() {
         .collect();
     assert_eq!(
         config_members,
-        vec!["configs/diagnostics.json"],
+        vec!["configs/diagnostics.json", "configs/wallet_status.json"],
         "unexpected members under configs/: {config_members:?}"
     );
 
@@ -279,5 +302,295 @@ fn diagnostics_never_serializes_secret_shaped_fields() {
                 "diagnostics field `{field_name}` looks like a secret (contains `{forbidden}`)"
             );
         }
+    }
+}
+
+// =============================================================================
+// Redacted wallet status document
+// =============================================================================
+
+/// A wallet config whose every secret-carrying field holds a sentinel.
+fn sentinel_wallet_config() -> ConfigWalletContent {
+    let mut content = ConfigWalletContent::default();
+    content.set_version_counter(2);
+    content.set_tari_wallets(vec![
+        WalletId::new("abc123".to_string()),
+        WalletId::new("def456".to_string()),
+    ]);
+    content.set_tari_wallet_details(Some(TariWalletDetails {
+        id: WalletId::new("abc123".to_string()),
+        tari_address: TariAddress::from_str(TEST_TARI_ADDRESS).expect("valid test address"),
+        wallet_birthday: 1234,
+        view_private_key_hex: ViewPrivateKeyHex::new(VIEW_KEY_SENTINEL.to_string()),
+        spend_public_key_hex: LEGACY_WALLET_SENTINEL.to_string(),
+    }));
+    content.set_generated_monero_address(LEGACY_FALLBACK_SENTINEL.to_string());
+    content.set_keyring_accessed(true);
+    content.set_seed_backed_up(false);
+    content.set_wallet_migration_nonce(3);
+
+    let mut pin_locker_state = PinLockerState::default();
+    pin_locker_state.set_pin_locked(true);
+    pin_locker_state.set_failed_pin_attempts(2);
+    content.set_pin_locker_state(pin_locker_state);
+
+    content
+}
+
+fn sample_wallet_status() -> WalletStatus {
+    let mut status = WalletStatus::from_config_content(&sentinel_wallet_config(), TEST_NETWORK);
+    status.keyring_entries = vec![
+        KeyringEntryReport {
+            wallet_id: "abc123".to_string(),
+            state: KeyringEntryState::NoEntry,
+            error_kind: Some("no_entry".to_string()),
+            blob_len: None,
+            blob_kind: SeedBlobKind::Unknown,
+            origin: ProbeOrigin::Startup,
+        },
+        KeyringEntryReport {
+            wallet_id: "monero".to_string(),
+            state: KeyringEntryState::Readable,
+            error_kind: None,
+            blob_len: Some(48),
+            blob_kind: SeedBlobKind::Unknown,
+            origin: ProbeOrigin::BundleAssembly,
+        },
+    ];
+    status
+}
+
+/// Every key a support engineer reads off the document. Renaming one of these
+/// silently breaks the "seeds lost" triage, so they are pinned here.
+const WALLET_STATUS_KEYS: [&str; 18] = [
+    "app_version",
+    "os",
+    "os_arch",
+    "network",
+    "config_readable",
+    "config_version_counter",
+    "wallet_ids",
+    "tari_wallet_details_cached",
+    "tari_address_prefix",
+    "external_tari_address_selected",
+    "pin_locked",
+    "failed_pin_attempts",
+    "keyring_accessed",
+    "seed_backed_up",
+    "monero_address_is_generated",
+    "wallet_migration_nonce",
+    "keyring_entries",
+    "files",
+];
+
+#[test]
+fn wallet_status_reports_the_expected_keys() {
+    let status = sample_wallet_status();
+    let parsed: Value = serde_json::to_value(&status).expect("wallet status should serialize");
+    let object = parsed
+        .as_object()
+        .expect("wallet status should be a JSON object");
+
+    for key in WALLET_STATUS_KEYS {
+        assert!(
+            object.contains_key(key),
+            "wallet status is missing `{key}`: {:?}",
+            object.keys().collect::<Vec<_>>()
+        );
+    }
+    // Unknown must be reported as `null`, never silently dropped: a missing key
+    // and a `false` both read as "fine" during triage.
+    assert_eq!(
+        object.len(),
+        WALLET_STATUS_KEYS.len(),
+        "unexpected wallet status field: {:?}",
+        object.keys().collect::<Vec<_>>()
+    );
+
+    assert_eq!(parsed["config_readable"], true);
+    assert_eq!(parsed["config_version_counter"], 2);
+    assert_eq!(parsed["network"], TEST_NETWORK);
+    assert_eq!(parsed["wallet_ids"][0], "abc123");
+    assert_eq!(parsed["wallet_ids"][1], "def456");
+    assert_eq!(parsed["tari_wallet_details_cached"], true);
+    assert_eq!(parsed["pin_locked"], true);
+    assert_eq!(parsed["failed_pin_attempts"], 2);
+    assert_eq!(parsed["keyring_accessed"], true);
+    assert_eq!(parsed["seed_backed_up"], false);
+    assert_eq!(parsed["monero_address_is_generated"], true);
+    assert_eq!(parsed["wallet_migration_nonce"], 3);
+    assert_eq!(parsed["os"], std::env::consts::OS);
+
+    // The keyring verdict per wallet id is the whole point of the document.
+    assert_eq!(parsed["keyring_entries"][0]["wallet_id"], "abc123");
+    assert_eq!(parsed["keyring_entries"][0]["state"], "no_entry");
+    assert_eq!(parsed["keyring_entries"][0]["origin"], "startup");
+    assert_eq!(parsed["keyring_entries"][1]["blob_len"], 48);
+}
+
+#[test]
+fn wallet_status_truncates_the_tari_address() {
+    let status = WalletStatus::from_config_content(&sentinel_wallet_config(), TEST_NETWORK);
+
+    let prefix = status
+        .tari_address_prefix
+        .as_deref()
+        .expect("address prefix should be reported");
+    assert_eq!(prefix, &TEST_TARI_ADDRESS[..8]);
+    assert_eq!(prefix.chars().count(), 8);
+
+    let serialized = serde_json::to_string(&status).expect("wallet status should serialize");
+    assert!(
+        !serialized.contains(&TEST_TARI_ADDRESS[..9]),
+        "more than 8 characters of the address leaked: {serialized}"
+    );
+}
+
+#[test]
+fn wallet_status_never_serializes_config_secrets() {
+    let serialized =
+        serde_json::to_string(&sample_wallet_status()).expect("wallet status should serialize");
+
+    for sentinel in SENTINELS {
+        assert!(
+            !serialized.contains(sentinel),
+            "secret `{sentinel}` leaked into the wallet status document"
+        );
+    }
+    assert!(
+        !serialized.contains(TEST_TARI_ADDRESS),
+        "the full Tari address leaked into the wallet status document"
+    );
+}
+
+#[test]
+fn wallet_status_degrades_to_unknown_when_the_wallet_is_uninitialized() {
+    // A default config is what an install whose wallet never initialised has:
+    // no wallet ids, no cached details. Nothing here may fail or panic, and
+    // every unknown has to read as `null` rather than as a plausible `false`.
+    let status = WalletStatus::from_config_content(&ConfigWalletContent::default(), TEST_NETWORK);
+    let parsed: Value = serde_json::to_value(&status).expect("wallet status should serialize");
+
+    assert_eq!(parsed["wallet_ids"], serde_json::json!([]));
+    assert_eq!(parsed["tari_wallet_details_cached"], false);
+    assert_eq!(parsed["tari_address_prefix"], Value::Null);
+    assert_eq!(parsed["keyring_entries"], serde_json::json!([]));
+    assert_eq!(parsed["files"], serde_json::json!([]));
+}
+
+#[test]
+fn wallet_status_file_scan_reports_metadata_not_contents() {
+    let temp_dir = tempfile::tempdir().expect("temp dir");
+    let root = temp_dir.path();
+
+    let legacy_dir = root.join(TEST_NETWORK);
+    fs::create_dir_all(&legacy_dir).expect("legacy dir");
+    fs::write(
+        legacy_dir.join("wallet_config.json"),
+        format!(r#"{{"seed_words_encrypted_base58":"{LEGACY_WALLET_SENTINEL}"}}"#),
+    )
+    .expect("legacy wallet config");
+    fs::write(
+        legacy_dir.join("credentials_backup.bin"),
+        LEGACY_FALLBACK_SENTINEL,
+    )
+    .expect("legacy fallback file");
+
+    let configs_dir = root.join("app_configs").join(TEST_NETWORK);
+    fs::create_dir_all(&configs_dir).expect("configs dir");
+    fs::write(
+        configs_dir.join("config_wallet.json"),
+        format!(r#"{{"view_private_key_hex":"{VIEW_KEY_SENTINEL}"}}"#),
+    )
+    .expect("wallet config");
+    fs::write(
+        configs_dir.join("config_wallet.json.backup"),
+        format!(r#"{{"view_private_key_hex":"{VIEW_KEY_SENTINEL}"}}"#),
+    )
+    .expect("wallet config backup");
+    fs::write(
+        configs_dir.join("config_wallet.json.corrupted.1700000000"),
+        vec![0u8; 12],
+    )
+    .expect("quarantined config");
+
+    let reports = scan_wallet_files(root, TEST_NETWORK);
+    let named = |name: &str| {
+        reports
+            .iter()
+            .find(|report| report.name == name)
+            .unwrap_or_else(|| panic!("`{name}` missing from {reports:?}"))
+    };
+
+    assert!(named("wallet_config.json").present);
+    assert_eq!(named("wallet_config.json").location, "legacy_network_dir");
+    assert_eq!(
+        named("credentials_backup.bin").len_bytes,
+        Some(LEGACY_FALLBACK_SENTINEL.len() as u64)
+    );
+    assert!(named("config_wallet.json").present);
+    assert!(named("config_wallet.json.backup").present);
+    assert_eq!(
+        named("config_wallet.json.corrupted.1700000000").len_bytes,
+        Some(12)
+    );
+
+    // Contents, and the absolute paths that carry the OS user name, stay out.
+    let serialized = serde_json::to_string(&reports).expect("reports should serialize");
+    for sentinel in SENTINELS {
+        assert!(
+            !serialized.contains(sentinel),
+            "file contents leaked into the wallet status document: {serialized}"
+        );
+    }
+    assert!(
+        !serialized.contains(&root.to_string_lossy().to_string()),
+        "an absolute path leaked into the wallet status document: {serialized}"
+    );
+}
+
+#[test]
+fn wallet_status_file_scan_reports_absent_files_without_failing() {
+    // An install with none of these files must still produce a document.
+    let temp_dir = tempfile::tempdir().expect("temp dir");
+    let reports = scan_wallet_files(temp_dir.path(), TEST_NETWORK);
+
+    assert_eq!(reports.len(), 4, "{reports:?}");
+    for report in &reports {
+        assert!(!report.present, "{report:?}");
+        assert_eq!(report.len_bytes, None, "{report:?}");
+    }
+}
+
+#[test]
+fn wallet_status_travels_in_the_support_archive() {
+    let temp_dir = tempfile::tempdir().expect("temp dir");
+    let logs_dir = setup_app_dirs(temp_dir.path()).expect("app dirs");
+
+    let (archive_file, _) =
+        create_support_archive(&logs_dir, &sample_diagnostics(), &sample_wallet_status())
+            .expect("archive should be created");
+
+    let contents = read_archive(&archive_file);
+    let (_, bytes) = contents
+        .files
+        .iter()
+        .find(|(name, _)| name == "configs/wallet_status.json")
+        .expect("wallet status document should be present");
+
+    let parsed: Value = serde_json::from_slice(bytes).expect("wallet status should be valid JSON");
+    for key in WALLET_STATUS_KEYS {
+        assert!(
+            parsed.get(key).is_some(),
+            "wallet status in the archive is missing `{key}`"
+        );
+    }
+
+    let as_text = String::from_utf8_lossy(bytes);
+    for sentinel in SENTINELS {
+        assert!(
+            !as_text.contains(sentinel),
+            "secret `{sentinel}` leaked into the archived wallet status document"
+        );
     }
 }
