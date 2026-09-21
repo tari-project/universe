@@ -50,7 +50,8 @@ use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WALLET_VE
 use crate::configs::trait_config::ConfigImpl;
 use crate::consts::DEFAULT_MONERO_ADDRESS;
 use crate::credential_manager::{
-    Credential, CredentialError, CredentialManager, LegacyCredential, LegacyCredentialManager,
+    Credential, CredentialError, CredentialManager, KEYCHAIN_USERNAME, LegacyCredential,
+    LegacyCredentialManager,
 };
 use crate::events::{CriticalProblemPayload, WalletRecoveryPayload};
 use crate::events_emitter::EventsEmitter;
@@ -184,6 +185,11 @@ impl InternalWallet {
         app_handle: &tauri::AppHandle,
         new_external_tari_address: Option<TariAddress>,
     ) -> Result<(), anyhow::Error> {
+        // Same reason as `add_tari_wallet` / `add_monero_wallet`: a recovery placeholder is not
+        // the user's config, and switching the app into seedless mode against it would record an
+        // external address over a wallet whose id list is simply missing. `_save_config` refuses
+        // the write anyway; refusing here means nothing is mutated in memory either.
+        ConfigWallet::content().await.ensure_available()?;
         if let Some(external_tari_address) = new_external_tari_address {
             ConfigWallet::update_field(
                 ConfigWalletContent::select_external_tari_address,
@@ -2540,10 +2546,6 @@ pub(crate) const LEGACY_DECRYPT_FAILED_SUFFIX: &str = "decrypt_failed";
 /// Suffix for a legacy wallet config that has been proven migrated (T4). The file holds only an
 /// enciphered seed, so it is renamed rather than destroyed.
 pub(crate) const LEGACY_MIGRATED_SUFFIX: &str = "migrated";
-/// Mirrors the private `credential_manager::KEYCHAIN_USERNAME`. Duplicated rather than imported
-/// because `credential_manager.rs` is owned by another change in flight; the legacy entry name is
-/// frozen history and cannot drift.
-const LEGACY_KEYCHAIN_USERNAME: &str = "inner_wallet_credentials";
 /// Wallet id carried by the view-only fallback wallet. It never enters `config_wallet.json` and
 /// never names a keyring entry: there is no seed to point at, which is the whole reason the
 /// wallet is view-only.
@@ -2893,7 +2895,7 @@ fn read_legacy_fallback_credential(
 /// Reads the legacy keyring entry directly, without the fallback-file preference.
 fn read_legacy_keyring_credential() -> Result<Option<LegacyCredential>, SeedProbeErrorKind> {
     let username = format!(
-        "{LEGACY_KEYCHAIN_USERNAME}_{}",
+        "{KEYCHAIN_USERNAME}_{}",
         Network::get_current().as_key_str()
     );
     let entry = keyring::Entry::new(APPLICATION_FOLDER_ID, &username)

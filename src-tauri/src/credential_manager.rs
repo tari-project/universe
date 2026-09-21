@@ -68,7 +68,9 @@ pub enum CredentialError {
 }
 
 const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
-const KEYCHAIN_USERNAME: &str = "inner_wallet_credentials";
+/// Username stem of every wallet credential this app has ever written, on every platform.
+/// Frozen history: `internal_wallet.rs` reads the pre-migration entry built from it directly.
+pub(crate) const KEYCHAIN_USERNAME: &str = "inner_wallet_credentials";
 
 /// Constant log/Sentry strings for the write protocol. Enum-like, never interpolated.
 const LOG_KEYRING_OVERWRITE_REFUSED: &str = "wallet.keyring_overwrite_refused";
