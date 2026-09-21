@@ -140,3 +140,40 @@ fn wipe_and_remove_file_deletes_existing_file_and_is_idempotent() {
         "absent file is not an error"
     );
 }
+
+#[test]
+#[cfg(unix)]
+fn wipe_and_remove_file_unlinks_symlink_without_touching_target() {
+    let unique = format!(
+        "{}_{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    );
+    let target =
+        std::env::temp_dir().join(format!("tari_universe_symlink_target_test_{}.bin", unique));
+    let link = std::env::temp_dir().join(format!("tari_universe_symlink_test_{}.bin", unique));
+
+    const TARGET_CONTENT: &[u8] = b"UNRELATED-USER-FILE";
+    std::fs::write(&target, TARGET_CONTENT).expect("write target");
+    std::os::unix::fs::symlink(&target, &link).expect("create symlink");
+
+    assert!(
+        wipe_and_remove_file(&link).expect("wipe symlink"),
+        "symlink is present, so the wipe reports a removal"
+    );
+
+    let link_err = std::fs::symlink_metadata(&link).expect_err("symlink must be unlinked");
+    assert_eq!(link_err.kind(), std::io::ErrorKind::NotFound);
+
+    assert!(target.exists(), "symlink target must survive the wipe");
+    assert_eq!(
+        std::fs::read(&target).expect("read target"),
+        TARGET_CONTENT,
+        "symlink target content must not be zeroed"
+    );
+
+    std::fs::remove_file(&target).expect("clean up target");
+}

@@ -439,9 +439,6 @@ impl SetupManager {
                             })
                             .await
                         }
-                        // Silent, self-gating; see fn docs. Covers both fresh migrations and
-                        // users who migrated on earlier versions that left the files behind.
-                        InternalWallet::purge_legacy_credential_files(&app_handle).await;
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET_APP_LOGIC, "Error loading internal wallet: {e:?}");
@@ -482,6 +479,10 @@ impl SetupManager {
                 .await;
             }
         }
+
+        // Silent, self-gating; see fn docs. Covers both fresh migrations and
+        // users who migrated on earlier versions that left the files behind.
+        InternalWallet::purge_legacy_credential_files(&app_handle).await;
 
         // Trigger it here so we can update UI when new wallet is created
         // We should probably change events to be loaded from internal wallet directly

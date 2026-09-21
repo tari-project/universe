@@ -767,6 +767,10 @@ impl InternalWallet {
     /// moment of need instead of silently deferring forever on a locked keychain. A missing
     /// entry is not retried and simply defers the cleanup to a later launch.
     ///
+    /// It must be called from a path common to all wallet modes (standard, seedless and exchange),
+    /// because a user can switch modes after migrating and would otherwise keep these files
+    /// forever; when the config lists no Tari wallet it exits before touching the keyring.
+    ///
     /// Only the current network directory is handled, because the keyring entries used as the
     /// safety gate are network-specific. Other networks are cleaned when the app runs on them.
     pub async fn purge_legacy_credential_files(app_handle: &AppHandle) {
@@ -786,9 +790,10 @@ impl InternalWallet {
         }
 
         // Safety gate: never delete the only remaining copy of a seed. The current config must be
-        // fully migrated and the migrated Tari seed must be readable from the keyring right now.
+        // at exactly the schema version this code understands and the migrated Tari seed must be
+        // readable from the keyring right now.
         let wallet_config = ConfigWallet::content().await;
-        if *wallet_config.version_counter() < WALLET_VERSION {
+        if *wallet_config.version_counter() != WALLET_VERSION {
             return;
         }
         let Some(wallet_id) = wallet_config.tari_wallets().first().cloned() else {
@@ -1147,18 +1152,33 @@ async fn get_legacy_fallback_file(app_config_dir: &Path) -> Result<PathBuf, anyh
 }
 
 /// Best-effort zero-overwrite followed by unlink. Returns `Ok(false)` when the file was absent.
+/// The entry is inspected with `symlink_metadata`, so a symlink is unlinked without overwriting
+/// anything: following it would zero an unrelated target file. Only a regular file is overwritten,
+/// and the overwrite is chunked through a fixed 64 KiB zero buffer so a large file cannot make us
+/// allocate unbounded memory.
 /// The overwrite is defence in depth only; journaled and copy-on-write filesystems may retain
 /// old blocks, which is why deletion (not overwrite) is the primary control.
 pub(crate) fn wipe_and_remove_file(path: &Path) -> std::io::Result<bool> {
-    let metadata = match std::fs::metadata(path) {
+    const ZERO_CHUNK_LEN: usize = 64 * 1024;
+
+    let metadata = match std::fs::symlink_metadata(path) {
         Ok(m) => m,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(false),
         Err(e) => return Err(e),
     };
+    // `is_file()` on symlink metadata is false for a symlink, so links fall straight through to
+    // the unlink below.
     if metadata.is_file() && metadata.len() > 0 {
         let mut file = OpenOptions::new().write(true).open(path)?;
-        let len = usize::try_from(metadata.len()).unwrap_or(usize::MAX);
-        file.write_all(&vec![0u8; len])?;
+        let zeros = [0u8; ZERO_CHUNK_LEN];
+        let mut remaining = metadata.len();
+        while remaining > 0 {
+            let chunk = usize::try_from(remaining)
+                .unwrap_or(ZERO_CHUNK_LEN)
+                .min(ZERO_CHUNK_LEN);
+            file.write_all(&zeros[..chunk])?;
+            remaining -= chunk as u64;
+        }
         file.sync_all()?;
         drop(file);
     }
