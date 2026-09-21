@@ -315,6 +315,21 @@ impl SetupManager {
 
         ConfigCore::initialize(app_handle.clone()).await;
         ConfigWallet::initialize(app_handle.clone()).await;
+        // The wallet config is the one config whose loss is not recoverable by writing a fresh
+        // default: a default has an empty `tari_wallets` list, which is the "create a new wallet"
+        // path, and that would orphan the seed still sitting in the keyring under an id only the
+        // lost file knew. When `config_wallet.json` and its `.backup` both failed to parse, T1
+        // hands back a placeholder that reports itself here. Everything else still initialises so
+        // the user can open settings and send a support bundle, but wallet initialisation,
+        // telemetry and mining are all skipped below.
+        let wallet_config_unavailable = ConfigWallet::content().await.ensure_available().is_err();
+        if wallet_config_unavailable {
+            error!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Wallet configuration is unavailable; skipping wallet initialization: reason={}",
+                WalletRecoveryReason::ConfigCorrupted.as_tag()
+            );
+        }
         ConfigMining::initialize(app_handle.clone()).await;
         ConfigUI::initialize(app_handle.clone()).await;
         ConfigPools::initialize(app_handle.clone()).await;
@@ -416,7 +431,12 @@ impl SetupManager {
         // which is the normal exchange-miner first-run state). Telemetry and mining are gated on
         // it; see the block after the initialisation branches.
         let mut wallet_recovery_reason: Option<WalletRecoveryReason> = None;
-        if built_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
+        if wallet_config_unavailable {
+            // Same handling as an initialisation `Err`: no wallet init, no telemetry, no mining.
+            // Nothing is created and nothing is written, so the quarantined copy of the damaged
+            // config and the keyring entries it pointed at both survive for the recovery flow.
+            wallet_recovery_reason = Some(WalletRecoveryReason::ConfigCorrupted);
+        } else if built_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
             if is_external_address_selected && is_on_exchange_specific_variant {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
                 if let Err(e) = InternalWallet::initialize_seedless(&app_handle, None).await {
@@ -454,7 +474,8 @@ impl SetupManager {
         }
 
         // Case when we are on exchange miner build and already selected external tari address ( Second time we open app )
-        if is_on_exchange_miner_build
+        if !wallet_config_unavailable
+            && is_on_exchange_miner_build
             && is_external_address_selected
             && built_in_exchange_id.eq(&last_config_exchange_id)
         {
@@ -865,6 +886,16 @@ impl SetupManager {
             phase_status_channels.clone(),
         )
         .await;
+
+        // Second check of the same condition as `pre_setup` (T1 handoff): the config could have
+        // been quarantined between the two, and a phase run against the recovery placeholder
+        // would write a wallet config that the user never had. `enter_wallet_recovery` keeps the
+        // first reason, so this cannot mask an earlier failure.
+        if let Err(e) = ConfigWallet::content().await.ensure_available() {
+            error!(target: LOG_TARGET_APP_LOGIC, "Wallet configuration is unavailable; not starting setup phases: {e}");
+            enter_wallet_recovery(WalletRecoveryReason::ConfigCorrupted).await;
+            return;
+        }
 
         self.setup_core_phase().await;
         self.setup_cpu_mining_phase().await;

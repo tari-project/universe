@@ -391,3 +391,32 @@ fn failed_backup_restore_preserves_backup_and_requires_recovery() {
     assert!(*ConfigWallet::load_from_path(&path).corrupted_recovery());
     assert_eq!(fs::read(backup).unwrap(), serialized);
 }
+
+/// The wallet-init guard reads this flag through
+/// `internal_wallet::wallet_config_is_corrupted_recovery`. Wired in 99487acf5; this is the test
+/// that keeps it wired, because the stub it replaced returned `false` unconditionally and nothing
+/// else in the suite would notice it coming back.
+#[test]
+fn wallet_init_refuses_a_recovery_placeholder_config() {
+    use crate::internal_wallet::wallet_config_is_corrupted_recovery;
+
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    fs::write(&path, damaged_fixture("nul filled")).unwrap();
+    let recovered = ConfigWallet::load_from_path(&path);
+    assert!(
+        wallet_config_is_corrupted_recovery(&recovered),
+        "a config recovered from a corrupt file must never reach the create-a-new-wallet branch"
+    );
+
+    let valid_path = directory.path().join("valid_config_wallet.json");
+    fs::write(
+        &valid_path,
+        serde_json::to_vec(&sentinel_config_content()).unwrap(),
+    )
+    .unwrap();
+    assert!(
+        !wallet_config_is_corrupted_recovery(&ConfigWallet::load_from_path(&valid_path)),
+        "a config that parsed must not be treated as a recovery placeholder"
+    );
+}

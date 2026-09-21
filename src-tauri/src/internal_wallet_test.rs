@@ -437,6 +437,7 @@ fn mining_is_refused_in_every_recovery_state() {
     for reason in [
         WalletRecoveryReason::InitializationFailed,
         WalletRecoveryReason::SeedUnavailable,
+        WalletRecoveryReason::ConfigCorrupted,
     ] {
         let error = wallet_usability(Some(reason))
             .expect_err("mining must be refused while the wallet needs recovery");

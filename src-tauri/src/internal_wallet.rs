@@ -358,14 +358,10 @@ impl InternalWallet {
                 .app_config_dir()
                 .map_err(|e| anyhow!("Couldn't get application config directory: {e}"))?;
 
-            // INTEGRATION POINT (T1, universe-wallet-hardening): once the wallet config
-            // carries the `corrupted_recovery` flag that T1 adds to its default, this is
-            // where it must be read. A config that was replaced by a marked default has an
-            // empty `tari_wallets` list, which reaches exactly this branch and would create
-            // a brand new wallet, orphaning the user's seed in the keyring. When the flag is
-            // set we must instead return an error so `setup_manager` shows the recovery UI.
-            // Replace the body of `wallet_config_is_corrupted_recovery` with the flag read;
-            // no other call site has to change.
+            // A config that was replaced by T1's marked recovery default has an empty
+            // `tari_wallets` list and reaches exactly this branch, which would create a brand
+            // new wallet and orphan the user's seed in the keyring. Refuse, and let
+            // `setup_manager` show the recovery UI.
             if wallet_config_is_corrupted_recovery(&wallet_config) {
                 return Err(anyhow!(
                     "Wallet config was recovered from a corrupt file; refusing to create a new wallet"
@@ -1579,6 +1575,13 @@ pub enum WalletRecoveryReason {
     InitializationFailed,
     /// The wallet initialised, but the startup probe could not read its seed.
     SeedUnavailable,
+    /// `config_wallet.json` could not be parsed and neither could its `.backup`, so the config in
+    /// memory is T1's recovery placeholder rather than the user's real one. The damaged file is
+    /// kept as `config_wallet.json.corrupted.<ts>` and a `config_wallet.json.recovery_required`
+    /// marker stops the next launch from looking like a fresh install. Distinct from
+    /// `InitializationFailed` because nothing was attempted: the wallet was never opened, so the
+    /// user's seed is untouched and still in the keyring.
+    ConfigCorrupted,
 }
 
 impl WalletRecoveryReason {
@@ -1586,6 +1589,7 @@ impl WalletRecoveryReason {
         match self {
             WalletRecoveryReason::InitializationFailed => "initialization_failed",
             WalletRecoveryReason::SeedUnavailable => "seed_unavailable",
+            WalletRecoveryReason::ConfigCorrupted => "config_corrupted",
         }
     }
 }
@@ -1643,26 +1647,24 @@ pub fn wallet_usability(reason: Option<WalletRecoveryReason>) -> Result<(), Mini
     match reason {
         None => Ok(()),
         Some(
-            WalletRecoveryReason::InitializationFailed | WalletRecoveryReason::SeedUnavailable,
+            WalletRecoveryReason::InitializationFailed
+            | WalletRecoveryReason::SeedUnavailable
+            | WalletRecoveryReason::ConfigCorrupted,
         ) => Err(MiningError::WalletNotReady),
     }
 }
 
-/// INTEGRATION POINT for T1 (universe-wallet-hardening, config durability).
+/// Whether the wallet config in hand is T1's recovery placeholder rather than the user's real
+/// config.
 ///
-/// T1 adds a `corrupted_recovery` flag to the wallet config default, set when
-/// `config_wallet.json` could not be parsed and neither could its backup. A config in that state
-/// has an empty `tari_wallets` list, which lands in `initialize_with_seed`'s "create new wallet"
-/// branch and would silently replace the user's wallet, orphaning their seed in the keyring.
-///
-/// To wire it up, replace the body with:
-/// ```ignore
-/// *wallet_config.corrupted_recovery()
-/// ```
-/// and delete the `_` on the parameter. Nothing else has to change: the single call site in
-/// `initialize_with_seed_inner` already turns `true` into an error, which `setup_manager` turns
-/// into the recovery UI.
-fn wallet_config_is_corrupted_recovery(wallet_config: &ConfigWalletContent) -> bool {
+/// T1 marks the default it returns when `config_wallet.json` could not be parsed and neither
+/// could its `.backup`. Such a config has an empty `tari_wallets` list, which lands in
+/// `initialize_with_seed`'s "create new wallet" branch and would silently replace the user's
+/// wallet, orphaning their seed in the keyring. The single call site in
+/// `initialize_with_seed_inner` turns `true` into an error, which `setup_manager` turns into the
+/// recovery UI; `setup_manager` also checks the same condition before wallet init even starts,
+/// so this is the second line of defence rather than the first.
+pub(crate) fn wallet_config_is_corrupted_recovery(wallet_config: &ConfigWalletContent) -> bool {
     wallet_config.ensure_available().is_err()
 }
 
