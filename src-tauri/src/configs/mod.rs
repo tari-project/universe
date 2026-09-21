@@ -30,5 +30,9 @@ pub mod config_ui;
 #[cfg(test)]
 mod config_ui_test;
 pub mod config_wallet;
+#[cfg(test)]
+mod config_wallet_test;
 pub mod pools;
 pub mod trait_config;
+#[cfg(test)]
+mod trait_config_telemetry_test;

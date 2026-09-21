@@ -161,6 +161,9 @@ fn publish_selected_backend(backend: TariMinerBackend) {
     }
 }
 
+/// `nvidia-smi` only enumerates NVIDIA devices, so every device found here shares this vendor.
+const NVIDIA_VENDOR: &str = "NVIDIA";
+
 /// An NVIDIA device that TARI.Miner has a backend for.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TariMinerDevice {
@@ -199,6 +202,10 @@ fn parse_nvidia_smi_devices(output: &str) -> Vec<TariMinerDevice> {
             common: GpuCommonInformation {
                 name: name.trim().to_string(),
                 device_id,
+                vendor: NVIDIA_VENDOR.to_string(),
+                memory_mb: None,
+                is_mineable: None,
+                unsupported_reason: None,
             },
             backend,
         });
@@ -345,6 +352,9 @@ pub struct TariMinerGpuMiner {
     pub connection_type: Option<GpuConnectionType>,
     pub gpu_status_sender: Sender<GpuMinerStatus>,
     pub gpu_devices: Vec<TariMinerDevice>,
+    /// The `common` half of [`Self::gpu_devices`], kept flat so [`GpuMinerInterfaceTrait::get_gpu_devices`]
+    /// can hand out a slice.
+    common_devices: Vec<GpuCommonInformation>,
     pub excluded_devices: Vec<u32>,
 }
 
@@ -357,6 +367,7 @@ impl TariMinerGpuMiner {
             connection_type: None,
             gpu_status_sender,
             gpu_devices: vec![],
+            common_devices: vec![],
             excluded_devices: vec![],
         }
     }
@@ -391,6 +402,10 @@ impl GpuMinerInterfaceTrait for TariMinerGpuMiner {
     ) -> Result<(), anyhow::Error> {
         self.connection_type = Some(connection_type);
         Ok(())
+    }
+
+    fn get_gpu_devices(&self) -> &[GpuCommonInformation] {
+        &self.common_devices
     }
 
     async fn load_excluded_devices(
@@ -450,16 +465,16 @@ impl GpuMinerInterfaceTrait for TariMinerGpuMiner {
         }
 
         self.gpu_devices = gpu_devices;
-        self.refresh_selected_backend();
-
-        let common_devices: Vec<GpuCommonInformation> = self
+        self.common_devices = self
             .gpu_devices
             .iter()
             .map(|device| device.common.clone())
             .collect();
-        let devices_indexes: Vec<u32> = common_devices.iter().map(|d| d.device_id).collect();
+        self.refresh_selected_backend();
 
-        EventsEmitter::emit_detected_devices(common_devices).await;
+        let devices_indexes: Vec<u32> = self.common_devices.iter().map(|d| d.device_id).collect();
+
+        EventsEmitter::emit_detected_devices(self.common_devices.clone()).await;
         ConfigMining::update_field(
             ConfigMiningContent::populate_gpu_devices_settings,
             (GpuMinerType::TariMiner, devices_indexes),
@@ -707,6 +722,10 @@ mod tests {
             common: GpuCommonInformation {
                 name: format!("GPU {device_id}"),
                 device_id,
+                vendor: NVIDIA_VENDOR.to_string(),
+                memory_mb: None,
+                is_mineable: None,
+                unsupported_reason: None,
             },
             backend,
         }
@@ -755,6 +774,10 @@ mod tests {
                 common: GpuCommonInformation {
                     name: "NVIDIA GeForce RTX 3080".to_string(),
                     device_id: 0,
+                    vendor: NVIDIA_VENDOR.to_string(),
+                    memory_mb: None,
+                    is_mineable: None,
+                    unsupported_reason: None,
                 },
                 backend: TariMinerBackend::Sm86,
             }]

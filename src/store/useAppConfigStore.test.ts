@@ -8,20 +8,10 @@ import { WalletUIMode } from '@app/types/events-payloads';
 describe('useAppConfigStore', () => {
     describe('ConfigWallet initial state', () => {
         const configWalletInitialState = {
-            created_at: '',
-            keyring_accessed: false,
             monero_address: '',
             monero_address_is_generated: false,
             wxtm_addresses: {},
         };
-
-        it('has empty created_at by default', () => {
-            expect(configWalletInitialState.created_at).toBe('');
-        });
-
-        it('has keyring_accessed as false by default', () => {
-            expect(configWalletInitialState.keyring_accessed).toBe(false);
-        });
 
         it('has empty monero_address by default', () => {
             expect(configWalletInitialState.monero_address).toBe('');

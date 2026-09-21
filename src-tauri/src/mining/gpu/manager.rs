@@ -52,7 +52,9 @@ use crate::{
                 GpuMiner, GpuMinerStatus, GpuMinerType, MINERS_PRIORITY, resolve_selected_miner,
             },
             interface::{GpuMinerInterface, GpuMinerInterfaceTrait},
-            miners::{lolminer::LolMinerGpuMiner, tariminer::TariMinerGpuMiner},
+            miners::{
+                GpuCommonInformation, lolminer::LolMinerGpuMiner, tariminer::TariMinerGpuMiner,
+            },
         },
         pools::{PoolManagerInterfaceTrait, gpu_pool_manager::GpuPoolManager},
     },
@@ -78,6 +80,7 @@ pub struct GpuManager {
     gpu_internal_status_channel: Sender<GpuMinerStatus>,
     gpu_external_status_channel: Sender<GpuMinerStatus>,
     node_status_channel: Option<Receiver<BaseNodeStatus>>, // Optional, only if connected to a node
+    detected_devices: Vec<GpuCommonInformation>,
     // ======= Cached config =======
     connection_type: GpuConnectionType,
     #[allow(dead_code)]
@@ -97,6 +100,7 @@ impl GpuManager {
             // ======= Miner config =======
             selected_miner: GpuMinerType::LolMiner,
             available_miners: HashMap::new(),
+            detected_devices: Vec::new(),
             // ======= Process watcher =======
             process_watcher: ProcessWatcher::new(
                 GpuMinerInterface::LolMiner(LolMinerGpuMiner::default()),
@@ -599,6 +603,7 @@ impl GpuManager {
     pub async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
         let mut successful_detection = false;
         let mut unhealthy_miners = vec![];
+        let mut detected_devices = vec![];
 
         // Iterate in priority order so the devices the highest priority miner sees are the ones
         // that end up published last, instead of depending on the hash map iteration order
@@ -611,6 +616,9 @@ impl GpuManager {
             match detection_result {
                 Ok(_) => {
                     successful_detection = true;
+                    if *miner_type == self.selected_miner {
+                        detected_devices = adapter.get_gpu_devices().to_vec();
+                    }
                     info!(target: LOG_TARGET_APP_LOGIC, "Devices detected with miner: {miner_type}");
                 }
                 Err(e) => {
@@ -631,9 +639,15 @@ impl GpuManager {
         if !successful_detection {
             return Err(anyhow::anyhow!("No miners detected any devices"));
         }
+        self.detected_devices = detected_devices;
         EventsEmitter::emit_available_gpu_miners(self.available_miners.clone()).await;
 
         Ok(())
+    }
+
+    /// The devices the selected miner found, as of the last [`Self::detect_devices`] call.
+    pub fn detected_devices(&self) -> &[GpuCommonInformation] {
+        &self.detected_devices
     }
 
     fn resolve_miner_interface(&self, miner_type: &GpuMinerType) -> GpuMinerInterface {

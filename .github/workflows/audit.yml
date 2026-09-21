@@ -39,11 +39,8 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 'lts/*'
-          cache: 'pnpm'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
+      # pnpm audit resolves against pnpm-lock.yaml — no node_modules needed.
       - name: Run npm audit
         run: |
           echo "Running pnpm audit..."

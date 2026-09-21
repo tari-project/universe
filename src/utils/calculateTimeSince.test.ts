@@ -178,5 +178,30 @@ describe('calculateTimeSince', () => {
             const result = calculateTimeSince(earlier, later);
             expect(result.hours).toBe(1);
         });
+
+        it('clamps to zero when the block timestamp is ahead of the local clock', () => {
+            // A few seconds of clock skew between the node and the local machine
+            // is ordinary. Without clamping, Math.floor rounds a negative diff
+            // away from zero and BlockTime renders "-1:-5".
+            const now = 1609459200 * 1000;
+            const result = calculateTimeSince(1609459200 + 5, now);
+
+            expect(result.days).toBe(0);
+            expect(result.daysString).toBe('');
+            expect(result.hours).toBe(0);
+            expect(result.hoursString).toBe('00');
+            expect(result.minutes).toBe('00');
+            expect(result.seconds).toBe('00');
+        });
+
+        it('clamps to zero for a large future skew', () => {
+            const now = 1609459200 * 1000;
+            const result = calculateTimeSince(1609459200 + 7200, now); // 2h ahead
+
+            expect(result.hours).toBe(0);
+            expect(result.hoursString).toBe('00');
+            expect(result.minutes).toBe('00');
+            expect(result.seconds).toBe('00');
+        });
     });
 });

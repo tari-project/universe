@@ -28,6 +28,7 @@ use crate::{
     mining::{
         GpuConnectionType,
         gpu::miners::{
+            GpuCommonInformation,
             lolminer::{LolMinerGpuMiner, LolMinerGpuMinerStatusMonitor},
             tariminer::{TariMinerGpuMiner, TariMinerGpuMinerStatusMonitor},
         },
@@ -49,6 +50,8 @@ pub trait GpuMinerInterfaceTrait: Send + Sync {
         connection_type: GpuConnectionType,
     ) -> Result<(), anyhow::Error>;
     async fn detect_devices(&mut self) -> Result<(), anyhow::Error>;
+    /// The devices found by the last [`Self::detect_devices`] call, empty before it has run.
+    fn get_gpu_devices(&self) -> &[GpuCommonInformation];
     async fn load_excluded_devices(
         &mut self,
         _excluded_devices: Vec<u32>,
@@ -104,6 +107,13 @@ impl GpuMinerInterfaceTrait for GpuMinerInterface {
         match self {
             GpuMinerInterface::LolMiner(miner) => miner.detect_devices().await,
             GpuMinerInterface::TariMiner(miner) => miner.detect_devices().await,
+        }
+    }
+
+    fn get_gpu_devices(&self) -> &[GpuCommonInformation] {
+        match self {
+            GpuMinerInterface::LolMiner(miner) => miner.get_gpu_devices(),
+            GpuMinerInterface::TariMiner(miner) => miner.get_gpu_devices(),
         }
     }
 

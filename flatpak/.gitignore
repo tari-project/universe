@@ -1,0 +1,12 @@
+# Build artifacts / local tooling — never committed
+.venv/
+build-dir/
+repo/
+.flatpak-builder/
+flatpak-cargo-generator.py
+*.log
+*.flatpak
+
+# Local helper scripts (not part of the packaging)
+run-build.sh
+run-buildtest.sh
