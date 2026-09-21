@@ -25,10 +25,11 @@ use monero_address_creator::Seed as MoneroSeed;
 use monero_address_creator::network::Mainnet;
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
-use std::io::{Read, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use tari_common::configuration::Network;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
+use tari_common_types::seeds::error::CipherError;
 use tari_common_types::seeds::mnemonic::Mnemonic;
 use tari_common_types::seeds::seed_words::SeedWords;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
@@ -39,7 +40,6 @@ use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::fs;
 use tokio::sync::{OnceCell, RwLock};
 
 use tari_utilities::hex::Hex;
@@ -59,7 +59,7 @@ use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::pin::PinManager;
 use crate::utils::{cryptography, rand_utils};
-use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState};
+use crate::{APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC, UniverseAppState};
 
 /// The wallet's view private key, in hex.
 ///
@@ -344,6 +344,11 @@ impl InternalWallet {
         .await?;
         let wallet_config = ConfigWallet::content().await;
 
+        // Set by the legacy branch when the wallet could only be brought up view-only. It is
+        // applied after `post_init`, so the recovery screen is raised over a wallet that already
+        // shows the user's address and balance rather than over nothing at all.
+        let mut pending_recovery: Option<WalletRecoveryReason> = None;
+
         let internal_wallet = if InternalWallet::validate_wallet_config_for_seed(
             app_handle,
             &wallet_config,
@@ -372,12 +377,16 @@ impl InternalWallet {
                 ));
             }
 
-            let old_wallet_config = get_old_wallet_config(&app_config_dir).await.ok();
-            if let Some(old_wallet_config) = old_wallet_config {
-                // Migrate old wallet config
-                let (wallet_id, tari_seed_binary, monero_seed_binary) =
-                    InternalWallet::migrate(app_handle, &app_config_dir, old_wallet_config).await?;
-                let tari_cipher_seed =
+            // The migration decision tree. Every arm either adopts a wallet that already exists
+            // or refuses; creating a fresh one is reachable from exactly one arm, and only when
+            // nothing on disk suggests this machine ever had a wallet.
+            match locate_legacy_wallet(&legacy_network_dir(&app_config_dir)) {
+                LegacyWalletEvidence::Migratable(old_wallet_config) => {
+                    match InternalWallet::migrate(app_handle, &app_config_dir, &old_wallet_config)
+                        .await
+                    {
+                        Ok((wallet_id, tari_seed_binary, monero_seed_binary)) => {
+                            let tari_cipher_seed =
                         CipherSeed::from_binary(&tari_seed_binary).map_err(|_| {
                             log::error!(
                                 target: LOG_TARGET_APP_LOGIC,
@@ -387,44 +396,89 @@ impl InternalWallet {
                             );
                             anyhow!("Could not parse Tari Seed from binary")
                         })?;
-                let tari_wallet_details =
-                    InternalWallet::get_tari_wallet_details(wallet_id, tari_cipher_seed).await?;
+                            let tari_wallet_details = InternalWallet::get_tari_wallet_details(
+                                wallet_id,
+                                tari_cipher_seed,
+                            )
+                            .await?;
 
-                InternalWallet {
-                    tari_address_type: TariAddressType::Internal,
-                    encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
-                    encrypted_monero_seed: Hidden::hide(monero_seed_binary),
-                    monero_address,
-                    external_tari_address: None,
-                    tari_wallet_details: Some(tari_wallet_details),
-                    seed_unavailable: None,
+                            InternalWallet {
+                                tari_address_type: TariAddressType::Internal,
+                                encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
+                                encrypted_monero_seed: Hidden::hide(monero_seed_binary),
+                                monero_address,
+                                external_tari_address: None,
+                                tari_wallet_details: Some(tari_wallet_details),
+                                seed_unavailable: None,
+                            }
+                        }
+                        Err(LegacyMigrationError::SeedUndecryptable) => {
+                            // The enciphered seed is on disk but no passphrase this machine has
+                            // opens it, and `migrate` has quarantined the file so this is the
+                            // last launch that tries. The address and view key in it are enough
+                            // to keep the wallet visible, which is what the pre-v1.2.24 app was
+                            // doing for these users all along.
+                            pending_recovery = Some(WalletRecoveryReason::LegacySeedUndecryptable);
+                            view_only_wallet_from_legacy(&old_wallet_config, monero_address)?
+                        }
+                        Err(LegacyMigrationError::Other(e)) => return Err(e),
+                    }
                 }
-            } else {
-                // Create new wallet
-                let tari_seed = CipherSeed::random();
-                let (tari_wallet_details, tari_seed_binary) =
-                    InternalWallet::add_tari_wallet(app_handle, tari_seed, None).await?;
+                LegacyWalletEvidence::ViewOnly(old_wallet_config) => {
+                    // A previous launch already quarantined this file. Re-running the decrypt
+                    // would only reproduce the failure, so come straight up view-only.
+                    pending_recovery = Some(WalletRecoveryReason::LegacySeedUndecryptable);
+                    view_only_wallet_from_legacy(&old_wallet_config, monero_address)?
+                }
+                LegacyWalletEvidence::Unreadable(problem) => {
+                    // A legacy file exists and cannot be used. It may still hold the only copy of
+                    // the seed, so the one thing that must not happen here is a new wallet.
+                    log::error!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "[initialize_with_seed] legacy wallet files unusable: file={} error={}",
+                        problem.file.as_tag(),
+                        problem.kind.as_tag(),
+                    );
+                    enter_wallet_recovery(WalletRecoveryReason::LegacyConfigUnreadable).await;
+                    return Err(anyhow!(
+                        "A legacy wallet is present but its files could not be read; refusing to create a new wallet"
+                    ));
+                }
+                LegacyWalletEvidence::None => {
+                    // Create new wallet. The only arm that may, and it is reached only when the
+                    // config is not a recovery placeholder (checked above) and nothing legacy is
+                    // on disk.
+                    let tari_seed = CipherSeed::random();
+                    let (tari_wallet_details, tari_seed_binary) =
+                        InternalWallet::add_tari_wallet(app_handle, tari_seed, None).await?;
 
-                let mut monero_seed_binary = None;
-                if monero_address.is_empty() {
-                    let monero_seed = MoneroSeed::generate()?;
-                    monero_seed_binary =
-                        Some(InternalWallet::add_monero_wallet(monero_seed).await?);
-                };
+                    let mut monero_seed_binary = None;
+                    if monero_address.is_empty() {
+                        let monero_seed = MoneroSeed::generate()?;
+                        monero_seed_binary =
+                            Some(InternalWallet::add_monero_wallet(monero_seed).await?);
+                    };
 
-                InternalWallet {
-                    tari_address_type: TariAddressType::Internal,
-                    encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
-                    encrypted_monero_seed: Hidden::hide(monero_seed_binary),
-                    monero_address,
-                    external_tari_address: None,
-                    tari_wallet_details: Some(tari_wallet_details),
-                    seed_unavailable: None,
+                    InternalWallet {
+                        tari_address_type: TariAddressType::Internal,
+                        encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
+                        encrypted_monero_seed: Hidden::hide(monero_seed_binary),
+                        monero_address,
+                        external_tari_address: None,
+                        tari_wallet_details: Some(tari_wallet_details),
+                        seed_unavailable: None,
+                    }
                 }
             }
         };
 
-        internal_wallet.post_init(app_handle).await
+        let post_init_result = internal_wallet.post_init(app_handle).await;
+        if post_init_result.is_ok()
+            && let Some(reason) = pending_recovery
+        {
+            enter_wallet_recovery(reason).await;
+        }
+        post_init_result
     }
 
     // Handle all side effects here
@@ -967,6 +1021,9 @@ impl InternalWallet {
         Ok(internal_wallet_guard.seed_unavailable)
     }
 
+    /// Reads the legacy credential through `LegacyCredentialManager`, with the macOS keychain
+    /// dialog loop. Kept for the one case where it is still the right tool: nothing else could be
+    /// read and the keyring may only be locked rather than empty.
     async fn get_legacy_credentials_forced(
         app_handle: &AppHandle,
         app_config_dir: &Path,
@@ -981,30 +1038,141 @@ impl InternalWallet {
         Ok(legacy_credential)
     }
 
+    /// Collects every legacy passphrase this machine still has, plus the legacy Monero seed.
+    ///
+    /// Never fatal. A source that is missing, locked or corrupt costs one candidate and is logged
+    /// with an enum-like error kind. The code this replaces branched on
+    /// `ConfigWallet.keyring_accessed` and, when a freshly defaulted config said the keyring had
+    /// never been touched, refused to look at the keyring at all - returning `Err` on every
+    /// launch for users whose keyring entry was sitting right there.
+    async fn legacy_credential_parts(
+        app_handle: &AppHandle,
+        app_config_dir: &Path,
+    ) -> LegacyCredentialParts {
+        let network_dir = legacy_network_dir(app_config_dir);
+
+        let fallback_credential = match read_legacy_fallback_credential(&network_dir) {
+            Ok(credential) => credential,
+            Err(kind) => {
+                log::warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Legacy fallback credential file could not be used: error={}",
+                    kind.as_tag(),
+                );
+                None
+            }
+        };
+
+        let keyring_credential = match read_legacy_keyring_credential() {
+            Ok(credential) => credential,
+            Err(kind) => {
+                log::warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "Legacy keyring credential could not be used: error={}",
+                    kind.as_tag(),
+                );
+                None
+            }
+        };
+
+        // Last resort: the entry may be unreadable only because the keychain is locked, which the
+        // standard macOS dialog can fix. Worth a prompt only when nothing else was found.
+        let keyring_credential = match keyring_credential {
+            Some(credential) => Some(credential),
+            None if fallback_credential.is_none() => {
+                match InternalWallet::get_legacy_credentials_forced(app_handle, app_config_dir)
+                    .await
+                {
+                    Ok(credential) => Some(credential),
+                    Err(_) => {
+                        log::warn!(target: LOG_TARGET_APP_LOGIC, "No legacy credential store could be read; continuing with the passphrases left");
+                        None
+                    }
+                }
+            }
+            None => None,
+        };
+
+        let monero_seed = keyring_credential
+            .as_ref()
+            .and_then(|credential| credential.monero_seed)
+            .or_else(|| {
+                fallback_credential
+                    .as_ref()
+                    .and_then(|credential| credential.monero_seed)
+            })
+            .map(|seed| seed.to_vec());
+
+        LegacyCredentialParts {
+            keyring_passphrase: keyring_credential
+                .and_then(|credential| credential.tari_seed_passphrase),
+            fallback_passphrase: fallback_credential
+                .and_then(|credential| credential.tari_seed_passphrase),
+            monero_seed,
+        }
+    }
+
+    /// One-shot migration of a pre-v1.2.24 wallet into the per-wallet keyring store.
+    ///
+    /// Three things changed here, and together they are what ends the crash loop:
+    /// * the decrypt is a `Result`, not an `.expect`. A seed no passphrase opens quarantines the
+    ///   legacy file and returns `SeedUndecryptable`, so the next launch cannot repeat it;
+    /// * every passphrase source is tried, in a fixed order, instead of only the one the legacy
+    ///   credential happened to hold;
+    /// * the Tari seed is decrypted *before* the Monero credential is written. The old order left
+    ///   the Monero entry pointing at a wallet the app never finished adopting, on every launch.
     async fn migrate(
         app_handle: &AppHandle,
         app_config_dir: &Path,
-        old_wallet_config: LegacyWalletConfig,
-    ) -> Result<(WalletId, Vec<u8>, Option<Vec<u8>>), anyhow::Error> {
-        let legacy_cred: LegacyCredential = if *ConfigWallet::content().await.keyring_accessed() {
-            InternalWallet::get_legacy_credentials_forced(app_handle, app_config_dir).await?
-        } else {
-            let legacy_fallback_file = get_legacy_fallback_file(app_config_dir).await?;
-            if !legacy_fallback_file.exists() {
-                return Err(anyhow!(
-                    "Legacy fallback file not found even though keyring not accessed! Path: {:?}",
-                    legacy_fallback_file
-                ));
-            }
-            let mut file = OpenOptions::new().read(true).open(legacy_fallback_file)?;
-            let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer)?;
-            let cred: LegacyCredential = serde_cbor::from_slice(&buffer)?;
-            cred
-        };
+        old_wallet_config: &LegacyWalletConfig,
+    ) -> Result<(WalletId, Vec<u8>, Option<Vec<u8>>), LegacyMigrationError> {
+        let parts = InternalWallet::legacy_credential_parts(app_handle, app_config_dir).await;
+        let monero_seed_binary = parts.monero_seed;
+        let candidates = legacy_passphrase_candidates(
+            parts.keyring_passphrase,
+            parts.fallback_passphrase,
+            old_wallet_config.passphrase.clone(),
+        );
+        let candidates_tried = candidates.len();
 
-        // Migrate Monero Seed if exists in the LegacyCredential
-        let monero_seed_binary = legacy_cred.monero_seed.map(|seed| seed.to_vec());
+        let (tari_seed, source) = match decrypt_legacy_tari_seed(
+            &old_wallet_config.seed_words_encrypted_base58,
+            candidates,
+        ) {
+            Ok(decrypted) => decrypted,
+            Err(kind) => {
+                log::error!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "[migrate] legacy Tari seed did not decrypt: error={} sources_tried={candidates_tried}",
+                    kind.as_tag(),
+                );
+                report_legacy_decrypt_failed(kind);
+                // Break the loop. With the file renamed there is nothing migratable left, so the
+                // next launch comes up view-only instead of failing the same decrypt again.
+                match quarantine_legacy_file(
+                    &legacy_network_dir(app_config_dir).join(LEGACY_WALLET_CONFIG_FILE_NAME),
+                    LEGACY_DECRYPT_FAILED_SUFFIX,
+                ) {
+                    Ok(Some(_)) => {
+                        log::warn!(target: LOG_TARGET_APP_LOGIC, "Quarantined the legacy wallet config after a failed decrypt");
+                    }
+                    Ok(None) => {}
+                    Err(e) => {
+                        log::error!(target: LOG_TARGET_APP_LOGIC, "Could not quarantine the legacy wallet config: {e}");
+                    }
+                }
+                return Err(LegacyMigrationError::SeedUndecryptable);
+            }
+        };
+        log::info!(
+            target: LOG_TARGET_APP_LOGIC,
+            "[migrate] legacy Tari seed decrypted: passphrase_source_index={} source={}",
+            source.index(),
+            source.as_tag(),
+        );
+
+        // Monero second, and only now. Writing the Monero credential for a migration that then
+        // fails leaves the keyring holding a seed for a wallet the app never adopted.
         if let Some(ref monero_seed) = monero_seed_binary {
             let credentials = Credential {
                 encrypted_seed: monero_seed.clone(),
@@ -1015,22 +1183,16 @@ impl InternalWallet {
                 &credentials,
                 true,
             )
-            .await?;
+            .await
+            .map_err(LegacyMigrationError::Other)?;
         } else {
             log::info!(target: LOG_TARGET_APP_LOGIC, "Monero Seed not found for migration");
         }
 
-        // Migrate Tari Seed
-        let tari_seed_enciphered_bytes =
-            Vec::<u8>::from_monero_base58(&old_wallet_config.seed_words_encrypted_base58)
-                .map_err(|e| anyhow!(e.to_string()))?;
-        let tari_seed = CipherSeed::from_enciphered_bytes(
-            &tari_seed_enciphered_bytes,
-            legacy_cred.tari_seed_passphrase,
-        )
-        .expect("Failed to decrypt legacy Tari seed");
         let (tari_wallet_details, tari_seed_binary) =
-            InternalWallet::add_tari_wallet(app_handle, tari_seed, None).await?;
+            InternalWallet::add_tari_wallet(app_handle, tari_seed, None)
+                .await
+                .map_err(LegacyMigrationError::Other)?;
 
         Ok((tari_wallet_details.id, tari_seed_binary, monero_seed_binary))
     }
@@ -1378,6 +1540,8 @@ pub const WALLET_NO_ADDRESS: &str = "Internal wallet has no Tari address defined
 /// The only Sentry message this module sends. Constant by policy: every varying detail goes into
 /// a tag with an enum-like value, never into the message (see the hardening brief).
 const SENTRY_SEED_UNAVAILABLE_AT_STARTUP: &str = "wallet.seed_unavailable_at_startup";
+/// The legacy migration's one Sentry message, under the same rule: constant text, enum-like tags.
+const SENTRY_LEGACY_DECRYPT_FAILED: &str = "wallet.legacy_decrypt_failed";
 /// Non-secret marker recording when the startup probe last ran. Holds a unix timestamp and an
 /// enum-like outcome only: no wallet ids, no blobs, no keys. It lives next to the app config dir
 /// rather than in `config_wallet.json` on purpose - the config crate is owned by the durability
@@ -1579,6 +1743,14 @@ pub enum WalletRecoveryReason {
     InitializationFailed,
     /// The wallet initialised, but the startup probe could not read its seed.
     SeedUnavailable,
+    /// A pre-v1.2.24 wallet was found, no known passphrase opens its seed, and the app is running
+    /// view-only from the address and view key in the legacy file. Distinct from
+    /// `SeedUnavailable`: the seed is provably on disk, it just cannot be opened here, and the
+    /// legacy file has been quarantined so the migration will not be attempted again.
+    LegacySeedUndecryptable,
+    /// A legacy wallet file exists but could not be read or parsed. No wallet was created: the
+    /// damaged file may still be the only copy of the seed.
+    LegacyConfigUnreadable,
 }
 
 impl WalletRecoveryReason {
@@ -1586,6 +1758,8 @@ impl WalletRecoveryReason {
         match self {
             WalletRecoveryReason::InitializationFailed => "initialization_failed",
             WalletRecoveryReason::SeedUnavailable => "seed_unavailable",
+            WalletRecoveryReason::LegacySeedUndecryptable => "legacy_seed_undecryptable",
+            WalletRecoveryReason::LegacyConfigUnreadable => "legacy_config_unreadable",
         }
     }
 }
@@ -1637,13 +1811,17 @@ pub fn ensure_wallet_usable() -> Result<(), MiningError> {
 
 /// Pure half of `ensure_wallet_usable`, split out so both branches are testable without touching
 /// the process-wide recovery state. Every recovery reason refuses: an initialisation failure
-/// means there is no wallet at all, and an unreadable seed means the app cannot prove it owns
-/// the address it would mine to.
+/// means there is no wallet at all, an unreadable seed means the app cannot prove it owns the
+/// address it would mine to, and the legacy reasons mean the wallet on screen is one the app
+/// cannot vouch for yet.
 pub fn wallet_usability(reason: Option<WalletRecoveryReason>) -> Result<(), MiningError> {
     match reason {
         None => Ok(()),
         Some(
-            WalletRecoveryReason::InitializationFailed | WalletRecoveryReason::SeedUnavailable,
+            WalletRecoveryReason::InitializationFailed
+            | WalletRecoveryReason::SeedUnavailable
+            | WalletRecoveryReason::LegacySeedUndecryptable
+            | WalletRecoveryReason::LegacyConfigUnreadable,
         ) => Err(MiningError::WalletNotReady),
     }
 }
@@ -1776,34 +1954,507 @@ pub async fn mnemonic_to_tari_cipher_seed(
 
 // ** Legacy Wallet Config **
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+/// The pre-v1.2.24 `wallet_config.json`.
+///
+/// `passphrase` is back. Era-1 builds (v0.4 - v0.7) wrote the legacy seed's passphrase into this
+/// file whenever the keyring was unavailable, and v1.2.24 dropped the field from this struct, so
+/// serde silently discarded the last passphrase those machines had - one of the documented ways a
+/// wallet ends up permanently undecryptable. In most real files the field is present and `null`.
+///
+/// `#[serde(default)]` on the container keeps a file written by any era parseable; the fields that
+/// have to be there for the file to mean anything are checked by `validate` instead, so a JSON
+/// document that happens to parse but carries no wallet is treated as damaged rather than empty.
+#[derive(Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
 pub struct LegacyWalletConfig {
-    tari_address_base58: String,
-    view_key_private_hex: String,
-    spend_public_key_hex: String,
-    seed_words_encrypted_base58: String,
-    config_path: Option<PathBuf>,
+    pub(crate) tari_address_base58: String,
+    pub(crate) view_key_private_hex: String,
+    pub(crate) spend_public_key_hex: String,
+    pub(crate) seed_words_encrypted_base58: String,
+    /// Era-1 in-file passphrase for `seed_words_encrypted_base58`. Usually `null`.
+    pub(crate) passphrase: Option<String>,
+    pub(crate) config_path: Option<PathBuf>,
 }
-pub async fn get_old_wallet_config(config_dir: &Path) -> Result<LegacyWalletConfig, anyhow::Error> {
-    let network = Network::get_current_or_user_setting_or_default()
-        .to_string()
-        .to_lowercase();
-    let old_config_file = config_dir.join(network).join("wallet_config.json");
-    let old_config_str = fs::read_to_string(old_config_file).await?;
-    let old_config: LegacyWalletConfig = serde_json::from_str(&old_config_str)?;
-    Ok(old_config)
+
+/// Hand-written: this struct holds an enciphered seed, a view private key and possibly a
+/// passphrase, none of which may reach a log line through a `{:?}`. Only presence is reported.
+impl std::fmt::Debug for LegacyWalletConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("LegacyWalletConfig")
+            .field("has_address", &!self.tari_address_base58.is_empty())
+            .field("has_view_key", &!self.view_key_private_hex.is_empty())
+            .field("has_seed", &!self.seed_words_encrypted_base58.is_empty())
+            .field("has_passphrase", &self.passphrase.is_some())
+            .finish()
+    }
+}
+
+impl LegacyWalletConfig {
+    /// A legacy config is only usable if it names a wallet. Anything less is damage, and damage
+    /// must never be mistaken for "no previous wallet here".
+    fn validate(self) -> Result<Self, LegacyConfigProblemKind> {
+        if self.tari_address_base58.is_empty() || self.seed_words_encrypted_base58.is_empty() {
+            return Err(LegacyConfigProblemKind::Incomplete);
+        }
+        Ok(self)
+    }
 }
 
 /// Plaintext (CBOR) seed fallback written by pre-keyring versions, see `LegacyCredentialManager`.
 pub(crate) const LEGACY_FALLBACK_FILE_NAME: &str = "credentials_backup.bin";
 /// Pre-migration wallet config holding the Tari seed enciphered with the passphrase above.
 pub(crate) const LEGACY_WALLET_CONFIG_FILE_NAME: &str = "wallet_config.json";
+/// Suffix for a legacy wallet config whose seed no known passphrase opens. Renaming is what
+/// breaks the migration loop: the next launch finds nothing migratable and comes up view-only
+/// instead of attempting - and failing - the same decrypt forever.
+pub(crate) const LEGACY_DECRYPT_FAILED_SUFFIX: &str = "decrypt_failed";
+/// Suffix for a legacy wallet config that has been proven migrated (T4). The file holds only an
+/// enciphered seed, so it is renamed rather than destroyed.
+pub(crate) const LEGACY_MIGRATED_SUFFIX: &str = "migrated";
+/// Mirrors the private `credential_manager::KEYCHAIN_USERNAME`. Duplicated rather than imported
+/// because `credential_manager.rs` is owned by another change in flight; the legacy entry name is
+/// frozen history and cannot drift.
+const LEGACY_KEYCHAIN_USERNAME: &str = "inner_wallet_credentials";
+/// Wallet id carried by the view-only fallback wallet. It never enters `config_wallet.json` and
+/// never names a keyring entry: there is no seed to point at, which is the whole reason the
+/// wallet is view-only.
+const LEGACY_VIEW_ONLY_WALLET_ID: &str = "legacy_view_only";
 
-async fn get_legacy_fallback_file(app_config_dir: &Path) -> Result<PathBuf, anyhow::Error> {
-    let network = Network::get_current().as_key_str();
-    let old_fallback_file = app_config_dir.join(network).join(LEGACY_FALLBACK_FILE_NAME);
-    Ok(old_fallback_file)
+/// The network subdirectory the legacy files live in.
+pub(crate) fn legacy_network_dir(app_config_dir: &Path) -> PathBuf {
+    app_config_dir.join(Network::get_current().as_key_str())
 }
+
+/// Which legacy file a problem refers to. Enum-like, safe for a log line: never a path, because a
+/// path carries the user's account name.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LegacyFileKind {
+    WalletConfig,
+    QuarantinedWalletConfig,
+    FallbackCredential,
+}
+
+impl LegacyFileKind {
+    pub(crate) fn as_tag(self) -> &'static str {
+        match self {
+            LegacyFileKind::WalletConfig => "wallet_config",
+            LegacyFileKind::QuarantinedWalletConfig => "quarantined_wallet_config",
+            LegacyFileKind::FallbackCredential => "fallback_credential",
+        }
+    }
+}
+
+/// What is wrong with a legacy file. Every variant means "do not create a new wallet".
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LegacyConfigProblemKind {
+    /// The file is there but the OS would not hand it over (locked by AV or an indexer,
+    /// permissions, a transient sharing violation on Windows).
+    Unreadable,
+    /// The file is there and readable but is not the JSON this code understands.
+    Unparseable,
+    /// The file parsed but does not name a wallet.
+    Incomplete,
+    /// A plaintext credential file survives with no wallet config of any kind next to it.
+    EvidenceWithoutConfig,
+}
+
+impl LegacyConfigProblemKind {
+    pub(crate) fn as_tag(self) -> &'static str {
+        match self {
+            LegacyConfigProblemKind::Unreadable => "unreadable",
+            LegacyConfigProblemKind::Unparseable => "unparseable",
+            LegacyConfigProblemKind::Incomplete => "incomplete",
+            LegacyConfigProblemKind::EvidenceWithoutConfig => "evidence_without_config",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct LegacyConfigProblem {
+    pub(crate) file: LegacyFileKind,
+    pub(crate) kind: LegacyConfigProblemKind,
+}
+
+/// What this launch found where a pre-v1.2.24 wallet would have left its files.
+///
+/// The point of the enum is that "there is no legacy wallet" is one specific answer rather than
+/// the default one. The old code called `get_old_wallet_config(..).ok()`, which collapsed
+/// "absent", "locked by antivirus" and "truncated" into `None` and then created a brand new
+/// wallet, orphaning the seed the damaged file pointed at.
+#[derive(Debug)]
+pub(crate) enum LegacyWalletEvidence {
+    /// Nothing legacy on disk. The only state in which a new wallet may be created.
+    None,
+    /// `wallet_config.json` is present and usable: this launch may migrate it.
+    Migratable(LegacyWalletConfig),
+    /// Only a quarantined config is left (`.decrypt_failed` from a previous launch, or
+    /// `.migrated` next to a config that has since lost its wallet list). Its seed is not
+    /// reachable from here, so the wallet can only be brought up view-only.
+    ViewOnly(LegacyWalletConfig),
+    /// A legacy file is present but unusable. Recovery case: never a new wallet.
+    Unreadable(LegacyConfigProblem),
+}
+
+/// Reads one legacy wallet config file.
+///
+/// `Ok(None)` means the file is simply not there - the only outcome that may lead to creating a
+/// wallet. Every other failure is reported, never swallowed.
+pub(crate) fn get_old_wallet_config(
+    path: &Path,
+) -> Result<Option<LegacyWalletConfig>, LegacyConfigProblemKind> {
+    let contents = match std::fs::read_to_string(path) {
+        Ok(contents) => contents,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(_) => return Err(LegacyConfigProblemKind::Unreadable),
+    };
+    let parsed: LegacyWalletConfig =
+        serde_json::from_str(&contents).map_err(|_| LegacyConfigProblemKind::Unparseable)?;
+    parsed.validate().map(Some)
+}
+
+/// Walks the legacy files in priority order and says what the launch is dealing with.
+///
+/// Takes the network directory rather than the app config dir so it can be exercised against a
+/// temp directory without a Tauri app handle or a `Network` global.
+pub(crate) fn locate_legacy_wallet(network_dir: &Path) -> LegacyWalletEvidence {
+    let primary = network_dir.join(LEGACY_WALLET_CONFIG_FILE_NAME);
+    match get_old_wallet_config(&primary) {
+        Ok(Some(config)) => return LegacyWalletEvidence::Migratable(config),
+        Err(kind) => {
+            return LegacyWalletEvidence::Unreadable(LegacyConfigProblem {
+                file: LegacyFileKind::WalletConfig,
+                kind,
+            });
+        }
+        Ok(None) => {}
+    }
+
+    // A quarantined config still names the wallet and carries its view key, so the app can keep
+    // showing it. It is never migrated again: the rename is the record that the decrypt was
+    // already tried and failed.
+    for suffix in [LEGACY_DECRYPT_FAILED_SUFFIX, LEGACY_MIGRATED_SUFFIX] {
+        let quarantined = quarantined_path(&primary, suffix);
+        match get_old_wallet_config(&quarantined) {
+            Ok(Some(config)) => return LegacyWalletEvidence::ViewOnly(config),
+            Err(kind) => {
+                return LegacyWalletEvidence::Unreadable(LegacyConfigProblem {
+                    file: LegacyFileKind::QuarantinedWalletConfig,
+                    kind,
+                });
+            }
+            Ok(None) => {}
+        }
+    }
+
+    // No wallet config in any form, but the plaintext credential file is still there: this
+    // machine had a wallet. Creating a new one here is exactly the silent replacement the
+    // hardening brief forbids.
+    if network_dir.join(LEGACY_FALLBACK_FILE_NAME).exists() {
+        return LegacyWalletEvidence::Unreadable(LegacyConfigProblem {
+            file: LegacyFileKind::FallbackCredential,
+            kind: LegacyConfigProblemKind::EvidenceWithoutConfig,
+        });
+    }
+
+    LegacyWalletEvidence::None
+}
+
+/// `<path>.<suffix>`, keeping the original name intact so the file is still recognisable.
+pub(crate) fn quarantined_path(path: &Path, suffix: &str) -> PathBuf {
+    let mut name = path.as_os_str().to_os_string();
+    name.push(".");
+    name.push(suffix);
+    PathBuf::from(name)
+}
+
+/// Renames a legacy file out of the way, never over the top of an existing quarantined file.
+///
+/// A previous quarantine may hold a different wallet's enciphered seed, so the name is uniquified
+/// rather than replaced. Returns the new path, or `Ok(None)` when there was nothing to rename.
+pub(crate) fn quarantine_legacy_file(
+    path: &Path,
+    suffix: &str,
+) -> std::io::Result<Option<PathBuf>> {
+    if !path.exists() {
+        return Ok(None);
+    }
+    let base = quarantined_path(path, suffix);
+    let mut target = base.clone();
+    let mut attempt = 1u32;
+    while target.exists() {
+        attempt += 1;
+        target = quarantined_path(&base, &attempt.to_string());
+        if attempt > 50 {
+            // Pathological, but never fail closed on a name clash: the point of the rename is to
+            // get the file out of the migration path.
+            target = quarantined_path(&base, &unix_now().to_string());
+            break;
+        }
+    }
+    std::fs::rename(path, &target)?;
+    Ok(Some(target))
+}
+
+// ** Legacy passphrases **
+
+/// Where a legacy passphrase came from. The index and the tag are safe to log; the passphrase
+/// itself never leaves this module.
+///
+/// The order is the order the sources are tried, and it is the fix for the single-source lookup
+/// that made `DecryptionFailed` permanent: the keyring entry first, then the plaintext fallback
+/// file (which `LegacyCredentialManager` would otherwise let shadow the keyring), then the
+/// in-file Era-1 passphrase that v1.2.24 dropped on the floor, then no passphrase at all.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LegacyPassphraseSource {
+    KeyringCredential,
+    FallbackFileCredential,
+    LegacyConfigFile,
+    NoPassphrase,
+}
+
+impl LegacyPassphraseSource {
+    pub(crate) fn index(self) -> usize {
+        match self {
+            LegacyPassphraseSource::KeyringCredential => 0,
+            LegacyPassphraseSource::FallbackFileCredential => 1,
+            LegacyPassphraseSource::LegacyConfigFile => 2,
+            LegacyPassphraseSource::NoPassphrase => 3,
+        }
+    }
+
+    pub(crate) fn as_tag(self) -> &'static str {
+        match self {
+            LegacyPassphraseSource::KeyringCredential => "keyring_credential",
+            LegacyPassphraseSource::FallbackFileCredential => "fallback_file_credential",
+            LegacyPassphraseSource::LegacyConfigFile => "legacy_config_file",
+            LegacyPassphraseSource::NoPassphrase => "no_passphrase",
+        }
+    }
+}
+
+/// Why a legacy seed would not decrypt, as an enum-like value fit for a log line or a Sentry tag.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LegacyDecryptErrorKind {
+    /// The enciphered seed is not valid monero-base58: the field is damaged, not the passphrase.
+    Base58,
+    /// Wrong length for a CipherSeed.
+    InvalidData,
+    /// Enciphered by a CipherSeed version this build does not know.
+    VersionMismatch,
+    /// Checksum mismatch: the bytes are corrupt rather than merely locked.
+    Crc,
+    /// The bytes are a well-formed CipherSeed and no passphrase we have opens it.
+    DecryptionFailed,
+    Other,
+}
+
+impl LegacyDecryptErrorKind {
+    pub(crate) fn as_tag(self) -> &'static str {
+        match self {
+            LegacyDecryptErrorKind::Base58 => "base58",
+            LegacyDecryptErrorKind::InvalidData => "invalid_data",
+            LegacyDecryptErrorKind::VersionMismatch => "version_mismatch",
+            LegacyDecryptErrorKind::Crc => "crc",
+            LegacyDecryptErrorKind::DecryptionFailed => "decryption_failed",
+            LegacyDecryptErrorKind::Other => "other",
+        }
+    }
+}
+
+impl From<&CipherError> for LegacyDecryptErrorKind {
+    fn from(error: &CipherError) -> Self {
+        match error {
+            CipherError::InvalidData => LegacyDecryptErrorKind::InvalidData,
+            CipherError::VersionMismatch => LegacyDecryptErrorKind::VersionMismatch,
+            CipherError::CrcError => LegacyDecryptErrorKind::Crc,
+            CipherError::DecryptionFailed => LegacyDecryptErrorKind::DecryptionFailed,
+            _ => LegacyDecryptErrorKind::Other,
+        }
+    }
+}
+
+/// Whatever the legacy credential stores still hold, split into the parts the migration needs.
+/// Passing the parts around instead of the credential keeps the passphrase away from anything
+/// that could format it.
+pub(crate) struct LegacyCredentialParts {
+    pub(crate) keyring_passphrase: Option<SafePassword>,
+    pub(crate) fallback_passphrase: Option<SafePassword>,
+    pub(crate) monero_seed: Option<Vec<u8>>,
+}
+
+/// The passphrase candidates, in the fixed order above. Always ends with "no passphrase", which
+/// is a legitimate answer for a seed that was enciphered without one.
+pub(crate) fn legacy_passphrase_candidates(
+    keyring_passphrase: Option<SafePassword>,
+    fallback_passphrase: Option<SafePassword>,
+    config_passphrase: Option<String>,
+) -> Vec<(LegacyPassphraseSource, Option<SafePassword>)> {
+    let mut candidates = Vec::with_capacity(4);
+    if let Some(passphrase) = keyring_passphrase {
+        candidates.push((LegacyPassphraseSource::KeyringCredential, Some(passphrase)));
+    }
+    if let Some(passphrase) = fallback_passphrase {
+        candidates.push((
+            LegacyPassphraseSource::FallbackFileCredential,
+            Some(passphrase),
+        ));
+    }
+    if let Some(passphrase) = config_passphrase {
+        candidates.push((
+            LegacyPassphraseSource::LegacyConfigFile,
+            Some(SafePassword::from(passphrase)),
+        ));
+    }
+    candidates.push((LegacyPassphraseSource::NoPassphrase, None));
+    candidates
+}
+
+/// Decrypts the legacy enciphered seed, trying each candidate until one works.
+///
+/// Shared by the migration (T3) and the purge gate (T4) so the two can never disagree about
+/// whether a legacy seed is readable. Returns the source that worked, for the log line; the
+/// passphrase is consumed and dropped either way.
+pub(crate) fn decrypt_legacy_tari_seed(
+    seed_words_encrypted_base58: &str,
+    candidates: Vec<(LegacyPassphraseSource, Option<SafePassword>)>,
+) -> Result<(CipherSeed, LegacyPassphraseSource), LegacyDecryptErrorKind> {
+    let enciphered = Vec::<u8>::from_monero_base58(seed_words_encrypted_base58)
+        .map_err(|_| LegacyDecryptErrorKind::Base58)?;
+
+    let mut last_error = LegacyDecryptErrorKind::Other;
+    for (source, passphrase) in candidates {
+        match CipherSeed::from_enciphered_bytes(&enciphered, passphrase) {
+            Ok(seed) => return Ok((seed, source)),
+            Err(e) => {
+                let kind = LegacyDecryptErrorKind::from(&e);
+                // A structural failure (wrong length, unknown version, bad checksum) is the same
+                // for every candidate, so there is nothing to learn from the rest.
+                if kind != LegacyDecryptErrorKind::DecryptionFailed {
+                    return Err(kind);
+                }
+                last_error = kind;
+            }
+        }
+    }
+    Err(last_error)
+}
+
+/// Reads the plaintext CBOR fallback credential directly.
+///
+/// `LegacyCredentialManager` prefers this file over the keyring whenever it exists, so reading it
+/// separately is what allows both sources to be tried instead of the file silently shadowing a
+/// keyring entry holding a different - and possibly the only working - passphrase.
+fn read_legacy_fallback_credential(
+    network_dir: &Path,
+) -> Result<Option<LegacyCredential>, SeedProbeErrorKind> {
+    let path = network_dir.join(LEGACY_FALLBACK_FILE_NAME);
+    let bytes = match std::fs::read(&path) {
+        Ok(bytes) => bytes,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(_) => return Err(SeedProbeErrorKind::Io),
+    };
+    if bytes.is_empty() {
+        return Ok(None);
+    }
+    serde_cbor::from_slice::<LegacyCredential>(&bytes)
+        .map(Some)
+        .map_err(|_| SeedProbeErrorKind::Decode)
+}
+
+/// Reads the legacy keyring entry directly, without the fallback-file preference.
+fn read_legacy_keyring_credential() -> Result<Option<LegacyCredential>, SeedProbeErrorKind> {
+    let username = format!(
+        "{LEGACY_KEYCHAIN_USERNAME}_{}",
+        Network::get_current().as_key_str()
+    );
+    let entry = keyring::Entry::new(APPLICATION_FOLDER_ID, &username)
+        .map_err(|e| SeedProbeErrorKind::from(&CredentialError::Keyring(e)))?;
+    match entry.get_secret() {
+        Ok(encoded) => serde_cbor::from_slice::<LegacyCredential>(&encoded)
+            .map(Some)
+            .map_err(|_| SeedProbeErrorKind::Decode),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(SeedProbeErrorKind::from(&CredentialError::Keyring(e))),
+    }
+}
+
+/// Constant message, details as enum-like tags only. Never formats a path or an error into it.
+fn report_legacy_decrypt_failed(kind: LegacyDecryptErrorKind) {
+    sentry::with_scope(
+        |scope| {
+            scope.set_tag("platform", std::env::consts::OS);
+            scope.set_tag("wallet.legacy_decrypt_error", kind.as_tag());
+        },
+        || {
+            sentry::capture_message(SENTRY_LEGACY_DECRYPT_FAILED, sentry::Level::Error);
+        },
+    );
+}
+
+/// Brings the wallet up read-only from a legacy config whose seed cannot be opened.
+///
+/// There is precedent: `initialize_seedless` already runs the app against an address it holds no
+/// seed for. This is the same shape, except the address is the user's own and the legacy file also
+/// carries the view key, so balance and scanning keep working - which is exactly what the
+/// pre-v1.2.24 app was doing for these users until the migration turned it into a crash loop.
+///
+/// Nothing is written: no wallet id reaches `config_wallet.json`, no keyring entry is created and
+/// no Monero wallet is generated. Replacing this wallet requires the user's explicit consent.
+fn view_only_wallet_from_legacy(
+    legacy: &LegacyWalletConfig,
+    monero_address: String,
+) -> Result<InternalWallet, anyhow::Error> {
+    let tari_address = TariAddress::from_base58(&legacy.tari_address_base58)
+        .map_err(|e| anyhow!("Legacy wallet address could not be parsed: {e}"))?;
+    if legacy.view_key_private_hex.is_empty() || legacy.spend_public_key_hex.is_empty() {
+        return Err(anyhow!(
+            "Legacy wallet config carries no view key, cannot run the wallet view-only"
+        ));
+    }
+
+    Ok(InternalWallet {
+        tari_address_type: TariAddressType::Internal,
+        encrypted_tari_seed: Hidden::hide(None),
+        encrypted_monero_seed: Hidden::hide(None),
+        monero_address,
+        external_tari_address: None,
+        tari_wallet_details: Some(TariWalletDetails {
+            id: WalletId::new(LEGACY_VIEW_ONLY_WALLET_ID.to_string()),
+            tari_address,
+            // The legacy file never stored a birthday. Zero means "scan from the start": slower
+            // than the real birthday, but it cannot miss an output.
+            wallet_birthday: 0,
+            view_private_key_hex: ViewPrivateKeyHex::new(legacy.view_key_private_hex.clone()),
+            spend_public_key_hex: legacy.spend_public_key_hex.clone(),
+        }),
+        // The seed exists on disk but nothing here can decode it, which is what the recovery
+        // screen and the support bundle need to say.
+        seed_unavailable: Some(SeedProbeErrorKind::Decode),
+    })
+}
+
+/// Why the migration could not complete.
+#[derive(Debug)]
+pub(crate) enum LegacyMigrationError {
+    /// No known passphrase opens the legacy seed. The config file has been quarantined, so this
+    /// is the last launch that tries; the caller brings the wallet up view-only instead.
+    SeedUndecryptable,
+    /// Anything else (keyring write refused, seed conversion failed). Propagated as-is.
+    Other(anyhow::Error),
+}
+
+impl std::fmt::Display for LegacyMigrationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LegacyMigrationError::SeedUndecryptable => {
+                f.write_str("Legacy Tari seed could not be decrypted with any known passphrase")
+            }
+            LegacyMigrationError::Other(e) => write!(f, "{e}"),
+        }
+    }
+}
+
+impl std::error::Error for LegacyMigrationError {}
 
 /// Best-effort zero-overwrite followed by unlink. Returns `Ok(false)` when the file was absent.
 /// The entry is inspected with `symlink_metadata`, so a symlink is unlinked without overwriting

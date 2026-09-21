@@ -27,6 +27,14 @@ const COPY_KEYS: Record<WalletRecoveryReason, { title: string; description: stri
         title: 'common:wallet-recovery-seed-unavailable-title',
         description: 'common:wallet-recovery-seed-unavailable-description',
     },
+    legacy_seed_undecryptable: {
+        title: 'common:wallet-recovery-legacy-seed-title',
+        description: 'common:wallet-recovery-legacy-seed-description',
+    },
+    legacy_config_unreadable: {
+        title: 'common:wallet-recovery-legacy-config-title',
+        description: 'common:wallet-recovery-legacy-config-description',
+    },
 };
 
 /**
