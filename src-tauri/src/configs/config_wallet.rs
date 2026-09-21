@@ -113,6 +113,26 @@ pub struct ConfigWalletContent {
     last_known_balance: MicroMinotari,
     #[getset(get = "pub", set = "pub")]
     security_warning_dismissed: bool,
+    /// Unix seconds of the last completed startup keyring probe, or 0 for "never
+    /// probed". Not a secret and not derived from one.
+    ///
+    /// It lives here rather than in its own file because this config is the one
+    /// that is written atomically and under a single writer lock. Only the
+    /// platforms that rate-limit the probe (macOS, where reading an item the
+    /// user approved with "Allow" re-shows the system dialog) record it, so the
+    /// platforms that suffered the interrupted-write crash loop keep their
+    /// launches free of an extra config write.
+    #[getset(get = "pub")]
+    seed_probe_last_unix: u64,
+    /// Enum-like tag of what that probe concluded: `ok`, `unavailable_<kind>` or
+    /// `inconclusive_<kind>`. Never an error message, a path, an id or a length.
+    ///
+    /// Deliberately a `String` and not an enum: an unknown variant written by a
+    /// newer version would fail the whole parse on downgrade and send a
+    /// perfectly good config down the quarantine path, which is the exact
+    /// failure this work exists to remove.
+    #[getset(get = "pub")]
+    seed_probe_last_outcome: Option<String>,
 }
 
 impl Default for ConfigWalletContent {
@@ -134,6 +154,8 @@ impl Default for ConfigWalletContent {
             seed_backed_up: false,
             last_known_balance: MicroMinotari(0),
             security_warning_dismissed: false,
+            seed_probe_last_unix: 0,
+            seed_probe_last_outcome: None,
         }
     }
 }
@@ -180,6 +202,18 @@ impl ConfigWalletContent {
             "Wallet configuration needs recovery. Restore a valid wallet configuration backup before continuing."
         );
         Ok(())
+    }
+
+    /// Records when the startup keyring probe last ran and what it concluded.
+    ///
+    /// One setter for both fields so a single `update_field` writes them
+    /// together: a timestamp that outlived its outcome would rate-limit the next
+    /// probe on the strength of a result nobody can name.
+    pub fn set_seed_probe_result(&mut self, result: (u64, &'static str)) -> &mut Self {
+        let (probed_at_unix, outcome_tag) = result;
+        self.seed_probe_last_unix = probed_at_unix;
+        self.seed_probe_last_outcome = Some(outcome_tag.to_string());
+        self
     }
 
     /// Builds the sanitized payload sent to the webview. Never includes

@@ -800,8 +800,7 @@ impl InternalWallet {
                     // to spend. Probe it once, read-only, right here.
                     if details_were_cached {
                         seed_unavailable =
-                            InternalWallet::probe_tari_seed_at_startup(app_handle, &tari_wallet_id)
-                                .await;
+                            InternalWallet::probe_tari_seed_at_startup(&tari_wallet_id).await;
                     }
                     (None, wallet_details.clone())
                 }
@@ -882,20 +881,19 @@ impl InternalWallet {
     /// (rather than "Always Allow") re-shows the system dialog on every read, so an
     /// unconditional probe would re-prompt those users at every launch - which is exactly what
     /// the cached-details path was built to avoid. On macOS the probe therefore runs at most
-    /// once per `SEED_PROBE_MIN_INTERVAL` (24h), with the timestamp of the last completed probe
-    /// kept in a non-secret marker file (`wallet_seed_probe.json`: a unix timestamp and an
-    /// enum-like outcome, no ids, no keys). Windows and Linux reads are silent and
-    /// sub-millisecond, so they are probed on every launch.
-    async fn probe_tari_seed_at_startup(
-        app_handle: &AppHandle,
-        wallet_id: &WalletId,
-    ) -> Option<SeedProbeErrorKind> {
-        let marker_path = app_handle
-            .path()
-            .app_config_dir()
-            .ok()
-            .map(|dir| dir.join(SEED_PROBE_MARKER_FILE_NAME));
-        let last_probe = marker_path.as_deref().and_then(read_seed_probe_marker);
+    /// once per `SEED_PROBE_MIN_INTERVAL` (24h). The timestamp of the last completed probe and
+    /// an enum-like tag for what it concluded are non-secret, so they live in the wallet config
+    /// (`seed_probe_last_unix` / `seed_probe_last_outcome`), which is the only store in the app
+    /// that is written atomically and under a single writer lock.
+    ///
+    /// Only the rate-limited platforms record it: on Windows and Linux the value would never be
+    /// read, and an unconditional config write on every launch is the habit that produced the
+    /// half-written `config_wallet.json` files in the first place.
+    async fn probe_tari_seed_at_startup(wallet_id: &WalletId) -> Option<SeedProbeErrorKind> {
+        let last_probe = match *ConfigWallet::content().await.seed_probe_last_unix() {
+            0 => None,
+            probed_at => Some(probed_at),
+        };
 
         if decide_seed_probe(
             SEED_PROBE_IS_RATE_LIMITED,
@@ -930,8 +928,18 @@ impl InternalWallet {
             Err(e) => classify_seed_probe_error(e, SEED_PROBE_IS_RATE_LIMITED),
         };
 
-        if let Some(path) = marker_path.as_deref() {
-            write_seed_probe_marker(path, unix_now(), outcome);
+        // Best effort: a result that cannot be persisted only means the next launch probes
+        // again, which on macOS costs one extra prompt and everywhere else costs nothing. In
+        // particular this is refused outright while the config is T1's recovery placeholder,
+        // which is correct - that config must never reach the disk.
+        if SEED_PROBE_IS_RATE_LIMITED
+            && let Err(e) = ConfigWallet::update_field(
+                ConfigWalletContent::set_seed_probe_result,
+                (unix_now(), outcome.as_tag()),
+            )
+            .await
+        {
+            log::debug!(target: LOG_TARGET_APP_LOGIC, "Could not record the startup seed probe result: {e}");
         }
 
         match outcome {
@@ -1379,11 +1387,6 @@ pub const WALLET_NO_ADDRESS: &str = "Internal wallet has no Tari address defined
 /// The only Sentry message this module sends. Constant by policy: every varying detail goes into
 /// a tag with an enum-like value, never into the message (see the hardening brief).
 const SENTRY_SEED_UNAVAILABLE_AT_STARTUP: &str = "wallet.seed_unavailable_at_startup";
-/// Non-secret marker recording when the startup probe last ran. Holds a unix timestamp and an
-/// enum-like outcome only: no wallet ids, no blobs, no keys. It lives next to the app config dir
-/// rather than in `config_wallet.json` on purpose - the config crate is owned by the durability
-/// work (T1) and this file must not add a field to it.
-const SEED_PROBE_MARKER_FILE_NAME: &str = "wallet_seed_probe.json";
 /// macOS rate limit for the startup probe: at most one keychain read per 24h. See
 /// `InternalWallet::probe_tari_seed_at_startup` for why.
 const SEED_PROBE_MIN_INTERVAL_SECS: u64 = 60 * 60 * 24;
@@ -1479,6 +1482,33 @@ pub enum SeedProbeOutcome {
     Inconclusive(SeedProbeErrorKind),
 }
 
+impl SeedProbeOutcome {
+    /// Enum-like tag value for the config field and for logs. Never contains user data.
+    pub fn as_tag(self) -> &'static str {
+        match self {
+            SeedProbeOutcome::Ok => "ok",
+            SeedProbeOutcome::Unavailable(SeedProbeErrorKind::NoEntry) => "unavailable_no_entry",
+            SeedProbeOutcome::Unavailable(SeedProbeErrorKind::KeyringPlatform) => {
+                "unavailable_keyring_platform"
+            }
+            SeedProbeOutcome::Unavailable(SeedProbeErrorKind::KeyringOther) => {
+                "unavailable_keyring_other"
+            }
+            SeedProbeOutcome::Unavailable(SeedProbeErrorKind::Io) => "unavailable_io",
+            SeedProbeOutcome::Unavailable(SeedProbeErrorKind::Decode) => "unavailable_decode",
+            SeedProbeOutcome::Inconclusive(SeedProbeErrorKind::NoEntry) => "inconclusive_no_entry",
+            SeedProbeOutcome::Inconclusive(SeedProbeErrorKind::KeyringPlatform) => {
+                "inconclusive_keyring_platform"
+            }
+            SeedProbeOutcome::Inconclusive(SeedProbeErrorKind::KeyringOther) => {
+                "inconclusive_keyring_other"
+            }
+            SeedProbeOutcome::Inconclusive(SeedProbeErrorKind::Io) => "inconclusive_io",
+            SeedProbeOutcome::Inconclusive(SeedProbeErrorKind::Decode) => "inconclusive_decode",
+        }
+    }
+}
+
 /// Whether the probe should run at all on this launch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SeedProbeDecision {
@@ -1518,45 +1548,11 @@ pub fn classify_seed_probe_error(error: &CredentialError, rate_limited: bool) ->
     }
 }
 
-#[derive(Serialize, Deserialize)]
-struct SeedProbeMarker {
-    last_probe_unix: u64,
-    last_outcome: SeedProbeOutcome,
-}
-
 fn unix_now() -> u64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or_default()
-}
-
-fn read_seed_probe_marker(path: &Path) -> Option<u64> {
-    let bytes = std::fs::read(path).ok()?;
-    serde_json::from_slice::<SeedProbeMarker>(&bytes)
-        .ok()
-        .map(|marker| marker.last_probe_unix)
-}
-
-/// Best effort: a marker that cannot be written only means the next launch probes again, which on
-/// macOS costs one extra prompt and everywhere else costs nothing.
-fn write_seed_probe_marker(path: &Path, now_unix: u64, outcome: SeedProbeOutcome) {
-    let marker = SeedProbeMarker {
-        last_probe_unix: now_unix,
-        last_outcome: outcome,
-    };
-    let Ok(serialized) = serde_json::to_vec(&marker) else {
-        return;
-    };
-    if let Some(parent) = path.parent()
-        && let Err(e) = std::fs::create_dir_all(parent)
-    {
-        log::debug!(target: LOG_TARGET_APP_LOGIC, "Could not create the directory for the seed probe marker: {e}");
-        return;
-    }
-    if let Err(e) = std::fs::write(path, serialized) {
-        log::debug!(target: LOG_TARGET_APP_LOGIC, "Could not write the seed probe marker: {e}");
-    }
 }
 
 /// Constant message, details as enum-like tags only. Never `format!`s an error into the message.

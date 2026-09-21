@@ -420,3 +420,38 @@ fn wallet_init_refuses_a_recovery_placeholder_config() {
         "a config that parsed must not be treated as a recovery placeholder"
     );
 }
+
+/// The startup probe's rate-limit record moved out of an ad-hoc
+/// `wallet_seed_probe.json` and into this config, so the two things that used to make that file
+/// fragile have to hold here: a config written before the fields existed must still parse, and
+/// the timestamp and its outcome must be written together.
+#[test]
+fn seed_probe_result_is_recorded_without_breaking_older_configs() {
+    let older_config = serde_json::to_value(ConfigWalletContent::default()).unwrap();
+    let mut older_config = older_config.as_object().unwrap().clone();
+    older_config.remove("seed_probe_last_unix");
+    older_config.remove("seed_probe_last_outcome");
+    let parsed: ConfigWalletContent =
+        serde_json::from_value(Value::Object(older_config)).expect("older configs must parse");
+    assert_eq!(*parsed.seed_probe_last_unix(), 0);
+    assert_eq!(parsed.seed_probe_last_outcome(), &None);
+
+    let mut content = ConfigWalletContent::default();
+    content.set_seed_probe_result((1_700_000_000, "unavailable_no_entry"));
+    assert_eq!(*content.seed_probe_last_unix(), 1_700_000_000);
+    assert_eq!(
+        content.seed_probe_last_outcome().as_deref(),
+        Some("unavailable_no_entry")
+    );
+
+    // A tag written by a newer version must not take the whole config down with it: an unknown
+    // value here would otherwise quarantine a perfectly good config.
+    let mut future_config = serde_json::to_value(&content).unwrap();
+    future_config["seed_probe_last_outcome"] = Value::String("something_new".to_string());
+    let parsed: ConfigWalletContent =
+        serde_json::from_value(future_config).expect("unknown outcome tags must still parse");
+    assert_eq!(
+        parsed.seed_probe_last_outcome().as_deref(),
+        Some("something_new")
+    );
+}
