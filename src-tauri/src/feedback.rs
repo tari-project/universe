@@ -69,6 +69,7 @@ const DIAGNOSTICS_ARCHIVE_PATH: &str = "configs/diagnostics.json";
 /// * Wallet state is reported as booleans and counters only.
 /// * If in doubt, leave the field out. A reviewer can always add one later.
 #[derive(Debug, Serialize)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct SupportDiagnostics {
     pub app_version: String,
     pub network: String,
