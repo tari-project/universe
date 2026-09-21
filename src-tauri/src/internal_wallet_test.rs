@@ -69,7 +69,8 @@
 
 use super::internal_wallet::{
     InternalWallet, SeedCandidate, TariAddressType, allocate_monero_wallet_id_with,
-    monero_seed_candidates, next_monero_wallet_id, tari_seed_candidates, wipe_and_remove_file,
+    decode_plain_tari_seed, monero_seed_candidates, next_monero_wallet_id, tari_seed_candidates,
+    wipe_and_remove_file,
 };
 use std::collections::HashSet;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
@@ -1007,6 +1008,39 @@ fn a_plain_decode_is_never_trusted_on_its_own() {
     // ... and the candidate list flags it as unauthenticated rather than returning it as fact.
     let candidates = tari_seed_candidates(&enciphered, None, false);
     assert!(candidates.iter().all(|candidate| !candidate.authenticated));
+}
+
+#[test]
+fn every_plain_decode_path_refuses_an_enciphered_blob() {
+    // The guard the rest of `internal_wallet.rs` decodes through. `validate_wallet_config_for_seed`
+    // (which writes the address the whole session uses), `load_latest_version`'s no-PIN branch and
+    // the purge gate's address list all used bare `CipherSeed::from_binary`, so for a PIN-locked
+    // wallet they accepted the enciphered blob and carried on with a seed belonging to nobody.
+    let seed = CipherSeed::random();
+    let plain = seed.to_binary().expect("serialize");
+    let enciphered = seed.encipher(Some(test_pin())).expect("encipher");
+
+    let decoded = decode_plain_tari_seed(&plain).expect("a plain blob decodes");
+    assert_eq!(decoded.entropy(), seed.entropy());
+
+    assert!(
+        CipherSeed::from_binary(&enciphered).is_ok(),
+        "precondition: bare bincode still accepts it, which is the whole problem"
+    );
+    assert!(
+        decode_plain_tari_seed(&enciphered).is_none(),
+        "an enciphered blob must never pass as a plain seed"
+    );
+
+    // Truncation and trailing bytes are the other two shapes a half-written entry takes.
+    assert!(decode_plain_tari_seed(&plain[..plain.len() - 1]).is_none());
+    let mut padded = plain.clone();
+    padded.push(0);
+    assert!(
+        decode_plain_tari_seed(&padded).is_none(),
+        "bincode ignores trailing bytes; the round trip does not"
+    );
+    assert!(decode_plain_tari_seed(&[]).is_none());
 }
 
 #[test]

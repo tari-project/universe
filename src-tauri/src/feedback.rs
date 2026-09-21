@@ -34,8 +34,6 @@ use regex::Regex;
 use reqwest::multipart;
 use serde::Serialize;
 use tari_common::configuration::Network;
-use tari_common_types::seeds::cipher_seed::CipherSeed;
-use tari_utilities::message_format::MessageFormat;
 use tokio::sync::RwLock;
 use zip::ZipWriter;
 use zip::write::SimpleFileOptions;
@@ -48,7 +46,9 @@ use crate::configs::config_ui::ConfigUI;
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
 use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{Credential, CredentialError, CredentialManager};
-use crate::internal_wallet::{LEGACY_FALLBACK_FILE_NAME, LEGACY_WALLET_CONFIG_FILE_NAME};
+use crate::internal_wallet::{
+    LEGACY_FALLBACK_FILE_NAME, LEGACY_WALLET_CONFIG_FILE_NAME, decode_plain_tari_seed,
+};
 use crate::utils::file_utils::{make_relative_path, path_as_string};
 use crate::utils::log_path_scrub::scrub_user_paths_bytes;
 use crate::{APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC};
@@ -388,7 +388,10 @@ pub fn record_startup_probe_outcome(
             report.state = KeyringEntryState::Readable;
             report.blob_len = Some(credential.encrypted_seed.len());
             if classify_blob {
-                report.blob_kind = if CipherSeed::from_binary(&credential.encrypted_seed).is_ok() {
+                // Round-trip proven, not just "bincode accepted it": plain `from_binary`
+                // succeeds on a PIN-enciphered blob too, which would report every enciphered
+                // entry as `plain` in the one document support reads to tell the two apart.
+                report.blob_kind = if decode_plain_tari_seed(&credential.encrypted_seed).is_some() {
                     SeedBlobKind::Plain
                 } else {
                     SeedBlobKind::PinEncipheredOrCorrupt
@@ -556,7 +559,10 @@ async fn probe_keyring_entry(wallet_id: &WalletId, classify_blob: bool) -> Keyri
             report.state = KeyringEntryState::Readable;
             report.blob_len = Some(credential.encrypted_seed.len());
             if classify_blob {
-                report.blob_kind = if CipherSeed::from_binary(&credential.encrypted_seed).is_ok() {
+                // Round-trip proven, not just "bincode accepted it": plain `from_binary`
+                // succeeds on a PIN-enciphered blob too, which would report every enciphered
+                // entry as `plain` in the one document support reads to tell the two apart.
+                report.blob_kind = if decode_plain_tari_seed(&credential.encrypted_seed).is_some() {
                     SeedBlobKind::Plain
                 } else {
                     SeedBlobKind::PinEncipheredOrCorrupt

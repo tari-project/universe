@@ -264,11 +264,18 @@ impl InternalWallet {
                     anyhow!("Failed to get credentials: {e}")
                 })?;
                 let tari_seed_binary = tari_seed_binary.encrypted_seed;
-                let tari_cipher_seed =
-                    CipherSeed::from_binary(&tari_seed_binary).map_err(|_| {
+                // The wallet details recorded here become the address the whole session mines
+                // and receives to, so the decode has to be proven rather than assumed. Plain
+                // `from_binary` would also "succeed" on a PIN-enciphered blob and write a wrong
+                // address into the config; `decode_plain_tari_seed` refuses that reading, and a
+                // PIN-locked wallet that lost its cached details ends up in the recovery state
+                // instead - which is the honest answer, because the PIN is needed to read it.
+                let pin_locked = PinManager::pin_locked().await;
+                let tari_cipher_seed = decode_plain_tari_seed(&tari_seed_binary)
+                    .ok_or_else(|| {
                         log::error!(
                             target: LOG_TARGET_APP_LOGIC,
-                            "[validate_wallet_config_for_seed] could not parse Tari seed from binary: error=seed_decode wallet_id={} blob_len={}",
+                            "[validate_wallet_config_for_seed] could not parse Tari seed from binary: error=seed_decode wallet_id={} blob_len={} pin_locked={pin_locked}",
                             wallet_id.as_str(),
                             tari_seed_binary.len(),
                         );
@@ -388,15 +395,14 @@ impl InternalWallet {
                     match InternalWallet::migrate(app_handle, &app_config_dir, &old_wallet_config)
                         .await
                     {
-                        Ok((wallet_id, tari_seed_binary, monero_seed_binary)) => {
-                            let tari_cipher_seed =
-                                parse_migrated_seed(&wallet_id, &tari_seed_binary)?;
-                            let tari_wallet_details = InternalWallet::get_tari_wallet_details(
-                                wallet_id,
-                                tari_cipher_seed,
-                            )
-                            .await?;
-
+                        Ok((tari_wallet_details, tari_seed_binary, monero_seed_binary)) => {
+                            // The details come straight from the decrypted seed inside `migrate`.
+                            // They used to be re-derived by decoding the blob it had just written
+                            // with `CipherSeed::from_binary`, which is unauthenticated: for a
+                            // user who already had a PIN that blob is *enciphered*, the decode
+                            // still succeeded, and the wallet came up on an address that belongs
+                            // to nobody. There is nothing to re-derive - the keyring write is
+                            // already verified by read-back - so the blob is never re-parsed.
                             InternalWallet {
                                 tari_address_type: TariAddressType::Internal,
                                 encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
@@ -1001,8 +1007,12 @@ impl InternalWallet {
                             }
                         }
                     } else {
-                        // Seed not yet encrypted with PIN
-                        CipherSeed::from_binary(&encrypted_tari_seed).map_err(|_| {
+                        // Seed not yet encrypted with PIN - or so `pin_locked` claims. The claim
+                        // is the config's, and it can be stale (a crash between the blobs and
+                        // the flag), so the decode is proven rather than trusted: a blob that is
+                        // really enciphered does not round-trip and is rejected here instead of
+                        // yielding a silently wrong address.
+                        decode_plain_tari_seed(&encrypted_tari_seed).ok_or_else(|| {
                             log::error!(
                                 target: LOG_TARGET_APP_LOGIC,
                                 "[load_latest_version] could not parse Tari seed from binary: error=seed_decode wallet_id={} blob_len={blob_len} pin_locked=false",
@@ -1243,7 +1253,7 @@ impl InternalWallet {
         app_handle: &AppHandle,
         app_config_dir: &Path,
         old_wallet_config: &LegacyWalletConfig,
-    ) -> Result<(WalletId, Vec<u8>, Option<Vec<u8>>), LegacyMigrationError> {
+    ) -> Result<(TariWalletDetails, Vec<u8>, Option<Vec<u8>>), LegacyMigrationError> {
         let parts = InternalWallet::legacy_credential_parts(app_handle, app_config_dir).await;
         let monero_seed_binary = parts.monero_seed;
         let candidates = legacy_passphrase_candidates(
@@ -1312,7 +1322,7 @@ impl InternalWallet {
                 .await
                 .map_err(LegacyMigrationError::Other)?;
 
-        Ok((tari_wallet_details.id, tari_seed_binary, monero_seed_binary))
+        Ok((tari_wallet_details, tari_seed_binary, monero_seed_binary))
     }
 
     /// Retires the legacy credential files left behind after a migration to the keyring-backed
@@ -1392,7 +1402,11 @@ impl InternalWallet {
                     return;
                 }
             };
-            if let Ok(seed) = CipherSeed::from_binary(&credential.encrypted_seed)
+            // Only a blob that proves it is a plain seed contributes an address. An enciphered
+            // blob decodes under plain `from_binary` too, and the address it would derive belongs
+            // to no wallet at all - a made-up entry in the list the purge decision is made
+            // against is exactly what must not happen here.
+            if let Some(seed) = decode_plain_tari_seed(&credential.encrypted_seed)
                 && let Ok(details) =
                     InternalWallet::get_tari_wallet_details(wallet_id.clone(), seed).await
             {
@@ -2163,6 +2177,34 @@ pub struct SeedCandidate<T> {
     pub pin_locked_actual: bool,
 }
 
+/// Does this seed re-serialize to exactly the bytes it was decoded from?
+///
+/// The only proof available that a blob really is a *plain*, un-enciphered `CipherSeed`. A
+/// serialized seed is 24 bytes and a PIN-enciphered one 60, so an enciphered blob can never
+/// re-serialize to itself.
+fn plain_tari_seed_round_trips(seed: &CipherSeed, blob: &[u8]) -> bool {
+    seed.to_binary()
+        .map(|round_trip| round_trip == blob)
+        .unwrap_or(false)
+}
+
+/// Decode a blob that is believed to hold a plain, un-enciphered `CipherSeed`, refusing anything
+/// that cannot prove it is one.
+///
+/// `CipherSeed::from_binary` is bincode with no authentication tag whatsoever: handed a
+/// PIN-enciphered blob it *succeeds* and returns a structurally valid seed carrying the wrong
+/// entropy, and therefore a wrong address. "Could not parse Tari Seed from binary" was never the
+/// error such a wallet got. Every site that decodes a blob it believes is plain goes through here
+/// so the bad reading is rejected instead of being acted on.
+///
+/// This proves the *interpretation* of the bytes, not whose wallet they are. A caller holding a
+/// recorded address must still check the seed derives it - see
+/// [`tari_seed_matches_recorded_address`].
+pub(crate) fn decode_plain_tari_seed(blob: &[u8]) -> Option<CipherSeed> {
+    let seed = CipherSeed::from_binary(blob).ok()?;
+    plain_tari_seed_round_trips(&seed, blob).then_some(seed)
+}
+
 /// Every reading of a Tari blob worth trying, the recorded interpretation first.
 ///
 /// Pure: no config, no keyring, no prompt, which is what makes both directions of the repair
@@ -2188,10 +2230,7 @@ pub fn tari_seed_candidates(
         // 24 bytes and an enciphered one 60, so an enciphered blob can never re-serialize to
         // itself. That is proof of the *interpretation*, not of whose wallet it is, which is why
         // an unauthenticated candidate still has to derive the recorded address.
-        let authenticated = seed
-            .to_binary()
-            .map(|round_trip| round_trip == blob)
-            .unwrap_or(false);
+        let authenticated = plain_tari_seed_round_trips(&seed, blob);
         candidates.push(SeedCandidate {
             seed,
             authenticated,
@@ -2920,24 +2959,6 @@ fn report_legacy_decrypt_failed(kind: LegacyDecryptErrorKind) {
             sentry::capture_message(SENTRY_LEGACY_DECRYPT_FAILED, sentry::Level::Error);
         },
     );
-}
-
-/// Re-reads the blob `migrate` just wrote to the keyring. A failure here means the seed did not
-/// survive its own round trip, which is a defect rather than a user state, so it is logged with
-/// the blob length and the wallet id - never the blob.
-fn parse_migrated_seed(
-    wallet_id: &WalletId,
-    seed_binary: &[u8],
-) -> Result<CipherSeed, anyhow::Error> {
-    CipherSeed::from_binary(seed_binary).map_err(|_| {
-        log::error!(
-            target: LOG_TARGET_APP_LOGIC,
-            "[initialize_with_seed] migrated seed did not parse: error=seed_decode wallet_id={} blob_len={}",
-            wallet_id.as_str(),
-            seed_binary.len(),
-        );
-        anyhow!("Could not parse Tari Seed from binary")
-    })
 }
 
 /// Brings the wallet up read-only from a legacy config whose seed cannot be opened.
