@@ -407,7 +407,13 @@ impl InternalWallet {
                                 tari_address_type: TariAddressType::Internal,
                                 encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
                                 encrypted_monero_seed: Hidden::hide(monero_seed_binary),
-                                monero_address,
+                                // Re-read: adopting the legacy Monero seed records the address
+                                // it derives, so the value captured before the migration is
+                                // stale exactly when it mattered (an empty one).
+                                monero_address: ConfigWallet::content()
+                                    .await
+                                    .monero_address()
+                                    .clone(),
                                 external_tari_address: None,
                                 tari_wallet_details: Some(tari_wallet_details),
                                 seed_unavailable: None,
@@ -1302,17 +1308,9 @@ impl InternalWallet {
         // Monero second, and only now. Writing the Monero credential for a migration that then
         // fails leaves the keyring holding a seed for a wallet the app never adopted.
         if let Some(ref monero_seed) = monero_seed_binary {
-            let credentials = Credential {
-                encrypted_seed: monero_seed.clone(),
-            };
-            InternalWallet::set_credentials(
-                app_handle,
-                WalletId::new("monero".to_string()),
-                &credentials,
-                true,
-            )
-            .await
-            .map_err(LegacyMigrationError::Other)?;
+            InternalWallet::adopt_legacy_monero_seed(app_handle, monero_seed)
+                .await
+                .map_err(LegacyMigrationError::Other)?;
         } else {
             log::info!(target: LOG_TARGET_APP_LOGIC, "Monero Seed not found for migration");
         }
@@ -1323,6 +1321,70 @@ impl InternalWallet {
                 .map_err(LegacyMigrationError::Other)?;
 
         Ok((tari_wallet_details, tari_seed_binary, monero_seed_binary))
+    }
+
+    /// Stores the Monero seed carried by a legacy wallet under a credential id that is free.
+    ///
+    /// The literal `monero` id this used to write to is the *legacy, unversioned* entry, and it
+    /// may already hold a different seed - from an earlier migration attempt on this machine, or
+    /// from a wallet created before the legacy files were found. There is no second copy of a
+    /// generated Monero seed anywhere, so an overwrite there is unrecoverable. Ids are allocated
+    /// through the same sequence `add_monero_wallet` uses (`monero`, `monero_2`, ...), which
+    /// skips any id that is occupied or whose readability cannot be determined; on a clean
+    /// machine that still yields exactly `monero`.
+    ///
+    /// The config is then pointed at the id together with the address it derives, so the two can
+    /// never diverge. A Monero address the user chose themselves is never replaced: the entry is
+    /// kept and "find my wallets" territory, not a silent switch of their payout address.
+    async fn adopt_legacy_monero_seed(
+        app_handle: &AppHandle,
+        monero_seed: &[u8],
+    ) -> Result<(), anyhow::Error> {
+        let monero_wallet_id = InternalWallet::allocate_monero_wallet_id().await?;
+        log::info!(
+            target: LOG_TARGET_APP_LOGIC,
+            "[migrate] storing the legacy Monero seed: wallet_id={}",
+            monero_wallet_id.as_str(),
+        );
+        InternalWallet::set_credentials(
+            app_handle,
+            monero_wallet_id.clone(),
+            &Credential {
+                encrypted_seed: monero_seed.to_vec(),
+            },
+            true,
+        )
+        .await?;
+
+        let wallet_config = ConfigWallet::content().await;
+        if !wallet_config.monero_address().is_empty()
+            && !*wallet_config.monero_address_is_generated()
+        {
+            log::info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "[migrate] keeping the Monero address already configured; the legacy seed is stored but not linked",
+            );
+            return Ok(());
+        }
+
+        let Some(monero_address) = <[u8; MONERO_SEED_LENGTH]>::try_from(monero_seed)
+            .ok()
+            .and_then(|bytes| MoneroSeed::new(bytes).to_address::<Mainnet>().ok())
+        else {
+            // The seed is kept either way - it is the only copy - but nothing is linked to a
+            // wallet whose address could not be derived.
+            log::warn!(
+                target: LOG_TARGET_APP_LOGIC,
+                "[migrate] legacy Monero seed did not yield an address: blob_len={}",
+                monero_seed.len(),
+            );
+            return Ok(());
+        };
+        ConfigWallet::update_field(
+            ConfigWalletContent::set_generated_monero_wallet,
+            (monero_address, monero_wallet_id),
+        )
+        .await
     }
 
     /// Retires the legacy credential files left behind after a migration to the keyring-backed
@@ -1433,13 +1495,14 @@ impl InternalWallet {
                         return;
                     }
                 };
+                // The id the config points at, not the literal `monero`: a wallet whose Monero
+                // seed was re-generated lives under `monero_2` or later, and checking the
+                // unversioned entry would either pass on a seed this wallet no longer uses or
+                // fail on one that was never written.
+                let monero_wallet_id = InternalWallet::monero_wallet_id().await;
                 if legacy_credential.monero_seed.is_some()
-                    && let Err(e) = InternalWallet::get_credentials(
-                        app_handle,
-                        WalletId::new("monero".to_string()),
-                        true,
-                    )
-                    .await
+                    && let Err(e) =
+                        InternalWallet::get_credentials(app_handle, monero_wallet_id, true).await
                 {
                     log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, Monero keyring entry not readable: {e}");
                     return;

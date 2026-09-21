@@ -47,7 +47,8 @@ use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId}
 use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{Credential, CredentialError, CredentialManager};
 use crate::internal_wallet::{
-    LEGACY_FALLBACK_FILE_NAME, LEGACY_WALLET_CONFIG_FILE_NAME, decode_plain_tari_seed,
+    LEGACY_FALLBACK_FILE_NAME, LEGACY_WALLET_CONFIG_FILE_NAME, MONERO_WALLET_ID_LEGACY,
+    decode_plain_tari_seed,
 };
 use crate::utils::file_utils::{make_relative_path, path_as_string};
 use crate::utils::log_path_scrub::scrub_user_paths_bytes;
@@ -696,7 +697,7 @@ impl WalletStatus {
                 content
                     .monero_wallet_id()
                     .clone()
-                    .unwrap_or_else(|| WalletId::new("monero".to_string())),
+                    .unwrap_or_else(|| WalletId::new(MONERO_WALLET_ID_LEGACY.to_string())),
                 false,
             ));
         }
