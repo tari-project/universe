@@ -1770,10 +1770,17 @@ impl InternalWallet {
             for candidate in
                 tari_seed_candidates(&encrypted_tari_seed, pin_password.clone(), pin_locked)
             {
-                if !candidate.authenticated
-                    && !tari_seed_matches_recorded_address(&candidate.seed).await
-                {
-                    continue;
+                if !candidate.authenticated {
+                    if !candidate.proven_encoding {
+                        // An enciphered blob read as plain: `from_binary` accepts it and hands
+                        // back a structurally valid seed carrying the wrong entropy.
+                        continue;
+                    }
+                    // Well-encoded, but a plain seed belonging to some other wallet is equally
+                    // well-encoded. Only the recorded address settles it.
+                    if !tari_seed_matches_recorded_address(&candidate.seed).await {
+                        continue;
+                    }
                 }
                 if candidate.pin_locked_actual != pin_locked {
                     repair_pin_state(candidate.pin_locked_actual, SEED_TAG_TARI).await;
@@ -2344,16 +2351,24 @@ async fn prompt_pin_for_repair(seed_tag: &str) -> Option<SafePassword> {
 
 /// One way a seed blob could be read.
 ///
-/// `authenticated` is the important field. `CipherSeed::from_enciphered_bytes` and
-/// `cryptography::decrypt` (AES-256-GCM) both verify a tag, so a success there is proof that the
-/// blob was read the right way. `CipherSeed::from_binary` is plain bincode with no tag at all: an
-/// *enciphered* blob deserializes into a structurally valid `CipherSeed` carrying the wrong
-/// entropy. Anything unauthenticated must therefore be checked against the address the config
-/// recorded before it is used or before the `pin_locked` flag is changed on the strength of it.
+/// Two different questions, deliberately kept apart:
+///
+/// * `authenticated` - a tag was verified. `CipherSeed::from_enciphered_bytes` and
+///   `cryptography::decrypt` (AES-256-GCM) both authenticate, so a success there proves the blob
+///   was read the right way *and* that whoever wrote it knew the PIN.
+/// * `proven_encoding` - the bytes really are a serialized seed of this kind, proven by
+///   re-serializing and comparing. That rules out reading an enciphered blob as a plain one, and
+///   nothing more: a valid plain seed belonging to a *different* wallet passes it too.
+///
+/// Only `authenticated` may be acted on without further proof. A candidate that is merely
+/// well-encoded has to derive the address the config recorded before it is used, or the app will
+/// happily spend from one wallet while the UI shows another.
 #[derive(Debug)]
 pub struct SeedCandidate<T> {
     pub seed: T,
     pub authenticated: bool,
+    /// The bytes round-trip as this kind of seed. Says nothing about whose seed it is.
+    pub proven_encoding: bool,
     /// What `pin_locked` would have to be for this reading to be the correct one.
     pub pin_locked_actual: bool,
 }
@@ -2402,19 +2417,20 @@ pub fn tari_seed_candidates(
         candidates.push(SeedCandidate {
             seed,
             authenticated: true,
+            proven_encoding: true,
             pin_locked_actual: true,
         });
     }
     if let Ok(seed) = CipherSeed::from_binary(blob) {
-        // Bincode carries no tag, but a round-trip does prove the bytes really are a serialized
-        // `CipherSeed` and not something else that happened to deserialize: a serialized seed is
-        // 24 bytes and an enciphered one 60, so an enciphered blob can never re-serialize to
-        // itself. That is proof of the *interpretation*, not of whose wallet it is, which is why
-        // an unauthenticated candidate still has to derive the recorded address.
-        let authenticated = plain_tari_seed_round_trips(&seed, blob);
+        // Bincode carries no tag. A round-trip proves the bytes really are a serialized
+        // `CipherSeed` rather than an enciphered one read the wrong way - a serialized seed is
+        // 24 bytes and an enciphered one 60 - but it proves nothing about whose seed it is, so
+        // this never counts as authenticated.
+        let proven_encoding = plain_tari_seed_round_trips(&seed, blob);
         candidates.push(SeedCandidate {
             seed,
-            authenticated,
+            authenticated: false,
+            proven_encoding,
             pin_locked_actual: false,
         });
     }
@@ -2442,13 +2458,16 @@ pub fn monero_seed_candidates(
         candidates.push(SeedCandidate {
             seed,
             authenticated: true,
+            proven_encoding: true,
             pin_locked_actual: true,
         });
     }
     if blob.len() == MONERO_SEED_LENGTH {
+        // Any 32 bytes look like a Monero seed, so there is nothing to prove here either way.
         candidates.push(SeedCandidate {
             seed: blob.to_vec(),
             authenticated: false,
+            proven_encoding: false,
             pin_locked_actual: false,
         });
     }

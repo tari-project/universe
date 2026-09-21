@@ -1000,13 +1000,37 @@ fn a_plain_tari_blob_under_a_locked_config_repairs_the_flag() {
     let candidate = best(&candidates);
     assert_eq!(candidate.seed.entropy(), seed.entropy());
     assert!(
-        candidate.authenticated,
+        candidate.proven_encoding,
         "a blob that re-serializes to itself really is a plain seed"
+    );
+    assert!(
+        !candidate.authenticated,
+        "a round trip proves the encoding, never whose seed it is"
     );
     assert!(
         !candidate.pin_locked_actual,
         "the recorded state must be corrected to unlocked"
     );
+}
+
+/// Well-encoded is not the same as ours. A plain seed from some other wallet round-trips just as
+/// cleanly, so the address check is what stands between the user and spending from it.
+#[test]
+fn a_well_encoded_plain_seed_is_not_authenticated() {
+    let blob = CipherSeed::random().to_binary().expect("serialize");
+    let candidates = tari_seed_candidates(&blob, None, false);
+    let candidate = best(&candidates);
+    assert!(candidate.proven_encoding);
+    assert!(!candidate.authenticated);
+
+    // An enciphered blob read as plain proves nothing at all.
+    let enciphered = CipherSeed::random()
+        .encipher(Some(test_pin()))
+        .expect("encipher");
+    let candidates = tari_seed_candidates(&enciphered, None, false);
+    let candidate = best(&candidates);
+    assert!(!candidate.proven_encoding);
+    assert!(!candidate.authenticated);
 }
 
 #[test]
@@ -1090,6 +1114,7 @@ fn the_recorded_interpretation_is_tried_first() {
     // "succeeds" (see above).
     let candidates = tari_seed_candidates(&enciphered, Some(test_pin()), true);
     assert!(best(&candidates).authenticated);
+    assert!(best(&candidates).proven_encoding);
     assert!(best(&candidates).pin_locked_actual);
 
     let plain = seed.to_binary().expect("serialize");

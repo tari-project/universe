@@ -214,13 +214,14 @@ async fn describe_wallet(
 
 /// Decode a blob found in the store.
 ///
-/// Only an authenticated reading counts. There is no recorded address to check an unauthenticated
-/// one against - the whole point is that the config does not know this wallet - so a blob that
-/// merely deserializes is treated as "needs a PIN" rather than shown under a made-up address.
+/// There is no recorded address to check a reading against - the whole point is that the config
+/// does not know this wallet - so only a reading that proves itself counts: a tag-verified
+/// decryption, or a plain seed that round-trips to exactly the stored bytes. A blob that merely
+/// deserializes is reported as needing a PIN rather than shown under a made-up address.
 fn read_seed(blob: &[u8], pin_password: Option<SafePassword>) -> Option<CipherSeed> {
     tari_seed_candidates(blob, pin_password, false)
         .into_iter()
-        .find(|candidate| candidate.authenticated)
+        .find(|candidate| candidate.authenticated || candidate.proven_encoding)
         .map(|candidate| candidate.seed)
 }
 
