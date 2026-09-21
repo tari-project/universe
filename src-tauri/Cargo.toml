@@ -135,11 +135,18 @@ openssl = { version = "0.10", features = [
 planif = "1.0.0"
 whoami = "1.5.2"
 windows-sys = { version = "0.52", features = [
+  "Win32_Foundation",
+  "Win32_Security_Credentials",
   "Win32_Storage_FileSystem",
   "Win32_System_WindowsProgramming",
-] } # GetDriveTypeW for SMB-mapped drive-letter detection in data_location
+] } # GetDriveTypeW for SMB-mapped drive-letter detection in data_location; CredEnumerateW for "find my wallets"
 winreg = "0.52.0"
 
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# CoreFoundation types for the Security-framework query behind "find my wallets". Only the raw
+# types are needed, so the sys crate is enough and no Objective-C runtime is pulled in.
+core-foundation-sys = "0.8"
 
 [dev-dependencies]
 mockall = "0.13"

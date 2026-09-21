@@ -112,6 +112,25 @@ impl PinManager {
         Ok(SafePassword::from(pin))
     }
 
+    /// Ask for a PIN without validating it against a stored seed.
+    ///
+    /// Only for the self-healing decode in `internal_wallet`, which validates by decoding the
+    /// blob it already holds. `validate_pin` cannot be used there: it reads the seed, which is
+    /// the operation that is failing.
+    pub async fn prompt_pin_unvalidated(
+        app_handle: &AppHandle,
+    ) -> Result<SafePassword, anyhow::Error> {
+        let pin = enter_pin_dialog(app_handle).await?;
+        Ok(SafePassword::from(pin))
+    }
+
+    /// Persist a corrected `pin_locked` flag. See `PinLocker::repair_pin_locked`.
+    pub async fn repair_pin_locked(locked: bool) -> Result<(), anyhow::Error> {
+        let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
+        let mut pin_locker = PinLocker::new(pin_locker_state);
+        pin_locker.repair_pin_locked(locked).await
+    }
+
     pub async fn set_pin_locked() -> Result<(), anyhow::Error> {
         let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
         let mut pin_locker = PinLocker::new(pin_locker_state);

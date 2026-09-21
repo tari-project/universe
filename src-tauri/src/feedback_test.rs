@@ -326,7 +326,10 @@ fn sentinel_wallet_config() -> ConfigWalletContent {
         view_private_key_hex: ViewPrivateKeyHex::new(VIEW_KEY_SENTINEL.to_string()),
         spend_public_key_hex: LEGACY_WALLET_SENTINEL.to_string(),
     }));
-    content.set_generated_monero_address(LEGACY_FALLBACK_SENTINEL.to_string());
+    content.set_generated_monero_wallet((
+        LEGACY_FALLBACK_SENTINEL.to_string(),
+        WalletId::new("monero".to_string()),
+    ));
     content.set_keyring_accessed(true);
     content.set_seed_backed_up(false);
     content.set_wallet_migration_nonce(3);

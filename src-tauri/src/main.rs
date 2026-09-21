@@ -144,6 +144,7 @@ mod tor_manager;
 mod updates_manager;
 mod utils;
 mod wallet;
+mod wallet_recovery;
 mod websocket_events_manager;
 mod websocket_manager;
 
@@ -581,6 +582,8 @@ fn main() {
             commands::get_local_block_stats,
             commands::create_pin,
             commands::forgot_pin,
+            commands::find_my_wallets,
+            commands::relink_wallet,
             commands::set_seed_backed_up,
             commands::select_mining_mode,
             commands::update_custom_mining_mode,
