@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { CircularProgress } from '@app/components/elements/CircularProgress';
@@ -10,6 +10,7 @@ import { useErrorDialogsButtonsLogic } from '@app/hooks/app/useErrorDialogsButto
 import { useAppStateStore } from '@app/store/appStateStore';
 import { setIsSettingsOpen } from '@app/store';
 import { WalletRecoveryReason } from '@app/types/events-payloads.ts';
+import FindMyWalletsDialog from '../WalletRecovery/FindMyWalletsDialog.tsx';
 
 import { TextWrapper, Wrapper } from './styles.ts';
 
@@ -39,6 +40,9 @@ const WalletRecoveryDialog = memo(function WalletRecoveryDialog() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const walletRecovery = useAppStateStore((s) => s.walletRecovery);
     const { isExiting, handleClose, handleRestart } = useErrorDialogsButtonsLogic();
+    // The first thing to try when the wallet cannot be opened or its seed cannot be read: the
+    // seed is often still in this computer's credential store under an id the config lost.
+    const [isFindingWallets, setIsFindingWallets] = useState(false);
 
     const copy = walletRecovery ? COPY_KEYS[walletRecovery.reason] : undefined;
 
@@ -57,9 +61,22 @@ const WalletRecoveryDialog = memo(function WalletRecoveryDialog() {
                             <CircularProgress />
                         ) : (
                             <Stack direction="row" gap={8} justifyContent="space-between" style={{ width: '100%' }}>
-                                <Button size="smaller" backgroundColor="info" onClick={() => setIsSettingsOpen(true)}>
-                                    {t('settings:settings')}
-                                </Button>
+                                <Stack direction="row" gap={8}>
+                                    <Button
+                                        size="smaller"
+                                        backgroundColor="warning"
+                                        onClick={() => setIsFindingWallets(true)}
+                                    >
+                                        {t('common:find-my-wallets')}
+                                    </Button>
+                                    <Button
+                                        size="smaller"
+                                        backgroundColor="info"
+                                        onClick={() => setIsSettingsOpen(true)}
+                                    >
+                                        {t('settings:settings')}
+                                    </Button>
+                                </Stack>
                                 <Stack direction="row" gap={8} justifyContent="space-around">
                                     <Button backgroundColor="error" size="smaller" onClick={handleClose}>
                                         {t('close-tari-universe')}
@@ -73,6 +90,7 @@ const WalletRecoveryDialog = memo(function WalletRecoveryDialog() {
                     </Stack>
                 </Wrapper>
             </DialogContent>
+            <FindMyWalletsDialog open={isFindingWallets} onOpenChange={setIsFindingWallets} />
         </Dialog>
     );
 });
