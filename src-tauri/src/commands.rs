@@ -685,7 +685,11 @@ pub async fn relink_wallet(
     app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
     SetupManager::get_instance()
-        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+        .shutdown_phases(vec![
+            SetupPhase::Wallet,
+            SetupPhase::CpuMining,
+            SetupPhase::GpuMining,
+        ])
         .await;
 
     let result = relink_tari_wallet(&app_handle, WalletId::new(wallet_id)).await;
@@ -702,7 +706,11 @@ pub async fn relink_wallet(
     // Both paths resume: a dismissed PIN prompt or an unreadable entry must not leave the wallet
     // and mining phases shut down for the rest of the run.
     SetupManager::get_instance()
-        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+        .resume_phases(vec![
+            SetupPhase::Wallet,
+            SetupPhase::CpuMining,
+            SetupPhase::GpuMining,
+        ])
         .await;
 
     let address_prefix = result.map_err(|e| {
@@ -724,7 +732,11 @@ pub async fn import_seed_words(
     let timer = Instant::now();
 
     SetupManager::get_instance()
-        .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+        .shutdown_phases(vec![
+            SetupPhase::Wallet,
+            SetupPhase::CpuMining,
+            SetupPhase::GpuMining,
+        ])
         .await;
 
     match InternalWallet::import_tari_seed_words(seed_words, &app_handle).await {
@@ -746,7 +758,11 @@ pub async fn import_seed_words(
             // Resume before returning: a failed import must not leave the wallet and mining
             // phases shut down for the rest of the run.
             SetupManager::get_instance()
-                .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+                .resume_phases(vec![
+                    SetupPhase::Wallet,
+                    SetupPhase::CpuMining,
+                    SetupPhase::GpuMining,
+                ])
                 .await;
             return Err(InvokeError::from_anyhow(e));
         }
@@ -763,7 +779,11 @@ pub async fn import_seed_words(
         .map_err(|e| e.to_string())?;
 
     SetupManager::get_instance()
-        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+        .resume_phases(vec![
+            SetupPhase::Wallet,
+            SetupPhase::CpuMining,
+            SetupPhase::GpuMining,
+        ])
         .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {

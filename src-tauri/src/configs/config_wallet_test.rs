@@ -432,6 +432,26 @@ fn failed_backup_restore_preserves_backup_and_requires_recovery() {
     assert_eq!(fs::read(backup).unwrap(), serialized);
 }
 
+/// Re-linking back and forth between two wallets must not grow `tari_wallets` without bound;
+/// the purge gate reads that list and every id in it has to stay distinct.
+#[test]
+fn selecting_a_wallet_twice_does_not_list_it_twice() {
+    let mut content = ConfigWalletContent::default();
+    let first = sentinel_wallet_details();
+    let mut second = sentinel_wallet_details();
+    second.id = WalletId::new("second_wallet".to_string());
+
+    content.add_tari_wallet(first.clone());
+    content.add_tari_wallet(second.clone());
+    content.add_tari_wallet(first.clone());
+
+    assert_eq!(
+        content.tari_wallets(),
+        &vec![first.id.clone(), second.id.clone()],
+        "the re-selected wallet moves to the front, the other one stays exactly once"
+    );
+}
+
 /// The wallet-init guard reads this flag through
 /// `internal_wallet::wallet_config_is_corrupted_recovery`. Wired in 99487acf5; this is the test
 /// that keeps it wired, because the stub it replaced returned `false` unconditionally and nothing

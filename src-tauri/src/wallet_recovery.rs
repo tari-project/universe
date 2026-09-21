@@ -260,6 +260,38 @@ pub async fn find_my_wallets(app_handle: &AppHandle) -> FindWalletsResult {
     with_pin
 }
 
+/// Failed recovery PIN attempts in this process, and when the last one was.
+///
+/// The persisted counter in `config_wallet.json` is the real one, but it is unreachable in
+/// exactly the state that needs it most: while the config is the recovery placeholder every
+/// write is refused, so the attempt is never recorded and every prompt starts from zero. This
+/// mirror is held in memory, so it survives a config that cannot be written, and check and
+/// increment happen under the one lock.
+static RECOVERY_PIN_ATTEMPTS: std::sync::Mutex<(u32, Option<std::time::Instant>)> =
+    std::sync::Mutex::new((0, None));
+
+/// Same schedule as `PinLockerState::pin_lockout_duration`.
+fn recovery_lockout_duration(attempts: u32) -> Option<std::time::Duration> {
+    match attempts {
+        3 => Some(std::time::Duration::from_secs(30)),
+        4 => Some(std::time::Duration::from_secs(120)),
+        5 => Some(std::time::Duration::from_secs(600)),
+        attempts if attempts >= 6 => Some(std::time::Duration::from_secs(3600)),
+        _ => None,
+    }
+}
+
+/// Seconds left on the in-memory recovery lockout.
+fn recovery_lockout_seconds() -> Option<u64> {
+    let guard = RECOVERY_PIN_ATTEMPTS
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let (attempts, last) = *guard;
+    let duration = recovery_lockout_duration(attempts)?;
+    let elapsed = last?.elapsed();
+    (elapsed < duration).then(|| (duration - elapsed).as_secs() + 1)
+}
+
 /// Ask for a PIN on a recovery path, under the same lockout as every other PIN entry.
 ///
 /// These prompts decrypt an orphaned credential rather than the configured wallet, so
@@ -267,7 +299,11 @@ pub async fn find_my_wallets(app_handle: &AppHandle) -> FindWalletsResult {
 /// which is the one that is missing. They are still PIN guesses, and without the lockout anyone
 /// at the running app could sit on "Search again" and walk a six-digit space.
 async fn prompt_recovery_pin(app_handle: &AppHandle) -> Result<SafePassword, anyhow::Error> {
-    if let Some(remaining_seconds) = PinManager::locked_out_seconds().await {
+    let remaining_seconds = recovery_lockout_seconds()
+        .into_iter()
+        .chain(PinManager::locked_out_seconds().await)
+        .max();
+    if let Some(remaining_seconds) = remaining_seconds {
         return Err(anyhow!(
             "Pin is locked out. Remaining seconds: {remaining_seconds}"
         ));
@@ -288,7 +324,22 @@ fn recovery_pin_opened_something(before: &FindWalletsResult, after: &FindWallets
 }
 
 /// Count a recovery PIN attempt against the same lockout as every other PIN entry.
+///
+/// The in-memory mirror is updated first and unconditionally, because the persisted one is
+/// refused while the config is a recovery placeholder - and that is the state in which this
+/// prompt is most likely to be reached.
 async fn record_recovery_pin_attempt(opened: bool) {
+    {
+        let mut guard = RECOVERY_PIN_ATTEMPTS
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if opened {
+            *guard = (0, None);
+        } else {
+            guard.0 = guard.0.saturating_add(1);
+            guard.1 = Some(std::time::Instant::now());
+        }
+    }
     let result = if opened {
         PinManager::reset_pin_attempts().await
     } else {
@@ -297,7 +348,7 @@ async fn record_recovery_pin_attempt(opened: bool) {
     if let Err(e) = result {
         log::warn!(
             target: LOG_TARGET_APP_LOGIC,
-            "[find_my_wallets] could not record the PIN attempt: {e}",
+            "[find_my_wallets] could not persist the PIN attempt, the in-memory lockout still applies: {e}",
         );
     }
 }
@@ -363,8 +414,32 @@ pub async fn relink_tari_wallet(
     // anything, so a wrong PIN or an unreadable entry leaves the placeholder exactly as it was;
     // by the time the write happens the seed has been read and its address derived, which is the
     // proof that makes replacing the placeholder safe.
+    let previous = ConfigWallet::content().await;
+    let was_placeholder = previous.ensure_available().is_err();
+    let previous_details = previous.tari_wallet_details().clone();
+    drop(previous);
+
     ConfigWallet::update_field(ConfigWalletContent::adopt_recovered_tari_wallet, details).await?;
-    InternalWallet::initialize_with_seed(app_handle).await?;
+    if let Err(e) = InternalWallet::initialize_with_seed(app_handle).await {
+        // `initialize_with_seed` snapshots the config *after* this write, so its own rollback
+        // cannot undo it. Put the previous selection back here instead, or the command reports
+        // failure while the config has already switched wallets.
+        //
+        // Except when the config was the recovery placeholder: there is no previous selection to
+        // return to, and restoring one would leave a valid config listing no wallet at all -
+        // which the next launch reads as a fresh install. The adopted wallet is the user's own
+        // and its seed is in the store, so keeping it is the safer of the two.
+        if !was_placeholder
+            && let Err(rollback) = ConfigWallet::update_field(
+                ConfigWalletContent::set_tari_wallet_details,
+                previous_details,
+            )
+            .await
+        {
+            log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not restore the previous wallet selection after a failed re-link: {rollback}");
+        }
+        return Err(e);
+    }
 
     log::info!(
         target: LOG_TARGET_APP_LOGIC,
@@ -543,6 +618,31 @@ mod tests {
                 platform: "linux".to_string()
             }
         ));
+    }
+
+    /// The persisted counter is unreachable while the config is a recovery placeholder, which is
+    /// exactly when "find my wallets" is offered, so the in-memory mirror has to hold the line on
+    /// its own.
+    #[test]
+    fn the_recovery_lockout_schedule_matches_the_persisted_one() {
+        assert_eq!(recovery_lockout_duration(0), None);
+        assert_eq!(recovery_lockout_duration(2), None);
+        assert_eq!(
+            recovery_lockout_duration(3),
+            Some(std::time::Duration::from_secs(30))
+        );
+        assert_eq!(
+            recovery_lockout_duration(4),
+            Some(std::time::Duration::from_secs(120))
+        );
+        assert_eq!(
+            recovery_lockout_duration(5),
+            Some(std::time::Duration::from_secs(600))
+        );
+        assert_eq!(
+            recovery_lockout_duration(99),
+            Some(std::time::Duration::from_secs(3600))
+        );
     }
 
     #[test]

@@ -509,7 +509,7 @@ impl InternalWallet {
 
                     let tari_seed = CipherSeed::random();
                     let (tari_wallet_details, tari_seed_binary) =
-                        InternalWallet::add_tari_wallet(app_handle, tari_seed, None).await?;
+                        InternalWallet::add_tari_wallet(app_handle, tari_seed, None, false).await?;
 
                     let mut monero_seed_binary = None;
                     if monero_address.is_empty() {
@@ -611,8 +611,13 @@ impl InternalWallet {
         let tari_cipher_seed = mnemonic_to_tari_cipher_seed(seed_words).await?;
         let pin_password = PinManager::get_validated_pin_if_defined(app_handle, None).await?;
 
+        // An import may replace a recovery placeholder. Typing the seed words is the strongest
+        // consent there is, and on Linux - where the credential store cannot be enumerated - it
+        // is the only way out of a corrupted config; refusing it left those users on a screen
+        // whose every action failed.
         let (tari_wallet_details, tari_seed_binary) =
-            InternalWallet::add_tari_wallet(app_handle, tari_cipher_seed, pin_password).await?;
+            InternalWallet::add_tari_wallet(app_handle, tari_cipher_seed, pin_password, true)
+                .await?;
 
         InternalWallet::initialize_with_seed(app_handle).await?;
 
@@ -623,15 +628,19 @@ impl InternalWallet {
     //
     // Support only one wallet fow now
     // * Define if we want to have one PIN for all wallets
+    /// `adopt_placeholder` is only ever true for a seed-word import: the user typed the words, so
+    /// the wallet is theirs by proof rather than by assumption. Every other caller refuses,
+    /// because writing a generated id into a recovery placeholder would lose the id the user's
+    /// seed is actually stored under.
     async fn add_tari_wallet(
         app_handle: &AppHandle,
         tari_seed: CipherSeed, // decrypted seed
         pin_password_provided: Option<SafePassword>,
+        adopt_placeholder: bool,
     ) -> Result<(TariWalletDetails, Vec<u8>), anyhow::Error> {
-        // Refuse against a recovery placeholder config: adding a wallet would write the new id
-        // into a config that is not the user's, and the id their seed is actually stored under
-        // would be lost with it.
-        ConfigWallet::content().await.ensure_available()?;
+        if !adopt_placeholder {
+            ConfigWallet::content().await.ensure_available()?;
+        }
         let wallet_id = rand_utils::get_rand_string(6);
         log::info!(target: LOG_TARGET_APP_LOGIC, "Adding Tari Wallet with id: {wallet_id}");
 
@@ -662,8 +671,21 @@ impl InternalWallet {
         // We always load the first index
         let wallet_details =
             InternalWallet::get_tari_wallet_details(WalletId::new(wallet_id), tari_seed).await?;
-        ConfigWallet::update_field(ConfigWalletContent::add_tari_wallet, wallet_details.clone())
+        // One save either way, so the placeholder flag can never be cleared without a wallet id
+        // landing with it.
+        if adopt_placeholder {
+            ConfigWallet::update_field(
+                ConfigWalletContent::adopt_recovered_tari_wallet,
+                wallet_details.clone(),
+            )
             .await?;
+        } else {
+            ConfigWallet::update_field(
+                ConfigWalletContent::add_tari_wallet,
+                wallet_details.clone(),
+            )
+            .await?;
+        }
 
         // Modify the instance directly due to circular usage in initialze_seed
         if let Some(instance) = INSTANCE.get() {
@@ -1408,7 +1430,7 @@ impl InternalWallet {
         }
 
         let (tari_wallet_details, tari_seed_binary) =
-            InternalWallet::add_tari_wallet(app_handle, tari_seed, None)
+            InternalWallet::add_tari_wallet(app_handle, tari_seed, None, false)
                 .await
                 .map_err(LegacyMigrationError::Other)?;
 

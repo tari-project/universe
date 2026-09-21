@@ -300,6 +300,12 @@ impl ConfigWalletContent {
     pub fn add_tari_wallet(&mut self, selected_wallet_details: TariWalletDetails) -> &mut Self {
         // Deselect the external Tari address because a new address is now selected by default
         self.selected_external_tari_address = None;
+        // Selecting a wallet that is already listed moves it to the front rather than adding a
+        // second copy: re-linking back and forth between two wallets would otherwise grow the
+        // list without bound, and every id in it has to stay distinct for the purge gate to
+        // mean anything.
+        self.tari_wallets
+            .retain(|id| id != &selected_wallet_details.id);
         self.tari_wallets
             .insert(0, selected_wallet_details.id.clone());
         self.tari_wallet_details = Some(selected_wallet_details);
