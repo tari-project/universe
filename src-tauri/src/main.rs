@@ -582,7 +582,7 @@ fn main() {
             commands::get_local_block_stats,
             commands::create_pin,
             commands::forgot_pin,
-            commands::find_my_wallets_command,
+            commands::find_my_wallets,
             commands::relink_wallet,
             commands::set_seed_backed_up,
             commands::select_mining_mode,

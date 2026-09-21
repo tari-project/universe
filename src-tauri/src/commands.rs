@@ -64,7 +64,9 @@ use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::wallet_manager::WalletManagerError;
 use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
-use crate::wallet_recovery::{FindWalletsResult, find_my_wallets, relink_tari_wallet};
+use crate::wallet_recovery::{
+    FindWalletsResult, find_my_wallets as find_wallets_in_keyring, relink_tari_wallet,
+};
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
 
 use base64::prelude::*;
@@ -661,11 +663,9 @@ pub async fn forgot_pin(
 /// whether the config lists it - never a seed, a blob or a view key. A platform that cannot
 /// enumerate its credential store answers `unsupported` rather than failing.
 #[tauri::command]
-pub async fn find_my_wallets_command(
-    app_handle: tauri::AppHandle,
-) -> Result<FindWalletsResult, String> {
+pub async fn find_my_wallets(app_handle: tauri::AppHandle) -> Result<FindWalletsResult, String> {
     let timer = Instant::now();
-    let result = find_my_wallets(&app_handle).await;
+    let result = find_wallets_in_keyring(&app_handle).await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "find_my_wallets took too long: {:?}", timer.elapsed());
     }

@@ -20,7 +20,7 @@ export function useFindMyWallets() {
         setIsSearching(true);
         setError(null);
         try {
-            setResult(await invoke<FindWalletsResult>('find_my_wallets_command'));
+            setResult(await invoke<FindWalletsResult>('find_my_wallets'));
         } catch (e) {
             console.error('Failed to search for wallets:', e);
             setError(String(e));
