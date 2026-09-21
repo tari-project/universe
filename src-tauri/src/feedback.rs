@@ -385,6 +385,7 @@ fn credential_error_kind(error: &CredentialError) -> &'static str {
         CredentialError::Io(_) => "io",
         CredentialError::Serialization(_) => "serialization",
         CredentialError::NoEntry(_) => "no_entry",
+        CredentialError::WriteNotVerified(_) => "write_not_verified",
     }
 }
 
