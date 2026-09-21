@@ -20,35 +20,44 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Write};
+use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock, Mutex};
 
 use anyhow::{Error, Result, anyhow};
+use futures::FutureExt;
 use log::{error, info};
 use regex::Regex;
 use reqwest::multipart;
 use serde::Serialize;
 use tari_common::configuration::Network;
+use tari_common_types::seeds::cipher_seed::CipherSeed;
+use tari_utilities::message_format::MessageFormat;
 use tokio::sync::RwLock;
 use zip::ZipWriter;
 use zip::write::SimpleFileOptions;
 
-use crate::LOG_TARGET_APP_LOGIC;
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::ConfigMining;
 use crate::configs::config_pools::ConfigPools;
 use crate::configs::config_ui::ConfigUI;
-use crate::configs::config_wallet::ConfigWallet;
+use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
 use crate::configs::trait_config::ConfigImpl;
+use crate::credential_manager::{CredentialError, CredentialManager};
+use crate::internal_wallet::{LEGACY_FALLBACK_FILE_NAME, LEGACY_WALLET_CONFIG_FILE_NAME};
 use crate::utils::file_utils::{make_relative_path, path_as_string};
 use crate::utils::log_path_scrub::scrub_user_paths_bytes;
+use crate::{APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC};
 
 const MAX_FILE_SIZE: u64 = 100 * 1024 * 1024; // 100MB in bytes
 /// Path of the diagnostics document inside the support archive.
 const DIAGNOSTICS_ARCHIVE_PATH: &str = "configs/diagnostics.json";
+/// Path of the redacted wallet status document inside the support archive.
+const WALLET_STATUS_ARCHIVE_PATH: &str = "configs/wallet_status.json";
 
 /// The non-secret snapshot of the user's settings that ships with a support bundle.
 ///
@@ -177,21 +186,514 @@ impl SupportDiagnostics {
     }
 }
 
-/// Builds the support archive: the log files plus `configs/diagnostics.json`.
+// =============================================================================
+// Redacted wallet status
+// =============================================================================
+
+/// Number of leading characters of a Tari address that may travel in a bundle.
+///
+/// Enough to match the address a user quotes in a support ticket against the
+/// one in their config, and far too little to be an address.
+const ADDRESS_PREFIX_LEN: usize = 8;
+
+/// Hard cap on the number of `*.corrupted.*` quarantine files reported.
+const MAX_CORRUPTED_FILES_REPORTED: usize = 20;
+
+/// File name of the current wallet config, see `ConfigImpl::_get_config_path`.
+const WALLET_CONFIG_FILE_NAME: &str = "config_wallet.json";
+/// Backup written next to it by the config loader.
+const WALLET_CONFIG_BACKUP_FILE_NAME: &str = "config_wallet.json.backup";
+/// Sub-directory of the app config directory that holds the current configs.
+const APP_CONFIGS_DIR_NAME: &str = "app_configs";
+/// Infix used by the config loader when it quarantines a file it cannot parse.
+const CORRUPTED_FILE_INFIX: &str = ".corrupted.";
+
+/// Where a reported file was looked for. A role, never a path: absolute paths
+/// carry the OS user name.
+const LOCATION_LEGACY_NETWORK_DIR: &str = "legacy_network_dir";
+const LOCATION_APP_CONFIGS_NETWORK_DIR: &str = "app_configs_network_dir";
+
+/// Whether the keyring handed over the entry for a wallet id.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KeyringEntryState {
+    /// The entry was read and decoded. The seed is physically present.
+    Readable,
+    /// The keyring has no entry under this id at all.
+    NoEntry,
+    /// The entry exists but the platform refused to hand it over (locked
+    /// keychain, denied prompt, stopped credential service, ACL mismatch).
+    Unreadable,
+    /// No probe ran, or the probe itself failed in a way we could not classify.
+    Unknown,
+}
+
+/// Shape of the stored blob, as far as it can be told without a PIN.
+///
+/// A `CipherSeed` that decodes without a PIN while the config says
+/// `pin_locked = true` (or the reverse) is the signature of an interrupted
+/// "create PIN", which presents to the user as a permanently wrong PIN.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SeedBlobKind {
+    /// Decodes as a `CipherSeed` without a PIN.
+    Plain,
+    /// Does not decode without a PIN: PIN-enciphered, or corrupt.
+    PinEncipheredOrCorrupt,
+    /// Not classified (entry unreadable, or not a `CipherSeed` blob).
+    Unknown,
+}
+
+/// Which launch the keyring report describes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProbeOrigin {
+    /// Recorded by the startup probe, i.e. true "at last launch".
+    Startup,
+    /// Probed read-only while this bundle was assembled, because no startup
+    /// record existed.
+    BundleAssembly,
+}
+
+/// What the keyring said about one wallet id. Never the blob itself.
+#[derive(Debug, Clone, Serialize)]
+pub struct KeyringEntryReport {
+    /// The random 6-character id from `tari_wallets`, or `monero`. Not a secret;
+    /// it is already written to the log at wallet creation.
+    pub wallet_id: String,
+    pub state: KeyringEntryState,
+    /// `CredentialError` variant name only. Never the error message: platform
+    /// errors quote OS text that can contain paths.
+    pub error_kind: Option<String>,
+    /// Length of the stored blob in bytes. Never the bytes. A Monero entry that
+    /// is not 32 bytes has been double-encrypted.
+    pub blob_len: Option<usize>,
+    pub blob_kind: SeedBlobKind,
+    pub origin: ProbeOrigin,
+}
+
+/// Presence and size of one file. Never its contents, never its full path.
+#[derive(Debug, Clone, Serialize)]
+pub struct FileReport {
+    /// File name only.
+    pub name: String,
+    /// Role of the directory it was looked for in.
+    pub location: String,
+    pub present: bool,
+    /// `None` when absent or not a regular file.
+    pub len_bytes: Option<u64>,
+}
+
+/// The redacted wallet status document shipped as `configs/wallet_status.json`.
+///
+/// Its job is to make a "my seeds are gone" report diagnosable from the bundle
+/// alone. Today a bundle carries no trace of *why* a seed-dependent operation
+/// failed: startup never opens the keyring once `tari_wallet_details` is cached
+/// in the config, so a missing or unreadable keyring entry is invisible until
+/// the user tries to spend.
+///
+/// Rules for anyone editing this struct, same as `SupportDiagnostics`:
+///
+/// * Every field is populated **individually** from an explicit read. Never
+///   build it by serializing `ConfigWalletContent`, `TariWalletDetails` or any
+///   part of either: both carry the view private key.
+/// * Never add seed words, private keys, the view private key, enciphered seed
+///   bytes, passphrases, PINs, a Tari or Monero address beyond
+///   [`ADDRESS_PREFIX_LEN`] characters, the contents of any config or legacy
+///   file, or any filesystem path (paths carry the OS user name).
+/// * Lengths, counts, booleans and enum names only.
+/// * `None` means "could not be determined", never "false".
+#[derive(Debug, Clone, Serialize)]
+#[allow(clippy::struct_excessive_bools)]
+pub struct WalletStatus {
+    pub app_version: String,
+    /// `std::env::consts::OS`, e.g. `macos`.
+    pub os: String,
+    /// `std::env::consts::ARCH`, e.g. `aarch64`.
+    pub os_arch: String,
+    pub network: String,
+    /// False when the wallet config could not be read at all; every config
+    /// derived field below is then `None`.
+    pub config_readable: bool,
+    pub config_version_counter: Option<u32>,
+    /// Ids listed in `tari_wallets`, in config order. The first entry is the
+    /// only one the app ever uses.
+    pub wallet_ids: Vec<String>,
+    /// `tari_wallet_details.is_some()`. True means the app can show an address
+    /// and scan a balance without ever opening the keyring.
+    pub tari_wallet_details_cached: Option<bool>,
+    /// First [`ADDRESS_PREFIX_LEN`] characters of the cached Tari address.
+    pub tari_address_prefix: Option<String>,
+    pub external_tari_address_selected: Option<bool>,
+    /// `pin_locker_state.pin_locked`.
+    pub pin_locked: Option<bool>,
+    pub failed_pin_attempts: Option<u32>,
+    /// `keyring_accessed`.
+    pub keyring_accessed: Option<bool>,
+    pub seed_backed_up: Option<bool>,
+    pub monero_address_is_generated: Option<bool>,
+    pub wallet_migration_nonce: Option<u64>,
+    /// One entry per configured wallet id, plus `monero` when the Monero
+    /// address was generated by the app.
+    pub keyring_entries: Vec<KeyringEntryReport>,
+    /// Presence and size of the files that decide a recovery: the two legacy
+    /// files, the current wallet config, its backup, and any quarantined copy.
+    pub files: Vec<FileReport>,
+}
+
+/// Non-secret record of what a startup keyring probe saw, keyed by wallet id.
+///
+/// Task 2 of the wallet-hardening brief adds a probe that opens the keyring once
+/// at startup. When it lands it should call [`record_startup_keyring_probe`]
+/// once per configured wallet id, and this document then reports what was true
+/// *at launch* rather than at the moment the user clicked "Send Logs".
+///
+/// Until then [`WalletStatus::collect`] falls back to its own read-only,
+/// non-forced probe during bundle assembly, tagged
+/// [`ProbeOrigin::BundleAssembly`]. The fallback is equivalent on Windows and
+/// Linux (the read is silent and sub-millisecond); on macOS it can raise one
+/// keychain prompt per entry for users who chose "Allow" rather than "Always
+/// Allow". An integrator replacing this with Task 2's probe result should keep
+/// the same enum values.
+static STARTUP_KEYRING_PROBE: LazyLock<Mutex<HashMap<String, KeyringEntryReport>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// Records the outcome of the startup keyring probe for one wallet id.
+///
+/// Currently unused: the startup probe is Task 2 of the wallet-hardening brief
+/// and lands on a different branch. See [`STARTUP_KEYRING_PROBE`].
+#[allow(dead_code)]
+pub fn record_startup_keyring_probe(mut report: KeyringEntryReport) {
+    report.origin = ProbeOrigin::Startup;
+    // A poisoned lock must never take the support bundle (or startup) down.
+    if let Ok(mut guard) = STARTUP_KEYRING_PROBE.lock() {
+        guard.insert(report.wallet_id.clone(), report);
+    }
+}
+
+fn startup_keyring_probe(wallet_id: &str) -> Option<KeyringEntryReport> {
+    STARTUP_KEYRING_PROBE
+        .lock()
+        .ok()
+        .and_then(|guard| guard.get(wallet_id).cloned())
+}
+
+/// `CredentialError` variant name. Never the message.
+fn credential_error_kind(error: &CredentialError) -> &'static str {
+    match error {
+        CredentialError::Keyring(_) => "keyring",
+        CredentialError::Io(_) => "io",
+        CredentialError::Serialization(_) => "serialization",
+        CredentialError::NoEntry(_) => "no_entry",
+    }
+}
+
+/// Root of the app config directory, `<os config dir>/<APPLICATION_FOLDER_ID>`.
+///
+/// Same directory Tauri reports as `app_config_dir()`, recomputed here so the
+/// bundle can be assembled without an `AppHandle`.
+fn app_config_root() -> Option<PathBuf> {
+    dirs::config_dir().map(|dir| dir.join(APPLICATION_FOLDER_ID))
+}
+
+fn file_report(dir: &Path, name: &str, location: &str) -> FileReport {
+    let (present, len_bytes) = match std::fs::metadata(dir.join(name)) {
+        Ok(metadata) if metadata.is_file() => (true, Some(metadata.len())),
+        Ok(_) => (true, None),
+        Err(_) => (false, None),
+    };
+    FileReport {
+        name: name.to_string(),
+        location: location.to_string(),
+        present,
+        len_bytes,
+    }
+}
+
+/// Names of the `*.corrupted.*` quarantine files in `dir`, sorted, capped.
+fn corrupted_file_reports(dir: &Path, location: &str) -> Vec<FileReport> {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return Vec::new();
+    };
+    let mut reports: Vec<FileReport> = entries
+        .flatten()
+        .filter_map(|entry| {
+            let name = entry.file_name().to_str()?.to_string();
+            if !name.contains(CORRUPTED_FILE_INFIX) {
+                return None;
+            }
+            let len_bytes = entry
+                .metadata()
+                .ok()
+                .filter(fs_meta_is_file)
+                .map(|m| m.len());
+            Some(FileReport {
+                name,
+                location: location.to_string(),
+                present: true,
+                len_bytes,
+            })
+        })
+        .collect();
+    reports.sort_by(|a, b| a.name.cmp(&b.name));
+    reports.truncate(MAX_CORRUPTED_FILES_REPORTED);
+    reports
+}
+
+fn fs_meta_is_file(metadata: &std::fs::Metadata) -> bool {
+    metadata.is_file()
+}
+
+/// Presence and size of every file that decides a wallet recovery.
+///
+/// Reads metadata only. The contents of a legacy `wallet_config.json` (an
+/// enciphered seed) or of `credentials_backup.bin` (a plaintext CBOR seed)
+/// never enter the bundle.
+pub(crate) fn scan_wallet_files(app_config_root: &Path, network: &str) -> Vec<FileReport> {
+    let legacy_dir = app_config_root.join(network);
+    let configs_dir = app_config_root.join(APP_CONFIGS_DIR_NAME).join(network);
+
+    let mut reports = vec![
+        file_report(
+            &legacy_dir,
+            LEGACY_WALLET_CONFIG_FILE_NAME,
+            LOCATION_LEGACY_NETWORK_DIR,
+        ),
+        file_report(
+            &legacy_dir,
+            LEGACY_FALLBACK_FILE_NAME,
+            LOCATION_LEGACY_NETWORK_DIR,
+        ),
+        file_report(
+            &configs_dir,
+            WALLET_CONFIG_FILE_NAME,
+            LOCATION_APP_CONFIGS_NETWORK_DIR,
+        ),
+        file_report(
+            &configs_dir,
+            WALLET_CONFIG_BACKUP_FILE_NAME,
+            LOCATION_APP_CONFIGS_NETWORK_DIR,
+        ),
+    ];
+    reports.extend(corrupted_file_reports(
+        &configs_dir,
+        LOCATION_APP_CONFIGS_NETWORK_DIR,
+    ));
+    reports.extend(corrupted_file_reports(
+        &legacy_dir,
+        LOCATION_LEGACY_NETWORK_DIR,
+    ));
+    reports
+}
+
+/// One read-only, non-forced keyring read. Never retries and never forces a
+/// dialog loop, so a denied or cancelled prompt is reported, not repeated.
+async fn probe_keyring_entry(wallet_id: &WalletId, classify_blob: bool) -> KeyringEntryReport {
+    let id = wallet_id.as_str().to_string();
+    let mut report = KeyringEntryReport {
+        wallet_id: id,
+        state: KeyringEntryState::Unknown,
+        error_kind: None,
+        blob_len: None,
+        blob_kind: SeedBlobKind::Unknown,
+        origin: ProbeOrigin::BundleAssembly,
+    };
+
+    // A panic inside a keyring backend must not take the support bundle down.
+    let result =
+        AssertUnwindSafe(CredentialManager::new_default(wallet_id.clone()).get_credentials())
+            .catch_unwind()
+            .await;
+
+    match result {
+        Ok(Ok(credential)) => {
+            report.state = KeyringEntryState::Readable;
+            report.blob_len = Some(credential.encrypted_seed.len());
+            if classify_blob {
+                report.blob_kind = if CipherSeed::from_binary(&credential.encrypted_seed).is_ok() {
+                    SeedBlobKind::Plain
+                } else {
+                    SeedBlobKind::PinEncipheredOrCorrupt
+                };
+            }
+        }
+        Ok(Err(error @ CredentialError::NoEntry(_))) => {
+            report.state = KeyringEntryState::NoEntry;
+            report.error_kind = Some(credential_error_kind(&error).to_string());
+        }
+        Ok(Err(error)) => {
+            report.state = KeyringEntryState::Unreadable;
+            report.error_kind = Some(credential_error_kind(&error).to_string());
+        }
+        Err(_panic) => {
+            report.error_kind = Some("panic".to_string());
+        }
+    }
+
+    report
+}
+
+impl WalletStatus {
+    /// Everything that can be known without reading the wallet config.
+    fn unknown(network: &str) -> Self {
+        Self {
+            app_version: env!("CARGO_PKG_VERSION").to_string(),
+            os: std::env::consts::OS.to_string(),
+            os_arch: std::env::consts::ARCH.to_string(),
+            network: network.to_string(),
+            config_readable: false,
+            config_version_counter: None,
+            wallet_ids: Vec::new(),
+            tari_wallet_details_cached: None,
+            tari_address_prefix: None,
+            external_tari_address_selected: None,
+            pin_locked: None,
+            failed_pin_attempts: None,
+            keyring_accessed: None,
+            seed_backed_up: None,
+            monero_address_is_generated: None,
+            wallet_migration_nonce: None,
+            keyring_entries: Vec::new(),
+            files: Vec::new(),
+        }
+    }
+
+    /// Copies the allowlisted wallet config fields out, one by one.
+    ///
+    /// The only value taken from `tari_wallet_details` is the first
+    /// [`ADDRESS_PREFIX_LEN`] characters of the address; the view private key it
+    /// also holds is never touched.
+    pub fn from_config_content(content: &ConfigWalletContent, network: &str) -> Self {
+        let mut status = Self::unknown(network);
+        status.config_readable = true;
+        status.config_version_counter = Some(*content.version_counter());
+        status.wallet_ids = content
+            .tari_wallets()
+            .iter()
+            .map(|id| id.as_str().to_string())
+            .collect();
+        status.tari_wallet_details_cached = Some(content.tari_wallet_details().is_some());
+        status.tari_address_prefix = content.tari_wallet_details().as_ref().map(|details| {
+            details
+                .tari_address
+                .to_base58()
+                .chars()
+                .take(ADDRESS_PREFIX_LEN)
+                .collect()
+        });
+        status.external_tari_address_selected =
+            Some(content.selected_external_tari_address().is_some());
+        status.pin_locked = Some(*content.pin_locker_state().pin_locked());
+        status.failed_pin_attempts = Some(*content.pin_locker_state().failed_pin_attempts());
+        status.keyring_accessed = Some(*content.keyring_accessed());
+        status.seed_backed_up = Some(*content.seed_backed_up());
+        status.monero_address_is_generated = Some(*content.monero_address_is_generated());
+        status.wallet_migration_nonce = Some(*content.wallet_migration_nonce());
+        status
+    }
+
+    /// Builds the document for the current install.
+    ///
+    /// Every read degrades to "unknown" instead of failing: a bundle from a
+    /// machine whose wallet never initialised is exactly the bundle worth
+    /// having, so nothing here may return `Err` or panic.
+    pub async fn collect() -> Self {
+        let network = Network::get_current_or_user_setting_or_default()
+            .as_key_str()
+            .to_string();
+
+        // The config singleton is a `LazyLock`; an earlier panic inside its
+        // initializer poisons it and every later access panics.
+        let content = AssertUnwindSafe(ConfigWallet::content())
+            .catch_unwind()
+            .await
+            .map_err(|_panic| {
+                error!(target: LOG_TARGET_APP_LOGIC, "[wallet_status] wallet config unreadable, reporting unknown");
+            })
+            .ok();
+
+        let mut status = match content.as_ref() {
+            Some(content) => Self::from_config_content(content, &network),
+            None => Self::unknown(&network),
+        };
+
+        if let Some(root) = app_config_root() {
+            status.files = scan_wallet_files(&root, &network);
+        }
+
+        if let Some(content) = content.as_ref() {
+            status.keyring_entries = Self::collect_keyring_entries(content).await;
+        }
+
+        status
+    }
+
+    async fn collect_keyring_entries(content: &ConfigWalletContent) -> Vec<KeyringEntryReport> {
+        let mut ids: Vec<(WalletId, bool)> = content
+            .tari_wallets()
+            .iter()
+            .map(|id| (id.clone(), true))
+            .collect();
+        // The Monero seed lives under a fixed id and is a raw 32-byte seed, not
+        // a `CipherSeed`, so it is reported by length only. Skipped when the
+        // user supplied their own address: there is then no generated seed.
+        if *content.monero_address_is_generated() {
+            ids.push((WalletId::new("monero".to_string()), false));
+        }
+
+        let mut reports = Vec::with_capacity(ids.len());
+        for (id, classify_blob) in ids {
+            match startup_keyring_probe(id.as_str()) {
+                Some(recorded) => reports.push(recorded),
+                None => reports.push(probe_keyring_entry(&id, classify_blob).await),
+            }
+        }
+        reports
+    }
+}
+
+/// Builds the support archive: the log files, `configs/diagnostics.json` and
+/// `configs/wallet_status.json`.
 ///
 /// Deliberately free of config singletons and network access so it can be
 /// tested in isolation. No file from the app config directory is ever read
-/// here - the only thing shipped about the configuration is the allowlisted
-/// `diagnostics` value.
+/// here - the only things shipped about the configuration are the allowlisted
+/// `diagnostics` and `wallet_status` values.
+///
+/// What ends up in the archive:
+///
+/// * `logs/**/*.log`, with home-directory paths scrubbed of the OS user name.
+///   Only `.log` is matched, so a `.zip` left behind by a failed upload is not
+///   nested into the next bundle.
+/// * `configs/diagnostics.json` - [`SupportDiagnostics`], an explicit
+///   allowlist of non-secret settings.
+/// * `configs/wallet_status.json` - [`WalletStatus`], presence/verdict/length
+///   metadata about the wallet.
+///
+/// What never does, and must not be added: `config_wallet.json`, its
+/// `.backup`, any `*.corrupted.*` copy, the legacy `wallet_config.json`, the
+/// legacy `credentials_backup.bin`, or any other file from the app config
+/// directory. Those four wallet files are reported by name, presence and byte
+/// length only, through [`WalletStatus::files`].
 ///
 /// Returns the path of the archive and its file name.
 pub fn create_support_archive(
     logs_dir: &Path,
     diagnostics: &SupportDiagnostics,
+    wallet_status: &WalletStatus,
 ) -> Result<(PathBuf, String)> {
     let zip_filename = diagnostics.archive_file_name();
     let archive_file = logs_dir.join(&zip_filename);
-    let diagnostics_json = serde_json::to_string_pretty(diagnostics)?;
+    let documents = vec![
+        (
+            DIAGNOSTICS_ARCHIVE_PATH,
+            serde_json::to_string_pretty(diagnostics)?,
+        ),
+        (
+            WALLET_STATUS_ARCHIVE_PATH,
+            serde_json::to_string_pretty(wallet_status)?,
+        ),
+    ];
 
     // Only log files. `.zip` is deliberately not matched: a bundle left behind
     // by a failed upload must not be nested into the next one, and the archive
@@ -202,7 +704,7 @@ pub fn create_support_archive(
     let directories_and_filters =
         vec![(logs_dir.to_path_buf(), log_regex_filter, "logs".to_string())];
 
-    zip_create_from_directories(&archive_file, &directories_and_filters, &diagnostics_json)?;
+    zip_create_from_directories(&archive_file, &directories_and_filters, &documents)?;
 
     Ok((archive_file, zip_filename))
 }
@@ -210,7 +712,7 @@ pub fn create_support_archive(
 fn zip_create_from_directories(
     archive_file: &Path,
     directories_and_filters: &[(PathBuf, Regex, String)],
-    diagnostics_json: &str,
+    documents: &[(&str, String)],
 ) -> Result<(), Error> {
     let file_options = SimpleFileOptions::default();
 
@@ -225,8 +727,10 @@ fn zip_create_from_directories(
     let mut zip = ZipWriter::new(file);
     let mut buffer = Vec::new();
 
-    zip.start_file(DIAGNOSTICS_ARCHIVE_PATH, file_options)?;
-    zip.write_all(diagnostics_json.as_bytes())?;
+    for (archive_path, document) in documents {
+        zip.start_file(*archive_path, file_options)?;
+        zip.write_all(document.as_bytes())?;
+    }
 
     for (directory, regex_filter, folder_name) in directories_and_filters {
         if !directory.exists() {
@@ -317,7 +821,9 @@ impl Feedback {
 
         let upload_zip_path = if include_logs {
             let diagnostics = SupportDiagnostics::collect().await;
-            let (archive_file, zip_filename) = create_support_archive(&app_log_dir, &diagnostics)?;
+            let wallet_status = WalletStatus::collect().await;
+            let (archive_file, zip_filename) =
+                create_support_archive(&app_log_dir, &diagnostics, &wallet_status)?;
             let metadata = std::fs::metadata(&archive_file)?;
             let file_size = metadata.len();
             info!(target: LOG_TARGET_APP_LOGIC, "Uploading {} ({} bytes)", zip_filename.clone(), file_size);
