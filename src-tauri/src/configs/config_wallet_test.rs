@@ -148,3 +148,246 @@ fn persistence_still_serializes_the_plain_view_key() {
         "on-disk wallet config must keep the plain hex key"
     );
 }
+
+use super::config_wallet::ConfigWallet;
+use super::trait_config::{ConfigImpl, atomic_write};
+use std::fs;
+
+/// The shapes `config_wallet.json` was found in on the crashing machines.
+///
+/// "nul filled" and "truncated" are derived from a *real* serialized config so
+/// they have the length NTFS would report after an unclean shutdown (metadata
+/// journaled, data not), which is what produced ~11,700 of the reported panics.
+fn damaged_fixture(kind: &str) -> Vec<u8> {
+    let valid = serde_json::to_vec_pretty(&sentinel_config_content()).unwrap();
+    match kind {
+        "invalid" => b"not json".to_vec(),
+        "empty" => Vec::new(),
+        "nul filled" => vec![0u8; valid.len()],
+        "truncated" => valid[..valid.len() / 2].to_vec(),
+        "bom prefixed" => {
+            let mut bytes = vec![0xef, 0xbb, 0xbf];
+            bytes.extend_from_slice(&valid);
+            bytes
+        }
+        other => unreachable!("unknown fixture {other}"),
+    }
+}
+
+#[test_case::test_case("invalid")]
+#[test_case::test_case("empty")]
+#[test_case::test_case("nul filled")]
+#[test_case::test_case("truncated")]
+#[test_case::test_case("bom prefixed")]
+fn corrupt_wallet_config_is_preserved_and_recovery_survives_restart(kind: &str) {
+    let corrupt = damaged_fixture(kind);
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    fs::write(&path, &corrupt).unwrap();
+    let config = ConfigWallet::load_from_path(&path);
+    assert!(*config.corrupted_recovery());
+    assert!(config.ensure_available().is_err());
+    // Refused on the flag alone, before `_get_config_path` is consulted, so the
+    // recovery placeholder can never be written over a real wallet config.
+    assert!(ConfigWallet::_save_config(config).is_err());
+    assert!(!path.exists());
+    let quarantined = fs::read_dir(directory.path())
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .find(|entry| {
+            entry
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .contains(".corrupted.")
+        })
+        .unwrap();
+    assert_eq!(fs::read(quarantined).unwrap(), corrupt);
+    assert!(*ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert!(
+        !path.exists(),
+        "restart must not create a replacement wallet config"
+    );
+}
+
+#[test]
+fn valid_backup_restores_wallet_identity_without_overwriting_backup() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    let backup = path.with_extension("json.backup");
+    let mut content = sentinel_config_content();
+    content.set_tari_wallets(vec![WalletId::new("original".into())]);
+    let serialized = serde_json::to_vec_pretty(&content).unwrap();
+    fs::write(&path, b"\0\0\0").unwrap();
+    fs::write(&backup, &serialized).unwrap();
+    let restored = ConfigWallet::load_from_path(&path);
+    assert!(!restored.corrupted_recovery());
+    assert_eq!(restored.tari_wallets(), content.tari_wallets());
+    assert_eq!(fs::read(&path).unwrap(), serialized);
+    assert_eq!(fs::read(&backup).unwrap(), serialized);
+}
+
+#[test]
+fn invalid_backup_is_not_promoted_or_overwritten() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    let backup = path.with_extension("json.backup");
+    fs::write(&path, b"truncated").unwrap();
+    fs::write(&backup, b"also truncated").unwrap();
+    assert!(*ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert_eq!(fs::read(&backup).unwrap(), b"also truncated");
+    assert!(*ConfigWallet::load_from_path(&path).corrupted_recovery());
+}
+
+#[test]
+fn valid_primary_is_not_rewritten_and_replaces_stale_backup() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    let backup = path.with_extension("json.backup");
+    let serialized = serde_json::to_vec_pretty(&sentinel_config_content()).unwrap();
+    fs::write(&path, &serialized).unwrap();
+    fs::write(&backup, b"bad backup").unwrap();
+    let file = fs::OpenOptions::new().write(true).open(&path).unwrap();
+    let old_time = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_000_000);
+    file.set_modified(old_time).unwrap();
+    drop(file);
+    let before = fs::metadata(&path).unwrap().modified().unwrap();
+    assert!(!ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert_eq!(fs::metadata(&path).unwrap().modified().unwrap(), before);
+    assert_eq!(fs::read(&path).unwrap(), serialized);
+    assert_eq!(fs::read(&backup).unwrap(), serialized);
+}
+
+#[test]
+fn missing_primary_uses_backup_and_invalid_backup_requires_recovery() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    let backup = path.with_extension("json.backup");
+    fs::write(
+        &backup,
+        serde_json::to_vec(&sentinel_config_content()).unwrap(),
+    )
+    .unwrap();
+    assert!(!ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert!(path.exists());
+    fs::remove_file(&path).unwrap();
+    fs::write(&backup, b"bad backup").unwrap();
+    assert!(*ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert!(!path.exists());
+}
+
+#[test]
+fn failed_recovery_marker_write_keeps_corrupt_primary() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    fs::write(&path, b"original damaged content").unwrap();
+    fs::create_dir(path.with_extension("json.recovery_required")).unwrap();
+    assert!(*ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert_eq!(fs::read(&path).unwrap(), b"original damaged content");
+}
+
+#[test]
+fn manually_restored_primary_can_leave_recovery() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    let marker = path.with_extension("json.recovery_required");
+    fs::write(&path, b"bad config").unwrap();
+    assert!(*ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert!(marker.exists(), "recovery must be recorded durably");
+    fs::write(
+        &path,
+        serde_json::to_vec(&sentinel_config_content()).unwrap(),
+    )
+    .unwrap();
+    assert!(!ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert!(
+        !marker.exists(),
+        "a valid config must clear the recovery marker"
+    );
+}
+
+#[test]
+fn recovery_flag_is_never_written_into_the_config_file() {
+    // The flag lives in memory only; the durable record is the marker file.
+    // A serialized `corrupted_recovery: false` in a file that was born out of a
+    // recovery would be worse than no flag at all.
+    let serialized = serde_json::to_value(ConfigWalletContent::default()).unwrap();
+    assert!(
+        serialized.get("corrupted_recovery").is_none(),
+        "recovery flag must not be a persisted field: {serialized}"
+    );
+
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    fs::write(&path, br#"{"corrupted_recovery": true}"#).unwrap();
+    assert!(
+        !ConfigWallet::load_from_path(&path).corrupted_recovery(),
+        "a file claiming recovery must not put a parseable config into recovery"
+    );
+}
+
+#[test]
+fn atomic_save_replaces_complete_content_and_cleans_up_failed_temp_files() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config.json");
+    atomic_write(&path, b"old complete content").unwrap();
+    atomic_write(&path, b"new").unwrap();
+    assert_eq!(fs::read(&path).unwrap(), b"new");
+    let blocked = directory.path().join("blocked.json");
+    fs::create_dir(&blocked).unwrap();
+    assert!(atomic_write(&blocked, b"cannot replace a directory").is_err());
+    assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 2);
+}
+
+#[test]
+fn payment_id_migration_renames_keys_once_and_preserves_string_values() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    let serialized = br#"{
+        "monero_address": "payment_id_user_data",
+        "future_field": [{"payment_id_user_data" : [1,2,3]}]
+    }"#;
+    fs::write(&path, serialized).unwrap();
+    assert!(!ConfigWallet::load_from_path(&path).corrupted_recovery());
+    let migrated_bytes = fs::read(&path).unwrap();
+    let migrated: Value = serde_json::from_slice(&migrated_bytes).unwrap();
+    assert_eq!(
+        migrated["future_field"][0]["memo_field_payment_id"],
+        serde_json::json!([1, 2, 3])
+    );
+    assert_eq!(migrated["monero_address"], "payment_id_user_data");
+    assert!(
+        migrated["future_field"][0]
+            .get("payment_id_user_data")
+            .is_none()
+    );
+    assert!(!ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert_eq!(fs::read(&path).unwrap(), migrated_bytes);
+    assert_eq!(
+        fs::read(path.with_extension("json.backup")).unwrap(),
+        migrated_bytes
+    );
+}
+
+#[test]
+fn failed_backup_write_does_not_poison_valid_primary() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    let serialized = serde_json::to_vec(&sentinel_config_content()).unwrap();
+    fs::write(&path, &serialized).unwrap();
+    fs::create_dir(path.with_extension("json.backup")).unwrap();
+    assert!(!ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert_eq!(fs::read(path).unwrap(), serialized);
+}
+
+#[test]
+fn failed_backup_restore_preserves_backup_and_requires_recovery() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    fs::create_dir(&path).unwrap();
+    let backup = path.with_extension("json.backup");
+    let serialized = serde_json::to_vec(&sentinel_config_content()).unwrap();
+    fs::write(&backup, &serialized).unwrap();
+    assert!(*ConfigWallet::load_from_path(&path).corrupted_recovery());
+    assert_eq!(fs::read(backup).unwrap(), serialized);
+}
