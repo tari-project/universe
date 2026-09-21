@@ -412,6 +412,7 @@ impl SetupManager {
         // This can happen when user was using dedicated exchange miner build before and now is using default app variant
         // Or user selected exchange on default app variant and reopened the app
         // In other cases we want to display standard wallet UI
+        let mut wallet_initialized = false;
         if built_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
             if is_external_address_selected && is_on_exchange_specific_variant {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
@@ -424,6 +425,8 @@ impl SetupManager {
                         error_message: Some(e.to_string()),
                     })
                     .await;
+                } else {
+                    wallet_initialized = true;
                 }
             } else {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Standard).await;
@@ -438,6 +441,8 @@ impl SetupManager {
                                 error_message: Some(e.to_string()),
                             })
                             .await
+                        } else {
+                            wallet_initialized = true;
                         }
                     }
                     Err(e) => {
@@ -477,12 +482,18 @@ impl SetupManager {
                     error_message: Some(e.to_string()),
                 })
                 .await;
+            } else {
+                wallet_initialized = true;
             }
         }
 
         // Silent, self-gating; see fn docs. Covers both fresh migrations and
-        // users who migrated on earlier versions that left the files behind.
-        InternalWallet::purge_legacy_credential_files(&app_handle).await;
+        // users who migrated on earlier versions that left the files behind. It is skipped when
+        // any wallet initialization or config migration step above failed, so a half-completed
+        // migration never loses its legacy recovery files.
+        if wallet_initialized {
+            InternalWallet::purge_legacy_credential_files(&app_handle).await;
+        }
 
         // Trigger it here so we can update UI when new wallet is created
         // We should probably change events to be loaded from internal wallet directly

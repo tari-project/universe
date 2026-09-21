@@ -770,6 +770,8 @@ impl InternalWallet {
     /// It must be called from a path common to all wallet modes (standard, seedless and exchange),
     /// because a user can switch modes after migrating and would otherwise keep these files
     /// forever; when the config lists no Tari wallet it exits before touching the keyring.
+    /// It also requires the global wallet instance to be initialised, as a second line of defence
+    /// for callers that reach this point after a failed or half-completed wallet setup.
     ///
     /// Only the current network directory is handled, because the keyring entries used as the
     /// safety gate are network-specific. Other networks are cleaned when the app runs on them.
@@ -789,37 +791,62 @@ impl InternalWallet {
             return;
         }
 
+        if !InternalWallet::is_initialized() {
+            log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, wallet not initialised");
+            return;
+        }
+
         // Safety gate: never delete the only remaining copy of a seed. The current config must be
-        // at exactly the schema version this code understands and the migrated Tari seed must be
-        // readable from the keyring right now.
+        // at exactly the schema version this code understands and every configured Tari wallet
+        // must be readable from the keyring right now: new wallets are prepended to the list, so
+        // the migrated wallet is not necessarily the first entry.
         let wallet_config = ConfigWallet::content().await;
         if *wallet_config.version_counter() != WALLET_VERSION {
             return;
         }
-        let Some(wallet_id) = wallet_config.tari_wallets().first().cloned() else {
+        if wallet_config.tari_wallets().is_empty() {
             return;
-        };
-        if let Err(e) = InternalWallet::get_credentials(app_handle, wallet_id, true).await {
-            log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, Tari keyring entry not readable: {e}");
-            return;
+        }
+        for wallet_id in wallet_config.tari_wallets() {
+            if let Err(e) =
+                InternalWallet::get_credentials(app_handle, wallet_id.clone(), true).await
+            {
+                let id = wallet_id.as_str();
+                log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, Tari keyring entry for wallet {id} not readable: {e}");
+                return;
+            }
         }
 
         // If the legacy file carried a Monero seed, the migrated Monero entry must be readable too.
+        // The gate fails closed: an unreadable or undecodable file may still hold the only copy of
+        // the Monero seed, so only a genuinely empty file skips the keyring check.
         if fallback_file.exists() {
-            let legacy_has_monero_seed = std::fs::read(&fallback_file)
-                .ok()
-                .and_then(|bytes| serde_cbor::from_slice::<LegacyCredential>(&bytes).ok())
-                .is_some_and(|cred| cred.monero_seed.is_some());
-            if legacy_has_monero_seed
-                && let Err(e) = InternalWallet::get_credentials(
-                    app_handle,
-                    WalletId::new("monero".to_string()),
-                    true,
-                )
-                .await
-            {
-                log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, Monero keyring entry not readable: {e}");
-                return;
+            let bytes = match std::fs::read(&fallback_file) {
+                Ok(bytes) => bytes,
+                Err(e) => {
+                    log::warn!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, cannot read {fallback_file:?}: {e}");
+                    return;
+                }
+            };
+            if !bytes.is_empty() {
+                let legacy_credential = match serde_cbor::from_slice::<LegacyCredential>(&bytes) {
+                    Ok(credential) => credential,
+                    Err(e) => {
+                        log::warn!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, cannot parse legacy credential file {fallback_file:?}: {e}");
+                        return;
+                    }
+                };
+                if legacy_credential.monero_seed.is_some()
+                    && let Err(e) = InternalWallet::get_credentials(
+                        app_handle,
+                        WalletId::new("monero".to_string()),
+                        true,
+                    )
+                    .await
+                {
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, Monero keyring entry not readable: {e}");
+                    return;
+                }
             }
         }
 
