@@ -37,7 +37,7 @@ use crate::requests::{
 };
 use crate::utils::network_status::NetworkStatus;
 
-use super::http_client::HttpClient;
+use super::http_client::{HttpClient, classify_status_error};
 
 const MAX_RETRIES: u32 = 5;
 
@@ -169,13 +169,13 @@ impl HttpFileClient {
 
         if destination_file.exists() {
             std::fs::remove_file(destination_file.clone())
-                .map_err(|e| anyhow::anyhow!("Failed to remove file: {}", e))?;
+                .map_err(|e| Self::classify_fs_error("Failed to remove file", &e))?;
         }
 
         if !destination.exists() {
             create_dir_all(destination)
                 .await
-                .map_err(|e| anyhow::anyhow!("Failed to create directory: {}", e))?;
+                .map_err(|e| Self::classify_fs_error("Failed to create directory", &e))?;
         }
 
         let mut file = File::options()
@@ -184,7 +184,7 @@ impl HttpFileClient {
             .truncate(true)
             .open(destination_file)
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
+            .map_err(|e| Self::classify_fs_error("Failed to create file", &e))?;
 
         self.download_file(expected_size, &mut file, false).await?;
 
@@ -216,14 +216,14 @@ impl HttpFileClient {
         if !destination.exists() {
             create_dir_all(destination)
                 .await
-                .map_err(|e| anyhow::anyhow!("Failed to create directory: {}", e))?;
+                .map_err(|e| Self::classify_fs_error("Failed to create directory", &e))?;
         }
 
         if !destination_file.exists() {
             info!(target: LOG_TARGET_APP_LOGIC, "File does not exist, creating new file at {}", destination_file.display());
             File::create(&destination_file)
                 .await
-                .map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
+                .map_err(|e| Self::classify_fs_error("Failed to create file", &e))?;
         }
 
         let file_size = get_content_size_from_file(
@@ -235,22 +235,25 @@ impl HttpFileClient {
             warn!(target: LOG_TARGET_APP_LOGIC, "File is probably corrupted, expected size: {expected_size}, but got: {file_size}");
             info!(target: LOG_TARGET_APP_LOGIC, "Removing corrupted file: {}", destination_file.display());
             std::fs::remove_file(&destination_file)
-                .map_err(|e| anyhow::anyhow!("Failed to remove corrupted file: {}", e))?;
+                .map_err(|e| Self::classify_fs_error("Failed to remove corrupted file", &e))?;
             info!(target: LOG_TARGET_APP_LOGIC, "Creating new file at {}", destination_file.display());
             File::create(&destination_file)
                 .await
-                .map_err(|e| anyhow::anyhow!("Failed to create file: {}", e))?;
+                .map_err(|e| Self::classify_fs_error("Failed to create file", &e))?;
         }
 
         let mut file = File::options()
             .append(true)
             .open(&destination_file)
             .await
-            .map_err(|e| anyhow::anyhow!("Failed to open file: {}", e))?;
+            .map_err(|e| Self::classify_fs_error("Failed to open file", &e))?;
 
         let mut internet_connection_check_attempt_count = 0;
         let mut file_download_attempt_count = 0;
         let mut last_registered_file_size = 0;
+        // Retained so a classified `BinaryDownloadError` from the last attempt
+        // stays in the error chain and is not reported to Sentry.
+        let mut last_error: Option<anyhow::Error> = None;
 
         loop {
             file_download_attempt_count += 1;
@@ -267,10 +270,14 @@ impl HttpFileClient {
             }
             if file_download_attempt_count > MAX_RETRIES {
                 warn!(target: LOG_TARGET_APP_LOGIC, "Max download attempts reached, giving up on downloading file.");
-                return Err(anyhow::anyhow!(
+                let message = format!(
                     "Max download attempts reached for file: {}",
                     destination_file.display()
-                ));
+                );
+                return Err(match last_error {
+                    Some(e) => e.context(message),
+                    None => anyhow::anyhow!(message),
+                });
             }
 
             if file_size.eq(&0) {
@@ -314,6 +321,7 @@ impl HttpFileClient {
                             }
                         }
                     }
+                    last_error = Some(e);
                 }
             }
         }
@@ -346,14 +354,13 @@ impl HttpFileClient {
             }
         }
 
-        let response = request.send().await?;
+        let response = request.send().await.map_err(|e| {
+            BinaryDownloadError::NetworkError(format!("GET request failed with error: {}", e))
+        })?;
         let response_status = response.status();
 
         if !response_status.is_success() {
-            return Err(anyhow!(
-                "GET request failed with status code: {}",
-                response_status
-            ));
+            return Err(classify_status_error("GET", response_status));
         }
 
         let mut stream = response.bytes_stream();
@@ -362,13 +369,18 @@ impl HttpFileClient {
                 Ok(data) => {
                     if let Err(e) = file.write_all(&data).await {
                         warn!(target: LOG_TARGET_APP_LOGIC, "Failed to write chunk to file: {e}");
-                        return Err(anyhow!("Failed to write chunk to file: {}", e));
+                        return Err(Self::classify_fs_error("Failed to write chunk to file", &e));
                     }
                     self.update_progress(file, expected_size).await?;
                 }
                 Err(e) => {
+                    // A stream error mid-transfer is a dropped/reset connection.
                     warn!(target: LOG_TARGET_APP_LOGIC, "Error reading chunk: {e}");
-                    return Err(anyhow!("Error reading chunk: {}", e));
+                    return Err(BinaryDownloadError::NetworkError(format!(
+                        "Error reading chunk: {}",
+                        e
+                    ))
+                    .into());
                 }
             }
         }
@@ -425,6 +437,21 @@ impl HttpFileClient {
             }
         }
         BinaryDownloadError::CorruptDownload(format!("Extraction failed: {}", e))
+    }
+
+    /// Classify a filesystem error hit while preparing download targets
+    /// (creating directories/files, removing stale files). Permission denied
+    /// (AV quarantine, Windows file locks) and already-exists (concurrent
+    /// instance or leftover partial download) are user-environment issues that
+    /// must not be reported to Sentry; the download retry path recovers from
+    /// them. Any other kind stays a plain error so real bugs still surface.
+    fn classify_fs_error(context: &str, e: &std::io::Error) -> anyhow::Error {
+        match e.kind() {
+            std::io::ErrorKind::PermissionDenied | std::io::ErrorKind::AlreadyExists => {
+                BinaryDownloadError::FileAccessDenied(format!("{context}: {e}")).into()
+            }
+            _ => anyhow::anyhow!("{context}: {e}"),
+        }
     }
 
     async fn extract_inner(&self) -> Result<(), anyhow::Error> {
