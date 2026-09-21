@@ -1158,6 +1158,32 @@ fn an_encrypted_monero_blob_is_authenticated_by_the_pin() {
     assert!(candidate.pin_locked_actual);
 }
 
+/// `create_pin` wrote the Tari blob and died before the Monero blob and the shared flag, so the
+/// two credentials disagree about what the flag should say. Only the Tari path may write it:
+/// otherwise the two repairs take turns flipping it and the Tari seed, which is the one whose
+/// reading actually depends on the flag, becomes unreadable once its one-shot prompt is spent.
+#[test]
+fn a_half_finished_create_pin_leaves_the_two_blobs_disagreeing() {
+    let tari_blob = CipherSeed::random()
+        .encipher(Some(test_pin()))
+        .expect("encipher");
+    let monero_blob = vec![5u8; 32];
+
+    let tari_candidates = tari_seed_candidates(&tari_blob, Some(test_pin()), false);
+    assert!(best(&tari_candidates).authenticated);
+    assert!(
+        best(&tari_candidates).pin_locked_actual,
+        "the Tari blob wants the flag set"
+    );
+
+    let monero_candidates = monero_seed_candidates(&monero_blob, Some(test_pin()), true);
+    assert_eq!(best(&monero_candidates).seed, monero_blob);
+    assert!(
+        !best(&monero_candidates).pin_locked_actual,
+        "the Monero blob wants the opposite, and reads fine without the flag either way"
+    );
+}
+
 #[test]
 fn a_consistent_monero_state_is_left_alone() {
     let seed = vec![3u8; 32];

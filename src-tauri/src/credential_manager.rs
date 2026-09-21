@@ -1088,7 +1088,6 @@ mod tests {
         );
     }
 
-    #[test]
     /// A store that accepts writes while refusing reads must not be able to blow away a seed.
     #[test]
     fn a_write_is_refused_while_the_existing_entry_cannot_be_read() {

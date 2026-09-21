@@ -1878,8 +1878,17 @@ impl InternalWallet {
 
         let blob_len = encrypted_monero_seed.len();
         let pin_locked = PinManager::pin_locked().await;
-        // A Monero seed is 32 raw bytes; anything else is ciphertext. That makes each blob
-        // self-describing, which is what lets the two repairs below be safe.
+        // A Monero seed is 32 raw bytes and a ciphertext never is, so this blob is
+        // self-describing: `monero_seed_candidates` ignores the recorded flag and tries both
+        // readings regardless. Reading Monero therefore never needs the flag, and - unlike the
+        // Tari path - it never writes it either.
+        //
+        // The flag is shared between the two credentials while their contents are not. A
+        // `create_pin` that dies between the two writes leaves the Tari blob enciphered and the
+        // Monero blob plain; if both paths repaired the flag they would take turns flipping it,
+        // and the Tari seed - whose reading genuinely depends on it - would end up unreadable
+        // for the rest of the run once its one-shot repair prompt was spent. The Tari blob is
+        // the single authority.
         let mut pin_password = pin_password;
         let supplied_pin = pin_password.is_some();
         let mut prompted = false;
@@ -1892,9 +1901,6 @@ impl InternalWallet {
                     && !monero_seed_matches_recorded_address(&candidate.seed).await
                 {
                     continue;
-                }
-                if candidate.pin_locked_actual != pin_locked {
-                    repair_pin_state(candidate.pin_locked_actual, SEED_TAG_MONERO).await;
                 }
                 accepted = Some(candidate.seed);
                 break;
