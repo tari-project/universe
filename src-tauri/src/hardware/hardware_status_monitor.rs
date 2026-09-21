@@ -397,15 +397,16 @@ impl HardwareStatusMonitor {
                 .iter()
                 .any(GpuCommonInformation::is_recommended_for_mining);
 
-        if devices.is_empty() {
-            info!(target: LOG_TARGET_APP_LOGIC, "No GPU detected, GPU mining is unavailable");
-            ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, false).await?;
-        } else if !is_available {
-            warn!(
-                target: LOG_TARGET_APP_LOGIC,
-                "No detected GPU can mine C29: {}",
-                refusal.as_deref().unwrap_or("no reason given")
-            );
+        if !is_available {
+            if devices.is_empty() {
+                info!(target: LOG_TARGET_APP_LOGIC, "No GPU detected, GPU mining is unavailable");
+            } else {
+                warn!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "No detected GPU can mine C29: {}",
+                    refusal.as_deref().unwrap_or("no reason given")
+                );
+            }
             ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, false).await?;
         }
 
