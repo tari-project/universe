@@ -32,3 +32,5 @@ mod config_ui_test;
 pub mod config_wallet;
 pub mod pools;
 pub mod trait_config;
+#[cfg(test)]
+mod trait_config_telemetry_test;

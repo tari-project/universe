@@ -1,3 +1,15 @@
+🚀 TARI UNIVERSE v1.6.13: Hotfix – The Confluence Part 2
+
+🔄 Rolling out via auto-update
+
+Hey Tari fam,
+
+Short one. There's a hard fork coming to the Tari network, and this release gets Tari Universe ready for it. The bundled node, wallet, and merge mining proxy move up to Tari v5.7.0-pre.10, and the Tari libraries the app builds against moved up to match.
+
+Nothing changes in how you mine today. Please update before the fork lands. 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.6.12: The Confluence
 
 🔄 Rolling out via auto-update

@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Tari Universe
+GenericName=Tari Mining App
+Comment=Mine Tari (XTM) with your CPU and GPU
+Exec=tari-universe %u
+Icon=com.tari.universe
+Terminal=false
+Categories=Network;Utility;Finance;
+Keywords=tari;mining;crypto;xtm;miner;wallet;
+StartupNotify=true
+StartupWMClass=tari-universe
