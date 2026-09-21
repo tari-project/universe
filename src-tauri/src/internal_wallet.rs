@@ -908,10 +908,15 @@ impl InternalWallet {
             return None;
         }
 
-        let outcome = match CredentialManager::new_default(wallet_id.clone())
+        let result = CredentialManager::new_default(wallet_id.clone())
             .get_credentials()
-            .await
-        {
+            .await;
+        // Hand the raw read to the support bundle before classifying it, so `wallet_status.json`
+        // can report what the keyring said *at launch* (origin `startup`) instead of reading the
+        // entry a second time - and, on macOS, prompting a second time - when the user sends a
+        // bundle. Only the length and shape of the blob are kept; the blob never leaves here.
+        crate::feedback::record_startup_probe_outcome(wallet_id.as_str(), true, &result);
+        let outcome = match &result {
             Ok(credential) => {
                 log::info!(
                     target: LOG_TARGET_APP_LOGIC,
@@ -922,7 +927,7 @@ impl InternalWallet {
                 );
                 SeedProbeOutcome::Ok
             }
-            Err(e) => classify_seed_probe_error(&e, SEED_PROBE_IS_RATE_LIMITED),
+            Err(e) => classify_seed_probe_error(e, SEED_PROBE_IS_RATE_LIMITED),
         };
 
         if let Some(path) = marker_path.as_deref() {

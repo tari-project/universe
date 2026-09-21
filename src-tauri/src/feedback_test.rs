@@ -43,9 +43,11 @@ use serde_json::Value;
 use tari_common_types::tari_address::TariAddress;
 
 use crate::configs::config_wallet::{ConfigWalletContent, WalletId};
+use crate::credential_manager::{Credential, CredentialError};
 use crate::feedback::{
     KeyringEntryReport, KeyringEntryState, ProbeOrigin, SeedBlobKind, SupportDiagnostics,
-    WalletStatus, create_support_archive, scan_wallet_files,
+    WalletStatus, create_support_archive, record_startup_probe_outcome, scan_wallet_files,
+    startup_keyring_probe,
 };
 use crate::internal_wallet::{TariWalletDetails, ViewPrivateKeyHex};
 use crate::pin::PinLockerState;
@@ -593,4 +595,58 @@ fn wallet_status_travels_in_the_support_archive() {
             "secret `{sentinel}` leaked into the archived wallet status document"
         );
     }
+}
+
+// --- Startup probe hand-off (T2 -> T6) ----------------------------------------------------
+//
+// The startup probe reads the keyring once, at launch. What it saw has to reach the bundle
+// without a second read: on macOS a second read is a second keychain prompt, and by then the
+// answer can differ from the one the user actually lived with at startup.
+
+const STARTUP_PROBE_SEED: &[u8] = b"not-a-cipher-seed-blob";
+
+#[test]
+fn a_recorded_startup_read_is_reported_as_origin_startup() {
+    let wallet_id = "t7a_ok";
+    record_startup_probe_outcome(
+        wallet_id,
+        true,
+        &Ok(Credential {
+            encrypted_seed: STARTUP_PROBE_SEED.to_vec(),
+        }),
+    );
+
+    let report = startup_keyring_probe(wallet_id).expect("the startup read must be recorded");
+    assert_eq!(report.origin, ProbeOrigin::Startup);
+    assert_eq!(report.state, KeyringEntryState::Readable);
+    assert_eq!(report.blob_len, Some(STARTUP_PROBE_SEED.len()));
+    // Not a `CipherSeed`, so it reads as PIN-enciphered-or-corrupt rather than plain.
+    assert_eq!(report.blob_kind, SeedBlobKind::PinEncipheredOrCorrupt);
+    assert_eq!(report.error_kind, None);
+
+    // The blob itself must never be anywhere in the serialized report.
+    let serialized = serde_json::to_string(&report).expect("serialize report");
+    assert!(!serialized.contains(std::str::from_utf8(STARTUP_PROBE_SEED).expect("utf8 fixture")));
+}
+
+#[test]
+fn a_missing_entry_seen_at_startup_is_recorded_as_no_entry() {
+    let wallet_id = "t7a_missing";
+    record_startup_probe_outcome(
+        wallet_id,
+        true,
+        &Err(CredentialError::NoEntry(wallet_id.to_string())),
+    );
+
+    let report = startup_keyring_probe(wallet_id).expect("the startup read must be recorded");
+    assert_eq!(report.origin, ProbeOrigin::Startup);
+    assert_eq!(report.state, KeyringEntryState::NoEntry);
+    assert_eq!(report.error_kind.as_deref(), Some("no_entry"));
+    assert_eq!(report.blob_len, None);
+}
+
+#[test]
+fn an_id_the_startup_probe_never_saw_falls_back_to_bundle_assembly() {
+    // The fallback is what keeps the Monero entry and any extra wallet id in the document.
+    assert!(startup_keyring_probe("t7a_never_probed").is_none());
 }

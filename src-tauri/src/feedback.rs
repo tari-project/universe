@@ -47,7 +47,7 @@ use crate::configs::config_pools::ConfigPools;
 use crate::configs::config_ui::ConfigUI;
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
 use crate::configs::trait_config::ConfigImpl;
-use crate::credential_manager::{CredentialError, CredentialManager};
+use crate::credential_manager::{Credential, CredentialError, CredentialManager};
 use crate::internal_wallet::{LEGACY_FALLBACK_FILE_NAME, LEGACY_WALLET_CONFIG_FILE_NAME};
 use crate::utils::file_utils::{make_relative_path, path_as_string};
 use crate::utils::log_path_scrub::scrub_user_paths_bytes;
@@ -343,26 +343,71 @@ pub struct WalletStatus {
 
 /// Non-secret record of what a startup keyring probe saw, keyed by wallet id.
 ///
-/// Task 2 of the wallet-hardening brief adds a probe that opens the keyring once
-/// at startup. When it lands it should call [`record_startup_keyring_probe`]
-/// once per configured wallet id, and this document then reports what was true
-/// *at launch* rather than at the moment the user clicked "Send Logs".
+/// Filled by the startup probe in
+/// `internal_wallet::InternalWallet::probe_tari_seed_at_startup`, through
+/// [`record_startup_probe_outcome`], so this document reports what was true *at
+/// launch* rather than at the moment the user clicked "Send Logs".
 ///
-/// Until then [`WalletStatus::collect`] falls back to its own read-only,
-/// non-forced probe during bundle assembly, tagged
-/// [`ProbeOrigin::BundleAssembly`]. The fallback is equivalent on Windows and
+/// [`WalletStatus::collect`] still falls back to its own read-only, non-forced
+/// probe during bundle assembly for any id the startup probe did not cover,
+/// tagged [`ProbeOrigin::BundleAssembly`]. That is every id but
+/// `tari_wallets[0]`, plus `tari_wallets[0]` itself on the launches where the
+/// startup probe did not run at all: a fresh install, a wallet whose details
+/// were not cached (the keyring was read anyway), or a macOS launch inside the
+/// probe's 24h rate-limit window. The fallback is equivalent on Windows and
 /// Linux (the read is silent and sub-millisecond); on macOS it can raise one
 /// keychain prompt per entry for users who chose "Allow" rather than "Always
-/// Allow". An integrator replacing this with Task 2's probe result should keep
-/// the same enum values.
+/// Allow".
 static STARTUP_KEYRING_PROBE: LazyLock<Mutex<HashMap<String, KeyringEntryReport>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-/// Records the outcome of the startup keyring probe for one wallet id.
+/// Records what one startup keyring read saw, so the support bundle can report
+/// it without opening the keyring a second time.
 ///
-/// Currently unused: the startup probe is Task 2 of the wallet-hardening brief
-/// and lands on a different branch. See [`STARTUP_KEYRING_PROBE`].
-#[allow(dead_code)]
+/// Takes the raw read result rather than a built report so that the mapping
+/// from `CredentialError` to [`KeyringEntryState`] lives in one place and the
+/// startup probe cannot drift from the bundle-assembly fallback. Only the blob
+/// *length* and shape are kept; the blob itself is never copied, logged or
+/// stored. `classify_blob` is false for the raw 32-byte Monero seed, which is
+/// not a `CipherSeed`.
+pub fn record_startup_probe_outcome(
+    wallet_id: &str,
+    classify_blob: bool,
+    result: &Result<Credential, CredentialError>,
+) {
+    let mut report = KeyringEntryReport {
+        wallet_id: wallet_id.to_string(),
+        state: KeyringEntryState::Unknown,
+        error_kind: None,
+        blob_len: None,
+        blob_kind: SeedBlobKind::Unknown,
+        origin: ProbeOrigin::Startup,
+    };
+    match result {
+        Ok(credential) => {
+            report.state = KeyringEntryState::Readable;
+            report.blob_len = Some(credential.encrypted_seed.len());
+            if classify_blob {
+                report.blob_kind = if CipherSeed::from_binary(&credential.encrypted_seed).is_ok() {
+                    SeedBlobKind::Plain
+                } else {
+                    SeedBlobKind::PinEncipheredOrCorrupt
+                };
+            }
+        }
+        Err(error @ CredentialError::NoEntry(_)) => {
+            report.state = KeyringEntryState::NoEntry;
+            report.error_kind = Some(credential_error_kind(error).to_string());
+        }
+        Err(error) => {
+            report.state = KeyringEntryState::Unreadable;
+            report.error_kind = Some(credential_error_kind(error).to_string());
+        }
+    }
+    record_startup_keyring_probe(report);
+}
+
+/// Records the outcome of the startup keyring probe for one wallet id.
 pub fn record_startup_keyring_probe(mut report: KeyringEntryReport) {
     report.origin = ProbeOrigin::Startup;
     // A poisoned lock must never take the support bundle (or startup) down.
@@ -371,7 +416,7 @@ pub fn record_startup_keyring_probe(mut report: KeyringEntryReport) {
     }
 }
 
-fn startup_keyring_probe(wallet_id: &str) -> Option<KeyringEntryReport> {
+pub(crate) fn startup_keyring_probe(wallet_id: &str) -> Option<KeyringEntryReport> {
     STARTUP_KEYRING_PROBE
         .lock()
         .ok()
