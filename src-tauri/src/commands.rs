@@ -40,7 +40,7 @@ use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::internal_wallet::{
-    InternalWallet, PaperWalletConfig, clear_wallet_recovery, mnemonic_to_tari_cipher_seed,
+    InternalWallet, PaperWalletConfig, leave_wallet_recovery, mnemonic_to_tari_cipher_seed,
 };
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::consts::GpuMinerType;
@@ -681,19 +681,36 @@ pub async fn find_my_wallets(app_handle: tauri::AppHandle) -> Result<FindWallets
 #[tauri::command]
 pub async fn relink_wallet(
     wallet_id: String,
+    state: tauri::State<'_, UniverseAppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
-    let address_prefix = relink_tari_wallet(&app_handle, WalletId::new(wallet_id))
-        .await
-        .map_err(|e| {
-            error!(target: LOG_TARGET_APP_LOGIC, "Error re-linking wallet: {e}");
-            e.to_string()
-        })?;
+    let result = relink_tari_wallet(&app_handle, WalletId::new(wallet_id)).await;
 
+    // The wallet process scans against a local database built for whichever wallet was selected
+    // before, so a re-link has to start it over, exactly as an import does.
+    if result.is_ok()
+        && let Ok(base_path) = app_handle.path().app_local_data_dir()
+        && let Err(e) = state.wallet_manager.clean_data_folder(&base_path).await
+    {
+        error!(target: LOG_TARGET_APP_LOGIC, "Could not clean the wallet data folder after a re-link: {e}");
+    }
+
+    // Both paths resume: a dismissed PIN prompt or an unreadable entry must not leave the wallet
+    // and mining phases shut down for the rest of the run.
+    SetupManager::get_instance()
+        .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+        .await;
+
+    let address_prefix = result.map_err(|e| {
+        error!(target: LOG_TARGET_APP_LOGIC, "Error re-linking wallet: {e}");
+        e.to_string()
+    })?;
+
+    leave_wallet_recovery(&app_handle).await;
     info!(target: LOG_TARGET_APP_LOGIC, "Wallet re-linked successfully");
     Ok(address_prefix)
 }
@@ -721,11 +738,16 @@ pub async fn import_seed_words(
             EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
             // The import is the way out of the wallet recovery state: the user just proved they
             // hold a seed and it is now in the keyring, so mining and telemetry may run again.
-            clear_wallet_recovery();
+            leave_wallet_recovery(&app_handle).await;
             log::info!(target: LOG_TARGET_APP_LOGIC, "Seed words imported successfully for wallet #{wallet_id:?}");
         }
         Err(e) => {
             error!(target: LOG_TARGET_APP_LOGIC, "Error importing seed words by internal wallet: {e:?}");
+            // Resume before returning: a failed import must not leave the wallet and mining
+            // phases shut down for the rest of the run.
+            SetupManager::get_instance()
+                .resume_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
+                .await;
             return Err(InvokeError::from_anyhow(e));
         }
     }

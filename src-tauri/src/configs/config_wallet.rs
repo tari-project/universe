@@ -253,6 +253,21 @@ impl ConfigWalletContent {
         self
     }
 
+    /// Adopt a wallet the user picked out of the credential store.
+    ///
+    /// Clears the recovery placeholder flag and records the wallet in one save. The two have to
+    /// happen together: clearing the flag on its own would write a default config with no wallet
+    /// in it, and the *next* launch would then read a perfectly valid config that lists nothing
+    /// and create a brand new wallet over the top of the one being recovered.
+    ///
+    /// This is the one place the placeholder may be replaced, and only because the user chose a
+    /// specific existing wallet from a list - which is the explicit consent the rest of the
+    /// wallet code refuses to assume.
+    pub fn adopt_recovered_tari_wallet(&mut self, details: TariWalletDetails) -> &mut Self {
+        self.corrupted_recovery = false;
+        self.add_tari_wallet(details)
+    }
+
     /// Records a generated Monero wallet: its address and the credential id its seed was written
     /// under, in one update.
     ///

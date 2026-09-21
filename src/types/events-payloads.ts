@@ -55,7 +55,8 @@ export type WalletRecoveryReason =
     | 'legacy_config_unreadable';
 
 export interface WalletRecoveryPayload {
-    reason: WalletRecoveryReason;
+    /** `null` means the wallet was recovered and the recovery screen should close. */
+    reason: WalletRecoveryReason | null;
 }
 
 export interface ShowReleaseNotesPayload {

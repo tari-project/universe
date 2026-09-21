@@ -77,11 +77,12 @@ const WalletRecoveryDialog = memo(function WalletRecoveryDialog() {
     // seed is often still in this computer's credential store under an id the config lost.
     const [isFindingWallets, setIsFindingWallets] = useState(false);
 
-    const copy = walletRecovery ? COPY_KEYS[walletRecovery.reason] : undefined;
-    const canFindWallets = !!walletRecovery && FIND_MY_WALLETS_REASONS.includes(walletRecovery.reason);
+    const reason = walletRecovery?.reason ?? undefined;
+    const copy = reason ? COPY_KEYS[reason] : undefined;
+    const canFindWallets = !!reason && FIND_MY_WALLETS_REASONS.includes(reason);
 
     return (
-        <Dialog open={!!walletRecovery}>
+        <Dialog open={!!reason}>
             <DialogContent>
                 <Wrapper>
                     <TextWrapper>

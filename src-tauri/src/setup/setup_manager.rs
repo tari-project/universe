@@ -232,6 +232,37 @@ impl SetupManager {
             .expect("App handle is not initialized")
     }
 
+    /// Start the telemetry manager and service.
+    ///
+    /// Called from `pre_setup` when the wallet is usable, and again if the user later recovers
+    /// out of the wallet recovery state - that launch skipped it, and without this telemetry
+    /// stays off until the next restart.
+    pub async fn start_telemetry(app_handle: &AppHandle) {
+        let state = app_handle.state::<UniverseAppState>();
+        let _unused = state
+            .telemetry_manager
+            .write()
+            .await
+            .initialize(app_handle.clone())
+            .await;
+        let mut telemetry_id = state
+            .telemetry_manager
+            .read()
+            .await
+            .get_unique_string()
+            .await;
+        if telemetry_id.is_empty() {
+            telemetry_id = "unknown_miner_tari_universe".to_string();
+        }
+        let app_version = app_handle.package_info().version.clone();
+        let _unused = state
+            .telemetry_service
+            .write()
+            .await
+            .init(app_version.to_string(), telemetry_id)
+            .await;
+    }
+
     #[allow(clippy::too_many_lines)]
     async fn pre_setup(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET_APP_LOGIC, "Pre Setup");
@@ -532,28 +563,7 @@ impl SetupManager {
                 reason.as_tag(),
             );
         } else {
-            let _unused = state
-                .telemetry_manager
-                .write()
-                .await
-                .initialize(app_handle.clone())
-                .await;
-            let mut telemetry_id = state
-                .telemetry_manager
-                .read()
-                .await
-                .get_unique_string()
-                .await;
-            if telemetry_id.is_empty() {
-                telemetry_id = "unknown_miner_tari_universe".to_string();
-            }
-            let app_version = app_handle.package_info().version.clone();
-            let _unused = state
-                .telemetry_service
-                .write()
-                .await
-                .init(app_version.to_string(), telemetry_id.clone())
-                .await;
+            Self::start_telemetry(&app_handle).await;
         }
 
         let _unused = PlatformUtils::initialize_preqesities().await;

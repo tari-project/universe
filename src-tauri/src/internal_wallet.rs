@@ -2616,7 +2616,10 @@ pub async fn enter_wallet_recovery(reason: WalletRecoveryReason) {
         *guard = Some(reason);
     }
     log::error!(target: LOG_TARGET_APP_LOGIC, "Entering wallet recovery state: reason={}", reason.as_tag());
-    EventsEmitter::emit_wallet_recovery_required(WalletRecoveryPayload { reason }).await;
+    EventsEmitter::emit_wallet_recovery_required(WalletRecoveryPayload {
+        reason: Some(reason),
+    })
+    .await;
 }
 
 /// The current recovery reason, if the app is in the recovery state.
@@ -2628,11 +2631,25 @@ pub fn wallet_recovery_reason() -> Option<WalletRecoveryReason> {
         .or(None)
 }
 
-/// Clear the recovery state after the user recovered (imported seed words, re-linked a wallet).
-pub fn clear_wallet_recovery() {
-    if let Ok(mut guard) = WALLET_RECOVERY_REASON.write() {
-        *guard = None;
+/// Leave the recovery state after the user recovered (imported seed words, re-linked a wallet).
+///
+/// Three things have to happen together, and only the first used to. The backend gate is what
+/// lets mining start again; the event is what closes the recovery screen, which is driven by the
+/// payload and had nothing else to clear it; and telemetry was skipped by the launch that
+/// entered recovery, so it stays off for the rest of the run unless it is started here.
+pub async fn leave_wallet_recovery(app_handle: &AppHandle) {
+    let was_in_recovery = {
+        match WALLET_RECOVERY_REASON.write() {
+            Ok(mut guard) => guard.take().is_some(),
+            Err(_) => false,
+        }
+    };
+    if !was_in_recovery {
+        return;
     }
+    log::info!(target: LOG_TARGET_APP_LOGIC, "Leaving wallet recovery state");
+    EventsEmitter::emit_wallet_recovery_required(WalletRecoveryPayload { reason: None }).await;
+    crate::setup::setup_manager::SetupManager::start_telemetry(app_handle).await;
 }
 
 /// Gate for anything that must not run against an unverified wallet. Both mining managers call

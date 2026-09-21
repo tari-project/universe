@@ -171,7 +171,10 @@ pub struct CriticalProblemPayload {
 /// path, an id or anything derived from a secret.
 #[derive(Debug, Serialize, Clone)]
 pub struct WalletRecoveryPayload {
-    pub reason: WalletRecoveryReason,
+    /// `None` means the wallet was recovered and the screen should close. Without it the
+    /// frontend has no way to leave the state: the dialog is driven by this payload and nothing
+    /// else ever cleared it.
+    pub reason: Option<WalletRecoveryReason>,
 }
 
 #[derive(Debug, Serialize, Clone)]

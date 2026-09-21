@@ -45,9 +45,7 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{
     CredentialManager, KeyringBackend, KeyringListing, WRITE_PROBE_SUFFIX, system_keyring,
 };
-use crate::internal_wallet::{
-    InternalWallet, MONERO_WALLET_ID_LEGACY, clear_wallet_recovery, tari_seed_candidates,
-};
+use crate::internal_wallet::{InternalWallet, MONERO_WALLET_ID_LEGACY, tari_seed_candidates};
 use crate::pin::PinManager;
 
 /// How many characters of the address the frontend gets. Enough to recognise a wallet, useless
@@ -313,8 +311,6 @@ pub async fn relink_tari_wallet(
     app_handle: &AppHandle,
     wallet_id: WalletId,
 ) -> Result<String, anyhow::Error> {
-    // A placeholder config must never be written; re-linking into one would lose the id again.
-    ConfigWallet::content().await.ensure_available()?;
     if !is_tari_wallet_id(&wallet_id) {
         return Err(anyhow!("Not a Tari wallet id"));
     }
@@ -362,11 +358,13 @@ pub async fn relink_tari_wallet(
 
     // Selects the wallet, drops any external address, and leaves the previously selected id in
     // the list rather than removing it: re-linking must never be the thing that loses a wallet.
-    ConfigWallet::update_field(ConfigWalletContent::add_tari_wallet, details).await?;
+    //
+    // This is also the way out of a corrupted config. Nothing before this point has written
+    // anything, so a wrong PIN or an unreadable entry leaves the placeholder exactly as it was;
+    // by the time the write happens the seed has been read and its address derived, which is the
+    // proof that makes replacing the placeholder safe.
+    ConfigWallet::update_field(ConfigWalletContent::adopt_recovered_tari_wallet, details).await?;
     InternalWallet::initialize_with_seed(app_handle).await?;
-    // The backend recovery gate is lifted here; the dialog that started this flow closes itself
-    // when the command returns, so no extra event is needed.
-    clear_wallet_recovery();
 
     log::info!(
         target: LOG_TARGET_APP_LOGIC,
