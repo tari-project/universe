@@ -46,6 +46,8 @@
     "binaries-cpu-miner-download": "Preparing CPU Miner Binary | Downloading: {{ progress }}%",
     "binaries-gpu-miner": "Đang chuẩn bị file nhị phân GPU Miner",
     "binaries-gpu-miner-download": "Preparing GPU Miner Binary | Downloading: {{ progress }}%",
+    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
+    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
     "binaries-merge-mining-proxy": "Đang chuẩn bị file nhị phân Merge Mining Proxy",
     "binaries-merge-mining-proxy-download": "Preparing Merge Mining Proxy Binary | Downloading: {{ progress }}%",
     "binaries-node": "Đang chuẩn bị file nhị phân Node",

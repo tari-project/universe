@@ -41,6 +41,7 @@ use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig, mnemonic_to_tari_cipher_seed};
 use crate::mining::cpu::manager::CpuManager;
+use crate::mining::gpu::consts::GpuMinerType;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
@@ -1049,23 +1050,47 @@ pub async fn set_display_mode(display_mode: &str) -> Result<(), InvokeError> {
 }
 #[tauri::command]
 pub async fn toggle_device_exclusion(device_index: u32, excluded: bool) -> Result<(), String> {
+    // Device ids only mean something together with the miner that enumerated them, and the devices
+    // the user is looking at are the ones the currently selected miner detected.
+    let miner_type = GpuManager::read().await.selected_miner().clone();
+
     if excluded {
-        info!(target: LOG_TARGET_APP_LOGIC, "Excluding device {device_index}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Excluding {miner_type} device {device_index}");
         ConfigMining::update_field(
             ConfigMiningContent::enable_gpu_device_exclusion,
-            device_index,
+            (miner_type, device_index),
         )
         .await
         .map_err(|e| e.to_string())?;
     } else {
-        info!(target: LOG_TARGET_APP_LOGIC, "Including device {device_index}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Including {miner_type} device {device_index}");
         ConfigMining::update_field(
             ConfigMiningContent::disable_gpu_device_exclusion,
-            device_index,
+            (miner_type, device_index),
         )
         .await
         .map_err(|e| e.to_string())?;
     }
+
+    Ok(())
+}
+
+/// Undoes a device list that the user emptied out to turn mining off, so re-enabling GPU mining
+/// does not leave a miner that refuses to start. Scoped to every miner, because the one that was
+/// emptied is not necessarily the one selected now.
+#[tauri::command]
+pub async fn include_devices_of_unusable_gpu_miners() -> Result<(), String> {
+    ConfigMining::update_field(ConfigMiningContent::include_devices_of_unusable_miners, ())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    EventsEmitter::emit_update_gpu_devices_settings(
+        ConfigMining::content()
+            .await
+            .gpu_devices_settings_by_miner()
+            .clone(),
+    )
+    .await;
 
     Ok(())
 }
@@ -1447,6 +1472,23 @@ pub async fn stop_gpu_mining() -> Result<(), String> {
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "stop_cpu_mining took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn switch_gpu_miner(gpu_miner_type: GpuMinerType) -> Result<(), String> {
+    let timer = Instant::now();
+
+    GpuManager::write()
+        .await
+        .select_miner_by_user(gpu_miner_type)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET_APP_LOGIC, "switch_gpu_miner took too long: {:?}", timer.elapsed());
+    }
+
     Ok(())
 }
 

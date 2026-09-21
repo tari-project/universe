@@ -42,6 +42,7 @@ pub enum SetupStep {
 
     // Gpu Mining Phase
     BinariesGpuMiner,
+    BinariesTariMiner,
     DetectGpu,
     InitializeGpuHardware,
 
@@ -74,6 +75,7 @@ impl SetupStep {
 
             // Gpu Mining Phase
             Self::BinariesGpuMiner => "binaries-gpu-miner".to_string(),
+            Self::BinariesTariMiner => "binaries-tari-miner".to_string(),
             Self::DetectGpu => "detect-gpu".to_string(),
             Self::InitializeGpuHardware => "initialize-gpu-hardware".to_string(),
 
@@ -107,7 +109,8 @@ impl SetupStep {
             Self::InitializeCpuHardware => 2,
 
             // Gpu Mining Phase 15
-            Self::BinariesGpuMiner => 10,
+            Self::BinariesGpuMiner => 5,
+            Self::BinariesTariMiner => 5,
             Self::DetectGpu => 3,
             Self::InitializeGpuHardware => 2,
 

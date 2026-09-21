@@ -45,6 +45,8 @@
     "binaries-cpu-miner-download": "Bereiding van CPU Mynwerker Binêr | Laai af: {{ progress }}%",
     "binaries-gpu-miner": "Bereiding van GPU Mynwerker Binêr",
     "binaries-gpu-miner-download": "Bereiding van GPU Mynwerker Binêr | Laai af: {{ progress }}%",
+    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
+    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
     "binaries-merge-mining-proxy": "Bereiding van Saamsmelt Myn Proksie Binêr",
     "binaries-merge-mining-proxy-download": "Bereiding van Saamvoeg Myn Proksi Binêr | Laai af: {{ progress }}%",
     "binaries-node": "Bereiding van Node Binêr",

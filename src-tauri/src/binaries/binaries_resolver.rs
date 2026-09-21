@@ -31,7 +31,7 @@ use tokio::sync::Mutex as AsyncMutex;
 
 use super::Binaries;
 use super::adapter_bridge::BridgeTappletAdapter;
-use super::adapter_github::GithubReleasesAdapter;
+use super::adapter_github::{ChecksumSource, GithubReleasesAdapter};
 use super::adapter_tor::TorReleaseAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
 use super::binaries_manager::BinaryManager;
@@ -140,8 +140,26 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "lolMiner-releases".to_string(),
                     owner: "Lolliedieb".to_string(),
+                    checksum_source: ChecksumSource::PerAssetSidecar,
                 }),
                 false,
+            ),
+        );
+
+        binary_manager.insert(
+            Binaries::TariMiner,
+            BinaryManager::new(
+                Binaries::TariMiner.name().to_string(),
+                None,
+                Box::new(GithubReleasesAdapter {
+                    repo: "TARI.Miner".to_string(),
+                    owner: "tari-project".to_string(),
+                    // The release publishes one manifest rather than a sidecar per asset. This is a
+                    // repo the project controls and we execute what it ships, so unlike the third
+                    // party miners there is no reason to skip verifying it.
+                    checksum_source: ChecksumSource::SharedManifest("SHA256SUMS.txt"),
+                }),
+                true,
             ),
         );
 
@@ -153,6 +171,7 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
+                    checksum_source: ChecksumSource::PerAssetSidecar,
                 }),
                 true,
             ),
@@ -166,6 +185,7 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
+                    checksum_source: ChecksumSource::PerAssetSidecar,
                 }),
                 true,
             ),
@@ -179,6 +199,7 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "tari".to_string(),
                     owner: "tari-project".to_string(),
+                    checksum_source: ChecksumSource::PerAssetSidecar,
                 }),
                 true,
             ),

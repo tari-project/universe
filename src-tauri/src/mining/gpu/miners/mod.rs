@@ -23,6 +23,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod lolminer;
+pub mod tariminer;
 
 /// lolMiner mines Cuckaroo29 (Tari) on Nvidia GTX 1000 and newer, and AMD RX 400 and newer,
 /// with at least 6 GB of GPU memory.

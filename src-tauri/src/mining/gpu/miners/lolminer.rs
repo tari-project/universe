@@ -174,12 +174,15 @@ impl GpuMinerInterfaceTrait for LolMinerGpuMiner {
         EventsEmitter::emit_detected_devices(self.gpu_devices.clone()).await;
         ConfigMining::update_field(
             ConfigMiningContent::populate_gpu_devices_settings,
-            devices_indexes,
+            (GpuMinerType::LolMiner, devices_indexes),
         )
         .await?;
 
         EventsEmitter::emit_update_gpu_devices_settings(
-            ConfigMining::content().await.gpu_devices_settings().clone(),
+            ConfigMining::content()
+                .await
+                .gpu_devices_settings_by_miner()
+                .clone(),
         )
         .await;
 
@@ -409,6 +412,7 @@ impl ProcessAdapter for LolMinerGpuMiner {
                     data_dir: base_folder,
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
+                    output_sink: None,
                 },
                 handle: None,
             },

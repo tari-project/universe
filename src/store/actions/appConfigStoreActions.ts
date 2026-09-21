@@ -32,6 +32,7 @@ import {
     CpuPools,
     FeedbackPrompts,
     GpuDeviceSettings,
+    GpuDevicesSettingsByMiner,
     GpuPools,
     PromptType,
 } from '@app/types/configs.ts';
@@ -190,26 +191,24 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
         useMiningStore.getState().isCpuMiningInitiated || useMiningStore.getState().isGpuMiningInitiated;
     const isGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
-    const gpuDevicesSettings = Object.values(useConfigMiningStore.getState().gpu_devices_settings);
     if (gpuMining || isGpuMiningInitiated) {
         await stopGpuMining();
     }
     try {
+        // Turning GPU mining off is expressed by gpu_mining_enabled alone. It used to also exclude
+        // every device, which the backend never needed (start_mining_inner refuses on
+        // gpu_mining_enabled before it ever reads the exclusions) and which now cannot be undone
+        // reliably, since exclusions are per miner and the user may switch miners in between.
+        if (enabled) {
+            // The user can still empty a device list by hand to turn mining off, so re-enabling
+            // has to undo that or the miner it was done to will refuse to start.
+            await invoke('include_devices_of_unusable_gpu_miners');
+        }
         await invoke('set_gpu_mining_enabled', { enabled });
         if (anyMiningInitiated && enabled) {
             await startGpuMining();
         } else {
             await stopGpuMining();
-        }
-        if (enabled && gpuDevicesSettings.every((device) => device.is_excluded)) {
-            for (const device of gpuDevicesSettings) {
-                await toggleDeviceExclusion(device.device_id, false);
-            }
-        }
-        if (!enabled && gpuDevicesSettings.some((device) => !device.is_excluded)) {
-            for (const device of gpuDevicesSettings) {
-                await toggleDeviceExclusion(device.device_id, true);
-            }
         }
     } catch (e) {
         console.error('Could not set GPU mining enabled', e);
@@ -663,12 +662,25 @@ export const handleWalletUIChanged = (mode: WalletUIMode) => {
     useConfigUIStore.setState((c) => ({ ...c, wallet_ui_mode: mode }));
 };
 
-export const handleGpuDevicesSettingsUpdated = (gpuDevicesSettings: Record<number, GpuDeviceSettings>) => {
-    useConfigMiningStore.setState((c) => ({ ...c, gpu_devices_settings: gpuDevicesSettings }));
+export const handleGpuDevicesSettingsUpdated = (gpuDevicesSettings: GpuDevicesSettingsByMiner) => {
+    useConfigMiningStore.setState((c) => ({ ...c, gpu_devices_settings_by_miner: gpuDevicesSettings }));
+};
+
+/// The devices on screen are the ones the currently selected miner detected, and device ids only
+/// mean something inside that miner's enumeration.
+export const getSelectedMinerDeviceSettings = (): Record<number, GpuDeviceSettings> => {
+    const selectedMiner = useMiningStore.getState().selectedMiner;
+    if (!selectedMiner) return {};
+    return useConfigMiningStore.getState().gpu_devices_settings_by_miner[selectedMiner] ?? {};
 };
 
 export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boolean) => {
     try {
+        const selectedMiner = useMiningStore.getState().selectedMiner;
+        if (!selectedMiner) {
+            console.error('Could not toggle device exclusion: no GPU miner is selected');
+            return;
+        }
         const wasGpuMiningInitiated = useMiningStore.getState().isGpuMiningInitiated;
         const metricsState = useMiningMetricsStore.getState();
         if (metricsState.gpu_mining_status.is_mining || wasGpuMiningInitiated) {
@@ -676,9 +688,12 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
             await stopGpuMining();
         }
         await invoke('toggle_device_exclusion', { deviceIndex, excluded });
-        const devices = useConfigMiningStore.getState().gpu_devices_settings;
+        const devices = getSelectedMinerDeviceSettings();
         const updatedDevices = { ...devices, [deviceIndex]: { ...devices[deviceIndex], is_excluded: excluded } };
-        useConfigMiningStore.setState((c) => ({ ...c, gpu_devices_settings: updatedDevices }));
+        useConfigMiningStore.setState((c) => ({
+            ...c,
+            gpu_devices_settings_by_miner: { ...c.gpu_devices_settings_by_miner, [selectedMiner]: updatedDevices },
+        }));
 
         const isAllExcluded = Object.values(updatedDevices).every((device) => device.is_excluded);
         if (isAllExcluded) {
