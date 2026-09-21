@@ -180,8 +180,24 @@ modules:
       # image (a black silhouette the OS recolors). On Linux/appindicator there's
       # no recoloring, so it renders as an invisible black icon on dark panels.
       # Use the real PNG and disable template mode.
-      - type: patch
-        path: patches/0003-linux-tray-icon-png-not-template.patch
+      #
+      # A sed rather than a patch: CI's "Set production identity" step rewrites
+      # tauri.conf.json with yq before flatpak-builder copies it, and yq re-indents
+      # the whole file, so a context patch against the repo's formatting no longer
+      # applies there. The substitutions are keyed on the values alone and are
+      # idempotent, so they work on the pristine file (local builds) and the
+      # yq-rewritten one (CI) alike.
+      - type: shell
+        commands:
+          - >-
+            sed -i
+            -e 's|"iconPath": "icons/systray_icon.ico"|"iconPath": "icons/systray_icon.png"|'
+            -e 's|"iconAsTemplate": true|"iconAsTemplate": false|'
+            src-tauri/tauri.conf.json
+          - >-
+            grep -q '"iconPath": "icons/systray_icon.png"' src-tauri/tauri.conf.json
+          - >-
+            grep -q '"iconAsTemplate": false' src-tauri/tauri.conf.json
 
       # NOTE: the "(Alpha)" branding / .alpha identifier strip is NOT a patch.
       # The app source (tauri.conf.json) keeps `(Alpha)` + com.tari.universe.alpha
