@@ -30,7 +30,9 @@
 
 use std::str::FromStr;
 
+use serde_json::Value;
 use tari_common_types::tari_address::TariAddress;
+use tari_transaction_components::tari_amount::MicroMinotari;
 
 use super::config_wallet::{ConfigWalletContent, WalletId};
 use crate::internal_wallet::{TariWalletDetails, ViewPrivateKeyHex};
@@ -78,5 +80,71 @@ fn config_wallet_content_serialization_keeps_the_plain_key() {
             .and_then(serde_json::Value::as_str),
         Some(VIEW_KEY_SENTINEL),
         "config_wallet.json must keep the plain hex key"
+    );
+}
+
+#[test]
+fn frontend_payload_never_carries_the_wallet_details() {
+    let content = sentinel_config_content();
+    let serialized =
+        serde_json::to_string(&content.to_frontend_payload()).expect("payload should serialize");
+
+    assert!(
+        !serialized.contains("view_key_sentinel"),
+        "view private key leaked into the webview payload: {serialized}"
+    );
+    assert!(
+        !serialized.contains("tari_wallet_details"),
+        "wallet details leaked into the webview payload: {serialized}"
+    );
+    assert!(
+        !serialized.contains("view_private_key_hex"),
+        "view key field leaked into the webview payload: {serialized}"
+    );
+}
+
+#[test]
+fn frontend_payload_keeps_the_fields_the_frontend_reads() {
+    let mut content = sentinel_config_content();
+    content.set_user_monero_address("monero_address_for_the_ui".to_string());
+    content.set_last_known_balance(MicroMinotari(4242));
+
+    let serialized =
+        serde_json::to_value(content.to_frontend_payload()).expect("payload should serialize");
+
+    assert_eq!(
+        serialized.get("monero_address").and_then(Value::as_str),
+        Some("monero_address_for_the_ui")
+    );
+    assert_eq!(
+        serialized
+            .get("monero_address_is_generated")
+            .and_then(Value::as_bool),
+        Some(false)
+    );
+    assert_eq!(
+        serialized.get("last_known_balance").and_then(Value::as_u64),
+        Some(4242)
+    );
+    assert!(
+        serialized.get("wxtm_addresses").is_some(),
+        "wxtm_addresses must reach the frontend: {serialized}"
+    );
+}
+
+#[test]
+fn persistence_still_serializes_the_plain_view_key() {
+    // The webview payload is sanitized, but `config_wallet.json` must stay
+    // byte-identical: `_save_config` serializes the content itself.
+    let serialized =
+        serde_json::to_value(sentinel_config_content()).expect("content should serialize");
+
+    assert_eq!(
+        serialized
+            .get("tari_wallet_details")
+            .and_then(|details| details.get("view_private_key_hex"))
+            .and_then(Value::as_str),
+        Some(VIEW_KEY_SENTINEL),
+        "on-disk wallet config must keep the plain hex key"
     );
 }

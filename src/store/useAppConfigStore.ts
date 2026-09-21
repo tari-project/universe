@@ -16,8 +16,6 @@ type UIConfigStoreState = Partial<ConfigUI> & {
 };
 
 const configWalletInitialState: ConfigWallet = {
-    created_at: '',
-    keyring_accessed: false,
     monero_address: '',
     monero_address_is_generated: false,
     wxtm_addresses: {},

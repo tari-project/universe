@@ -122,7 +122,43 @@ impl Default for ConfigWalletContent {
 }
 impl ConfigContentImpl for ConfigWalletContent {}
 
+/// The wallet config as the webview receives it.
+///
+/// `ConfigWalletContent` carries `tari_wallet_details`, and therefore the
+/// wallet view private key, so the content must never be emitted to the
+/// frontend wholesale. This payload copies only the fields the frontend's
+/// `ConfigWallet` TypeScript interface actually reads, under the same names and
+/// casing, so nothing on the frontend has to change.
+///
+/// `Serialize` on `ConfigWalletContent` is shared with `_save_config`, so the
+/// key cannot simply be skipped there: `config_wallet.json` has to keep it.
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub struct ConfigWalletFrontend<'a> {
+    monero_address: &'a str,
+    monero_address_is_generated: bool,
+    wxtm_addresses: &'a HashMap<String, String>,
+    last_known_balance: &'a MicroMinotari,
+}
+
+impl<'a> From<&'a ConfigWalletContent> for ConfigWalletFrontend<'a> {
+    fn from(content: &'a ConfigWalletContent) -> Self {
+        Self {
+            monero_address: &content.monero_address,
+            monero_address_is_generated: content.monero_address_is_generated,
+            wxtm_addresses: &content.wxtm_addresses,
+            last_known_balance: &content.last_known_balance,
+        }
+    }
+}
+
 impl ConfigWalletContent {
+    /// Builds the sanitized payload sent to the webview. Never includes
+    /// `tari_wallet_details` or anything derived from it.
+    pub fn to_frontend_payload(&self) -> ConfigWalletFrontend<'_> {
+        ConfigWalletFrontend::from(self)
+    }
+
     pub fn add_wxtm_address(&mut self, payload: (String, String)) -> &mut Self {
         let (exchange_id, address) = payload;
         self.wxtm_addresses.insert(exchange_id, address);
