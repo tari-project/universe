@@ -1,0 +1,38 @@
+diff --git a/src-tauri/src/auto_launcher.rs b/src-tauri/src/auto_launcher.rs
+index 197f2a921..d2575ed3a 100644
+--- a/src-tauri/src/auto_launcher.rs
++++ b/src-tauri/src/auto_launcher.rs
+@@ -241,6 +241,15 @@ impl AutoLauncher {
+     ) -> Result<(), anyhow::Error> {
+         info!(target: LOG_TARGET_APP_LOGIC, "Initializing auto-launcher");
+ 
++        // Inside the Flatpak sandbox `current_exe()` resolves to /app/bin which is
++        // not launchable from the host session. Auto-start must instead be wired up
++        // through the XDG autostart desktop entry (handled by the packaging), so the
++        // crate-based launcher is a no-op here.
++        if std::env::var_os("FLATPAK_ID").is_some() {
++            info!(target: LOG_TARGET_APP_LOGIC, "Running under Flatpak; auto-launch is managed by the desktop autostart entry, skipping crate-based launcher.");
++            return Ok(());
++        }
++
+         let app_exe = current_exe()?;
+         let app_exe = canonicalize(&app_exe)?;
+         let app_name = app_exe
+diff --git a/src-tauri/src/updates_manager.rs b/src-tauri/src/updates_manager.rs
+index d46a988ce..051e9c6fd 100644
+--- a/src-tauri/src/updates_manager.rs
++++ b/src-tauri/src/updates_manager.rs
+@@ -144,6 +144,13 @@ impl UpdatesManager {
+         enable_downgrade: bool,
+         timeout_duration: Duration,
+     ) -> Result<(), anyhow::Error> {
++        // Under Flatpak the app lives on a read-only /app mount and updates are
++        // delivered through `flatpak update`, so the bundled Tauri updater can
++        // never succeed. Skip it entirely to avoid spurious update prompts.
++        if std::env::var_os("FLATPAK_ID").is_some() {
++            info!(target: LOG_TARGET_APP_LOGIC, "Running under Flatpak; skipping built-in updater (updates are managed by Flatpak).");
++            return Ok(());
++        }
+         let res = tokio::time::timeout(
+             timeout_duration,
+             self.check_for_update(app.clone(), enable_downgrade),
