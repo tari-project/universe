@@ -143,6 +143,30 @@ impl PinManager {
         Ok(SafePassword::from(pin))
     }
 
+    /// Seconds left on the PIN lockout, or `None` when there is none.
+    ///
+    /// Every path that lets a user try a PIN has to consult this, including the recovery
+    /// commands: those decrypt an orphaned credential rather than the configured wallet, so
+    /// `validate_pin` cannot be used, but they are still PIN guesses and must be counted.
+    pub async fn locked_out_seconds() -> Option<u64> {
+        let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
+        PinLocker::new(pin_locker_state).locked_out_seconds().await
+    }
+
+    /// Record a wrong PIN against the lockout counter.
+    pub async fn register_failed_pin_attempt() -> Result<(), anyhow::Error> {
+        let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
+        PinLocker::new(pin_locker_state)
+            .register_failed_pin_attempt()
+            .await
+    }
+
+    /// Clear the lockout counter after a PIN that worked.
+    pub async fn reset_pin_attempts() -> Result<(), anyhow::Error> {
+        let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
+        PinLocker::new(pin_locker_state).reset_pin_attempts().await
+    }
+
     /// Persist a corrected `pin_locked` flag. See `PinLocker::repair_pin_locked`.
     pub async fn repair_pin_locked(locked: bool) -> Result<(), anyhow::Error> {
         let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();

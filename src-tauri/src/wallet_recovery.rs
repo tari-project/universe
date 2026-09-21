@@ -227,8 +227,11 @@ fn read_seed(blob: &[u8], pin_password: Option<SafePassword>) -> Option<CipherSe
 
 /// Run "find my wallets" against the real credential store.
 ///
-/// Asks for a PIN first when one is set, so enciphered entries can be identified too; a dismissed
-/// prompt simply means those come back as `PinRequired`.
+/// Enumerates first, and only asks for a PIN if something in the store actually needs one. The
+/// config's own `pin_locked` flag is not the question: the wallet this feature exists to find is
+/// one the config has lost track of, so a recreated config with no PIN routinely sits in front of
+/// a credential enciphered with the PIN the user still remembers. A dismissed prompt simply
+/// leaves those entries reported as `PinRequired`.
 pub async fn find_my_wallets(app_handle: &AppHandle) -> FindWalletsResult {
     let wallet_config = ConfigWallet::content().await;
     let linked = wallet_config.tari_wallets().clone();
@@ -238,13 +241,67 @@ pub async fn find_my_wallets(app_handle: &AppHandle) -> FindWalletsResult {
         .map(|details| details.id.clone());
     drop(wallet_config);
 
-    let pin_password = if PinManager::pin_locked().await {
-        PinManager::prompt_pin_unvalidated(app_handle).await.ok()
-    } else {
-        None
-    };
+    let backend = system_keyring();
+    let found = find_wallets_with(backend.clone(), &linked, active.as_ref(), None).await;
 
-    find_wallets_with(system_keyring(), &linked, active.as_ref(), pin_password).await
+    let FindWalletsResult::Found { ref wallets } = found else {
+        return found;
+    };
+    if !wallets
+        .iter()
+        .any(|wallet| wallet.status == FoundWalletStatus::PinRequired)
+    {
+        return found;
+    }
+
+    let Ok(pin_password) = prompt_recovery_pin(app_handle).await else {
+        return found;
+    };
+    let with_pin = find_wallets_with(backend, &linked, active.as_ref(), Some(pin_password)).await;
+    record_recovery_pin_attempt(recovery_pin_opened_something(&found, &with_pin)).await;
+    with_pin
+}
+
+/// Ask for a PIN on a recovery path, under the same lockout as every other PIN entry.
+///
+/// These prompts decrypt an orphaned credential rather than the configured wallet, so
+/// `PinManager::validate_pin` cannot do the checking - it reads the wallet the config points at,
+/// which is the one that is missing. They are still PIN guesses, and without the lockout anyone
+/// at the running app could sit on "Search again" and walk a six-digit space.
+async fn prompt_recovery_pin(app_handle: &AppHandle) -> Result<SafePassword, anyhow::Error> {
+    if let Some(remaining_seconds) = PinManager::locked_out_seconds().await {
+        return Err(anyhow!(
+            "Pin is locked out. Remaining seconds: {remaining_seconds}"
+        ));
+    }
+    PinManager::prompt_pin_unvalidated(app_handle).await
+}
+
+/// Did the PIN open anything? Pure, so the accounting can be tested without a config.
+fn recovery_pin_opened_something(before: &FindWalletsResult, after: &FindWalletsResult) -> bool {
+    let locked = |result: &FindWalletsResult| match result {
+        FindWalletsResult::Found { wallets } => wallets
+            .iter()
+            .filter(|wallet| wallet.status == FoundWalletStatus::PinRequired)
+            .count(),
+        FindWalletsResult::Unsupported { .. } => 0,
+    };
+    matches!(after, FindWalletsResult::Found { .. }) && locked(after) < locked(before)
+}
+
+/// Count a recovery PIN attempt against the same lockout as every other PIN entry.
+async fn record_recovery_pin_attempt(opened: bool) {
+    let result = if opened {
+        PinManager::reset_pin_attempts().await
+    } else {
+        PinManager::register_failed_pin_attempt().await
+    };
+    if let Err(e) = result {
+        log::warn!(
+            target: LOG_TARGET_APP_LOGIC,
+            "[find_my_wallets] could not record the PIN attempt: {e}",
+        );
+    }
 }
 
 /// Point the wallet config at a wallet the store already holds, and restart the wallet on it.
@@ -274,20 +331,26 @@ pub async fn relink_tari_wallet(
             anyhow!("Failed to read the wallet from the keyring: {e}")
         })?;
 
-    let pin_password = if PinManager::pin_locked().await {
-        Some(PinManager::prompt_pin_unvalidated(app_handle).await?)
-    } else {
-        None
+    // Try the entry as it stands first. Only a blob that needs a PIN is worth prompting for, and
+    // whether *this* entry needs one has nothing to do with the current config's `pin_locked`
+    // flag - the entry may well predate the config in front of it.
+    let seed = match read_seed(&credential.encrypted_seed, None) {
+        Some(seed) => seed,
+        None => {
+            let pin_password = prompt_recovery_pin(app_handle).await?;
+            let seed = read_seed(&credential.encrypted_seed, Some(pin_password));
+            record_recovery_pin_attempt(seed.is_some()).await;
+            seed.ok_or_else(|| {
+                log::error!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "[relink_tari_wallet] could not read the seed: wallet_id={} blob_len={}",
+                    wallet_id.as_str(),
+                    credential.encrypted_seed.len(),
+                );
+                anyhow!("Could not read this wallet's seed")
+            })?
+        }
     };
-    let seed = read_seed(&credential.encrypted_seed, pin_password).ok_or_else(|| {
-        log::error!(
-            target: LOG_TARGET_APP_LOGIC,
-            "[relink_tari_wallet] could not read the seed: wallet_id={} blob_len={}",
-            wallet_id.as_str(),
-            credential.encrypted_seed.len(),
-        );
-        anyhow!("Could not read this wallet's seed")
-    })?;
 
     let details = InternalWallet::get_tari_wallet_details(wallet_id.clone(), seed).await?;
     let address_prefix: String = details
@@ -448,6 +511,39 @@ mod tests {
         assert!(matches!(
             find_wallets_with(keyring, &[], None, None).await,
             FindWalletsResult::Unsupported { .. }
+        ));
+    }
+
+    fn result_with(statuses: &[FoundWalletStatus]) -> FindWalletsResult {
+        FindWalletsResult::Found {
+            wallets: statuses
+                .iter()
+                .enumerate()
+                .map(|(index, status)| FoundWallet {
+                    wallet_id: format!("w{index}"),
+                    address_prefix: None,
+                    is_linked: false,
+                    is_active: false,
+                    status: *status,
+                })
+                .collect(),
+        }
+    }
+
+    /// A recovery PIN is still a PIN guess; a wrong one has to count towards the lockout or
+    /// "Search again" becomes an unmetered oracle.
+    #[test]
+    fn only_a_pin_that_opened_something_counts_as_correct() {
+        let locked = result_with(&[FoundWalletStatus::PinRequired, FoundWalletStatus::Readable]);
+        let opened = result_with(&[FoundWalletStatus::Readable, FoundWalletStatus::Readable]);
+
+        assert!(recovery_pin_opened_something(&locked, &opened));
+        assert!(!recovery_pin_opened_something(&locked, &locked));
+        assert!(!recovery_pin_opened_something(
+            &locked,
+            &FindWalletsResult::Unsupported {
+                platform: "linux".to_string()
+            }
         ));
     }
 
