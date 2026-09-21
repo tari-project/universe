@@ -171,6 +171,14 @@ impl GpuManager {
             .insert(miner.miner_type.clone(), miner);
     }
 
+    /// Whether any loaded miner is in a state we could mine with.
+    ///
+    /// A miner whose binary failed to initialize, or that found no device it can mine on, is
+    /// loaded but unhealthy. On a machine without a usable GPU every miner ends up that way.
+    pub fn has_healthy_miner(&self) -> bool {
+        self.available_miners.values().any(|miner| miner.is_healthy)
+    }
+
     /// Handles loading the pool connection for the selected miner.
     /// If the selected miner does not support pool mining, it attempts to switch to a fallback miner that does.
     /// If no suitable miner is found, an error is returned.
@@ -696,5 +704,36 @@ impl GpuManager {
     #[allow(dead_code)]
     pub fn handle_mining_pool_change(_enabled: bool) {
         todo!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn a_manager_with_no_miners_has_nothing_healthy() {
+        let manager = GpuManager::new();
+        assert!(!manager.has_healthy_miner());
+    }
+
+    #[tokio::test]
+    async fn a_miner_that_failed_detection_does_not_count_as_healthy() {
+        let mut manager = GpuManager::new();
+        manager
+            .load_miner(
+                GpuMinerType::LolMiner,
+                false,
+                Some("Device detection failed".to_string()),
+            )
+            .await;
+        assert!(!manager.has_healthy_miner());
+    }
+
+    #[tokio::test]
+    async fn one_healthy_miner_is_enough() {
+        let mut manager = GpuManager::new();
+        manager.load_miner(GpuMinerType::LolMiner, true, None).await;
+        assert!(manager.has_healthy_miner());
     }
 }
