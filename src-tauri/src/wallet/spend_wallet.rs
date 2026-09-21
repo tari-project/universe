@@ -35,6 +35,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::binaries::{Binaries, BinaryResolver};
+use crate::events::PinPromptContext;
 use crate::internal_wallet::InternalWallet;
 use crate::pin::PinManager;
 use crate::process_adapter::{
@@ -83,10 +84,15 @@ impl SpendWallet {
 
     /// Signs a one-sided transaction from the provided input file and writes the result to the output file
     ///
+    /// This is where the PIN gate for outgoing transactions actually lives: reading the
+    /// seed words requires the user to enter their PIN, when one is configured.
+    ///
     /// # Arguments
     /// * `input_file` - Path to the input transaction file to be signed
     /// * `output_file` - Path where the signed transaction will be written
     /// * `app_handle` - Tauri AppHandle for accessing application paths
+    /// * `pin_context` - Optional transaction details shown in the PIN dialog, so the
+    ///   user can see what they are approving
     ///
     /// # Returns
     /// * `Result<(), Error>` - Ok if the transaction was successfully signed, otherwise an error
@@ -95,9 +101,10 @@ impl SpendWallet {
         input_file: PathBuf,
         output_file: PathBuf,
         app_handle: &AppHandle,
+        pin_context: Option<PinPromptContext>,
     ) -> Result<(), Error> {
         let seed_words = self
-            .get_seed_words(app_handle)
+            .get_seed_words(app_handle, pin_context)
             .await
             .context("Failed to retrieve wallet seed words")?;
 
@@ -238,8 +245,12 @@ impl SpendWallet {
         ])
     }
 
-    async fn get_seed_words(&self, app_handle: &AppHandle) -> Result<String, Error> {
-        let pin_password = PinManager::get_validated_pin_if_defined(app_handle)
+    async fn get_seed_words(
+        &self,
+        app_handle: &AppHandle,
+        pin_context: Option<PinPromptContext>,
+    ) -> Result<String, Error> {
+        let pin_password = PinManager::get_validated_pin_if_defined(app_handle, pin_context)
             .await
             .context("Failed to validate PIN")?;
         let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password)

@@ -1,7 +1,7 @@
-import { TappletSigner } from './TappletSigner';
+import { TappletCallableMethod } from './TappletSigner';
 
 export interface TransactionEvent {
-    methodName: Exclude<keyof TappletSigner, 'runOne'>;
+    methodName: TappletCallableMethod;
     /* eslint-disable @typescript-eslint/no-explicit-any */
     args: any[];
     id: number;

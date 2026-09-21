@@ -78,10 +78,23 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 await queryClient.invalidateQueries({ queryKey: ['transactions'] });
                 setStatus('completed');
             } catch (error) {
-                setStoreError(`Error sending transaction: ${error}`);
-                setError(`root.invoke_error`, {
-                    message: `${t('send.error-message')} ${error}`,
-                });
+                // The backend gates the send itself (PIN dialog, or an approve/deny dialog
+                // when no PIN is set), so "the user said no" and "nobody answered in time"
+                // are normal outcomes here, not failures worth a scary error toast.
+                const message = `${error}`;
+                const wasCancelled = /denied by user|PIN entry cancelled/i.test(message);
+                const timedOut = /timed out waiting for confirmation/i.test(message);
+
+                if (wasCancelled || timedOut) {
+                    setError(`root.invoke_error`, {
+                        message: wasCancelled ? t('send.error-denied') : t('send.error-timeout'),
+                    });
+                } else {
+                    setStoreError(`Error sending transaction: ${error}`);
+                    setError(`root.invoke_error`, {
+                        message: `${t('send.error-message')} ${error}`,
+                    });
+                }
                 setStatus('fields');
             }
         },

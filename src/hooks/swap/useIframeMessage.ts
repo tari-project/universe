@@ -1,4 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import type { RefObject } from 'react';
+import { getIframeOrigin } from '@app/utils/iframeOrigin';
 import { SelectableTokenInfo, SwapDirection, SwapStatus } from './lib/types';
 
 export enum MessageType {
@@ -100,16 +102,43 @@ export type IframeMessage =
     | SetFullscreenMessage
     | ProcessingMessage;
 
-// Hook to listen for messages from the parent window
-export function useIframeMessage(onMessage: (event: MessageEvent<IframeMessage>) => void) {
+/**
+ * Only the swap iframe we embedded may talk to us: the message has to come from that
+ * iframe's own window and carry the exact origin the iframe was pointed at. Any other
+ * frame (including the tapplet iframe), popup or window is dropped.
+ */
+export function isTrustedIframeMessage(event: MessageEvent, iframe: HTMLIFrameElement | null): boolean {
+    if (!iframe || !event.source) return false;
+
+    const expectedOrigin = getIframeOrigin(iframe.src);
+    if (!expectedOrigin) return false;
+
+    return event.source === iframe.contentWindow && event.origin === expectedOrigin;
+}
+
+// Hook to listen for messages from the swap iframe owned by `iframeRef`
+export function useIframeMessage(
+    iframeRef: RefObject<HTMLIFrameElement | null>,
+    onMessage: (event: MessageEvent<IframeMessage>) => void
+) {
+    const untrustedMessageWarned = useRef(false);
+
     useEffect(() => {
         function handleMessage(event: MessageEvent<IframeMessage>) {
-            // Optionally, add origin checks here for security
+            if (!isTrustedIframeMessage(event, iframeRef.current)) {
+                if (!untrustedMessageWarned.current) {
+                    untrustedMessageWarned.current = true;
+                    console.warn(
+                        `Ignoring iframe message from untrusted sender (origin: "${event.origin}"). Further messages will be dropped silently.`
+                    );
+                }
+                return;
+            }
             onMessage(event);
         }
         window.addEventListener('message', handleMessage);
         return () => {
             window.removeEventListener('message', handleMessage);
         };
-    }, [onMessage]);
+    }, [iframeRef, onMessage]);
 }

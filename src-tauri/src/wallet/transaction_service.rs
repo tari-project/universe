@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::LOG_TARGET_APP_LOGIC;
+use crate::events::PinPromptContext;
 use crate::wallet::spend_wallet::SpendWallet;
 use crate::wallet::wallet_adapter::WalletAdapter;
 use crate::wallet::wallet_status_monitor::WalletStatusMonitorError;
@@ -168,6 +169,7 @@ impl<'a> TransactionService<'a> {
     /// # Arguments
     /// * `unsigned_tx_file` - Path to the unsigned transaction file
     /// * `tx_id` - Transaction ID
+    /// * `pin_context` - Optional transaction context shown in the PIN dialog
     ///
     /// # Returns
     /// * `Result<PathBuf, anyhow::Error>` - Path to the signed transaction file
@@ -175,6 +177,7 @@ impl<'a> TransactionService<'a> {
         &self,
         unsigned_tx_file: PathBuf,
         tx_id: String,
+        pin_context: Option<PinPromptContext>,
     ) -> Result<PathBuf, anyhow::Error> {
         // Define the output file path for the signed transaction
         let wallet_txs_dir = get_transactions_directory(self.app_handle)?;
@@ -188,6 +191,7 @@ impl<'a> TransactionService<'a> {
                 unsigned_tx_file,
                 signed_tx_destination_file.clone(),
                 self.app_handle,
+                pin_context,
             )
             .await?;
 

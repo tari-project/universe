@@ -188,6 +188,26 @@ impl GpuManager {
             .insert(miner.miner_type.clone(), miner);
     }
 
+    fn set_miner_health(
+        &mut self,
+        miner_type: &GpuMinerType,
+        is_healthy: bool,
+        last_error: Option<String>,
+    ) {
+        if let Some(miner) = self.available_miners.get_mut(miner_type) {
+            miner.is_healthy = is_healthy;
+            miner.last_error = last_error;
+        }
+    }
+
+    /// Whether any loaded miner is in a state we could mine with.
+    ///
+    /// A miner whose binary failed to initialize, or that found no device it can mine on, is
+    /// loaded but unhealthy. On a machine without a usable GPU every miner ends up that way.
+    pub fn has_healthy_miner(&self) -> bool {
+        self.available_miners.values().any(|miner| miner.is_healthy)
+    }
+
     /// Handles loading the pool connection for the selected miner.
     /// If the selected miner does not support pool mining, it attempts to switch to a fallback miner that does.
     /// If no suitable miner is found, an error is returned.
@@ -602,6 +622,7 @@ impl GpuManager {
     /// If no miners are left, we return an error
     pub async fn detect_devices(&mut self) -> Result<(), anyhow::Error> {
         let mut successful_detection = false;
+        let mut healthy_miners = vec![];
         let mut unhealthy_miners = vec![];
         let mut detected_devices = vec![];
 
@@ -619,6 +640,7 @@ impl GpuManager {
                     if *miner_type == self.selected_miner {
                         detected_devices = adapter.get_gpu_devices().to_vec();
                     }
+                    healthy_miners.push(miner_type.clone());
                     info!(target: LOG_TARGET_APP_LOGIC, "Devices detected with miner: {miner_type}");
                 }
                 Err(e) => {
@@ -628,11 +650,18 @@ impl GpuManager {
             }
         }
 
+        // Detection can be retried, on Windows after installing GPU drivers, so a success has to
+        // clear the failure an earlier attempt recorded or the miner stays unusable for good.
+        for miner_type in healthy_miners {
+            self.set_miner_health(&miner_type, true, None);
+        }
+
         for miner_type in unhealthy_miners {
-            if let Some(miner) = self.available_miners.get_mut(&miner_type) {
-                miner.is_healthy = false;
-                miner.last_error = Some("Device detection failed".to_string());
-            }
+            self.set_miner_health(
+                &miner_type,
+                false,
+                Some("Device detection failed".to_string()),
+            );
             info!(target: LOG_TARGET_APP_LOGIC, "Marked miner {miner_type} as unhealthy due to detection failure");
         }
 
@@ -752,5 +781,54 @@ impl GpuManager {
     #[allow(dead_code)]
     pub fn handle_mining_pool_change(_enabled: bool) {
         todo!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn a_manager_with_no_miners_has_nothing_healthy() {
+        let manager = GpuManager::new();
+        assert!(!manager.has_healthy_miner());
+    }
+
+    #[tokio::test]
+    async fn a_miner_that_failed_detection_does_not_count_as_healthy() {
+        let mut manager = GpuManager::new();
+        manager
+            .load_miner(
+                GpuMinerType::LolMiner,
+                false,
+                Some("Device detection failed".to_string()),
+            )
+            .await;
+        assert!(!manager.has_healthy_miner());
+    }
+
+    #[tokio::test]
+    async fn a_successful_retry_restores_a_miner_that_failed_detection_before() {
+        let mut manager = GpuManager::new();
+        manager.load_miner(GpuMinerType::LolMiner, true, None).await;
+
+        manager.set_miner_health(
+            &GpuMinerType::LolMiner,
+            false,
+            Some("Device detection failed".to_string()),
+        );
+        assert!(!manager.has_healthy_miner());
+
+        manager.set_miner_health(&GpuMinerType::LolMiner, true, None);
+        assert!(manager.has_healthy_miner());
+        let miner = &manager.available_miners[&GpuMinerType::LolMiner];
+        assert_eq!(miner.last_error, None);
+    }
+
+    #[tokio::test]
+    async fn one_healthy_miner_is_enough() {
+        let mut manager = GpuManager::new();
+        manager.load_miner(GpuMinerType::LolMiner, true, None).await;
+        assert!(manager.has_healthy_miner());
     }
 }
