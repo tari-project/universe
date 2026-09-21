@@ -65,6 +65,11 @@ pub enum CredentialError {
     /// value, if there was one, has been put back. Never carries the blob or the id's contents.
     #[error("Keyring write could not be verified for: {0}")]
     WriteNotVerified(String),
+    /// An entry already exists under this id and the store would not hand it over, so nothing
+    /// can prove what overwriting it would destroy. The write was refused and the entry is
+    /// untouched.
+    #[error("An unreadable credential already exists for: {0}")]
+    PreviousUnreadable(String),
 }
 
 const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
@@ -99,6 +104,34 @@ pub enum KeyringListing {
     Entries(Vec<String>),
     /// This platform cannot enumerate its credential store from here.
     Unsupported,
+}
+
+/// What step 1 of the write protocol found under the id it is about to write.
+#[derive(Debug)]
+enum PreviousCredential {
+    /// An entry exists and these are its bytes. It can be restored if the write goes wrong.
+    Present(Vec<u8>),
+    /// No entry exists. Writing cannot destroy anything.
+    Absent,
+    /// An entry exists and the store refused to show it. Nothing may overwrite it.
+    Unknown,
+}
+
+/// One mutex per credential id, created on first use and kept for the life of the process.
+///
+/// The map is tiny and bounded by the number of wallet ids the app has ever addressed in this
+/// run, so the entries are never reclaimed; a `Mutex` is 8 bytes plus the key.
+static CREDENTIAL_LOCKS: LazyLock<
+    std::sync::Mutex<std::collections::HashMap<(String, String), Arc<std::sync::Mutex<()>>>>,
+> = LazyLock::new(|| std::sync::Mutex::new(std::collections::HashMap::new()));
+
+/// The lock guarding the write protocol for one credential id.
+fn credential_lock(service: &str, username: &str) -> Arc<std::sync::Mutex<()>> {
+    let key = (service.to_string(), username.to_string());
+    let mut locks = CREDENTIAL_LOCKS
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    Arc::clone(locks.entry(key).or_default())
 }
 
 /// The platform credential store, behind a trait so the write protocol can be tested.
@@ -260,10 +293,19 @@ impl CredentialManager {
 
     /// Write a credential without ever leaving the user without one.
     ///
+    /// The whole protocol runs under a lock held for this credential id (see
+    /// [`credential_lock`]). Without it two concurrent saves can both read the old value, one
+    /// can verify and report success, and the other can then see a mismatch and put the old
+    /// blob back - silently undoing a write its caller was told had succeeded.
+    ///
     /// Protocol, in order:
     ///
-    /// 1. Read whatever is stored today and keep it in memory (`previous`). A failure to read is
-    ///    recorded but is not fatal: it only means we cannot promise a restore later.
+    /// 1. Read whatever is stored today. The result is a *tri-state*
+    ///    ([`PreviousCredential`]): present, absent, or unknown. Unknown means the entry exists
+    ///    and the store would not hand it over, and it is fatal here: overwriting a blob we
+    ///    cannot read is overwriting a seed we cannot prove is stored anywhere else, which is
+    ///    precisely what the hardening brief forbids. Backends can allow writes while refusing
+    ///    reads, so "the write will fail anyway" is not a safe assumption.
     /// 2. Write the new value **under the same id**, in place. No delete happens first - that was
     ///    the old behaviour and it is what left users with no credential at all when the write
     ///    that followed failed (path P11 of the investigation).
@@ -278,7 +320,23 @@ impl CredentialManager {
     /// seeds get lost.
     fn save_to_keyring(&self, credential: &Credential) -> Result<(), CredentialError> {
         let serialized = serde_cbor::to_vec(credential)?;
-        let previous = self.read_previous();
+        let lock = credential_lock(&self.service_name, &self.username);
+        // A poisoned lock means another writer panicked mid-protocol. Carry on with the entry it
+        // left behind rather than refusing every later write for the life of the process; the
+        // read-back verification below is what actually decides the outcome.
+        let _guard = lock.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+
+        let previous = match self.read_previous() {
+            PreviousCredential::Present(previous) => Some(previous),
+            PreviousCredential::Absent => None,
+            PreviousCredential::Unknown => {
+                log::error!(
+                    target: LOG_TARGET_APP_LOGIC,
+                    "{LOG_KEYRING_WRITE_REFUSED}: an entry exists that could not be read, refusing to overwrite it",
+                );
+                return Err(CredentialError::PreviousUnreadable(self.username.clone()));
+            }
+        };
 
         if previous.as_deref() == Some(serialized.as_slice()) {
             // Identical bytes: writing would only risk the entry for no gain.
@@ -365,20 +423,23 @@ impl CredentialManager {
         }
     }
 
-    /// Step 1 of the write protocol. `None` means "there is nothing we can restore": either the
-    /// entry does not exist, or it exists but is unreadable, in which case we must not delete it.
-    fn read_previous(&self) -> Option<Vec<u8>> {
+    /// Step 1 of the write protocol.
+    ///
+    /// Three outcomes, and the difference between the last two is the whole point: "there is no
+    /// entry" is safe to write over, "there is an entry and the store would not show it to us"
+    /// is not.
+    fn read_previous(&self) -> PreviousCredential {
         match self.backend.get_secret(&self.service_name, &self.username) {
-            Ok(previous) => Some(previous),
-            Err(CredentialError::NoEntry(_)) => None,
+            Ok(previous) => PreviousCredential::Present(previous),
+            Err(CredentialError::NoEntry(_)) => PreviousCredential::Absent,
             Err(_) => {
                 // Unreadable: a locked keychain, a stopped service, a denied prompt. The entry may
-                // still hold the user's only seed, so the protocol below will never delete it.
+                // still hold the user's only seed, and nothing here can prove otherwise.
                 log::warn!(
                     target: LOG_TARGET_APP_LOGIC,
                     "{LOG_KEYRING_WRITE_UNVERIFIED}: existing credential could not be read before writing",
                 );
-                None
+                PreviousCredential::Unknown
             }
         }
     }
@@ -1024,6 +1085,64 @@ mod tests {
         assert_eq!(
             stored_credential(&keyring).map(|c| c.encrypted_seed),
             Some(vec![1u8; 16])
+        );
+    }
+
+    #[test]
+    /// A store that accepts writes while refusing reads must not be able to blow away a seed.
+    #[test]
+    fn a_write_is_refused_while_the_existing_entry_cannot_be_read() {
+        let keyring = Arc::new(FakeKeyring::new());
+        let manager = manager(keyring.clone());
+        manager
+            .save_to_keyring(&credential(1))
+            .expect("first write");
+
+        // Reads denied, writes still accepted: the entry is there and nothing can prove what
+        // overwriting it would destroy.
+        keyring.fail_reads.store(true, Ordering::SeqCst);
+        let error = manager
+            .save_to_keyring(&credential(2))
+            .expect_err("an unreadable entry must not be overwritten");
+        assert!(
+            matches!(error, CredentialError::PreviousUnreadable(_)),
+            "{error:?}"
+        );
+
+        keyring.fail_reads.store(false, Ordering::SeqCst);
+        assert_eq!(
+            stored_credential(&keyring).map(|c| c.encrypted_seed),
+            Some(vec![1u8; 16]),
+            "the original seed is untouched"
+        );
+    }
+
+    #[test]
+    fn concurrent_writes_to_one_id_do_not_undo_each_other() {
+        let keyring = Arc::new(FakeKeyring::new());
+        manager(keyring.clone())
+            .save_to_keyring(&credential(1))
+            .expect("first write");
+
+        let handles: Vec<_> = (2u8..10)
+            .map(|value| {
+                let backend: Arc<dyn KeyringBackend> = keyring.clone();
+                std::thread::spawn(move || manager(backend).save_to_keyring(&credential(value)))
+            })
+            .collect();
+        for handle in handles {
+            handle.join().expect("thread").expect("write");
+        }
+
+        // Whichever write landed last, the entry holds exactly one of the values written and
+        // never the superseded one: no writer may restore the old blob over a peer's success.
+        let stored = stored_credential(&keyring)
+            .map(|c| c.encrypted_seed)
+            .expect("an entry");
+        assert_eq!(stored.len(), 16);
+        assert!(
+            (2u8..10).contains(&stored[0]),
+            "unexpected value {stored:?}"
         );
     }
 

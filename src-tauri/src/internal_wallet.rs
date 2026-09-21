@@ -2088,6 +2088,9 @@ impl From<&CredentialError> for SeedProbeErrorKind {
             // A write we could not verify says nothing about a later read; it is a store-level
             // fault like any other and is never produced by the probe itself.
             CredentialError::WriteNotVerified(_) => SeedProbeErrorKind::KeyringOther,
+            // "The entry exists and the store would not show it to us" - which is what the probe
+            // itself would have reported as a platform failure, so classify it the same way.
+            CredentialError::PreviousUnreadable(_) => SeedProbeErrorKind::KeyringPlatform,
             CredentialError::Keyring(keyring_error) => match keyring_error {
                 // `load_from_keyring` maps `NoEntry` before it gets here, but keep the arm so a
                 // future caller that passes the raw error through still classifies it correctly.
