@@ -64,7 +64,7 @@ fn sample_diagnostics() -> SupportDiagnostics {
         use_tor: true,
         auto_update: true,
         pre_release: false,
-        remote_base_node_address: "https://grpc.tari.com:443".to_string(),
+        remote_base_node_is_default: true,
         node_type: "Remote".to_string(),
         mmproxy_use_monero_failover: false,
         cpu_mining_enabled: true,
@@ -75,11 +75,9 @@ fn sample_diagnostics() -> SupportDiagnostics {
         is_lolminer_tested: false,
         is_gpu_mining_recommended: true,
         cpu_pool_enabled: true,
-        cpu_pool_name: "SupportXTMPool".to_string(),
-        cpu_pool_url: "https://pool.example/cpu".to_string(),
+        cpu_pool_type: "SupportXTMPoolRANDOMX".to_string(),
         gpu_pool_enabled: false,
-        gpu_pool_name: "LuckyPoolC29".to_string(),
-        gpu_pool_url: "https://pool.example/gpu".to_string(),
+        gpu_pool_type: "LuckyPoolC29".to_string(),
         application_language: "en".to_string(),
         should_always_use_system_language: false,
         display_mode: "System".to_string(),
@@ -91,7 +89,7 @@ fn sample_diagnostics() -> SupportDiagnostics {
         credential_store_accessed: true,
         wallet_backed_up: false,
         wallet_migration_nonce: 7,
-        monero_address_is_generated: true,
+        monero_wallet_is_generated: true,
     }
 }
 
@@ -270,7 +268,9 @@ fn diagnostics_never_serializes_secret_shaped_fields() {
 
     // A new field whose name looks like a credential is almost certainly a
     // secret that must not travel in a support bundle.
-    const FORBIDDEN_NAME_PARTS: [&str; 5] = ["token", "key", "seed", "pin", "secret"];
+    const FORBIDDEN_NAME_PARTS: [&str; 8] = [
+        "token", "key", "seed", "pin", "secret", "url", "address", "host",
+    ];
     for field_name in object.keys() {
         let lowercased = field_name.to_lowercase();
         for forbidden in FORBIDDEN_NAME_PARTS {

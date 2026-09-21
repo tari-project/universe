@@ -37,7 +37,7 @@ use zip::write::SimpleFileOptions;
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::app_in_memory_config::AppInMemoryConfig;
-use crate::configs::config_core::ConfigCore;
+use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::ConfigMining;
 use crate::configs::config_pools::ConfigPools;
 use crate::configs::config_ui::ConfigUI;
@@ -65,7 +65,9 @@ const DIAGNOSTICS_ARCHIVE_PATH: &str = "configs/diagnostics.json";
 /// * Never add secrets or anything that can contain them: airdrop tokens,
 ///   `tari_wallet_details` (or any field inside it), PIN/locker data, the MCP
 ///   bearer token, seed phrases, private/view keys, addresses or address
-///   books, and filesystem paths (they carry the user name).
+///   books, filesystem paths (they carry the user name), and user-configured
+///   endpoints such as a custom remote node or pool URL (they can expose a
+///   private network). Report "is default" booleans or enum names instead.
 /// * Wallet state is reported as booleans and counters only.
 /// * If in doubt, leave the field out. A reviewer can always add one later.
 #[derive(Debug, Serialize)]
@@ -80,7 +82,7 @@ pub struct SupportDiagnostics {
     pub use_tor: bool,
     pub auto_update: bool,
     pub pre_release: bool,
-    pub remote_base_node_address: String,
+    pub remote_base_node_is_default: bool,
     pub node_type: String,
     pub mmproxy_use_monero_failover: bool,
     pub cpu_mining_enabled: bool,
@@ -91,11 +93,9 @@ pub struct SupportDiagnostics {
     pub is_lolminer_tested: bool,
     pub is_gpu_mining_recommended: bool,
     pub cpu_pool_enabled: bool,
-    pub cpu_pool_name: String,
-    pub cpu_pool_url: String,
+    pub cpu_pool_type: String,
     pub gpu_pool_enabled: bool,
-    pub gpu_pool_name: String,
-    pub gpu_pool_url: String,
+    pub gpu_pool_type: String,
     pub application_language: String,
     pub should_always_use_system_language: bool,
     pub display_mode: String,
@@ -110,7 +110,7 @@ pub struct SupportDiagnostics {
     /// `seed_backed_up`
     pub wallet_backed_up: bool,
     pub wallet_migration_nonce: u64,
-    pub monero_address_is_generated: bool,
+    pub monero_wallet_is_generated: bool,
 }
 
 impl SupportDiagnostics {
@@ -141,7 +141,8 @@ impl SupportDiagnostics {
             use_tor: *core.use_tor(),
             auto_update: *core.auto_update(),
             pre_release: *core.pre_release(),
-            remote_base_node_address: core.remote_base_node_address().clone(),
+            remote_base_node_is_default: core.remote_base_node_address()
+                == ConfigCoreContent::default().remote_base_node_address(),
             node_type: format!("{:?}", core.node_type()),
             mmproxy_use_monero_failover: *core.mmproxy_use_monero_failover(),
             cpu_mining_enabled: *mining.cpu_mining_enabled(),
@@ -152,11 +153,9 @@ impl SupportDiagnostics {
             is_lolminer_tested: *mining.is_lolminer_tested(),
             is_gpu_mining_recommended: *mining.is_gpu_mining_recommended(),
             cpu_pool_enabled: *pools.cpu_pool_enabled(),
-            cpu_pool_name: cpu_pool.pool_name.clone(),
-            cpu_pool_url: cpu_pool.pool_url.clone(),
+            cpu_pool_type: format!("{:?}", cpu_pool.pool_type),
             gpu_pool_enabled: *pools.gpu_pool_enabled(),
-            gpu_pool_name: gpu_pool.pool_name.clone(),
-            gpu_pool_url: gpu_pool.pool_url.clone(),
+            gpu_pool_type: format!("{:?}", gpu_pool.pool_type),
             application_language: ui.application_language().clone(),
             should_always_use_system_language: *ui.should_always_use_system_language(),
             display_mode: format!("{:?}", ui.display_mode()),
@@ -168,7 +167,7 @@ impl SupportDiagnostics {
             credential_store_accessed: *wallet.keyring_accessed(),
             wallet_backed_up: *wallet.seed_backed_up(),
             wallet_migration_nonce: *wallet.wallet_migration_nonce(),
-            monero_address_is_generated: *wallet.monero_address_is_generated(),
+            monero_wallet_is_generated: *wallet.monero_address_is_generated(),
         }
     }
 

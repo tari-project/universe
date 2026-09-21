@@ -60,7 +60,12 @@ const PLACEHOLDER: &[u8] = b"<user>";
 static HOME_PATH_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r#"(?x-u)
-        # A URL is matched first so its path cannot be mistaken for a home dir.
+        # A local file URL is only its scheme: consume `file://` alone so the
+        # path that follows is scrubbed like any other path.
+        (?P<file_url> file://)
+        |
+        # Any other URL is matched whole so its path cannot be mistaken for a
+        # home dir.
         (?P<url>
             [a-zA-Z][a-zA-Z0-9+.\-]* :// [^\s"'<>\\,;()\[\]{}]*
         )
@@ -83,7 +88,7 @@ fn scrub_inner(input: &[u8]) -> Option<Vec<u8>> {
     let mut copied_up_to = 0usize;
 
     for caps in HOME_PATH_RE.captures_iter(input) {
-        // The URL alternative has no `user` group; skip those matches whole.
+        // The URL alternatives have no `user` group; skip those matches whole.
         let Some(user) = caps.name("user") else {
             continue;
         };

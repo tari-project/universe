@@ -163,3 +163,23 @@ fn multibyte_username_is_scrubbed_without_breaking_utf8() {
         "/home/<user>/.local/share/com.tari.universe"
     );
 }
+
+#[test]
+fn scrubs_unix_file_urls() {
+    assert_eq!(
+        scrub_user_paths("opened file:///home/alice/app.log and file:///Users/alice/Library/x"),
+        "opened file:///home/<user>/app.log and file:///Users/<user>/Library/x"
+    );
+}
+
+#[test]
+fn scrubs_windows_file_urls() {
+    assert_eq!(
+        scrub_user_paths(r"file:///C:/Users/alice/AppData/Local/com.tari.universe/x.log"),
+        r"file:///C:/Users/<user>/AppData/Local/com.tari.universe/x.log"
+    );
+    assert_eq!(
+        scrub_user_paths(r"file://C:\\Users\\alice\\AppData"),
+        r"file://C:\\Users\\<user>\\AppData"
+    );
+}
