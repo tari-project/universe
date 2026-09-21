@@ -243,7 +243,10 @@ impl ConfigImpl for ConfigWallet {
                 }
                 Err(e) => {
                     log::error!(target: LOG_TARGET_APP_LOGIC, "[{}] [load_config] error occured when loading config content: {e:?}", Self::_get_name());
-                    log::info!(target: LOG_TARGET_APP_LOGIC, "* Wallet Config: {config_content_serialized}");
+                    // The raw file holds the wallet view private key, so its
+                    // content must never be logged. The serde error above
+                    // already carries the line/column of the problem.
+                    log::info!(target: LOG_TARGET_APP_LOGIC, "* Wallet Config: {} bytes could not be parsed", config_content_serialized.len());
                     // Panic instead of creating default config
                     panic!("Failed to load wallet config: {e:?}");
                 }
