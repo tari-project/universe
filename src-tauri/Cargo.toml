@@ -20,7 +20,6 @@ embed-resource = "2.5.0"
 tauri-build = { version = "2", features = ["isolation"] }
 
 [dependencies]
-tempfile = "3.10"
 anyhow = "1"
 async-trait = "0.1.81"
 async_zip = { version = "0.0.17", features = ["full"] }
@@ -111,6 +110,7 @@ tauri-plugin-sentry = "0.3"
 tauri-plugin-shell = "2"
 tauri-plugin-single-instance = '2'
 tauri-plugin-updater = "2"
+tempfile = "3.10"
 thiserror = "2.0.10"
 tiny-keccak = "2.0"
 tokio = { version = "1", features = ["full"] }
