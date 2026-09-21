@@ -449,3 +449,427 @@ fn mining_is_refused_in_every_recovery_state() {
         assert!(!reason.as_tag().is_empty());
     }
 }
+
+// --- Legacy migration and legacy-file purge (c9hf / k5q8) ---------------------------------
+//
+// The whole point of these two changes is that a machine with a legacy wallet can no longer be
+// pushed into a state it cannot leave: the decrypt is tried from every source, a failure
+// quarantines the file instead of panicking, an unreadable legacy file never turns into a new
+// wallet, and nothing is deleted until the legacy seed is proven to be the wallet in the config.
+// Everything below runs against temp directories and in-memory fixtures; no keyring is touched.
+
+use super::credential_manager::LegacyCredential;
+use super::internal_wallet::{
+    LEGACY_DECRYPT_FAILED_SUFFIX, LEGACY_FALLBACK_FILE_NAME, LEGACY_MIGRATED_SUFFIX,
+    LEGACY_WALLET_CONFIG_FILE_NAME, LegacyConfigProblemKind, LegacyDecryptErrorKind,
+    LegacyFileKind, LegacyPassphraseSource, LegacyPurgeDecision, LegacySeedProof,
+    LegacyWalletEvidence, decrypt_legacy_tari_seed, get_old_wallet_config,
+    legacy_passphrase_candidates, legacy_purge_decision, locate_legacy_wallet,
+    quarantine_legacy_file, quarantined_path,
+};
+use tari_common_types::seeds::cipher_seed::CipherSeed;
+use tari_utilities::SafePassword;
+use tari_utilities::encoding::MBase58;
+
+/// Not a real view key: these two fields are only ever copied through, never used as keys here.
+const LEGACY_VIEW_KEY_HEX: &str =
+    "0a0b0c0d0e0f00112233445566778899aabbccddeeff00112233445566778899";
+const LEGACY_SPEND_KEY_HEX: &str =
+    "99887766554433221100ffeeddccbbaa99887766554433221100ffeeddccbbaa";
+
+/// A legacy seed as `wallet_config.json` stored it: `CipherSeed::encipher` output, monero-base58.
+fn enciphered_legacy_seed(passphrase: Option<&str>) -> String {
+    let seed = CipherSeed::random();
+    seed.encipher(passphrase.map(SafePassword::from))
+        .expect("encipher the fixture seed")
+        .to_monero_base58()
+}
+
+/// The on-disk shape of a pre-v1.2.24 `wallet_config.json`, including the `passphrase` field that
+/// real Era-1 files carry and that v1.2.24 dropped from the struct.
+fn legacy_wallet_config_json(seed_base58: &str, passphrase: Option<&str>) -> String {
+    let passphrase = match passphrase {
+        Some(passphrase) => format!("\"{passphrase}\""),
+        None => "null".to_string(),
+    };
+    format!(
+        r#"{{"tari_address_base58":"{TEST_TARI_ADDRESS}","view_key_private_hex":"{LEGACY_VIEW_KEY_HEX}","spend_public_key_hex":"{LEGACY_SPEND_KEY_HEX}","seed_words_encrypted_base58":"{seed_base58}","passphrase":{passphrase},"config_path":null}}"#
+    )
+}
+
+fn write_legacy_wallet_config(dir: &std::path::Path, contents: &str) -> std::path::PathBuf {
+    let path = dir.join(LEGACY_WALLET_CONFIG_FILE_NAME);
+    std::fs::write(&path, contents).expect("write the legacy wallet config fixture");
+    path
+}
+
+// --- Passphrase sources -------------------------------------------------------------------
+
+#[test]
+fn passphrase_candidates_follow_the_documented_order() {
+    // Keyring first, then the plaintext fallback file (which the legacy credential manager would
+    // otherwise let shadow the keyring), then the in-file Era-1 passphrase, then none at all.
+    let candidates = legacy_passphrase_candidates(
+        Some(SafePassword::from("from-keyring")),
+        Some(SafePassword::from("from-file")),
+        Some("from-config".to_string()),
+    );
+
+    let sources: Vec<LegacyPassphraseSource> =
+        candidates.iter().map(|(source, _)| *source).collect();
+    assert_eq!(
+        sources,
+        vec![
+            LegacyPassphraseSource::KeyringCredential,
+            LegacyPassphraseSource::FallbackFileCredential,
+            LegacyPassphraseSource::LegacyConfigFile,
+            LegacyPassphraseSource::NoPassphrase,
+        ]
+    );
+    for (position, (source, _)) in candidates.iter().enumerate() {
+        assert_eq!(source.index(), position, "index must match the try order");
+        assert!(!source.as_tag().is_empty());
+    }
+}
+
+#[test]
+fn passphrase_candidates_always_end_with_no_passphrase() {
+    // A seed enciphered without a passphrase is a legitimate legacy state, so "none" is a source
+    // in its own right and must be tried even when nothing else exists.
+    let candidates = legacy_passphrase_candidates(None, None, None);
+
+    assert_eq!(candidates.len(), 1);
+    assert_eq!(candidates[0].0, LegacyPassphraseSource::NoPassphrase);
+    assert!(candidates[0].1.is_none());
+}
+
+// --- Decrypting the legacy seed (c9hf criteria 1 and 3) -----------------------------------
+
+#[test]
+fn legacy_seed_decrypts_with_the_passphrase_from_the_credential() {
+    let seed_base58 = enciphered_legacy_seed(Some("correct horse"));
+    let credential = LegacyCredential {
+        tari_seed_passphrase: Some(SafePassword::from("correct horse")),
+        monero_seed: None,
+    };
+
+    let candidates =
+        legacy_passphrase_candidates(credential.tari_seed_passphrase, None, Some("wrong".into()));
+    let (_seed, source) =
+        decrypt_legacy_tari_seed(&seed_base58, candidates).expect("credential passphrase works");
+
+    assert_eq!(source, LegacyPassphraseSource::KeyringCredential);
+    assert_eq!(source.index(), 0);
+}
+
+#[test]
+fn legacy_seed_decrypts_with_the_passphrase_from_the_legacy_file() {
+    // The Era-1 case: the passphrase only ever lived in `wallet_config.json`, and v1.2.24 threw
+    // it away by dropping the field from the struct. Nothing else on the machine can open this.
+    let seed_base58 = enciphered_legacy_seed(Some("in-file passphrase"));
+    let json = legacy_wallet_config_json(&seed_base58, Some("in-file passphrase"));
+    let parsed: super::internal_wallet::LegacyWalletConfig =
+        serde_json::from_str(&json).expect("legacy fixture parses");
+
+    let candidates = legacy_passphrase_candidates(
+        Some(SafePassword::from("stale keyring passphrase")),
+        None,
+        parsed.passphrase.clone(),
+    );
+    let (_seed, source) = decrypt_legacy_tari_seed(&parsed.seed_words_encrypted_base58, candidates)
+        .expect("the in-file passphrase works");
+
+    assert_eq!(source, LegacyPassphraseSource::LegacyConfigFile);
+    assert_eq!(source.index(), 2);
+}
+
+#[test]
+fn legacy_seed_decrypts_with_no_passphrase_at_all() {
+    let seed_base58 = enciphered_legacy_seed(None);
+
+    let (_seed, source) =
+        decrypt_legacy_tari_seed(&seed_base58, legacy_passphrase_candidates(None, None, None))
+            .expect("a seed enciphered without a passphrase opens with none");
+
+    assert_eq!(source, LegacyPassphraseSource::NoPassphrase);
+}
+
+#[test]
+fn legacy_seed_that_no_source_opens_reports_decryption_failed() {
+    // This is panic 4: every source is wrong. It must be an error, not an `.expect`.
+    let seed_base58 = enciphered_legacy_seed(Some("the passphrase this machine lost"));
+
+    let error = decrypt_legacy_tari_seed(
+        &seed_base58,
+        legacy_passphrase_candidates(
+            Some(SafePassword::from("wrong one")),
+            Some(SafePassword::from("wrong two")),
+            Some("wrong three".to_string()),
+        ),
+    )
+    .expect_err("no passphrase should open this seed");
+
+    assert_eq!(error, LegacyDecryptErrorKind::DecryptionFailed);
+    // The tag is what reaches a Sentry tag, so it must be a fixed, closed value.
+    assert_eq!(error.as_tag(), "decryption_failed");
+}
+
+#[test]
+fn a_damaged_enciphered_seed_is_reported_as_damage_not_as_a_wrong_passphrase() {
+    // Worth separating: "the bytes are corrupt" is a different support answer from "the
+    // passphrase is gone", and trying the remaining passphrases cannot change the outcome.
+    let error = decrypt_legacy_tari_seed(
+        "not base58 at all !!!",
+        legacy_passphrase_candidates(None, None, None),
+    )
+    .expect_err("a non-base58 seed field cannot decrypt");
+
+    assert_eq!(error, LegacyDecryptErrorKind::Base58);
+}
+
+// --- The migration decision tree (c9hf criterion 4) ---------------------------------------
+
+#[test]
+fn an_empty_config_dir_is_the_only_state_that_allows_a_new_wallet() {
+    let dir = tempfile::tempdir().expect("temp dir");
+
+    assert!(matches!(
+        locate_legacy_wallet(dir.path()),
+        LegacyWalletEvidence::None
+    ));
+}
+
+#[test]
+fn a_readable_legacy_config_is_migratable() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let seed_base58 = enciphered_legacy_seed(Some("passphrase"));
+    write_legacy_wallet_config(dir.path(), &legacy_wallet_config_json(&seed_base58, None));
+
+    match locate_legacy_wallet(dir.path()) {
+        LegacyWalletEvidence::Migratable(config) => {
+            assert_eq!(config.seed_words_encrypted_base58, seed_base58);
+        }
+        other => panic!("expected a migratable legacy wallet, got {other:?}"),
+    }
+}
+
+#[test]
+fn an_unparseable_legacy_config_is_a_recovery_case_never_a_new_wallet() {
+    // The `.ok()` this replaces turned "locked by antivirus" and "truncated" into "no legacy
+    // wallet here", and the next step created a brand new wallet over the top of the old one.
+    let dir = tempfile::tempdir().expect("temp dir");
+    write_legacy_wallet_config(dir.path(), "{ this is not json");
+
+    match locate_legacy_wallet(dir.path()) {
+        LegacyWalletEvidence::Unreadable(problem) => {
+            assert_eq!(problem.file, LegacyFileKind::WalletConfig);
+            assert_eq!(problem.kind, LegacyConfigProblemKind::Unparseable);
+        }
+        other => panic!("an unparseable legacy config must not allow a new wallet: {other:?}"),
+    }
+}
+
+#[test]
+fn a_legacy_config_without_a_wallet_in_it_is_a_recovery_case() {
+    // Valid JSON, no wallet: a truncated or half-written file, not a fresh install.
+    let dir = tempfile::tempdir().expect("temp dir");
+    write_legacy_wallet_config(dir.path(), "{}");
+
+    match locate_legacy_wallet(dir.path()) {
+        LegacyWalletEvidence::Unreadable(problem) => {
+            assert_eq!(problem.kind, LegacyConfigProblemKind::Incomplete);
+        }
+        other => panic!("expected a recovery case, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_surviving_credential_file_alone_still_blocks_a_new_wallet() {
+    // The wallet config is gone but the machine demonstrably had a wallet. Creating a new one
+    // here is the silent replacement the hardening brief forbids.
+    let dir = tempfile::tempdir().expect("temp dir");
+    std::fs::write(dir.path().join(LEGACY_FALLBACK_FILE_NAME), b"\x00\x01")
+        .expect("write the fallback fixture");
+
+    match locate_legacy_wallet(dir.path()) {
+        LegacyWalletEvidence::Unreadable(problem) => {
+            assert_eq!(problem.file, LegacyFileKind::FallbackCredential);
+            assert_eq!(problem.kind, LegacyConfigProblemKind::EvidenceWithoutConfig);
+        }
+        other => panic!("expected a recovery case, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_quarantined_legacy_config_comes_back_as_view_only_not_as_migratable() {
+    // After a failed decrypt the file is renamed, so the next launch finds nothing to migrate and
+    // cannot repeat the failure - this is what makes the crash loop impossible - but the address
+    // and view key are still there, so the wallet stays visible.
+    let dir = tempfile::tempdir().expect("temp dir");
+    let seed_base58 = enciphered_legacy_seed(Some("lost"));
+    let path =
+        write_legacy_wallet_config(dir.path(), &legacy_wallet_config_json(&seed_base58, None));
+
+    let quarantined = quarantine_legacy_file(&path, LEGACY_DECRYPT_FAILED_SUFFIX)
+        .expect("quarantine the legacy config")
+        .expect("the file was there");
+
+    assert!(!path.exists(), "the migratable name must be gone");
+    assert_eq!(
+        quarantined,
+        quarantined_path(&path, LEGACY_DECRYPT_FAILED_SUFFIX)
+    );
+    assert!(quarantined.exists(), "the file itself must survive");
+
+    match locate_legacy_wallet(dir.path()) {
+        LegacyWalletEvidence::ViewOnly(config) => {
+            assert_eq!(config.seed_words_encrypted_base58, seed_base58);
+        }
+        other => panic!("expected a view-only legacy wallet, got {other:?}"),
+    }
+}
+
+#[test]
+fn quarantining_never_overwrites_an_earlier_quarantined_file() {
+    // A previous quarantine may hold a different wallet's enciphered seed.
+    let dir = tempfile::tempdir().expect("temp dir");
+    let path = dir.path().join(LEGACY_WALLET_CONFIG_FILE_NAME);
+    std::fs::write(&path, b"first").expect("write the first fixture");
+    quarantine_legacy_file(&path, LEGACY_MIGRATED_SUFFIX).expect("first quarantine");
+
+    std::fs::write(&path, b"second").expect("write the second fixture");
+    let second = quarantine_legacy_file(&path, LEGACY_MIGRATED_SUFFIX)
+        .expect("second quarantine")
+        .expect("the file was there");
+
+    let first = quarantined_path(&path, LEGACY_MIGRATED_SUFFIX);
+    assert_ne!(second, first);
+    assert_eq!(std::fs::read(&first).expect("read the first"), b"first");
+    assert_eq!(std::fs::read(&second).expect("read the second"), b"second");
+}
+
+#[test]
+fn quarantining_an_absent_file_is_not_an_error() {
+    let dir = tempfile::tempdir().expect("temp dir");
+
+    assert!(
+        quarantine_legacy_file(
+            &dir.path().join(LEGACY_WALLET_CONFIG_FILE_NAME),
+            LEGACY_DECRYPT_FAILED_SUFFIX,
+        )
+        .expect("absent is not an error")
+        .is_none()
+    );
+}
+
+#[test]
+fn an_absent_legacy_config_file_is_reported_as_absent_not_as_damage() {
+    let dir = tempfile::tempdir().expect("temp dir");
+
+    assert!(
+        get_old_wallet_config(&dir.path().join(LEGACY_WALLET_CONFIG_FILE_NAME))
+            .expect("absent is not an error")
+            .is_none()
+    );
+}
+
+// --- The purge gate (k5q8) ----------------------------------------------------------------
+
+/// Two independent wallets, as the gate sees them: an address derived from a seed.
+async fn address_for_a_random_wallet() -> TariAddress {
+    InternalWallet::get_tari_wallet_details(
+        WalletId::new("gate_fixture".to_string()),
+        CipherSeed::random(),
+    )
+    .await
+    .expect("derive the fixture address")
+    .tari_address
+}
+
+#[tokio::test]
+async fn purge_proceeds_when_the_legacy_seed_derives_a_configured_address() {
+    let legacy = address_for_a_random_wallet().await;
+    let other = address_for_a_random_wallet().await;
+
+    assert_eq!(
+        legacy_purge_decision(
+            &LegacySeedProof::Address(legacy.clone()),
+            &[other, legacy],
+            false,
+        ),
+        LegacyPurgeDecision::Purge
+    );
+}
+
+#[tokio::test]
+async fn purge_is_refused_when_the_legacy_wallet_is_not_the_configured_one() {
+    // The #3353 hole: the config's wallets are readable, but they are a different wallet. Before
+    // this gate, the last copy of the user's original enciphered seed was zero-filled here.
+    let legacy = address_for_a_random_wallet().await;
+    let configured = address_for_a_random_wallet().await;
+
+    assert_eq!(
+        legacy_purge_decision(&LegacySeedProof::Address(legacy), &[configured], false),
+        LegacyPurgeDecision::Defer("address_mismatch")
+    );
+}
+
+#[tokio::test]
+async fn purge_is_refused_when_the_legacy_seed_cannot_be_decrypted() {
+    // Nothing is proven, so nothing is touched - even though every configured wallet is readable.
+    let configured = address_for_a_random_wallet().await;
+
+    assert_eq!(
+        legacy_purge_decision(&LegacySeedProof::Undecryptable, &[configured], false),
+        LegacyPurgeDecision::Defer("legacy_seed_undecryptable")
+    );
+}
+
+#[test]
+fn purge_is_refused_while_a_quarantined_config_still_needs_its_passphrase() {
+    // No wallet config left to match, but a `.decrypt_failed` one is sitting next to the
+    // credential file: that passphrase is the only thing that could ever open it.
+    assert_eq!(
+        legacy_purge_decision(&LegacySeedProof::NoLegacyConfig, &[], true),
+        LegacyPurgeDecision::Defer("quarantined_config_present")
+    );
+}
+
+#[test]
+fn purge_proceeds_when_the_passphrase_can_no_longer_open_anything() {
+    assert_eq!(
+        legacy_purge_decision(&LegacySeedProof::NoLegacyConfig, &[], false),
+        LegacyPurgeDecision::Purge
+    );
+}
+
+#[test]
+fn the_enciphered_legacy_config_is_renamed_while_the_plaintext_file_is_destroyed() {
+    // The two files get different treatment on purpose: `wallet_config.json` is enciphered and
+    // may be the last copy of a seed, `credentials_backup.bin` is plaintext CBOR.
+    let dir = tempfile::tempdir().expect("temp dir");
+    let seed_base58 = enciphered_legacy_seed(Some("passphrase"));
+    let config =
+        write_legacy_wallet_config(dir.path(), &legacy_wallet_config_json(&seed_base58, None));
+    let fallback = dir.path().join(LEGACY_FALLBACK_FILE_NAME);
+    std::fs::write(&fallback, b"PLAINTEXT-CBOR-CREDENTIAL").expect("write the fallback fixture");
+
+    quarantine_legacy_file(&config, LEGACY_MIGRATED_SUFFIX).expect("rename the legacy config");
+    assert!(wipe_and_remove_file(&fallback).expect("wipe the plaintext credential file"));
+
+    assert!(!config.exists(), "the migration path must be clear");
+    assert!(
+        !fallback.exists(),
+        "the plaintext credential file must be gone"
+    );
+    let migrated = quarantined_path(&config, LEGACY_MIGRATED_SUFFIX);
+    assert!(
+        migrated.exists(),
+        "the enciphered seed must be kept, not destroyed"
+    );
+    assert!(
+        String::from_utf8_lossy(&std::fs::read(&migrated).expect("read the renamed config"))
+            .contains(&seed_base58),
+        "the renamed file must still carry the enciphered seed"
+    );
+}

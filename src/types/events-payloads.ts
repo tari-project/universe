@@ -48,6 +48,11 @@ export interface CriticalProblemPayload {
  * chosen here.
  */
 export type WalletRecoveryReason = 'initialization_failed' | 'seed_unavailable' | 'config_corrupted';
+export type WalletRecoveryReason =
+    | 'initialization_failed'
+    | 'seed_unavailable'
+    | 'legacy_seed_undecryptable'
+    | 'legacy_config_unreadable';
 
 export interface WalletRecoveryPayload {
     reason: WalletRecoveryReason;
