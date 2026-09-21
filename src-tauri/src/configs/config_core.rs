@@ -42,10 +42,23 @@ use crate::utils::rand_utils;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct AirdropTokens {
     pub token: String,
     pub refresh_token: String,
+}
+
+/// Manual `Debug` so the credentials can never be written to a log line or a
+/// telemetry payload through a `{:?}` formatter. `Serialize`/`Deserialize` are
+/// intentionally left untouched: the tokens still have to round-trip through
+/// the config file and the frontend.
+impl std::fmt::Debug for AirdropTokens {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AirdropTokens")
+            .field("token", &"[REDACTED]")
+            .field("refresh_token", &"[REDACTED]")
+            .finish()
+    }
 }
 
 pub const CORE_CONFIG_VERSION: u32 = 0;
