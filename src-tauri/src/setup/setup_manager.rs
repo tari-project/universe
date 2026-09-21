@@ -471,6 +471,10 @@ impl SetupManager {
                     }
                 };
             }
+        } else {
+            // An exchange-miner build on its first run: the external address has not been chosen
+            // yet, so there is nothing to initialise. The block below picks it up once it has.
+            // Not a failure, so no recovery reason - see the comment on `init_recovery_reason`.
         }
 
         // Case when we are on exchange miner build and already selected external tari address ( Second time we open app )

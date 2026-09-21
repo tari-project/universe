@@ -134,11 +134,12 @@ impl PinManager {
     ///
     /// Only for the self-healing decode in `internal_wallet`, which validates by decoding the
     /// blob it already holds. `validate_pin` cannot be used there: it reads the seed, which is
-    /// the operation that is failing.
+    /// the operation that is failing. No `PinPromptContext`: these prompts are repairs, not
+    /// authorisations of a transaction, so there is nothing for the dialog to describe.
     pub async fn prompt_pin_unvalidated(
         app_handle: &AppHandle,
     ) -> Result<SafePassword, anyhow::Error> {
-        let pin = enter_pin_dialog(app_handle).await?;
+        let pin = enter_pin_dialog(app_handle, None).await?;
         Ok(SafePassword::from(pin))
     }
 

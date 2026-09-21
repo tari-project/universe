@@ -281,7 +281,7 @@ fn failed_recovery_marker_write_keeps_corrupt_primary() {
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("config_wallet.json");
     fs::write(&path, b"original damaged content").unwrap();
-    fs::create_dir(path.with_extension("json.recovery_required")).unwrap();
+    fs::create_dir_all(path.with_extension("json.recovery_required")).unwrap();
     assert!(*ConfigWallet::load_from_path(&path).corrupted_recovery());
     assert_eq!(fs::read(&path).unwrap(), b"original damaged content");
 }
@@ -334,7 +334,7 @@ fn atomic_save_replaces_complete_content_and_cleans_up_failed_temp_files() {
     atomic_write(&path, b"new").unwrap();
     assert_eq!(fs::read(&path).unwrap(), b"new");
     let blocked = directory.path().join("blocked.json");
-    fs::create_dir(&blocked).unwrap();
+    fs::create_dir_all(&blocked).unwrap();
     assert!(atomic_write(&blocked, b"cannot replace a directory").is_err());
     assert_eq!(fs::read_dir(directory.path()).unwrap().count(), 2);
 }
@@ -415,7 +415,7 @@ fn failed_backup_write_does_not_poison_valid_primary() {
     let path = directory.path().join("config_wallet.json");
     let serialized = serde_json::to_vec(&sentinel_config_content()).unwrap();
     fs::write(&path, &serialized).unwrap();
-    fs::create_dir(path.with_extension("json.backup")).unwrap();
+    fs::create_dir_all(path.with_extension("json.backup")).unwrap();
     assert!(!ConfigWallet::load_from_path(&path).corrupted_recovery());
     assert_eq!(fs::read(path).unwrap(), serialized);
 }
@@ -424,7 +424,7 @@ fn failed_backup_write_does_not_poison_valid_primary() {
 fn failed_backup_restore_preserves_backup_and_requires_recovery() {
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("config_wallet.json");
-    fs::create_dir(&path).unwrap();
+    fs::create_dir_all(&path).unwrap();
     let backup = path.with_extension("json.backup");
     let serialized = serde_json::to_vec(&sentinel_config_content()).unwrap();
     fs::write(&backup, &serialized).unwrap();

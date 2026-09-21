@@ -377,6 +377,10 @@ impl InternalWallet {
         result
     }
 
+    // The migration decision tree. Every arm is a distinct on-disk state and the order the
+    // states are tested in is the safety property, so it is kept in one place where it can be
+    // read top to bottom rather than split across helpers.
+    #[allow(clippy::too_many_lines)]
     async fn initialize_with_seed_inner(
         app_handle: &tauri::AppHandle,
     ) -> Result<(), anyhow::Error> {
@@ -1462,6 +1466,9 @@ impl InternalWallet {
     /// that the wallet *these files describe* is one of them: the legacy seed is decrypted with
     /// the same multi-source passphrase logic the migration uses and the address it derives must
     /// match. Anything unprovable leaves both files exactly where they are.
+    // A sequence of gates that must all pass before an irreversible deletion. Splitting it
+    // would let a future edit reorder or skip one without that being obvious at the call site.
+    #[allow(clippy::too_many_lines)]
     pub async fn purge_legacy_credential_files(app_handle: &AppHandle) {
         let app_config_dir = match app_handle.path().app_config_dir() {
             Ok(dir) => dir,
@@ -1806,6 +1813,9 @@ impl InternalWallet {
     }
 
     /** Method safe to use before init - fallbacks to the credential manager */
+    // Read, then decode, then self-heal the recorded PIN state, then length-check. Each step
+    // depends on the one before it and every early return is a distinct user-facing error.
+    #[allow(clippy::too_many_lines)]
     pub async fn get_monero_seed(
         pin_password: Option<SafePassword>,
     ) -> Result<MoneroSeed, anyhow::Error> {
