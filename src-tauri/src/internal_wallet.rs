@@ -167,7 +167,6 @@ impl InternalWallet {
         app_handle: &tauri::AppHandle,
         new_external_tari_address: Option<TariAddress>,
     ) -> Result<(), anyhow::Error> {
-        ConfigWallet::content().await.ensure_available()?;
         if let Some(external_tari_address) = new_external_tari_address {
             ConfigWallet::update_field(
                 ConfigWalletContent::select_external_tari_address,
@@ -261,7 +260,6 @@ impl InternalWallet {
     }
 
     pub async fn initialize_with_seed(app_handle: &tauri::AppHandle) -> Result<(), anyhow::Error> {
-        ConfigWallet::content().await.ensure_available()?;
         ConfigWallet::update_field(
             ConfigWalletContent::set_selected_external_tari_address,
             None,
@@ -411,7 +409,6 @@ impl InternalWallet {
         tari_seed: CipherSeed, // decrypted seed
         pin_password_provided: Option<SafePassword>,
     ) -> Result<(TariWalletDetails, Vec<u8>), anyhow::Error> {
-        ConfigWallet::content().await.ensure_available()?;
         let wallet_id = rand_utils::get_rand_string(6);
         log::info!(target: LOG_TARGET_APP_LOGIC, "Adding Tari Wallet with id: {wallet_id}");
 
@@ -464,7 +461,6 @@ impl InternalWallet {
     }
 
     async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
-        ConfigWallet::content().await.ensure_available()?;
         log::info!(target: LOG_TARGET_APP_LOGIC, "Adding new Monero Wallet");
         let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
         let monero_seed_binary = (*monero_seed.inner())
