@@ -312,12 +312,17 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_wallet_config_loaded(payload: &ConfigWalletContent) {
+    /// Emits the wallet config to the webview.
+    ///
+    /// The content is sanitized first: `ConfigWalletContent` holds
+    /// `tari_wallet_details`, and therefore the wallet view private key, which
+    /// the frontend never reads and must never receive.
+    pub async fn emit_wallet_config_loaded(content: &ConfigWalletContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
 
         let event = Event {
             event_type: EventType::ConfigWalletLoaded,
-            payload,
+            payload: content.to_frontend_payload(),
         };
         if let Err(e) = Self::get_app_handle()
             .await

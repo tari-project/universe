@@ -58,25 +58,12 @@ export default function FailedModuleInitializationDialog() {
         }
     }, [isEveryAppModuleResolved]);
 
-    const {
-        isExiting,
-        logsSubmissionId,
-        handleClose,
-        handleRestart,
-        handleSendFeedback,
-        handleCopyLogsSubmissionId,
-        handleLogsSubbmissionIdButtonText,
-        handleSeperateLogsButtonText,
-    } = useErrorDialogsButtonsLogic();
+    const { isExiting, handleClose, handleRestart } = useErrorDialogsButtonsLogic();
 
     const handleRestartModule = useCallback(async (appModuleState: AppModuleState) => {
         setRestartingModule(true);
         await invoke('restart_phases', { phases: Object.keys(appModuleState.error_messages) });
     }, []);
-
-    const handleFeedbackForAllModules = useCallback(async () => {
-        await handleSendFeedback('Failed initialization of all modules');
-    }, [handleSendFeedback]);
 
     const handleCloseDialog = useCallback(() => {
         setIsDialogOpen(false);
@@ -161,27 +148,7 @@ export default function FailedModuleInitializationDialog() {
                                     >
                                         {t('common:restart')}
                                     </Button>
-                                    <Button
-                                        variant="outlined"
-                                        fluid
-                                        backgroundColor="warning"
-                                        size="small"
-                                        onClick={handleFeedbackForAllModules}
-                                    >
-                                        {handleSeperateLogsButtonText}
-                                    </Button>
                                 </>
-                            )}
-                            {logsSubmissionId && (
-                                <Button
-                                    backgroundColor="gothic"
-                                    variant="outlined"
-                                    fluid
-                                    size="small"
-                                    onClick={handleCopyLogsSubmissionId}
-                                >
-                                    {handleLogsSubbmissionIdButtonText}
-                                </Button>
                             )}
                         </GlobalActionsWrapper>
                     )}

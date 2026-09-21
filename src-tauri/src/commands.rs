@@ -921,21 +921,12 @@ pub async fn send_feedback(
 ) -> Result<String, String> {
     let timer = Instant::now();
     let app_log_dir = app.path().app_log_dir().expect("Could not get log dir.");
-    let app_config_dir = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get app config dir.");
 
     let reference = state
         .feedback
         .read()
         .await
-        .send_feedback(
-            feedback,
-            include_logs,
-            app_log_dir.clone(),
-            app_config_dir.clone(),
-        )
+        .send_feedback(feedback, include_logs, app_log_dir.clone())
         .await
         .inspect_err(|e| error!("error at send_feedback {e:?}"))
         .map_err(|e| e.to_string())?;
@@ -1082,6 +1073,9 @@ pub async fn toggle_device_exclusion(device_index: u32, excluded: bool) -> Resul
 pub async fn set_gpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
+    ConfigMining::update_field(ConfigMiningContent::set_has_user_chosen_gpu_mining, true)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
     ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, enabled)
         .await
         .map_err(InvokeError::from_anyhow)?;

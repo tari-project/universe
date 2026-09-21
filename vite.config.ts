@@ -58,7 +58,7 @@ const devOptions: UserConfig = {
         port: 1420,
         strictPort: true,
         watch: {
-            ignored: ['**/src-tauri/**'],
+            ignored: ['**/src-tauri/**', '**/target/**', '**/process-wrapper/**'],
         },
     },
 };

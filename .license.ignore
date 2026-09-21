@@ -1,3 +1,8 @@
+./flatpak/com.tari.universe.desktop
+./flatpak/com.tari.universe.metainfo.xml
+./flatpak/patches/0001-disable-updater-and-autostart-under-flatpak.patch
+./flatpak/patches/0002-vite-tsconfig-paths-ignore-vendor-configs.patch
+./flatpak/patches/0003-linux-tray-icon-png-not-template.patch
 ./src-tauri/env.esmeralda
 ./src-tauri/env.igor
 ./src-tauri/env.localnet

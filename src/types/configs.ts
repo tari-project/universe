@@ -1,11 +1,12 @@
 import { WalletUIMode } from './events-payloads';
 
+// Mirrors the sanitized `ConfigWalletFrontend` payload emitted by the backend.
+// The wallet view private key (and the rest of `tari_wallet_details`) never
+// leaves the Rust side, so nothing here may reference it.
 export interface ConfigWallet {
-    created_at: string;
     monero_address: string;
     monero_address_is_generated: boolean;
     wxtm_addresses: Record<string, string>; // Ethereum addresses used for WXTm mode
-    keyring_accessed: boolean;
     last_known_balance?: number;
 }
 export interface ConfigUI {
@@ -51,6 +52,11 @@ export interface ConfigMining {
     gpu_devices_settings: Record<number, GpuDeviceSettings>;
     cpu_mining_enabled: boolean;
     is_gpu_mining_recommended: boolean;
+    /** Whether any detected GPU can mine at all. When false, GPU mining cannot be switched on. */
+    gpu_mining_available: boolean;
+    /** The miner's own words for why it will not mine on this machine. */
+    gpu_mining_unavailable_reason: string | null;
+    has_user_chosen_gpu_mining: boolean;
     eco_alert_needed: boolean;
     mode_mining_times?: MiningModeTimes;
     pause_on_battery_mode: PauseOnBatteryModeState;
