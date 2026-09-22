@@ -367,6 +367,17 @@ fn previous_wallet_files_reads_the_backup_wallet_list() {
         "a backup of a config that never held a wallet is not evidence"
     );
 
+    std::fs::write(
+        &config_backup,
+        r#"{"tari_wallets":[],"tari_wallet_details":{"id":"abc"}}"#,
+    )
+    .expect("write backup with cached details only");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &absent),
+        Some("config_backup"),
+        "cached wallet details name a wallet even when the id list was emptied"
+    );
+
     std::fs::write(&config_backup, "not json").expect("write corrupt backup");
     assert_eq!(
         previous_wallet_files(&config_backup, &absent),

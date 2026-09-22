@@ -234,20 +234,14 @@ impl InternalWallet {
                 .await
                 {
                     Ok(cred) => cred.encrypted_seed,
-                    Err(e) => {
-                        // TODO(testing): This panic crashes the app on credential failures.
-                        // Convert to Result and show user-friendly recovery UI.
-                        // See TESTING_ISSUES.md for full analysis.
-                        panic!("Failed to get credentials: {e}")
-                    }
+                    Err(e) => return Err(anyhow!("Failed to get credentials: {e}")),
                 };
                 let tari_cipher_seed = CipherSeed::from_binary(&tari_seed_binary)
-                    .expect("Could not convert Tari Seed to binary");
+                    .map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))?;
 
                 let tari_wallet_details =
                     InternalWallet::get_tari_wallet_details(wallet_id.clone(), tari_cipher_seed)
-                        .await
-                        .expect("Could not extract Tari Seed to binary");
+                        .await?;
                 ConfigWallet::update_field(
                     ConfigWalletContent::set_tari_wallet_details,
                     Some(tari_wallet_details),
@@ -276,7 +270,7 @@ impl InternalWallet {
                 let app_config_dir = app_handle
                     .path()
                     .app_config_dir()
-                    .expect("Couldn't get application config directory!");
+                    .map_err(|e| anyhow!("Couldn't get application config directory: {e}"))?;
 
                 let old_wallet_config = get_old_wallet_config(&app_config_dir).await?;
                 if let Some(old_wallet_config) = old_wallet_config {
@@ -287,7 +281,7 @@ impl InternalWallet {
                     let tari_wallet_details = InternalWallet::get_tari_wallet_details(
                         wallet_id,
                         CipherSeed::from_binary(&tari_seed_binary)
-                            .expect("Could not convert Tari Seed to binary"),
+                            .map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))?,
                     )
                     .await?;
 
@@ -716,20 +710,19 @@ impl InternalWallet {
     ) -> Result<InternalWallet, anyhow::Error> {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Internal Wallet latest version detected.");
         let monero_address = wallet_config.monero_address().clone();
-        // TODO(testing): These panics can crash the app if config is corrupted.
-        // Convert to Result<InternalWallet, WalletConfigError> with recovery options.
-        // See TESTING_ISSUES.md for full analysis.
+        // An inconsistent wallet config is reported, not fatal: the error reaches the critical
+        // problem dialog instead of killing every launch.
         if monero_address.is_empty() {
-            panic!(
-                "Unexpected! Monero address should be accessible for v{:?}",
+            return Err(anyhow!(
+                "Monero address should be accessible for v{:?}",
                 *wallet_config.version_counter()
-            );
+            ));
         }
         if (*wallet_config.tari_wallets()).is_empty() {
-            panic!(
-                "Unexpected! Tari wallets field should be defined in the config for v{:?}",
+            return Err(anyhow!(
+                "Tari wallets field should be defined in the config for v{:?}",
                 *wallet_config.version_counter()
-            );
+            ));
         }
 
         let (encrypted_tari_seed, tari_wallet_details) = {
@@ -740,9 +733,10 @@ impl InternalWallet {
                 }
                 _ => {
                     // If wallet details are not saved in the config file, extract them from the decrypted seed.
-                    let tari_wallet_id = (*wallet_config.tari_wallets())
-                        .first()
-                        .expect("Unexpected! Selected wallet not found in the wallet config!");
+                    let tari_wallet_id =
+                        (*wallet_config.tari_wallets()).first().ok_or_else(|| {
+                            anyhow!("Selected wallet not found in the wallet config!")
+                        })?;
                     let encrypted_tari_seed = match InternalWallet::get_credentials(
                         app_handle,
                         tari_wallet_id.clone(),
@@ -751,9 +745,7 @@ impl InternalWallet {
                     .await
                     {
                         Ok(cred) => cred.encrypted_seed,
-                        Err(e) => {
-                            panic!("Failed to get credentials: {e}")
-                        }
+                        Err(e) => return Err(anyhow!("Failed to get credentials: {e}")),
                     };
                     let tari_cipher_seed = if PinManager::pin_locked().await {
                         let pin_password = PinManager::get_validated_pin(app_handle, None).await?;
@@ -769,7 +761,7 @@ impl InternalWallet {
                     } else {
                         // Seed not yet encrypted with PIN
                         CipherSeed::from_binary(&encrypted_tari_seed)
-                            .expect("Could not parse Tari Seed from binary")
+                            .map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))?
                     };
                     let wallet_details = InternalWallet::get_tari_wallet_details(
                         tari_wallet_id.clone(),
@@ -1350,17 +1342,24 @@ pub(crate) fn previous_wallet_files(
     None
 }
 
-/// True when the wallet config backup lists a Tari wallet, or cannot be parsed at all. A first
-/// launch that failed before creating a wallet leaves an empty list, which is not evidence.
+/// True when the wallet config backup names a Tari wallet, by id or by cached details, or
+/// cannot be parsed at all. A first launch that failed before creating a wallet names neither,
+/// which is not evidence.
 fn backup_names_a_wallet(config_backup: &Path) -> bool {
     let Ok(contents) = std::fs::read_to_string(config_backup) else {
         return false;
     };
     match serde_json::from_str::<serde_json::Value>(&contents) {
-        Ok(content) => content
-            .get("tari_wallets")
-            .and_then(serde_json::Value::as_array)
-            .is_some_and(|wallets| !wallets.is_empty()),
+        Ok(content) => {
+            let has_wallet_id = content
+                .get("tari_wallets")
+                .and_then(serde_json::Value::as_array)
+                .is_some_and(|wallets| !wallets.is_empty());
+            has_wallet_id
+                || content
+                    .get("tari_wallet_details")
+                    .is_some_and(|d| !d.is_null())
+        }
         Err(_) => true,
     }
 }
