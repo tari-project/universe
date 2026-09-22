@@ -20,13 +20,14 @@ interface ListProps {
 
 export function List({ setIsScrolled, targetRef }: ListProps) {
     const { t } = useTranslation('wallet');
-    const walletScanning = useWalletStore((s) => s.wallet_scanning);
+    const walletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
     const walletImporting = useWalletStore((s) => s.is_wallet_importing);
     const walletIsLoading = useWalletStore((s) => s.isLoading);
-    const { data, fetchNextPage, isFetchingNextPage, isFetching, hasNextPage } = useFetchTxHistory();
+    const { data, fetchNextPage, isFetchingNextPage, isFetching, isPending, isLoading, hasNextPage } =
+        useFetchTxHistory();
 
-    // TODO clean up
-    const walletLoading = walletImporting || walletScanning?.is_scanning || isFetching || walletIsLoading;
+    // Background refreshes should keep the settled list and empty state visible.
+    const walletLoading = walletImporting || walletScanning || isPending || walletIsLoading;
 
     useEffect(() => {
         const el = targetRef?.current;
@@ -79,7 +80,7 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
             {Array.from({ length: placeholdersNeeded }).map((_, index) => (
                 <PlaceholderItem key={`placeholder-${index}`} />
             ))}
-            {isFetchingNextPage || isFetching ? <LoadingDots /> : null}
+            {isFetchingNextPage || isLoading ? <LoadingDots /> : null}
         </ListItemWrapper>
     );
 
@@ -90,7 +91,7 @@ export function List({ setIsScrolled, targetRef }: ListProps) {
             {emptyMarkup}
             {listMarkup}
             {/*added placeholder so the scroll can trigger fetch*/}
-            {!walletScanning?.is_scanning ? <PlaceholderItem ref={ref} $isLast /> : null}
+            {!walletScanning ? <PlaceholderItem ref={ref} $isLast /> : null}
         </ListWrapper>
     );
 }
