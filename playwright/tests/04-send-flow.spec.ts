@@ -120,10 +120,8 @@ test.describe('Send Transaction Flow', () => {
     await confirmBtn.waitFor({ state: 'visible', timeout: 5_000 });
     await confirmBtn.click({ timeout: 10_000 });
 
-    // --- Send gate (#3355) ---
-    // This wallet has no PIN, so the backend asks for an explicit confirmation
-    // instead of a PIN before it signs. Until this is acknowledged the send
-    // never leaves `processing` and the completion copy below never appears.
+    // This wallet has no PIN, so the backend asks for an explicit confirmation before it
+    // signs. The send stays in `processing` until it is acknowledged.
     const appConfirmBtn = page.locator(sel.send.appConfirmButton);
     await appConfirmBtn.waitFor({ state: 'visible', timeout: 30_000 });
     await appConfirmBtn.click({ timeout: 10_000 });

@@ -22,13 +22,10 @@
 
 //! Storage of wallet seed material in the platform credential store.
 //!
-//! Two rules drive everything here, both from the wallet hardening brief:
-//!
-//! 1. A keyring entry is frequently the *only* copy of a seed on the machine. Nothing in this
-//!    file may destroy one unless a replacement has been written and proven readable.
-//! 2. The store is reached through a [`KeyringBackend`] trait so the write protocol can be tested
-//!    against an in-memory fake. The production backend ([`SystemKeyring`]) is a thin wrapper over
-//!    the `keyring` crate and behaves exactly as before.
+//! A keyring entry is frequently the *only* copy of a seed on the machine, so nothing here may
+//! destroy one unless a replacement has been written and proven readable. The store is reached
+//! through a [`KeyringBackend`] trait so that protocol can be tested against an in-memory fake;
+//! the production backend ([`SystemKeyring`]) is a thin wrapper over the `keyring` crate.
 
 use crate::APPLICATION_FOLDER_ID;
 use crate::LOG_TARGET_APP_LOGIC;
@@ -303,24 +300,18 @@ impl CredentialManager {
     ///
     /// Protocol, in order:
     ///
-    /// 1. Read whatever is stored today. The result is a *tri-state*
-    ///    ([`PreviousCredential`]): present, absent, or unknown. Unknown means the entry exists
-    ///    and the store would not hand it over, and it is fatal here: overwriting a blob we
-    ///    cannot read is overwriting a seed we cannot prove is stored anywhere else, which is
-    ///    precisely what the hardening brief forbids. Backends can allow writes while refusing
-    ///    reads, so "the write will fail anyway" is not a safe assumption.
-    /// 2. Write the new value **under the same id**, in place. No delete happens first - that was
-    ///    the old behaviour and it is what left users with no credential at all when the write
-    ///    that followed failed (path P11 of the investigation).
+    /// 1. Read whatever is stored today, as a tri-state ([`PreviousCredential`]). `Unknown` -
+    ///    an entry exists and the store would not hand it over - is fatal: a backend can allow
+    ///    writes while refusing reads, so overwriting would destroy a seed nothing can prove is
+    ///    stored elsewhere.
+    /// 2. Write the new value **under the same id**, in place. Never delete first: a delete
+    ///    followed by a failed write leaves the user with no credential at all.
     /// 3. Read the entry back and compare it byte for byte with what we wrote.
-    /// 4. Only a verified read-back counts as success. The in-place write is what replaces the
-    ///    old entry, so at no point do both copies go missing.
+    /// 4. Only a verified read-back counts as success, so at no point do both copies go missing.
     ///
-    /// If a platform ever refuses an in-place overwrite, step 2 falls back to delete-then-write,
-    /// but only *after* step 1 captured the old blob, and it writes the old blob back if the
-    /// retry fails. If the verification in step 3 fails the previous value is restored too, and
-    /// the call errors: a caller that believes a seed was stored when it was not is exactly how
-    /// seeds get lost.
+    /// If a platform refuses an in-place overwrite, step 2 falls back to delete-then-write, but
+    /// only *after* step 1 captured the old blob, and it writes that blob back if the retry
+    /// fails. A failed verification in step 3 restores the previous value and errors.
     fn save_to_keyring(&self, credential: &Credential) -> Result<(), CredentialError> {
         let serialized = serde_cbor::to_vec(credential)?;
         let lock = credential_lock(&self.service_name, &self.username);
@@ -495,13 +486,10 @@ mod platform_listing {
             CRED_TYPE_GENERIC, CREDENTIALW, CredEnumerateW, CredFree,
         };
 
-        // The `keyring` crate stores generic credentials under the target name
-        // "{username}.{service}": `Entry::new` builds with no explicit target, and the `None`
-        // arm of `WinCredential::new_with_target` sets `target_name: format!("{user}.{service}")`
-        // (keyring-3.6.3/src/windows.rs:378, the version pinned in Cargo.lock). `CredEnumerateW`
-        // only supports a trailing `*`, which is enough because the username prefix is a real
-        // prefix of the target name. If a future keyring release flips the order, this filter
-        // matches nothing and "find my wallets" reports an empty list - wrong, but harmless.
+        // The `keyring` crate formats the target name of a generic credential as
+        // "{username}.{service}", so the username prefix is a real prefix of the target name and
+        // the trailing `*` that `CredEnumerateW` supports is enough. If a future keyring release
+        // flips the order this filter matches nothing and the search reports an empty list.
         let filter: Vec<u16> = format!("{username_prefix}*")
             .encode_utf16()
             .chain(std::iter::once(0))
@@ -974,8 +962,8 @@ mod tests {
         manager
             .save_to_keyring(&credential(1))
             .expect("first write");
-        // A backend that refuses to delete would break a delete-then-write implementation; this
-        // one accepts deletes, so the assertion is the stronger one: the value is simply replaced.
+        // This backend accepts deletes, so a delete-then-write would also pass; the assertion
+        // below is the stronger one, that the value is simply replaced.
         manager
             .save_to_keyring(&credential(2))
             .expect("in-place overwrite");
@@ -1048,9 +1036,8 @@ mod tests {
             .save_to_keyring(&credential(1))
             .expect("first write");
 
-        // Every write of the *new* value fails, both in place and after the delete. That is
-        // precisely the window the old delete-then-set order left open, and the protocol has to
-        // come out of it with the old seed still in the store.
+        // Every write of the *new* value fails, both in place and after the delete. The protocol
+        // has to come out of that with the old seed still in the store.
         let previous_bytes = serde_cbor::to_vec(&credential(1)).expect("serialize");
         let failing = FailAfterDelete {
             inner: keyring.clone(),

@@ -65,15 +65,10 @@ use crate::{APPLICATION_FOLDER_ID, LOG_TARGET_APP_LOGIC, UniverseAppState};
 
 /// The wallet's view private key, in hex.
 ///
-/// The key has to keep living in `config_wallet.json` as a plain hex string, so
-/// `Serialize`/`Deserialize` stay transparent and the on-disk shape is exactly
-/// what it was before. Only `Debug`/`Display` are masked, so the key can never
-/// be written to a log line or a telemetry payload through a `{:?}` formatter.
-/// The value is held in a `tari_utilities::Hidden` so it is zeroized on drop as
-/// well, matching how the seeds are handled on `InternalWallet`.
-///
-/// `Hidden` is not used directly on the field because `Hidden` only implements
-/// `Deserialize`; serialization is left to the caller by design.
+/// `Serialize`/`Deserialize` stay transparent because the key lives in
+/// `config_wallet.json` as a plain hex string. Only `Debug`/`Display` are
+/// masked, so the key can never reach a log line or a telemetry payload through
+/// a `{:?}` formatter, and the `Hidden` wrapper zeroizes it on drop.
 #[derive(Clone, Deserialize)]
 #[serde(transparent)]
 pub struct ViewPrivateKeyHex(Hidden<String>);
@@ -185,10 +180,9 @@ impl InternalWallet {
         app_handle: &tauri::AppHandle,
         new_external_tari_address: Option<TariAddress>,
     ) -> Result<(), anyhow::Error> {
-        // Same reason as `add_tari_wallet` / `add_monero_wallet`: a recovery placeholder is not
-        // the user's config, and switching the app into seedless mode against it would record an
-        // external address over a wallet whose id list is simply missing. `_save_config` refuses
-        // the write anyway; refusing here means nothing is mutated in memory either.
+        // Switching into seedless mode against a recovery placeholder would record an external
+        // address over a wallet whose id list is merely missing. `_save_config` refuses the write
+        // anyway; refusing here means nothing is mutated in memory either.
         ConfigWallet::content().await.ensure_available()?;
         if let Some(external_tari_address) = new_external_tari_address {
             ConfigWallet::update_field(
@@ -264,19 +258,15 @@ impl InternalWallet {
                     anyhow!("Failed to get credentials: {e}")
                 })?;
                 let tari_seed_binary = tari_seed_binary.encrypted_seed;
-                // The wallet details recorded here become the address the whole session mines
-                // and receives to, so the decode has to be *proven* rather than assumed. Plain
-                // `from_binary` would also "succeed" on a PIN-enciphered blob and write a wrong
-                // address into the config; `decode_plain_tari_seed` refuses that reading.
+                // These details become the address the whole session mines and receives to, so
+                // the decode has to be *proven*: plain `from_binary` also "succeeds" on a
+                // PIN-enciphered blob and would record an address that belongs to nobody.
                 //
-                // There is no recorded address to check an unauthenticated reading against -
-                // the missing details are the premise - so the only other reading that may be
-                // acted on is an authenticated one. When a PIN is set, asking for it once buys
-                // exactly that: `CipherSeed::from_enciphered_bytes` verifies a tag, so a blob it
-                // opens is provably this wallet's seed. Without the prompt this wallet (a config
-                // restored from a `.backup` older than the PIN, say) would go to the recovery
-                // screen even though one PIN entry brings it up correctly. A dismissed or wrong
-                // PIN falls through to the same error as before, which is the honest answer.
+                // There is no recorded address to check an unauthenticated reading against - the
+                // missing details are the premise - so the only other reading that may be acted
+                // on is an authenticated one, which is what one PIN prompt buys:
+                // `CipherSeed::from_enciphered_bytes` verifies a tag. A dismissed or wrong PIN
+                // falls through to the error below.
                 let pin_locked = PinManager::pin_locked().await;
                 let plain_seed = decode_plain_tari_seed(&tari_seed_binary);
                 let tari_cipher_seed = match plain_seed {
@@ -325,16 +315,13 @@ impl InternalWallet {
     /// Initialise the wallet from its seed, all-or-nothing.
     ///
     /// The inner routine mutates two config fields before it can know whether it will succeed
-    /// (the external-address reset that switches the app into seed mode, and the wallet details
-    /// derived from the keyring blob). Both are snapshotted here and put back on failure, so a
-    /// launch that ends in the recovery state leaves `config_wallet.json` exactly as it found it.
-    /// `INSTANCE` is only published by `post_init`, which is the last step, and the keyring is
-    /// only written by `add_tari_wallet` / `add_monero_wallet`, which are the seed's *only*
-    /// copies at that point and must therefore never be rolled back.
+    /// (the external-address reset, and the wallet details derived from the keyring blob). Both
+    /// are snapshotted here and put back on failure, so a launch that ends in recovery leaves
+    /// `config_wallet.json` as it found it.
     ///
-    /// The Monero address and id written by `adopt_legacy_monero_seed` are deliberately not in
-    /// the snapshot either, for the same reason: they are the only pointer to the keyring entry
-    /// holding the migrated Monero seed, and undoing them would orphan it.
+    /// Keyring writes are never rolled back, and neither are the Monero address and id written by
+    /// `adopt_legacy_monero_seed`: they are the only pointer to the entry holding the migrated
+    /// seed, and undoing them would orphan it.
     pub async fn initialize_with_seed(app_handle: &tauri::AppHandle) -> Result<(), anyhow::Error> {
         let config_before = ConfigWallet::content().await;
         let external_address_before = config_before.selected_external_tari_address().clone();
@@ -410,10 +397,9 @@ impl InternalWallet {
                 .app_config_dir()
                 .map_err(|e| anyhow!("Couldn't get application config directory: {e}"))?;
 
-            // A config that was replaced by T1's marked recovery default has an empty
-            // `tari_wallets` list and reaches exactly this branch, which would create a brand
-            // new wallet and orphan the user's seed in the keyring. Refuse, and let
-            // `setup_manager` show the recovery UI.
+            // The recovery placeholder has an empty `tari_wallets` list and reaches exactly this
+            // branch, which would create a brand new wallet and orphan the user's seed in the
+            // keyring. Refuse, and let `setup_manager` show the recovery UI.
             if wallet_config_is_corrupted_recovery(&wallet_config) {
                 return Err(anyhow!(
                     "Wallet config was recovered from a corrupt file; refusing to create a new wallet"
@@ -430,12 +416,11 @@ impl InternalWallet {
                     {
                         Ok((tari_wallet_details, tari_seed_binary, monero_seed_binary)) => {
                             // The details come straight from the decrypted seed inside `migrate`.
-                            // They used to be re-derived by decoding the blob it had just written
-                            // with `CipherSeed::from_binary`, which is unauthenticated: for a
-                            // user who already had a PIN that blob is *enciphered*, the decode
-                            // still succeeded, and the wallet came up on an address that belongs
-                            // to nobody. There is nothing to re-derive - the keyring write is
-                            // already verified by read-back - so the blob is never re-parsed.
+                            // Re-deriving them by decoding the blob it just wrote would be
+                            // unauthenticated: for a user who already had a PIN that blob is
+                            // enciphered and the decode still succeeds, on an address that
+                            // belongs to nobody. The keyring write is verified by read-back, so
+                            // there is nothing to re-derive anyway.
                             InternalWallet {
                                 tari_address_type: TariAddressType::Internal,
                                 encrypted_tari_seed: Hidden::hide(Some(tari_seed_binary)),
@@ -456,8 +441,7 @@ impl InternalWallet {
                             // The enciphered seed is on disk but no passphrase this machine has
                             // opens it, and `migrate` has quarantined the file so this is the
                             // last launch that tries. The address and view key in it are enough
-                            // to keep the wallet visible, which is what the pre-v1.2.24 app was
-                            // doing for these users all along.
+                            // to keep the wallet visible.
                             pending_recovery = Some(WalletRecoveryReason::LegacySeedUndecryptable);
                             view_only_wallet_from_legacy(&old_wallet_config, monero_address)?
                         }
@@ -485,16 +469,12 @@ impl InternalWallet {
                     ));
                 }
                 LegacyWalletEvidence::None => {
-                    // Create new wallet. The only arm that may, and it is reached only when the
-                    // config is not a recovery placeholder (checked above) and nothing legacy is
-                    // on disk.
+                    // Create new wallet. The only arm that may, and only when the config is not
+                    // a recovery placeholder (checked above) and nothing legacy is on disk.
                     //
-                    // One last structural check first: a config that *names* a wallet must never
-                    // be answered with a new one, whatever led here. Today the only route into
-                    // this branch with a non-empty list is an on-disk `version_counter` below
-                    // `WALLET_VERSION`, which no shipped build writes - but the cost of being
-                    // wrong is the user's seed orphaned under an id nothing points at, so the
-                    // invariant is enforced here rather than inferred from a constant.
+                    // One last structural check: a config that *names* a wallet must never be
+                    // answered with a new one, whatever led here. The cost of being wrong is the
+                    // user's seed orphaned under an id nothing points at.
                     if !wallet_config.tari_wallets().is_empty() {
                         log::error!(
                             target: LOG_TARGET_APP_LOGIC,
@@ -611,10 +591,9 @@ impl InternalWallet {
         let tari_cipher_seed = mnemonic_to_tari_cipher_seed(seed_words).await?;
         let pin_password = PinManager::get_validated_pin_if_defined(app_handle, None).await?;
 
-        // An import may replace a recovery placeholder. Typing the seed words is the strongest
-        // consent there is, and on Linux - where the credential store cannot be enumerated - it
-        // is the only way out of a corrupted config; refusing it left those users on a screen
-        // whose every action failed.
+        // An import may replace a recovery placeholder: typing the seed words is proof the
+        // wallet is the user's, and on Linux - where the credential store cannot be enumerated -
+        // it is the only way out of a corrupted config.
         let (tari_wallet_details, tari_seed_binary) =
             InternalWallet::add_tari_wallet(app_handle, tari_cipher_seed, pin_password, true)
                 .await?;
@@ -628,10 +607,9 @@ impl InternalWallet {
     //
     // Support only one wallet fow now
     // * Define if we want to have one PIN for all wallets
-    /// `adopt_placeholder` is only ever true for a seed-word import: the user typed the words, so
-    /// the wallet is theirs by proof rather than by assumption. Every other caller refuses,
-    /// because writing a generated id into a recovery placeholder would lose the id the user's
-    /// seed is actually stored under.
+    /// `adopt_placeholder` is only ever true for a seed-word import, where the typed words prove
+    /// the wallet is the user's. Every other caller refuses: writing a generated id into a
+    /// recovery placeholder would lose the id the user's seed is actually stored under.
     async fn add_tari_wallet(
         app_handle: &AppHandle,
         tari_seed: CipherSeed, // decrypted seed
@@ -707,10 +685,9 @@ impl InternalWallet {
 
     /// Store a newly generated Monero seed under an id that is not in use.
     ///
-    /// Never writes over an existing Monero entry. The keyring blob is the only copy of a Monero
-    /// seed there is - there are no seed words on paper unless the user exported them - so a
-    /// second generated seed goes to the next id in the sequence and the previous one stays where
-    /// it is (path P6 of the investigation).
+    /// Never writes over an existing Monero entry: the keyring blob is the only copy of a Monero
+    /// seed there is, so a second generated seed goes to the next id in the sequence and the
+    /// previous one stays where it is.
     async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
         // Same reason as `add_tari_wallet`: never write a wallet into a placeholder config.
         ConfigWallet::content().await.ensure_available()?;
@@ -743,16 +720,13 @@ impl InternalWallet {
 
     /// Deliberately keeps the Monero credential.
     ///
-    /// There is no second copy of a generated Monero seed anywhere: not in the config, not in a
-    /// file, and only on paper if the user exported the seed words. Deleting the entry - which is
-    /// what this did, from `clear_all_wallets` - makes every Monero payout ever mined to that
-    /// address unrecoverable, and the reset flow that calls it can and does fail halfway on
-    /// Windows. Superseded ids are kept for the same reason.
+    /// There is no second copy of a generated Monero seed anywhere unless the user exported the
+    /// seed words, so deleting the entry makes every Monero payout ever mined to that address
+    /// unrecoverable. Superseded ids are kept for the same reason.
     ///
-    /// Note that "find my wallets" does *not* list these. It enumerates Tari wallets, and a
-    /// Monero seed is 32 raw bytes with no Tari address to derive or re-link, so
-    /// `wallet_recovery::is_tari_wallet_id` filters Monero ids out. Keeping the entry preserves
-    /// the seed for a support-led recovery; it does not make it reachable from the UI.
+    /// "Find my wallets" does not list these: a Monero seed is 32 raw bytes with no Tari address
+    /// to derive, so `wallet_recovery::is_tari_wallet_id` filters Monero ids out. Keeping the
+    /// entry preserves the seed for a support-led recovery, not for the UI.
     async fn remove_monero_wallet() -> Result<(), anyhow::Error> {
         let wallet_id = InternalWallet::monero_wallet_id().await;
         log::info!(
@@ -818,10 +792,8 @@ impl InternalWallet {
     ///
     /// Write order is the same as `create_pin` and for the same reason: the seed blobs first,
     /// the `pin_locked` flag last. The Monero seed cannot be recovered from the Tari seed, so a
-    /// new one is generated - but it is written under a *new* credential id, leaving the previous
-    /// Monero entry exactly where it is. Anything mined to the old Monero address stays
-    /// recoverable from the credential store instead of being overwritten (path P6). See
-    /// `remove_monero_wallet` for why that recovery is support-led rather than a UI button.
+    /// new one is generated under a *new* credential id, leaving the previous Monero entry where
+    /// it is and anything mined to the old address recoverable from the credential store.
     pub async fn recover_forgotten_pin(
         app_handle: &AppHandle,
         tari_seed: CipherSeed,
@@ -893,9 +865,8 @@ impl InternalWallet {
 
     /// Encipher the wallet's seeds with a new PIN.
     ///
-    /// Refuses to run when a PIN is already set. The old code did not check, and calling it twice
-    /// read the already-enciphered Monero blob as if it were plaintext and encrypted it a second
-    /// time, which no code path can undo (path P5).
+    /// Refuses to run when a PIN is already set: without the check, a second call reads the
+    /// already-enciphered Monero blob as plaintext and enciphers it again, which nothing can undo.
     ///
     /// Order of writes, and why:
     ///
@@ -904,13 +875,10 @@ impl InternalWallet {
     /// 2. The Tari blob, then the Monero blob, then the `pin_locked` flag.
     ///
     /// `pin_locked` is the config's claim about how the blobs are encoded, so the flag must be
-    /// the last thing written. A crash before it leaves enciphered blobs with the flag still
-    /// false: the seeds are intact, and the decode path below notices that the blob does not
-    /// parse as plaintext, asks once for the PIN and repairs the flag. The opposite order would
-    /// leave the flag true over plaintext blobs, which sends every later PIN entry through the
-    /// failed-attempt counter and locks the user out of their own wallet for an hour at a time.
-    /// Each blob is individually self-describing, so a crash between the two is recoverable in
-    /// exactly the same way.
+    /// written last. A crash before it leaves enciphered blobs with the flag still false, which
+    /// the decode path repairs with one PIN prompt. The opposite order would leave the flag true
+    /// over plaintext blobs, sending every later PIN entry through the failed-attempt counter.
+    /// Each blob is self-describing, so a crash between the two is recoverable the same way.
     pub async fn create_pin(app_handle: &AppHandle) -> Result<(), anyhow::Error> {
         if PinManager::pin_locked().await {
             // Not a defect and not reported: the UI should not have offered this. Returning an
@@ -1057,11 +1025,9 @@ impl InternalWallet {
                 anyhow!("Tari wallets field should be defined in the wallet config v{version}")
             })?;
 
-        // Whether the details were already on disk when this launch started, as opposed to being
-        // derived from the keyring moments ago by `validate_wallet_config_for_seed`. Only the
-        // former means "nothing on the startup path reads the keyring", which is the case the
-        // probe exists for; probing right after a successful forced read would just cost the
-        // macOS user a second keychain prompt for an answer we already have.
+        // Only details that were already on disk mean "nothing on the startup path reads the
+        // keyring", which is the case the probe exists for. Probing right after a successful
+        // forced read would cost a macOS user a second keychain prompt for a known answer.
         let details_were_cached = wallet_config.tari_wallet_details().is_some();
 
         let mut seed_unavailable = None;
@@ -1069,10 +1035,9 @@ impl InternalWallet {
             match ConfigWallet::content().await.tari_wallet_details() {
                 Some(wallet_details) => {
                     log_wallet_details("load_latest_version", "wallet_config", wallet_details);
-                    // The cached details make every other startup step (address, balance,
-                    // scanning, mining) work without ever opening the keyring, which is how a
-                    // deleted or unreadable entry used to stay invisible until the user tried
-                    // to spend. Probe it once, read-only, right here.
+                    // The cached details make every other startup step work without opening the
+                    // keyring, so a deleted or unreadable entry would otherwise stay invisible
+                    // until the user tried to spend. Probe it once, read-only, right here.
                     if details_were_cached {
                         seed_unavailable =
                             InternalWallet::probe_tari_seed_at_startup(&tari_wallet_id).await;
@@ -1151,23 +1116,14 @@ impl InternalWallet {
 
     /// One read-only keyring probe for `tari_wallets[0]`, run only when the wallet config already
     /// carried the wallet details and nothing else on the startup path would touch the keyring.
+    /// It never creates, writes or deletes; it returns the failure kind for the UI and the
+    /// support bundle to name.
     ///
-    /// Read-only on purpose: it never creates a wallet, never writes and never deletes. It
-    /// returns the failure kind to store on the instance; the caller puts it on the wallet so
-    /// the UI and the support bundle can name the cause.
-    ///
-    /// macOS rate-limiting policy: reading a keychain item the user approved with "Allow"
-    /// (rather than "Always Allow") re-shows the system dialog on every read, so an
-    /// unconditional probe would re-prompt those users at every launch - which is exactly what
-    /// the cached-details path was built to avoid. On macOS the probe therefore runs at most
-    /// once per `SEED_PROBE_MIN_INTERVAL` (24h). The timestamp of the last completed probe and
-    /// an enum-like tag for what it concluded are non-secret, so they live in the wallet config
-    /// (`seed_probe_last_unix` / `seed_probe_last_outcome`), which is the only store in the app
-    /// that is written atomically and under a single writer lock.
-    ///
-    /// Only the rate-limited platforms record it: on Windows and Linux the value would never be
-    /// read, and an unconditional config write on every launch is the habit that produced the
-    /// half-written `config_wallet.json` files in the first place.
+    /// macOS re-shows the system dialog on every read of an item approved with "Allow" rather
+    /// than "Always Allow", so there the probe runs at most once per `SEED_PROBE_MIN_INTERVAL`
+    /// (24h). The non-secret timestamp and outcome tag live in the wallet config, which is the
+    /// only store written atomically under a single writer lock. Only the rate-limited platforms
+    /// record them: elsewhere the value would never be read and the extra write buys nothing.
     async fn probe_tari_seed_at_startup(wallet_id: &WalletId) -> Option<SeedProbeErrorKind> {
         let wallet_config = ConfigWallet::content().await;
         let last_probe = match *wallet_config.seed_probe_last_unix() {
@@ -1184,10 +1140,9 @@ impl InternalWallet {
             SEED_PROBE_MIN_INTERVAL_SECS,
         ) == SeedProbeDecision::Skip
         {
-            // Skipping the read must not also discard what the last read concluded. A launch
-            // that found the entry missing, followed by a restart inside the rate-limit window,
-            // would otherwise come up as if the seed were fine and let mining and telemetry run
-            // against a wallet whose seed is still gone.
+            // Skipping the read must not discard what the last one concluded: a restart inside
+            // the rate-limit window would otherwise come up as if the seed were fine and let
+            // mining and telemetry run against a wallet whose seed is still gone.
             let remembered = last_outcome
                 .as_deref()
                 .and_then(seed_probe_outcome_from_tag);
@@ -1202,10 +1157,9 @@ impl InternalWallet {
         let result = CredentialManager::new_default(wallet_id.clone())
             .get_credentials()
             .await;
-        // Hand the raw read to the support bundle before classifying it, so `wallet_status.json`
-        // can report what the keyring said *at launch* (origin `startup`) instead of reading the
-        // entry a second time - and, on macOS, prompting a second time - when the user sends a
-        // bundle. Only the length and shape of the blob are kept; the blob never leaves here.
+        // Hand the raw read to the support bundle so `wallet_status.json` reports what the
+        // keyring said *at launch* instead of reading - and on macOS prompting - a second time.
+        // Only the length and shape of the blob are kept; the blob never leaves here.
         crate::feedback::record_startup_probe_outcome(wallet_id.as_str(), true, &result);
         let outcome = match &result {
             Ok(credential) => {
@@ -1222,8 +1176,7 @@ impl InternalWallet {
         };
 
         // Best effort: a result that cannot be persisted only means the next launch probes
-        // again, which on macOS costs one extra prompt and everywhere else costs nothing. In
-        // particular this is refused outright while the config is T1's recovery placeholder,
+        // again. The write is refused outright while the config is the recovery placeholder,
         // which is correct - that config must never reach the disk.
         if SEED_PROBE_IS_RATE_LIMITED
             && let Err(e) = ConfigWallet::update_field(
@@ -1287,12 +1240,8 @@ impl InternalWallet {
     }
 
     /// Collects every legacy passphrase this machine still has, plus the legacy Monero seed.
-    ///
-    /// Never fatal. A source that is missing, locked or corrupt costs one candidate and is logged
-    /// with an enum-like error kind. The code this replaces branched on
-    /// `ConfigWallet.keyring_accessed` and, when a freshly defaulted config said the keyring had
-    /// never been touched, refused to look at the keyring at all - returning `Err` on every
-    /// launch for users whose keyring entry was sitting right there.
+    /// Never fatal: a source that is missing, locked or corrupt costs one candidate and is logged
+    /// with an enum-like error kind.
     async fn legacy_credential_parts(
         app_handle: &AppHandle,
         app_config_dir: &Path,
@@ -1362,13 +1311,10 @@ impl InternalWallet {
 
     /// One-shot migration of a pre-v1.2.24 wallet into the per-wallet keyring store.
     ///
-    /// Three things changed here, and together they are what ends the crash loop:
-    /// * the decrypt is a `Result`, not an `.expect`. A seed no passphrase opens quarantines the
-    ///   legacy file and returns `SeedUndecryptable`, so the next launch cannot repeat it;
-    /// * every passphrase source is tried, in a fixed order, instead of only the one the legacy
-    ///   credential happened to hold;
-    /// * the Tari seed is decrypted *before* the Monero credential is written. The old order left
-    ///   the Monero entry pointing at a wallet the app never finished adopting, on every launch.
+    /// A seed no passphrase opens quarantines the legacy file and returns `SeedUndecryptable`, so
+    /// the next launch cannot repeat the failure. Every passphrase source is tried in a fixed
+    /// order, and the Tari seed is decrypted *before* the Monero credential is written, so a
+    /// failed migration cannot leave a Monero entry pointing at a wallet nothing adopted.
     async fn migrate(
         app_handle: &AppHandle,
         app_config_dir: &Path,
@@ -1439,18 +1385,14 @@ impl InternalWallet {
 
     /// Stores the Monero seed carried by a legacy wallet under a credential id that is free.
     ///
-    /// The literal `monero` id this used to write to is the *legacy, unversioned* entry, and it
-    /// may already hold a different seed - from an earlier migration attempt on this machine, or
-    /// from a wallet created before the legacy files were found. There is no second copy of a
-    /// generated Monero seed anywhere, and "find my wallets" cannot reach one (see
-    /// `remove_monero_wallet`), so an overwrite there is unrecoverable. Ids are allocated
-    /// through the same sequence `add_monero_wallet` uses (`monero`, `monero_2`, ...), which
+    /// The unversioned `monero` id may already hold a different seed - from an earlier migration
+    /// attempt, or from a wallet created before the legacy files were found - and an overwrite
+    /// there is unrecoverable. Ids come from the same sequence `add_monero_wallet` uses, which
     /// skips any id that is occupied or whose readability cannot be determined; on a clean
     /// machine that still yields exactly `monero`.
     ///
-    /// The config is then pointed at the id together with the address it derives, so the two can
-    /// never diverge. A Monero address the user chose themselves is never replaced: the entry is
-    /// kept and "find my wallets" territory, not a silent switch of their payout address.
+    /// The config is pointed at the id together with the address it derives, so the two can never
+    /// diverge. A Monero address the user chose themselves is never replaced.
     async fn adopt_legacy_monero_seed(
         app_handle: &AppHandle,
         monero_seed: &[u8],
@@ -1503,25 +1445,19 @@ impl InternalWallet {
     }
 
     /// Retires the legacy credential files left behind after a migration to the keyring-backed
-    /// store. Runs on every launch and is a no-op when nothing is left to clean, so only users who
-    /// still have the legacy files ever reach the keyring reads below. Those reads are forced: on
-    /// macOS that shows the app's standard keychain dialog at the moment of need instead of
-    /// silently deferring forever on a locked keychain. A missing entry is not retried and simply
-    /// defers the cleanup to a later launch.
+    /// store. A no-op when nothing is left to clean, so only users who still have the legacy
+    /// files reach the keyring reads below. Those reads are forced: on macOS that shows the
+    /// standard keychain dialog at the moment of need rather than deferring forever on a locked
+    /// keychain. A missing entry defers the cleanup to a later launch.
     ///
-    /// It must be called from a path common to all wallet modes (standard, seedless and exchange),
-    /// because a user can switch modes after migrating and would otherwise keep these files
-    /// forever; when the config lists no Tari wallet it exits before touching the keyring.
-    /// It also requires the global wallet instance to be initialised, as a second line of defence
-    /// for callers that reach this point after a failed or half-completed wallet setup.
+    /// Must be called from a path common to all wallet modes, because a user can switch modes
+    /// after migrating and would otherwise keep these files forever. Only the current network
+    /// directory is handled, because the keyring entries used as the safety gate are
+    /// network-specific.
     ///
-    /// Only the current network directory is handled, because the keyring entries used as the
-    /// safety gate are network-specific. Other networks are cleaned when the app runs on them.
-    ///
-    /// The gate has two halves. The first, inherited from PR #3353, proves that every wallet the
-    /// config lists is readable right now. The second, and the one that makes this safe, proves
-    /// that the wallet *these files describe* is one of them: the legacy seed is decrypted with
-    /// the same multi-source passphrase logic the migration uses and the address it derives must
+    /// The gate has two halves: every wallet the config lists must be readable right now, and the
+    /// wallet *these files describe* must be one of them - the legacy seed is decrypted with the
+    /// same multi-source passphrase logic the migration uses and the address it derives must
     /// match. Anything unprovable leaves both files exactly where they are.
     // A sequence of gates that must all pass before an irreversible deletion. Splitting it
     // would let a future edit reorder or skip one without that being obvious at the call site.
@@ -1560,9 +1496,8 @@ impl InternalWallet {
         }
 
         // The addresses the config can vouch for. The cached details cover the PIN-enciphered
-        // case, where the blob cannot be opened here without prompting; every blob that is not
-        // enciphered contributes its own derived address as well, so a migrated wallet that has
-        // since been pushed down the list by an import still matches.
+        // case; every blob that is not enciphered contributes its own derived address too, so a
+        // migrated wallet pushed down the list by an import still matches.
         let mut configured_addresses: Vec<TariAddress> = Vec::new();
         if let Some(details) = wallet_config.tari_wallet_details() {
             configured_addresses.push(details.tari_address.clone());
@@ -1582,10 +1517,9 @@ impl InternalWallet {
                     return;
                 }
             };
-            // Only a blob that proves it is a plain seed contributes an address. An enciphered
-            // blob decodes under plain `from_binary` too, and the address it would derive belongs
-            // to no wallet at all - a made-up entry in the list the purge decision is made
-            // against is exactly what must not happen here.
+            // Only a blob that proves it is a plain seed contributes an address: an enciphered
+            // blob also decodes under plain `from_binary`, deriving an address that belongs to no
+            // wallet, which must never enter the list the purge is decided against.
             if let Some(seed) = decode_plain_tari_seed(&credential.encrypted_seed)
                 && let Ok(details) =
                     InternalWallet::get_tari_wallet_details(wallet_id.clone(), seed).await
@@ -1594,12 +1528,9 @@ impl InternalWallet {
             }
         }
 
-        // If the legacy file carries a Monero seed, that seed itself must be somewhere in the
-        // credential store. Reading the currently linked Monero entry only proves that *some*
-        // seed is there - after a "forgot PIN" recovery or a config replacement it is a
-        // different one - so the bytes are compared instead. The gate fails closed: an
-        // unreadable or undecodable file may still hold the only copy, so only a genuinely
-        // empty file skips the check.
+        // A Monero seed in the legacy file must itself be somewhere in the credential store, so
+        // the bytes are compared: the currently linked entry may hold a different seed after a
+        // "forgot PIN" recovery. Fails closed - only a genuinely empty file skips the check.
         if fallback_file.exists() {
             let bytes = match std::fs::read(&fallback_file) {
                 Ok(bytes) => bytes,
@@ -1687,12 +1618,10 @@ impl InternalWallet {
             LegacyPurgeDecision::Purge => {}
         }
 
-        // Both files are destroyed, not renamed. `wallet_config.json` holds an enciphered seed
-        // *and*, for Era-1 files, the passphrase that opens it in the same document, so a
-        // renamed copy is self-decrypting recovery material sitting on disk for anything that
-        // can read the directory. Everything above has already proven the seed is in the
-        // credential store and derives an address this config owns, so there is nothing left
-        // here worth keeping.
+        // Destroyed, not renamed: an Era-1 `wallet_config.json` holds an enciphered seed and the
+        // passphrase that opens it in the same document, so a renamed copy is self-decrypting
+        // recovery material left on disk. Everything above has already proven the seed is in the
+        // credential store under an address this config owns.
         match wipe_and_remove_file(&legacy_wallet_config) {
             Ok(true) => {
                 log::info!(target: LOG_TARGET_APP_LOGIC, "Removed the migrated legacy wallet config");
@@ -1786,10 +1715,9 @@ impl InternalWallet {
                             cred.encrypted_seed
                         }
                         Err(e) => {
-                            // Diagnostics only: variant name, wallet id, and the config's PIN
-                            // flag. Never the blob, the seed words or the view key. Without
-                            // this line a support bundle cannot tell a deleted keyring entry
-                            // (P1) from an unreadable one (P2).
+                            // Diagnostics only: variant name, wallet id and the config's PIN
+                            // flag, never the blob or the seed. Without it a support bundle
+                            // cannot tell a deleted keyring entry from an unreadable one.
                             log_seed_read_failure(
                                 "get_tari_seed",
                                 wallet_id.as_str(),
@@ -1844,9 +1772,9 @@ impl InternalWallet {
                 return Ok(candidate.seed);
             }
 
-            // Nothing read the blob. If no PIN was supplied, the blob may be enciphered while the
-            // config says no PIN is set (path P3: `create_pin` wrote the blob and then died
-            // before writing the flag). Ask once - once per run, never in a loop.
+            // Nothing read the blob. Without a PIN it may be enciphered while the config says no
+            // PIN is set, which is what a `create_pin` that died between the blob and the flag
+            // leaves behind. Ask once per run, never in a loop.
             if supplied_pin || prompted {
                 break;
             }
@@ -1934,17 +1862,13 @@ impl InternalWallet {
 
         let blob_len = encrypted_monero_seed.len();
         let pin_locked = PinManager::pin_locked().await;
-        // A Monero seed is 32 raw bytes and a ciphertext never is, so this blob is
-        // self-describing: `monero_seed_candidates` ignores the recorded flag and tries both
-        // readings regardless. Reading Monero therefore never needs the flag, and - unlike the
-        // Tari path - it never writes it either.
+        // A Monero seed is 32 raw bytes and a ciphertext never is, so the blob is
+        // self-describing and `monero_seed_candidates` ignores the recorded flag entirely.
         //
-        // The flag is shared between the two credentials while their contents are not. A
-        // `create_pin` that dies between the two writes leaves the Tari blob enciphered and the
-        // Monero blob plain; if both paths repaired the flag they would take turns flipping it,
-        // and the Tari seed - whose reading genuinely depends on it - would end up unreadable
-        // for the rest of the run once its one-shot repair prompt was spent. The Tari blob is
-        // the single authority.
+        // The flag is shared between the two credentials while their contents are not, so only
+        // the Tari path may repair it. If both did, a `create_pin` that died between the two
+        // writes would have them take turns flipping it, and the Tari seed - whose reading really
+        // does depend on the flag - would be unreadable once its one-shot prompt was spent.
         let mut pin_password = pin_password;
         let supplied_pin = pin_password.is_some();
         let mut prompted = false;
@@ -2039,7 +1963,7 @@ pub const WALLET_NOT_INITIALIZED: &str = "InternalWallet is not initialized";
 /// Error text for an initialised-but-addressless wallet. Should be unreachable; see `post_init`.
 pub const WALLET_NO_ADDRESS: &str = "Internal wallet has no Tari address defined";
 /// The only Sentry message this module sends. Constant by policy: every varying detail goes into
-/// a tag with an enum-like value, never into the message (see the hardening brief).
+/// a tag with an enum-like value, never into the message.
 const SENTRY_SEED_UNAVAILABLE_AT_STARTUP: &str = "wallet.seed_unavailable_at_startup";
 /// The legacy migration's one Sentry message, under the same rule: constant text, enum-like tags.
 const SENTRY_LEGACY_DECRYPT_FAILED: &str = "wallet.legacy_decrypt_failed";
@@ -2053,12 +1977,10 @@ const SEED_PROBE_IS_RATE_LIMITED: bool = cfg!(target_os = "macos");
 /// opposed to because something is broken.
 ///
 /// macOS shows the keychain dialog on every read of an item approved with "Allow", and a locked
-/// login keychain refuses outright. Linux secret-service does the same: a locked collection
-/// raises an unlock prompt, and a dismissed prompt comes back as a platform failure. On both,
-/// "the store would not hand it over" says nothing about whether the seed is still there, so it
-/// must not raise the recovery UI, stop mining, or reach Sentry - the brief's "user-cancelled
-/// keychain prompts are non-fatal" rule. Windows has no such prompt: a platform failure there is
-/// a stopped `VaultSvc` or a broken DPAPI state, which is worth surfacing.
+/// login keychain refuses outright. Linux secret-service does the same. On both, "the store would
+/// not hand it over" says nothing about whether the seed is still there, so it must not raise the
+/// recovery UI, stop mining or reach Sentry. Windows has no such prompt: a platform failure there
+/// is a stopped `VaultSvc` or a broken DPAPI state, which is worth surfacing.
 const SEED_PROBE_STORE_CAN_DENY: bool = cfg!(target_os = "macos") || cfg!(target_os = "linux");
 
 /// Why a keyring read failed, as an enum-like value fit for a log line or a Sentry tag.
@@ -2092,11 +2014,9 @@ impl SeedProbeErrorKind {
 
 /// Log a failed seed read with the fields a support bundle needs and nothing else.
 ///
-/// Level follows the hardening rule "wrong PIN and user-cancelled keychain prompts are
-/// non-fatal": where the store can deny a read on the user's say-so (macOS, Linux) a keyring
-/// platform failure is what a cancelled or denied prompt looks like, so it warns. Everywhere
-/// else, and for every other kind, a seed we cannot read is a real problem and logs at error
-/// level.
+/// Where the store can deny a read on the user's say-so (macOS, Linux) a keyring platform failure
+/// is what a cancelled or denied prompt looks like, so it warns. Everywhere else, and for every
+/// other kind, a seed that cannot be read is a real problem and logs at error level.
 fn log_seed_read_failure(
     context: &str,
     wallet_id: &str,
@@ -2134,10 +2054,9 @@ pub(crate) fn address_prefix(address: &TariAddress) -> String {
 
 /// Log that wallet details were established, without printing them.
 ///
-/// `TariWalletDetails` redacts the view private key in its `Debug`, but `{wallet_details:?}`
-/// still prints the full Tari address and the spend public key, and the hardening brief forbids
-/// exactly that. The wallet id and an address prefix answer every question these lines were
-/// there to answer ("which wallet came up, and from where").
+/// `TariWalletDetails` redacts the view private key in its `Debug`, but `{wallet_details:?}` still
+/// prints the full Tari address and the spend public key. The wallet id and an address prefix
+/// answer the only question these lines ask: which wallet came up, and from where.
 fn log_wallet_details(context: &str, source: &str, details: &TariWalletDetails) {
     log::info!(
         target: LOG_TARGET_APP_LOGIC,
@@ -2182,8 +2101,7 @@ pub enum SeedProbeOutcome {
     /// The seed could not be read and that is worth reporting and surfacing.
     Unavailable(SeedProbeErrorKind),
     /// The read did not happen on the user's terms (macOS denied/locked keychain). Not proof the
-    /// seed is gone and not a defect, so it is logged and nothing else: criterion "user-cancelled
-    /// keychain prompts are non-fatal, no Sentry".
+    /// seed is gone and not a defect, so it is logged and nothing else: no Sentry, no recovery.
     Inconclusive(SeedProbeErrorKind),
 }
 
@@ -2371,8 +2289,8 @@ fn repair_prompt_flag(seed_tag: &str) -> &'static AtomicBool {
 
 /// Record that the config's `pin_locked` flag disagreed with the blob, and correct it.
 ///
-/// The correction goes through the normal config update path, which T1 made atomic, so a crash
-/// during the repair leaves either the old flag or the new one and never a truncated file.
+/// The correction goes through the normal config update path, which is atomic, so a crash during
+/// the repair leaves either the old flag or the new one and never a truncated file.
 async fn repair_pin_state(should_be_locked: bool, seed_tag: &'static str) {
     log::warn!(
         target: LOG_TARGET_APP_LOGIC,
@@ -2429,18 +2347,17 @@ async fn prompt_pin_for_repair(seed_tag: &str) -> Option<SafePassword> {
 
 /// One way a seed blob could be read.
 ///
-/// Two different questions, deliberately kept apart:
+/// Two different questions, kept apart:
 ///
-/// * `authenticated` - a tag was verified. `CipherSeed::from_enciphered_bytes` and
-///   `cryptography::decrypt` (AES-256-GCM) both authenticate, so a success there proves the blob
-///   was read the right way *and* that whoever wrote it knew the PIN.
-/// * `proven_encoding` - the bytes really are a serialized seed of this kind, proven by
-///   re-serializing and comparing. That rules out reading an enciphered blob as a plain one, and
-///   nothing more: a valid plain seed belonging to a *different* wallet passes it too.
+/// * `authenticated` - a tag was verified, which proves the blob was read the right way *and*
+///   that whoever wrote it knew the PIN.
+/// * `proven_encoding` - the bytes re-serialize to themselves, which rules out reading an
+///   enciphered blob as a plain one and nothing more: a plain seed belonging to a *different*
+///   wallet passes it too.
 ///
-/// Only `authenticated` may be acted on without further proof. A candidate that is merely
-/// well-encoded has to derive the address the config recorded before it is used, or the app will
-/// happily spend from one wallet while the UI shows another.
+/// Only `authenticated` may be acted on without further proof. A merely well-encoded candidate
+/// has to derive the address the config recorded, or the app spends from one wallet while the UI
+/// shows another.
 #[derive(Debug)]
 pub struct SeedCandidate<T> {
     pub seed: T,
@@ -2465,11 +2382,9 @@ fn plain_tari_seed_round_trips(seed: &CipherSeed, blob: &[u8]) -> bool {
 /// Decode a blob that is believed to hold a plain, un-enciphered `CipherSeed`, refusing anything
 /// that cannot prove it is one.
 ///
-/// `CipherSeed::from_binary` is bincode with no authentication tag whatsoever: handed a
-/// PIN-enciphered blob it *succeeds* and returns a structurally valid seed carrying the wrong
-/// entropy, and therefore a wrong address. "Could not parse Tari Seed from binary" was never the
-/// error such a wallet got. Every site that decodes a blob it believes is plain goes through here
-/// so the bad reading is rejected instead of being acted on.
+/// `CipherSeed::from_binary` is bincode with no authentication tag: handed a PIN-enciphered blob
+/// it *succeeds* and returns a structurally valid seed carrying the wrong entropy, and so a wrong
+/// address. Every site that decodes a blob it believes is plain goes through here.
 ///
 /// This proves the *interpretation* of the bytes, not whose wallet they are. A caller holding a
 /// recorded address must still check the seed derives it - see
@@ -2555,8 +2470,7 @@ pub fn monero_seed_candidates(
 /// Does this seed derive the Tari address the config recorded?
 ///
 /// The check that makes an unauthenticated decode safe to act on. `None` recorded details means
-/// there is nothing to check against - the pre-init path - and the caller then accepts the decode
-/// exactly as it did before this check existed.
+/// there is nothing to check against - the pre-init path - and the caller accepts the decode.
 async fn tari_seed_matches_recorded_address(seed: &CipherSeed) -> bool {
     let Some(recorded) = ConfigWallet::content().await.tari_wallet_details().clone() else {
         return true;
@@ -2591,11 +2505,10 @@ pub enum WalletRecoveryReason {
     /// The wallet initialised, but the startup probe could not read its seed.
     SeedUnavailable,
     /// `config_wallet.json` could not be parsed and neither could its `.backup`, so the config in
-    /// memory is T1's recovery placeholder rather than the user's real one. The damaged file is
-    /// kept as `config_wallet.json.corrupted.<ts>` and a `config_wallet.json.recovery_required`
-    /// marker stops the next launch from looking like a fresh install. Distinct from
-    /// `InitializationFailed` because nothing was attempted: the wallet was never opened, so the
-    /// user's seed is untouched and still in the keyring.
+    /// memory is the recovery placeholder. The damaged file is kept as
+    /// `config_wallet.json.corrupted.<ts>` and a `config_wallet.json.recovery_required` marker
+    /// stops the next launch from looking like a fresh install. Distinct from
+    /// `InitializationFailed` because nothing was attempted: the seed is untouched in the keyring.
     ConfigCorrupted,
     /// A pre-v1.2.24 wallet was found, no known passphrase opens its seed, and the app is running
     /// view-only from the address and view key in the legacy file. Distinct from
@@ -2655,10 +2568,9 @@ pub fn wallet_recovery_reason() -> Option<WalletRecoveryReason> {
 
 /// Leave the recovery state after the user recovered (imported seed words, re-linked a wallet).
 ///
-/// Three things have to happen together, and only the first used to. The backend gate is what
-/// lets mining start again; the event is what closes the recovery screen, which is driven by the
-/// payload and had nothing else to clear it; and telemetry was skipped by the launch that
-/// entered recovery, so it stays off for the rest of the run unless it is started here.
+/// Three things have to happen together: the backend gate lets mining start again, the event
+/// closes the recovery screen (nothing else clears it), and telemetry is started because the
+/// launch that entered recovery skipped it.
 pub async fn leave_wallet_recovery(app_handle: &AppHandle) {
     let was_in_recovery = {
         match WALLET_RECOVERY_REASON.write() {
@@ -2699,16 +2611,12 @@ pub fn wallet_usability(reason: Option<WalletRecoveryReason>) -> Result<(), Mini
     }
 }
 
-/// Whether the wallet config in hand is T1's recovery placeholder rather than the user's real
-/// config.
+/// Whether the wallet config in hand is the recovery placeholder rather than the user's real one.
 ///
-/// T1 marks the default it returns when `config_wallet.json` could not be parsed and neither
-/// could its `.backup`. Such a config has an empty `tari_wallets` list, which lands in
-/// `initialize_with_seed`'s "create new wallet" branch and would silently replace the user's
-/// wallet, orphaning their seed in the keyring. The single call site in
-/// `initialize_with_seed_inner` turns `true` into an error, which `setup_manager` turns into the
-/// recovery UI; `setup_manager` also checks the same condition before wallet init even starts,
-/// so this is the second line of defence rather than the first.
+/// The placeholder has an empty `tari_wallets` list, which lands in `initialize_with_seed`'s
+/// "create new wallet" branch and would replace the user's wallet, orphaning their seed in the
+/// keyring. `setup_manager` checks the same condition before wallet init starts, so this is the
+/// second line of defence.
 pub(crate) fn wallet_config_is_corrupted_recovery(wallet_config: &ConfigWalletContent) -> bool {
     wallet_config.ensure_available().is_err()
 }
@@ -2751,10 +2659,9 @@ async fn handle_critical_problem(
         Ok(instance) => instance.read().await.tari_address_type.to_string(),
         Err(_) => "Uninitialized".to_string(),
     };
-    // Prefixes only, in the log and in the payload alike. The question this message exists to
-    // answer is "do these two addresses differ", which a prefix answers; printing the details
-    // (or even the whole address) puts the user's wallet address into the log file, the webview
-    // and any support bundle built from them.
+    // Prefixes only, in the log and in the payload alike: the question is whether the two
+    // addresses differ, and the full address would reach the log file, the webview and every
+    // support bundle built from them.
     let state_prefix = state_wallet_details
         .as_ref()
         .map(|d| address_prefix(&d.tari_address));
@@ -2831,10 +2738,9 @@ pub async fn mnemonic_to_tari_cipher_seed(
 
 /// The pre-v1.2.24 `wallet_config.json`.
 ///
-/// `passphrase` is back. Era-1 builds (v0.4 - v0.7) wrote the legacy seed's passphrase into this
-/// file whenever the keyring was unavailable, and v1.2.24 dropped the field from this struct, so
-/// serde silently discarded the last passphrase those machines had - one of the documented ways a
-/// wallet ends up permanently undecryptable. In most real files the field is present and `null`.
+/// Era-1 builds (v0.4 - v0.7) wrote the legacy seed's passphrase into this file whenever the
+/// keyring was unavailable, so `passphrase` has to stay in the struct or serde discards the last
+/// passphrase those machines had. In most real files the field is present and `null`.
 ///
 /// `#[serde(default)]` on the container keeps a file written by any era parseable; the fields that
 /// have to be there for the file to mean anything are checked by `validate` instead, so a JSON
@@ -2879,14 +2785,12 @@ impl LegacyWalletConfig {
 pub(crate) const LEGACY_FALLBACK_FILE_NAME: &str = "credentials_backup.bin";
 /// Pre-migration wallet config holding the Tari seed enciphered with the passphrase above.
 pub(crate) const LEGACY_WALLET_CONFIG_FILE_NAME: &str = "wallet_config.json";
-/// Suffix for a legacy wallet config whose seed no known passphrase opens. Renaming is what
-/// breaks the migration loop: the next launch finds nothing migratable and comes up view-only
-/// instead of attempting - and failing - the same decrypt forever.
+/// Suffix for a legacy wallet config whose seed no known passphrase opens. Renaming breaks the
+/// migration loop: the next launch finds nothing migratable and comes up view-only.
 ///
-/// Unlike a migrated file this one is kept rather than destroyed, and it does still hold an
-/// enciphered seed next to whatever passphrase failed to open it. That is the trade-off: nothing
-/// here can prove the seed exists anywhere else - by definition, since it could not be read -
-/// and destroying the only copy is worse than leaving it on the user's own disk.
+/// Unlike a migrated file this one is kept rather than destroyed. Nothing can prove its seed
+/// exists anywhere else - by definition, since it could not be read - so this file is the only
+/// copy and destroying it is worse than leaving it on the user's own disk.
 pub(crate) const LEGACY_DECRYPT_FAILED_SUFFIX: &str = "decrypt_failed";
 /// Wallet id carried by the view-only fallback wallet. It never enters `config_wallet.json` and
 /// never names a keyring entry: there is no seed to point at, which is the whole reason the
@@ -2951,9 +2855,8 @@ pub(crate) struct LegacyConfigProblem {
 /// What this launch found where a pre-v1.2.24 wallet would have left its files.
 ///
 /// The point of the enum is that "there is no legacy wallet" is one specific answer rather than
-/// the default one. The old code called `get_old_wallet_config(..).ok()`, which collapsed
-/// "absent", "locked by antivirus" and "truncated" into `None` and then created a brand new
-/// wallet, orphaning the seed the damaged file pointed at.
+/// the default one: collapsing "absent", "locked by antivirus" and "truncated" into a single
+/// `None` ends in a brand new wallet and an orphaned seed.
 #[derive(Debug)]
 pub(crate) enum LegacyWalletEvidence {
     /// Nothing legacy on disk. The only state in which a new wallet may be created.
@@ -3017,8 +2920,7 @@ pub(crate) fn locate_legacy_wallet(network_dir: &Path) -> LegacyWalletEvidence {
     }
 
     // No wallet config in any form, but the plaintext credential file is still there: this
-    // machine had a wallet. Creating a new one here is exactly the silent replacement the
-    // hardening brief forbids.
+    // machine had a wallet, so a new one here would silently replace it.
     if network_dir.join(LEGACY_FALLBACK_FILE_NAME).exists() {
         return LegacyWalletEvidence::Unreadable(LegacyConfigProblem {
             file: LegacyFileKind::FallbackCredential,
@@ -3070,10 +2972,9 @@ pub(crate) fn quarantine_legacy_file(
 /// Where a legacy passphrase came from. The index and the tag are safe to log; the passphrase
 /// itself never leaves this module.
 ///
-/// The order is the order the sources are tried, and it is the fix for the single-source lookup
-/// that made `DecryptionFailed` permanent: the keyring entry first, then the plaintext fallback
-/// file (which `LegacyCredentialManager` would otherwise let shadow the keyring), then the
-/// in-file Era-1 passphrase that v1.2.24 dropped on the floor, then no passphrase at all.
+/// The variant order is the order the sources are tried: the keyring entry first, then the
+/// plaintext fallback file (which `LegacyCredentialManager` would otherwise let shadow the
+/// keyring), then the in-file Era-1 passphrase, then no passphrase at all.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LegacyPassphraseSource {
     KeyringCredential,
@@ -3181,9 +3082,9 @@ pub(crate) fn legacy_passphrase_candidates(
 
 /// Decrypts the legacy enciphered seed, trying each candidate until one works.
 ///
-/// Shared by the migration (T3) and the purge gate (T4) so the two can never disagree about
-/// whether a legacy seed is readable. Returns the source that worked, for the log line; the
-/// passphrase is consumed and dropped either way.
+/// Shared by the migration and the purge gate so the two can never disagree about whether a
+/// legacy seed is readable. Returns the source that worked, for the log line; the passphrase is
+/// consumed and dropped either way.
 pub(crate) fn decrypt_legacy_tari_seed(
     seed_words_encrypted_base58: &str,
     candidates: Vec<(LegacyPassphraseSource, Option<SafePassword>)>,
@@ -3263,10 +3164,8 @@ fn report_legacy_decrypt_failed(kind: LegacyDecryptErrorKind) {
 
 /// Brings the wallet up read-only from a legacy config whose seed cannot be opened.
 ///
-/// There is precedent: `initialize_seedless` already runs the app against an address it holds no
-/// seed for. This is the same shape, except the address is the user's own and the legacy file also
-/// carries the view key, so balance and scanning keep working - which is exactly what the
-/// pre-v1.2.24 app was doing for these users until the migration turned it into a crash loop.
+/// Same shape as `initialize_seedless`, except the address is the user's own and the legacy file
+/// also carries the view key, so balance and scanning keep working.
 ///
 /// Nothing is written: no wallet id reaches `config_wallet.json`, no keyring entry is created and
 /// no Monero wallet is generated. Replacing this wallet requires the user's explicit consent.
@@ -3349,12 +3248,9 @@ pub(crate) enum LegacySeedProof {
     NoLegacyConfig,
 }
 
-/// The gate that PR #3353 was missing.
-///
-/// The old gate proved "the wallets the config lists have a readable blob", which is not the same
-/// as "those blobs are the wallet these files describe". A user whose migration failed and who
-/// then created or imported a different wallet passed the old gate, and the last copy of their
-/// original enciphered seed was zero-filled on the next launch.
+/// Proves the blobs the config lists really are the wallet these files describe, not merely that
+/// they are readable: a user whose migration failed and who then created or imported a different
+/// wallet would otherwise have the last copy of their original seed destroyed.
 ///
 /// With no `wallet_config.json` left the plaintext credential file holds a passphrase for a file
 /// that no longer exists, so it may go - unless a `.decrypt_failed` config is sitting next to it,
@@ -3382,16 +3278,13 @@ pub(crate) fn legacy_purge_decision(
 
 /// Best-effort zero-overwrite followed by unlink. Returns `Ok(false)` when the file was absent.
 /// The entry is inspected with `symlink_metadata`, so a symlink is unlinked without overwriting
-/// anything: following it would zero an unrelated target file. Only a regular file is overwritten,
-/// and the overwrite is chunked through a fixed 64 KiB zero buffer so a large file cannot make us
-/// allocate unbounded memory.
-/// The overwrite is defence in depth only; journaled and copy-on-write filesystems may retain
-/// old blocks, which is why deletion (not overwrite) is the primary control. An overwrite
-/// failure is logged and the unlink still proceeds.
+/// anything: following it would zero an unrelated target file.
+///
+/// The overwrite is defence in depth only - journaled and copy-on-write filesystems may retain old
+/// blocks - so deletion is the primary control and an overwrite failure does not stop the unlink.
 ///
 /// Reserved for the *plaintext* `credentials_backup.bin`. The enciphered `wallet_config.json` is
-/// renamed instead: destroying it would take the last copy of a seed with it, and it is worthless
-/// once the passphrase file above is gone.
+/// renamed instead: destroying it would take the last copy of a seed with it.
 pub(crate) fn wipe_and_remove_file(path: &Path) -> std::io::Result<bool> {
     const ZERO_CHUNK_LEN: usize = 64 * 1024;
 

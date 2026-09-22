@@ -96,8 +96,8 @@ impl EventsEmitter {
         Self::get_app_handle().await
     }
 
-    /// The app handle if one has been loaded. Non-panicking counterpart of `get_app_handle`, for
-    /// callers that run before or outside the window lifetime and must degrade instead of dying.
+    /// Non-panicking counterpart of `get_app_handle`, for callers that run before or outside the
+    /// window lifetime.
     pub async fn try_get_app_handle() -> Option<AppHandle> {
         INSTANCE.app_handle.read().await.clone()
     }
@@ -170,9 +170,8 @@ impl EventsEmitter {
         }
     }
 
-    /// Tell the frontend to show the wallet recovery UI. Deliberately separate from
-    /// `emit_critical_problem`: the app is still usable (settings, log export, support bundle),
-    /// only the wallet needs attention.
+    /// Tell the frontend to show the wallet recovery UI. Separate from `emit_critical_problem`
+    /// because the app is still usable - only the wallet needs attention.
     pub async fn emit_wallet_recovery_required(payload: WalletRecoveryPayload) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

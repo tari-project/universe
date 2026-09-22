@@ -191,10 +191,8 @@ impl SupportDiagnostics {
 // Redacted wallet status
 // =============================================================================
 
-/// Number of leading characters of a Tari address that may travel in a bundle.
-///
-/// Enough to match the address a user quotes in a support ticket against the
-/// one in their config, and far too little to be an address.
+/// Number of leading characters of a Tari address that may travel in a bundle:
+/// enough to match one quoted in a support ticket, far too little to be an address.
 const ADDRESS_PREFIX_LEN: usize = 8;
 
 /// Hard cap on the number of `*.corrupted.*` quarantine files reported.
@@ -290,11 +288,8 @@ pub struct FileReport {
 }
 
 /// The redacted wallet status document shipped as `configs/wallet_status.json`.
-///
-/// Its job is to make a "my seeds are gone" report diagnosable from the bundle
-/// alone. Today a bundle carries no trace of *why* a seed-dependent operation
-/// failed: startup never opens the keyring once `tari_wallet_details` is cached
-/// in the config, so a missing or unreadable keyring entry is invisible until
+/// Startup never opens the keyring once `tari_wallet_details` is cached in the
+/// config, so a missing or unreadable keyring entry is otherwise invisible until
 /// the user tries to spend.
 ///
 /// Rules for anyone editing this struct, same as `SupportDiagnostics`:
@@ -346,35 +341,23 @@ pub struct WalletStatus {
     pub files: Vec<FileReport>,
 }
 
-/// Non-secret record of what a startup keyring probe saw, keyed by wallet id.
+/// Non-secret record of what a startup keyring probe saw, keyed by wallet id, so
+/// this document reports what was true *at launch* rather than at the moment the
+/// user clicked "Send Logs".
 ///
-/// Filled by the startup probe in
-/// `internal_wallet::InternalWallet::probe_tari_seed_at_startup`, through
-/// [`record_startup_probe_outcome`], so this document reports what was true *at
-/// launch* rather than at the moment the user clicked "Send Logs".
-///
-/// [`WalletStatus::collect`] still falls back to its own read-only, non-forced
-/// probe during bundle assembly for any id the startup probe did not cover,
-/// tagged [`ProbeOrigin::BundleAssembly`]. That is every id but
-/// `tari_wallets[0]`, plus `tari_wallets[0]` itself on the launches where the
-/// startup probe did not run at all: a fresh install, a wallet whose details
-/// were not cached (the keyring was read anyway), or a macOS launch inside the
-/// probe's 24h rate-limit window. The fallback is equivalent on Windows and
-/// Linux (the read is silent and sub-millisecond); on macOS it can raise one
-/// keychain prompt per entry for users who chose "Allow" rather than "Always
-/// Allow".
+/// [`WalletStatus::collect`] falls back to its own read-only, non-forced probe for
+/// any id the startup probe did not cover, tagged [`ProbeOrigin::BundleAssembly`].
+/// That read is silent on Windows and Linux; on macOS it can raise one keychain
+/// prompt per entry for users who chose "Allow" rather than "Always Allow".
 static STARTUP_KEYRING_PROBE: LazyLock<Mutex<HashMap<String, KeyringEntryReport>>> =
     LazyLock::new(|| Mutex::new(HashMap::new()));
 
-/// Records what one startup keyring read saw, so the support bundle can report
-/// it without opening the keyring a second time.
-///
-/// Takes the raw read result rather than a built report so that the mapping
-/// from `CredentialError` to [`KeyringEntryState`] lives in one place and the
-/// startup probe cannot drift from the bundle-assembly fallback. Only the blob
-/// *length* and shape are kept; the blob itself is never copied, logged or
-/// stored. `classify_blob` is false for the raw 32-byte Monero seed, which is
-/// not a `CipherSeed`.
+/// Records what one startup keyring read saw, so the support bundle can report it
+/// without opening the keyring a second time. Takes the raw read result so the
+/// `CredentialError` to [`KeyringEntryState`] mapping cannot drift from the
+/// bundle-assembly fallback; only the blob *length* and shape are kept.
+/// `classify_blob` is false for the raw 32-byte Monero seed, which is not a
+/// `CipherSeed`.
 pub fn record_startup_probe_outcome(
     wallet_id: &str,
     classify_blob: bool,
@@ -394,8 +377,7 @@ pub fn record_startup_probe_outcome(
             report.blob_len = Some(credential.encrypted_seed.len());
             if classify_blob {
                 // Round-trip proven, not just "bincode accepted it": plain `from_binary`
-                // succeeds on a PIN-enciphered blob too, which would report every enciphered
-                // entry as `plain` in the one document support reads to tell the two apart.
+                // succeeds on a PIN-enciphered blob too and would report it as `plain`.
                 report.blob_kind = if decode_plain_tari_seed(&credential.encrypted_seed).is_some() {
                     SeedBlobKind::Plain
                 } else {
@@ -529,10 +511,8 @@ pub(crate) fn scan_wallet_files(app_config_root: &Path, network: &str) -> Vec<Fi
             WALLET_CONFIG_BACKUP_FILE_NAME,
             LOCATION_APP_CONFIGS_NETWORK_DIR,
         ),
-        // Present means a launch quarantined the config and the next one must not mistake the
-        // absence of `config_wallet.json` for a fresh install. It is the difference between
-        // "this user is mid-recovery" and "this user is new", which nothing else in the bundle
-        // can tell apart.
+        // Present means a launch quarantined the config: the difference between "mid-recovery"
+        // and "new install", which nothing else in the bundle can tell apart.
         file_report(
             &configs_dir,
             WALLET_CONFIG_RECOVERY_MARKER_FILE_NAME,
@@ -596,8 +576,7 @@ async fn probe_keyring_entry(wallet_id: &WalletId, classify_blob: bool) -> Keyri
             report.blob_len = Some(credential.encrypted_seed.len());
             if classify_blob {
                 // Round-trip proven, not just "bincode accepted it": plain `from_binary`
-                // succeeds on a PIN-enciphered blob too, which would report every enciphered
-                // entry as `plain` in the one document support reads to tell the two apart.
+                // succeeds on a PIN-enciphered blob too and would report it as `plain`.
                 report.blob_kind = if decode_plain_tari_seed(&credential.encrypted_seed).is_some() {
                     SeedBlobKind::Plain
                 } else {
@@ -680,11 +659,10 @@ impl WalletStatus {
         status
     }
 
-    /// Builds the document for the current install.
-    ///
-    /// Every read degrades to "unknown" instead of failing: a bundle from a
-    /// machine whose wallet never initialised is exactly the bundle worth
-    /// having, so nothing here may return `Err` or panic.
+    /// Builds the document for the current install. Every read degrades to
+    /// "unknown" instead of failing: a bundle from a machine whose wallet never
+    /// initialised is exactly the bundle worth having, so nothing here may
+    /// return `Err` or panic.
     pub async fn collect() -> Self {
         let network = Network::get_current_or_user_setting_or_default()
             .as_key_str()
@@ -700,10 +678,8 @@ impl WalletStatus {
             })
             .ok();
 
-        // A placeholder is not a config. `ConfigWallet::content()` hands one back rather than
-        // panicking when neither the file nor its backup parsed, and reporting it as readable -
-        // version 2, no wallets - describes a fresh install rather than the corruption this
-        // document exists to explain.
+        // The recovery placeholder is not a config: reporting it as readable would describe a
+        // fresh install rather than the corruption this document exists to explain.
         let content = content.filter(|content| content.ensure_available().is_ok());
         let mut status = match content.as_ref() {
             Some(content) => Self::from_config_content(content, &network),
@@ -727,12 +703,10 @@ impl WalletStatus {
             .iter()
             .map(|id| (id.clone(), true))
             .collect();
-        // The Monero seed lives under a fixed id and is a raw 32-byte seed, not
-        // a `CipherSeed`, so it is reported by length only. Skipped when the
-        // user supplied their own address: there is then no generated seed.
+        // The Monero seed is a raw 32-byte seed, not a `CipherSeed`, so it is reported by length
+        // only. Its id is versioned (`monero`, `monero_2`, ...) and `None` means the original
+        // unversioned entry.
         if *content.monero_address_is_generated() {
-            // Monero ids are versioned (`monero`, `monero_2`, ...); `None` means the original
-            // unversioned entry, which is what pre-versioning wallets use.
             ids.push((
                 content
                     .monero_wallet_id()
@@ -746,10 +720,9 @@ impl WalletStatus {
         for (id, classify_blob) in ids {
             match startup_keyring_probe(id.as_str()) {
                 Some(recorded) => reports.push(recorded),
-                // Where the store can ask the user for permission - macOS keychain, Linux
-                // secret-service - reading here would raise a prompt per entry at the moment
-                // someone clicks "Send Logs". An unknown entry is a worse answer than a
-                // reported one but a better one than an unexpected password dialog.
+                // Where the store can ask the user - macOS keychain, Linux secret-service -
+                // reading here would raise a prompt per entry at the moment someone clicks
+                // "Send Logs".
                 None if STORE_CAN_PROMPT => reports.push(unprobed_report(&id)),
                 None => reports.push(probe_keyring_entry(&id, classify_blob).await),
             }
@@ -766,21 +739,10 @@ impl WalletStatus {
 /// here - the only things shipped about the configuration are the allowlisted
 /// `diagnostics` and `wallet_status` values.
 ///
-/// What ends up in the archive:
-///
-/// * `logs/**/*.log`, with home-directory paths scrubbed of the OS user name.
-///   Only `.log` is matched, so a `.zip` left behind by a failed upload is not
-///   nested into the next bundle.
-/// * `configs/diagnostics.json` - [`SupportDiagnostics`], an explicit
-///   allowlist of non-secret settings.
-/// * `configs/wallet_status.json` - [`WalletStatus`], presence/verdict/length
-///   metadata about the wallet.
-///
-/// What never does, and must not be added: `config_wallet.json`, its
-/// `.backup`, any `*.corrupted.*` copy, the legacy `wallet_config.json`, the
-/// legacy `credentials_backup.bin`, or any other file from the app config
-/// directory. Those four wallet files are reported by name, presence and byte
-/// length only, through [`WalletStatus::files`].
+/// `config_wallet.json`, its `.backup`, any `*.corrupted.*` copy, the legacy
+/// `wallet_config.json` and the legacy `credentials_backup.bin` must never be
+/// added: they are reported by name, presence and byte length only, through
+/// [`WalletStatus::files`]. Log paths are scrubbed of the OS user name.
 ///
 /// Returns the path of the archive and its file name.
 pub fn create_support_archive(

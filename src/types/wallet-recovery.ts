@@ -1,9 +1,7 @@
 /**
- * Payloads of the "find my wallets" recovery commands.
- *
- * Mirrors `src-tauri/src/wallet_recovery.rs`. The backend deliberately sends nothing that could
- * identify or reconstruct a wallet beyond an 8-character address prefix: no seed, no blob, no
- * view key.
+ * Payloads of the "find my wallets" recovery commands, mirroring `src-tauri/src/wallet_recovery.rs`.
+ * Nothing that could identify or reconstruct a wallet beyond an 8-character address prefix crosses
+ * this boundary: no seed, no blob, no view key.
  */
 
 export type FoundWalletStatus = 'readable' | 'pin_required' | 'unreadable';

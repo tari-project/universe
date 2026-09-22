@@ -135,8 +135,7 @@ impl WalletManager {
             .adapter
             .connect_with_local_node(config.connect_with_local_node);
 
-        // A wallet that never initialised has no birthday to scan from; the wallet process
-        // handles `None` by scanning from genesis, which is the safe default here.
+        // No birthday means the wallet process scans from genesis, which is the safe default.
         let tari_wallet_details = InternalWallet::tari_wallet_details().await?;
         process_watcher.adapter.wallet_birthday = tari_wallet_details.map(|d| d.wallet_birthday);
         process_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();

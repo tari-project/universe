@@ -82,11 +82,9 @@ impl PinLocker {
         }
     }
 
-    /// Correct a `pin_locked` flag that disagrees with what the keyring actually holds.
-    ///
-    /// Separate from `set_pin_locked` because it also clears the failed-attempt counter: every
-    /// failure recorded against the wrong state was the app's mistake, not the user's, and
-    /// leaving them counted would lock the user out right after the repair.
+    /// Correct a `pin_locked` flag that disagrees with what the keyring holds. Unlike
+    /// `set_pin_locked` this also clears the failed-attempt counter: those failures were counted
+    /// against the wrong state and would otherwise lock the user out right after the repair.
     pub async fn repair_pin_locked(&mut self, locked: bool) -> Result<(), anyhow::Error> {
         self.state.pin_locked = locked;
         self.state.reset_pin_attempts();

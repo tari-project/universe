@@ -22,12 +22,10 @@
 
 //! Regression tests for the "Send Logs" support bundle.
 //!
-//! The archive used to copy every `*.json`/`*.toml`/... file out of the app
-//! config directory, which shipped the airdrop tokens, the wallet view key and
-//! the MCP bearer token to the feedback endpoint. Nothing from the config
-//! directory may end up in the archive any more: the only configuration that
-//! travels is the allowlisted `SupportDiagnostics` document plus the redacted
-//! `WalletStatus` document.
+//! Nothing from the app config directory may end up in the archive - it holds
+//! the airdrop tokens, the wallet view key and the MCP bearer token. The only
+//! configuration that travels is the allowlisted `SupportDiagnostics` document
+//! plus the redacted `WalletStatus` document.
 //!
 //! `WalletStatus` exists so that a "my seeds are gone" report is diagnosable
 //! from the bundle alone. It is built from the same wallet config that holds
@@ -610,7 +608,7 @@ fn wallet_status_travels_in_the_support_archive() {
     }
 }
 
-// --- Startup probe hand-off (T2 -> T6) ----------------------------------------------------
+// --- Startup probe records reaching the support bundle ------------------------------------
 //
 // The startup probe reads the keyring once, at launch. What it saw has to reach the bundle
 // without a second read: on macOS a second read is a second keychain prompt, and by then the

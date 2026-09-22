@@ -23,10 +23,9 @@
 //! "Find my wallets": list the wallet seeds this machine's credential store still holds and let
 //! the user re-link one.
 //!
-//! This is the self-service recovery for the states the investigation calls P7 and P8 - a wallet
-//! seed that is still in the keyring under an id nothing points at, because the config was lost,
-//! recreated, or because an import pushed the previous wallet out of view. The config knows one
-//! wallet; the store may hold several.
+//! The self-service recovery for a seed that is still in the keyring under an id nothing points
+//! at, because the config was lost, recreated, or because an import pushed the previous wallet
+//! out of view. The config knows one wallet; the store may hold several.
 //!
 //! What leaves this module: a wallet id, the first 8 characters of the derived Tari address, and
 //! whether the config lists it. Never a seed, never a blob, never a view key.
@@ -260,13 +259,9 @@ pub async fn find_my_wallets(app_handle: &AppHandle) -> FindWalletsResult {
     with_pin
 }
 
-/// Failed recovery PIN attempts in this process, and when the last one was.
-///
-/// The persisted counter in `config_wallet.json` is the real one, but it is unreachable in
-/// exactly the state that needs it most: while the config is the recovery placeholder every
-/// write is refused, so the attempt is never recorded and every prompt starts from zero. This
-/// mirror is held in memory, so it survives a config that cannot be written, and check and
-/// increment happen under the one lock.
+/// Failed recovery PIN attempts in this process, and when the last one was. The persisted counter
+/// in `config_wallet.json` is unreachable in the state that needs it most: while the config is the
+/// recovery placeholder every write is refused, so every prompt would start from zero.
 static RECOVERY_PIN_ATTEMPTS: std::sync::Mutex<(u32, Option<std::time::Instant>)> =
     std::sync::Mutex::new((0, None));
 
@@ -292,12 +287,10 @@ fn recovery_lockout_seconds() -> Option<u64> {
     (elapsed < duration).then(|| (duration - elapsed).as_secs() + 1)
 }
 
-/// Ask for a PIN on a recovery path, under the same lockout as every other PIN entry.
-///
-/// These prompts decrypt an orphaned credential rather than the configured wallet, so
-/// `PinManager::validate_pin` cannot do the checking - it reads the wallet the config points at,
-/// which is the one that is missing. They are still PIN guesses, and without the lockout anyone
-/// at the running app could sit on "Search again" and walk a six-digit space.
+/// Ask for a PIN on a recovery path, under the same lockout as every other PIN entry. These
+/// prompts decrypt an orphaned credential rather than the configured wallet, so
+/// `PinManager::validate_pin` cannot check them, but they are still PIN guesses: without the
+/// lockout anyone at the running app could sit on "Search again" and walk a six-digit space.
 async fn prompt_recovery_pin(app_handle: &AppHandle) -> Result<SafePassword, anyhow::Error> {
     let remaining_seconds = recovery_lockout_seconds()
         .into_iter()
@@ -326,14 +319,9 @@ fn recovery_pin_opened_something(before: &FindWalletsResult, after: &FindWallets
 /// Count a recovery PIN attempt against the same lockout as every other PIN entry.
 ///
 /// Failures count; successes do not clear the counter. The store can hold wallets enciphered
-/// under different historical PINs, so clearing it on any success would hand someone who knows
-/// one PIN an unlimited oracle over the others: two guesses at the second wallet, one correct
-/// entry against the first to reset, repeat. Nothing needs the counter cleared to finish a
-/// recovery, and a working wallet clears it through the normal validation path anyway.
-///
-/// The in-memory mirror is updated first and unconditionally, because the persisted one is
-/// refused while the config is a recovery placeholder - and that is the state in which this
-/// prompt is most likely to be reached.
+/// under different historical PINs, so clearing on any success would give someone who knows one
+/// PIN an unlimited oracle over the others. The in-memory mirror is updated first and
+/// unconditionally, because the persisted one is refused while the config is a placeholder.
 async fn record_recovery_pin_attempt(opened: bool) {
     if opened {
         return;
@@ -407,13 +395,10 @@ pub async fn relink_tari_wallet(
         .take(ADDRESS_PREFIX_LEN)
         .collect();
 
-    // Selects the wallet, drops any external address, and leaves the previously selected id in
-    // the list rather than removing it: re-linking must never be the thing that loses a wallet.
-    //
-    // This is also the way out of a corrupted config. Nothing before this point has written
-    // anything, so a wrong PIN or an unreadable entry leaves the placeholder exactly as it was;
-    // by the time the write happens the seed has been read and its address derived, which is the
-    // proof that makes replacing the placeholder safe.
+    // Leaves the previously selected id in the list rather than removing it: re-linking must
+    // never be the thing that loses a wallet. This is also the way out of a corrupted config, and
+    // it is safe because nothing before this point wrote anything and the seed has by now been
+    // read and its address derived.
     let previous = ConfigWallet::content().await;
     let was_placeholder = previous.ensure_available().is_err();
     let previous_details = previous.tari_wallet_details().clone();
@@ -422,13 +407,9 @@ pub async fn relink_tari_wallet(
     ConfigWallet::update_field(ConfigWalletContent::adopt_recovered_tari_wallet, details).await?;
     if let Err(e) = InternalWallet::initialize_with_seed(app_handle).await {
         // `initialize_with_seed` snapshots the config *after* this write, so its own rollback
-        // cannot undo it. Put the previous selection back here instead, or the command reports
-        // failure while the config has already switched wallets.
-        //
-        // Except when the config was the recovery placeholder: there is no previous selection to
-        // return to, and restoring one would leave a valid config listing no wallet at all -
-        // which the next launch reads as a fresh install. The adopted wallet is the user's own
-        // and its seed is in the store, so keeping it is the safer of the two.
+        // cannot undo it; put the previous selection back here instead. Not when the config was
+        // the recovery placeholder though: restoring that would leave a valid config listing no
+        // wallet, which the next launch reads as a fresh install.
         if !was_placeholder
             && let Err(rollback) = ConfigWallet::update_field(
                 ConfigWalletContent::set_tari_wallet_details,

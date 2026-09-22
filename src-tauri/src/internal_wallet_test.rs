@@ -316,7 +316,7 @@ fn wipe_and_remove_file_unlinks_symlink_without_touching_target() {
     std::fs::remove_file(&target).expect("clean up target");
 }
 
-// --- Startup keyring probe (kmbt) ---------------------------------------------------------
+// --- Startup keyring probe ----------------------------------------------------------------
 //
 // The probe itself needs a live keyring, but its two decisions do not: whether to run at all
 // (macOS rate limiting) and how to classify a failure. Both are pure functions and are what the
@@ -511,13 +511,12 @@ fn mining_is_refused_in_every_recovery_state() {
     }
 }
 
-// --- Legacy migration and legacy-file purge (c9hf / k5q8) ---------------------------------
+// --- Legacy migration and legacy-file purge -----------------------------------------------
 //
-// The whole point of these two changes is that a machine with a legacy wallet can no longer be
-// pushed into a state it cannot leave: the decrypt is tried from every source, a failure
-// quarantines the file instead of panicking, an unreadable legacy file never turns into a new
-// wallet, and nothing is deleted until the legacy seed is proven to be the wallet in the config.
-// Everything below runs against temp directories and in-memory fixtures; no keyring is touched.
+// A machine with a legacy wallet must never be pushed into a state it cannot leave: the decrypt
+// is tried from every source, a failure quarantines the file instead of panicking, an unreadable
+// legacy file never turns into a new wallet, and nothing is deleted until the legacy seed is
+// proven to be the wallet in the config. Temp directories and in-memory fixtures only; no keyring.
 
 use super::credential_manager::LegacyCredential;
 use super::internal_wallet::{
@@ -601,7 +600,7 @@ fn passphrase_candidates_always_end_with_no_passphrase() {
     assert!(candidates[0].1.is_none());
 }
 
-// --- Decrypting the legacy seed (c9hf criteria 1 and 3) -----------------------------------
+// --- Decrypting the legacy seed -----------------------------------------------------------
 
 #[test]
 fn legacy_seed_decrypts_with_the_passphrase_from_the_credential() {
@@ -654,7 +653,7 @@ fn legacy_seed_decrypts_with_no_passphrase_at_all() {
 
 #[test]
 fn legacy_seed_that_no_source_opens_reports_decryption_failed() {
-    // This is panic 4: every source is wrong. It must be an error, not an `.expect`.
+    // Every source is wrong: that has to be an error, not an `.expect`.
     let seed_base58 = enciphered_legacy_seed(Some("the passphrase this machine lost"));
 
     let error = decrypt_legacy_tari_seed(
@@ -685,7 +684,7 @@ fn a_damaged_enciphered_seed_is_reported_as_damage_not_as_a_wrong_passphrase() {
     assert_eq!(error, LegacyDecryptErrorKind::Base58);
 }
 
-// --- The migration decision tree (c9hf criterion 4) ---------------------------------------
+// --- The migration decision tree ----------------------------------------------------------
 
 #[test]
 fn an_empty_config_dir_is_the_only_state_that_allows_a_new_wallet() {
@@ -713,8 +712,8 @@ fn a_readable_legacy_config_is_migratable() {
 
 #[test]
 fn an_unparseable_legacy_config_is_a_recovery_case_never_a_new_wallet() {
-    // The `.ok()` this replaces turned "locked by antivirus" and "truncated" into "no legacy
-    // wallet here", and the next step created a brand new wallet over the top of the old one.
+    // Collapsing "locked by antivirus" and "truncated" into "no legacy wallet here" would let
+    // the next step create a brand new wallet over the top of the old one.
     let dir = tempfile::tempdir().expect("temp dir");
     write_legacy_wallet_config(dir.path(), "{ this is not json");
 
@@ -743,8 +742,8 @@ fn a_legacy_config_without_a_wallet_in_it_is_a_recovery_case() {
 
 #[test]
 fn a_surviving_credential_file_alone_still_blocks_a_new_wallet() {
-    // The wallet config is gone but the machine demonstrably had a wallet. Creating a new one
-    // here is the silent replacement the hardening brief forbids.
+    // The wallet config is gone but the machine demonstrably had a wallet, so a new one here
+    // would silently replace it.
     let dir = tempfile::tempdir().expect("temp dir");
     std::fs::write(dir.path().join(LEGACY_FALLBACK_FILE_NAME), b"\x00\x01")
         .expect("write the fallback fixture");
@@ -831,7 +830,7 @@ fn an_absent_legacy_config_file_is_reported_as_absent_not_as_damage() {
     );
 }
 
-// --- The purge gate (k5q8) ----------------------------------------------------------------
+// --- The purge gate -----------------------------------------------------------------------
 
 /// Two independent wallets, as the gate sees them: an address derived from a seed.
 async fn address_for_a_random_wallet() -> TariAddress {
@@ -861,8 +860,8 @@ async fn purge_proceeds_when_the_legacy_seed_derives_a_configured_address() {
 
 #[tokio::test]
 async fn purge_is_refused_when_the_legacy_wallet_is_not_the_configured_one() {
-    // The #3353 hole: the config's wallets are readable, but they are a different wallet. Before
-    // this gate, the last copy of the user's original enciphered seed was zero-filled here.
+    // The config's wallets are readable, but they are a different wallet: without the second
+    // half of the gate, the last copy of the user's original seed would be zero-filled here.
     let legacy = address_for_a_random_wallet().await;
     let configured = address_for_a_random_wallet().await;
 
@@ -1045,8 +1044,8 @@ fn best<T>(candidates: &[SeedCandidate<T>]) -> &SeedCandidate<T> {
 
 #[test]
 fn a_plain_tari_blob_under_a_locked_config_repairs_the_flag() {
-    // Path P4 with a plaintext blob: the config claims a PIN, the keyring holds a plain seed.
-    // Before the repair this was "Wrong PIN entered!" forever, with a lockout after three tries.
+    // The config claims a PIN and the keyring holds a plain seed. Without the repair this is
+    // "Wrong PIN entered!" forever, with a lockout after three tries.
     let seed = CipherSeed::random();
     let blob = seed.to_binary().expect("serialize");
 
@@ -1091,9 +1090,8 @@ fn a_well_encoded_plain_seed_is_not_authenticated() {
 fn a_plain_decode_is_never_trusted_on_its_own() {
     // The reason `authenticated` exists. `to_binary`/`from_binary` is bincode with no tag, so an
     // *enciphered* blob deserializes into a structurally valid seed that is not the user's.
-    // Acting on it without checking the derived address would hand a user who mistyped their PIN
-    // a different, empty wallet - and, before this change, the no-PIN path returned exactly that
-    // seed to the caller.
+    // Acting on it without checking the derived address hands a user who mistyped their PIN a
+    // different, empty wallet.
     let seed = CipherSeed::random();
     let enciphered = seed.encipher(Some(test_pin())).expect("encipher");
 
@@ -1111,10 +1109,10 @@ fn a_plain_decode_is_never_trusted_on_its_own() {
 
 #[test]
 fn every_plain_decode_path_refuses_an_enciphered_blob() {
-    // The guard the rest of `internal_wallet.rs` decodes through. `validate_wallet_config_for_seed`
+    // The guard the rest of `internal_wallet.rs` decodes through: `validate_wallet_config_for_seed`
     // (which writes the address the whole session uses), `load_latest_version`'s no-PIN branch and
-    // the purge gate's address list all used bare `CipherSeed::from_binary`, so for a PIN-locked
-    // wallet they accepted the enciphered blob and carried on with a seed belonging to nobody.
+    // the purge gate's address list. Bare `CipherSeed::from_binary` accepts a PIN-locked wallet's
+    // enciphered blob and carries on with a seed belonging to nobody.
     let seed = CipherSeed::random();
     let plain = seed.to_binary().expect("serialize");
     let enciphered = seed.encipher(Some(test_pin())).expect("encipher");
@@ -1144,8 +1142,8 @@ fn every_plain_decode_path_refuses_an_enciphered_blob() {
 
 #[test]
 fn an_enciphered_tari_blob_is_authenticated_by_the_pin() {
-    // Path P3: `create_pin` wrote the enciphered blob and died before writing the flag. The MAC
-    // in the enciphered format proves the answer, so no address check is needed for this one.
+    // `create_pin` wrote the enciphered blob and died before writing the flag. The MAC in the
+    // enciphered format proves the answer, so no address check is needed for this one.
     let seed = CipherSeed::random();
     let blob = seed.encipher(Some(test_pin())).expect("encipher");
 

@@ -215,27 +215,16 @@ struct UniverseAppState {
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
 }
 
-/// Longest panic message that may reach a log line.
-///
-/// A `&'static str` payload is a literal from our own source and is short. A
-/// `String` payload is `expect`/`unwrap` formatting someone's error with
-/// `{:?}`, and a `Debug` impl can print bytes: `keyring::Error::BadEncoding`
-/// carries a `Vec<u8>` that, for a credential, would be the seed blob. No
-/// `expect`/`unwrap` on a keyring or seed-bearing `Result` exists outside
-/// `#[cfg(test)]` in this crate today, so that is defence in depth rather than
-/// a live path - but the hook is the one place where text from an arbitrary
-/// failure reaches the log, and a cap keeps a pathological payload from
-/// emptying a blob into it. It is generous enough to keep a real panic message
-/// readable, which is what makes a Windows crash triageable from a bundle.
+/// Longest panic message that may reach a log line. A `String` payload is an
+/// `expect`/`unwrap` formatting an error with `{:?}`, and a `Debug` impl can
+/// print bytes: `keyring::Error::BadEncoding` carries a `Vec<u8>` that, for a
+/// credential, would be the seed blob. The cap is generous enough to keep a
+/// real panic message readable.
 const MAX_PANIC_MESSAGE_LEN: usize = 256;
 
-/// The panic message, but only when it is actually a string, and bounded.
-///
-/// `panic!`/`expect`/`unwrap` always produce a `&'static str` or a `String`, so
-/// this covers every panic the app can realistically raise. A payload of any
-/// other type (`panic_any(SomeStruct)`) is deliberately *not* formatted: the
-/// whole point is that no struct is ever dumped into a log line, because the
-/// wallet structs carry seeds and view keys.
+/// The panic message, but only when it is actually a string, and bounded. A payload
+/// of any other type (`panic_any(SomeStruct)`) is never formatted, because the wallet
+/// structs carry seeds and view keys.
 fn panic_message(panic_info: &std::panic::PanicHookInfo<'_>) -> String {
     let payload = panic_info.payload();
     let message: &str = if let Some(message) = payload.downcast_ref::<&'static str>() {
@@ -252,18 +241,12 @@ fn panic_message(panic_info: &std::panic::PanicHookInfo<'_>) -> String {
     }
 }
 
-/// Makes any panic fatal for the whole process.
+/// Makes any panic fatal for the whole process. Without this a panic inside a
+/// tokio task only kills that task, leaving a half-alive app with a poisoned
+/// `LazyLock` and a splash screen that never closes.
 ///
-/// Without this, a panic inside a task spawned on the tokio runtime only kills
-/// that task. The app kept running with a `LazyLock` poisoned by the panicking
-/// initializer, a splash screen that never closes, and every later access to
-/// that singleton panicking in turn - a half-alive process that users can only
-/// escape by force-quitting, and which re-reports on every relaunch. Exiting
-/// non-zero turns that into an honest crash.
-///
-/// Only the message and the source location are logged. Sentry gets a constant
-/// string, never the payload: the Sentry panic integration would otherwise ship
-/// whatever an `expect` was formatted with.
+/// Only the message and the source location are logged; Sentry gets a constant
+/// string, never the payload, which its panic integration would otherwise ship.
 fn install_fatal_panic_hook() {
     std::panic::set_hook(Box::new(|panic_info| {
         let message = panic_message(panic_info);
@@ -759,11 +742,9 @@ fn main() {
     });
 }
 
-/// The hook can only be tested by letting it run, and it ends the process, so
-/// each case re-executes this test binary as a child and inspects the exit
-/// status. Nothing here installs the hook in the parent, so the rest of the
-/// test suite keeps the default panic behaviour and `#[should_panic]` tests
-/// elsewhere are unaffected.
+/// The hook can only be tested by letting it run, and it ends the process, so each
+/// case re-executes this test binary as a child and inspects the exit status. The
+/// hook is never installed in the parent, so other tests keep the default behaviour.
 #[cfg(test)]
 mod fatal_panic_tests {
     const CHILD: &str = "TARI_TEST_FATAL_PANIC_CHILD";

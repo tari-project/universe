@@ -658,12 +658,10 @@ pub async fn forgot_pin(
     Ok(())
 }
 
-/// List the wallet seeds this machine's credential store still holds.
-///
-/// The recovery for a seed the config no longer points at: a config that was lost or recreated,
-/// or a wallet pushed out of view by an import. Returns an id, an 8-character address prefix and
-/// whether the config lists it - never a seed, a blob or a view key. A platform that cannot
-/// enumerate its credential store answers `unsupported` rather than failing.
+/// List the wallet seeds this machine's credential store still holds: the recovery for a seed the
+/// config no longer points at. Returns an id, an 8-character address prefix and whether the config
+/// lists it - never a seed, a blob or a view key. A platform that cannot enumerate its credential
+/// store answers `unsupported` rather than failing.
 #[tauri::command]
 pub async fn find_my_wallets(app_handle: tauri::AppHandle) -> Result<FindWalletsResult, String> {
     let timer = Instant::now();
@@ -674,10 +672,9 @@ pub async fn find_my_wallets(app_handle: tauri::AppHandle) -> Result<FindWallets
     Ok(result)
 }
 
-/// Point the app at one of the wallets `find_my_wallets_command` found.
-///
-/// Returns the 8-character prefix of the address now in use. Writes nothing to the keyring: the
-/// seed is already there, and the previously selected wallet stays in the list.
+/// Point the app at one of the wallets `find_my_wallets` returned, and answer with the
+/// 8-character prefix of the address now in use. Writes nothing to the keyring and leaves the
+/// previously selected wallet in the list.
 #[tauri::command]
 pub async fn relink_wallet(
     wallet_id: String,
@@ -748,8 +745,8 @@ pub async fn import_seed_words(
             .await
             .map_err(InvokeError::from_anyhow)?;
             EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
-            // The import is the way out of the wallet recovery state: the user just proved they
-            // hold a seed and it is now in the keyring, so mining and telemetry may run again.
+            // Importing a seed is the way out of the recovery state: the user proved they hold
+            // one and it is now in the keyring.
             leave_wallet_recovery(&app_handle).await;
             log::info!(target: LOG_TARGET_APP_LOGIC, "Seed words imported successfully for wallet #{wallet_id:?}");
         }

@@ -41,11 +41,9 @@ export interface CriticalProblemPayload {
 }
 
 /**
- * Why the app entered the wallet recovery state.
- *
  * Mirrors `WalletRecoveryReason` in `src-tauri/src/internal_wallet.rs`. The backend sends an
  * enum-like value only - never an error string, a path or an id - so all user-facing copy is
- * chosen here.
+ * chosen on this side.
  */
 export type WalletRecoveryReason =
     | 'initialization_failed'

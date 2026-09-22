@@ -18,10 +18,8 @@ interface FindMyWalletsDialogProps {
 
 /**
  * Lists the wallet seeds this machine's credential store still holds and lets the user pick one.
- *
- * Reachable from the wallet recovery screen and from wallet settings. The backend sends only an
- * id, an 8-character address prefix and whether the wallet is already linked, so there is nothing
- * sensitive to render here even by accident.
+ * The backend sends only an id, an 8-character address prefix and link flags, so there is nothing
+ * sensitive to render here.
  */
 const FindMyWalletsDialog = memo(function FindMyWalletsDialog({ open, onOpenChange }: FindMyWalletsDialogProps) {
     const { t } = useTranslation('common', { useSuspense: false });

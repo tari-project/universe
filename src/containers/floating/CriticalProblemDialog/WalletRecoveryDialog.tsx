@@ -15,9 +15,8 @@ import FindMyWalletsDialog from '../WalletRecovery/FindMyWalletsDialog.tsx';
 import { TextWrapper, Wrapper } from './styles.ts';
 
 /**
- * Copy per recovery reason. The backend never sends a message, only an enum-like reason, so the
- * wording (and therefore the redaction) lives entirely here: no path, id or error string from the
- * backend can reach the screen through this dialog.
+ * Copy per recovery reason. The backend sends only an enum-like reason, never a message, so no
+ * path, id or error string can reach the screen through this dialog.
  */
 const COPY_KEYS: Record<WalletRecoveryReason, { title: string; description: string }> = {
     initialization_failed: {
@@ -28,10 +27,8 @@ const COPY_KEYS: Record<WalletRecoveryReason, { title: string; description: stri
         title: 'common:wallet-recovery-seed-unavailable-title',
         description: 'common:wallet-recovery-seed-unavailable-description',
     },
-    // The wallet config could not be parsed and neither could its backup. The copy names the two
-    // files the backend leaves behind (`config_wallet.json.corrupted.<ts>` and
-    // `config_wallet.json.recovery_required`) and says outright that no new wallet was created,
-    // because "my wallet is empty" is what this state looks like from the outside.
+    // The copy has to say outright that no new wallet was created: from the outside this state
+    // looks like an emptied wallet.
     config_corrupted: {
         title: 'common:wallet-recovery-config-corrupted-title',
         description: 'common:wallet-recovery-config-corrupted-description',
@@ -47,14 +44,9 @@ const COPY_KEYS: Record<WalletRecoveryReason, { title: string; description: stri
 };
 
 /**
- * Reasons for which searching the credential store is a plausible next step.
- *
- * All four describe a wallet whose seed may well still be on this computer under an id the app
- * has lost track of: secure storage could not be read for the configured id, the settings file
- * that held the id list was destroyed, or a pre-migration wallet could not be adopted.
- * `initialization_failed` is deliberately absent - it means the wallet the config points at
- * failed to open for some other reason, and offering to re-link the id it is already using would
- * only be confusing. The dialog is still reachable from Settings there.
+ * Reasons whose seed may still be on this computer under an id the app has lost track of.
+ * `initialization_failed` is absent: the configured id is intact there, so offering to re-link it
+ * would only confuse. The dialog stays reachable from Settings.
  */
 const FIND_MY_WALLETS_REASONS: readonly WalletRecoveryReason[] = [
     'seed_unavailable',
@@ -64,17 +56,14 @@ const FIND_MY_WALLETS_REASONS: readonly WalletRecoveryReason[] = [
 ];
 
 /**
- * Shown when the app cannot vouch for the wallet. Deliberately not `CriticalProblemDialog`: the
- * app is not broken, so the primary action is "open settings" (where the user can export logs and
- * send a support bundle) rather than "restart" or "quit". Telemetry is not running and neither
- * miner will start while this is up; both are gated in the backend.
+ * Shown when the app cannot vouch for the wallet. Not `CriticalProblemDialog`: the app itself
+ * works, so the primary action is opening settings rather than restarting or quitting. Mining and
+ * telemetry stay gated in the backend while this is up.
  */
 const WalletRecoveryDialog = memo(function WalletRecoveryDialog() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const walletRecovery = useAppStateStore((s) => s.walletRecovery);
     const { isExiting, handleClose, handleRestart } = useErrorDialogsButtonsLogic();
-    // The first thing to try when the wallet cannot be opened or its seed cannot be read: the
-    // seed is often still in this computer's credential store under an id the config lost.
     const [isFindingWallets, setIsFindingWallets] = useState(false);
 
     const reason = walletRecovery?.reason ?? undefined;

@@ -68,19 +68,14 @@ impl WalletId {
 #[derive(Getters, Setters)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct ConfigWalletContent {
-    /// In-memory only: set when `_load_or_create` had to fall back to a default
-    /// because neither `config_wallet.json` nor its `.backup` could be parsed.
+    /// In-memory only: set when `_load_or_create` fell back to a default because
+    /// neither `config_wallet.json` nor its `.backup` could be parsed.
     ///
-    /// `#[serde(skip)]` is deliberate. If this were a normal field it would be
-    /// written into `config_wallet.json` by the next save and a later launch
-    /// would read back `corrupted_recovery: false` from a file that was in fact
-    /// born out of a recovery, which is exactly the misleading state we must not
-    /// create. Durability across launches is carried by a separate marker file,
-    /// `config_wallet.json.recovery_required` (see `load_from_path`): it is
-    /// written before the damaged file is quarantined and removed again as soon
-    /// as a valid config is loaded. That marker, not this flag, is what stops a
-    /// post-quarantine launch from looking like a fresh install and silently
-    /// creating a new wallet.
+    /// Persisting it would read back as `false` on a later launch from a file
+    /// that was born out of a recovery, so durability is carried by the
+    /// `config_wallet.json.recovery_required` marker instead (see
+    /// `load_from_path`): the marker is what stops a post-quarantine launch from
+    /// looking like a fresh install and creating a new wallet.
     #[serde(skip)]
     #[getset(get = "pub")]
     corrupted_recovery: bool,
@@ -94,22 +89,15 @@ pub struct ConfigWalletContent {
     wxtm_addresses: HashMap<String, String>, // This is the Ethereum address used for WXTm mode | Maps exchange ID to address
     #[getset(get = "pub")]
     monero_address_is_generated: bool,
-    /// Credential id holding the generated Monero seed.
+    /// Credential id holding the generated Monero seed. `None` means the original, unversioned
+    /// `monero` entry, which is what every wallet created before Monero ids were versioned uses.
+    /// A new seed is never written over an existing entry: it takes the next id in the sequence
+    /// (`monero`, `monero_2`, ...) and this field moves with it, so a seed that was replaced is
+    /// still in the store.
     ///
-    /// `None` means the original, unversioned `monero` entry, which is what every wallet created
-    /// before Monero ids were versioned uses. A new seed is never written over an existing entry:
-    /// it gets the next id in the sequence (`monero`, `monero_2`, ...) and this field is moved to
-    /// it, so a seed that was replaced - by "forgot PIN", say - is still in the store.
-    ///
-    /// Downgrade note. A release that predates this field parses the config fine (the struct is
-    /// `#[serde(default)]` and nothing uses `deny_unknown_fields`), but it re-serializes without
-    /// the field, so the first config write by an older build drops it. An older build then
-    /// reads the hardcoded `monero` entry while `monero_address` still names the seed at
-    /// `monero_2`. Coming back to a build with this field, the id reads as `None` again: the
-    /// seed at `monero_2` is not lost, and `allocate_monero_wallet_id` will not overwrite it,
-    /// but `get_monero_seed` refuses the mismatched `monero` entry (its address does not derive
-    /// the recorded one) rather than returning the wrong seed words. Failing closed is the
-    /// deliberate choice; re-linking that entry is a support-led recovery.
+    /// An older build drops this field on its first config write. Coming back, the id reads as
+    /// `None` while `monero_address` still names the seed at `monero_2`, and `get_monero_seed`
+    /// refuses the mismatched `monero` entry rather than returning the wrong seed words.
     #[getset(get = "pub", set = "pub")]
     monero_wallet_id: Option<WalletId>,
     #[getset(get = "pub", set = "pub")]
@@ -132,23 +120,17 @@ pub struct ConfigWalletContent {
     #[getset(get = "pub", set = "pub")]
     security_warning_dismissed: bool,
     /// Unix seconds of the last completed startup keyring probe, or 0 for "never
-    /// probed". Not a secret and not derived from one.
-    ///
-    /// It lives here rather than in its own file because this config is the one
-    /// that is written atomically and under a single writer lock. Only the
-    /// platforms that rate-limit the probe (macOS, where reading an item the
-    /// user approved with "Allow" re-shows the system dialog) record it, so the
-    /// platforms that suffered the interrupted-write crash loop keep their
-    /// launches free of an extra config write.
+    /// probed". Not a secret and not derived from one. It lives in this config
+    /// because this is the one written atomically under a single writer lock.
+    /// Only the platforms that rate-limit the probe record it: macOS re-shows
+    /// the system dialog on every read of an item approved with "Allow".
     #[getset(get = "pub")]
     seed_probe_last_unix: u64,
     /// Enum-like tag of what that probe concluded: `ok`, `unavailable_<kind>` or
     /// `inconclusive_<kind>`. Never an error message, a path, an id or a length.
-    ///
-    /// Deliberately a `String` and not an enum: an unknown variant written by a
-    /// newer version would fail the whole parse on downgrade and send a
-    /// perfectly good config down the quarantine path, which is the exact
-    /// failure this work exists to remove.
+    /// A `String` rather than an enum: an unknown variant written by a newer
+    /// version would fail the whole parse on downgrade and send a perfectly good
+    /// config down the quarantine path.
     #[getset(get = "pub")]
     seed_probe_last_outcome: Option<String>,
 }
@@ -223,11 +205,9 @@ impl ConfigWalletContent {
         Ok(())
     }
 
-    /// Records when the startup keyring probe last ran and what it concluded.
-    ///
-    /// One setter for both fields so a single `update_field` writes them
-    /// together: a timestamp that outlived its outcome would rate-limit the next
-    /// probe on the strength of a result nobody can name.
+    /// Records when the startup keyring probe last ran and what it concluded. One setter for
+    /// both fields so a single `update_field` writes them together: a timestamp that outlived its
+    /// outcome would rate-limit the next probe on a result nobody can name.
     pub fn set_seed_probe_result(&mut self, result: (u64, &'static str)) -> &mut Self {
         let (probed_at_unix, outcome_tag) = result;
         self.seed_probe_last_unix = probed_at_unix;
@@ -253,27 +233,18 @@ impl ConfigWalletContent {
         self
     }
 
-    /// Adopt a wallet the user picked out of the credential store.
-    ///
-    /// Clears the recovery placeholder flag and records the wallet in one save. The two have to
-    /// happen together: clearing the flag on its own would write a default config with no wallet
-    /// in it, and the *next* launch would then read a perfectly valid config that lists nothing
-    /// and create a brand new wallet over the top of the one being recovered.
-    ///
-    /// This is the one place the placeholder may be replaced, and only because the user chose a
-    /// specific existing wallet from a list - which is the explicit consent the rest of the
-    /// wallet code refuses to assume.
+    /// Adopt a wallet the user picked out of the credential store: clears the recovery
+    /// placeholder flag and records the wallet in one save. Clearing the flag on its own would
+    /// write a default config listing no wallet, and the next launch would read that as valid and
+    /// create a brand new wallet over the one being recovered.
     pub fn adopt_recovered_tari_wallet(&mut self, details: TariWalletDetails) -> &mut Self {
         self.corrupted_recovery = false;
         self.add_tari_wallet(details)
     }
 
-    /// Records a generated Monero wallet: its address and the credential id its seed was written
-    /// under, in one update.
-    ///
-    /// The two must never disagree - an address without the id that derives it is an orphaned
-    /// seed - and `update_field` saves once per call, so they are set together rather than in two
-    /// saves with a crash window between them.
+    /// Records a generated Monero wallet's address and the credential id its seed was written
+    /// under in one update: an address without the id that derives it is an orphaned seed, and
+    /// `update_field` saves once per call, so there is no crash window between the two.
     pub fn set_generated_monero_wallet(&mut self, payload: (String, WalletId)) -> &mut Self {
         let (address, wallet_id) = payload;
         self.monero_address = address;
@@ -300,10 +271,8 @@ impl ConfigWalletContent {
     pub fn add_tari_wallet(&mut self, selected_wallet_details: TariWalletDetails) -> &mut Self {
         // Deselect the external Tari address because a new address is now selected by default
         self.selected_external_tari_address = None;
-        // Selecting a wallet that is already listed moves it to the front rather than adding a
-        // second copy: re-linking back and forth between two wallets would otherwise grow the
-        // list without bound, and every id in it has to stay distinct for the purge gate to
-        // mean anything.
+        // Selecting a listed wallet moves it to the front rather than adding a second copy: the
+        // ids have to stay distinct for the purge gate to mean anything.
         self.tari_wallets
             .retain(|id| id != &selected_wallet_details.id);
         self.tari_wallets
@@ -324,29 +293,23 @@ pub struct ConfigWallet {
 
 impl ConfigWallet {
     /// Loads the wallet config, never panicking and never trusting unvalidated
-    /// bytes.
-    ///
-    /// Order: parse the primary file, else parse `.backup` and restore it, else
+    /// bytes: parse the primary file, else parse `.backup` and restore it, else
     /// quarantine the damaged primary as `.corrupted.<ts>` and enter recovery.
-    /// `.backup` is only ever written *after* a successful parse, so it always
-    /// holds the last content this build could read; the pre-parse copy that
-    /// used to live here destroyed the backup in exactly the case it existed
-    /// for. The recovery marker is persisted *before* the quarantine rename so a
-    /// crash in between cannot make the next launch look like a fresh install
-    /// (which would silently create a new wallet and orphan the keyring seed).
-    /// A manually restored valid primary takes priority and clears the marker.
+    ///
+    /// `.backup` is only written *after* a successful parse, so it always holds
+    /// the last content this build could read. The recovery marker is persisted
+    /// *before* the quarantine rename, so a crash in between cannot make the
+    /// next launch look like a fresh install and create a new wallet. A manually
+    /// restored valid primary takes priority and clears the marker.
     pub(super) fn load_from_path(path: &Path) -> ConfigWalletContent {
         let backup = path.with_extension("json.backup");
         let marker = path.with_extension("json.recovery_required");
         match Self::read_validated(path) {
             Ok((content, serialized, migrated)) => {
                 if migrated && atomic_write(path, serialized.as_bytes()).is_err() {
-                    // The file parsed: the wallet id list and the view key are in hand and the
-                    // rename has been applied in memory. Only persisting it failed (a full disk,
-                    // an antivirus lock). Refusing to run here would put a user whose config is
-                    // perfectly readable into the recovery UI, and the migration is idempotent:
-                    // the next successful save writes the renamed form, and a launch that never
-                    // saves simply migrates again.
+                    // The file parsed, so only persisting the rename failed. The migration is
+                    // idempotent - a launch that never saves migrates again - so this is not a
+                    // reason to put a readable config into the recovery UI.
                     log::warn!(target: LOG_TARGET_APP_LOGIC, "wallet.config_migration_save_failed");
                 }
                 if atomic_write(&backup, serialized.as_bytes()).is_err() {
@@ -475,12 +438,9 @@ impl ConfigWallet {
 /// Renames the `DualAddress` field that the core repo renamed from
 /// `payment_id_user_data` to `memo_field_payment_id` (#2743).
 ///
-/// Operates on JSON object *keys* only, at any depth, and reports whether
-/// anything changed so the caller can avoid rewriting the file when it did not.
-/// The predecessor was a blanket string replace over the whole file, which also
-/// rewrote user-entered string values, and it ran on every single launch
-/// whether or not the old key was present - that unconditional rewrite is what
-/// kept the secret-bearing file permanently dirty on disk.
+/// Operates on JSON object *keys* only, at any depth: a blanket string replace
+/// over the file also rewrites user-entered string values. Reports whether
+/// anything changed so the caller can leave the file alone when it did not.
 fn migrate_payment_id(value: &mut serde_json::Value) -> bool {
     let mut migrated = false;
     match value {

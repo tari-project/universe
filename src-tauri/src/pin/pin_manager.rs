@@ -109,12 +109,9 @@ impl PinManager {
                 }
             }
         } else {
-            // There is nothing to validate the PIN against: no cached Tari wallet details and a
-            // Monero address the user supplied themselves, so neither seed is ours to read.
-            // Reachable from a config restored from a backup that predates the wallet details.
-            // This used to `panic!`, which killed whichever Tauri command task asked - including
-            // `reset_settings`, the one thing such a user would try. An error leaves the app
-            // alive and the seeds untouched.
+            // Nothing to validate the PIN against: no cached Tari wallet details and a Monero
+            // address the user supplied themselves. Reachable from a config restored from a
+            // backup that predates the wallet details.
             log::error!(target: LOG_TARGET_APP_LOGIC, "Neither Tari Seed nor Monero Seed available to validate against.");
             return Err(anyhow::anyhow!(
                 "No wallet seed is available to validate the PIN against"
@@ -130,12 +127,9 @@ impl PinManager {
         Ok(SafePassword::from(pin))
     }
 
-    /// Ask for a PIN without validating it against a stored seed.
-    ///
-    /// Only for the self-healing decode in `internal_wallet`, which validates by decoding the
-    /// blob it already holds. `validate_pin` cannot be used there: it reads the seed, which is
-    /// the operation that is failing. No `PinPromptContext`: these prompts are repairs, not
-    /// authorisations of a transaction, so there is nothing for the dialog to describe.
+    /// Ask for a PIN without validating it against a stored seed. For the self-healing decode in
+    /// `internal_wallet`, which validates by decoding the blob it holds; `validate_pin` cannot be
+    /// used there because it reads the seed, which is the failing operation.
     pub async fn prompt_pin_unvalidated(
         app_handle: &AppHandle,
     ) -> Result<SafePassword, anyhow::Error> {
@@ -143,11 +137,9 @@ impl PinManager {
         Ok(SafePassword::from(pin))
     }
 
-    /// Seconds left on the PIN lockout, or `None` when there is none.
-    ///
-    /// Every path that lets a user try a PIN has to consult this, including the recovery
-    /// commands: those decrypt an orphaned credential rather than the configured wallet, so
-    /// `validate_pin` cannot be used, but they are still PIN guesses and must be counted.
+    /// Seconds left on the PIN lockout, or `None` when there is none. The recovery commands
+    /// decrypt an orphaned credential rather than the configured wallet, so they cannot use
+    /// `validate_pin`, but their guesses still have to be counted.
     pub async fn locked_out_seconds() -> Option<u64> {
         let pin_locker_state = ConfigWallet::content().await.pin_locker_state().clone();
         PinLocker::new(pin_locker_state).locked_out_seconds().await

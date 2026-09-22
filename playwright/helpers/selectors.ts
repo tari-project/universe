@@ -126,9 +126,8 @@ export const sel = {
     messageInput: '[data-testid="send-input-message"]',
     reviewButton: '[data-testid="send-review-button"]',
     confirmButton: '[data-testid="send-confirm-button"]',
-    // The send gate added in #3355 raises a separate confirmation dialog for an
-    // app-origin send when no PIN is configured. With a PIN it asks for the PIN
-    // instead, which is why 95-security-pin never sees this button.
+    // Only raised for an app-origin send when no PIN is configured; with a PIN the
+    // backend asks for the PIN instead.
     appConfirmButton: '[data-testid="app-tx-confirm-button"]',
     doneButton: '[data-testid="send-done-button"]',
     status: '[data-testid="send-status"]',

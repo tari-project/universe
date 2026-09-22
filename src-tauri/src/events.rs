@@ -164,16 +164,11 @@ pub struct CriticalProblemPayload {
 }
 
 /// The app cannot vouch for the wallet and must show the recovery UI instead of running.
-///
-/// Distinct from `CriticalProblem` on purpose: a critical problem is "the app is broken", while
-/// this is "the app is fine, your wallet needs attention", and the two need different copy and
-/// different actions. The payload carries an enum-like reason only - never an error string, a
-/// path, an id or anything derived from a secret.
+/// Distinct from `CriticalProblem`, which means the app itself is broken. Carries an enum-like
+/// reason only - never an error string, a path, an id or anything derived from a secret.
 #[derive(Debug, Serialize, Clone)]
 pub struct WalletRecoveryPayload {
-    /// `None` means the wallet was recovered and the screen should close. Without it the
-    /// frontend has no way to leave the state: the dialog is driven by this payload and nothing
-    /// else ever cleared it.
+    /// `None` means the wallet was recovered and the screen should close; nothing else clears it.
     pub reason: Option<WalletRecoveryReason>,
 }
 

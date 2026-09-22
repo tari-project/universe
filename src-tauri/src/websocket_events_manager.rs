@@ -199,8 +199,7 @@ impl WebsocketEventsManager {
             return None;
         }
 
-        // Skip the message when there is no usable wallet: nothing here is worth reporting
-        // and the websocket payload is keyed on the address.
+        // The payload is keyed on the address, so skip the message without a usable wallet.
         let tari_address = match InternalWallet::tari_address().await {
             Ok(address) => address,
             Err(e) => {

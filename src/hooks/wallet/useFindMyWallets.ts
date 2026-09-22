@@ -4,11 +4,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { FindWalletsResult } from '@app/types/wallet-recovery.ts';
 
 /**
- * Drives the two "find my wallets" commands.
- *
- * Both are user-initiated and both can prompt for a PIN in the backend, so nothing here runs on
- * mount or polls: the search happens when the user asks for it, and the result is kept until they
- * ask again.
+ * Both commands can prompt for a PIN in the backend, so nothing here runs on mount or polls: the
+ * search happens when the user asks for it.
  */
 export function useFindMyWallets() {
     const [result, setResult] = useState<FindWalletsResult | null>(null);

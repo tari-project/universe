@@ -8,9 +8,8 @@ interface AppState {
     isSettingsOpen: boolean;
     criticalError?: Partial<CriticalProblemPayload>;
     /**
-     * Set when the backend cannot vouch for the wallet: initialization failed, or the startup
-     * keyring probe could not read the seed. Distinct from `criticalProblem` because the app
-     * itself is fine - settings and log export stay usable - only the wallet needs attention.
+     * Set when the backend cannot vouch for the wallet. Distinct from `criticalProblem` because
+     * the app itself is fine - settings and log export stay usable.
      */
     walletRecovery?: WalletRecoveryPayload;
     systemDependencies: SystemDependency[];

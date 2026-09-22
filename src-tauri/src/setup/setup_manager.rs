@@ -232,11 +232,9 @@ impl SetupManager {
             .expect("App handle is not initialized")
     }
 
-    /// Start the telemetry manager and service.
-    ///
-    /// Called from `pre_setup` when the wallet is usable, and again if the user later recovers
-    /// out of the wallet recovery state - that launch skipped it, and without this telemetry
-    /// stays off until the next restart.
+    /// Start the telemetry manager and service. Also called after the user recovers out of the
+    /// wallet recovery state: that launch skipped telemetry, which would otherwise stay off until
+    /// the next restart.
     pub async fn start_telemetry(app_handle: &AppHandle) {
         let state = app_handle.state::<UniverseAppState>();
         let _unused = state
@@ -348,13 +346,11 @@ impl SetupManager {
 
         ConfigCore::initialize(app_handle.clone()).await;
         ConfigWallet::initialize(app_handle.clone()).await;
-        // The wallet config is the one config whose loss is not recoverable by writing a fresh
-        // default: a default has an empty `tari_wallets` list, which is the "create a new wallet"
-        // path, and that would orphan the seed still sitting in the keyring under an id only the
-        // lost file knew. When `config_wallet.json` and its `.backup` both failed to parse, T1
-        // hands back a placeholder that reports itself here. Everything else still initialises so
-        // the user can open settings and send a support bundle, but wallet initialisation,
-        // telemetry and mining are all skipped below.
+        // A default wallet config has an empty `tari_wallets` list, which is the "create a new
+        // wallet" path: writing one would orphan the seed sitting in the keyring under an id only
+        // the lost file knew. When neither `config_wallet.json` nor its `.backup` parses, the
+        // config reports itself unavailable here and wallet init, telemetry and mining are
+        // skipped below; the rest of the app still starts so the user can send a support bundle.
         let wallet_config_unavailable = ConfigWallet::content().await.ensure_available().is_err();
         if wallet_config_unavailable {
             error!(
@@ -460,14 +456,12 @@ impl SetupManager {
         // Or user selected exchange on default app variant and reopened the app
         // In other cases we want to display standard wallet UI
         let mut wallet_initialized = false;
-        // Set when a wallet initialisation actually failed (as opposed to "not attempted yet",
-        // which is the normal exchange-miner first-run state). Telemetry and mining are gated on
-        // it; see the block after the initialisation branches.
+        // Set only when an initialisation actually failed, not when it was never attempted (the
+        // normal exchange-miner first run). Telemetry and mining are gated on it.
         let mut init_recovery_reason: Option<WalletRecoveryReason> = None;
         if wallet_config_unavailable {
-            // Same handling as an initialisation `Err`: no wallet init, no telemetry, no mining.
-            // Nothing is created and nothing is written, so the quarantined copy of the damaged
-            // config and the keyring entries it pointed at both survive for the recovery flow.
+            // Nothing is created or written, so the quarantined config and the keyring entries
+            // it pointed at both survive for the recovery flow.
             init_recovery_reason = Some(WalletRecoveryReason::ConfigCorrupted);
         } else if built_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
             if is_external_address_selected && is_on_exchange_specific_variant {
@@ -487,9 +481,8 @@ impl SetupManager {
                             init_recovery_reason = Some(WalletRecoveryReason::InitializationFailed);
                         } else {
                             wallet_initialized = true;
-                            // The wallet is usable, but the startup probe may have found that
-                            // its seed cannot be read. That is a recovery case too: the user
-                            // must be told now, not at their first send.
+                            // The wallet is usable but its seed may not be readable, which is a
+                            // recovery case too: tell the user now, not at their first send.
                             if let Ok(Some(kind)) = InternalWallet::seed_unavailable().await {
                                 warn!(target: LOG_TARGET_APP_LOGIC, "Wallet seed unavailable at startup: error={}", kind.as_tag());
                                 init_recovery_reason = Some(WalletRecoveryReason::SeedUnavailable);
@@ -503,9 +496,8 @@ impl SetupManager {
                 };
             }
         } else {
-            // An exchange-miner build on its first run: the external address has not been chosen
-            // yet, so there is nothing to initialise. The block below picks it up once it has.
-            // Not a failure, so no recovery reason - see the comment on `init_recovery_reason`.
+            // Exchange-miner build on its first run: no external address has been chosen yet, so
+            // there is nothing to initialise and no failure to report.
         }
 
         // Case when we are on exchange miner build and already selected external tari address ( Second time we open app )
@@ -543,19 +535,16 @@ impl SetupManager {
         // We should probably change events to be loaded from internal wallet directly
         EventsEmitter::emit_wallet_config_loaded(&ConfigWallet::content().await).await;
 
-        // Never run with an unverified wallet. A failed initialisation (or a seed the keyring
-        // will not give back) puts the app into the recovery state: telemetry does not start and
-        // `ensure_wallet_usable` refuses to let either miner start. Everything else keeps
-        // running, so the user can still open settings, export logs and send a support bundle.
+        // A failed initialisation, or a seed the keyring will not give back, puts the app into
+        // the recovery state: telemetry does not start and `ensure_wallet_usable` refuses to
+        // start either miner. Everything else keeps running.
         if let Some(reason) = init_recovery_reason {
             enter_wallet_recovery(reason).await;
         }
 
-        // The global state, not the local verdict, decides. `initialize_with_seed` enters
-        // recovery itself on the legacy view-only path and still returns `Ok`, because the
-        // wallet does come up - just without a seed. Gating on the local variable alone started
-        // telemetry for exactly those users, while the recovery screen was telling them it was
-        // paused.
+        // The global state decides, not the local verdict: `initialize_with_seed` enters
+        // recovery itself on the legacy view-only path and still returns `Ok`, so gating on the
+        // local variable alone would start telemetry for exactly those users.
         if let Some(reason) = wallet_recovery_reason() {
             warn!(
                 target: LOG_TARGET_APP_LOGIC,
@@ -914,10 +903,9 @@ impl SetupManager {
         )
         .await;
 
-        // Second check of the same condition as `pre_setup` (T1 handoff): the config could have
-        // been quarantined between the two, and a phase run against the recovery placeholder
-        // would write a wallet config that the user never had. `enter_wallet_recovery` keeps the
-        // first reason, so this cannot mask an earlier failure.
+        // Re-checked since `pre_setup`: the config can be quarantined in between, and a phase run
+        // against the recovery placeholder would write a wallet config the user never had.
+        // `enter_wallet_recovery` keeps the first reason, so this cannot mask an earlier failure.
         if let Err(e) = ConfigWallet::content().await.ensure_available() {
             error!(target: LOG_TARGET_APP_LOGIC, "Wallet configuration is unavailable; not starting setup phases: {e}");
             enter_wallet_recovery(WalletRecoveryReason::ConfigCorrupted).await;

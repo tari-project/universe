@@ -248,9 +248,8 @@ const useTauriEventsListener = () => {
                             setDialogToShow('keychain');
                             break;
                         case 'WalletRecoveryRequired':
-                            // A payload with no reason is the backend saying the wallet was
-                            // recovered; the dialog is driven by this state and nothing else
-                            // clears it.
+                            // A payload with no reason means the wallet recovered; nothing else
+                            // clears this state.
                             setWalletRecovery(event.payload.reason ? event.payload : undefined);
                             break;
                         case 'CreatePin':

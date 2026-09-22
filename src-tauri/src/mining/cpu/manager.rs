@@ -164,9 +164,8 @@ impl CpuManager {
     }
 
     async fn start_mining_inner(&mut self) -> Result<(), anyhow::Error> {
-        // Refuse before doing any work: mining to an address the app cannot vouch for is the
-        // failure mode this whole hardening pass exists to stop. Applies to solo/mmproxy mode
-        // too, which mines to the Monero address and would otherwise start without a wallet.
+        // Refuse before doing any work: never mine to an address the app cannot vouch for.
+        // Solo/mmproxy mines to the Monero address and would otherwise start without a wallet.
         ensure_wallet_usable()?;
 
         let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();

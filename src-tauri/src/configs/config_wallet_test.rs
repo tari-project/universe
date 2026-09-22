@@ -156,8 +156,8 @@ use std::fs;
 /// The shapes `config_wallet.json` was found in on the crashing machines.
 ///
 /// "nul filled" and "truncated" are derived from a *real* serialized config so
-/// they have the length NTFS would report after an unclean shutdown (metadata
-/// journaled, data not), which is what produced ~11,700 of the reported panics.
+/// they have the length NTFS reports after an unclean shutdown, where the
+/// metadata is journaled and the data is not.
 fn damaged_fixture(kind: &str) -> Vec<u8> {
     let valid = serde_json::to_vec_pretty(&sentinel_config_content()).unwrap();
     match kind {
@@ -453,9 +453,8 @@ fn selecting_a_wallet_twice_does_not_list_it_twice() {
 }
 
 /// The wallet-init guard reads this flag through
-/// `internal_wallet::wallet_config_is_corrupted_recovery`. Wired in 99487acf5; this is the test
-/// that keeps it wired, because the stub it replaced returned `false` unconditionally and nothing
-/// else in the suite would notice it coming back.
+/// `internal_wallet::wallet_config_is_corrupted_recovery`. Nothing else in the suite notices if
+/// that reader starts answering `false` unconditionally.
 #[test]
 fn wallet_init_refuses_a_recovery_placeholder_config() {
     use crate::internal_wallet::wallet_config_is_corrupted_recovery;
@@ -481,10 +480,9 @@ fn wallet_init_refuses_a_recovery_placeholder_config() {
     );
 }
 
-/// The startup probe's rate-limit record moved out of an ad-hoc
-/// `wallet_seed_probe.json` and into this config, so the two things that used to make that file
-/// fragile have to hold here: a config written before the fields existed must still parse, and
-/// the timestamp and its outcome must be written together.
+/// The startup probe's rate-limit record lives in this config, so two things have to hold: a
+/// config written before the fields existed must still parse, and the timestamp and its outcome
+/// must be written together.
 #[test]
 fn seed_probe_result_is_recorded_without_breaking_older_configs() {
     let older_config = serde_json::to_value(ConfigWalletContent::default()).unwrap();

@@ -12,13 +12,7 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 
-/**
- * Settings entry point for "find my wallets".
- *
- * The same action the wallet recovery screen offers, reachable when nothing is obviously wrong:
- * a user who imported a seed "just to test", or whose settings were recreated, sees their old
- * wallet listed here rather than having to describe it to support.
- */
+/** Settings entry point for the same search the wallet recovery screen offers. */
 export const FindMyWalletsMarkup = () => {
     const { t } = useTranslation('common', { useSuspense: false });
     const [open, setOpen] = useState(false);

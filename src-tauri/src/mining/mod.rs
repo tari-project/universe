@@ -36,10 +36,9 @@ pub enum MiningError {
     CpuMiningDisabled,
     #[error("All GPU devices are excluded. Cannot start lolminer.")]
     AllDevicesExcluded,
-    /// The wallet did not initialise, or its seed could not be verified at startup. Mining to an
-    /// address the app cannot prove it owns is exactly the "I lost my seeds" failure, so it is
-    /// refused. Classified as a user-environment error so the formatted message never reaches
-    /// Sentry: the wallet path reports its own constant-string event instead.
+    /// The wallet did not initialise, or its seed could not be verified at startup. Classified
+    /// as a user-environment error so the formatted message never reaches Sentry; the wallet path
+    /// reports its own constant-string event instead.
     #[error("Wallet is not ready. Recover the wallet before starting to mine.")]
     WalletNotReady,
 }
