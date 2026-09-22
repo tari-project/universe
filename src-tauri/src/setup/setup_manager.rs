@@ -496,8 +496,6 @@ impl SetupManager {
         // Set only when an initialisation actually failed, not when it was never attempted (the
         // normal exchange-miner first run). Telemetry and mining are gated on it.
         let mut init_recovery_reason: Option<WalletRecoveryReason> = None;
-        // An exchange-miner build on its first run has no external address yet, so it reaches
-        // neither branch: nothing is initialised and there is no failure to report.
         if wallet_config_unavailable {
             // Nothing is created or written, so the quarantined config and the keyring entries
             // it pointed at both survive for the recovery flow.
@@ -536,6 +534,9 @@ impl SetupManager {
                     }
                 };
             }
+        } else {
+            // An exchange-miner build on its first run: no external address has been chosen yet,
+            // so there is nothing to initialise and no failure to report.
         }
 
         // Case when we are on exchange miner build and already selected external tari address ( Second time we open app )

@@ -601,12 +601,14 @@ mod tests {
             );
         }
 
-        // Only the enciphered length is worth a prompt.
-        assert!(is_enciphered_tari_seed(&vec![
-            0u8;
-            ENCIPHERED_TARI_SEED_LEN
-        ]));
-        assert!(!is_enciphered_tari_seed(&vec![0u8; 24]));
+        // Only the length the crate actually writes is worth a prompt.
+        let enciphered = CipherSeed::random()
+            .encipher(Some(SafePassword::from("123456".to_string())))
+            .expect("encipher");
+        assert!(is_enciphered_tari_seed(&enciphered));
+        assert!(!is_enciphered_tari_seed(
+            &CipherSeed::random().to_binary().expect("serialize")
+        ));
         assert!(!is_enciphered_tari_seed(&[]));
     }
 
