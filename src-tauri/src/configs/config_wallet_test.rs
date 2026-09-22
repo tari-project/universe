@@ -513,3 +513,88 @@ fn seed_probe_result_is_recorded_without_breaking_older_configs() {
         Some("something_new")
     );
 }
+
+/// Both advertised ways out of a corrupted config - re-linking a wallet from the credential store
+/// and importing seed words - end in this one write, and `load_latest_version` opens the result on
+/// the next launch. Neither entry point can be driven here (both need an `AppHandle`, a real
+/// keyring and a PIN manager), so the test drives the write itself and asserts the exact check
+/// `load_latest_version` runs first.
+#[test]
+fn adopting_a_wallet_out_of_a_recovery_placeholder_yields_a_loadable_config() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    fs::write(&path, damaged_fixture("nul filled")).unwrap();
+    let mut placeholder = ConfigWallet::load_from_path(&path);
+    assert!(placeholder.ensure_loadable().is_err());
+
+    let details = sentinel_wallet_details();
+    placeholder.adopt_recovered_tari_wallet((
+        details.clone(),
+        Some((
+            "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string(),
+            WalletId::new("monero_2".to_string()),
+        )),
+    ));
+
+    assert!(!placeholder.corrupted_recovery());
+    assert!(
+        placeholder.ensure_loadable().is_ok(),
+        "the adopted config has to pass the check `load_latest_version` starts with"
+    );
+    assert_eq!(placeholder.tari_wallets(), &vec![details.id.clone()]);
+    assert!(placeholder.monero_address_is_generated());
+}
+
+/// The adoption is the only write a placeholder accepts, so an incomplete one must not reach the
+/// disk: the previous release panics on a config whose `monero_address` is empty, and this one
+/// fails to load it on every launch.
+#[test]
+fn an_adoption_without_a_monero_address_is_refused_rather_than_persisted() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    fs::write(&path, damaged_fixture("empty")).unwrap();
+    let mut placeholder = ConfigWallet::load_from_path(&path);
+
+    placeholder.adopt_recovered_tari_wallet((sentinel_wallet_details(), None));
+
+    assert!(
+        placeholder.corrupted_recovery(),
+        "an adoption that cannot be loaded back must leave the placeholder flag alone"
+    );
+    assert!(placeholder.ensure_loadable().is_err());
+    assert!(ConfigWallet::_save_config(placeholder).is_err());
+}
+
+/// A config written by a recovery exit is opened by the previous release too, and that build
+/// panics on an empty `monero_address`.
+#[test]
+fn the_config_a_recovery_exit_writes_carries_every_field_an_older_build_reads() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("config_wallet.json");
+    fs::write(&path, damaged_fixture("truncated")).unwrap();
+    let mut placeholder = ConfigWallet::load_from_path(&path);
+    placeholder.adopt_recovered_tari_wallet((
+        sentinel_wallet_details(),
+        Some((
+            "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string(),
+            WalletId::new("monero".to_string()),
+        )),
+    ));
+
+    let serialized = serde_json::to_value(&placeholder).unwrap();
+    assert!(
+        !serialized["monero_address"].as_str().unwrap().is_empty(),
+        "an empty monero_address panics the previous release's loader"
+    );
+    assert_eq!(serialized["tari_wallets"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        serialized["version_counter"].as_u64(),
+        Some(u64::from(super::config_wallet::WALLET_VERSION))
+    );
+    assert!(
+        serialized.get("corrupted_recovery").is_none(),
+        "the in-memory recovery flag is never written to disk"
+    );
+    let reparsed: ConfigWalletContent = serde_json::from_value(serialized).unwrap();
+    assert!(reparsed.ensure_loadable().is_ok());
+}

@@ -205,6 +205,23 @@ impl ConfigWalletContent {
         Ok(())
     }
 
+    /// `Err` when `InternalWallet::load_latest_version` would refuse this content. Both sides
+    /// share this one check so an adoption cannot write a config that every later launch fails
+    /// on - and that an older build, which panics on an empty Monero address, cannot open at all.
+    pub fn ensure_loadable(&self) -> Result<(), anyhow::Error> {
+        self.ensure_available()?;
+        let version = self.version_counter;
+        anyhow::ensure!(
+            !self.tari_wallets.is_empty(),
+            "Tari wallets field should be defined in the wallet config v{version}"
+        );
+        anyhow::ensure!(
+            !self.monero_address.is_empty(),
+            "Monero address should be accessible for wallet config v{version}"
+        );
+        Ok(())
+    }
+
     /// Records when the startup keyring probe last ran and what it concluded. One setter for
     /// both fields so a single `update_field` writes them together: a timestamp that outlived its
     /// outcome would rate-limit the next probe on a result nobody can name.
@@ -233,13 +250,30 @@ impl ConfigWalletContent {
         self
     }
 
-    /// Adopt a wallet the user picked out of the credential store: clears the recovery
-    /// placeholder flag and records the wallet in one save. Clearing the flag on its own would
-    /// write a default config listing no wallet, and the next launch would read that as valid and
-    /// create a brand new wallet over the one being recovered.
-    pub fn adopt_recovered_tari_wallet(&mut self, details: TariWalletDetails) -> &mut Self {
-        self.corrupted_recovery = false;
-        self.add_tari_wallet(details)
+    /// Adopt a wallet the user picked out of the credential store, together with the Monero side
+    /// the placeholder never had, in one save. Clearing the flag on its own would write a default
+    /// config listing no wallet, and the next launch would read that as valid and create a brand
+    /// new wallet over the one being recovered.
+    ///
+    /// The flag is only cleared once the result is loadable, so an adoption that is missing a
+    /// Monero address stays a placeholder and `_save_config` refuses it rather than leaving a
+    /// config that fails on every later launch.
+    pub fn adopt_recovered_tari_wallet(
+        &mut self,
+        payload: (TariWalletDetails, Option<(String, WalletId)>),
+    ) -> &mut Self {
+        let (details, monero_wallet) = payload;
+        if let Some(monero_wallet) = monero_wallet {
+            self.set_generated_monero_wallet(monero_wallet);
+        }
+        self.add_tari_wallet(details);
+        if self.corrupted_recovery {
+            self.corrupted_recovery = false;
+            if self.ensure_loadable().is_err() {
+                self.corrupted_recovery = true;
+            }
+        }
+        self
     }
 
     /// Records a generated Monero wallet's address and the credential id its seed was written
@@ -401,6 +435,19 @@ impl ConfigWallet {
         };
         let content: ConfigWalletContent = serde_json::from_str(&serialized)?;
         Ok((content, serialized, migrated))
+    }
+
+    /// The one way to adopt a wallet into a recovery placeholder: applies the adoption to a copy,
+    /// proves the result is loadable, and only then persists it. A config written from a
+    /// placeholder that is missing its Monero side fails `load_latest_version` on every launch
+    /// and cannot be opened by an older build at all.
+    pub async fn adopt_recovered_wallet(
+        payload: (TariWalletDetails, Option<(String, WalletId)>),
+    ) -> Result<(), anyhow::Error> {
+        let mut candidate = ConfigWallet::content().await;
+        candidate.adopt_recovered_tari_wallet(payload.clone());
+        candidate.ensure_loadable()?;
+        ConfigWallet::update_field(ConfigWalletContent::adopt_recovered_tari_wallet, payload).await
     }
 
     pub async fn initialize(app_handle: AppHandle) {

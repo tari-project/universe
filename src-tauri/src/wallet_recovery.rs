@@ -404,7 +404,10 @@ pub async fn relink_tari_wallet(
     let previous_details = previous.tari_wallet_details().clone();
     drop(previous);
 
-    ConfigWallet::update_field(ConfigWalletContent::adopt_recovered_tari_wallet, details).await?;
+    // A placeholder config has no Monero address, and `load_latest_version` refuses a config
+    // without one, so the adoption carries the Monero side with it in the same save.
+    let monero_wallet = InternalWallet::monero_wallet_for_adoption().await?;
+    ConfigWallet::adopt_recovered_wallet((details, monero_wallet)).await?;
     if let Err(e) = InternalWallet::initialize_with_seed(app_handle).await {
         // `initialize_with_seed` snapshots the config *after* this write, so its own rollback
         // cannot undo it; put the previous selection back here instead. Not when the config was

@@ -389,7 +389,7 @@ impl InternalWallet {
         )
         .await?
         {
-            InternalWallet::load_latest_version(app_handle, wallet_config).await?
+            InternalWallet::load_latest_version(wallet_config).await?
         } else {
             let monero_address = wallet_config.monero_address().clone();
             let app_config_dir = app_handle
@@ -652,11 +652,8 @@ impl InternalWallet {
         // One save either way, so the placeholder flag can never be cleared without a wallet id
         // landing with it.
         if adopt_placeholder {
-            ConfigWallet::update_field(
-                ConfigWalletContent::adopt_recovered_tari_wallet,
-                wallet_details.clone(),
-            )
-            .await?;
+            let monero_wallet = InternalWallet::monero_wallet_for_adoption().await?;
+            ConfigWallet::adopt_recovered_wallet((wallet_details.clone(), monero_wallet)).await?;
         } else {
             ConfigWallet::update_field(
                 ConfigWalletContent::add_tari_wallet,
@@ -687,10 +684,11 @@ impl InternalWallet {
     ///
     /// Never writes over an existing Monero entry: the keyring blob is the only copy of a Monero
     /// seed there is, so a second generated seed goes to the next id in the sequence and the
-    /// previous one stays where it is.
-    async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
-        // Same reason as `add_tari_wallet`: never write a wallet into a placeholder config.
-        ConfigWallet::content().await.ensure_available()?;
+    /// previous one stays where it is. Writes the keyring only, so the caller chooses which
+    /// config write records the result.
+    async fn store_new_monero_wallet(
+        monero_seed: &MoneroSeed,
+    ) -> Result<(String, WalletId, Vec<u8>), anyhow::Error> {
         let wallet_id = InternalWallet::allocate_monero_wallet_id().await?;
         log::info!(target: LOG_TARGET_APP_LOGIC, "Adding new Monero Wallet with id: {}", wallet_id.as_str());
         let cm = CredentialManager::new_default(wallet_id.clone());
@@ -709,6 +707,15 @@ impl InternalWallet {
         let monero_address = monero_seed
             .to_address::<Mainnet>()
             .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string());
+        Ok((monero_address, wallet_id, monero_seed_binary))
+    }
+
+    /// Generate a Monero wallet and record it in the config.
+    async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
+        // Same reason as `add_tari_wallet`: never write a wallet into a placeholder config.
+        ConfigWallet::content().await.ensure_available()?;
+        let (monero_address, wallet_id, monero_seed_binary) =
+            InternalWallet::store_new_monero_wallet(&monero_seed).await?;
         ConfigWallet::update_field(
             ConfigWalletContent::set_generated_monero_wallet,
             (monero_address, wallet_id),
@@ -716,6 +723,46 @@ impl InternalWallet {
         .await?;
 
         Ok(monero_seed_binary)
+    }
+
+    /// The Monero address and credential id a recovery adoption has to carry, or `None` when the
+    /// config already names one.
+    ///
+    /// A config recovered from a corrupt file has no Monero address, and `load_latest_version`
+    /// refuses a config without one, so adopting a wallet into a placeholder has to bring the
+    /// Monero side with it. The seed already in the store is preferred - that keeps the user's
+    /// payout address across the recovery - and a blob that cannot be read is replaced by a new
+    /// seed at a free id rather than overwritten. Writes the keyring only: the config write is
+    /// the caller's single adoption save, which is the only write a placeholder accepts.
+    pub(crate) async fn monero_wallet_for_adoption()
+    -> Result<Option<(String, WalletId)>, anyhow::Error> {
+        if !ConfigWallet::content().await.monero_address().is_empty() {
+            return Ok(None);
+        }
+
+        let linked = InternalWallet::monero_wallet_id().await;
+        if let Ok(credential) = CredentialManager::new_default(linked.clone())
+            .get_credentials()
+            .await
+            && let Some(recovered) = monero_wallet_from_blob(&linked, &credential.encrypted_seed)
+        {
+            log::info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "[monero_wallet_for_adoption] recovered the stored Monero wallet: wallet_id={}",
+                linked.as_str(),
+            );
+            return Ok(Some(recovered));
+        }
+
+        let monero_seed = MoneroSeed::generate()?;
+        let (monero_address, wallet_id, _seed_binary) =
+            InternalWallet::store_new_monero_wallet(&monero_seed).await?;
+        log::info!(
+            target: LOG_TARGET_APP_LOGIC,
+            "[monero_wallet_for_adoption] generated a Monero wallet for the recovered config: wallet_id={}",
+            wallet_id.as_str(),
+        );
+        Ok(Some((monero_address, wallet_id)))
     }
 
     /// Deliberately keeps the Monero credential.
@@ -1007,105 +1054,44 @@ impl InternalWallet {
     }
 
     async fn load_latest_version(
-        app_handle: &AppHandle,
         wallet_config: ConfigWalletContent,
     ) -> Result<InternalWallet, anyhow::Error> {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Internal Wallet latest version detected.");
+        // The same check every write into a recovery placeholder has to pass, so a config this
+        // build persists is one this build can open again.
+        wallet_config.ensure_loadable()?;
         let monero_address = wallet_config.monero_address().clone();
-        let version = *wallet_config.version_counter();
-        if monero_address.is_empty() {
-            return Err(anyhow!(
-                "Monero address should be accessible for wallet config v{version}"
-            ));
-        }
         let tari_wallet_id = (*wallet_config.tari_wallets())
             .first()
             .cloned()
-            .ok_or_else(|| {
-                anyhow!("Tari wallets field should be defined in the wallet config v{version}")
-            })?;
+            .ok_or_else(|| anyhow!("Tari wallets field should be defined in the wallet config"))?;
 
         // Only details that were already on disk mean "nothing on the startup path reads the
         // keyring", which is the case the probe exists for. Probing right after a successful
         // forced read would cost a macOS user a second keychain prompt for a known answer.
         let details_were_cached = wallet_config.tari_wallet_details().is_some();
 
-        let mut seed_unavailable = None;
-        let (encrypted_tari_seed, tari_wallet_details) = {
-            match ConfigWallet::content().await.tari_wallet_details() {
-                Some(wallet_details) => {
-                    log_wallet_details("load_latest_version", "wallet_config", wallet_details);
-                    // The cached details make every other startup step work without opening the
-                    // keyring, so a deleted or unreadable entry would otherwise stay invisible
-                    // until the user tried to spend. Probe it once, read-only, right here.
-                    if details_were_cached {
-                        seed_unavailable =
-                            InternalWallet::probe_tari_seed_at_startup(&tari_wallet_id).await;
-                    }
-                    (None, wallet_details.clone())
-                }
-                _ => {
-                    // If wallet details are not saved in the config file, extract them from the
-                    // decrypted seed. This path already reads the keyring, so it needs no probe.
-                    let encrypted_tari_seed =
-                        InternalWallet::get_credentials(app_handle, tari_wallet_id.clone(), true)
-                            .await
-                            .map_err(|e| {
-                                log::error!(
-                                    target: LOG_TARGET_APP_LOGIC,
-                                    "[load_latest_version] keyring read failed: wallet_id={}",
-                                    tari_wallet_id.as_str(),
-                                );
-                                anyhow!("Failed to get credentials: {e}")
-                            })?
-                            .encrypted_seed;
-                    let blob_len = encrypted_tari_seed.len();
-                    let tari_cipher_seed = if PinManager::pin_locked().await {
-                        let pin_password = PinManager::get_validated_pin(app_handle, None).await?;
-                        match CipherSeed::from_enciphered_bytes(
-                            &encrypted_tari_seed,
-                            Some(pin_password),
-                        ) {
-                            Ok(seed) => seed,
-                            Err(_) => {
-                                // Wrong PIN is a user mistake: warn, never Sentry.
-                                log::warn!(
-                                    target: LOG_TARGET_APP_LOGIC,
-                                    "[load_latest_version] seed did not decipher with the supplied PIN: wallet_id={} blob_len={blob_len} pin_locked=true",
-                                    tari_wallet_id.as_str(),
-                                );
-                                return Err(anyhow!("Wrong PIN entered!"));
-                            }
-                        }
-                    } else {
-                        // Seed not yet encrypted with PIN - or so `pin_locked` claims. The claim
-                        // is the config's, and it can be stale (a crash between the blobs and
-                        // the flag), so the decode is proven rather than trusted: a blob that is
-                        // really enciphered does not round-trip and is rejected here instead of
-                        // yielding a silently wrong address.
-                        decode_plain_tari_seed(&encrypted_tari_seed).ok_or_else(|| {
-                            log::error!(
-                                target: LOG_TARGET_APP_LOGIC,
-                                "[load_latest_version] could not parse Tari seed from binary: error=seed_decode wallet_id={} blob_len={blob_len} pin_locked=false",
-                                tari_wallet_id.as_str(),
-                            );
-                            anyhow!("Could not parse Tari Seed from binary")
-                        })?
-                    };
-                    let wallet_details = InternalWallet::get_tari_wallet_details(
-                        tari_wallet_id.clone(),
-                        tari_cipher_seed,
-                    )
-                    .await?;
-                    log_wallet_details("load_latest_version", "keyring_seed", &wallet_details);
-                    (Some(encrypted_tari_seed), wallet_details)
-                }
-            }
+        // `validate_wallet_config_for_seed` derives and stores the details for this id before it
+        // answers `true`, so the re-read always finds them.
+        let tari_wallet_details = ConfigWallet::content()
+            .await
+            .tari_wallet_details()
+            .clone()
+            .ok_or_else(|| anyhow!("Wallet details are missing for the configured wallet"))?;
+        log_wallet_details("load_latest_version", "wallet_config", &tari_wallet_details);
+
+        // The cached details make every other startup step work without opening the keyring, so
+        // a deleted or unreadable entry would otherwise stay invisible until the user tried to
+        // spend. Probe it once, read-only, right here.
+        let seed_unavailable = if details_were_cached {
+            InternalWallet::probe_tari_seed_at_startup(&tari_wallet_id).await
+        } else {
+            None
         };
 
         Ok(InternalWallet {
             tari_address_type: TariAddressType::Internal,
-            encrypted_tari_seed: Hidden::hide(encrypted_tari_seed),
+            encrypted_tari_seed: Hidden::hide(None), // Prompt when needed
             encrypted_monero_seed: Hidden::hide(None), // Prompt when needed
             monero_address,
             external_tari_address: None,
@@ -2235,6 +2221,18 @@ const SEED_TAG_MONERO: &str = "monero";
 
 /// `monero` -> `monero_2` -> `monero_3` ... Anything unrecognised restarts the sequence at 2, so
 /// a hand-edited config can never produce a collision with the id it started from.
+/// The address and id to record for the Monero blob stored under `wallet_id`, or `None` when the
+/// blob is not a plain 32-byte seed.
+///
+/// A Monero seed is 32 raw bytes and a ciphertext never is, so the length is the whole proof. An
+/// enciphered or truncated blob cannot be turned into an address here, and recovery generates a
+/// new seed under a free id rather than recording an address it cannot derive.
+pub fn monero_wallet_from_blob(wallet_id: &WalletId, blob: &[u8]) -> Option<(String, WalletId)> {
+    let seed_bytes: [u8; MONERO_SEED_LENGTH] = blob.try_into().ok()?;
+    let address = MoneroSeed::new(seed_bytes).to_address::<Mainnet>().ok()?;
+    Some((address, wallet_id.clone()))
+}
+
 pub fn next_monero_wallet_id(current: &WalletId) -> WalletId {
     let version = current
         .as_str()

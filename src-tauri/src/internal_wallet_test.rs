@@ -70,7 +70,8 @@
 use super::internal_wallet::{
     ADDRESS_LOG_PREFIX_LEN, InternalWallet, SeedCandidate, TariAddressType, address_prefix,
     allocate_monero_wallet_id_with, decode_plain_tari_seed, monero_seed_candidates,
-    next_monero_wallet_id, seed_probe_outcome_from_tag, tari_seed_candidates, wipe_and_remove_file,
+    monero_wallet_from_blob, next_monero_wallet_id, seed_probe_outcome_from_tag,
+    tari_seed_candidates, wipe_and_remove_file,
 };
 use std::collections::HashSet;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
@@ -1025,6 +1026,34 @@ async fn allocation_gives_up_instead_of_overwriting() {
         result.is_err(),
         "a store where every id is taken must error, not reuse one"
     );
+}
+
+/// A recovery placeholder has no Monero address, and `load_latest_version` refuses a config
+/// without one, so adopting a wallet out of one has to produce the Monero side as well. The seed
+/// already in the store is preferred; anything that is not a plain seed cannot be turned into an
+/// address and has to be replaced rather than recorded.
+#[test]
+fn a_stored_monero_seed_recovers_its_address_and_anything_else_recovers_nothing() {
+    let wallet_id = WalletId::new("monero".to_string());
+    let seed = vec![7u8; 32];
+
+    let (address, recovered_id) = monero_wallet_from_blob(&wallet_id, &seed)
+        .expect("a plain 32-byte seed derives its address");
+    assert!(!address.is_empty());
+    assert_eq!(recovered_id, wallet_id);
+    assert_eq!(
+        monero_wallet_from_blob(&wallet_id, &seed).map(|recovered| recovered.0),
+        Some(address),
+        "the same seed always derives the same address"
+    );
+
+    for blob in [vec![], vec![7u8; 31], vec![7u8; 33], vec![7u8; 60]] {
+        assert!(
+            monero_wallet_from_blob(&wallet_id, &blob).is_none(),
+            "only a 32-byte blob is a Monero seed: {} bytes",
+            blob.len()
+        );
+    }
 }
 
 // ** Self-healing PIN state **
