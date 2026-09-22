@@ -299,7 +299,10 @@ impl InternalWallet {
                     // config and then a Monero failure leaves a config the next launch cannot
                     // load. A custom Monero address generates no seed, so it still passes.
                     if monero_address.is_empty() && monero_credential_exists().await {
-                        return Err(anyhow!("{MONERO_SEED_ALREADY_EXISTS}"));
+                        return Err(wallet_settings_problem(
+                            "wallet-config-missing-keys-present",
+                            "monero credential",
+                        ));
                     }
 
                     // Create new wallet
@@ -468,7 +471,10 @@ impl InternalWallet {
         let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
         // A generated seed must never overwrite the Monero credential already in the keyring.
         if monero_credential_exists().await {
-            return Err(anyhow!("{MONERO_SEED_ALREADY_EXISTS}"));
+            return Err(wallet_settings_problem(
+                "wallet-config-missing-keys-present",
+                "monero credential",
+            ));
         }
         let monero_seed_binary = (*monero_seed.inner())
             .to_binary()
@@ -713,15 +719,15 @@ impl InternalWallet {
         // An inconsistent wallet config is reported, not fatal: the error reaches the critical
         // problem dialog instead of killing every launch.
         if monero_address.is_empty() {
-            return Err(anyhow!(
-                "Monero address should be accessible for v{:?}",
-                *wallet_config.version_counter()
+            return Err(wallet_settings_problem(
+                "wallet-config-incomplete",
+                "monero_address",
             ));
         }
         if (*wallet_config.tari_wallets()).is_empty() {
-            return Err(anyhow!(
-                "Tari wallets field should be defined in the config for v{:?}",
-                *wallet_config.version_counter()
+            return Err(wallet_settings_problem(
+                "wallet-config-incomplete",
+                "tari_wallets",
             ));
         }
 
@@ -1290,9 +1296,6 @@ pub async fn get_old_wallet_config(
     Ok(Some(old_config))
 }
 
-const MONERO_SEED_ALREADY_EXISTS: &str =
-    "A Monero seed already exists in the keyring, refusing to generate a new one";
-
 /// True when the keyring already holds a Monero seed. A keyring error is not proof of one:
 /// generating a seed would fail on the same keyring anyway.
 async fn monero_credential_exists() -> bool {
@@ -1300,6 +1303,16 @@ async fn monero_credential_exists() -> bool {
         .get_credentials()
         .await
         .is_ok()
+}
+
+/// A wallet failure the user has to be told about, as the i18n keys the critical problem
+/// dialog translates plus one short technical line it prints raw.
+fn wallet_settings_problem(description_key: &str, detail: &str) -> anyhow::Error {
+    anyhow::Error::new(CriticalProblemPayload {
+        title: Some("common:wallet-settings-problem".to_string()),
+        description: Some(format!("common:{description_key}")),
+        error_message: Some(detail.to_string()),
+    })
 }
 
 /// Constant Sentry message; the evidence kind travels as a tag.
@@ -1323,16 +1336,32 @@ fn refuse_if_previous_wallet_evident(app_config_dir: &Path) -> Result<(), anyhow
         |scope| scope.set_tag("previous_wallet_evidence", evidence),
         || sentry::capture_message(PREVIOUS_WALLET_EVIDENT, sentry::Level::Error),
     );
-    Err(anyhow!("{PREVIOUS_WALLET_EVIDENT}: {evidence}"))
+    // The dialog translates the description key and prints the detail line raw.
+    Err(match evidence {
+        "wallet_config_unreadable" => wallet_settings_problem(
+            "wallet-config-unreadable",
+            &config_moved_aside(&config_backup).unwrap_or_else(|| evidence.to_string()),
+        ),
+        "legacy_wallet_config" => wallet_settings_problem("wallet-legacy-not-loadable", evidence),
+        _ => wallet_settings_problem(
+            "wallet-config-backup-unreadable",
+            "config_wallet.json.backup",
+        ),
+    })
 }
 
 /// Evidence that this machine already held a Tari wallet, as an enum-like tag. Only files that
 /// name a Tari wallet count: a seedless user reverting to an internal wallet has a Monero
 /// credential and a wallet data directory but no seed to lose, and must still be let through.
+/// A config moved aside as unreadable is checked first: it is the most specific thing that can
+/// have happened, and every other kind of evidence is a side effect of it.
 pub(crate) fn previous_wallet_files(
     config_backup: &Path,
     legacy_wallet_config: &Path,
 ) -> Option<&'static str> {
+    if config_moved_aside(config_backup).is_some() {
+        return Some("wallet_config_unreadable");
+    }
     if backup_names_a_wallet(config_backup) {
         return Some("config_backup");
     }
@@ -1340,6 +1369,18 @@ pub(crate) fn previous_wallet_files(
         return Some("legacy_wallet_config");
     }
     None
+}
+
+/// The name of a `config_wallet.json.corrupt.<timestamp>` sitting beside the backup: startup
+/// found the config unreadable and renamed it, so this machine held a wallet. The name holds a
+/// timestamp, never a wallet id, so it is safe to show.
+fn config_moved_aside(config_backup: &Path) -> Option<String> {
+    let entries = std::fs::read_dir(config_backup.parent()?).ok()?;
+    entries.flatten().find_map(|entry| {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        name.starts_with("config_wallet.json.corrupt.")
+            .then_some(name)
+    })
 }
 
 /// True when the wallet config backup names a Tari wallet, by id or by cached details, or
