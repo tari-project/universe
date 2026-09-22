@@ -120,7 +120,10 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
     function invoke(param: 'get_local_block_stats', payload: { limit: number }): Promise<LocalBlockStats[]>;
     function invoke(param: 'create_pin'): Promise<void>;
-    function invoke(param: 'forgot_pin', payload: { seedWords: string[] }): Promise<void>;
+    function invoke(
+        param: 'forgot_pin',
+        payload: { seedWords: string[]; moneroSeedWords: string[] | null }
+    ): Promise<void>;
     function invoke(param: 'toggle_cpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'toggle_gpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(

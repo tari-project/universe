@@ -70,6 +70,8 @@ use base64::prelude::*;
 
 use crate::node::data_location::update_data_location;
 use log::{debug, error, info, warn};
+use monero_address_creator::Seed as MoneroSeed;
+use monero_address_creator::network::Mainnet;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
@@ -624,6 +626,7 @@ pub async fn get_transactions(
 #[tauri::command]
 pub async fn forgot_pin(
     seed_words: Vec<String>,
+    monero_seed_words: Option<Vec<String>>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
     let tari_cipher_seed = mnemonic_to_tari_cipher_seed(seed_words)
@@ -642,7 +645,26 @@ pub async fn forgot_pin(
         return Err("Seed words do not match".to_string());
     }
 
-    InternalWallet::recover_forgotten_pin(&app_handle, tari_cipher_seed)
+    // The Monero credential is enciphered with the forgotten PIN, so recovery replaces it. Words
+    // are accepted only when they derive the recorded address; without them the user has asked for
+    // a new Monero wallet.
+    let monero_seed = match monero_seed_words {
+        Some(words) if !words.is_empty() => {
+            let seed = MoneroSeed::from_seed_words(&words)
+                .map_err(|_| "Monero seed words do not match".to_string())?;
+            let address = seed
+                .to_address::<Mainnet>()
+                .map_err(|_| "Monero seed words do not match".to_string())?;
+            if address != *ConfigWallet::content().await.monero_address() {
+                error!(target: LOG_TARGET_APP_LOGIC, "Monero seed words do not match the recorded Monero address");
+                return Err("Monero seed words do not match".to_string());
+            }
+            Some(seed)
+        }
+        _ => None,
+    };
+
+    InternalWallet::recover_forgotten_pin(&app_handle, tari_cipher_seed, monero_seed)
         .await
         .map_err(|e| e.to_string())?;
 

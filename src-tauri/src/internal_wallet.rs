@@ -495,14 +495,25 @@ impl InternalWallet {
     pub async fn recover_forgotten_pin(
         app_handle: &AppHandle,
         tari_seed: CipherSeed,
+        monero_seed: Option<MoneroSeed>,
     ) -> Result<(), anyhow::Error> {
         let pin_password = PinManager::create_pin(app_handle).await?;
 
         let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
         {
-            // Unfortunately, we cannot recover the Monero seed from the wallet.
-            // We need to create a new one at this point.
-            let monero_seed = MoneroSeed::generate()?;
+            // The old Monero blob is enciphered with the forgotten PIN, so it is replaced here:
+            // either with the seed the caller proved derives the recorded address, or, when the
+            // user asked for that, with a new Monero wallet.
+            let (monero_seed, new_monero_address) = match monero_seed {
+                Some(monero_seed) => (monero_seed, None),
+                None => {
+                    let monero_seed = MoneroSeed::generate()?;
+                    let monero_address = monero_seed
+                        .to_address::<Mainnet>()
+                        .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string());
+                    (monero_seed, Some(monero_address))
+                }
+            };
             let encrypted_monero_seed = cryptography::encrypt(monero_seed.inner(), &pin_password)?;
             InternalWallet::set_credentials(
                 app_handle,
@@ -513,16 +524,14 @@ impl InternalWallet {
                 false,
             )
             .await?;
-            let monero_address = monero_seed
-                .to_address::<Mainnet>()
-                .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string());
-            log::info!(target: LOG_TARGET_APP_LOGIC, "New Monero Address generated when recover_forgotten_pin: {monero_address}");
-            ConfigWallet::update_field(
-                ConfigWalletContent::set_generated_monero_address,
-                monero_address,
-            )
-            .await?;
-
+            if let Some(monero_address) = new_monero_address {
+                log::info!(target: LOG_TARGET_APP_LOGIC, "New Monero wallet created during PIN recovery");
+                ConfigWallet::update_field(
+                    ConfigWalletContent::set_generated_monero_address,
+                    monero_address,
+                )
+                .await?;
+            }
             Some(encrypted_monero_seed)
         } else {
             None // External Monero address, no seed to recover
@@ -558,22 +567,54 @@ impl InternalWallet {
     }
 
     pub async fn create_pin(app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+        if PinManager::pin_locked().await {
+            // The stored seeds are already enciphered with a PIN and nothing decrypts twice.
+            return Err(anyhow!("A PIN is already set for this wallet"));
+        }
         let pin_password = PinManager::create_pin(app_handle).await?;
+
+        // Read the Tari seed before any credential is rewritten, so a wallet whose Tari seed is
+        // unreadable keeps its Monero seed as it is.
+        let tari_seed = InternalWallet::get_tari_seed(None).await?;
+        let wallet_id = InternalWallet::tari_wallet_details()
+            .await
+            .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
+            .id;
 
         let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
         {
-            // Encrypt Monero Seed with PIN
-            let monero_seed = InternalWallet::get_monero_seed(None).await?;
-            let encrypted_monero_seed = cryptography::encrypt(monero_seed.inner(), &pin_password)?;
-            InternalWallet::set_credentials(
+            // Encrypt Monero Seed with PIN. An earlier run can have written this credential and
+            // then failed, so a blob that already decrypts with this PIN is kept as it is:
+            // encrypting it again would bury the seed.
+            let stored_monero_seed = InternalWallet::get_credentials(
                 app_handle,
                 WalletId::new("monero".to_string()),
-                &Credential {
-                    encrypted_seed: encrypted_monero_seed.clone(),
-                },
                 false,
             )
-            .await?;
+            .await?
+            .encrypted_seed;
+            let encrypted_monero_seed =
+                if cryptography::decrypt(&stored_monero_seed, &pin_password).is_ok() {
+                    stored_monero_seed
+                } else if stored_monero_seed.len() == 32 {
+                    // A plain Monero seed, as written before any PIN existed.
+                    let encrypted_monero_seed =
+                        cryptography::encrypt(&stored_monero_seed, &pin_password)?;
+                    InternalWallet::set_credentials(
+                        app_handle,
+                        WalletId::new("monero".to_string()),
+                        &Credential {
+                            encrypted_seed: encrypted_monero_seed.clone(),
+                        },
+                        false,
+                    )
+                    .await?;
+                    encrypted_monero_seed
+                } else {
+                    return Err(anyhow!(
+                        "Stored Monero seed is neither plain nor enciphered with this PIN"
+                    ));
+                };
             if InternalWallet::is_initialized() {
                 let mut internal_wallet_guard = InternalWallet::current().write().await;
                 internal_wallet_guard.encrypted_monero_seed =
@@ -586,11 +627,6 @@ impl InternalWallet {
         };
         let encrypted_tari_seed = {
             // Encrypt Tari Seed with PIN
-            let tari_seed = InternalWallet::get_tari_seed(None).await?;
-            let wallet_id = InternalWallet::tari_wallet_details()
-                .await
-                .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
-                .id;
             let encrypted_tari_seed = tari_seed.encipher(Some(pin_password))?;
             InternalWallet::set_credentials(
                 app_handle,
@@ -864,6 +900,28 @@ impl InternalWallet {
             {
                 let id = wallet_id.as_str();
                 log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, Tari keyring entry for wallet {id} not readable: {e}");
+                return;
+            }
+        }
+
+        // The legacy config holds the only copy of the legacy wallet's seed, so it is removed only
+        // when the wallet in use is that same wallet. After a silent replacement the addresses
+        // differ and both files stay: the fallback file holds the passphrase that decrypts it.
+        if legacy_wallet_config.exists() {
+            let legacy_address = std::fs::read_to_string(&legacy_wallet_config)
+                .ok()
+                .and_then(|raw| serde_json::from_str::<LegacyWalletConfig>(&raw).ok())
+                .map(|legacy| legacy.tari_address_base58);
+            let keep_reason = match legacy_address {
+                Some(address) => legacy_config_keep_reason(
+                    &address,
+                    wallet_config.tari_wallets().first(),
+                    wallet_config.tari_wallet_details().as_ref(),
+                ),
+                None => Some("legacy_config_unreadable"),
+            };
+            if let Some(reason) = keep_reason {
+                log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, reason={reason}");
                 return;
             }
         }
@@ -1216,6 +1274,25 @@ pub async fn get_old_wallet_config(config_dir: &Path) -> Result<LegacyWalletConf
     let old_config_str = fs::read_to_string(old_config_file).await?;
     let old_config: LegacyWalletConfig = serde_json::from_str(&old_config_str)?;
     Ok(old_config)
+}
+
+/// Names why the legacy wallet config must be kept, or `None` when the wallet the config now uses
+/// is the legacy wallet itself and the file is no longer the only copy of its seed.
+pub(crate) fn legacy_config_keep_reason(
+    legacy_address_base58: &str,
+    first_wallet: Option<&WalletId>,
+    selected: Option<&TariWalletDetails>,
+) -> Option<&'static str> {
+    let Some(selected) = selected else {
+        return Some("no_selected_wallet_details");
+    };
+    if first_wallet != Some(&selected.id) {
+        return Some("selected_wallet_is_not_the_first_wallet");
+    }
+    if selected.tari_address.to_base58() != legacy_address_base58 {
+        return Some("address_mismatch");
+    }
+    None
 }
 
 /// Plaintext (CBOR) seed fallback written by pre-keyring versions, see `LegacyCredentialManager`.
