@@ -379,9 +379,8 @@ impl InternalWallet {
         result
     }
 
-    // The migration decision tree. Every arm is a distinct on-disk state and the order the
-    // states are tested in is the safety property, so it is kept in one place where it can be
-    // read top to bottom rather than split across helpers.
+    // The migration decision tree: every arm is a distinct on-disk state, and the order they are
+    // tested in is the safety property.
     #[allow(clippy::too_many_lines)]
     async fn initialize_with_seed_inner(
         app_handle: &tauri::AppHandle,
@@ -543,8 +542,9 @@ impl InternalWallet {
         InternalWallet::set_current(self.clone()).await?;
 
         let state = app_handle.state::<UniverseAppState>();
+        // Only a seed wallet has a view key to hand to the wallet manager; a seedless one has
+        // nothing to publish here.
         if let Some(ref wallet_details) = self.tari_wallet_details {
-            // Internal(Seed)
             state
                 .wallet_manager
                 .set_view_private_key_and_spend_key(
@@ -552,8 +552,6 @@ impl InternalWallet {
                     wallet_details.spend_public_key_hex.clone(),
                 )
                 .await;
-        } else {
-            // External(Seedless)
         }
 
         ConfigUI::handle_wallet_type_update(self.tari_address_type.clone()).await?;
@@ -681,7 +679,8 @@ impl InternalWallet {
         // answering with a verdict about the wallet this one replaces.
         InternalWallet::note_seed_read(&wallet_details.id).await;
 
-        // Modify the instance directly due to circular usage in initialze_seed
+        // The instance is updated in place: `initialize_with_seed` calls back into here, so it
+        // cannot be rebuilt from the config yet.
         if let Some(instance) = INSTANCE.get() {
             let mut internal_wallet_guard = instance.write().await;
             internal_wallet_guard.external_tari_address = None;
@@ -1523,8 +1522,7 @@ impl InternalWallet {
     /// wallet *these files describe* must be one of them - the legacy seed is decrypted with the
     /// same multi-source passphrase logic the migration uses and the address it derives must
     /// match. Anything unprovable leaves both files exactly where they are.
-    // A sequence of gates that must all pass before an irreversible deletion. Splitting it
-    // would let a future edit reorder or skip one without that being obvious at the call site.
+    // A sequence of gates that must all pass before an irreversible deletion.
     #[allow(clippy::too_many_lines)]
     pub async fn purge_legacy_credential_files(app_handle: &AppHandle) {
         let app_config_dir = match app_handle.path().app_config_dir() {
@@ -1883,9 +1881,8 @@ impl InternalWallet {
         }
     }
 
-    /** Method safe to use before init - fallbacks to the credential manager */
-    // Read, then decode, then self-heal the recorded PIN state, then length-check. Each step
-    // depends on the one before it and every early return is a distinct user-facing error.
+    /// Read, then decode, then self-heal the recorded PIN state, then length-check. Safe to use
+    /// before init: it falls back to the credential manager.
     #[allow(clippy::too_many_lines)]
     pub async fn get_monero_seed(
         pin_password: Option<SafePassword>,
@@ -2729,11 +2726,7 @@ pub async fn enter_wallet_recovery(reason: WalletRecoveryReason) {
 
 /// The current recovery reason, if the app is in the recovery state.
 pub fn wallet_recovery_reason() -> Option<WalletRecoveryReason> {
-    WALLET_RECOVERY_REASON
-        .read()
-        .ok()
-        .and_then(|guard| *guard)
-        .or(None)
+    WALLET_RECOVERY_REASON.read().ok().and_then(|guard| *guard)
 }
 
 /// Leave the recovery state after the user recovered (imported seed words, re-linked a wallet).
@@ -3027,8 +3020,11 @@ impl LegacyFileKind {
 /// What is wrong with a legacy file. Every variant means "do not create a new wallet".
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum LegacyConfigProblemKind {
-    /// The file is there but the OS would not hand it over (locked by AV or an indexer,
-    /// permissions, a transient sharing violation on Windows).
+    /// The file is there and the OS refused access: an ACL, or a Windows sharing violation while
+    /// antivirus or an indexer holds it open. Named apart from `Unreadable` because it is the
+    /// one that usually clears on its own.
+    PermissionDenied,
+    /// The file is there but could not be read for any other reason.
     Unreadable,
     /// The file is there and readable but is not the JSON this code understands.
     Unparseable,
@@ -3041,6 +3037,7 @@ pub(crate) enum LegacyConfigProblemKind {
 impl LegacyConfigProblemKind {
     pub(crate) fn as_tag(self) -> &'static str {
         match self {
+            LegacyConfigProblemKind::PermissionDenied => "permission_denied",
             LegacyConfigProblemKind::Unreadable => "unreadable",
             LegacyConfigProblemKind::Unparseable => "unparseable",
             LegacyConfigProblemKind::Incomplete => "incomplete",
@@ -3083,6 +3080,9 @@ pub(crate) fn get_old_wallet_config(
     let contents = match std::fs::read_to_string(path) {
         Ok(contents) => contents,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
+            return Err(LegacyConfigProblemKind::PermissionDenied);
+        }
         Err(_) => return Err(LegacyConfigProblemKind::Unreadable),
     };
     let parsed: LegacyWalletConfig =
@@ -3486,8 +3486,10 @@ pub(crate) fn legacy_purge_decision(
 /// The overwrite is defence in depth only - journaled and copy-on-write filesystems may retain old
 /// blocks - so deletion is the primary control and an overwrite failure does not stop the unlink.
 ///
-/// Reserved for the *plaintext* `credentials_backup.bin`. The enciphered `wallet_config.json` is
-/// renamed instead: destroying it would take the last copy of a seed with it.
+/// Used on both retired legacy files, and only once the purge gate has proven the seed they hold
+/// is in the credential store under an address this config owns. An Era-1 `wallet_config.json`
+/// carries the enciphered seed and its passphrase in the same document, so leaving a renamed copy
+/// would leave self-decrypting recovery material on disk.
 pub(crate) fn wipe_and_remove_file(path: &Path) -> std::io::Result<bool> {
     const ZERO_CHUNK_LEN: usize = 64 * 1024;
 

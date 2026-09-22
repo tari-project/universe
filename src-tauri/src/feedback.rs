@@ -394,12 +394,6 @@ pub fn record_startup_probe_outcome(
             report.error_kind = Some(credential_error_kind(error).to_string());
         }
     }
-    record_startup_keyring_probe(report);
-}
-
-/// Records the outcome of the startup keyring probe for one wallet id.
-pub fn record_startup_keyring_probe(mut report: KeyringEntryReport) {
-    report.origin = ProbeOrigin::Startup;
     // A poisoned lock must never take the support bundle (or startup) down.
     if let Ok(mut guard) = STARTUP_KEYRING_PROBE.lock() {
         guard.insert(report.wallet_id.clone(), report);

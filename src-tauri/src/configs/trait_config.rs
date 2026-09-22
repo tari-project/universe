@@ -173,8 +173,9 @@ pub trait ConfigImpl {
     /// recorded.
     ///
     /// The write lock is held across both the mutation and the save, which
-    /// serializes writers per config: separate locks for the two let tasks
-    /// updating different fields interleave their bytes in one file write.
+    /// serializes writers per config. With a separate lock for each step, two
+    /// tasks updating different fields can interleave and write one file from
+    /// two different snapshots.
     ///
     /// The mutation is applied to a copy and committed to the shared content
     /// only once the save succeeded, so a failed save leaves memory and disk

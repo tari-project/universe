@@ -809,8 +809,9 @@ impl LegacyCredentialManager {
         )
     }
 
+    /// The flag is set at construction and the file is re-checked here, so a fallback file that
+    /// appeared since then is still found.
     fn use_fallback(&self) -> bool {
-        // maybe check just file
         self.fallback_mode.load(Ordering::SeqCst) || self.fallback_file().exists()
     }
 
