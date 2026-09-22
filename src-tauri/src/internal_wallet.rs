@@ -1291,7 +1291,7 @@ pub async fn get_old_wallet_config(
 }
 
 const MONERO_SEED_ALREADY_EXISTS: &str =
-    "A Monero seed already exists in the keyring, refusing to generate a new one";
+    "Refusing to create a new wallet: the keyring still holds a Monero seed from a previous wallet";
 
 /// True when the keyring already holds a Monero seed. A keyring error is not proof of one:
 /// generating a seed would fail on the same keyring anyway.
@@ -1323,16 +1323,31 @@ fn refuse_if_previous_wallet_evident(app_config_dir: &Path) -> Result<(), anyhow
         |scope| scope.set_tag("previous_wallet_evidence", evidence),
         || sentry::capture_message(PREVIOUS_WALLET_EVIDENT, sentry::Level::Error),
     );
-    Err(anyhow!("{PREVIOUS_WALLET_EVIDENT}: {evidence}"))
+    // The dialog shows this text, so it names what happened rather than the tag.
+    Err(anyhow!(
+        "Refusing to create a new wallet: {}",
+        match evidence {
+            "wallet_config_unreadable" =>
+                "the wallet config could not be read and was moved aside as \
+                 config_wallet.json.corrupt.<ts>; a backup may still be recoverable by hand",
+            "legacy_wallet_config" => "a wallet config from an earlier version is still here",
+            _ => "the wallet config backup names a previous wallet",
+        }
+    ))
 }
 
 /// Evidence that this machine already held a Tari wallet, as an enum-like tag. Only files that
 /// name a Tari wallet count: a seedless user reverting to an internal wallet has a Monero
 /// credential and a wallet data directory but no seed to lose, and must still be let through.
+/// A config moved aside as unreadable is checked first: it is the most specific thing that can
+/// have happened, and every other kind of evidence is a side effect of it.
 pub(crate) fn previous_wallet_files(
     config_backup: &Path,
     legacy_wallet_config: &Path,
 ) -> Option<&'static str> {
+    if config_moved_aside(config_backup) {
+        return Some("wallet_config_unreadable");
+    }
     if backup_names_a_wallet(config_backup) {
         return Some("config_backup");
     }
@@ -1340,6 +1355,23 @@ pub(crate) fn previous_wallet_files(
         return Some("legacy_wallet_config");
     }
     None
+}
+
+/// True when a `config_wallet.json.corrupt.<timestamp>` sits beside the backup: startup found
+/// the config unreadable and renamed it, so this machine held a wallet.
+fn config_moved_aside(config_backup: &Path) -> bool {
+    let Some(config_dir) = config_backup.parent() else {
+        return false;
+    };
+    let Ok(entries) = std::fs::read_dir(config_dir) else {
+        return false;
+    };
+    entries.flatten().any(|entry| {
+        entry
+            .file_name()
+            .to_string_lossy()
+            .starts_with("config_wallet.json.corrupt.")
+    })
 }
 
 /// True when the wallet config backup names a Tari wallet, by id or by cached details, or
