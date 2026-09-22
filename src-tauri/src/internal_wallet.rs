@@ -299,10 +299,7 @@ impl InternalWallet {
                     // config and then a Monero failure leaves a config the next launch cannot
                     // load. A custom Monero address generates no seed, so it still passes.
                     if monero_address.is_empty() && monero_credential_exists().await {
-                        return Err(wallet_settings_problem(
-                            "wallet-config-missing-keys-present",
-                            "monero credential",
-                        ));
+                        return Err(wallet_config_missing_problem());
                     }
 
                     // Create new wallet
@@ -471,10 +468,7 @@ impl InternalWallet {
         let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
         // A generated seed must never overwrite the Monero credential already in the keyring.
         if monero_credential_exists().await {
-            return Err(wallet_settings_problem(
-                "wallet-config-missing-keys-present",
-                "monero credential",
-            ));
+            return Err(wallet_config_missing_problem());
         }
         let monero_seed_binary = (*monero_seed.inner())
             .to_binary()
@@ -1352,6 +1346,20 @@ async fn monero_credential_exists() -> bool {
         .is_ok()
 }
 
+/// The wallet settings file is gone. The raw line names what was on disk, never a credential
+/// store: a Monero credential is why we stopped, not the problem the user has to fix.
+fn wallet_config_missing_problem() -> anyhow::Error {
+    let config_backup = ConfigWallet::_get_config_path().with_extension("json.backup");
+    wallet_settings_problem(
+        "wallet-config-missing",
+        if config_backup.exists() {
+            "config_wallet.json missing, backup unusable"
+        } else {
+            "config_wallet.json missing, backup absent"
+        },
+    )
+}
+
 /// A wallet failure the user has to be told about, as the i18n keys the critical problem
 /// dialog translates plus one short technical line it prints raw.
 fn wallet_settings_problem(description_key: &str, detail: &str) -> anyhow::Error {
@@ -1383,17 +1391,11 @@ fn refuse_if_previous_wallet_evident(app_config_dir: &Path) -> Result<(), anyhow
         |scope| scope.set_tag("previous_wallet_evidence", evidence),
         || sentry::capture_message(PREVIOUS_WALLET_EVIDENT, sentry::Level::Error),
     );
-    // The dialog translates the description key and prints the detail line raw.
-    Err(match evidence {
-        "wallet_config_unreadable" => wallet_settings_problem(
-            "wallet-config-unreadable",
-            &config_moved_aside(&config_backup).unwrap_or_else(|| evidence.to_string()),
-        ),
-        "legacy_wallet_config" => wallet_settings_problem("wallet-legacy-not-loadable", evidence),
-        _ => wallet_settings_problem(
-            "wallet-config-backup-unreadable",
-            "config_wallet.json.backup",
-        ),
+    // The dialog describes the config itself: missing or unreadable. The evidence only decided
+    // whether to block and travels in the log line and the Sentry tag above.
+    Err(match config_moved_aside(&config_backup) {
+        Some(moved_aside) => wallet_settings_problem("wallet-config-unreadable", &moved_aside),
+        None => wallet_config_missing_problem(),
     })
 }
 

@@ -53,11 +53,9 @@
   "version": "Version",
   "versions": "Versions",
   "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
-  "wallet-config-backup-unreadable": "Your wallet settings file (config_wallet.json) is missing and its backup (config_wallet.json.backup) could not be read. Your wallet keys are still stored securely on this device and nothing has been changed. To recover, restore config_wallet.json from a backup or contact support.",
   "wallet-config-incomplete": "Your wallet settings file (config_wallet.json) is incomplete. Nothing has been changed. Restore it from its backup (config_wallet.json.backup) or contact support.",
-  "wallet-config-missing-keys-present": "Your wallet settings file (config_wallet.json) and its backup are missing, but this device still holds the keys of a previous wallet, so nothing has been changed and those keys are not lost. To recover, restore config_wallet.json from a backup or contact support.",
+  "wallet-config-missing": "Your wallet settings file (config_wallet.json) is missing and no usable backup was found, but this device still holds the keys of a previous wallet, so nothing has been changed and those keys are not lost. To recover, restore config_wallet.json from a backup or contact support.",
   "wallet-config-unreadable": "Your wallet settings file (config_wallet.json) could not be read and no usable backup was found. The damaged file was moved aside under the name shown above, in the Tari Universe config folder. Your wallet keys are still stored securely on this device and nothing has been changed. To recover, restore config_wallet.json from a backup or contact support with the moved file.",
-  "wallet-legacy-not-loadable": "A wallet from an earlier version of Tari Universe was found on this device but could not be loaded. Nothing has been changed. Contact support to recover it.",
   "wallet-settings-problem": "Wallet settings problem",
   "webgl-not-supported": "WebGL not supported. Disabled visual mode.",
   "xtm": "XTM"

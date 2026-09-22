@@ -227,6 +227,7 @@ impl ConfigWallet {
         if !config_path.exists() {
             // A deleted config whose backup still names a wallet is a recovery,
             // not a fresh install.
+            log::info!(target: LOG_TARGET_APP_LOGIC, "[config_wallet] config file is missing, looking for a usable backup");
             return Self::recover_from_backup(config_path, &backup_path);
         }
         let raw = fs::read_to_string(config_path).unwrap_or_else(|error| {
@@ -276,6 +277,7 @@ impl ConfigWallet {
         let config_content =
             serde_json::from_str::<ConfigWalletContent>(&migrate_address_field(&raw)).ok()?;
         if config_content.tari_wallets().is_empty() {
+            log::info!(target: LOG_TARGET_APP_LOGIC, "[config_wallet] the backup names no wallet, not using it as a recovery");
             return None;
         }
         let _unused = atomic_write(config_path, raw.as_bytes()).inspect_err(|_| {
