@@ -71,10 +71,11 @@ use super::internal_wallet::{
     ADDRESS_LOG_PREFIX_LEN, InternalWallet, SeedCandidate, TariAddressType, address_prefix,
     allocate_monero_wallet_id_with, decode_plain_tari_seed, monero_seed_candidates,
     monero_wallet_from_blob, next_monero_wallet_id, remembered_seed_probe_outcome,
-    seed_probe_outcome_from_tag, tari_seed_candidates, wipe_and_remove_file,
+    seed_probe_outcome_from_tag, seed_word_rejection, tari_seed_candidates, wipe_and_remove_file,
 };
 use std::collections::HashSet;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
+use tari_common_types::seeds::error::{CipherError, MnemonicError};
 use tari_utilities::SafePassword;
 use tari_utilities::message_format::MessageFormat;
 
@@ -1316,4 +1317,33 @@ fn a_wrong_monero_pin_reads_nothing() {
     let seed = vec![5u8; 32];
     let blob = crate::utils::cryptography::encrypt(&seed, &test_pin()).expect("encrypt");
     assert!(monero_seed_candidates(&blob, Some(other_pin()), true).is_empty());
+}
+
+/// A rejected seed word is usually a real one with a character wrong, and `MnemonicError`'s own
+/// text quotes it. Neither the log line nor the message the user sees may carry that text.
+#[test]
+fn rejected_seed_words_are_named_by_kind_and_never_quoted() {
+    let mistyped = CipherError::MnemonicError(MnemonicError::WordNotFound("scrupt".to_string()));
+    let (tag, message) = seed_word_rejection(&mistyped);
+    assert_eq!(tag, "word_not_found");
+    assert!(!message.contains("scrupt"), "{message}");
+    assert!(!mistyped.to_string().is_empty());
+
+    assert_eq!(
+        seed_word_rejection(&CipherError::MnemonicError(
+            MnemonicError::EncodeInvalidLength
+        ))
+        .0,
+        "word_count"
+    );
+    assert_eq!(
+        seed_word_rejection(&CipherError::MnemonicError(MnemonicError::UnknownLanguage)).0,
+        "mnemonic"
+    );
+    assert_eq!(seed_word_rejection(&CipherError::CrcError).0, "seed_decode");
+
+    // The tags go into log lines that end up in support bundles, so they are a closed set.
+    for tag in ["word_not_found", "word_count", "mnemonic", "seed_decode"] {
+        assert!(tag.chars().all(|c| c.is_ascii_lowercase() || c == '_'));
+    }
 }

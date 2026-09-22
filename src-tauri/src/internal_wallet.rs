@@ -30,7 +30,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use tari_common::configuration::Network;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
-use tari_common_types::seeds::error::CipherError;
+use tari_common_types::seeds::error::{CipherError, MnemonicError};
 use tari_common_types::seeds::mnemonic::Mnemonic;
 use tari_common_types::seeds::seed_words::SeedWords;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
@@ -2770,13 +2770,46 @@ where
     }
 }
 
+/// Why a set of seed words was rejected: an enum-like tag for the log and a message that quotes
+/// nothing.
+///
+/// `MnemonicError::WordNotFound` prints the word it did not recognise, and a word that is "not
+/// found" is usually a real seed word with one character wrong, so neither the log line nor the
+/// message the user sees may carry the error's own text.
+pub fn seed_word_rejection(error: &CipherError) -> (&'static str, &'static str) {
+    match error {
+        CipherError::MnemonicError(MnemonicError::WordNotFound(_)) => (
+            "word_not_found",
+            "One of these words is not a Tari seed word. Check the spelling of each word and try again.",
+        ),
+        CipherError::MnemonicError(MnemonicError::EncodeInvalidLength) => (
+            "word_count",
+            "A Tari seed is exactly 24 words. Check that every word was entered.",
+        ),
+        CipherError::MnemonicError(_) => (
+            "mnemonic",
+            "These seed words could not be read. Check each word and try again.",
+        ),
+        _ => (
+            "seed_decode",
+            "These seed words are not a Tari wallet seed.",
+        ),
+    }
+}
+
 pub async fn mnemonic_to_tari_cipher_seed(
     seed_words: Vec<String>,
 ) -> Result<CipherSeed, anyhow::Error> {
     let hidden_seed_words = seed_words.into_iter().map(Hidden::hide).collect::<Vec<_>>();
     let seed_words_parsed = SeedWords::new(hidden_seed_words);
-    // TODO: use pin to encrypt seed words
-    CipherSeed::from_mnemonic(&seed_words_parsed, None).map_err(|e| anyhow::anyhow!(e.to_string()))
+    CipherSeed::from_mnemonic(&seed_words_parsed, None).map_err(|e| {
+        let (tag, message) = seed_word_rejection(&e);
+        log::error!(
+            target: LOG_TARGET_APP_LOGIC,
+            "[mnemonic_to_tari_cipher_seed] seed words rejected: error={tag}",
+        );
+        anyhow!(message)
+    })
 }
 
 // ** Legacy Wallet Config **
