@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{env::temp_dir, fs, path::PathBuf};
+use std::{env::temp_dir, fs, io::Write, path::PathBuf};
 
 use anyhow::Error;
 use dirs::config_dir;
@@ -117,7 +117,15 @@ pub trait ConfigImpl {
             fs::create_dir_all(parent)?;
         }
         let config_content_serialized = serde_json::to_string_pretty(&config_content)?;
-        fs::write(config_path, config_content_serialized)?;
+        // Write and flush a temporary file next to the config, then rename over it.
+        // A truncate-in-place write leaves an empty or NUL-filled config behind when
+        // the machine dies mid-write, and the app then cannot start at all.
+        let temp_path = config_path.with_extension("json.tmp");
+        let mut temp_file = fs::File::create(&temp_path)?;
+        temp_file.write_all(config_content_serialized.as_bytes())?;
+        temp_file.sync_all()?;
+        drop(temp_file);
+        fs::rename(&temp_path, &config_path)?;
         Ok(())
     }
     fn _load_config() -> Result<Self::Config, Error> {
@@ -145,13 +153,15 @@ pub trait ConfigImpl {
         Self: 'static,
     {
         debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] with function: {:?} and value of type: {:?}", Self::_get_name(), std::any::type_name::<F>(), std::any::type_name::<I>());
-        setter_callback(
-            Self::current().write().await._get_content_mut(),
-            value.clone(),
-        );
-        Self::_save_config(Self::current().read().await._get_content().clone()).inspect_err(|error|
-            debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] error: {:?}", Self::_get_name(), error)
-        )?;
+        {
+            // Mutate and save under one write lock: two updates that each dropped the
+            // lock before saving could interleave their writes to the same file.
+            let mut config = Self::current().write().await;
+            setter_callback(config._get_content_mut(), value.clone());
+            Self::_save_config(config._get_content().clone()).inspect_err(|error|
+                debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] error: {:?}", Self::_get_name(), error)
+            )?;
+        }
         Self::current()
             .read()
             .await

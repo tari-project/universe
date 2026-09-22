@@ -28,13 +28,13 @@
 //! log file. The key still has to be stored as plain hex, so only the `Debug`
 //! output is masked.
 
-use std::str::FromStr;
+use std::{fs, str::FromStr};
 
 use serde_json::Value;
 use tari_common_types::tari_address::TariAddress;
 use tari_transaction_components::tari_amount::MicroMinotari;
 
-use super::config_wallet::{ConfigWalletContent, WalletId};
+use super::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
 use crate::internal_wallet::{TariWalletDetails, ViewPrivateKeyHex};
 
 const TEST_TARI_ADDRESS: &str =
@@ -146,5 +146,82 @@ fn persistence_still_serializes_the_plain_view_key() {
             .and_then(Value::as_str),
         Some(VIEW_KEY_SENTINEL),
         "on-disk wallet config must keep the plain hex key"
+    );
+}
+
+/// The shapes `config_wallet.json` was found in on the crash-looping machines.
+/// The NUL-filled and truncated ones are derived from a real serialized config:
+/// after an unclean shutdown NTFS restores the file length but not the data.
+fn damaged_fixture(kind: &str) -> Vec<u8> {
+    match kind {
+        "invalid" => b"not json".to_vec(),
+        "empty" => Vec::new(),
+        "nul filled" => vec![0u8; valid_config_bytes().len()],
+        "truncated" => {
+            let valid = valid_config_bytes();
+            valid[..valid.len() / 2].to_vec()
+        }
+        other => unreachable!("unknown fixture {other}"),
+    }
+}
+
+fn valid_config_bytes() -> Vec<u8> {
+    serde_json::to_vec_pretty(&sentinel_config_content()).expect("content should serialize")
+}
+
+#[test_case::test_case("invalid")]
+#[test_case::test_case("empty")]
+#[test_case::test_case("nul filled")]
+#[test_case::test_case("truncated")]
+fn an_unreadable_wallet_config_falls_back_to_defaults(kind: &str) {
+    let directory = tempfile::tempdir().expect("temp dir");
+    let path = directory.path().join("config_wallet.json");
+    fs::write(&path, damaged_fixture(kind)).expect("fixture written");
+
+    let content = ConfigWallet::load_or_recover(&path);
+
+    assert!(content.tari_wallet_details().is_none(), "{kind} was parsed");
+    assert!(
+        !directory.path().join("config_wallet.json.backup").exists(),
+        "{kind} must never become the backup"
+    );
+    assert!(!path.exists(), "{kind} must be moved aside");
+    assert!(
+        fs::read_dir(directory.path())
+            .expect("temp dir readable")
+            .any(|entry| {
+                entry
+                    .expect("dir entry")
+                    .file_name()
+                    .to_string_lossy()
+                    .contains(".corrupt.")
+            }),
+        "{kind} must be kept under a .corrupt. name"
+    );
+}
+
+#[test]
+fn a_corrupt_wallet_config_is_recovered_from_the_backup() {
+    let directory = tempfile::tempdir().expect("temp dir");
+    let path = directory.path().join("config_wallet.json");
+    let backup_path = directory.path().join("config_wallet.json.backup");
+    let valid = valid_config_bytes();
+    fs::write(&backup_path, &valid).expect("backup written");
+    fs::write(&path, damaged_fixture("nul filled")).expect("fixture written");
+
+    let content = ConfigWallet::load_or_recover(&path);
+
+    assert_eq!(
+        content
+            .tari_wallet_details()
+            .as_ref()
+            .map(|details| details.id.as_str()),
+        Some("wallet_sentinel_id"),
+        "the backup should have been used"
+    );
+    assert_eq!(
+        fs::read(&backup_path).expect("backup readable"),
+        valid,
+        "the backup must survive a corrupt primary"
     );
 }
