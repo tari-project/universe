@@ -67,7 +67,9 @@
 //! - Use serial test execution with `serial_test` crate
 //! - Or refactor to use dependency injection instead of static singleton
 
-use super::internal_wallet::{InternalWallet, TariAddressType, wipe_and_remove_file};
+use super::internal_wallet::{
+    InternalWallet, TariAddressType, previous_wallet_files, wipe_and_remove_file,
+};
 
 #[test]
 fn tari_address_type_display_internal() {
@@ -324,4 +326,62 @@ fn an_enciphered_monero_seed_is_not_a_plain_one() {
 
     assert_ne!(enciphered.len(), 32);
     assert!(super::utils::cryptography::decrypt(&enciphered, &pin).is_ok());
+}
+
+/// One fixture per evidence kind, plus the fresh install that must still be allowed through.
+#[test]
+fn previous_wallet_files_reports_each_evidence_kind() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let config_backup = dir.path().join("config_wallet.json.backup");
+    let legacy_wallet_config = dir.path().join("wallet_config.json");
+
+    assert_eq!(
+        previous_wallet_files(&config_backup, &legacy_wallet_config),
+        None,
+        "a fresh install has no evidence and must be allowed to create a wallet"
+    );
+
+    std::fs::write(&legacy_wallet_config, "{}").expect("write legacy config");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &legacy_wallet_config),
+        Some("legacy_wallet_config")
+    );
+
+    std::fs::write(&config_backup, r#"{"tari_wallets":["abc123"]}"#).expect("write backup");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &legacy_wallet_config),
+        Some("config_backup")
+    );
+}
+
+#[test]
+fn previous_wallet_files_reads_the_backup_wallet_list() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let config_backup = dir.path().join("config_wallet.json.backup");
+    let absent = dir.path().join("absent");
+
+    std::fs::write(&config_backup, r#"{"tari_wallets":[]}"#).expect("write empty backup");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &absent),
+        None,
+        "a backup of a config that never held a wallet is not evidence"
+    );
+
+    std::fs::write(
+        &config_backup,
+        r#"{"tari_wallets":[],"tari_wallet_details":{"id":"abc"}}"#,
+    )
+    .expect("write backup with cached details only");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &absent),
+        Some("config_backup"),
+        "cached wallet details name a wallet even when the id list was emptied"
+    );
+
+    std::fs::write(&config_backup, "not json").expect("write corrupt backup");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &absent),
+        Some("config_backup"),
+        "an unparseable backup fails closed"
+    );
 }

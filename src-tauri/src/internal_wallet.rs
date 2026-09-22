@@ -38,6 +38,7 @@ use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
 use tauri::{AppHandle, Manager};
+use tauri_plugin_sentry::sentry;
 use tokio::fs;
 use tokio::sync::{OnceCell, RwLock};
 
@@ -233,20 +234,14 @@ impl InternalWallet {
                 .await
                 {
                     Ok(cred) => cred.encrypted_seed,
-                    Err(e) => {
-                        // TODO(testing): This panic crashes the app on credential failures.
-                        // Convert to Result and show user-friendly recovery UI.
-                        // See TESTING_ISSUES.md for full analysis.
-                        panic!("Failed to get credentials: {e}")
-                    }
+                    Err(e) => return Err(anyhow!("Failed to get credentials: {e}")),
                 };
                 let tari_cipher_seed = CipherSeed::from_binary(&tari_seed_binary)
-                    .expect("Could not convert Tari Seed to binary");
+                    .map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))?;
 
                 let tari_wallet_details =
                     InternalWallet::get_tari_wallet_details(wallet_id.clone(), tari_cipher_seed)
-                        .await
-                        .expect("Could not extract Tari Seed to binary");
+                        .await?;
                 ConfigWallet::update_field(
                     ConfigWalletContent::set_tari_wallet_details,
                     Some(tari_wallet_details),
@@ -275,9 +270,9 @@ impl InternalWallet {
                 let app_config_dir = app_handle
                     .path()
                     .app_config_dir()
-                    .expect("Couldn't get application config directory!");
+                    .map_err(|e| anyhow!("Couldn't get application config directory: {e}"))?;
 
-                let old_wallet_config = get_old_wallet_config(&app_config_dir).await.ok();
+                let old_wallet_config = get_old_wallet_config(&app_config_dir).await?;
                 if let Some(old_wallet_config) = old_wallet_config {
                     // Migrate old wallet config
                     let (wallet_id, tari_seed_binary, monero_seed_binary) =
@@ -286,7 +281,7 @@ impl InternalWallet {
                     let tari_wallet_details = InternalWallet::get_tari_wallet_details(
                         wallet_id,
                         CipherSeed::from_binary(&tari_seed_binary)
-                            .expect("Could not convert Tari Seed to binary"),
+                            .map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))?,
                     )
                     .await?;
 
@@ -299,6 +294,14 @@ impl InternalWallet {
                         tari_wallet_details: Some(tari_wallet_details),
                     }
                 } else {
+                    refuse_if_previous_wallet_evident(&app_config_dir)?;
+                    // Checked before anything is persisted: a new Tari wallet written to the
+                    // config and then a Monero failure leaves a config the next launch cannot
+                    // load. A custom Monero address generates no seed, so it still passes.
+                    if monero_address.is_empty() && monero_credential_exists().await {
+                        return Err(anyhow!("{MONERO_SEED_ALREADY_EXISTS}"));
+                    }
+
                     // Create new wallet
                     let tari_seed = CipherSeed::random();
                     let (tari_wallet_details, tari_seed_binary) =
@@ -463,6 +466,10 @@ impl InternalWallet {
     async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Adding new Monero Wallet");
         let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
+        // A generated seed must never overwrite the Monero credential already in the keyring.
+        if monero_credential_exists().await {
+            return Err(anyhow!("{MONERO_SEED_ALREADY_EXISTS}"));
+        }
         let monero_seed_binary = (*monero_seed.inner())
             .to_binary()
             .expect("Failed to convert monero seed to binary");
@@ -703,20 +710,19 @@ impl InternalWallet {
     ) -> Result<InternalWallet, anyhow::Error> {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Internal Wallet latest version detected.");
         let monero_address = wallet_config.monero_address().clone();
-        // TODO(testing): These panics can crash the app if config is corrupted.
-        // Convert to Result<InternalWallet, WalletConfigError> with recovery options.
-        // See TESTING_ISSUES.md for full analysis.
+        // An inconsistent wallet config is reported, not fatal: the error reaches the critical
+        // problem dialog instead of killing every launch.
         if monero_address.is_empty() {
-            panic!(
-                "Unexpected! Monero address should be accessible for v{:?}",
+            return Err(anyhow!(
+                "Monero address should be accessible for v{:?}",
                 *wallet_config.version_counter()
-            );
+            ));
         }
         if (*wallet_config.tari_wallets()).is_empty() {
-            panic!(
-                "Unexpected! Tari wallets field should be defined in the config for v{:?}",
+            return Err(anyhow!(
+                "Tari wallets field should be defined in the config for v{:?}",
                 *wallet_config.version_counter()
-            );
+            ));
         }
 
         let (encrypted_tari_seed, tari_wallet_details) = {
@@ -727,9 +733,10 @@ impl InternalWallet {
                 }
                 _ => {
                     // If wallet details are not saved in the config file, extract them from the decrypted seed.
-                    let tari_wallet_id = (*wallet_config.tari_wallets())
-                        .first()
-                        .expect("Unexpected! Selected wallet not found in the wallet config!");
+                    let tari_wallet_id =
+                        (*wallet_config.tari_wallets()).first().ok_or_else(|| {
+                            anyhow!("Selected wallet not found in the wallet config!")
+                        })?;
                     let encrypted_tari_seed = match InternalWallet::get_credentials(
                         app_handle,
                         tari_wallet_id.clone(),
@@ -738,9 +745,7 @@ impl InternalWallet {
                     .await
                     {
                         Ok(cred) => cred.encrypted_seed,
-                        Err(e) => {
-                            panic!("Failed to get credentials: {e}")
-                        }
+                        Err(e) => return Err(anyhow!("Failed to get credentials: {e}")),
                     };
                     let tari_cipher_seed = if PinManager::pin_locked().await {
                         let pin_password = PinManager::get_validated_pin(app_handle, None).await?;
@@ -756,7 +761,7 @@ impl InternalWallet {
                     } else {
                         // Seed not yet encrypted with PIN
                         CipherSeed::from_binary(&encrypted_tari_seed)
-                            .expect("Could not parse Tari Seed from binary")
+                            .map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))?
                     };
                     let wallet_details = InternalWallet::get_tari_wallet_details(
                         tari_wallet_id.clone(),
@@ -1266,14 +1271,97 @@ pub struct LegacyWalletConfig {
     seed_words_encrypted_base58: String,
     config_path: Option<PathBuf>,
 }
-pub async fn get_old_wallet_config(config_dir: &Path) -> Result<LegacyWalletConfig, anyhow::Error> {
+/// Reads the pre-keyring wallet config. `Ok(None)` means the file is absent; a file that
+/// cannot be read or parsed is an error, never a reason to create a new wallet.
+pub async fn get_old_wallet_config(
+    config_dir: &Path,
+) -> Result<Option<LegacyWalletConfig>, anyhow::Error> {
     let network = Network::get_current_or_user_setting_or_default()
         .to_string()
         .to_lowercase();
-    let old_config_file = config_dir.join(network).join("wallet_config.json");
+    let old_config_file = config_dir
+        .join(network)
+        .join(LEGACY_WALLET_CONFIG_FILE_NAME);
+    if !old_config_file.exists() {
+        return Ok(None);
+    }
     let old_config_str = fs::read_to_string(old_config_file).await?;
     let old_config: LegacyWalletConfig = serde_json::from_str(&old_config_str)?;
-    Ok(old_config)
+    Ok(Some(old_config))
+}
+
+const MONERO_SEED_ALREADY_EXISTS: &str =
+    "A Monero seed already exists in the keyring, refusing to generate a new one";
+
+/// True when the keyring already holds a Monero seed. A keyring error is not proof of one:
+/// generating a seed would fail on the same keyring anyway.
+async fn monero_credential_exists() -> bool {
+    CredentialManager::new_default(WalletId::new("monero".to_string()))
+        .get_credentials()
+        .await
+        .is_ok()
+}
+
+/// Constant Sentry message; the evidence kind travels as a tag.
+const PREVIOUS_WALLET_EVIDENT: &str =
+    "Refusing to create a new wallet, a previous wallet is evident";
+
+/// Fails when a previous Tari wallet is evident on this machine, so a new one never replaces it
+/// and leaves the old seed in the keyring under an id nothing records. The error reaches the
+/// critical problem dialog through the caller in `setup_manager`.
+fn refuse_if_previous_wallet_evident(app_config_dir: &Path) -> Result<(), anyhow::Error> {
+    let config_backup = ConfigWallet::_get_config_path().with_extension("json.backup");
+    let legacy_wallet_config = app_config_dir
+        .join(Network::get_current().as_key_str())
+        .join(LEGACY_WALLET_CONFIG_FILE_NAME);
+    let Some(evidence) = previous_wallet_files(&config_backup, &legacy_wallet_config) else {
+        return Ok(());
+    };
+
+    log::error!(target: LOG_TARGET_APP_LOGIC, "{PREVIOUS_WALLET_EVIDENT}: {evidence}");
+    sentry::with_scope(
+        |scope| scope.set_tag("previous_wallet_evidence", evidence),
+        || sentry::capture_message(PREVIOUS_WALLET_EVIDENT, sentry::Level::Error),
+    );
+    Err(anyhow!("{PREVIOUS_WALLET_EVIDENT}: {evidence}"))
+}
+
+/// Evidence that this machine already held a Tari wallet, as an enum-like tag. Only files that
+/// name a Tari wallet count: a seedless user reverting to an internal wallet has a Monero
+/// credential and a wallet data directory but no seed to lose, and must still be let through.
+pub(crate) fn previous_wallet_files(
+    config_backup: &Path,
+    legacy_wallet_config: &Path,
+) -> Option<&'static str> {
+    if backup_names_a_wallet(config_backup) {
+        return Some("config_backup");
+    }
+    if legacy_wallet_config.exists() {
+        return Some("legacy_wallet_config");
+    }
+    None
+}
+
+/// True when the wallet config backup names a Tari wallet, by id or by cached details, or
+/// cannot be parsed at all. A first launch that failed before creating a wallet names neither,
+/// which is not evidence.
+fn backup_names_a_wallet(config_backup: &Path) -> bool {
+    let Ok(contents) = std::fs::read_to_string(config_backup) else {
+        return false;
+    };
+    match serde_json::from_str::<serde_json::Value>(&contents) {
+        Ok(content) => {
+            let has_wallet_id = content
+                .get("tari_wallets")
+                .and_then(serde_json::Value::as_array)
+                .is_some_and(|wallets| !wallets.is_empty());
+            has_wallet_id
+                || content
+                    .get("tari_wallet_details")
+                    .is_some_and(|d| !d.is_null())
+        }
+        Err(_) => true,
+    }
 }
 
 /// Names why the legacy wallet config must be kept, or `None` when the wallet the config now uses
