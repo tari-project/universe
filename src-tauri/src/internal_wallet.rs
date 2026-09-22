@@ -713,12 +713,8 @@ impl InternalWallet {
     /// Reads the Tari credential once at startup so a lost or unreadable keyring entry is
     /// reported now instead of at the user's first spend. Read-only and never forced.
     async fn probe_tari_credential(wallet_id: WalletId) -> Result<(), anyhow::Error> {
-        // Skipped on macOS: a keychain read there can raise a prompt, and a denied or cancelled
-        // prompt is not a lost seed. The seed is still checked on first use.
-        if cfg!(target_os = "macos") {
-            return Ok(());
-        }
-
+        // A single read, never retried, so a lost or unreadable credential is reported at startup
+        // instead of on the user's first spend.
         match CredentialManager::new_default(wallet_id)
             .get_credentials()
             .await
