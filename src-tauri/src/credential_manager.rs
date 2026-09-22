@@ -76,6 +76,10 @@ pub enum CredentialError {
     #[error("The credential store could not be enumerated: status={0}")]
     #[cfg_attr(not(any(target_os = "windows", target_os = "macos")), allow(dead_code))]
     ListingFailed(i64),
+    /// A write that required the id to be free found an entry already there. Nothing was
+    /// written; whatever is stored is untouched.
+    #[error("A credential already exists for: {0}")]
+    EntryAlreadyExists(String),
     /// The enumeration call answered in a shape this code cannot walk, or its query could not be
     /// built. Nothing was read and nothing was written.
     ///
@@ -229,6 +233,15 @@ pub struct CredentialManager {
     backend: Arc<dyn KeyringBackend>,
 }
 
+/// Whether a write may land on an id that is already in use.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum WriteMode {
+    /// Replace the readable value that is there, if any.
+    Replace,
+    /// Refuse if anything is stored under this id.
+    ExpectAbsent,
+}
+
 impl CredentialManager {
     fn new(service_name: String, username: String, backend: Arc<dyn KeyringBackend>) -> Self {
         CredentialManager {
@@ -286,7 +299,19 @@ impl CredentialManager {
     }
 
     pub async fn set_credentials(&self, credential: &Credential) -> Result<(), CredentialError> {
-        self.save_to_keyring(credential)
+        self.save_to_keyring(credential, WriteMode::Replace)
+    }
+
+    /// Write a credential for an id that nothing has used before.
+    ///
+    /// A generated wallet id is six random characters, so a collision is vanishingly unlikely -
+    /// but the write protocol should be able to say "this id must be free", because the cost of
+    /// being wrong is the seed that was already there.
+    pub async fn set_new_credentials(
+        &self,
+        credential: &Credential,
+    ) -> Result<(), CredentialError> {
+        self.save_to_keyring(credential, WriteMode::ExpectAbsent)
     }
 
     pub async fn get_credentials(&self) -> Result<Credential, CredentialError> {
@@ -300,11 +325,6 @@ impl CredentialManager {
             Err(CredentialError::NoEntry(_)) => Ok(false),
             Err(e) => Err(e),
         }
-    }
-
-    pub fn delete_credential(&self) -> Result<(), CredentialError> {
-        self.backend
-            .delete_credential(&self.service_name, &self.username)
     }
 
     /// Write a credential without ever leaving the user without one.
@@ -328,7 +348,11 @@ impl CredentialManager {
     /// If a platform refuses an in-place overwrite, step 2 falls back to delete-then-write, but
     /// only *after* step 1 captured the old blob, and it writes that blob back if the retry
     /// fails. A failed verification in step 3 restores the previous value and errors.
-    fn save_to_keyring(&self, credential: &Credential) -> Result<(), CredentialError> {
+    fn save_to_keyring(
+        &self,
+        credential: &Credential,
+        mode: WriteMode,
+    ) -> Result<(), CredentialError> {
         let serialized = serde_cbor::to_vec(credential)?;
         let lock = credential_lock(&self.service_name, &self.username);
         // A poisoned lock means another writer panicked mid-protocol. Carry on with the entry it
@@ -347,6 +371,14 @@ impl CredentialManager {
                 return Err(CredentialError::PreviousUnreadable(self.username.clone()));
             }
         };
+
+        if mode == WriteMode::ExpectAbsent && previous.is_some() {
+            log::error!(
+                target: LOG_TARGET_APP_LOGIC,
+                "{LOG_KEYRING_WRITE_REFUSED}: an entry already exists under an id that had to be free",
+            );
+            return Err(CredentialError::EntryAlreadyExists(self.username.clone()));
+        }
 
         if previous.as_deref() == Some(serialized.as_slice()) {
             // Identical bytes: writing would only risk the entry for no gain.
@@ -974,7 +1006,7 @@ mod tests {
     fn write_into_an_empty_store_is_verified_and_kept() {
         let keyring = Arc::new(FakeKeyring::new());
         manager(keyring.clone())
-            .save_to_keyring(&credential(1))
+            .save_to_keyring(&credential(1), WriteMode::Replace)
             .expect("first write should succeed");
 
         assert_eq!(
@@ -983,17 +1015,49 @@ mod tests {
         );
     }
 
+    /// A wallet id is six random characters. A collision is vanishingly unlikely, but the only
+    /// thing standing between it and someone's seed is that the creation path says the id has to
+    /// be free.
+    #[test]
+    fn a_new_wallet_never_writes_over_an_id_that_is_taken() {
+        let keyring = Arc::new(FakeKeyring::new());
+        let manager = manager(keyring.clone());
+        manager
+            .save_to_keyring(&credential(1), WriteMode::Replace)
+            .expect("the existing wallet");
+
+        let refused = manager
+            .save_to_keyring(&credential(2), WriteMode::ExpectAbsent)
+            .expect_err("an occupied id must not be written over");
+        assert!(matches!(refused, CredentialError::EntryAlreadyExists(_)));
+        assert_eq!(
+            stored_credential(&keyring).map(|c| c.encrypted_seed),
+            Some(vec![1u8; 16]),
+            "the seed that was there is untouched"
+        );
+
+        // A free id is written exactly as before.
+        let fresh = CredentialManager::new(
+            SERVICE.to_string(),
+            "inner_wallet_credentials_testnet_free".to_string(),
+            keyring.clone(),
+        );
+        fresh
+            .save_to_keyring(&credential(3), WriteMode::ExpectAbsent)
+            .expect("a free id is still writable");
+    }
+
     #[test]
     fn overwrite_happens_in_place_without_deleting_first() {
         let keyring = Arc::new(FakeKeyring::new());
         let manager = manager(keyring.clone());
         manager
-            .save_to_keyring(&credential(1))
+            .save_to_keyring(&credential(1), WriteMode::Replace)
             .expect("first write");
         // This backend accepts deletes, so a delete-then-write would also pass; the assertion
         // below is the stronger one, that the value is simply replaced.
         manager
-            .save_to_keyring(&credential(2))
+            .save_to_keyring(&credential(2), WriteMode::Replace)
             .expect("in-place overwrite");
 
         assert_eq!(
@@ -1007,14 +1071,14 @@ mod tests {
         let keyring = Arc::new(FakeKeyring::new());
         let manager = manager(keyring.clone());
         manager
-            .save_to_keyring(&credential(1))
+            .save_to_keyring(&credential(1), WriteMode::Replace)
             .expect("first write");
 
         // A store that refuses every write: the old entry must not be deleted in the hope that a
         // retry will succeed.
         keyring.fail_writes.store(true, Ordering::SeqCst);
         let error = manager
-            .save_to_keyring(&credential(2))
+            .save_to_keyring(&credential(2), WriteMode::Replace)
             .expect_err("the write must fail");
         assert!(matches!(error, CredentialError::Keyring(_)));
 
@@ -1031,7 +1095,7 @@ mod tests {
         keyring.fail_writes.store(true, Ordering::SeqCst);
 
         manager(keyring.clone())
-            .save_to_keyring(&credential(1))
+            .save_to_keyring(&credential(1), WriteMode::Replace)
             .expect_err("the write must fail");
         assert!(keyring.raw(SERVICE, USERNAME).is_none());
     }
@@ -1041,14 +1105,14 @@ mod tests {
         let keyring = Arc::new(FakeKeyring::new());
         let manager = manager(keyring.clone());
         manager
-            .save_to_keyring(&credential(1))
+            .save_to_keyring(&credential(1), WriteMode::Replace)
             .expect("first write");
 
         keyring
             .refuse_in_place_overwrite
             .store(true, Ordering::SeqCst);
         manager
-            .save_to_keyring(&credential(2))
+            .save_to_keyring(&credential(2), WriteMode::Replace)
             .expect("replace fallback should succeed");
 
         assert_eq!(
@@ -1061,7 +1125,7 @@ mod tests {
     fn a_replace_that_fails_after_the_delete_restores_the_previous_value() {
         let keyring = Arc::new(FakeKeyring::new());
         manager(keyring.clone())
-            .save_to_keyring(&credential(1))
+            .save_to_keyring(&credential(1), WriteMode::Replace)
             .expect("first write");
 
         // Every write of the *new* value fails, both in place and after the delete. The protocol
@@ -1074,7 +1138,7 @@ mod tests {
         let failing_manager =
             CredentialManager::new(SERVICE.to_string(), USERNAME.to_string(), Arc::new(failing));
         failing_manager
-            .save_to_keyring(&credential(2))
+            .save_to_keyring(&credential(2), WriteMode::Replace)
             .expect_err("the retry must fail");
 
         assert_eq!(
@@ -1089,13 +1153,13 @@ mod tests {
         let keyring = Arc::new(FakeKeyring::new());
         let manager = manager(keyring.clone());
         manager
-            .save_to_keyring(&credential(1))
+            .save_to_keyring(&credential(1), WriteMode::Replace)
             .expect("first write");
 
         // Corrupt the write under test only; the restore that follows it goes through cleanly.
         keyring.corrupt_writes.store(1, Ordering::SeqCst);
         let error = manager
-            .save_to_keyring(&credential(2))
+            .save_to_keyring(&credential(2), WriteMode::Replace)
             .expect_err("an unverifiable write must fail");
         assert!(matches!(error, CredentialError::WriteNotVerified(_)));
 
@@ -1112,14 +1176,14 @@ mod tests {
         let keyring = Arc::new(FakeKeyring::new());
         let manager = manager(keyring.clone());
         manager
-            .save_to_keyring(&credential(1))
+            .save_to_keyring(&credential(1), WriteMode::Replace)
             .expect("first write");
 
         // Reads denied, writes still accepted: the entry is there and nothing can prove what
         // overwriting it would destroy.
         keyring.fail_reads.store(true, Ordering::SeqCst);
         let error = manager
-            .save_to_keyring(&credential(2))
+            .save_to_keyring(&credential(2), WriteMode::Replace)
             .expect_err("an unreadable entry must not be overwritten");
         assert!(
             matches!(error, CredentialError::PreviousUnreadable(_)),
@@ -1138,13 +1202,15 @@ mod tests {
     fn concurrent_writes_to_one_id_do_not_undo_each_other() {
         let keyring = Arc::new(FakeKeyring::new());
         manager(keyring.clone())
-            .save_to_keyring(&credential(1))
+            .save_to_keyring(&credential(1), WriteMode::Replace)
             .expect("first write");
 
         let handles: Vec<_> = (2u8..10)
             .map(|value| {
                 let backend: Arc<dyn KeyringBackend> = keyring.clone();
-                std::thread::spawn(move || manager(backend).save_to_keyring(&credential(value)))
+                std::thread::spawn(move || {
+                    manager(backend).save_to_keyring(&credential(value), WriteMode::Replace)
+                })
             })
             .collect();
         for handle in handles {
@@ -1168,7 +1234,7 @@ mod tests {
         let keyring = Arc::new(FakeKeyring::new());
         let manager = manager(keyring.clone());
         manager
-            .save_to_keyring(&credential(1))
+            .save_to_keyring(&credential(1), WriteMode::Replace)
             .expect("first write");
 
         // The store holds something we cannot read (locked keychain, denied prompt). The write
@@ -1178,7 +1244,7 @@ mod tests {
             .refuse_in_place_overwrite
             .store(true, Ordering::SeqCst);
         manager
-            .save_to_keyring(&credential(2))
+            .save_to_keyring(&credential(2), WriteMode::Replace)
             .expect_err("the write must fail");
 
         keyring.fail_reads.store(false, Ordering::SeqCst);
@@ -1193,12 +1259,12 @@ mod tests {
         let keyring = Arc::new(FakeKeyring::new());
         let manager = manager(keyring.clone());
         manager
-            .save_to_keyring(&credential(1))
+            .save_to_keyring(&credential(1), WriteMode::Replace)
             .expect("first write");
 
         keyring.fail_writes.store(true, Ordering::SeqCst);
         manager
-            .save_to_keyring(&credential(1))
+            .save_to_keyring(&credential(1), WriteMode::Replace)
             .expect("an identical write is a no-op");
         assert_eq!(
             stored_credential(&keyring).map(|c| c.encrypted_seed),

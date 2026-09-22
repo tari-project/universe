@@ -422,6 +422,7 @@ fn credential_error_kind(error: &CredentialError) -> &'static str {
         CredentialError::NoEntry(_) => "no_entry",
         CredentialError::WriteNotVerified(_) => "write_not_verified",
         CredentialError::PreviousUnreadable(_) => "previous_unreadable",
+        CredentialError::EntryAlreadyExists(_) => "entry_already_exists",
         CredentialError::ListingFailed(_) => "listing_failed",
         CredentialError::ListingUnusable => "listing_unusable",
     }

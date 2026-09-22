@@ -653,11 +653,12 @@ impl InternalWallet {
             encrypted_seed: encrypted_seed.clone(),
         };
 
-        InternalWallet::set_credentials(
+        // The id was just generated, so it has to be free: an id that is taken already protects
+        // somebody's seed.
+        InternalWallet::set_new_credentials(
             app_handle,
             WalletId::new(wallet_id.clone()),
             &credentials,
-            true,
         )
         .await?;
 
@@ -688,14 +689,6 @@ impl InternalWallet {
             internal_wallet_guard.encrypted_tari_seed = Hidden::hide(Some(encrypted_seed.clone()));
         }
         Ok((wallet_details, encrypted_seed))
-    }
-
-    fn remove_tari_wallet(wallet_id: WalletId) -> Result<(), anyhow::Error> {
-        log::info!(target: LOG_TARGET_APP_LOGIC, "Removing Tari Wallet with id: {wallet_id:?}");
-        let cm = CredentialManager::new_default(wallet_id);
-        cm.delete_credential()?;
-
-        Ok(())
     }
 
     /// Store a newly generated Monero seed under an id that is not in use.
@@ -1047,6 +1040,21 @@ impl InternalWallet {
         Ok(Credential {
             encrypted_seed: seed,
         })
+    }
+
+    /// Write the credential for a freshly generated wallet id, refusing an id that is taken.
+    async fn set_new_credentials(
+        app_handle: &AppHandle,
+        id: WalletId,
+        credential: &Credential,
+    ) -> Result<(), anyhow::Error> {
+        let cm = CredentialManager::new_default(id);
+        retry_with_keyring_dialog(
+            app_handle,
+            || cm.set_new_credentials(credential),
+            "Failed to set credentials for a new wallet",
+        )
+        .await
     }
 
     async fn set_credentials(
@@ -1994,10 +2002,20 @@ impl InternalWallet {
         Ok(())
     }
 
+    /// Forget every wallet this config names, keeping their credentials.
+    ///
+    /// A reset clears the app's own state; it cannot prove that the seeds it points at are
+    /// readable anywhere else, and a keyring entry is the only copy of one unless the user wrote
+    /// the words down. The entries are left where they are for the same reason the Monero one is,
+    /// and "find my wallets" lists them again afterwards.
     pub async fn clear_all_wallets() -> Result<(), anyhow::Error> {
         let wallet_config = ConfigWallet::content().await;
         for wallet_id in wallet_config.tari_wallets() {
-            InternalWallet::remove_tari_wallet(wallet_id.clone())?
+            log::info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "{LOG_TARI_ENTRY_PRESERVED}: keeping the Tari credential wallet_id={}",
+                wallet_id.as_str(),
+            );
         }
         InternalWallet::remove_monero_wallet().await?;
         Ok(())
@@ -2132,6 +2150,8 @@ impl From<&CredentialError> for SeedProbeErrorKind {
             CredentialError::ListingFailed(_) | CredentialError::ListingUnusable => {
                 SeedProbeErrorKind::KeyringPlatform
             }
+            // Only a write ever produces this, and the entry it refused to touch is readable.
+            CredentialError::EntryAlreadyExists(_) => SeedProbeErrorKind::KeyringOther,
             CredentialError::Keyring(keyring_error) => match keyring_error {
                 // `load_from_keyring` maps `NoEntry` before it gets here, but keep the arm so a
                 // future caller that passes the raw error through still classifies it correctly.
@@ -2296,6 +2316,8 @@ const MONERO_WALLET_ID_MAX_VERSIONS: u32 = 32;
 const MONERO_SEED_LENGTH: usize = 32;
 /// Constant log string for the Monero entry that is deliberately not deleted.
 const LOG_MONERO_ENTRY_PRESERVED: &str = "wallet.monero_entry_preserved";
+/// The same, for a Tari entry a reset no longer destroys.
+const LOG_TARI_ENTRY_PRESERVED: &str = "wallet.tari_entry_preserved";
 /// Shown when the stored Monero blob cannot be read as the seed the config's address came from.
 /// Deliberately not "not 32 bytes": the common cause is a superseded entry, not a damaged one.
 const MONERO_SEED_NOT_THE_RECORDED_ONE: &str =
