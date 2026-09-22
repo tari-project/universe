@@ -30,7 +30,7 @@
   "find-my-wallets-status-unreadable": "Could not be read from secure storage",
   "find-my-wallets-title": "Find my wallets",
   "find-my-wallets-unknown-address": "Address unavailable",
-  "find-my-wallets-unsupported": "Tari Universe cannot list the secure storage on this operating system. Your wallet seeds are untouched; please restore with your seed words or contact support.",
+  "find-my-wallets-unsupported": "Tari Universe could not list this computer's secure storage, either because this operating system does not support it or because the store would not answer. Your wallet seeds are untouched; please restore with your seed words or contact support.",
   "find-my-wallets-use": "Use this wallet",
   "find-my-wallets-using": "Switching...",
   "hashrate": "Hashrate",

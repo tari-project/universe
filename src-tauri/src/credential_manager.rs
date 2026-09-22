@@ -67,6 +67,22 @@ pub enum CredentialError {
     /// untouched.
     #[error("An unreadable credential already exists for: {0}")]
     PreviousUnreadable(String),
+    /// The store was asked to enumerate and refused: a locked keychain, a stopped service, a
+    /// denied prompt. Carries the platform's own status code - `GetLastError` on Windows,
+    /// `OSStatus` on macOS - and nothing else, because that code is the one thing support needs
+    /// and the only thing here that is certainly not a secret.
+    ///
+    /// Constructed by the Windows and macOS enumerators only.
+    #[error("The credential store could not be enumerated: status={0}")]
+    #[cfg_attr(not(any(target_os = "windows", target_os = "macos")), allow(dead_code))]
+    ListingFailed(i64),
+    /// The enumeration call answered in a shape this code cannot walk, or its query could not be
+    /// built. Nothing was read and nothing was written.
+    ///
+    /// Constructed by the macOS enumerator only.
+    #[error("The credential store answered an unusable result")]
+    #[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+    ListingUnusable,
 }
 
 const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
@@ -508,7 +524,10 @@ mod platform_listing {
                 // No credential matches the filter. That is an answer, not a failure.
                 return Ok(KeyringListing::Entries(Vec::new()));
             }
-            return Ok(KeyringListing::Unsupported);
+            // Anything else is a real store failure - a stopped `VaultSvc`, no logon session -
+            // and reporting it as "this platform cannot enumerate" would throw away the one
+            // number that says which.
+            return Err(CredentialError::ListingFailed(i64::from(last_error)));
         }
 
         let mut usernames = Vec::new();
@@ -581,7 +600,7 @@ mod platform_listing {
         // trigger the "allow access to your secret" prompt.
         unsafe {
             let Some(service_string) = cf_string(service) else {
-                return Ok(KeyringListing::Unsupported);
+                return Err(CredentialError::ListingUnusable);
             };
             let keys: [*const c_void; 4] = [
                 kSecClass as *const c_void,
@@ -605,7 +624,7 @@ mod platform_listing {
             );
             CFRelease(service_string as CFTypeRef);
             if query.is_null() {
-                return Ok(KeyringListing::Unsupported);
+                return Err(CredentialError::ListingUnusable);
             }
 
             let mut result: CFTypeRef = std::ptr::null();
@@ -615,17 +634,21 @@ mod platform_listing {
             if status == ERR_SEC_ITEM_NOT_FOUND {
                 return Ok(KeyringListing::Entries(Vec::new()));
             }
-            if status != 0 || result.is_null() {
-                return Ok(KeyringListing::Unsupported);
+            if status != 0 {
+                // A locked login keychain or a denied prompt, not a platform without a store.
+                return Err(CredentialError::ListingFailed(i64::from(status)));
+            }
+            if result.is_null() {
+                return Err(CredentialError::ListingUnusable);
             }
 
             // `kSecMatchLimitAll` is documented to return a CFArray of CFDictionaries, but the
             // cast is what decides whether the loop below walks a real array or arbitrary memory,
-            // so it is checked rather than assumed. A result of any other shape is reported as
-            // "cannot enumerate", which is the fail-closed answer.
+            // so it is checked rather than assumed. A result of any other shape is an error, not
+            // an empty list, which is the fail-closed answer.
             if CFGetTypeID(result) != CFArrayGetTypeID() {
                 CFRelease(result);
-                return Ok(KeyringListing::Unsupported);
+                return Err(CredentialError::ListingUnusable);
             }
             let mut usernames = Vec::new();
             let array = result as CFArrayRef;
@@ -820,6 +843,8 @@ pub(crate) struct FakeKeyring {
     pub fail_reads: AtomicBool,
     /// `list_usernames` reports the platform cannot enumerate.
     pub listing_unsupported: AtomicBool,
+    /// `list_usernames` fails the way a locked or stopped store does.
+    pub listing_fails: AtomicBool,
 }
 
 #[cfg(test)]
@@ -903,6 +928,9 @@ impl KeyringBackend for FakeKeyring {
     ) -> Result<KeyringListing, CredentialError> {
         if self.listing_unsupported.load(Ordering::SeqCst) {
             return Ok(KeyringListing::Unsupported);
+        }
+        if self.listing_fails.load(Ordering::SeqCst) {
+            return Err(CredentialError::ListingFailed(-25308));
         }
         let mut usernames: Vec<String> = self
             .entries

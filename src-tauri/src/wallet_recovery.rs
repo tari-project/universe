@@ -138,9 +138,9 @@ pub async fn find_wallets_with(
             };
         }
         Err(e) => {
-            // The platform helpers answer `Unsupported` rather than erroring, so this is a
-            // genuine store failure. Still not an error to the user: an empty list with the
-            // reason logged is more useful than a red toast.
+            // A store that exists and refused: a locked keychain, a stopped service, a denied
+            // prompt. The error carries the platform status code and nothing else, and that code
+            // is the one thing a support bundle needs to tell these apart.
             log::warn!(
                 target: LOG_TARGET_APP_LOGIC,
                 "[find_my_wallets] the credential store could not be enumerated: {e}",
@@ -442,7 +442,7 @@ const LOG_WALLET_RELINKED: &str = "wallet.relinked";
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::credential_manager::{Credential, FakeKeyring};
+    use crate::credential_manager::{Credential, CredentialError, FakeKeyring};
     use std::sync::atomic::Ordering;
     use tari_utilities::message_format::MessageFormat;
 
@@ -561,6 +561,32 @@ mod tests {
         assert_eq!(wallets.len(), 1);
         assert_eq!(wallets[0].status, FoundWalletStatus::Unreadable);
         assert_eq!(wallets[0].address_prefix, None);
+    }
+
+    /// A store that exists and refused is not a platform without a store. The user still sees one
+    /// message, but the status code has to reach the log, because it is the only thing that tells
+    /// a locked keychain from a stopped service.
+    #[tokio::test]
+    async fn a_store_that_refuses_to_enumerate_reports_its_status_code() {
+        let keyring = Arc::new(FakeKeyring::new());
+        keyring.listing_fails.store(true, Ordering::SeqCst);
+
+        let error = keyring
+            .list_usernames(&CredentialManager::default_service_name(), "")
+            .expect_err("a refusing store errors rather than answering `unsupported`");
+        assert!(matches!(error, CredentialError::ListingFailed(-25308)));
+        let rendered = error.to_string();
+        assert!(rendered.contains("-25308"), "{rendered}");
+        assert!(
+            !rendered.contains("inner_wallet_credentials"),
+            "the message names no entry: {rendered}"
+        );
+
+        // The user is still not shown a red toast; the list is simply empty.
+        assert!(matches!(
+            find_wallets_with(keyring, &[], None, None).await,
+            FindWalletsResult::Unsupported { .. }
+        ));
     }
 
     #[tokio::test]

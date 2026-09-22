@@ -2096,6 +2096,10 @@ impl From<&CredentialError> for SeedProbeErrorKind {
             // "The entry exists and the store would not show it to us" - which is what the probe
             // itself would have reported as a platform failure, so classify it the same way.
             CredentialError::PreviousUnreadable(_) => SeedProbeErrorKind::KeyringPlatform,
+            // Enumeration failures are the store refusing to answer, never the probe's own read.
+            CredentialError::ListingFailed(_) | CredentialError::ListingUnusable => {
+                SeedProbeErrorKind::KeyringPlatform
+            }
             CredentialError::Keyring(keyring_error) => match keyring_error {
                 // `load_from_keyring` maps `NoEntry` before it gets here, but keep the arm so a
                 // future caller that passes the raw error through still classifies it correctly.
