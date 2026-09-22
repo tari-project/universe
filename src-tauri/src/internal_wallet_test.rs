@@ -396,3 +396,33 @@ fn previous_wallet_files_reads_the_backup_wallet_list() {
         "an unparseable backup fails closed"
     );
 }
+
+#[test]
+fn credential_error_tag_separates_a_missing_entry_from_a_platform_failure() {
+    use super::credential_manager::CredentialError;
+    use super::internal_wallet::credential_error_tag;
+
+    assert_eq!(
+        credential_error_tag(&CredentialError::NoEntry("entry".to_string())),
+        "missing_entry"
+    );
+    assert_eq!(
+        credential_error_tag(&CredentialError::Keyring(keyring::Error::Invalid(
+            "attribute".to_string(),
+            "value".to_string()
+        ))),
+        "platform_error"
+    );
+    assert_eq!(
+        credential_error_tag(&CredentialError::Io(std::io::Error::from(
+            std::io::ErrorKind::PermissionDenied
+        ))),
+        "io_error"
+    );
+    assert_eq!(
+        credential_error_tag(&CredentialError::Serialization(
+            serde_cbor::from_slice::<u8>(&[]).expect_err("empty input does not decode")
+        )),
+        "decode_error"
+    );
+}

@@ -299,10 +299,7 @@ impl InternalWallet {
                     // config and then a Monero failure leaves a config the next launch cannot
                     // load. A custom Monero address generates no seed, so it still passes.
                     if monero_address.is_empty() && monero_credential_exists().await {
-                        return Err(wallet_settings_problem(
-                            "wallet-config-missing-keys-present",
-                            "monero credential",
-                        ));
+                        return Err(wallet_config_missing_problem());
                     }
 
                     // Create new wallet
@@ -471,10 +468,7 @@ impl InternalWallet {
         let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
         // A generated seed must never overwrite the Monero credential already in the keyring.
         if monero_credential_exists().await {
-            return Err(wallet_settings_problem(
-                "wallet-config-missing-keys-present",
-                "monero credential",
-            ));
+            return Err(wallet_config_missing_problem());
         }
         let monero_seed_binary = (*monero_seed.inner())
             .to_binary()
@@ -710,6 +704,33 @@ impl InternalWallet {
         Ok(())
     }
 
+    /// Reads the Tari credential once at startup so a lost or unreadable keyring entry is
+    /// reported now instead of at the user's first spend. Read-only and never forced.
+    async fn probe_tari_credential(wallet_id: WalletId) -> Result<(), anyhow::Error> {
+        // A single read, never retried, so a lost or unreadable credential is reported at startup
+        // instead of on the user's first spend.
+        match CredentialManager::new_default(wallet_id)
+            .get_credentials()
+            .await
+        {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                let kind = credential_error_tag(&e);
+                log::error!(target: LOG_TARGET_APP_LOGIC, "[probe_tari_credential] Tari seed credential is unreadable: {kind}");
+                sentry::with_scope(
+                    |scope| scope.set_tag("wallet.seed_probe", kind),
+                    || {
+                        sentry::capture_message(
+                            "Tari seed credential unreadable at startup",
+                            sentry::Level::Error,
+                        )
+                    },
+                );
+                Err(wallet_keys_problem(kind))
+            }
+        }
+    }
+
     async fn load_latest_version(
         app_handle: &AppHandle,
         wallet_config: ConfigWalletContent,
@@ -735,6 +756,11 @@ impl InternalWallet {
             match ConfigWallet::content().await.tari_wallet_details() {
                 Some(wallet_details) => {
                     log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(wallet config file) Tari Wallet Details: {wallet_details:?}");
+                    // The cached details make the keyring unnecessary for startup, so without this
+                    // probe a missing seed stays invisible until the user first spends.
+                    if let Some(tari_wallet_id) = (*wallet_config.tari_wallets()).first() {
+                        InternalWallet::probe_tari_credential(tari_wallet_id.clone()).await?;
+                    }
                     (None, wallet_details.clone())
                 }
                 _ => {
@@ -1052,6 +1078,7 @@ impl InternalWallet {
                             cred.encrypted_seed
                         }
                         Err(e) => {
+                            log::error!(target: LOG_TARGET_APP_LOGIC, "[get_tari_seed] Failed to read the Tari seed from the keyring: {}", credential_error_tag(&e));
                             // Only display once
                             #[cfg(target_os = "macos")]
                             EventsEmitter::emit_show_keyring_dialog().await;
@@ -1115,6 +1142,7 @@ impl InternalWallet {
                         cred.encrypted_seed
                     }
                     Err(e) => {
+                        log::error!(target: LOG_TARGET_APP_LOGIC, "[get_monero_seed] Failed to read the Monero seed from the keyring: {}", credential_error_tag(&e));
                         #[cfg(target_os = "macos")]
                         EventsEmitter::emit_show_keyring_dialog().await;
 
@@ -1189,6 +1217,17 @@ impl std::fmt::Display for TariAddressType {
 pub struct PaperWalletConfig {
     pub qr_link: String,
     pub password: String,
+}
+
+/// Enum-like tag for a credential failure, safe to log and to send as a Sentry tag.
+/// Carries the kind of failure only, never the error's contents.
+pub fn credential_error_tag(error: &CredentialError) -> &'static str {
+    match error {
+        CredentialError::NoEntry(_) => "missing_entry",
+        CredentialError::Keyring(_) => "platform_error",
+        CredentialError::Serialization(_) => "decode_error",
+        CredentialError::Io(_) => "io_error",
+    }
 }
 
 async fn handle_critical_problem(
@@ -1305,6 +1344,30 @@ async fn monero_credential_exists() -> bool {
         .is_ok()
 }
 
+/// The wallet settings file is gone. The raw line names what was on disk, never a credential
+/// store: a Monero credential is why we stopped, not the problem the user has to fix.
+fn wallet_config_missing_problem() -> anyhow::Error {
+    let config_backup = ConfigWallet::_get_config_path().with_extension("json.backup");
+    wallet_settings_problem(
+        "wallet-config-missing",
+        if config_backup.exists() {
+            "config_wallet.json missing, backup unusable"
+        } else {
+            "config_wallet.json missing, backup absent"
+        },
+    )
+}
+
+/// The keyring no longer returns this wallet's keys. Same carrier as the settings failures,
+/// its own title: the file on disk is fine, the credential store is not.
+fn wallet_keys_problem(detail: &str) -> anyhow::Error {
+    anyhow::Error::new(CriticalProblemPayload {
+        title: Some("common:wallet-keys-problem".to_string()),
+        description: Some("common:wallet-keys-unreadable".to_string()),
+        error_message: Some(detail.to_string()),
+    })
+}
+
 /// A wallet failure the user has to be told about, as the i18n keys the critical problem
 /// dialog translates plus one short technical line it prints raw.
 fn wallet_settings_problem(description_key: &str, detail: &str) -> anyhow::Error {
@@ -1336,17 +1399,11 @@ fn refuse_if_previous_wallet_evident(app_config_dir: &Path) -> Result<(), anyhow
         |scope| scope.set_tag("previous_wallet_evidence", evidence),
         || sentry::capture_message(PREVIOUS_WALLET_EVIDENT, sentry::Level::Error),
     );
-    // The dialog translates the description key and prints the detail line raw.
-    Err(match evidence {
-        "wallet_config_unreadable" => wallet_settings_problem(
-            "wallet-config-unreadable",
-            &config_moved_aside(&config_backup).unwrap_or_else(|| evidence.to_string()),
-        ),
-        "legacy_wallet_config" => wallet_settings_problem("wallet-legacy-not-loadable", evidence),
-        _ => wallet_settings_problem(
-            "wallet-config-backup-unreadable",
-            "config_wallet.json.backup",
-        ),
+    // The dialog describes the config itself: missing or unreadable. The evidence only decided
+    // whether to block and travels in the log line and the Sentry tag above.
+    Err(match config_moved_aside(&config_backup) {
+        Some(moved_aside) => wallet_settings_problem("wallet-config-unreadable", &moved_aside),
+        None => wallet_config_missing_problem(),
     })
 }
 
