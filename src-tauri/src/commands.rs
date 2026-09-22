@@ -681,12 +681,11 @@ pub async fn relink_wallet(
     state: tauri::State<'_, UniverseAppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<String, String> {
+    // A launch that stopped at the corrupted-config gate never started Core or Node, so the
+    // recovery exit has to run the whole sequence rather than resume three phases.
+    let phases = SetupManager::get_instance().phases_for_wallet_change();
     SetupManager::get_instance()
-        .shutdown_phases(vec![
-            SetupPhase::Wallet,
-            SetupPhase::CpuMining,
-            SetupPhase::GpuMining,
-        ])
+        .shutdown_phases(phases.clone())
         .await;
 
     let result = relink_tari_wallet(&app_handle, WalletId::new(wallet_id)).await;
@@ -702,13 +701,7 @@ pub async fn relink_wallet(
 
     // Both paths resume: a dismissed PIN prompt or an unreadable entry must not leave the wallet
     // and mining phases shut down for the rest of the run.
-    SetupManager::get_instance()
-        .resume_phases(vec![
-            SetupPhase::Wallet,
-            SetupPhase::CpuMining,
-            SetupPhase::GpuMining,
-        ])
-        .await;
+    SetupManager::get_instance().resume_phases(phases).await;
 
     let address_prefix = result.map_err(|e| {
         error!(target: LOG_TARGET_APP_LOGIC, "Error re-linking wallet: {e}");
@@ -728,12 +721,11 @@ pub async fn import_seed_words(
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
+    // Same as `relink_wallet`: an import out of a corrupted config is the first thing to start
+    // Core and Node on this run.
+    let phases = SetupManager::get_instance().phases_for_wallet_change();
     SetupManager::get_instance()
-        .shutdown_phases(vec![
-            SetupPhase::Wallet,
-            SetupPhase::CpuMining,
-            SetupPhase::GpuMining,
-        ])
+        .shutdown_phases(phases.clone())
         .await;
 
     match InternalWallet::import_tari_seed_words(seed_words, &app_handle).await {
@@ -754,13 +746,7 @@ pub async fn import_seed_words(
             error!(target: LOG_TARGET_APP_LOGIC, "Error importing seed words by internal wallet: {e:?}");
             // Resume before returning: a failed import must not leave the wallet and mining
             // phases shut down for the rest of the run.
-            SetupManager::get_instance()
-                .resume_phases(vec![
-                    SetupPhase::Wallet,
-                    SetupPhase::CpuMining,
-                    SetupPhase::GpuMining,
-                ])
-                .await;
+            SetupManager::get_instance().resume_phases(phases).await;
             return Err(InvokeError::from_anyhow(e));
         }
     }
@@ -775,13 +761,7 @@ pub async fn import_seed_words(
         .await
         .map_err(|e| e.to_string())?;
 
-    SetupManager::get_instance()
-        .resume_phases(vec![
-            SetupPhase::Wallet,
-            SetupPhase::CpuMining,
-            SetupPhase::GpuMining,
-        ])
-        .await;
+    SetupManager::get_instance().resume_phases(phases).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "import_seed_words took too long: {:?}", timer.elapsed());

@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use super::setup_manager::{ExchangeModalStatus, PhaseStatus, SetupPhase};
+use super::setup_manager::{ExchangeModalStatus, PhaseStatus, SetupPhase, wallet_change_phases};
 use std::collections::HashMap;
 
 #[test]
@@ -199,4 +199,26 @@ fn phase_status_display_failed() {
         format!("{}", PhaseStatus::Failed("test".to_string())),
         "Failed: test"
     );
+}
+
+/// A launch that stopped at the wallet config gate never started Core or Node. The wallet phase
+/// waits on the node phase's status, so a recovery exit that resumed only the wallet and mining
+/// phases would sit on that wait until it timed out, with no node and no wallet process.
+#[test]
+fn a_recovery_exit_starts_the_phases_the_corrupted_config_skipped() {
+    let after_a_normal_launch = wallet_change_phases(true);
+    assert_eq!(
+        after_a_normal_launch,
+        vec![
+            SetupPhase::Wallet,
+            SetupPhase::CpuMining,
+            SetupPhase::GpuMining
+        ],
+        "everything else is already running"
+    );
+
+    let after_a_config_gate = wallet_change_phases(false);
+    assert_eq!(after_a_config_gate, SetupPhase::all());
+    assert!(after_a_config_gate.contains(&SetupPhase::Core));
+    assert!(after_a_config_gate.contains(&SetupPhase::Node));
 }

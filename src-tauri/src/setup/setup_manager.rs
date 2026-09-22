@@ -73,6 +73,7 @@ use std::collections::HashMap;
 use std::{
     fmt::{Display, Formatter},
     sync::LazyLock,
+    sync::atomic::{AtomicBool, Ordering},
     time::Duration,
 };
 use tari_common::configuration::Network;
@@ -200,6 +201,23 @@ impl PhaseStatus {
     }
 }
 
+/// Which phases a wallet switch cycles, given whether the phase sequence ever ran.
+///
+/// Separate from `SetupManager` so the rule can be checked without a Tauri app: the wallet phase
+/// waits on the node phase, so a recovery exit from a launch that never started Core and Node has
+/// to start them too.
+pub fn wallet_change_phases(phases_started: bool) -> Vec<SetupPhase> {
+    if phases_started {
+        vec![
+            SetupPhase::Wallet,
+            SetupPhase::CpuMining,
+            SetupPhase::GpuMining,
+        ]
+    } else {
+        SetupPhase::all()
+    }
+}
+
 #[derive(Default)]
 pub struct SetupManager {
     pub features: RwLock<SetupFeaturesList>,
@@ -213,6 +231,9 @@ pub struct SetupManager {
     app_handle: Mutex<Option<AppHandle>>,
     // Temporary to prevent multiple restarts within few seconds
     restart_safe_lock: Mutex<()>,
+    /// Whether the phase sequence has run. A launch that stopped at the wallet config gate never
+    /// started Core or Node, and a wallet switch after that has to start them rather than resume.
+    phases_started: AtomicBool,
 }
 
 impl SetupManager {
@@ -757,6 +778,9 @@ impl SetupManager {
         if phases.is_empty() {
             return;
         }
+        if phases.contains(&SetupPhase::Core) && phases.contains(&SetupPhase::Node) {
+            self.phases_started.store(true, Ordering::SeqCst);
+        }
 
         EventsEmitter::emit_restarting_phases(phases.clone()).await;
         let _unused = self.resolve_setup_features().await;
@@ -818,6 +842,16 @@ impl SetupManager {
                 }
             }
         }
+    }
+
+    /// The phases a command that changes the active wallet has to cycle.
+    ///
+    /// Normally the wallet and both miners. After a launch that stopped at the wallet config gate
+    /// it is every phase: Core and Node were never started, and the wallet phase waits on the node
+    /// phase's status, so resuming the short list would leave the app without a node or a wallet
+    /// process until the user restarted it.
+    pub fn phases_for_wallet_change(&self) -> Vec<SetupPhase> {
+        wallet_change_phases(self.phases_started.load(Ordering::SeqCst))
     }
 
     pub async fn restart_phases(&self, phases: Vec<SetupPhase>) {
@@ -912,6 +946,7 @@ impl SetupManager {
             return;
         }
 
+        self.phases_started.store(true, Ordering::SeqCst);
         self.setup_core_phase().await;
         self.setup_cpu_mining_phase().await;
         self.setup_gpu_mining_phase().await;
