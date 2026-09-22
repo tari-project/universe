@@ -726,9 +726,7 @@ impl InternalWallet {
                         )
                     },
                 );
-                Err(anyhow!(
-                    "Tari seed credential is unreadable at startup: {kind}"
-                ))
+                Err(wallet_keys_problem(kind))
             }
         }
     }
@@ -1358,6 +1356,16 @@ fn wallet_config_missing_problem() -> anyhow::Error {
             "config_wallet.json missing, backup absent"
         },
     )
+}
+
+/// The keyring no longer returns this wallet's keys. Same carrier as the settings failures,
+/// its own title: the file on disk is fine, the credential store is not.
+fn wallet_keys_problem(detail: &str) -> anyhow::Error {
+    anyhow::Error::new(CriticalProblemPayload {
+        title: Some("common:wallet-keys-problem".to_string()),
+        description: Some("common:wallet-keys-unreadable".to_string()),
+        error_message: Some(detail.to_string()),
+    })
 }
 
 /// A wallet failure the user has to be told about, as the i18n keys the critical problem
