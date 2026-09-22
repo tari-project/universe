@@ -611,3 +611,34 @@ fn the_config_a_recovery_exit_writes_carries_every_field_an_older_build_reads() 
     let reparsed: ConfigWalletContent = serde_json::from_value(serialized).unwrap();
     assert!(reparsed.ensure_loadable().is_ok());
 }
+
+/// A re-link that fails to initialise puts the previous selection back. The wallet it tried is
+/// deliberately left in the list: re-linking must never be the thing that loses a wallet id, and
+/// the purge gate reads that list.
+#[test]
+fn a_failed_relink_restores_the_previous_selection_without_dropping_the_id() {
+    let previous = sentinel_wallet_details();
+    let mut attempted = sentinel_wallet_details();
+    attempted.id = WalletId::new("relinked_wallet".to_string());
+
+    let mut content = ConfigWalletContent::default();
+    content.add_tari_wallet(previous.clone());
+    content.add_tari_wallet(attempted.clone());
+    assert_eq!(
+        content.tari_wallet_details().as_ref().map(|d| d.id.clone()),
+        Some(attempted.id.clone())
+    );
+
+    content.set_tari_wallet_details(Some(previous.clone()));
+
+    assert_eq!(
+        content.tari_wallet_details().as_ref().map(|d| d.id.clone()),
+        Some(previous.id.clone()),
+        "the wallet the app was using is selected again"
+    );
+    assert_eq!(
+        content.tari_wallets(),
+        &vec![attempted.id, previous.id],
+        "both ids stay listed; the rollback only moves the selection"
+    );
+}

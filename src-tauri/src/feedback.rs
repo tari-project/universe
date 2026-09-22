@@ -407,6 +407,31 @@ pub(crate) fn startup_keyring_probe(wallet_id: &str) -> Option<KeyringEntryRepor
         .and_then(|guard| guard.get(wallet_id).cloned())
 }
 
+/// How one credential id is reported in the support bundle.
+#[derive(Debug)]
+pub(crate) enum BundleProbePlan {
+    /// What the startup read saw. Always preferred: it is also what the user lived with.
+    Recorded(Box<KeyringEntryReport>),
+    /// Reported as never probed rather than read here. On a store that can ask the user - the
+    /// macOS keychain, Linux secret-service - a read would raise a prompt per entry at the moment
+    /// someone clicks "Send Logs".
+    Unprobed,
+    /// Safe to read now: this store answers without asking anyone.
+    Read,
+}
+
+/// Decides between the three, given what the startup probe recorded for this id.
+pub(crate) fn bundle_probe_plan(
+    recorded: Option<KeyringEntryReport>,
+    store_can_prompt: bool,
+) -> BundleProbePlan {
+    match recorded {
+        Some(recorded) => BundleProbePlan::Recorded(Box::new(recorded)),
+        None if store_can_prompt => BundleProbePlan::Unprobed,
+        None => BundleProbePlan::Read,
+    }
+}
+
 /// `CredentialError` variant name. Never the message.
 fn credential_error_kind(error: &CredentialError) -> &'static str {
     match error {
@@ -715,13 +740,12 @@ impl WalletStatus {
 
         let mut reports = Vec::with_capacity(ids.len());
         for (id, classify_blob) in ids {
-            match startup_keyring_probe(id.as_str()) {
-                Some(recorded) => reports.push(recorded),
-                // Where the store can ask the user - macOS keychain, Linux secret-service -
-                // reading here would raise a prompt per entry at the moment someone clicks
-                // "Send Logs".
-                None if STORE_CAN_PROMPT => reports.push(unprobed_report(&id)),
-                None => reports.push(probe_keyring_entry(&id, classify_blob).await),
+            match bundle_probe_plan(startup_keyring_probe(id.as_str()), STORE_CAN_PROMPT) {
+                BundleProbePlan::Recorded(recorded) => reports.push(*recorded),
+                BundleProbePlan::Unprobed => reports.push(unprobed_report(&id)),
+                BundleProbePlan::Read => {
+                    reports.push(probe_keyring_entry(&id, classify_blob).await)
+                }
             }
         }
         reports

@@ -36,7 +36,8 @@ use crate::configs::config_ui::WalletUIMode;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::event_scheduler::EventScheduler;
 use crate::internal_wallet::{
-    InternalWallet, WalletRecoveryReason, enter_wallet_recovery, wallet_recovery_reason,
+    InternalWallet, SeedProbeErrorKind, WalletRecoveryReason, enter_wallet_recovery,
+    wallet_recovery_reason,
 };
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::manager::GpuManager;
@@ -199,6 +200,21 @@ impl PhaseStatus {
     pub fn is_restarting(&self) -> bool {
         matches!(self, PhaseStatus::None)
     }
+}
+
+/// The recovery reason a finished wallet initialisation leaves behind.
+///
+/// A wallet that came up but whose seed the startup probe could not read is a recovery case too:
+/// mining and telemetry stay off and the user hears about it at launch rather than at their first
+/// send. Separate from `pre_setup` so the rule can be checked without a Tauri app.
+pub fn recovery_reason_after_init(
+    init_failed: bool,
+    seed_probe: Option<SeedProbeErrorKind>,
+) -> Option<WalletRecoveryReason> {
+    if init_failed {
+        return Some(WalletRecoveryReason::InitializationFailed);
+    }
+    seed_probe.map(|_| WalletRecoveryReason::SeedUnavailable)
 }
 
 /// Which phases a wallet switch cycles, given whether the phase sequence ever ran.
@@ -506,15 +522,17 @@ impl SetupManager {
                             wallet_initialized = true;
                             // The wallet is usable but its seed may not be readable, which is a
                             // recovery case too: tell the user now, not at their first send.
-                            if let Ok(Some(kind)) = InternalWallet::seed_unavailable().await {
+                            let seed_probe =
+                                InternalWallet::seed_unavailable().await.unwrap_or(None);
+                            if let Some(kind) = seed_probe {
                                 warn!(target: LOG_TARGET_APP_LOGIC, "Wallet seed unavailable at startup: error={}", kind.as_tag());
-                                init_recovery_reason = Some(WalletRecoveryReason::SeedUnavailable);
                             }
+                            init_recovery_reason = recovery_reason_after_init(false, seed_probe);
                         }
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET_APP_LOGIC, "Error loading internal wallet: {e:?}");
-                        init_recovery_reason = Some(WalletRecoveryReason::InitializationFailed);
+                        init_recovery_reason = recovery_reason_after_init(true, None);
                     }
                 };
             }

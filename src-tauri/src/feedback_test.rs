@@ -43,9 +43,9 @@ use tari_common_types::tari_address::TariAddress;
 use crate::configs::config_wallet::{ConfigWalletContent, WalletId};
 use crate::credential_manager::{Credential, CredentialError};
 use crate::feedback::{
-    KeyringEntryReport, KeyringEntryState, ProbeOrigin, SeedBlobKind, SupportDiagnostics,
-    WalletStatus, create_support_archive, record_startup_probe_outcome, scan_wallet_files,
-    startup_keyring_probe,
+    BundleProbePlan, KeyringEntryReport, KeyringEntryState, ProbeOrigin, SeedBlobKind,
+    SupportDiagnostics, WalletStatus, bundle_probe_plan, create_support_archive,
+    record_startup_probe_outcome, scan_wallet_files, startup_keyring_probe,
 };
 use crate::internal_wallet::{TariWalletDetails, ViewPrivateKeyHex};
 use crate::pin::PinLockerState;
@@ -660,4 +660,39 @@ fn a_missing_entry_seen_at_startup_is_recorded_as_no_entry() {
 fn an_id_the_startup_probe_never_saw_falls_back_to_bundle_assembly() {
     // The fallback is what keeps the Monero entry and any extra wallet id in the document.
     assert!(startup_keyring_probe("t7a_never_probed").is_none());
+}
+
+/// The bundle reports what the startup read saw and never opens the store itself where opening it
+/// would ask the user: a support bundle must not raise a keychain prompt per wallet at the moment
+/// someone clicks "Send Logs".
+#[test]
+fn the_bundle_prefers_the_startup_read_and_never_prompts_for_what_it_missed() {
+    let wallet_id = "t7a_planned";
+    record_startup_probe_outcome(
+        wallet_id,
+        true,
+        &Err(CredentialError::NoEntry(wallet_id.to_string())),
+    );
+    let recorded = startup_keyring_probe(wallet_id).expect("recorded");
+
+    match bundle_probe_plan(Some(recorded.clone()), true) {
+        BundleProbePlan::Recorded(report) => {
+            assert_eq!(report.state, KeyringEntryState::NoEntry);
+            assert_eq!(report.origin, ProbeOrigin::Startup);
+        }
+        other => panic!("a recorded read is always used: {other:?}"),
+    }
+    assert!(matches!(
+        bundle_probe_plan(Some(recorded), false),
+        BundleProbePlan::Recorded(_)
+    ));
+
+    assert!(matches!(
+        bundle_probe_plan(None, true),
+        BundleProbePlan::Unprobed
+    ));
+    assert!(matches!(
+        bundle_probe_plan(None, false),
+        BundleProbePlan::Read
+    ));
 }

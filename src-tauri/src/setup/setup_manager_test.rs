@@ -20,7 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use super::setup_manager::{ExchangeModalStatus, PhaseStatus, SetupPhase, wallet_change_phases};
+use super::setup_manager::{
+    ExchangeModalStatus, PhaseStatus, SetupPhase, recovery_reason_after_init, wallet_change_phases,
+};
+use crate::internal_wallet::{SeedProbeErrorKind, WalletRecoveryReason};
 use std::collections::HashMap;
 
 #[test]
@@ -221,4 +224,25 @@ fn a_recovery_exit_starts_the_phases_the_corrupted_config_skipped() {
     assert_eq!(after_a_config_gate, SetupPhase::all());
     assert!(after_a_config_gate.contains(&SetupPhase::Core));
     assert!(after_a_config_gate.contains(&SetupPhase::Node));
+}
+
+/// The startup probe's verdict is what turns "the wallet opened" into a recovery state: without
+/// this mapping a wallet whose seed the keyring no longer holds mines and reports telemetry until
+/// the user tries to spend.
+#[test]
+fn a_wallet_that_opened_without_its_seed_is_still_a_recovery_case() {
+    assert_eq!(recovery_reason_after_init(false, None), None);
+    assert_eq!(
+        recovery_reason_after_init(false, Some(SeedProbeErrorKind::NoEntry)),
+        Some(WalletRecoveryReason::SeedUnavailable)
+    );
+    assert_eq!(
+        recovery_reason_after_init(true, None),
+        Some(WalletRecoveryReason::InitializationFailed)
+    );
+    // A failed initialisation is named by its own reason whatever the probe said.
+    assert_eq!(
+        recovery_reason_after_init(true, Some(SeedProbeErrorKind::KeyringPlatform)),
+        Some(WalletRecoveryReason::InitializationFailed)
+    );
 }
