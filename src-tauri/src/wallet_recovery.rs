@@ -34,7 +34,10 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use serde::Serialize;
-use tari_common_types::seeds::cipher_seed::CipherSeed;
+use tari_common_types::seeds::cipher_seed::{
+    CIPHER_SEED_BIRTHDAY_BYTES, CIPHER_SEED_CHECKSUM_BYTES, CIPHER_SEED_ENTROPY_BYTES,
+    CIPHER_SEED_MAC_BYTES, CIPHER_SEED_MAIN_SALT_BYTES, CipherSeed,
+};
 use tari_utilities::SafePassword;
 use tauri::AppHandle;
 
@@ -60,8 +63,8 @@ pub enum FoundWalletStatus {
     /// The entry exists and holds an enciphered seed, but no PIN opened it. The wallet is there;
     /// the user needs the right PIN to see which one it is.
     PinRequired,
-    /// The entry exists but the store would not hand it over (locked keychain, denied prompt,
-    /// stopped service). Says nothing about the seed itself.
+    /// The entry exists but could not be turned into a wallet: the store would not hand it over
+    /// (locked keychain, denied prompt, stopped service), or what it held is not a seed at all.
     Unreadable,
 }
 
@@ -196,7 +199,10 @@ async fn describe_wallet(
     };
 
     let Some(seed) = read_seed(&credential.encrypted_seed, pin_password) else {
-        return (FoundWalletStatus::PinRequired, None);
+        if is_enciphered_tari_seed(&credential.encrypted_seed) {
+            return (FoundWalletStatus::PinRequired, None);
+        }
+        return (FoundWalletStatus::Unreadable, None);
     };
 
     match InternalWallet::get_tari_wallet_details(wallet_id.clone(), seed).await {
@@ -207,6 +213,25 @@ async fn describe_wallet(
         }
         Err(_) => (FoundWalletStatus::Unreadable, None),
     }
+}
+
+/// Length of a PIN-enciphered `CipherSeed`: version byte, birthday, entropy, salt, MAC and
+/// checksum. Built from the crate's own constants rather than written out, so a format change
+/// cannot quietly turn every entry in the store into "needs your PIN".
+const ENCIPHERED_TARI_SEED_LEN: usize = 1
+    + CIPHER_SEED_BIRTHDAY_BYTES
+    + CIPHER_SEED_ENTROPY_BYTES
+    + CIPHER_SEED_MAIN_SALT_BYTES
+    + CIPHER_SEED_MAC_BYTES
+    + CIPHER_SEED_CHECKSUM_BYTES;
+
+/// Could a PIN open this blob?
+///
+/// Only an enciphered seed has a PIN to ask for. Offering the prompt for a blob of any other
+/// length - a truncated entry, a Monero seed written under a Tari id - spends the user's real
+/// lockout budget on something no PIN will ever open.
+fn is_enciphered_tari_seed(blob: &[u8]) -> bool {
+    blob.len() == ENCIPHERED_TARI_SEED_LEN
 }
 
 /// Decode a blob found in the store.
@@ -371,6 +396,15 @@ pub async fn relink_tari_wallet(
     // flag - the entry may well predate the config in front of it.
     let seed = match read_seed(&credential.encrypted_seed, None) {
         Some(seed) => seed,
+        None if !is_enciphered_tari_seed(&credential.encrypted_seed) => {
+            log::error!(
+                target: LOG_TARGET_APP_LOGIC,
+                "[relink_tari_wallet] the entry does not hold a Tari seed: wallet_id={} blob_len={}",
+                wallet_id.as_str(),
+                credential.encrypted_seed.len(),
+            );
+            return Err(anyhow!("Could not read this wallet's seed"));
+        }
         None => {
             let pin_password = prompt_recovery_pin(app_handle).await?;
             let seed = read_seed(&credential.encrypted_seed, Some(pin_password));
@@ -541,6 +575,39 @@ mod tests {
         };
         assert_eq!(wallets[0].status, FoundWalletStatus::Readable);
         assert!(wallets[0].address_prefix.is_some());
+    }
+
+    /// A blob that is neither a plain nor an enciphered seed can never be opened by a PIN, and
+    /// listing it as "needs your PIN" walks the user into the real lockout on their own wallet.
+    #[tokio::test]
+    async fn a_blob_that_is_not_a_seed_is_not_reported_as_needing_a_pin() {
+        let keyring = Arc::new(FakeKeyring::new());
+        // A Monero seed written under a Tari id, and a truncated entry.
+        store_wallet(&keyring, "corrupt1", vec![9u8; 32]);
+        store_wallet(&keyring, "corrupt2", vec![9u8; 7]);
+
+        let FindWalletsResult::Found { wallets } =
+            find_wallets_with(keyring, &[], None, None).await
+        else {
+            panic!("enumerable");
+        };
+        assert_eq!(wallets.len(), 2);
+        for wallet in &wallets {
+            assert_eq!(
+                wallet.status,
+                FoundWalletStatus::Unreadable,
+                "{} must not ask for a PIN",
+                wallet.wallet_id
+            );
+        }
+
+        // Only the enciphered length is worth a prompt.
+        assert!(is_enciphered_tari_seed(&vec![
+            0u8;
+            ENCIPHERED_TARI_SEED_LEN
+        ]));
+        assert!(!is_enciphered_tari_seed(&vec![0u8; 24]));
+        assert!(!is_enciphered_tari_seed(&[]));
     }
 
     #[tokio::test]

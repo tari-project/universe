@@ -2419,8 +2419,8 @@ pub struct SeedCandidate<T> {
 
 /// Does this seed re-serialize to exactly the bytes it was decoded from?
 ///
-/// The only proof available that a blob really is a *plain*, un-enciphered `CipherSeed`. A
-/// serialized seed is 24 bytes and a PIN-enciphered one 60, so an enciphered blob can never
+/// The only proof available that a blob really is a *plain*, un-enciphered `CipherSeed`. The two
+/// encodings have different lengths and different layouts, so an enciphered blob can never
 /// re-serialize to itself.
 fn plain_tari_seed_round_trips(seed: &CipherSeed, blob: &[u8]) -> bool {
     seed.to_binary()
