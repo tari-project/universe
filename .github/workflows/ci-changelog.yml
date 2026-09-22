@@ -65,3 +65,47 @@ jobs:
             --header "Content-Type: application/json" \
             --header "Authorization: Bearer ${{ env.CF_AUTHORIZATION_BEARER }}" \
             --data "{\"files\": [\"https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/CHANGELOG.md\"] }"
+
+      # Tari Universe reads its release notes from the CDN copy, not from this repo
+      # (see CHANGELOG_URL in src-tauri/src/release_notes.rs). Both steps above are
+      # continue-on-error and the purge one exits 0 even when Cloudflare answers
+      # `"success": false`, so neither can be trusted to report a broken sync. This
+      # checks the only thing that actually matters: what the CDN is serving.
+      - name: Verify the CDN is serving this CHANGELOG
+        continue-on-error: true
+        if: ${{ env.BASE_TLD != '' && runner.name != 'self-hosted' }}
+        env:
+          BASE_TLD: ${{ secrets.BASE_TLD }}
+          BASE_URL: ${{ secrets.BASE_URL }}
+        run: |
+          url="https://${BASE_TLD}/${BASE_URL}/CHANGELOG.md"
+
+          # A purge is not instant, so a single miss is not yet news.
+          for attempt in 1 2 3; do
+            curl -fsSL "${url}" -o cdn-changelog.md || : > cdn-changelog.md
+            cmp -s CHANGELOG.md cdn-changelog.md && break
+            [ "${attempt}" = 3 ] || sleep 10
+          done
+
+          if cmp -s CHANGELOG.md cdn-changelog.md; then
+            echo "The CDN is serving this commit's CHANGELOG.md." >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+
+          {
+            echo "## :rotating_light: The changelog sync did not land"
+            echo
+            echo "\`${url}\` is not serving this commit's \`CHANGELOG.md\`."
+            echo
+            echo "Tari Universe reads its in-app release notes from that URL, so users"
+            echo "are being shown a stale changelog until this is fixed. Check the"
+            echo "\`AWS_*\` (R2) and \`CF_AUTHORIZATION_BEARER\` secrets first: both"
+            echo "failed silently for months when they went stale."
+            echo
+            echo "| | First line |"
+            echo "|---|---|"
+            echo "| This commit | $(head -1 CHANGELOG.md) |"
+            echo "| CDN | $(head -1 cdn-changelog.md 2>/dev/null || echo '_unreachable_') |"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          echo "::error title=Changelog sync did not land::${url} is not serving the current CHANGELOG.md, so in-app release notes are stale. See the job summary."
