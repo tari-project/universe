@@ -18,3 +18,12 @@ export interface FoundWallet {
 }
 
 export type FindWalletsResult = { kind: 'found'; wallets: FoundWallet[] } | { kind: 'unsupported'; platform: string };
+
+/**
+ * A translation key and its interpolation values. Backend errors are `anyhow` chains that can carry
+ * keyring entry names and platform text, so only this reaches the screen.
+ */
+export interface WalletRecoveryErrorMessage {
+    key: string;
+    seconds?: number;
+}

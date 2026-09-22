@@ -26,14 +26,30 @@ export const WalletList = styled.div`
     overflow-y: auto;
 `;
 
+export const WalletEntry = styled.div`
+    flex-direction: column;
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background-color: ${({ theme }) => theme.palette.background.main};
+`;
+
 export const WalletRow = styled.div`
     align-items: center;
     justify-content: space-between;
     display: flex;
     gap: 12px;
-    padding: 10px 12px;
-    border-radius: 8px;
-    background-color: ${({ theme }) => theme.palette.background.main};
+`;
+
+export const ConfirmPanel = styled.div`
+    flex-direction: column;
+    display: flex;
+    gap: 8px;
+
+    p {
+        color: ${({ theme }) => theme.palette.text.accent};
+    }
 `;
 
 export const WalletLabel = styled.div`

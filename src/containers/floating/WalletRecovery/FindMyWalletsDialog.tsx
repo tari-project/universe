@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { CircularProgress } from '@app/components/elements/CircularProgress';
@@ -9,7 +9,16 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { useFindMyWallets } from '@app/hooks/wallet/useFindMyWallets.ts';
 import { FoundWallet } from '@app/types/wallet-recovery.ts';
 
-import { AddressPrefix, TextWrapper, WalletLabel, WalletList, WalletRow, Wrapper } from './styles.ts';
+import {
+    AddressPrefix,
+    ConfirmPanel,
+    TextWrapper,
+    WalletEntry,
+    WalletLabel,
+    WalletList,
+    WalletRow,
+    Wrapper,
+} from './styles.ts';
 
 interface FindMyWalletsDialogProps {
     open: boolean;
@@ -24,6 +33,9 @@ interface FindMyWalletsDialogProps {
 const FindMyWalletsDialog = memo(function FindMyWalletsDialog({ open, onOpenChange }: FindMyWalletsDialogProps) {
     const { t } = useTranslation('common', { useSuspense: false });
     const { result, isSearching, relinkingId, error, search, relink } = useFindMyWallets();
+    // Switching wallets wipes the local scan database, so the row asks first rather than acting on
+    // one click. Confirming in place keeps this from stacking a third floating dialog.
+    const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
     const statusLabel = (wallet: FoundWallet) => {
         if (wallet.is_active) return t('find-my-wallets-status-active');
@@ -36,6 +48,16 @@ const FindMyWalletsDialog = memo(function FindMyWalletsDialog({ open, onOpenChan
             default:
                 return t('find-my-wallets-status-unreadable');
         }
+    };
+
+    const handleSearch = () => {
+        setConfirmingId(null);
+        void search();
+    };
+
+    const handleConfirm = (walletId: string) => {
+        setConfirmingId(null);
+        void relink(walletId);
     };
 
     return (
@@ -64,36 +86,74 @@ const FindMyWalletsDialog = memo(function FindMyWalletsDialog({ open, onOpenChan
                     {!isSearching && result?.kind === 'found' && result.wallets.length > 0 ? (
                         <WalletList>
                             {result.wallets.map((wallet) => (
-                                <WalletRow key={wallet.wallet_id}>
-                                    <WalletLabel>
-                                        <AddressPrefix>
-                                            {wallet.address_prefix
-                                                ? `${wallet.address_prefix}...`
-                                                : t('find-my-wallets-unknown-address')}
-                                        </AddressPrefix>
-                                        <Typography variant="p">{statusLabel(wallet)}</Typography>
-                                    </WalletLabel>
-                                    <Button
-                                        size="smaller"
-                                        variant="black"
-                                        disabled={
-                                            wallet.is_active || wallet.status !== 'readable' || relinkingId !== null
-                                        }
-                                        onClick={() => relink(wallet.wallet_id)}
-                                    >
-                                        {relinkingId === wallet.wallet_id
-                                            ? t('find-my-wallets-using')
-                                            : t('find-my-wallets-use')}
-                                    </Button>
-                                </WalletRow>
+                                <WalletEntry key={wallet.wallet_id}>
+                                    <WalletRow>
+                                        <WalletLabel>
+                                            <AddressPrefix>
+                                                {wallet.address_prefix
+                                                    ? `${wallet.address_prefix}...`
+                                                    : t('find-my-wallets-unknown-address')}
+                                            </AddressPrefix>
+                                            <Typography variant="p">{statusLabel(wallet)}</Typography>
+                                        </WalletLabel>
+                                        {confirmingId === wallet.wallet_id ? (
+                                            <Stack direction="row" gap={8}>
+                                                <Button
+                                                    size="smaller"
+                                                    backgroundColor="warning"
+                                                    onClick={() => handleConfirm(wallet.wallet_id)}
+                                                >
+                                                    {t('find-my-wallets-confirm')}
+                                                </Button>
+                                                <Button
+                                                    size="smaller"
+                                                    variant="black"
+                                                    onClick={() => setConfirmingId(null)}
+                                                >
+                                                    {t('cancel')}
+                                                </Button>
+                                            </Stack>
+                                        ) : (
+                                            <Button
+                                                size="smaller"
+                                                variant="black"
+                                                disabled={
+                                                    wallet.is_active ||
+                                                    wallet.status !== 'readable' ||
+                                                    relinkingId !== null
+                                                }
+                                                onClick={() => setConfirmingId(wallet.wallet_id)}
+                                            >
+                                                {relinkingId === wallet.wallet_id
+                                                    ? t('find-my-wallets-using')
+                                                    : t('find-my-wallets-use')}
+                                            </Button>
+                                        )}
+                                    </WalletRow>
+                                    {confirmingId === wallet.wallet_id ? (
+                                        <ConfirmPanel>
+                                            <Typography variant="p">
+                                                {t('find-my-wallets-confirm-description', {
+                                                    prefix:
+                                                        wallet.address_prefix ?? t('find-my-wallets-unknown-address'),
+                                                })}
+                                            </Typography>
+                                        </ConfirmPanel>
+                                    ) : null}
+                                </WalletEntry>
                             ))}
                         </WalletList>
                     ) : null}
 
-                    {error ? <Typography variant="p">{error}</Typography> : null}
+                    {error ? <Typography variant="p">{t(error.key, { seconds: error.seconds })}</Typography> : null}
 
                     <Stack direction="row" gap={8} justifyContent="space-between" style={{ width: '100%' }}>
-                        <Button size="smaller" backgroundColor="info" disabled={isSearching} onClick={search}>
+                        <Button
+                            size="smaller"
+                            backgroundColor="info"
+                            disabled={isSearching || relinkingId !== null}
+                            onClick={handleSearch}
+                        >
                             {result ? t('find-my-wallets-search-again') : t('find-my-wallets-search')}
                         </Button>
                         <Button size="smaller" variant="black" onClick={() => onOpenChange(false)}>
