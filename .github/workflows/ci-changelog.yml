@@ -55,16 +55,22 @@ jobs:
         continue-on-error: true
         if: ${{ env.CF_AUTHORIZATION_BEARER != '' && runner.name != 'self-hosted' }}
         env:
-          BASE_TLD: ${{ secrets.BASE_TLD }}
-          BASE_URL: ${{ secrets.BASE_URL }}
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
           CF_AUTHORIZATION_BEARER: ${{ secrets.CF_AUTHORIZATION_BEARER }}
         run: |
-          curl --request POST \
-            --url https://api.cloudflare.com/client/v4/zones/${{ env.CF_ZONE_ID }}/purge_cache \
+          # BASE_URL is the bucket path for the upload above, which is not the public
+          # URL. Purging a URL built from it purges nothing. Use the URL the app reads.
+          url=$(grep -oP '(?<=^const CHANGELOG_URL: &str = ")[^"]+' src-tauri/src/release_notes.rs)
+          curl --silent --show-error --request POST \
+            --url "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
             --header "Content-Type: application/json" \
-            --header "Authorization: Bearer ${{ env.CF_AUTHORIZATION_BEARER }}" \
-            --data "{\"files\": [\"https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/CHANGELOG.md\"] }"
+            --header "Authorization: Bearer ${CF_AUTHORIZATION_BEARER}" \
+            --data "{\"files\": [\"${url}\"] }" \
+            --output purge.json
+          # curl exits 0 on an HTTP-level refusal, so check the body Cloudflare sent.
+          if ! grep -q '"success":true' purge.json; then
+            echo "::error title=Cache purge refused::Cloudflare rejected the purge: $(head -c 300 purge.json)"
+          fi
 
       # Tari Universe reads its release notes from the CDN copy, not from this repo
       # (see CHANGELOG_URL in src-tauri/src/release_notes.rs). Both steps above are
