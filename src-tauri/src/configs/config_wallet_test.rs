@@ -166,7 +166,9 @@ fn damaged_fixture(kind: &str) -> Vec<u8> {
 }
 
 fn valid_config_bytes() -> Vec<u8> {
-    serde_json::to_vec_pretty(&sentinel_config_content()).expect("content should serialize")
+    let mut content = sentinel_config_content();
+    content.set_tari_wallets(vec![WalletId::new("wallet_sentinel_id".to_string())]);
+    serde_json::to_vec_pretty(&content).expect("content should serialize")
 }
 
 #[test_case::test_case("invalid")]
@@ -178,7 +180,8 @@ fn an_unreadable_wallet_config_falls_back_to_defaults(kind: &str) {
     let path = directory.path().join("config_wallet.json");
     fs::write(&path, damaged_fixture(kind)).expect("fixture written");
 
-    let content = ConfigWallet::load_or_recover(&path);
+    let content =
+        ConfigWallet::load_or_recover(&path).expect("a damaged config is not a fresh install");
 
     assert!(content.tari_wallet_details().is_none(), "{kind} was parsed");
     assert!(
@@ -209,7 +212,7 @@ fn a_corrupt_wallet_config_is_recovered_from_the_backup() {
     fs::write(&backup_path, &valid).expect("backup written");
     fs::write(&path, damaged_fixture("nul filled")).expect("fixture written");
 
-    let content = ConfigWallet::load_or_recover(&path);
+    let content = ConfigWallet::load_or_recover(&path).expect("the backup should have been used");
 
     assert_eq!(
         content
@@ -224,4 +227,41 @@ fn a_corrupt_wallet_config_is_recovered_from_the_backup() {
         valid,
         "the backup must survive a corrupt primary"
     );
+}
+
+#[test]
+fn a_missing_wallet_config_is_restored_from_the_backup() {
+    let directory = tempfile::tempdir().expect("temp dir");
+    let path = directory.path().join("config_wallet.json");
+    let valid = valid_config_bytes();
+    fs::write(directory.path().join("config_wallet.json.backup"), &valid).expect("backup written");
+
+    let content = ConfigWallet::load_or_recover(&path).expect("the backup names a wallet");
+
+    assert!(
+        !content.tari_wallets().is_empty(),
+        "the wallet list is lost"
+    );
+    assert_eq!(
+        fs::read(&path).expect("primary readable"),
+        valid,
+        "the backup must be restored as the primary"
+    );
+}
+
+#[test]
+fn a_backup_that_names_no_wallet_is_not_a_recovery() {
+    let directory = tempfile::tempdir().expect("temp dir");
+    let path = directory.path().join("config_wallet.json");
+    fs::write(
+        directory.path().join("config_wallet.json.backup"),
+        serde_json::to_vec_pretty(&ConfigWalletContent::default()).expect("serialize default"),
+    )
+    .expect("backup written");
+    fs::write(&path, damaged_fixture("invalid")).expect("fixture written");
+
+    let content = ConfigWallet::load_or_recover(&path).expect("a damaged config is not fresh");
+
+    assert!(content.tari_wallets().is_empty());
+    assert!(!path.exists(), "the damaged primary must be moved aside");
 }

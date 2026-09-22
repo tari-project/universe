@@ -712,17 +712,8 @@ impl InternalWallet {
         let monero_address = wallet_config.monero_address().clone();
         // An inconsistent wallet config is reported, not fatal: the error reaches the critical
         // problem dialog instead of killing every launch.
-        if monero_address.is_empty() {
-            return Err(anyhow!(
-                "Monero address should be accessible for v{:?}",
-                *wallet_config.version_counter()
-            ));
-        }
-        if (*wallet_config.tari_wallets()).is_empty() {
-            return Err(anyhow!(
-                "Tari wallets field should be defined in the config for v{:?}",
-                *wallet_config.version_counter()
-            ));
+        if monero_address.is_empty() || (*wallet_config.tari_wallets()).is_empty() {
+            return Err(anyhow!("{WALLET_CONFIG_INCOMPLETE}"));
         }
 
         let (encrypted_tari_seed, tari_wallet_details) = {
@@ -1290,8 +1281,7 @@ pub async fn get_old_wallet_config(
     Ok(Some(old_config))
 }
 
-const MONERO_SEED_ALREADY_EXISTS: &str =
-    "Refusing to create a new wallet: the keyring still holds a Monero seed from a previous wallet";
+const MONERO_SEED_ALREADY_EXISTS: &str = "Your wallet settings file (config_wallet.json) and its backup are missing, but this device still holds the keys of a previous wallet, so nothing has been changed and those keys are not lost. To recover, restore config_wallet.json from a backup or contact support.";
 
 /// True when the keyring already holds a Monero seed. A keyring error is not proof of one:
 /// generating a seed would fail on the same keyring anyway.
@@ -1301,6 +1291,9 @@ async fn monero_credential_exists() -> bool {
         .await
         .is_ok()
 }
+
+/// Shown when the loaded config is missing a field the wallet cannot start without.
+const WALLET_CONFIG_INCOMPLETE: &str = "Your wallet settings file (config_wallet.json) is incomplete. Nothing has been changed. Restore it from its backup (config_wallet.json.backup) or contact support.";
 
 /// Constant Sentry message; the evidence kind travels as a tag.
 const PREVIOUS_WALLET_EVIDENT: &str =
@@ -1323,17 +1316,16 @@ fn refuse_if_previous_wallet_evident(app_config_dir: &Path) -> Result<(), anyhow
         |scope| scope.set_tag("previous_wallet_evidence", evidence),
         || sentry::capture_message(PREVIOUS_WALLET_EVIDENT, sentry::Level::Error),
     );
-    // The dialog shows this text, so it names what happened rather than the tag.
-    Err(anyhow!(
-        "Refusing to create a new wallet: {}",
-        match evidence {
-            "wallet_config_unreadable" =>
-                "the wallet config could not be read and was moved aside as \
-                 config_wallet.json.corrupt.<ts>; a backup may still be recoverable by hand",
-            "legacy_wallet_config" => "a wallet config from an earlier version is still here",
-            _ => "the wallet config backup names a previous wallet",
-        }
-    ))
+    // The dialog shows this text, so it says what happened, that nothing changed, and how
+    // to recover. The Sentry message and tag above stay constant.
+    Err(anyhow!(match evidence {
+        "wallet_config_unreadable" =>
+            "Your wallet settings file (config_wallet.json) could not be read and no usable backup was found. The damaged file was moved to config_wallet.json.corrupt.<ts> in the Tari Universe config folder. Your wallet keys are still stored securely on this device and nothing has been changed. To recover, restore config_wallet.json from a backup or contact support with the moved file.",
+        "legacy_wallet_config" =>
+            "A wallet from an earlier version of Tari Universe was found on this device but could not be loaded. Nothing has been changed. Contact support to recover it.",
+        _ =>
+            "Your wallet settings file (config_wallet.json) is missing and its backup (config_wallet.json.backup) could not be read. Your wallet keys are still stored securely on this device and nothing has been changed. To recover, restore config_wallet.json from a backup or contact support.",
+    }))
 }
 
 /// Evidence that this machine already held a Tari wallet, as an enum-like tag. Only files that

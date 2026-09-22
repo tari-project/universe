@@ -20,7 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{env::temp_dir, fs, io::Write, path::PathBuf};
+use std::{
+    env::temp_dir,
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Error;
 use dirs::config_dir;
@@ -51,6 +56,19 @@ pub fn build_config_update_field_event(config_name: &str, field: &str) -> serde_
         "config": config_name,
         "field": field,
     })
+}
+
+/// Writes a temporary file next to `path`, flushes it and renames over `path`. A
+/// truncate-in-place write leaves an empty or NUL-filled file behind when the machine
+/// dies mid-write, and a config the app cannot parse stops it from starting at all.
+pub(crate) fn atomic_write(path: &Path, contents: &[u8]) -> Result<(), Error> {
+    let temp_path = path.with_extension("json.tmp");
+    let mut temp_file = fs::File::create(&temp_path)?;
+    temp_file.write_all(contents)?;
+    temp_file.sync_all()?;
+    drop(temp_file);
+    fs::rename(&temp_path, path)?;
+    Ok(())
 }
 
 #[allow(dead_code)]
@@ -117,16 +135,7 @@ pub trait ConfigImpl {
             fs::create_dir_all(parent)?;
         }
         let config_content_serialized = serde_json::to_string_pretty(&config_content)?;
-        // Write and flush a temporary file next to the config, then rename over it.
-        // A truncate-in-place write leaves an empty or NUL-filled config behind when
-        // the machine dies mid-write, and the app then cannot start at all.
-        let temp_path = config_path.with_extension("json.tmp");
-        let mut temp_file = fs::File::create(&temp_path)?;
-        temp_file.write_all(config_content_serialized.as_bytes())?;
-        temp_file.sync_all()?;
-        drop(temp_file);
-        fs::rename(&temp_path, &config_path)?;
-        Ok(())
+        atomic_write(&config_path, config_content_serialized.as_bytes())
     }
     fn _load_config() -> Result<Self::Config, Error> {
         let config_path = Self::_get_config_path();

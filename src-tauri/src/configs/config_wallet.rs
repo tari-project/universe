@@ -42,7 +42,7 @@ use crate::{
     pin::PinLockerState,
 };
 
-use super::trait_config::{ConfigContentImpl, ConfigImpl};
+use super::trait_config::{ConfigContentImpl, ConfigImpl, atomic_write};
 
 static EXCHANGES_RECORD_NAME_FOR_EXTERNAL_ADDRESS_BOOK: &str = "Exchanges";
 
@@ -221,8 +221,14 @@ impl ConfigWallet {
     /// Loads the wallet config without ever panicking: a panic in the `LazyLock`
     /// initializer poisons it, and then every later config access panics too.
     /// Falls back to the backup, then to defaults, and never deletes a file.
-    pub(super) fn load_or_recover(config_path: &Path) -> ConfigWalletContent {
-        let backup_path = format!("{}.backup", config_path.display());
+    /// `None` only when there is nothing to load, so the caller creates a fresh config.
+    pub(super) fn load_or_recover(config_path: &Path) -> Option<ConfigWalletContent> {
+        let backup_path = config_path.with_extension("json.backup");
+        if !config_path.exists() {
+            // A deleted config whose backup still names a wallet is a recovery,
+            // not a fresh install.
+            return Self::recover_from_backup(config_path, &backup_path);
+        }
         let raw = fs::read_to_string(config_path).unwrap_or_else(|error| {
             log::error!(target: LOG_TARGET_APP_LOGIC, "[config_wallet] config file is unreadable: {:?}", error.kind());
             String::new()
@@ -236,19 +242,13 @@ impl ConfigWallet {
                     log::warn!(target: LOG_TARGET_APP_LOGIC, "[config_wallet] could not write the backup: {:?}", error.kind());
                 });
                 log::info!(target: LOG_TARGET_APP_LOGIC, "[config_wallet] [load_config] loaded config content");
-                config_content
+                Some(config_content)
             }
             Err(error) => {
                 // Only the error kind is logged: the file holds the wallet view private key.
                 log::error!(target: LOG_TARGET_APP_LOGIC, "[config_wallet] config content could not be parsed ({:?}), trying the backup", error.classify());
-                if let Some(config_content) =
-                    fs::read_to_string(&backup_path).ok().and_then(|backup| {
-                        serde_json::from_str::<ConfigWalletContent>(&migrate_address_field(&backup))
-                            .ok()
-                    })
-                {
-                    log::warn!(target: LOG_TARGET_APP_LOGIC, "[config_wallet] recovered config content from the backup");
-                    return config_content;
+                if let Some(config_content) = Self::recover_from_backup(config_path, &backup_path) {
+                    return Some(config_content);
                 }
                 // Move the unreadable file aside, keeping the backup: the wallet id it
                 // held may still be recoverable by hand.
@@ -262,10 +262,27 @@ impl ConfigWallet {
                 .inspect_err(|error| {
                     log::warn!(target: LOG_TARGET_APP_LOGIC, "[config_wallet] could not move the unreadable config aside: {:?}", error.kind());
                 });
-                log::error!(target: LOG_TARGET_APP_LOGIC, "[config_wallet] no readable config or backup, continuing with defaults");
-                ConfigWalletContent::default()
+                log::error!(target: LOG_TARGET_APP_LOGIC, "[config_wallet] no usable config or backup, continuing with defaults");
+                Some(ConfigWalletContent::default())
             }
         }
+    }
+
+    /// The backup, when it parses and names a wallet, restored over the primary so the
+    /// next launch reads it directly. A backup that names no wallet is not a recovery:
+    /// it would look like a working config and hide that the real one was lost.
+    fn recover_from_backup(config_path: &Path, backup_path: &Path) -> Option<ConfigWalletContent> {
+        let raw = fs::read_to_string(backup_path).ok()?;
+        let config_content =
+            serde_json::from_str::<ConfigWalletContent>(&migrate_address_field(&raw)).ok()?;
+        if config_content.tari_wallets().is_empty() {
+            return None;
+        }
+        let _unused = atomic_write(config_path, raw.as_bytes()).inspect_err(|_| {
+            log::warn!(target: LOG_TARGET_APP_LOGIC, "[config_wallet] could not restore the config from the backup");
+        });
+        log::warn!(target: LOG_TARGET_APP_LOGIC, "[config_wallet] recovered config content from the backup");
+        Some(config_content)
     }
 
     pub async fn initialize(app_handle: AppHandle) {
@@ -322,17 +339,17 @@ impl ConfigImpl for ConfigWallet {
     }
 
     fn _load_or_create() -> Self::Config {
-        let config_path = <Self as ConfigImpl>::_get_config_path();
-        if config_path.exists() {
-            Self::load_or_recover(&config_path)
-        } else {
-            log::debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [load_config] creating a new config content (file not found)", Self::_get_name());
-            let config_content = Self::Config::default();
-            let _unused = Self::_save_config(config_content.clone()).inspect_err(|error| {
-                log::warn!(target: LOG_TARGET_APP_LOGIC, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
-            });
-            config_content
+        if let Some(config_content) =
+            Self::load_or_recover(&<Self as ConfigImpl>::_get_config_path())
+        {
+            return config_content;
         }
+        log::debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [load_config] creating a new config content (file not found)", Self::_get_name());
+        let config_content = Self::Config::default();
+        let _unused = Self::_save_config(config_content.clone()).inspect_err(|error| {
+            log::warn!(target: LOG_TARGET_APP_LOGIC, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
+        });
+        config_content
     }
 
     async fn _get_app_handle(&self) -> Option<AppHandle> {
