@@ -281,3 +281,33 @@ fn wipe_and_remove_file_unlinks_symlink_without_touching_target() {
 
     std::fs::remove_file(&target).expect("clean up target");
 }
+
+// --- Legacy credential purge gate ---
+
+/// The address a wallet that silently replaced the legacy one would record. The gate compares the
+/// recorded strings, so this never has to decode.
+const OTHER_TARI_ADDRESS: &str = "a_different_wallet_address";
+
+#[test]
+fn legacy_config_is_kept_when_the_wallet_in_use_is_a_different_wallet() {
+    let details = sentinel_wallet_details();
+
+    assert_eq!(
+        super::internal_wallet::legacy_config_keep_reason(
+            OTHER_TARI_ADDRESS,
+            Some(&details.id),
+            Some(&details),
+        ),
+        Some("address_mismatch"),
+        "a legacy file describing another wallet is the only copy of that wallet's seed"
+    );
+    assert_eq!(
+        super::internal_wallet::legacy_config_keep_reason(
+            TEST_TARI_ADDRESS,
+            Some(&details.id),
+            Some(&details),
+        ),
+        None,
+        "the legacy wallet is the wallet in use, so its file may be removed"
+    );
+}
