@@ -1,3 +1,13 @@
+🚀 TARI UNIVERSE v1.6.14: Hotfix – The Confluence Part 3
+
+_September 22, 2026_
+
+🔄 Rolling out via auto-update
+
+The hard fork already happened, back in v1.6.13, so if you updated before it landed you sailed straight through. If you didn't, your node is holding a copy of the chain the new rules don't agree with, and this release migrates that database for you: expect a "Migrating Database" step on first launch with a block counter ticking up, and on a node with the full chain it is not a fast one. Your wallet, your balance and your rewards aren't touched by any of it, this is only the node's copy of the chain. 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.6.13: Hotfix – The Confluence Part 2
 
 🔄 Rolling out via auto-update
