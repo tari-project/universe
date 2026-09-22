@@ -495,14 +495,47 @@ impl InternalWallet {
     pub async fn recover_forgotten_pin(
         app_handle: &AppHandle,
         tari_seed: CipherSeed,
+        monero_seed: Option<MoneroSeed>,
     ) -> Result<(), anyhow::Error> {
         let pin_password = PinManager::create_pin(app_handle).await?;
 
-        if *ConfigWallet::content().await.monero_address_is_generated() {
-            // The Monero credential is the only copy of that seed and it stays enciphered with the
-            // forgotten PIN. Generating a replacement here would destroy it.
-            log::warn!(target: LOG_TARGET_APP_LOGIC, "Monero seed left untouched by PIN recovery, it still needs the previous PIN");
-        }
+        let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
+        {
+            // The old Monero blob is enciphered with the forgotten PIN, so it is replaced here:
+            // either with the seed the caller proved derives the recorded address, or, when the
+            // user asked for that, with a new Monero wallet.
+            let (monero_seed, new_monero_address) = match monero_seed {
+                Some(monero_seed) => (monero_seed, None),
+                None => {
+                    let monero_seed = MoneroSeed::generate()?;
+                    let monero_address = monero_seed
+                        .to_address::<Mainnet>()
+                        .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string());
+                    (monero_seed, Some(monero_address))
+                }
+            };
+            let encrypted_monero_seed = cryptography::encrypt(monero_seed.inner(), &pin_password)?;
+            InternalWallet::set_credentials(
+                app_handle,
+                WalletId::new("monero".to_string()),
+                &Credential {
+                    encrypted_seed: encrypted_monero_seed.clone(),
+                },
+                false,
+            )
+            .await?;
+            if let Some(monero_address) = new_monero_address {
+                log::info!(target: LOG_TARGET_APP_LOGIC, "New Monero wallet created during PIN recovery");
+                ConfigWallet::update_field(
+                    ConfigWalletContent::set_generated_monero_address,
+                    monero_address,
+                )
+                .await?;
+            }
+            Some(encrypted_monero_seed)
+        } else {
+            None // External Monero address, no seed to recover
+        };
         let encrypted_tari_seed = {
             // Encrypt Tari Seed with PIN
             let wallet_id = InternalWallet::tari_wallet_details()
@@ -525,6 +558,7 @@ impl InternalWallet {
 
         if InternalWallet::is_initialized() {
             let mut internal_wallet_guard = InternalWallet::current().write().await;
+            internal_wallet_guard.encrypted_monero_seed = Hidden::hide(encrypted_monero_seed);
             internal_wallet_guard.encrypted_tari_seed =
                 Hidden::hide(Some(encrypted_tari_seed.clone()));
         }
