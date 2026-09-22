@@ -846,6 +846,29 @@ impl InternalWallet {
         .await
     }
 
+    /// The id to store `monero_seed` under: the id that already holds exactly these bytes if
+    /// there is one, otherwise the first free id in the sequence.
+    async fn allocate_monero_wallet_id_for_seed(
+        monero_seed: &[u8],
+    ) -> Result<WalletId, anyhow::Error> {
+        let start = InternalWallet::monero_wallet_id().await;
+        allocate_monero_wallet_id_for_seed_with(start, |candidate| async move {
+            match CredentialManager::new_default(candidate)
+                .get_credentials()
+                .await
+            {
+                Ok(credential) if credential.encrypted_seed == monero_seed => {
+                    MoneroIdState::HoldsThisSeed
+                }
+                Ok(_) => MoneroIdState::Taken,
+                Err(CredentialError::NoEntry(_)) => MoneroIdState::Free,
+                // "The store would not tell us" is not proof that an id is free.
+                Err(_) => MoneroIdState::Taken,
+            }
+        })
+        .await
+    }
+
     /// Set a new PIN for a user who lost the old one, proven by their Tari seed words.
     ///
     /// Write order is the same as `create_pin` and for the same reason: the seed blobs first,
@@ -1424,11 +1447,12 @@ impl InternalWallet {
 
     /// Stores the Monero seed carried by a legacy wallet under a credential id that is free.
     ///
-    /// The unversioned `monero` id may already hold a different seed - from an earlier migration
-    /// attempt, or from a wallet created before the legacy files were found - and an overwrite
-    /// there is unrecoverable. Ids come from the same sequence `add_monero_wallet` uses, which
-    /// skips any id that is occupied or whose readability cannot be determined; on a clean
-    /// machine that still yields exactly `monero`.
+    /// The unversioned `monero` id may already hold a different seed - from a wallet created
+    /// before the legacy files were found - and an overwrite there is unrecoverable. Ids come
+    /// from the same sequence `add_monero_wallet` uses, skipping any id that is occupied or whose
+    /// readability cannot be determined; on a clean machine that still yields exactly `monero`.
+    /// An id that already holds this exact seed is reused, so a migration that fails after this
+    /// point and runs again does not consume a new id each time.
     ///
     /// The config is pointed at the id together with the address it derives, so the two can never
     /// diverge. A Monero address the user chose themselves is never replaced.
@@ -1436,7 +1460,8 @@ impl InternalWallet {
         app_handle: &AppHandle,
         monero_seed: &[u8],
     ) -> Result<(), anyhow::Error> {
-        let monero_wallet_id = InternalWallet::allocate_monero_wallet_id().await?;
+        let monero_wallet_id =
+            InternalWallet::allocate_monero_wallet_id_for_seed(monero_seed).await?;
         log::info!(
             target: LOG_TARGET_APP_LOGIC,
             "[migrate] storing the legacy Monero seed: wallet_id={}",
@@ -2372,6 +2397,44 @@ where
     for _ in 0..MONERO_WALLET_ID_MAX_VERSIONS {
         if !is_occupied(candidate.clone()).await {
             return Ok(candidate);
+        }
+        candidate = next_monero_wallet_id(&candidate);
+    }
+    Err(anyhow!(
+        "Could not find a free Monero credential id after {MONERO_WALLET_ID_MAX_VERSIONS} attempts"
+    ))
+}
+
+/// What the credential store says about one Monero id, for the allocation that has a seed in hand.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MoneroIdState {
+    /// Nothing is stored under this id.
+    Free,
+    /// Exactly the seed being stored is already here.
+    HoldsThisSeed,
+    /// A different seed is here, or the store would not say which. Either way, not free.
+    Taken,
+}
+
+/// Walk the `monero`, `monero_2`, ... sequence from `start` and return the id that already holds
+/// this seed, or the first free one.
+///
+/// A migration that stored the seed and then failed before the wallet was added runs again on the
+/// next launch. Without the first rule every attempt burns another id, the config's
+/// `monero_wallet_id` walks up the sequence, and the thirty-third attempt fails outright.
+pub async fn allocate_monero_wallet_id_for_seed_with<F, Fut>(
+    start: WalletId,
+    inspect: F,
+) -> Result<WalletId, anyhow::Error>
+where
+    F: Fn(WalletId) -> Fut,
+    Fut: std::future::Future<Output = MoneroIdState>,
+{
+    let mut candidate = start;
+    for _ in 0..MONERO_WALLET_ID_MAX_VERSIONS {
+        match inspect(candidate.clone()).await {
+            MoneroIdState::Free | MoneroIdState::HoldsThisSeed => return Ok(candidate),
+            MoneroIdState::Taken => {}
         }
         candidate = next_monero_wallet_id(&candidate);
     }

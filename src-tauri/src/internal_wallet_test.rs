@@ -68,10 +68,11 @@
 //! - Or refactor to use dependency injection instead of static singleton
 
 use super::internal_wallet::{
-    ADDRESS_LOG_PREFIX_LEN, InternalWallet, SeedCandidate, TariAddressType, address_prefix,
-    allocate_monero_wallet_id_with, decode_plain_tari_seed, monero_seed_candidates,
-    monero_wallet_from_blob, next_monero_wallet_id, remembered_seed_probe_outcome,
-    seed_probe_outcome_from_tag, seed_word_rejection, tari_seed_candidates, wipe_and_remove_file,
+    ADDRESS_LOG_PREFIX_LEN, InternalWallet, MoneroIdState, SeedCandidate, TariAddressType,
+    address_prefix, allocate_monero_wallet_id_for_seed_with, allocate_monero_wallet_id_with,
+    decode_plain_tari_seed, monero_seed_candidates, monero_wallet_from_blob, next_monero_wallet_id,
+    remembered_seed_probe_outcome, seed_probe_outcome_from_tag, seed_word_rejection,
+    tari_seed_candidates, wipe_and_remove_file,
 };
 use std::collections::HashSet;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
@@ -1089,6 +1090,54 @@ fn a_stored_monero_seed_recovers_its_address_and_anything_else_recovers_nothing(
             blob.len()
         );
     }
+}
+
+/// A migration that stored the Monero seed and then failed runs again on the next launch. It has
+/// to land on the same id: otherwise every attempt burns another one, the config's
+/// `monero_wallet_id` walks up the sequence, and the thirty-third attempt fails outright.
+#[tokio::test]
+async fn a_repeated_migration_reuses_the_id_that_already_holds_its_seed() {
+    let already_stored = WalletId::new("monero_2".to_string());
+    let allocated =
+        allocate_monero_wallet_id_for_seed_with(WalletId::new("monero".to_string()), |candidate| {
+            let already_stored = already_stored.clone();
+            async move {
+                if candidate == already_stored {
+                    MoneroIdState::HoldsThisSeed
+                } else {
+                    MoneroIdState::Taken
+                }
+            }
+        })
+        .await
+        .expect("the id holding this seed is the answer");
+    assert_eq!(allocated.as_str(), "monero_2");
+}
+
+#[tokio::test]
+async fn a_seed_that_is_nowhere_yet_takes_the_first_free_id() {
+    let allocated =
+        allocate_monero_wallet_id_for_seed_with(WalletId::new("monero".to_string()), |candidate| {
+            std::future::ready(if candidate.as_str() == "monero" {
+                MoneroIdState::Taken
+            } else {
+                MoneroIdState::Free
+            })
+        })
+        .await
+        .expect("a free id exists");
+    assert_eq!(
+        allocated.as_str(),
+        "monero_2",
+        "an id holding a different seed is never written over"
+    );
+
+    let exhausted = allocate_monero_wallet_id_for_seed_with(
+        WalletId::new("monero".to_string()),
+        |_candidate| std::future::ready(MoneroIdState::Taken),
+    )
+    .await;
+    assert!(exhausted.is_err(), "a full sequence errors, never reuses");
 }
 
 // ** Self-healing PIN state **
