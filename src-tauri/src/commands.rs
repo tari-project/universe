@@ -640,7 +640,10 @@ pub async fn forgot_pin(
     .await
     .map_err(|e| e.to_string())?;
 
-    if extracted_wallet_details.tari_address != InternalWallet::tari_address().await {
+    let current_tari_address = InternalWallet::tari_address()
+        .await
+        .map_err(|e| e.to_string())?;
+    if extracted_wallet_details.tari_address != current_tari_address {
         error!(target: LOG_TARGET_APP_LOGIC, "Seed words do not match current wallet address");
         return Err("Seed words do not match".to_string());
     }

@@ -25,7 +25,7 @@ use monero_address_creator::Seed as MoneroSeed;
 use monero_address_creator::network::Mainnet;
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
-use std::io::{Read, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use tari_common::configuration::Network;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
@@ -135,8 +135,13 @@ pub struct InternalWallet {
 static INSTANCE: OnceCell<RwLock<InternalWallet>> = OnceCell::const_new();
 
 impl InternalWallet {
-    pub fn current() -> &'static RwLock<InternalWallet> {
-        INSTANCE.get().expect("InternalWallet is not initialized")
+    /// The global wallet, or an error when initialization has not run or failed. Callers reached
+    /// by telemetry, mining and the setup phases run regardless of wallet init, so this must not
+    /// panic.
+    pub fn current() -> Result<&'static RwLock<InternalWallet>, anyhow::Error> {
+        INSTANCE
+            .get()
+            .ok_or_else(|| anyhow!("InternalWallet is not initialized"))
     }
 
     pub fn is_initialized() -> bool {
@@ -146,7 +151,7 @@ impl InternalWallet {
     async fn set_current(new_internal_wallet: InternalWallet) -> Result<(), anyhow::Error> {
         if INSTANCE.get().is_some() {
             // INSTANCE has been initialized
-            let mut internal_wallet_guard = InternalWallet::current().write().await;
+            let mut internal_wallet_guard = InternalWallet::current()?.write().await;
             *internal_wallet_guard = new_internal_wallet;
         } else {
             INSTANCE
@@ -157,7 +162,10 @@ impl InternalWallet {
     }
 
     pub async fn is_internal() -> bool {
-        let internal_wallet_guard = InternalWallet::current().read().await;
+        let Ok(instance) = InternalWallet::current() else {
+            return false;
+        };
+        let internal_wallet_guard = instance.read().await;
         matches!(
             internal_wallet_guard.tari_address_type,
             TariAddressType::Internal
@@ -368,9 +376,9 @@ impl InternalWallet {
 
     // ** Getters
 
-    pub async fn tari_address() -> TariAddress {
-        let internal_wallet_guard = InternalWallet::current().read().await;
-        internal_wallet_guard.extract_tari_address().clone()
+    pub async fn tari_address() -> Result<TariAddress, anyhow::Error> {
+        let internal_wallet_guard = InternalWallet::current()?.read().await;
+        Ok(internal_wallet_guard.extract_tari_address().clone())
     }
     fn extract_tari_address(&self) -> &TariAddress {
         if let Some(ref external_tari_address) = self.external_tari_address {
@@ -386,7 +394,7 @@ impl InternalWallet {
     }
 
     pub async fn tari_wallet_details() -> Option<TariWalletDetails> {
-        let internal_wallet_guard = InternalWallet::current().read().await;
+        let internal_wallet_guard = InternalWallet::current().ok()?.read().await;
         internal_wallet_guard.tari_wallet_details.clone()
     }
     // **
@@ -450,7 +458,7 @@ impl InternalWallet {
 
         // Modify the instance directly due to circular usage in initialze_seed
         if INSTANCE.get().is_some() {
-            let mut internal_wallet_guard = InternalWallet::current().write().await;
+            let mut internal_wallet_guard = InternalWallet::current()?.write().await;
             internal_wallet_guard.external_tari_address = None;
             internal_wallet_guard.tari_wallet_details = Some(wallet_details.clone());
             internal_wallet_guard.encrypted_tari_seed = Hidden::hide(Some(encrypted_seed.clone()));
@@ -570,7 +578,7 @@ impl InternalWallet {
         PinManager::set_pin_locked().await?;
 
         if InternalWallet::is_initialized() {
-            let mut internal_wallet_guard = InternalWallet::current().write().await;
+            let mut internal_wallet_guard = InternalWallet::current()?.write().await;
             internal_wallet_guard.encrypted_monero_seed = Hidden::hide(encrypted_monero_seed);
             internal_wallet_guard.encrypted_tari_seed =
                 Hidden::hide(Some(encrypted_tari_seed.clone()));
@@ -629,7 +637,7 @@ impl InternalWallet {
                     ));
                 };
             if InternalWallet::is_initialized() {
-                let mut internal_wallet_guard = InternalWallet::current().write().await;
+                let mut internal_wallet_guard = InternalWallet::current()?.write().await;
                 internal_wallet_guard.encrypted_monero_seed =
                     Hidden::hide(Some(encrypted_monero_seed.clone()));
             }
@@ -655,7 +663,7 @@ impl InternalWallet {
         PinManager::set_pin_locked().await?;
 
         if InternalWallet::is_initialized() {
-            let mut internal_wallet_guard = InternalWallet::current().write().await;
+            let mut internal_wallet_guard = InternalWallet::current()?.write().await;
             internal_wallet_guard.encrypted_monero_seed = Hidden::hide(encrypted_monero_seed);
             internal_wallet_guard.encrypted_tari_seed =
                 Hidden::hide(Some(encrypted_tari_seed.clone()));
@@ -809,25 +817,24 @@ impl InternalWallet {
         app_config_dir: &Path,
         old_wallet_config: LegacyWalletConfig,
     ) -> Result<(WalletId, Vec<u8>, Option<Vec<u8>>), anyhow::Error> {
-        let legacy_cred: LegacyCredential = if *ConfigWallet::content().await.keyring_accessed() {
-            InternalWallet::get_legacy_credentials_forced(app_handle, app_config_dir).await?
-        } else {
-            let legacy_fallback_file = get_legacy_fallback_file(app_config_dir).await?;
-            if !legacy_fallback_file.exists() {
-                return Err(anyhow!(
-                    "Legacy fallback file not found even though keyring not accessed! Path: {:?}",
-                    legacy_fallback_file
-                ));
-            }
-            let mut file = OpenOptions::new().read(true).open(legacy_fallback_file)?;
-            let mut buffer = Vec::new();
-            file.read_to_end(&mut buffer)?;
-            let cred: LegacyCredential = serde_cbor::from_slice(&buffer)?;
-            cred
-        };
+        // `LegacyCredentialManager` already picks between the keyring and the fallback file, and
+        // a fresh config claiming the keyring was never accessed is not evidence that it holds
+        // nothing. The legacy config file carries a passphrase of its own, so a credential that
+        // cannot be read is not fatal here.
+        let legacy_cred: Option<LegacyCredential> =
+            match InternalWallet::get_legacy_credentials_forced(app_handle, app_config_dir).await {
+                Ok(cred) => Some(cred),
+                Err(e) => {
+                    log::warn!(target: LOG_TARGET_APP_LOGIC, "Legacy credential not readable, falling back to the legacy config file: {e}");
+                    None
+                }
+            };
 
         // Migrate Monero Seed if exists in the LegacyCredential
-        let monero_seed_binary = legacy_cred.monero_seed.map(|seed| seed.to_vec());
+        let monero_seed_binary = legacy_cred
+            .as_ref()
+            .and_then(|cred| cred.monero_seed)
+            .map(|seed| seed.to_vec());
         if let Some(ref monero_seed) = monero_seed_binary {
             let credentials = Credential {
                 encrypted_seed: monero_seed.clone(),
@@ -847,11 +854,16 @@ impl InternalWallet {
         let tari_seed_enciphered_bytes =
             Vec::<u8>::from_monero_base58(&old_wallet_config.seed_words_encrypted_base58)
                 .map_err(|e| anyhow!(e.to_string()))?;
-        let tari_seed = CipherSeed::from_enciphered_bytes(
+        // Try every passphrase still on this machine: the credential's, then the one pre-v0.8
+        // versions wrote into the legacy config file, then none at all.
+        let tari_seed = decrypt_legacy_tari_seed(
             &tari_seed_enciphered_bytes,
-            legacy_cred.tari_seed_passphrase,
-        )
-        .expect("Failed to decrypt legacy Tari seed");
+            [
+                legacy_cred.and_then(|cred| cred.tari_seed_passphrase),
+                old_wallet_config.passphrase,
+                None,
+            ],
+        )?;
         let (tari_wallet_details, tari_seed_binary) =
             InternalWallet::add_tari_wallet(app_handle, tari_seed, None).await?;
 
@@ -1025,7 +1037,7 @@ impl InternalWallet {
     ) -> Result<CipherSeed, anyhow::Error> {
         let encrypted_tari_seed = {
             let state_result = if InternalWallet::is_initialized() {
-                let internal_wallet = InternalWallet::current().read().await;
+                let internal_wallet = InternalWallet::current()?.read().await;
                 internal_wallet.encrypted_tari_seed.reveal().clone()
             } else {
                 None
@@ -1046,9 +1058,12 @@ impl InternalWallet {
                     match result {
                         Ok(cred) => {
                             // Update store if not yet set to store
-                            let mut internal_wallet_guard = InternalWallet::current().write().await;
-                            internal_wallet_guard.encrypted_tari_seed =
-                                Hidden::hide(Some(cred.encrypted_seed.clone()));
+                            if InternalWallet::is_initialized() {
+                                let mut internal_wallet_guard =
+                                    InternalWallet::current()?.write().await;
+                                internal_wallet_guard.encrypted_tari_seed =
+                                    Hidden::hide(Some(cred.encrypted_seed.clone()));
+                            }
                             cred.encrypted_seed
                         }
                         Err(e) => {
@@ -1066,15 +1081,40 @@ impl InternalWallet {
             }
         };
 
-        if let Some(pin_password) = pin_password {
-            CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, Some(pin_password))
-                .map_err(|_| anyhow!("Wrong PIN entered!"))
+        // `CipherSeed::from_binary` is unauthenticated: PIN-enciphered bytes decode into a
+        // structurally valid seed with different entropy, hence a different address. Decode the
+        // way the PIN state implies first, then the other way, and hand back only a seed that
+        // derives the recorded address.
+        let pin_provided = pin_password.is_some();
+        let primary = if pin_provided {
+            CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, pin_password).ok()
         } else {
-            // Seed not yet encrypted with PIN
-            CipherSeed::from_binary(&encrypted_tari_seed).map_err(|_| {
-                log::error!(target: LOG_TARGET_APP_LOGIC, "[get_tari_seed] Could not parse Tari Seed from binary.");
-                anyhow!("Could not parse Tari Seed from binary")
-            })
+            CipherSeed::from_binary(&encrypted_tari_seed).ok()
+        };
+        if let Some(seed) = primary
+            && seed_proves_recorded_address(&seed).await != Some(false)
+        {
+            return Ok(seed);
+        }
+
+        // The stored bytes can be in the other form than the PIN state says. That decode is only
+        // trusted when the recorded address proves it, so a wrong seed is never returned.
+        let secondary = if pin_provided {
+            CipherSeed::from_binary(&encrypted_tari_seed).ok()
+        } else {
+            CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, None).ok()
+        };
+        if let Some(seed) = secondary
+            && seed_proves_recorded_address(&seed).await == Some(true)
+        {
+            return Ok(seed);
+        }
+
+        log::error!(target: LOG_TARGET_APP_LOGIC, "[get_tari_seed] No Tari seed decode derives the recorded wallet address.");
+        if pin_provided {
+            Err(anyhow!("Wrong PIN entered!"))
+        } else {
+            Err(anyhow!("Could not parse Tari Seed from binary"))
         }
     }
 
@@ -1089,7 +1129,7 @@ impl InternalWallet {
         }
 
         let state_result = if InternalWallet::is_initialized() {
-            let internal_wallet = InternalWallet::current().read().await;
+            let internal_wallet = InternalWallet::current()?.read().await;
             internal_wallet.encrypted_monero_seed.reveal().clone()
         } else {
             None
@@ -1108,7 +1148,8 @@ impl InternalWallet {
                     Ok(cred) => {
                         // Update store if not yet set
                         if InternalWallet::is_initialized() {
-                            let mut internal_wallet_guard = InternalWallet::current().write().await;
+                            let mut internal_wallet_guard =
+                                InternalWallet::current()?.write().await;
                             internal_wallet_guard.encrypted_monero_seed =
                                 Hidden::hide(Some(cred.encrypted_seed.clone()));
                         }
@@ -1146,7 +1187,7 @@ impl InternalWallet {
         .await?;
 
         if INSTANCE.get().is_some() {
-            let mut internal_wallet_guard = InternalWallet::current().write().await;
+            let mut internal_wallet_guard = InternalWallet::current()?.write().await;
             internal_wallet_guard.monero_address = monero_address;
         }
 
@@ -1197,10 +1238,14 @@ async fn handle_critical_problem(
     extracted_wallet_details: Option<&TariWalletDetails>,
 ) {
     let state_wallet_details = InternalWallet::tari_wallet_details().await;
+    let tari_address_type = match InternalWallet::current() {
+        Ok(instance) => instance.read().await.tari_address_type.to_string(),
+        Err(_) => "uninitialized".to_string(),
+    };
     log::error!(
         target: LOG_TARGET_APP_LOGIC,
         "Unexpected {}! {} --- State: {:?} | Extracted from seed: {:?}",
-        InternalWallet::current().read().await.tari_address_type,
+        tari_address_type,
         title,
         state_wallet_details,
         extracted_wallet_details
@@ -1258,6 +1303,34 @@ where
     }
 }
 
+/// Open the legacy enciphered seed with the first passphrase that works. A failure is an error
+/// the user can act on: the panic this replaces fired before anything persisted, so the same
+/// state produced the same crash on every launch.
+pub(crate) fn decrypt_legacy_tari_seed(
+    enciphered_bytes: &[u8],
+    passphrases: impl IntoIterator<Item = Option<SafePassword>>,
+) -> Result<CipherSeed, anyhow::Error> {
+    passphrases
+        .into_iter()
+        .find_map(|passphrase| CipherSeed::from_enciphered_bytes(enciphered_bytes, passphrase).ok())
+        .ok_or_else(|| anyhow!("Failed to decrypt legacy Tari seed"))
+}
+
+/// Derive the address from a decoded seed and compare it with the one recorded in the wallet
+/// config. `None` when the config records no address, so there is nothing to prove against.
+async fn seed_proves_recorded_address(seed: &CipherSeed) -> Option<bool> {
+    let recorded = ConfigWallet::content()
+        .await
+        .tari_wallet_details()
+        .clone()?;
+    Some(
+        match InternalWallet::get_tari_wallet_details(recorded.id.clone(), seed.clone()).await {
+            Ok(derived) => derived.tari_address == recorded.tari_address,
+            Err(_) => false,
+        },
+    )
+}
+
 pub async fn mnemonic_to_tari_cipher_seed(
     seed_words: Vec<String>,
 ) -> Result<CipherSeed, anyhow::Error> {
@@ -1275,6 +1348,11 @@ pub struct LegacyWalletConfig {
     view_key_private_hex: String,
     spend_public_key_hex: String,
     seed_words_encrypted_base58: String,
+    /// Written by versions that could not reach the keyring, and dropped from this struct in
+    /// v1.2.24, which left those seeds undecryptable. `SafePassword` stores it as a byte
+    /// sequence, exactly the shape those versions wrote.
+    #[serde(default)]
+    passphrase: Option<SafePassword>,
     config_path: Option<PathBuf>,
 }
 /// Reads the pre-keyring wallet config. `Ok(None)` means the file is absent; a file that
@@ -1428,12 +1506,6 @@ pub(crate) fn legacy_config_keep_reason(
 pub(crate) const LEGACY_FALLBACK_FILE_NAME: &str = "credentials_backup.bin";
 /// Pre-migration wallet config holding the Tari seed enciphered with the passphrase above.
 pub(crate) const LEGACY_WALLET_CONFIG_FILE_NAME: &str = "wallet_config.json";
-
-async fn get_legacy_fallback_file(app_config_dir: &Path) -> Result<PathBuf, anyhow::Error> {
-    let network = Network::get_current().as_key_str();
-    let old_fallback_file = app_config_dir.join(network).join(LEGACY_FALLBACK_FILE_NAME);
-    Ok(old_fallback_file)
-}
 
 /// Best-effort zero-overwrite followed by unlink. Returns `Ok(false)` when the file was absent.
 /// The entry is inspected with `symlink_metadata`, so a symlink is unlinked without overwriting
