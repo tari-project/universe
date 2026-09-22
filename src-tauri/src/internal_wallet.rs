@@ -38,6 +38,7 @@ use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
 use tauri::{AppHandle, Manager};
+use tauri_plugin_sentry::sentry;
 use tokio::fs;
 use tokio::sync::{OnceCell, RwLock};
 
@@ -277,7 +278,7 @@ impl InternalWallet {
                     .app_config_dir()
                     .expect("Couldn't get application config directory!");
 
-                let old_wallet_config = get_old_wallet_config(&app_config_dir).await.ok();
+                let old_wallet_config = get_old_wallet_config(&app_config_dir).await?;
                 if let Some(old_wallet_config) = old_wallet_config {
                     // Migrate old wallet config
                     let (wallet_id, tari_seed_binary, monero_seed_binary) =
@@ -299,6 +300,7 @@ impl InternalWallet {
                         tari_wallet_details: Some(tari_wallet_details),
                     }
                 } else {
+                    refuse_if_previous_wallet_evident(&app_config_dir)?;
                     // Create new wallet
                     let tari_seed = CipherSeed::random();
                     let (tari_wallet_details, tari_seed_binary) =
@@ -463,6 +465,12 @@ impl InternalWallet {
     async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Adding new Monero Wallet");
         let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
+        // A generated seed must never overwrite the Monero credential already in the keyring.
+        if cm.get_credentials().await.is_ok() {
+            return Err(anyhow!(
+                "A Monero seed already exists in the keyring, refusing to generate a new one"
+            ));
+        }
         let monero_seed_binary = (*monero_seed.inner())
             .to_binary()
             .expect("Failed to convert monero seed to binary");
@@ -1266,14 +1274,78 @@ pub struct LegacyWalletConfig {
     seed_words_encrypted_base58: String,
     config_path: Option<PathBuf>,
 }
-pub async fn get_old_wallet_config(config_dir: &Path) -> Result<LegacyWalletConfig, anyhow::Error> {
+/// Reads the pre-keyring wallet config. `Ok(None)` means the file is absent; a file that
+/// cannot be read or parsed is an error, never a reason to create a new wallet.
+pub async fn get_old_wallet_config(
+    config_dir: &Path,
+) -> Result<Option<LegacyWalletConfig>, anyhow::Error> {
     let network = Network::get_current_or_user_setting_or_default()
         .to_string()
         .to_lowercase();
-    let old_config_file = config_dir.join(network).join("wallet_config.json");
+    let old_config_file = config_dir
+        .join(network)
+        .join(LEGACY_WALLET_CONFIG_FILE_NAME);
+    if !old_config_file.exists() {
+        return Ok(None);
+    }
     let old_config_str = fs::read_to_string(old_config_file).await?;
     let old_config: LegacyWalletConfig = serde_json::from_str(&old_config_str)?;
-    Ok(old_config)
+    Ok(Some(old_config))
+}
+
+/// Constant Sentry message; the evidence kind travels as a tag.
+const PREVIOUS_WALLET_EVIDENT: &str =
+    "Refusing to create a new wallet, a previous wallet is evident";
+
+/// Fails when a previous Tari wallet is evident on this machine, so a new one never replaces it
+/// and leaves the old seed in the keyring under an id nothing records. The error reaches the
+/// critical problem dialog through the caller in `setup_manager`.
+fn refuse_if_previous_wallet_evident(app_config_dir: &Path) -> Result<(), anyhow::Error> {
+    let config_backup = ConfigWallet::_get_config_path().with_extension("json.backup");
+    let legacy_wallet_config = app_config_dir
+        .join(Network::get_current().as_key_str())
+        .join(LEGACY_WALLET_CONFIG_FILE_NAME);
+    let Some(evidence) = previous_wallet_files(&config_backup, &legacy_wallet_config) else {
+        return Ok(());
+    };
+
+    log::error!(target: LOG_TARGET_APP_LOGIC, "{PREVIOUS_WALLET_EVIDENT}: {evidence}");
+    sentry::with_scope(
+        |scope| scope.set_tag("previous_wallet_evidence", evidence),
+        || sentry::capture_message(PREVIOUS_WALLET_EVIDENT, sentry::Level::Error),
+    );
+    Err(anyhow!("{PREVIOUS_WALLET_EVIDENT}: {evidence}"))
+}
+
+/// Evidence that this machine already held a Tari wallet, as an enum-like tag. Only files that
+/// name a Tari wallet count: a seedless user reverting to an internal wallet has a Monero
+/// credential and a wallet data directory but no seed to lose, and must still be let through.
+pub(crate) fn previous_wallet_files(
+    config_backup: &Path,
+    legacy_wallet_config: &Path,
+) -> Option<&'static str> {
+    if backup_names_a_wallet(config_backup) {
+        return Some("config_backup");
+    }
+    if legacy_wallet_config.exists() {
+        return Some("legacy_wallet_config");
+    }
+    None
+}
+
+/// True when the wallet config backup lists a Tari wallet, or cannot be parsed at all. A first
+/// launch that failed before creating a wallet leaves an empty list, which is not evidence.
+fn backup_names_a_wallet(config_backup: &Path) -> bool {
+    let Ok(contents) = std::fs::read_to_string(config_backup) else {
+        return false;
+    };
+    match serde_json::from_str::<serde_json::Value>(&contents) {
+        Ok(content) => content
+            .get("tari_wallets")
+            .and_then(serde_json::Value::as_array)
+            .is_some_and(|wallets| !wallets.is_empty()),
+        Err(_) => true,
+    }
 }
 
 /// Names why the legacy wallet config must be kept, or `None` when the wallet the config now uses
