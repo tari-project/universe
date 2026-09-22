@@ -73,12 +73,17 @@ jobs:
       # checks the only thing that actually matters: what the CDN is serving.
       - name: Verify the CDN is serving this CHANGELOG
         continue-on-error: true
-        if: ${{ env.BASE_TLD != '' && runner.name != 'self-hosted' }}
-        env:
-          BASE_TLD: ${{ secrets.BASE_TLD }}
-          BASE_URL: ${{ secrets.BASE_URL }}
         run: |
-          url="https://${BASE_TLD}/${BASE_URL}/CHANGELOG.md"
+          # Read the URL out of the app rather than rebuilding it from BASE_TLD and
+          # BASE_URL. Those two cannot both be right: the upload needs BASE_URL to
+          # start with the bucket name, and the purge needs it not to. Taking the
+          # constant the app actually reads also means this check follows the app if
+          # the URL ever moves.
+          url=$(grep -oP '(?<=^const CHANGELOG_URL: &str = ")[^"]+' src-tauri/src/release_notes.rs)
+          if [ -z "${url}" ]; then
+            echo "::error title=Cannot find CHANGELOG_URL::CHANGELOG_URL was not found in src-tauri/src/release_notes.rs, so the CDN copy could not be verified."
+            exit 0
+          fi
 
           # A purge is not instant, so a single miss is not yet news.
           for attempt in 1 2 3; do
