@@ -37,7 +37,13 @@ jobs:
           AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           S3CMD: 'cp'
-          S3OPTIONS: '--content-type "text/plain; charset=utf-8"'
+          # The object was served with the R2 default of max-age=14400, so a new
+          # changelog took up to four hours to reach users and the cache purge below
+          # was the only way to make it prompt. Five minutes makes the purge a nicety
+          # rather than the thing the whole pipeline depends on. The app only refetches
+          # hourly and revalidates by ETag, so this costs an edge revalidation per PoP,
+          # not per user.
+          S3OPTIONS: '--content-type "text/plain; charset=utf-8" --cache-control "public, max-age=300"'
         run: |
           docker run --rm -t \
             -v ${PWD}:/work/data \
