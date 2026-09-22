@@ -301,6 +301,13 @@ impl InternalWallet {
                     }
                 } else {
                     refuse_if_previous_wallet_evident(&app_config_dir)?;
+                    // Checked before anything is persisted: a new Tari wallet written to the
+                    // config and then a Monero failure leaves a config the next launch cannot
+                    // load. A custom Monero address generates no seed, so it still passes.
+                    if monero_address.is_empty() && monero_credential_exists().await {
+                        return Err(anyhow!("{MONERO_SEED_ALREADY_EXISTS}"));
+                    }
+
                     // Create new wallet
                     let tari_seed = CipherSeed::random();
                     let (tari_wallet_details, tari_seed_binary) =
@@ -466,10 +473,8 @@ impl InternalWallet {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Adding new Monero Wallet");
         let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
         // A generated seed must never overwrite the Monero credential already in the keyring.
-        if cm.get_credentials().await.is_ok() {
-            return Err(anyhow!(
-                "A Monero seed already exists in the keyring, refusing to generate a new one"
-            ));
+        if monero_credential_exists().await {
+            return Err(anyhow!("{MONERO_SEED_ALREADY_EXISTS}"));
         }
         let monero_seed_binary = (*monero_seed.inner())
             .to_binary()
@@ -1291,6 +1296,18 @@ pub async fn get_old_wallet_config(
     let old_config_str = fs::read_to_string(old_config_file).await?;
     let old_config: LegacyWalletConfig = serde_json::from_str(&old_config_str)?;
     Ok(Some(old_config))
+}
+
+const MONERO_SEED_ALREADY_EXISTS: &str =
+    "A Monero seed already exists in the keyring, refusing to generate a new one";
+
+/// True when the keyring already holds a Monero seed. A keyring error is not proof of one:
+/// generating a seed would fail on the same keyring anyway.
+async fn monero_credential_exists() -> bool {
+    CredentialManager::new_default(WalletId::new("monero".to_string()))
+        .get_credentials()
+        .await
+        .is_ok()
 }
 
 /// Constant Sentry message; the evidence kind travels as a tag.
