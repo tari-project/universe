@@ -642,3 +642,28 @@ fn a_failed_relink_restores_the_previous_selection_without_dropping_the_id() {
         "both ids stay listed; the rollback only moves the selection"
     );
 }
+
+/// A pre-v1.2.24 config need not carry a Monero address at all, and the recovery screen offers
+/// those users a seed-word import. The import adopts through the same write, so it has to produce
+/// the Monero side for a config that merely lacks one, not only for a recovery placeholder.
+#[test]
+fn an_import_into_a_config_without_a_monero_address_still_yields_a_loadable_config() {
+    let mut legacy = ConfigWalletContent::default();
+    assert!(legacy.monero_address().is_empty());
+    assert!(!legacy.corrupted_recovery());
+
+    legacy.adopt_recovered_tari_wallet((sentinel_wallet_details(), None));
+    assert!(
+        legacy.ensure_loadable().is_err(),
+        "without a Monero address the next launch cannot open this config"
+    );
+
+    legacy.adopt_recovered_tari_wallet((
+        sentinel_wallet_details(),
+        Some((
+            "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string(),
+            WalletId::new("monero".to_string()),
+        )),
+    ));
+    assert!(legacy.ensure_loadable().is_ok());
+}
