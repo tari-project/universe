@@ -275,11 +275,26 @@ impl InternalWallet {
                         let prompted = if pin_locked {
                             match PinManager::prompt_pin_unvalidated(app_handle).await {
                                 Ok(pin) => {
-                                    tari_seed_candidates(&tari_seed_binary, Some(pin), pin_locked)
-                                        .into_iter()
-                                        .find(|candidate| candidate.authenticated)
-                                        .map(|candidate| candidate.seed)
+                                    let opened = tari_seed_candidates(
+                                        &tari_seed_binary,
+                                        Some(pin),
+                                        pin_locked,
+                                    )
+                                    .into_iter()
+                                    .find(|candidate| candidate.authenticated)
+                                    .map(|candidate| candidate.seed);
+                                    // This prompt cannot go through `validate_pin` - the config
+                                    // has no details to check against - but it is still a PIN
+                                    // guess, so a wrong one counts against the same lockout.
+                                    if opened.is_none()
+                                        && let Err(e) =
+                                            PinManager::register_failed_pin_attempt().await
+                                    {
+                                        log::warn!(target: LOG_TARGET_APP_LOGIC, "Could not record a failed startup PIN attempt: {e}");
+                                    }
+                                    opened
                                 }
+                                // A dismissed prompt is not a guess.
                                 Err(_) => None,
                             }
                         } else {
@@ -1527,9 +1542,14 @@ impl InternalWallet {
             .await
             {
                 Ok(credential) => credential,
-                Err(e) => {
-                    let id = wallet_id.as_str();
-                    log::info!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, Tari keyring entry for wallet {id} not readable: {e}");
+                Err(_) => {
+                    // The keyring read logs its own error kind; an anyhow chain repeated here
+                    // would only add the store's own wording to the bundle.
+                    log::info!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "Legacy credential cleanup deferred, Tari keyring entry not readable: wallet_id={}",
+                        wallet_id.as_str(),
+                    );
                     return;
                 }
             };
@@ -1551,15 +1571,25 @@ impl InternalWallet {
             let bytes = match std::fs::read(&fallback_file) {
                 Ok(bytes) => bytes,
                 Err(e) => {
-                    log::warn!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, cannot read the legacy credential file: {e}");
+                    log::warn!(
+                        target: LOG_TARGET_APP_LOGIC,
+                        "Legacy credential cleanup deferred, cannot read the legacy credential file: error={}",
+                        e.kind(),
+                    );
                     return;
                 }
             };
             if !bytes.is_empty() {
                 let legacy_credential = match serde_cbor::from_slice::<LegacyCredential>(&bytes) {
                     Ok(credential) => credential,
-                    Err(e) => {
-                        log::warn!(target: LOG_TARGET_APP_LOGIC, "Legacy credential cleanup deferred, cannot parse the legacy credential file: {e}");
+                    Err(_) => {
+                        // A serde message quotes the value it choked on, and that file holds a
+                        // passphrase and a Monero seed.
+                        log::warn!(
+                            target: LOG_TARGET_APP_LOGIC,
+                            "Legacy credential cleanup deferred, cannot parse the legacy credential file: error={}",
+                            SeedProbeErrorKind::Decode.as_tag(),
+                        );
                         return;
                     }
                 };
@@ -1894,9 +1924,11 @@ impl InternalWallet {
             for candidate in
                 monero_seed_candidates(&encrypted_monero_seed, pin_password.clone(), pin_locked)
             {
-                if !candidate.authenticated
-                    && !monero_seed_matches_recorded_address(&candidate.seed).await
-                {
+                // The Monero address is derivable from the seed, so this check is cheap and it
+                // applies to an authenticated decrypt too: after a "forgot PIN" recovery the
+                // superseded `monero` entry decrypts under the same PIN and yields the seed for
+                // an address the config no longer names.
+                if !monero_seed_matches_recorded_address(&candidate.seed).await {
                     continue;
                 }
                 accepted = Some(candidate.seed);
@@ -1917,9 +1949,9 @@ impl InternalWallet {
                 }
                 log::error!(
                     target: LOG_TARGET_APP_LOGIC,
-                    "[get_monero_seed] blob is not a plain Monero seed: error=seed_length blob_len={blob_len} pin_locked={pin_locked}",
+                    "[get_monero_seed] no reading of the blob derives the recorded address: error=address_mismatch blob_len={blob_len} pin_locked={pin_locked}",
                 );
-                return Err(anyhow!("Monero seed is not 32 bytes"));
+                return Err(anyhow!(MONERO_SEED_NOT_THE_RECORDED_ONE));
             }
             match prompt_pin_for_repair(SEED_TAG_MONERO).await {
                 Some(prompted_pin) => {
@@ -1929,9 +1961,9 @@ impl InternalWallet {
                 None => {
                     log::error!(
                         target: LOG_TARGET_APP_LOGIC,
-                        "[get_monero_seed] blob is not a plain Monero seed: error=seed_length blob_len={blob_len} pin_locked={pin_locked}",
+                        "[get_monero_seed] no reading of the blob derives the recorded address: error=address_mismatch blob_len={blob_len} pin_locked={pin_locked}",
                     );
-                    return Err(anyhow!("Monero seed is not 32 bytes"));
+                    return Err(anyhow!(MONERO_SEED_NOT_THE_RECORDED_ONE));
                 }
             }
         };
@@ -2264,6 +2296,10 @@ const MONERO_WALLET_ID_MAX_VERSIONS: u32 = 32;
 const MONERO_SEED_LENGTH: usize = 32;
 /// Constant log string for the Monero entry that is deliberately not deleted.
 const LOG_MONERO_ENTRY_PRESERVED: &str = "wallet.monero_entry_preserved";
+/// Shown when the stored Monero blob cannot be read as the seed the config's address came from.
+/// Deliberately not "not 32 bytes": the common cause is a superseded entry, not a damaged one.
+const MONERO_SEED_NOT_THE_RECORDED_ONE: &str =
+    "The stored Monero seed does not match this wallet's Monero address.";
 /// Constant message for a repaired `pin_locked` flag. Details go in tags, never in the message.
 const SENTRY_PIN_STATE_REPAIRED: &str = "wallet.pin_state_repaired";
 /// Enum-like tag values naming which seed a repair or prompt concerned.
