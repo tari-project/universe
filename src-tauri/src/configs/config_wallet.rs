@@ -133,6 +133,11 @@ pub struct ConfigWalletContent {
     /// config down the quarantine path.
     #[getset(get = "pub")]
     seed_probe_last_outcome: Option<String>,
+    /// The wallet id that outcome belongs to. A verdict recorded for a wallet the user has since
+    /// re-linked away from says nothing about the one in front of them, so a record without this
+    /// id, or with a different one, is ignored and the probe runs again.
+    #[getset(get = "pub")]
+    seed_probe_last_wallet_id: Option<WalletId>,
 }
 
 impl Default for ConfigWalletContent {
@@ -157,6 +162,7 @@ impl Default for ConfigWalletContent {
             security_warning_dismissed: false,
             seed_probe_last_unix: 0,
             seed_probe_last_outcome: None,
+            seed_probe_last_wallet_id: None,
         }
     }
 }
@@ -222,13 +228,15 @@ impl ConfigWalletContent {
         Ok(())
     }
 
-    /// Records when the startup keyring probe last ran and what it concluded. One setter for
-    /// both fields so a single `update_field` writes them together: a timestamp that outlived its
-    /// outcome would rate-limit the next probe on a result nobody can name.
-    pub fn set_seed_probe_result(&mut self, result: (u64, &'static str)) -> &mut Self {
-        let (probed_at_unix, outcome_tag) = result;
+    /// Records when the startup keyring probe last ran, what it concluded and for which wallet.
+    /// One setter for all three so a single `update_field` writes them together: a timestamp that
+    /// outlived its outcome would rate-limit the next probe on a result nobody can name, and an
+    /// outcome without its wallet id would be reused for a wallet it never looked at.
+    pub fn set_seed_probe_result(&mut self, result: (u64, &'static str, WalletId)) -> &mut Self {
+        let (probed_at_unix, outcome_tag, wallet_id) = result;
         self.seed_probe_last_unix = probed_at_unix;
         self.seed_probe_last_outcome = Some(outcome_tag.to_string());
+        self.seed_probe_last_wallet_id = Some(wallet_id);
         self
     }
 

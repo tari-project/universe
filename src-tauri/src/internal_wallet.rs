@@ -661,6 +661,9 @@ impl InternalWallet {
             )
             .await?;
         }
+        // The credential was written and read back, so the rate-limited probe must not keep
+        // answering with a verdict about the wallet this one replaces.
+        InternalWallet::note_seed_read(&wallet_details.id).await;
 
         // Modify the instance directly due to circular usage in initialze_seed
         if let Some(instance) = INSTANCE.get() {
@@ -1117,21 +1120,28 @@ impl InternalWallet {
             probed_at => Some(probed_at),
         };
         let last_outcome = wallet_config.seed_probe_last_outcome().clone();
+        let last_wallet_id = wallet_config.seed_probe_last_wallet_id().clone();
         drop(wallet_config);
 
-        if decide_seed_probe(
-            SEED_PROBE_IS_RATE_LIMITED,
-            last_probe,
-            unix_now(),
-            SEED_PROBE_MIN_INTERVAL_SECS,
-        ) == SeedProbeDecision::Skip
+        // A record about another wallet cannot rate-limit this one: the read it stands for never
+        // touched this entry.
+        let record_is_for_this_wallet = last_wallet_id.as_ref() == Some(wallet_id);
+        if record_is_for_this_wallet
+            && decide_seed_probe(
+                SEED_PROBE_IS_RATE_LIMITED,
+                last_probe,
+                unix_now(),
+                SEED_PROBE_MIN_INTERVAL_SECS,
+            ) == SeedProbeDecision::Skip
         {
             // Skipping the read must not discard what the last one concluded: a restart inside
             // the rate-limit window would otherwise come up as if the seed were fine and let
             // mining and telemetry run against a wallet whose seed is still gone.
-            let remembered = last_outcome
-                .as_deref()
-                .and_then(seed_probe_outcome_from_tag);
+            let remembered = remembered_seed_probe_outcome(
+                last_wallet_id.as_ref(),
+                last_outcome.as_deref(),
+                wallet_id,
+            );
             log::info!(
                 target: LOG_TARGET_APP_LOGIC,
                 "Startup seed probe skipped: rate limited on this platform, last outcome={}",
@@ -1167,7 +1177,7 @@ impl InternalWallet {
         if SEED_PROBE_IS_RATE_LIMITED
             && let Err(e) = ConfigWallet::update_field(
                 ConfigWalletContent::set_seed_probe_result,
-                (unix_now(), outcome.as_tag()),
+                (unix_now(), outcome.as_tag(), wallet_id.clone()),
             )
             .await
         {
@@ -1199,6 +1209,26 @@ impl InternalWallet {
                 report_seed_unavailable_at_startup(kind);
                 Some(kind)
             }
+        }
+    }
+
+    /// Records that this wallet's seed was just read from the store.
+    ///
+    /// The rate-limited probe answers from this record, so a read that succeeded has to replace
+    /// whatever an earlier wallet left behind: without it a re-link or an import keeps re-entering
+    /// recovery for the rest of the 24h window on the strength of a verdict about another entry.
+    /// Best effort - a record that cannot be written only costs one extra probe.
+    pub(crate) async fn note_seed_read(wallet_id: &WalletId) {
+        if !SEED_PROBE_IS_RATE_LIMITED {
+            return;
+        }
+        if let Err(e) = ConfigWallet::update_field(
+            ConfigWalletContent::set_seed_probe_result,
+            (unix_now(), SeedProbeOutcome::Ok.as_tag(), wallet_id.clone()),
+        )
+        .await
+        {
+            log::debug!(target: LOG_TARGET_APP_LOGIC, "Could not record a successful seed read: {e}");
         }
     }
 
@@ -1698,6 +1728,7 @@ impl InternalWallet {
                                 internal_wallet_guard.encrypted_tari_seed =
                                     Hidden::hide(Some(cred.encrypted_seed.clone()));
                             }
+                            InternalWallet::note_seed_read(wallet_id).await;
                             cred.encrypted_seed
                         }
                         Err(e) => {
@@ -2179,6 +2210,22 @@ pub fn seed_probe_outcome_from_tag(tag: &str) -> Option<SeedProbeErrorKind> {
         "unavailable_decode" => Some(SeedProbeErrorKind::Decode),
         _ => None,
     }
+}
+
+/// The verdict a rate-limited launch may reuse for `wallet_id`.
+///
+/// Only a record that names this same wallet counts. The record left by the wallet the user has
+/// just re-linked away from describes an entry this launch never looks at, and reusing it would
+/// put a perfectly readable wallet back into recovery for the rest of the interval.
+pub fn remembered_seed_probe_outcome(
+    recorded_wallet_id: Option<&WalletId>,
+    recorded_outcome: Option<&str>,
+    wallet_id: &WalletId,
+) -> Option<SeedProbeErrorKind> {
+    if recorded_wallet_id? != wallet_id {
+        return None;
+    }
+    seed_probe_outcome_from_tag(recorded_outcome?)
 }
 
 fn unix_now() -> u64 {

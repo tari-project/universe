@@ -408,6 +408,9 @@ pub async fn relink_tari_wallet(
     // without one, so the adoption carries the Monero side with it in the same save.
     let monero_wallet = InternalWallet::monero_wallet_for_adoption().await?;
     ConfigWallet::adopt_recovered_wallet((details, monero_wallet)).await?;
+    // This entry was just read, so the rate-limited startup probe must stop answering with the
+    // verdict recorded for the wallet being re-linked away from.
+    InternalWallet::note_seed_read(&wallet_id).await;
     if let Err(e) = InternalWallet::initialize_with_seed(app_handle).await {
         // `initialize_with_seed` snapshots the config *after* this write, so its own rollback
         // cannot undo it; put the previous selection back here instead. Not when the config was

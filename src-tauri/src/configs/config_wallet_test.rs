@@ -489,17 +489,30 @@ fn seed_probe_result_is_recorded_without_breaking_older_configs() {
     let mut older_config = older_config.as_object().unwrap().clone();
     older_config.remove("seed_probe_last_unix");
     older_config.remove("seed_probe_last_outcome");
+    older_config.remove("seed_probe_last_wallet_id");
     let parsed: ConfigWalletContent =
         serde_json::from_value(Value::Object(older_config)).expect("older configs must parse");
     assert_eq!(*parsed.seed_probe_last_unix(), 0);
     assert_eq!(parsed.seed_probe_last_outcome(), &None);
 
     let mut content = ConfigWalletContent::default();
-    content.set_seed_probe_result((1_700_000_000, "unavailable_no_entry"));
+    content.set_seed_probe_result((
+        1_700_000_000,
+        "unavailable_no_entry",
+        WalletId::new("probed_wallet".to_string()),
+    ));
     assert_eq!(*content.seed_probe_last_unix(), 1_700_000_000);
     assert_eq!(
         content.seed_probe_last_outcome().as_deref(),
         Some("unavailable_no_entry")
+    );
+    assert_eq!(
+        content
+            .seed_probe_last_wallet_id()
+            .as_ref()
+            .map(WalletId::as_str),
+        Some("probed_wallet"),
+        "a verdict without the wallet it is about gets reused for a wallet it never looked at"
     );
 
     // A tag written by a newer version must not take the whole config down with it: an unknown

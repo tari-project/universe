@@ -70,8 +70,8 @@
 use super::internal_wallet::{
     ADDRESS_LOG_PREFIX_LEN, InternalWallet, SeedCandidate, TariAddressType, address_prefix,
     allocate_monero_wallet_id_with, decode_plain_tari_seed, monero_seed_candidates,
-    monero_wallet_from_blob, next_monero_wallet_id, seed_probe_outcome_from_tag,
-    tari_seed_candidates, wipe_and_remove_file,
+    monero_wallet_from_blob, next_monero_wallet_id, remembered_seed_probe_outcome,
+    seed_probe_outcome_from_tag, tari_seed_candidates, wipe_and_remove_file,
 };
 use std::collections::HashSet;
 use tari_common_types::seeds::cipher_seed::CipherSeed;
@@ -468,6 +468,40 @@ fn a_recorded_unavailable_outcome_survives_a_rate_limited_launch() {
     assert_eq!(
         seed_probe_outcome_from_tag("unavailable_from_the_future"),
         None
+    );
+}
+
+/// The record is keyed by wallet id: after a re-link or an import the verdict recorded for the
+/// wallet left behind must not send the new one into recovery for the rest of the 24h window.
+#[test]
+fn a_recorded_outcome_only_speaks_for_the_wallet_it_was_recorded_for() {
+    let probed = WalletId::new("wallet_a".to_string());
+    let relinked = WalletId::new("wallet_b".to_string());
+    let tag = SeedProbeOutcome::Unavailable(SeedProbeErrorKind::NoEntry).as_tag();
+
+    assert_eq!(
+        remembered_seed_probe_outcome(Some(&probed), Some(tag), &probed),
+        Some(SeedProbeErrorKind::NoEntry),
+        "a record about this wallet is still the last thing known about it"
+    );
+    assert_eq!(
+        remembered_seed_probe_outcome(Some(&probed), Some(tag), &relinked),
+        None,
+        "the wallet the user re-linked to was never probed"
+    );
+    assert_eq!(
+        remembered_seed_probe_outcome(None, Some(tag), &probed),
+        None,
+        "a record from a build that did not key it cannot be attributed to any wallet"
+    );
+    assert_eq!(
+        remembered_seed_probe_outcome(Some(&probed), None, &probed),
+        None
+    );
+    assert_eq!(
+        remembered_seed_probe_outcome(Some(&probed), Some(SeedProbeOutcome::Ok.as_tag()), &probed),
+        None,
+        "a successful read is not a reason to hold the wallet in recovery"
     );
 }
 
