@@ -447,14 +447,19 @@ impl SetupManager {
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET_APP_LOGIC, "Error loading internal wallet: {e:?}");
-                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                            title: Some("Wallet(seed) not initialized!".to_string()),
-                            description: Some(
-                                "Encountered an error while initializing the wallet.".to_string(),
-                            ),
-                            error_message: Some(e.to_string()),
-                        })
-                        .await;
+                        // A failure that already knows what to tell the user carries its own
+                        // payload; anything else gets the generic one.
+                        let payload = e.downcast::<CriticalProblemPayload>().unwrap_or_else(|e| {
+                            CriticalProblemPayload {
+                                title: Some("Wallet(seed) not initialized!".to_string()),
+                                description: Some(
+                                    "Encountered an error while initializing the wallet."
+                                        .to_string(),
+                                ),
+                                error_message: Some(e.to_string()),
+                            }
+                        });
+                        EventsEmitter::emit_critical_problem(payload).await;
                     }
                 };
             }
