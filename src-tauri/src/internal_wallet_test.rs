@@ -352,6 +352,17 @@ fn previous_wallet_files_reports_each_evidence_kind() {
         previous_wallet_files(&config_backup, &legacy_wallet_config),
         Some("config_backup")
     );
+
+    std::fs::write(
+        dir.path().join("config_wallet.json.corrupt.1790000000"),
+        "\0",
+    )
+    .expect("write the config moved aside");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &legacy_wallet_config),
+        Some("wallet_config_unreadable"),
+        "a config moved aside as unreadable outranks the evidence it caused"
+    );
 }
 
 #[test]
