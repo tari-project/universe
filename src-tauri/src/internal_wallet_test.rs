@@ -311,3 +311,17 @@ fn legacy_config_is_kept_when_the_wallet_in_use_is_a_different_wallet() {
         "the legacy wallet is the wallet in use, so its file may be removed"
     );
 }
+
+/// `create_pin` tells an already enciphered Monero credential from a plain seed by decrypting it,
+/// and falls back to the 32-byte plain length. Both only work while enciphering changes the length.
+#[test]
+fn an_enciphered_monero_seed_is_not_a_plain_one() {
+    use tari_utilities::SafePassword;
+
+    let pin = SafePassword::from("123456");
+    let enciphered =
+        super::utils::cryptography::encrypt(&[7u8; 32], &pin).expect("encipher the seed");
+
+    assert_ne!(enciphered.len(), 32);
+    assert!(super::utils::cryptography::decrypt(&enciphered, &pin).is_ok());
+}

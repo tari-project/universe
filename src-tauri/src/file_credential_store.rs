@@ -75,25 +75,26 @@ impl CredentialApi for FileCredential {
         self.set_secret(password.as_bytes())
     }
 
+    /// Writes a sibling file and renames it over the original, so a failed write cannot truncate
+    /// the previous secret.
     fn set_secret(&self, secret: &[u8]) -> Result<()> {
         fs::create_dir_all(store_dir()).map_err(|e| Error::PlatformFailure(Box::new(e)))?;
+        let temp_path = self.path.with_extension("tmp");
+        let mut options = fs::OpenOptions::new();
+        options.write(true).create(true).truncate(true);
         #[cfg(unix)]
         {
             use std::os::unix::fs::OpenOptionsExt;
-            let mut file = fs::OpenOptions::new()
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .mode(0o600)
-                .open(&self.path)
-                .map_err(|e| Error::PlatformFailure(Box::new(e)))?;
-            file.write_all(secret)
-                .map_err(|e| Error::PlatformFailure(Box::new(e)))?;
+            options.mode(0o600);
         }
-        #[cfg(not(unix))]
-        {
-            fs::write(&self.path, secret).map_err(|e| Error::PlatformFailure(Box::new(e)))?;
-        }
+        let mut file = options
+            .open(&temp_path)
+            .map_err(|e| Error::PlatformFailure(Box::new(e)))?;
+        file.write_all(secret)
+            .map_err(|e| Error::PlatformFailure(Box::new(e)))?;
+        // Windows refuses to rename over an open handle.
+        drop(file);
+        fs::rename(&temp_path, &self.path).map_err(|e| Error::PlatformFailure(Box::new(e)))?;
         Ok(())
     }
 

@@ -103,9 +103,8 @@ impl CredentialManager {
         Self::write_credential(&entry, credential)
     }
 
-    /// Overwrites the entry in place. Every supported backend replaces an existing secret, so
-    /// deleting first only risks leaving no credential at all when the write then fails, taking
-    /// the only copy of the seed with it.
+    /// Overwrites the entry in place: deleting first leaves no credential at all when the write
+    /// then fails, and with it the only copy of the seed.
     fn write_credential(entry: &Entry, credential: &Credential) -> Result<(), CredentialError> {
         let serialized = serde_cbor::to_vec(credential)?;
         entry.set_secret(&serialized)?;

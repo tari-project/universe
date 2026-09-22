@@ -549,18 +549,38 @@ impl InternalWallet {
 
         let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
         {
-            // Encrypt Monero Seed with PIN
-            let monero_seed = InternalWallet::get_monero_seed(None).await?;
-            let encrypted_monero_seed = cryptography::encrypt(monero_seed.inner(), &pin_password)?;
-            InternalWallet::set_credentials(
+            // Encrypt Monero Seed with PIN. An earlier run can have written this credential and
+            // then failed, so a blob that already decrypts with this PIN is kept as it is:
+            // encrypting it again would bury the seed.
+            let stored_monero_seed = InternalWallet::get_credentials(
                 app_handle,
                 WalletId::new("monero".to_string()),
-                &Credential {
-                    encrypted_seed: encrypted_monero_seed.clone(),
-                },
                 false,
             )
-            .await?;
+            .await?
+            .encrypted_seed;
+            let encrypted_monero_seed =
+                if cryptography::decrypt(&stored_monero_seed, &pin_password).is_ok() {
+                    stored_monero_seed
+                } else if stored_monero_seed.len() == 32 {
+                    // A plain Monero seed, as written before any PIN existed.
+                    let encrypted_monero_seed =
+                        cryptography::encrypt(&stored_monero_seed, &pin_password)?;
+                    InternalWallet::set_credentials(
+                        app_handle,
+                        WalletId::new("monero".to_string()),
+                        &Credential {
+                            encrypted_seed: encrypted_monero_seed.clone(),
+                        },
+                        false,
+                    )
+                    .await?;
+                    encrypted_monero_seed
+                } else {
+                    return Err(anyhow!(
+                        "Stored Monero seed is neither plain nor enciphered with this PIN"
+                    ));
+                };
             if InternalWallet::is_initialized() {
                 let mut internal_wallet_guard = InternalWallet::current().write().await;
                 internal_wallet_guard.encrypted_monero_seed =
