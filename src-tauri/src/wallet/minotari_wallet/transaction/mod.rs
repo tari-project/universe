@@ -38,9 +38,9 @@ use tari_transaction_components_wallet::{
         sign_locked_transaction,
     },
 };
-use zeroize::Zeroizing;
 
-use crate::wallet::minotari_wallet::{DEFAULT_PASSWORD, base_node_http_url};
+use crate::credential_manager::CredentialManager;
+use crate::wallet::minotari_wallet::base_node_http_url;
 
 const CONFIRMATION_WINDOW: u64 = 3;
 /// Duration in seconds that UTXOs are locked after transaction creation.
@@ -81,7 +81,7 @@ impl TransactionManager {
         let transaction_sender = TransactionSender::new(
             pool,
             sender_address,
-            Zeroizing::new(DEFAULT_PASSWORD.to_string()),
+            CredentialManager::minotari_db_password().await?,
             network,
             CONFIRMATION_WINDOW,
         )?;

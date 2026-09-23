@@ -50,6 +50,7 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::fs;
 use tokio::sync::{OnceCell, RwLock};
+use zeroize::Zeroizing;
 
 use tari_utilities::hex::Hex;
 
@@ -1037,12 +1038,14 @@ impl InternalWallet {
 
             // The `minotari` signing crate uses tari 5.7.0-pre.8, so rebuild the cipher seed
             // as a wallet-side `CipherSeed`. The binary form is identical across the two
-            // versions (CIPHER_SEED_VERSION == 2), so this round-trip is lossless.
-            let wallet_cipher_seed = WalletCipherSeed::from_binary(
-                &tari_cipher_seed
+            // versions (CIPHER_SEED_VERSION == 2), so this round-trip is lossless. The
+            // intermediate buffer is the master entropy in the clear, so it is wiped on
+            // drop rather than left in the heap.
+            let wallet_cipher_seed = WalletCipherSeed::from_binary(&Zeroizing::new(
+                tari_cipher_seed
                     .to_binary()
                     .map_err(|e| anyhow!(e.to_string()))?,
-            )
+            ))
             .map_err(|e| anyhow!(e.to_string()))?;
 
             let seed_words_wallet = WalletSeedWordsWallet::construct_new(wallet_cipher_seed)

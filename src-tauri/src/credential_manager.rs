@@ -23,6 +23,7 @@
 use crate::APPLICATION_FOLDER_ID;
 use crate::configs::config_wallet::WalletId;
 use keyring::{Entry, Error as KeyringError};
+use ring::rand::{SecureRandom, SystemRandom};
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
 use std::io::{self, Read};
@@ -31,6 +32,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tari_common::configuration::Network;
 use tari_utilities::SafePassword;
 use thiserror::Error;
+use zeroize::Zeroizing;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Credential {
@@ -52,6 +54,8 @@ pub enum CredentialError {
 
 const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
 const KEYCHAIN_USERNAME: &str = "inner_wallet_credentials";
+const MINOTARI_DB_ENTRY: &str = "minotari_db_password";
+const MINOTARI_DB_PASSWORD_BYTES: usize = 32;
 
 pub struct CredentialManager {
     service_name: String,
@@ -91,6 +95,47 @@ impl CredentialManager {
             Err(CredentialError::Keyring(e)) => Err(e.into()),
             Err(err) => Err(err),
         }
+    }
+
+    /// Password encrypting the minotari wallet database, whose account blob holds the
+    /// view private key. Random per install, minted on first use and kept in the OS
+    /// credential store beside the seed.
+    ///
+    /// Deliberately not keyed by `WalletId`: importing a wallet mints a new id while the
+    /// database on disk is deleted and rebuilt on its own schedule, and any window where
+    /// the two disagree leaves a database nothing can open.
+    pub async fn minotari_db_password() -> Result<Zeroizing<String>, CredentialError> {
+        let entry = Entry::new(
+            APPLICATION_FOLDER_ID,
+            &format!(
+                "{}_{}_{}",
+                KEYCHAIN_USERNAME,
+                Network::get_current().as_key_str(),
+                MINOTARI_DB_ENTRY
+            ),
+        )?;
+        Self::read_or_create_password(&entry)
+    }
+
+    /// Never overwrites a secret that is already there: the database it opens cannot be
+    /// re-keyed, so a second value would lock the wallet out of its own scan history.
+    fn read_or_create_password(entry: &Entry) -> Result<Zeroizing<String>, CredentialError> {
+        match entry.get_secret() {
+            Ok(secret) if !secret.is_empty() => return Ok(Zeroizing::new(hex::encode(secret))),
+            Ok(_) | Err(KeyringError::NoEntry) => {}
+            Err(e) => return Err(e.into()),
+        }
+
+        let mut secret = Zeroizing::new([0u8; MINOTARI_DB_PASSWORD_BYTES]);
+        SystemRandom::new()
+            .fill(secret.as_mut_slice())
+            .map_err(|_| {
+                CredentialError::Io(io::Error::other(
+                    "Failed to generate a minotari database password",
+                ))
+            })?;
+        entry.set_secret(secret.as_slice())?;
+        Ok(Zeroizing::new(hex::encode(secret.as_slice())))
     }
 
     pub fn delete_credential(&self) -> Result<(), keyring::Error> {
@@ -239,5 +284,17 @@ mod tests {
             serde_cbor::from_slice(&entry.get_secret().expect("the entry must still be present"))
                 .expect("stored credential decodes");
         assert_eq!(stored.encrypted_seed, previous.encrypted_seed);
+    }
+
+    #[test]
+    fn the_minotari_db_password_is_minted_once_and_then_reused() {
+        let entry = Entry::new_with_credential(Box::new(MockCredential::default()));
+
+        let first = CredentialManager::read_or_create_password(&entry).expect("first read");
+        assert_eq!(first.len(), MINOTARI_DB_PASSWORD_BYTES * 2);
+        assert!(first.chars().all(|c| c.is_ascii_hexdigit()));
+
+        let second = CredentialManager::read_or_create_password(&entry).expect("second read");
+        assert_eq!(*first, *second, "a stored password must never be replaced");
     }
 }

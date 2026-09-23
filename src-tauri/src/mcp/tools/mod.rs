@@ -418,7 +418,7 @@ impl TariMcpHandler {
     /// Get the wallet balance.
     #[tool(
         name = "get_wallet_balance",
-        description = "Get the wallet balance including available, pending, and timelocked amounts"
+        description = "Get the wallet balance: total, available, locked (reserved for in-flight sends), unconfirmed (incoming, not yet confirmed) and immature (mined, not yet spendable) amounts"
     )]
     async fn get_wallet_balance(&self) -> Result<String, String> {
         if !Self::is_tier_enabled("read").await {

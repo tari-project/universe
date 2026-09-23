@@ -28,6 +28,7 @@ pub static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet";
 
 use crate::{
     LOG_TARGET_STATUSES, UniverseAppState,
+    credential_manager::CredentialManager,
     events::PinPromptContext,
     events_emitter::EventsEmitter,
     internal_wallet::{InternalWallet, TariAddressType},
@@ -38,12 +39,12 @@ use crate::{
         transaction::{TransactionManager, parse_destination_address},
     },
 };
-use log::{error, info};
+use log::{error, info, warn};
 use minotari_wallet::{
     DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
     TransactionHistoryService,
     db::{AccountBalance, get_account_by_name, get_latest_scanned_tip_block_by_account},
-    get_balance,
+    get_balance, init_db,
     tasks::unlocker::TransactionUnlocker,
     transactions::{TransactionSource, one_sided_transaction::Recipient},
     utils::init_wallet::init_with_view_key,
@@ -98,7 +99,6 @@ pub(crate) fn wallet_network() -> WalletNetwork {
         Network::Esmeralda => WalletNetwork::Esmeralda,
     }
 }
-static DEFAULT_PASSWORD: &str = "test_password";
 static REQUIRED_CONFIRMATIONS: u64 = 3;
 
 // Blockchain scanning constants
@@ -197,10 +197,9 @@ impl MinotariWalletManager {
                 "Transaction amount must be greater than zero"
             ));
         }
-        info!(
-            "Sending one-sided transaction to address: {}, amount: {}",
-            address, amount
-        );
+        // No address or amount in the log: these lines end up in user-submitted feedback
+        // bundles, where they would hand over the recipient and the value of every send.
+        info!(target: LOG_TARGET, "Sending a one-sided transaction.");
         let tari_address = Self::get_owner_address().await?;
         let destination_address = parse_destination_address(&address)?;
 
@@ -228,7 +227,8 @@ impl MinotariWalletManager {
             payment_id,
         };
 
-        info!(
+        log::debug!(
+            target: LOG_TARGET,
             "Creating one-sided transaction from {} to {} for amount {}",
             tari_address, address, amount
         );
@@ -531,6 +531,7 @@ impl MinotariWalletManager {
 
         let database_path_buf = PathBuf::from(database_path);
         let generation = INSTANCE.scan_generation.fetch_add(1, Ordering::SeqCst) + 1;
+        let db_password = CredentialManager::minotari_db_password().await?;
 
         // Tracked, not a bare `tokio::spawn`: `shutdown_phases(Wallet)` only awaits
         // tasks on this tracker, and a refresh/import deletes the database folder the
@@ -556,7 +557,7 @@ impl MinotariWalletManager {
                     };
 
                     let (event_rx, scan_future) = Scanner::new(
-                        DEFAULT_PASSWORD,
+                        db_password.as_str(),
                         &base_url,
                         database_path_buf.clone(),
                         SCAN_BATCH_SIZE,
@@ -582,6 +583,22 @@ impl MinotariWalletManager {
                         BalanceTracker::current()
                             .update_from_transactions(Self::get_latest_account_balance().await)
                             .await;
+
+                        // The unlocker's own loop returns on the first transient pool
+                        // error but leaves its handle behind, so `run_transaction_unlocker`
+                        // would answer "already running" forever and time-locked funds
+                        // would never unlock again. Reap the dead task and start a new one.
+                        let dead = INSTANCE
+                            .unlocker_handle
+                            .write()
+                            .await
+                            .take_if(|handle| handle.is_finished());
+                        if let Some(handle) = dead {
+                            error!(target: LOG_TARGET, "Transaction unlocker exited ({:?}), restarting it.", handle.await);
+                            if let Err(e) = Self::run_transaction_unlocker().await {
+                                error!(target: LOG_TARGET, "Could not restart the transaction unlocker: {e:?}");
+                            }
+                        }
                     }
 
                     let caught_up = match result {
@@ -795,13 +812,7 @@ impl MinotariWalletManager {
 
         let tip_height = Self::get_chain_tip_height();
         let start_height = INSTANCE.scan_start_height.load(Ordering::SeqCst);
-        let progress = if tip_height > start_height {
-            let scanned = current_height.saturating_sub(start_height) as f64;
-            let span = (tip_height - start_height) as f64;
-            ((scanned / span) * 100.0).min(100.0)
-        } else {
-            0.0
-        };
+        let progress = scan_progress_percent(start_height, current_height, tip_height);
 
         // Continuous mode keeps reporting blocks after the first Completed (every
         // new block); reporting `false` there would flip the wallet UI back into
@@ -889,16 +900,60 @@ impl MinotariWalletManager {
             }
         }
     }
+    /// Drop a database whose account no longer opens with the password we hold.
+    ///
+    /// Builds before this one encrypted the account blob with a hard-coded password, and
+    /// nothing can re-key it. Without this the scan fails on every cycle forever, so the
+    /// directory goes and the caller re-imports the view key and rescans from the wallet
+    /// birthday — the same work a fresh install does, no funds involved.
+    ///
+    /// Safe to delete here: the caller runs before `initialize_wallet` opens the pool.
+    async fn discard_undecryptable_database(
+        database_path: &str,
+        tari_address: &str,
+        password: &str,
+    ) -> Result<(), anyhow::Error> {
+        if !Path::new(database_path).exists() {
+            return Ok(());
+        }
+
+        let pool = init_db(PathBuf::from(database_path))?;
+        let decrypts = {
+            let conn = pool.get()?;
+            match get_account_by_name(&conn, tari_address)? {
+                Some(account) => account.get_keys_hex(password).is_ok(),
+                None => true,
+            }
+        };
+        drop(pool);
+
+        if decrypts {
+            return Ok(());
+        }
+
+        let wallet_dir = MinotariWalletDatabaseManager::minotari_wallet_dir()?;
+        warn!(
+            target: LOG_TARGET,
+            "Minotari wallet account cannot be decrypted with the stored password; removing {} and rescanning from the wallet birthday",
+            wallet_dir.display()
+        );
+        tokio::fs::remove_dir_all(&wallet_dir).await?;
+        Ok(())
+    }
+
     pub async fn import_view_key() -> Result<(), anyhow::Error> {
         let tari_wallet_details = InternalWallet::tari_wallet_details().await;
         if let Some(details) = tari_wallet_details {
             let database_path = MinotariWalletDatabaseManager::database_path()?;
             let tari_address = Self::get_owner_address().await?;
+            let password = CredentialManager::minotari_db_password().await?;
+
+            Self::discard_undecryptable_database(&database_path, &tari_address, &password).await?;
 
             init_with_view_key(
                 details.view_private_key_hex.reveal(),
                 &details.spend_public_key_hex,
-                DEFAULT_PASSWORD,
+                &password,
                 Path::new(&database_path),
                 details.wallet_birthday,
                 Some(tari_address.as_str()),
@@ -968,5 +1023,42 @@ impl MinotariWalletManager {
             });
 
         Ok(())
+    }
+}
+
+/// Share of the range this scan has to cover (`start_height` to the node's tip)
+/// that has been scanned, as a percentage. `0` when the tip is unknown (0) or not
+/// yet past the start, so a wallet whose node has not reported a height yet does
+/// not show a nonsense percentage.
+fn scan_progress_percent(start_height: u64, current_height: u64, tip_height: u64) -> f64 {
+    if tip_height <= start_height {
+        return 0.0;
+    }
+    let scanned = current_height.saturating_sub(start_height) as f64;
+    let span = (tip_height - start_height) as f64;
+    ((scanned / span) * 100.0).min(100.0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::scan_progress_percent;
+
+    #[test]
+    fn progress_is_measured_from_the_scan_start_not_genesis() {
+        // A wallet born at block 300k, half way to a tip of 400k, is at 50%.
+        assert_eq!(scan_progress_percent(300_000, 350_000, 400_000), 50.0);
+    }
+
+    #[test]
+    fn progress_clamps_at_100_when_the_tip_is_stale() {
+        // The cached node tip lags the blocks the scanner is reporting.
+        assert_eq!(scan_progress_percent(100, 500, 400), 100.0);
+    }
+
+    #[test]
+    fn progress_is_zero_without_a_usable_tip() {
+        // No node status yet, and a tip that has not moved past the start.
+        assert_eq!(scan_progress_percent(300_000, 350_000, 0), 0.0);
+        assert_eq!(scan_progress_percent(400, 400, 400), 0.0);
     }
 }
