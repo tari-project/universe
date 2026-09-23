@@ -27,8 +27,9 @@
 //! `send_transaction` tool) goes through [`gated_send`]. Two user-facing gates exist:
 //!
 //! * **PIN** — when a PIN is configured it is requested (and validated, with lockout on
-//!   repeated failures) while the transaction is signed, deep in
-//!   [`crate::wallet::minotari_wallet::transaction::TransactionManager::sign_one_sided_transaction`]. That is
+//!   repeated failures) by [`crate::internal_wallet::InternalWallet::get_key_manager`],
+//!   which [`crate::wallet::minotari_wallet::MinotariWalletManager::send_one_sided_transaction`]
+//!   calls before it creates (and so locks the inputs of) the transaction. That is
 //!   the real gate: a script running in the webview does not know the PIN. The prompt
 //!   carries a [`crate::events::PinPromptContext::Send`] so the user can see the amount
 //!   and destination they are approving.
@@ -254,8 +255,8 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionErro
         info!(target: LOG_TARGET_APP_LOGIC, "send gate: transaction approved by user (origin={})", origin.as_str());
     }
 
-    // The PIN dialog (when a PIN is configured) is raised from here on, while the
-    // minotari transaction is signed, and carries the amount/destination.
+    // The PIN dialog (when a PIN is configured) is raised from here on, before the
+    // minotari transaction is created, and carries the amount/destination.
     info!(
         target: LOG_TARGET_APP_LOGIC,
         "send gate: executing send (origin={}, destination={destination}, amount={amount})",

@@ -114,6 +114,11 @@ fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
         // long after the miner exited. A fresh page correctly defaults to
         // not-mining and picks the stream up within seconds if it runs.
         //
+        // WalletTransactionsCleared is deliberately absent too: it is a
+        // transient "drop what you have" signal, not state. A fresh client has
+        // nothing to clear, and replaying it would wipe the transaction list
+        // that WalletTransactionsFound is about to refill.
+        //
         // Everything else (ShowReleaseNotes, AskForRestart, PIN dialogs,
         // shutdown prompts, ...) is also intentionally not replayed.
         _ => return None,

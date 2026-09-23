@@ -890,6 +890,21 @@ impl EventsEmitter {
         }
     }
 
+    /// Tells the frontend to drop its transaction list: the wallet it belonged to
+    /// is gone (history refresh, seed import) and a fresh scan is about to start.
+    pub async fn emit_wallet_transactions_cleared() {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::WalletTransactionsCleared,
+                payload: (),
+            },
+        ) {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletTransactionsCleared event: {e:?}");
+        }
+    }
+
     /// Emit when a pending transaction has been matched with a scanned transaction
     /// This allows the frontend to update the transaction status
     pub async fn emit_wallet_transaction_updated(payload: DisplayedTransaction) {

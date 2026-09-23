@@ -51,19 +51,35 @@ impl MinotariWalletDatabaseManager {
         Ok(())
     }
 
-    pub fn database_path() -> Result<String, anyhow::Error> {
-        let data_directory_path =
-            dirs::data_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
+    /// Releases the pool so the database files can be deleted (refresh / import).
+    /// The next `initialize` recreates it.
+    pub async fn close(&self) {
+        *self.database_pool.write().await = None;
+        info!(target: LOG_TARGET, "Minotari wallet database pool closed");
+    }
 
-        let binary_folder_path = data_directory_path
+    /// Directory holding this network's minotari wallet database.
+    ///
+    /// Every caller must derive the path from here: `dirs::data_dir()` is the
+    /// Roaming profile on Windows while Tauri's `app_local_data_dir()` is Local,
+    /// so a cleanup built from the app's base path would delete a different
+    /// folder than the one the scanner is writing to.
+    pub fn minotari_wallet_dir() -> Result<PathBuf, anyhow::Error> {
+        let data_directory_path =
+            dirs::data_dir().ok_or_else(|| anyhow::anyhow!("Failed to get data directory"))?;
+
+        Ok(data_directory_path
             .join(APPLICATION_FOLDER_ID)
             .join("minotari-wallet")
             .join(
                 Network::get_current_or_user_setting_or_default()
                     .to_string()
                     .to_lowercase(),
-            )
-            .join("wallet.db");
+            ))
+    }
+
+    pub fn database_path() -> Result<String, anyhow::Error> {
+        let binary_folder_path = Self::minotari_wallet_dir()?.join("wallet.db");
 
         if let Some(string_path) = binary_folder_path.to_str() {
             Ok(string_path.to_string())

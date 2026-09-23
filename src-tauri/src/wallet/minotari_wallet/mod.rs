@@ -26,7 +26,6 @@ pub mod transaction;
 
 pub static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet";
 
-use crate::wallet::minotari_wallet::balance_tracker::EMPTY_BALANCE;
 use crate::{
     LOG_TARGET_STATUSES, UniverseAppState,
     events::PinPromptContext,
@@ -34,8 +33,9 @@ use crate::{
     internal_wallet::{InternalWallet, TariAddressType},
     tasks_tracker::TasksTrackers,
     wallet::minotari_wallet::{
-        balance_tracker::BalanceTracker, database_manager::MinotariWalletDatabaseManager,
-        transaction::TransactionManager,
+        balance_tracker::BalanceTracker,
+        database_manager::MinotariWalletDatabaseManager,
+        transaction::{TransactionManager, parse_destination_address},
     },
 };
 use log::{error, info};
@@ -45,7 +45,7 @@ use minotari_wallet::{
     db::{AccountBalance, get_account_by_name, get_latest_scanned_tip_block_by_account},
     get_balance,
     tasks::unlocker::TransactionUnlocker,
-    transactions::one_sided_transaction::Recipient,
+    transactions::{TransactionSource, one_sided_transaction::Recipient},
     utils::init_wallet::init_with_view_key,
 };
 use r2d2::PooledConnection;
@@ -60,10 +60,8 @@ use std::{
     time::{Duration, Instant},
 };
 use tari_common::configuration::Network;
-use tari_common_types_wallet::tari_address::TariAddress;
 use tari_common_types_wallet::transaction::TxId;
 use tari_common_wallet::configuration::Network as WalletNetwork;
-use tari_transaction_components_wallet::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
@@ -133,6 +131,11 @@ pub struct MinotariWalletManager {
     pending_transactions: RwLock<HashMap<TxId, DisplayedTransaction>>,
     last_progress_emit_time: RwLock<Instant>,
     unlocker_handle: RwLock<Option<JoinHandle<Result<(), anyhow::Error>>>>,
+    /// Bumped every time a scan loop starts. The loop captures its value and
+    /// anything it produces is dropped once this moves on, so a cycle still
+    /// winding down after a refresh/import cannot write the old wallet's blocks
+    /// and balances into the replacement wallet's state.
+    scan_generation: AtomicU64,
 }
 
 impl MinotariWalletManager {
@@ -150,6 +153,7 @@ impl MinotariWalletManager {
                 Instant::now() - Duration::from_secs(PROGRESS_UPDATE_INTERVAL_SECS),
             ),
             unlocker_handle: RwLock::new(None),
+            scan_generation: AtomicU64::new(0),
         }
     }
 
@@ -198,21 +202,25 @@ impl MinotariWalletManager {
             address, amount
         );
         let tari_address = Self::get_owner_address().await?;
+        let destination_address = parse_destination_address(&address)?;
+
+        // Build the key manager (and so raise the PIN prompt) before anything locks
+        // UTXOs: a cancelled, mistyped or timed-out PIN returns from here having locked
+        // nothing, instead of leaving the selected inputs unspendable until the lock
+        // expires.
+        let app_handle = INSTANCE
+            .app_handle
+            .read()
+            .await
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("App handle not set"))?;
+        let key_manager = InternalWallet::get_key_manager(&app_handle, pin_context).await?;
+
         let mut transaction_manager = TransactionManager::new(
             INSTANCE.database_manager.get_pool().await?,
             tari_address.clone(),
         )
         .await?;
-
-        let destination_address = TariAddress::from_base58(&address)?;
-        let expected_network = wallet_network();
-        if destination_address.network() != expected_network {
-            return Err(anyhow::anyhow!(
-                "Destination address is for network {:?}, but the wallet is on {:?}",
-                destination_address.network(),
-                expected_network
-            ));
-        }
 
         let recipient: Recipient = Recipient {
             address: destination_address,
@@ -231,16 +239,7 @@ impl MinotariWalletManager {
         info!("Signing one-sided transaction...");
 
         let signed_transaction = transaction_manager
-            .sign_one_sided_transaction(
-                INSTANCE
-                    .app_handle
-                    .read()
-                    .await
-                    .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("App handle not set"))?,
-                unsigned_one_sided_transaction,
-                pin_context,
-            )
+            .sign_one_sided_transaction(&key_manager, unsigned_one_sided_transaction)
             .await?;
 
         info!("Finalizing and broadcasting one-sided transaction...");
@@ -252,16 +251,13 @@ impl MinotariWalletManager {
         // Store as pending transaction for later matching with scanned transactions
         Self::store_pending_transaction(&displayed_transaction).await;
 
-        let current_balance = Self::get_latest_account_balance().await;
-        let updated_balance = if let Some(mut balance) = current_balance {
-            balance.total = balance.total.saturating_sub(MicroMinotari(amount));
-            balance
-        } else {
-            EMPTY_BALANCE.clone()
-        };
-
+        // Re-read the balance the database now reports rather than guessing at it: the
+        // spent inputs are locked, so `available` already reflects the send, fee
+        // included. Subtracting the amount from `total` alone left `available` (what
+        // send validation checks) untouched, so the same funds could be spent twice
+        // before the next scan snapped the number back.
         BalanceTracker::current()
-            .update_from_transactions(Some(updated_balance))
+            .update_from_transactions(Self::get_latest_account_balance().await)
             .await;
 
         // Emit to frontend immediately so user sees the pending transaction
@@ -302,6 +298,26 @@ impl MinotariWalletManager {
         pending.clear();
     }
 
+    /// Forget everything the previous wallet's scan produced so a refresh or an
+    /// import starts from a blank slate instead of inheriting stale sync flags,
+    /// progress heights, balance and pending sends.
+    pub async fn reset_for_rescan() {
+        INSTANCE
+            .initial_sync_complete
+            .store(false, Ordering::SeqCst);
+        INSTANCE.scan_start_height.store(0, Ordering::SeqCst);
+        *INSTANCE.last_scanned_height.write().await = 0;
+        Self::clear_pending_transactions().await;
+        BalanceTracker::current().clear().await;
+        EventsEmitter::emit_wallet_transactions_cleared().await;
+        info!(target: LOG_TARGET, "Wallet scan state reset for rescan.");
+    }
+
+    /// Release the database pool so the wallet data folder can be deleted.
+    pub async fn close_database() {
+        INSTANCE.database_manager.close().await;
+    }
+
     pub async fn handle_side_effects_after_wallet_import(
         tari_wallet_type: TariAddressType,
     ) -> Result<(), anyhow::Error> {
@@ -315,16 +331,7 @@ impl MinotariWalletManager {
             Self::update_owner_address(&new_address).await?;
         }
 
-        // Clear balance tracker
-        BalanceTracker::current().clear().await;
-
-        // Clear pending transactions since we're starting fresh with new wallet
-        Self::clear_pending_transactions().await;
-
-        // Reset initial sync state since we're starting fresh with new wallet
-        INSTANCE
-            .initial_sync_complete
-            .store(false, Ordering::SeqCst);
+        Self::reset_for_rescan().await;
 
         info!(
             target: LOG_TARGET,
@@ -497,11 +504,10 @@ impl MinotariWalletManager {
 
         let database_path = MinotariWalletDatabaseManager::database_path()?;
         let tari_address = Self::get_owner_address().await?;
-        let base_url = base_node_http_url().await?;
 
         info!(
             target: LOG_TARGET,
-            "Starting blockchain scan for Minotari wallet at database path: {} via {}", database_path, base_url
+            "Starting blockchain scan for Minotari wallet at database path: {}", database_path
         );
 
         // Create cancellation token
@@ -524,45 +530,79 @@ impl MinotariWalletManager {
         let cancel_token_for_scan = cancel_token.clone();
 
         let database_path_buf = PathBuf::from(database_path);
+        let generation = INSTANCE.scan_generation.fetch_add(1, Ordering::SeqCst) + 1;
 
-        tokio::spawn(async move {
-            while !cancel_token_for_scan.is_cancelled() {
-                let (event_rx, scan_future) = Scanner::new(
-                    DEFAULT_PASSWORD,
-                    &base_url,
-                    database_path_buf.clone(),
-                    SCAN_BATCH_SIZE,
-                    REQUIRED_CONFIRMATIONS,
-                )
-                .account(&tari_address)
-                .mode(ScanMode::Partial {
-                    max_blocks: SCAN_MAX_BLOCKS_PER_CYCLE,
-                })
-                .cancel_token(cancel_token_for_scan.clone())
-                .run_with_events();
+        // Tracked, not a bare `tokio::spawn`: `shutdown_phases(Wallet)` only awaits
+        // tasks on this tracker, and a refresh/import deletes the database folder the
+        // moment it returns.
+        TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                while !cancel_token_for_scan.is_cancelled() {
+                    // Re-read per cycle: switching between the local node and the remote
+                    // RPC changes this URL, and a scanner pinned to the old one is dead.
+                    let base_url = match base_node_http_url().await {
+                        Ok(url) => url,
+                        Err(e) => {
+                            error!(target: LOG_TARGET, "No base node URL for the scan cycle, retrying after {SCAN_POLL_INTERVAL_SECS}s: {e:?}");
+                            tokio::select! {
+                                _ = tokio::time::sleep(Duration::from_secs(SCAN_POLL_INTERVAL_SECS)) => {}
+                                _ = cancel_token_for_scan.cancelled() => {}
+                            }
+                            continue;
+                        }
+                    };
 
-                // The event stream ends when the scan future drops its sender.
-                let (_, result) = tokio::join!(Self::process_scan_events(event_rx), scan_future);
+                    let (event_rx, scan_future) = Scanner::new(
+                        DEFAULT_PASSWORD,
+                        &base_url,
+                        database_path_buf.clone(),
+                        SCAN_BATCH_SIZE,
+                        REQUIRED_CONFIRMATIONS,
+                    )
+                    .account(&tari_address)
+                    .mode(ScanMode::Partial {
+                        max_blocks: SCAN_MAX_BLOCKS_PER_CYCLE,
+                    })
+                    .cancel_token(cancel_token_for_scan.clone())
+                    .run_with_events();
 
-                let caught_up = match result {
-                    Ok((_, more_blocks)) => !more_blocks,
-                    Err(e) => {
-                        // Keep polling: a dead scanner would silently freeze the balance
-                        // and history until the next app start.
-                        error!(target: LOG_TARGET, "Blockchain scan cycle failed, retrying after {SCAN_POLL_INTERVAL_SECS}s: {e:?}");
-                        true
+                    // The event stream ends when the scan future drops its sender.
+                    let (_, result) = tokio::join!(
+                        Self::process_scan_events(event_rx, generation),
+                        scan_future
+                    );
+
+                    // Confirmations, coinbase maturity and lock expiry all move money
+                    // between available/locked/immature without a single transaction
+                    // event, so the balance is re-read once per cycle regardless.
+                    if generation == INSTANCE.scan_generation.load(Ordering::SeqCst) {
+                        BalanceTracker::current()
+                            .update_from_transactions(Self::get_latest_account_balance().await)
+                            .await;
                     }
-                };
 
-                if caught_up {
-                    tokio::select! {
-                        _ = tokio::time::sleep(Duration::from_secs(SCAN_POLL_INTERVAL_SECS)) => {}
-                        _ = cancel_token_for_scan.cancelled() => {}
+                    let caught_up = match result {
+                        Ok((_, more_blocks)) => !more_blocks,
+                        Err(e) => {
+                            // Keep polling: a dead scanner would silently freeze the balance
+                            // and history until the next app start.
+                            error!(target: LOG_TARGET, "Blockchain scan cycle failed, retrying after {SCAN_POLL_INTERVAL_SECS}s: {e:?}");
+                            true
+                        }
+                    };
+
+                    if caught_up {
+                        tokio::select! {
+                            _ = tokio::time::sleep(Duration::from_secs(SCAN_POLL_INTERVAL_SECS)) => {}
+                            _ = cancel_token_for_scan.cancelled() => {}
+                        }
                     }
                 }
-            }
-            info!(target: LOG_TARGET_STATUSES, "Blockchain scan loop stopped.");
-        });
+                info!(target: LOG_TARGET_STATUSES, "Blockchain scan loop stopped.");
+            });
 
         // Spawn shutdown listener task
         TasksTrackers::current()
@@ -579,8 +619,17 @@ impl MinotariWalletManager {
         Ok(())
     }
 
-    async fn process_scan_events(mut rx: tokio::sync::mpsc::UnboundedReceiver<ProcessingEvent>) {
+    async fn process_scan_events(
+        mut rx: tokio::sync::mpsc::UnboundedReceiver<ProcessingEvent>,
+        generation: u64,
+    ) {
         while let Some(event) = rx.recv().await {
+            // A superseded loop's blocks and balances belong to a wallet that no
+            // longer exists. Keep draining so the scan future is not left writing
+            // into a closed channel, but act on nothing.
+            if generation != INSTANCE.scan_generation.load(Ordering::SeqCst) {
+                continue;
+            }
             match event {
                 ProcessingEvent::ScanStatus(status) => {
                     Self::handle_status_event(status).await;
@@ -629,8 +678,10 @@ impl MinotariWalletManager {
                         let updated_balance = Self::get_latest_account_balance().await;
 
                         BalanceTracker::current()
-                            .update_from_transactions(updated_balance.clone())
+                            .update_from_transactions(updated_balance)
                             .await;
+
+                        Self::notify_blocks_won(&transactions_to_emit).await;
 
                         // Emit all transactions to frontend
                         EventsEmitter::emit_wallet_transactions_found(transactions_to_emit).await;
@@ -648,6 +699,10 @@ impl MinotariWalletManager {
                     for tx in reorg_event.reorganized_displayed_transactions {
                         EventsEmitter::emit_wallet_transaction_updated(tx).await;
                     }
+
+                    BalanceTracker::current()
+                        .update_from_transactions(Self::get_latest_account_balance().await)
+                        .await;
                 }
                 ProcessingEvent::TransactionsUpdated(update_event) => {
                     let update_count = update_event.updated_transactions.len();
@@ -661,8 +716,39 @@ impl MinotariWalletManager {
                     for tx in update_event.updated_transactions {
                         EventsEmitter::emit_wallet_transaction_updated(tx).await;
                     }
+
+                    // A confirmation moves funds from unconfirmed to available
+                    // without changing the total.
+                    BalanceTracker::current()
+                        .update_from_transactions(Self::get_latest_account_balance().await)
+                        .await;
                 }
             }
+        }
+    }
+
+    /// Tell the airdrop backend about every block this wallet just mined.
+    ///
+    /// Only once the wallet has caught up to the tip: the initial scan (and every
+    /// refresh/import rescan) walks the whole mining history, and reporting those
+    /// blocks again would replay years of rewards to the airdrop API.
+    async fn notify_blocks_won(transactions: &[DisplayedTransaction]) {
+        if !INSTANCE.initial_sync_complete.load(Ordering::SeqCst) {
+            return;
+        }
+        let coinbase_heights: Vec<u64> = transactions
+            .iter()
+            .filter(|tx| tx.source == TransactionSource::Coinbase)
+            .map(|tx| tx.blockchain.block_height)
+            .collect();
+        if coinbase_heights.is_empty() {
+            return;
+        }
+        let Some(app_handle) = INSTANCE.app_handle.read().await.clone() else {
+            return;
+        };
+        for height in coinbase_heights {
+            crate::airdrop::send_new_block_mined(app_handle.clone(), height).await;
         }
     }
 

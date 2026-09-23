@@ -43,6 +43,20 @@ pub static EMPTY_BALANCE: AccountBalance = AccountBalance {
 
 static INSTANCE: LazyLock<BalanceTracker> = LazyLock::new(BalanceTracker::new);
 
+/// True when anything the wallet UI shows has moved.
+///
+/// `AccountBalance` has no `PartialEq`, and comparing `total` alone is not
+/// enough: a confirmation, a coinbase maturing or a lock expiring shifts money
+/// between available/locked/unconfirmed/immature while `total` stays put, which
+/// used to leave the spendable balance stale until the next incoming payment.
+fn balance_differs(a: &AccountBalance, b: &AccountBalance) -> bool {
+    a.total != b.total
+        || a.available != b.available
+        || a.locked != b.locked
+        || a.unconfirmed != b.unconfirmed
+        || a.immature != b.immature
+}
+
 pub struct BalanceTracker {
     account_balance: RwLock<AccountBalance>,
 }
@@ -93,7 +107,7 @@ impl BalanceTracker {
         let mut account_balance = self.account_balance.write().await;
         let mut should_emit_balance = false;
         if let Some(updated_balance) = updated_account_balance {
-            should_emit_balance = updated_balance.total != account_balance.total;
+            should_emit_balance = balance_differs(&updated_balance, &account_balance);
             *account_balance = updated_balance;
         }
         if should_emit_balance {
@@ -109,5 +123,23 @@ impl BalanceTracker {
     /// Emit balance update to frontend
     async fn emit_balance(account_balance: AccountBalance) {
         EventsEmitter::emit_wallet_balance_update(account_balance).await;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn emits_when_only_available_moves() {
+        let mut matured = EMPTY_BALANCE.clone();
+        matured.total = MicroMinotari(100);
+        let mut immature = matured.clone();
+        immature.immature = MicroMinotari(100);
+        matured.available = MicroMinotari(100);
+
+        // Coinbase maturing: total identical, spendable amount not.
+        assert!(balance_differs(&matured, &immature));
+        assert!(!balance_differs(&matured, &matured.clone()));
     }
 }

@@ -26,18 +26,19 @@ use log::info;
 use tari_common::configuration::Network;
 
 use crate::LOG_TARGET_APP_LOGIC;
+use crate::wallet::minotari_wallet::database_manager::MinotariWalletDatabaseManager;
 
 pub mod minotari_wallet;
 pub mod send_gate;
 pub mod wallet_types;
 
 /// Removes the on-disk wallet data for the current network: the in-process minotari DB
-/// (`<base>/minotari-wallet/<network>`) and the legacy console wallet folder
-/// (`<base>/wallet/<network>`).
+/// (wherever `MinotariWalletDatabaseManager` actually put it) and the legacy console
+/// wallet folder (`<base>/wallet/<network>`).
 pub async fn clean_wallet_data_folders(base_path: &Path) -> Result<(), anyhow::Error> {
     let network_str = Network::get_current().to_string().to_lowercase();
     for dir in [
-        base_path.join("minotari-wallet").join(&network_str),
+        MinotariWalletDatabaseManager::minotari_wallet_dir()?,
         base_path.join("wallet").join(&network_str),
     ] {
         if dir.try_exists()? && dir.is_dir() {

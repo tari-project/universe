@@ -647,6 +647,10 @@ pub async fn import_seed_words(
         }
     }
 
+    // The scan state was already reset by the import's side effects; this only has
+    // to free the database files before the folder is removed.
+    MinotariWalletManager::close_database().await;
+
     let base_path = app_handle
         .path()
         .app_local_data_dir()
@@ -1601,10 +1605,10 @@ pub async fn reconnect() -> Result<(), String> {
 /// The gate is `wallet::send_gate::gated_send`, shared with the MCP `send_transaction`
 /// tool:
 /// * With a PIN configured, the PIN is requested and validated further down the stack
-///   (`MinotariWalletManager::send_one_sided_transaction` ->
-///   `TransactionManager::sign_one_sided_transaction` -> `InternalWallet::get_key_manager`
-///   -> `InternalWallet::get_tari_seed_with_prompt`). The prompt carries the amount and
-///   destination. A wrong or cancelled PIN aborts the send before anything is broadcast.
+///   (`MinotariWalletManager::send_one_sided_transaction` -> `InternalWallet::get_key_manager`
+///   -> `InternalWallet::get_tari_seed_with_prompt`), before any UTXO is locked. The prompt
+///   carries the amount and destination. A wrong or cancelled PIN aborts the send with
+///   nothing locked or broadcast.
 /// * With no PIN configured there is nothing secret to ask for, so the gate emits a
 ///   backend-driven confirmation dialog (amount + destination + payment id, 120s timeout)
 ///   that the user must approve.
@@ -2156,6 +2160,10 @@ pub async fn refresh_wallet_history(app_handle: tauri::AppHandle) -> Result<(), 
         .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
 
+    MinotariWalletManager::reset_for_rescan().await;
+    // Nothing may hold the database files open when the folder goes.
+    MinotariWalletManager::close_database().await;
+
     let base_path = app_handle
         .path()
         .app_local_data_dir()
@@ -2163,8 +2171,6 @@ pub async fn refresh_wallet_history(app_handle: tauri::AppHandle) -> Result<(), 
     crate::wallet::clean_wallet_data_folders(&base_path)
         .await
         .map_err(|e| e.to_string())?;
-
-    MinotariWalletManager::clear_pending_transactions().await;
 
     SetupManager::get_instance()
         .resume_phases(vec![SetupPhase::Wallet])
