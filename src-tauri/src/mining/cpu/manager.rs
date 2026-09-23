@@ -208,7 +208,7 @@ impl CpuManager {
                     .current_cpu_pool()
                     .pool_url
                     .clone();
-                let tari_address = InternalWallet::tari_address().await;
+                let tari_address = InternalWallet::tari_address().await?;
 
                 // Worker name format depends on the pool
                 // LuckyPool: .Tari-Universe

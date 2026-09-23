@@ -208,7 +208,7 @@ impl SetupPhaseImpl for CpuMiningSetupPhase {
                     return Ok(());
                 }
 
-                let tari_address = InternalWallet::tari_address().await;
+                let tari_address = InternalWallet::tari_address().await?;
                 let telemetry_id = state
                     .telemetry_manager
                     .read()

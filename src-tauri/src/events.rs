@@ -155,12 +155,28 @@ pub struct ShowReleaseNotesPayload {
     pub should_show_dialog: bool,
 }
 
+/// `title` and `description` are i18n keys the dialog runs through `t()`; `error_message` is
+/// printed raw, so it carries only a short technical detail and never seed material.
 #[derive(Debug, Serialize, Clone)]
 pub struct CriticalProblemPayload {
     pub title: Option<String>,
     pub description: Option<String>,
     pub error_message: Option<String>,
 }
+
+/// Lets the payload travel as the error itself, so a failure that already knows what the user
+/// should be told reaches the dialog without being flattened into an English string.
+impl std::fmt::Display for CriticalProblemPayload {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match (&self.error_message, &self.description) {
+            (Some(detail), _) => write!(formatter, "{detail}"),
+            (None, Some(description)) => write!(formatter, "{description}"),
+            (None, None) => write!(formatter, "critical problem"),
+        }
+    }
+}
+
+impl std::error::Error for CriticalProblemPayload {}
 
 #[derive(Debug, Serialize, Clone)]
 pub struct NodeTypeUpdatePayload {
@@ -232,6 +248,10 @@ pub enum PinPromptContext {
         destination: String,
         payment_id: Option<String>,
     },
+    /// The wallet details are missing from the config and are being rebuilt from the stored seed.
+    RestoreWalletDetails,
+    /// The stored seed is PIN-protected although the config says no PIN is set.
+    SeedNeedsPin,
 }
 
 #[derive(Debug, Serialize, Clone)]

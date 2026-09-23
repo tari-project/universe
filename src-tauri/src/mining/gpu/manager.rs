@@ -379,7 +379,7 @@ impl GpuManager {
                     .get_task_tracker()
                     .await;
 
-                let tari_address = InternalWallet::tari_address().await;
+                let tari_address = InternalWallet::tari_address().await?;
                 let gpu_usage_percentage = ConfigMining::content()
                     .await
                     .get_selected_gpu_usage_percentage();

@@ -5,6 +5,7 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import EnterPin from '@app/components/security/pin/EnterPin.tsx';
 import { TransactionContextSummary } from '@app/components/transactions/send/TransactionContextSummary.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
 import { Header, Heading, Wrapper } from './styles.ts';
 
 export default function EnterPinDialog() {
@@ -18,6 +19,12 @@ export default function EnterPinDialog() {
     // Only shown when the backend told us what the PIN is for. Everything else keeps the
     // plain "Enter your PIN" dialog.
     const sendContext = pinContext?.kind === 'send' ? pinContext : null;
+    const reasonKey =
+        pinContext?.kind === 'restore_wallet_details'
+            ? 'security.pin.restore-wallet-details'
+            : pinContext?.kind === 'seed_needs_pin'
+              ? 'security.pin.seed-needs-pin'
+              : null;
 
     function handleClose() {
         if (pinResolver) {
@@ -52,6 +59,11 @@ export default function EnterPinDialog() {
                         <Heading>{sendContext ? t('security.pin.approve-send') : t('security.pin.enter')}</Heading>{' '}
                         <CloseButton onClick={handleClose} />
                     </Header>
+                    {reasonKey && (
+                        <Typography variant="p" style={{ opacity: 0.5, fontSize: 12 }}>
+                            {t(reasonKey)}
+                        </Typography>
+                    )}
                     {sendContext && (
                         <TransactionContextSummary
                             amountMicroMinotari={sendContext.amount_micro_minotari}

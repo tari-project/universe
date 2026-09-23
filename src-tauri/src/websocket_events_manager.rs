@@ -204,7 +204,7 @@ impl WebsocketEventsManager {
             warn!(target: LOG_TARGET_APP_LOGIC, "Wallet has not been initialized");
             return None;
         }
-        let tari_address = InternalWallet::tari_address().await;
+        let tari_address = InternalWallet::tari_address().await.ok()?;
 
         let pools_config = ConfigPools::content().await;
         let gpu_pool_name = pools_config.current_gpu_pool().pool_name;

@@ -24,7 +24,9 @@ use crate::internal_wallet::InternalWallet;
 use crate::wallet::wallet_manager::WalletManager;
 
 pub async fn get_wallet_address() -> Result<String, String> {
-    let address = InternalWallet::tari_address().await;
+    let address = InternalWallet::tari_address()
+        .await
+        .map_err(|e| e.to_string())?;
     let emoji = address.to_emoji_string();
     let hex = address.to_hex();
     let base58 = address.to_base58();
