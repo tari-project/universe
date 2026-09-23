@@ -153,6 +153,11 @@ export default function Tile({
             {...getReferenceProps?.()}
             onClick={handleClick}
             $isModuleFailed={isModuleFailed}
+            data-testid={`mining-tile-${title.toLowerCase()}`}
+            // NumberFlow renders its digits inside a shadow root, which
+            // tests cannot read from text content — expose the rate directly.
+            data-rate={syncing || isLoading ? '' : String(mainNumber)}
+            data-rate-unit={mainUnit}
         >
             <Inside $isSyncing={syncing || isLoading}>
                 <HeadingRow>

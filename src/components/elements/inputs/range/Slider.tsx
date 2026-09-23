@@ -23,6 +23,7 @@ interface SliderProps {
     startingValue?: number;
     performanceMarkers?: boolean;
     isLoading?: boolean;
+    testId?: string;
 }
 export function SliderInput({
     defaultValue = 0,
@@ -33,6 +34,7 @@ export function SliderInput({
     maxValue,
     stepSize = 1,
     onChange,
+    testId,
 }: SliderProps) {
     const [value, setValue] = useState(defaultValue);
     const deferredValue = useDebouncedValue(value, 200);
@@ -77,7 +79,7 @@ export function SliderInput({
     };
 
     return (
-        <Wrapper $isLoading={isLoading}>
+        <Wrapper $isLoading={isLoading} data-testid={testId}>
             <RangeLimits>{`${startingValue}%`}</RangeLimits>
 
             <SliderWrapper

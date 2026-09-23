@@ -125,7 +125,13 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     const displayCTAs = (
         <>
             {!isMonero ? (
-                <IconButton size="small" disabled={isWalletImporting} onClick={onToggleEdit} type="button">
+                <IconButton
+                    size="small"
+                    disabled={isWalletImporting}
+                    onClick={onToggleEdit}
+                    type="button"
+                    data-testid="wallet-seed-edit"
+                >
                     <IoPencil />
                 </IconButton>
             ) : null}
@@ -137,7 +143,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
 
     const editCTAs = (
         <>
-            <IconButton size="small" type="submit" disabled={!isValid || !seedWords}>
+            <IconButton size="small" type="submit" disabled={!isValid || !seedWords} data-testid="wallet-seed-submit">
                 <IoCheckmarkOutline />
             </IconButton>
             <IconButton size="small" type="reset">
@@ -189,7 +195,12 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
                                 <Button size="small" onClick={() => setShowConfirm(false)}>
                                     {t('cancel')}
                                 </Button>
-                                <Button size="small" color="warning" onClick={() => handleConfirmed()}>
+                                <Button
+                                    size="small"
+                                    color="warning"
+                                    onClick={() => handleConfirmed()}
+                                    data-testid="wallet-import-confirm"
+                                >
                                     {t('yes')}
                                 </Button>
                             </Stack>

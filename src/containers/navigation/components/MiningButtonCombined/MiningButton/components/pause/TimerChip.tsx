@@ -6,7 +6,7 @@ interface TimerChipProps {
 }
 export default function TimerChip({ resumeTime }: TimerChipProps) {
     return (
-        <ChipWrapper title={resumeTime.fullTimeString}>
+        <ChipWrapper title={resumeTime.fullTimeString} data-testid="resume-countdown">
             <CountdownIcon /> <ChipText>{resumeTime.displayString}</ChipText>
         </ChipWrapper>
     );

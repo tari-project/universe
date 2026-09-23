@@ -43,13 +43,22 @@
   "gpu-device-enabled": "GPU Mining devices",
   "gpu-device-enabled-description": "Enable or disable specific GPU device.",
   "gpu-device-no-found": "⚠️ No GPU devices found",
+  "gpu-device-single-device-note": "{{miner}} mines on one GPU at a time — the first enabled device is used.",
   "gpu-engine": "Gpu Engine",
+  "gpu-miner-description": {
+    "LolMiner": "Closed source C29 miner for AMD and NVIDIA GPUs",
+    "TariMiner": "Open source C29 miner for NVIDIA GPUs"
+  },
+  "gpu-miner-failed-with": "Failed with: {{error}}",
+  "gpu-miner-select-placeholder": "Select GPU miner",
   "gpu-miners": "GPU Miners",
   "gpu-miners-not-found": "No GPU Miners found",
   "gpu-mining-enabled": "GPU Mining",
   "gpu-mining-not-recommended": "Detected low end hardware, gpu mining is not recommended",
   "gpu-not-available-on-macos": "⚠️ GPU mining is not available on macOS",
   "gpu-unavailable": "⚠️ GPU disabled because your hardware does not support it",
+  "gpu-cannot-mine": "⚠️ Your GPU cannot mine Tari: {{reason}}",
+  "gpu-cannot-mine-unknown": "the miner does not support this device",
   "hardware-status": "Hardware status",
   "idle-timeout": {
     "max": "Maximum is 21600 seconds",
@@ -206,6 +215,10 @@
   "should-auto-start": {
     "description": "When enabled, the app will start automatically when you log in to your computer.",
     "title": "Auto-start on system boot"
+  },
+  "show-window-on-startup": {
+    "description": "When enabled, Tari Universe will show its main window after startup. Turn this off to launch to the task tray.",
+    "title": "Show window on startup"
   },
   "should-use-system-language": "Use system language",
   "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",

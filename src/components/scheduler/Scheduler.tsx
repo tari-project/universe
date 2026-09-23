@@ -77,11 +77,13 @@ export default function Scheduler() {
                         label={t('schedule.time-label', { context: 'start' })}
                         initialTime={startTime}
                         handleOnChange={setStartTime}
+                        testId="scheduler-start-time"
                     />
                     <TimePicker
                         label={t('schedule.time-label', { context: 'end' })}
                         initialTime={endTime}
                         handleOnChange={setEndTime}
+                        testId="scheduler-end-time"
                     />
                     <MiningMode
                         variant="secondary"
@@ -92,10 +94,17 @@ export default function Scheduler() {
                 <CurrentScheduleItem />
             </ContentWrapper>
             <ContentWrapper>
-                <CTA variant="black" size="xlarge" fluid onClick={handleSave} disabled={isPending}>
+                <CTA
+                    variant="black"
+                    size="xlarge"
+                    fluid
+                    onClick={handleSave}
+                    disabled={isPending}
+                    data-testid="scheduler-save"
+                >
                     {t('schedule.cta-save', { context: saved ? 'complete' : '' })}
                 </CTA>
-                <TextButton fluid onClick={() => setShowScheduler(false)}>
+                <TextButton fluid onClick={() => setShowScheduler(false)} data-testid="scheduler-cancel">
                     <CTAText>{t('common:cancel')}</CTAText>
                 </TextButton>
             </ContentWrapper>

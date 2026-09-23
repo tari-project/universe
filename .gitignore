@@ -41,3 +41,10 @@ tari-win-bundler/bin
 
 # Built process-wrapper sidecar binaries
 src-tauri/binaries/
+
+# Local tooling config
+.mcp.json
+.claude/
+
+# Patched remote-ui build artifact
+src-tauri/tauri-remote-ui-patched/Cargo.lock

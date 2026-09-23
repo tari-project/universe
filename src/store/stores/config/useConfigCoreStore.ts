@@ -21,5 +21,6 @@ const initialState: ConfigCore = {
     use_tor: false,
     scheduler_events: null,
     shutdown_mode: ShutdownMode.Tasktray,
+    show_window_on_startup: true,
 };
 export const useConfigCoreStore = create<ConfigCore>()(() => ({ ...initialState }));

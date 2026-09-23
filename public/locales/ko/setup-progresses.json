@@ -45,6 +45,8 @@
     "binaries-cpu-miner-download": "CPU 채굴기 바이너리 준비 중 | 다운로드 중: {{ progress }}%",
     "binaries-gpu-miner": "GPU 채굴기 바이너리 준비 중",
     "binaries-gpu-miner-download": "GPU 채굴기 바이너리 준비 중 | 다운로드 중: {{ progress }}%",
+    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
+    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
     "binaries-merge-mining-proxy": "병합 채굴 프록시 바이너리 준비 중",
     "binaries-merge-mining-proxy-download": "병합 채굴 프록시 바이너리 준비 중 | 다운로드 중: {{ progress }}%",
     "binaries-node": "노드 바이너리 준비 중",

@@ -41,7 +41,7 @@ export default function SyncCountdown({ onCompleted, onStarted, isCompact = fals
         }
     }, [countdown]);
 
-    if (!startedRef.current) {
+    if (countdown === -1) {
         return <LoadingText text={t('setup-progresses:calculating_time', { context: isCompact ? 'compact' : '' })} />;
     }
 

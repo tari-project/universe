@@ -67,6 +67,7 @@ export const Edit = () => {
                     $hasError={!!formState.errors.seedWords}
                     onPaste={handlePaste}
                     placeholder="Enter seed words..."
+                    data-testid="wallet-seed-input"
                     {...register('seedWords', registerOptions)}
                 />
             </EditWrapper>

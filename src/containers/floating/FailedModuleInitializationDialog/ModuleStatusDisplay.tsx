@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useMemo } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoRefreshOutline } from 'react-icons/io5';
 import { SetupPhase } from '@app/types/events-payloads';
@@ -17,7 +17,6 @@ import {
     NoErrorMessage,
     ModuleActionsWrapper,
 } from './styles';
-import { useErrorDialogsButtonsLogic } from '@app/hooks/app/useErrorDialogsButtonsLogic';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
@@ -26,7 +25,6 @@ interface ModuleStatusDisplayProps {
     status: AppModuleStatus;
     errorMessages: Record<SetupPhase, string>;
     onRestart?: () => void;
-    onSendLogs?: () => void;
     isRestartLoading?: boolean;
     allModulesFailed?: boolean;
     extraActionButtons?: ReactNode[];
@@ -62,13 +60,6 @@ export function ModuleStatusDisplay({
         }
         return errorMessage;
     };
-
-    const { logsSubmissionId, handleSendFeedback, handleCopyLogsSubmissionId, handleLogsButtonText } =
-        useErrorDialogsButtonsLogic();
-
-    const handleSendModuleLogs = useCallback(async () => {
-        await handleSendFeedback(`Failed initialization of ${module}`);
-    }, [handleSendFeedback, module]);
 
     return (
         <ModuleStatusWrapper>
@@ -110,14 +101,6 @@ export function ModuleStatusDisplay({
             {status === AppModuleStatus.Failed && !allModulesFailed && (
                 <ModuleActionsWrapper>
                     {extraActionButtons}
-                    <Button
-                        backgroundColor="warning"
-                        variant="outlined"
-                        size="smaller"
-                        onClick={logsSubmissionId ? handleCopyLogsSubmissionId : handleSendModuleLogs}
-                    >
-                        {handleLogsButtonText}
-                    </Button>
                     <Button
                         backgroundColor="green"
                         size="smaller"

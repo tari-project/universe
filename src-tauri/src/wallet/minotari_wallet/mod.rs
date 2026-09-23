@@ -29,6 +29,7 @@ pub static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet";
 use crate::wallet::minotari_wallet::balance_tracker::EMPTY_BALANCE;
 use crate::{
     LOG_TARGET_STATUSES, UniverseAppState,
+    events::PinPromptContext,
     events_emitter::EventsEmitter,
     internal_wallet::{InternalWallet, TariAddressType},
     tasks_tracker::TasksTrackers,
@@ -84,8 +85,8 @@ pub(crate) fn get_grpc_url() -> String {
     http_api_url.to_string()
 }
 
-/// The `minotari` wallet crate depends on tari 5.3.1, while the rest of the app
-/// uses tari v5.4.0-rc.1. Derive the wallet-side (`5.3.1`) network from the app's
+/// The `minotari` wallet crate depends on tari 5.7.0-pre.8, while the rest of the app
+/// uses tari v6.0.1-pre.0. Derive the wallet-side network from the app's
 /// canonical network so the two can never diverge (e.g. sending to the wrong
 /// network). The variant sets are identical across both versions.
 pub(crate) fn wallet_network() -> WalletNetwork {
@@ -156,7 +157,7 @@ impl MinotariWalletManager {
 
     /// Initialize and cache the owner Tari address
     async fn init_owner_address() -> Result<(), anyhow::Error> {
-        let address = InternalWallet::tari_address().await.to_base58();
+        let address = InternalWallet::tari_address().await?.to_base58();
         let mut owner_address_lock = INSTANCE.owner_tari_address.write().await;
         *owner_address_lock = Some(address);
         Ok(())
@@ -172,6 +173,7 @@ impl MinotariWalletManager {
         address: String,
         amount: u64,
         payment_id: Option<String>,
+        pin_context: Option<PinPromptContext>,
     ) -> Result<DisplayedTransaction, anyhow::Error> {
         if amount == 0 {
             return Err(anyhow::anyhow!(
@@ -182,10 +184,10 @@ impl MinotariWalletManager {
             "Sending one-sided transaction to address: {}, amount: {}",
             address, amount
         );
-        let tari_address = Self::get_owner_address().await;
+        let tari_address = Self::get_owner_address().await?;
         let mut transaction_manager = TransactionManager::new(
             INSTANCE.database_manager.get_pool().await?,
-            Self::get_owner_address().await,
+            tari_address.clone(),
         )
         .await?;
 
@@ -224,6 +226,7 @@ impl MinotariWalletManager {
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("App handle not set"))?,
                 unsigned_one_sided_transaction,
+                pin_context,
             )
             .await?;
 
@@ -295,7 +298,7 @@ impl MinotariWalletManager {
         );
 
         if tari_wallet_type == TariAddressType::Internal {
-            let new_address = InternalWallet::tari_address().await.to_base58();
+            let new_address = InternalWallet::tari_address().await?.to_base58();
             Self::update_owner_address(&new_address).await?;
         }
 
@@ -318,12 +321,12 @@ impl MinotariWalletManager {
     }
 
     /// Get cached owner address or fetch if not cached
-    async fn get_owner_address() -> String {
+    async fn get_owner_address() -> Result<String, anyhow::Error> {
         // Fast path: read lock
         {
             let owner_address_lock = INSTANCE.owner_tari_address.read().await;
             if let Some(address) = owner_address_lock.as_ref() {
-                return address.clone();
+                return Ok(address.clone());
             }
         }
 
@@ -331,12 +334,12 @@ impl MinotariWalletManager {
         let mut owner_address_lock = INSTANCE.owner_tari_address.write().await;
         // Double-check after acquiring write lock (another task may have initialized)
         if let Some(address) = owner_address_lock.as_ref() {
-            return address.clone();
+            return Ok(address.clone());
         }
 
-        let address = InternalWallet::tari_address().await.to_base58();
+        let address = InternalWallet::tari_address().await?.to_base58();
         *owner_address_lock = Some(address.clone());
-        address
+        Ok(address)
     }
 
     /// Acquire database connection with retry logic
@@ -456,7 +459,7 @@ impl MinotariWalletManager {
         }
 
         let database_path = MinotariWalletDatabaseManager::database_path()?;
-        let tari_address = Self::get_owner_address().await;
+        let tari_address = Self::get_owner_address().await?;
 
         info!(
             target: LOG_TARGET,
@@ -709,16 +712,27 @@ impl MinotariWalletManager {
             ScanStatusEvent::Paused { reason, .. } => {
                 info!(target: LOG_TARGET_STATUSES, "Scan paused: {:?}", reason);
             }
+            ScanStatusEvent::FastSyncPhaseStarted {
+                phase,
+                from_height,
+                to_height,
+                ..
+            } => {
+                info!(target: LOG_TARGET_STATUSES, "Fast sync phase {phase:?} started: {from_height} -> {to_height:?}");
+            }
+            ScanStatusEvent::FastSyncPhaseCompleted { phase, .. } => {
+                info!(target: LOG_TARGET_STATUSES, "Fast sync phase {phase:?} completed");
+            }
         }
     }
     pub async fn import_view_key() -> Result<(), anyhow::Error> {
         let tari_wallet_details = InternalWallet::tari_wallet_details().await;
         if let Some(details) = tari_wallet_details {
             let database_path = MinotariWalletDatabaseManager::database_path()?;
-            let tari_address = Self::get_owner_address().await;
+            let tari_address = Self::get_owner_address().await?;
 
             init_with_view_key(
-                &details.view_private_key_hex,
+                details.view_private_key_hex.reveal(),
                 &details.spend_public_key_hex,
                 DEFAULT_PASSWORD,
                 Path::new(&database_path),

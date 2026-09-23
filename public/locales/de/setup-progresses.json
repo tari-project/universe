@@ -45,6 +45,8 @@
     "binaries-cpu-miner-download": "CPU-Miner-Binärdatei vorbereiten | Herunterladen: {{ progress }}%",
     "binaries-gpu-miner": "GPU-Miner-Binärdatei wird vorbereitet",
     "binaries-gpu-miner-download": "GPU-Miner-Binärdatei vorbereiten | Herunterladen: {{ progress }}%",
+    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
+    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
     "binaries-merge-mining-proxy": "Merge Mining Proxy-Binärdatei wird vorbereitet",
     "binaries-merge-mining-proxy-download": "Merge-Mining-Proxy-Binärdatei vorbereiten | Herunterladen: {{ progress }}%",
     "binaries-node": "Knoten-Binärdatei wird vorbereitet",

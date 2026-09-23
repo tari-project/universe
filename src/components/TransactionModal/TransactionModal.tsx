@@ -17,13 +17,13 @@ interface Props {
 
 export default function TransactionModal({ show, title, children, handleBack, handleClose, noClose, noHeader }: Props) {
     const backIcon = handleBack ? (
-        <TopButton onClick={handleBack}>
+        <TopButton onClick={handleBack} data-testid="modal-back">
             <IoArrowBack />
         </TopButton>
     ) : null;
 
     const closeIcon = handleClose ? (
-        <TopButton onClick={handleClose}>
+        <TopButton onClick={handleClose} data-testid="modal-close">
             <CloseIcon />
         </TopButton>
     ) : null;

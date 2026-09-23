@@ -99,9 +99,13 @@ impl CredentialManager {
     }
 
     fn save_to_keyring(&self, credential: &Credential) -> Result<(), CredentialError> {
-        let _unused = self.delete_credential();
-
         let entry = Entry::new(&self.service_name, &self.username)?;
+        Self::write_credential(&entry, credential)
+    }
+
+    /// Overwrites the entry in place: deleting first leaves no credential at all when the write
+    /// then fails, and with it the only copy of the seed.
+    fn write_credential(entry: &Entry, credential: &Credential) -> Result<(), CredentialError> {
         let serialized = serde_cbor::to_vec(credential)?;
         entry.set_secret(&serialized)?;
         Ok(())
@@ -201,5 +205,39 @@ impl LegacyCredentialManager {
 
     fn fallback_file(&self) -> PathBuf {
         self.fallback_dir.join(FALLBACK_FILE_PATH)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use keyring::mock::MockCredential;
+
+    #[test]
+    fn a_failed_write_keeps_the_previous_credential() {
+        let entry = Entry::new_with_credential(Box::new(MockCredential::default()));
+        let previous = Credential {
+            encrypted_seed: vec![1, 2, 3],
+        };
+        CredentialManager::write_credential(&entry, &previous).expect("first write");
+
+        let mock: &MockCredential = entry
+            .get_credential()
+            .downcast_ref()
+            .expect("mock credential");
+        mock.set_error(KeyringError::Invalid(
+            "mock".to_string(),
+            "write refused".to_string(),
+        ));
+        let replacement = Credential {
+            encrypted_seed: vec![4, 5, 6],
+        };
+        CredentialManager::write_credential(&entry, &replacement)
+            .expect_err("the mock refuses this write");
+
+        let stored: Credential =
+            serde_cbor::from_slice(&entry.get_secret().expect("the entry must still be present"))
+                .expect("stored credential decodes");
+        assert_eq!(stored.encrypted_seed, previous.encrypted_seed);
     }
 }

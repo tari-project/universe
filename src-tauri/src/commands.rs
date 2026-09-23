@@ -41,6 +41,7 @@ use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig, mnemonic_to_tari_cipher_seed};
 use crate::mining::cpu::manager::CpuManager;
+use crate::mining::gpu::consts::GpuMinerType;
 use crate::mining::gpu::manager::GpuManager;
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
@@ -61,6 +62,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
+use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send};
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
 
@@ -69,6 +71,8 @@ use base64::prelude::*;
 use crate::node::data_location::update_data_location;
 use crate::wallet::minotari_wallet::balance_tracker::BalanceTracker;
 use log::{debug, error, info, warn};
+use monero_address_creator::Seed as MoneroSeed;
+use monero_address_creator::network::Mainnet;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
@@ -126,7 +130,7 @@ pub async fn select_exchange_miner(
         TariAddress::from_str(&mining_address).map_err(|e| format!("Invalid Tari address: {e}"))?;
 
     // Validate PIN if pin locked
-    let _unused = PinManager::get_validated_pin_if_defined(&app_handle)
+    let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -163,6 +167,18 @@ pub async fn frontend_ready(
     app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    // In test mode every page load calls frontend_ready after registering
+    // its event listeners — replay the cached backend state so fresh
+    // Playwright contexts see current (real) module/config/wallet state,
+    // and emit a fresh CloseSplashscreen: setup completed long ago, and a
+    // page stuck on the splash can't be driven. Deliberately before the
+    // once-guard: it must run for every page.
+    #[cfg(feature = "test-mode")]
+    {
+        crate::headless::replay_state_snapshot(&app).await;
+        EventsEmitter::emit_close_splashscreen().await;
+    }
+
     static FRONTEND_READY_CALLED: std::sync::atomic::AtomicBool =
         std::sync::atomic::AtomicBool::new(false);
     if FRONTEND_READY_CALLED.load(Ordering::SeqCst) {
@@ -172,6 +188,19 @@ pub async fn frontend_ready(
 
     EventsEmitter::load_app_handle(app.clone()).await;
     FrontendReadyChannel::current().set_ready();
+
+    if *ConfigCore::content().await.show_window_on_startup() {
+        match app.get_webview_window("main") {
+            Some(window) => {
+                if let Err(err) = window.show() {
+                    error!(target: LOG_TARGET_APP_LOGIC, "Couldn't show the main window on startup {err:?}");
+                }
+            }
+            None => {
+                error!(target: LOG_TARGET_APP_LOGIC, "Could not find main window to show on startup");
+            }
+        }
+    }
 
     let state_inner = state.inner().clone();
 
@@ -183,9 +212,15 @@ pub async fn frontend_ready(
             // Give the splash screen a few seconds to show before closing it
             sleep(Duration::from_secs(3));
             EventsEmitter::emit_close_splashscreen().await;
-            let _unused = ReleaseNotes::current()
-                .handle_release_notes_event_emit(state_inner, app)
-                .await;
+            // In test mode the release-notes dialog would land on whichever
+            // test page happens to trigger the once-guard, seconds after it
+            // finished dialog dismissal — a nondeterministic overlay that
+            // blocks clicks. Suppress it; it is not part of any E2E flow.
+            if !cfg!(feature = "test-mode") {
+                let _unused = ReleaseNotes::current()
+                    .handle_release_notes_event_emit(state_inner, app)
+                    .await;
+            }
         });
 
     Ok(())
@@ -373,7 +408,7 @@ pub async fn get_network(
 pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    let pin_password = PinManager::get_validated_pin_if_defined(&app_handle)
+    let pin_password = PinManager::get_validated_pin_if_defined(&app_handle, None)
         .await
         .map_err(|e| e.to_string())?;
     let monero_seed = InternalWallet::get_monero_seed(pin_password)
@@ -408,10 +443,7 @@ pub async fn get_paper_wallet_details(
     warn!(target: LOG_TARGET_APP_LOGIC, "auth_uuid {auth_uuid:?}");
     let anon_id = ConfigCore::content().await.anon_id().clone();
 
-    let pin_password = PinManager::get_validated_pin_if_defined(&app_handle)
-        .await
-        .map_err(|e| e.to_string())?;
-    let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password)
+    let tari_cipher_seed = InternalWallet::get_tari_seed_with_prompt(&app_handle, None)
         .await
         .map_err(InvokeError::from_anyhow)?;
     let raw_passphrase = phraze::generate_a_passphrase(5, "-", false, &MNEMONIC_ENGLISH_WORDS);
@@ -459,10 +491,7 @@ pub async fn get_paper_wallet_details(
 pub async fn get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    let pin_password = PinManager::get_validated_pin_if_defined(&app_handle)
-        .await
-        .map_err(|e| e.to_string())?;
-    let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password)
+    let tari_cipher_seed = InternalWallet::get_tari_seed_with_prompt(&app_handle, None)
         .await
         .map_err(|e| e.to_string())?;
     let seed_words = tari_cipher_seed
@@ -497,7 +526,7 @@ pub async fn set_external_tari_address(
         .await;
 
     // Validate PIN if pin locked
-    let _unused = PinManager::get_validated_pin_if_defined(&app_handle)
+    let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
         .await
         .map_err(InvokeError::from_anyhow)?;
 
@@ -566,6 +595,7 @@ pub async fn get_airdrop_tokens(
 #[tauri::command]
 pub async fn forgot_pin(
     seed_words: Vec<String>,
+    monero_seed_words: Option<Vec<String>>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
     let tari_cipher_seed = mnemonic_to_tari_cipher_seed(seed_words)
@@ -579,12 +609,34 @@ pub async fn forgot_pin(
     .await
     .map_err(|e| e.to_string())?;
 
-    if extracted_wallet_details.tari_address != InternalWallet::tari_address().await {
+    let current_tari_address = InternalWallet::tari_address()
+        .await
+        .map_err(|e| e.to_string())?;
+    if extracted_wallet_details.tari_address != current_tari_address {
         error!(target: LOG_TARGET_APP_LOGIC, "Seed words do not match current wallet address");
         return Err("Seed words do not match".to_string());
     }
 
-    InternalWallet::recover_forgotten_pin(&app_handle, tari_cipher_seed)
+    // The Monero credential is enciphered with the forgotten PIN, so recovery replaces it. Words
+    // are accepted only when they derive the recorded address; without them the user has asked for
+    // a new Monero wallet.
+    let monero_seed = match monero_seed_words {
+        Some(words) if !words.is_empty() => {
+            let seed = MoneroSeed::from_seed_words(&words)
+                .map_err(|_| "Monero seed words do not match".to_string())?;
+            let address = seed
+                .to_address::<Mainnet>()
+                .map_err(|_| "Monero seed words do not match".to_string())?;
+            if address != *ConfigWallet::content().await.monero_address() {
+                error!(target: LOG_TARGET_APP_LOGIC, "Monero seed words do not match the recorded Monero address");
+                return Err("Monero seed words do not match".to_string());
+            }
+            Some(seed)
+        }
+        _ => None,
+    };
+
+    InternalWallet::recover_forgotten_pin(&app_handle, tari_cipher_seed, monero_seed)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -733,7 +785,7 @@ pub async fn reset_settings(
 ) -> Result<(), String> {
     if reset_wallet {
         // Validate PIN if pin locked
-        let _unused = PinManager::get_validated_pin_if_defined(&app_handle)
+        let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
             .await
             .map_err(|e| e.to_string())?;
         log::info!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Pin successfully validated");
@@ -865,21 +917,12 @@ pub async fn send_feedback(
 ) -> Result<String, String> {
     let timer = Instant::now();
     let app_log_dir = app.path().app_log_dir().expect("Could not get log dir.");
-    let app_config_dir = app
-        .path()
-        .app_config_dir()
-        .expect("Could not get app config dir.");
 
     let reference = state
         .feedback
         .read()
         .await
-        .send_feedback(
-            feedback,
-            include_logs,
-            app_log_dir.clone(),
-            app_config_dir.clone(),
-        )
+        .send_feedback(feedback, include_logs, app_log_dir.clone())
         .await
         .inspect_err(|e| error!("error at send_feedback {e:?}"))
         .map_err(|e| e.to_string())?;
@@ -1001,19 +1044,23 @@ pub async fn set_display_mode(display_mode: &str) -> Result<(), InvokeError> {
 }
 #[tauri::command]
 pub async fn toggle_device_exclusion(device_index: u32, excluded: bool) -> Result<(), String> {
+    // Device ids only mean something together with the miner that enumerated them, and the devices
+    // the user is looking at are the ones the currently selected miner detected.
+    let miner_type = GpuManager::read().await.selected_miner().clone();
+
     if excluded {
-        info!(target: LOG_TARGET_APP_LOGIC, "Excluding device {device_index}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Excluding {miner_type} device {device_index}");
         ConfigMining::update_field(
             ConfigMiningContent::enable_gpu_device_exclusion,
-            device_index,
+            (miner_type, device_index),
         )
         .await
         .map_err(|e| e.to_string())?;
     } else {
-        info!(target: LOG_TARGET_APP_LOGIC, "Including device {device_index}");
+        info!(target: LOG_TARGET_APP_LOGIC, "Including {miner_type} device {device_index}");
         ConfigMining::update_field(
             ConfigMiningContent::disable_gpu_device_exclusion,
-            device_index,
+            (miner_type, device_index),
         )
         .await
         .map_err(|e| e.to_string())?;
@@ -1022,10 +1069,33 @@ pub async fn toggle_device_exclusion(device_index: u32, excluded: bool) -> Resul
     Ok(())
 }
 
+/// Undoes a device list that the user emptied out to turn mining off, so re-enabling GPU mining
+/// does not leave a miner that refuses to start. Scoped to every miner, because the one that was
+/// emptied is not necessarily the one selected now.
+#[tauri::command]
+pub async fn include_devices_of_unusable_gpu_miners() -> Result<(), String> {
+    ConfigMining::update_field(ConfigMiningContent::include_devices_of_unusable_miners, ())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    EventsEmitter::emit_update_gpu_devices_settings(
+        ConfigMining::content()
+            .await
+            .gpu_devices_settings_by_miner()
+            .clone(),
+    )
+    .await;
+
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn set_gpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
+    ConfigMining::update_field(ConfigMiningContent::set_has_user_chosen_gpu_mining, true)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
     ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, enabled)
         .await
         .map_err(InvokeError::from_anyhow)?;
@@ -1218,6 +1288,18 @@ pub async fn set_should_auto_launch(should_auto_launch: bool) -> Result<(), Invo
 }
 
 #[tauri::command]
+pub async fn set_show_window_on_startup(show_window_on_startup: bool) -> Result<(), InvokeError> {
+    ConfigCore::update_field(
+        ConfigCoreContent::set_show_window_on_startup,
+        show_window_on_startup,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn set_tor_config(
     config: TorConfig,
     _window: tauri::Window,
@@ -1388,6 +1470,23 @@ pub async fn stop_gpu_mining() -> Result<(), String> {
 }
 
 #[tauri::command]
+pub async fn switch_gpu_miner(gpu_miner_type: GpuMinerType) -> Result<(), String> {
+    let timer = Instant::now();
+
+    GpuManager::write()
+        .await
+        .select_miner_by_user(gpu_miner_type)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET_APP_LOGIC, "switch_gpu_miner took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn toggle_cpu_pool_mining(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
 
@@ -1523,6 +1622,20 @@ pub async fn reconnect() -> Result<(), String> {
     Ok(())
 }
 
+/// Spend funds. Reachable from anything that can call `invoke` — the in-app send UI,
+/// the tapplet bridge, the dev console — so the user-consent gate has to live here in
+/// the backend rather than in the calling UI.
+///
+/// The gate is `wallet::send_gate::gated_send`, shared with the MCP `send_transaction`
+/// tool:
+/// * With a PIN configured, the PIN is requested and validated further down the stack
+///   (`MinotariWalletManager::send_one_sided_transaction` ->
+///   `TransactionManager::sign_one_sided_transaction` -> `InternalWallet::get_key_manager`
+///   -> `InternalWallet::get_tari_seed_with_prompt`). The prompt carries the amount and
+///   destination. A wrong or cancelled PIN aborts the send before anything is broadcast.
+/// * With no PIN configured there is nothing secret to ask for, so the gate emits a
+///   backend-driven confirmation dialog (amount + destination + payment id, 120s timeout)
+///   that the user must approve.
 #[tauri::command]
 pub async fn send_one_sided_to_stealth_address(
     amount: String,
@@ -1531,13 +1644,13 @@ pub async fn send_one_sided_to_stealth_address(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
-
-    let parsed_amount = Minotari::from_str(&amount).map_err(|e| e.to_string())?;
-    MinotariWalletManager::send_one_sided_transaction(
+    gated_send(GatedSendRequest {
+        origin: SendOrigin::App,
+        request_id: SendOrigin::App.new_request_id(),
+        amount,
         destination,
-        parsed_amount.uT().0,
         payment_id,
-    )
+    })
     .await
     .map_err(|e| e.to_string())?;
 

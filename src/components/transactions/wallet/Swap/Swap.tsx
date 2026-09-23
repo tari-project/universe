@@ -9,11 +9,12 @@ import {
     ProcessingTransaction,
 } from '@app/containers/floating/SwapDialogs/sections/ProcessingTransaction/ProcessingTransaction';
 
-import { useState, useRef, useEffect, useCallback } from 'react'; // Added useRef
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
 import { useTranslation } from 'react-i18next';
 import { setIsSwapping } from '@app/store/actions/walletStoreActions';
 import { MessageType, useIframeMessage } from '@app/hooks/swap/useIframeMessage';
+import { getIframeOrigin } from '@app/utils/iframeOrigin';
 import { useUIStore } from '@app/store';
 import { useIframeUrl } from '@app/hooks/swap/useIframeUrl';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots';
@@ -30,18 +31,27 @@ export const Swap = () => {
     const [swapHeight, setSwapHeight] = useState(0);
     const iframeUrl = useIframeUrl();
     const iframeRef = useRef<HTMLIFrameElement | null>(null);
+    const iframeOrigin = useMemo(() => getIframeOrigin(iframeUrl), [iframeUrl]);
     const [isFullscreen, setIsFullscreen] = useState(false);
+
+    // Post only to the origin we loaded, never '*': a navigated-away iframe must not receive
+    // app messages.
+    const postToIframe = useCallback(
+        (message: { type: string; payload?: unknown }) => {
+            if (!iframeOrigin || !iframeRef.current) return;
+            iframeRef.current.contentWindow?.postMessage(message, iframeOrigin);
+        },
+        [iframeOrigin]
+    );
 
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const handleSetTheme = useCallback(() => {
         if (!iframeUrl) return;
         setTimeout(() => {
-            if (iframeRef.current) {
-                iframeRef.current.contentWindow?.postMessage({ type: 'SET_THEME', payload: { theme } }, '*');
-            }
+            postToIframe({ type: 'SET_THEME', payload: { theme } });
         }, 1000);
-    }, [iframeUrl, theme]);
+    }, [iframeUrl, postToIframe, theme]);
     useEffect(() => {
         // Keep the iframe theme in sync with the app theme
         handleSetTheme();
@@ -58,7 +68,8 @@ export const Swap = () => {
         setConfirmingTransaction(null);
         setProcessingTransaction(null);
     };
-    useIframeMessage((event) => {
+
+    useIframeMessage(iframeRef, (event) => {
         switch (event.data.type) {
             case MessageType.CONFIRM_REQUEST:
                 setConfirming(true);
@@ -103,14 +114,12 @@ export const Swap = () => {
         if (iframeRef.current) {
             handleClearState();
             setApproving(true);
-            iframeRef.current.contentWindow?.postMessage({ type: 'EXECUTE_SWAP' }, '*');
+            postToIframe({ type: 'EXECUTE_SWAP' });
         }
     };
 
     const handleAddXtmToWallet = () => {
-        if (iframeRef.current) {
-            iframeRef.current.contentWindow?.postMessage({ type: 'ADD_XTM_TO_WALLET' }, '*');
-        }
+        postToIframe({ type: 'ADD_XTM_TO_WALLET' });
     };
 
     return (

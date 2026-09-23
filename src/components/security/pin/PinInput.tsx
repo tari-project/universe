@@ -102,5 +102,5 @@ export function PinInput({ hasError = false, isConfirm = false, autoSubmitFn }: 
         );
     });
 
-    return <DigitWrapper>{digitMarkup}</DigitWrapper>;
+    return <DigitWrapper data-testid="pin-input">{digitMarkup}</DigitWrapper>;
 }

@@ -104,6 +104,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                         warning={t('custom-power-levels.cpu-warning')}
                         isLoading={isChangingMode}
                         minLevel={1}
+                        testId="custom-cpu-slider"
                     />
                 );
             }}
@@ -125,6 +126,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                         warning={t('custom-power-levels.gpu-warning')}
                         onChange={field.onChange}
                         isLoading={isChangingMode}
+                        testId="custom-gpu-slider"
                     />
                 );
             }}
@@ -146,7 +148,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
             </CustomLevelsHeader>
             <CustomLevelsContent>
                 {!!currentMode && (
-                    <CurrentModeDetails>
+                    <CurrentModeDetails data-testid="custom-mode-details">
                         <Typography variant="p">
                             <span>{`${t('custom-power-levels.current-mode')}: `}</span>
                             {showGpuSettings
@@ -164,6 +166,7 @@ export function CustomPowerLevelsDialog({ handleClose }: CustomPowerLevelsDialog
                         disabled={
                             isChangingMode || (currentMode?.mode_type === MiningModeType.Custom && !formState.isDirty)
                         }
+                        data-testid="custom-levels-save"
                     >
                         {t(`custom-power-levels.${formState.isDirty ? 'save-changes' : 'use-custom'}`)}
                     </Button>

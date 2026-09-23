@@ -25,7 +25,7 @@ export const SyncWithPhone = () => {
                     <Typography>{t('sidebar:paper-wallet-tooltip-message')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <Button onClick={() => setShowPaperWalletModal(true)}>
+                    <Button onClick={() => setShowPaperWalletModal(true)} data-testid="wallet-sync-phone">
                         {t('sidebar:paper-wallet-tooltip-title')}
                     </Button>
                 </SettingsGroupAction>

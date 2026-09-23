@@ -19,6 +19,7 @@ declare module '@tauri-apps/api/core' {
     ): Promise<void>;
     function invoke(param: 'get_application_language'): Promise<string>;
     function invoke(param: 'set_should_auto_launch', payload: { shouldAutoLaunch: boolean }): Promise<void>;
+    function invoke(param: 'set_show_window_on_startup', payload: { showWindowOnStartup: boolean }): Promise<void>;
     function invoke(param: 'set_application_language', payload: { applicationLanguage: Language }): Promise<void>;
     function invoke(param: 'frontend_ready'): Promise<void>;
     function invoke(param: 'download_and_start_installer', payload: { id: string }): Promise<void>;
@@ -112,7 +113,10 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
     function invoke(param: 'get_local_block_stats', payload: { limit: number }): Promise<LocalBlockStats[]>;
     function invoke(param: 'create_pin'): Promise<void>;
-    function invoke(param: 'forgot_pin', payload: { seedWords: string[] }): Promise<void>;
+    function invoke(
+        param: 'forgot_pin',
+        payload: { seedWords: string[]; moneroSeedWords: string[] | null }
+    ): Promise<void>;
     function invoke(param: 'toggle_cpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'toggle_gpu_pool_mining', payload: { enabled: boolean }): Promise<void>;
     function invoke(
@@ -128,6 +132,8 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'reset_cpu_pool_config', payload: { cpuPoolType: string }): Promise<void>;
     function invoke(param: 'restart_phases', payload: { phases: SetupPhase[] }): Promise<void>;
     function invoke(param: 'list_connected_peers'): Promise<string[]>;
+    function invoke(param: 'switch_gpu_miner', payload: { gpuMinerType: GpuMinerType }): Promise<void>;
+    function invoke(param: 'include_devices_of_unusable_gpu_miners'): Promise<void>;
 
     function invoke(param: 'set_feedback_fields', payload: { feedbackType: string; wasSent: boolean }): Promise<void>;
     function invoke(param: 'set_mode_mining_time', payload: { mode: string; duration: number }): Promise<void>;

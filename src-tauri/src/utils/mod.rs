@@ -26,6 +26,9 @@ pub mod battery_status;
 pub mod cryptography;
 pub mod file_utils;
 pub mod formatting_utils;
+pub mod log_path_scrub;
+#[cfg(test)]
+mod log_path_scrub_test;
 pub mod logging_utils;
 pub mod macos_utils;
 pub mod network_status;

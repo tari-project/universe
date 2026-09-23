@@ -71,7 +71,7 @@ export default function ConnectSection({ setSection }: Props) {
                     <QRTooltip trigger={<GoogleStoreIcon />} text={t('connect.scan')} codeImage={qrTooltipImage} />
                 </StoreWrapper>
 
-                <BlackButton onClick={handleBlackButtonClick} disabled={isPending}>
+                <BlackButton onClick={handleBlackButtonClick} disabled={isPending} data-testid="sync-have-app">
                     {isPending ? <LoadingSvg /> : <span>{t('connect.blackButton')}</span>}
                 </BlackButton>
             </ContentWrapper>

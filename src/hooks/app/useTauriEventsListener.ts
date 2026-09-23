@@ -251,7 +251,10 @@ const useTauriEventsListener = () => {
                         useSecurityStore.setState({ modal: 'create_pin' });
                         break;
                     case 'EnterPin':
-                        useSecurityStore.setState({ modal: 'enter_pin' });
+                        useSecurityStore.setState({
+                            modal: 'enter_pin',
+                            pinContext: event.payload ?? null,
+                        });
                         break;
                     case 'UpdateGpuDevicesSettings':
                         handleGpuDevicesSettingsUpdated(event.payload);

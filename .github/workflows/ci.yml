@@ -56,11 +56,11 @@ jobs:
       - uses: swatinem/rust-cache@v2.7.5
         with:
           workspaces: './src-tauri -> target'
+          shared-key: tari-universe
 
       - name: Cargo format
         working-directory: ./src-tauri
         run: |
-          rustup component add rustfmt
           cargo fmt --all -- --check
 
       - name: Build process-wrapper
@@ -77,34 +77,35 @@ jobs:
           TELEMETRY_API_URL: http://localhost:3004
           EXCHANGE_ID: universal
         run: |
-          rustup component add clippy
           cargo install cargo-lints
           cargo lints clippy --all-targets --all-features
 
       - name: Cargo check
         working-directory: ./src-tauri
         run: |
-          cargo check --release --all-targets --workspace
+          cargo check --all-targets --workspace
 
   machete:
     name: Machete
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: swatinem/rust-cache@v2.7.5
-        with:
-          workspaces: './src-tauri -> target'
 
-      - name: Build process-wrapper
+      # cargo-machete parses manifests only — no Rust toolchain or build
+      # needed. Prebuilt static binary instead of `cargo install`, which
+      # compiled from source for several minutes on every run.
+      - name: Install cargo-machete
         run: |
-          cargo build --manifest-path process-wrapper/Cargo.toml
+          base_url=https://github.com/bnjbvr/cargo-machete/releases/download/v0.7.0
+          curl -sSfLO "${base_url}/cargo-machete-v0.7.0-x86_64-unknown-linux-musl.tar.gz"
+          curl -sSfLO "${base_url}/cargo-machete-v0.7.0-x86_64-unknown-linux-musl.tar.gz.sha256"
+          echo "$(cat cargo-machete-v0.7.0-x86_64-unknown-linux-musl.tar.gz.sha256)  cargo-machete-v0.7.0-x86_64-unknown-linux-musl.tar.gz" | sha256sum -c -
+          tar xzf cargo-machete-v0.7.0-x86_64-unknown-linux-musl.tar.gz
+          sudo install -m 755 cargo-machete-v0.7.0-x86_64-unknown-linux-musl/cargo-machete /usr/local/bin/cargo-machete
 
       - name: Cargo machete
         working-directory: ./src-tauri
-        run: |
-          cargo install --version 0.7.0 cargo-machete
-          cargo machete
+        run: cargo-machete
 
   tauri-test-build:
     name: Tauri build
@@ -130,7 +131,7 @@ jobs:
 
       - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: lts/*
           cache: 'pnpm'
@@ -142,17 +143,19 @@ jobs:
       - uses: swatinem/rust-cache@v2.7.5
         with:
           workspaces: './src-tauri -> target'
+          shared-key: tari-universe
 
       - name: Build process-wrapper
         run: |
           cargo build --release --manifest-path process-wrapper/Cargo.toml
 
-      - name: Cargo tauri build
+      # @tauri-apps/cli is already a devDependency — pnpm exec uses its
+      # prebuilt binary instead of compiling tauri-cli from source (~10 min).
+      - name: Tauri build
         working-directory: ./src-tauri
         run: |
-          cargo install tauri-cli
-          cargo tauri --version
-          cargo tauri build --ci --no-bundle
+          pnpm exec tauri --version
+          pnpm exec tauri build --ci --no-bundle
 
   file-licenses:
     name: File licenses
@@ -162,9 +165,8 @@ jobs:
         uses: actions/checkout@v7
       - name: Install ripgrep
         run: |
-          # https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb.sha256
-          wget -v https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb
-          sudo dpkg -i ripgrep_14.1.1-1_amd64.deb
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --assume-yes ripgrep
           rg --version || exit 1
       - name: Run the license check
         run: ./scripts/file_license_check.sh
@@ -181,6 +183,7 @@ jobs:
       - uses: swatinem/rust-cache@v2.7.5
         with:
           workspaces: './src-tauri -> target'
+          shared-key: tari-universe
 
       - name: Install dependencies (linux)
         run: |
@@ -221,7 +224,7 @@ jobs:
 
       - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: lts/*
           cache: 'pnpm'
@@ -229,8 +232,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run frontend tests
-        run: pnpm run test
-
+      # test:coverage runs the full suite (vitest run --coverage) — a plain
+      # `pnpm run test` first would just execute everything a second time.
       - name: Run frontend tests with coverage
         run: pnpm run test:coverage

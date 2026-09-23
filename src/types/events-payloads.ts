@@ -94,12 +94,14 @@ export interface ProgressTrackerUpdatePayload {
 
 export enum GpuMinerType {
     LolMiner = 'LolMiner',
+    TariMiner = 'TariMiner',
 }
 
 export enum GpuMinerFeature {
     SoloMining = 'SoloMining',
     PoolMining = 'PoolMining',
     DeviceExclusion = 'DeviceExclusion',
+    SingleDeviceMining = 'SingleDeviceMining',
     MiningIntensity = 'MiningIntensity',
     EngineSelection = 'EngineSelection',
 }
@@ -124,3 +126,29 @@ export interface GpuMiner {
     is_healthy: boolean;
     last_error?: string;
 }
+
+/** Which caller asked for a transaction: the in-app/tapplet bridge path, or the MCP tool. */
+export type TransactionOrigin = 'app' | 'mcp';
+
+/**
+ * Optional context attached to the `EnterPin` event, so the PIN dialog can tell the user
+ * what they are authorising instead of asking for a PIN out of the blue.
+ */
+export interface SendPinPromptContext {
+    kind: 'send';
+    amount_micro_minotari: number;
+    destination: string;
+    payment_id?: string | null;
+}
+
+/** The wallet details were missing from the config and are being rebuilt from the stored seed. */
+export interface RestoreWalletDetailsPinPromptContext {
+    kind: 'restore_wallet_details';
+}
+
+/** The stored seed is PIN-protected although the settings say no PIN is set. */
+export interface SeedNeedsPinPromptContext {
+    kind: 'seed_needs_pin';
+}
+
+export type PinPromptContext = SendPinPromptContext | RestoreWalletDetailsPinPromptContext | SeedNeedsPinPromptContext;

@@ -1,3 +1,69 @@
+🚀 TARI UNIVERSE v1.6.14: Hotfix – The Confluence Part 3
+
+_September 22, 2026_
+
+🔄 Rolling out via auto-update
+
+The hard fork already happened, back in v1.6.13, so if you updated before it landed you sailed straight through. If you didn't, your node is holding a copy of the chain the new rules don't agree with, and this release migrates that database for you: expect a "Migrating Database" step on first launch with a block counter ticking up, and on a node with the full chain it is not a fast one. Your wallet, your balance and your rewards aren't touched by any of it, this is only the node's copy of the chain. 💜🐢
+
+---
+
+🚀 TARI UNIVERSE v1.6.13: Hotfix – The Confluence Part 2
+
+🔄 Rolling out via auto-update
+
+Hey Tari fam,
+
+Short one. There's a hard fork coming to the Tari network, and this release gets Tari Universe ready for it. The bundled node, wallet, and merge mining proxy move up to Tari v5.7.0-pre.10, and the Tari libraries the app builds against moved up to match.
+
+Nothing changes in how you mine today. Please update before the fork lands. 💜🐢
+
+---
+
+🚀 TARI UNIVERSE v1.6.12: The Confluence
+
+🔄 Rolling out via auto-update
+
+Hey Tari fam,
+
+This release is a first for us: it includes contributions from the wider Tari community. Thank you for building this alongside us. 💜
+
+✨ WHAT'S NEW
+
+🌐 **Connect to your own node** – Running your own Tari base node? You can now point Tari Universe straight at it. Head to Settings → Node Configuration, pick Remote (or Remote & Local), and drop in your node's address. Perfect for anyone who wants full control over what they connect to.
+
+🌉 **A more reliable Bridge** – The Bridge used to depend on a single gateway that could go down and take your balances and transfers with it. It now falls back across multiple gateways automatically, so a hiccup on one no longer stops the Bridge — and we can fix outages on our end without you waiting for a new update.
+
+🧹 **Reclaim your disk space** – Old downloaded miner and binary versions used to pile up forever. Tari Universe now cleans out the outdated ones after each update, so it stops quietly eating your hard drive.
+
+✨ WHAT'S FIXED
+
+😴 **Mining stays stopped when you stop it** – If you manually paused mining and then your computer slept and woke up, mining would sneak back on without asking. Now Tari Universe remembers you turned it off and leaves it off — while still auto-resuming in the cases where you actually want it to.
+
+🔑 **Easier wallet import** – Pasting or typing your seed words used to throw a confusing "not a defined natural language" error if they were on separate lines or comma-separated. Now we accept seed words however they come — spaces, new lines, tabs, or commas — and the confirmation checkmark updates the moment you paste.
+
+💸 **First send just works** – On a fresh install, your very first transaction could fail with a missing-file error. We've made send setup bulletproof so that first payment goes through the first time.
+
+🍎 **Correct CPU hashrate on Mac** – Mac users, your CPU (RandomX) hashrate was showing the wrong units. It now displays the real numbers in the right units (H/s, kH/s, and so on), matching what your mining actually does.
+
+🪟 **Windows stability round-up** – A bunch of Windows-specific gremlins squashed:
+• Far fewer random crashes for NVIDIA GPU users — we fixed a driver library that was being loaded and unloaded every few seconds.
+• Auto-start on boot now works even when Tari Universe is installed to a folder with spaces in the path (like "Program Files"), and existing installs fix themselves on next launch.
+• Turning off "start on startup" now fully removes the scheduled task instead of leaving a piece of it behind.
+• Leftover miner processes are cleaned up more reliably, even when the process name casing doesn't match.
+
+🛡️ **Safer startup & shutdown** – Tari Universe is now much more careful when cleaning up a previous instance, so it won't accidentally shut down an unrelated program on your machine or crash while trying.
+
+📊 **Honest node status** – Your node could show "Synced" from stale data even when it had actually stalled. Node status is now reported accurately, so what you see reflects what's really happening.
+
+🔌 **No wasted requests for solo miners** – If you mine solo with pools turned off, the app was still pinging pool servers in the background. It now only checks pool stats when pool mining is actually enabled.
+
+🔧 **Under the hood** – Updated to Tari core v5.4.0 (which also restores macOS node/wallet support), bumped the bundled miners (XMRig 6.26.0, lolMiner 1.98a), patched several security advisories, hardened our build against supply-chain attacks, and fixed macOS app notarization so future Mac releases keep flowing smoothly.
+
+Thank you for all the reports that make releases like this possible. Keep 'em coming! 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.6.11: Soonsville Sunrise
 
 _February 26, 2026_

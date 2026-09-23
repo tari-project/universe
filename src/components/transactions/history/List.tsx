@@ -20,6 +20,8 @@ export function List({ setIsScrolled, scrolled = false }: ListProps) {
     const { t } = useTranslation('wallet');
     const walletTransactionsAll = useWalletStore((s) => s.wallet_transactions);
     const transactionsFilter = useWalletStore((s) => s.transaction_history_filter);
+    const walletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);
+    const walletImporting = useWalletStore((s) => s.is_wallet_importing);
 
     // Track seen transaction IDs to show "new" indicator for new transactions
     const [seenTransactionIds, setSeenTransactionIds] = useState<Set<string>>(new Set());
@@ -73,8 +75,9 @@ export function List({ setIsScrolled, scrolled = false }: ListProps) {
     const transactionsCount = walletTransactions?.length || 0;
     const placeholdersNeeded = Math.max(0, 2 - transactionsCount);
 
-    const isEmpty = !walletTransactionsAll?.length;
-    const emptyMarkup = isEmpty ? <EmptyText>{t('empty-tx')}</EmptyText> : null;
+    // Keep the empty state hidden while a scan or import may still produce transactions.
+    const isEmpty = !walletScanning && !walletImporting && !walletTransactionsAll?.length;
+    const emptyMarkup = isEmpty ? <EmptyText data-testid="tx-list-empty">{t('empty-tx')}</EmptyText> : null;
 
     return (
         <ListWrapper>

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { addToast } from '@app/components/ToastStack/useToastStore';
+import type { TransactionOrigin } from '@app/types/events-payloads.ts';
 
 export interface McpAuditEntry {
     timestamp: string;
@@ -16,6 +17,9 @@ export interface McpPendingTransaction {
     destination: string;
     amount_micro_minotari: number;
     amount_display: string;
+    /** Defaults to `mcp`; `app` means the in-app send command asked for approval. */
+    origin?: TransactionOrigin;
+    payment_id?: string | null;
 }
 
 export type McpTxStatus = 'reviewing' | 'processing' | 'completed';
@@ -63,6 +67,10 @@ let lastHandledRequestId: string | null = null;
 export const handleMcpTransactionResult = (payload: { request_id: string; success: boolean; error?: string }) => {
     if (payload.request_id === lastHandledRequestId) return;
     lastHandledRequestId = payload.request_id;
+
+    // Only the MCP tool reports results this way; app-origin sends are followed through
+    // by the send modal that started them.
+    if (!payload.request_id.startsWith('mcp_tx_')) return;
 
     if (payload.success) {
         setMcpTxStatus('completed');

@@ -136,6 +136,15 @@ export const setShouldAutoLaunch = async (shouldAutoLaunch: boolean) => {
     });
 };
 
+export const setShowWindowOnStartup = async (showWindowOnStartup: boolean) => {
+    store.setState((c) => ({ ...c, show_window_on_startup: showWindowOnStartup }));
+    invoke('set_show_window_on_startup', { showWindowOnStartup }).catch((e) => {
+        console.error('Could not set show window on startup', e);
+        setError('Could not change startup window setting');
+        store.setState((c) => ({ ...c, show_window_on_startup: !showWindowOnStartup }));
+    });
+};
+
 export const setSchedulerEvents = async (newEvent: SchedulerEvent) => {
     const initialState = store.getState().scheduler_events;
     const updated = { ...initialState, [newEvent.id]: newEvent };

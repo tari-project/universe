@@ -30,7 +30,11 @@ export function CurrentScheduleItem() {
                                 <strong>{`${fmtTimePartString(start)} - ${fmtTimePartString(end)}`}</strong>
                             </Typography>
                         </TextWrapper>
-                        <IconButton size="small" onClick={() => removeSchedulerEvent(SCHEDULER_EVENT_ID)}>
+                        <IconButton
+                            size="small"
+                            onClick={() => removeSchedulerEvent(SCHEDULER_EVENT_ID)}
+                            data-testid="scheduler-delete"
+                        >
                             <FaRegTrashCan />
                         </IconButton>
                     </Content>

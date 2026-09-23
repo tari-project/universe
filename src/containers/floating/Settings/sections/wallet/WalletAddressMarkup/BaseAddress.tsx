@@ -23,6 +23,7 @@ export default function BaseAddress() {
             onApply={setExternalTariAddress}
             rules={validationRules}
             isWXTM={!!isWXTM}
+            testId="wallet-tari-address"
         />
     );
 }

@@ -67,7 +67,11 @@ export const GpuPoolsSettings = () => {
                 </SettingsGroupContent>
 
                 <SettingsGroupAction>
-                    <ToggleSwitch checked={isGpuPoolEnabled} onChange={(e) => handleToggleGpuPool(e.target.checked)} />
+                    <ToggleSwitch
+                        checked={isGpuPoolEnabled}
+                        onChange={(e) => handleToggleGpuPool(e.target.checked)}
+                        data-testid="pool-toggle-gpu"
+                    />
                 </SettingsGroupAction>
             </SettingsGroup>
 

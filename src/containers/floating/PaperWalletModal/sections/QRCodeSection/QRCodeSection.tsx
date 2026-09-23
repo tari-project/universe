@@ -74,7 +74,7 @@ export default function QRCodeSection({ onDoneClick }: Props) {
     return (
         <Wrapper>
             <CodeWrapper>
-                <QRCodeWrapper>
+                <QRCodeWrapper data-testid="sync-qr">
                     <QRCode
                         size={190}
                         style={{ borderRadius: 15 }}
@@ -102,6 +102,7 @@ export default function QRCodeSection({ onDoneClick }: Props) {
                             $shrinkFont={shrinkFont}
                             readOnly
                             onClick={handleCopyClick}
+                            data-testid="sync-identification-code"
                         />
                     </InputWrapper>
                 </QRContentWrapper>

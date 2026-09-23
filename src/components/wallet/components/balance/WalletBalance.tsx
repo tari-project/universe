@@ -109,7 +109,13 @@ export const WalletBalance = () => {
     );
 
     return (
-        <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
+        <Wrapper
+            onMouseEnter={() => setHovering(true)}
+            onMouseLeave={() => setHovering(false)}
+            data-testid="wallet-balance"
+            data-balance={balance}
+            data-balance-total={removeXTMCryptoDecimals(total || 0)}
+        >
             <BalanceWrapper>
                 <BalanceTextWrapper>
                     {hideBalance ? (
@@ -126,6 +132,7 @@ export const WalletBalance = () => {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 10 }}
                             onClick={toggleHideWalletBalance}
+                            data-testid="balance-visibility-toggle"
                         >
                             {hideBalance ? <IoEyeOutline /> : <IoEyeOffOutline />}
                         </ActionButton>
@@ -141,7 +148,7 @@ export const WalletBalance = () => {
 
 export const WalletBalanceHidden = () => {
     return (
-        <Wrapper>
+        <Wrapper data-testid="wallet-balance" data-mode="exchange">
             <BalanceWrapper>
                 <BalanceTextWrapper>
                     <Hidden>{`*******`}</Hidden>

@@ -22,17 +22,22 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock i18next
-vi.mock('i18next', () => ({
-    default: {
+vi.mock('i18next', () => {
+    const i18n = {
         language: 'en',
         t: (key: string) => key,
-    },
-    t: (key: string) => key,
-}));
+        use: vi.fn().mockReturnThis(),
+        init: vi.fn().mockResolvedValue(undefined),
+        on: vi.fn(),
+        off: vi.fn(),
+        changeLanguage: vi.fn().mockResolvedValue(undefined),
+    };
+    return { default: i18n, t: i18n.t };
+});
 
 // Mock @tauri-apps/api/core
 vi.mock('@tauri-apps/api/core', () => ({
-    invoke: vi.fn(),
+    invoke: vi.fn().mockResolvedValue([]),
 }));
 
 // Mock react-i18next
@@ -44,4 +49,5 @@ vi.mock('react-i18next', () => ({
             changeLanguage: vi.fn(),
         },
     }),
+    initReactI18next: { type: '3rdParty', init: vi.fn() },
 }));

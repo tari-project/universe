@@ -40,7 +40,7 @@ export function BlockHeightAccent() {
     });
 
     return (
-        <AccentWrapper style={{ width }}>
+        <AccentWrapper style={{ width }} data-testid="block-height">
             <AccentText style={{ scale }}>
                 {heightStringArr?.map((c, i) => (
                     <SpacedNum key={`spaced-char-${c}-${i}`} $isDec={isNaN(Number(c))}>

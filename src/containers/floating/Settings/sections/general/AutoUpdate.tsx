@@ -25,7 +25,11 @@ const AutoUpdate = () => {
                     <Typography variant="p">{t('use-auto-update.description')}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <ToggleSwitch checked={autoUpdate} onChange={({ target }) => setAutoUpdate(target.checked)} />
+                    <ToggleSwitch
+                        data-testid="settings-toggle-autoupdate"
+                        checked={autoUpdate}
+                        onChange={({ target }) => setAutoUpdate(target.checked)}
+                    />
                 </SettingsGroupAction>
             </SettingsGroup>
         </SettingsGroupWrapper>

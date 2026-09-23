@@ -86,6 +86,7 @@ export default function AdvancedSettings() {
                         type="number"
                         min={1024}
                         max={65535}
+                        data-testid="mcp-port-input"
                         value={portValue}
                         onChange={(e) => setPortValue(e.target.value)}
                         onBlur={commitPort}
@@ -102,7 +103,11 @@ export default function AdvancedSettings() {
                     </SettingsGroupTitle>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <ToggleSwitch checked={readTier} onChange={(e) => handleTierToggle('read', e.target.checked)} />
+                    <ToggleSwitch
+                        checked={readTier}
+                        onChange={(e) => handleTierToggle('read', e.target.checked)}
+                        data-testid="mcp-tier-read"
+                    />
                 </SettingsGroupAction>
             </SettingsGroup>
             <SettingsGroup>
@@ -115,6 +120,7 @@ export default function AdvancedSettings() {
                     <ToggleSwitch
                         checked={controlTier}
                         onChange={(e) => handleTierToggle('control', e.target.checked)}
+                        data-testid="mcp-tier-control"
                     />
                 </SettingsGroupAction>
             </SettingsGroup>

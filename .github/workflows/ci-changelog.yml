@@ -37,7 +37,13 @@ jobs:
           AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           S3CMD: 'cp'
-          S3OPTIONS: '--content-type "text/plain; charset=utf-8"'
+          # The object was served with the R2 default of max-age=14400, so a new
+          # changelog took up to four hours to reach users and the cache purge below
+          # was the only way to make it prompt. Five minutes makes the purge a nicety
+          # rather than the thing the whole pipeline depends on. The app only refetches
+          # hourly and revalidates by ETag, so this costs an edge revalidation per PoP,
+          # not per user.
+          S3OPTIONS: '--content-type "text/plain; charset=utf-8" --cache-control "public, max-age=300"'
         run: |
           docker run --rm -t \
             -v ${PWD}:/work/data \
@@ -55,13 +61,68 @@ jobs:
         continue-on-error: true
         if: ${{ env.CF_AUTHORIZATION_BEARER != '' && runner.name != 'self-hosted' }}
         env:
-          BASE_TLD: ${{ secrets.BASE_TLD }}
-          BASE_URL: ${{ secrets.BASE_URL }}
           CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
           CF_AUTHORIZATION_BEARER: ${{ secrets.CF_AUTHORIZATION_BEARER }}
         run: |
-          curl --request POST \
-            --url https://api.cloudflare.com/client/v4/zones/${{ env.CF_ZONE_ID }}/purge_cache \
+          # BASE_URL is the bucket path for the upload above, which is not the public
+          # URL. Purging a URL built from it purges nothing. Use the URL the app reads.
+          url=$(grep -oP '(?<=^const CHANGELOG_URL: &str = ")[^"]+' src-tauri/src/release_notes.rs)
+          curl --silent --show-error --request POST \
+            --url "https://api.cloudflare.com/client/v4/zones/${CF_ZONE_ID}/purge_cache" \
             --header "Content-Type: application/json" \
-            --header "Authorization: Bearer ${{ env.CF_AUTHORIZATION_BEARER }}" \
-            --data "{\"files\": [\"https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/CHANGELOG.md\"] }"
+            --header "Authorization: Bearer ${CF_AUTHORIZATION_BEARER}" \
+            --data "{\"files\": [\"${url}\"] }" \
+            --output purge.json
+          # curl exits 0 on an HTTP-level refusal, so check the body Cloudflare sent.
+          if ! grep -q '"success":true' purge.json; then
+            echo "::error title=Cache purge refused::Cloudflare rejected the purge: $(head -c 300 purge.json)"
+          fi
+
+      # Tari Universe reads its release notes from the CDN copy, not from this repo
+      # (see CHANGELOG_URL in src-tauri/src/release_notes.rs). Both steps above are
+      # continue-on-error and the purge one exits 0 even when Cloudflare answers
+      # `"success": false`, so neither can be trusted to report a broken sync. This
+      # checks the only thing that actually matters: what the CDN is serving.
+      - name: Verify the CDN is serving this CHANGELOG
+        continue-on-error: true
+        run: |
+          # Read the URL out of the app rather than rebuilding it from BASE_TLD and
+          # BASE_URL. Those two cannot both be right: the upload needs BASE_URL to
+          # start with the bucket name, and the purge needs it not to. Taking the
+          # constant the app actually reads also means this check follows the app if
+          # the URL ever moves.
+          url=$(grep -oP '(?<=^const CHANGELOG_URL: &str = ")[^"]+' src-tauri/src/release_notes.rs)
+          if [ -z "${url}" ]; then
+            echo "::error title=Cannot find CHANGELOG_URL::CHANGELOG_URL was not found in src-tauri/src/release_notes.rs, so the CDN copy could not be verified."
+            exit 0
+          fi
+
+          # A purge is not instant, so a single miss is not yet news.
+          for attempt in 1 2 3; do
+            curl -fsSL "${url}" -o cdn-changelog.md || : > cdn-changelog.md
+            cmp -s CHANGELOG.md cdn-changelog.md && break
+            [ "${attempt}" = 3 ] || sleep 10
+          done
+
+          if cmp -s CHANGELOG.md cdn-changelog.md; then
+            echo "The CDN is serving this commit's CHANGELOG.md." >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+
+          {
+            echo "## :rotating_light: The changelog sync did not land"
+            echo
+            echo "\`${url}\` is not serving this commit's \`CHANGELOG.md\`."
+            echo
+            echo "Tari Universe reads its in-app release notes from that URL, so users"
+            echo "are being shown a stale changelog until this is fixed. Check the"
+            echo "\`AWS_*\` (R2) and \`CF_AUTHORIZATION_BEARER\` secrets first: both"
+            echo "failed silently for months when they went stale."
+            echo
+            echo "| | First line |"
+            echo "|---|---|"
+            echo "| This commit | $(head -1 CHANGELOG.md) |"
+            echo "| CDN | $(head -1 cdn-changelog.md 2>/dev/null || echo '_unreachable_') |"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+          echo "::error title=Changelog sync did not land::${url} is not serving the current CHANGELOG.md, so in-app release notes are stale. See the job summary."

@@ -154,12 +154,28 @@ pub struct ShowReleaseNotesPayload {
     pub should_show_dialog: bool,
 }
 
+/// `title` and `description` are i18n keys the dialog runs through `t()`; `error_message` is
+/// printed raw, so it carries only a short technical detail and never seed material.
 #[derive(Debug, Serialize, Clone)]
 pub struct CriticalProblemPayload {
     pub title: Option<String>,
     pub description: Option<String>,
     pub error_message: Option<String>,
 }
+
+/// Lets the payload travel as the error itself, so a failure that already knows what the user
+/// should be told reaches the dialog without being flattened into an English string.
+impl std::fmt::Display for CriticalProblemPayload {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match (&self.error_message, &self.description) {
+            (Some(detail), _) => write!(formatter, "{detail}"),
+            (None, Some(description)) => write!(formatter, "{description}"),
+            (None, None) => write!(formatter, "critical problem"),
+        }
+    }
+}
+
+impl std::error::Error for CriticalProblemPayload {}
 
 #[derive(Debug, Serialize, Clone)]
 pub struct NodeTypeUpdatePayload {
@@ -210,6 +226,26 @@ pub struct McpTransactionConfirmationPayload {
     pub destination: String,
     pub amount_micro_minotari: u64,
     pub amount_display: String,
+    /// Which caller asked for the transaction: `"app"` (in-app UI, tapplet bridge,
+    /// anything reaching the Tauri command) or `"mcp"` (MCP transaction tool).
+    pub origin: String,
+    pub payment_id: Option<String>,
+}
+
+/// Optional context attached to the `EnterPin` event so the PIN dialog can tell the
+/// user *what* they are authorising instead of asking for a PIN out of the blue.
+#[derive(Debug, Serialize, Clone)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum PinPromptContext {
+    Send {
+        amount_micro_minotari: u64,
+        destination: String,
+        payment_id: Option<String>,
+    },
+    /// The wallet details are missing from the config and are being rebuilt from the stored seed.
+    RestoreWalletDetails,
+    /// The stored seed is PIN-protected although the config says no PIN is set.
+    SeedNeedsPin,
 }
 
 #[derive(Debug, Serialize, Clone)]

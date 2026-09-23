@@ -106,7 +106,7 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
     ) : null;
 
     return (
-        <Wrapper ref={ref} $isCurrent={isCurrent} $isActive={isActive}>
+        <Wrapper ref={ref} $isCurrent={isCurrent} $isActive={isActive} data-testid={`exchange-option-${content.slug}`}>
             <ContentHeaderWrapper
                 onClick={() => {
                     onActiveClick(!isActive ? content.id : '');
@@ -174,7 +174,11 @@ export const XCOption = ({ isCurrent = false, isActive, content, onActiveClick, 
                         ) : null}
 
                         {isAddressValid ? (
-                            <ConfirmButton onClick={handleExchangeMiner} disabled={isSubmitting || !isAddressValid}>
+                            <ConfirmButton
+                                onClick={handleExchangeMiner}
+                                disabled={isSubmitting || !isAddressValid}
+                                data-testid="exchange-confirm"
+                            >
                                 {isSubmitting ? (
                                     <LoadingDots />
                                 ) : (

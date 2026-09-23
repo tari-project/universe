@@ -22,7 +22,10 @@
 
 use std::path::PathBuf;
 
-use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
+use crate::{
+    mining::gpu::miners::tariminer::selected_backend,
+    utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
+};
 
 pub enum BinaryPlatformAssets {
     LinuxX64,
@@ -40,6 +43,7 @@ pub enum Binaries {
     Tor,
     BridgeTapplet,
     LolMiner,
+    TariMiner,
 }
 impl Binaries {
     pub fn name(&self) -> &str {
@@ -51,6 +55,7 @@ impl Binaries {
             Binaries::Tor => "tor",
             Binaries::BridgeTapplet => "bridge",
             Binaries::LolMiner => "lolminer",
+            Binaries::TariMiner => "tariminer",
         }
     }
 
@@ -63,6 +68,7 @@ impl Binaries {
             "tor" => Binaries::Tor,
             "bridge" => Binaries::BridgeTapplet,
             "lolminer" => Binaries::LolMiner,
+            "tariminer" => Binaries::TariMiner,
             _ => panic!("Unknown binary name: {name}"),
         }
     }
@@ -106,6 +112,11 @@ impl Binaries {
             Binaries::LolMiner => {
                 let file_name = "lolMiner";
                 Self::append_exe_if_windows(&mut PathBuf::from(version).join(file_name))
+            }
+            // The release archive ships one backend per CUDA compute capability, the one that
+            // matches the GPU we mine with is published by the TARI.Miner adapter
+            Binaries::TariMiner => {
+                Self::append_exe_if_windows(&mut selected_backend().relative_binary_path())
             }
         }
     }
@@ -189,6 +200,15 @@ impl Binaries {
                 BinaryPlatformAssets::MacOSArm64 => {
                     format!("tari_suite-{version}-{network}-{hash}-macos-arm64.zip")
                 }
+            },
+            Binaries::TariMiner => match platform {
+                BinaryPlatformAssets::LinuxX64 => {
+                    format!("TARI.Miner-v{version}-linux.tar.gz")
+                }
+                BinaryPlatformAssets::WindowsX64 => {
+                    format!("TARI.Miner-v{version}-windows.zip")
+                }
+                _ => "Not available for this platform".to_string(),
             },
             Binaries::LolMiner => match platform {
                 BinaryPlatformAssets::LinuxX64 => {

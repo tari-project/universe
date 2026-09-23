@@ -18,6 +18,7 @@ export default function WalletActions({ section, setSection }: WalletActionsProp
                 aria-selected={section === 'send'}
                 onClick={() => setSection('send')}
                 disabled={isScanning}
+                data-testid="wallet-send-button"
             >
                 {t('tabs.send')}
             </NavButton>
@@ -25,6 +26,7 @@ export default function WalletActions({ section, setSection }: WalletActionsProp
                 $isActive={section === 'receive'}
                 aria-selected={section === 'receive'}
                 onClick={() => setSection('receive')}
+                data-testid="wallet-receive-button"
             >
                 {t('tabs.receive')}
             </NavButton>

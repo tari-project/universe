@@ -39,6 +39,7 @@ export default function CpuMiningSettings() {
                         checked={isCpuMiningEnabled}
                         disabled={!cpuMiningModuleInitialized}
                         onChange={handleCpuMiningEnabled}
+                        data-testid="settings-toggle-cpu-mining"
                     />
                 </SettingsGroupAction>
             </SettingsGroup>

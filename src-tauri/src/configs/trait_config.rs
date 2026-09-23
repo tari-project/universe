@@ -20,7 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{env::temp_dir, fmt::Debug, fs, path::PathBuf};
+use std::{
+    env::temp_dir,
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Error;
 use dirs::config_dir;
@@ -36,6 +41,35 @@ use crate::{
     events_emitter::EventsEmitter,
     setup::setup_manager::{SetupManager, SetupPhase},
 };
+
+pub const CONFIG_UPDATE_FIELD_EVENT_NAME: &str = "config-update-field";
+
+/// Builds the payload for the `config-update-field` telemetry event.
+///
+/// Only metadata about *which* config and *which* setter ran is reported. The
+/// value passed to the setter is deliberately never included: the generic
+/// setters are used for secrets as well (airdrop access/refresh tokens, for
+/// example), so any value forwarded here would be exfiltrated to the telemetry
+/// endpoint.
+pub fn build_config_update_field_event(config_name: &str, field: &str) -> serde_json::Value {
+    json!({
+        "config": config_name,
+        "field": field,
+    })
+}
+
+/// Writes a temporary file next to `path`, flushes it and renames over `path`. A
+/// truncate-in-place write leaves an empty or NUL-filled file behind when the machine
+/// dies mid-write, and a config the app cannot parse stops it from starting at all.
+pub(crate) fn atomic_write(path: &Path, contents: &[u8]) -> Result<(), Error> {
+    let temp_path = path.with_extension("json.tmp");
+    let mut temp_file = fs::File::create(&temp_path)?;
+    temp_file.write_all(contents)?;
+    temp_file.sync_all()?;
+    drop(temp_file);
+    fs::rename(&temp_path, path)?;
+    Ok(())
+}
 
 #[allow(dead_code)]
 pub trait ConfigContentImpl: Clone + Default + Serialize + for<'de> Deserialize<'de> {}
@@ -101,8 +135,7 @@ pub trait ConfigImpl {
             fs::create_dir_all(parent)?;
         }
         let config_content_serialized = serde_json::to_string_pretty(&config_content)?;
-        fs::write(config_path, config_content_serialized)?;
-        Ok(())
+        atomic_write(&config_path, config_content_serialized.as_bytes())
     }
     fn _load_config() -> Result<Self::Config, Error> {
         let config_path = Self::_get_config_path();
@@ -117,30 +150,33 @@ pub trait ConfigImpl {
         Self::current().read().await._get_content().clone()
     }
     async fn load_app_handle(&mut self, app_handle: AppHandle);
+    /// Applies `setter_callback` to the config content and persists it.
+    ///
+    /// The value is never logged or reported: setters carry user secrets such
+    /// as airdrop tokens. Only the config name and the setter type name are
+    /// recorded.
     async fn update_field<F, I>(setter_callback: F, value: I) -> Result<(), Error>
     where
-        I: Serialize + Clone + Debug,
+        I: Serialize + Clone,
         F: FnOnce(&mut Self::Config, I) -> &mut Self::Config,
         Self: 'static,
     {
-        debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] with function: {:?} and value: {:?}", Self::_get_name(), std::any::type_name::<F>(), value);
-        setter_callback(
-            Self::current().write().await._get_content_mut(),
-            value.clone(),
-        );
-        Self::_save_config(Self::current().read().await._get_content().clone()).inspect_err(|error|
-            debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] error: {:?}", Self::_get_name(), error)
-        )?;
+        debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] with function: {:?} and value of type: {:?}", Self::_get_name(), std::any::type_name::<F>(), std::any::type_name::<I>());
+        {
+            // Mutate and save under one write lock: two updates that each dropped the
+            // lock before saving could interleave their writes to the same file.
+            let mut config = Self::current().write().await;
+            setter_callback(config._get_content_mut(), value.clone());
+            Self::_save_config(config._get_content().clone()).inspect_err(|error|
+                debug!(target: LOG_TARGET_APP_LOGIC, "[{}] [update_field] error: {:?}", Self::_get_name(), error)
+            )?;
+        }
         Self::current()
             .read()
             .await
             ._send_telemetry_event(
-                "config-update-field",
-                json!({
-                    "config": Self::_get_name(),
-                    "field": std::any::type_name::<F>(),
-                    "value": value,
-                }),
+                CONFIG_UPDATE_FIELD_EVENT_NAME,
+                build_config_update_field_event(&Self::_get_name(), std::any::type_name::<F>()),
             )
             .await;
         Ok(())
@@ -152,7 +188,7 @@ pub trait ConfigImpl {
         phases_to_restart: Vec<SetupPhase>,
     ) -> Result<(), Error>
     where
-        I: Serialize + Clone + Debug,
+        I: Serialize + Clone,
         F: FnOnce(&mut Self::Config, I) -> &mut Self::Config,
         Self: 'static,
     {

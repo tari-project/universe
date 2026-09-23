@@ -118,6 +118,7 @@ const HistoryListItem = memo(function HistoryListItem({
         <Button
             size="smaller"
             variant="outlined"
+            data-testid="tx-row-details"
             onClick={(e) => {
                 e.stopPropagation();
                 setDetailsItem?.(transaction);
@@ -131,6 +132,7 @@ const HistoryListItem = memo(function HistoryListItem({
         <ItemWrapper
             ref={ref}
             data-index={index}
+            data-testid={`tx-row-${itemType}`}
             style={{ height: 48 }}
             onMouseEnter={() => setHovering(true)}
             onMouseLeave={() => setHovering(false)}

@@ -10,6 +10,7 @@ import { CTASArea, InputArea, WalletSettingsGrid } from '../styles';
 interface AddressEditorProps {
     initialAddress: string;
     isWXTM?: boolean;
+    testId?: string;
     onApply: (newAddress: string) => Promise<void>;
     rules:
         | Omit<
@@ -34,7 +35,7 @@ const StyledForm = styled.form`
     min-height: 64px;
 `;
 
-const AddressEditor = ({ initialAddress, onApply, rules, isWXTM }: AddressEditorProps) => {
+const AddressEditor = ({ initialAddress, onApply, rules, isWXTM, testId }: AddressEditorProps) => {
     const {
         control,
         watch,
@@ -98,6 +99,7 @@ const AddressEditor = ({ initialAddress, onApply, rules, isWXTM }: AddressEditor
                                     type="text"
                                     hasError={!!errors.address}
                                     onFocus={() => setEditing(true)}
+                                    data-testid={testId}
                                 />
                             );
                         }}

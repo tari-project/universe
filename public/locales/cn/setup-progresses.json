@@ -45,6 +45,8 @@
     "binaries-cpu-miner-download": "准备 CPU 矿工二进制文件 | 下载中：{{ progress }}%",
     "binaries-gpu-miner": "准备 GPU 挖矿二进制文件",
     "binaries-gpu-miner-download": "准备 GPU 矿工二进制文件 | 下载中：{{ progress }}%",
+    "binaries-tari-miner": "Preparing open source GPU Miner Binary",
+    "binaries-tari-miner-download": "Preparing open source GPU Miner Binary | Downloading: {{ progress }}%",
     "binaries-merge-mining-proxy": "准备合并挖矿代理二进制文件",
     "binaries-merge-mining-proxy-download": "准备合并挖矿代理二进制文件 | 下载中：{{ progress }}%",
     "binaries-node": "准备节点二进制文件",

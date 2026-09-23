@@ -60,7 +60,7 @@ pub enum NodeManagerError {
     UnknownError(#[from] anyhow::Error),
 }
 
-pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
+pub const STOP_ON_ERROR_CODES: [i32; 3] = [114, 102, 101];
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Default)]
 pub enum NodeType {

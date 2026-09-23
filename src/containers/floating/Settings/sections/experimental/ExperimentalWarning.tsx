@@ -26,6 +26,7 @@ export default function ExperimentalWarning() {
                 <ToggleSwitch
                     checked={showExperimental}
                     onChange={() => setShowExperimentalSettings(!showExperimental)}
+                    data-testid="settings-toggle-experimental"
                 />
             </Stack>
             <Typography variant="p">{t('experimental-warning', { ns: 'settings' })}</Typography>

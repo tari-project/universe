@@ -67,7 +67,14 @@
 //! - Use serial test execution with `serial_test` crate
 //! - Or refactor to use dependency injection instead of static singleton
 
-use super::internal_wallet::{InternalWallet, TariAddressType};
+use super::internal_wallet::{
+    InternalWallet, LegacyWalletConfig, SEED_PIN_REQUIRED, SeedNeedsPin, TariAddressType,
+    decrypt_legacy_tari_seed, previous_wallet_files, seed_proves_recorded_address,
+    wipe_and_remove_file,
+};
+use tari_common_types::seeds::cipher_seed::CipherSeed;
+use tari_utilities::SafePassword;
+use tari_utilities::message_format::MessageFormat;
 
 #[test]
 fn tari_address_type_display_internal() {
@@ -110,8 +117,466 @@ fn internal_wallet_is_initialized_before_set() {
     );
 }
 
+/// `current()` is reached from telemetry, mining and the setup phases, all of which run whether
+/// or not wallet init succeeded. Before initialisation it must return the error, not panic.
 #[test]
-#[should_panic(expected = "InternalWallet is not initialized")]
-fn current_panics_before_initialization() {
-    let _ = InternalWallet::current();
+fn current_returns_an_error_before_initialization() {
+    assert!(InternalWallet::current().is_err());
+}
+
+/// The accessors those callers actually use must degrade instead of panicking too.
+#[tokio::test]
+async fn the_wallet_accessors_degrade_before_initialization() {
+    assert!(InternalWallet::tari_address().await.is_err());
+    assert!(InternalWallet::tari_wallet_details().await.is_none());
+    assert!(!InternalWallet::is_internal().await);
+}
+
+// --- The seed decode has to be proven ------------------------------------------------------
+
+/// Why every plain decode is proven against the recorded address: `from_binary` is
+/// unauthenticated, so PIN-enciphered bytes come back as a structurally valid seed with
+/// different entropy. Returned unchecked, that is a different wallet address, which the user
+/// experiences as a lost wallet.
+#[test]
+fn enciphered_bytes_decode_through_the_plain_path_into_a_different_seed() {
+    let seed = CipherSeed::random();
+    let enciphered = seed
+        .encipher(Some(SafePassword::from("1234")))
+        .expect("encipher the fixture seed");
+
+    let decoded = CipherSeed::from_binary(&enciphered)
+        .expect("from_binary accepts enciphered bytes, which is the whole problem");
+
+    assert_ne!(
+        decoded.entropy(),
+        seed.entropy(),
+        "an unproven plain decode yields a different wallet"
+    );
+    // The proof the wallet uses is the derived address; entropy is what drives it.
+    assert_ne!(decoded.to_binary().ok(), seed.to_binary().ok());
+}
+
+/// The proof `get_tari_seed` runs on every decode: derive the address from the seed in hand and
+/// compare it with the one on record. Only a seed that derives the recorded address is returned.
+#[tokio::test]
+async fn the_address_proof_tells_the_recorded_wallet_from_any_other() {
+    let seed = CipherSeed::random();
+    let recorded = InternalWallet::get_tari_wallet_details(
+        WalletId::new("recorded".to_string()),
+        seed.clone(),
+    )
+    .await
+    .expect("derive the recorded details");
+    let other = InternalWallet::get_tari_wallet_details(
+        WalletId::new("other".to_string()),
+        CipherSeed::random(),
+    )
+    .await
+    .expect("derive another wallet's details");
+
+    assert_eq!(
+        seed_proves_recorded_address(&seed, Some(&recorded)).await,
+        Some(true)
+    );
+    assert_eq!(
+        seed_proves_recorded_address(&seed, Some(&other)).await,
+        Some(false),
+        "a seed for a different address must not pass the proof"
+    );
+    assert_eq!(
+        seed_proves_recorded_address(&seed, None).await,
+        None,
+        "with nothing recorded there is nothing to prove against"
+    );
+}
+
+/// The signal that lets a caller prompt for a PIN instead of reporting a parse failure, which
+/// reads to the user as a lost wallet. It has to survive the trip through `anyhow`.
+#[test]
+fn a_pin_protected_seed_is_distinguishable_from_a_damaged_one() {
+    let error: anyhow::Error = SeedNeedsPin.into();
+
+    assert!(error.downcast_ref::<SeedNeedsPin>().is_some());
+    assert!(
+        anyhow::anyhow!("Could not parse Tari Seed from binary")
+            .downcast_ref::<SeedNeedsPin>()
+            .is_none()
+    );
+    // Both strings end up in a toast verbatim, so neither may read as a failure.
+    assert!(!error.to_string().is_empty());
+    assert!(SEED_PIN_REQUIRED.ends_with('.'));
+}
+
+// --- The legacy seed decrypt -----------------------------------------------------------------
+
+/// The pre-v0.8 case: the passphrase only ever lived in `wallet_config.json`, and v1.2.24 dropped
+/// the field, which left the seed undecryptable and panicking on every launch.
+#[test]
+fn a_legacy_seed_opens_with_the_passphrase_from_the_legacy_config_file() {
+    let seed = CipherSeed::random();
+    let in_file = SafePassword::from("in-file passphrase");
+    let enciphered = seed
+        .encipher(Some(in_file.clone()))
+        .expect("encipher the fixture seed");
+
+    let opened = decrypt_legacy_tari_seed(
+        &enciphered,
+        [
+            Some(SafePassword::from("stale keyring")),
+            Some(in_file),
+            None,
+        ],
+    )
+    .expect("the in-file passphrase opens the seed");
+
+    assert_eq!(opened.entropy(), seed.entropy());
+}
+
+#[test]
+fn a_legacy_seed_no_passphrase_opens_is_an_error_not_a_panic() {
+    let seed = CipherSeed::random();
+    let enciphered = seed
+        .encipher(Some(SafePassword::from("the passphrase this machine lost")))
+        .expect("encipher the fixture seed");
+
+    assert!(
+        decrypt_legacy_tari_seed(&enciphered, [Some(SafePassword::from("wrong")), None]).is_err()
+    );
+}
+
+/// Old versions serialized the passphrase with `SafePassword`, which writes a byte sequence, so
+/// that is the on-disk shape the restored field has to read. A shape the struct cannot parse
+/// fails the whole file, and an unreadable legacy config looks like "no legacy wallet".
+#[test]
+fn the_legacy_config_reads_the_passphrase_shape_old_versions_wrote() {
+    let stored = serde_json::to_string(&SafePassword::from("legacy passphrase"))
+        .expect("serialize as old versions did");
+    let with_passphrase = format!(
+        r#"{{"tari_address_base58":"a","view_key_private_hex":"b","spend_public_key_hex":"c","seed_words_encrypted_base58":"d","passphrase":{stored},"config_path":null}}"#
+    );
+
+    let parsed: LegacyWalletConfig =
+        serde_json::from_str(&with_passphrase).expect("legacy fixture parses");
+    let round_tripped = serde_json::to_value(&parsed).expect("serialize");
+    assert_eq!(
+        round_tripped["passphrase"],
+        serde_json::from_str::<serde_json::Value>(&stored).expect("value"),
+        "the passphrase must survive the read"
+    );
+
+    // Files that never had the field are the common case and must still parse.
+    let without_passphrase = r#"{"tari_address_base58":"a","view_key_private_hex":"b","spend_public_key_hex":"c","seed_words_encrypted_base58":"d","config_path":null}"#;
+    let parsed: LegacyWalletConfig =
+        serde_json::from_str(without_passphrase).expect("a file without the field parses");
+    assert!(serde_json::to_value(&parsed).expect("serialize")["passphrase"].is_null());
+}
+
+// --- Redaction of the wallet view private key (GHSA-3wv6-9vwg-865r) ---
+//
+// The key stays in `config_wallet.json` as a plain hex string, so the JSON
+// shape must not change; it may only never show up in `Debug` output.
+
+use super::configs::config_wallet::WalletId;
+use super::internal_wallet::{TariWalletDetails, ViewPrivateKeyHex};
+use std::str::FromStr;
+use tari_common_types::tari_address::TariAddress;
+
+/// A valid dual (one-sided) address, same fixture as `utils::address_utils`.
+const TEST_TARI_ADDRESS: &str =
+    "f25eNHz2YnBVKHaqNuacGyDFB321RwwCnTr4vb2SjQCgDZVXyNNthc7zftQKRDu6evLjvSUD8W5akpPMdhS4HQ9kF3g";
+const VIEW_KEY_SENTINEL: &str = "view_key_sentinel_0123";
+
+fn sentinel_wallet_details() -> TariWalletDetails {
+    TariWalletDetails {
+        id: WalletId::new("wallet_sentinel_id".to_string()),
+        tari_address: TariAddress::from_str(TEST_TARI_ADDRESS).expect("valid test address"),
+        wallet_birthday: 1234,
+        view_private_key_hex: ViewPrivateKeyHex::new(VIEW_KEY_SENTINEL.to_string()),
+        spend_public_key_hex: "spend_public_key_not_secret".to_string(),
+    }
+}
+
+/// The on-disk JSON, exactly as `config_wallet.json` stores it.
+fn sentinel_wallet_details_json() -> String {
+    format!(
+        r#"{{"id":"wallet_sentinel_id","tari_address":"{TEST_TARI_ADDRESS}","wallet_birthday":1234,"view_private_key_hex":"{VIEW_KEY_SENTINEL}","spend_public_key_hex":"spend_public_key_not_secret"}}"#
+    )
+}
+
+#[test]
+fn tari_wallet_details_debug_redacts_view_private_key() {
+    let debug_output = format!("{:?}", sentinel_wallet_details());
+
+    assert!(
+        !debug_output.contains("view_key_sentinel"),
+        "view private key leaked into Debug output: {debug_output}"
+    );
+    assert!(debug_output.contains("REDACTED"), "{debug_output}");
+    // Non-secret fields are still useful for debugging.
+    assert!(
+        debug_output.contains("wallet_sentinel_id"),
+        "{debug_output}"
+    );
+    assert!(
+        debug_output.contains("spend_public_key_not_secret"),
+        "{debug_output}"
+    );
+}
+
+#[test]
+fn view_private_key_hex_debug_and_display_redact() {
+    let key = ViewPrivateKeyHex::new(VIEW_KEY_SENTINEL.to_string());
+
+    assert!(!format!("{key:?}").contains("view_key_sentinel"));
+    assert!(!format!("{key}").contains("view_key_sentinel"));
+    assert_eq!(key.reveal(), VIEW_KEY_SENTINEL);
+}
+
+#[test]
+fn tari_wallet_details_deserializes_the_on_disk_shape() {
+    let details: TariWalletDetails =
+        serde_json::from_str(&sentinel_wallet_details_json()).expect("fixture should deserialize");
+
+    assert_eq!(details.view_private_key_hex.reveal(), VIEW_KEY_SENTINEL);
+    assert_eq!(details.id.as_str(), "wallet_sentinel_id");
+    assert_eq!(details.wallet_birthday, 1234);
+}
+
+#[test]
+fn tari_wallet_details_serializes_the_key_as_a_plain_hex_string() {
+    let details: TariWalletDetails =
+        serde_json::from_str(&sentinel_wallet_details_json()).expect("fixture should deserialize");
+
+    let value = serde_json::to_value(&details).expect("should serialize");
+
+    assert_eq!(
+        value
+            .get("view_private_key_hex")
+            .and_then(serde_json::Value::as_str),
+        Some(VIEW_KEY_SENTINEL),
+        "the config file must keep the plain hex string"
+    );
+    // The whole document must round-trip byte for byte.
+    assert_eq!(
+        serde_json::to_string(&details).expect("should serialize"),
+        sentinel_wallet_details_json()
+    );
+}
+
+#[test]
+fn tari_wallet_details_round_trip_preserves_the_key() {
+    let serialized = serde_json::to_string(&sentinel_wallet_details()).expect("should serialize");
+    let deserialized: TariWalletDetails =
+        serde_json::from_str(&serialized).expect("should deserialize");
+
+    assert_eq!(
+        deserialized.view_private_key_hex.reveal(),
+        VIEW_KEY_SENTINEL
+    );
+}
+
+#[test]
+fn wipe_and_remove_file_deletes_existing_file_and_is_idempotent() {
+    let path = std::env::temp_dir().join(format!(
+        "tari_universe_legacy_cred_test_{}_{}.bin",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    ));
+    std::fs::write(&path, b"SAFE-DEMO-PASSPHRASE").expect("write fixture");
+    assert!(path.exists());
+
+    assert!(wipe_and_remove_file(&path).expect("first wipe"));
+    assert!(
+        !path.exists(),
+        "legacy file must not survive a successful wipe"
+    );
+
+    assert!(
+        !wipe_and_remove_file(&path).expect("second wipe"),
+        "absent file is not an error"
+    );
+}
+
+#[test]
+#[cfg(unix)]
+fn wipe_and_remove_file_unlinks_symlink_without_touching_target() {
+    let unique = format!(
+        "{}_{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_nanos()
+    );
+    let target =
+        std::env::temp_dir().join(format!("tari_universe_symlink_target_test_{}.bin", unique));
+    let link = std::env::temp_dir().join(format!("tari_universe_symlink_test_{}.bin", unique));
+
+    const TARGET_CONTENT: &[u8] = b"UNRELATED-USER-FILE";
+    std::fs::write(&target, TARGET_CONTENT).expect("write target");
+    std::os::unix::fs::symlink(&target, &link).expect("create symlink");
+
+    assert!(
+        wipe_and_remove_file(&link).expect("wipe symlink"),
+        "symlink is present, so the wipe reports a removal"
+    );
+
+    let link_err = std::fs::symlink_metadata(&link).expect_err("symlink must be unlinked");
+    assert_eq!(link_err.kind(), std::io::ErrorKind::NotFound);
+
+    assert!(target.exists(), "symlink target must survive the wipe");
+    assert_eq!(
+        std::fs::read(&target).expect("read target"),
+        TARGET_CONTENT,
+        "symlink target content must not be zeroed"
+    );
+
+    std::fs::remove_file(&target).expect("clean up target");
+}
+
+// --- Legacy credential purge gate ---
+
+/// The address a wallet that silently replaced the legacy one would record. The gate compares the
+/// recorded strings, so this never has to decode.
+const OTHER_TARI_ADDRESS: &str = "a_different_wallet_address";
+
+#[test]
+fn legacy_config_is_kept_when_the_wallet_in_use_is_a_different_wallet() {
+    let details = sentinel_wallet_details();
+
+    assert_eq!(
+        super::internal_wallet::legacy_config_keep_reason(
+            OTHER_TARI_ADDRESS,
+            Some(&details.id),
+            Some(&details),
+        ),
+        Some("address_mismatch"),
+        "a legacy file describing another wallet is the only copy of that wallet's seed"
+    );
+    assert_eq!(
+        super::internal_wallet::legacy_config_keep_reason(
+            TEST_TARI_ADDRESS,
+            Some(&details.id),
+            Some(&details),
+        ),
+        None,
+        "the legacy wallet is the wallet in use, so its file may be removed"
+    );
+}
+
+/// `create_pin` tells an already enciphered Monero credential from a plain seed by decrypting it,
+/// and falls back to the 32-byte plain length. Both only work while enciphering changes the length.
+#[test]
+fn an_enciphered_monero_seed_is_not_a_plain_one() {
+    use tari_utilities::SafePassword;
+
+    let pin = SafePassword::from("123456");
+    let enciphered =
+        super::utils::cryptography::encrypt(&[7u8; 32], &pin).expect("encipher the seed");
+
+    assert_ne!(enciphered.len(), 32);
+    assert!(super::utils::cryptography::decrypt(&enciphered, &pin).is_ok());
+}
+
+/// One fixture per evidence kind, plus the fresh install that must still be allowed through.
+#[test]
+fn previous_wallet_files_reports_each_evidence_kind() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let config_backup = dir.path().join("config_wallet.json.backup");
+    let legacy_wallet_config = dir.path().join("wallet_config.json");
+
+    assert_eq!(
+        previous_wallet_files(&config_backup, &legacy_wallet_config),
+        None,
+        "a fresh install has no evidence and must be allowed to create a wallet"
+    );
+
+    std::fs::write(&legacy_wallet_config, "{}").expect("write legacy config");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &legacy_wallet_config),
+        Some("legacy_wallet_config")
+    );
+
+    std::fs::write(&config_backup, r#"{"tari_wallets":["abc123"]}"#).expect("write backup");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &legacy_wallet_config),
+        Some("config_backup")
+    );
+
+    std::fs::write(
+        dir.path().join("config_wallet.json.corrupt.1790000000"),
+        "\0",
+    )
+    .expect("write the config moved aside");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &legacy_wallet_config),
+        Some("wallet_config_unreadable"),
+        "a config moved aside as unreadable outranks the evidence it caused"
+    );
+}
+
+#[test]
+fn previous_wallet_files_reads_the_backup_wallet_list() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let config_backup = dir.path().join("config_wallet.json.backup");
+    let absent = dir.path().join("absent");
+
+    std::fs::write(&config_backup, r#"{"tari_wallets":[]}"#).expect("write empty backup");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &absent),
+        None,
+        "a backup of a config that never held a wallet is not evidence"
+    );
+
+    std::fs::write(
+        &config_backup,
+        r#"{"tari_wallets":[],"tari_wallet_details":{"id":"abc"}}"#,
+    )
+    .expect("write backup with cached details only");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &absent),
+        Some("config_backup"),
+        "cached wallet details name a wallet even when the id list was emptied"
+    );
+
+    std::fs::write(&config_backup, "not json").expect("write corrupt backup");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &absent),
+        Some("config_backup"),
+        "an unparseable backup fails closed"
+    );
+}
+
+#[test]
+fn credential_error_tag_separates_a_missing_entry_from_a_platform_failure() {
+    use super::credential_manager::CredentialError;
+    use super::internal_wallet::credential_error_tag;
+
+    assert_eq!(
+        credential_error_tag(&CredentialError::NoEntry("entry".to_string())),
+        "missing_entry"
+    );
+    assert_eq!(
+        credential_error_tag(&CredentialError::Keyring(keyring::Error::Invalid(
+            "attribute".to_string(),
+            "value".to_string()
+        ))),
+        "platform_error"
+    );
+    assert_eq!(
+        credential_error_tag(&CredentialError::Io(std::io::Error::from(
+            std::io::ErrorKind::PermissionDenied
+        ))),
+        "io_error"
+    );
+    assert_eq!(
+        credential_error_tag(&CredentialError::Serialization(
+            serde_cbor::from_slice::<u8>(&[]).expect_err("empty input does not decode")
+        )),
+        "decode_error"
+    );
 }

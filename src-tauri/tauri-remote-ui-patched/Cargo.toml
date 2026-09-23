@@ -1,0 +1,39 @@
+# Vendored from tauri-remote-ui 0.14.0 (MIT, https://github.com/DraviaVemal/tauri-remote-ui).
+# Vendored at 0.14.0 because later releases (>= 1.0.0) are AGPL-3.0-only.
+#
+# Local patches (see git history for details):
+# - emit() no longer panics when a WebSocket peer has disconnected
+# - supports multiple simultaneous WebSocket connections (broadcast on emit)
+# - emits `remote-ui://client-connected` on the app handle when a client
+#   connects, so the app can replay a state snapshot to late joiners
+[package]
+name = "tauri-remote-ui"
+version = "0.14.1-tari.1"
+edition = "2021"
+rust-version = "1.77.2"
+license = "MIT"
+description = "Vendored + patched tauri-remote-ui: exposes the app UI over WebSocket for E2E testing"
+repository = "https://github.com/DraviaVemal/tauri-remote-ui"
+links = "tauri-remote-ui"
+
+[lib]
+name = "tauri_remote_ui"
+path = "src/lib.rs"
+
+[dependencies]
+futures = "0.3"
+http-body-util = "0.1"
+hyper = { version = "1", features = ["full"] }
+hyper-tungstenite = "0.18"
+hyper-util = "0.1"
+log = "0.4"
+mime_guess = "2"
+serde = "1"
+serde_json = "1"
+tauri = "2"
+thiserror = "2"
+tokio = { version = "1.47", features = ["full"] }
+urlencoding = "2.1"
+
+[build-dependencies]
+tauri-plugin = { version = "2.4.0", features = ["build"] }

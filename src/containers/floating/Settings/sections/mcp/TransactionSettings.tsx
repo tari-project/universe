@@ -53,6 +53,7 @@ export default function TransactionSettings() {
                         checked={transactionsEnabled}
                         onChange={(e) => handleToggle(e.target.checked)}
                         disabled={loading}
+                        data-testid="mcp-tier-transactions"
                     />
                 </SettingsGroupAction>
             </SettingsGroup>

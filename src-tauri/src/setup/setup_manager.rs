@@ -241,10 +241,6 @@ impl SetupManager {
         websocket_manager_write.set_app_handle(app_handle.clone());
         drop(websocket_manager_write);
 
-        let webview = app_handle
-            .get_webview_window("main")
-            .expect("main window must exist");
-
         let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
         if let Err(e) = websocket_events_manager_guard
             .set_app_handle(app_handle.clone(), state.websocket_manager.clone())
@@ -264,47 +260,58 @@ impl SetupManager {
             .load_app_handle(app_handle.clone())
             .await;
 
-        // Listen for websocket reconnection events to restart events manager
-        let websocket_event_manager_clone = state.websocket_event_manager.clone();
-        let websocket_manager_clone = state.websocket_manager.clone();
-        let app_handle_clone = app_handle.clone();
-        webview.listen("websocket-reconnected", move |_event| {
-            let websocket_event_manager_clone = websocket_event_manager_clone.clone();
-            let websocket_manager_clone = websocket_manager_clone.clone();
-            let app_handle_clone = app_handle_clone.clone();
+        // Webview listeners are only needed when a native window exists.
+        // In headless mode the app runs without a window (remote-ui only), so there is no webview.
+        if let Some(webview) = app_handle.get_webview_window("main") {
+            // Listen for websocket reconnection events to restart events manager
+            let websocket_event_manager_clone = state.websocket_event_manager.clone();
+            let websocket_manager_clone = state.websocket_manager.clone();
+            let app_handle_clone = app_handle.clone();
+            webview.listen("websocket-reconnected", move |_event| {
+                let websocket_event_manager_clone = websocket_event_manager_clone.clone();
+                let websocket_manager_clone = websocket_manager_clone.clone();
+                let app_handle_clone = app_handle_clone.clone();
 
-            tauri::async_runtime::spawn(async move {
-                info!(target: LOG_TARGET_APP_LOGIC, "Restarting websocket events manager after reconnection");
-                let mut events_manager_guard = websocket_event_manager_clone.write().await;
-                match events_manager_guard
-                    .set_app_handle(app_handle_clone, websocket_manager_clone)
-                    .await
-                { Err(e) => {
-                    error!(target: LOG_TARGET_APP_LOGIC, "Failed to restart websocket events manager: {e}");
-                } _ => {
-                    info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager restarted successfully");
-                }}
-            });
-        });
-        let websocket_tx = state.websocket_message_tx.clone();
-        webview.listen("ws-tx", move |event: tauri::Event| {
-            let event_cloned = event.clone();
-            let websocket_tx_clone = websocket_tx.clone();
-
-            tauri::async_runtime::spawn(async move {
-                let message = event_cloned.payload();
-                if let Ok(message) = serde_json::from_str::<WebsocketMessage>(message)
-                    .inspect_err(|e| error!("websocket malformatted: {e}"))
-                    && websocket_tx_clone
-                        .send(message.clone())
+                tauri::async_runtime::spawn(async move {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Restarting websocket events manager after reconnection");
+                    let mut events_manager_guard = websocket_event_manager_clone.write().await;
+                    match events_manager_guard
+                        .set_app_handle(app_handle_clone, websocket_manager_clone)
                         .await
-                        .inspect_err(|e| error!("too many messages in websocket send queue {e}"))
-                        .is_ok()
-                {
-                    log::trace!("websocket message sent {message:?}");
-                }
+                    {
+                        Err(e) => {
+                            error!(target: LOG_TARGET_APP_LOGIC, "Failed to restart websocket events manager: {e}");
+                        }
+                        _ => {
+                            info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager restarted successfully");
+                        }
+                    }
+                });
             });
-        });
+            let websocket_tx = state.websocket_message_tx.clone();
+            webview.listen("ws-tx", move |event: tauri::Event| {
+                let event_cloned = event.clone();
+                let websocket_tx_clone = websocket_tx.clone();
+
+                tauri::async_runtime::spawn(async move {
+                    let message = event_cloned.payload();
+                    if let Ok(message) = serde_json::from_str::<WebsocketMessage>(message)
+                        .inspect_err(|e| error!("websocket malformatted: {e}"))
+                        && websocket_tx_clone
+                            .send(message.clone())
+                            .await
+                            .inspect_err(|e| {
+                                error!("too many messages in websocket send queue {e}")
+                            })
+                            .is_ok()
+                    {
+                        log::trace!("websocket message sent {message:?}");
+                    }
+                });
+            });
+        } else {
+            info!(target: LOG_TARGET_APP_LOGIC, "No main webview window — skipping webview event listeners (headless mode)");
+        }
         EventsManager::handle_node_type_update(&app_handle).await;
 
         ConfigCore::initialize(app_handle.clone()).await;
@@ -401,6 +408,7 @@ impl SetupManager {
         // This can happen when user was using dedicated exchange miner build before and now is using default app variant
         // Or user selected exchange on default app variant and reopened the app
         // In other cases we want to display standard wallet UI
+        let mut wallet_initialized = false;
         if built_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
             if is_external_address_selected && is_on_exchange_specific_variant {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
@@ -413,6 +421,8 @@ impl SetupManager {
                         error_message: Some(e.to_string()),
                     })
                     .await;
+                } else {
+                    wallet_initialized = true;
                 }
             } else {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Standard).await;
@@ -427,18 +437,25 @@ impl SetupManager {
                                 error_message: Some(e.to_string()),
                             })
                             .await
+                        } else {
+                            wallet_initialized = true;
                         }
                     }
                     Err(e) => {
                         error!(target: LOG_TARGET_APP_LOGIC, "Error loading internal wallet: {e:?}");
-                        EventsEmitter::emit_critical_problem(CriticalProblemPayload {
-                            title: Some("Wallet(seed) not initialized!".to_string()),
-                            description: Some(
-                                "Encountered an error while initializing the wallet.".to_string(),
-                            ),
-                            error_message: Some(e.to_string()),
-                        })
-                        .await;
+                        // A failure that already knows what to tell the user carries its own
+                        // payload; anything else gets the generic one.
+                        let payload = e.downcast::<CriticalProblemPayload>().unwrap_or_else(|e| {
+                            CriticalProblemPayload {
+                                title: Some("Wallet(seed) not initialized!".to_string()),
+                                description: Some(
+                                    "Encountered an error while initializing the wallet."
+                                        .to_string(),
+                                ),
+                                error_message: Some(e.to_string()),
+                            }
+                        });
+                        EventsEmitter::emit_critical_problem(payload).await;
                     }
                 };
             }
@@ -466,7 +483,17 @@ impl SetupManager {
                     error_message: Some(e.to_string()),
                 })
                 .await;
+            } else {
+                wallet_initialized = true;
             }
+        }
+
+        // Silent, self-gating; see fn docs. Covers both fresh migrations and
+        // users who migrated on earlier versions that left the files behind. It is skipped when
+        // any wallet initialization or config migration step above failed, so a half-completed
+        // migration never loses its legacy recovery files.
+        if wallet_initialized {
+            InternalWallet::purge_legacy_credential_files(&app_handle).await;
         }
 
         // Trigger it here so we can update UI when new wallet is created

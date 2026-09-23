@@ -36,7 +36,6 @@
   "restart": "Restart",
   "seconds": "seconds",
   "select": "Select",
-  "send-logs": "Send Logs",
   "sent": "Sent",
   "shutting-down": "Shutting down..",
   "skip-for-now": "Skip for now",
@@ -54,6 +53,12 @@
   "version": "Version",
   "versions": "Versions",
   "waiting-for-confirmations": "Waiting for {{ total }} block confirmations ({{ confirmations }} of {{ total }} confirmed)",
+  "wallet-config-incomplete": "Your wallet settings file (config_wallet.json) is incomplete. Nothing has been changed. Restore it from its backup (config_wallet.json.backup) or contact support.",
+  "wallet-config-missing": "Your wallet settings file (config_wallet.json) is missing and no usable backup was found, but this device still holds the keys of a previous wallet, so nothing has been changed and those keys are not lost. To recover, restore config_wallet.json from a backup or contact support.",
+  "wallet-config-unreadable": "Your wallet settings file (config_wallet.json) could not be read and no usable backup was found. The damaged file was moved aside under the name shown above, in the Tari Universe config folder. Your wallet keys are still stored securely on this device and nothing has been changed. To recover, restore config_wallet.json from a backup or contact support with the moved file.",
+  "wallet-keys-problem": "Wallet keys problem",
+  "wallet-keys-unreadable": "Tari Universe can no longer read your wallet keys from this device's keyring or credential store. Nothing has been changed. If you moved to a new machine or reset your login, restore the wallet from your seed words; otherwise contact support.",
+  "wallet-settings-problem": "Wallet settings problem",
   "webgl-not-supported": "WebGL not supported. Disabled visual mode.",
   "xtm": "XTM"
 }

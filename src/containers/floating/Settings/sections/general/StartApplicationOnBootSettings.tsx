@@ -26,6 +26,7 @@ export default function StartApplicationOnBootSettings() {
                 </SettingsGroupContent>
                 <SettingsGroupAction>
                     <ToggleSwitch
+                        data-testid="settings-toggle-autostart"
                         checked={shouldAutoLaunch}
                         onChange={(event) => setShouldAutoLaunch(event.target.checked)}
                     />

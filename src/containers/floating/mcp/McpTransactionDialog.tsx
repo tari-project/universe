@@ -6,6 +6,8 @@ import TransactionModal from '@app/components/TransactionModal/TransactionModal'
 import { SendReview } from '@app/components/transactions/send/SendReview/SendReview';
 import { StyledForm, Wrapper } from '@app/components/transactions/send/Send.styles';
 import { Typography } from '@app/components/elements/Typography';
+import { Button } from '@app/components/elements/buttons/Button';
+import { TransactionContextSummary } from '@app/components/transactions/send/TransactionContextSummary';
 
 const TIMEOUT_SECS = 120;
 function noop() {
@@ -20,6 +22,11 @@ export default function McpTransactionDialog() {
     const [submitting, setSubmitting] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
 
+    // An `app` origin means the send command itself asked the backend to confirm, because
+    // no PIN is configured. The modal that started the send owns the progress/result UI,
+    // so this dialog is a plain approve/deny prompt in that case.
+    const isAppOrigin = pending?.origin === 'app';
+
     const handleDeny = useCallback(async () => {
         if (!pending) return;
         try {
@@ -28,7 +35,7 @@ export default function McpTransactionDialog() {
                 approved: false,
             });
         } catch (e) {
-            console.error('Failed to deny MCP transaction:', e);
+            console.error('Failed to deny transaction:', e);
         }
         setMcpPendingTransaction(null);
     }, [pending]);
@@ -63,22 +70,26 @@ export default function McpTransactionDialog() {
                 requestId: pending.request_id,
                 approved: true,
             });
-            setMcpTxStatus('processing');
+            if (isAppOrigin) {
+                setMcpPendingTransaction(null);
+            } else {
+                setMcpTxStatus('processing');
+            }
         } catch (e) {
-            console.error('Failed to approve MCP transaction:', e);
+            console.error('Failed to approve transaction:', e);
         } finally {
             setSubmitting(false);
         }
-    }, [pending]);
+    }, [pending, isAppOrigin]);
 
     const handleFormSubmit = useCallback(
         (e: React.FormEvent) => {
             e.preventDefault();
-            if (mcpTxStatus === 'reviewing') {
+            if (isAppOrigin || mcpTxStatus === 'reviewing') {
                 handleApprove();
             }
         },
-        [mcpTxStatus, handleApprove]
+        [isAppOrigin, mcpTxStatus, handleApprove]
     );
 
     if (!pending) return null;
@@ -87,33 +98,58 @@ export default function McpTransactionDialog() {
     const amountXtm = pending.amount_micro_minotari / 1_000_000;
 
     const getTitle = () => {
-        if (mcpTxStatus === 'processing' || mcpTxStatus === 'completed') {
+        if (!isAppOrigin && (mcpTxStatus === 'processing' || mcpTxStatus === 'completed')) {
             return undefined;
         }
-        return t('wallet:send.review-title');
+        return isAppOrigin ? t('wallet:send.confirm-title') : t('wallet:send.review-title');
     };
 
     return (
         <TransactionModal
             show={!!pending}
             title={getTitle()}
-            handleClose={mcpTxStatus !== 'reviewing' ? handleClose : undefined}
-            handleBack={mcpTxStatus === 'reviewing' ? handleDeny : undefined}
+            handleClose={!isAppOrigin && mcpTxStatus !== 'reviewing' ? handleClose : undefined}
+            handleBack={isAppOrigin || mcpTxStatus === 'reviewing' ? handleDeny : undefined}
         >
             <Wrapper $isLoading={submitting}>
                 <StyledForm ref={formRef} onSubmit={handleFormSubmit}>
-                    {mcpTxStatus === 'reviewing' && (
-                        <Typography variant="p" style={{ opacity: 0.5, fontSize: 11, textAlign: 'center' }}>
+                    {(isAppOrigin || mcpTxStatus === 'reviewing') && (
+                        <Typography
+                            variant="p"
+                            style={{ opacity: 0.5, fontSize: 11, textAlign: 'center' }}
+                            data-testid="mcp-tx-countdown"
+                        >
                             {t('settings:mcp.transaction-dialog.remaining', { countdown })}
                         </Typography>
                     )}
-                    <SendReview
-                        status={mcpTxStatus}
-                        setStatus={noop}
-                        amount={amountXtm}
-                        address={pending.destination}
-                        handleClose={handleClose}
-                    />
+                    {isAppOrigin ? (
+                        <>
+                            <TransactionContextSummary
+                                amountMicroMinotari={pending.amount_micro_minotari}
+                                destination={pending.destination}
+                                paymentId={pending.payment_id}
+                                subtitle={t('wallet:send.confirm-subtitle')}
+                            />
+                            <Button
+                                type="submit"
+                                fluid
+                                size="xlarge"
+                                variant="green"
+                                disabled={submitting}
+                                data-testid="app-tx-confirm-button"
+                            >
+                                {t('wallet:send.cta-confirm')}
+                            </Button>
+                        </>
+                    ) : (
+                        <SendReview
+                            status={mcpTxStatus}
+                            setStatus={noop}
+                            amount={amountXtm}
+                            address={pending.destination}
+                            handleClose={handleClose}
+                        />
+                    )}
                 </StyledForm>
             </Wrapper>
         </TransactionModal>

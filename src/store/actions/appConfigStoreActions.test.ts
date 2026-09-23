@@ -195,50 +195,6 @@ describe('appConfigStoreActions', () => {
         });
     });
 
-    describe('setGpuMiningEnabled logic', () => {
-        interface GpuDeviceSettings {
-            device_id: number;
-            is_excluded: boolean;
-        }
-
-        const shouldEnableAllDevicesAfterGpuEnable = (devices: GpuDeviceSettings[], enabled: boolean): boolean => {
-            return enabled && devices.every((device) => device.is_excluded);
-        };
-
-        const shouldExcludeAllDevicesAfterGpuDisable = (devices: GpuDeviceSettings[], enabled: boolean): boolean => {
-            return !enabled && devices.some((device) => !device.is_excluded);
-        };
-
-        it('should enable all devices when GPU mining enabled and all were excluded', () => {
-            const devices: GpuDeviceSettings[] = [
-                { device_id: 0, is_excluded: true },
-                { device_id: 1, is_excluded: true },
-            ];
-            expect(shouldEnableAllDevicesAfterGpuEnable(devices, true)).toBe(true);
-        });
-
-        it('should not enable all devices when some were already enabled', () => {
-            const devices: GpuDeviceSettings[] = [
-                { device_id: 0, is_excluded: true },
-                { device_id: 1, is_excluded: false },
-            ];
-            expect(shouldEnableAllDevicesAfterGpuEnable(devices, true)).toBe(false);
-        });
-
-        it('should exclude all devices when GPU mining disabled', () => {
-            const devices: GpuDeviceSettings[] = [
-                { device_id: 0, is_excluded: false },
-                { device_id: 1, is_excluded: true },
-            ];
-            expect(shouldExcludeAllDevicesAfterGpuDisable(devices, false)).toBe(true);
-        });
-
-        it('should not exclude devices when GPU mining enabled', () => {
-            const devices: GpuDeviceSettings[] = [{ device_id: 0, is_excluded: false }];
-            expect(shouldExcludeAllDevicesAfterGpuDisable(devices, true)).toBe(false);
-        });
-    });
-
     describe('selectMiningMode logic', () => {
         interface ModeChangeState {
             shouldSetMiningModeAsSchedulerEventMode: boolean;

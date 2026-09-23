@@ -8,20 +8,10 @@ import { WalletUIMode } from '@app/types/events-payloads';
 describe('useAppConfigStore', () => {
     describe('ConfigWallet initial state', () => {
         const configWalletInitialState = {
-            created_at: '',
-            keyring_accessed: false,
             monero_address: '',
             monero_address_is_generated: false,
             wxtm_addresses: {},
         };
-
-        it('has empty created_at by default', () => {
-            expect(configWalletInitialState.created_at).toBe('');
-        });
-
-        it('has keyring_accessed as false by default', () => {
-            expect(configWalletInitialState.keyring_accessed).toBe(false);
-        });
 
         it('has empty monero_address by default', () => {
             expect(configWalletInitialState.monero_address).toBe('');
@@ -44,7 +34,7 @@ describe('useAppConfigStore', () => {
             mine_on_app_start: false,
             mining_modes: {},
             selected_mining_mode: 'Eco',
-            gpu_devices_settings: {},
+            gpu_devices_settings_by_miner: {},
             is_gpu_mining_recommended: true,
             eco_alert_needed: false,
             pause_on_battery_mode: PauseOnBatteryModeState.Enabled,
@@ -70,8 +60,8 @@ describe('useAppConfigStore', () => {
             expect(configMiningInitialState.mining_modes).toEqual({});
         });
 
-        it('has empty gpu_devices_settings by default', () => {
-            expect(configMiningInitialState.gpu_devices_settings).toEqual({});
+        it('has empty gpu_devices_settings_by_miner by default', () => {
+            expect(configMiningInitialState.gpu_devices_settings_by_miner).toEqual({});
         });
 
         it('has is_gpu_mining_recommended as true by default', () => {

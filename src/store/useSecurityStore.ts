@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { PinPromptContext } from '@app/types/events-payloads.ts';
 
 const _DIALOGS = ['intro', 'verify_seedphrase', 'create_pin', 'enter_pin', 'forgot_pin'] as const;
 
@@ -8,6 +9,8 @@ export type DialogsType = DialogsTuple[number] | null;
 interface State {
     modal: DialogsType;
     pinResolver: ((pin?: string) => void) | null;
+    /** What the backend is asking the user to authorise, when it told us. */
+    pinContext: PinPromptContext | null;
 }
 
 interface Actions {
@@ -17,6 +20,7 @@ interface Actions {
 const initialState: State = {
     modal: null,
     pinResolver: null,
+    pinContext: null,
 };
 
 export const useSecurityStore = create<State & Actions>()((set) => ({
@@ -30,6 +34,6 @@ export function requestPin(): Promise<string | undefined> {
         if (current.pinResolver) {
             current.pinResolver(undefined);
         }
-        useSecurityStore.setState({ pinResolver: resolve, modal: 'enter_pin' });
+        useSecurityStore.setState({ pinResolver: resolve, modal: 'enter_pin', pinContext: null });
     });
 }

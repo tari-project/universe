@@ -163,6 +163,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                     data_dir,
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
+                    output_sink: None,
                 },
             },
             MergeMiningProxyStatusMonitor {

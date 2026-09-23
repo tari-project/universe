@@ -51,11 +51,12 @@ export default function SetScheduleButton() {
             checked={eventDetails?.state !== SchedulerEventState.Paused}
             onChange={handlePauseToggle}
             disabled={isPending}
+            data-testid="scheduler-pause-toggle"
         />
     ) : null;
     return (
         <Wrapper>
-            <StyledCTA onClick={() => setShowScheduler(true)} $hasSchedule={hasSchedule}>
+            <StyledCTA onClick={() => setShowScheduler(true)} $hasSchedule={hasSchedule} data-testid="scheduler-open">
                 <Content>
                     <CalendarWrapper>
                         <CalendarSvg />

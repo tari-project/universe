@@ -44,7 +44,12 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
     const hasDetails = inputs.length > 0 || outputs.length > 0;
 
     return (
-        <TransactionModal show={expanded} title={t(`history.transaction-details`)} handleClose={handleClose}>
+        <TransactionModal
+            show={expanded}
+            title={t(`history.transaction-details`)}
+            handleClose={handleClose}
+            data-testid="tx-details-modal"
+        >
             <Wrapper>
                 {/* Main transaction details */}
                 <StatusList entries={mainEntries} />
@@ -97,6 +102,7 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
                 fluid
                 icon={copyIcon}
                 onClick={() => copyToClipboard(JSON.stringify(transaction, null, 2))}
+                data-testid="tx-details-copy-raw"
             >
                 {t('send.transaction-copy-raw')}
             </Button>

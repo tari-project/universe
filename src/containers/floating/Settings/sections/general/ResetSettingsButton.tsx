@@ -25,7 +25,9 @@ export const ResetSettingsButton = () => {
                         </SettingsGroupTitle>
                     </SettingsGroupContent>
                     <SettingsGroupAction>
-                        <Button onClick={() => setOpen(true)}>{t('reset-settings')}</Button>
+                        <Button data-testid="settings-reset-button" onClick={() => setOpen(true)}>
+                            {t('reset-settings')}
+                        </Button>
                     </SettingsGroupAction>
                 </SettingsGroup>
             </SettingsGroupWrapper>

@@ -32,6 +32,7 @@ export default function PauseOnBatteryModeMarkup() {
                 <SettingsGroupAction>
                     <ToggleSwitch
                         checked={pauseOnBatteryMode === PauseOnBatteryModeState.Enabled}
+                        data-testid="settings-toggle-pause-on-battery"
                         onChange={(event) =>
                             setPauseOnBatteryMode(
                                 event.target.checked

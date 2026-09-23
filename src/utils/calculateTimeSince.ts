@@ -8,7 +8,10 @@ export interface TimeSince {
 }
 export default function calculateTimeSince(earlier: number, later: number): TimeSince {
     const past: Date = new Date(earlier * 1000); // Convert seconds to milliseconds
-    const diff: number = later - past.getTime();
+    // Clamp to zero: a block timestamp can sit slightly ahead of the local
+    // clock (node/peer skew), and `Math.floor` on a negative diff rounds *away*
+    // from zero, so a five-second skew renders as `-1:-5` rather than `00:00`.
+    const diff: number = Math.max(0, later - past.getTime());
 
     // Convert the difference to days, hours, minutes, and seconds
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));

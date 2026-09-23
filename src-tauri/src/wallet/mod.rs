@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod minotari_wallet;
+pub mod send_gate;
 pub mod wallet_adapter;
 pub mod wallet_manager;
 pub mod wallet_status_monitor;

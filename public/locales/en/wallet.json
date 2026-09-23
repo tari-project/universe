@@ -27,6 +27,8 @@
       "warning": "Keychain access is required for this operation.\nPlease try again and select “allow”."
     },
     "pin": {
+      "approve-send": "Approve transaction",
+      "approve-send-subtitle": "Enter your PIN to authorise this transaction. If you did not start it, close this dialog.",
       "create": "Create PIN",
       "create-confirm": "Confirm PIN",
       "creation-subtitle": "Set a secure PIN code to protect your wallet on this device.\nYour PIN stays private—it’s never stored or shared with Tari Universe.",
@@ -38,7 +40,12 @@
       "enter-skip": "Skip for now",
       "error-match": "That’s not quite right. Try again or create a new PIN.",
       "explainer": "If you forget this PIN, the only way to regain access to your wallet is by restoring it from your seed phrase.",
-      "forgot": "Forgot PIN"
+      "forgot": "Forgot PIN",
+      "forgot-monero-warning": "Your Monero wallet is protected by the PIN you forgot. Enter your Monero seed words to keep it, or continue and Tari Universe will create a new Monero wallet for you.",
+      "forgot-monero-placeholder": "Enter Monero seed words (optional)...",
+      "forgot-monero-replace": "Continue and create a new Monero wallet",
+      "restore-wallet-details": "Your wallet details were missing from the settings file. Enter your PIN to restore them from your wallet keys. Nothing else will change.",
+      "seed-needs-pin": "Your wallet keys are protected by a PIN, but your settings say no PIN is set. Your seed is safe and nothing has been changed. Enter your PIN to continue."
     },
     "reminder": {
       "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\nLet's do it now—it'll only take a moment",
@@ -57,12 +64,16 @@
     "completed-title": "You're Done!",
     "cta-confirm": "Confirm",
     "cta-review": "Review",
+    "confirm-subtitle": "This transaction was requested from within the app. Approve it only if you started it.",
+    "confirm-title": "Confirm transaction",
     "cta-send": "Send Tari",
     "destination-address": "Destination address",
     "done-button": "Done",
+    "error-denied": "Transaction cancelled.",
     "error-invalid-address": "The address is invalid",
     "error-invalid-amount": "The amount is invalid",
     "error-message": "Error sending transaction: ",
+    "error-timeout": "Transaction confirmation timed out.",
     "estimated-completion-time": "Estimated completion time",
     "field-address": "address",
     "field-amount": "amount",

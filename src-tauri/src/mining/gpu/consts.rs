@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -46,36 +48,56 @@ impl GpuMinerStatus {
     }
 }
 
-#[derive(Eq, Hash, PartialEq, Clone, Deserialize, Serialize, Debug)]
+#[derive(Eq, Hash, PartialEq, Clone, Deserialize, Serialize, Debug, Default)]
 pub enum GpuMinerType {
+    #[default]
     LolMiner,
+    /// The open source CUDA C29 miner: <https://github.com/tari-project/TARI.Miner>
+    TariMiner,
 }
 
 impl GpuMinerType {
+    /// Resolves a miner type from its persisted/display name.
+    /// Unknown names (for example the miners that were removed together with SHA3) return `None`
+    /// so callers can fall back to the default instead of failing.
+    pub fn from_name(name: &str) -> Option<GpuMinerType> {
+        match name {
+            "LolMiner" => Some(GpuMinerType::LolMiner),
+            "TariMiner" => Some(GpuMinerType::TariMiner),
+            _ => None,
+        }
+    }
+
     pub fn get_expected_features(&self) -> Vec<GpuMinerFeature> {
         match self {
             GpuMinerType::LolMiner => vec![
                 GpuMinerFeature::PoolMining,
                 GpuMinerFeature::DeviceExclusion,
             ],
+            GpuMinerType::TariMiner => vec![
+                GpuMinerFeature::PoolMining,
+                GpuMinerFeature::DeviceExclusion,
+                GpuMinerFeature::SingleDeviceMining,
+            ],
         }
     }
 
     pub fn main_algorithm(&self) -> GpuMiningAlgorithm {
         match self {
-            GpuMinerType::LolMiner => GpuMiningAlgorithm::C29,
+            GpuMinerType::LolMiner | GpuMinerType::TariMiner => GpuMiningAlgorithm::C29,
         }
     }
 
     pub fn supported_algorithms(&self) -> Vec<GpuMiningAlgorithm> {
         match self {
-            GpuMinerType::LolMiner => vec![GpuMiningAlgorithm::C29],
+            GpuMinerType::LolMiner | GpuMinerType::TariMiner => vec![GpuMiningAlgorithm::C29],
         }
     }
 
     pub fn supported_platforms(&self) -> Vec<CurrentOperatingSystem> {
         match self {
-            GpuMinerType::LolMiner => vec![
+            // TARI.Miner only ships NVIDIA CUDA backends for Windows and Linux
+            GpuMinerType::LolMiner | GpuMinerType::TariMiner => vec![
                 CurrentOperatingSystem::Windows,
                 CurrentOperatingSystem::Linux,
             ],
@@ -84,7 +106,9 @@ impl GpuMinerType {
 
     pub fn supported_pools(&self) -> Vec<GpuPool> {
         match self {
-            GpuMinerType::LolMiner => vec![GpuPool::KryptexPoolC29, GpuPool::LuckyPoolC29],
+            GpuMinerType::LolMiner | GpuMinerType::TariMiner => {
+                vec![GpuPool::KryptexPoolC29, GpuPool::LuckyPoolC29]
+            }
         }
     }
 
@@ -94,7 +118,7 @@ impl GpuMinerType {
 
     pub fn default_pool(&self) -> Option<GpuPool> {
         match self {
-            GpuMinerType::LolMiner => Some(GpuPool::LuckyPoolC29),
+            GpuMinerType::LolMiner | GpuMinerType::TariMiner => Some(GpuPool::LuckyPoolC29),
         }
     }
 
@@ -116,6 +140,7 @@ impl std::fmt::Display for GpuMinerType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             GpuMinerType::LolMiner => "LolMiner",
+            GpuMinerType::TariMiner => "TariMiner",
         };
         write!(f, "{s}")
     }
@@ -135,6 +160,9 @@ pub enum GpuMinerFeature {
     PoolMining,
     /// Support for excluding specific GPU devices
     DeviceExclusion,
+    /// Mines on one device at a time. Device exclusion still applies, but it picks which single
+    /// device is used rather than adding devices to the ones already mining.
+    SingleDeviceMining,
 }
 
 #[derive(Clone, Serialize)]
@@ -161,4 +189,108 @@ impl GpuMiner {
 /// Defines priority of miners to be used when multiple miners are available
 /// The first miner in the list has the highest priority
 /// Used for selecting default or fallback miner
-pub const MINERS_PRIORITY: &[GpuMinerType] = &[GpuMinerType::LolMiner];
+pub const MINERS_PRIORITY: &[GpuMinerType] = &[GpuMinerType::LolMiner, GpuMinerType::TariMiner];
+
+/// Resolves the miner that should actually be used, given the miner the user picked and the miners
+/// that were successfully initialized on this machine.
+/// The saved miner wins whenever it is available and healthy, otherwise the first healthy miner in
+/// `MINERS_PRIORITY` is used. Returns `None` when there is nothing to fall back to.
+pub fn resolve_selected_miner(
+    saved_miner: &GpuMinerType,
+    available_miners: &HashMap<GpuMinerType, GpuMiner>,
+) -> Option<GpuMinerType> {
+    if matches!(available_miners.get(saved_miner), Some(m) if m.is_healthy) {
+        return Some(saved_miner.clone());
+    }
+
+    MINERS_PRIORITY
+        .iter()
+        .find(|miner_type| matches!(available_miners.get(miner_type), Some(m) if m.is_healthy))
+        .cloned()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn miner(miner_type: GpuMinerType, is_healthy: bool) -> (GpuMinerType, GpuMiner) {
+        (
+            miner_type.clone(),
+            GpuMiner::new(miner_type, is_healthy, None),
+        )
+    }
+
+    #[test]
+    fn from_name_maps_known_miners_and_ignores_legacy_ones() {
+        assert_eq!(
+            GpuMinerType::from_name("LolMiner"),
+            Some(GpuMinerType::LolMiner)
+        );
+        assert_eq!(
+            GpuMinerType::from_name("TariMiner"),
+            Some(GpuMinerType::TariMiner)
+        );
+        assert_eq!(GpuMinerType::from_name("Graxil"), None);
+        assert_eq!(GpuMinerType::from_name(""), None);
+    }
+
+    #[test]
+    fn from_name_round_trips_with_display() {
+        for miner_type in MINERS_PRIORITY {
+            assert_eq!(
+                GpuMinerType::from_name(&miner_type.to_string()).as_ref(),
+                Some(miner_type)
+            );
+        }
+    }
+
+    #[test]
+    fn resolve_selected_miner_keeps_the_saved_miner_when_it_is_healthy() {
+        let available = HashMap::from([
+            miner(GpuMinerType::LolMiner, true),
+            miner(GpuMinerType::TariMiner, true),
+        ]);
+
+        assert_eq!(
+            resolve_selected_miner(&GpuMinerType::TariMiner, &available),
+            Some(GpuMinerType::TariMiner)
+        );
+    }
+
+    #[test]
+    fn resolve_selected_miner_falls_back_when_the_saved_miner_is_unavailable() {
+        let available = HashMap::from([miner(GpuMinerType::LolMiner, true)]);
+
+        assert_eq!(
+            resolve_selected_miner(&GpuMinerType::TariMiner, &available),
+            Some(GpuMinerType::LolMiner)
+        );
+    }
+
+    #[test]
+    fn resolve_selected_miner_falls_back_when_the_saved_miner_is_unhealthy() {
+        let available = HashMap::from([
+            miner(GpuMinerType::LolMiner, false),
+            miner(GpuMinerType::TariMiner, true),
+        ]);
+
+        assert_eq!(
+            resolve_selected_miner(&GpuMinerType::LolMiner, &available),
+            Some(GpuMinerType::TariMiner)
+        );
+    }
+
+    #[test]
+    fn resolve_selected_miner_returns_none_when_nothing_is_healthy() {
+        let available = HashMap::from([miner(GpuMinerType::LolMiner, false)]);
+
+        assert_eq!(
+            resolve_selected_miner(&GpuMinerType::LolMiner, &available),
+            None
+        );
+        assert_eq!(
+            resolve_selected_miner(&GpuMinerType::LolMiner, &HashMap::new()),
+            None
+        );
+    }
+}

@@ -89,6 +89,19 @@ describe('core config actions', () => {
             expect(state.should_auto_launch).toBe(false);
         });
 
+        it('setShowWindowOnStartup follows optimistic update pattern', () => {
+            let state = { show_window_on_startup: true };
+            const showWindowOnStartup = false;
+
+            // Optimistic update
+            state = { ...state, show_window_on_startup: showWindowOnStartup };
+            expect(state.show_window_on_startup).toBe(false);
+
+            // Rollback on error
+            state = { ...state, show_window_on_startup: !showWindowOnStartup };
+            expect(state.show_window_on_startup).toBe(true);
+        });
+
         it('setUseTor follows optimistic update pattern', () => {
             let state = { use_tor: false };
             const useTor = true;

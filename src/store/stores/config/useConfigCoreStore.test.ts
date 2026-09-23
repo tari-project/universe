@@ -18,6 +18,7 @@ describe('useConfigCoreStore', () => {
             pre_release: false,
             remote_base_node_address: '',
             should_auto_launch: false,
+            show_window_on_startup: true,
             use_tor: false,
             scheduler_events: null,
             shutdown_mode: ShutdownMode.Tasktray,
@@ -41,6 +42,10 @@ describe('useConfigCoreStore', () => {
 
         it('has should_auto_launch as false by default', () => {
             expect(initialState.should_auto_launch).toBe(false);
+        });
+
+        it('has show_window_on_startup as true by default', () => {
+            expect(initialState.show_window_on_startup).toBe(true);
         });
 
         it('has use_tor as false by default', () => {

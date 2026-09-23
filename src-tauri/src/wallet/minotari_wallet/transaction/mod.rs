@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::events::PinPromptContext;
 use crate::wallet::minotari_wallet::wallet_network;
 use anyhow::anyhow;
 use log::info;
@@ -36,6 +37,7 @@ use tari_transaction_components_wallet::{
     },
 };
 use tauri::AppHandle;
+use zeroize::Zeroizing;
 
 use crate::{
     internal_wallet::InternalWallet,
@@ -57,7 +59,7 @@ impl TransactionManager {
         let transaction_sender = TransactionSender::new(
             pool,
             sender_address,
-            DEFAULT_PASSWORD.to_string(),
+            Zeroizing::new(DEFAULT_PASSWORD.to_string()),
             network,
             CONFIRMATION_WINDOW,
         )?;
@@ -84,9 +86,10 @@ impl TransactionManager {
         &self,
         app_handle: &AppHandle,
         unsigned_tx: PrepareOneSidedTransactionForSigningResult,
+        pin_context: Option<PinPromptContext>,
     ) -> Result<SignedOneSidedTransactionResult, anyhow::Error> {
         info!("Signing one-sided transaction...");
-        let key_manager = InternalWallet::get_key_manager(app_handle).await?;
+        let key_manager = InternalWallet::get_key_manager(app_handle, pin_context).await?;
         let network = wallet_network();
         let rules = ConsensusManager::builder(network).build();
 

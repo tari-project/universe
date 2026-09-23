@@ -1,0 +1,18 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Tari Universe — headless test bridge</title>
+    </head>
+    <body>
+        <!--
+            Loaded into the hidden native webview in headless test mode
+            (see src-tauri/src/headless.rs). The webview must stay alive so
+            tauri-remote-ui can eval invoke() calls through it, but it must
+            NOT run the app frontend: a second live frontend reacts to
+            backend events (auto stop/start mining, config writes) and
+            races the Playwright-driven page.
+        -->
+        headless test bridge
+    </body>
+</html>
