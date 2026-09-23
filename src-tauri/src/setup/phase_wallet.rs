@@ -187,11 +187,16 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .complete_step(SetupStep::MinotariWallet, || async {
                 MinotariWalletManager::load_app_handle(app_handle_clone).await;
                 if InternalWallet::is_internal().await {
-                MinotariWalletManager::initialize_wallet().await?;
-                info!(target: LOG_TARGET_APP_LOGIC, "============================ Setting up Minotari Wallet");
-                let _unused = MinotariWalletManager::import_view_key().await;
-                info!(target: LOG_TARGET_APP_LOGIC, "============================ Scanning blocks for Minotari Wallet");
-                MinotariWalletManager::initialize_blockchain_scanning().await?;
+                    // The account must exist before `initialize_wallet` looks it up by
+                    // address. `init_with_view_key` refuses an account that already
+                    // exists, which is the normal case after the first launch.
+                    info!(target: LOG_TARGET_APP_LOGIC, "============================ Setting up Minotari Wallet");
+                    if let Err(e) = MinotariWalletManager::import_view_key().await {
+                        info!(target: LOG_TARGET_APP_LOGIC, "Minotari wallet account not imported (already present?): {e}");
+                    }
+                    MinotariWalletManager::initialize_wallet().await?;
+                    info!(target: LOG_TARGET_APP_LOGIC, "============================ Scanning blocks for Minotari Wallet");
+                    MinotariWalletManager::initialize_blockchain_scanning().await?;
                 }
 
                 Ok(())
