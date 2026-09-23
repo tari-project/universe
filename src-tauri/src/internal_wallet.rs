@@ -244,8 +244,17 @@ impl InternalWallet {
                     Ok(cred) => cred.encrypted_seed,
                     Err(e) => return Err(anyhow!("Failed to get credentials: {e}")),
                 };
-                let tari_cipher_seed = CipherSeed::from_binary(&tari_seed_binary)
-                    .map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))?;
+                // With a PIN set the stored blob is enciphered, and the unauthenticated
+                // `from_binary` would decode it into a garbage seed whose details are then
+                // persisted and become what every later proof compares against.
+                let tari_cipher_seed = if PinManager::pin_locked().await {
+                    let pin_password = PinManager::get_validated_pin(app_handle, None).await?;
+                    CipherSeed::from_enciphered_bytes(&tari_seed_binary, Some(pin_password))
+                        .map_err(|_| anyhow!("Wrong PIN entered!"))?
+                } else {
+                    CipherSeed::from_binary(&tari_seed_binary)
+                        .map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))?
+                };
 
                 let tari_wallet_details =
                     InternalWallet::get_tari_wallet_details(wallet_id.clone(), tari_cipher_seed)
@@ -282,16 +291,12 @@ impl InternalWallet {
 
                 let old_wallet_config = get_old_wallet_config(&app_config_dir).await?;
                 if let Some(old_wallet_config) = old_wallet_config {
-                    // Migrate old wallet config
-                    let (wallet_id, tari_seed_binary, monero_seed_binary) =
+                    // Migrate old wallet config. The details come from the decrypted legacy
+                    // seed, so the stored blob is never decoded again here: with a PIN set it is
+                    // enciphered and `from_binary` would not authenticate it.
+                    let (tari_wallet_details, tari_seed_binary, monero_seed_binary) =
                         InternalWallet::migrate(app_handle, &app_config_dir, old_wallet_config)
                             .await?;
-                    let tari_wallet_details = InternalWallet::get_tari_wallet_details(
-                        wallet_id,
-                        CipherSeed::from_binary(&tari_seed_binary)
-                            .map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))?,
-                    )
-                    .await?;
 
                     InternalWallet {
                         tari_address_type: TariAddressType::Internal,
@@ -842,11 +847,10 @@ impl InternalWallet {
         app_handle: &AppHandle,
         app_config_dir: &Path,
         old_wallet_config: LegacyWalletConfig,
-    ) -> Result<(WalletId, Vec<u8>, Option<Vec<u8>>), anyhow::Error> {
+    ) -> Result<(TariWalletDetails, Vec<u8>, Option<Vec<u8>>), anyhow::Error> {
         // `LegacyCredentialManager` already picks between the keyring and the fallback file, and
-        // a fresh config claiming the keyring was never accessed is not evidence that it holds
-        // nothing. The legacy config file carries a passphrase of its own, so a credential that
-        // cannot be read is not fatal here.
+        // the legacy config file carries a passphrase of its own, so a credential that cannot be
+        // read is not fatal here.
         let legacy_cred: Option<LegacyCredential> =
             match InternalWallet::get_legacy_credentials_forced(app_handle, app_config_dir).await {
                 Ok(cred) => Some(cred),
@@ -893,7 +897,7 @@ impl InternalWallet {
         let (tari_wallet_details, tari_seed_binary) =
             InternalWallet::add_tari_wallet(app_handle, tari_seed, None).await?;
 
-        Ok((tari_wallet_details.id, tari_seed_binary, monero_seed_binary))
+        Ok((tari_wallet_details, tari_seed_binary, monero_seed_binary))
     }
 
     /// Removes the plaintext legacy credential files left behind after a successful migration to
@@ -1108,10 +1112,10 @@ impl InternalWallet {
             }
         };
 
-        // `CipherSeed::from_binary` is unauthenticated: PIN-enciphered bytes decode into a
-        // structurally valid seed with different entropy, hence a different address. Decode the
-        // way the PIN state implies first, then the other way, and hand back only a seed that
-        // derives the recorded address.
+        // `from_binary` is unauthenticated: PIN-enciphered bytes decode into a valid-looking seed
+        // for a different address. Decode the way the PIN state implies, then the other way, and
+        // hand back only a seed that derives the recorded address.
+        let recorded = ConfigWallet::content().await.tari_wallet_details().clone();
         let pin_provided = pin_password.is_some();
         let primary = if pin_provided {
             CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, pin_password).ok()
@@ -1119,7 +1123,7 @@ impl InternalWallet {
             CipherSeed::from_binary(&encrypted_tari_seed).ok()
         };
         if let Some(seed) = primary
-            && seed_proves_recorded_address(&seed).await != Some(false)
+            && seed_proves_recorded_address(&seed, recorded.as_ref()).await != Some(false)
         {
             return Ok(seed);
         }
@@ -1132,7 +1136,7 @@ impl InternalWallet {
             CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, None).ok()
         };
         if let Some(seed) = secondary
-            && seed_proves_recorded_address(&seed).await == Some(true)
+            && seed_proves_recorded_address(&seed, recorded.as_ref()).await == Some(true)
         {
             return Ok(seed);
         }
@@ -1344,7 +1348,7 @@ where
 
 /// Open the legacy enciphered seed with the first passphrase that works. A failure is an error
 /// the user can act on: the panic this replaces fired before anything persisted, so the same
-/// state produced the same crash on every launch.
+/// state crashed every launch.
 pub(crate) fn decrypt_legacy_tari_seed(
     enciphered_bytes: &[u8],
     passphrases: impl IntoIterator<Item = Option<SafePassword>>,
@@ -1355,13 +1359,13 @@ pub(crate) fn decrypt_legacy_tari_seed(
         .ok_or_else(|| anyhow!("Failed to decrypt legacy Tari seed"))
 }
 
-/// Derive the address from a decoded seed and compare it with the one recorded in the wallet
-/// config. `None` when the config records no address, so there is nothing to prove against.
-async fn seed_proves_recorded_address(seed: &CipherSeed) -> Option<bool> {
-    let recorded = ConfigWallet::content()
-        .await
-        .tari_wallet_details()
-        .clone()?;
+/// Derive the address from a decoded seed and compare it with the recorded one. `None` when
+/// nothing is recorded, so there is nothing to prove against.
+pub(crate) async fn seed_proves_recorded_address(
+    seed: &CipherSeed,
+    recorded: Option<&TariWalletDetails>,
+) -> Option<bool> {
+    let recorded = recorded?;
     Some(
         match InternalWallet::get_tari_wallet_details(recorded.id.clone(), seed.clone()).await {
             Ok(derived) => derived.tari_address == recorded.tari_address,

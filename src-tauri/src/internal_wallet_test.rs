@@ -69,7 +69,7 @@
 
 use super::internal_wallet::{
     InternalWallet, LegacyWalletConfig, TariAddressType, decrypt_legacy_tari_seed,
-    previous_wallet_files, wipe_and_remove_file,
+    previous_wallet_files, seed_proves_recorded_address, wipe_and_remove_file,
 };
 use tari_common_types::seeds::cipher_seed::CipherSeed;
 use tari_utilities::SafePassword;
@@ -154,6 +154,40 @@ fn enciphered_bytes_decode_through_the_plain_path_into_a_different_seed() {
     );
     // The proof the wallet uses is the derived address; entropy is what drives it.
     assert_ne!(decoded.to_binary().ok(), seed.to_binary().ok());
+}
+
+/// The proof `get_tari_seed` runs on every decode: derive the address from the seed in hand and
+/// compare it with the one on record. Only a seed that derives the recorded address is returned.
+#[tokio::test]
+async fn the_address_proof_tells_the_recorded_wallet_from_any_other() {
+    let seed = CipherSeed::random();
+    let recorded = InternalWallet::get_tari_wallet_details(
+        WalletId::new("recorded".to_string()),
+        seed.clone(),
+    )
+    .await
+    .expect("derive the recorded details");
+    let other = InternalWallet::get_tari_wallet_details(
+        WalletId::new("other".to_string()),
+        CipherSeed::random(),
+    )
+    .await
+    .expect("derive another wallet's details");
+
+    assert_eq!(
+        seed_proves_recorded_address(&seed, Some(&recorded)).await,
+        Some(true)
+    );
+    assert_eq!(
+        seed_proves_recorded_address(&seed, Some(&other)).await,
+        Some(false),
+        "a seed for a different address must not pass the proof"
+    );
+    assert_eq!(
+        seed_proves_recorded_address(&seed, None).await,
+        None,
+        "with nothing recorded there is nothing to prove against"
+    );
 }
 
 // --- The legacy seed decrypt -----------------------------------------------------------------
