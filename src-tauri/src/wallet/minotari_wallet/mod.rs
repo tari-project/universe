@@ -107,6 +107,11 @@ static REQUIRED_CONFIRMATIONS: u64 = 3;
 // Blockchain scanning constants
 const SCAN_BATCH_SIZE: u64 = 25;
 const SCAN_POLL_INTERVAL_SECS: u64 = 20;
+/// Blocks per scan cycle. Like the minotari daemon, each cycle is a fresh
+/// `ScanMode::Partial` run that resumes from the database tip; `Continuous` mode
+/// re-processes the previous tip block on every poll and trips the unique output
+/// constraint as soon as new blocks arrive.
+const SCAN_MAX_BLOCKS_PER_CYCLE: u64 = 1000;
 const PROGRESS_UPDATE_INTERVAL_SECS: u64 = 10;
 
 pub struct MinotariWalletManager {
@@ -481,39 +486,42 @@ impl MinotariWalletManager {
         let database_path_buf = PathBuf::from(database_path);
 
         tokio::spawn(async move {
-            let (event_rx, scan_future) = Scanner::new(
-                DEFAULT_PASSWORD,
-                &base_url,
-                database_path_buf,
-                SCAN_BATCH_SIZE,
-                REQUIRED_CONFIRMATIONS,
-            )
-            .account(&tari_address)
-            .mode(ScanMode::Continuous {
-                poll_interval: Duration::from_secs(SCAN_POLL_INTERVAL_SECS),
-            })
-            .cancel_token(cancel_token_for_scan.clone())
-            .run_with_events();
+            while !cancel_token_for_scan.is_cancelled() {
+                let (event_rx, scan_future) = Scanner::new(
+                    DEFAULT_PASSWORD,
+                    &base_url,
+                    database_path_buf.clone(),
+                    SCAN_BATCH_SIZE,
+                    REQUIRED_CONFIRMATIONS,
+                )
+                .account(&tari_address)
+                .mode(ScanMode::Partial {
+                    max_blocks: SCAN_MAX_BLOCKS_PER_CYCLE,
+                })
+                .cancel_token(cancel_token_for_scan.clone())
+                .run_with_events();
 
-            // Process events and run scan concurrently
-            tokio::select! {
-                _ = Self::process_scan_events(event_rx) => {
-                    info!(target: LOG_TARGET_STATUSES, "Scan event processing completed.");
-                }
-                result = scan_future => {
-                    match result {
-                        Ok(_) => {
-                            info!(target: LOG_TARGET_STATUSES, "Blockchain scan completed successfully.");
-                        }
-                        Err(e) => {
-                            error!(target: LOG_TARGET, "Blockchain scan failed: {:?}", e);
-                        }
+                // The event stream ends when the scan future drops its sender.
+                let (_, result) = tokio::join!(Self::process_scan_events(event_rx), scan_future);
+
+                let caught_up = match result {
+                    Ok((_, more_blocks)) => !more_blocks,
+                    Err(e) => {
+                        // Keep polling: a dead scanner would silently freeze the balance
+                        // and history until the next app start.
+                        error!(target: LOG_TARGET, "Blockchain scan cycle failed, retrying after {SCAN_POLL_INTERVAL_SECS}s: {e:?}");
+                        true
+                    }
+                };
+
+                if caught_up {
+                    tokio::select! {
+                        _ = tokio::time::sleep(Duration::from_secs(SCAN_POLL_INTERVAL_SECS)) => {}
+                        _ = cancel_token_for_scan.cancelled() => {}
                     }
                 }
             }
-
-            // Ensure token is cancelled when done
-            cancel_token_for_scan.cancel();
+            info!(target: LOG_TARGET_STATUSES, "Blockchain scan loop stopped.");
         });
 
         // Spawn shutdown listener task
