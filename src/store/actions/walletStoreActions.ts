@@ -21,7 +21,8 @@ export const importSeedWords = async (seedWords: string[]) => {
     useWalletStore.setState((c) => ({
         ...c,
         is_wallet_importing: true,
-        tx_history: [],
+        wallet_transactions: [],
+        selectedTransactionId: null,
         bridge_transactions: [],
         wallet_scanning: {
             is_initial_scan_complete: false,
@@ -95,7 +96,7 @@ export const setTxHistoryFilter = (filter: TxHistoryFilter) => {
     useWalletStore.setState((c) => ({ ...c, transaction_history_filter: filter }));
 };
 
-export const setSelectedTransactionId = (transactionId: string | null) =>
+export const setSelectedTransactionId = (transactionId: number | null) =>
     useWalletStore.setState((c) => ({ ...c, selectedTransactionId: transactionId }));
 
 export const handleSelectedTariAddressChange = (payload: TariAddressUpdatePayload) => {
@@ -153,7 +154,7 @@ const solveBridgeTransactionDetails = async (walletTxs: DisplayedTransaction[]):
     if (shouldFetchBridgeItems(walletTxs)) {
         const processedTransactions: DisplayedTransaction[] = [...walletTxs];
         const walletAddress = useWalletStore.getState().tari_address_base58;
-        const bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress);
+        const bridgeTransactions = await fetchBridgeTransactionsHistory(walletAddress).catch(() => []);
         bridgeTransactions.forEach((bridgeTx) => {
             walletTxs.forEach((walletTx, index) => {
                 if (
@@ -210,5 +211,6 @@ export const handleWalletTransactionsCleared = () => {
     useWalletStore.setState((c) => ({
         ...c,
         wallet_transactions: [],
+        selectedTransactionId: null,
     }));
 };

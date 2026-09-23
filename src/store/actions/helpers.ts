@@ -3,37 +3,6 @@ import { DisplayedTransaction } from '@app/types/app-status.ts';
 const sortTransactions = (txs: DisplayedTransaction[]): DisplayedTransaction[] =>
     txs.sort((a, b) => new Date(b.blockchain.timestamp).getTime() - new Date(a.blockchain.timestamp).getTime());
 
-const isTransactionMatch = (txA: DisplayedTransaction, txB: DisplayedTransaction) => {
-    if (txA.id === txB.id) return true;
-
-    const hashesA = txA.details?.sent_output_hashes;
-    const hashesB = txB.details?.sent_output_hashes;
-    if (hashesA?.length && hashesB?.length && hashesA.some((h) => hashesB.includes(h))) {
-        return true;
-    }
-
-    const inputsA = txA.details?.inputs;
-    const inputsB = txB.details?.inputs;
-
-    const matchedInputA = inputsA?.find((input) => input.is_matched && input.matched_output_id);
-    if (
-        matchedInputA &&
-        inputsB?.some((input) => input.is_matched && input.matched_output_id === matchedInputA.matched_output_id)
-    ) {
-        return true;
-    }
-
-    const matchedInputB = inputsB?.find((input) => input.is_matched && input.matched_output_id);
-    if (
-        matchedInputB &&
-        inputsA?.some((input) => input.is_matched && input.matched_output_id === matchedInputB.matched_output_id)
-    ) {
-        return true;
-    }
-
-    return false;
-};
-
 export const mergeTransactions = (
     currentList: DisplayedTransaction[],
     incomingList: DisplayedTransaction[],
@@ -45,7 +14,7 @@ export const mergeTransactions = (
     let hasChanges = false;
 
     incomingList.forEach((newTx) => {
-        const matchIndex = updatedList.findIndex((existingTx) => isTransactionMatch(existingTx, newTx));
+        const matchIndex = updatedList.findIndex((existingTx) => existingTx.id === newTx.id);
 
         if (matchIndex >= 0) {
             const existing = updatedList[matchIndex];

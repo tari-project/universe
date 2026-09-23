@@ -33,7 +33,8 @@ export default function Wallet({ section, setSection }: WalletProps) {
 
     const [isScrolled, setIsScrolled] = useState(false);
 
-    const isSyncing = !isConnectedToTariNetwork || isInitialWalletScanning;
+    // A failed wallet module never reports a completed scan, so the sync loader would hide the failure alert forever.
+    const isSyncing = !isWalletModuleFailed && (!isConnectedToTariNetwork || isInitialWalletScanning);
     const listHidden = isSyncing || !isStandardWalletUI || isWalletModuleFailed;
 
     return (

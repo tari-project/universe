@@ -116,21 +116,21 @@ describe('useBlockchainVisualisationStore', () => {
     describe('recapIds state', () => {
         it('can add recap IDs', () => {
             useBlockchainVisualisationStore.setState({
-                recapIds: ['1', '2', '3'],
+                recapIds: [1, 2, 3],
             });
-            expect(useBlockchainVisualisationStore.getState().recapIds).toEqual(['1', '2', '3']);
+            expect(useBlockchainVisualisationStore.getState().recapIds).toEqual([1, 2, 3]);
         });
 
         it('can add to existing recap IDs', () => {
-            useBlockchainVisualisationStore.setState({ recapIds: ['1', '2'] });
+            useBlockchainVisualisationStore.setState({ recapIds: [1, 2] });
             useBlockchainVisualisationStore.setState((curr) => ({
-                recapIds: [...curr.recapIds, '3'],
+                recapIds: [...curr.recapIds, 3],
             }));
-            expect(useBlockchainVisualisationStore.getState().recapIds).toEqual(['1', '2', '3']);
+            expect(useBlockchainVisualisationStore.getState().recapIds).toEqual([1, 2, 3]);
         });
 
         it('can clear recap IDs', () => {
-            useBlockchainVisualisationStore.setState({ recapIds: ['1', '2', '3'] });
+            useBlockchainVisualisationStore.setState({ recapIds: [1, 2, 3] });
             useBlockchainVisualisationStore.setState({ recapIds: [] });
             expect(useBlockchainVisualisationStore.getState().recapIds).toEqual([]);
         });
@@ -274,7 +274,7 @@ describe('useBlockchainVisualisationStore', () => {
         it('clears recapData and recapIds when there was a recap', () => {
             useBlockchainVisualisationStore.setState({
                 recapData: { count: 5, totalEarnings: 5000000 },
-                recapIds: ['1', '2', '3'],
+                recapIds: [1, 2, 3],
                 replayItem: { paymentId: 'test' } as unknown as DisplayedTransaction,
             });
 
@@ -287,13 +287,13 @@ describe('useBlockchainVisualisationStore', () => {
         it('preserves recapIds when there was no recap', () => {
             useBlockchainVisualisationStore.setState({
                 recapData: undefined,
-                recapIds: ['1', '2', '3'],
+                recapIds: [1, 2, 3],
                 replayItem: { paymentId: 'test' } as unknown as DisplayedTransaction,
             });
 
             handleReplayComplete();
 
-            expect(useBlockchainVisualisationStore.getState().recapIds).toEqual(['1', '2', '3']);
+            expect(useBlockchainVisualisationStore.getState().recapIds).toEqual([1, 2, 3]);
         });
     });
 
@@ -311,13 +311,13 @@ describe('useBlockchainVisualisationStore', () => {
     describe('complex state updates', () => {
         it('preserves unrelated state when updating specific fields', () => {
             useBlockchainVisualisationStore.setState({
-                recapIds: ['1', '2', '3'],
+                recapIds: [1, 2, 3],
                 rewardCount: 5,
             });
 
             useBlockchainVisualisationStore.setState({ earnings: 1000000 });
 
-            expect(useBlockchainVisualisationStore.getState().recapIds).toEqual(['1', '2', '3']);
+            expect(useBlockchainVisualisationStore.getState().recapIds).toEqual([1, 2, 3]);
             expect(useBlockchainVisualisationStore.getState().rewardCount).toBe(5);
             expect(useBlockchainVisualisationStore.getState().earnings).toBe(1000000);
         });

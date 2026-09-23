@@ -57,38 +57,50 @@ export enum TransactionDisplayStatus {
     Cancelled = 'cancelled',
     Reorganized = 'reorganized',
     Rejected = 'rejected',
+    Locked = 'locked',
 }
 
 export enum OutputStatus {
     Unspent = 'Unspent',
     Locked = 'Locked',
     Spent = 'Spent',
+    SpentUnconfirmed = 'SpentUnconfirmed',
+}
+
+/** Rust `FixedHash` is `#[serde(transparent)]` over `[u8; 32]`, so it arrives as a byte array. */
+export type FixedHash = number[];
+
+/** Rust `CoinBaseExtra` is a `MaxSizeBytes`, which serialises as a struct wrapping its bytes. */
+export interface MaxSizeBytes {
+    inner: number[];
 }
 
 export interface BlockchainInfo {
     block_height: number;
     timestamp: string;
     confirmations: number;
+    block_hash: FixedHash;
 }
 
 export interface FeeInfo {
     amount: number;
-    amount_display: string;
 }
 
 export interface TransactionInput {
-    output_hash: string;
+    output_hash: FixedHash;
     amount: number;
-    matched_output_id?: number;
-    is_matched: boolean;
+    matched_output_id: number;
+    mined_in_block_hash: FixedHash;
 }
 
 export interface TransactionOutput {
-    hash: string;
+    hash: FixedHash;
     amount: number;
     status: OutputStatus;
-    confirmed_height?: number;
-    output_type: string;
+    mined_in_block_height: number;
+    mined_in_block_hash: FixedHash;
+    /** Rust `OutputType` derives `Serialize_repr`, so it arrives as its `u8` discriminant. */
+    output_type: number;
     is_change: boolean;
 }
 
@@ -98,24 +110,27 @@ export interface TransactionDetails {
     total_debit: number;
     inputs: TransactionInput[];
     outputs: TransactionOutput[];
-    output_type?: string;
-    coinbase_extra?: string;
-    memo_hex?: string;
-    sent_output_hashes: string[];
+    output_type: number | null;
+    coinbase_extra: MaxSizeBytes | null;
+    memo_hex: string | null;
+    sent_output_hashes: FixedHash[];
+    /** Hex encoded by a serde helper on the Rust side, unlike every other hash here. */
+    sent_payrefs: string[];
 }
 
 export interface DisplayedTransaction {
-    id: string;
+    id: number;
     direction: TransactionDirection;
     source: TransactionSource;
     status: TransactionDisplayStatus;
     amount: number;
-    amount_display: string;
-    message?: string;
-    counterparty?: string;
+    message: string | null;
+    counterparty: string | null;
     blockchain: BlockchainInfo;
-    fee?: FeeInfo;
+    fee: FeeInfo | null;
     details: TransactionDetails;
+    lock_height: number;
+    /** Attached by the frontend in `solveBridgeTransactionDetails`; not part of the wire format. */
     bridge_transaction_details?: {
         status: UserTransactionDTO.status;
         transactionHash?: string;

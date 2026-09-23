@@ -25,7 +25,7 @@ export function List({ setIsScrolled, scrolled = false }: ListProps) {
     const walletImporting = useWalletStore((s) => s.is_wallet_importing);
 
     // Track seen transaction IDs to show "new" indicator for new transactions
-    const [seenTransactionIds, setSeenTransactionIds] = useState<Set<string>>(new Set());
+    const [seenTransactionIds, setSeenTransactionIds] = useState<Set<number>>(new Set());
     const isInitialLoad = useRef(true);
     const ref = useRef<VListHandle>(null);
 

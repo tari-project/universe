@@ -1,86 +1,77 @@
-/**
- * Tests for wallet store action constants and logic.
- * Note: These tests focus on pure logic and constants that don't require
- * the full Tauri runtime. Integration tests with Tauri would require
- * a different setup with e2e testing tools.
- */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { invoke } from '@tauri-apps/api/core';
 
-// Test the bitflag constants directly without importing the full module
-// since the module has deep Tauri dependencies
-const COINBASE_BITFLAG = 6144;
-const NON_COINBASE_BITFLAG = 2015;
+vi.mock('@tauri-apps/api/window', () => ({
+    getCurrentWindow: vi.fn(() => ({ onCloseRequested: vi.fn(), listen: vi.fn() })),
+}));
 
-type TxHistoryFilter = 'all-activity' | 'transactions' | 'rewards';
+import {
+    DisplayedTransaction,
+    TransactionDirection,
+    TransactionDisplayStatus,
+    TransactionSource,
+} from '@app/types/app-status.ts';
+import { initialState, useWalletStore } from '../useWalletStore';
+import { handleWalletTransactionsFound, importSeedWords } from './walletStoreActions';
 
-const filterToBitflag = (filter: TxHistoryFilter): number => {
-    switch (filter) {
-        case 'transactions':
-            return NON_COINBASE_BITFLAG;
-        case 'rewards':
-            return COINBASE_BITFLAG;
-        default:
-            return COINBASE_BITFLAG | NON_COINBASE_BITFLAG;
-    }
-};
+function makeTransaction(id: number): DisplayedTransaction {
+    return {
+        id,
+        direction: TransactionDirection.Incoming,
+        source: TransactionSource.Transfer,
+        status: TransactionDisplayStatus.Confirmed,
+        amount: 1000,
+        message: null,
+        counterparty: `counterparty-${id}`,
+        blockchain: { block_height: id, timestamp: '2026-09-23T00:00:00', confirmations: 3, block_hash: [] },
+        fee: null,
+        details: {
+            account_id: 0,
+            total_credit: 1000,
+            total_debit: 0,
+            inputs: [],
+            outputs: [],
+            output_type: null,
+            coinbase_extra: null,
+            memo_hex: null,
+            sent_output_hashes: [],
+            sent_payrefs: [],
+        },
+        lock_height: 0,
+    };
+}
 
-describe('walletStoreActions', () => {
-    describe('bitflag constants', () => {
-        it('COINBASE_BITFLAG is correctly defined', () => {
-            expect(COINBASE_BITFLAG).toBe(6144);
-        });
-
-        it('NON_COINBASE_BITFLAG is correctly defined', () => {
-            expect(NON_COINBASE_BITFLAG).toBe(2015);
-        });
-
-        it('bitflags are mutually exclusive', () => {
-            expect(COINBASE_BITFLAG & NON_COINBASE_BITFLAG).toBe(0);
-        });
-
-        it('combined bitflag covers both', () => {
-            const combined = COINBASE_BITFLAG | NON_COINBASE_BITFLAG;
-            expect(combined).toBe(COINBASE_BITFLAG + NON_COINBASE_BITFLAG);
-        });
+describe('importSeedWords', () => {
+    beforeEach(() => {
+        useWalletStore.setState({ ...initialState });
+        vi.mocked(invoke).mockReset().mockResolvedValue(undefined);
     });
 
-    describe('filterToBitflag', () => {
-        it('returns NON_COINBASE_BITFLAG for transactions filter', () => {
-            expect(filterToBitflag('transactions')).toBe(NON_COINBASE_BITFLAG);
-        });
+    it('drops the previous wallet history so only the imported wallet is listed', async () => {
+        const walletA = makeTransaction(1);
+        useWalletStore.setState({ wallet_transactions: [walletA], selectedTransactionId: walletA.id });
 
-        it('returns COINBASE_BITFLAG for rewards filter', () => {
-            expect(filterToBitflag('rewards')).toBe(COINBASE_BITFLAG);
-        });
+        await importSeedWords(['seed', 'words']);
 
-        it('returns combined bitflags for all-activity filter', () => {
-            expect(filterToBitflag('all-activity')).toBe(COINBASE_BITFLAG | NON_COINBASE_BITFLAG);
-        });
+        expect(invoke).toHaveBeenCalledWith('import_seed_words', { seedWords: ['seed', 'words'] });
+        expect(useWalletStore.getState().wallet_transactions).toEqual([]);
+        expect(useWalletStore.getState().selectedTransactionId).toBeNull();
+        expect(useWalletStore.getState().is_wallet_importing).toBe(false);
 
-        it('combined equals 8159', () => {
-            expect(COINBASE_BITFLAG | NON_COINBASE_BITFLAG).toBe(8159);
-        });
+        const walletB = makeTransaction(2);
+        await handleWalletTransactionsFound([walletB]);
+
+        expect(useWalletStore.getState().wallet_transactions).toEqual([walletB]);
     });
 
-    describe('TxArgs defaults', () => {
-        it('filter defaults apply correctly', () => {
-            const defaultFilter: TxHistoryFilter = 'all-activity';
-            const defaultOffset = 0;
+    it('keeps the history when the import fails', async () => {
+        const walletA = makeTransaction(1);
+        vi.mocked(invoke).mockRejectedValue('User canceled the operation');
 
-            expect(defaultFilter).toBe('all-activity');
-            expect(defaultOffset).toBe(0);
-        });
+        useWalletStore.setState({ wallet_transactions: [walletA] });
+        await importSeedWords(['seed']);
 
-        it('offset can be any positive number', () => {
-            const offsets = [0, 10, 100, 1000];
-            offsets.forEach((offset) => {
-                expect(offset).toBeGreaterThanOrEqual(0);
-            });
-        });
-
-        it('limit is optional and can be undefined', () => {
-            const args: { offset: number; limit?: number } = { offset: 0 };
-            expect(args.limit).toBeUndefined();
-        });
+        await handleWalletTransactionsFound([walletA]);
+        expect(useWalletStore.getState().wallet_transactions).toEqual([walletA]);
     });
 });

@@ -9,6 +9,7 @@ vi.mock('@tauri-apps/api/window', () => ({
 }));
 
 import { TappletSigner } from './TappletSigner';
+import { useWalletStore } from '@app/store/useWalletStore';
 
 describe('TappletSigner.runOne', () => {
     let signer: TappletSigner;
@@ -107,6 +108,30 @@ describe('TappletSigner.runOne', () => {
 
         it('tolerates a missing args array', async () => {
             await expect(signer.runOne('isConnected', undefined)).resolves.toBe(true);
+        });
+    });
+
+    describe('getTariBalance', () => {
+        it('returns the legacy field names the shipped bridge reads', async () => {
+            useWalletStore.setState({ account_balance: { total: 10, available: 7, locked: 2, unconfirmed: 1 } });
+
+            await expect(signer.runOne('getTariBalance', [])).resolves.toEqual({
+                available_balance: 7,
+                timelocked_balance: 2,
+                pending_incoming_balance: 1,
+                pending_outgoing_balance: 0,
+            });
+        });
+
+        it('reports zeroes when the balance is not known yet', async () => {
+            useWalletStore.setState({ account_balance: undefined });
+
+            await expect(signer.runOne('getTariBalance', [])).resolves.toEqual({
+                available_balance: 0,
+                timelocked_balance: 0,
+                pending_incoming_balance: 0,
+                pending_outgoing_balance: 0,
+            });
         });
     });
 });

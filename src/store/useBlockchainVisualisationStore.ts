@@ -16,7 +16,7 @@ interface State {
     recapData?: Recap;
     recapCount?: number;
     rewardCount?: number;
-    recapIds: string[];
+    recapIds: number[];
     replayItem?: DisplayedTransaction;
     latestBlockHeight?: number;
 }

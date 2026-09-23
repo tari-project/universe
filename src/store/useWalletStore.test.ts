@@ -162,28 +162,12 @@ describe('useWalletStore', () => {
 
     describe('details item - selectedTransactionId', () => {
         it('can set detailsItem', () => {
-            const item = {
-                id: 'selected',
-                destinationAddress: 'dest',
-                paymentId: 'payment-1',
-                feeAmount: 100,
-                createdAt: Date.now(),
-                tokenAmount: 1000000,
-                walletTransactionDetails: {
-                    txId: 1,
-                    direction: 2,
-                    isCancelled: false,
-                    status: 6,
-                },
-            };
-            useWalletStore.setState({ selectedTransactionId: item.id });
-            expect(useWalletStore.getState().selectedTransactionId).toEqual(item.id);
+            useWalletStore.setState({ selectedTransactionId: 42 });
+            expect(useWalletStore.getState().selectedTransactionId).toEqual(42);
         });
 
         it('can clear detailsItem', () => {
-            useWalletStore.setState({
-                selectedTransactionId: 'selected',
-            });
+            useWalletStore.setState({ selectedTransactionId: 42 });
             useWalletStore.setState({ selectedTransactionId: null });
             expect(useWalletStore.getState().selectedTransactionId).toBeNull();
         });

@@ -50,17 +50,15 @@ const TRANSACTION_FIELD_ORDER: TransactionField[] = [
 enum InputField {
     Amount = 'amount',
     OutputHash = 'outputHash',
-    Matched = 'matched',
 }
 
-const INPUT_FIELD_ORDER: InputField[] = [InputField.Amount, InputField.OutputHash, InputField.Matched];
+const INPUT_FIELD_ORDER: InputField[] = [InputField.Amount, InputField.OutputHash];
 
 enum OutputField {
     Amount = 'amount',
     Status = 'status',
     OutputType = 'outputType',
     Hash = 'hash',
-    ConfirmedHeight = 'confirmedHeight',
     IsChange = 'isChange',
 }
 
@@ -69,7 +67,6 @@ const OUTPUT_FIELD_ORDER: OutputField[] = [
     OutputField.Status,
     OutputField.OutputType,
     OutputField.Hash,
-    OutputField.ConfirmedHeight,
     OutputField.IsChange,
 ];
 
@@ -85,6 +82,11 @@ function sortByFieldOrder<T>(entries: OrderedEntry[], fieldOrder: T[]): StatusLi
             return indexA - indexB;
         })
         .map(({ field: _, ...entry }) => entry);
+}
+
+/** `FixedHash` and friends arrive as byte arrays over the wire; show them the way the explorer does. */
+function toHex(bytes: number[]): string {
+    return bytes.map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 function formatMicroTari(value: number): ReactNode {
@@ -136,6 +138,8 @@ function getStatusLabel(status: TransactionDisplayStatus): string {
             return 'Reorganized';
         case TransactionDisplayStatus.Rejected:
             return 'Rejected';
+        case TransactionDisplayStatus.Locked:
+            return 'Locked';
         default:
             return status;
     }
@@ -242,7 +246,7 @@ export function getTransactionListEntries(transaction: DisplayedTransaction): St
         entries.push({
             field: TransactionField.CoinbaseExtra,
             label: 'Coinbase Extra',
-            value: transaction.details.coinbase_extra,
+            value: toHex(transaction.details.coinbase_extra.inner),
         });
     }
 
@@ -262,13 +266,7 @@ export function getInputDetails(input: TransactionInput): StatusListEntry[] {
     entries.push({
         field: InputField.OutputHash,
         label: 'Output Hash',
-        value: input.output_hash,
-    });
-
-    entries.push({
-        field: InputField.Matched,
-        label: 'Matched',
-        value: input.is_matched ? 'Yes' : 'No',
+        value: toHex(input.output_hash),
     });
 
     return sortByFieldOrder(entries, INPUT_FIELD_ORDER);
@@ -293,22 +291,14 @@ export function getOutputDetails(output: TransactionOutput): StatusListEntry[] {
     entries.push({
         field: OutputField.OutputType,
         label: 'Output Type',
-        value: output.output_type,
+        value: output.output_type.toString(),
     });
 
     entries.push({
         field: OutputField.Hash,
         label: 'Hash',
-        value: output.hash,
+        value: toHex(output.hash),
     });
-
-    if (output.confirmed_height) {
-        entries.push({
-            field: OutputField.ConfirmedHeight,
-            label: 'Confirmed Height',
-            value: output.confirmed_height.toString(),
-        });
-    }
 
     if (output.is_change) {
         entries.push({
