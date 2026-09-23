@@ -5,7 +5,7 @@ import os from 'os';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { APP_ID, getAppConfigDir, getAppDataDir, getAppDataRoots, getAppCacheDir } from './app-dirs';
-import { TEST_WALLET } from './test-wallet';
+import { TEST_WALLET, TEST_MONERO } from './test-wallet';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -113,15 +113,15 @@ function getWalletConfig() {
   return {
     version_counter: 2,
     tari_wallets: [TEST_WALLET.walletId],
-    monero_address: '49aN3cwox5jCz9grdZmd5KTYggXrtVKRAdpr4wTba27HBxw4d29qfMj6rMNPNgAPhPgEyXEGWiNyZYLAKdPjn7CUPybeYYA',
+    monero_address: TEST_MONERO.address,
     wxtm_addresses: {},
-    // The fixture uses an EXTERNAL Monero address (no generated Monero
-    // seed in the credential store). If this were `true`, create_pin would
-    // try to encipher a Monero seed that was never seeded and fail
-    // ("Keyring had no entry for ... monero"). PIN validation still keys
-    // off the Tari seed (tari_wallet_details is set), so every PIN gate
-    // works; only Monero-seed reveal is out of scope (see COVERAGE.md).
-    monero_address_is_generated: false,
+    // The fixture owns a GENERATED Monero wallet: preSeedCredentials writes
+    // TEST_MONERO's plaintext seed to the Monero credential entry, so the
+    // address here is the one that seed derives. This is what the Monero
+    // seed-word reveal and the forgot-PIN Monero paths (96-pin-recovery)
+    // need — with an external address the backend keeps no Monero seed at
+    // all and both are unreachable.
+    monero_address_is_generated: true,
     keyring_accessed: false,
     wallet_migration_nonce: 1,
     external_tari_addresses_book: {},
@@ -173,12 +173,18 @@ function preSeedCredentials(): void {
   // The file-backed credential store hashes service+user to generate filenames.
   // service = APP_ID (the test profile identifier / APPLICATION_FOLDER_ID)
   // username = "inner_wallet_credentials_localnet_{walletId}"
+  // The Monero seed lives under the fixed "monero" wallet id
+  // (CredentialManager::new_default(WalletId::new("monero"))).
   const service = APP_ID;
-  const user = `inner_wallet_credentials_localnet_${TEST_WALLET.walletId}`;
-  const filename = credentialFilename(service, user);
-  const cborBytes = Buffer.from(TEST_WALLET.cborHex, 'hex');
-  fs.writeFileSync(path.join(credentialDir, filename), cborBytes);
-  console.log(`Credential file written: ${filename} (${cborBytes.length} bytes)`);
+  for (const [walletId, cborHex] of [
+    [TEST_WALLET.walletId, TEST_WALLET.cborHex],
+    ['monero', TEST_MONERO.cborHex],
+  ] as const) {
+    const filename = credentialFilename(service, `inner_wallet_credentials_localnet_${walletId}`);
+    const cborBytes = Buffer.from(cborHex, 'hex');
+    fs.writeFileSync(path.join(credentialDir, filename), cborBytes);
+    console.log(`Credential file written: ${filename} (${cborBytes.length} bytes)`);
+  }
 }
 
 async function waitForPort(port: number, timeout: number): Promise<void> {

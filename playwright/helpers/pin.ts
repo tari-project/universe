@@ -5,6 +5,8 @@ import { sel } from './selectors';
  *  dialog serializes the PIN as a number over the event bridge. */
 export const TEST_PIN = '135246';
 export const WRONG_PIN = '999999';
+/** The replacement PIN 96-pin-recovery sets during a forgot-PIN recovery. */
+export const NEW_PIN = '246135';
 
 /**
  * Type a 6-digit PIN into the currently visible PIN input. The inputs
@@ -29,4 +31,22 @@ export async function answerPinPrompt(page: Page, pin: string, timeout = 15_000)
     .locator(sel.pin.input)
     .waitFor({ state: 'hidden', timeout })
     .catch(() => {});
+}
+
+/**
+ * Answer the "Create your Wallet PIN" dialog a backend command raised
+ * (`create_pin`, or `forgot_pin` via `recover_forgotten_pin`): the create
+ * step, the confirm step, then the all-done step. Re-enciphering the seed
+ * is argon2 work, so the completion step gets a long timeout.
+ */
+export async function answerPinCreation(page: Page, pin: string, timeout = 60_000) {
+  await page.getByText('Create your Wallet PIN').first().waitFor({ state: 'visible', timeout });
+  await enterPinDigits(page, pin);
+  await page.locator(sel.pin.createSubmit).click({ timeout: 5_000 });
+
+  await page.getByText('Confirm your PIN').first().waitFor({ state: 'visible', timeout: 15_000 });
+  await enterPinDigits(page, pin);
+  await page.locator(sel.pin.createSubmit).click({ timeout: 5_000 });
+
+  await page.getByText('Continue to Tari Universe').first().click({ timeout });
 }

@@ -77,8 +77,28 @@ runs last** (file naming keeps it last; `workers: 1`, no shuffle).
 | PIN setup: create, wrong confirm error, re-create, success | automated |
 | Send gated by PIN (wrong PIN error → correct PIN proceeds) | automated |
 | Seed words reveal gated by PIN | automated |
-| Monero seed words gated by PIN | partial — same gate component; covered via seed words |
+| Monero seed words gated by PIN | automated — `96-pin-recovery` (the fixture owns a generated Monero wallet) |
 | Sync with Phone gated by PIN | automated |
+
+## §5b PIN recovery — automated, runs right after the PIN spec
+
+`96-pin-recovery.spec.ts`, the guards from #3361. It runs between
+`95-security-pin` (which sets the PIN) and `98-wallet-import`, and hands the
+PIN back as `TEST_PIN` so the specs after it are unaffected.
+
+The fixture profile owns a **generated** Monero wallet: `global-setup`
+pre-seeds `TEST_MONERO`'s plaintext 32-byte seed into the Monero credential
+file and records its address with `monero_address_is_generated: true`. That
+is what makes the Monero seed reveal and the Monero half of `forgot_pin`
+reachable at all.
+
+| QA item | Status | Where |
+|---|---|---|
+| `create_pin` refused when a PIN already exists | automated | `96-pin-recovery` (no UI route left, so the command goes through the remote-ui shim) |
+| Forgot PIN with another wallet's Monero words: error, nothing changes | automated | `96-pin-recovery` |
+| Forgot PIN with the right Monero words: Monero wallet kept, both seeds readable under the new PIN | automated | `96-pin-recovery` |
+| Forgot PIN with no Monero words: button says so, Monero wallet replaced, Tari seed intact | automated | `96-pin-recovery` |
+| Legacy credential purge gate | manual | needs an app relaunch mid-suite |
 
 ## §6 Settings Sweep
 
@@ -87,7 +107,7 @@ runs last** (file naming keeps it last; `workers: 1`, no shuffle).
 | General (toggles, language, theme, visual mode, app info, reset dialog) | automated | `05-settings` |
 | General: auto-start actually starts on boot; reset actually deletes dirs | manual | machine-level side effects |
 | Airdrop | manual | external service |
-| Wallet: addresses shown + copyable, seed words hidden→reveal, Monero address | automated | `01-wallet-integrity` + `09-settings-sweep` |
+| Wallet: addresses shown + copyable, seed words hidden→reveal, Monero address | automated | `01-wallet-integrity` + `09-settings-sweep` (the Monero address is asserted against the pre-seeded `TEST_MONERO` wallet) |
 | Wallet: Refresh wallet history rescan | manual | long rescan, destructive to suite timing |
 | Mining: CPU/GPU/mine-on-startup/battery toggles | automated | `09-settings-sweep` |
 | Mining on startup honoured across restart | manual | needs backend restart |

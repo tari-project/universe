@@ -1,6 +1,6 @@
 import { test, expect } from '../helpers/fixtures';
 import { sel } from '../helpers/selectors';
-import { TEST_WALLET } from '../helpers/test-wallet';
+import { TEST_WALLET, TEST_MONERO } from '../helpers/test-wallet';
 import { openSettingsTab, toggleAndRestore, setToggleState } from '../helpers/settings';
 
 /**
@@ -18,10 +18,12 @@ test.describe('Settings Sweep', () => {
       timeout: 30_000,
     });
 
-    // Monero address from the seeded config renders in its editor.
-    const monero = page.locator(sel.settings.moneroAddress);
-    await monero.waitFor({ state: 'visible', timeout: 10_000 });
-    expect(await monero.inputValue()).toMatch(/^4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}$/);
+    // Monero address from the seeded config renders in its editor. It is
+    // the address TEST_MONERO's pre-seeded seed derives, so a silently
+    // regenerated Monero wallet fails here rather than passing a shape check.
+    await expect(page.locator(sel.settings.moneroAddress)).toHaveValue(TEST_MONERO.address, {
+      timeout: 30_000,
+    });
 
     // Seed words are hidden until revealed (01-wallet-integrity covers the
     // reveal itself).
