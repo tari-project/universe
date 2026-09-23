@@ -57,17 +57,19 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
                 {/* Operations section */}
                 {hasDetails && (
                     <OperationsSection>
-                        <OperationsTitle>{`Details (${inputs.length + outputs.length})`}</OperationsTitle>
+                        <OperationsTitle>
+                            {t('details.operations-title', { total: inputs.length + outputs.length })}
+                        </OperationsTitle>
 
                         {/* Render inputs */}
                         {inputs.map((input: TransactionInput, index: number) => {
                             const operationEntries = getInputDetails(input);
-                            const subtitle = `Amount: ${input.amount} µXTM`;
+                            const subtitle = t('details.amount-subtitle', { amount: input.amount });
 
                             return (
                                 <AccordionItem
                                     key={`input-${index}`}
-                                    title={`Input #${index + 1}`}
+                                    title={t('details.input-index', { index: index + 1 })}
                                     subtitle={subtitle}
                                     isOpen={openOperations.has(index)}
                                     onToggle={() => toggleOperation(index)}
@@ -79,13 +81,17 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
                         {/* Render outputs */}
                         {outputs.map((output: TransactionOutput, index: number) => {
                             const operationEntries = getOutputDetails(output);
-                            const subtitle = `Amount: ${output.amount} µXTM • ${output.output_type}`;
+                            const subtitle = `${t('details.amount-subtitle', { amount: output.amount })} • ${output.output_type}`;
                             const outputIndex = inputs.length + index;
 
                             return (
                                 <AccordionItem
                                     key={`output-${index}`}
-                                    title={output.is_change ? `Change Output #${index + 1}` : `Output #${index + 1}`}
+                                    title={
+                                        output.is_change
+                                            ? t('details.change-output-index', { index: index + 1 })
+                                            : t('details.output-index', { index: index + 1 })
+                                    }
                                     subtitle={subtitle}
                                     isOpen={openOperations.has(outputIndex)}
                                     onToggle={() => toggleOperation(outputIndex)}

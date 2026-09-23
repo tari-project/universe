@@ -22,6 +22,7 @@ export const importSeedWords = async (seedWords: string[]) => {
         ...c,
         is_wallet_importing: true,
         wallet_transactions: [],
+        wallet_transactions_loaded: false,
         selectedTransactionId: null,
         bridge_transactions: [],
         wallet_scanning: {
@@ -211,6 +212,7 @@ export const handleWalletTransactionsCleared = () => {
     useWalletStore.setState((c) => ({
         ...c,
         wallet_transactions: [],
+        wallet_transactions_loaded: false,
         selectedTransactionId: null,
     }));
 };

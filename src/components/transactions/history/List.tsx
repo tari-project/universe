@@ -45,10 +45,15 @@ export function List({ setIsScrolled, scrolled = false }: ListProps) {
     }, [walletTransactionsAll, transactionsFilter]);
 
     // The backend pushes history as it is found; a page that mounts later (reload,
-    // late webview) asks for what it missed.
+    // late webview) asks for what it missed. The list remounts whenever the sidebar hides it,
+    // so only the first mount of a session fetches - a clear/import resets the flag.
     useEffect(() => {
-        invoke('get_wallet_transaction_history')
-            .then(handleWalletTransactionsFound)
+        if (useWalletStore.getState().wallet_transactions_loaded) return;
+        invoke<DisplayedTransaction[]>('get_wallet_transaction_history')
+            .then((transactions) => {
+                useWalletStore.setState({ wallet_transactions_loaded: true });
+                return handleWalletTransactionsFound(transactions);
+            })
             .catch((e) => console.warn('Could not load wallet history:', e));
     }, []);
 
@@ -108,7 +113,7 @@ export function List({ setIsScrolled, scrolled = false }: ListProps) {
                         return (
                             <HistoryListItem
                                 transaction={tx}
-                                key={i}
+                                key={tx.id}
                                 index={i}
                                 itemIsNew={isNewTransaction}
                                 setDetailsItem={handleDetailsChange}

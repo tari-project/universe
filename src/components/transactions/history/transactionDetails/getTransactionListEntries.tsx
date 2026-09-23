@@ -102,9 +102,9 @@ function formatMicroTari(value: number): ReactNode {
 function getDirectionLabel(direction: TransactionDirection): string {
     switch (direction) {
         case TransactionDirection.Incoming:
-            return 'Received';
+            return i18n.t('common:received');
         case TransactionDirection.Outgoing:
-            return 'Sent';
+            return i18n.t('common:sent');
         default:
             return direction;
     }
@@ -113,33 +113,33 @@ function getDirectionLabel(direction: TransactionDirection): string {
 function getSourceLabel(source: TransactionSource): string {
     switch (source) {
         case TransactionSource.Coinbase:
-            return 'Mining Reward';
+            return i18n.t('wallet:details.source-coinbase');
         case TransactionSource.OneSided:
-            return 'One-sided Payment';
+            return i18n.t('wallet:details.source-one-sided');
         case TransactionSource.Transfer:
-            return 'Transfer';
+            return i18n.t('wallet:details.source-transfer');
         case TransactionSource.Unknown:
         default:
-            return 'Transaction';
+            return i18n.t('wallet:details.source-unknown');
     }
 }
 
 function getStatusLabel(status: TransactionDisplayStatus): string {
     switch (status) {
         case TransactionDisplayStatus.Pending:
-            return 'Pending';
+            return i18n.t('common:pending');
         case TransactionDisplayStatus.Unconfirmed:
-            return 'Unconfirmed';
+            return i18n.t('wallet:details.status-unconfirmed');
         case TransactionDisplayStatus.Confirmed:
-            return 'Confirmed';
+            return i18n.t('wallet:details.status-confirmed');
         case TransactionDisplayStatus.Cancelled:
-            return 'Cancelled';
+            return i18n.t('wallet:details.status-cancelled');
         case TransactionDisplayStatus.Reorganized:
-            return 'Reorganized';
+            return i18n.t('wallet:details.status-reorganized');
         case TransactionDisplayStatus.Rejected:
-            return 'Rejected';
+            return i18n.t('wallet:details.status-rejected');
         case TransactionDisplayStatus.Locked:
-            return 'Locked';
+            return i18n.t('wallet:details.status-locked');
         default:
             return status;
     }
@@ -150,25 +150,25 @@ export function getTransactionListEntries(transaction: DisplayedTransaction): St
 
     entries.push({
         field: TransactionField.BlockHeight,
-        label: 'Block Height',
+        label: i18n.t('wallet:details.block-height'),
         value: transaction.blockchain.block_height.toString(),
     });
 
     entries.push({
         field: TransactionField.Date,
-        label: 'Date',
+        label: i18n.t('wallet:details.date'),
         value: formatEffectiveDate(transaction.blockchain.timestamp),
     });
 
     entries.push({
         field: TransactionField.Direction,
-        label: 'Direction',
+        label: i18n.t('wallet:details.direction'),
         value: getDirectionLabel(transaction.direction),
     });
 
     entries.push({
         field: TransactionField.Type,
-        label: 'Type',
+        label: i18n.t('wallet:details.type'),
         value: getSourceLabel(transaction.source),
     });
 
@@ -182,7 +182,7 @@ export function getTransactionListEntries(transaction: DisplayedTransaction): St
     const balancePreset = transaction.amount.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
     entries.push({
         field: TransactionField.Amount,
-        label: 'Amount',
+        label: i18n.t('wallet:details.amount'),
         value: (
             <>
                 {isNegative ? '-' : '+'}
@@ -196,7 +196,7 @@ export function getTransactionListEntries(transaction: DisplayedTransaction): St
     if (transaction.fee) {
         entries.push({
             field: TransactionField.Fee,
-            label: 'Fee',
+            label: i18n.t('wallet:details.fee'),
             value: formatMicroTari(transaction.fee.amount),
             valueRight: `${formatNumber(Number(transaction.fee.amount), FormatPreset.DECIMAL_COMPACT)} µXTM`,
         });
@@ -205,7 +205,7 @@ export function getTransactionListEntries(transaction: DisplayedTransaction): St
     if (transaction.blockchain.confirmations > 0) {
         entries.push({
             field: TransactionField.Confirmations,
-            label: 'Confirmations',
+            label: i18n.t('wallet:details.confirmations'),
             value: transaction.blockchain.confirmations.toString(),
         });
     }
@@ -213,7 +213,10 @@ export function getTransactionListEntries(transaction: DisplayedTransaction): St
     if (transaction.counterparty) {
         entries.push({
             field: TransactionField.CounterpartyAddress,
-            label: transaction.direction === TransactionDirection.Incoming ? 'From Address' : 'To Address',
+            label:
+                transaction.direction === TransactionDirection.Incoming
+                    ? i18n.t('wallet:details.from-address')
+                    : i18n.t('wallet:details.to-address'),
             value: transaction.counterparty,
         });
     }
@@ -221,7 +224,7 @@ export function getTransactionListEntries(transaction: DisplayedTransaction): St
     if (transaction.message) {
         entries.push({
             field: TransactionField.Message,
-            label: 'Message',
+            label: i18n.t('wallet:details.message'),
             value: transaction.message,
         });
     }
@@ -229,14 +232,14 @@ export function getTransactionListEntries(transaction: DisplayedTransaction): St
     if (transaction.bridge_transaction_details) {
         entries.push({
             field: TransactionField.BridgeStatus,
-            label: 'Bridge Status',
+            label: i18n.t('wallet:details.bridge-status'),
             value: transaction.bridge_transaction_details.status,
         });
 
         if (transaction.bridge_transaction_details.transactionHash) {
             entries.push({
                 field: TransactionField.BridgeTransactionHash,
-                label: 'Transaction Hash',
+                label: i18n.t('wallet:details.transaction-hash'),
                 value: transaction.bridge_transaction_details.transactionHash,
             });
         }
@@ -245,7 +248,7 @@ export function getTransactionListEntries(transaction: DisplayedTransaction): St
     if (transaction.details.coinbase_extra) {
         entries.push({
             field: TransactionField.CoinbaseExtra,
-            label: 'Coinbase Extra',
+            label: i18n.t('wallet:details.coinbase-extra'),
             value: toHex(transaction.details.coinbase_extra.inner),
         });
     }
@@ -258,14 +261,14 @@ export function getInputDetails(input: TransactionInput): StatusListEntry[] {
 
     entries.push({
         field: InputField.Amount,
-        label: 'Amount',
+        label: i18n.t('wallet:details.amount'),
         value: formatMicroTari(input.amount),
         valueRight: `${formatNumber(Number(input.amount), FormatPreset.DECIMAL_COMPACT)} µXTM`,
     });
 
     entries.push({
         field: InputField.OutputHash,
-        label: 'Output Hash',
+        label: i18n.t('wallet:details.output-hash'),
         value: toHex(input.output_hash),
     });
 
@@ -277,34 +280,34 @@ export function getOutputDetails(output: TransactionOutput): StatusListEntry[] {
 
     entries.push({
         field: OutputField.Amount,
-        label: 'Amount',
+        label: i18n.t('wallet:details.amount'),
         value: formatMicroTari(output.amount),
         valueRight: `${formatNumber(Number(output.amount), FormatPreset.DECIMAL_COMPACT)} µXTM`,
     });
 
     entries.push({
         field: OutputField.Status,
-        label: 'Status',
+        label: i18n.t('wallet:details.status'),
         value: output.status,
     });
 
     entries.push({
         field: OutputField.OutputType,
-        label: 'Output Type',
+        label: i18n.t('wallet:details.output-type'),
         value: output.output_type.toString(),
     });
 
     entries.push({
         field: OutputField.Hash,
-        label: 'Hash',
+        label: i18n.t('wallet:details.hash'),
         value: toHex(output.hash),
     });
 
     if (output.is_change) {
         entries.push({
             field: OutputField.IsChange,
-            label: 'Change Output',
-            value: 'Yes',
+            label: i18n.t('wallet:details.change-output'),
+            value: i18n.t('wallet:details.yes'),
         });
     }
 

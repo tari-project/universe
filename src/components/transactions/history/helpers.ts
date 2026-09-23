@@ -44,7 +44,7 @@ export const resolveTransactionTitle = (transaction: DisplayedTransaction): stri
     const itemType = resolveTransactionType(transaction);
 
     if (transaction.bridge_transaction_details) {
-        return 'Bridge XTM to WXTM';
+        return i18n.t('wallet:details.bridge-title');
     }
 
     const typeTitle = i18n.t(`common:${itemType}`);

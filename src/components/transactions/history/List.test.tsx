@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { invoke } from '@tauri-apps/api/core';
 import { render, screen } from '@app/test/test-utils';
 import { List } from './List';
 
@@ -8,11 +9,17 @@ const { wallet } = vi.hoisted(() => ({
         transaction_history_filter: 'all-activity',
         wallet_scanning: { is_initial_scan_complete: true },
         is_wallet_importing: false,
+        wallet_transactions_loaded: false,
     },
 }));
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue([]) }));
-vi.mock('@app/store', () => ({ useWalletStore: (selector: (state: typeof wallet) => unknown) => selector(wallet) }));
+vi.mock('@app/store', () => ({
+    useWalletStore: Object.assign((selector: (state: typeof wallet) => unknown) => selector(wallet), {
+        getState: () => wallet,
+        setState: (partial: Partial<typeof wallet>) => Object.assign(wallet, partial),
+    }),
+}));
 vi.mock('@app/store/actions/walletStoreActions.ts', () => ({
     setSelectedTransactionId: vi.fn(),
     handleWalletTransactionsFound: vi.fn(),
@@ -30,7 +37,18 @@ describe('transaction history empty state', () => {
             wallet_transactions: [],
             wallet_scanning: { is_initial_scan_complete: true },
             is_wallet_importing: false,
+            wallet_transactions_loaded: false,
         });
+        vi.mocked(invoke).mockClear();
+    });
+
+    it('only asks the backend for the history once per session', async () => {
+        const { unmount } = render(list());
+        await vi.waitFor(() => expect(wallet.wallet_transactions_loaded).toBe(true));
+        unmount();
+
+        render(list());
+        expect(invoke).toHaveBeenCalledTimes(1);
     });
 
     it('shows the empty state once there is nothing to wait for', () => {

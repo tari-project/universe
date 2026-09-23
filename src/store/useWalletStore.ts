@@ -19,6 +19,7 @@ export interface WalletStoreState {
     account_balance?: AccountBalance;
     transaction_history_filter: TxHistoryFilter;
     wallet_transactions: DisplayedTransaction[];
+    wallet_transactions_loaded: boolean;
     // ========= Bridge related data ==========
     bridge_transactions: BackendBridgeTransaction[];
     cold_wallet_address?: string;
@@ -48,6 +49,7 @@ export const initialState: WalletStoreState = {
     exchange_wxtm_addresses: {},
     transaction_history_filter: 'all-activity',
     wallet_transactions: [],
+    wallet_transactions_loaded: false,
     bridge_transactions: [],
     cold_wallet_address: undefined,
     is_wallet_importing: false,
