@@ -139,4 +139,9 @@ export interface SendPinPromptContext {
     payment_id?: string | null;
 }
 
-export type PinPromptContext = SendPinPromptContext;
+/** The wallet details were missing from the config and are being rebuilt from the stored seed. */
+export interface RestoreWalletDetailsPinPromptContext {
+    kind: 'restore_wallet_details';
+}
+
+export type PinPromptContext = SendPinPromptContext | RestoreWalletDetailsPinPromptContext;

@@ -51,7 +51,7 @@ use crate::consts::DEFAULT_MONERO_ADDRESS;
 use crate::credential_manager::{
     Credential, CredentialError, CredentialManager, LegacyCredential, LegacyCredentialManager,
 };
-use crate::events::CriticalProblemPayload;
+use crate::events::{CriticalProblemPayload, PinPromptContext};
 use crate::events_emitter::EventsEmitter;
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
@@ -231,24 +231,28 @@ impl InternalWallet {
         }
         // An owned tari wallet id found
 
-        if wallet_config.tari_wallet_details().is_none() {
-            // Try to extract wallet details from seed stored in credentials
-            if let Some(wallet_id) = wallet_config.tari_wallets().first() {
-                let tari_seed_binary = match InternalWallet::get_credentials(
-                    app_handle,
-                    wallet_id.clone(),
-                    true,
-                )
-                .await
-                {
-                    Ok(cred) => cred.encrypted_seed,
-                    Err(e) => return Err(anyhow!("Failed to get credentials: {e}")),
-                };
+        // Exactly one keyring read per startup, here: the probe when the details are cached, the
+        // backfill's own read when they are not. Never both.
+        if let Some(wallet_id) = wallet_config.tari_wallets().first() {
+            if wallet_config.tari_wallet_details().is_some() {
+                // The cached details make the keyring unnecessary for startup, so without this
+                // read a missing seed stays invisible until the user first spends.
+                InternalWallet::probe_tari_credential(wallet_id.clone()).await?;
+            } else {
+                // Rebuild the details from the stored seed, reporting an unreadable credential
+                // exactly as the probe does.
+                let tari_seed_binary = InternalWallet::probe_tari_credential(wallet_id.clone())
+                    .await?
+                    .encrypted_seed;
                 // With a PIN set the stored blob is enciphered, and the unauthenticated
                 // `from_binary` would decode it into a garbage seed whose details are then
                 // persisted and become what every later proof compares against.
                 let tari_cipher_seed = if PinManager::pin_locked().await {
-                    let pin_password = PinManager::get_validated_pin(app_handle, None).await?;
+                    let pin_password = PinManager::get_validated_pin(
+                        app_handle,
+                        Some(PinPromptContext::RestoreWalletDetails),
+                    )
+                    .await?;
                     CipherSeed::from_enciphered_bytes(&tari_seed_binary, Some(pin_password))
                         .map_err(|_| anyhow!("Wrong PIN entered!"))?
                 } else {
@@ -265,7 +269,6 @@ impl InternalWallet {
                 )
                 .await?;
             }
-            // An owned tari wallet data accessible
         }
 
         Ok(true)
@@ -718,15 +721,14 @@ impl InternalWallet {
     }
 
     /// Reads the Tari credential once at startup so a lost or unreadable keyring entry is
-    /// reported now instead of at the user's first spend. Read-only and never forced.
-    async fn probe_tari_credential(wallet_id: WalletId) -> Result<(), anyhow::Error> {
-        // A single read, never retried, so a lost or unreadable credential is reported at startup
-        // instead of on the user's first spend.
+    /// reported now instead of at the user's first spend. Never forced, and the only keyring
+    /// read on any startup path: callers that just want the check drop the credential.
+    async fn probe_tari_credential(wallet_id: WalletId) -> Result<Credential, anyhow::Error> {
         match CredentialManager::new_default(wallet_id)
             .get_credentials()
             .await
         {
-            Ok(_) => Ok(()),
+            Ok(credential) => Ok(credential),
             Err(e) => {
                 let kind = credential_error_tag(&e);
                 log::error!(target: LOG_TARGET_APP_LOGIC, "[probe_tari_credential] Tari seed credential is unreadable: {kind}");
@@ -769,11 +771,6 @@ impl InternalWallet {
             match ConfigWallet::content().await.tari_wallet_details() {
                 Some(wallet_details) => {
                     log::info!(target: LOG_TARGET_APP_LOGIC, "Extracted(wallet config file) Tari Wallet Details: {wallet_details:?}");
-                    // The cached details make the keyring unnecessary for startup, so without this
-                    // probe a missing seed stays invisible until the user first spends.
-                    if let Some(tari_wallet_id) = (*wallet_config.tari_wallets()).first() {
-                        InternalWallet::probe_tari_credential(tari_wallet_id.clone()).await?;
-                    }
                     (None, wallet_details.clone())
                 }
                 _ => {
