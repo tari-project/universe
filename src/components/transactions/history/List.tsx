@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 
 import { useTranslation } from 'react-i18next';
 import { VList, VListHandle } from 'virtua';
@@ -6,7 +7,7 @@ import { VList, VListHandle } from 'virtua';
 import { useWalletStore } from '@app/store';
 
 import { EmptyText, ListItemWrapper, ListMask, ListWrapper } from './List.styles.ts';
-import { setSelectedTransactionId } from '@app/store/actions/walletStoreActions.ts';
+import { handleWalletTransactionsFound, setSelectedTransactionId } from '@app/store/actions/walletStoreActions.ts';
 import { DisplayedTransaction, TransactionSource } from '@app/types/app-status.ts';
 import { HistoryListItem } from './transactionHistoryItem/HistoryItem.tsx';
 import { PlaceholderItem } from './transactionHistoryItem/HistoryItem.styles.ts';
@@ -42,6 +43,14 @@ export function List({ setIsScrolled, scrolled = false }: ListProps) {
                 return walletTransactionsAll;
         }
     }, [walletTransactionsAll, transactionsFilter]);
+
+    // The backend pushes history as it is found; a page that mounts later (reload,
+    // late webview) asks for what it missed.
+    useEffect(() => {
+        invoke('get_wallet_transaction_history')
+            .then(handleWalletTransactionsFound)
+            .catch((e) => console.warn('Could not load wallet history:', e));
+    }, []);
 
     // Mark all transactions as seen on initial load (so they don't show as "new")
     useEffect(() => {

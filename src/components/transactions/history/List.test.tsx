@@ -11,8 +11,12 @@ const { wallet } = vi.hoisted(() => ({
     },
 }));
 
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue([]) }));
 vi.mock('@app/store', () => ({ useWalletStore: (selector: (state: typeof wallet) => unknown) => selector(wallet) }));
-vi.mock('@app/store/actions/walletStoreActions.ts', () => ({ setSelectedTransactionId: vi.fn() }));
+vi.mock('@app/store/actions/walletStoreActions.ts', () => ({
+    setSelectedTransactionId: vi.fn(),
+    handleWalletTransactionsFound: vi.fn(),
+}));
 vi.mock('virtua', () => ({ VList: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 vi.mock('./transactionHistoryItem/HistoryItem.tsx', () => ({
     HistoryListItem: () => <div data-testid="transaction" />,

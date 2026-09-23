@@ -72,17 +72,19 @@ use tokio_util::sync::CancellationToken;
 
 static INSTANCE: LazyLock<MinotariWalletManager> = LazyLock::new(MinotariWalletManager::new);
 
-pub(crate) fn get_grpc_url() -> String {
-    let network = Network::get_current_or_user_setting_or_default();
-    let http_api_url = match network {
-        Network::MainNet => "https://rpc.tari.com",
-        Network::StageNet => "https://rpc.stagenet.tari.com",
-        Network::NextNet => "https://rpc.nextnet.tari.com",
-        Network::LocalNet => "https://rpc.localnet.tari.com",
-        Network::Igor => "https://rpc.igor.tari.com",
-        Network::Esmeralda => "https://rpc.esmeralda.tari.com",
-    };
-    http_api_url.to_string()
+/// HTTP API of the base node the app is currently using: the local node when one
+/// is running, otherwise the remote RPC for the network. Scanning and broadcasting
+/// go to the same node the rest of the app talks to, so a local node (and localnet,
+/// which has no public RPC) works.
+pub(crate) async fn base_node_http_url() -> Result<String, anyhow::Error> {
+    let app_handle = INSTANCE
+        .app_handle
+        .read()
+        .await
+        .clone()
+        .ok_or_else(|| anyhow::anyhow!("App handle not set"))?;
+    let app_state = app_handle.state::<UniverseAppState>();
+    Ok(app_state.node_manager.get_http_api_url().await)
 }
 
 /// The `minotari` wallet crate depends on tari 5.7.0-pre.8, while the rest of the app
@@ -460,10 +462,11 @@ impl MinotariWalletManager {
 
         let database_path = MinotariWalletDatabaseManager::database_path()?;
         let tari_address = Self::get_owner_address().await?;
+        let base_url = base_node_http_url().await?;
 
         info!(
             target: LOG_TARGET,
-            "Starting blockchain scan for Minotari wallet at database path: {}", database_path
+            "Starting blockchain scan for Minotari wallet at database path: {} via {}", database_path, base_url
         );
 
         // Create cancellation token
@@ -480,7 +483,7 @@ impl MinotariWalletManager {
         tokio::spawn(async move {
             let (event_rx, scan_future) = Scanner::new(
                 DEFAULT_PASSWORD,
-                &get_grpc_url(),
+                &base_url,
                 database_path_buf,
                 SCAN_BATCH_SIZE,
                 REQUIRED_CONFIRMATIONS,
@@ -656,11 +659,14 @@ impl MinotariWalletManager {
                         0.0
                     };
 
+                    // Continuous mode keeps emitting Progress after the first Completed
+                    // (every new block); reporting `false` there would flip the wallet UI
+                    // back into its syncing state and hide send/receive/history.
                     EventsEmitter::emit_wallet_scanning_progress_update(
                         current_height,
                         tip_height,
                         progress,
-                        false, // is_initial_scan_complete - still scanning
+                        INSTANCE.initial_sync_complete.load(Ordering::SeqCst),
                     )
                     .await;
                 }

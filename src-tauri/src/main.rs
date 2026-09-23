@@ -516,6 +516,7 @@ fn main() {
             commands::get_bridge_envs,
             commands::parse_tari_address,
             commands::refresh_wallet_history,
+            commands::get_wallet_transaction_history,
             commands::get_base_node_status,
             commands::get_local_block_stats,
             commands::create_pin,

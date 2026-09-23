@@ -1,4 +1,11 @@
-import { ApplicationsVersions, TorConfig, BridgeEnvs, TariAddressVariants, BaseNodeStatus } from './app-status';
+import {
+    ApplicationsVersions,
+    TorConfig,
+    BridgeEnvs,
+    TariAddressVariants,
+    BaseNodeStatus,
+    DisplayedTransaction,
+} from './app-status';
 import { PaperWalletDetails } from './app-status.ts';
 import { LocalBlockStats } from './mining/blocks.ts';
 import { displayMode } from '../store/types.ts';
@@ -110,6 +117,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_bridge_envs'): Promise<BridgeEnvs>;
     function invoke(param: 'parse_tari_address', payload: { address: string }): Promise<TariAddressVariants>;
     function invoke(param: 'refresh_wallet_history'): Promise<void>;
+    function invoke(param: 'get_wallet_transaction_history'): Promise<DisplayedTransaction[]>;
     function invoke(param: 'get_base_node_status'): Promise<BaseNodeStatus>;
     function invoke(param: 'get_local_block_stats', payload: { limit: number }): Promise<LocalBlockStats[]>;
     function invoke(param: 'create_pin'): Promise<void>;

@@ -86,7 +86,7 @@ fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
         | "ConfigMcpLoaded"
         | "SelectedTariAddressChanged"
         | "WalletBalanceUpdate"
-        | "WalletStatusUpdate"
+        | "WalletScanningProgressUpdate"
         | "WalletUIModeChanged"
         | "BaseNodeUpdate"
         | "NodeTypeUpdate"
@@ -102,7 +102,6 @@ fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
         | "StuckOnOrphanChain"
         | "AvailableMiners"
         | "UpdateSelectedMiner"
-        | "InitWalletScanningProgress"
         // PinLocked is a one-shot STATE event (emitted when a PIN is
         // created/cleared), not a dialog trigger. Fresh pages must learn a
         // PIN is set, or frontend-gated flows (e.g. MCP token reveal) skip

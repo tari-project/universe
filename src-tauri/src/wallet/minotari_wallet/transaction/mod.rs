@@ -41,7 +41,7 @@ use zeroize::Zeroizing;
 
 use crate::{
     internal_wallet::InternalWallet,
-    wallet::minotari_wallet::{DEFAULT_PASSWORD, get_grpc_url},
+    wallet::minotari_wallet::{DEFAULT_PASSWORD, base_node_http_url},
 };
 
 const CONFIRMATION_WINDOW: u64 = 3;
@@ -111,7 +111,7 @@ impl TransactionManager {
         info!("Finalizing one-sided transaction...");
         let displayed_transaction = self
             .transaction_sender
-            .finalize_transaction_and_broadcast(signed_transaction, get_grpc_url())
+            .finalize_transaction_and_broadcast(signed_transaction, base_node_http_url().await?)
             .await?;
 
         Ok(displayed_transaction)

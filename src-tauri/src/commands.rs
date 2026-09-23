@@ -62,6 +62,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
+use crate::wallet::minotari_wallet::database_manager::DEFAULT_ACCOUNT_ID;
 use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send};
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
@@ -71,6 +72,7 @@ use base64::prelude::*;
 use crate::node::data_location::update_data_location;
 use crate::wallet::minotari_wallet::balance_tracker::BalanceTracker;
 use log::{debug, error, info, warn};
+use minotari_wallet::DisplayedTransaction;
 use monero_address_creator::Seed as MoneroSeed;
 use monero_address_creator::network::Mainnet;
 use regex::Regex;
@@ -2167,6 +2169,15 @@ pub async fn resume_scheduler_event(event_id: String) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+/// Full transaction history, for a frontend that mounts (or reloads) after the
+/// initial `WalletTransactionsFound` push went out.
+#[tauri::command]
+pub async fn get_wallet_transaction_history() -> Result<Vec<DisplayedTransaction>, String> {
+    MinotariWalletManager::get_transaction_history(DEFAULT_ACCOUNT_ID)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
