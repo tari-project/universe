@@ -286,7 +286,6 @@ impl BinaryManager {
             let (sender, mut receiver) = channel::<f64>(0.0);
             let task_tacker = match Binaries::from_name(&self.binary_name) {
                 Binaries::Xmrig => &TasksTrackers::current().cpu_mining_phase,
-                Binaries::Wallet => &TasksTrackers::current().wallet_phase,
                 Binaries::MinotariNode => &TasksTrackers::current().node_phase,
                 Binaries::Tor => &TasksTrackers::current().node_phase,
                 Binaries::MergeMiningProxy => &TasksTrackers::current().cpu_mining_phase,

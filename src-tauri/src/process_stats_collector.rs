@@ -35,8 +35,6 @@ pub(crate) struct ProcessStatsCollectorBuilder {
     node_rx: Receiver<ProcessWatcherStats>,
     tor_tx: Option<Sender<ProcessWatcherStats>>,
     tor_rx: Receiver<ProcessWatcherStats>,
-    wallet_tx: Option<Sender<ProcessWatcherStats>>,
-    wallet_rx: Receiver<ProcessWatcherStats>,
 }
 
 impl ProcessStatsCollectorBuilder {
@@ -49,7 +47,6 @@ impl ProcessStatsCollectorBuilder {
             tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (node_tx, node_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (tor_tx, tor_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
-        let (wallet_tx, wallet_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
 
         Self {
             cpu_miner_tx: Some(cpu_miner_tx),
@@ -62,8 +59,6 @@ impl ProcessStatsCollectorBuilder {
             node_rx,
             tor_tx: Some(tor_tx),
             tor_rx,
-            wallet_tx: Some(wallet_tx),
-            wallet_rx,
         }
     }
 
@@ -95,12 +90,6 @@ impl ProcessStatsCollectorBuilder {
         self.tor_tx.take().expect("Cannot take tor more than once")
     }
 
-    pub fn take_wallet(&mut self) -> Sender<ProcessWatcherStats> {
-        self.wallet_tx
-            .take()
-            .expect("Cannot take wallet more than once")
-    }
-
     pub fn build(self) -> ProcessStatsCollector {
         ProcessStatsCollector {
             cpu_miner_rx: self.cpu_miner_rx,
@@ -108,7 +97,6 @@ impl ProcessStatsCollectorBuilder {
             mm_proxy_rx: self.mm_proxy_rx,
             node_rx: self.node_rx,
             tor_rx: self.tor_rx,
-            wallet_rx: self.wallet_rx,
         }
     }
 }
@@ -120,7 +108,6 @@ pub(crate) struct ProcessStatsCollector {
     mm_proxy_rx: Receiver<ProcessWatcherStats>,
     node_rx: Receiver<ProcessWatcherStats>,
     tor_rx: Receiver<ProcessWatcherStats>,
-    wallet_rx: Receiver<ProcessWatcherStats>,
 }
 
 impl ProcessStatsCollector {
@@ -142,9 +129,5 @@ impl ProcessStatsCollector {
 
     pub fn get_tor_stats(&self) -> ProcessWatcherStats {
         self.tor_rx.borrow().clone()
-    }
-
-    pub fn get_wallet_stats(&self) -> ProcessWatcherStats {
-        self.wallet_rx.borrow().clone()
     }
 }

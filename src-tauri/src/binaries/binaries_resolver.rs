@@ -192,20 +192,6 @@ impl BinaryResolver {
         );
 
         binary_manager.insert(
-            Binaries::Wallet,
-            BinaryManager::new(
-                Binaries::Wallet.name().to_string(),
-                None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "tari".to_string(),
-                    owner: "tari-project".to_string(),
-                    checksum_source: ChecksumSource::PerAssetSidecar,
-                }),
-                true,
-            ),
-        );
-
-        binary_manager.insert(
             Binaries::Tor,
             BinaryManager::new(
                 Binaries::Tor.name().to_string(),
@@ -292,12 +278,10 @@ impl BinaryResolver {
             return Ok(());
         }
 
-        // These 3 binaries are downloaded as one zip so processing them in parallel would cause file conflicts
+        // These 2 binaries are downloaded as one zip so processing them in parallel would cause file conflicts
         // To keep it safe, we lock the download for these binaries and then check again if files exist after acquiring the lock
-        let needs_tari_suite_lock = matches!(
-            binary,
-            Binaries::MergeMiningProxy | Binaries::MinotariNode | Binaries::Wallet
-        );
+        let needs_tari_suite_lock =
+            matches!(binary, Binaries::MergeMiningProxy | Binaries::MinotariNode);
 
         if needs_tari_suite_lock {
             let _lock = TARI_SUITE_DOWNLOAD_LOCK.lock().await;

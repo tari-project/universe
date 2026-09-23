@@ -53,6 +53,7 @@ use tokio::sync::{OnceCell, RwLock};
 
 use tari_utilities::hex::Hex;
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_ui::ConfigUI;
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WALLET_VERSION, WalletId};
 use crate::configs::trait_config::ConfigImpl;
@@ -68,7 +69,6 @@ use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::pin::PinManager;
 use crate::utils::{cryptography, rand_utils};
 use crate::wallet::minotari_wallet::MinotariWalletManager;
-use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState};
 
 /// The wallet's view private key, in hex.
 ///
@@ -183,7 +183,6 @@ impl InternalWallet {
     }
 
     pub async fn initialize_seedless(
-        app_handle: &tauri::AppHandle,
         new_external_tari_address: Option<TariAddress>,
     ) -> Result<(), anyhow::Error> {
         if let Some(external_tari_address) = new_external_tari_address {
@@ -218,7 +217,7 @@ impl InternalWallet {
             tari_wallet_details: None,
         };
 
-        internal_wallet.post_init(app_handle).await
+        internal_wallet.post_init().await
     }
 
     /** Ensures wallet config contains everything needed to initialize the wallet - returns false when impossible */
@@ -351,26 +350,12 @@ impl InternalWallet {
                 }
             };
 
-        internal_wallet.post_init(app_handle).await
+        internal_wallet.post_init().await
     }
 
     // Handle all side effects here
-    async fn post_init(&self, app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+    async fn post_init(&self) -> Result<(), anyhow::Error> {
         InternalWallet::set_current(self.clone()).await?;
-
-        let state = app_handle.state::<UniverseAppState>();
-        if let Some(ref wallet_details) = self.tari_wallet_details {
-            // Internal(Seed)
-            state
-                .wallet_manager
-                .set_view_private_key_and_spend_key(
-                    wallet_details.view_private_key_hex.reveal().to_string(),
-                    wallet_details.spend_public_key_hex.clone(),
-                )
-                .await;
-        } else {
-            // External(Seedless)
-        }
 
         MinotariWalletManager::handle_side_effects_after_wallet_import(
             self.tari_address_type.clone(),

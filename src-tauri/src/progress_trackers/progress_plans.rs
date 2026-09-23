@@ -29,7 +29,6 @@ pub enum SetupStep {
     // Node Phase
     BinariesTor,
     BinariesNode,
-    BinariesWallet,
     StartTor,
     MigratingDatabase,
     StartingNode,
@@ -47,7 +46,6 @@ pub enum SetupStep {
     InitializeGpuHardware,
 
     // Wallet Phase
-    StartWallet,
     SetupBridge,
     MinotariWallet,
 }
@@ -81,8 +79,6 @@ impl SetupStep {
             Self::InitializeGpuHardware => "initialize-gpu-hardware".to_string(),
 
             // Wallet Phase
-            Self::BinariesWallet => "binaries-wallet".to_string(),
-            Self::StartWallet => "start-wallet".to_string(),
             Self::SetupBridge => "setup-bridge".to_string(),
             Self::MinotariWallet => "minotari-wallet".to_string(),
         }
@@ -117,10 +113,8 @@ impl SetupStep {
             Self::InitializeGpuHardware => 2,
 
             // Wallet Phase 20
-            Self::BinariesWallet => 10,
-            Self::StartWallet => 5,
             Self::SetupBridge => 1,
-            Self::MinotariWallet => 4,
+            Self::MinotariWallet => 19,
         }
     }
 }

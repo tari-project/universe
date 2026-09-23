@@ -20,9 +20,30 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::path::Path;
+
+use log::info;
+use tari_common::configuration::Network;
+
+use crate::LOG_TARGET_APP_LOGIC;
+
 pub mod minotari_wallet;
 pub mod send_gate;
-pub mod wallet_adapter;
-pub mod wallet_manager;
-pub mod wallet_status_monitor;
 pub mod wallet_types;
+
+/// Removes the on-disk wallet data for the current network: the in-process minotari DB
+/// (`<base>/minotari-wallet/<network>`) and the legacy console wallet folder
+/// (`<base>/wallet/<network>`).
+pub async fn clean_wallet_data_folders(base_path: &Path) -> Result<(), anyhow::Error> {
+    let network_str = Network::get_current().to_string().to_lowercase();
+    for dir in [
+        base_path.join("minotari-wallet").join(&network_str),
+        base_path.join("wallet").join(&network_str),
+    ] {
+        if dir.try_exists()? && dir.is_dir() {
+            tokio::fs::remove_dir_all(&dir).await?;
+            info!(target: LOG_TARGET_APP_LOGIC, "Removed wallet data folder {}", dir.display());
+        }
+    }
+    Ok(())
+}

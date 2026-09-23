@@ -109,7 +109,6 @@ pub struct ApplicationsVersions {
     xmrig: ApplicationsInformation,
     minotari_node: ApplicationsInformation,
     mm_proxy: ApplicationsInformation,
-    wallet: ApplicationsInformation,
     xtrgpuminer: ApplicationsInformation,
     bridge: ApplicationsInformation,
 }
@@ -135,7 +134,7 @@ pub async fn select_exchange_miner(
         .await
         .map_err(|e| e.to_string())?;
 
-    match InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address)).await {
+    match InternalWallet::initialize_seedless(Some(new_external_tari_address)).await {
         Ok(_) => {
             log::info!(target: LOG_TARGET_APP_LOGIC, "Internal wallet initialized successfully after \"select_exchange_miner\"");
         }
@@ -274,7 +273,6 @@ pub async fn exit_application(
     GpuManager::read().await.on_app_exit().await;
     CpuManager::read().await.on_app_exit().await;
     state.tor_manager.on_app_exit().await;
-    state.wallet_manager.on_app_exit().await;
     state.node_manager.on_app_exit().await;
 
     app.exit(0);
@@ -333,7 +331,6 @@ pub async fn get_applications_versions(
     // let xmrig_port = &cpu_miner.get_port().await;
     // let gpu_miner = &state.gpu_miner.read().await;
     // let xtr_port = gpu_miner.get_port().await;
-    let wallet_port = &state.wallet_manager.get_port().await;
     let node_manager = &state.node_manager;
     let node_port = node_manager
         .clone()
@@ -350,7 +347,6 @@ pub async fn get_applications_versions(
     let mm_proxy_version = binary_resolver
         .get_binary_version(Binaries::MergeMiningProxy)
         .await;
-    let wallet_version = binary_resolver.get_binary_version(Binaries::Wallet).await;
     let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::LolMiner).await;
     let bridge_version = binary_resolver
         .get_binary_version(Binaries::BridgeTapplet)
@@ -380,10 +376,6 @@ pub async fn get_applications_versions(
         mm_proxy: ApplicationsInformation {
             version: mm_proxy_version,
             port: Some(*mmp_port),
-        },
-        wallet: ApplicationsInformation {
-            version: wallet_version,
-            port: Some(*wallet_port),
         },
         xtrgpuminer: ApplicationsInformation {
             version: xtrgpuminer_version,
@@ -429,17 +421,12 @@ pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<S
 
 #[tauri::command]
 pub async fn get_paper_wallet_details(
-    state: tauri::State<'_, UniverseAppState>,
     auth_uuid: Option<String>,
     app_handle: tauri::AppHandle,
 ) -> Result<PaperWalletConfig, InvokeError> {
     let timer = Instant::now();
 
-    let wallet_balance = state
-        .wallet_state_watch_rx
-        .borrow()
-        .clone()
-        .and_then(|state| state.balance);
+    let wallet_balance = BalanceTracker::current().get_account_balance().await.total;
 
     warn!(target: LOG_TARGET_APP_LOGIC, "auth_uuid {auth_uuid:?}");
     let anon_id = ConfigCore::content().await.anon_id().clone();
@@ -463,17 +450,7 @@ pub async fn get_paper_wallet_details(
         seed_words_encrypted_base58,
         encode(&anon_id),
     );
-    // Add wallet_balance as a query parameter if it exists
-    if let Some(balance) = &wallet_balance {
-        let available_balance = balance.available_balance
-            + balance.timelocked_balance
-            + balance.pending_incoming_balance;
-
-        link.push_str(&format!(
-            "&balance={}",
-            encode(&available_balance.to_string())
-        ));
-    }
+    link.push_str(&format!("&balance={}", encode(&wallet_balance.to_string())));
     // Add auth_uuid as a query parameter if it exists
     if let Some(uuid) = &auth_uuid {
         link.push_str(&format!("&tt={}", encode(uuid)));
@@ -533,7 +510,7 @@ pub async fn set_external_tari_address(
 
     let new_external_tari_address =
         TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
-    InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address))
+    InternalWallet::initialize_seedless(Some(new_external_tari_address))
         .await
         .map_err(InvokeError::from_anyhow)?;
 
@@ -544,15 +521,12 @@ pub async fn set_external_tari_address(
 }
 
 #[tauri::command]
-pub async fn confirm_exchange_address(
-    app_handle: tauri::AppHandle,
-    address: String,
-) -> Result<(), InvokeError> {
+pub async fn confirm_exchange_address(address: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let new_external_tari_address =
         TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
 
-    InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address))
+    InternalWallet::initialize_seedless(Some(new_external_tari_address))
         .await
         .map_err(InvokeError::from_anyhow)?;
 
@@ -648,7 +622,6 @@ pub async fn forgot_pin(
 #[tauri::command]
 pub async fn import_seed_words(
     seed_words: Vec<String>,
-    state: tauri::State<'_, UniverseAppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
@@ -678,9 +651,7 @@ pub async fn import_seed_words(
         .path()
         .app_local_data_dir()
         .map_err(|_| "Could not find wallet data dir".to_string())?;
-    state
-        .wallet_manager
-        .clean_data_folder(&base_path)
+    crate::wallet::clean_wallet_data_folders(&base_path)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -2180,10 +2151,7 @@ pub async fn get_wallet_transaction_history() -> Result<Vec<DisplayedTransaction
 }
 
 #[tauri::command]
-pub async fn refresh_wallet_history(
-    state: tauri::State<'_, UniverseAppState>,
-    app_handle: tauri::AppHandle,
-) -> Result<(), String> {
+pub async fn refresh_wallet_history(app_handle: tauri::AppHandle) -> Result<(), String> {
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
@@ -2192,9 +2160,7 @@ pub async fn refresh_wallet_history(
         .path()
         .app_local_data_dir()
         .map_err(|_| "Could not find wallet data dir".to_string())?;
-    state
-        .wallet_manager
-        .clean_data_folder(&base_path)
+    crate::wallet::clean_wallet_data_folders(&base_path)
         .await
         .map_err(|e| e.to_string())?;
 
