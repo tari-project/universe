@@ -509,15 +509,12 @@ async fn get_telemetry_data_inner(
         );
     }
 
-    // Add payment ID from current tari address
-    if InternalWallet::is_initialized()
-        && let Some(_state) = app_handle.try_state::<crate::UniverseAppState>()
+    // Add payment ID from current tari address; a missing wallet simply has none.
+    if let Some(_state) = app_handle.try_state::<crate::UniverseAppState>()
+        && let Ok(tari_address) = InternalWallet::tari_address().await
+        && let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58())
     {
-        let tari_address = InternalWallet::tari_address().await;
-        if let Ok(Some(payment_id)) = extract_payment_id(&tari_address.to_base58()) {
-            extra_data.insert("mining_address_payment_id".to_string(), payment_id);
-        }
-        // Note: If no payment ID, we don't add the field (saves space vs empty string)
+        extra_data.insert("mining_address_payment_id".to_string(), payment_id);
     }
 
     extra_data.insert(
@@ -670,7 +667,7 @@ async fn get_telemetry_data_inner(
         extra_data.insert(format!("disk_{i}_kind"), kind);
     }
 
-    let tari_address = InternalWallet::tari_address().await.to_base58();
+    let tari_address = InternalWallet::tari_address().await?.to_base58();
 
     let data = TelemetryData {
         app_id: config.anon_id().to_string(),

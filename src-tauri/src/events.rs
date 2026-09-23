@@ -248,6 +248,10 @@ pub enum PinPromptContext {
         destination: String,
         payment_id: Option<String>,
     },
+    /// The wallet details are missing from the config and are being rebuilt from the stored seed.
+    RestoreWalletDetails,
+    /// The stored seed is PIN-protected although the config says no PIN is set.
+    SeedNeedsPin,
 }
 
 #[derive(Debug, Serialize, Clone)]

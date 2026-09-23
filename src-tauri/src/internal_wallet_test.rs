@@ -68,8 +68,13 @@
 //! - Or refactor to use dependency injection instead of static singleton
 
 use super::internal_wallet::{
-    InternalWallet, TariAddressType, previous_wallet_files, wipe_and_remove_file,
+    InternalWallet, LegacyWalletConfig, SEED_PIN_REQUIRED, SeedNeedsPin, TariAddressType,
+    decrypt_legacy_tari_seed, previous_wallet_files, seed_proves_recorded_address,
+    wipe_and_remove_file,
 };
+use tari_common_types::seeds::cipher_seed::CipherSeed;
+use tari_utilities::SafePassword;
+use tari_utilities::message_format::MessageFormat;
 
 #[test]
 fn tari_address_type_display_internal() {
@@ -112,10 +117,159 @@ fn internal_wallet_is_initialized_before_set() {
     );
 }
 
+/// `current()` is reached from telemetry, mining and the setup phases, all of which run whether
+/// or not wallet init succeeded. Before initialisation it must return the error, not panic.
 #[test]
-#[should_panic(expected = "InternalWallet is not initialized")]
-fn current_panics_before_initialization() {
-    let _ = InternalWallet::current();
+fn current_returns_an_error_before_initialization() {
+    assert!(InternalWallet::current().is_err());
+}
+
+/// The accessors those callers actually use must degrade instead of panicking too.
+#[tokio::test]
+async fn the_wallet_accessors_degrade_before_initialization() {
+    assert!(InternalWallet::tari_address().await.is_err());
+    assert!(InternalWallet::tari_wallet_details().await.is_none());
+    assert!(!InternalWallet::is_internal().await);
+}
+
+// --- The seed decode has to be proven ------------------------------------------------------
+
+/// Why every plain decode is proven against the recorded address: `from_binary` is
+/// unauthenticated, so PIN-enciphered bytes come back as a structurally valid seed with
+/// different entropy. Returned unchecked, that is a different wallet address, which the user
+/// experiences as a lost wallet.
+#[test]
+fn enciphered_bytes_decode_through_the_plain_path_into_a_different_seed() {
+    let seed = CipherSeed::random();
+    let enciphered = seed
+        .encipher(Some(SafePassword::from("1234")))
+        .expect("encipher the fixture seed");
+
+    let decoded = CipherSeed::from_binary(&enciphered)
+        .expect("from_binary accepts enciphered bytes, which is the whole problem");
+
+    assert_ne!(
+        decoded.entropy(),
+        seed.entropy(),
+        "an unproven plain decode yields a different wallet"
+    );
+    // The proof the wallet uses is the derived address; entropy is what drives it.
+    assert_ne!(decoded.to_binary().ok(), seed.to_binary().ok());
+}
+
+/// The proof `get_tari_seed` runs on every decode: derive the address from the seed in hand and
+/// compare it with the one on record. Only a seed that derives the recorded address is returned.
+#[tokio::test]
+async fn the_address_proof_tells_the_recorded_wallet_from_any_other() {
+    let seed = CipherSeed::random();
+    let recorded = InternalWallet::get_tari_wallet_details(
+        WalletId::new("recorded".to_string()),
+        seed.clone(),
+    )
+    .await
+    .expect("derive the recorded details");
+    let other = InternalWallet::get_tari_wallet_details(
+        WalletId::new("other".to_string()),
+        CipherSeed::random(),
+    )
+    .await
+    .expect("derive another wallet's details");
+
+    assert_eq!(
+        seed_proves_recorded_address(&seed, Some(&recorded)).await,
+        Some(true)
+    );
+    assert_eq!(
+        seed_proves_recorded_address(&seed, Some(&other)).await,
+        Some(false),
+        "a seed for a different address must not pass the proof"
+    );
+    assert_eq!(
+        seed_proves_recorded_address(&seed, None).await,
+        None,
+        "with nothing recorded there is nothing to prove against"
+    );
+}
+
+/// The signal that lets a caller prompt for a PIN instead of reporting a parse failure, which
+/// reads to the user as a lost wallet. It has to survive the trip through `anyhow`.
+#[test]
+fn a_pin_protected_seed_is_distinguishable_from_a_damaged_one() {
+    let error: anyhow::Error = SeedNeedsPin.into();
+
+    assert!(error.downcast_ref::<SeedNeedsPin>().is_some());
+    assert!(
+        anyhow::anyhow!("Could not parse Tari Seed from binary")
+            .downcast_ref::<SeedNeedsPin>()
+            .is_none()
+    );
+    // Both strings end up in a toast verbatim, so neither may read as a failure.
+    assert!(!error.to_string().is_empty());
+    assert!(SEED_PIN_REQUIRED.ends_with('.'));
+}
+
+// --- The legacy seed decrypt -----------------------------------------------------------------
+
+/// The pre-v0.8 case: the passphrase only ever lived in `wallet_config.json`, and v1.2.24 dropped
+/// the field, which left the seed undecryptable and panicking on every launch.
+#[test]
+fn a_legacy_seed_opens_with_the_passphrase_from_the_legacy_config_file() {
+    let seed = CipherSeed::random();
+    let in_file = SafePassword::from("in-file passphrase");
+    let enciphered = seed
+        .encipher(Some(in_file.clone()))
+        .expect("encipher the fixture seed");
+
+    let opened = decrypt_legacy_tari_seed(
+        &enciphered,
+        [
+            Some(SafePassword::from("stale keyring")),
+            Some(in_file),
+            None,
+        ],
+    )
+    .expect("the in-file passphrase opens the seed");
+
+    assert_eq!(opened.entropy(), seed.entropy());
+}
+
+#[test]
+fn a_legacy_seed_no_passphrase_opens_is_an_error_not_a_panic() {
+    let seed = CipherSeed::random();
+    let enciphered = seed
+        .encipher(Some(SafePassword::from("the passphrase this machine lost")))
+        .expect("encipher the fixture seed");
+
+    assert!(
+        decrypt_legacy_tari_seed(&enciphered, [Some(SafePassword::from("wrong")), None]).is_err()
+    );
+}
+
+/// Old versions serialized the passphrase with `SafePassword`, which writes a byte sequence, so
+/// that is the on-disk shape the restored field has to read. A shape the struct cannot parse
+/// fails the whole file, and an unreadable legacy config looks like "no legacy wallet".
+#[test]
+fn the_legacy_config_reads_the_passphrase_shape_old_versions_wrote() {
+    let stored = serde_json::to_string(&SafePassword::from("legacy passphrase"))
+        .expect("serialize as old versions did");
+    let with_passphrase = format!(
+        r#"{{"tari_address_base58":"a","view_key_private_hex":"b","spend_public_key_hex":"c","seed_words_encrypted_base58":"d","passphrase":{stored},"config_path":null}}"#
+    );
+
+    let parsed: LegacyWalletConfig =
+        serde_json::from_str(&with_passphrase).expect("legacy fixture parses");
+    let round_tripped = serde_json::to_value(&parsed).expect("serialize");
+    assert_eq!(
+        round_tripped["passphrase"],
+        serde_json::from_str::<serde_json::Value>(&stored).expect("value"),
+        "the passphrase must survive the read"
+    );
+
+    // Files that never had the field are the common case and must still parse.
+    let without_passphrase = r#"{"tari_address_base58":"a","view_key_private_hex":"b","spend_public_key_hex":"c","seed_words_encrypted_base58":"d","config_path":null}"#;
+    let parsed: LegacyWalletConfig =
+        serde_json::from_str(without_passphrase).expect("a file without the field parses");
+    assert!(serde_json::to_value(&parsed).expect("serialize")["passphrase"].is_null());
 }
 
 // --- Redaction of the wallet view private key (GHSA-3wv6-9vwg-865r) ---
