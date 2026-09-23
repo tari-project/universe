@@ -68,8 +68,9 @@
 //! - Or refactor to use dependency injection instead of static singleton
 
 use super::internal_wallet::{
-    InternalWallet, LegacyWalletConfig, TariAddressType, decrypt_legacy_tari_seed,
-    previous_wallet_files, seed_proves_recorded_address, wipe_and_remove_file,
+    InternalWallet, LegacyWalletConfig, SEED_PIN_REQUIRED, SeedNeedsPin, TariAddressType,
+    decrypt_legacy_tari_seed, previous_wallet_files, seed_proves_recorded_address,
+    wipe_and_remove_file,
 };
 use tari_common_types::seeds::cipher_seed::CipherSeed;
 use tari_utilities::SafePassword;
@@ -188,6 +189,23 @@ async fn the_address_proof_tells_the_recorded_wallet_from_any_other() {
         None,
         "with nothing recorded there is nothing to prove against"
     );
+}
+
+/// The signal that lets a caller prompt for a PIN instead of reporting a parse failure, which
+/// reads to the user as a lost wallet. It has to survive the trip through `anyhow`.
+#[test]
+fn a_pin_protected_seed_is_distinguishable_from_a_damaged_one() {
+    let error: anyhow::Error = SeedNeedsPin.into();
+
+    assert!(error.downcast_ref::<SeedNeedsPin>().is_some());
+    assert!(
+        anyhow::anyhow!("Could not parse Tari Seed from binary")
+            .downcast_ref::<SeedNeedsPin>()
+            .is_none()
+    );
+    // Both strings end up in a toast verbatim, so neither may read as a failure.
+    assert!(!error.to_string().is_empty());
+    assert!(SEED_PIN_REQUIRED.ends_with('.'));
 }
 
 // --- The legacy seed decrypt -----------------------------------------------------------------

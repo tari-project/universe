@@ -19,7 +19,12 @@ export default function EnterPinDialog() {
     // Only shown when the backend told us what the PIN is for. Everything else keeps the
     // plain "Enter your PIN" dialog.
     const sendContext = pinContext?.kind === 'send' ? pinContext : null;
-    const restoreContext = pinContext?.kind === 'restore_wallet_details';
+    const reasonKey =
+        pinContext?.kind === 'restore_wallet_details'
+            ? 'security.pin.restore-wallet-details'
+            : pinContext?.kind === 'seed_needs_pin'
+              ? 'security.pin.seed-needs-pin'
+              : null;
 
     function handleClose() {
         if (pinResolver) {
@@ -54,9 +59,9 @@ export default function EnterPinDialog() {
                         <Heading>{sendContext ? t('security.pin.approve-send') : t('security.pin.enter')}</Heading>{' '}
                         <CloseButton onClick={handleClose} />
                     </Header>
-                    {restoreContext && (
+                    {reasonKey && (
                         <Typography variant="p" style={{ opacity: 0.5, fontSize: 12 }}>
-                            {t('security.pin.restore-wallet-details')}
+                            {t(reasonKey)}
                         </Typography>
                     )}
                     {sendContext && (

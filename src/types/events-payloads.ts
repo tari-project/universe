@@ -144,4 +144,9 @@ export interface RestoreWalletDetailsPinPromptContext {
     kind: 'restore_wallet_details';
 }
 
-export type PinPromptContext = SendPinPromptContext | RestoreWalletDetailsPinPromptContext;
+/** The stored seed is PIN-protected although the settings say no PIN is set. */
+export interface SeedNeedsPinPromptContext {
+    kind: 'seed_needs_pin';
+}
+
+export type PinPromptContext = SendPinPromptContext | RestoreWalletDetailsPinPromptContext | SeedNeedsPinPromptContext;

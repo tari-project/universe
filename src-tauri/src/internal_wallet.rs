@@ -1142,7 +1142,31 @@ impl InternalWallet {
         if pin_provided {
             Err(anyhow!("Wrong PIN entered!"))
         } else {
-            Err(anyhow!("Could not parse Tari Seed from binary"))
+            // The plain decode failed the proof, so the stored blob is enciphered even though the
+            // config says no PIN is set. Callers can recover by asking for one.
+            Err(SeedNeedsPin.into())
+        }
+    }
+
+    /// Reads the Tari seed, asking for a PIN when the stored blob turns out to be PIN-protected
+    /// while the config says no PIN is set.
+    pub async fn get_tari_seed_with_prompt(
+        app_handle: &AppHandle,
+        context: Option<PinPromptContext>,
+    ) -> Result<CipherSeed, anyhow::Error> {
+        let pin_password = PinManager::get_validated_pin_if_defined(app_handle, context).await?;
+        let pin_given = pin_password.is_some();
+        match InternalWallet::get_tari_seed(pin_password).await {
+            Err(e) if !pin_given && e.downcast_ref::<SeedNeedsPin>().is_some() => {
+                // The prompt's own validation decrypts the stored blob rather than trusting the
+                // config flag, so it still works while `pin_locked` is false.
+                let pin_password =
+                    PinManager::get_validated_pin(app_handle, Some(PinPromptContext::SeedNeedsPin))
+                        .await
+                        .map_err(|_| anyhow!(SEED_PIN_REQUIRED))?;
+                InternalWallet::get_tari_seed(Some(pin_password)).await
+            }
+            result => result,
         }
     }
 
@@ -1194,6 +1218,7 @@ impl InternalWallet {
             }
         };
 
+        let pin_given = pin_password.is_some();
         let decrypted_monero_seed = if let Some(pin_password) = pin_password {
             cryptography::decrypt(&encrypted_monero_seed, &pin_password)
                 .map_err(|_| anyhow!("Wrong PIN entered!"))
@@ -1201,10 +1226,14 @@ impl InternalWallet {
             // Seed not yet encrypted with PIN
             Ok(encrypted_monero_seed)
         }?;
-        let decrypted_monero_seed_bytes: [u8; 32] = decrypted_monero_seed
-            .as_slice()
-            .try_into()
-            .map_err(|_| anyhow!("Monero seed is not 32 bytes"))?;
+        let decrypted_monero_seed_bytes: [u8; 32] =
+            match decrypted_monero_seed.as_slice().try_into() {
+                Ok(bytes) => bytes,
+                // Enciphering changes the length, so a plain read of the wrong length means the blob
+                // is PIN-protected even though the config says it is not.
+                Err(_) if !pin_given => return Err(SeedNeedsPin.into()),
+                Err(_) => return Err(anyhow!("Monero seed is not 32 bytes")),
+            };
         Ok(MoneroSeed::new(decrypted_monero_seed_bytes))
     }
 
@@ -1271,6 +1300,22 @@ pub fn credential_error_tag(error: &CredentialError) -> &'static str {
         CredentialError::Io(_) => "io_error",
     }
 }
+
+/// The stored seed only opens with a PIN, though the config says none is set. Distinguishable so
+/// callers can ask for one instead of reporting a parse failure that reads as a lost wallet.
+#[derive(Debug)]
+pub struct SeedNeedsPin;
+
+impl std::fmt::Display for SeedNeedsPin {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("The wallet keys are protected by a PIN")
+    }
+}
+impl std::error::Error for SeedNeedsPin {}
+
+/// Shown when the user closes or fails the PIN prompt raised by `get_tari_seed_with_prompt`.
+/// Toasts render the raw error string, so this has to read as a whole sentence on its own.
+pub const SEED_PIN_REQUIRED: &str = "Your wallet keys are protected by a PIN and nothing has been changed. Enter your PIN to view or use your wallet, or contact support.";
 
 async fn handle_critical_problem(
     title: &str,

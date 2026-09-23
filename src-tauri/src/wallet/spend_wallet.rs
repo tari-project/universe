@@ -37,7 +37,6 @@ use crate::LOG_TARGET_APP_LOGIC;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::events::PinPromptContext;
 use crate::internal_wallet::InternalWallet;
-use crate::pin::PinManager;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessInstanceTrait, ProcessStartupSpec,
     StatusMonitor,
@@ -250,10 +249,7 @@ impl SpendWallet {
         app_handle: &AppHandle,
         pin_context: Option<PinPromptContext>,
     ) -> Result<String, Error> {
-        let pin_password = PinManager::get_validated_pin_if_defined(app_handle, pin_context)
-            .await
-            .context("Failed to validate PIN")?;
-        let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password)
+        let tari_cipher_seed = InternalWallet::get_tari_seed_with_prompt(app_handle, pin_context)
             .await
             .context("Failed to get Tari seed")?;
         let seed_words = tari_cipher_seed

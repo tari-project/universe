@@ -442,10 +442,7 @@ pub async fn get_paper_wallet_details(
     warn!(target: LOG_TARGET_APP_LOGIC, "auth_uuid {auth_uuid:?}");
     let anon_id = ConfigCore::content().await.anon_id().clone();
 
-    let pin_password = PinManager::get_validated_pin_if_defined(&app_handle, None)
-        .await
-        .map_err(|e| e.to_string())?;
-    let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password)
+    let tari_cipher_seed = InternalWallet::get_tari_seed_with_prompt(&app_handle, None)
         .await
         .map_err(InvokeError::from_anyhow)?;
     let raw_passphrase = phraze::generate_a_passphrase(5, "-", false, &MNEMONIC_ENGLISH_WORDS);
@@ -493,10 +490,7 @@ pub async fn get_paper_wallet_details(
 pub async fn get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    let pin_password = PinManager::get_validated_pin_if_defined(&app_handle, None)
-        .await
-        .map_err(|e| e.to_string())?;
-    let tari_cipher_seed = InternalWallet::get_tari_seed(pin_password)
+    let tari_cipher_seed = InternalWallet::get_tari_seed_with_prompt(&app_handle, None)
         .await
         .map_err(|e| e.to_string())?;
     let seed_words = tari_cipher_seed
