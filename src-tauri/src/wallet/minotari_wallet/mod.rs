@@ -584,21 +584,7 @@ impl MinotariWalletManager {
                             .update_from_transactions(Self::get_latest_account_balance().await)
                             .await;
 
-                        // The unlocker's own loop returns on the first transient pool
-                        // error but leaves its handle behind, so `run_transaction_unlocker`
-                        // would answer "already running" forever and time-locked funds
-                        // would never unlock again. Reap the dead task and start a new one.
-                        let dead = INSTANCE
-                            .unlocker_handle
-                            .write()
-                            .await
-                            .take_if(|handle| handle.is_finished());
-                        if let Some(handle) = dead {
-                            error!(target: LOG_TARGET, "Transaction unlocker exited ({:?}), restarting it.", handle.await);
-                            if let Err(e) = Self::run_transaction_unlocker().await {
-                                error!(target: LOG_TARGET, "Could not restart the transaction unlocker: {e:?}");
-                            }
-                        }
+                        Self::restart_unlocker_if_dead().await;
                     }
 
                     let caught_up = match result {
@@ -962,6 +948,24 @@ impl MinotariWalletManager {
             Ok(())
         } else {
             Err(anyhow::anyhow!("Tari wallet details not found"))
+        }
+    }
+
+    /// The unlocker's own loop returns on the first transient pool error but leaves
+    /// its handle behind, so `run_transaction_unlocker` would answer "already running"
+    /// forever and time-locked funds would never unlock again. Reap the dead task and
+    /// start a new one.
+    async fn restart_unlocker_if_dead() {
+        let dead = INSTANCE
+            .unlocker_handle
+            .write()
+            .await
+            .take_if(|handle| handle.is_finished());
+        if let Some(handle) = dead {
+            error!(target: LOG_TARGET, "Transaction unlocker exited ({:?}), restarting it.", handle.await);
+            if let Err(e) = Self::run_transaction_unlocker().await {
+                error!(target: LOG_TARGET, "Could not restart the transaction unlocker: {e:?}");
+            }
         }
     }
 
