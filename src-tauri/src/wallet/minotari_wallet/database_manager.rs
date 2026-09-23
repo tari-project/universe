@@ -33,8 +33,6 @@ use tokio::sync::RwLock;
 
 const CONNECTION_HEALTH_CHECK_INTERVAL_SECS: u64 = 60;
 
-pub const DEFAULT_ACCOUNT_ID: i64 = 1;
-
 pub struct MinotariWalletDatabaseManager {
     database_pool: RwLock<Option<SqlitePool>>,
 }

@@ -34,8 +34,7 @@ use crate::{
     internal_wallet::{InternalWallet, TariAddressType},
     tasks_tracker::TasksTrackers,
     wallet::minotari_wallet::{
-        balance_tracker::BalanceTracker,
-        database_manager::{DEFAULT_ACCOUNT_ID, MinotariWalletDatabaseManager},
+        balance_tracker::BalanceTracker, database_manager::MinotariWalletDatabaseManager,
         transaction::TransactionManager,
     },
 };
@@ -43,7 +42,7 @@ use log::{error, info};
 use minotari_wallet::{
     DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
     TransactionHistoryService,
-    db::{AccountBalance, get_latest_scanned_tip_block_by_account},
+    db::{AccountBalance, get_account_by_name, get_latest_scanned_tip_block_by_account},
     get_balance,
     tasks::unlocker::TransactionUnlocker,
     transactions::one_sided_transaction::Recipient,
@@ -56,7 +55,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{
         LazyLock,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
     },
     time::{Duration, Instant},
 };
@@ -123,6 +122,12 @@ pub struct MinotariWalletManager {
     owner_tari_address: RwLock<Option<String>>,
     /// Indicates if initial sync is complete (first Completed event received)
     initial_sync_complete: AtomicBool,
+    /// Height the wallet's scan began at: its oldest scanned block, or the first
+    /// block reported when nothing has been scanned yet (0 until then). Progress is
+    /// measured from here rather than from genesis, so a wallet born at block 300k
+    /// does not open at "50% scanned", and a restart part-way through resumes at
+    /// the same percentage rather than dropping back to 0%.
+    scan_start_height: AtomicU64,
     /// Stores pending transactions by their sent_output_hashes for matching with scanned transactions
     /// Key: comma-separated sorted output hashes, Value: DisplayedTransaction
     pending_transactions: RwLock<HashMap<TxId, DisplayedTransaction>>,
@@ -139,6 +144,7 @@ impl MinotariWalletManager {
             owner_tari_address: RwLock::new(None),
             last_scanned_height: RwLock::new(0),
             initial_sync_complete: AtomicBool::new(false),
+            scan_start_height: AtomicU64::new(0),
             pending_transactions: RwLock::new(HashMap::new()),
             last_progress_emit_time: RwLock::new(
                 Instant::now() - Duration::from_secs(PROGRESS_UPDATE_INTERVAL_SECS),
@@ -355,32 +361,60 @@ impl MinotariWalletManager {
         INSTANCE.database_manager.get_connection().await
     }
 
-    /// Get the latest scanned tip block for an account
-    async fn get_latest_scanned_tip_block(
-        account_id: i64,
-    ) -> Result<Option<minotari_wallet::models::ScannedTipBlock>, anyhow::Error> {
+    /// Database id of the account that holds this app's wallet.
+    ///
+    /// `import_view_key` names accounts after the owner's Tari address, and the
+    /// database keeps every account it has ever seen (a re-import, a wallet that was
+    /// later replaced). The first row is therefore not necessarily ours, so the
+    /// account is always looked up by address.
+    async fn owner_account_id() -> Result<i64, anyhow::Error> {
+        let address = Self::get_owner_address().await?;
+        let conn = Self::get_db_connection().await?;
+        let account = get_account_by_name(&conn, &address)?
+            .ok_or_else(|| anyhow::anyhow!("No wallet account found for address {address}"))?;
+        Ok(account.id)
+    }
+
+    /// Oldest block the owner's account has scanned, `None` for a wallet that has
+    /// not scanned anything yet. Pruning keeps every block on the pruning interval,
+    /// so this stays within a few blocks of where the scan first started.
+    async fn first_scanned_height() -> Result<Option<u64>, anyhow::Error> {
+        let account_id = Self::owner_account_id().await?;
+        let conn = Self::get_db_connection().await?;
+        let height: Option<i64> = conn.query_row(
+            "SELECT MIN(height) FROM scanned_tip_blocks WHERE account_id = ?1",
+            [account_id],
+            |row| row.get(0),
+        )?;
+        Ok(height.map(|h| u64::try_from(h).unwrap_or(0)))
+    }
+
+    /// Get the latest scanned tip block for the owner's account
+    async fn get_latest_scanned_tip_block()
+    -> Result<Option<minotari_wallet::models::ScannedTipBlock>, anyhow::Error> {
+        let account_id = Self::owner_account_id().await?;
         let conn = Self::get_db_connection().await?;
         get_latest_scanned_tip_block_by_account(&conn, account_id).map_err(|e| e.into())
     }
 
-    /// Get balance for an account
-    pub async fn get_account_balance(account_id: i64) -> Result<AccountBalance, anyhow::Error> {
+    /// Get balance for the owner's account
+    pub async fn get_account_balance() -> Result<AccountBalance, anyhow::Error> {
+        let account_id = Self::owner_account_id().await?;
         let conn = Self::get_db_connection().await?;
         get_balance(&conn, account_id).map_err(|e| e.into())
     }
 
     pub async fn get_latest_account_balance() -> Option<AccountBalance> {
         let mut updated_balance: Option<AccountBalance> = None;
-        if let Ok(bal) = Self::get_account_balance(DEFAULT_ACCOUNT_ID).await {
+        if let Ok(bal) = Self::get_account_balance().await {
             updated_balance = Some(bal)
         };
         updated_balance
     }
 
-    /// Load transaction history excluding reorged transactions
-    pub async fn get_transaction_history(
-        account_id: i64,
-    ) -> Result<Vec<DisplayedTransaction>, anyhow::Error> {
+    /// Load the owner's transaction history excluding reorged transactions
+    pub async fn get_transaction_history() -> Result<Vec<DisplayedTransaction>, anyhow::Error> {
+        let account_id = Self::owner_account_id().await?;
         let db_pool = INSTANCE.database_manager.get_pool().await?;
         let history_service = TransactionHistoryService::new(db_pool);
         history_service
@@ -406,7 +440,7 @@ impl MinotariWalletManager {
 
         // ============= | Check latest block height | ==============
 
-        let latest_scanned_block = Self::get_latest_scanned_tip_block(DEFAULT_ACCOUNT_ID).await?;
+        let latest_scanned_block = Self::get_latest_scanned_tip_block().await?;
         if let Some(block) = latest_scanned_block {
             {
                 let mut last_scanned_height_lock = INSTANCE.last_scanned_height.write().await;
@@ -419,18 +453,14 @@ impl MinotariWalletManager {
         }
 
         // ============== |Initialize Balance Data| ==============
-        let balance = Self::get_account_balance(DEFAULT_ACCOUNT_ID).await?;
+        let balance = Self::get_account_balance().await?;
         BalanceTracker::current()
             .initialize_from_account_balance(balance)
             .await;
 
         // ============== |Fetch and Process All Balance Changes| ==============
 
-        // Use TransactionHistoryService to load and process transaction history
-        let db_pool = INSTANCE.database_manager.get_pool().await?;
-        let history_service = TransactionHistoryService::new(db_pool);
-
-        match history_service.load_transactions_excluding_reorged(DEFAULT_ACCOUNT_ID) {
+        match Self::get_transaction_history().await {
             Ok(transactions) => {
                 info!(
                     target: LOG_TARGET,
@@ -477,6 +507,16 @@ impl MinotariWalletManager {
         // Create cancellation token
         let cancel_token = CancellationToken::new();
         *INSTANCE.cancel_token.write().await = Some(cancel_token.clone());
+        let scan_start_height = match Self::first_scanned_height().await {
+            Ok(height) => height.unwrap_or(0),
+            Err(e) => {
+                error!(target: LOG_TARGET, "Could not read the first scanned height, progress starts from the first block reported: {e:?}");
+                0
+            }
+        };
+        INSTANCE
+            .scan_start_height
+            .store(scan_start_height, Ordering::SeqCst);
 
         // Get shutdown signal for graceful termination
         let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
@@ -545,7 +585,13 @@ impl MinotariWalletManager {
                 ProcessingEvent::ScanStatus(status) => {
                     Self::handle_status_event(status).await;
                 }
-                ProcessingEvent::BlockProcessed(_block_event) => {}
+                // The library emits one of these per block. Its `ScanStatusEvent::Progress`
+                // never fires in continuous mode (the emit is behind a condition that
+                // cannot hold), so this is the only per-block signal during the initial
+                // scan and it drives the progress shown in the wallet.
+                ProcessingEvent::BlockProcessed(block_event) => {
+                    Self::record_scanned_height(block_event.height).await;
+                }
                 ProcessingEvent::TransactionsReady(transactions_event) => {
                     let transaction_count = transactions_event.transactions.len();
 
@@ -634,6 +680,55 @@ impl MinotariWalletManager {
         app_state.node_status_watch_rx.borrow().block_height
     }
 
+    /// Records a scanned block height and, at most once per
+    /// `PROGRESS_UPDATE_INTERVAL_SECS`, pushes progress to the frontend.
+    ///
+    /// Progress is the share of the range this scan has to cover (its first block
+    /// to the node's tip), not of the whole chain.
+    async fn record_scanned_height(current_height: u64) {
+        {
+            let mut height = INSTANCE.last_scanned_height.write().await;
+            *height = current_height;
+        }
+        // The first height reported is where this scan started from.
+        let _unused = INSTANCE.scan_start_height.compare_exchange(
+            0,
+            current_height,
+            Ordering::SeqCst,
+            Ordering::SeqCst,
+        );
+
+        let should_emit = {
+            let last_emit = INSTANCE.last_progress_emit_time.read().await;
+            last_emit.elapsed() >= Duration::from_secs(PROGRESS_UPDATE_INTERVAL_SECS)
+        };
+        if !should_emit {
+            return;
+        }
+        *INSTANCE.last_progress_emit_time.write().await = Instant::now();
+
+        let tip_height = Self::get_chain_tip_height();
+        let start_height = INSTANCE.scan_start_height.load(Ordering::SeqCst);
+        let progress = if tip_height > start_height {
+            let scanned = current_height.saturating_sub(start_height) as f64;
+            let span = (tip_height - start_height) as f64;
+            ((scanned / span) * 100.0).min(100.0)
+        } else {
+            0.0
+        };
+
+        // Continuous mode keeps reporting blocks after the first Completed (every
+        // new block); reporting `false` there would flip the wallet UI back into
+        // its syncing state and hide send/receive/history.
+        EventsEmitter::emit_wallet_scanning_progress_update(
+            current_height,
+            tip_height,
+            progress,
+            INSTANCE.initial_sync_complete.load(Ordering::SeqCst),
+        )
+        .await;
+    }
+
     async fn handle_status_event(event: ScanStatusEvent) {
         match event {
             ScanStatusEvent::Started {
@@ -646,38 +741,7 @@ impl MinotariWalletManager {
                 );
             }
             ScanStatusEvent::Progress { current_height, .. } => {
-                // Update last scanned height
-                {
-                    let mut height = INSTANCE.last_scanned_height.write().await;
-                    *height = current_height;
-                }
-
-                let should_emit = {
-                    let last_emit = INSTANCE.last_progress_emit_time.read().await;
-                    last_emit.elapsed() >= Duration::from_secs(PROGRESS_UPDATE_INTERVAL_SECS)
-                };
-                if should_emit {
-                    *INSTANCE.last_progress_emit_time.write().await = Instant::now();
-
-                    // Get chain tip from node status for accurate progress
-                    let tip_height = Self::get_chain_tip_height();
-                    let progress = if tip_height > 0 {
-                        ((current_height as f64 / tip_height as f64) * 100.0).min(100.0)
-                    } else {
-                        0.0
-                    };
-
-                    // Continuous mode keeps emitting Progress after the first Completed
-                    // (every new block); reporting `false` there would flip the wallet UI
-                    // back into its syncing state and hide send/receive/history.
-                    EventsEmitter::emit_wallet_scanning_progress_update(
-                        current_height,
-                        tip_height,
-                        progress,
-                        INSTANCE.initial_sync_complete.load(Ordering::SeqCst),
-                    )
-                    .await;
-                }
+                Self::record_scanned_height(current_height).await;
             }
             ScanStatusEvent::Completed {
                 final_height,

@@ -62,7 +62,6 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
-use crate::wallet::minotari_wallet::database_manager::DEFAULT_ACCOUNT_ID;
 use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send};
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
@@ -2175,7 +2174,7 @@ pub async fn resume_scheduler_event(event_id: String) -> Result<(), String> {
 /// initial `WalletTransactionsFound` push went out.
 #[tauri::command]
 pub async fn get_wallet_transaction_history() -> Result<Vec<DisplayedTransaction>, String> {
-    MinotariWalletManager::get_transaction_history(DEFAULT_ACCOUNT_ID)
+    MinotariWalletManager::get_transaction_history()
         .await
         .map_err(|e| e.to_string())
 }

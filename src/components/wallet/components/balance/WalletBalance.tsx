@@ -52,6 +52,9 @@ export const WalletBalance = () => {
 
     const isScanning = !scanData.is_initial_scan_complete;
     const scanProgress = Math.floor(scanData.progress * 10) / 10;
+    // No progress event has arrived yet: the scan is starting up or the backend
+    // has not learned the chain tip, so heights and a percentage would be wrong.
+    const hasScanData = scanData.total_height > 0;
 
     const balance = removeXTMCryptoDecimals(roundToTwoDecimals(total || 0));
     const balanceMismatch = removeXTMCryptoDecimals(roundToTwoDecimals(available || 0)) != balance;
@@ -65,9 +68,9 @@ export const WalletBalance = () => {
 
     const loadingMarkup = (
         <LoadingText>
-            {scanData && isConnected ? (
+            {isConnected ? (
                 <Trans>
-                    {scanProgress < 100
+                    {hasScanData && scanProgress < 100
                         ? t('wallet-scanning-with-progress', {
                               percentage: scanProgress,
                               scanned: formatValue(scanData.scanned_height),
@@ -91,9 +94,7 @@ export const WalletBalance = () => {
     );
 
     let bottomMarkup: ReactNode;
-    if (scanData.total_height === 0 && isScanning) {
-        bottomMarkup = <></>;
-    } else if (isLoading) {
+    if (isLoading) {
         bottomMarkup = loadingMarkup;
     } else {
         bottomMarkup = <Typography>{balanceText}</Typography>;
@@ -103,7 +104,7 @@ export const WalletBalance = () => {
         <ScanProgressWrapper>
             <Progress
                 percentage={scanProgress && scanProgress >= 95 ? scanProgress - 9 : scanProgress} // so you can actually still see the little gap
-                isInfinite={!isConnected || scanProgress === 100}
+                isInfinite={!isConnected || !hasScanData || scanProgress === 100}
             />
         </ScanProgressWrapper>
     );

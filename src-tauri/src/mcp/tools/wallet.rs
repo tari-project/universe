@@ -22,7 +22,6 @@
 
 use crate::internal_wallet::InternalWallet;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
-use crate::wallet::minotari_wallet::database_manager::DEFAULT_ACCOUNT_ID;
 
 pub async fn get_wallet_address() -> Result<String, String> {
     let address = InternalWallet::tari_address()
@@ -41,7 +40,7 @@ pub async fn get_wallet_address() -> Result<String, String> {
 }
 
 pub async fn get_wallet_balance() -> Result<String, String> {
-    let balance = MinotariWalletManager::get_account_balance(DEFAULT_ACCOUNT_ID)
+    let balance = MinotariWalletManager::get_account_balance()
         .await
         .map_err(|e| format!("Failed to get wallet balance: {e}"))?;
 
@@ -56,7 +55,7 @@ pub async fn get_wallet_balance() -> Result<String, String> {
 
 pub async fn get_transaction_history(limit: Option<u32>) -> Result<String, String> {
     let limit = limit.unwrap_or(20) as usize;
-    let transactions = MinotariWalletManager::get_transaction_history(DEFAULT_ACCOUNT_ID)
+    let transactions = MinotariWalletManager::get_transaction_history()
         .await
         .map_err(|e| format!("Failed to get transaction history: {e}"))?;
 
