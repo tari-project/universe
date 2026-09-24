@@ -91,6 +91,8 @@ pub use state::L2WalletState;
 const LOG_TARGET: &str = "tari::universe::ootle";
 /// Same as tari_walletd: stop looking for more recovered accounts after this many misses.
 const RECOVERY_ABANDON_COUNT: usize = 10;
+/// Holds the id of the L1 wallet the store in the same directory belongs to.
+const L1_WALLET_ID_FILE: &str = "l1-wallet-id";
 
 pub struct OotleWalletSpec;
 
@@ -131,10 +133,21 @@ impl OotleWalletManager {
             .ok_or_else(|| anyhow::anyhow!("No Ootle indexer configured for {network}"))?;
 
         let store_dir = data_dir.join("ootle-wallet").join(network.as_key_str());
+        // A restart of the wallet phase leaves the old store open; let it go before the
+        // directory might be deleted below.
+        INSTANCE.sdk.lock().await.take();
+        INSTANCE.transactions.lock().await.take();
+        let reset = match InternalWallet::tari_wallet_details().await {
+            Some(details) => claim_store_for(&store_dir, details.id.as_str())?,
+            None => false,
+        };
         let password = CredentialManager::ootle_keyring_password().await?;
         let sdk = open_sdk(&store_dir, network, indexer_url.clone(), &password)?;
 
-        if sdk.config_api().exists(ConfigKey::CipherSeed)? {
+        if reset {
+            info!(target: LOG_TARGET, "L2 store belonged to a replaced L1 wallet, removed it");
+            emit_state(&sdk).await;
+        } else if sdk.config_api().exists(ConfigKey::CipherSeed)? {
             start_services(&sdk, sdk.is_recovery_needed()?).await?;
             info!(target: LOG_TARGET, "L2 wallet started on {network}, indexer {indexer_url}");
         } else {
@@ -306,6 +319,23 @@ fn parse_address(address: &str, network: OotleNetwork) -> Result<OotleAddress, T
     }
     parsed.validate().map_err(|e| invalid(e.to_string()))?;
     Ok(parsed)
+}
+
+/// Makes `store_dir` belong to the L1 wallet `l1_wallet_id`. The L2 seed is the L1 seed,
+/// so a store left from another L1 wallet (seed words import) holds the wrong keys and is
+/// deleted, as is a store with no owner on record (older build, or a delete cut short).
+/// Returns whether it deleted one. Runs on every open, so a crash between the L1 import
+/// and the next start still ends with the store gone.
+fn claim_store_for(store_dir: &Path, l1_wallet_id: &str) -> Result<bool, anyhow::Error> {
+    let owner_file = store_dir.join(L1_WALLET_ID_FILE);
+    let owner = std::fs::read_to_string(&owner_file).ok();
+    let reset = owner.as_deref() != Some(l1_wallet_id) && store_dir.join("wallet.sqlite").exists();
+    if reset {
+        std::fs::remove_dir_all(store_dir)?;
+    }
+    std::fs::create_dir_all(store_dir)?;
+    std::fs::write(owner_file, l1_wallet_id)?;
+    Ok(reset)
 }
 
 /// Opens (or creates) the store in `store_dir` and wraps it in the SDK. Does not touch
@@ -519,6 +549,31 @@ mod tests {
         for i in 0..l1_words.len() {
             assert_eq!(l1_words.get_word(i).unwrap(), l2_words.get_word(i).unwrap());
         }
+    }
+
+    #[test]
+    fn a_replaced_l1_wallet_leaves_l2_not_enabled() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store_dir = dir.path().join("esmeralda");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let enabled = |store_dir: &Path| {
+            let sdk = open_sdk(store_dir, Network::Esmeralda, url.clone(), "test").expect("sdk");
+            sdk.config_api()
+                .exists(ConfigKey::CipherSeed)
+                .expect("exists")
+        };
+
+        assert!(!claim_store_for(&store_dir, "first").expect("claim"));
+        let mut sdk = open_sdk(&store_dir, Network::Esmeralda, url.clone(), "test").expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("seed");
+        drop(sdk);
+
+        assert!(!claim_store_for(&store_dir, "first").expect("same wallet"));
+        assert!(enabled(&store_dir));
+        assert!(claim_store_for(&store_dir, "second").expect("replaced wallet"));
+        assert!(!enabled(&store_dir));
+        assert!(!claim_store_for(&store_dir, "second").expect("new owner"));
     }
 
     #[test]
