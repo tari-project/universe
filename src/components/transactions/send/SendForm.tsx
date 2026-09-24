@@ -17,9 +17,10 @@ import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 
 interface Props {
     isBack?: boolean;
+    hasReviewStep?: boolean;
 }
 
-export function SendForm({ isBack }: Props) {
+export function SendForm({ isBack, hasReviewStep = true }: Props) {
     const { t } = useTranslation('wallet');
     const { validateAddress, validateAmount, validationErrorMessage } = useValidateTariAddress();
     const [address, setAddress] = useState('');
@@ -179,7 +180,7 @@ export function SendForm({ isBack }: Props) {
                     size="xlarge"
                     data-testid="send-review-button"
                 >
-                    {t('send.cta-review')}
+                    {t(hasReviewStep ? 'send.cta-review' : 'send.cta-send')}
                 </Button>
             </BottomWrapper>
         </>

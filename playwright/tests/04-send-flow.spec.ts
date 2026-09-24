@@ -12,7 +12,7 @@ async function openSendModal(page: Page) {
   const sendBtn = page.locator(sel.send.button);
   await sendBtn.waitFor({ state: 'visible', timeout: 10_000 });
   await sendBtn.click({ timeout: 5_000 });
-  await expect(page.getByText('Send Tari')).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText('Send Tari').first()).toBeVisible({ timeout: 5_000 });
   const addressInput = page.locator(sel.send.addressInput);
   await addressInput.waitFor({ state: 'visible', timeout: 5_000 });
   return addressInput;
@@ -65,11 +65,11 @@ test.describe('Send Transaction Flow', () => {
     await expect(amountInput).toBeEnabled({ timeout: 5_000 });
 
     // --- Non-numeric amount is rejected (field filters or errors) ---
-    // NOTE: the Review button is enabled once the address validates (the
+    // NOTE: the submit button is enabled once the address validates (the
     // form validates amounts on submit), so button state proves nothing
     // here. Assert the actual containment: the characters never make it
     // into the field, or an inline error shows.
-    const reviewBtn = page.locator(sel.send.reviewButton);
+    const submitBtn = page.locator(sel.send.reviewButton);
     await amountInput.click();
     await amountInput.pressSequentially('abc', { delay: 50 });
     const amountError = page.getByText(/amount is invalid/i);
@@ -81,15 +81,16 @@ test.describe('Send Transaction Flow', () => {
       expect(await amountInput.inputValue()).not.toContain('abc');
     }
 
-    // --- Valid amount + message enables Review ---
+    // --- Valid amount + message enables the submit button ---
     await amountInput.fill('');
     await amountInput.fill('1');
     await page.locator(sel.send.messageInput).fill('validation-check');
-    await expect(reviewBtn).toBeEnabled({ timeout: 5_000 });
+    await expect(submitBtn).toBeEnabled({ timeout: 5_000 });
+    await expect(submitBtn).toHaveText(/Send Tari/i);
 
     // Close the modal without sending — this test only covers validation.
     await page.keyboard.press('Escape');
-    await expect(page.getByText('Send Tari')).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Send Tari').first()).not.toBeVisible({ timeout: 5_000 });
   });
 
   test('send a transaction end-to-end and see it confirm', async ({ appPage: page }) => {
@@ -106,26 +107,21 @@ test.describe('Send Transaction Flow', () => {
     await amountInput.fill(SEND_AMOUNT);
     await page.locator(sel.send.messageInput).fill(TX_MESSAGE);
 
-    // --- Review ---
-    const reviewBtn = page.locator(sel.send.reviewButton);
-    await expect(reviewBtn).toBeEnabled({ timeout: 5_000 });
-    await reviewBtn.click({ timeout: 5_000 });
+    // --- Submit ---
+    const submitBtn = page.locator(sel.send.reviewButton);
+    await expect(submitBtn).toBeEnabled({ timeout: 5_000 });
+    await submitBtn.click({ timeout: 5_000 });
 
-    await expect(page.getByText(/Review transaction/i).first()).toBeVisible({ timeout: 5_000 });
+    // --- Confirm ---
+    // No PIN, so the backend's confirmation dialog is the only review step.
+    await expect(page.getByText(/Confirm transaction/i).first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/Review transaction/i)).toHaveCount(0);
+    await expect(page.locator(sel.send.confirmButton)).toHaveCount(0);
     await expect(page.getByText(VALID_ADDRESS.slice(0, 8)).first()).toBeVisible({ timeout: 5_000 });
     await expect(page.getByText(TX_MESSAGE).first()).toBeVisible({ timeout: 5_000 });
 
-    // --- Confirm ---
-    const confirmBtn = page.locator(sel.send.confirmButton);
-    await confirmBtn.waitFor({ state: 'visible', timeout: 5_000 });
-    await confirmBtn.click({ timeout: 10_000 });
-
-    // --- Send gate (#3355) ---
-    // This wallet has no PIN, so the backend asks for an explicit confirmation
-    // instead of a PIN before it signs. Until this is acknowledged the send
-    // never leaves `processing` and the completion copy below never appears.
     const appConfirmBtn = page.locator(sel.send.appConfirmButton);
-    await appConfirmBtn.waitFor({ state: 'visible', timeout: 30_000 });
+    await appConfirmBtn.waitFor({ state: 'visible', timeout: 5_000 });
     await appConfirmBtn.click({ timeout: 10_000 });
 
     await expect(page.getByText(/on the way/i).first()).toBeVisible({ timeout: 30_000 });

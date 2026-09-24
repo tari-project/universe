@@ -9,6 +9,7 @@ import { StyledForm, Wrapper } from './Send.styles.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { setError as setStoreError } from '@app/store';
 import { queryClient } from '@app/App/queryClient.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 interface SendModalProps {
     section: string;
@@ -21,6 +22,8 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const { t } = useTranslation('wallet');
     const [status, setStatus] = useState<SendStatus>('fields');
     const [isBack, setIsBack] = useState(false);
+    // Without a PIN the backend's confirmation dialog is the review step.
+    const hasReviewStep = useWalletStore((s) => s.is_pin_locked);
 
     const methods = useForm<SendInputs>({
         defaultValues,
@@ -49,7 +52,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
 
     const handleFormSubmit = useCallback(
         async (data: SendInputs) => {
-            if (status === 'fields') {
+            if (status === 'fields' && hasReviewStep) {
                 setStatus('reviewing');
                 return;
             }
@@ -98,7 +101,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 setStatus('fields');
             }
         },
-        [status, setStatus, setError, t]
+        [status, hasReviewStep, setStatus, setError, t]
     );
 
     const getModalTitle = () => {
@@ -113,7 +116,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
 
     const formContentMarkup =
         status === 'fields' ? (
-            <SendForm isBack={isBack} />
+            <SendForm isBack={isBack} hasReviewStep={hasReviewStep} />
         ) : (
             <SendReview
                 status={status}
