@@ -31,7 +31,7 @@ export const TabsWrapper = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 40px;
+    gap: 8px;
     margin: 8px 0;
 `;
 

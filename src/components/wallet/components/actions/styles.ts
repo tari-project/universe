@@ -3,10 +3,12 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const NavWrapper = styled.div`
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     flex-direction: row;
     position: relative;
     align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
 
     gap: 5px;
 `;
@@ -23,7 +25,10 @@ export const NavButton = styled(Button).attrs({
     text-transform: capitalize;
 
     height: 22px;
-    width: 70px;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 70px;
+    padding: 0 6px;
 
     &:hover {
         background-color: ${({ theme }) =>
