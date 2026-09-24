@@ -250,6 +250,7 @@
   },
   "l2": {
     "title": "Layer 2",
+    "account-name": "Ootle Wallet",
     "pin-required": "You must set a PIN to use Layer 2",
     "set-pin": "Set a PIN",
     "enable-description": "Layer 2 uses a wallet made from your existing seed words. You'll be asked for your PIN.",

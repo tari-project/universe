@@ -59,7 +59,7 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                 <AnimatedBG $col1="#0B0A0D" $col2="#6F8309" />
                 <Content>
                     <DetailsRow>
-                        <Name>{account.name || t('l2.title')}</Name>
+                        <Name>{account.is_default ? t('l2.account-name') : account.name || t('l2.title')}</Name>
                         <Actions>
                             <ActionButton
                                 onClick={() => copyToClipboard(account.address)}

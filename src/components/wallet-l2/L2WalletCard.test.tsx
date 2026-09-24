@@ -15,7 +15,7 @@ const enabledState: L2WalletState = {
     enabled: true,
     accounts: [
         {
-            name: 'default',
+            name: 'recovered-account-0',
             address: 'otl_esm_test',
             component_address: 'component_test',
             public_key: 'ab'.repeat(32),
@@ -67,6 +67,15 @@ describe('L2WalletCard', () => {
         expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3');
         expect(screen.getAllByTestId('l2-history-row')).toHaveLength(1);
         expect(screen.queryByTestId('l2-enable')).not.toBeInTheDocument();
+    });
+
+    it('names the default account Ootle Wallet, not the recovery name', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        serve(enabledState);
+        render(<L2WalletCard />);
+
+        expect(await screen.findByText('l2.account-name')).toBeInTheDocument();
+        expect(screen.queryByText('recovered-account-0')).not.toBeInTheDocument();
     });
 
     it('keeps Burn disabled while the L1 wallet is still scanning', async () => {
