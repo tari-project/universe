@@ -242,6 +242,7 @@
     "processing-text": "Your burn is being broadcast. This can take a few minutes.",
     "completed-title": "Burn broadcast",
     "completed-text": "Once the burn is mined, the L2 claim proof will be written to:",
-    "error-message": "Error burning funds: "
+    "error-message": "Error burning funds: ",
+    "pin-required": "Set a PIN to burn"
   }
 }

@@ -38,7 +38,8 @@
 //!   destination (or L2 claim key) they are approving.
 //! * **Confirmation dialog** — a backend-driven approve/deny dialog emitted to the
 //!   frontend. It is required whenever there is no PIN to fall back on (and always for
-//!   MCP, which additionally refuses to run at all without a configured PIN).
+//!   MCP, which additionally refuses to run at all without a configured PIN). Burns
+//!   also refuse to run without a PIN, so they never fall back to the dialog alone.
 
 use std::fmt;
 use std::str::FromStr;
@@ -285,6 +286,23 @@ pub fn network_supports_burn(network: Network) -> bool {
     matches!(network, Network::Esmeralda)
 }
 
+/// Checks run before a burn shows any dialog or takes the gate permit. A burn needs a
+/// PIN: without one the only gate would be a confirmation dialog, and a script in the
+/// webview can answer that.
+fn check_burn_allowed(network: Network, pin_configured: bool) -> Result<(), TransactionError> {
+    if !network_supports_burn(network) {
+        return Err(TransactionError::Disabled(format!(
+            "Burning to L2 is not available on {network}"
+        )));
+    }
+    if !pin_configured {
+        return Err(TransactionError::NoPinConfigured(
+            "No PIN configured. Set up a PIN before burning to L2.".to_string(),
+        ));
+    }
+    Ok(())
+}
+
 /// Burn funds for L2 behind the same gates as [`gated_send`]. A burn cannot be undone,
 /// so it is never allowed to skip a gate a send would have to pass.
 pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, TransactionError> {
@@ -295,12 +313,10 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
         payment_id,
     } = request;
 
-    let network = Network::get_current_or_user_setting_or_default();
-    if !network_supports_burn(network) {
-        return Err(TransactionError::Disabled(format!(
-            "Burning to L2 is not available on {network}"
-        )));
-    }
+    check_burn_allowed(
+        Network::get_current_or_user_setting_or_default(),
+        PinManager::pin_locked().await,
+    )?;
     let amount_u64 = parse_amount(&amount)?;
     let kind = SpendKind::Burn { claim_public_key };
     let pass = pass_gates(
@@ -567,6 +583,19 @@ mod tests {
                 "{network} must not offer burns"
             );
         }
+    }
+
+    #[test]
+    fn burn_needs_a_pin_and_esmeralda() {
+        assert!(check_burn_allowed(Network::Esmeralda, true).is_ok());
+        assert!(matches!(
+            check_burn_allowed(Network::Esmeralda, false),
+            Err(TransactionError::NoPinConfigured(_))
+        ));
+        assert!(matches!(
+            check_burn_allowed(Network::MainNet, true),
+            Err(TransactionError::Disabled(_))
+        ));
     }
 
     #[test]

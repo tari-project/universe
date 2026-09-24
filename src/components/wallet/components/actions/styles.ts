@@ -40,3 +40,10 @@ export const NavButton = styled(Button).attrs({
         pointer-events: none;
     }
 `;
+
+export const BurnHint = styled.span`
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 70px;
+`;

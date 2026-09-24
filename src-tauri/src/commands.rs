@@ -1639,8 +1639,7 @@ pub async fn send_one_sided_to_stealth_address(
     Ok(())
 }
 
-/// Burn funds for L2. Gated exactly like a send: PIN when one is set, an explicit
-/// confirmation dialog otherwise.
+/// Burn funds for L2. Refused without a PIN; with one, the PIN prompt is the gate.
 #[tauri::command]
 pub async fn burn_to_l2(
     amount: String,
