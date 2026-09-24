@@ -155,18 +155,20 @@ interface L2BurnRowProps {
     onClaim: () => void;
 }
 
-// A burn row: a Pending chip until it's mined, a Waiting chip until the L2 has imported
-// the L1 block it was mined in, then the Claim button. Without the mined height or the
-// L2 height the button shows, so nothing gets stuck.
+// A burn row: a Pending chip until it's mined, a checking status until the L1 node says
+// where it was mined, a Waiting chip until the L2 has imported that block, then the Claim
+// button. Without the L2 height the button shows, so nothing gets stuck.
 function L2BurnRow({ burn, amount, claiming, onClaim }: L2BurnRowProps) {
     const { t } = useTranslation('wallet');
     const stats = useL2WalletStore((s) => s.networkStats);
     const blocksToWait = burn.mined_height === null || !stats ? 0 : Math.max(0, burn.mined_height - stats.block_height);
     const waiting = burn.status === 'claimable' && blocksToWait > 0;
+    const checking = burn.status === 'claimable' && burn.mined_height === null;
 
     let status = t('l2.claim.ready');
     if (burn.status === 'pending') status = t('l2.claim.pending');
     else if (burn.status === 'foreign') status = t('l2.claim.foreign');
+    else if (checking) status = t('l2.claim.checking');
     else if (waiting && stats) {
         status = t('l2.claim.claimable-in', {
             count: blocksToWait,
@@ -198,7 +200,7 @@ function L2BurnRow({ burn, amount, claiming, onClaim }: L2BurnRowProps) {
                         {amount}
                         <CurrencyText>{`XTR`}</CurrencyText>
                     </ValueWrapper>
-                    {burn.status === 'claimable' && !waiting && (
+                    {burn.status === 'claimable' && !waiting && !checking && (
                         <Button
                             size="smaller"
                             variant="black"

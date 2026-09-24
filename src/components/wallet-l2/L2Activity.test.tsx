@@ -18,7 +18,7 @@ const burn = (commitment: string, status: L2Burn['status'], timestamp = 0): L2Bu
     amount: 1_000_000_000,
     proof_file: status === 'pending' ? null : `${commitment}.json`,
     status,
-    mined_height: null,
+    mined_height: status === 'pending' ? null : 0,
     timestamp,
 });
 const serveBurns = (burns: L2Burn[]) =>
@@ -106,6 +106,13 @@ describe('L2Activity', () => {
         expect(rows[1].querySelector('[data-testid="l2-claim-chip"]')).toBeNull();
         expect(screen.getAllByTestId('l2-claim-button')).toHaveLength(1);
         useL2WalletStore.setState({ networkStats: null });
+    });
+
+    it('holds the Claim button while the node has not said where the burn was mined', async () => {
+        serveBurns([{ ...burn('ee'.repeat(32), 'claimable'), mined_height: null }]);
+        render(<L2Activity account={account} filter="all-activity" />);
+        expect(await screen.findByText('l2.claim.checking')).toBeInTheDocument();
+        expect(screen.queryByTestId('l2-claim-button')).not.toBeInTheDocument();
     });
 
     it('shows the empty text when only claimed burns are left', async () => {

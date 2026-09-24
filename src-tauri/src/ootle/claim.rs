@@ -62,7 +62,6 @@ use tari_template_lib::{
 };
 
 use super::{LOG_TARGET, OotleSdk, send::VALIDITY_EPOCHS};
-use crate::wallet::minotari_wallet::BurnRecord;
 
 /// Claimed proof files move here, the same place tari_walletd puts them.
 const CLAIMED_DIR: &str = "claimed";
@@ -87,7 +86,7 @@ pub struct L2Burn {
     /// "claimed" once a claim is accepted on L2. "foreign" instead of "claimable" when
     /// the claim key isn't one of this wallet's L2 accounts.
     pub status: &'static str,
-    /// The L1 height the burn was mined at, when the L1 wallet knows it. The L2 can't
+    /// The L1 height the burn was mined at, once the L1 node has said. The L2 can't
     /// accept its claim until it has imported that block.
     pub mined_height: Option<u64>,
     /// Unix seconds, when the burn was made (its proof file's mtime when the L1 wallet
@@ -156,12 +155,11 @@ impl BurnProof {
 
 /// Every burn the panel knows about, newest first: proof files in `dir` are claimable,
 /// those in its claimed directory are claimed, and `pending` rows without a proof file
-/// yet stay pending. `records` from the L1 wallet db give each burn when it was made and
-/// its mined height.
+/// yet stay pending. `times` from the L1 wallet db say when each burn was made.
 pub fn list_burns(
     dir: &Path,
     pending: Vec<L2Burn>,
-    records: &HashMap<String, BurnRecord>,
+    times: &HashMap<String, u64>,
 ) -> Result<Vec<L2Burn>, anyhow::Error> {
     let mut files = read_burns(dir, "claimable")?;
     files.extend(read_burns(&dir.join(CLAIMED_DIR), "claimed")?);
@@ -172,9 +170,8 @@ pub fn list_burns(
         .chain(files)
         .collect();
     for burn in &mut burns {
-        if let Some(record) = records.get(&burn.commitment) {
-            burn.timestamp = record.created_at;
-            burn.mined_height = record.mined_height;
+        if let Some(&time) = times.get(&burn.commitment) {
+            burn.timestamp = time;
         }
     }
     burns.sort_by_key(|b| std::cmp::Reverse(b.timestamp));
@@ -251,7 +248,7 @@ fn read_burns(dir: &Path, status: &'static str) -> Result<Vec<L2Burn>, anyhow::E
     Ok(burns)
 }
 
-fn read_proof(path: &Path) -> Result<BurnProof, anyhow::Error> {
+pub fn read_proof(path: &Path) -> Result<BurnProof, anyhow::Error> {
     if std::fs::metadata(path)?.len() > MAX_PROOF_BYTES {
         bail!("The burn proof file is too large");
     }
@@ -610,27 +607,21 @@ mod tests {
             .duration_since(SystemTime::UNIX_EPOCH)
             .expect("now")
             .as_secs();
-        let record = |ago: u64, mined_height| BurnRecord {
-            created_at: now - ago,
-            mined_height,
-        };
-        let records = HashMap::from([
-            (old.clone(), record(7200, Some(10))),
-            (new.clone(), record(1800, Some(20))),
-            ("aa".to_string(), record(60, None)),
-            ("bb".to_string(), record(5400, None)),
+        let times = HashMap::from([
+            (old.clone(), now - 7200),
+            (new.clone(), now - 1800),
+            ("aa".to_string(), now - 60),
+            ("bb".to_string(), now - 5400),
         ]);
         let pending = |c: &str| L2Burn::pending(c.to_string(), CLAIM_KEY.to_string(), 1);
 
-        let burns = list_burns(dir, vec![pending("aa"), pending("bb")], &records).expect("burns");
+        let burns = list_burns(dir, vec![pending("aa"), pending("bb")], &times).expect("burns");
 
         let order: Vec<_> = burns.iter().map(|b| b.commitment.as_str()).collect();
         assert_eq!(
             order,
             ["aa", new.as_str(), unknown.as_str(), "bb", old.as_str()]
         );
-        assert_eq!(burns[1].mined_height, Some(20));
-        assert_eq!(burns[2].mined_height, None);
     }
 
     #[test]
