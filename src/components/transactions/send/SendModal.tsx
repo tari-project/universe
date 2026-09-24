@@ -9,6 +9,7 @@ import { StyledForm, Wrapper } from './Send.styles.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { setError as setStoreError } from '@app/store';
 import { queryClient } from '@app/App/queryClient.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 interface SendModalProps {
     section: string;
@@ -21,6 +22,13 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const { t } = useTranslation('wallet');
     const [status, setStatus] = useState<SendStatus>('fields');
     const [isBack, setIsBack] = useState(false);
+
+    // The user should confirm a send exactly once. With a PIN configured, the review
+    // step here is that confirmation and the PIN prompt that follows is authentication.
+    // Without a PIN, the backend send gate raises its own approve/deny dialog showing
+    // the same amount, destination and description, so that dialog is the confirmation
+    // and the form submits straight into it.
+    const hasReviewStep = useWalletStore((s) => s.is_pin_locked);
 
     const methods = useForm<SendInputs>({
         defaultValues,
@@ -49,7 +57,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
 
     const handleFormSubmit = useCallback(
         async (data: SendInputs) => {
-            if (status === 'fields') {
+            if (status === 'fields' && hasReviewStep) {
                 setStatus('reviewing');
                 return;
             }
@@ -78,9 +86,10 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 await queryClient.invalidateQueries({ queryKey: ['transactions'] });
                 setStatus('completed');
             } catch (error) {
-                // The backend gates the send itself (PIN dialog, or an approve/deny dialog
-                // when no PIN is set), so "the user said no" and "nobody answered in time"
-                // are normal outcomes here, not failures worth a scary error toast.
+                // The backend gates the send itself (PIN dialog, or the approve/deny dialog
+                // that stands in for the review step when no PIN is set), so "the user said
+                // no" and "nobody answered in time" are normal outcomes here, not failures
+                // worth a scary error toast.
                 const message = `${error}`;
                 const wasCancelled = /denied by user|PIN entry cancelled/i.test(message);
                 const timedOut = /timed out waiting for confirmation/i.test(message);
@@ -98,7 +107,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 setStatus('fields');
             }
         },
-        [status, setStatus, setError, t]
+        [status, hasReviewStep, setStatus, setError, t]
     );
 
     const getModalTitle = () => {
@@ -113,7 +122,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
 
     const formContentMarkup =
         status === 'fields' ? (
-            <SendForm isBack={isBack} />
+            <SendForm isBack={isBack} hasReviewStep={hasReviewStep} />
         ) : (
             <SendReview
                 status={status}

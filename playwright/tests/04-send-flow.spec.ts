@@ -65,11 +65,11 @@ test.describe('Send Transaction Flow', () => {
     await expect(amountInput).toBeEnabled({ timeout: 5_000 });
 
     // --- Non-numeric amount is rejected (field filters or errors) ---
-    // NOTE: the Review button is enabled once the address validates (the
+    // NOTE: the submit button is enabled once the address validates (the
     // form validates amounts on submit), so button state proves nothing
     // here. Assert the actual containment: the characters never make it
     // into the field, or an inline error shows.
-    const reviewBtn = page.locator(sel.send.reviewButton);
+    const submitBtn = page.locator(sel.send.reviewButton);
     await amountInput.click();
     await amountInput.pressSequentially('abc', { delay: 50 });
     const amountError = page.getByText(/amount is invalid/i);
@@ -81,11 +81,14 @@ test.describe('Send Transaction Flow', () => {
       expect(await amountInput.inputValue()).not.toContain('abc');
     }
 
-    // --- Valid amount + message enables Review ---
+    // --- Valid amount + message enables the submit button ---
+    // This wallet has no PIN, so the button reads "Send Tari" rather than
+    // "Review": the send gate's confirmation dialog is the review step.
     await amountInput.fill('');
     await amountInput.fill('1');
     await page.locator(sel.send.messageInput).fill('validation-check');
-    await expect(reviewBtn).toBeEnabled({ timeout: 5_000 });
+    await expect(submitBtn).toBeEnabled({ timeout: 5_000 });
+    await expect(submitBtn).toHaveText(/Send Tari/i);
 
     // Close the modal without sending — this test only covers validation.
     await page.keyboard.press('Escape');
@@ -106,26 +109,25 @@ test.describe('Send Transaction Flow', () => {
     await amountInput.fill(SEND_AMOUNT);
     await page.locator(sel.send.messageInput).fill(TX_MESSAGE);
 
-    // --- Review ---
-    const reviewBtn = page.locator(sel.send.reviewButton);
-    await expect(reviewBtn).toBeEnabled({ timeout: 5_000 });
-    await reviewBtn.click({ timeout: 5_000 });
+    // --- Submit ---
+    const submitBtn = page.locator(sel.send.reviewButton);
+    await expect(submitBtn).toBeEnabled({ timeout: 5_000 });
+    await submitBtn.click({ timeout: 5_000 });
 
-    await expect(page.getByText(/Review transaction/i).first()).toBeVisible({ timeout: 5_000 });
+    // --- Send gate (#3355): the one and only confirmation ---
+    // This wallet has no PIN, so the backend asks for an explicit approval
+    // instead of a PIN before it signs. The form skips its in-app review step
+    // and submits straight into this dialog, which shows the same amount,
+    // destination and description. Until it is acknowledged the send never
+    // leaves `processing` and the completion copy below never appears.
+    await expect(page.getByText(/Confirm transaction/i).first()).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/Review transaction/i)).toHaveCount(0);
+    await expect(page.locator(sel.send.confirmButton)).toHaveCount(0);
     await expect(page.getByText(VALID_ADDRESS.slice(0, 8)).first()).toBeVisible({ timeout: 5_000 });
     await expect(page.getByText(TX_MESSAGE).first()).toBeVisible({ timeout: 5_000 });
 
-    // --- Confirm ---
-    const confirmBtn = page.locator(sel.send.confirmButton);
-    await confirmBtn.waitFor({ state: 'visible', timeout: 5_000 });
-    await confirmBtn.click({ timeout: 10_000 });
-
-    // --- Send gate (#3355) ---
-    // This wallet has no PIN, so the backend asks for an explicit confirmation
-    // instead of a PIN before it signs. Until this is acknowledged the send
-    // never leaves `processing` and the completion copy below never appears.
     const appConfirmBtn = page.locator(sel.send.appConfirmButton);
-    await appConfirmBtn.waitFor({ state: 'visible', timeout: 30_000 });
+    await appConfirmBtn.waitFor({ state: 'visible', timeout: 5_000 });
     await appConfirmBtn.click({ timeout: 10_000 });
 
     await expect(page.getByText(/on the way/i).first()).toBeVisible({ timeout: 30_000 });
