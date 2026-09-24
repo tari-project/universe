@@ -82,8 +82,6 @@ test.describe('Send Transaction Flow', () => {
     }
 
     // --- Valid amount + message enables the submit button ---
-    // This wallet has no PIN, so the button reads "Send Tari" rather than
-    // "Review": the send gate's confirmation dialog is the review step.
     await amountInput.fill('');
     await amountInput.fill('1');
     await page.locator(sel.send.messageInput).fill('validation-check');
@@ -114,12 +112,8 @@ test.describe('Send Transaction Flow', () => {
     await expect(submitBtn).toBeEnabled({ timeout: 5_000 });
     await submitBtn.click({ timeout: 5_000 });
 
-    // --- Send gate (#3355): the one and only confirmation ---
-    // This wallet has no PIN, so the backend asks for an explicit approval
-    // instead of a PIN before it signs. The form skips its in-app review step
-    // and submits straight into this dialog, which shows the same amount,
-    // destination and description. Until it is acknowledged the send never
-    // leaves `processing` and the completion copy below never appears.
+    // --- Confirm ---
+    // No PIN, so the backend's confirmation dialog is the only review step.
     await expect(page.getByText(/Confirm transaction/i).first()).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText(/Review transaction/i)).toHaveCount(0);
     await expect(page.locator(sel.send.confirmButton)).toHaveCount(0);

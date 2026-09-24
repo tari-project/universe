@@ -117,9 +117,7 @@ impl SendOrigin {
     /// MCP always confirms. The app confirms only when no PIN is configured, because
     /// with a PIN the signing step already prompts for it (and that prompt shows the
     /// same amount/destination details) — asking twice would just train users to click
-    /// through. For the same reason the in-app send form skips its own review step when
-    /// no PIN is configured and submits straight into this dialog, so the user confirms
-    /// a send exactly once either way.
+    /// through.
     fn requires_confirmation(self, pin_configured: bool) -> bool {
         match self {
             SendOrigin::Mcp => true,

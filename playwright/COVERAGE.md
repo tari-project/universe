@@ -60,7 +60,7 @@ backend and `02-mining-flow` asserts the app reaches a ready miner.
 
 | QA item | Status | Where |
 |---|---|---|
-| Send: validation, backend confirmation, broadcast, history, details, copy raw, completion | automated | `04-send-flow` |
+| Send: validation, review, broadcast, history, details, copy raw, completion | automated | `04-send-flow` |
 | Block-height link opens explorer | manual | no explorer for localnet |
 | Receive: modal, QR, Base58⇄emoji toggle, copy address | automated | `08-receive-and-sync` |
 | Receive funds via QR scan from another device | manual | needs a second device; self-send in `04` proves receipt |

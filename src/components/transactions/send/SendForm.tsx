@@ -17,7 +17,6 @@ import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 
 interface Props {
     isBack?: boolean;
-    /** Whether submitting opens the in-app review step, or sends straight away. */
     hasReviewStep?: boolean;
 }
 
