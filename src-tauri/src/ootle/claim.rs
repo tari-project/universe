@@ -86,6 +86,9 @@ pub struct L2Burn {
     /// "claimed" once a claim is accepted on L2. "foreign" instead of "claimable" when
     /// the claim key isn't one of this wallet's L2 accounts.
     pub status: &'static str,
+    /// The L1 height the burn was mined at, when the L1 wallet knows it. The L2 can't
+    /// accept its claim until it has imported that block.
+    pub mined_height: Option<u64>,
 }
 
 /// How a submitted claim ended on L2.
@@ -125,6 +128,7 @@ impl L2Burn {
             amount,
             proof_file: None,
             status: "pending",
+            mined_height: None,
         }
     }
 }
@@ -226,6 +230,7 @@ fn read_burns(
                     amount: proof.claim_proof.value,
                     proof_file: Some(file.to_string()),
                     status,
+                    mined_height: None,
                 },
             )),
             Err(e) => warn!(target: LOG_TARGET, "Skipping burn proof {file}: {e}"),

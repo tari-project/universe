@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { useUIStore } from '@app/store/useUIStore.ts';
+import { useL2WalletStore } from '@app/store/useL2WalletStore.ts';
 import type { L2Account, L2Burn } from '@app/types/events-payloads.ts';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
@@ -20,11 +21,22 @@ import {
 
 const sectionStyle = { display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0' } as const;
 
+const formatWait = (seconds: number) => {
+    const minutes = Math.ceil(seconds / 60);
+    return minutes < 60 ? `${minutes} min` : `${Math.round(minutes / 60)} h`;
+};
+
 export default function L2ClaimBurns({ account }: { account: L2Account }) {
     const { t } = useTranslation('wallet');
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const [burns, setBurns] = useState<L2Burn[]>([]);
     const [claiming, setClaiming] = useState<string | null>(null);
+    const stats = useL2WalletStore((s) => s.networkStats);
+
+    // The L2 rejects a claim until it has imported the L1 block the burn was mined in.
+    // Without the mined height or the L2 height the button stays, so nothing gets stuck.
+    const blocksToWait = (burn: L2Burn) =>
+        burn.mined_height === null || !stats ? 0 : Math.max(0, burn.mined_height - stats.block_height);
 
     // Every L2 state update hands us a new account, including the one sent when a claim
     // is accepted and its burn moves to claimed, so the list follows the state.
@@ -49,6 +61,10 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
     function status(burn: L2Burn) {
         if (burn.status === 'pending') return t('l2.claim.pending');
         if (burn.status === 'foreign') return t('l2.claim.foreign');
+        const count = blocksToWait(burn);
+        if (count > 0 && stats) {
+            return t('l2.claim.claimable-in', { count, time: formatWait(count * stats.block_target_secs) });
+        }
         return t('l2.claim.ready');
     }
 
@@ -83,7 +99,7 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
                                         : formatNumber(burn.amount, FormatPreset.XTM_COMPACT).toLowerCase()}
                                     <CurrencyText>{`XTR`}</CurrencyText>
                                 </ValueWrapper>
-                                {burn.status === 'claimable' && (
+                                {burn.status === 'claimable' && !blocksToWait(burn) && (
                                     <Button
                                         size="smaller"
                                         variant="black"

@@ -309,6 +309,8 @@
       "claiming": "Claiming...",
       "pending": "Waiting for the burn to be mined",
       "ready": "Ready to claim",
+      "claimable-in_one": "Claimable in {{count}} block, about {{time}}",
+      "claimable-in_other": "Claimable in {{count}} blocks, about {{time}}",
       "foreign": "Sent to a claim key this wallet doesn't hold",
       "rejected": "Claim rejected",
       "confirmed": "Claim confirmed",

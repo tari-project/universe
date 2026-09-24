@@ -292,7 +292,14 @@ async fn listed_burns() -> Result<Vec<L2Burn>, TransactionError> {
             L2Burn::pending(hex::encode(row.commitment), row.claim_public_key, amount)
         })
         .collect();
-    claim::list_burns(&burn_proofs_dir()?, pending).map_err(wallet_error)
+    let mut burns = claim::list_burns(&burn_proofs_dir()?, pending).map_err(wallet_error)?;
+    let heights = MinotariWalletManager::burn_mined_heights()
+        .await
+        .map_err(wallet_error)?;
+    for burn in &mut burns {
+        burn.mined_height = heights.get(&burn.commitment).copied();
+    }
+    Ok(burns)
 }
 
 /// A new burn or proof file is an L1 side change, so no wallet event reports it. Sends

@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
-import type { L2Account, L2Burn } from '@app/types/events-payloads.ts';
+import type { L2Account, L2Burn, L2NetworkStats } from '@app/types/events-payloads.ts';
 import L2ClaimBurns from './L2ClaimBurns';
+import { useL2WalletStore } from '@app/store/useL2WalletStore.ts';
 import { useToastStore } from '@app/components/ToastStack/useToastStore.tsx';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
@@ -14,6 +15,7 @@ const burn = (commitment: string, status: L2Burn['status']): L2Burn => ({
     amount: 1_000_000_000,
     proof_file: status === 'pending' ? null : `${commitment}.json`,
     status,
+    mined_height: null,
 });
 const REJECTION = 'L2 claim failed: ownership proof validation failed';
 
@@ -61,6 +63,26 @@ describe('L2ClaimBurns', () => {
         render(<L2ClaimBurns account={account} />);
         expect(await screen.findByText('l2.claim.foreign')).toBeInTheDocument();
         expect(screen.queryByTestId('l2-claim-button')).not.toBeInTheDocument();
+    });
+
+    it('hides Claim until the L2 has imported the block the burn was mined in', async () => {
+        useL2WalletStore.setState({
+            networkStats: { block_height: 1000, block_target_secs: 120 } as L2NetworkStats,
+        });
+        vi.mocked(invoke).mockImplementation((async (cmd: string) =>
+            cmd === 'l2_claimable_burns'
+                ? [
+                      { ...burn('ee'.repeat(32), 'claimable'), mined_height: 1030 },
+                      { ...burn('ff'.repeat(32), 'claimable'), mined_height: 1000 },
+                  ]
+                : undefined) as typeof invoke);
+        render(<L2ClaimBurns account={account} />);
+        const rows = await screen.findAllByTestId('l2-claim-row');
+        expect(rows[0]).toHaveTextContent('l2.claim.claimable-in');
+        expect(rows[0].querySelector('[data-testid="l2-claim-button"]')).toBeNull();
+        expect(rows[1]).toHaveTextContent('l2.claim.ready');
+        expect(screen.getAllByTestId('l2-claim-button')).toHaveLength(1);
+        useL2WalletStore.setState({ networkStats: null });
     });
 
     it('renders nothing without burns to claim', async () => {

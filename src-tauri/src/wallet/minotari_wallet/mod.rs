@@ -80,7 +80,7 @@ use minotari_wallet::{
     },
 };
 use r2d2::PooledConnection;
-use r2d2_sqlite::SqliteConnectionManager;
+use r2d2_sqlite::{SqliteConnectionManager, rusqlite::Connection};
 use serde::Serialize;
 use std::{
     collections::{HashMap, HashSet},
@@ -422,6 +422,11 @@ impl MinotariWalletManager {
     /// Burns broadcast but not yet mined deep enough for their claim proof to be written.
     pub async fn pending_burns() -> Result<Vec<DbBurnProof>, anyhow::Error> {
         Ok(get_pending_burn_proofs(&*Self::get_db_connection().await?)?)
+    }
+
+    /// The L1 height each of this wallet's mined burns went into, by commitment (hex).
+    pub async fn burn_mined_heights() -> Result<HashMap<String, u64>, anyhow::Error> {
+        burn_mined_heights(&*Self::get_db_connection().await?)
     }
 
     /// Completes pending burn proofs with their kernel merkle proof once the burn is
@@ -1316,10 +1321,61 @@ fn confirmation_status(confirmations: u64, blocks_until_unlocked: u64) -> Transa
     }
 }
 
+/// A burn's transaction is recorded with the burned output's hash, hex, as its
+/// sent_output_hash, and gets its mined_height once the wallet sees it in a block.
+fn burn_mined_heights(conn: &Connection) -> Result<HashMap<String, u64>, anyhow::Error> {
+    let mut stmt = conn.prepare(
+        "SELECT b.commitment, c.mined_height FROM burn_proofs b
+         JOIN completed_transactions c ON c.sent_output_hash = lower(hex(b.output_hash))
+         WHERE c.mined_height IS NOT NULL",
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok((row.get::<_, Vec<u8>>(0)?, row.get::<_, i64>(1)?))
+    })?;
+    rows.map(|row| {
+        let (commitment, height) = row?;
+        Ok((hex::encode(commitment), u64::try_from(height)?))
+    })
+    .collect()
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{blocks_to_report, confirmation_status, scan_progress_percent};
+    use super::{blocks_to_report, burn_mined_heights, confirmation_status, scan_progress_percent};
     use minotari_wallet::transactions::TransactionDisplayStatus;
+
+    #[test]
+    fn a_burns_mined_height_comes_from_its_transaction() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let pool = minotari_wallet::db::init_db(dir.path().join("wallet.db")).expect("db");
+        let conn = pool.get().expect("connection");
+        let burn = |id: u8, height: Option<i64>| {
+            let hash = [id; 32];
+            conn.execute(
+                "INSERT INTO burn_proofs (account_id, output_hash, commitment, claim_public_key,
+                   ownership_proof_nonce, ownership_proof_sig, kernel_excess, kernel_excess_nonce,
+                   kernel_excess_sig, sender_offset_public_key, encrypted_data, value)
+                 VALUES (1, ?1, ?2, '', x'', x'', x'', x'', x'', x'', x'', 1)",
+                (hash.as_slice(), [id + 1; 32].as_slice()),
+            )
+            .expect("burn proof");
+            conn.execute(
+                "INSERT INTO completed_transactions (id, account_id, pending_tx_id, status,
+                   kernel_excess, serialized_transaction, sent_output_hash, mined_height)
+                 VALUES (?1, 1, '', 'completed', x'', x'', ?2, ?3)",
+                (i64::from(id), hex::encode(hash), height),
+            )
+            .expect("completed transaction");
+        };
+        conn.execute_batch("PRAGMA foreign_keys = OFF")
+            .expect("pragma");
+        burn(1, Some(914_607));
+        burn(3, None);
+
+        let heights = burn_mined_heights(&conn).expect("heights");
+        assert_eq!(heights.len(), 1);
+        assert_eq!(heights.get(&hex::encode([2u8; 32])), Some(&914_607));
+    }
 
     #[test]
     fn a_mined_send_at_the_required_depth_is_confirmed_unless_still_locked() {
