@@ -46,9 +46,15 @@ use minotari_wallet::{
     DisplayedTransaction, PauseReason, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
     TransactionHistoryService,
     db::{AccountBalance, get_account_by_name, get_latest_scanned_tip_block_by_account},
-    get_balance, init_db,
+    get_balance,
+    http::WalletHttpClient,
+    init_db,
     tasks::unlocker::TransactionUnlocker,
-    transactions::{TransactionSource, one_sided_transaction::Recipient},
+    transactions::{
+        TransactionSource,
+        monitor::{MonitoringState, TransactionMonitor},
+        one_sided_transaction::Recipient,
+    },
     utils::init_wallet::init_with_view_key,
 };
 use r2d2::PooledConnection;
@@ -556,6 +562,7 @@ impl MinotariWalletManager {
                     // between available/locked/immature without a single transaction
                     // event, so the balance is re-read once per cycle regardless.
                     if generation == INSTANCE.scan_generation.load(Ordering::SeqCst) {
+                        Self::refresh_transaction_confirmations().await;
                         BalanceTracker::current()
                             .update_from_transactions(Self::get_latest_account_balance().await)
                             .await;
@@ -596,6 +603,50 @@ impl MinotariWalletManager {
             });
 
         Ok(())
+    }
+
+    /// Moves displayed transactions on from Unconfirmed once the scan is past their
+    /// confirmation depth, and tells the frontend about each one.
+    ///
+    /// The library's transaction monitor does this, but the unified scan loop only
+    /// calls it behind the same never-true condition that hides its progress
+    /// events, so on its own nothing the wallet scans ever reads as Confirmed.
+    async fn refresh_transaction_confirmations() {
+        let scanned_height = *INSTANCE.last_scanned_height.read().await;
+        if scanned_height == 0 {
+            return;
+        }
+        let updated: Result<Vec<DisplayedTransaction>, anyhow::Error> = async {
+            let account_id = Self::owner_account_id().await?;
+            let pool = INSTANCE.database_manager.get_pool().await?;
+            let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
+            // A fresh state rather than one initialised from the database: the
+            // monitor then updates confirmations only and leaves pending sends alone.
+            let monitor =
+                TransactionMonitor::new(MonitoringState::new(), REQUIRED_CONFIRMATIONS, None);
+            let result = monitor
+                .monitor_if_needed(&client, &pool, account_id, scanned_height)
+                .await?;
+            Ok(result.updated_displayed_transactions)
+        }
+        .await;
+        match updated {
+            Ok(transactions) => {
+                if !transactions.is_empty() {
+                    info!(
+                        target: LOG_TARGET,
+                        "{} transactions updated against scanned height {scanned_height}",
+                        transactions.len()
+                    );
+                }
+                for tx in transactions {
+                    EventsEmitter::emit_wallet_transaction_updated(tx).await;
+                }
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Could not refresh transaction confirmations: {e:?}");
+            }
+        }
     }
 
     async fn process_scan_events(
