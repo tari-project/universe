@@ -37,6 +37,7 @@ import {
     QROutside,
     QRSizer,
 } from '@app/components/transactions/receive/Address.style.ts';
+import L2ClaimBurns from './L2ClaimBurns.tsx';
 import L2History from './L2History.tsx';
 import L2SendModal from './L2SendModal.tsx';
 
@@ -128,6 +129,8 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                     </BurnHint>
                 </NavWrapper>
             </TabsWrapper>
+
+            <L2ClaimBurns account={account} />
 
             <L2History account={account} />
 

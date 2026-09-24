@@ -58,10 +58,11 @@ use minotari_wallet::{
     DisplayedTransaction, PauseReason, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
     TransactionHistoryService,
     db::{
-        AccountBalance, AccountRow, get_account_by_name,
+        AccountBalance, AccountRow, DbBurnProof, get_account_by_name,
         get_displayed_transactions_needing_confirmation_update,
-        get_latest_scanned_tip_block_by_account, mark_completed_transaction_as_broadcasted,
-        mark_completed_transaction_as_rejected, update_displayed_transaction_confirmations,
+        get_latest_scanned_tip_block_by_account, get_pending_burn_proofs,
+        mark_completed_transaction_as_broadcasted, mark_completed_transaction_as_rejected,
+        update_displayed_transaction_confirmations,
     },
     get_balance,
     http::WalletHttpClient,
@@ -414,8 +415,13 @@ impl MinotariWalletManager {
         })
     }
 
-    fn burn_proofs_dir() -> Result<PathBuf, anyhow::Error> {
+    pub fn burn_proofs_dir() -> Result<PathBuf, anyhow::Error> {
         Ok(MinotariWalletDatabaseManager::minotari_wallet_dir()?.join("burn_proofs"))
+    }
+
+    /// Burns broadcast but not yet mined deep enough for their claim proof to be written.
+    pub async fn pending_burns() -> Result<Vec<DbBurnProof>, anyhow::Error> {
+        Ok(get_pending_burn_proofs(&*Self::get_db_connection().await?)?)
     }
 
     /// Completes pending burn proofs with their kernel merkle proof once the burn is

@@ -285,6 +285,17 @@
       "processing-text": "Working out the fee and submitting. This can take a minute.",
       "completed-title": "Sent",
       "completed-text": "Your L2 transaction was submitted."
+    },
+    "claim": {
+      "title": "Burns to claim",
+      "commitment": "Burn commitment",
+      "review-label": "You are claiming",
+      "cta": "Claim",
+      "claiming": "Claiming...",
+      "pending": "Waiting for the burn to be mined",
+      "submitted": "Claim submitted. The XTR shows up once it's confirmed.",
+      "approve": "Approve claim",
+      "approve-subtitle": "Enter your PIN to claim this burn into your Layer 2 wallet. If you did not start this, close this dialog."
     }
   }
 }

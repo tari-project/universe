@@ -49,7 +49,7 @@ use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::network_utils::NetworkExt;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
-use crate::ootle::{L2WalletState, OotleWalletManager};
+use crate::ootle::{L2Burn, L2WalletState, OotleWalletManager};
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
@@ -65,8 +65,8 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::minotari_wallet::BurnReceipt;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::wallet::send_gate::{
-    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_send,
-    gated_send,
+    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_claim,
+    gated_l2_send, gated_send,
 };
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
@@ -1708,6 +1708,25 @@ pub fn l2_validate_address(address: String) -> Result<(), String> {
 #[tauri::command]
 pub async fn l2_get_state() -> Result<L2WalletState, String> {
     OotleWalletManager::state().await.map_err(|e| e.to_string())
+}
+
+/// Burns to L2 from this wallet, pending, claimable or claimed.
+#[tauri::command]
+pub async fn l2_claimable_burns() -> Result<Vec<L2Burn>, String> {
+    OotleWalletManager::burns().await.map_err(|e| e.to_string())
+}
+
+/// Claim a burn on L2 by its commitment. Refused without a PIN; with one, the PIN
+/// prompt is the gate. Returns the L2 transaction id.
+#[tauri::command]
+pub async fn l2_claim_burn(
+    app_handle: tauri::AppHandle,
+    commitment: String,
+) -> Result<String, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_claim_burn] called with args: (commitment: {commitment:?})");
+    gated_l2_claim(app_handle, SendOrigin::App.new_request_id(), commitment)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

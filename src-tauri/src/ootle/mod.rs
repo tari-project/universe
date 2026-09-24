@@ -26,7 +26,7 @@
 //! L1 seed, so a fresh store stays "not enabled" until the user enables L2 behind the
 //! PIN, which restores the SDK seed from the L1 seed words and starts the services.
 
-use std::{future::Future, path::Path, str::FromStr, sync::LazyLock};
+use std::{collections::HashMap, future::Future, path::Path, str::FromStr, sync::LazyLock};
 
 use log::{error, info};
 use tari_common::configuration::Network;
@@ -75,12 +75,17 @@ use crate::{
     internal_wallet::{InternalWallet, to_wallet_cipher_seed},
     pin::PinManager,
     tasks_tracker::TasksTrackers,
-    wallet::send_gate::{TransactionError, check_l2_allowed, network_supports_l2},
+    wallet::{
+        minotari_wallet::MinotariWalletManager,
+        send_gate::{TransactionError, check_l2_allowed, network_supports_l2},
+    },
 };
 
+mod claim;
 mod send;
 mod state;
 
+pub use claim::{BurnProof, L2Burn};
 pub use state::L2WalletState;
 
 const LOG_TARGET: &str = "tari::universe::ootle";
@@ -200,12 +205,7 @@ impl OotleWalletManager {
         pin_context: PinPromptContext,
     ) -> Result<String, TransactionError> {
         let sdk = started_sdk().await?;
-        let transactions = INSTANCE
-            .transactions
-            .lock()
-            .await
-            .clone()
-            .ok_or_else(|| TransactionError::Disabled("Layer 2 is not enabled".to_string()))?;
+        let transactions = transaction_service().await?;
         let account = ComponentAddress::from_str(account)
             .map_err(wallet_error)
             .and_then(|component| {
@@ -224,6 +224,65 @@ impl OotleWalletManager {
         emit_state(&sdk).await;
         Ok(id.to_string())
     }
+
+    /// Burns to L2 made from this wallet and whether they can be claimed yet. Refused
+    /// without a PIN or off Esmeralda.
+    pub async fn burns() -> Result<Vec<L2Burn>, TransactionError> {
+        check_l2_allowed(
+            Network::get_current_or_user_setting_or_default(),
+            PinManager::pin_locked().await,
+        )?;
+        let pending = MinotariWalletManager::pending_burns()
+            .await
+            .map_err(wallet_error)?
+            .into_iter()
+            .map(|row| {
+                let amount = u64::try_from(row.value).unwrap_or_default();
+                L2Burn::pending(hex::encode(row.commitment), row.claim_public_key, amount)
+            })
+            .collect();
+        claim::list_burns(&burn_proofs_dir()?, pending).map_err(wallet_error)
+    }
+
+    /// The claimable proof for the burn with this commitment, and its file name.
+    pub fn find_claimable_burn(commitment: &str) -> Result<(String, BurnProof), TransactionError> {
+        claim::find_claimable(&burn_proofs_dir()?, commitment).map_err(wallet_error)
+    }
+
+    /// Claims a burn into the wallet account its claim key belongs to once the user
+    /// enters their PIN, and returns the L2 transaction id. The caller has already
+    /// passed the send gate.
+    pub async fn claim_burn(
+        app_handle: &AppHandle,
+        file_name: String,
+        proof: BurnProof,
+        pin_context: PinPromptContext,
+    ) -> Result<String, TransactionError> {
+        let sdk = started_sdk().await?;
+        let transactions = transaction_service().await?;
+        PinManager::get_validated_pin(app_handle, Some(pin_context))
+            .await
+            .map_err(wallet_error)?;
+        let id = claim::claim_burn(&sdk, &transactions, proof, file_name)
+            .await
+            .map_err(|e| TransactionError::WalletError(format!("L2 claim failed: {e}")))?;
+        info!(target: LOG_TARGET, "L2 claim submitted: {id}");
+        emit_state(&sdk).await;
+        Ok(id.to_string())
+    }
+}
+
+fn burn_proofs_dir() -> Result<std::path::PathBuf, TransactionError> {
+    MinotariWalletManager::burn_proofs_dir().map_err(wallet_error)
+}
+
+async fn transaction_service() -> Result<TransactionServiceHandle, TransactionError> {
+    INSTANCE
+        .transactions
+        .lock()
+        .await
+        .clone()
+        .ok_or_else(|| TransactionError::Disabled("Layer 2 is not enabled".to_string()))
 }
 
 async fn started_sdk() -> Result<OotleSdk, TransactionError> {
@@ -337,8 +396,8 @@ fn upsert_genesis_resources(sdk: &OotleSdk) -> Result<(), anyhow::Error> {
 }
 
 /// Spawns the wallet services the way tari_walletd does, minus the template monitor,
-/// burn claiming and the wasm optimizer. They run on the wallet phase tracker so they
-/// stop with the L1 wallet.
+/// automatic burn claiming and the wasm optimizer. They run on the wallet phase tracker
+/// so they stop with the L1 wallet.
 async fn start_services(sdk: &OotleSdk, needs_recovery: bool) -> Result<(), anyhow::Error> {
     let phase = &TasksTrackers::current().wallet_phase;
     let tracker = phase.get_task_tracker().await;
@@ -390,11 +449,13 @@ async fn start_services(sdk: &OotleSdk, needs_recovery: bool) -> Result<(), anyh
 }
 
 /// Sends the whole L2 state to the frontend now and again whenever the wallet reports
-/// an account, balance or transaction change.
+/// an account, balance or transaction change, and marks accepted burn claims claimed.
 async fn emit_state_on_events(
     sdk: OotleSdk,
     mut events: broadcast::Receiver<WalletEvent>,
 ) -> Result<(), anyhow::Error> {
+    let proof_dir = MinotariWalletManager::burn_proofs_dir()?;
+    let mut claims = HashMap::new();
     emit_state(&sdk).await;
     loop {
         match events.recv().await {
@@ -403,7 +464,13 @@ async fn emit_state_on_events(
                 | WalletEvent::TransactionRequestCreated(_)
                 | WalletEvent::UtxoRecoveryStarted(_),
             ) => {}
-            Ok(_) | Err(broadcast::error::RecvError::Lagged(_)) => emit_state(&sdk).await,
+            // A claim's proof file moves before the state goes out, so the panel's burn
+            // list refreshes with it gone.
+            Ok(event) => {
+                claim::track_claim(&proof_dir, &mut claims, &event);
+                emit_state(&sdk).await;
+            }
+            Err(broadcast::error::RecvError::Lagged(_)) => emit_state(&sdk).await,
             Err(broadcast::error::RecvError::Closed) => return Ok(()),
         }
     }

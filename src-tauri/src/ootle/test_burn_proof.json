@@ -1,0 +1,28 @@
+{
+  "claim_proof": {
+    "burn_public_key": "7c29fa218284a767bedb04b2fb44e55fa22fc01c201b56f30d1d79357a2e4d76",
+    "commitment": "dae29ac8a7d02f1adc193c5c68cab83a33d2dff3f7ac78c5c3434f5189126f42",
+    "ownership_proof": {
+      "public_nonce": "5ced9470c5dd34edb3fa23e104eb9bb41fba38102eec780a7fd138c1b8da9479",
+      "signature": "b699203dcc29c1394e3254af37a55de86462be54de35e896ba1bfb9fe87a200b"
+    },
+    "encoded_merkle_proof": {
+      "block_hash": "8UrhMlJwax6664SCFBD0e5DJv8LZ7WWf73RWN0gAZsA=",
+      "encoded_merkle_proof": "69ocAAAAAAACAAAAAAAAACAAAAAAAAAADfVZggXLsnnoeNn6tNK6b5vSoz5NaEejUIQRBDvhmm0gAAAAAAAAADAnrHbD4wr8YXvQQ+qNP5pHp4L470qRkbsX44SuwpGJDAAAAAAAAAAgAAAAAAAAAL3njv47ju/MKaASMH3pTrXoZ9KLv2caTSSm86Mbk62FIAAAAAAAAAB2Swfi+9PCEeAnVepxQcSt1nbgJGKkEDAvJv0VIeVuKiAAAAAAAAAAkdkVGIWN0dwwFsJ16MwZ3E+sGNu5leMX3+JGiiiOSGEgAAAAAAAAAON653/PIV0oOAupCADajrnEKz6jOsf2hg+owGQQb01EIAAAAAAAAAB4+yfck8rBsAZGbUkX1QE4jJjrnYtGk/DpwDbkpYoEeSAAAAAAAAAAy3ar9XeGHxxDSoKeJcHiRSL+SGgMi+kc3sqrINowQQcgAAAAAAAAAPFm2IK8pvP+C269oFGQWWHkcRJ/gmuRcEN8uQFRCra0IAAAAAAAAADfabosJmypPD45c4G7Ciuz5N1EfnEq1cfye7z0WWA3QiAAAAAAAAAA5IWEO29FhQttCgXAaIKSsMax8CK8zeogx3t7kcpIaNkgAAAAAAAAAA5uI5D8uNPKzez2CLBQYA2wc7nqItXipfePj3f2OtwYIAAAAAAAAADLw8W+JPirYHdDBXM9olZHP4UePsBU8kHib3KDgW0mFyAAAAAAAAAAS6QQxk5CHJS13YtZ7ZIJZjErz0qkCp3oleyNFNntKOQ=",
+      "leaf_index": 945530
+    },
+    "kernel": {
+      "version": 0,
+      "fee": 710,
+      "lock_height": 0,
+      "excess": "74b027a0013f2ef72871a4185df691c55d0c4c3cc8355bbf2da9abae2e5a8b4d",
+      "excess_sig": {
+        "public_nonce": "265f0abfc662126588c880b5d2403d61ddd74ea797a5ad17b64cad28865dfe27",
+        "signature": "a06a511042bf48902fccd7979a29b8828c3c3f7dc9cc29cfd05eb90da2100105"
+      }
+    },
+    "value": 1000000000,
+    "sender_offset_public_key": "8abb186d28d977095b9511147b34c9fdc7522975159fcb0b1cbadcd90f99be6e"
+  },
+  "encrypted_data": "5fvMV1WXgxFBzcZfH8N5OW0vHHqPZHuiYQXIR3T71c8GO/yNoD+wydQXF1V1lBqg8vRTFgoKRWyalTkZmN0BVlG8CCRmUjKoOEpaiW806K3vWFlg8qL6ohaqH7Ly44C3d9rzj8VnF59fyxeQY0Ui"
+}

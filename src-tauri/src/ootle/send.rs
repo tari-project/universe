@@ -47,7 +47,7 @@ use tari_template_lib::{
 use super::OotleSdk;
 
 /// Same as tari_walletd: about an hour at the 20 minute epoch target.
-const VALIDITY_EPOCHS: u64 = 3;
+pub(super) const VALIDITY_EPOCHS: u64 = 3;
 /// Same as tari_walletd: dry runs before giving up on the fee settling.
 const MAX_FEE_ROUNDS: usize = 5;
 

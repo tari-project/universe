@@ -494,6 +494,8 @@ fn main() {
             commands::burn_to_l2,
             commands::enable_l2_wallet,
             commands::l2_get_state,
+            commands::l2_claimable_burns,
+            commands::l2_claim_burn,
             commands::l2_send,
             commands::l2_validate_address,
             commands::verify_address_for_send,

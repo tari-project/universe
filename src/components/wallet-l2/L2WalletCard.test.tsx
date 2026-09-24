@@ -30,7 +30,8 @@ const enabledState: L2WalletState = {
 const serve = (state: L2WalletState) =>
     vi
         .mocked(invoke)
-        .mockImplementation((async (cmd: string) => (cmd === 'l2_get_state' ? state : undefined)) as typeof invoke);
+        .mockImplementation((async (cmd: string) =>
+            cmd === 'l2_get_state' ? state : cmd === 'l2_claimable_burns' ? [] : undefined) as typeof invoke);
 
 describe('L2WalletCard', () => {
     beforeEach(() => {

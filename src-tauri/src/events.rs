@@ -225,10 +225,10 @@ pub struct McpServerStatusPayload {
 #[derive(Debug, Serialize, Clone)]
 pub struct McpTransactionConfirmationPayload {
     pub request_id: String,
-    /// `"send"`, `"burn"` or `"l2_send"`; decides how `destination` is labelled in the dialog.
+    /// `"send"`, `"burn"`, `"l2_send"` or `"l2_claim"`; decides how `destination` is labelled in the dialog.
     pub kind: String,
     /// The recipient address for a send, the L2 claim public key (hex) for a burn, the
-    /// Ootle address for an L2 send.
+    /// Ootle address for an L2 send, the burn commitment (hex) for an L2 claim.
     pub destination: String,
     pub amount_micro_minotari: u64,
     pub amount_display: String,
@@ -263,6 +263,11 @@ pub enum PinPromptContext {
         amount_micro_minotari: u64,
         destination: String,
         account: String,
+    },
+    /// Claiming an L1 burn of `amount_micro_minotari` on L2, `commitment` (hex) being the burn.
+    L2Claim {
+        amount_micro_minotari: u64,
+        commitment: String,
     },
 }
 

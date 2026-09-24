@@ -167,14 +167,22 @@ export interface L2SendPinPromptContext {
     account: string;
 }
 
+/** Claiming an L1 burn of `amount_micro_minotari` on L2. `commitment` (hex) identifies the burn. */
+export interface L2ClaimPinPromptContext {
+    kind: 'l2_claim';
+    amount_micro_minotari: number;
+    commitment: string;
+}
+
 export type PinPromptContext =
     | SendPinPromptContext
     | BurnPinPromptContext
     | L2SendPinPromptContext
+    | L2ClaimPinPromptContext
     | RestoreWalletDetailsPinPromptContext
     | SeedNeedsPinPromptContext;
 
-export type SpendKind = 'send' | 'burn' | 'l2_send';
+export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim';
 
 /** XTR in micro units. Revealed sits in the account vault, confidential in stealth UTXOs. */
 export interface L2Balance {
@@ -210,6 +218,15 @@ export interface L2Account {
     balance: L2Balance;
     history: L2BalanceChange[];
     transactions: L2Transaction[];
+}
+
+/** A burn to L2 from this wallet. `amount` is micro XTM burned; `proof_file` is set once the proof is written. */
+export interface L2Burn {
+    commitment: string;
+    claim_public_key: string;
+    amount: number;
+    proof_file: string | null;
+    status: 'pending' | 'claimable' | 'claimed';
 }
 
 export interface L2WalletState {

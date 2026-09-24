@@ -24,17 +24,18 @@
 //!
 //! Every caller that can move funds (the `send_one_sided_to_stealth_address` Tauri
 //! command used by the in-app send flow and by the tapplet bridge, the MCP
-//! `send_transaction` tool, the `burn_to_l2` command and the `l2_send` command) goes
-//! through the same gates: [`gated_send`], [`gated_burn`] and [`gated_l2_send`] share
-//! [`pass_gates`]. Two user-facing gates exist:
+//! `send_transaction` tool, the `burn_to_l2` command, the `l2_send` command and the
+//! `l2_claim_burn` command) goes through the same gates: [`gated_send`], [`gated_burn`],
+//! [`gated_l2_send`] and [`gated_l2_claim`] share [`pass_gates`]. Two user-facing gates exist:
 //!
 //! * **PIN** — when a PIN is configured it is requested (and validated, with lockout on
 //!   repeated failures) by [`crate::internal_wallet::InternalWallet::get_signing_wallet`],
 //!   which [`crate::wallet::minotari_wallet::MinotariWalletManager::send_one_sided_transaction`]
 //!   and [`crate::wallet::minotari_wallet::MinotariWalletManager::burn_to_l2`] call
 //!   before they create (and so lock the inputs of) the transaction, and
-//!   [`crate::ootle::OotleWalletManager::send_xtr`] asks for it before it builds the L2
-//!   transfer. That is the real
+//!   [`crate::ootle::OotleWalletManager::send_xtr`] and
+//!   [`crate::ootle::OotleWalletManager::claim_burn`] ask for it before they build the L2
+//!   transaction. That is the real
 //!   gate: a script running in the webview does not know the PIN. The prompt carries a
 //!   [`crate::events::PinPromptContext`] so the user can see the amount and the
 //!   destination (or L2 claim key) they are approving.
@@ -186,6 +187,9 @@ pub enum SpendKind {
         destination: String,
         account: String,
     },
+    L2Claim {
+        commitment: String,
+    },
 }
 
 impl SpendKind {
@@ -194,16 +198,19 @@ impl SpendKind {
             SpendKind::Send { .. } => "send",
             SpendKind::Burn { .. } => "burn",
             SpendKind::L2Send { .. } => "l2_send",
+            SpendKind::L2Claim { .. } => "l2_claim",
         }
     }
 
     /// The counterparty shown to the user: the address for a send, the L2 claim key
     /// for a burn. A burn has no recipient, and the claim key is the only thing that
-    /// can ever get the funds back, so that is what the user must be asked to check.
+    /// can ever get the funds back, so that is what the user must be asked to check. A
+    /// claim shows the commitment of the burn being claimed.
     pub fn counterparty(&self) -> &str {
         match self {
             SpendKind::Send { destination } | SpendKind::L2Send { destination, .. } => destination,
             SpendKind::Burn { claim_public_key } => claim_public_key,
+            SpendKind::L2Claim { commitment } => commitment,
         }
     }
 
@@ -231,13 +238,17 @@ impl SpendKind {
                 destination: destination.clone(),
                 account: account.clone(),
             },
+            SpendKind::L2Claim { commitment } => PinPromptContext::L2Claim {
+                amount_micro_minotari,
+                commitment: commitment.clone(),
+            },
         }
     }
 
     /// The currency the amount is in: XTR on L2, XTM on L1.
     fn currency(&self) -> &'static str {
         match self {
-            SpendKind::L2Send { .. } => "XTR",
+            SpendKind::L2Send { .. } | SpendKind::L2Claim { .. } => "XTR",
             SpendKind::Send { .. } | SpendKind::Burn { .. } => "XTM",
         }
     }
@@ -430,6 +441,40 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
         unreachable!("gated_l2_send builds an L2Send kind")
     };
     OotleWalletManager::send_xtr(&app_handle, &account, address, amount_u64, pass.pin_context).await
+}
+
+/// Claim an L1 burn on L2 behind the same gates as [`gated_l2_send`]. Refused without a
+/// PIN or off Esmeralda, and only for a burn whose proof file is there to claim. Returns
+/// the L2 transaction id.
+pub async fn gated_l2_claim(
+    app_handle: tauri::AppHandle,
+    request_id: String,
+    commitment: String,
+) -> Result<String, TransactionError> {
+    check_l2_allowed(
+        Network::get_current_or_user_setting_or_default(),
+        PinManager::pin_locked().await,
+    )?;
+    let (file_name, proof) = OotleWalletManager::find_claimable_burn(&commitment)?;
+    let amount_u64 = proof.claim_proof.value;
+    let amount = format!("{}.{:06}", amount_u64 / 1_000_000, amount_u64 % 1_000_000);
+    let kind = SpendKind::L2Claim { commitment };
+    let pass = pass_gates(
+        SendOrigin::App,
+        request_id,
+        &amount,
+        amount_u64,
+        &kind,
+        &None,
+    )
+    .await?;
+
+    info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "send gate: executing L2 claim (commitment={}, amount={amount})",
+        kind.counterparty()
+    );
+    OotleWalletManager::claim_burn(&app_handle, file_name, proof, pass.pin_context).await
 }
 
 /// Run the consent gates for one spend: serialise on the gate permit, then show the
@@ -673,6 +718,21 @@ mod tests {
             send.pin_context(3, None),
             PinPromptContext::L2Send { amount_micro_minotari: 3, ref destination, ref account }
                 if destination == "otl_esm_addr" && account == "component_abc"
+        ));
+    }
+
+    #[test]
+    fn l2_claim_asks_about_the_burn_commitment_in_xtr() {
+        let claim = SpendKind::L2Claim {
+            commitment: "dae29ac8".to_string(),
+        };
+        assert_eq!(claim.as_str(), "l2_claim");
+        assert_eq!(claim.counterparty(), "dae29ac8");
+        assert_eq!(claim.currency(), "XTR");
+        assert!(matches!(
+            claim.pin_context(4, None),
+            PinPromptContext::L2Claim { amount_micro_minotari: 4, ref commitment }
+                if commitment == "dae29ac8"
         ));
     }
 

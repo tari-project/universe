@@ -91,6 +91,23 @@ describe('McpTransactionDialog', () => {
         expect(screen.queryByText('XTM')).not.toBeInTheDocument();
     });
 
+    it('labels an L2 claim with the burn commitment and XTR', async () => {
+        setMcpPendingTransaction({
+            request_id: 'app_tx_claim',
+            kind: 'l2_claim',
+            origin: 'app',
+            destination: 'dae29ac8',
+            amount_micro_minotari: 1_000_000,
+            amount_display: '1.000000 XTR',
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('l2.claim.commitment')).toBeInTheDocument();
+            expect(screen.getByText('XTR')).toBeInTheDocument();
+        });
+        expect(screen.getByText('dae29ac8')).toBeInTheDocument();
+    });
+
     it('shows destination address label', async () => {
         setMcpPendingTransaction({
             request_id: 'mcp_tx_123',
