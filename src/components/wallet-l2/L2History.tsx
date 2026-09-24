@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { AnimatePresence } from 'motion/react';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store/useUIStore.ts';
-import type { L2Account } from '@app/types/events-payloads.ts';
+import type { L2Account, L2BalanceChange } from '@app/types/events-payloads.ts';
 import { formatNumber, FormatPreset } from '@app/utils';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList.tsx';
@@ -9,6 +11,8 @@ import { formatEffectiveDate } from '@app/components/transactions/history/helper
 import { EmptyText, ListItemWrapper, ListWrapper } from '@app/components/transactions/history/List.styles.ts';
 import {
     BlockInfoWrapper,
+    ButtonWrapper,
+    HoverWrapper,
     Content,
     ContentWrapper,
     CurrencyText,
@@ -43,7 +47,7 @@ export default function L2History({ account }: { account: L2Account }) {
             {!account.history.length && <EmptyText data-testid="l2-history-empty">{t('l2.empty')}</EmptyText>}
             <ListItemWrapper>
                 {account.history.map((change) => (
-                    <ItemWrapper key={change.id} style={{ height: 48 }} data-testid="l2-history-row">
+                    <L2HistoryRow key={change.id} change={change} onDetails={() => setSelectedId(change.id)}>
                         <ContentWrapper onClick={() => setSelectedId(change.id)}>
                             <Content>
                                 <BlockInfoWrapper>
@@ -63,7 +67,7 @@ export default function L2History({ account }: { account: L2Account }) {
                                 </ValueWrapper>
                             </Content>
                         </ContentWrapper>
-                    </ItemWrapper>
+                    </L2HistoryRow>
                 ))}
             </ListItemWrapper>
 
@@ -92,5 +96,52 @@ export default function L2History({ account }: { account: L2Account }) {
                 )}
             </TransactionModal>
         </ListWrapper>
+    );
+}
+
+// A history row with the same hover-to-reveal View details button as the L1 rows.
+function L2HistoryRow({
+    change,
+    onDetails,
+    children,
+}: {
+    change: L2BalanceChange;
+    onDetails: () => void;
+    children: React.ReactNode;
+}) {
+    const { t } = useTranslation('wallet');
+    const [hovering, setHovering] = useState(false);
+    return (
+        <ItemWrapper
+            style={{ height: 48 }}
+            data-testid="l2-history-row"
+            onMouseEnter={() => setHovering(true)}
+            onMouseLeave={() => setHovering(false)}
+        >
+            <AnimatePresence>
+                {hovering && (
+                    <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        <ButtonWrapper
+                            initial={{ opacity: 0, x: 5 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 5 }}
+                        >
+                            <Button
+                                size="smaller"
+                                variant="outlined"
+                                data-testid="l2-row-details"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDetails();
+                                }}
+                            >
+                                {t('history.view-details')}
+                            </Button>
+                        </ButtonWrapper>
+                    </HoverWrapper>
+                )}
+            </AnimatePresence>
+            {children}
+        </ItemWrapper>
     );
 }

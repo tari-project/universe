@@ -112,6 +112,16 @@ describe('L2WalletCard', () => {
         expect(screen.getByText('burn.claim-key-default')).toBeInTheDocument();
     });
 
+    it('shows View details on a hovered history row', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        serve(enabledState);
+        render(<L2WalletCard />);
+        const row = await screen.findByTestId('l2-history-row');
+        fireEvent.mouseEnter(row);
+        fireEvent.click(await screen.findByTestId('l2-row-details'));
+        expect(await screen.findByText('history.transaction-details')).toBeInTheDocument();
+    });
+
     it('filters between burns to claim and history', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         const burn = { commitment: 'aa'.repeat(32), claim_public_key: 'ab'.repeat(32), amount: 1, proof_file: null };
@@ -119,7 +129,7 @@ describe('L2WalletCard', () => {
             cmd === 'l2_get_state'
                 ? enabledState
                 : cmd === 'l2_claimable_burns'
-                  ? [{ ...burn, status: 'pending', last_error: null, not_yet_claimable: false }]
+                  ? [{ ...burn, status: 'pending' }]
                   : undefined) as typeof invoke);
         render(<L2WalletCard />);
         const pick = async (label: string) => {
