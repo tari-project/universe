@@ -5,6 +5,7 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 import type { L2Account, L2Burn } from '@app/types/events-payloads.ts';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import {
     BlockInfoWrapper,
@@ -24,7 +25,6 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const [burns, setBurns] = useState<L2Burn[]>([]);
     const [claiming, setClaiming] = useState<string | null>(null);
-    const [message, setMessage] = useState('');
 
     // Every L2 state update hands us a new account, including the one sent when a claim
     // is accepted and its burn moves to claimed, so the list follows the state.
@@ -36,12 +36,11 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
 
     async function claim(commitment: string) {
         setClaiming(commitment);
-        setMessage('');
         try {
             await invoke('l2_claim_burn', { commitment });
-            setMessage(t('l2.claim.submitted'));
+            addToast({ title: t('l2.claim.submitted'), type: 'success' });
         } catch (e) {
-            setMessage(String(e));
+            addToast({ title: t('l2.claim.failed'), text: String(e), type: 'error' });
         } finally {
             setClaiming(null);
         }
@@ -56,7 +55,7 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
     }
 
     const open = burns.filter((burn) => burn.status !== 'claimed');
-    if (!open.length && !message) return null;
+    if (!open.length) return null;
 
     return (
         <div style={sectionStyle} data-testid="l2-claim-burns">
@@ -86,9 +85,9 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
                                         : formatNumber(burn.amount, FormatPreset.XTM_COMPACT).toLowerCase()}
                                     <CurrencyText>{`XTR`}</CurrencyText>
                                 </ValueWrapper>
-                                {burn.status === 'claimable' && (
+                                {burn.status === 'claimable' && !burn.not_yet_claimable && (
                                     <Button
-                                        size="small"
+                                        size="smaller"
                                         variant="black"
                                         disabled={claiming !== null}
                                         onClick={() => claim(burn.commitment)}
@@ -102,11 +101,6 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
                     </ItemWrapper>
                 ))}
             </div>
-            {message && (
-                <Typography variant="p" style={{ wordBreak: 'break-all' }} data-testid="l2-claim-message">
-                    {message}
-                </Typography>
-            )}
         </div>
     );
 }

@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
 import type { L2Account, L2Burn } from '@app/types/events-payloads.ts';
 import L2ClaimBurns from './L2ClaimBurns';
+import { useToastStore } from '@app/components/ToastStack/useToastStore.tsx';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }));
 
@@ -53,10 +54,10 @@ describe('L2ClaimBurns', () => {
         render(<L2ClaimBurns account={account} />);
         fireEvent.click(await screen.findByTestId('l2-claim-button'));
         expect(invoke).toHaveBeenCalledWith('l2_claim_burn', { commitment: 'aa'.repeat(32) });
-        expect(await screen.findByTestId('l2-claim-message')).toHaveTextContent(REJECTION);
+        await waitFor(() => expect(useToastStore.getState().toasts.slice(-1)[0]?.text).toContain(REJECTION));
     });
 
-    it('shows why the last claim was rejected and keeps the Claim button', async () => {
+    it('shows why the last claim was rejected, and hides Claim while the L2 has not seen the burn', async () => {
         vi.mocked(invoke).mockImplementation((async (cmd: string) =>
             cmd === 'l2_claimable_burns'
                 ? [
@@ -69,7 +70,7 @@ describe('L2ClaimBurns', () => {
                   ]
                 : undefined) as typeof invoke);
         render(<L2ClaimBurns account={account} />);
-        await waitFor(() => expect(screen.getAllByTestId('l2-claim-button')).toHaveLength(2));
+        await waitFor(() => expect(screen.getAllByTestId('l2-claim-button')).toHaveLength(1));
         const statuses = screen.getAllByTestId('l2-claim-status').map((s) => s.textContent);
         expect(statuses).toEqual(['l2.claim.rejected', 'l2.claim.not-yet-claimable']);
     });

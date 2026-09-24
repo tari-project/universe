@@ -299,6 +299,7 @@
       "rejected": "Claim rejected: {{reason}}",
       "not-yet-claimable": "Not claimable yet, the L2 hasn't seen the burn",
       "submitted": "Claim submitted. The XTR shows up once it's confirmed.",
+      "failed": "Claim failed",
       "approve": "Approve claim",
       "approve-subtitle": "Enter your PIN to claim this burn into your Layer 2 wallet. If you did not start this, close this dialog."
     }
