@@ -53,7 +53,7 @@ function wipeTestData(): void {
   for (const dir of getAppDataRoots()) {
     if (!fs.existsSync(dir)) continue;
     if (path.resolve(dir) === path.resolve(cacheDir)) {
-      // Keep downloaded sidecar binaries (node, wallet, xmrig, ...) —
+      // Keep downloaded sidecar binaries (node, xmrig, ...) —
       // re-downloading them every run is slow and a network flake source.
       // Wipe everything else in the cache dir.
       for (const entry of fs.readdirSync(dir)) {

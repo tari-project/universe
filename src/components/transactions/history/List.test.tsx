@@ -1,119 +1,67 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { invoke } from '@tauri-apps/api/core';
 import { render, screen } from '@app/test/test-utils';
 import { List } from './List';
 
-const { history, wallet } = vi.hoisted(() => ({
-    history: {
-        data: undefined as { pages: unknown[][] } | undefined,
-        fetchNextPage: vi.fn(),
-        isFetchingNextPage: false,
-        isFetching: false,
-        isPending: true,
-        isLoading: false,
-        hasNextPage: false,
-    },
+const { wallet } = vi.hoisted(() => ({
     wallet: {
-        wallet_scanning: { is_scanning: false },
+        wallet_transactions: [] as unknown[],
+        transaction_history_filter: 'all-activity',
+        wallet_scanning: { is_initial_scan_complete: true },
         is_wallet_importing: false,
-        isLoading: false,
+        wallet_transactions_loaded: false,
     },
 }));
 
-vi.mock('@app/hooks/wallet/useFetchTxHistory.ts', () => ({ useFetchTxHistory: () => history }));
-vi.mock('@app/store', () => ({ useWalletStore: (selector: (state: typeof wallet) => unknown) => selector(wallet) }));
-vi.mock('@app/store/actions/walletStoreActions.ts', () => ({ setDetailsItem: vi.fn() }));
-vi.mock('react-intersection-observer', () => ({ useOnInView: () => vi.fn() }));
-vi.mock('./ListItem.tsx', () => ({ HistoryListItem: () => <div data-testid="transaction" /> }));
-vi.mock('@app/components/elements/loaders/LoadingDots.tsx', () => ({
-    default: () => <div data-testid="loading-dots" />,
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue([]) }));
+vi.mock('@app/store', () => ({
+    useWalletStore: Object.assign((selector: (state: typeof wallet) => unknown) => selector(wallet), {
+        getState: () => wallet,
+        setState: (partial: Partial<typeof wallet>) => Object.assign(wallet, partial),
+    }),
+}));
+vi.mock('@app/store/actions/walletStoreActions.ts', () => ({
+    setSelectedTransactionId: vi.fn(),
+    handleWalletTransactionsFound: vi.fn(),
+}));
+vi.mock('virtua', () => ({ VList: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
+vi.mock('./transactionHistoryItem/HistoryItem.tsx', () => ({
+    HistoryListItem: () => <div data-testid="transaction" />,
 }));
 
-const list = () => <List setIsScrolled={vi.fn()} targetRef={null} />;
+const list = () => <List setIsScrolled={vi.fn()} />;
 
-function finishLoading(pages: unknown[][] = [[]]) {
-    Object.assign(history, { data: { pages }, isPending: false, isLoading: false, isFetching: false });
-}
-
-describe('transaction history loading', () => {
+describe('transaction history empty state', () => {
     beforeEach(() => {
-        Object.assign(history, {
-            data: undefined,
-            isFetchingNextPage: false,
-            isFetching: false,
-            isPending: true,
-            isLoading: false,
-            hasNextPage: false,
-        });
         Object.assign(wallet, {
-            wallet_scanning: { is_scanning: false },
+            wallet_transactions: [],
+            wallet_scanning: { is_initial_scan_complete: true },
             is_wallet_importing: false,
-            isLoading: false,
+            wallet_transactions_loaded: false,
         });
+        vi.mocked(invoke).mockClear();
     });
 
-    it('waits for the first result before showing the empty state', () => {
-        const { rerender } = render(list());
-        expect(screen.queryByTestId('tx-list-empty')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('loading-dots')).not.toBeInTheDocument();
+    it('only asks the backend for the history once per session', async () => {
+        const { unmount } = render(list());
+        await vi.waitFor(() => expect(wallet.wallet_transactions_loaded).toBe(true));
+        unmount();
 
-        Object.assign(history, { isFetching: true, isLoading: true });
-        rerender(list());
-        expect(screen.getByTestId('loading-dots')).toBeInTheDocument();
-        expect(screen.queryByTestId('tx-list-empty')).not.toBeInTheDocument();
+        render(list());
+        expect(invoke).toHaveBeenCalledTimes(1);
+    });
 
-        finishLoading();
-        rerender(list());
+    it('shows the empty state once there is nothing to wait for', () => {
+        render(list());
         expect(screen.getByTestId('tx-list-empty')).toBeInTheDocument();
-        expect(screen.queryByTestId('loading-dots')).not.toBeInTheDocument();
-    });
-
-    it('keeps the empty pill mounted throughout repeated background refreshes', () => {
-        finishLoading();
-        const { rerender } = render(list());
-        const pill = screen.getByTestId('tx-list-empty');
-
-        for (const isFetching of [true, false, true, false]) {
-            history.isFetching = isFetching;
-            rerender(list());
-            expect(screen.getByTestId('tx-list-empty')).toBe(pill);
-            expect(screen.queryByTestId('loading-dots')).not.toBeInTheDocument();
-        }
-    });
-
-    it('keeps transactions mounted during refreshes and shows a loader for pagination', () => {
-        finishLoading([[{ paymentId: 'tx-1' }]]);
-        const { rerender } = render(list());
-        const transaction = screen.getByTestId('transaction');
-
-        history.isFetching = true;
-        rerender(list());
-        expect(screen.getByTestId('transaction')).toBe(transaction);
-        expect(screen.queryByTestId('loading-dots')).not.toBeInTheDocument();
-
-        history.isFetchingNextPage = true;
-        rerender(list());
-        expect(screen.getByTestId('transaction')).toBe(transaction);
-        expect(screen.getByTestId('loading-dots')).toBeInTheDocument();
-    });
-
-    it('hides the old empty state when a different wallet starts loading', () => {
-        finishLoading();
-        const { rerender } = render(list());
-        expect(screen.getByTestId('tx-list-empty')).toBeInTheDocument();
-
-        Object.assign(history, { data: undefined, isPending: true, isLoading: true, isFetching: true });
-        rerender(list());
-        expect(screen.queryByTestId('tx-list-empty')).not.toBeInTheDocument();
-        expect(screen.getByTestId('loading-dots')).toBeInTheDocument();
     });
 
     it('waits for wallet scanning and importing to finish before showing the empty state', () => {
-        finishLoading();
-        wallet.wallet_scanning.is_scanning = true;
+        wallet.wallet_scanning.is_initial_scan_complete = false;
         const { rerender } = render(list());
         expect(screen.queryByTestId('tx-list-empty')).not.toBeInTheDocument();
 
-        wallet.wallet_scanning.is_scanning = false;
+        wallet.wallet_scanning.is_initial_scan_complete = true;
         wallet.is_wallet_importing = true;
         rerender(list());
         expect(screen.queryByTestId('tx-list-empty')).not.toBeInTheDocument();
@@ -121,5 +69,12 @@ describe('transaction history loading', () => {
         wallet.is_wallet_importing = false;
         rerender(list());
         expect(screen.getByTestId('tx-list-empty')).toBeInTheDocument();
+    });
+
+    it('hides the empty state when transactions exist', () => {
+        wallet.wallet_transactions = [{ id: 'tx-1', source: 'Received' }];
+        render(list());
+        expect(screen.queryByTestId('tx-list-empty')).not.toBeInTheDocument();
+        expect(screen.getByTestId('transaction')).toBeInTheDocument();
     });
 });

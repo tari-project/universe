@@ -61,15 +61,17 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send};
-use crate::wallet::wallet_manager::WalletManagerError;
-use crate::wallet::wallet_types::{TariAddressVariants, TransactionInfo};
+use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
 
 use base64::prelude::*;
 
 use crate::node::data_location::update_data_location;
+use crate::wallet::minotari_wallet::balance_tracker::BalanceTracker;
 use log::{debug, error, info, warn};
+use minotari_wallet::DisplayedTransaction;
 use monero_address_creator::Seed as MoneroSeed;
 use monero_address_creator::network::Mainnet;
 use regex::Regex;
@@ -107,7 +109,6 @@ pub struct ApplicationsVersions {
     xmrig: ApplicationsInformation,
     minotari_node: ApplicationsInformation,
     mm_proxy: ApplicationsInformation,
-    wallet: ApplicationsInformation,
     xtrgpuminer: ApplicationsInformation,
     bridge: ApplicationsInformation,
 }
@@ -133,7 +134,7 @@ pub async fn select_exchange_miner(
         .await
         .map_err(|e| e.to_string())?;
 
-    match InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address)).await {
+    match InternalWallet::initialize_seedless(Some(new_external_tari_address)).await {
         Ok(_) => {
             log::info!(target: LOG_TARGET_APP_LOGIC, "Internal wallet initialized successfully after \"select_exchange_miner\"");
         }
@@ -272,7 +273,6 @@ pub async fn exit_application(
     GpuManager::read().await.on_app_exit().await;
     CpuManager::read().await.on_app_exit().await;
     state.tor_manager.on_app_exit().await;
-    state.wallet_manager.on_app_exit().await;
     state.node_manager.on_app_exit().await;
 
     app.exit(0);
@@ -331,7 +331,6 @@ pub async fn get_applications_versions(
     // let xmrig_port = &cpu_miner.get_port().await;
     // let gpu_miner = &state.gpu_miner.read().await;
     // let xtr_port = gpu_miner.get_port().await;
-    let wallet_port = &state.wallet_manager.get_port().await;
     let node_manager = &state.node_manager;
     let node_port = node_manager
         .clone()
@@ -348,7 +347,6 @@ pub async fn get_applications_versions(
     let mm_proxy_version = binary_resolver
         .get_binary_version(Binaries::MergeMiningProxy)
         .await;
-    let wallet_version = binary_resolver.get_binary_version(Binaries::Wallet).await;
     let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::LolMiner).await;
     let bridge_version = binary_resolver
         .get_binary_version(Binaries::BridgeTapplet)
@@ -378,10 +376,6 @@ pub async fn get_applications_versions(
         mm_proxy: ApplicationsInformation {
             version: mm_proxy_version,
             port: Some(*mmp_port),
-        },
-        wallet: ApplicationsInformation {
-            version: wallet_version,
-            port: Some(*wallet_port),
         },
         xtrgpuminer: ApplicationsInformation {
             version: xtrgpuminer_version,
@@ -427,17 +421,12 @@ pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<S
 
 #[tauri::command]
 pub async fn get_paper_wallet_details(
-    state: tauri::State<'_, UniverseAppState>,
     auth_uuid: Option<String>,
     app_handle: tauri::AppHandle,
 ) -> Result<PaperWalletConfig, InvokeError> {
     let timer = Instant::now();
 
-    let wallet_balance = state
-        .wallet_state_watch_rx
-        .borrow()
-        .clone()
-        .and_then(|state| state.balance);
+    let wallet_balance = BalanceTracker::current().get_account_balance().await.total;
 
     warn!(target: LOG_TARGET_APP_LOGIC, "auth_uuid {auth_uuid:?}");
     let anon_id = ConfigCore::content().await.anon_id().clone();
@@ -461,17 +450,7 @@ pub async fn get_paper_wallet_details(
         seed_words_encrypted_base58,
         encode(&anon_id),
     );
-    // Add wallet_balance as a query parameter if it exists
-    if let Some(balance) = &wallet_balance {
-        let available_balance = balance.available_balance
-            + balance.timelocked_balance
-            + balance.pending_incoming_balance;
-
-        link.push_str(&format!(
-            "&balance={}",
-            encode(&available_balance.to_string())
-        ));
-    }
+    link.push_str(&format!("&balance={}", encode(&wallet_balance.to_string())));
     // Add auth_uuid as a query parameter if it exists
     if let Some(uuid) = &auth_uuid {
         link.push_str(&format!("&tt={}", encode(uuid)));
@@ -531,7 +510,7 @@ pub async fn set_external_tari_address(
 
     let new_external_tari_address =
         TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
-    InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address))
+    InternalWallet::initialize_seedless(Some(new_external_tari_address))
         .await
         .map_err(InvokeError::from_anyhow)?;
 
@@ -542,15 +521,12 @@ pub async fn set_external_tari_address(
 }
 
 #[tauri::command]
-pub async fn confirm_exchange_address(
-    app_handle: tauri::AppHandle,
-    address: String,
-) -> Result<(), InvokeError> {
+pub async fn confirm_exchange_address(address: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let new_external_tari_address =
         TariAddress::from_str(&address).map_err(|e| format!("Invalid Tari address: {e}"))?;
 
-    InternalWallet::initialize_seedless(&app_handle, Some(new_external_tari_address))
+    InternalWallet::initialize_seedless(Some(new_external_tari_address))
         .await
         .map_err(InvokeError::from_anyhow)?;
 
@@ -589,32 +565,6 @@ pub async fn get_airdrop_tokens(
         warn!(target: LOG_TARGET_APP_LOGIC, "get_airdrop_tokens took too long: {:?}", timer.elapsed());
     }
     Ok(airdrop_access_token)
-}
-
-#[tauri::command]
-pub async fn get_transactions(
-    state: tauri::State<'_, UniverseAppState>,
-    offset: Option<u32>,
-    limit: Option<u32>,
-    status_bitflag: Option<u32>,
-) -> Result<Vec<TransactionInfo>, String> {
-    let timer = Instant::now();
-    let transactions = state
-        .wallet_manager
-        .get_transactions(offset, limit, status_bitflag)
-        .await
-        .unwrap_or_else(|e| {
-            if !matches!(e, WalletManagerError::WalletNotStarted) {
-                warn!(target: LOG_TARGET_APP_LOGIC, "Error getting transactions: {e}");
-            }
-            vec![]
-        });
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET_APP_LOGIC, "get_transactions took too long: {:?}", timer.elapsed());
-    }
-
-    Ok(transactions)
 }
 
 #[tauri::command]
@@ -672,7 +622,6 @@ pub async fn forgot_pin(
 #[tauri::command]
 pub async fn import_seed_words(
     seed_words: Vec<String>,
-    state: tauri::State<'_, UniverseAppState>,
     app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
@@ -698,13 +647,15 @@ pub async fn import_seed_words(
         }
     }
 
+    // The scan state was already reset by the import's side effects; this only has
+    // to free the database files before the folder is removed.
+    MinotariWalletManager::close_database().await;
+
     let base_path = app_handle
         .path()
         .app_local_data_dir()
         .map_err(|_| "Could not find wallet data dir".to_string())?;
-    state
-        .wallet_manager
-        .clean_data_folder(&base_path)
+    crate::wallet::clean_wallet_data_folders(&base_path)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -857,7 +808,7 @@ pub async fn reset_settings(
             .await
             .map_err(|e| e.to_string())?;
     } else {
-        folder_block_list.push("wallet");
+        folder_block_list.push("minotari-wallet");
         files_block_list.push("credentials_backup.bin");
     }
     // handle App Config reset individually
@@ -1654,42 +1605,30 @@ pub async fn reconnect() -> Result<(), String> {
 /// The gate is `wallet::send_gate::gated_send`, shared with the MCP `send_transaction`
 /// tool:
 /// * With a PIN configured, the PIN is requested and validated further down the stack
-///   (`WalletAdapter::send_one_sided_to_stealth_address` -> `TransactionService::sign_one_sided_tx`
-///   -> `SpendWallet::sign_one_sided_transaction` -> `SpendWallet::get_seed_words` ->
-///   `PinManager::get_validated_pin_if_defined`). The prompt carries the amount and
-///   destination. A wrong or cancelled PIN aborts the send and the prepared transaction
-///   is cancelled.
+///   (`MinotariWalletManager::send_one_sided_transaction` -> `InternalWallet::get_key_manager`
+///   -> `InternalWallet::get_tari_seed_with_prompt`), before any UTXO is locked. The prompt
+///   carries the amount and destination. A wrong or cancelled PIN aborts the send with
+///   nothing locked or broadcast.
 /// * With no PIN configured there is nothing secret to ask for, so the gate emits a
 ///   backend-driven confirmation dialog (amount + destination + payment id, 120s timeout)
 ///   that the user must approve.
 #[tauri::command]
 pub async fn send_one_sided_to_stealth_address(
-    state: tauri::State<'_, UniverseAppState>,
-    app_handle: tauri::AppHandle,
     amount: String,
     destination: String,
     payment_id: Option<String>,
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
-    gated_send(
-        GatedSendRequest {
-            origin: SendOrigin::App,
-            request_id: SendOrigin::App.new_request_id(),
-            amount,
-            destination,
-            payment_id,
-        },
-        &state.wallet_manager,
-        &app_handle,
-    )
+    gated_send(GatedSendRequest {
+        origin: SendOrigin::App,
+        request_id: SendOrigin::App.new_request_id(),
+        amount,
+        destination,
+        payment_id,
+    })
     .await
     .map_err(|e| e.to_string())?;
-
-    let balance = state.wallet_manager.get_balance().await;
-    if let Ok(balance) = balance {
-        EventsEmitter::emit_wallet_balance_update(balance).await;
-    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
@@ -1708,26 +1647,18 @@ pub fn verify_address_for_send(
 }
 
 #[tauri::command]
-pub fn validate_minotari_amount(
-    amount: String,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), InvokeError> {
+pub async fn validate_minotari_amount(amount: String) -> Result<(), InvokeError> {
     let t_amount = Minotari::from_str(&amount).map_err(|e| e.to_string())?;
     let m_amount = MicroMinotari::from(t_amount);
 
-    let balance = state
-        .wallet_state_watch_rx
-        .borrow()
-        .clone()
-        .and_then(|state| state.balance);
+    let available_balance = BalanceTracker::current()
+        .get_account_balance()
+        .await
+        .available;
 
-    let mut available_balance = MicroMinotari::from(0);
-
-    if let Some(wallet_balance) = &balance {
-        available_balance = wallet_balance.available_balance
-    }
-
-    match m_amount.cmp(&available_balance) {
+    // `m_amount` is a v5.4.0-rc.1 MicroMinotari while `available_balance` comes from
+    // the minotari wallet (tari 5.3.1); compare by raw micro-Tari value.
+    match m_amount.as_u64().cmp(&available_balance.as_u64()) {
         std::cmp::Ordering::Less => Ok(()),
         _ => Err(InvokeError::from("Insufficient balance".to_string())),
     }
@@ -2214,29 +2145,32 @@ pub async fn resume_scheduler_event(event_id: String) -> Result<(), String> {
     Ok(())
 }
 
+/// Full transaction history, for a frontend that mounts (or reloads) after the
+/// initial `WalletTransactionsFound` push went out.
 #[tauri::command]
-pub async fn refresh_wallet_history(
-    state: tauri::State<'_, UniverseAppState>,
-    app_handle: tauri::AppHandle,
-) -> Result<(), String> {
+pub async fn get_wallet_transaction_history() -> Result<Vec<DisplayedTransaction>, String> {
+    MinotariWalletManager::get_transaction_history()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn refresh_wallet_history(app_handle: tauri::AppHandle) -> Result<(), String> {
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
+
+    MinotariWalletManager::reset_for_rescan().await;
+    // Nothing may hold the database files open when the folder goes.
+    MinotariWalletManager::close_database().await;
 
     let base_path = app_handle
         .path()
         .app_local_data_dir()
         .map_err(|_| "Could not find wallet data dir".to_string())?;
-    state
-        .wallet_manager
-        .clean_data_folder(&base_path)
+    crate::wallet::clean_wallet_data_folders(&base_path)
         .await
         .map_err(|e| e.to_string())?;
-
-    // Trigger it manually to immediately update the UI
-    let node_status_watch_rx = state.node_status_watch_rx.clone();
-    let node_status = *node_status_watch_rx.borrow();
-    EventsEmitter::emit_init_wallet_scanning_progress(0, node_status.block_height, 0.0).await;
 
     SetupManager::get_instance()
         .resume_phases(vec![SetupPhase::Wallet])

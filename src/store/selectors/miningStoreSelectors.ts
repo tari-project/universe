@@ -8,3 +8,5 @@ export const getSelectedMiner = (state: MiningStoreState): GpuMiner | undefined 
 
     return state.availableMiners[state.selectedMiner];
 };
+
+export const getIsMining = (s: MiningStoreState): boolean => s.isCpuMiningInitiated || s.isGpuMiningInitiated;

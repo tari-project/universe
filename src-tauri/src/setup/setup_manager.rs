@@ -322,11 +322,7 @@ impl SetupManager {
         ConfigMcp::initialize(app_handle.clone()).await;
 
         // Initialize MCP server with node status receiver for chain tools
-        crate::mcp::server::McpServerManager::initialize(
-            state.node_status_watch_rx.clone(),
-            state.wallet_manager.clone(),
-        )
-        .await;
+        crate::mcp::server::McpServerManager::initialize(state.node_status_watch_rx.clone()).await;
 
         // Auto-start MCP server if enabled with a valid token
         if *ConfigMcp::content().await.enabled()
@@ -416,7 +412,7 @@ impl SetupManager {
         if built_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
             if is_external_address_selected && is_on_exchange_specific_variant {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
-                if let Err(e) = InternalWallet::initialize_seedless(&app_handle, None).await {
+                if let Err(e) = InternalWallet::initialize_seedless(None).await {
                     EventsEmitter::emit_critical_problem(CriticalProblemPayload {
                         title: Some("Wallet(Seedless) not initialized!".to_string()),
                         description: Some(
@@ -476,9 +472,7 @@ impl SetupManager {
                 .clone();
             info!(target: LOG_TARGET_APP_LOGIC, "External address selected on exchange miner build");
             let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
-            if let Err(e) =
-                InternalWallet::initialize_seedless(&app_handle, external_tari_address).await
-            {
+            if let Err(e) = InternalWallet::initialize_seedless(external_tari_address).await {
                 EventsEmitter::emit_critical_problem(CriticalProblemPayload {
                     title: Some("Wallet(Seedless) not initialized!".to_string()),
                     description: Some(

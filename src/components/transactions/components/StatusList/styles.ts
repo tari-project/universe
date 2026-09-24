@@ -10,8 +10,8 @@ export const Wrapper = styled('div')`
 export const Entry = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    padding: 12px 0;
+    gap: max(3px, 0.2vh);
+    padding: max(6px, 0.8vh) 0;
     border-bottom: ${({ theme }) => `1px solid ${theme.colorsAlpha.greyscaleAlpha[20]}`};
 
     &:first-child {
@@ -19,16 +19,15 @@ export const Entry = styled.div`
     }
     &:last-child {
         border-bottom: none;
-        padding-bottom: 18px;
     }
 `;
 
 export const Label = styled.div`
     color: ${({ theme }) => theme.palette.text.primary};
-    font-size: 12px;
-    font-style: normal;
+    font-size: 11px;
+    text-transform: capitalize;
     font-weight: 500;
-    line-height: normal;
+    line-height: 1;
     letter-spacing: -0.36px;
     opacity: 0.5;
 `;

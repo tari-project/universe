@@ -1,14 +1,14 @@
+import { DisplayedTransaction } from '@app/types/app-status';
 import { create } from 'zustand';
-import { CombinedBridgeWalletTransaction } from './useWalletStore.ts';
 
 interface State {
     showModal: boolean;
-    item: CombinedBridgeWalletTransaction | null;
+    item: DisplayedTransaction | null;
 }
 
 interface Actions {
     setShowModal: (showModal: boolean) => void;
-    setItemData: (item: CombinedBridgeWalletTransaction | null) => void;
+    setItemData: (item: DisplayedTransaction | null) => void;
 }
 
 const initialState: State = {

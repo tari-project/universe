@@ -18,7 +18,7 @@ import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { getSelectedMinerDeviceSettings, toggleDeviceExclusion } from '@app/store/actions/appConfigStoreActions.ts';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors.ts';
-import { getSelectedMiner } from '@app/store/selectors/minningStoreSelectors.ts';
+import { getSelectedMiner } from '@app/store/selectors/miningStoreSelectors.ts';
 import { GpuMinerFeature } from '@app/types/events-payloads.ts';
 
 const GpuDevices = memo(function GpuDevices() {

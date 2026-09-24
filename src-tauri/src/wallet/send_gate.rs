@@ -27,8 +27,9 @@
 //! `send_transaction` tool) goes through [`gated_send`]. Two user-facing gates exist:
 //!
 //! * **PIN** — when a PIN is configured it is requested (and validated, with lockout on
-//!   repeated failures) while the transaction is signed, deep in
-//!   [`crate::wallet::spend_wallet::SpendWallet::sign_one_sided_transaction`]. That is
+//!   repeated failures) by [`crate::internal_wallet::InternalWallet::get_key_manager`],
+//!   which [`crate::wallet::minotari_wallet::MinotariWalletManager::send_one_sided_transaction`]
+//!   calls before it creates (and so locks the inputs of) the transaction. That is
 //!   the real gate: a script running in the webview does not know the PIN. The prompt
 //!   carries a [`crate::events::PinPromptContext::Send`] so the user can see the amount
 //!   and destination they are approving.
@@ -46,10 +47,11 @@ use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::events::McpTransactionConfirmationPayload;
+use crate::events::PinPromptContext;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::rate_limiter::TransactionRateLimiter;
 use crate::pin::PinManager;
-use crate::wallet::wallet_manager::WalletManager;
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 
 const DIALOG_TIMEOUT_SECS: u64 = 120;
 
@@ -177,11 +179,7 @@ pub fn parse_amount(amount: &str) -> Result<u64, TransactionError> {
 ///
 /// Returns as soon as the transaction has been signed and broadcast; emitting result
 /// events / balance refreshes is left to the caller.
-pub async fn gated_send(
-    request: GatedSendRequest,
-    wallet_manager: &WalletManager,
-    app_handle: &tauri::AppHandle,
-) -> Result<(), TransactionError> {
+pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionError> {
     let GatedSendRequest {
         origin,
         request_id,
@@ -257,17 +255,27 @@ pub async fn gated_send(
         info!(target: LOG_TARGET_APP_LOGIC, "send gate: transaction approved by user (origin={})", origin.as_str());
     }
 
-    // The PIN dialog (when a PIN is configured) is raised from here on, inside
-    // SpendWallet::sign_one_sided_transaction, and carries the amount/destination.
+    // The PIN dialog (when a PIN is configured) is raised from here on, before the
+    // minotari transaction is created, and carries the amount/destination.
     info!(
         target: LOG_TARGET_APP_LOGIC,
         "send gate: executing send (origin={}, destination={destination}, amount={amount})",
         origin.as_str()
     );
-    wallet_manager
-        .send_one_sided_to_stealth_address(amount, destination, payment_id, app_handle)
-        .await
-        .map_err(|e| TransactionError::WalletError(format!("Transaction failed: {e}")))
+    let pin_context = PinPromptContext::Send {
+        amount_micro_minotari: amount_u64,
+        destination: destination.clone(),
+        payment_id: payment_id.clone(),
+    };
+    MinotariWalletManager::send_one_sided_transaction(
+        destination,
+        amount_u64,
+        payment_id,
+        Some(pin_context),
+    )
+    .await
+    .map(|_| ())
+    .map_err(|e| TransactionError::WalletError(format!("Transaction failed: {e}")))
 }
 
 async fn await_confirmation(

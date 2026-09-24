@@ -1,97 +1,132 @@
-import { useCallback, useEffect, RefObject } from 'react';
-import { useOnInView } from 'react-intersection-observer';
-import { useTranslation } from 'react-i18next';
+import { useCallback, useEffect, useState, useRef, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 
-import { CombinedBridgeWalletTransaction, useWalletStore } from '@app/store';
+import { useTranslation } from 'react-i18next';
+import { VList, VListHandle } from 'virtua';
 
-import { useFetchTxHistory } from '@app/hooks/wallet/useFetchTxHistory.ts';
+import { useWalletStore } from '@app/store';
 
-import { HistoryListItem } from './ListItem.tsx';
-import { PlaceholderItem } from './ListItem.styles.ts';
-import { EmptyText, ListItemWrapper, ListWrapper } from './List.styles.ts';
-import { setDetailsItem } from '@app/store/actions/walletStoreActions.ts';
-import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { EmptyText, ListItemWrapper, ListMask, ListWrapper } from './List.styles.ts';
+import { handleWalletTransactionsFound, setSelectedTransactionId } from '@app/store/actions/walletStoreActions.ts';
+import { DisplayedTransaction, TransactionSource } from '@app/types/app-status.ts';
+import { HistoryListItem } from './transactionHistoryItem/HistoryItem.tsx';
+import { PlaceholderItem } from './transactionHistoryItem/HistoryItem.styles.ts';
 
 interface ListProps {
     setIsScrolled: (isScrolled: boolean) => void;
-    targetRef: RefObject<HTMLDivElement> | null;
+    scrolled?: boolean;
 }
 
-export function List({ setIsScrolled, targetRef }: ListProps) {
+export function List({ setIsScrolled, scrolled = false }: ListProps) {
     const { t } = useTranslation('wallet');
-    const walletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
+    const walletTransactionsAll = useWalletStore((s) => s.wallet_transactions);
+    const transactionsFilter = useWalletStore((s) => s.transaction_history_filter);
+    const walletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);
     const walletImporting = useWalletStore((s) => s.is_wallet_importing);
-    const walletIsLoading = useWalletStore((s) => s.isLoading);
-    const { data, fetchNextPage, isFetchingNextPage, isFetching, isPending, isLoading, hasNextPage } =
-        useFetchTxHistory();
 
-    // Background refreshes should keep the settled list and empty state visible.
-    const walletLoading = walletImporting || walletScanning || isPending || walletIsLoading;
+    // Track seen transaction IDs to show "new" indicator for new transactions
+    const [seenTransactionIds, setSeenTransactionIds] = useState<Set<number>>(new Set());
+    const isInitialLoad = useRef(true);
+    const ref = useRef<VListHandle>(null);
 
+    const walletTransactions = useMemo(() => {
+        if (!walletTransactionsAll) return [];
+
+        switch (transactionsFilter) {
+            case 'all-activity':
+                return walletTransactionsAll;
+            case 'rewards':
+                return walletTransactionsAll.filter((tx) => tx.source === TransactionSource.Coinbase);
+            case 'transactions':
+                return walletTransactionsAll.filter((tx) => tx.source !== TransactionSource.Coinbase);
+            default:
+                return walletTransactionsAll;
+        }
+    }, [walletTransactionsAll, transactionsFilter]);
+
+    // The backend pushes history as it is found; a page that mounts later (reload,
+    // late webview) asks for what it missed. The list remounts whenever the sidebar hides it,
+    // so only the first mount of a session fetches - a clear/import resets the flag.
     useEffect(() => {
-        const el = targetRef?.current;
-        if (!el) return;
-        const onScroll = () => setIsScrolled(el.scrollTop > 1);
-        el.addEventListener('scroll', onScroll);
-        return () => el.removeEventListener('scroll', onScroll);
-    }, [targetRef, setIsScrolled]);
+        if (useWalletStore.getState().wallet_transactions_loaded) return;
+        invoke<DisplayedTransaction[]>('get_wallet_transaction_history')
+            .then((transactions) => {
+                useWalletStore.setState({ wallet_transactions_loaded: true });
+                return handleWalletTransactionsFound(transactions);
+            })
+            .catch((e) => console.warn('Could not load wallet history:', e));
+    }, []);
 
-    const ref = useOnInView((inView) => {
-        if (inView && hasNextPage && !isFetching) {
-            void fetchNextPage({ cancelRefetch: false });
+    // Mark all transactions as seen on initial load (so they don't show as "new")
+    useEffect(() => {
+        if (isInitialLoad.current && walletTransactions && walletTransactions.length > 0) {
+            const initialIds = new Set(walletTransactions.map((tx) => tx.id));
+            setSeenTransactionIds(initialIds);
+            isInitialLoad.current = false;
         }
-    });
-    const transactions = data?.pages.flatMap((page) => page) || [];
+    }, [walletTransactions]);
 
-    const handleDetailsChange = useCallback(async (transaction: CombinedBridgeWalletTransaction | null) => {
-        if (!transaction || !transaction.walletTransactionDetails) {
-            setDetailsItem(null);
-            return;
-        }
-        const dest_address_emoji = await invoke('parse_tari_address', { address: transaction.destinationAddress })
-            .then((result) => result?.emoji_string)
-            .catch(() => undefined);
+    // Mark new transactions as seen after 30 seconds
+    useEffect(() => {
+        if (!walletTransactions || isInitialLoad.current) return;
+        const newTransactionIds = walletTransactions.filter((tx) => !seenTransactionIds.has(tx.id)).map((tx) => tx.id);
+        if (newTransactionIds.length === 0) return;
+        const timer = setTimeout(() => {
+            setSeenTransactionIds((prev) => {
+                const updated = new Set(prev);
+                newTransactionIds.forEach((id) => updated.add(id));
+                return updated;
+            });
+        }, 30000); // 30 seconds
+        return () => clearTimeout(timer);
+    }, [walletTransactions, seenTransactionIds]);
 
-        setDetailsItem({
-            ...transaction,
-            walletTransactionDetails: {
-                ...transaction.walletTransactionDetails,
-                destAddressEmoji: dest_address_emoji,
-            },
-        });
+    const handleDetailsChange = useCallback((transaction: DisplayedTransaction) => {
+        setSelectedTransactionId(transaction.id);
     }, []);
 
     // Calculate how many placeholder items we need to add
-    const transactionsCount = transactions?.length || 0;
-    const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
-    const listMarkup = (
-        <ListItemWrapper>
-            {transactions?.map((tx, i) => {
-                const txId = tx.walletTransactionDetails?.txId || tx.paymentId;
-                const hash = tx.bridgeTransactionDetails?.transactionHash;
-                const hasNoId = !txId && !hash?.length;
+    const transactionsCount = walletTransactions?.length || 0;
+    const placeholdersNeeded = Math.max(0, 2 - transactionsCount);
 
-                const itemKey = `ListItem_${txId}-${hash}-${hasNoId ? i : ''}`;
-                return <HistoryListItem key={itemKey} item={tx} index={i} setDetailsItem={handleDetailsChange} />;
-            })}
-
-            {/* fill the list with placeholders if there are less than 4 entries */}
-            {Array.from({ length: placeholdersNeeded }).map((_, index) => (
-                <PlaceholderItem key={`placeholder-${index}`} />
-            ))}
-            {isFetchingNextPage || isLoading ? <LoadingDots /> : null}
-        </ListItemWrapper>
-    );
-
-    const isEmpty = !walletLoading && !transactions?.length;
+    // Keep the empty state hidden while a scan or import may still produce transactions.
+    const isEmpty = !walletScanning && !walletImporting && !walletTransactionsAll?.length;
     const emptyMarkup = isEmpty ? <EmptyText data-testid="tx-list-empty">{t('empty-tx')}</EmptyText> : null;
+
     return (
         <ListWrapper>
+            {scrolled && <ListMask />}
             {emptyMarkup}
-            {listMarkup}
-            {/*added placeholder so the scroll can trigger fetch*/}
-            {!walletScanning ? <PlaceholderItem ref={ref} $isLast /> : null}
+            <ListItemWrapper>
+                <VList
+                    ref={ref}
+                    bufferSize={4}
+                    itemSize={48}
+                    style={{ height: '100%', width: '100%' }}
+                    onScroll={(offset) => {
+                        if (!ref.current) return;
+                        setIsScrolled(offset > 1);
+                    }}
+                >
+                    {walletTransactions?.map((tx, i) => {
+                        const isNewTransaction = !seenTransactionIds.has(tx.id);
+                        return (
+                            <HistoryListItem
+                                transaction={tx}
+                                key={tx.id}
+                                index={i}
+                                itemIsNew={isNewTransaction}
+                                setDetailsItem={handleDetailsChange}
+                            />
+                        );
+                    })}
+                </VList>
+                {/* fill the list with placeholders if there are less than 4 entries */}
+                {Array.from({ length: placeholdersNeeded }).map((_, index) => (
+                    <PlaceholderItem key={`placeholder-${index}`} />
+                ))}
+            </ListItemWrapper>
+            <ListMask $bottom />
         </ListWrapper>
     );
 }

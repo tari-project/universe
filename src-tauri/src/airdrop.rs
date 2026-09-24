@@ -36,6 +36,7 @@ use crate::LOG_TARGET_APP_LOGIC;
 use crate::{
     UniverseAppState,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    internal_wallet::InternalWallet,
     tasks_tracker::TasksTrackers,
 };
 
@@ -51,6 +52,7 @@ pub struct AirdropAccessToken {
     pub scope: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AirdropMinedBlockMessage {
@@ -102,9 +104,11 @@ pub async fn validate_jwt(airdrop_access_token: Option<String>) -> Option<String
     })
 }
 
-pub async fn get_wallet_view_key_hashed(app: AppHandle) -> String {
-    let wallet_manager = app.state::<UniverseAppState>().wallet_manager.clone();
-    let view_private_key = wallet_manager.get_view_private_key().await;
+pub async fn get_wallet_view_key_hashed() -> String {
+    let view_private_key = InternalWallet::tari_wallet_details()
+        .await
+        .map(|details| details.view_private_key_hex.reveal().to_string())
+        .unwrap_or_default();
     hex::encode(Sha256::digest(view_private_key))
 }
 
@@ -116,7 +120,7 @@ pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
         let config = ConfigCore::content().await;
         let app_id = config.anon_id().to_string();
 
-        let hashed_view_private_key = get_wallet_view_key_hashed(app.clone()).await;
+        let hashed_view_private_key = get_wallet_view_key_hashed().await;
 
         let client = reqwest::Client::new();
         let url = format!("{base_url}/miner/mined-block");

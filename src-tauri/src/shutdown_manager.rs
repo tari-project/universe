@@ -301,7 +301,6 @@ impl ShutdownManager {
             let state = app.state::<UniverseAppState>();
 
             state.tor_manager.on_app_exit().await;
-            state.wallet_manager.on_app_exit().await;
             state.node_manager.on_app_exit().await;
 
             app.exit(0);

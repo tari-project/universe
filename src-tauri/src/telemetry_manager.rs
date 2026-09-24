@@ -392,7 +392,7 @@ async fn get_telemetry_data_inner(
         ..
     } = *node_latest_status.borrow();
 
-    let wallet_view_key_hashed = get_wallet_view_key_hashed(app_handle.clone()).await;
+    let wallet_view_key_hashed = get_wallet_view_key_hashed().await;
     let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
     let gpu_status = gpu_latest_miner_stats.borrow().clone();
     let config = ConfigCore::content().await;
@@ -629,12 +629,6 @@ async fn get_telemetry_data_inner(
         "mmproxy",
     );
     add_process_stats(&mut extra_data, stats_collector.get_tor_stats(), "tor");
-
-    add_process_stats(
-        &mut extra_data,
-        stats_collector.get_wallet_stats(),
-        "wallet",
-    );
 
     let (download_speed, upload_speed, latency) = *NetworkStatus::current()
         .get_network_speeds_receiver()

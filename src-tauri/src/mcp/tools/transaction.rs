@@ -28,7 +28,6 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::events_emitter::EventsEmitter;
 use crate::pin::PinManager;
 use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send};
-use crate::wallet::wallet_manager::WalletManager;
 use log::info;
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
@@ -71,8 +70,6 @@ pub async fn send_transaction(
     destination: String,
     amount: String,
     payment_id: Option<String>,
-    wallet_manager: &WalletManager,
-    app_handle: &tauri::AppHandle,
 ) -> Result<String, TransactionError> {
     // MCP-specific policy. The user-consent gates (confirmation dialog, rate limiter and
     // the PIN prompt raised while signing) live in `wallet::send_gate::gated_send`, which
@@ -102,17 +99,13 @@ pub async fn send_transaction(
     info!(target: LOG_TARGET_APP_LOGIC, "MCP: send_transaction requested (destination={}, amount={})", destination, amount_display);
 
     // 4. Rate limit, confirmation dialog, PIN and the actual send
-    let result = gated_send(
-        GatedSendRequest {
-            origin: SendOrigin::Mcp,
-            request_id: request_id.clone(),
-            amount,
-            destination: destination.clone(),
-            payment_id,
-        },
-        wallet_manager,
-        app_handle,
-    )
+    let result = gated_send(GatedSendRequest {
+        origin: SendOrigin::Mcp,
+        request_id: request_id.clone(),
+        amount,
+        destination: destination.clone(),
+        payment_id,
+    })
     .await;
 
     match result {
@@ -125,10 +118,6 @@ pub async fn send_transaction(
                 },
             )
             .await;
-
-            if let Ok(balance) = wallet_manager.get_balance().await {
-                EventsEmitter::emit_wallet_balance_update(balance).await;
-            }
 
             let result = SendTransactionSuccess {
                 status: "success",

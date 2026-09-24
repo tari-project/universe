@@ -88,18 +88,6 @@ impl ProcessInstanceTrait for MockProcessInstance {
     fn is_shutdown_triggered(&self) -> bool {
         self.shutdown_triggered.load(Ordering::SeqCst)
     }
-
-    async fn wait(&mut self) -> Result<i32, anyhow::Error> {
-        Ok(self.exit_code.load(Ordering::SeqCst))
-    }
-
-    async fn start_and_wait_for_output(
-        &mut self,
-        _task_tracker: TaskTracker,
-    ) -> Result<(i32, Vec<String>, Vec<String>), anyhow::Error> {
-        self.is_running.store(true, Ordering::SeqCst);
-        Ok((self.exit_code.load(Ordering::SeqCst), vec![], vec![]))
-    }
 }
 
 /// A configurable mock for StatusMonitor

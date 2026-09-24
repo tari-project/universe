@@ -36,7 +36,6 @@ use crate::{
     },
     process_adapter::{ProcessAdapter, ProcessInstanceTrait},
 };
-use anyhow::Error;
 use std::{
     path::PathBuf,
     sync::{Arc, atomic::AtomicU64},
@@ -227,19 +226,5 @@ impl ProcessInstanceTrait for NullProcessInstance {
 
     fn is_shutdown_triggered(&self) -> bool {
         self.shutdown.is_triggered()
-    }
-
-    async fn wait(&mut self) -> Result<i32, Error> {
-        Ok(0)
-    }
-
-    async fn start_and_wait_for_output(
-        &mut self,
-        _task_tracker: TaskTracker,
-    ) -> Result<(i32, Vec<String>, Vec<String>), anyhow::Error> {
-        self.start(_task_tracker).await?;
-        self.wait()
-            .await
-            .map(|exit_code| (exit_code, Vec::new(), Vec::new()))
     }
 }

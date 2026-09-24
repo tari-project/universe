@@ -177,7 +177,7 @@ impl ProgressStepper {
 
     /// After the action is completed it will handle all sideeffects related to step completion with ``self.emit_completion_update`` or ``self.handle_step_error``.
     /// ### Arguments
-    /// * `step` - the step to complete e.g. `SetupStep::BinariesWallet`
+    /// * `step` - the step to complete e.g. `SetupStep::BinariesNode`
     /// * `action` - action that will be executed to complete the step, it should return a Result indicating success or failure
     /// ### Returns
     /// If step is required for phase to complete successfully, it will return an error if the action fails.
@@ -214,7 +214,7 @@ impl ProgressStepper {
 
     ///   Tracks the step incrementally, allowing for progress updates to be sent during the step execution.
     ///   ### Arguments
-    /// * `step` - the step to track e.g. `SetupStep::BinariesWallet`
+    /// * `step` - the step to track e.g. `SetupStep::BinariesNode`
     ///   ### Returns
     /// * `IncrementalProgressTracker` that can be used to send progress updates.
     ///   This method will create a new `IncrementalProgressTracker` for the step if it doesn't already exist.
@@ -244,7 +244,7 @@ impl ProgressStepper {
     /// Works similar to `complete_step`, but it doesn't require an action to be executed.
     /// It simply marks the step as completed and updates the progress accumulator.
     /// ### Arguments
-    /// * `step` - the step to complete e.g. `SetupStep::BinariesWallet`
+    /// * `step` - the step to complete e.g. `SetupStep::BinariesNode`
     /// * `error` - an optional error that occurred during the step execution
     /// ### Returns
     /// Result indicating success or failure of the step completion
@@ -271,7 +271,7 @@ impl ProgressStepper {
 
     /// Resolves step as completed successfully and emits the completion update.
     /// ### Arguments
-    /// * `step` - the step to skip e.g. `SetupStep::BinariesWallet`
+    /// * `step` - the step to skip e.g. `SetupStep::BinariesNode`
     #[allow(dead_code)]
     pub async fn skip_step(&mut self, step: SetupStep) -> Result<(), anyhow::Error> {
         if let Some(index) = self.steps.iter().position(|s| s.get_step() == &step) {
@@ -292,7 +292,7 @@ impl ProgressStepper {
     /// - Updating timeout watcher <br>
     /// - Sending telemetry event <br>
     /// ### Arguments
-    /// * `step` - the step to skip e.g. `SetupStep::BinariesWallet`
+    /// * `step` - the step to skip e.g. `SetupStep::BinariesNode`
     async fn emit_completion_update(&self, step: &SetupStep) {
         let accumulator = self.accumulator.read().await;
         let total_progress = accumulator.get_total_progress();

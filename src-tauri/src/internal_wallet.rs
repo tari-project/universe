@@ -33,7 +33,16 @@ use tari_common_types::seeds::mnemonic::Mnemonic;
 use tari_common_types::seeds::seed_words::SeedWords;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_transaction_components::key_manager::wallet_types::{SeedWordsWallet, WalletType};
-use tari_transaction_components::key_manager::{KeyManager, TransactionKeyManagerInterface};
+use tari_transaction_components::key_manager::{
+    KeyManager, SecretTransactionKeyManagerInterface, TransactionKeyManagerInterface,
+};
+// Wallet-side (tari 5.3.1) key manager types, used only for signing transactions
+// via the `minotari` crate. See `wallet::minotari_wallet::wallet_network`.
+use tari_common_types_wallet::seeds::cipher_seed::CipherSeed as WalletCipherSeed;
+use tari_transaction_components_wallet::key_manager::KeyManager as WalletKeyManager;
+use tari_transaction_components_wallet::key_manager::wallet_types::{
+    SeedWordsWallet as WalletSeedWordsWallet, WalletType as WalletWalletType,
+};
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
@@ -41,9 +50,11 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::fs;
 use tokio::sync::{OnceCell, RwLock};
+use zeroize::Zeroizing;
 
 use tari_utilities::hex::Hex;
 
+use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_ui::ConfigUI;
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WALLET_VERSION, WalletId};
 use crate::configs::trait_config::ConfigImpl;
@@ -58,7 +69,7 @@ use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::pin::PinManager;
 use crate::utils::{cryptography, rand_utils};
-use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState};
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 
 /// The wallet's view private key, in hex.
 ///
@@ -173,7 +184,6 @@ impl InternalWallet {
     }
 
     pub async fn initialize_seedless(
-        app_handle: &tauri::AppHandle,
         new_external_tari_address: Option<TariAddress>,
     ) -> Result<(), anyhow::Error> {
         if let Some(external_tari_address) = new_external_tari_address {
@@ -208,7 +218,7 @@ impl InternalWallet {
             tari_wallet_details: None,
         };
 
-        internal_wallet.post_init(app_handle).await
+        internal_wallet.post_init().await
     }
 
     /** Ensures wallet config contains everything needed to initialize the wallet - returns false when impossible */
@@ -341,26 +351,17 @@ impl InternalWallet {
                 }
             };
 
-        internal_wallet.post_init(app_handle).await
+        internal_wallet.post_init().await
     }
 
     // Handle all side effects here
-    async fn post_init(&self, app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+    async fn post_init(&self) -> Result<(), anyhow::Error> {
         InternalWallet::set_current(self.clone()).await?;
 
-        let state = app_handle.state::<UniverseAppState>();
-        if let Some(ref wallet_details) = self.tari_wallet_details {
-            // Internal(Seed)
-            state
-                .wallet_manager
-                .set_view_private_key_and_spend_key(
-                    wallet_details.view_private_key_hex.reveal().to_string(),
-                    wallet_details.spend_public_key_hex.clone(),
-                )
-                .await;
-        } else {
-            // External(Seedless)
-        }
+        MinotariWalletManager::handle_side_effects_after_wallet_import(
+            self.tari_address_type.clone(),
+        )
+        .await?;
 
         ConfigUI::handle_wallet_type_update(self.tari_address_type.clone()).await?;
         EventsEmitter::emit_selected_tari_address_changed(
@@ -1022,27 +1023,68 @@ impl InternalWallet {
         }
     }
 
+    /// Build the wallet-side key manager used to sign minotari transactions.
+    ///
+    /// When a PIN is configured this prompts for it (with `pin_context` shown in the
+    /// dialog); this is the PIN gate for outgoing transactions.
+    pub async fn get_key_manager(
+        app_handle: &AppHandle,
+        pin_context: Option<PinPromptContext>,
+    ) -> Result<WalletKeyManager, anyhow::Error> {
+        let tari_wallet_details = Self::tari_wallet_details().await;
+
+        if tari_wallet_details.is_some() {
+            let tari_cipher_seed = Self::get_tari_seed_with_prompt(app_handle, pin_context).await?;
+
+            // The `minotari` signing crate uses tari 5.7.0-pre.8, so rebuild the cipher seed
+            // as a wallet-side `CipherSeed`. The binary form is identical across the two
+            // versions (CIPHER_SEED_VERSION == 2), so this round-trip is lossless. The
+            // intermediate buffer is the master entropy in the clear, so it is wiped on
+            // drop rather than left in the heap.
+            let wallet_cipher_seed = WalletCipherSeed::from_binary(&Zeroizing::new(
+                tari_cipher_seed
+                    .to_binary()
+                    .map_err(|e| anyhow!(e.to_string()))?,
+            ))
+            .map_err(|e| anyhow!(e.to_string()))?;
+
+            let seed_words_wallet = WalletSeedWordsWallet::construct_new(wallet_cipher_seed)
+                .map_err(|e| anyhow!(e.to_string()))?;
+
+            let tx_key_manager =
+                WalletKeyManager::new(WalletWalletType::SeedWords(seed_words_wallet))
+                    .map_err(|e| anyhow!(e.to_string()))?;
+
+            Ok(tx_key_manager)
+        } else {
+            Err(anyhow!(
+                "Seedless Wallet does not support Key Manager extraction"
+            ))
+        }
+    }
+
     pub async fn get_tari_wallet_details(
         wallet_id: WalletId,
         tari_cipher_seed: CipherSeed,
     ) -> Result<TariWalletDetails, anyhow::Error> {
         let wallet_birthday = tari_cipher_seed.birthday();
 
-        // Get a real error up in here
-        let seed_words_wallet =
-            SeedWordsWallet::construct_new(tari_cipher_seed).map_err(|e| anyhow!(e.to_string()))?;
-        let wallet = WalletType::SeedWords(seed_words_wallet);
-        let key_manager = KeyManager::new(wallet)?;
+        let seed_words_wallet = SeedWordsWallet::construct_new(tari_cipher_seed.clone())
+            .map_err(|e| anyhow!(e.to_string()))?;
 
-        let comms_pub_key = key_manager.get_spend_key().pub_key;
-        let view_key = key_manager.get_view_key();
+        let tx_key_manager = KeyManager::new(WalletType::SeedWords(seed_words_wallet))
+            .map_err(|e| anyhow!(e.to_string()))?;
+        let view_key = tx_key_manager.get_view_key();
+        let view_key_private = tx_key_manager
+            .get_private_key(&view_key.key_id)
+            .map_err(|e| anyhow!(e.to_string()))?;
         let view_key_public = view_key.pub_key;
-        let view_key_private = key_manager.get_private_view_key();
+        let spend_key = tx_key_manager.get_spend_key().pub_key;
 
         let network = Network::get_current_or_user_setting_or_default();
         let tari_address = TariAddress::new_dual_address(
             view_key_public.clone(),
-            comms_pub_key.clone(),
+            spend_key.clone(),
             network,
             TariAddressFeatures::create_one_sided_only(),
             None,
@@ -1053,7 +1095,7 @@ impl InternalWallet {
             id: wallet_id,
             tari_address,
             wallet_birthday,
-            spend_public_key_hex: comms_pub_key.to_hex(),
+            spend_public_key_hex: spend_key.to_hex(),
             view_private_key_hex: ViewPrivateKeyHex::new(view_key_private.to_hex()),
         })
     }
@@ -1264,7 +1306,7 @@ impl InternalWallet {
 
 // ** Utils **
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[repr(u8)]
 pub enum TariAddressType {
     Internal = 0,

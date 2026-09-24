@@ -1,4 +1,5 @@
 import { AppModule } from '@app/store/types/setup';
+import { UserTransactionDTO } from '@tari-project/wxtm-bridge-backend-api';
 
 export interface TorConfig {
     control_port: number;
@@ -32,21 +33,109 @@ export interface SystemDependency {
     required_by_app_modules: AppModule[];
 }
 
-export interface TransactionInfo {
-    tx_id: number;
-    source_address: string;
-    dest_address: string;
-    status: number;
-    direction: number;
+// TODO move this to transactions.ts
+// ============================================================================
+// DisplayedTransaction Types (from minotari_wallet)
+// ============================================================================
+
+export enum TransactionDirection {
+    Incoming = 'incoming',
+    Outgoing = 'outgoing',
+}
+
+export enum TransactionSource {
+    Transfer = 'transfer',
+    Coinbase = 'coinbase',
+    OneSided = 'one_sided',
+    Unknown = 'unknown',
+}
+
+export enum TransactionDisplayStatus {
+    Pending = 'pending',
+    Unconfirmed = 'unconfirmed',
+    Confirmed = 'confirmed',
+    Cancelled = 'cancelled',
+    Reorganized = 'reorganized',
+    Rejected = 'rejected',
+    Locked = 'locked',
+}
+
+export enum OutputStatus {
+    Unspent = 'Unspent',
+    Locked = 'Locked',
+    Spent = 'Spent',
+    SpentUnconfirmed = 'SpentUnconfirmed',
+}
+
+/** Rust `FixedHash` is `#[serde(transparent)]` over `[u8; 32]`, so it arrives as a byte array. */
+export type FixedHash = number[];
+
+/** Rust `CoinBaseExtra` is a `MaxSizeBytes`, which serialises as a struct wrapping its bytes. */
+export interface MaxSizeBytes {
+    inner: number[];
+}
+
+export interface BlockchainInfo {
+    block_height: number;
+    timestamp: string;
+    confirmations: number;
+    block_hash: FixedHash;
+}
+
+export interface FeeInfo {
     amount: number;
-    fee: number;
-    is_cancelled: boolean;
-    excess_sig: string;
-    timestamp: number;
-    message: string;
-    payment_id: string;
-    mined_in_block_height?: number;
-    payment_reference?: string;
+}
+
+export interface TransactionInput {
+    output_hash: FixedHash;
+    amount: number;
+    matched_output_id: number;
+    mined_in_block_hash: FixedHash;
+}
+
+export interface TransactionOutput {
+    hash: FixedHash;
+    amount: number;
+    status: OutputStatus;
+    mined_in_block_height: number;
+    mined_in_block_hash: FixedHash;
+    /** Rust `OutputType` derives `Serialize_repr`, so it arrives as its `u8` discriminant. */
+    output_type: number;
+    is_change: boolean;
+}
+
+export interface TransactionDetails {
+    account_id: number;
+    total_credit: number;
+    total_debit: number;
+    inputs: TransactionInput[];
+    outputs: TransactionOutput[];
+    output_type: number | null;
+    coinbase_extra: MaxSizeBytes | null;
+    memo_hex: string | null;
+    sent_output_hashes: FixedHash[];
+    /** Hex encoded by a serde helper on the Rust side, unlike every other hash here. */
+    sent_payrefs: string[];
+}
+
+export interface DisplayedTransaction {
+    id: number;
+    direction: TransactionDirection;
+    source: TransactionSource;
+    status: TransactionDisplayStatus;
+    amount: number;
+    message: string | null;
+    counterparty: string | null;
+    blockchain: BlockchainInfo;
+    fee: FeeInfo | null;
+    details: TransactionDetails;
+    lock_height: number;
+    /** Attached by the frontend in `solveBridgeTransactionDetails`; not part of the wire format. */
+    bridge_transaction_details?: {
+        status: UserTransactionDTO.status;
+        transactionHash?: string;
+        amountAfterFee?: string;
+    };
 }
 
 export interface GpuDevice {
@@ -98,11 +187,15 @@ export interface BaseNodeStatus {
     readiness_status: string;
 }
 
-export interface WalletBalance {
-    available_balance: number;
-    timelocked_balance: number;
-    pending_incoming_balance: number;
-    pending_outgoing_balance: number;
+export interface AccountBalance {
+    total: number;
+    available: number;
+    locked: number;
+    unconfirmed: number;
+    total_credits?: number;
+    total_debits?: number;
+    max_height?: number;
+    max_date?: string;
 }
 
 interface ApplicationsInformation {
@@ -115,7 +208,6 @@ export interface ApplicationsVersions {
     xmrig: ApplicationsInformation;
     minotari_node: ApplicationsInformation;
     mm_proxy: ApplicationsInformation;
-    wallet: ApplicationsInformation;
     bridge: ApplicationsInformation;
 }
 

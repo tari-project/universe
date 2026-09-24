@@ -4,7 +4,7 @@ import { useMiningPoolsStore } from '@app/store/useMiningPoolsStore';
 import { useEffect, useRef } from 'react';
 import { setupStoreSelectors } from '@app/store/selectors/setupStoreSelectors';
 import { useSetupStore } from '@app/store/useSetupStore';
-import { getSelectedMiner } from '@app/store/selectors/minningStoreSelectors';
+import { getSelectedMiner } from '@app/store/selectors/miningStoreSelectors';
 
 export default function GPUTile() {
     const gpuPoolStats = useMiningPoolsStore((s) => s.gpuPoolStats);

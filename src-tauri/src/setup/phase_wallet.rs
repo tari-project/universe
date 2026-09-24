@@ -25,15 +25,11 @@ use super::{
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
+use crate::LOG_TARGET_APP_LOGIC;
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::{
-    LOG_TARGET_APP_LOGIC,
-    wallet::wallet_manager::{STOP_ON_ERROR_CODES, WalletManagerError},
-};
-use crate::{
-    UniverseAppState,
     binaries::{Binaries, BinaryResolver},
     configs::{
-        config_core::ConfigCore,
         config_wallet::{ConfigWallet, ConfigWalletContent},
         trait_config::ConfigImpl,
     },
@@ -46,24 +42,23 @@ use crate::{
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
-    wallet::wallet_manager::WalletStartupConfig,
 };
 use anyhow::Error;
-use log::{error, warn};
+use log::info;
+use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::{
     Mutex,
     watch::{Receiver, Sender},
 };
 use tokio_util::task::TaskTracker;
-// Bump to force wallet full scan
-const WALLET_MIGRATION_NONCE: u64 = 1;
+
+// Bump to run the wallet data migration on next start
+const WALLET_MIGRATION_NONCE: u64 = 2;
 
 #[derive(Clone, Default)]
-pub struct WalletSetupPhaseAppConfiguration {
-    use_tor: bool,
-}
+pub struct WalletSetupPhaseAppConfiguration {}
 
 pub struct WalletSetupPhase {
     app_handle: AppHandle,
@@ -137,8 +132,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         timeout_watcher_sender: Sender<u64>,
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_incremental_step(SetupStep::BinariesWallet, true)
-            .add_step(SetupStep::StartWallet, true)
+            .add_step(SetupStep::MinotariWallet, true)
             .add_incremental_step(SetupStep::SetupBridge, false)
             .build(
                 app_handle,
@@ -149,8 +143,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        let use_tor = *ConfigCore::content().await.use_tor();
-        Ok(WalletSetupPhaseAppConfiguration { use_tor })
+        Ok(WalletSetupPhaseAppConfiguration {})
     }
 
     async fn setup(self) {
@@ -158,76 +151,54 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn setup_inner(&self) -> Result<(), Error> {
-        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
-        let app_state_clone = app_state.clone();
-        let is_local_node = app_state.node_manager.is_local_current().await;
-        let use_tor = self.app_configuration.use_tor && is_local_node && !cfg!(target_os = "macos");
+        let (data_dir, _config_dir, _log_dir) = self.get_app_dirs()?;
 
         let binary_resolver = BinaryResolver::current();
 
-        let wallet_binary_progress_tracker =
-            progress_stepper.track_step_incrementally(SetupStep::BinariesWallet);
-
-        progress_stepper
-            .complete_step(SetupStep::BinariesWallet, || async {
-                binary_resolver
-                    .initialize_binary(Binaries::Wallet, wallet_binary_progress_tracker)
-                    .await
-            })
-            .await?;
-
-        progress_stepper
-            .complete_step(SetupStep::StartWallet, || async {
-                for _i in 0..2 {
-                    let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
-                    if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
-                        log::info!(target: LOG_TARGET_APP_LOGIC, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
-                        if let Err(e) = app_state.wallet_manager.clean_data_folder(&data_dir).await {
-                            log::warn!(target: LOG_TARGET_APP_LOGIC, "Failed to clean wallet data folder: {e}");
-                        }
-                        if
-                        let Err(e) = ConfigWallet::update_field(
-                            ConfigWalletContent::set_wallet_migration_nonce,
-                            WALLET_MIGRATION_NONCE
-                        ).await
-                        {
-                            log::warn!(target: LOG_TARGET_APP_LOGIC, "Failed to update wallet migration nonce: {e}");
-                        }
-                    }
-
-                    let wallet_config = WalletStartupConfig {
-                        base_path: data_dir.clone(),
-                        config_path: config_dir.clone(),
-                        log_path: log_dir.clone(),
-                        use_tor,
-                        connect_with_local_node: is_local_node,
-                    };
-                    match app_state_clone.wallet_manager.ensure_started(
-                        TasksTrackers::current().wallet_phase.get_signal().await,
-                        wallet_config.clone()
-                    ).await {
-                        Ok(_) => { break; }
-                        Err(e)=> {
-                            if let WalletManagerError::ExitCode(code) = e {
-                                if STOP_ON_ERROR_CODES.contains(&code) {
-                                    warn!(target: LOG_TARGET_APP_LOGIC, "Wallet config is corrupt or needs a restart, deleting and trying again.");
-                                    app_state.wallet_manager.clean_data_folder(&data_dir).await?;
-                                }
-                                continue;
-                            }
-                            if let WalletManagerError::UnknownError(e) = e {
-                                warn!(target: LOG_TARGET_APP_LOGIC, "WalletManagerError::UnknownError({e:?}) needs a restart.");
-                                continue;
-                            }
-                            error!(target: LOG_TARGET_APP_LOGIC, "Could not start wallet manager after restart: {e:?} | Exiting the app");
-                            self.app_handle.exit(-1);
-                            return Err(e.into());
-                        }
-                    }
-
+        let latest_wallet_migration_nonce = *ConfigWallet::content().await.wallet_migration_nonce();
+        if latest_wallet_migration_nonce < WALLET_MIGRATION_NONCE {
+            info!(target: LOG_TARGET_APP_LOGIC, "Wallet migration required(Nonce {latest_wallet_migration_nonce} => {WALLET_MIGRATION_NONCE})");
+            // The console wallet sidecar is gone; drop its data folder, leave the minotari DB alone.
+            let legacy_wallet_dir = data_dir
+                .join("wallet")
+                .join(Network::get_current().to_string().to_lowercase());
+            match tokio::fs::remove_dir_all(&legacy_wallet_dir).await {
+                Ok(()) => {
+                    info!(target: LOG_TARGET_APP_LOGIC, "Removed legacy console wallet data folder {}", legacy_wallet_dir.display())
                 }
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Err(e) => {
+                    log::warn!(target: LOG_TARGET_APP_LOGIC, "Failed to remove legacy console wallet data folder {}: {e}", legacy_wallet_dir.display())
+                }
+            }
+            if let Err(e) = ConfigWallet::update_field(
+                ConfigWalletContent::set_wallet_migration_nonce,
+                WALLET_MIGRATION_NONCE,
+            )
+            .await
+            {
+                log::warn!(target: LOG_TARGET_APP_LOGIC, "Failed to update wallet migration nonce: {e}");
+            }
+        }
+
+        let app_handle_clone = self.get_app_handle().clone();
+        progress_stepper
+            .complete_step(SetupStep::MinotariWallet, || async {
+                MinotariWalletManager::load_app_handle(app_handle_clone).await;
+                if InternalWallet::is_internal().await {
+                    // The account must exist before `initialize_wallet` looks it up by
+                    // address. `init_with_view_key` refuses an account that already
+                    // exists, which is the normal case after the first launch.
+                    info!(target: LOG_TARGET_APP_LOGIC, "============================ Setting up Minotari Wallet");
+                    if let Err(e) = MinotariWalletManager::import_view_key().await {
+                        info!(target: LOG_TARGET_APP_LOGIC, "Minotari wallet account not imported (already present?): {e}");
+                    }
+                    MinotariWalletManager::initialize_wallet().await?;
+                    info!(target: LOG_TARGET_APP_LOGIC, "============================ Scanning blocks for Minotari Wallet");
+                    MinotariWalletManager::initialize_blockchain_scanning().await?;
+                }
+
                 Ok(())
             })
             .await?;
@@ -254,16 +225,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
         } else {
             self.status_sender
                 .send(PhaseStatus::SuccessWithWarnings(setup_warnings.clone()))?;
-        }
-
-        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
-        let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        if InternalWallet::is_internal().await {
-            app_state.wallet_manager.reset_initial_scan_completed();
-            app_state
-                .wallet_manager
-                .wait_for_initial_wallet_scan(node_status_watch_rx)
-                .await?;
         }
 
         let config_wallet = ConfigWallet::content().await;

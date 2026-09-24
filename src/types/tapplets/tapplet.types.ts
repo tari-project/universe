@@ -16,6 +16,18 @@ export interface AccountData {
     address: string;
 }
 
+/**
+ * Balance shape the shipped bridge tapplet reads (`balance?.available_balance` in
+ * wxtm-bridge-frontend v0.4.2 `store/account.ts`). Renaming these fields blanks the
+ * bridge balance, so keep them until the pinned bridge build is bumped.
+ */
+export interface TappletWalletBalance {
+    available_balance: number;
+    timelocked_balance: number;
+    pending_incoming_balance: number;
+    pending_outgoing_balance: number;
+}
+
 export interface ActiveTapplet {
     tapplet_id: number;
     display_name: string;

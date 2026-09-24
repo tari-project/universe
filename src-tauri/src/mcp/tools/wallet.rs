@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::internal_wallet::InternalWallet;
-use crate::wallet::wallet_manager::WalletManager;
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 
 pub async fn get_wallet_address() -> Result<String, String> {
     let address = InternalWallet::tari_address()
@@ -39,46 +39,47 @@ pub async fn get_wallet_address() -> Result<String, String> {
     serde_json::to_string(&result).map_err(|e| e.to_string())
 }
 
-pub async fn get_wallet_balance(wallet_manager: &WalletManager) -> Result<String, String> {
-    let balance = wallet_manager
-        .get_balance()
+pub async fn get_wallet_balance() -> Result<String, String> {
+    let balance = MinotariWalletManager::get_account_balance()
         .await
         .map_err(|e| format!("Failed to get wallet balance: {e}"))?;
 
+    // The wallet database has no "pending outgoing" figure to report: an in-flight
+    // send shows up as `locked`. Reporting the `AccountBalance` fields under their
+    // own names keeps the tool honest instead of inventing a hardcoded zero.
     let result = serde_json::json!({
-        "available_balance": balance.available_balance.as_u64(),
-        "timelocked_balance": balance.timelocked_balance.as_u64(),
-        "pending_incoming_balance": balance.pending_incoming_balance.as_u64(),
-        "pending_outgoing_balance": balance.pending_outgoing_balance.as_u64(),
+        "total": balance.total.as_u64(),
+        "available": balance.available.as_u64(),
+        "locked": balance.locked.as_u64(),
+        "unconfirmed": balance.unconfirmed.as_u64(),
+        "immature": balance.immature.as_u64(),
     });
     serde_json::to_string(&result).map_err(|e| e.to_string())
 }
 
-pub async fn get_transaction_history(
-    wallet_manager: &WalletManager,
-    limit: Option<u32>,
-) -> Result<String, String> {
-    let limit = limit.unwrap_or(20);
-    let transactions = wallet_manager
-        .get_transactions(None, Some(limit), None)
+// ponytail: loads the whole history and truncates. The crate's paginated loader
+// (`TransactionHistoryService::load_transactions_paginated`) does not filter out
+// reorganized transactions, so using it here would surface transactions the rest
+// of the app hides. Push the limit down once the crate grows a paginated
+// excluding-reorged query, or once histories get big enough for this to matter.
+pub async fn get_transaction_history(limit: Option<u32>) -> Result<String, String> {
+    let limit = limit.unwrap_or(20) as usize;
+    let transactions = MinotariWalletManager::get_transaction_history()
         .await
         .map_err(|e| format!("Failed to get transaction history: {e}"))?;
 
     let result: Vec<serde_json::Value> = transactions
         .iter()
+        .take(limit)
         .map(|tx| {
             serde_json::json!({
-                "tx_id": tx.tx_id,
-                "source_address": tx.source_address,
-                "dest_address": tx.dest_address,
+                "tx_id": tx.id,
+                "amount": tx.amount,
                 "status": format!("{:?}", tx.status),
-                "amount": tx.amount.as_u64(),
-                "fee": tx.fee,
-                "direction": tx.direction,
-                "is_cancelled": tx.is_cancelled,
-                "timestamp": tx.timestamp,
-                "mined_in_block_height": tx.mined_in_block_height,
-                "payment_id": tx.payment_id,
+                "counterparty": tx.counterparty,
+                "message": tx.message,
+                "source": tx.source,
+                "timestamp": tx.blockchain.timestamp.to_string(),
             })
         })
         .collect();

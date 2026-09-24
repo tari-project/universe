@@ -86,7 +86,7 @@ fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
         | "ConfigMcpLoaded"
         | "SelectedTariAddressChanged"
         | "WalletBalanceUpdate"
-        | "WalletStatusUpdate"
+        | "WalletScanningProgressUpdate"
         | "WalletUIModeChanged"
         | "BaseNodeUpdate"
         | "NodeTypeUpdate"
@@ -102,7 +102,6 @@ fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
         | "StuckOnOrphanChain"
         | "AvailableMiners"
         | "UpdateSelectedMiner"
-        | "InitWalletScanningProgress"
         // PinLocked is a one-shot STATE event (emitted when a PIN is
         // created/cleared), not a dialog trigger. Fresh pages must learn a
         // PIN is set, or frontend-gated flows (e.g. MCP token reveal) skip
@@ -114,6 +113,11 @@ fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
         // when mining stops, so a cached sample can assert is_mining=true
         // long after the miner exited. A fresh page correctly defaults to
         // not-mining and picks the stream up within seconds if it runs.
+        //
+        // WalletTransactionsCleared is deliberately absent too: it is a
+        // transient "drop what you have" signal, not state. A fresh client has
+        // nothing to clear, and replaying it would wipe the transaction list
+        // that WalletTransactionsFound is about to refill.
         //
         // Everything else (ShowReleaseNotes, AskForRestart, PIN dialogs,
         // shutdown prompts, ...) is also intentionally not replayed.

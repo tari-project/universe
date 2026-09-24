@@ -75,8 +75,6 @@ use crate::node::node_manager::NodeManager;
 use crate::shutdown_manager::ShutdownManager;
 use crate::systemtray_manager::SystemTrayManager;
 use crate::tor_manager::TorManager;
-use crate::wallet::wallet_manager::WalletManager;
-use crate::wallet::wallet_types::WalletState;
 
 mod ab_test_selector;
 mod airdrop;
@@ -116,7 +114,6 @@ mod node;
 mod pin;
 mod port_allocator;
 mod process_adapter;
-mod process_adapter_utils;
 mod process_killer;
 mod process_stats_collector;
 mod process_utils;
@@ -197,11 +194,9 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 #[derive(Clone)]
 struct UniverseAppState {
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
-    wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
-    wallet_manager: WalletManager,
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
     telemetry_service: Arc<RwLock<TelemetryService>>,
     feedback: Arc<RwLock<Feedback>>,
@@ -279,8 +274,6 @@ fn main() {
         local_node_watch_rx,
         remote_node_watch_rx,
     );
-    let (wallet_state_watch_tx, wallet_state_watch_rx) =
-        watch::channel::<Option<WalletState>>(None);
     let (websocket_message_tx, websocket_message_rx) =
         tokio::sync::mpsc::channel::<WebsocketMessage>(500);
 
@@ -291,12 +284,6 @@ fn main() {
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
     let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) =
         watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
-    let wallet_manager = WalletManager::new(
-        node_manager.clone(),
-        wallet_state_watch_tx,
-        &mut stats_collector,
-        base_node_watch_rx.clone(),
-    );
 
     let app_in_memory_config = Arc::new(RwLock::new(AppInMemoryConfig::default()));
 
@@ -354,11 +341,9 @@ fn main() {
     );
     let app_state = UniverseAppState {
         node_status_watch_rx: Arc::new(base_node_watch_rx),
-        wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         in_memory_config: app_in_memory_config.clone(),
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
-        wallet_manager,
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
         telemetry_service: Arc::new(RwLock::new(telemetry_service)),
         feedback: Arc::new(RwLock::new(feedback)),
@@ -460,7 +445,6 @@ fn main() {
             commands::get_paper_wallet_details,
             commands::get_seed_words,
             commands::get_tor_config,
-            commands::get_transactions,
             commands::import_seed_words,
             commands::revert_to_internal_wallet,
             commands::log_web_message,
@@ -517,6 +501,7 @@ fn main() {
             commands::get_bridge_envs,
             commands::parse_tari_address,
             commands::refresh_wallet_history,
+            commands::get_wallet_transaction_history,
             commands::get_base_node_status,
             commands::get_local_block_stats,
             commands::create_pin,

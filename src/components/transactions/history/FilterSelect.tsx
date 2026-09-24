@@ -5,6 +5,8 @@ import { flip, offset } from '@floating-ui/react';
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FilterWrapper } from './List.styles.ts';
+import { useWalletStore } from '@app/store';
+import { setTxHistoryFilter } from '@app/store/actions/walletStoreActions.ts';
 
 export type TxHistoryFilter = 'all-activity' | 'rewards' | 'transactions';
 
@@ -17,13 +19,10 @@ const renderCustomIcon = (isOpen: boolean) =>
         <IoIosArrowDown size={11} style={{ marginLeft: 2 }} />
     );
 
-interface FilterSelectProps {
-    filter: TxHistoryFilter;
-    handleFilterChange: (newFilter: TxHistoryFilter) => void;
-}
-
-export const FilterSelect = React.memo(({ filter, handleFilterChange }: FilterSelectProps) => {
+export const FilterSelect = React.memo(() => {
     const { t } = useTranslation('wallet', { useSuspense: false });
+    const filter = useWalletStore((s) => s.transaction_history_filter);
+
     const filterOptions = useCallback(
         (): SelectOption<TxHistoryFilter>[] =>
             FILTER_TYPES.map((type) => ({
@@ -38,7 +37,7 @@ export const FilterSelect = React.memo(({ filter, handleFilterChange }: FilterSe
             <Select
                 options={filterOptions}
                 selectedValue={filter}
-                onChange={handleFilterChange as (value: string) => void}
+                onChange={setTxHistoryFilter as (value: string) => void}
                 variant="minimal"
                 customIcon={renderCustomIcon}
                 forceHeight={250}

@@ -21,7 +21,7 @@ function readAppPid(): number {
 /**
  * Shutdown — the LAST test in the suite. Exercises the QA "Closing/Quit
  * Miner" sweep: a graceful quit must stop every sidecar (minotari node +
- * merge-mining proxy, wallet, xmrig, tor, GPU miner), leaving nothing
+ * merge-mining proxy, xmrig, tor, GPU miner), leaving nothing
  * orphaned. Because it quits the shared backend, nothing can run after it
  * (file name keeps it last; global teardown then finds nothing to do).
  *

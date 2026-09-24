@@ -39,6 +39,7 @@ use crate::{
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
+    wallet::minotari_wallet::MinotariWalletManager,
 };
 use anyhow::Error;
 use log::{error, info, warn};
@@ -238,7 +239,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             if STOP_ON_ERROR_CODES.contains(&code) {
                                 warn!(target: LOG_TARGET_APP_LOGIC, "Node data or config is corrupt or needs a restart, deleting and trying again.");
                                 state.node_manager.clean_data_folder(&node_data_dir).await?;
-                                state.wallet_manager.clean_data_folder(&data_dir).await?;
+                                crate::wallet::clean_wallet_data_folders(&data_dir).await?;
                             }
                             continue;
                         }
@@ -288,38 +289,26 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
                 let init_node_status = *node_status_watch_rx.borrow();
                 EventsEmitter::emit_base_node_update(init_node_status).await;
-
                 let mut latest_updated_block_height = init_node_status.block_height;
-                let mut was_initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
+
+
                 loop {
                     tokio::select! {
                 _ = node_status_watch_rx.changed() => {
                     let node_status = *node_status_watch_rx.borrow();
-                    let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
                     let node_synced = node_status.is_synced;
+                    let wallet_is_syncing = MinotariWalletManager::is_syncing().await;
 
-                    if initial_sync_finished && !was_initial_sync_finished {
-                        let height = node_status.block_height;
-                        latest_updated_block_height = height;
-                        info!(target: LOG_TARGET_APP_LOGIC,
-                            "Initial wallet scan completed at height {height}, triggering transaction refresh");
-                        let app_for_refresh = app_handle_clone.clone();
-                        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-                            let _ = EventsManager::handle_new_block_height(&app_for_refresh, height).await;
-                        });
-                    }
-                    was_initial_sync_finished = initial_sync_finished;
+                    let all_syncing_complete= !wallet_is_syncing && node_synced;
+                    let latest_needs_update = all_syncing_complete && (latest_updated_block_height == 0 || node_status.block_height > latest_updated_block_height);
 
-                    if node_status.block_height > latest_updated_block_height && initial_sync_finished && node_synced {
-                        while latest_updated_block_height < node_status.block_height {
-                            latest_updated_block_height += 1;
-                            let _ = EventsManager::handle_new_block_height(&app_handle_clone, latest_updated_block_height).await;
+                   if latest_needs_update {
+                        latest_updated_block_height = node_status.block_height;
+                        if all_syncing_complete {
+                            EventsEmitter::emit_new_block_mined(latest_updated_block_height).await;
                         }
                     }
                     EventsEmitter::emit_base_node_update(node_status).await;
-                    if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
-                        latest_updated_block_height = node_status.block_height;
-                    }
                 },
                 _ = shutdown_signal.wait() => {
                     break;

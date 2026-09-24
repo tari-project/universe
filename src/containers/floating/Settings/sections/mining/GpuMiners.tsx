@@ -6,7 +6,7 @@ import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { switchSelectedMiner } from '@app/store/actions/miningStoreActions.ts';
-import { getSelectedMiner } from '@app/store/selectors/minningStoreSelectors';
+import { getSelectedMiner } from '@app/store/selectors/miningStoreSelectors';
 import { GpuMinerType } from '@app/types/events-payloads.ts';
 import { SettingsGroupContent, SettingsGroupTitle, SettingsGroupWrapper } from '../../components/SettingsGroup.styles';
 import { GpuMinerSelect } from './components/GpuMinerSelect.tsx';

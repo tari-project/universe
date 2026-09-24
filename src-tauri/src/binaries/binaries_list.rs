@@ -39,7 +39,6 @@ pub enum Binaries {
     Xmrig,
     MergeMiningProxy,
     MinotariNode,
-    Wallet,
     Tor,
     BridgeTapplet,
     LolMiner,
@@ -51,7 +50,6 @@ impl Binaries {
             Binaries::Xmrig => "xmrig",
             Binaries::MergeMiningProxy => "mmproxy",
             Binaries::MinotariNode => "minotari_node",
-            Binaries::Wallet => "wallet",
             Binaries::Tor => "tor",
             Binaries::BridgeTapplet => "bridge",
             Binaries::LolMiner => "lolminer",
@@ -64,7 +62,6 @@ impl Binaries {
             "xmrig" => Binaries::Xmrig,
             "mmproxy" => Binaries::MergeMiningProxy,
             "minotari_node" => Binaries::MinotariNode,
-            "wallet" => Binaries::Wallet,
             "tor" => Binaries::Tor,
             "bridge" => Binaries::BridgeTapplet,
             "lolminer" => Binaries::LolMiner,
@@ -95,10 +92,6 @@ impl Binaries {
             }
             Binaries::MinotariNode => {
                 let file_name = "minotari_node";
-                Self::append_exe_if_windows(&mut PathBuf::from(file_name))
-            }
-            Binaries::Wallet => {
-                let file_name = "minotari_console_wallet";
                 Self::append_exe_if_windows(&mut PathBuf::from(file_name))
             }
             Binaries::Tor => {
@@ -174,20 +167,6 @@ impl Binaries {
                 }
             },
             Binaries::MinotariNode => match platform {
-                BinaryPlatformAssets::LinuxX64 => {
-                    format!("tari_suite-{version}-{network}-{hash}-linux-x86_64.zip")
-                }
-                BinaryPlatformAssets::WindowsX64 => {
-                    format!("tari_suite-{version}-{network}-{hash}-windows-x64.exe.zip")
-                }
-                BinaryPlatformAssets::MacOSX64 => {
-                    format!("tari_suite-{version}-{network}-{hash}-macos-x86_64.zip")
-                }
-                BinaryPlatformAssets::MacOSArm64 => {
-                    format!("tari_suite-{version}-{network}-{hash}-macos-arm64.zip")
-                }
-            },
-            Binaries::Wallet => match platform {
                 BinaryPlatformAssets::LinuxX64 => {
                     format!("tari_suite-{version}-{network}-{hash}-linux-x86_64.zip")
                 }

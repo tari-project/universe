@@ -24,8 +24,8 @@ use crate::configs::config_mining::GpuDevicesSettingsByMiner;
 use crate::configs::config_pools::ConfigPoolsContent;
 use crate::configs::config_ui::WalletUIMode;
 use crate::events::{
-    ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload,
-    InitWalletScanningProgressPayload, UpdateAppModuleStatusPayload, WalletStatusUpdatePayload,
+    ConnectionStatusPayload, CriticalProblemPayload, DisabledPhasesPayload, NewBlockHeightPayload,
+    UpdateAppModuleStatusPayload, WalletScanningProgressUpdatePayload,
 };
 use crate::internal_wallet::TariAddressType;
 use crate::mining::MinerControlsState;
@@ -35,7 +35,6 @@ use crate::mining::gpu::miners::GpuCommonInformation;
 use crate::mining::pools::PoolStatus;
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
-use crate::wallet::wallet_types::{TransactionInfo, WalletBalance};
 use crate::{
     BaseNodeStatus, LOG_TARGET_APP_LOGIC,
     configs::{
@@ -44,15 +43,16 @@ use crate::{
         config_wallet::ConfigWalletContent,
     },
     events::{
-        DetectedDevicesPayload, Event, EventType, NetworkStatusPayload, NewBlockHeightPayload,
-        NodeTypeUpdatePayload, ProgressTrackerUpdatePayload, ShowReleaseNotesPayload,
-        TariAddressUpdatePayload,
+        DetectedDevicesPayload, Event, EventType, NetworkStatusPayload, NodeTypeUpdatePayload,
+        ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, TariAddressUpdatePayload,
     },
     hardware::hardware_status_monitor::PublicDeviceGpuProperties,
     setup::setup_manager::SetupPhase,
     utils::app_flow_utils::FrontendReadyChannel,
 };
 use log::error;
+use minotari_wallet::DisplayedTransaction;
+use minotari_wallet::db::AccountBalance;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 use tari_common_types::tari_address::TariAddress;
@@ -91,9 +91,6 @@ impl EventsEmitter {
             .clone()
     }
 
-    pub async fn get_app_handle_public() -> AppHandle {
-        Self::get_app_handle().await
-    }
     pub async fn emit_progress_tracker_update(payload: ProgressTrackerUpdatePayload) {
         let event = Event {
             event_type: EventType::SetupProgressUpdate,
@@ -423,11 +420,11 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_wallet_balance_update(balance: WalletBalance) {
+    pub async fn emit_wallet_balance_update(account_balance: AccountBalance) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::WalletBalanceUpdate,
-            payload: balance,
+            payload: account_balance,
         };
         if let Err(e) = Self::get_app_handle()
             .await
@@ -523,17 +520,11 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_new_block_mined(
-        block_height: u64,
-        coinbase_transaction: Option<TransactionInfo>,
-    ) {
+    pub async fn emit_new_block_mined(block_height: u64) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::NewBlockHeight,
-            payload: NewBlockHeightPayload {
-                block_height,
-                coinbase_transaction,
-            },
+            payload: NewBlockHeightPayload { block_height },
         };
         if let Err(e) = Self::get_app_handle()
             .await
@@ -585,18 +576,20 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_init_wallet_scanning_progress(
+    pub async fn emit_wallet_scanning_progress_update(
         scanned_height: u64,
         total_height: u64,
         progress: f64,
+        is_initial_scan_complete: bool,
     ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::InitWalletScanningProgress,
-            payload: InitWalletScanningProgressPayload {
+            event_type: EventType::WalletScanningProgressUpdate,
+            payload: WalletScanningProgressUpdatePayload {
                 scanned_height,
                 total_height,
                 progress,
+                is_initial_scan_complete,
             },
         };
         if let Err(e) = Self::get_app_handle()
@@ -781,18 +774,6 @@ impl EventsEmitter {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit SeedBackedUp event: {e:?}");
         }
     }
-
-    pub async fn emit_wallet_status_updated(loading: bool, unhealthy: Option<bool>) {
-        let _ = FrontendReadyChannel::current().wait_for_ready().await;
-        let evt = Event {
-            event_type: EventType::WalletStatusUpdate,
-            payload: WalletStatusUpdatePayload { loading, unhealthy },
-        };
-        if let Err(e) = Self::get_app_handle().await.emit(BACKEND_STATE_UPDATE, evt) {
-            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletStatusUpdate event: {e:?}");
-        }
-    }
-
     pub async fn emit_update_cpu_miner_state(state: MinerControlsState) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         if let Err(e) = Self::get_app_handle().await.emit(
@@ -893,6 +874,49 @@ impl EventsEmitter {
             },
         ) {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit ShowBatteryAlert event: {e:?}");
+        }
+    }
+
+    pub async fn emit_wallet_transactions_found(payload: Vec<DisplayedTransaction>) {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::WalletTransactionsFound,
+                payload,
+            },
+        ) {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletTransactionsFound event: {e:?}");
+        }
+    }
+
+    /// Tells the frontend to drop its transaction list: the wallet it belonged to
+    /// is gone (history refresh, seed import) and a fresh scan is about to start.
+    pub async fn emit_wallet_transactions_cleared() {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::WalletTransactionsCleared,
+                payload: (),
+            },
+        ) {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletTransactionsCleared event: {e:?}");
+        }
+    }
+
+    /// Emit when a pending transaction has been matched with a scanned transaction
+    /// This allows the frontend to update the transaction status
+    pub async fn emit_wallet_transaction_updated(payload: DisplayedTransaction) {
+        let _ = FrontendReadyChannel::current().wait_for_ready().await;
+        if let Err(e) = Self::get_app_handle().await.emit(
+            BACKEND_STATE_UPDATE,
+            Event {
+                event_type: EventType::WalletTransactionUpdated,
+                payload,
+            },
+        ) {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit WalletTransactionUpdated event: {e:?}");
         }
     }
 }

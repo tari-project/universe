@@ -8,7 +8,7 @@ import { useCallback } from 'react';
 
 export default function BridgeButton() {
     const showTapplet = useUIStore((s) => s.showTapplet);
-    const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
+    const isWalletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);
 
     const handleOpen = useCallback(async () => {
         await setActiveTappById(BRIDGE_TAPPLET_ID, true);

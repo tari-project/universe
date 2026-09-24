@@ -6,24 +6,25 @@ import {
     GpuMiner,
     GpuMinerType,
     MinerControlsState,
-    NewBlockHeightPayload,
     NodeTypeUpdatePayload,
     PinPromptContext,
     ProgressTrackerUpdatePayload,
     SetupPhase,
     ShowReleaseNotesPayload,
     TariAddressUpdatePayload,
+    WalletScanningProgressUpdatePayload,
     TransactionOrigin,
     WalletUIMode,
 } from './events-payloads.ts';
 import {
+    AccountBalance,
     BaseNodeStatus,
     CpuMinerStatus,
+    DisplayedTransaction,
     GpuMinerStatus,
     NetworkStatus,
     PoolStats,
     SystemDependency,
-    WalletBalance,
 } from './app-status.ts';
 import { ConfigMcp, ConfigMining, ConfigPools, ConfigUI, ConfigWallet, GpuDeviceSettings } from './configs.ts';
 import { DisabledPhasesPayload } from '@app/store/actions/setupStoreActions.ts';
@@ -50,7 +51,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'WalletBalanceUpdate';
-          payload: WalletBalance;
+          payload: AccountBalance;
       }
     | {
           event_type: 'CpuMiningUpdate';
@@ -62,7 +63,7 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'NewBlockHeight';
-          payload: NewBlockHeightPayload;
+          payload: { block_height: number };
       }
     | {
           event_type: 'CloseSplashscreen';
@@ -133,12 +134,8 @@ export type BackendStateUpdateEvent =
           payload: BackgroundNodeSyncUpdatePayload;
       }
     | {
-          event_type: 'InitWalletScanningProgress';
-          payload: {
-              scanned_height: number;
-              total_height: number;
-              progress: number;
-          };
+          event_type: 'WalletScanningProgressUpdate';
+          payload: WalletScanningProgressUpdatePayload;
       }
     | {
           event_type: 'ConnectionStatus';
@@ -205,13 +202,6 @@ export type BackendStateUpdateEvent =
           payload: Record<GpuMinerType, GpuMiner>;
       }
     | {
-          event_type: 'WalletStatusUpdate';
-          payload: {
-              loading: boolean;
-              unhealthy?: boolean;
-          };
-      }
-    | {
           event_type: 'UpdateCpuMinerControlsState';
           payload: MinerControlsState;
       }
@@ -242,6 +232,18 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ShuttingDown';
           payload: undefined;
+      }
+    | {
+          event_type: 'WalletTransactionsFound';
+          payload: DisplayedTransaction[];
+      }
+    | {
+          event_type: 'WalletTransactionsCleared';
+          payload: undefined;
+      }
+    | {
+          event_type: 'WalletTransactionUpdated';
+          payload: DisplayedTransaction;
       }
     | {
           event_type: 'SetShowBatteryAlert';

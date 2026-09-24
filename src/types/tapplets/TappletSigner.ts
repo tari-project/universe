@@ -1,7 +1,14 @@
 import { BackendBridgeTransaction, setError as setStoreError, useConfigUIStore, useWalletStore } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
-import { BaseNodeStatus, BridgeEnvs, WalletBalance } from '../app-status';
-import { AccountData, BridgeTxDetails, SendOneSidedRequest, TappletSignerParams, WindowSize } from './tapplet.types';
+import { BaseNodeStatus, BridgeEnvs } from '../app-status';
+import {
+    AccountData,
+    BridgeTxDetails,
+    SendOneSidedRequest,
+    TappletSignerParams,
+    TappletWalletBalance,
+    WindowSize,
+} from './tapplet.types';
 import {
     useTappletsStore,
     setOngoingBridgeTx as setTx,
@@ -175,17 +182,15 @@ export class TappletSigner {
         const status = await invoke('get_base_node_status');
         return status;
     }
-
-    public async getTariBalance(): Promise<WalletBalance> {
-        const walletBalance = useWalletStore.getState().balance;
-        return (
-            walletBalance ?? {
-                available_balance: 0,
-                timelocked_balance: 0,
-                pending_incoming_balance: 0,
-                pending_outgoing_balance: 0,
-            }
-        );
+    /** Maps the wallet's `AccountBalance` onto the field names the shipped bridge tapplet reads. */
+    public async getTariBalance(): Promise<TappletWalletBalance> {
+        const accountBalance = useWalletStore.getState().account_balance;
+        return {
+            available_balance: accountBalance?.available || 0,
+            timelocked_balance: accountBalance?.locked || 0,
+            pending_incoming_balance: accountBalance?.unconfirmed || 0,
+            pending_outgoing_balance: 0,
+        };
     }
 
     public async getAppLanguage(): Promise<string | undefined> {
