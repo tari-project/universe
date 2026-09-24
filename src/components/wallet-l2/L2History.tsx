@@ -3,7 +3,7 @@ import { AnimatePresence } from 'motion/react';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { useTranslation } from 'react-i18next';
 import { useUIStore } from '@app/store/useUIStore.ts';
-import type { L2Account, L2BalanceChange } from '@app/types/events-payloads.ts';
+import type { L2Account } from '@app/types/events-payloads.ts';
 import { formatNumber, FormatPreset } from '@app/utils';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList.tsx';
@@ -47,7 +47,7 @@ export default function L2History({ account }: { account: L2Account }) {
             {!account.history.length && <EmptyText data-testid="l2-history-empty">{t('l2.empty')}</EmptyText>}
             <ListItemWrapper>
                 {account.history.map((change) => (
-                    <L2HistoryRow key={change.id} change={change} onDetails={() => setSelectedId(change.id)}>
+                    <L2HistoryRow key={change.id} onDetails={() => setSelectedId(change.id)}>
                         <ContentWrapper onClick={() => setSelectedId(change.id)}>
                             <Content>
                                 <BlockInfoWrapper>
@@ -100,15 +100,7 @@ export default function L2History({ account }: { account: L2Account }) {
 }
 
 // A history row with the same hover-to-reveal View details button as the L1 rows.
-function L2HistoryRow({
-    change,
-    onDetails,
-    children,
-}: {
-    change: L2BalanceChange;
-    onDetails: () => void;
-    children: React.ReactNode;
-}) {
+function L2HistoryRow({ onDetails, children }: { onDetails: () => void; children: React.ReactNode }) {
     const { t } = useTranslation('wallet');
     const [hovering, setHovering] = useState(false);
     return (
