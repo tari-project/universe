@@ -20,7 +20,21 @@ export default function L2Button() {
             data-testid="sidebar-l2-button"
             data-active={l2Open}
         >
-            <span style={{ fontSize: 18, fontWeight: 700 }}>{`L2`}</span>
+            {/* Two linked rings: the L1 and L2 chains woven together. */}
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                <path
+                    d="M11.10 20.91 A7 7 0 1 1 16.12 17.39"
+                    stroke="currentColor"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                />
+                <path
+                    d="M16.90 7.09 A7 7 0 1 1 11.88 10.61"
+                    stroke="currentColor"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                />
+            </svg>
         </Button>
     );
 }
