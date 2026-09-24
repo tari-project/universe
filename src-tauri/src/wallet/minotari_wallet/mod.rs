@@ -26,6 +26,8 @@ pub mod transaction;
 
 pub static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet";
 
+use crate::configs::config_core::ConfigCore;
+use crate::configs::trait_config::ConfigImpl;
 use crate::{
     LOG_TARGET_STATUSES, UniverseAppState,
     credential_manager::CredentialManager,
@@ -704,14 +706,17 @@ impl MinotariWalletManager {
     /// refresh/import rescan) walks the whole mining history, and reporting those
     /// blocks again would replay years of rewards to the airdrop API.
     async fn notify_blocks_won(transactions: &[DisplayedTransaction]) {
-        if !INSTANCE.initial_sync_complete.load(Ordering::SeqCst) {
-            return;
-        }
         let coinbase_heights: Vec<u64> = transactions
             .iter()
             .filter(|tx| tx.source == TransactionSource::Coinbase)
             .map(|tx| tx.blockchain.block_height)
             .collect();
+        let allow_notifications = *ConfigCore::content().await.allow_notifications();
+        let coinbase_heights = blocks_to_report(
+            INSTANCE.initial_sync_complete.load(Ordering::SeqCst),
+            allow_notifications,
+            coinbase_heights,
+        );
         if coinbase_heights.is_empty() {
             return;
         }
@@ -1009,6 +1014,22 @@ impl MinotariWalletManager {
     }
 }
 
+/// Coinbase heights worth reporting as blocks won. Nothing until the initial
+/// sync has caught up (a rescan would replay years of history), and nothing
+/// unless the user allows notifications: the report leaves the machine, as the
+/// pre-minotari path also required.
+fn blocks_to_report(
+    synced: bool,
+    allow_notifications: bool,
+    coinbase_heights: Vec<u64>,
+) -> Vec<u64> {
+    if synced && allow_notifications {
+        coinbase_heights
+    } else {
+        Vec::new()
+    }
+}
+
 /// Scanned height as a percentage of the node's tip: the same ratio as the
 /// "scanned / total" heights the wallet shows next to it, so the three numbers
 /// agree. A wallet born well after genesis therefore starts above 0%. `0` when
@@ -1023,7 +1044,14 @@ fn scan_progress_percent(current_height: u64, tip_height: u64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use super::scan_progress_percent;
+    use super::{blocks_to_report, scan_progress_percent};
+
+    #[test]
+    fn blocks_won_are_reported_only_when_synced_and_notifications_are_allowed() {
+        assert_eq!(blocks_to_report(true, true, vec![7, 9]), vec![7, 9]);
+        assert!(blocks_to_report(true, false, vec![7, 9]).is_empty());
+        assert!(blocks_to_report(false, true, vec![7, 9]).is_empty());
+    }
 
     #[test]
     fn progress_matches_the_scanned_over_total_heights_shown_beside_it() {
