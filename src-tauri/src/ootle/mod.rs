@@ -62,17 +62,23 @@ use tari_template_lib::{
     },
 };
 use tauri::AppHandle;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, broadcast};
 use tokio_util::task::TaskTracker;
+use url::Url;
 
 use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     credential_manager::CredentialManager,
+    events_emitter::EventsEmitter,
     internal_wallet::{InternalWallet, to_wallet_cipher_seed},
     pin::PinManager,
     tasks_tracker::TasksTrackers,
     wallet::send_gate::{TransactionError, check_l2_allowed, network_supports_l2},
 };
+
+mod state;
+
+pub use state::L2WalletState;
 
 const LOG_TARGET: &str = "tari::universe::ootle";
 /// Same as tari_walletd: stop looking for more recovered accounts after this many misses.
@@ -114,23 +120,8 @@ impl OotleWalletManager {
             .ok_or_else(|| anyhow::anyhow!("No Ootle indexer configured for {network}"))?;
 
         let store_dir = data_dir.join("ootle-wallet").join(network.as_key_str());
-        std::fs::create_dir_all(&store_dir)?;
-        let store = SqliteWalletStore::try_open(store_dir.join("wallet.sqlite"))?;
-        store.run_migrations()?;
-
         let password = CredentialManager::ootle_keyring_password().await?;
-        let config = WalletSdkConfig {
-            network: ootle_network(network),
-            override_keyring_password: Some(SafePassword::from(password.as_str())),
-        };
-        let indexer = IndexerRestApiNetworkInterface::new(indexer_url.clone());
-        let sdk = OotleSdk::initialize_with_local_key_store(
-            store,
-            indexer,
-            config,
-            EpochBirthday::far_future(),
-        )?;
-        upsert_genesis_resources(&sdk)?;
+        let sdk = open_sdk(&store_dir, network, indexer_url.clone(), &password)?;
 
         if sdk.config_api().exists(ConfigKey::CipherSeed)? {
             start_services(&sdk, sdk.is_recovery_needed()?).await?;
@@ -171,6 +162,46 @@ impl OotleWalletManager {
         info!(target: LOG_TARGET, "L2 wallet enabled");
         Ok(())
     }
+
+    /// Everything the L2 panel shows. Refused without a PIN or off Esmeralda, and
+    /// before the store has opened. A store that was never enabled reports
+    /// `enabled: false` and no accounts.
+    pub async fn state() -> Result<L2WalletState, TransactionError> {
+        check_l2_allowed(
+            Network::get_current_or_user_setting_or_default(),
+            PinManager::pin_locked().await,
+        )?;
+        let sdk = INSTANCE.sdk.lock().await.clone().ok_or_else(|| {
+            TransactionError::Disabled("The L2 wallet has not started yet".to_string())
+        })?;
+        state::build_state(&sdk).map_err(wallet_error)
+    }
+}
+
+/// Opens (or creates) the store in `store_dir` and wraps it in the SDK. Does not touch
+/// the network.
+fn open_sdk(
+    store_dir: &Path,
+    network: Network,
+    indexer_url: Url,
+    password: &str,
+) -> Result<OotleSdk, anyhow::Error> {
+    std::fs::create_dir_all(store_dir)?;
+    let store = SqliteWalletStore::try_open(store_dir.join("wallet.sqlite"))?;
+    store.run_migrations()?;
+    let config = WalletSdkConfig {
+        network: ootle_network(network),
+        override_keyring_password: Some(SafePassword::from(password)),
+    };
+    let indexer = IndexerRestApiNetworkInterface::new(indexer_url);
+    let sdk = OotleSdk::initialize_with_local_key_store(
+        store,
+        indexer,
+        config,
+        EpochBirthday::far_future(),
+    )?;
+    upsert_genesis_resources(&sdk)?;
+    Ok(sdk)
 }
 
 fn wallet_error(e: impl std::fmt::Display) -> TransactionError {
@@ -250,6 +281,8 @@ async fn start_services(sdk: &OotleSdk, needs_recovery: bool) -> Result<(), anyh
     });
 
     let notify = INSTANCE.notify.clone();
+    let events = emit_state_on_events(sdk.clone(), notify.subscribe());
+    spawn_service(&tracker, &signal, "state events", events);
     let (transactions, _) = TransactionService::new(notify.clone(), sdk.clone(), signal.clone());
     spawn_service(&tracker, &signal, "transaction service", transactions.run());
 
@@ -272,12 +305,42 @@ async fn start_services(sdk: &OotleSdk, needs_recovery: bool) -> Result<(), anyh
             RECOVERY_ABANDON_COUNT,
             birthday,
         );
-        spawn_service(&tracker, &signal, "account recovery", async {
+        // Recovery adds the accounts (index 0 becomes the default) without an event.
+        let sdk = sdk.clone();
+        spawn_service(&tracker, &signal, "account recovery", async move {
             scanner.scan().await;
+            emit_state(&sdk).await;
             Ok(())
         });
     }
     Ok(())
+}
+
+/// Sends the whole L2 state to the frontend now and again whenever the wallet reports
+/// an account, balance or transaction change.
+async fn emit_state_on_events(
+    sdk: OotleSdk,
+    mut events: broadcast::Receiver<WalletEvent>,
+) -> Result<(), anyhow::Error> {
+    emit_state(&sdk).await;
+    loop {
+        match events.recv().await {
+            Ok(
+                WalletEvent::AuthLoginRequest(_)
+                | WalletEvent::TransactionRequestCreated(_)
+                | WalletEvent::UtxoRecoveryStarted(_),
+            ) => {}
+            Ok(_) | Err(broadcast::error::RecvError::Lagged(_)) => emit_state(&sdk).await,
+            Err(broadcast::error::RecvError::Closed) => return Ok(()),
+        }
+    }
+}
+
+async fn emit_state(sdk: &OotleSdk) {
+    match state::build_state(sdk) {
+        Ok(state) => EventsEmitter::emit_l2_wallet_state(state).await,
+        Err(e) => error!(target: LOG_TARGET, "Could not read the L2 wallet state: {e}"),
+    }
 }
 
 fn spawn_service(

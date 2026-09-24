@@ -166,3 +166,44 @@ export type PinPromptContext =
     | SeedNeedsPinPromptContext;
 
 export type SpendKind = 'send' | 'burn';
+
+/** XTR in micro units. Revealed sits in the account vault, confidential in stealth UTXOs. */
+export interface L2Balance {
+    revealed: number;
+    confidential: number;
+}
+
+/** A settled XTR movement on an L2 account. `amount` is signed micro XTR. */
+export interface L2BalanceChange {
+    id: number;
+    transaction_id: string | null;
+    amount: number;
+    source: 'transaction' | 'scan' | 'recovery';
+    timestamp: number;
+}
+
+/** A transaction this wallet submitted on L2, with its current status. */
+export interface L2Transaction {
+    id: string;
+    status: string;
+    fee: number | null;
+    invalid_reason: string | null;
+    timestamp: number;
+}
+
+export interface L2Account {
+    name: string | null;
+    address: string;
+    component_address: string;
+    /** Owner public key, hex. The key an L1 burn is claimed with. */
+    public_key: string;
+    is_default: boolean;
+    balance: L2Balance;
+    history: L2BalanceChange[];
+    transactions: L2Transaction[];
+}
+
+export interface L2WalletState {
+    enabled: boolean;
+    accounts: L2Account[];
+}

@@ -88,6 +88,7 @@ fn replay_cache_key(event: &serde_json::Value) -> Option<String> {
         | "WalletBalanceUpdate"
         | "WalletScanningProgressUpdate"
         | "WalletUIModeChanged"
+        | "L2WalletStateUpdate"
         | "BaseNodeUpdate"
         | "NodeTypeUpdate"
         | "UpdateCpuMinerControlsState"

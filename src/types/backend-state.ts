@@ -2,6 +2,7 @@ import {
     BackgroundNodeSyncUpdatePayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
+    L2WalletState,
     DetectedDevicesPayload,
     GpuMiner,
     GpuMinerType,
@@ -244,6 +245,10 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'WalletTransactionUpdated';
           payload: DisplayedTransaction;
+      }
+    | {
+          event_type: 'L2WalletStateUpdate';
+          payload: L2WalletState;
       }
     | {
           event_type: 'SetShowBatteryAlert';

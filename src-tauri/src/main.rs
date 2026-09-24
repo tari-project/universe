@@ -493,6 +493,7 @@ fn main() {
             commands::send_one_sided_to_stealth_address,
             commands::burn_to_l2,
             commands::enable_l2_wallet,
+            commands::l2_get_state,
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,

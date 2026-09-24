@@ -49,7 +49,7 @@ use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::network_utils::NetworkExt;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
-use crate::ootle::OotleWalletManager;
+use crate::ootle::{L2WalletState, OotleWalletManager};
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
@@ -1672,6 +1672,12 @@ pub async fn enable_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String
     OotleWalletManager::enable(&app_handle)
         .await
         .map_err(|e| e.to_string())
+}
+
+/// Everything the L2 panel shows: accounts, XTR balances and history.
+#[tauri::command]
+pub async fn l2_get_state() -> Result<L2WalletState, String> {
+    OotleWalletManager::state().await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
