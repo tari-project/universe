@@ -77,7 +77,7 @@ import {
     handleWalletTransactionsCleared,
     handleWalletTransactionUpdated,
 } from '@app/store/actions/walletStoreActions';
-import { handleL2WalletStateUpdate } from '@app/store/actions/l2WalletStoreActions';
+import { handleL2NetworkStats, handleL2WalletStateUpdate } from '@app/store/actions/l2WalletStoreActions';
 import { handleConfigCoreLoaded } from '@app/store/actions/config/core.ts';
 import { handleFeedbackExitSurveyRequested } from '@app/store/stores/userFeedbackStore';
 
@@ -301,6 +301,9 @@ const useTauriEventsListener = () => {
                         break;
                     case 'L2WalletStateUpdate':
                         handleL2WalletStateUpdate(event.payload);
+                        break;
+                    case 'L2NetworkStats':
+                        handleL2NetworkStats(event.payload);
                         break;
                     case 'SetShowBatteryAlert':
                         setShowBatteryAlert(event.payload);

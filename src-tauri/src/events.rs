@@ -41,6 +41,7 @@ pub enum EventType {
     WalletTransactionsCleared,
     WalletTransactionUpdated,
     L2WalletStateUpdate,
+    L2NetworkStats,
     BaseNodeUpdate,
     GpuDevicesUpdate,
     CpuPoolsStatsUpdate,

@@ -235,3 +235,15 @@ export interface L2WalletState {
     enabled: boolean;
     accounts: L2Account[];
 }
+
+/** Micro XTR amounts. Block counts and times are L1. */
+export interface L2NetworkStats {
+    epoch: number;
+    block_height: number;
+    epoch_length: number;
+    blocks_into_epoch: number;
+    block_target_secs: number;
+    tx_count: number;
+    fee_volume: number;
+    burned: number;
+}

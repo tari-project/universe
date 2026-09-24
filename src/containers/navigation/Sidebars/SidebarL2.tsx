@@ -1,3 +1,4 @@
+import L2Tiles from '@app/components/wallet-l2/L2Tiles.tsx';
 import L2WalletCard from '@app/components/wallet-l2/L2WalletCard.tsx';
 import { SidebarContent, SidebarWrapper } from './Sidebar.styles.ts';
 
@@ -10,8 +11,7 @@ export default function SidebarL2() {
     return (
         <SidebarWrapper variants={variants} initial="hidden" animate="visible" exit="hidden" data-testid="sidebar-l2">
             <SidebarContent>
-                {/* Top half stays empty for now. */}
-                <div style={{ flex: '1 1 100%' }} />
+                <L2Tiles />
                 <L2WalletCard />
             </SidebarContent>
         </SidebarWrapper>

@@ -33,7 +33,7 @@ use crate::mining::cpu::CpuMinerStatus;
 use crate::mining::gpu::consts::{GpuMiner, GpuMinerStatus, GpuMinerType};
 use crate::mining::gpu::miners::GpuCommonInformation;
 use crate::mining::pools::PoolStatus;
-use crate::ootle::L2WalletState;
+use crate::ootle::{L2NetworkStats, L2WalletState};
 #[cfg(target_os = "windows")]
 use crate::system_dependencies::UniversalSystemDependency;
 use crate::{
@@ -432,6 +432,20 @@ impl EventsEmitter {
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit L2WalletStateUpdate event: {e:?}");
+        }
+    }
+
+    pub async fn emit_l2_network_stats(stats: L2NetworkStats) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::L2NetworkStats,
+            payload: stats,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit L2NetworkStats event: {e:?}");
         }
     }
 

@@ -290,6 +290,17 @@
       "completed-title": "Sent",
       "completed-text": "Your L2 transaction was submitted."
     },
+    "tiles": {
+      "epoch": "Epoch",
+      "epoch-progress": "Block {{block}} of {{length}}",
+      "next-epoch": "Next epoch",
+      "blocks-left_one": "{{count}} block left",
+      "blocks-left_other": "{{count}} blocks left",
+      "activity": "Activity",
+      "transactions": "Transactions",
+      "fees": "Fees",
+      "burned": "Burned"
+    },
     "claim": {
       "title": "Burns to claim",
       "commitment": "Burn commitment",

@@ -28,7 +28,7 @@
 
 use std::{collections::HashMap, future::Future, path::Path, str::FromStr, sync::LazyLock};
 
-use log::{error, info};
+use log::{error, info, warn};
 use tari_common::configuration::Network;
 use tari_common_types_wallet::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_crypto::tari_utilities::SafePassword;
@@ -82,10 +82,12 @@ use crate::{
 };
 
 mod claim;
+mod network_stats;
 mod send;
 mod state;
 
 pub use claim::{BurnProof, L2Burn};
+pub use network_stats::L2NetworkStats;
 pub use state::L2WalletState;
 
 const LOG_TARGET: &str = "tari::universe::ootle";
@@ -248,16 +250,7 @@ impl OotleWalletManager {
             Network::get_current_or_user_setting_or_default(),
             PinManager::pin_locked().await,
         )?;
-        let pending = MinotariWalletManager::pending_burns()
-            .await
-            .map_err(wallet_error)?
-            .into_iter()
-            .map(|row| {
-                let amount = u64::try_from(row.value).unwrap_or_default();
-                L2Burn::pending(hex::encode(row.commitment), row.claim_public_key, amount)
-            })
-            .collect();
-        let mut burns = claim::list_burns(&burn_proofs_dir()?, pending).map_err(wallet_error)?;
+        let mut burns = listed_burns().await?;
         claim::mark_foreign(&started_sdk().await?, &mut burns).map_err(wallet_error)?;
         claim::attach_errors(&mut burns, &*INSTANCE.claim_errors.lock().await);
         Ok(burns)
@@ -288,6 +281,35 @@ impl OotleWalletManager {
         info!(target: LOG_TARGET, "L2 claim submitted: {id}");
         emit_state(&sdk).await;
         Ok(id.to_string())
+    }
+}
+
+/// Pending burns from the L1 wallet db and the proof files on disk, before the checks
+/// against the L2 wallet.
+async fn listed_burns() -> Result<Vec<L2Burn>, TransactionError> {
+    let pending = MinotariWalletManager::pending_burns()
+        .await
+        .map_err(wallet_error)?
+        .into_iter()
+        .map(|row| {
+            let amount = u64::try_from(row.value).unwrap_or_default();
+            L2Burn::pending(hex::encode(row.commitment), row.claim_public_key, amount)
+        })
+        .collect();
+    claim::list_burns(&burn_proofs_dir()?, pending).map_err(wallet_error)
+}
+
+/// A new burn or proof file is an L1 side change, so no wallet event reports it. Sends
+/// the L2 state when the burn list changed since `last`, which makes the panel refetch
+/// its burns.
+async fn emit_state_on_new_burns(sdk: &OotleSdk, last: &mut Option<Vec<L2Burn>>) {
+    match listed_burns().await {
+        Ok(burns) if last.as_ref() != Some(&burns) => {
+            *last = Some(burns);
+            emit_state(sdk).await;
+        }
+        Ok(_) => {}
+        Err(e) => warn!(target: LOG_TARGET, "Could not list burns to L2: {e}"),
     }
 }
 
@@ -445,6 +467,12 @@ async fn start_services(sdk: &OotleSdk, needs_recovery: bool) -> Result<(), anyh
         phase_signal.wait().await;
         shutdown.trigger();
     });
+
+    if let Some(indexer) = ConfigCore::content().await.ootle_indexer_url().clone() {
+        let network = Network::get_current_or_user_setting_or_default();
+        let poll = network_stats::poll(sdk.clone(), indexer, network);
+        spawn_service(&tracker, &signal, "network poller", poll);
+    }
 
     let notify = INSTANCE.notify.clone();
     let events = emit_state_on_events(sdk.clone(), notify.subscribe());
