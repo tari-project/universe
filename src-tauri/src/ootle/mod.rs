@@ -86,7 +86,7 @@ mod network_stats;
 mod send;
 mod state;
 
-pub use claim::{BurnProof, L2Burn};
+pub use claim::{BurnProof, L2Burn, L2ClaimResult};
 pub use network_stats::L2NetworkStats;
 pub use state::L2WalletState;
 
@@ -110,7 +110,6 @@ static INSTANCE: LazyLock<OotleWalletManager> = LazyLock::new(|| OotleWalletMana
     sdk: Mutex::new(None),
     notify: Notify::new(100),
     transactions: Mutex::new(None),
-    claim_errors: Mutex::new(HashMap::new()),
 });
 
 pub struct OotleWalletManager {
@@ -118,8 +117,6 @@ pub struct OotleWalletManager {
     notify: Notify<WalletEvent>,
     /// Set once the services run, which is when L2 is enabled.
     transactions: Mutex<Option<TransactionServiceHandle>>,
-    /// Why the last claim of each proof file was rejected, cleared when it's claimed again.
-    claim_errors: Mutex<HashMap<String, String>>,
 }
 
 impl OotleWalletManager {
@@ -252,7 +249,6 @@ impl OotleWalletManager {
         )?;
         let mut burns = listed_burns().await?;
         claim::mark_foreign(&started_sdk().await?, &mut burns).map_err(wallet_error)?;
-        claim::attach_errors(&mut burns, &*INSTANCE.claim_errors.lock().await);
         Ok(burns)
     }
 
@@ -531,10 +527,11 @@ async fn emit_state_on_events(
             // A claim's proof file moves before the state goes out, so the panel's burn
             // list refreshes with it gone.
             Ok(event) => {
-                let mut errors = INSTANCE.claim_errors.lock().await;
-                claim::track_claim(&proof_dir, &mut claims, &mut errors, &event);
-                drop(errors);
+                let result = claim::track_claim(&proof_dir, &mut claims, &event);
                 emit_state(&sdk).await;
+                if let Some(result) = result {
+                    EventsEmitter::emit_l2_claim_result(result).await;
+                }
             }
             Err(broadcast::error::RecvError::Lagged(_)) => emit_state(&sdk).await,
             Err(broadcast::error::RecvError::Closed) => return Ok(()),

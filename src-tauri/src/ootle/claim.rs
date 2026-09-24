@@ -86,10 +86,34 @@ pub struct L2Burn {
     /// "claimed" once a claim is accepted on L2. "foreign" instead of "claimable" when
     /// the claim key isn't one of this wallet's L2 accounts.
     pub status: &'static str,
-    /// Why the last claim of this burn was rejected, until the next claim is submitted.
-    pub last_error: Option<String>,
-    /// The last claim was rejected only because the L2 hasn't seen the burn yet.
+}
+
+/// How a submitted claim ended on L2.
+#[derive(Clone, Debug, Serialize, PartialEq)]
+pub struct L2ClaimResult {
+    /// Hex, the claimed burn's commitment.
+    pub commitment: String,
+    pub accepted: bool,
+    /// Why the claim was rejected, when the L2 said.
+    pub reason: Option<String>,
+    /// Rejected only because the L2 hasn't seen the burn yet.
     pub not_yet_claimable: bool,
+}
+
+impl L2ClaimResult {
+    /// The result for a claim of the proof `file` ({claim key}-{commitment}.json).
+    fn new(file: &str, accepted: bool, reason: Option<String>) -> Self {
+        let commitment = file
+            .strip_suffix(".json")
+            .and_then(|name| name.rsplit_once('-'))
+            .map_or(file, |(_, commitment)| commitment);
+        Self {
+            commitment: commitment.to_string(),
+            accepted,
+            not_yet_claimable: reason.as_deref().is_some_and(is_burn_not_yet_claimable),
+            reason,
+        }
+    }
 }
 
 impl L2Burn {
@@ -101,8 +125,6 @@ impl L2Burn {
             amount,
             proof_file: None,
             status: "pending",
-            last_error: None,
-            not_yet_claimable: false,
         }
     }
 }
@@ -141,20 +163,6 @@ pub fn list_burns(dir: &Path, pending: Vec<L2Burn>) -> Result<Vec<L2Burn>, anyho
 }
 
 /// Fills in each burn's last claim rejection from `errors`, keyed by proof file.
-pub fn attach_errors(burns: &mut [L2Burn], errors: &HashMap<String, String>) {
-    for burn in burns {
-        burn.last_error = burn
-            .proof_file
-            .as_ref()
-            .and_then(|f| errors.get(f))
-            .cloned();
-        burn.not_yet_claimable = burn
-            .last_error
-            .as_deref()
-            .is_some_and(is_burn_not_yet_claimable);
-    }
-}
-
 /// Marks claimable burns whose claim key isn't one of this wallet's L2 accounts
 /// "foreign", since claim_burn would refuse them.
 pub fn mark_foreign(sdk: &OotleSdk, burns: &mut [L2Burn]) -> Result<(), anyhow::Error> {
@@ -218,8 +226,6 @@ fn read_burns(
                     amount: proof.claim_proof.value,
                     proof_file: Some(file.to_string()),
                     status,
-                    last_error: None,
-                    not_yet_claimable: false,
                 },
             )),
             Err(e) => warn!(target: LOG_TARGET, "Skipping burn proof {file}: {e}"),
@@ -235,43 +241,47 @@ fn read_proof(path: &Path) -> Result<BurnProof, anyhow::Error> {
     Ok(serde_json::from_slice(&std::fs::read(path)?)?)
 }
 
-/// Moves the proof file of an accepted claim into the claimed directory and keeps the
-/// reason a claim was rejected in `errors` until the next claim of that file. `claims`
-/// maps submitted claim transactions to their proof file.
+/// Moves the proof file of an accepted claim into the claimed directory and returns how
+/// a tracked claim ended once it finalizes or turns out invalid. `claims` maps submitted
+/// claim transactions to their proof file.
 pub fn track_claim(
     dir: &Path,
     claims: &mut HashMap<TransactionId, String>,
-    errors: &mut HashMap<String, String>,
     event: &WalletEvent,
-) {
+) -> Option<L2ClaimResult> {
     match event {
         WalletEvent::TransactionSubmitted(event) => {
             if let Some(TransactionContextKind::ClaimBurn { file_name }) =
                 event.context.as_ref().and_then(|c| c.kind.as_ref())
             {
-                errors.remove(file_name);
                 claims.insert(event.transaction_id, file_name.clone());
             }
+            None
         }
         WalletEvent::TransactionFinalized(event) => {
-            let Some(file) = claims.remove(&event.transaction_id) else {
-                return;
-            };
+            let file = claims.remove(&event.transaction_id)?;
             if let Some(reason) = event.finalize.result.any_reject() {
                 warn!(target: LOG_TARGET, "Claim of {file} was rejected, it stays claimable: {reason}");
-                errors.insert(file, reason.to_string());
-                return;
+                return Some(L2ClaimResult::new(&file, false, Some(reason.to_string())));
             }
             let moved = std::fs::create_dir_all(dir.join(CLAIMED_DIR))
                 .and_then(|()| std::fs::rename(dir.join(&file), dir.join(CLAIMED_DIR).join(&file)));
             if let Err(e) = moved {
                 warn!(target: LOG_TARGET, "Could not mark {file} claimed: {e}");
             }
+            Some(L2ClaimResult::new(&file, true, None))
         }
         WalletEvent::TransactionInvalid(event) => {
-            claims.remove(&event.transaction_id);
+            let file = claims.remove(&event.transaction_id)?;
+            let reason = event
+                .finalize
+                .as_ref()
+                .and_then(|f| f.result.any_reject())
+                .map(|r| r.to_string());
+            warn!(target: LOG_TARGET, "Claim of {file} is invalid, it stays claimable: {reason:?}");
+            Some(L2ClaimResult::new(&file, false, reason))
         }
-        _ => {}
+        _ => None,
     }
 }
 
@@ -468,36 +478,23 @@ mod tests {
     }
 
     #[test]
-    fn rejections_map_to_the_row() {
+    fn rejections_map_to_the_result() {
         let not_yet = "Execution failure: At instruction #0: Invalid burn claim proof: block header not found \
                        for hash 0a1b2c. The claim may be invalid, or the burn may have occurred after the \
                        current epoch, and therefore is not yet claimable.";
-        let errors = HashMap::from([
-            ("a.json".to_string(), not_yet.to_string()),
-            (
-                "b.json".to_string(),
-                "Execution failure: Insufficient funds".to_string(),
-            ),
-        ]);
-        let burn = |file: &str| L2Burn {
-            proof_file: Some(file.to_string()),
-            ..L2Burn::pending(String::new(), String::new(), 1)
+        let file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
+        let result = |accepted, reason: Option<&str>| {
+            let r = L2ClaimResult::new(&file, accepted, reason.map(str::to_string));
+            (r.commitment, r.accepted, r.not_yet_claimable)
         };
-        let mut burns = [burn("a.json"), burn("b.json"), burn("c.json")];
-
-        attach_errors(&mut burns, &errors);
-
-        let rows: Vec<_> = burns
-            .iter()
-            .map(|b| (b.last_error.as_deref(), b.not_yet_claimable))
-            .collect();
+        assert_eq!(result(true, None), (COMMITMENT.to_string(), true, false));
         assert_eq!(
-            rows,
-            [
-                (Some(not_yet), true),
-                (Some("Execution failure: Insufficient funds"), false),
-                (None, false),
-            ]
+            result(false, Some(not_yet)),
+            (COMMITMENT.to_string(), false, true)
+        );
+        assert_eq!(
+            result(false, Some("Execution failure: Insufficient funds")),
+            (COMMITMENT.to_string(), false, false)
         );
     }
 

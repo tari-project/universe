@@ -14,8 +14,6 @@ const burn = (commitment: string, status: L2Burn['status']): L2Burn => ({
     amount: 1_000_000_000,
     proof_file: status === 'pending' ? null : `${commitment}.json`,
     status,
-    last_error: null,
-    not_yet_claimable: false,
 });
 const REJECTION = 'L2 claim failed: ownership proof validation failed';
 
@@ -55,24 +53,6 @@ describe('L2ClaimBurns', () => {
         fireEvent.click(await screen.findByTestId('l2-claim-button'));
         expect(invoke).toHaveBeenCalledWith('l2_claim_burn', { commitment: 'aa'.repeat(32) });
         await waitFor(() => expect(useToastStore.getState().toasts.slice(-1)[0]?.text).toContain(REJECTION));
-    });
-
-    it('never writes a rejection into the row and keeps the Claim button', async () => {
-        vi.mocked(invoke).mockImplementation((async (cmd: string) =>
-            cmd === 'l2_claimable_burns'
-                ? [
-                      { ...burn('aa'.repeat(32), 'claimable'), last_error: 'Insufficient funds' },
-                      {
-                          ...burn('bb'.repeat(32), 'claimable'),
-                          last_error: 'is not yet claimable',
-                          not_yet_claimable: true,
-                      },
-                  ]
-                : undefined) as typeof invoke);
-        render(<L2ClaimBurns account={account} />);
-        await waitFor(() => expect(screen.getAllByTestId('l2-claim-button')).toHaveLength(2));
-        const statuses = screen.getAllByTestId('l2-claim-status').map((s) => s.textContent);
-        expect(statuses).toEqual(['l2.claim.ready', 'l2.claim.ready']);
     });
 
     it('lists a burn to a key this wallet does not hold without a Claim button', async () => {

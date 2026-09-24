@@ -227,7 +227,13 @@ export interface L2Burn {
     amount: number;
     proof_file: string | null;
     status: 'pending' | 'claimable' | 'claimed' | 'foreign';
-    last_error: string | null;
+}
+
+/** How a submitted claim of the burn with `commitment` (hex) ended on L2. */
+export interface L2ClaimResult {
+    commitment: string;
+    accepted: boolean;
+    reason: string | null;
     not_yet_claimable: boolean;
 }
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { initialState, selectL2Account, useL2WalletStore } from '../useL2WalletStore';
-import { handleL2WalletStateUpdate } from './l2WalletStoreActions';
+import { handleL2ClaimResult, handleL2WalletStateUpdate } from './l2WalletStoreActions';
+import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import type { L2Account } from '@app/types/events-payloads.ts';
 
 const account = (name: string, is_default: boolean): L2Account => ({
@@ -37,5 +38,30 @@ describe('handleL2WalletStateUpdate', () => {
 
         handleL2WalletStateUpdate(initialState);
         expect(selectL2Account(useL2WalletStore.getState())).toBeUndefined();
+    });
+});
+
+describe('handleL2ClaimResult', () => {
+    const result = {
+        commitment: 'aa'.repeat(32),
+        accepted: false,
+        reason: 'Insufficient funds',
+        not_yet_claimable: false,
+    };
+    const lastToast = () => useToastStore.getState().toasts.slice(-1)[0];
+
+    it('toasts success when the claim is accepted', () => {
+        handleL2ClaimResult({ ...result, accepted: true, reason: null });
+        expect(lastToast()).toMatchObject({ type: 'success', title: 'l2.claim.confirmed' });
+    });
+
+    it('toasts the reject reason', () => {
+        handleL2ClaimResult(result);
+        expect(lastToast()).toMatchObject({ type: 'error', title: 'l2.claim.rejected', text: 'Insufficient funds' });
+    });
+
+    it('explains a burn the L2 has not seen yet instead of the raw reason', () => {
+        handleL2ClaimResult({ ...result, reason: 'is not yet claimable', not_yet_claimable: true });
+        expect(lastToast()).toMatchObject({ type: 'error', text: 'l2.claim.not-yet-claimable' });
     });
 });

@@ -310,9 +310,10 @@
       "pending": "Waiting for the burn to be mined",
       "ready": "Ready to claim",
       "foreign": "Sent to a claim key this wallet doesn't hold",
-      "rejected": "Claim rejected: {{reason}}",
-      "not-yet-claimable": "Not claimable yet, the L2 hasn't seen the burn",
-      "submitted": "Claim submitted. The XTR shows up once it's confirmed.",
+      "rejected": "Claim rejected",
+      "confirmed": "Claim confirmed",
+      "not-yet-claimable": "The L2 hasn't seen this burn yet. On esmeralda it follows L1 by 100 blocks, try again in a while.",
+      "submitted": "Claim submitted, waiting for confirmation",
       "failed": "Claim failed",
       "approve": "Approve claim",
       "approve-subtitle": "Enter your PIN to claim this burn into your Layer 2 wallet. If you did not start this, close this dialog."
