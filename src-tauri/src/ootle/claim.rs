@@ -24,7 +24,12 @@
 //! it: check the burn's ownership proof against the account's derived claim key, decrypt
 //! the burned output, and mint it straight into a stealth output the account owns.
 
-use std::{collections::HashSet, iter, path::Path, time::SystemTime};
+use std::{
+    collections::{HashMap, HashSet},
+    iter,
+    path::Path,
+    time::SystemTime,
+};
 
 use anyhow::{anyhow, bail};
 use base64::{Engine, prelude::BASE64_STANDARD};
@@ -62,6 +67,9 @@ use super::{LOG_TARGET, OotleSdk, send::VALIDITY_EPOCHS};
 const CLAIMED_DIR: &str = "claimed";
 /// Proof files are small. Same cap as tari_walletd.
 const MAX_PROOF_BYTES: u64 = 1 << 20;
+/// What the claim burn verifier says when the L2 hasn't synced the burn's L1 block yet.
+/// Same phrase tari_walletd's auto claim matches to retry later.
+const BURN_NOT_YET_CLAIMABLE_MARKER: &str = "not yet claimable";
 
 /// A burn to L2 and how far along its claim is.
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -75,8 +83,13 @@ pub struct L2Burn {
     /// File name of the proof inside the burn proof directory, once it's written.
     pub proof_file: Option<String>,
     /// "pending" until the burn is mined and its proof written, then "claimable", then
-    /// "claimed" once a claim is accepted on L2.
+    /// "claimed" once a claim is accepted on L2. "foreign" instead of "claimable" when
+    /// the claim key isn't one of this wallet's L2 accounts.
     pub status: &'static str,
+    /// Why the last claim of this burn was rejected, until the next claim is submitted.
+    pub last_error: Option<String>,
+    /// The last claim was rejected only because the L2 hasn't seen the burn yet.
+    pub not_yet_claimable: bool,
 }
 
 impl L2Burn {
@@ -88,6 +101,8 @@ impl L2Burn {
             amount,
             proof_file: None,
             status: "pending",
+            last_error: None,
+            not_yet_claimable: false,
         }
     }
 }
@@ -123,6 +138,45 @@ pub fn list_burns(dir: &Path, pending: Vec<L2Burn>) -> Result<Vec<L2Burn>, anyho
         .filter(|b| !known.contains(&b.commitment))
         .chain(files.into_iter().map(|(_, burn)| burn))
         .collect())
+}
+
+/// Fills in each burn's last claim rejection from `errors`, keyed by proof file.
+pub fn attach_errors(burns: &mut [L2Burn], errors: &HashMap<String, String>) {
+    for burn in burns {
+        burn.last_error = burn
+            .proof_file
+            .as_ref()
+            .and_then(|f| errors.get(f))
+            .cloned();
+        burn.not_yet_claimable = burn
+            .last_error
+            .as_deref()
+            .is_some_and(is_burn_not_yet_claimable);
+    }
+}
+
+/// Marks claimable burns whose claim key isn't one of this wallet's L2 accounts
+/// "foreign", since claim_burn would refuse them.
+pub fn mark_foreign(sdk: &OotleSdk, burns: &mut [L2Burn]) -> Result<(), anyhow::Error> {
+    for burn in burns.iter_mut().filter(|b| b.status == "claimable") {
+        let key =
+            RistrettoPublicKeyBytes::try_from(hex::decode(&burn.claim_public_key)?.as_slice())?;
+        if sdk
+            .accounts_api()
+            .get_account_by_public_key(&key)
+            .optional()?
+            .is_none()
+        {
+            burn.status = "foreign";
+        }
+    }
+    Ok(())
+}
+
+/// True if a claim was rejected because the burn's L1 block isn't synced into a
+/// claimable epoch yet, rather than because the claim is bad.
+fn is_burn_not_yet_claimable(reject_reason: &str) -> bool {
+    reject_reason.contains(BURN_NOT_YET_CLAIMABLE_MARKER)
 }
 
 /// The claimable proof for `commitment` and its file name.
@@ -164,6 +218,8 @@ fn read_burns(
                     amount: proof.claim_proof.value,
                     proof_file: Some(file.to_string()),
                     status,
+                    last_error: None,
+                    not_yet_claimable: false,
                 },
             )),
             Err(e) => warn!(target: LOG_TARGET, "Skipping burn proof {file}: {e}"),
@@ -179,11 +235,13 @@ fn read_proof(path: &Path) -> Result<BurnProof, anyhow::Error> {
     Ok(serde_json::from_slice(&std::fs::read(path)?)?)
 }
 
-/// Moves the proof file of an accepted claim into the claimed directory. `claims` maps
-/// submitted claim transactions to their proof file.
+/// Moves the proof file of an accepted claim into the claimed directory and keeps the
+/// reason a claim was rejected in `errors` until the next claim of that file. `claims`
+/// maps submitted claim transactions to their proof file.
 pub fn track_claim(
     dir: &Path,
-    claims: &mut std::collections::HashMap<TransactionId, String>,
+    claims: &mut HashMap<TransactionId, String>,
+    errors: &mut HashMap<String, String>,
     event: &WalletEvent,
 ) {
     match event {
@@ -191,6 +249,7 @@ pub fn track_claim(
             if let Some(TransactionContextKind::ClaimBurn { file_name }) =
                 event.context.as_ref().and_then(|c| c.kind.as_ref())
             {
+                errors.remove(file_name);
                 claims.insert(event.transaction_id, file_name.clone());
             }
         }
@@ -198,8 +257,9 @@ pub fn track_claim(
             let Some(file) = claims.remove(&event.transaction_id) else {
                 return;
             };
-            if event.finalize.result.any_accept().is_none() {
-                warn!(target: LOG_TARGET, "Claim of {file} was not accepted, it stays claimable");
+            if let Some(reason) = event.finalize.result.any_reject() {
+                warn!(target: LOG_TARGET, "Claim of {file} was rejected, it stays claimable: {reason}");
+                errors.insert(file, reason.to_string());
                 return;
             }
             let moved = std::fs::create_dir_all(dir.join(CLAIMED_DIR))
@@ -408,6 +468,40 @@ mod tests {
     }
 
     #[test]
+    fn rejections_map_to_the_row() {
+        let not_yet = "Execution failure: At instruction #0: Invalid burn claim proof: block header not found \
+                       for hash 0a1b2c. The claim may be invalid, or the burn may have occurred after the \
+                       current epoch, and therefore is not yet claimable.";
+        let errors = HashMap::from([
+            ("a.json".to_string(), not_yet.to_string()),
+            (
+                "b.json".to_string(),
+                "Execution failure: Insufficient funds".to_string(),
+            ),
+        ]);
+        let burn = |file: &str| L2Burn {
+            proof_file: Some(file.to_string()),
+            ..L2Burn::pending(String::new(), String::new(), 1)
+        };
+        let mut burns = [burn("a.json"), burn("b.json"), burn("c.json")];
+
+        attach_errors(&mut burns, &errors);
+
+        let rows: Vec<_> = burns
+            .iter()
+            .map(|b| (b.last_error.as_deref(), b.not_yet_claimable))
+            .collect();
+        assert_eq!(
+            rows,
+            [
+                (Some(not_yet), true),
+                (Some("Execution failure: Insufficient funds"), false),
+                (None, false),
+            ]
+        );
+    }
+
+    #[test]
     fn reads_the_burn_proof_workers_file() {
         let proof: BurnProof = serde_json::from_str(PROOF).expect("proof");
         assert_eq!(
@@ -505,7 +599,7 @@ mod tests {
     }
 
     #[test]
-    fn a_burn_for_another_key_fails_the_ownership_check() {
+    fn a_burn_for_another_key_is_foreign_and_fails_the_ownership_check() {
         let dir = tempfile::tempdir().expect("temp dir");
         let url = url::Url::parse("http://127.0.0.1:1").expect("url");
         let mut sdk =
@@ -522,6 +616,14 @@ mod tests {
             .get_account_by_address(account.component_address())
             .expect("account");
         let proof: BurnProof = serde_json::from_str(PROOF).expect("proof");
+        let claimable = |key: String| L2Burn {
+            status: "claimable",
+            ..L2Burn::pending(String::new(), key, 1)
+        };
+        let own_key = hex::encode(account.owner_public_key().as_slice());
+        let mut burns = [claimable(own_key), claimable(CLAIM_KEY.to_string())];
+        mark_foreign(&sdk, &mut burns).expect("mark foreign");
+        assert_eq!(burns.map(|b| b.status), ["claimable", "foreign"]);
 
         let Err(e) = claim_keys(&sdk, &account, &proof.claim_proof) else {
             panic!("a burn for someone else's key must not validate");

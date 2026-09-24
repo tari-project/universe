@@ -45,6 +45,14 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
         }
     }
 
+    function status(burn: L2Burn) {
+        if (burn.status === 'pending') return t('l2.claim.pending');
+        if (burn.status === 'foreign') return t('l2.claim.foreign');
+        if (burn.not_yet_claimable) return t('l2.claim.not-yet-claimable');
+        if (burn.last_error) return t('l2.claim.rejected', { reason: burn.last_error });
+        return t('l2.claim.ready');
+    }
+
     const open = burns.filter((burn) => burn.status !== 'claimed');
     if (!open.length && !message) return null;
 
@@ -56,7 +64,7 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
                 {open.map((burn) => (
                     <ItemWrapper
                         key={burn.commitment}
-                        style={{ height: 48 }}
+                        style={{ minHeight: 48 }}
                         title={burn.commitment}
                         data-testid="l2-claim-row"
                     >
@@ -64,8 +72,8 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
                             <Content>
                                 <BlockInfoWrapper>
                                     <TitleWrapper>{t('tabs.burn')}</TitleWrapper>
-                                    <TimeWrapper variant="p">
-                                        {burn.status === 'claimable' ? t('l2.claim.ready') : t('l2.claim.pending')}
+                                    <TimeWrapper variant="p" data-testid="l2-claim-status">
+                                        {status(burn)}
                                     </TimeWrapper>
                                 </BlockInfoWrapper>
                             </Content>

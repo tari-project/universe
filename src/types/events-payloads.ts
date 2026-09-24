@@ -226,7 +226,9 @@ export interface L2Burn {
     claim_public_key: string;
     amount: number;
     proof_file: string | null;
-    status: 'pending' | 'claimable' | 'claimed';
+    status: 'pending' | 'claimable' | 'claimed' | 'foreign';
+    last_error: string | null;
+    not_yet_claimable: boolean;
 }
 
 export interface L2WalletState {
