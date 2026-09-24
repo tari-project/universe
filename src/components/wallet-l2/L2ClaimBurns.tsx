@@ -49,8 +49,6 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
     function status(burn: L2Burn) {
         if (burn.status === 'pending') return t('l2.claim.pending');
         if (burn.status === 'foreign') return t('l2.claim.foreign');
-        if (burn.not_yet_claimable) return t('l2.claim.not-yet-claimable');
-        if (burn.last_error) return t('l2.claim.rejected', { reason: burn.last_error });
         return t('l2.claim.ready');
     }
 
@@ -85,7 +83,7 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
                                         : formatNumber(burn.amount, FormatPreset.XTM_COMPACT).toLowerCase()}
                                     <CurrencyText>{`XTR`}</CurrencyText>
                                 </ValueWrapper>
-                                {burn.status === 'claimable' && !burn.not_yet_claimable && (
+                                {burn.status === 'claimable' && (
                                     <Button
                                         size="smaller"
                                         variant="black"

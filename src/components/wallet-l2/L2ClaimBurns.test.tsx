@@ -57,7 +57,7 @@ describe('L2ClaimBurns', () => {
         await waitFor(() => expect(useToastStore.getState().toasts.slice(-1)[0]?.text).toContain(REJECTION));
     });
 
-    it('shows why the last claim was rejected, and hides Claim while the L2 has not seen the burn', async () => {
+    it('never writes a rejection into the row and keeps the Claim button', async () => {
         vi.mocked(invoke).mockImplementation((async (cmd: string) =>
             cmd === 'l2_claimable_burns'
                 ? [
@@ -70,9 +70,9 @@ describe('L2ClaimBurns', () => {
                   ]
                 : undefined) as typeof invoke);
         render(<L2ClaimBurns account={account} />);
-        await waitFor(() => expect(screen.getAllByTestId('l2-claim-button')).toHaveLength(1));
+        await waitFor(() => expect(screen.getAllByTestId('l2-claim-button')).toHaveLength(2));
         const statuses = screen.getAllByTestId('l2-claim-status').map((s) => s.textContent);
-        expect(statuses).toEqual(['l2.claim.rejected', 'l2.claim.not-yet-claimable']);
+        expect(statuses).toEqual(['l2.claim.ready', 'l2.claim.ready']);
     });
 
     it('lists a burn to a key this wallet does not hold without a Claim button', async () => {
