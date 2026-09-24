@@ -120,12 +120,6 @@ pub struct MinotariWalletManager {
     owner_tari_address: RwLock<Option<String>>,
     /// Indicates if initial sync is complete (first Completed event received)
     initial_sync_complete: AtomicBool,
-    /// Height the wallet's scan began at: its oldest scanned block, or the first
-    /// block reported when nothing has been scanned yet (0 until then). Progress is
-    /// measured from here rather than from genesis, so a wallet born at block 300k
-    /// does not open at "50% scanned", and a restart part-way through resumes at
-    /// the same percentage rather than dropping back to 0%.
-    scan_start_height: AtomicU64,
     /// Stores pending transactions by their sent_output_hashes for matching with scanned transactions
     /// Key: comma-separated sorted output hashes, Value: DisplayedTransaction
     pending_transactions: RwLock<HashMap<TxId, DisplayedTransaction>>,
@@ -147,7 +141,6 @@ impl MinotariWalletManager {
             owner_tari_address: RwLock::new(None),
             last_scanned_height: RwLock::new(0),
             initial_sync_complete: AtomicBool::new(false),
-            scan_start_height: AtomicU64::new(0),
             pending_transactions: RwLock::new(HashMap::new()),
             last_progress_emit_time: RwLock::new(
                 Instant::now() - Duration::from_secs(PROGRESS_UPDATE_INTERVAL_SECS),
@@ -305,7 +298,6 @@ impl MinotariWalletManager {
         INSTANCE
             .initial_sync_complete
             .store(false, Ordering::SeqCst);
-        INSTANCE.scan_start_height.store(0, Ordering::SeqCst);
         *INSTANCE.last_scanned_height.write().await = 0;
         Self::clear_pending_transactions().await;
         BalanceTracker::current().clear().await;
@@ -380,20 +372,6 @@ impl MinotariWalletManager {
         let account = get_account_by_name(&conn, &address)?
             .ok_or_else(|| anyhow::anyhow!("No wallet account found for address {address}"))?;
         Ok(account.id)
-    }
-
-    /// Oldest block the owner's account has scanned, `None` for a wallet that has
-    /// not scanned anything yet. Pruning keeps every block on the pruning interval,
-    /// so this stays within a few blocks of where the scan first started.
-    async fn first_scanned_height() -> Result<Option<u64>, anyhow::Error> {
-        let account_id = Self::owner_account_id().await?;
-        let conn = Self::get_db_connection().await?;
-        let height: Option<i64> = conn.query_row(
-            "SELECT MIN(height) FROM scanned_tip_blocks WHERE account_id = ?1",
-            [account_id],
-            |row| row.get(0),
-        )?;
-        Ok(height.map(|h| u64::try_from(h).unwrap_or(0)))
     }
 
     /// Get the latest scanned tip block for the owner's account
@@ -513,16 +491,6 @@ impl MinotariWalletManager {
         // Create cancellation token
         let cancel_token = CancellationToken::new();
         *INSTANCE.cancel_token.write().await = Some(cancel_token.clone());
-        let scan_start_height = match Self::first_scanned_height().await {
-            Ok(height) => height.unwrap_or(0),
-            Err(e) => {
-                error!(target: LOG_TARGET, "Could not read the first scanned height, progress starts from the first block reported: {e:?}");
-                0
-            }
-        };
-        INSTANCE
-            .scan_start_height
-            .store(scan_start_height, Ordering::SeqCst);
 
         // Get shutdown signal for graceful termination
         let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
@@ -779,14 +747,6 @@ impl MinotariWalletManager {
             let mut height = INSTANCE.last_scanned_height.write().await;
             *height = current_height;
         }
-        // The first height reported is where this scan started from.
-        let _unused = INSTANCE.scan_start_height.compare_exchange(
-            0,
-            current_height,
-            Ordering::SeqCst,
-            Ordering::SeqCst,
-        );
-
         let should_emit = {
             let last_emit = INSTANCE.last_progress_emit_time.read().await;
             last_emit.elapsed() >= Duration::from_secs(PROGRESS_UPDATE_INTERVAL_SECS)
@@ -797,8 +757,7 @@ impl MinotariWalletManager {
         *INSTANCE.last_progress_emit_time.write().await = Instant::now();
 
         let tip_height = Self::get_chain_tip_height();
-        let start_height = INSTANCE.scan_start_height.load(Ordering::SeqCst);
-        let progress = scan_progress_percent(start_height, current_height, tip_height);
+        let progress = scan_progress_percent(current_height, tip_height);
 
         // Continuous mode keeps reporting blocks after the first Completed (every
         // new block); reporting `false` there would flip the wallet UI back into
@@ -1050,17 +1009,16 @@ impl MinotariWalletManager {
     }
 }
 
-/// Share of the range this scan has to cover (`start_height` to the node's tip)
-/// that has been scanned, as a percentage. `0` when the tip is unknown (0) or not
-/// yet past the start, so a wallet whose node has not reported a height yet does
+/// Scanned height as a percentage of the node's tip: the same ratio as the
+/// "scanned / total" heights the wallet shows next to it, so the three numbers
+/// agree. A wallet born well after genesis therefore starts above 0%. `0` when
+/// the tip is unknown, so a wallet whose node has not reported a height yet does
 /// not show a nonsense percentage.
-fn scan_progress_percent(start_height: u64, current_height: u64, tip_height: u64) -> f64 {
-    if tip_height <= start_height {
+fn scan_progress_percent(current_height: u64, tip_height: u64) -> f64 {
+    if tip_height == 0 {
         return 0.0;
     }
-    let scanned = current_height.saturating_sub(start_height) as f64;
-    let span = (tip_height - start_height) as f64;
-    ((scanned / span) * 100.0).min(100.0)
+    ((current_height as f64 / tip_height as f64) * 100.0).min(100.0)
 }
 
 #[cfg(test)]
@@ -1068,21 +1026,20 @@ mod tests {
     use super::scan_progress_percent;
 
     #[test]
-    fn progress_is_measured_from_the_scan_start_not_genesis() {
-        // A wallet born at block 300k, half way to a tip of 400k, is at 50%.
-        assert_eq!(scan_progress_percent(300_000, 350_000, 400_000), 50.0);
+    fn progress_matches_the_scanned_over_total_heights_shown_beside_it() {
+        // "300,000 / 400,000" reads as 75%, so that is what the bar shows.
+        assert_eq!(scan_progress_percent(300_000, 400_000), 75.0);
     }
 
     #[test]
     fn progress_clamps_at_100_when_the_tip_is_stale() {
         // The cached node tip lags the blocks the scanner is reporting.
-        assert_eq!(scan_progress_percent(100, 500, 400), 100.0);
+        assert_eq!(scan_progress_percent(500, 400), 100.0);
     }
 
     #[test]
     fn progress_is_zero_without_a_usable_tip() {
-        // No node status yet, and a tip that has not moved past the start.
-        assert_eq!(scan_progress_percent(300_000, 350_000, 0), 0.0);
-        assert_eq!(scan_progress_percent(400, 400, 400), 0.0);
+        // No node status yet.
+        assert_eq!(scan_progress_percent(350_000, 0), 0.0);
     }
 }
