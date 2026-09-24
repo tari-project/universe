@@ -26,6 +26,15 @@ pub mod transaction;
 
 pub static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet";
 
+/// What the UI gets back from a broadcast burn.
+#[derive(Debug, Clone, Serialize)]
+pub struct BurnReceipt {
+    pub tx_id: String,
+    pub output_hash: String,
+    /// Where the complete L2 claim proof will be written once the burn is mined.
+    pub proof_file: String,
+}
+
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::{
@@ -38,7 +47,10 @@ use crate::{
     wallet::minotari_wallet::{
         balance_tracker::BalanceTracker,
         database_manager::MinotariWalletDatabaseManager,
-        transaction::{TransactionManager, parse_destination_address},
+        transaction::{
+            CONFIRMATION_WINDOW, TransactionManager, UTXO_LOCK_DURATION_SECS,
+            parse_destination_address,
+        },
     },
 };
 use log::{error, info, warn};
@@ -46,17 +58,29 @@ use minotari_wallet::{
     DisplayedTransaction, PauseReason, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
     TransactionHistoryService,
     db::{
-        AccountBalance, get_account_by_name,
+        AccountBalance, AccountRow, get_account_by_name,
         get_displayed_transactions_needing_confirmation_update,
-        get_latest_scanned_tip_block_by_account, update_displayed_transaction_confirmations,
+        get_latest_scanned_tip_block_by_account, mark_completed_transaction_as_broadcasted,
+        mark_completed_transaction_as_rejected, update_displayed_transaction_confirmations,
     },
-    get_balance, init_db,
-    tasks::unlocker::TransactionUnlocker,
-    transactions::{TransactionDisplayStatus, TransactionSource, one_sided_transaction::Recipient},
-    utils::init_wallet::init_with_view_key,
+    get_balance,
+    http::WalletHttpClient,
+    init_db,
+    tasks::{burn_proof_worker::BurnProofWorker, unlocker::TransactionUnlocker},
+    transactions::{
+        TransactionDisplayStatus, TransactionSource,
+        burn::{BurnTxParams, BurnTxResult, create_burn_tx, persist_burn_records},
+        one_sided_transaction::Recipient,
+    },
+    utils::{
+        crypto::{encrypt_data, parse_claimable_public_key_hex},
+        fingerprint::calculate_fingerprint,
+        init_wallet::init_with_view_key,
+    },
 };
 use r2d2::PooledConnection;
 use r2d2_sqlite::SqliteConnectionManager;
+use serde::Serialize;
 use std::{
     collections::{HashMap, HashSet},
     path::{Path, PathBuf},
@@ -69,10 +93,12 @@ use std::{
 use tari_common::configuration::Network;
 use tari_common_types_wallet::transaction::TxId;
 use tari_common_wallet::configuration::Network as WalletNetwork;
+use tari_transaction_components_wallet::tari_amount::MicroMinotari as WalletMicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
+use zeroize::Zeroizing;
 
 static INSTANCE: LazyLock<MinotariWalletManager> = LazyLock::new(MinotariWalletManager::new);
 
@@ -137,6 +163,7 @@ pub struct MinotariWalletManager {
     pending_transactions: RwLock<HashMap<TxId, DisplayedTransaction>>,
     last_progress_emit_time: RwLock<Instant>,
     unlocker_handle: RwLock<Option<JoinHandle<Result<(), anyhow::Error>>>>,
+    burn_proof_handle: RwLock<Option<JoinHandle<Result<(), anyhow::Error>>>>,
     /// Bumped every time a scan loop starts. The loop captures its value and
     /// anything it produces is dropped once this moves on, so a cycle still
     /// winding down after a refresh/import cannot write the old wallet's blocks
@@ -158,6 +185,7 @@ impl MinotariWalletManager {
                 Instant::now() - Duration::from_secs(PROGRESS_UPDATE_INTERVAL_SECS),
             ),
             unlocker_handle: RwLock::new(None),
+            burn_proof_handle: RwLock::new(None),
             scan_generation: AtomicU64::new(0),
         }
     }
@@ -270,6 +298,155 @@ impl MinotariWalletManager {
 
         info!("One-sided transaction sent successfully.");
         Ok(displayed_transaction)
+    }
+
+    /// Burn `amount` µT so it can be claimed on L2 by `claim_public_key`.
+    ///
+    /// The partial burn proof is persisted before broadcast; [`Self::run_burn_proof_worker`]
+    /// completes it with the kernel merkle proof once the burn is mined and writes the
+    /// claim file named in the returned [`BurnReceipt`].
+    pub async fn burn_to_l2(
+        claim_public_key: String,
+        amount: u64,
+        payment_id: Option<String>,
+        pin_context: Option<PinPromptContext>,
+    ) -> Result<BurnReceipt, anyhow::Error> {
+        if amount == 0 {
+            return Err(anyhow::anyhow!("Burn amount must be greater than zero"));
+        }
+        let claim_key = parse_claimable_public_key_hex(&claim_public_key)
+            .map_err(|e| anyhow::anyhow!("Invalid L2 claim public key: {e}"))?;
+        info!(target: LOG_TARGET, "Burning funds to L2.");
+
+        // PIN prompt first, before anything locks UTXOs (same ordering as a send).
+        let app_handle = INSTANCE
+            .app_handle
+            .read()
+            .await
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("App handle not set"))?;
+        let signing_wallet = InternalWallet::get_signing_wallet(&app_handle, pin_context).await?;
+
+        let owner_address = Self::get_owner_address().await?;
+        let password = CredentialManager::minotari_db_password().await?;
+        let mut conn = Self::get_db_connection().await?;
+        let account = get_account_by_name(&conn, &owner_address)?.ok_or_else(|| {
+            anyhow::anyhow!("No wallet account found for address {owner_address}")
+        })?;
+
+        // The stored account is view-only, and `create_burn_tx` signs with the key manager
+        // it derives from the account row. Hand it an in-memory row holding the seed
+        // wallet under the same id, so locking and bookkeeping hit the real account while
+        // signing uses the PIN-unlocked seed. Nothing here is written to the database.
+        // This shim goes away once minotari-cli offers a create_burn_tx that takes a key manager.
+        let wallet_json = Zeroizing::new(serde_json::to_vec(&signing_wallet)?);
+        let encrypted = encrypt_data(&wallet_json, &password)?;
+        let signing_account = AccountRow {
+            id: account.id,
+            friendly_name: account.friendly_name.clone(),
+            fingerprint: calculate_fingerprint(&signing_wallet),
+            encrypted_wallet: encrypted.ciphertext,
+            cipher_nonce: encrypted.nonce,
+            salt: encrypted.salt_bytes,
+            birthday: account.birthday,
+        };
+        drop(signing_wallet);
+
+        let idempotency_key = uuid::Uuid::new_v4().to_string();
+        let params = BurnTxParams {
+            account_id: account.id,
+            amount: WalletMicroMinotari::from(amount),
+            claim_public_key: Some(claim_key),
+            sidechain_deployment_key: None,
+            fee_per_gram: WalletMicroMinotari::from(5u64),
+            payment_id,
+            idempotency_key: Some(idempotency_key.clone()),
+            seconds_to_lock: UTXO_LOCK_DURATION_SECS,
+            confirmation_window: CONFIRMATION_WINDOW,
+        };
+        let result = create_burn_tx(
+            &signing_account,
+            &mut conn,
+            wallet_network(),
+            &password,
+            params,
+        )
+        .map_err(|e| anyhow::anyhow!("Failed to build burn transaction: {e}"))?;
+        // Proof first, broadcast second: a burn whose proof is lost is money gone for good.
+        persist_burn_records(&mut conn, &result, account.id, &idempotency_key)?;
+
+        let proof_file = Self::burn_proofs_dir()?.join(format!(
+            "{}-{}.json",
+            result.new_burn_proof.claim_public_key,
+            hex::encode(&result.new_burn_proof.commitment)
+        ));
+        let BurnTxResult {
+            transaction,
+            output_hash,
+            tx_id,
+            ..
+        } = result;
+
+        let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
+        match client.submit_transaction(transaction).await {
+            Ok(r) if r.accepted => mark_completed_transaction_as_broadcasted(&conn, tx_id, 1)?,
+            Ok(r) => {
+                let reason = r.rejection_reason.to_string();
+                mark_completed_transaction_as_rejected(&conn, tx_id, &reason)?;
+                return Err(anyhow::anyhow!("Burn rejected by network: {reason}"));
+            }
+            Err(e) => {
+                mark_completed_transaction_as_rejected(&conn, tx_id, &e.to_string())?;
+                return Err(anyhow::anyhow!("Burn broadcast failed: {e}"));
+            }
+        }
+        drop(conn);
+
+        BalanceTracker::current()
+            .update_from_transactions(Self::get_latest_account_balance().await)
+            .await;
+        info!(target: LOG_TARGET, "Burn transaction broadcast.");
+
+        Ok(BurnReceipt {
+            tx_id: tx_id.to_string(),
+            output_hash: hex::encode(output_hash),
+            proof_file: proof_file.to_string_lossy().into_owned(),
+        })
+    }
+
+    fn burn_proofs_dir() -> Result<PathBuf, anyhow::Error> {
+        Ok(MinotariWalletDatabaseManager::minotari_wallet_dir()?.join("burn_proofs"))
+    }
+
+    /// Completes pending burn proofs with their kernel merkle proof once the burn is
+    /// mined, writing the L2 claim file. Same lifecycle as the transaction unlocker.
+    pub async fn run_burn_proof_worker() -> Result<(), anyhow::Error> {
+        if INSTANCE.burn_proof_handle.read().await.is_some() {
+            return Ok(());
+        }
+        let pool = INSTANCE.database_manager.get_pool().await?;
+        // The node URL is captured at start; a node switch takes effect on the next wallet phase restart.
+        let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
+        let (shutdown_tx, shutdown_rx) = tokio::sync::broadcast::channel(1);
+        let handle = BurnProofWorker::new(pool, client, Self::burn_proofs_dir()?).run(shutdown_rx);
+        *INSTANCE.burn_proof_handle.write().await = Some(handle);
+        info!(target: LOG_TARGET, "Burn proof worker spawned.");
+
+        let mut app_shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+        TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                app_shutdown_signal.wait().await;
+                if let Some(handle) = INSTANCE.burn_proof_handle.write().await.take() {
+                    drop(shutdown_tx.send(()));
+                    if let Err(e) = handle.await {
+                        error!(target: LOG_TARGET, "Burn proof worker did not stop cleanly: {e:?}");
+                    }
+                }
+            });
+        Ok(())
     }
 
     /// Store a pending transaction for later matching with scanned transactions
@@ -433,6 +610,9 @@ impl MinotariWalletManager {
 
         if let Err(e) = Self::run_transaction_unlocker().await {
             error!(target: LOG_TARGET, "Failed to start transaction unlocker: {:?}", e);
+        }
+        if let Err(e) = Self::run_burn_proof_worker().await {
+            error!(target: LOG_TARGET, "Failed to start burn proof worker: {:?}", e);
         }
 
         // ============= | Check latest block height | ==============

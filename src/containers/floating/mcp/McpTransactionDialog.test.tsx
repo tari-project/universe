@@ -55,6 +55,23 @@ describe('McpTransactionDialog', () => {
         });
     });
 
+    it('labels a burn approval with the L2 claim key, not a destination address', async () => {
+        setMcpPendingTransaction({
+            request_id: 'app_tx_burn',
+            kind: 'burn',
+            origin: 'app',
+            destination: 'ab'.repeat(32),
+            amount_micro_minotari: 1_500_000,
+            amount_display: '1.5 XTM',
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('burn.claim-public-key')).toBeInTheDocument();
+            expect(screen.getByText('burn.review-label')).toBeInTheDocument();
+        });
+        expect(screen.queryByText('send.destination-address')).not.toBeInTheDocument();
+    });
+
     it('shows destination address label', async () => {
         setMcpPendingTransaction({
             request_id: 'mcp_tx_123',

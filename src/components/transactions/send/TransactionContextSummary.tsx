@@ -4,12 +4,15 @@ import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusList, StatusListEntry } from '../components/StatusList/StatusList';
 import TariPurpleLogo from './SendReview/icons/TariPurpleLogo';
 import { Amount, Currency, WhiteBox, WhiteBoxLabel, WhiteBoxValue, Wrapper } from './SendReview/styles';
+import type { SpendKind } from '@app/types/events-payloads.ts';
 
 interface Props {
     amountMicroMinotari: number;
+    /** Recipient address for a send, L2 claim public key for a burn. */
     destination: string;
     paymentId?: string | null;
     subtitle?: string;
+    kind?: SpendKind;
 }
 
 /**
@@ -17,12 +20,19 @@ interface Props {
  * never asked to authorise a transaction they cannot see. Shared by the PIN dialog and
  * the transaction confirmation dialog.
  */
-export function TransactionContextSummary({ amountMicroMinotari, destination, paymentId, subtitle }: Props) {
+export function TransactionContextSummary({
+    amountMicroMinotari,
+    destination,
+    paymentId,
+    subtitle,
+    kind = 'send',
+}: Props) {
     const { t } = useTranslation('wallet');
+    const isBurn = kind === 'burn';
 
     const entries: StatusListEntry[] = [
         {
-            label: t('send.destination-address'),
+            label: isBurn ? t('burn.claim-public-key') : t('send.destination-address'),
             value: destination,
         },
         {
@@ -34,7 +44,7 @@ export function TransactionContextSummary({ amountMicroMinotari, destination, pa
     return (
         <Wrapper>
             <WhiteBox>
-                <WhiteBoxLabel>{t('send.review-label')}</WhiteBoxLabel>
+                <WhiteBoxLabel>{isBurn ? t('burn.review-label') : t('send.review-label')}</WhiteBoxLabel>
                 <WhiteBoxValue>
                     <TariPurpleLogo />
                     <Amount>{formatNumber(amountMicroMinotari, FormatPreset.XTM_COMPACT)}</Amount>

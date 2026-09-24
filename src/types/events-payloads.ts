@@ -151,4 +151,18 @@ export interface SeedNeedsPinPromptContext {
     kind: 'seed_needs_pin';
 }
 
-export type PinPromptContext = SendPinPromptContext | RestoreWalletDetailsPinPromptContext | SeedNeedsPinPromptContext;
+/** Burning L1 funds to be claimed on L2 by `claim_public_key`. */
+export interface BurnPinPromptContext {
+    kind: 'burn';
+    amount_micro_minotari: number;
+    claim_public_key: string;
+    payment_id?: string | null;
+}
+
+export type PinPromptContext =
+    | SendPinPromptContext
+    | BurnPinPromptContext
+    | RestoreWalletDetailsPinPromptContext
+    | SeedNeedsPinPromptContext;
+
+export type SpendKind = 'send' | 'burn';

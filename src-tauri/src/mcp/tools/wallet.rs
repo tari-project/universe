@@ -57,7 +57,7 @@ pub async fn get_wallet_balance() -> Result<String, String> {
     serde_json::to_string(&result).map_err(|e| e.to_string())
 }
 
-// ponytail: loads the whole history and truncates. The crate's paginated loader
+// Loads the whole history and truncates. The crate's paginated loader
 // (`TransactionHistoryService::load_transactions_paginated`) does not filter out
 // reorganized transactions, so using it here would surface transactions the rest
 // of the app hides. Push the limit down once the crate grows a paginated

@@ -224,6 +224,9 @@ pub struct McpServerStatusPayload {
 #[derive(Debug, Serialize, Clone)]
 pub struct McpTransactionConfirmationPayload {
     pub request_id: String,
+    /// `"send"` or `"burn"`; decides how `destination` is labelled in the dialog.
+    pub kind: String,
+    /// The recipient address for a send, the L2 claim public key (hex) for a burn.
     pub destination: String,
     pub amount_micro_minotari: u64,
     pub amount_display: String,
@@ -241,6 +244,12 @@ pub enum PinPromptContext {
     Send {
         amount_micro_minotari: u64,
         destination: String,
+        payment_id: Option<String>,
+    },
+    /// Burning L1 funds to be claimed on L2 by `claim_public_key`.
+    Burn {
+        amount_micro_minotari: u64,
+        claim_public_key: String,
         payment_id: Option<String>,
     },
     /// The wallet details are missing from the config and are being rebuilt from the stored seed.

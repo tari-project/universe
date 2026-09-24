@@ -1031,6 +1031,17 @@ impl InternalWallet {
         app_handle: &AppHandle,
         pin_context: Option<PinPromptContext>,
     ) -> Result<WalletKeyManager, anyhow::Error> {
+        let signing_wallet = Self::get_signing_wallet(app_handle, pin_context).await?;
+        WalletKeyManager::new(signing_wallet).map_err(|e| anyhow!(e.to_string()))
+    }
+
+    /// The full (spend-capable) wallet rebuilt from the stored seed, raising the PIN
+    /// prompt when a PIN is configured. This is the one place the seed leaves the
+    /// keychain for signing; every spend path goes through here.
+    pub async fn get_signing_wallet(
+        app_handle: &AppHandle,
+        pin_context: Option<PinPromptContext>,
+    ) -> Result<WalletWalletType, anyhow::Error> {
         let tari_wallet_details = Self::tari_wallet_details().await;
 
         if tari_wallet_details.is_some() {
@@ -1051,11 +1062,7 @@ impl InternalWallet {
             let seed_words_wallet = WalletSeedWordsWallet::construct_new(wallet_cipher_seed)
                 .map_err(|e| anyhow!(e.to_string()))?;
 
-            let tx_key_manager =
-                WalletKeyManager::new(WalletWalletType::SeedWords(seed_words_wallet))
-                    .map_err(|e| anyhow!(e.to_string()))?;
-
-            Ok(tx_key_manager)
+            Ok(WalletWalletType::SeedWords(seed_words_wallet))
         } else {
             Err(anyhow!(
                 "Seedless Wallet does not support Key Manager extraction"

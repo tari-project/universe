@@ -490,6 +490,7 @@ fn main() {
             commands::websocket_get_status,
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,
+            commands::burn_to_l2,
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,
