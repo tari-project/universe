@@ -110,7 +110,13 @@ const SCAN_POLL_INTERVAL_SECS: u64 = 20;
 /// `ScanMode::Partial` run that resumes from the database tip; `Continuous` mode
 /// re-processes the previous tip block on every poll and trips the unique output
 /// constraint as soon as new blocks arrive.
-const SCAN_MAX_BLOCKS_PER_CYCLE: u64 = 1000;
+///
+/// Each cycle rebuilds the scanner: two Argon2id decrypts of the account, a new
+/// HTTP client and a reorg check, about two seconds against three seconds of
+/// scanning per 1000 blocks. The size only sets how often that is paid; the
+/// library commits every 25-block batch and resumes from the last committed
+/// block, so a failure loses no more at 20,000 than at 1000.
+const SCAN_MAX_BLOCKS_PER_CYCLE: u64 = 20_000;
 const PROGRESS_UPDATE_INTERVAL_SECS: u64 = 10;
 
 pub struct MinotariWalletManager {
