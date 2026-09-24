@@ -38,13 +38,17 @@ import {
     QROutside,
     QRSizer,
 } from '@app/components/transactions/receive/Address.style.ts';
+import { FilterSelect } from '@app/components/transactions/history/FilterSelect.tsx';
 import L2ClaimBurns from './L2ClaimBurns.tsx';
 import L2History from './L2History.tsx';
 import L2SendModal from './L2SendModal.tsx';
 
+const FILTER_TYPES = ['all-activity', 'transactions', 'l2.filter.waiting-claims'] as const;
+
 export default function L2Wallet({ account }: { account: L2Account }) {
     const { t } = useTranslation('wallet');
     const [section, setSection] = useState('history');
+    const [filter, setFilter] = useState<string>('all-activity');
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     // A burn spends L1 funds, so it waits on the L1 wallet like the L1 send does.
@@ -57,7 +61,7 @@ export default function L2Wallet({ account }: { account: L2Account }) {
     return (
         <WalletWrapper data-testid="l2-wallet">
             <DetailsCard $isScrolled={false}>
-                <AnimatedBG $col1="#0B0A0D" $col2="#6F8309" />
+                <AnimatedBG $col1="#2b1d5a" $col2="#4c2c8f" />
                 <Content>
                     <DetailsRow>
                         <Name>{account.is_default ? t('l2.account-name') : account.name || t('l2.title')}</Name>
@@ -91,6 +95,7 @@ export default function L2Wallet({ account }: { account: L2Account }) {
             </DetailsCard>
 
             <TabsWrapper>
+                <FilterSelect types={FILTER_TYPES} value={filter} onChange={setFilter} />
                 <NavWrapper>
                     <NavButton
                         $isActive={section === 'history'}
@@ -131,9 +136,9 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                 </NavWrapper>
             </TabsWrapper>
 
-            <L2ClaimBurns account={account} />
+            {filter !== 'transactions' && <L2ClaimBurns account={account} />}
 
-            <L2History account={account} />
+            {filter !== 'l2.filter.waiting-claims' && <L2History account={account} />}
 
             <L2SendModal
                 show={section === 'send'}

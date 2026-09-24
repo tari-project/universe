@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
-import { fireEvent, render, screen } from '@app/test/test-utils';
+import { fireEvent, render, screen, within } from '@app/test/test-utils';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { initialState, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
@@ -110,5 +110,32 @@ describe('L2WalletCard', () => {
         fireEvent.click(await screen.findByTestId('l2-burn-button'));
         expect(await screen.findByDisplayValue('ab'.repeat(32))).toBeInTheDocument();
         expect(screen.getByText('burn.claim-key-default')).toBeInTheDocument();
+    });
+
+    it('filters between burns to claim and history', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        const burn = { commitment: 'aa'.repeat(32), claim_public_key: 'ab'.repeat(32), amount: 1, proof_file: null };
+        vi.mocked(invoke).mockImplementation((async (cmd: string) =>
+            cmd === 'l2_get_state'
+                ? enabledState
+                : cmd === 'l2_claimable_burns'
+                  ? [{ ...burn, status: 'pending', last_error: null, not_yet_claimable: false }]
+                  : undefined) as typeof invoke);
+        render(<L2WalletCard />);
+        const pick = async (label: string) => {
+            fireEvent.click(within(screen.getByTestId('tx-history-filter')).getByRole('combobox'));
+            fireEvent.click(await screen.findByRole('option', { name: label }));
+        };
+
+        expect(await screen.findByTestId('l2-claim-burns')).toBeInTheDocument();
+        expect(screen.getByTestId('l2-history-row')).toBeInTheDocument();
+
+        await pick('transactions');
+        expect(screen.queryByTestId('l2-claim-burns')).not.toBeInTheDocument();
+        expect(screen.getByTestId('l2-history-row')).toBeInTheDocument();
+
+        await pick('l2.filter.waiting-claims');
+        expect(await screen.findByTestId('l2-claim-burns')).toBeInTheDocument();
+        expect(screen.queryByTestId('l2-history-row')).not.toBeInTheDocument();
     });
 });

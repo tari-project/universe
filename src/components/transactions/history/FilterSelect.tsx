@@ -19,25 +19,32 @@ const renderCustomIcon = (isOpen: boolean) =>
         <IoIosArrowDown size={11} style={{ marginLeft: 2 }} />
     );
 
-export const FilterSelect = React.memo(() => {
+interface FilterSelectProps {
+    // Defaults to the L1 history filter in the wallet store. The L2 card passes its own.
+    types?: readonly string[];
+    value?: string;
+    onChange?: (value: string) => void;
+}
+
+export const FilterSelect = React.memo(({ types = FILTER_TYPES, value, onChange }: FilterSelectProps) => {
     const { t } = useTranslation('wallet', { useSuspense: false });
-    const filter = useWalletStore((s) => s.transaction_history_filter);
+    const storeFilter = useWalletStore((s) => s.transaction_history_filter);
 
     const filterOptions = useCallback(
-        (): SelectOption<TxHistoryFilter>[] =>
-            FILTER_TYPES.map((type) => ({
+        (): SelectOption<string>[] =>
+            types.map((type) => ({
                 label: t(type),
                 value: type,
             })),
-        [t]
+        [t, types]
     )();
 
     return (
         <FilterWrapper data-testid="tx-history-filter">
             <Select
                 options={filterOptions}
-                selectedValue={filter}
-                onChange={setTxHistoryFilter as (value: string) => void}
+                selectedValue={value ?? storeFilter}
+                onChange={onChange ?? (setTxHistoryFilter as (value: string) => void)}
                 variant="minimal"
                 customIcon={renderCustomIcon}
                 forceHeight={250}

@@ -260,6 +260,9 @@
     "balance-split": "Revealed {{revealed}} · Confidential {{confidential}}",
     "receive-title": "Receive on Layer 2",
     "empty": "No Layer 2 activity yet",
+    "filter": {
+      "waiting-claims": "Waiting claims"
+    },
     "source": {
       "transaction": "Transaction",
       "scan": "Received",
