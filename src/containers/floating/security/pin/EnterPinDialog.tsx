@@ -20,6 +20,7 @@ export default function EnterPinDialog() {
     // plain "Enter your PIN" dialog.
     const sendContext = pinContext?.kind === 'send' ? pinContext : null;
     const burnContext = pinContext?.kind === 'burn' ? pinContext : null;
+    const l2SendContext = pinContext?.kind === 'l2_send' ? pinContext : null;
     const reasonKey =
         pinContext?.kind === 'restore_wallet_details'
             ? 'security.pin.restore-wallet-details'
@@ -60,7 +61,7 @@ export default function EnterPinDialog() {
                         <Heading>
                             {burnContext
                                 ? t('security.pin.approve-burn')
-                                : sendContext
+                                : sendContext || l2SendContext
                                   ? t('security.pin.approve-send')
                                   : t('security.pin.enter')}
                         </Heading>{' '}
@@ -86,6 +87,14 @@ export default function EnterPinDialog() {
                             destination={burnContext.claim_public_key}
                             paymentId={burnContext.payment_id}
                             subtitle={t('security.pin.approve-burn-subtitle')}
+                        />
+                    )}
+                    {l2SendContext && (
+                        <TransactionContextSummary
+                            kind="l2_send"
+                            amountMicroMinotari={l2SendContext.amount_micro_minotari}
+                            destination={l2SendContext.destination}
+                            subtitle={t('security.pin.approve-send-subtitle')}
                         />
                     )}
                     <EnterPin onSubmit={handleSubmit} />

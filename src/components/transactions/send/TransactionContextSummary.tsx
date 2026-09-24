@@ -8,7 +8,7 @@ import type { SpendKind } from '@app/types/events-payloads.ts';
 
 interface Props {
     amountMicroMinotari: number;
-    /** Recipient address for a send, L2 claim public key for a burn. */
+    /** Recipient address for a send, L2 claim public key for a burn, Ootle address for an L2 send. */
     destination: string;
     paymentId?: string | null;
     subtitle?: string;
@@ -29,10 +29,16 @@ export function TransactionContextSummary({
 }: Props) {
     const { t } = useTranslation('wallet');
     const isBurn = kind === 'burn';
+    const isL2 = kind === 'l2_send';
+    const destinationLabel = isBurn
+        ? t('burn.claim-public-key')
+        : isL2
+          ? t('l2.send.address')
+          : t('send.destination-address');
 
     const entries: StatusListEntry[] = [
         {
-            label: isBurn ? t('burn.claim-public-key') : t('send.destination-address'),
+            label: destinationLabel,
             value: destination,
         },
         {
@@ -48,7 +54,7 @@ export function TransactionContextSummary({
                 <WhiteBoxValue>
                     <TariPurpleLogo />
                     <Amount>{formatNumber(amountMicroMinotari, FormatPreset.XTM_COMPACT)}</Amount>
-                    <Currency>{`XTM`}</Currency>
+                    <Currency>{isL2 ? `XTR` : `XTM`}</Currency>
                 </WhiteBoxValue>
             </WhiteBox>
             <StatusList entries={entries} />

@@ -65,7 +65,8 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::minotari_wallet::BurnReceipt;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::wallet::send_gate::{
-    GatedBurnRequest, GatedSendRequest, SendOrigin, gated_burn, gated_send,
+    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_send,
+    gated_send,
 };
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
@@ -1671,6 +1672,35 @@ pub async fn enable_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String
     info!(target: LOG_TARGET_APP_LOGIC, "[enable_l2_wallet] called");
     OotleWalletManager::enable(&app_handle)
         .await
+        .map_err(|e| e.to_string())
+}
+
+/// Send XTR on L2 from one of the wallet's accounts. Refused without a PIN; with one,
+/// the PIN prompt is the gate. Returns the L2 transaction id.
+#[tauri::command]
+pub async fn l2_send(
+    app_handle: tauri::AppHandle,
+    account: String,
+    destination: String,
+    amount: String,
+) -> Result<String, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called with args: (account: {account:?}, destination: {destination:?}, amount: {amount:?})");
+    gated_l2_send(GatedL2SendRequest {
+        app_handle,
+        request_id: SendOrigin::App.new_request_id(),
+        amount,
+        destination,
+        account,
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// Checks an L2 address before the send form lets the user review it.
+#[tauri::command]
+pub fn l2_validate_address(address: String) -> Result<(), String> {
+    OotleWalletManager::parse_address(&address)
+        .map(|_| ())
         .map_err(|e| e.to_string())
 }
 

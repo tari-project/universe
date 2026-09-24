@@ -26,7 +26,7 @@
 //! L1 seed, so a fresh store stays "not enabled" until the user enables L2 behind the
 //! PIN, which restores the SDK seed from the L1 seed words and starts the services.
 
-use std::{future::Future, path::Path, sync::LazyLock};
+use std::{future::Future, path::Path, str::FromStr, sync::LazyLock};
 
 use log::{error, info};
 use tari_common::configuration::Network;
@@ -34,7 +34,8 @@ use tari_common_types_wallet::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_crypto::tari_utilities::SafePassword;
 use tari_engine_types::resource::Resource;
 use tari_ootle_wallet_sdk::{
-    CipherSeed, Network as OotleNetwork, SeedWords, WalletSdk, WalletSdkConfig, WalletSdkSpec,
+    CipherSeed, Network as OotleNetwork, OotleAddress, SeedWords, WalletSdk, WalletSdkConfig,
+    WalletSdkSpec,
     apis::config::ConfigKey,
     cipher_seed::CipherSeedRestore,
     local_key_store::LocalKeyStore,
@@ -46,14 +47,14 @@ use tari_ootle_wallet_sdk_services::{
     account_recovery::AccountRecoveryService,
     indexer_rest_api::IndexerRestApiNetworkInterface,
     notify::Notify,
-    transaction_service::TransactionService,
+    transaction_service::{TransactionService, TransactionServiceHandle},
     utxo_scanner::{StealthUtxoScannerWorker, UtxoRecovery},
 };
 use tari_ootle_wallet_storage_sqlite::SqliteWalletStore;
 use tari_template_lib::{
     prelude::LOCKED,
     types::{
-        Metadata, ResourceType, SubstateOwnerRule,
+        ComponentAddress, Metadata, ResourceType, SubstateOwnerRule,
         access_rules::ResourceAccessRules,
         constants::{
             PUBLIC_IDENTITY_RESOURCE_ADDRESS, STEALTH_TARI_RESOURCE_ADDRESS, TOKEN_SYMBOL,
@@ -69,6 +70,7 @@ use url::Url;
 use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     credential_manager::CredentialManager,
+    events::PinPromptContext,
     events_emitter::EventsEmitter,
     internal_wallet::{InternalWallet, to_wallet_cipher_seed},
     pin::PinManager,
@@ -76,6 +78,7 @@ use crate::{
     wallet::send_gate::{TransactionError, check_l2_allowed, network_supports_l2},
 };
 
+mod send;
 mod state;
 
 pub use state::L2WalletState;
@@ -97,11 +100,14 @@ type OotleSdk = WalletSdk<OotleWalletSpec>;
 static INSTANCE: LazyLock<OotleWalletManager> = LazyLock::new(|| OotleWalletManager {
     sdk: Mutex::new(None),
     notify: Notify::new(100),
+    transactions: Mutex::new(None),
 });
 
 pub struct OotleWalletManager {
     sdk: Mutex<Option<OotleSdk>>,
     notify: Notify<WalletEvent>,
+    /// Set once the services run, which is when L2 is enabled.
+    transactions: Mutex<Option<TransactionServiceHandle>>,
 }
 
 impl OotleWalletManager {
@@ -171,11 +177,76 @@ impl OotleWalletManager {
             Network::get_current_or_user_setting_or_default(),
             PinManager::pin_locked().await,
         )?;
-        let sdk = INSTANCE.sdk.lock().await.clone().ok_or_else(|| {
-            TransactionError::Disabled("The L2 wallet has not started yet".to_string())
-        })?;
-        state::build_state(&sdk).map_err(wallet_error)
+        state::build_state(&started_sdk().await?).map_err(wallet_error)
     }
+
+    /// Parses an Ootle address for the current network. Called before a send touches
+    /// the gate, so a typo never reaches the PIN prompt.
+    pub fn parse_address(address: &str) -> Result<OotleAddress, TransactionError> {
+        parse_address(
+            address,
+            ootle_network(Network::get_current_or_user_setting_or_default()),
+        )
+    }
+
+    /// Sends `amount` micro XTR from `account` (a component address) to `destination`
+    /// once the user enters their PIN, and returns the L2 transaction id. The caller has
+    /// already passed the send gate.
+    pub async fn send_xtr(
+        app_handle: &AppHandle,
+        account: &str,
+        destination: OotleAddress,
+        amount: u64,
+        pin_context: PinPromptContext,
+    ) -> Result<String, TransactionError> {
+        let sdk = started_sdk().await?;
+        let transactions = INSTANCE
+            .transactions
+            .lock()
+            .await
+            .clone()
+            .ok_or_else(|| TransactionError::Disabled("Layer 2 is not enabled".to_string()))?;
+        let account = ComponentAddress::from_str(account)
+            .map_err(wallet_error)
+            .and_then(|component| {
+                sdk.accounts_api()
+                    .get_account_by_address(&component)
+                    .map_err(wallet_error)
+            })?;
+
+        PinManager::get_validated_pin(app_handle, Some(pin_context))
+            .await
+            .map_err(wallet_error)?;
+        let id = send::send_xtr(&sdk, &transactions, account, destination, amount)
+            .await
+            .map_err(|e| TransactionError::WalletError(format!("L2 send failed: {e}")))?;
+        info!(target: LOG_TARGET, "L2 send submitted: {id}");
+        emit_state(&sdk).await;
+        Ok(id.to_string())
+    }
+}
+
+async fn started_sdk() -> Result<OotleSdk, TransactionError> {
+    INSTANCE
+        .sdk
+        .lock()
+        .await
+        .clone()
+        .ok_or_else(|| TransactionError::Disabled("The L2 wallet has not started yet".to_string()))
+}
+
+fn parse_address(address: &str, network: OotleNetwork) -> Result<OotleAddress, TransactionError> {
+    let invalid =
+        |reason: String| TransactionError::InvalidAddress(format!("Invalid L2 address: {reason}"));
+    let parsed = OotleAddress::from_str(address.trim()).map_err(|e| invalid(e.to_string()))?;
+    if parsed.network() != network {
+        return Err(invalid(format!(
+            "it is for {}, not {network}",
+            parsed.network()
+        )));
+    }
+    parsed.validate().map_err(|e| invalid(e.to_string()))?;
+    Ok(parsed)
 }
 
 /// Opens (or creates) the store in `store_dir` and wraps it in the SDK. Does not touch
@@ -283,8 +354,10 @@ async fn start_services(sdk: &OotleSdk, needs_recovery: bool) -> Result<(), anyh
     let notify = INSTANCE.notify.clone();
     let events = emit_state_on_events(sdk.clone(), notify.subscribe());
     spawn_service(&tracker, &signal, "state events", events);
-    let (transactions, _) = TransactionService::new(notify.clone(), sdk.clone(), signal.clone());
+    let (transactions, handle) =
+        TransactionService::new(notify.clone(), sdk.clone(), signal.clone());
     spawn_service(&tracker, &signal, "transaction service", transactions.run());
+    *INSTANCE.transactions.lock().await = Some(handle);
 
     let (scanner, scanner_handle) =
         StealthUtxoScannerWorker::new(sdk.clone(), notify.clone()).spawn();
@@ -378,6 +451,36 @@ mod tests {
         assert_eq!(l1_words.len(), l2_words.len());
         for i in 0..l1_words.len() {
             assert_eq!(l1_words.get_word(i).unwrap(), l2_words.get_word(i).unwrap());
+        }
+    }
+
+    #[test]
+    fn parse_address_takes_only_valid_addresses_for_this_network() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let mut sdk = open_sdk(dir.path(), Network::Esmeralda, url, "test").expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("seed");
+        let key = sdk.key_manager_api().next_account_address().expect("key");
+        sdk.accounts_api()
+            .create_account(Some("default"), true, key)
+            .expect("account");
+        let state = state::build_state(&sdk).expect("state");
+        let address = state.accounts[0].address.clone();
+
+        let parsed = parse_address(&format!(" {address} "), OotleNetwork::Esmeralda);
+        assert_eq!(parsed.expect("valid").to_string(), address);
+        assert!(matches!(
+            parse_address(&address, OotleNetwork::MainNet),
+            Err(TransactionError::InvalidAddress(_))
+        ));
+        let mut typo = address.clone();
+        typo.pop();
+        for bad in ["", "not an address", typo.as_str()] {
+            assert!(matches!(
+                parse_address(bad, OotleNetwork::Esmeralda),
+                Err(TransactionError::InvalidAddress(_))
+            ));
         }
     }
 }

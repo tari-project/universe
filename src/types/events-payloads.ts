@@ -159,13 +159,22 @@ export interface BurnPinPromptContext {
     payment_id?: string | null;
 }
 
+/** Sending XTR (micro units) on L2 from `account` to the Ootle address `destination`. */
+export interface L2SendPinPromptContext {
+    kind: 'l2_send';
+    amount_micro_minotari: number;
+    destination: string;
+    account: string;
+}
+
 export type PinPromptContext =
     | SendPinPromptContext
     | BurnPinPromptContext
+    | L2SendPinPromptContext
     | RestoreWalletDetailsPinPromptContext
     | SeedNeedsPinPromptContext;
 
-export type SpendKind = 'send' | 'burn';
+export type SpendKind = 'send' | 'burn' | 'l2_send';
 
 /** XTR in micro units. Revealed sits in the account vault, confidential in stealth UTXOs. */
 export interface L2Balance {

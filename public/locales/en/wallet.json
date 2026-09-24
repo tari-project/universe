@@ -141,7 +141,9 @@
     "transaction-id": "Transaction ID",
     "label-claimPublicKey": "L2 Claim Public Key",
     "placeholder-claimPublicKey": "64 hex characters",
-    "field-claimPublicKey": "claim public key"
+    "field-claimPublicKey": "claim public key",
+    "label-l2Address": "L2 Address",
+    "placeholder-l2Address": "Enter L2 address"
   },
   "swap": {
     "accept": "Accept",
@@ -269,6 +271,19 @@
       "status": "Status",
       "fee": "Fee",
       "invalid-reason": "Reason"
+    },
+    "send": {
+      "title": "Send on Layer 2",
+      "review-title": "Review L2 send",
+      "address": "L2 address",
+      "cta-review": "Review",
+      "cta-confirm": "Send XTR",
+      "error-invalid-address": "That isn't a valid Layer 2 address for this network",
+      "error-message": "Error sending on Layer 2: ",
+      "processing-title": "Your XTR is on the way",
+      "processing-text": "Working out the fee and submitting. This can take a minute.",
+      "completed-title": "Sent",
+      "completed-text": "Your L2 transaction was submitted."
     }
   }
 }

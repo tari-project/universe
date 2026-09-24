@@ -72,6 +72,25 @@ describe('McpTransactionDialog', () => {
         expect(screen.queryByText('send.destination-address')).not.toBeInTheDocument();
     });
 
+    it('labels an L2 send with the L2 address and XTR', async () => {
+        setMcpPendingTransaction({
+            request_id: 'app_tx_l2',
+            kind: 'l2_send',
+            origin: 'app',
+            destination: 'otl_esm_example',
+            amount_micro_minotari: 1_000_000,
+            amount_display: '1 XTR',
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('l2.send.address')).toBeInTheDocument();
+            expect(screen.getByText('XTR')).toBeInTheDocument();
+        });
+        expect(screen.getByText('otl_esm_example')).toBeInTheDocument();
+        expect(screen.queryByText('send.destination-address')).not.toBeInTheDocument();
+        expect(screen.queryByText('XTM')).not.toBeInTheDocument();
+    });
+
     it('shows destination address label', async () => {
         setMcpPendingTransaction({
             request_id: 'mcp_tx_123',

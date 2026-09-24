@@ -36,6 +36,7 @@ import {
     QRSizer,
 } from '@app/components/transactions/receive/Address.style.ts';
 import L2History from './L2History.tsx';
+import L2SendModal from './L2SendModal.tsx';
 
 export default function L2Wallet({ account }: { account: L2Account }) {
     const { t } = useTranslation('wallet');
@@ -92,6 +93,14 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                         {t('tabs.history')}
                     </NavButton>
                     <NavButton
+                        $isActive={section === 'send'}
+                        aria-selected={section === 'send'}
+                        onClick={() => setSection('send')}
+                        data-testid="l2-send-button"
+                    >
+                        {t('tabs.send')}
+                    </NavButton>
+                    <NavButton
                         $isActive={section === 'receive'}
                         aria-selected={section === 'receive'}
                         onClick={() => setSection('receive')}
@@ -103,6 +112,12 @@ export default function L2Wallet({ account }: { account: L2Account }) {
             </TabsWrapper>
 
             <L2History account={account} />
+
+            <L2SendModal
+                show={section === 'send'}
+                account={account.component_address}
+                onClose={() => setSection('history')}
+            />
 
             <TransactionModal
                 show={section === 'receive'}

@@ -225,9 +225,10 @@ pub struct McpServerStatusPayload {
 #[derive(Debug, Serialize, Clone)]
 pub struct McpTransactionConfirmationPayload {
     pub request_id: String,
-    /// `"send"` or `"burn"`; decides how `destination` is labelled in the dialog.
+    /// `"send"`, `"burn"` or `"l2_send"`; decides how `destination` is labelled in the dialog.
     pub kind: String,
-    /// The recipient address for a send, the L2 claim public key (hex) for a burn.
+    /// The recipient address for a send, the L2 claim public key (hex) for a burn, the
+    /// Ootle address for an L2 send.
     pub destination: String,
     pub amount_micro_minotari: u64,
     pub amount_display: String,
@@ -257,6 +258,12 @@ pub enum PinPromptContext {
     RestoreWalletDetails,
     /// The stored seed is PIN-protected although the config says no PIN is set.
     SeedNeedsPin,
+    /// Sending XTR (micro units) on L2 from `account` to the Ootle address `destination`.
+    L2Send {
+        amount_micro_minotari: u64,
+        destination: String,
+        account: String,
+    },
 }
 
 #[derive(Debug, Serialize, Clone)]
