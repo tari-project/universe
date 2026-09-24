@@ -122,9 +122,15 @@ describe('L2WalletCard', () => {
         expect(await screen.findByText('history.transaction-details')).toBeInTheDocument();
     });
 
-    it('filters between burns to claim and history', async () => {
+    it('filters the feed between burns and history', async () => {
         useWalletStore.setState({ is_pin_locked: true });
-        const burn = { commitment: 'aa'.repeat(32), claim_public_key: 'ab'.repeat(32), amount: 1, proof_file: null };
+        const burn = {
+            commitment: 'aa'.repeat(32),
+            claim_public_key: 'ab'.repeat(32),
+            amount: 1,
+            proof_file: null,
+            timestamp: 2,
+        };
         vi.mocked(invoke).mockImplementation((async (cmd: string) =>
             cmd === 'l2_get_state'
                 ? enabledState
@@ -137,15 +143,15 @@ describe('L2WalletCard', () => {
             fireEvent.click(await screen.findByRole('option', { name: label }));
         };
 
-        expect(await screen.findByTestId('l2-claim-burns')).toBeInTheDocument();
+        expect(await screen.findByTestId('l2-claim-row')).toBeInTheDocument();
         expect(screen.getByTestId('l2-history-row')).toBeInTheDocument();
 
         await pick('transactions');
-        expect(screen.queryByTestId('l2-claim-burns')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('l2-claim-row')).not.toBeInTheDocument();
         expect(screen.getByTestId('l2-history-row')).toBeInTheDocument();
 
         await pick('l2.filter.waiting-claims');
-        expect(await screen.findByTestId('l2-claim-burns')).toBeInTheDocument();
+        expect(await screen.findByTestId('l2-claim-row')).toBeInTheDocument();
         expect(screen.queryByTestId('l2-history-row')).not.toBeInTheDocument();
     });
 });

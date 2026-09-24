@@ -62,6 +62,7 @@ use tari_template_lib::{
 };
 
 use super::{LOG_TARGET, OotleSdk, send::VALIDITY_EPOCHS};
+use crate::wallet::minotari_wallet::BurnRecord;
 
 /// Claimed proof files move here, the same place tari_walletd puts them.
 const CLAIMED_DIR: &str = "claimed";
@@ -89,6 +90,9 @@ pub struct L2Burn {
     /// The L1 height the burn was mined at, when the L1 wallet knows it. The L2 can't
     /// accept its claim until it has imported that block.
     pub mined_height: Option<u64>,
+    /// Unix seconds, when the burn was made (its proof file's mtime when the L1 wallet
+    /// has no record of it).
+    pub timestamp: u64,
 }
 
 /// How a submitted claim ended on L2.
@@ -129,6 +133,7 @@ impl L2Burn {
             proof_file: None,
             status: "pending",
             mined_height: None,
+            timestamp: 0,
         }
     }
 }
@@ -150,20 +155,30 @@ impl BurnProof {
 }
 
 /// Every burn the panel knows about, newest first: proof files in `dir` are claimable,
-/// those in its claimed directory are claimed, and `pending` rows (oldest first, as the
-/// wallet db returns them) without a proof file yet stay pending. Pending burns aren't
-/// mined yet, so they go ahead of every burn with a proof.
-pub fn list_burns(dir: &Path, pending: Vec<L2Burn>) -> Result<Vec<L2Burn>, anyhow::Error> {
+/// those in its claimed directory are claimed, and `pending` rows without a proof file
+/// yet stay pending. `records` from the L1 wallet db give each burn when it was made and
+/// its mined height.
+pub fn list_burns(
+    dir: &Path,
+    pending: Vec<L2Burn>,
+    records: &HashMap<String, BurnRecord>,
+) -> Result<Vec<L2Burn>, anyhow::Error> {
     let mut files = read_burns(dir, "claimable")?;
     files.extend(read_burns(&dir.join(CLAIMED_DIR), "claimed")?);
-    files.sort_by_key(|(modified, _)| std::cmp::Reverse(*modified));
-    let known: HashSet<String> = files.iter().map(|(_, b)| b.commitment.clone()).collect();
-    Ok(pending
+    let known: HashSet<String> = files.iter().map(|b| b.commitment.clone()).collect();
+    let mut burns: Vec<L2Burn> = pending
         .into_iter()
-        .rev()
         .filter(|b| !known.contains(&b.commitment))
-        .chain(files.into_iter().map(|(_, burn)| burn))
-        .collect())
+        .chain(files)
+        .collect();
+    for burn in &mut burns {
+        if let Some(record) = records.get(&burn.commitment) {
+            burn.timestamp = record.created_at;
+            burn.mined_height = record.mined_height;
+        }
+    }
+    burns.sort_by_key(|b| std::cmp::Reverse(b.timestamp));
+    Ok(burns)
 }
 
 /// Fills in each burn's last claim rejection from `errors`, keyed by proof file.
@@ -195,7 +210,6 @@ fn is_burn_not_yet_claimable(reject_reason: &str) -> bool {
 pub fn find_claimable(dir: &Path, commitment: &str) -> Result<(String, BurnProof), anyhow::Error> {
     let file = read_burns(dir, "claimable")?
         .into_iter()
-        .map(|(_, burn)| burn)
         .find(|burn| burn.commitment == commitment)
         .and_then(|burn| burn.proof_file)
         .ok_or_else(|| anyhow!("No claimable burn with commitment {commitment}"))?;
@@ -203,11 +217,8 @@ pub fn find_claimable(dir: &Path, commitment: &str) -> Result<(String, BurnProof
     Ok((file, proof))
 }
 
-/// The burns with a proof file in `dir`, each with when its file was last modified.
-fn read_burns(
-    dir: &Path,
-    status: &'static str,
-) -> Result<Vec<(SystemTime, L2Burn)>, anyhow::Error> {
+/// The burns with a proof file in `dir`, timed by when the file was last modified.
+fn read_burns(dir: &Path, status: &'static str) -> Result<Vec<L2Burn>, anyhow::Error> {
     let entries = match std::fs::read_dir(dir) {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
         entries => entries?,
@@ -222,17 +233,18 @@ fn read_burns(
             continue;
         }
         match read_proof(&path) {
-            Ok(proof) => burns.push((
-                std::fs::metadata(&path)?.modified()?,
-                L2Burn {
-                    commitment: hex::encode(proof.claim_proof.commitment.as_bytes()),
-                    claim_public_key: hex::encode(proof.claim_proof.burn_public_key.as_bytes()),
-                    amount: proof.claim_proof.value,
-                    proof_file: Some(file.to_string()),
-                    status,
-                    mined_height: None,
-                },
-            )),
+            Ok(proof) => burns.push(L2Burn {
+                commitment: hex::encode(proof.claim_proof.commitment.as_bytes()),
+                claim_public_key: hex::encode(proof.claim_proof.burn_public_key.as_bytes()),
+                amount: proof.claim_proof.value,
+                proof_file: Some(file.to_string()),
+                status,
+                mined_height: None,
+                timestamp: std::fs::metadata(&path)?
+                    .modified()?
+                    .duration_since(SystemTime::UNIX_EPOCH)?
+                    .as_secs(),
+            }),
             Err(e) => warn!(target: LOG_TARGET, "Skipping burn proof {file}: {e}"),
         }
     }
@@ -536,6 +548,7 @@ mod tests {
                 L2Burn::pending(COMMITMENT.to_string(), CLAIM_KEY.to_string(), 1),
                 L2Burn::pending(pending.clone(), CLAIM_KEY.to_string(), 5),
             ],
+            &HashMap::new(),
         )
         .expect("burns");
 
@@ -572,32 +585,52 @@ mod tests {
         assert!(find_claimable(dir, &claimed).is_err());
         assert!(find_claimable(dir, &pending).is_err());
         assert!(
-            list_burns(&dir.join("missing"), Vec::new())
+            list_burns(&dir.join("missing"), Vec::new(), &HashMap::new())
                 .expect("empty")
                 .is_empty()
         );
     }
 
     #[test]
-    fn burns_list_newest_first() {
+    fn burns_list_newest_first_by_when_they_were_made() {
         let dir = tempfile::tempdir().expect("temp dir");
         let dir = dir.path();
-        let (old, new) = ("11".repeat(32), "22".repeat(32));
-        write(dir, "new.json", &other_proof(&new));
+        let (old, new, unknown) = ("11".repeat(32), "22".repeat(32), "33".repeat(32));
+        // The old burn's proof landed last, but the wallet db says it was made first.
         write(dir, "old.json", &other_proof(&old));
+        write(dir, "new.json", &other_proof(&new));
+        write(dir, "unknown.json", &other_proof(&unknown));
         let an_hour_ago = SystemTime::now() - std::time::Duration::from_secs(3600);
         std::fs::File::options()
             .write(true)
-            .open(dir.join("old.json"))
+            .open(dir.join("unknown.json"))
             .and_then(|file| file.set_modified(an_hour_ago))
             .expect("mtime");
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("now")
+            .as_secs();
+        let record = |ago: u64, mined_height| BurnRecord {
+            created_at: now - ago,
+            mined_height,
+        };
+        let records = HashMap::from([
+            (old.clone(), record(7200, Some(10))),
+            (new.clone(), record(1800, Some(20))),
+            ("aa".to_string(), record(60, None)),
+            ("bb".to_string(), record(5400, None)),
+        ]);
         let pending = |c: &str| L2Burn::pending(c.to_string(), CLAIM_KEY.to_string(), 1);
 
-        // The wallet db hands pending burns over oldest first.
-        let burns = list_burns(dir, vec![pending("aa"), pending("bb")]).expect("burns");
+        let burns = list_burns(dir, vec![pending("aa"), pending("bb")], &records).expect("burns");
 
         let order: Vec<_> = burns.iter().map(|b| b.commitment.as_str()).collect();
-        assert_eq!(order, ["bb", "aa", new.as_str(), old.as_str()]);
+        assert_eq!(
+            order,
+            ["aa", new.as_str(), unknown.as_str(), "bb", old.as_str()]
+        );
+        assert_eq!(burns[1].mined_height, Some(20));
+        assert_eq!(burns[2].mined_height, None);
     }
 
     #[test]

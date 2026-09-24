@@ -302,11 +302,12 @@
       "burned": "Burned"
     },
     "claim": {
-      "title": "Burns to claim",
       "commitment": "Burn commitment",
       "review-label": "You are claiming",
       "cta": "Claim",
       "claiming": "Claiming...",
+      "chip-pending": "Pending",
+      "chip-waiting": "Waiting",
       "pending": "Waiting for the burn to be mined",
       "ready": "Ready to claim",
       "claimable-in_one": "Claimable in {{count}} block, about {{time}}",

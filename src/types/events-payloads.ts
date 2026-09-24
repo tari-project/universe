@@ -229,6 +229,8 @@ export interface L2Burn {
     status: 'pending' | 'claimable' | 'claimed' | 'foreign';
     /** The L1 height the burn was mined at, null when the L1 wallet doesn't know it. */
     mined_height: number | null;
+    /** Unix seconds, when the burn was made. */
+    timestamp: number;
 }
 
 /** How a submitted claim of the burn with `commitment` (hex) ended on L2. */

@@ -424,9 +424,10 @@ impl MinotariWalletManager {
         Ok(get_pending_burn_proofs(&*Self::get_db_connection().await?)?)
     }
 
-    /// The L1 height each of this wallet's mined burns went into, by commitment (hex).
-    pub async fn burn_mined_heights() -> Result<HashMap<String, u64>, anyhow::Error> {
-        burn_mined_heights(&*Self::get_db_connection().await?)
+    /// When each of this wallet's burns was made and the L1 height it went into, by
+    /// commitment (hex).
+    pub async fn burn_records() -> Result<HashMap<String, BurnRecord>, anyhow::Error> {
+        burn_records(&*Self::get_db_connection().await?)
     }
 
     /// Completes pending burn proofs with their kernel merkle proof once the burn is
@@ -1321,31 +1322,51 @@ fn confirmation_status(confirmations: u64, blocks_until_unlocked: u64) -> Transa
     }
 }
 
+/// What the wallet db knows about a burn.
+#[derive(Debug, PartialEq)]
+pub struct BurnRecord {
+    /// Unix seconds, when the burn was made.
+    pub created_at: u64,
+    /// The L1 height the burn was mined at, once the wallet has seen it in a block.
+    pub mined_height: Option<u64>,
+}
+
 /// A burn's transaction is recorded with the burned output's hash, hex, as its
 /// sent_output_hash, and gets its mined_height once the wallet sees it in a block.
-fn burn_mined_heights(conn: &Connection) -> Result<HashMap<String, u64>, anyhow::Error> {
+fn burn_records(conn: &Connection) -> Result<HashMap<String, BurnRecord>, anyhow::Error> {
     let mut stmt = conn.prepare(
-        "SELECT b.commitment, c.mined_height FROM burn_proofs b
-         JOIN completed_transactions c ON c.sent_output_hash = lower(hex(b.output_hash))
-         WHERE c.mined_height IS NOT NULL",
+        "SELECT b.commitment, CAST(strftime('%s', b.created_at) AS INTEGER), MAX(c.mined_height)
+         FROM burn_proofs b
+         LEFT JOIN completed_transactions c ON c.sent_output_hash = lower(hex(b.output_hash))
+         GROUP BY b.id",
     )?;
     let rows = stmt.query_map([], |row| {
-        Ok((row.get::<_, Vec<u8>>(0)?, row.get::<_, i64>(1)?))
+        Ok((
+            row.get::<_, Vec<u8>>(0)?,
+            row.get::<_, i64>(1)?,
+            row.get::<_, Option<i64>>(2)?,
+        ))
     })?;
     rows.map(|row| {
-        let (commitment, height) = row?;
-        Ok((hex::encode(commitment), u64::try_from(height)?))
+        let (commitment, created_at, height) = row?;
+        let record = BurnRecord {
+            created_at: u64::try_from(created_at)?,
+            mined_height: height.map(u64::try_from).transpose()?,
+        };
+        Ok((hex::encode(commitment), record))
     })
     .collect()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{blocks_to_report, burn_mined_heights, confirmation_status, scan_progress_percent};
+    use super::{
+        BurnRecord, blocks_to_report, burn_records, confirmation_status, scan_progress_percent,
+    };
     use minotari_wallet::transactions::TransactionDisplayStatus;
 
     #[test]
-    fn a_burns_mined_height_comes_from_its_transaction() {
+    fn a_burns_record_has_when_it_was_made_and_its_mined_height() {
         let dir = tempfile::tempdir().expect("temp dir");
         let pool = minotari_wallet::db::init_db(dir.path().join("wallet.db")).expect("db");
         let conn = pool.get().expect("connection");
@@ -1371,10 +1392,23 @@ mod tests {
             .expect("pragma");
         burn(1, Some(914_607));
         burn(3, None);
+        conn.execute(
+            "UPDATE burn_proofs SET created_at = '2026-09-24 12:00:00'",
+            [],
+        )
+        .expect("created_at");
 
-        let heights = burn_mined_heights(&conn).expect("heights");
-        assert_eq!(heights.len(), 1);
-        assert_eq!(heights.get(&hex::encode([2u8; 32])), Some(&914_607));
+        let records = burn_records(&conn).expect("records");
+        let record = |height| BurnRecord {
+            created_at: 1_790_251_200,
+            mined_height: height,
+        };
+        assert_eq!(records.len(), 2);
+        assert_eq!(
+            records.get(&hex::encode([2u8; 32])),
+            Some(&record(Some(914_607)))
+        );
+        assert_eq!(records.get(&hex::encode([4u8; 32])), Some(&record(None)));
     }
 
     #[test]

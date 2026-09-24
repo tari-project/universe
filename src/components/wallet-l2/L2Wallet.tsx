@@ -39,8 +39,7 @@ import {
     QRSizer,
 } from '@app/components/transactions/receive/Address.style.ts';
 import { FilterSelect } from '@app/components/transactions/history/FilterSelect.tsx';
-import L2ClaimBurns from './L2ClaimBurns.tsx';
-import L2History from './L2History.tsx';
+import L2Activity from './L2Activity.tsx';
 import L2SendModal from './L2SendModal.tsx';
 
 const FILTER_TYPES = ['all-activity', 'transactions', 'l2.filter.waiting-claims'] as const;
@@ -129,10 +128,9 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                 </NavWrapper>
             </TabsWrapper>
 
-            {/* One scroll area for both lists, so a long list can't push the card past the window. */}
+            {/* Its own scroll area, so a long list can't push the card past the window. */}
             <div style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto' }}>
-                {filter !== 'transactions' && <L2ClaimBurns account={account} />}
-                {filter !== 'l2.filter.waiting-claims' && <L2History account={account} />}
+                <L2Activity account={account} filter={filter} />
             </div>
 
             <L2SendModal
