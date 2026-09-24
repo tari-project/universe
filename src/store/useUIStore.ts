@@ -8,6 +8,7 @@ interface UIStoreState {
     currentSidebar: SidebarType;
     latestVersion?: string;
     sidebarOpen: boolean;
+    l2Open: boolean;
     showExperimental: boolean;
     showExternalDependenciesDialog: boolean;
     dialogToShow?: DialogType;
@@ -36,6 +37,7 @@ const initialState: UIStoreState = {
     theme: preferredTheme,
     preferredTheme,
     sidebarOpen: false,
+    l2Open: false,
     currentSidebar: 'mining',
     dialogToShow: null,
     showExperimental: false,

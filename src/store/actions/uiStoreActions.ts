@@ -9,7 +9,7 @@ import { setVisualMode } from './appConfigStoreActions.ts';
 
 import { Theme } from '@app/theme/types.ts';
 import { ConnectionStatusPayload } from '@app/types/events-payloads.ts';
-import { SB_WIDTH } from '@app/theme/styles.ts';
+import { SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
 import { useConfigUIStore } from '../useAppConfigStore.ts';
 import { CONNECTION_STATUS, DialogType, sidebarTowerOffset, TOWER_CANVAS_ID } from '../types/ui.ts';
 
@@ -92,11 +92,15 @@ export const setIsReconnecting = (isReconnecting: boolean) => useUIStore.setStat
 
 export const toggleHideWalletBalance = () =>
     useUIStore.setState((current) => ({ hideWalletBalance: !current.hideWalletBalance }));
+// The tower shifts right by every open card, plus the gap between the two cards.
+const towerOffset = (sidebarOpen: boolean, l2Open: boolean) => {
+    const cards = Number(sidebarOpen) + Number(l2Open);
+    return sidebarTowerOffset + cards * SB_WIDTH + (cards > 1 ? SB_SPACING : 0);
+};
 export const setSidebarOpen = (sidebarOpen: boolean) =>
-    useUIStore.setState({
-        sidebarOpen,
-        towerSidebarOffset: sidebarOpen ? sidebarTowerOffset + SB_WIDTH : sidebarTowerOffset,
-    });
+    useUIStore.setState((s) => ({ sidebarOpen, towerSidebarOffset: towerOffset(sidebarOpen, s.l2Open) }));
+export const setL2Open = (l2Open: boolean) =>
+    useUIStore.setState((s) => ({ l2Open, towerSidebarOffset: towerOffset(s.sidebarOpen, l2Open) }));
 
 export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState((c) => ({ ...c, seedlessUI }));
 export const setShouldShowExchangeSpecificModal = (shouldShowExchangeSpecificModal: boolean) =>

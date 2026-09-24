@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { NavWrapper, NavButton, BurnHint } from './styles.ts';
 import { useMiningStore, useWalletStore } from '@app/store';
-import { networkSupportsBurn } from '@app/utils/network';
+import { networkSupportsL2 } from '@app/utils/network';
 
 interface WalletActionsProps {
     section: string;
@@ -11,7 +11,7 @@ interface WalletActionsProps {
 export default function WalletActions({ section, setSection }: WalletActionsProps) {
     const { t } = useTranslation(['wallet', 'sidebar']);
     const isScanning = useWalletStore((s) => !s.wallet_scanning.is_initial_scan_complete);
-    const canBurn = useMiningStore((s) => networkSupportsBurn(s.network));
+    const canBurn = useMiningStore((s) => networkSupportsL2(s.network));
     const hasPin = useWalletStore((s) => s.is_pin_locked);
 
     return (

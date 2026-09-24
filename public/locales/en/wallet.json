@@ -244,5 +244,31 @@
     "completed-text": "Once the burn is mined, the L2 claim proof will be written to:",
     "error-message": "Error burning funds: ",
     "pin-required": "Set a PIN to burn"
+  },
+  "l2": {
+    "title": "Layer 2",
+    "pin-required": "You must set a PIN to use Layer 2",
+    "set-pin": "Set a PIN",
+    "enable-description": "Layer 2 uses a wallet made from your existing seed words. You'll be asked for your PIN.",
+    "enable": "Enable Layer 2",
+    "enable-error": "Couldn't enable Layer 2: ",
+    "loading": "Loading your Layer 2 wallet...",
+    "balance-split": "Revealed {{revealed}} · Confidential {{confidential}}",
+    "receive-title": "Receive on Layer 2",
+    "empty": "No Layer 2 activity yet",
+    "source": {
+      "transaction": "Transaction",
+      "scan": "Received",
+      "recovery": "Recovered"
+    },
+    "details": {
+      "amount": "Amount",
+      "source": "Type",
+      "date": "Date",
+      "transaction-id": "Transaction ID",
+      "status": "Status",
+      "fee": "Fee",
+      "invalid-reason": "Reason"
+    }
   }
 }
