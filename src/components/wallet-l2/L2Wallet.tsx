@@ -98,13 +98,6 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                 <FilterSelect types={FILTER_TYPES} value={filter} onChange={setFilter} />
                 <NavWrapper>
                     <NavButton
-                        $isActive={section === 'history'}
-                        aria-selected={section === 'history'}
-                        onClick={() => setSection('history')}
-                    >
-                        {t('tabs.history')}
-                    </NavButton>
-                    <NavButton
                         $isActive={section === 'send'}
                         aria-selected={section === 'send'}
                         onClick={() => setSection('send')}
