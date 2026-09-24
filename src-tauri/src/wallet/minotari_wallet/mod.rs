@@ -41,7 +41,7 @@ use crate::{
 };
 use log::{error, info, warn};
 use minotari_wallet::{
-    DisplayedTransaction, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
+    DisplayedTransaction, PauseReason, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
     TransactionHistoryService,
     db::{AccountBalance, get_account_by_name, get_latest_scanned_tip_block_by_account},
     get_balance, init_db,
@@ -870,8 +870,28 @@ impl MinotariWalletManager {
                 );
             }
             ScanStatusEvent::MoreBlocksAvailable { .. } => {}
-            ScanStatusEvent::Paused { reason, .. } => {
-                info!(target: LOG_TARGET_STATUSES, "Scan paused: {:?}", reason);
+            // Every cycle ends with `MaxBlocksReached`: the loop above starts the next
+            // one at once, so it is a progress marker, not a stall.
+            ScanStatusEvent::Paused {
+                last_scanned_height,
+                reason: PauseReason::MaxBlocksReached { limit },
+                ..
+            } => {
+                let tip_height = Self::get_chain_tip_height();
+                info!(
+                    target: LOG_TARGET_STATUSES,
+                    "Scan cycle of {limit} blocks done at height {last_scanned_height} of {tip_height}, starting the next cycle"
+                );
+            }
+            ScanStatusEvent::Paused {
+                last_scanned_height,
+                reason: PauseReason::Cancelled,
+                ..
+            } => {
+                info!(
+                    target: LOG_TARGET_STATUSES,
+                    "Scan cancelled at height {last_scanned_height}"
+                );
             }
             ScanStatusEvent::FastSyncPhaseStarted {
                 phase,
