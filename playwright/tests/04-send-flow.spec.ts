@@ -12,7 +12,7 @@ async function openSendModal(page: Page) {
   const sendBtn = page.locator(sel.send.button);
   await sendBtn.waitFor({ state: 'visible', timeout: 10_000 });
   await sendBtn.click({ timeout: 5_000 });
-  await expect(page.getByText('Send Tari')).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText('Send Tari').first()).toBeVisible({ timeout: 5_000 });
   const addressInput = page.locator(sel.send.addressInput);
   await addressInput.waitFor({ state: 'visible', timeout: 5_000 });
   return addressInput;
@@ -90,7 +90,7 @@ test.describe('Send Transaction Flow', () => {
 
     // Close the modal without sending — this test only covers validation.
     await page.keyboard.press('Escape');
-    await expect(page.getByText('Send Tari')).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText('Send Tari').first()).not.toBeVisible({ timeout: 5_000 });
   });
 
   test('send a transaction end-to-end and see it confirm', async ({ appPage: page }) => {
