@@ -1,0 +1,320 @@
+// Copyright 2026. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+//! The Ootle (L2) wallet, run in-process from the tari-ootle wallet SDK.
+//!
+//! Esmeralda only. The store opens during the wallet setup phase. The L2 seed is the
+//! L1 seed, so a fresh store stays "not enabled" until the user enables L2 behind the
+//! PIN, which restores the SDK seed from the L1 seed words and starts the services.
+
+use std::{future::Future, path::Path, sync::LazyLock};
+
+use log::{error, info};
+use tari_common::configuration::Network;
+use tari_common_types_wallet::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
+use tari_crypto::tari_utilities::SafePassword;
+use tari_engine_types::resource::Resource;
+use tari_ootle_wallet_sdk::{
+    CipherSeed, Network as OotleNetwork, SeedWords, WalletSdk, WalletSdkConfig, WalletSdkSpec,
+    apis::config::ConfigKey,
+    cipher_seed::CipherSeedRestore,
+    local_key_store::LocalKeyStore,
+    models::{EpochBirthday, WalletEvent},
+};
+use tari_ootle_wallet_sdk_services::{
+    Shutdown, ShutdownSignal,
+    account_monitor::AccountMonitor,
+    account_recovery::AccountRecoveryService,
+    indexer_rest_api::IndexerRestApiNetworkInterface,
+    notify::Notify,
+    transaction_service::TransactionService,
+    utxo_scanner::{StealthUtxoScannerWorker, UtxoRecovery},
+};
+use tari_ootle_wallet_storage_sqlite::SqliteWalletStore;
+use tari_template_lib::{
+    prelude::LOCKED,
+    types::{
+        Metadata, ResourceType, SubstateOwnerRule,
+        access_rules::ResourceAccessRules,
+        constants::{
+            PUBLIC_IDENTITY_RESOURCE_ADDRESS, STEALTH_TARI_RESOURCE_ADDRESS, TOKEN_SYMBOL,
+        },
+        rule,
+    },
+};
+use tauri::AppHandle;
+use tokio::sync::Mutex;
+use tokio_util::task::TaskTracker;
+
+use crate::{
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    credential_manager::CredentialManager,
+    internal_wallet::{InternalWallet, to_wallet_cipher_seed},
+    pin::PinManager,
+    tasks_tracker::TasksTrackers,
+    wallet::send_gate::{TransactionError, check_l2_allowed, network_supports_l2},
+};
+
+const LOG_TARGET: &str = "tari::universe::ootle";
+/// Same as tari_walletd: stop looking for more recovered accounts after this many misses.
+const RECOVERY_ABANDON_COUNT: usize = 10;
+
+pub struct OotleWalletSpec;
+
+impl WalletSdkSpec for OotleWalletSpec {
+    type KeyStore = LocalKeyStore;
+    type NetworkInterface = IndexerRestApiNetworkInterface;
+    type Store = SqliteWalletStore;
+}
+
+type OotleSdk = WalletSdk<OotleWalletSpec>;
+
+static INSTANCE: LazyLock<OotleWalletManager> = LazyLock::new(|| OotleWalletManager {
+    sdk: Mutex::new(None),
+    notify: Notify::new(100),
+});
+
+pub struct OotleWalletManager {
+    sdk: Mutex<Option<OotleSdk>>,
+    notify: Notify<WalletEvent>,
+}
+
+impl OotleWalletManager {
+    /// Opens the L2 store and starts the services if L2 was enabled before. Does
+    /// nothing off Esmeralda.
+    pub async fn initialize(data_dir: &Path) -> Result<(), anyhow::Error> {
+        let network = Network::get_current_or_user_setting_or_default();
+        if !network_supports_l2(network) {
+            info!(target: LOG_TARGET, "L2 wallet skipped, not available on {network}");
+            return Ok(());
+        }
+        let indexer_url = ConfigCore::content()
+            .await
+            .ootle_indexer_url()
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("No Ootle indexer configured for {network}"))?;
+
+        let store_dir = data_dir.join("ootle-wallet").join(network.as_key_str());
+        std::fs::create_dir_all(&store_dir)?;
+        let store = SqliteWalletStore::try_open(store_dir.join("wallet.sqlite"))?;
+        store.run_migrations()?;
+
+        let password = CredentialManager::ootle_keyring_password().await?;
+        let config = WalletSdkConfig {
+            network: ootle_network(network),
+            override_keyring_password: Some(SafePassword::from(password.as_str())),
+        };
+        let indexer = IndexerRestApiNetworkInterface::new(indexer_url.clone());
+        let sdk = OotleSdk::initialize_with_local_key_store(
+            store,
+            indexer,
+            config,
+            EpochBirthday::far_future(),
+        )?;
+        upsert_genesis_resources(&sdk)?;
+
+        if sdk.config_api().exists(ConfigKey::CipherSeed)? {
+            start_services(&sdk, sdk.is_recovery_needed()?).await?;
+            info!(target: LOG_TARGET, "L2 wallet started on {network}, indexer {indexer_url}");
+        } else {
+            info!(target: LOG_TARGET, "L2 wallet opened on {network}, not enabled yet");
+        }
+        *INSTANCE.sdk.lock().await = Some(sdk);
+        Ok(())
+    }
+
+    /// Turns L2 on: asks for the PIN, restores the L2 seed from the L1 seed and starts
+    /// the services. Refused without a PIN or off Esmeralda.
+    pub async fn enable(app_handle: &AppHandle) -> Result<(), TransactionError> {
+        check_l2_allowed(
+            Network::get_current_or_user_setting_or_default(),
+            PinManager::pin_locked().await,
+        )?;
+        let mut guard = INSTANCE.sdk.lock().await;
+        let sdk = guard.as_mut().ok_or_else(|| {
+            TransactionError::Disabled("The L2 wallet has not started yet".to_string())
+        })?;
+        if sdk
+            .config_api()
+            .exists(ConfigKey::CipherSeed)
+            .map_err(wallet_error)?
+        {
+            return Ok(());
+        }
+
+        let seed = InternalWallet::get_tari_seed_with_prompt(app_handle, None)
+            .await
+            .map_err(wallet_error)?;
+        let seed_words = l2_seed_words(&seed).map_err(wallet_error)?;
+        sdk.initialize_cipher_seed(CipherSeedRestore::FromSeedWords(&seed_words))
+            .map_err(wallet_error)?;
+        start_services(sdk, true).await.map_err(wallet_error)?;
+        info!(target: LOG_TARGET, "L2 wallet enabled");
+        Ok(())
+    }
+}
+
+fn wallet_error(e: impl std::fmt::Display) -> TransactionError {
+    TransactionError::WalletError(e.to_string())
+}
+
+fn ootle_network(network: Network) -> OotleNetwork {
+    match network {
+        Network::MainNet => OotleNetwork::MainNet,
+        Network::StageNet => OotleNetwork::StageNet,
+        Network::NextNet => OotleNetwork::NextNet,
+        Network::LocalNet => OotleNetwork::LocalNet,
+        Network::Igor => OotleNetwork::Igor,
+        Network::Esmeralda => OotleNetwork::Esmeralda,
+    }
+}
+
+/// The L1 seed as seed words the wallet SDK can restore from.
+fn l2_seed_words(
+    seed: &tari_common_types::seeds::cipher_seed::CipherSeed,
+) -> Result<SeedWords, anyhow::Error> {
+    let seed: CipherSeed = to_wallet_cipher_seed(seed)?;
+    Ok(seed.to_mnemonic(MnemonicLanguage::English, None)?)
+}
+
+/// The XTR and public identity resources every wallet knows about, copied from
+/// tari_ootle_app_utilities::genesis_resources (which pulls in the engine).
+fn upsert_genesis_resources(sdk: &OotleSdk) -> Result<(), anyhow::Error> {
+    let symbol = if sdk.network().is_testnet() {
+        "tTARI"
+    } else {
+        "TARI"
+    };
+    let xtr = Resource::new(
+        ResourceType::Stealth,
+        SubstateOwnerRule::None,
+        ResourceAccessRules::new()
+            .mintable(rule!(deny_all), LOCKED)
+            .burnable(rule!(deny_all), LOCKED)
+            .recallable(rule!(deny_all), LOCKED)
+            .freezable(rule!(deny_all), LOCKED),
+        Metadata::from([(TOKEN_SYMBOL, symbol)]),
+        None,
+        None,
+        6,
+        false,
+    );
+    let identity = Resource::new(
+        ResourceType::NonFungible,
+        SubstateOwnerRule::None,
+        ResourceAccessRules::new(),
+        Metadata::from([(TOKEN_SYMBOL, "ID".to_string())]),
+        None,
+        None,
+        0,
+        false,
+    );
+    let resources = sdk.resources_api();
+    resources.upsert_resource(&STEALTH_TARI_RESOURCE_ADDRESS, &xtr)?;
+    resources.upsert_resource(&PUBLIC_IDENTITY_RESOURCE_ADDRESS, &identity)?;
+    Ok(())
+}
+
+/// Spawns the wallet services the way tari_walletd does, minus the template monitor,
+/// burn claiming and the wasm optimizer. They run on the wallet phase tracker so they
+/// stop with the L1 wallet.
+async fn start_services(sdk: &OotleSdk, needs_recovery: bool) -> Result<(), anyhow::Error> {
+    let phase = &TasksTrackers::current().wallet_phase;
+    let tracker = phase.get_task_tracker().await;
+    let mut phase_signal = phase.get_signal().await;
+    // The SDK services take the tari 5.x shutdown signal, so relay the phase's one to it.
+    let mut shutdown = Shutdown::new();
+    let signal = shutdown.to_signal();
+    tracker.spawn(async move {
+        phase_signal.wait().await;
+        shutdown.trigger();
+    });
+
+    let notify = INSTANCE.notify.clone();
+    let (transactions, _) = TransactionService::new(notify.clone(), sdk.clone(), signal.clone());
+    spawn_service(&tracker, &signal, "transaction service", transactions.run());
+
+    let (scanner, scanner_handle) =
+        StealthUtxoScannerWorker::new(sdk.clone(), notify.clone()).spawn();
+    spawn_service(&tracker, &signal, "utxo scanner", async { scanner.await? });
+    let recovery = UtxoRecovery::new(sdk.clone()).with_notify(notify.clone());
+    let waker = scanner_handle.subscribe_notifications();
+    spawn_service(&tracker, &signal, "utxo recovery", recovery.run(waker));
+
+    let (monitor, monitor_handle) =
+        AccountMonitor::new(notify, sdk.clone(), scanner_handle, signal.clone());
+    spawn_service(&tracker, &signal, "account monitor", monitor.run());
+
+    if needs_recovery {
+        let birthday = sdk.key_manager_api().get_cipher_seed_birthday_epoch()?;
+        let scanner = AccountRecoveryService::new(
+            sdk.clone(),
+            monitor_handle,
+            RECOVERY_ABANDON_COUNT,
+            birthday,
+        );
+        spawn_service(&tracker, &signal, "account recovery", async {
+            scanner.scan().await;
+            Ok(())
+        });
+    }
+    Ok(())
+}
+
+fn spawn_service(
+    tracker: &TaskTracker,
+    signal: &ShutdownSignal,
+    name: &'static str,
+    service: impl Future<Output = Result<(), anyhow::Error>> + Send + 'static,
+) {
+    let mut signal = signal.clone();
+    tracker.spawn(async move {
+        tokio::select! {
+            result = service => match result {
+                Ok(()) => info!(target: LOG_TARGET, "L2 {name} stopped"),
+                Err(e) => error!(target: LOG_TARGET, "L2 {name} failed: {e}"),
+            },
+            _ = signal.wait() => {}
+        }
+    });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn l2_seed_words_are_the_l1_seed_words() {
+        let l1_seed = tari_common_types::seeds::cipher_seed::CipherSeed::random();
+        let l1_words = tari_common_types::seeds::mnemonic::Mnemonic::to_mnemonic(
+            &l1_seed,
+            tari_common_types::seeds::mnemonic::MnemonicLanguage::English,
+            None,
+        )
+        .expect("l1 words");
+        let l2_words = l2_seed_words(&l1_seed).expect("l2 words");
+        assert_eq!(l1_words.len(), l2_words.len());
+        for i in 0..l1_words.len() {
+            assert_eq!(l1_words.get_word(i).unwrap(), l2_words.get_word(i).unwrap());
+        }
+    }
+}

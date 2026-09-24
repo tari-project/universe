@@ -30,6 +30,7 @@ use std::{sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
+use url::Url;
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::ab_test_selector::ABTestSelector;
@@ -92,6 +93,15 @@ pub struct ConfigCoreContent {
     shutdown_mode: ShutdownMode,
     show_window_on_startup: bool,
     node_data_directory: Option<PathBuf>,
+    /// Indexer the Ootle (L2) wallet talks to. None where Universe has no L2.
+    ootle_indexer_url: Option<Url>,
+}
+
+fn default_ootle_indexer_url(network: Network) -> Option<Url> {
+    match network {
+        Network::Esmeralda => Url::parse("http://54.38.0.31:50124").ok(),
+        _ => None,
+    }
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -153,6 +163,7 @@ impl Default for ConfigCoreContent {
             shutdown_mode: ShutdownMode::Tasktray,
             show_window_on_startup: true,
             node_data_directory: None,
+            ootle_indexer_url: default_ootle_indexer_url(network),
         }
     }
 }
@@ -229,5 +240,27 @@ impl ConfigImpl for ConfigCore {
 
     fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_esmeralda_has_a_default_ootle_indexer() {
+        assert_eq!(
+            default_ootle_indexer_url(Network::Esmeralda).map(String::from),
+            Some("http://54.38.0.31:50124/".to_string())
+        );
+        for network in [
+            Network::MainNet,
+            Network::StageNet,
+            Network::NextNet,
+            Network::LocalNet,
+            Network::Igor,
+        ] {
+            assert!(default_ootle_indexer_url(network).is_none(), "{network}");
+        }
     }
 }

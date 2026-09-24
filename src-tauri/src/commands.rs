@@ -49,6 +49,7 @@ use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::network_utils::NetworkExt;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
+use crate::ootle::OotleWalletManager;
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
@@ -1661,6 +1662,16 @@ pub async fn burn_to_l2(
         warn!(target: LOG_TARGET_APP_LOGIC, "burn_to_l2 took too long: {:?}", timer.elapsed());
     }
     Ok(receipt)
+}
+
+/// Turn the L2 wallet on. Refused without a PIN; the PIN prompt unlocks the L1 seed the
+/// L2 wallet is restored from.
+#[tauri::command]
+pub async fn enable_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[enable_l2_wallet] called");
+    OotleWalletManager::enable(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

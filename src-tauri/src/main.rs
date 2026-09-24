@@ -111,6 +111,7 @@ mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
 mod node;
+mod ootle;
 mod pin;
 mod port_allocator;
 mod process_adapter;
@@ -491,6 +492,7 @@ fn main() {
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,
             commands::burn_to_l2,
+            commands::enable_l2_wallet,
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,

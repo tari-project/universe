@@ -281,23 +281,23 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionErro
     .map_err(|e| TransactionError::WalletError(format!("Transaction failed: {e}")))
 }
 
-/// Networks whose L2 can claim a burn. Anywhere else the burn would just destroy funds.
-pub fn network_supports_burn(network: Network) -> bool {
+/// Networks with an L2 Universe can use. A burn anywhere else would just destroy funds.
+pub fn network_supports_l2(network: Network) -> bool {
     matches!(network, Network::Esmeralda)
 }
 
-/// Checks run before a burn shows any dialog or takes the gate permit. A burn needs a
-/// PIN: without one the only gate would be a confirmation dialog, and a script in the
-/// webview can answer that.
-fn check_burn_allowed(network: Network, pin_configured: bool) -> Result<(), TransactionError> {
-    if !network_supports_burn(network) {
+/// Checks run before anything on L2 (and any burn to it) shows a dialog or takes the
+/// gate permit. L2 needs a PIN: without one the only gate would be a confirmation
+/// dialog, and a script in the webview can answer that.
+pub fn check_l2_allowed(network: Network, pin_configured: bool) -> Result<(), TransactionError> {
+    if !network_supports_l2(network) {
         return Err(TransactionError::Disabled(format!(
-            "Burning to L2 is not available on {network}"
+            "Layer 2 is not available on {network}"
         )));
     }
     if !pin_configured {
         return Err(TransactionError::NoPinConfigured(
-            "No PIN configured. Set up a PIN before burning to L2.".to_string(),
+            "No PIN configured. Set up a PIN before using Layer 2.".to_string(),
         ));
     }
     Ok(())
@@ -313,7 +313,7 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
         payment_id,
     } = request;
 
-    check_burn_allowed(
+    check_l2_allowed(
         Network::get_current_or_user_setting_or_default(),
         PinManager::pin_locked().await,
     )?;
@@ -569,8 +569,8 @@ mod tests {
     }
 
     #[test]
-    fn only_esmeralda_supports_burn() {
-        assert!(network_supports_burn(Network::Esmeralda));
+    fn only_esmeralda_supports_l2() {
+        assert!(network_supports_l2(Network::Esmeralda));
         for network in [
             Network::MainNet,
             Network::StageNet,
@@ -578,22 +578,19 @@ mod tests {
             Network::LocalNet,
             Network::Igor,
         ] {
-            assert!(
-                !network_supports_burn(network),
-                "{network} must not offer burns"
-            );
+            assert!(!network_supports_l2(network), "{network} must not offer L2");
         }
     }
 
     #[test]
-    fn burn_needs_a_pin_and_esmeralda() {
-        assert!(check_burn_allowed(Network::Esmeralda, true).is_ok());
+    fn l2_needs_a_pin_and_esmeralda() {
+        assert!(check_l2_allowed(Network::Esmeralda, true).is_ok());
         assert!(matches!(
-            check_burn_allowed(Network::Esmeralda, false),
+            check_l2_allowed(Network::Esmeralda, false),
             Err(TransactionError::NoPinConfigured(_))
         ));
         assert!(matches!(
-            check_burn_allowed(Network::MainNet, true),
+            check_l2_allowed(Network::MainNet, true),
             Err(TransactionError::Disabled(_))
         ));
     }

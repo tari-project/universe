@@ -94,6 +94,12 @@ tari_crypto = "0.23.1"
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v6.0.1-pre.0" }
 tari_transaction_components = { git = "https://github.com/tari-project/tari.git", tag = "v6.0.1-pre.0" }
 tari_utilities = "0.10.0"
+tari_ootle_common_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82" }
+tari_ootle_wallet_sdk = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82" }
+tari_ootle_wallet_sdk_services = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82", features = ["indexer_client"] }
+tari_ootle_wallet_storage_sqlite = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82" }
+tari_engine_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82" }
+tari_template_lib = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82" }
 # Wallet-side tari crates pinned to the version used by the `minotari` crate
 # (crates.io 5.7.0-pre.8). These are distinct from the git v6.0.1-pre.0 crates above,
 # which the rest of the app uses. The wallet module bridges between the two.

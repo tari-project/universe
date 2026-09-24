@@ -1046,18 +1046,7 @@ impl InternalWallet {
 
         if tari_wallet_details.is_some() {
             let tari_cipher_seed = Self::get_tari_seed_with_prompt(app_handle, pin_context).await?;
-
-            // The `minotari` signing crate uses tari 5.7.0-pre.8, so rebuild the cipher seed
-            // as a wallet-side `CipherSeed`. The binary form is identical across the two
-            // versions (CIPHER_SEED_VERSION == 2), so this round-trip is lossless. The
-            // intermediate buffer is the master entropy in the clear, so it is wiped on
-            // drop rather than left in the heap.
-            let wallet_cipher_seed = WalletCipherSeed::from_binary(&Zeroizing::new(
-                tari_cipher_seed
-                    .to_binary()
-                    .map_err(|e| anyhow!(e.to_string()))?,
-            ))
-            .map_err(|e| anyhow!(e.to_string()))?;
+            let wallet_cipher_seed = to_wallet_cipher_seed(&tari_cipher_seed)?;
 
             let seed_words_wallet = WalletSeedWordsWallet::construct_new(wallet_cipher_seed)
                 .map_err(|e| anyhow!(e.to_string()))?;
@@ -1701,4 +1690,16 @@ fn zero_fill(path: &Path, len: u64, chunk_len: usize) -> std::io::Result<()> {
         remaining -= chunk as u64;
     }
     file.sync_all()
+}
+
+/// The `minotari` signing crate and the Ootle wallet SDK use tari 5.7.0-pre.8, so rebuild
+/// the cipher seed as a wallet-side `CipherSeed`. The binary form is identical across the
+/// two versions (CIPHER_SEED_VERSION == 2), so this round-trip is lossless. The
+/// intermediate buffer is the master entropy in the clear, so it is wiped on drop rather
+/// than left in the heap.
+pub fn to_wallet_cipher_seed(seed: &CipherSeed) -> Result<WalletCipherSeed, anyhow::Error> {
+    WalletCipherSeed::from_binary(&Zeroizing::new(
+        seed.to_binary().map_err(|e| anyhow!(e.to_string()))?,
+    ))
+    .map_err(|e| anyhow!(e.to_string()))
 }
