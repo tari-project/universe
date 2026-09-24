@@ -2,12 +2,21 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import type { L2Account, L2Burn } from '@app/types/events-payloads.ts';
-import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
+import { formatNumber, FormatPreset } from '@app/utils';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import {
+    BlockInfoWrapper,
+    Content,
+    ContentWrapper,
+    CurrencyText,
+    ItemWrapper,
+    TimeWrapper,
+    TitleWrapper,
+    ValueWrapper,
+} from '@app/components/transactions/history/transactionHistoryItem/HistoryItem.styles.ts';
 
 const sectionStyle = { display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0' } as const;
-const rowStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 } as const;
 
 export default function L2ClaimBurns({ account }: { account: L2Account }) {
     const { t } = useTranslation('wallet');
@@ -42,26 +51,45 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
     return (
         <div style={sectionStyle} data-testid="l2-claim-burns">
             <Typography variant="h6">{t('l2.claim.title')}</Typography>
-            {open.map((burn) => (
-                <div key={burn.commitment} style={rowStyle} data-testid="l2-claim-row">
-                    <Typography variant="p" title={burn.commitment}>
-                        {`${formatNumber(burn.amount, FormatPreset.XTM_LONG)} XTR · ${truncateMiddle(burn.commitment, 6)}`}
-                    </Typography>
-                    {burn.status === 'claimable' ? (
-                        <Button
-                            size="small"
-                            variant="black"
-                            disabled={claiming !== null}
-                            onClick={() => claim(burn.commitment)}
-                            data-testid="l2-claim-button"
-                        >
-                            {claiming === burn.commitment ? t('l2.claim.claiming') : t('l2.claim.cta')}
-                        </Button>
-                    ) : (
-                        <Typography variant="p">{t('l2.claim.pending')}</Typography>
-                    )}
-                </div>
-            ))}
+            {/* The backend lists burns newest first. */}
+            <div>
+                {open.map((burn) => (
+                    <ItemWrapper
+                        key={burn.commitment}
+                        style={{ height: 48 }}
+                        title={burn.commitment}
+                        data-testid="l2-claim-row"
+                    >
+                        <ContentWrapper>
+                            <Content>
+                                <BlockInfoWrapper>
+                                    <TitleWrapper>{t('tabs.burn')}</TitleWrapper>
+                                    <TimeWrapper variant="p">
+                                        {burn.status === 'claimable' ? t('l2.claim.ready') : t('l2.claim.pending')}
+                                    </TimeWrapper>
+                                </BlockInfoWrapper>
+                            </Content>
+                            <Content>
+                                <ValueWrapper>
+                                    {formatNumber(burn.amount, FormatPreset.XTM_LONG_DEC)}
+                                    <CurrencyText>{`XTR`}</CurrencyText>
+                                </ValueWrapper>
+                                {burn.status === 'claimable' && (
+                                    <Button
+                                        size="small"
+                                        variant="black"
+                                        disabled={claiming !== null}
+                                        onClick={() => claim(burn.commitment)}
+                                        data-testid="l2-claim-button"
+                                    >
+                                        {claiming === burn.commitment ? t('l2.claim.claiming') : t('l2.claim.cta')}
+                                    </Button>
+                                )}
+                            </Content>
+                        </ContentWrapper>
+                    </ItemWrapper>
+                ))}
+            </div>
             {message && (
                 <Typography variant="p" style={{ wordBreak: 'break-all' }} data-testid="l2-claim-message">
                     {message}

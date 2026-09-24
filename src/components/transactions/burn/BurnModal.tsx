@@ -225,11 +225,7 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
                                     </StatusHero>
                                 ) : (
                                     <StatusHero icon={<CompletedIcon />} title={t('burn.completed-title')}>
-                                        <>
-                                            {t('burn.completed-text')}
-                                            <br />
-                                            <strong style={{ wordBreak: 'break-all' }}>{receipt?.proof_file}</strong>
-                                        </>
+                                        {t('burn.completed-text')}
                                     </StatusHero>
                                 )}
                                 <StatusList entries={statusEntries} />

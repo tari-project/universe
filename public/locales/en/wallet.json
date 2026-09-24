@@ -243,7 +243,7 @@
     "processing-title": "Burning your XTM",
     "processing-text": "Your burn is being broadcast. This can take a few minutes.",
     "completed-title": "Burn broadcast",
-    "completed-text": "Once the burn is mined, the L2 claim proof will be written to:",
+    "completed-text": "Once the burn is mined you can claim it from Burns to claim in your Layer 2 wallet.",
     "error-message": "Error burning funds: ",
     "pin-required": "Set a PIN to burn",
     "claim-key-default": "The claim key defaults to this wallet's own L2 account."
@@ -294,6 +294,7 @@
       "cta": "Claim",
       "claiming": "Claiming...",
       "pending": "Waiting for the burn to be mined",
+      "ready": "Ready to claim",
       "submitted": "Claim submitted. The XTR shows up once it's confirmed.",
       "approve": "Approve claim",
       "approve-subtitle": "Enter your PIN to claim this burn into your Layer 2 wallet. If you did not start this, close this dialog."

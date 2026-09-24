@@ -36,6 +36,14 @@ describe('L2ClaimBurns', () => {
         await waitFor(() => expect(screen.getAllByTestId('l2-claim-row')).toHaveLength(2));
         expect(screen.getAllByTestId('l2-claim-button')).toHaveLength(1);
         expect(screen.getByText('l2.claim.pending')).toBeInTheDocument();
+        expect(screen.getByText('l2.claim.ready')).toBeInTheDocument();
+    });
+
+    it('keeps the backend order (newest first) and never shows the proof file', async () => {
+        render(<L2ClaimBurns account={account} />);
+        const rows = await screen.findAllByTestId('l2-claim-row');
+        expect(rows.map((row) => row.getAttribute('title'))).toEqual(['aa'.repeat(32), 'bb'.repeat(32)]);
+        expect(screen.getByTestId('l2-claim-burns')).not.toHaveTextContent('.json');
     });
 
     it('claims by commitment and shows the rejection', async () => {

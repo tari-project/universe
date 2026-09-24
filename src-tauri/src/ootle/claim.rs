@@ -24,7 +24,7 @@
 //! it: check the burn's ownership proof against the account's derived claim key, decrypt
 //! the burned output, and mint it straight into a stealth output the account owns.
 
-use std::{collections::HashSet, iter, path::Path};
+use std::{collections::HashSet, iter, path::Path, time::SystemTime};
 
 use anyhow::{anyhow, bail};
 use base64::{Engine, prelude::BASE64_STANDARD};
@@ -108,24 +108,28 @@ impl BurnProof {
     }
 }
 
-/// Every burn the panel knows about: proof files in `dir` are claimable, those in its
-/// claimed directory are claimed, and `pending` rows without a proof file yet stay pending.
+/// Every burn the panel knows about, newest first: proof files in `dir` are claimable,
+/// those in its claimed directory are claimed, and `pending` rows (oldest first, as the
+/// wallet db returns them) without a proof file yet stay pending. Pending burns aren't
+/// mined yet, so they go ahead of every burn with a proof.
 pub fn list_burns(dir: &Path, pending: Vec<L2Burn>) -> Result<Vec<L2Burn>, anyhow::Error> {
-    let mut burns = read_burns(dir, "claimable")?;
-    burns.extend(read_burns(&dir.join(CLAIMED_DIR), "claimed")?);
-    let known: HashSet<String> = burns.iter().map(|b| b.commitment.clone()).collect();
-    burns.extend(
-        pending
-            .into_iter()
-            .filter(|b| !known.contains(&b.commitment)),
-    );
-    Ok(burns)
+    let mut files = read_burns(dir, "claimable")?;
+    files.extend(read_burns(&dir.join(CLAIMED_DIR), "claimed")?);
+    files.sort_by_key(|(modified, _)| std::cmp::Reverse(*modified));
+    let known: HashSet<String> = files.iter().map(|(_, b)| b.commitment.clone()).collect();
+    Ok(pending
+        .into_iter()
+        .rev()
+        .filter(|b| !known.contains(&b.commitment))
+        .chain(files.into_iter().map(|(_, burn)| burn))
+        .collect())
 }
 
 /// The claimable proof for `commitment` and its file name.
 pub fn find_claimable(dir: &Path, commitment: &str) -> Result<(String, BurnProof), anyhow::Error> {
     let file = read_burns(dir, "claimable")?
         .into_iter()
+        .map(|(_, burn)| burn)
         .find(|burn| burn.commitment == commitment)
         .and_then(|burn| burn.proof_file)
         .ok_or_else(|| anyhow!("No claimable burn with commitment {commitment}"))?;
@@ -133,7 +137,11 @@ pub fn find_claimable(dir: &Path, commitment: &str) -> Result<(String, BurnProof
     Ok((file, proof))
 }
 
-fn read_burns(dir: &Path, status: &'static str) -> Result<Vec<L2Burn>, anyhow::Error> {
+/// The burns with a proof file in `dir`, each with when its file was last modified.
+fn read_burns(
+    dir: &Path,
+    status: &'static str,
+) -> Result<Vec<(SystemTime, L2Burn)>, anyhow::Error> {
     let entries = match std::fs::read_dir(dir) {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
         entries => entries?,
@@ -148,13 +156,16 @@ fn read_burns(dir: &Path, status: &'static str) -> Result<Vec<L2Burn>, anyhow::E
             continue;
         }
         match read_proof(&path) {
-            Ok(proof) => burns.push(L2Burn {
-                commitment: hex::encode(proof.claim_proof.commitment.as_bytes()),
-                claim_public_key: hex::encode(proof.claim_proof.burn_public_key.as_bytes()),
-                amount: proof.claim_proof.value,
-                proof_file: Some(file.to_string()),
-                status,
-            }),
+            Ok(proof) => burns.push((
+                std::fs::metadata(&path)?.modified()?,
+                L2Burn {
+                    commitment: hex::encode(proof.claim_proof.commitment.as_bytes()),
+                    claim_public_key: hex::encode(proof.claim_proof.burn_public_key.as_bytes()),
+                    amount: proof.claim_proof.value,
+                    proof_file: Some(file.to_string()),
+                    status,
+                },
+            )),
             Err(e) => warn!(target: LOG_TARGET, "Skipping burn proof {file}: {e}"),
         }
     }
@@ -469,6 +480,28 @@ mod tests {
                 .expect("empty")
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn burns_list_newest_first() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = dir.path();
+        let (old, new) = ("11".repeat(32), "22".repeat(32));
+        write(dir, "new.json", &other_proof(&new));
+        write(dir, "old.json", &other_proof(&old));
+        let an_hour_ago = SystemTime::now() - std::time::Duration::from_secs(3600);
+        std::fs::File::options()
+            .write(true)
+            .open(dir.join("old.json"))
+            .and_then(|file| file.set_modified(an_hour_ago))
+            .expect("mtime");
+        let pending = |c: &str| L2Burn::pending(c.to_string(), CLAIM_KEY.to_string(), 1);
+
+        // The wallet db hands pending burns over oldest first.
+        let burns = list_burns(dir, vec![pending("aa"), pending("bb")]).expect("burns");
+
+        let order: Vec<_> = burns.iter().map(|b| b.commitment.as_str()).collect();
+        assert_eq!(order, ["bb", "aa", new.as_str(), old.as_str()]);
     }
 
     #[test]
