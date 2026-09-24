@@ -96,7 +96,9 @@ tari_transaction_components = { git = "https://github.com/tari-project/tari.git"
 tari_utilities = "0.10.0"
 tari_ootle_common_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82" }
 tari_ootle_wallet_sdk = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82" }
-tari_ootle_wallet_sdk_services = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82", features = ["indexer_client"] }
+tari_ootle_wallet_sdk_services = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82", features = [
+  "indexer_client",
+] }
 tari_ootle_wallet_storage_sqlite = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82" }
 tari_ootle_transaction = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82" }
 tari_engine_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "d043dad82" }
