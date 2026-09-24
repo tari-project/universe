@@ -61,8 +61,11 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
+use crate::wallet::minotari_wallet::BurnReceipt;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
-use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send};
+use crate::wallet::send_gate::{
+    GatedBurnRequest, GatedSendRequest, SendOrigin, gated_burn, gated_send,
+};
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
 
@@ -1634,6 +1637,31 @@ pub async fn send_one_sided_to_stealth_address(
         warn!(target: LOG_TARGET_APP_LOGIC, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
+}
+
+/// Burn funds for L2. Gated exactly like a send: PIN when one is set, an explicit
+/// confirmation dialog otherwise.
+#[tauri::command]
+pub async fn burn_to_l2(
+    amount: String,
+    claim_public_key: String,
+    payment_id: Option<String>,
+) -> Result<BurnReceipt, String> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET_APP_LOGIC, "[burn_to_l2] called with args: (amount: {amount:?}, claim_public_key: {claim_public_key:?}, payment_id: {payment_id:?})");
+    let receipt = gated_burn(GatedBurnRequest {
+        request_id: SendOrigin::App.new_request_id(),
+        amount,
+        claim_public_key,
+        payment_id,
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET_APP_LOGIC, "burn_to_l2 took too long: {:?}", timer.elapsed());
+    }
+    Ok(receipt)
 }
 
 #[tauri::command]

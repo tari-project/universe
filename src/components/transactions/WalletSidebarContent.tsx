@@ -4,8 +4,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import SendModal from '@app/components/transactions/send/SendModal.tsx';
+import BurnModal from '@app/components/transactions/burn/BurnModal.tsx';
 import Wallet from '../wallet/sidebarWallet/wallet.tsx';
-import { useWalletStore } from '@app/store';
+import { useMiningStore, useWalletStore } from '@app/store';
+import { networkSupportsBurn } from '@app/utils/network';
 import { TransactionDetails } from '@app/components/transactions/history/transactionDetails/TransactionDetails.tsx';
 import { setSelectedTransactionId } from '@app/store/actions/walletStoreActions.ts';
 import { AnimatePresence } from 'motion/react';
@@ -15,6 +17,7 @@ export default function WalletSidebarContent() {
     const { t } = useTranslation('wallet');
     const selectedTransaction = useWalletStore((s) => s.selectedTransaction());
     const isSwapping = useWalletStore((s) => s.is_swapping);
+    const canBurn = useMiningStore((s) => networkSupportsBurn(s.network));
     const [section, setSection] = useState('history');
     return (
         <>
@@ -22,7 +25,8 @@ export default function WalletSidebarContent() {
                 {isSwapping ? <SwapUI /> : <Wallet section={section} setSection={setSection} />}
             </AnimatePresence>
 
-            {section !== 'history' && <SendModal section={section} setSection={setSection} />}
+            {section === 'send' && <SendModal section={section} setSection={setSection} />}
+            {section === 'burn' && canBurn && <BurnModal section={section} setSection={setSection} />}
             <TransactionModal
                 show={section === 'receive'}
                 title={`${t('tabs.receive')}  ${t('tari')}`}

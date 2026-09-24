@@ -125,6 +125,7 @@ export default function McpTransactionDialog() {
                     {isAppOrigin ? (
                         <>
                             <TransactionContextSummary
+                                kind={pending.kind}
                                 amountMicroMinotari={pending.amount_micro_minotari}
                                 destination={pending.destination}
                                 paymentId={pending.payment_id}

@@ -82,7 +82,9 @@
       "forgot-monero-placeholder": "Enter Monero seed words (optional)...",
       "forgot-monero-replace": "Continue and create a new Monero wallet",
       "restore-wallet-details": "Your wallet details were missing from the settings file. Enter your PIN to restore them from your wallet keys. Nothing else will change.",
-      "seed-needs-pin": "Your wallet keys are protected by a PIN, but your settings say no PIN is set. Your seed is safe and nothing has been changed. Enter your PIN to continue."
+      "seed-needs-pin": "Your wallet keys are protected by a PIN, but your settings say no PIN is set. Your seed is safe and nothing has been changed. Enter your PIN to continue.",
+      "approve-burn": "Approve burn",
+      "approve-burn-subtitle": "Enter your PIN to burn these funds. Burning cannot be undone; only the L2 claim key can recover them. If you did not start this, close this dialog."
     },
     "reminder": {
       "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\nLet's do it now—it'll only take a moment",
@@ -136,7 +138,10 @@
     "total-fees": "Total Fees",
     "transaction-copy-raw": "Copy raw details",
     "transaction-description": "Transaction Description",
-    "transaction-id": "Transaction ID"
+    "transaction-id": "Transaction ID",
+    "label-claimPublicKey": "L2 Claim Public Key",
+    "placeholder-claimPublicKey": "64 hex characters",
+    "field-claimPublicKey": "claim public key"
   },
   "swap": {
     "accept": "Accept",
@@ -207,7 +212,8 @@
   "tabs": {
     "history": "History",
     "receive": "Receive",
-    "send": "Send"
+    "send": "Send",
+    "burn": "Burn to L2"
   },
   "tari": "Tari",
   "transactions": "Transactions",
@@ -222,5 +228,20 @@
     "mine-directly-to-exchange": "Mine directly to {{exchangeName}}",
     "mining-here": "Mining here",
     "or": "or"
+  },
+  "burn": {
+    "title": "Burn to L2",
+    "review-title": "Review burn",
+    "review-label": "You are burning",
+    "claim-public-key": "L2 claim public key",
+    "warning": "Burning destroys these funds on L1. They can only be claimed on L2 with the private key matching this claim public key. This cannot be undone.",
+    "cta-review": "Review burn",
+    "cta-confirm": "Burn funds",
+    "error-invalid-claim-key": "The claim public key must be 64 hex characters",
+    "processing-title": "Burning your XTM",
+    "processing-text": "Your burn is being broadcast. This can take a few minutes.",
+    "completed-title": "Burn broadcast",
+    "completed-text": "Once the burn is mined, the L2 claim proof will be written to:",
+    "error-message": "Error burning funds: "
   }
 }

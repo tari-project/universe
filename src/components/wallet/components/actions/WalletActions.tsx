@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next';
 
 import { NavWrapper, NavButton } from './styles.ts';
-import { useWalletStore } from '@app/store';
+import { useMiningStore, useWalletStore } from '@app/store';
+import { networkSupportsBurn } from '@app/utils/network';
 
 interface WalletActionsProps {
     section: string;
@@ -10,6 +11,7 @@ interface WalletActionsProps {
 export default function WalletActions({ section, setSection }: WalletActionsProps) {
     const { t } = useTranslation(['wallet', 'sidebar']);
     const isScanning = useWalletStore((s) => !s.wallet_scanning.is_initial_scan_complete);
+    const canBurn = useMiningStore((s) => networkSupportsBurn(s.network));
 
     return (
         <NavWrapper>
@@ -30,6 +32,17 @@ export default function WalletActions({ section, setSection }: WalletActionsProp
             >
                 {t('tabs.receive')}
             </NavButton>
+            {canBurn && (
+                <NavButton
+                    $isActive={section === 'burn'}
+                    aria-selected={section === 'burn'}
+                    onClick={() => setSection('burn')}
+                    disabled={isScanning}
+                    data-testid="wallet-burn-button"
+                >
+                    {t('tabs.burn')}
+                </NavButton>
+            )}
         </NavWrapper>
     );
 }

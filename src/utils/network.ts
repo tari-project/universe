@@ -21,6 +21,11 @@ export function isLocalNet(): boolean {
     return storedNetwork === Network.LocalNet;
 }
 
+/** Burning to L2 only exists on networks with an L2 that can claim it; today that is Esmeralda. */
+export function networkSupportsBurn(network: string | undefined): boolean {
+    return network === Network.Esmeralda;
+}
+
 export function isMainNet(): boolean {
     const storedNetwork = useMiningStore.getState().network;
     const _network = Object.values(Network).find((network) => network === storedNetwork);
