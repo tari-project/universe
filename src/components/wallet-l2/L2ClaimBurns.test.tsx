@@ -39,6 +39,7 @@ describe('L2ClaimBurns', () => {
         expect(screen.getAllByTestId('l2-claim-button')).toHaveLength(1);
         expect(screen.getByText('l2.claim.pending')).toBeInTheDocument();
         expect(screen.getByText('l2.claim.ready')).toBeInTheDocument();
+        expect(screen.getAllByTestId('l2-claim-row')[0]).toHaveTextContent('1kXTR');
     });
 
     it('keeps the backend order (newest first) and never shows the proof file', async () => {

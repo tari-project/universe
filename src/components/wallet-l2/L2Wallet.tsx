@@ -22,6 +22,7 @@ import { ActionButton } from '@app/components/wallet/components/details/actions/
 import {
     BalanceTextWrapper,
     BottomWrapper,
+    Hidden,
     SuffixWrapper,
     Wrapper as BalanceWrapper,
 } from '@app/components/wallet/components/balance/styles.ts';
@@ -73,7 +74,7 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                     <BottomContent>
                         <BalanceWrapper data-testid="l2-balance">
                             <BalanceTextWrapper>
-                                {xtr(revealed + confidential)}
+                                {hideBalance ? <Hidden>{`*******`}</Hidden> : xtr(revealed + confidential)}
                                 <SuffixWrapper>{` XTR`}</SuffixWrapper>
                             </BalanceTextWrapper>
                             <BottomWrapper>

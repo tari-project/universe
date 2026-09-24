@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
+import { useUIStore } from '@app/store/useUIStore.ts';
 import type { L2Account, L2Burn } from '@app/types/events-payloads.ts';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
@@ -20,6 +21,7 @@ const sectionStyle = { display: 'flex', flexDirection: 'column', gap: 8, padding
 
 export default function L2ClaimBurns({ account }: { account: L2Account }) {
     const { t } = useTranslation('wallet');
+    const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const [burns, setBurns] = useState<L2Burn[]>([]);
     const [claiming, setClaiming] = useState<string | null>(null);
     const [message, setMessage] = useState('');
@@ -79,7 +81,9 @@ export default function L2ClaimBurns({ account }: { account: L2Account }) {
                             </Content>
                             <Content>
                                 <ValueWrapper>
-                                    {formatNumber(burn.amount, FormatPreset.XTM_LONG_DEC)}
+                                    {hideBalance
+                                        ? '***'
+                                        : formatNumber(burn.amount, FormatPreset.XTM_COMPACT).toLowerCase()}
                                     <CurrencyText>{`XTR`}</CurrencyText>
                                 </ValueWrapper>
                                 {burn.status === 'claimable' && (

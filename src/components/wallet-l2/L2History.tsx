@@ -22,13 +22,17 @@ import { Wrapper as DetailsWrapper } from '@app/components/transactions/history/
 
 // The backend sends unix seconds; formatEffectiveDate wants an ISO string.
 const date = (seconds: number) => formatEffectiveDate(new Date(seconds * 1000).toISOString());
+// Same preset choice as the L1 transaction details.
+const detail = (value: number) =>
+    `${formatNumber(value, value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS)} XTR`;
 
 export default function L2History({ account }: { account: L2Account }) {
     const { t } = useTranslation('wallet');
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const [selectedId, setSelectedId] = useState<number | null>(null);
 
-    const xtr = (value: number) => (hideBalance ? '***' : formatNumber(Math.abs(value), FormatPreset.XTM_LONG_DEC));
+    const xtr = (value: number) =>
+        hideBalance ? '***' : formatNumber(Math.abs(value), FormatPreset.XTM_COMPACT).toLowerCase();
     const selected = account.history.find((change) => change.id === selectedId);
     const tx = selected?.transaction_id
         ? account.transactions.find((transaction) => transaction.id === selected.transaction_id)
@@ -74,13 +78,13 @@ export default function L2History({ account }: { account: L2Account }) {
                             entries={[
                                 {
                                     label: t('l2.details.amount'),
-                                    value: `${selected.amount < 0 ? '-' : ''}${xtr(selected.amount)} XTR`,
+                                    value: `${selected.amount < 0 ? '-' : '+'}${detail(Math.abs(selected.amount))}`,
                                 },
                                 { label: t('l2.details.source'), value: t(`l2.source.${selected.source}`) },
                                 { label: t('l2.details.date'), value: date(selected.timestamp) },
                                 { label: t('l2.details.transaction-id'), value: selected.transaction_id },
                                 { label: t('l2.details.status'), value: tx?.status },
-                                { label: t('l2.details.fee'), value: tx?.fee != null ? `${xtr(tx.fee)} XTR` : null },
+                                { label: t('l2.details.fee'), value: tx?.fee != null ? detail(tx.fee) : null },
                                 { label: t('l2.details.invalid-reason'), value: tx?.invalid_reason },
                             ]}
                         />

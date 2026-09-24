@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 import { fireEvent, render, screen } from '@app/test/test-utils';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
 import { initialState, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
 import L2WalletCard from './L2WalletCard';
@@ -21,7 +22,7 @@ const enabledState: L2WalletState = {
             public_key: 'ab'.repeat(32),
             is_default: true,
             balance: { revealed: 1_000_000, confidential: 2_000_000 },
-            history: [{ id: 1, transaction_id: null, amount: 3_000_000, source: 'scan', timestamp: 1 }],
+            history: [{ id: 1, transaction_id: null, amount: 1_234_567_890, source: 'scan', timestamp: 1 }],
             transactions: [],
         },
     ],
@@ -59,13 +60,25 @@ describe('L2WalletCard', () => {
         expect(screen.queryByTestId('l2-wallet')).not.toBeInTheDocument();
     });
 
+    it('masks amounts the way L1 does when the balance is hidden', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        useUIStore.setState({ hideWalletBalance: true });
+        serve(enabledState);
+        render(<L2WalletCard />);
+
+        expect(await screen.findByTestId('l2-balance')).toHaveTextContent('******* XTR');
+        expect(screen.getByTestId('l2-history-row')).toHaveTextContent('***XTR');
+        useUIStore.setState({ hideWalletBalance: false });
+    });
+
     it('shows the wallet once L2 is enabled', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         serve(enabledState);
         render(<L2WalletCard />);
 
-        expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3');
+        expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3 XTR');
         expect(screen.getAllByTestId('l2-history-row')).toHaveLength(1);
+        expect(screen.getByTestId('l2-history-row')).toHaveTextContent('+1.23kXTR');
         expect(screen.queryByTestId('l2-enable')).not.toBeInTheDocument();
     });
 
