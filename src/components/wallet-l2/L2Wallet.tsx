@@ -59,7 +59,7 @@ export default function L2Wallet({ account }: { account: L2Account }) {
     const xtr = (value: number) => (hideBalance ? '*******' : formatNumber(value, FormatPreset.XTM_LONG));
 
     return (
-        <WalletWrapper data-testid="l2-wallet">
+        <WalletWrapper style={{ minHeight: 0 }} data-testid="l2-wallet">
             <DetailsCard $isScrolled={false}>
                 <AnimatedBG $col1="#2b1d5a" $col2="#4c2c8f" />
                 <Content>
@@ -129,9 +129,11 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                 </NavWrapper>
             </TabsWrapper>
 
-            {filter !== 'transactions' && <L2ClaimBurns account={account} />}
-
-            {filter !== 'l2.filter.waiting-claims' && <L2History account={account} />}
+            {/* One scroll area for both lists, so a long list can't push the card past the window. */}
+            <div style={{ flex: '1 1 0', minHeight: 0, overflowY: 'auto' }}>
+                {filter !== 'transactions' && <L2ClaimBurns account={account} />}
+                {filter !== 'l2.filter.waiting-claims' && <L2History account={account} />}
+            </div>
 
             <L2SendModal
                 show={section === 'send'}
