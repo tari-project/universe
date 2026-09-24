@@ -245,7 +245,8 @@
     "completed-title": "Burn broadcast",
     "completed-text": "Once the burn is mined, the L2 claim proof will be written to:",
     "error-message": "Error burning funds: ",
-    "pin-required": "Set a PIN to burn"
+    "pin-required": "Set a PIN to burn",
+    "claim-key-default": "The claim key defaults to this wallet's own L2 account."
   },
   "l2": {
     "title": "Layer 2",

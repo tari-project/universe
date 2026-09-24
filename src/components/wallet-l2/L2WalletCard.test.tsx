@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
-import { render, screen } from '@app/test/test-utils';
+import { fireEvent, render, screen } from '@app/test/test-utils';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { initialState, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
@@ -66,5 +66,26 @@ describe('L2WalletCard', () => {
         expect(await screen.findByTestId('l2-balance')).toHaveTextContent('3');
         expect(screen.getAllByTestId('l2-history-row')).toHaveLength(1);
         expect(screen.queryByTestId('l2-enable')).not.toBeInTheDocument();
+    });
+
+    it('keeps Burn disabled while the L1 wallet is still scanning', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        serve(enabledState);
+        render(<L2WalletCard />);
+
+        expect(await screen.findByTestId('l2-burn-button')).toBeDisabled();
+    });
+
+    it('opens the burn form with the default account key as the claim key', async () => {
+        useWalletStore.setState({
+            is_pin_locked: true,
+            wallet_scanning: { scanned_height: 1, total_height: 1, progress: 100, is_initial_scan_complete: true },
+        });
+        serve(enabledState);
+        render(<L2WalletCard />);
+
+        fireEvent.click(await screen.findByTestId('l2-burn-button'));
+        expect(await screen.findByDisplayValue('ab'.repeat(32))).toBeInTheDocument();
+        expect(screen.getByText('burn.claim-key-default')).toBeInTheDocument();
     });
 });

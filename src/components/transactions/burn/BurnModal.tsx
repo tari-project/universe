@@ -28,6 +28,7 @@ import { queryClient } from '@app/App/queryClient.ts';
 interface BurnModalProps {
     section: string;
     setSection: (section: string) => void;
+    claimPublicKey: string;
 }
 
 interface BurnReceipt {
@@ -80,6 +81,9 @@ function BurnForm() {
             <Typography variant="p" style={{ opacity: 0.7, fontSize: 12 }}>
                 {t('burn.warning')}
             </Typography>
+            <Typography variant="p" style={{ opacity: 0.7, fontSize: 12 }}>
+                {t('burn.claim-key-default')}
+            </Typography>
             <FormFieldsWrapper>
                 <FormField
                     control={control}
@@ -118,11 +122,11 @@ function BurnForm() {
     );
 }
 
-export default function BurnModal({ section, setSection }: BurnModalProps) {
+export default function BurnModal({ section, setSection, claimPublicKey }: BurnModalProps) {
     const { t } = useTranslation('wallet');
     const [status, setStatus] = useState<SendStatus>('fields');
     const [receipt, setReceipt] = useState<BurnReceipt | null>(null);
-    const methods = useForm<SendInputs>({ defaultValues, mode: 'all' });
+    const methods = useForm<SendInputs>({ defaultValues: { ...defaultValues, claimPublicKey }, mode: 'all' });
     const { reset, setError } = methods;
 
     function handleClose() {

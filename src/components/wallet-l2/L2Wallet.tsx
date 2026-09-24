@@ -5,6 +5,7 @@ import { QRCode } from 'react-qrcode-logo';
 import { CopySVG } from '@app/assets/icons/copy';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 import type { L2Account } from '@app/types/events-payloads.ts';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -24,7 +25,8 @@ import {
     SuffixWrapper,
     Wrapper as BalanceWrapper,
 } from '@app/components/wallet/components/balance/styles.ts';
-import { NavButton, NavWrapper } from '@app/components/wallet/components/actions/styles.ts';
+import { BurnHint, NavButton, NavWrapper } from '@app/components/wallet/components/actions/styles.ts';
+import BurnModal from '@app/components/transactions/burn/BurnModal.tsx';
 import { Wrapper as ReceiveWrapper } from '@app/components/transactions/receive/receive.styles.ts';
 import {
     AddressContainer,
@@ -43,6 +45,9 @@ export default function L2Wallet({ account }: { account: L2Account }) {
     const [section, setSection] = useState('history');
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
+    // A burn spends L1 funds, so it waits on the L1 wallet like the L1 send does.
+    const isL1Scanning = useWalletStore((s) => !s.wallet_scanning.is_initial_scan_complete);
+    const hasPin = useWalletStore((s) => s.is_pin_locked);
 
     const { revealed, confidential } = account.balance;
     const xtr = (value: number) => (hideBalance ? '*******' : formatNumber(value, FormatPreset.XTM_LONG));
@@ -108,6 +113,19 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                     >
                         {t('tabs.receive')}
                     </NavButton>
+                    {/* The disabled button ignores the pointer, so the hint sits on a wrapper. */}
+                    <BurnHint title={hasPin ? undefined : t('burn.pin-required')}>
+                        <NavButton
+                            $isActive={section === 'burn'}
+                            aria-selected={section === 'burn'}
+                            onClick={() => setSection('burn')}
+                            disabled={isL1Scanning || !hasPin}
+                            aria-label={hasPin ? undefined : t('burn.pin-required')}
+                            data-testid="l2-burn-button"
+                        >
+                            {t('tabs.burn')}
+                        </NavButton>
+                    </BurnHint>
                 </NavWrapper>
             </TabsWrapper>
 
@@ -118,6 +136,10 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                 account={account.component_address}
                 onClose={() => setSection('history')}
             />
+
+            {section === 'burn' && (
+                <BurnModal section={section} setSection={setSection} claimPublicKey={account.public_key} />
+            )}
 
             <TransactionModal
                 show={section === 'receive'}
