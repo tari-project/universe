@@ -45,16 +45,14 @@ use log::{error, info, warn};
 use minotari_wallet::{
     DisplayedTransaction, PauseReason, ProcessingEvent, ScanMode, ScanStatusEvent, Scanner,
     TransactionHistoryService,
-    db::{AccountBalance, get_account_by_name, get_latest_scanned_tip_block_by_account},
-    get_balance,
-    http::WalletHttpClient,
-    init_db,
-    tasks::unlocker::TransactionUnlocker,
-    transactions::{
-        TransactionSource,
-        monitor::{MonitoringState, TransactionMonitor},
-        one_sided_transaction::Recipient,
+    db::{
+        AccountBalance, get_account_by_name,
+        get_displayed_transactions_needing_confirmation_update,
+        get_latest_scanned_tip_block_by_account, update_displayed_transaction_confirmations,
     },
+    get_balance, init_db,
+    tasks::unlocker::TransactionUnlocker,
+    transactions::{TransactionDisplayStatus, TransactionSource, one_sided_transaction::Recipient},
     utils::init_wallet::init_with_view_key,
 };
 use r2d2::PooledConnection;
@@ -608,9 +606,13 @@ impl MinotariWalletManager {
     /// Moves displayed transactions on from Unconfirmed once the scan is past their
     /// confirmation depth, and tells the frontend about each one.
     ///
-    /// The library's transaction monitor does this, but the unified scan loop only
-    /// calls it behind the same never-true condition that hides its progress
-    /// events, so on its own nothing the wallet scans ever reads as Confirmed.
+    /// The library's transaction monitor is meant to do this, but the unified scan
+    /// loop only calls it behind a condition that never holds, so on its own nothing
+    /// the wallet scans ever reads as Confirmed. The monitor is not used here because
+    /// it also counts confirmations for sends that have not been mined yet, whose
+    /// block height is still 0: "scanned height minus 0" marks a Pending send as
+    /// Confirmed, the scanner then no longer recognises it as pending when the mined
+    /// transaction arrives, and the history ends up with the send twice.
     async fn refresh_transaction_confirmations() {
         let scanned_height = *INSTANCE.last_scanned_height.read().await;
         if scanned_height == 0 {
@@ -618,16 +620,27 @@ impl MinotariWalletManager {
         }
         let updated: Result<Vec<DisplayedTransaction>, anyhow::Error> = async {
             let account_id = Self::owner_account_id().await?;
-            let pool = INSTANCE.database_manager.get_pool().await?;
-            let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
-            // A fresh state rather than one initialised from the database: the
-            // monitor then updates confirmations only and leaves pending sends alone.
-            let monitor =
-                TransactionMonitor::new(MonitoringState::new(), REQUIRED_CONFIRMATIONS, None);
-            let result = monitor
-                .monitor_if_needed(&client, &pool, account_id, scanned_height)
-                .await?;
-            Ok(result.updated_displayed_transactions)
+            let conn = Self::get_db_connection().await?;
+            let mut updated = Vec::new();
+            for mut tx in get_displayed_transactions_needing_confirmation_update(&conn, account_id)?
+            {
+                // Not mined yet: it stays Pending until the scanner finds it in a block.
+                if tx.blockchain.block_height == 0 {
+                    continue;
+                }
+                let confirmations = scanned_height.saturating_sub(tx.blockchain.block_height);
+                if confirmations == tx.blockchain.confirmations {
+                    continue;
+                }
+                tx.blockchain.confirmations = confirmations;
+                tx.status = confirmation_status(
+                    confirmations,
+                    tx.lock_height.saturating_sub(scanned_height),
+                );
+                update_displayed_transaction_confirmations(&conn, &tx)?;
+                updated.push(tx);
+            }
+            Ok(updated)
         }
         .await;
         match updated {
@@ -1099,9 +1112,42 @@ fn scan_progress_percent(current_height: u64, tip_height: u64) -> f64 {
     ((current_height as f64 / tip_height as f64) * 100.0).min(100.0)
 }
 
+/// Display status for a mined transaction with `confirmations` blocks on top of it,
+/// the same rule the library's monitor applies: below the required depth it is
+/// Unconfirmed, at or past it Confirmed, unless `blocks_until_unlocked` says its
+/// outputs are still time-locked.
+fn confirmation_status(confirmations: u64, blocks_until_unlocked: u64) -> TransactionDisplayStatus {
+    if confirmations >= REQUIRED_CONFIRMATIONS {
+        if blocks_until_unlocked > 0 {
+            TransactionDisplayStatus::Locked
+        } else {
+            TransactionDisplayStatus::Confirmed
+        }
+    } else if confirmations > 0 {
+        TransactionDisplayStatus::Unconfirmed
+    } else {
+        TransactionDisplayStatus::Pending
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{blocks_to_report, scan_progress_percent};
+    use super::{blocks_to_report, confirmation_status, scan_progress_percent};
+    use minotari_wallet::transactions::TransactionDisplayStatus;
+
+    #[test]
+    fn a_mined_send_at_the_required_depth_is_confirmed_unless_still_locked() {
+        assert_eq!(
+            confirmation_status(3, 0),
+            TransactionDisplayStatus::Confirmed
+        );
+        assert_eq!(confirmation_status(3, 10), TransactionDisplayStatus::Locked);
+        assert_eq!(
+            confirmation_status(1, 0),
+            TransactionDisplayStatus::Unconfirmed
+        );
+        assert_eq!(confirmation_status(0, 0), TransactionDisplayStatus::Pending);
+    }
 
     #[test]
     fn blocks_won_are_reported_only_when_synced_and_notifications_are_allowed() {
