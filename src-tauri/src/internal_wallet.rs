@@ -516,11 +516,12 @@ impl InternalWallet {
         Ok(())
     }
 
+    /// Returns the new PIN, which the L2 store is moved onto next.
     pub async fn recover_forgotten_pin(
         app_handle: &AppHandle,
         tari_seed: CipherSeed,
         monero_seed: Option<MoneroSeed>,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<SafePassword, anyhow::Error> {
         let pin_password = PinManager::create_pin(app_handle).await?;
 
         let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
@@ -566,7 +567,7 @@ impl InternalWallet {
                 .await
                 .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
                 .id;
-            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password))?;
+            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?;
             InternalWallet::set_credentials(
                 app_handle,
                 wallet_id.clone(),
@@ -587,7 +588,7 @@ impl InternalWallet {
                 Hidden::hide(Some(encrypted_tari_seed.clone()));
         }
 
-        Ok(())
+        Ok(pin_password)
     }
 
     pub async fn create_pin(app_handle: &AppHandle) -> Result<(), anyhow::Error> {

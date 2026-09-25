@@ -109,15 +109,23 @@ impl CredentialManager {
         Self::install_password(MINOTARI_DB_ENTRY)
     }
 
-    /// Password the Ootle (L2) wallet encrypts its cipher seed with. Minted once per
-    /// install like [`Self::minotari_db_password`], for the same reason: a second value
-    /// would lock the L2 wallet out of its own seed.
-    pub async fn ootle_keyring_password() -> Result<Zeroizing<String>, CredentialError> {
-        Self::install_password(OOTLE_KEYRING_ENTRY)
+    /// Password older builds encrypted the Ootle (L2) seed with, if this install has one.
+    /// The L2 store is encrypted with the PIN now; this is only read to move an older store
+    /// onto it. Never minted.
+    pub fn legacy_ootle_keyring_password() -> Result<Option<Zeroizing<String>>, CredentialError> {
+        match Self::install_entry(OOTLE_KEYRING_ENTRY)?.get_secret() {
+            Ok(secret) if !secret.is_empty() => Ok(Some(Zeroizing::new(hex::encode(secret)))),
+            Ok(_) | Err(KeyringError::NoEntry) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
     }
 
     fn install_password(name: &str) -> Result<Zeroizing<String>, CredentialError> {
-        let entry = Entry::new(
+        Self::read_or_create_password(&Self::install_entry(name)?)
+    }
+
+    fn install_entry(name: &str) -> Result<Entry, CredentialError> {
+        Ok(Entry::new(
             APPLICATION_FOLDER_ID,
             &format!(
                 "{}_{}_{}",
@@ -125,8 +133,7 @@ impl CredentialManager {
                 Network::get_current().as_key_str(),
                 name
             ),
-        )?;
-        Self::read_or_create_password(&entry)
+        )?)
     }
 
     /// Never overwrites a secret that is already there: the database it opens cannot be
