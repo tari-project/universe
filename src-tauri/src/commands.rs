@@ -630,6 +630,8 @@ pub async fn import_seed_words(
     app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
+    // The import deletes the wallet folder, and an unmined burn's proof lives in it.
+    MinotariWalletManager::ensure_no_pending_burns().map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
@@ -2287,6 +2289,7 @@ pub async fn get_wallet_transaction_history() -> Result<Vec<DisplayedTransaction
 
 #[tauri::command]
 pub async fn refresh_wallet_history(app_handle: tauri::AppHandle) -> Result<(), String> {
+    MinotariWalletManager::ensure_no_pending_burns().map_err(|e| e.to_string())?;
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
