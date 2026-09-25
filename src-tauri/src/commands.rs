@@ -1710,6 +1710,37 @@ pub async fn l2_get_state() -> Result<L2WalletState, String> {
     OotleWalletManager::state().await.map_err(|e| e.to_string())
 }
 
+/// The L2 seed words, behind the PIN prompt.
+#[tauri::command]
+pub async fn l2_get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_get_seed_words] called");
+    OotleWalletManager::seed_words(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Replace the L2 wallet with one restored from seed words used for L2 only, behind the
+/// PIN prompt. The L1 wallet is not touched.
+#[tauri::command]
+pub async fn l2_import_seed_words(
+    app_handle: tauri::AppHandle,
+    seed_words: Vec<String>,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_import_seed_words] called");
+    OotleWalletManager::import_seed_words(&app_handle, seed_words)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Put the L2 wallet back on the L1 seed after an import, behind the PIN prompt.
+#[tauri::command]
+pub async fn l2_use_l1_seed(app_handle: tauri::AppHandle) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_use_l1_seed] called");
+    OotleWalletManager::use_l1_seed(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Burns to L2 from this wallet, pending, claimable or claimed.
 #[tauri::command]
 pub async fn l2_claimable_burns() -> Result<Vec<L2Burn>, String> {

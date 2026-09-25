@@ -41,6 +41,16 @@ const HISTORY_LIMIT: usize = 50;
 pub struct L2WalletState {
     pub enabled: bool,
     pub accounts: Vec<L2Account>,
+    pub seed_source: SeedSource,
+}
+
+/// Where the L2 seed came from: the L1 seed, or words imported for L2 only.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SeedSource {
+    #[default]
+    L1,
+    Imported,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -88,7 +98,10 @@ pub struct L2Transaction {
 
 pub fn build_state(sdk: &OotleSdk) -> Result<L2WalletState, anyhow::Error> {
     if !sdk.config_api().exists(ConfigKey::CipherSeed)? {
-        return Ok(L2WalletState::default());
+        return Ok(L2WalletState {
+            seed_source: super::seed_source(),
+            ..Default::default()
+        });
     }
     let accounts_api = sdk.accounts_api();
     let count = usize::try_from(accounts_api.count()?)?;
@@ -100,6 +113,7 @@ pub fn build_state(sdk: &OotleSdk) -> Result<L2WalletState, anyhow::Error> {
     Ok(L2WalletState {
         enabled: true,
         accounts,
+        seed_source: super::seed_source(),
     })
 }
 
@@ -196,6 +210,12 @@ mod tests {
         let state = build_state(&sdk).expect("state");
         assert!(!state.enabled);
         assert!(state.accounts.is_empty());
+        let json = serde_json::to_value(&state).expect("json");
+        assert_eq!(json["seed_source"], "l1");
+        assert_eq!(
+            serde_json::to_value(SeedSource::Imported).expect("json"),
+            "imported"
+        );
 
         sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
             .expect("seed");

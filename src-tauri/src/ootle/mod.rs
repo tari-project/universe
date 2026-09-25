@@ -26,7 +26,16 @@
 //! L1 seed, so a fresh store stays "not enabled" until the user enables L2 behind the
 //! PIN, which restores the SDK seed from the L1 seed words and starts the services.
 
-use std::{collections::HashMap, future::Future, path::Path, str::FromStr, sync::LazyLock};
+use std::{
+    collections::HashMap,
+    future::Future,
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::{
+        LazyLock,
+        atomic::{AtomicBool, Ordering},
+    },
+};
 
 use log::{error, info, warn};
 use tari_common::configuration::Network;
@@ -74,6 +83,7 @@ use crate::{
     events_emitter::EventsEmitter,
     internal_wallet::{InternalWallet, to_wallet_cipher_seed},
     pin::PinManager,
+    setup::setup_manager::{SetupManager, SetupPhase},
     tasks_tracker::TasksTrackers,
     wallet::{
         minotari_wallet::MinotariWalletManager,
@@ -89,12 +99,17 @@ mod state;
 pub use claim::{BurnProof, L2Burn, L2ClaimResult};
 pub use network_stats::L2NetworkStats;
 pub use state::L2WalletState;
+use state::SeedSource;
 
 const LOG_TARGET: &str = "tari::universe::ootle";
 /// Same as tari_walletd: stop looking for more recovered accounts after this many misses.
 const RECOVERY_ABANDON_COUNT: usize = 10;
-/// Holds the id of the L1 wallet the store in the same directory belongs to.
+/// Holds the id of the L1 wallet the store in the same directory belongs to, or
+/// [`IMPORTED_SEED`].
 const L1_WALLET_ID_FILE: &str = "l1-wallet-id";
+/// Owner of a store restored from seed words the user imported for L2 only. Such a store
+/// belongs to no L1 wallet, so an L1 wallet change leaves it alone.
+const IMPORTED_SEED: &str = "imported";
 
 pub struct OotleWalletSpec;
 
@@ -111,6 +126,8 @@ static INSTANCE: LazyLock<OotleWalletManager> = LazyLock::new(|| OotleWalletMana
     notify: Notify::new(100),
     transactions: Mutex::new(None),
     mined_heights: Mutex::new(HashMap::new()),
+    store_dir: Mutex::new(None),
+    seed_imported: AtomicBool::new(false),
 });
 
 pub struct OotleWalletManager {
@@ -121,6 +138,10 @@ pub struct OotleWalletManager {
     /// L1 heights the node said burns were mined at, by commitment. Kept in memory only,
     /// a restart just asks again.
     mined_heights: Mutex<HashMap<String, u64>>,
+    /// Where the open store lives, set on every open.
+    store_dir: Mutex<Option<PathBuf>>,
+    /// Whether the open store holds imported seed words rather than the L1 seed.
+    seed_imported: AtomicBool,
 }
 
 impl OotleWalletManager {
@@ -147,6 +168,11 @@ impl OotleWalletManager {
             Some(details) => claim_store_for(&store_dir, details.id.as_str())?,
             None => false,
         };
+        let owner = std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).ok();
+        INSTANCE
+            .seed_imported
+            .store(owner.as_deref() == Some(IMPORTED_SEED), Ordering::Relaxed);
+        *INSTANCE.store_dir.lock().await = Some(store_dir.clone());
         let password = CredentialManager::ootle_keyring_password().await?;
         let sdk = open_sdk(&store_dir, network, indexer_url.clone(), &password)?;
 
@@ -191,6 +217,62 @@ impl OotleWalletManager {
         start_services(sdk, true).await.map_err(wallet_error)?;
         info!(target: LOG_TARGET, "L2 wallet enabled");
         Ok(())
+    }
+
+    /// The L2 seed words, once the user enters their PIN. Refused without a PIN, off
+    /// Esmeralda, and before L2 is enabled.
+    pub async fn seed_words(app_handle: &AppHandle) -> Result<Vec<String>, TransactionError> {
+        check_l2_allowed(
+            Network::get_current_or_user_setting_or_default(),
+            PinManager::pin_locked().await,
+        )?;
+        let mut sdk = started_sdk().await?;
+        PinManager::get_validated_pin_if_defined(app_handle, None)
+            .await
+            .map_err(wallet_error)?;
+        let words = sdk
+            .load_seed_words()
+            .map_err(wallet_error)?
+            .ok_or_else(|| TransactionError::Disabled("Layer 2 is not enabled".to_string()))?;
+        (0..words.len())
+            .map(|i| words.get_word(i).cloned().map_err(wallet_error))
+            .collect()
+    }
+
+    /// Replaces the L2 wallet with one restored from `seed_words`, which belong to L2
+    /// only, once the user enters their PIN. The words are checked before anything is
+    /// touched. Refused without a PIN or off Esmeralda.
+    pub async fn import_seed_words(
+        app_handle: &AppHandle,
+        seed_words: Vec<String>,
+    ) -> Result<(), TransactionError> {
+        check_l2_allowed(
+            Network::get_current_or_user_setting_or_default(),
+            PinManager::pin_locked().await,
+        )?;
+        let words = parse_seed_words(&seed_words)?;
+        PinManager::get_validated_pin_if_defined(app_handle, None)
+            .await
+            .map_err(wallet_error)?;
+        replace_store(&words, IMPORTED_SEED).await
+    }
+
+    /// Replaces the L2 wallet with one restored from the L1 seed, undoing an import, once
+    /// the user enters their PIN. Refused without a PIN or off Esmeralda.
+    pub async fn use_l1_seed(app_handle: &AppHandle) -> Result<(), TransactionError> {
+        check_l2_allowed(
+            Network::get_current_or_user_setting_or_default(),
+            PinManager::pin_locked().await,
+        )?;
+        let wallet_id = InternalWallet::tari_wallet_details()
+            .await
+            .ok_or_else(|| TransactionError::WalletError("No L1 wallet found".to_string()))?
+            .id;
+        let seed = InternalWallet::get_tari_seed_with_prompt(app_handle, None)
+            .await
+            .map_err(wallet_error)?;
+        let words = l2_seed_words(&seed).map_err(wallet_error)?;
+        replace_store(&words, wallet_id.as_str()).await
     }
 
     /// Everything the L2 panel shows. Refused without a PIN or off Esmeralda, and
@@ -281,6 +363,78 @@ impl OotleWalletManager {
         info!(target: LOG_TARGET, "L2 claim submitted: {id}");
         emit_state(&sdk).await;
         Ok(id.to_string())
+    }
+}
+
+/// Stops the wallet phase (which runs the L2 services), swaps the store for one restored
+/// from `words` and owned by `owner`, then resumes the phase, which reopens the store and
+/// starts the services with recovery on and sends the new state. The phase resumes even
+/// when the swap fails, so the L1 wallet always comes back.
+async fn replace_store(words: &SeedWords, owner: &str) -> Result<(), TransactionError> {
+    let store_dir = INSTANCE.store_dir.lock().await.clone().ok_or_else(|| {
+        TransactionError::Disabled("The L2 wallet has not started yet".to_string())
+    })?;
+    let indexer_url = ConfigCore::content()
+        .await
+        .ootle_indexer_url()
+        .clone()
+        .ok_or_else(|| TransactionError::Disabled("No Ootle indexer configured".to_string()))?;
+    let password = CredentialManager::ootle_keyring_password()
+        .await
+        .map_err(wallet_error)?;
+    let network = Network::get_current_or_user_setting_or_default();
+
+    SetupManager::get_instance()
+        .shutdown_phases(vec![SetupPhase::Wallet])
+        .await;
+    // Nothing may hold the store open when its directory goes.
+    INSTANCE.sdk.lock().await.take();
+    INSTANCE.transactions.lock().await.take();
+    let result = restore_store(&store_dir, network, indexer_url, &password, words, owner);
+    SetupManager::get_instance()
+        .resume_phases(vec![SetupPhase::Wallet])
+        .await;
+    result.map_err(wallet_error)?;
+    info!(target: LOG_TARGET, "L2 wallet restored from new seed words, owner {owner}");
+    Ok(())
+}
+
+/// Deletes the store in `store_dir` and creates a new one restored from `words`, marked
+/// as owned by `owner`. Does not touch the network.
+fn restore_store(
+    store_dir: &Path,
+    network: Network,
+    indexer_url: Url,
+    password: &str,
+    words: &SeedWords,
+    owner: &str,
+) -> Result<(), anyhow::Error> {
+    if store_dir.exists() {
+        std::fs::remove_dir_all(store_dir)?;
+    }
+    let mut sdk = open_sdk(store_dir, network, indexer_url, password)?;
+    sdk.initialize_cipher_seed(CipherSeedRestore::FromSeedWords(words))?;
+    std::fs::write(store_dir.join(L1_WALLET_ID_FILE), owner)?;
+    Ok(())
+}
+
+/// Seed words typed by the user, checked to be a valid seed.
+fn parse_seed_words(seed_words: &[String]) -> Result<SeedWords, TransactionError> {
+    let mut words = SeedWords::new(vec![]);
+    for word in seed_words {
+        words.push(word.trim().to_string());
+    }
+    CipherSeed::from_mnemonic(&words, None)
+        .map_err(|e| TransactionError::WalletError(format!("Invalid seed words: {e}")))?;
+    Ok(words)
+}
+
+/// Whether the open store holds imported seed words or the L1 seed.
+fn seed_source() -> SeedSource {
+    if INSTANCE.seed_imported.load(Ordering::Relaxed) {
+        SeedSource::Imported
+    } else {
+        SeedSource::L1
     }
 }
 
@@ -402,10 +556,14 @@ fn parse_address(address: &str, network: OotleNetwork) -> Result<OotleAddress, T
 /// so a store left from another L1 wallet (seed words import) holds the wrong keys and is
 /// deleted, as is a store with no owner on record (older build, or a delete cut short).
 /// Returns whether it deleted one. Runs on every open, so a crash between the L1 import
-/// and the next start still ends with the store gone.
+/// and the next start still ends with the store gone. A store holding imported seed words
+/// is kept as it is.
 fn claim_store_for(store_dir: &Path, l1_wallet_id: &str) -> Result<bool, anyhow::Error> {
     let owner_file = store_dir.join(L1_WALLET_ID_FILE);
     let owner = std::fs::read_to_string(&owner_file).ok();
+    if owner.as_deref() == Some(IMPORTED_SEED) {
+        return Ok(false);
+    }
     let reset = owner.as_deref() != Some(l1_wallet_id) && store_dir.join("wallet.sqlite").exists();
     if reset {
         std::fs::remove_dir_all(store_dir)?;
@@ -660,6 +818,84 @@ mod tests {
         assert!(claim_store_for(&store_dir, "second").expect("replaced wallet"));
         assert!(!enabled(&store_dir));
         assert!(!claim_store_for(&store_dir, "second").expect("new owner"));
+    }
+
+    #[test]
+    fn imported_seed_words_replace_the_seed_and_survive_an_l1_wallet_change() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store_dir = dir.path().join("esmeralda");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let stored_words = |store_dir: &Path| {
+            let mut sdk =
+                open_sdk(store_dir, Network::Esmeralda, url.clone(), "test").expect("sdk");
+            sdk.load_seed_words()
+                .expect("load")
+                .map(|w| w.join(" ").reveal().clone())
+        };
+        let owner = |store_dir: &Path| {
+            std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).expect("owner")
+        };
+
+        assert!(!claim_store_for(&store_dir, "first").expect("claim"));
+        let mut sdk = open_sdk(&store_dir, Network::Esmeralda, url.clone(), "test").expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("seed");
+        let old = sdk.load_seed_words().expect("load").expect("words");
+        drop(sdk);
+
+        let typed: Vec<String> = CipherSeed::random()
+            .to_mnemonic(MnemonicLanguage::English, None)
+            .expect("words")
+            .join(" ")
+            .reveal()
+            .split(' ')
+            .map(|w| format!(" {w} "))
+            .collect();
+        let mut bad = typed.clone();
+        bad.swap(0, 1);
+        assert!(parse_seed_words(&bad).is_err());
+        assert!(parse_seed_words(&typed[1..]).is_err());
+        let new = parse_seed_words(&typed).expect("valid words");
+        assert_ne!(old.join(" ").reveal(), new.join(" ").reveal());
+
+        restore_store(
+            &store_dir,
+            Network::Esmeralda,
+            url.clone(),
+            "test",
+            &new,
+            IMPORTED_SEED,
+        )
+        .expect("import over a seeded store");
+        assert_eq!(
+            stored_words(&store_dir),
+            Some(new.join(" ").reveal().clone())
+        );
+        assert!(!claim_store_for(&store_dir, "second").expect("l1 wallet changed"));
+        assert_eq!(owner(&store_dir), IMPORTED_SEED);
+        assert_eq!(
+            stored_words(&store_dir),
+            Some(new.join(" ").reveal().clone())
+        );
+
+        // Back on the L1 seed the store follows the L1 wallet again.
+        restore_store(
+            &store_dir,
+            Network::Esmeralda,
+            url.clone(),
+            "test",
+            &old,
+            "second",
+        )
+        .expect("use l1 seed");
+        assert!(!claim_store_for(&store_dir, "second").expect("same wallet"));
+        assert_eq!(
+            stored_words(&store_dir),
+            Some(old.join(" ").reveal().clone())
+        );
+        assert!(claim_store_for(&store_dir, "third").expect("replaced wallet"));
+        assert_eq!(stored_words(&store_dir), None);
+        assert_eq!(owner(&store_dir), "third");
     }
 
     #[test]
