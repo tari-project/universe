@@ -244,6 +244,7 @@ export interface L2ClaimResult {
 export interface L2WalletState {
     enabled: boolean;
     accounts: L2Account[];
+    seed_source: 'l1' | 'imported';
 }
 
 /** Micro XTR amounts. Block counts and times are L1. */

@@ -8,6 +8,11 @@ import { handleL2WalletStateUpdate } from '@app/store/actions/l2WalletStoreActio
 import type { L2WalletState } from '@app/types/events-payloads.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { Stack } from '@app/components/elements/Stack.tsx';
+import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import SeedWords from '@app/components/wallet/seedwords/SeedWords.tsx';
+import { resetL2ToL1Seed } from '@app/store/actions/l2WalletStoreActions.ts';
 import { CopyToClipboard } from '../wallet/WalletAddressMarkup/WalletAddressMarkup.tsx';
 import { CTASArea, InputArea, WalletSettingsGrid } from '../wallet/styles.ts';
 import {
@@ -42,7 +47,10 @@ export const L2Settings = () => {
     const enabled = useL2WalletStore((s) => s.enabled);
     const account = useL2WalletStore(selectL2Account);
     const indexerUrl = useConfigCoreStore((s) => s.ootle_indexer_url);
+    const seedSource = useL2WalletStore((s) => s.seed_source);
+    const seedChangePending = useL2WalletStore((s) => s.seedChangePending);
     const [enabling, setEnabling] = useState(false);
+    const [confirmReset, setConfirmReset] = useState(false);
     const [error, setError] = useState('');
 
     // The panel may never have been opened, so catch up with the backend here too.
@@ -78,7 +86,7 @@ export const L2Settings = () => {
                 </Button>
             </SettingsGroupContent>
         );
-    } else if (!enabled) {
+    } else if (!enabled && !seedChangePending) {
         status = (
             <SettingsGroupContent data-testid="l2-settings-not-enabled">
                 <Typography>{t('l2.enable-description')}</Typography>
@@ -123,7 +131,62 @@ export const L2Settings = () => {
                     <Typography data-testid="l2-settings-indexer">{indexerUrl}</Typography>
                 </SettingsGroupWrapper>
             )}
-            {/* L2 SEED WORDS SECTION: the seed words task inserts its section here. */}
+            {/* An import or reset turns L2 off while the wallet phase restarts, so keep the section up while it runs. */}
+            {hasPin && (enabled || seedChangePending) && (
+                <SettingsGroupWrapper data-testid="l2-settings-seed-words">
+                    <SettingsGroupTitle>
+                        <Typography variant="h6">{t('l2.seed-words')}</Typography>
+                    </SettingsGroupTitle>
+                    <Typography variant="p" data-testid="l2-settings-seed-note">
+                        {t(seedSource === 'imported' ? 'l2.seed-note-imported' : 'l2.seed-note-l1')}
+                    </Typography>
+                    <SeedWords isL2 />
+                    {seedChangePending && <LoadingDots />}
+                    {seedSource === 'imported' && (
+                        <Button
+                            size="small"
+                            variant="black"
+                            onClick={() => setConfirmReset(true)}
+                            disabled={seedChangePending}
+                            data-testid="l2-settings-use-l1-seed"
+                        >
+                            {t('l2.use-l1-seed')}
+                        </Button>
+                    )}
+                </SettingsGroupWrapper>
+            )}
+            <Dialog open={confirmReset} onOpenChange={setConfirmReset}>
+                <DialogContent>
+                    <Stack
+                        direction="column"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        style={{ width: 400, height: 120 }}
+                    >
+                        <Typography variant="h3">{t('l2.use-l1-seed')}</Typography>
+                        <Typography variant="p" style={{ whiteSpace: 'pre', textAlign: 'center' }}>
+                            {t('l2.confirm-replace-copy')}
+                        </Typography>
+                        {seedChangePending ? (
+                            <LoadingDots />
+                        ) : (
+                            <Stack direction="row" gap={8}>
+                                <Button size="small" onClick={() => setConfirmReset(false)}>
+                                    {t('cancel')}
+                                </Button>
+                                <Button
+                                    size="small"
+                                    color="warning"
+                                    onClick={() => resetL2ToL1Seed().then(() => setConfirmReset(false))}
+                                    data-testid="l2-settings-use-l1-seed-confirm"
+                                >
+                                    {t('yes')}
+                                </Button>
+                            </Stack>
+                        )}
+                    </Stack>
+                </DialogContent>
+            </Dialog>
         </>
     );
 };

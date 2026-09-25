@@ -21,8 +21,12 @@ describe('handleL2WalletStateUpdate', () => {
     });
 
     it('replaces the stored state with the latest update', () => {
-        handleL2WalletStateUpdate({ enabled: true, accounts: [account('a', true), account('b', false)] });
-        handleL2WalletStateUpdate({ enabled: true, accounts: [account('b', false)] });
+        handleL2WalletStateUpdate({
+            enabled: true,
+            seed_source: 'l1',
+            accounts: [account('a', true), account('b', false)],
+        });
+        handleL2WalletStateUpdate({ enabled: true, seed_source: 'l1', accounts: [account('b', false)] });
 
         const state = useL2WalletStore.getState();
         expect(state.accounts.map((a) => a.name)).toEqual(['b']);
@@ -30,10 +34,18 @@ describe('handleL2WalletStateUpdate', () => {
     });
 
     it('selects the default account, else the first', () => {
-        handleL2WalletStateUpdate({ enabled: true, accounts: [account('a', false), account('b', true)] });
+        handleL2WalletStateUpdate({
+            enabled: true,
+            seed_source: 'l1',
+            accounts: [account('a', false), account('b', true)],
+        });
         expect(selectL2Account(useL2WalletStore.getState())?.name).toBe('b');
 
-        handleL2WalletStateUpdate({ enabled: true, accounts: [account('a', false), account('c', false)] });
+        handleL2WalletStateUpdate({
+            enabled: true,
+            seed_source: 'l1',
+            accounts: [account('a', false), account('c', false)],
+        });
         expect(selectL2Account(useL2WalletStore.getState())?.name).toBe('a');
 
         handleL2WalletStateUpdate(initialState);

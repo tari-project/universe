@@ -10,6 +10,8 @@ import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floatin
 import { Edit, splitSeedWordsInput } from '@app/components/wallet/seedwords/components/Edit.tsx';
 import { FormProvider, useForm } from 'react-hook-form';
 import { importSeedWords, useWalletStore } from '@app/store';
+import { useL2WalletStore } from '@app/store/useL2WalletStore.ts';
+import { importL2SeedWords } from '@app/store/actions/l2WalletStoreActions.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -25,9 +27,13 @@ const SEED_WORDS_COUNTDOWN_DURATION = 300; // 5mins (same as in paper wallet)
 
 interface SeedWordsProps {
     isMonero?: boolean;
+    /** Show and import the Layer 2 seed words instead. The import only replaces the L2 wallet. */
+    isL2?: boolean;
 }
-export default function SeedWords({ isMonero = false }: SeedWordsProps) {
-    const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
+export default function SeedWords({ isMonero = false, isL2 = false }: SeedWordsProps) {
+    const isL1Importing = useWalletStore((s) => s.is_wallet_importing);
+    const isL2Changing = useL2WalletStore((s) => s.seedChangePending);
+    const isWalletImporting = isL2 ? isL2Changing : isL1Importing;
     const [isPending, startTransition] = useTransition();
     const [isVisible, setIsVisible] = useState(false);
     const [isEditView, setIsEditView] = useState(false);
@@ -38,6 +44,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const { seedWords, getSeedWords, setSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords({
         fetchMoneroSeeds: isMonero,
+        fetchL2Seeds: isL2,
     });
     const methods = useForm({ defaultValues: { seedWords: seedWords?.join(' ').trim() } });
     const { isValid } = methods.formState;
@@ -71,10 +78,10 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     const handleConfirmed = useCallback(async () => {
         if (!isValid || !newSeedWords) return;
 
-        await importSeedWords(newSeedWords);
+        await (isL2 ? importL2SeedWords : importSeedWords)(newSeedWords);
         setShowConfirm(false);
         setIsEditView(false);
-    }, [isValid, newSeedWords]);
+    }, [isL2, isValid, newSeedWords]);
 
     const handleApply = (data: { seedWords: string }) => {
         setNewSeedWords(splitSeedWordsInput(data.seedWords));
@@ -135,7 +142,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
                     <IoPencil />
                 </IconButton>
             ) : null}
-            <IconButton size="small" type="button" onClick={() => handleCopyClick()}>
+            <IconButton size="small" type="button" disabled={isWalletImporting} onClick={() => handleCopyClick()}>
                 {!isCopied ? isPending ? <CircularProgress /> : <IoCopyOutline /> : <IoCheckmarkOutline />}
             </IconButton>
         </>
@@ -154,7 +161,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
 
     return (
         <>
-            <Wrapper key={isMonero ? 'monero' : 'tari'}>
+            <Wrapper key={isMonero ? 'monero' : isL2 ? 'l2' : 'tari'}>
                 <FormProvider {...methods}>
                     <Form onSubmit={methods.handleSubmit(handleApply)} onReset={handleReset}>
                         <WalletSettingsGrid>
@@ -183,9 +190,9 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
                         justifyContent="space-between"
                         style={{ width: 400, height: 120 }}
                     >
-                        <Typography variant="h3">{t('confirm-import-wallet')}</Typography>
+                        <Typography variant="h3">{t(isL2 ? 'l2.confirm-import' : 'confirm-import-wallet')}</Typography>
                         <Typography variant="p" style={{ whiteSpace: 'pre', textAlign: 'center' }}>
-                            {t('confirm-import-wallet-copy')}
+                            {t(isL2 ? 'l2.confirm-replace-copy' : 'confirm-import-wallet-copy')}
                         </Typography>
 
                         {isWalletImporting ? (

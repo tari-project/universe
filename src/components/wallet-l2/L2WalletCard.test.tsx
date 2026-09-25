@@ -14,6 +14,7 @@ vi.mock('@tauri-apps/api/window', () => ({
 
 const enabledState: L2WalletState = {
     enabled: true,
+    seed_source: 'l1',
     accounts: [
         {
             name: 'recovered-account-0',

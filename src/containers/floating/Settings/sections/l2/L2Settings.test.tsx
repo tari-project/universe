@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
-import { render, screen } from '@app/test/test-utils';
+import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useMiningStore } from '@app/store';
 import { initialState, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
@@ -18,6 +18,7 @@ vi.mock('@tauri-apps/api/window', () => ({
 
 const enabledState: L2WalletState = {
     enabled: true,
+    seed_source: 'l1',
     accounts: [
         {
             name: 'recovered-account-0',
@@ -97,5 +98,51 @@ describe('L2Settings', () => {
 
         await screen.findByTestId('l2-settings-address');
         expect(screen.queryByTestId('l2-settings-indexer')).not.toBeInTheDocument();
+    });
+
+    it('picks the seed words note from seed_source and offers the L1 seed back only after an import', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        serve(enabledState);
+        const { unmount } = render(<L2Settings />);
+
+        expect(await screen.findByTestId('l2-settings-seed-note')).toHaveTextContent('l2.seed-note-l1');
+        expect(screen.queryByTestId('l2-settings-use-l1-seed')).not.toBeInTheDocument();
+        unmount();
+
+        serve({ ...enabledState, seed_source: 'imported' });
+        render(<L2Settings />);
+        await waitFor(() =>
+            expect(screen.getByTestId('l2-settings-seed-note')).toHaveTextContent('l2.seed-note-imported')
+        );
+        fireEvent.click(screen.getByTestId('l2-settings-use-l1-seed'));
+        fireEvent.click(await screen.findByTestId('l2-settings-use-l1-seed-confirm'));
+        await waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_use_l1_seed', undefined));
+    });
+
+    it('hides the seed words section when L2 is off', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        serve(initialState);
+        render(<L2Settings />);
+
+        await screen.findByTestId('l2-settings-enable');
+        expect(screen.queryByTestId('l2-settings-seed-words')).not.toBeInTheDocument();
+    });
+
+    it('imports L2 seed words only after the confirm dialog', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        serve(enabledState);
+        render(<L2Settings />);
+        const words = Array.from({ length: 24 }, (_, i) => `word${i}`);
+
+        fireEvent.click(await screen.findByTestId('wallet-seed-edit'));
+        fireEvent.change(screen.getByRole('textbox'), { target: { value: words.join(' ') } });
+        await waitFor(() => expect(screen.getByTestId('wallet-seed-submit')).toBeEnabled());
+        fireEvent.click(screen.getByTestId('wallet-seed-submit'));
+
+        const confirm = await screen.findByTestId('wallet-import-confirm');
+        expect(screen.getByText('l2.confirm-import')).toBeInTheDocument();
+        expect(invoke).not.toHaveBeenCalledWith('l2_import_seed_words', expect.anything());
+        fireEvent.click(confirm);
+        await waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_import_seed_words', { seedWords: words }));
     });
 });

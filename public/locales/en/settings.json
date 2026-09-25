@@ -279,6 +279,13 @@
     "account": "Default account",
     "address": "Address",
     "public-key": "Owner public key",
-    "indexer": "Indexer"
+    "indexer": "Indexer",
+    "seed-words": "Layer 2 seed words",
+    "seed-note-l1": "Your Layer 2 wallet uses the same seed words as your Tari wallet.",
+    "seed-note-imported": "Your Layer 2 wallet uses its own imported seed words. Back them up separately.",
+    "use-l1-seed": "Use my Tari wallet seed",
+    "confirm-import": "Import Layer 2 seed words",
+    "seed-change-error": "Couldn't change the Layer 2 seed words",
+    "confirm-replace-copy": "Your current Layer 2 wallet will be replaced.\nYou can only get it back with its seed words."
   }
 }
