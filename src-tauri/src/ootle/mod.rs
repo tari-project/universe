@@ -399,8 +399,10 @@ async fn replace_store(words: &SeedWords, owner: &str) -> Result<(), Transaction
     Ok(())
 }
 
-/// Deletes the store in `store_dir` and creates a new one restored from `words`, marked
-/// as owned by `owner`. Does not touch the network.
+/// Replaces the store in `store_dir` with a new one restored from `words`, marked as
+/// owned by `owner`. The old store is moved aside first and only deleted once the new
+/// one is complete. If building the new one fails, the old one goes back in place. Does
+/// not touch the network.
 fn restore_store(
     store_dir: &Path,
     network: Network,
@@ -409,9 +411,40 @@ fn restore_store(
     words: &SeedWords,
     owner: &str,
 ) -> Result<(), anyhow::Error> {
-    if store_dir.exists() {
-        std::fs::remove_dir_all(store_dir)?;
+    let old_dir = store_dir.with_extension("old");
+    let had_old = store_dir.exists();
+    if had_old {
+        std::fs::rename(store_dir, &old_dir)?;
     }
+    let result = create_store(store_dir, network, indexer_url, password, words, owner);
+    if result.is_err() {
+        if let Err(e) = std::fs::remove_dir_all(store_dir) {
+            warn!(target: LOG_TARGET, "Could not remove the unfinished L2 store: {e}");
+        }
+        if had_old {
+            std::fs::rename(&old_dir, store_dir).map_err(|e| {
+                anyhow::anyhow!(
+                    "L2 restore failed and the old store could not be put back, it is in {}: {e}",
+                    old_dir.display()
+                )
+            })?;
+        }
+        return result;
+    }
+    if had_old && let Err(e) = std::fs::remove_dir_all(&old_dir) {
+        warn!(target: LOG_TARGET, "Could not remove the old L2 store: {e}");
+    }
+    Ok(())
+}
+
+fn create_store(
+    store_dir: &Path,
+    network: Network,
+    indexer_url: Url,
+    password: &str,
+    words: &SeedWords,
+    owner: &str,
+) -> Result<(), anyhow::Error> {
     let mut sdk = open_sdk(store_dir, network, indexer_url, password)?;
     sdk.initialize_cipher_seed(CipherSeedRestore::FromSeedWords(words))?;
     std::fs::write(store_dir.join(L1_WALLET_ID_FILE), owner)?;
@@ -818,6 +851,60 @@ mod tests {
         assert!(claim_store_for(&store_dir, "second").expect("replaced wallet"));
         assert!(!enabled(&store_dir));
         assert!(!claim_store_for(&store_dir, "second").expect("new owner"));
+    }
+
+    #[test]
+    fn a_failed_restore_keeps_the_old_store() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store_dir = dir.path().join("esmeralda");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let stored_words = |store_dir: &Path| {
+            let mut sdk =
+                open_sdk(store_dir, Network::Esmeralda, url.clone(), "test").expect("sdk");
+            sdk.load_seed_words()
+                .expect("load")
+                .map(|w| w.join(" ").reveal().clone())
+        };
+        let owner = |store_dir: &Path| {
+            std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).expect("owner")
+        };
+        let words = |seed: CipherSeed| {
+            seed.to_mnemonic(MnemonicLanguage::English, None)
+                .expect("words")
+        };
+        let restore = |words: &SeedWords, owner: &str| {
+            restore_store(
+                &store_dir,
+                Network::Esmeralda,
+                url.clone(),
+                "test",
+                words,
+                owner,
+            )
+        };
+
+        let old = words(CipherSeed::random());
+        restore(&old, "first").expect("first store");
+
+        // Fails after the new store's database exists, at seed initialisation.
+        let mut bad = SeedWords::new(vec![]);
+        bad.push("notaseedword".to_string());
+        assert!(restore(&bad, IMPORTED_SEED).is_err());
+        assert_eq!(
+            stored_words(&store_dir),
+            Some(old.join(" ").reveal().clone())
+        );
+        assert_eq!(owner(&store_dir), "first");
+        assert!(!store_dir.with_extension("old").exists());
+
+        let new = words(CipherSeed::random());
+        restore(&new, IMPORTED_SEED).expect("good restore");
+        assert_eq!(
+            stored_words(&store_dir),
+            Some(new.join(" ").reveal().clone())
+        );
+        assert_eq!(owner(&store_dir), IMPORTED_SEED);
+        assert!(!store_dir.with_extension("old").exists());
     }
 
     #[test]
