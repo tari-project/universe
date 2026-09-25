@@ -164,6 +164,7 @@ impl OotleWalletManager {
         // directory might be deleted below.
         INSTANCE.sdk.lock().await.take();
         INSTANCE.transactions.lock().await.take();
+        recover_store_swap(&store_dir)?;
         let reset = match InternalWallet::tari_wallet_details().await {
             Some(details) => claim_store_for(&store_dir, details.id.as_str())?,
             None => false,
@@ -433,6 +434,27 @@ fn restore_store(
     }
     if had_old && let Err(e) = std::fs::remove_dir_all(&old_dir) {
         warn!(target: LOG_TARGET, "Could not remove the old L2 store: {e}");
+    }
+    Ok(())
+}
+
+/// Settles a [`restore_store`] swap cut short by a crash. The owner file is the last
+/// thing a swap writes, so a store dir with it means the swap completed and only the
+/// old store's cleanup was lost. Without it the new store is unfinished and the old one
+/// goes back in place.
+fn recover_store_swap(store_dir: &Path) -> Result<(), anyhow::Error> {
+    let old_dir = store_dir.with_extension("old");
+    if !old_dir.exists() {
+        return Ok(());
+    }
+    if store_dir.join(L1_WALLET_ID_FILE).exists() {
+        std::fs::remove_dir_all(&old_dir)?;
+    } else {
+        if store_dir.exists() {
+            std::fs::remove_dir_all(store_dir)?;
+        }
+        std::fs::rename(&old_dir, store_dir)?;
+        warn!(target: LOG_TARGET, "L2 store swap was cut short, put the old store back");
     }
     Ok(())
 }
@@ -905,6 +927,44 @@ mod tests {
         );
         assert_eq!(owner(&store_dir), IMPORTED_SEED);
         assert!(!store_dir.with_extension("old").exists());
+    }
+
+    #[test]
+    fn a_swap_cut_short_is_settled_on_open() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store_dir = dir.path().join("esmeralda");
+        let old_dir = store_dir.with_extension("old");
+        let write = |dir: &Path, file: &str, text: &str| {
+            std::fs::create_dir_all(dir).expect("dir");
+            std::fs::write(dir.join(file), text).expect("write");
+        };
+        let read = |file: &str| std::fs::read_to_string(store_dir.join(file)).ok();
+
+        // Nothing to settle.
+        recover_store_swap(&store_dir).expect("no swap");
+        assert!(!store_dir.exists());
+
+        // Cut short after the new database was created but before the owner file.
+        write(&old_dir, L1_WALLET_ID_FILE, "old");
+        write(&old_dir, "wallet.sqlite", "old db");
+        write(&store_dir, "wallet.sqlite", "half built");
+        recover_store_swap(&store_dir).expect("roll back");
+        assert_eq!(read(L1_WALLET_ID_FILE).as_deref(), Some("old"));
+        assert_eq!(read("wallet.sqlite").as_deref(), Some("old db"));
+        assert!(!old_dir.exists());
+
+        // Cut short before the new store dir existed.
+        std::fs::rename(&store_dir, &old_dir).expect("move aside");
+        recover_store_swap(&store_dir).expect("roll back");
+        assert_eq!(read("wallet.sqlite").as_deref(), Some("old db"));
+        assert!(!old_dir.exists());
+
+        // Cut short after the owner file, only the cleanup was lost.
+        write(&old_dir, "wallet.sqlite", "stale");
+        write(&store_dir, L1_WALLET_ID_FILE, "new");
+        recover_store_swap(&store_dir).expect("finish");
+        assert_eq!(read(L1_WALLET_ID_FILE).as_deref(), Some("new"));
+        assert!(!old_dir.exists());
     }
 
     #[test]
