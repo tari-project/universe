@@ -19,6 +19,7 @@ vi.mock('@tauri-apps/api/window', () => ({
 
 const enabledState: L2WalletState = {
     enabled: true,
+    locked: false,
     seed_source: 'l1',
     accounts: [
         {
@@ -137,6 +138,18 @@ describe('L2Settings', () => {
         render(<L2Settings />);
 
         await screen.findByTestId('l2-settings-enable');
+        expect(screen.queryByTestId('l2-settings-seed-words')).not.toBeInTheDocument();
+    });
+
+    it('offers Unlock Layer 2 and hides the account and seed words while locked', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        serve({ enabled: true, locked: true, seed_source: 'l1', accounts: [] });
+        render(<L2Settings />);
+
+        fireEvent.click(await screen.findByTestId('l2-settings-unlock'));
+        await waitFor(() => expect(invoke).toHaveBeenCalledWith('unlock_l2_wallet'));
+        expect(screen.queryByTestId('l2-settings-enable')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('l2-settings-account')).not.toBeInTheDocument();
         expect(screen.queryByTestId('l2-settings-seed-words')).not.toBeInTheDocument();
     });
 

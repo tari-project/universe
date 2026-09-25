@@ -18,6 +18,7 @@ export default function L2WalletCard() {
     const { t } = useTranslation('wallet');
     const hasPin = useWalletStore((s) => s.is_pin_locked);
     const enabled = useL2WalletStore((s) => s.enabled);
+    const locked = useL2WalletStore((s) => s.locked);
     const account = useL2WalletStore(selectL2Account);
     const [enabling, setEnabling] = useState(false);
     const [error, setError] = useState('');
@@ -28,14 +29,14 @@ export default function L2WalletCard() {
         fetchL2State().catch((e) => console.warn('Could not load L2 wallet state:', e));
     }, [hasPin]);
 
-    async function enable() {
+    async function open(command: 'enable_l2_wallet' | 'unlock_l2_wallet', errorKey: string) {
         setEnabling(true);
         setError('');
         try {
-            await invoke('enable_l2_wallet');
+            await invoke(command);
             await fetchL2State();
         } catch (e) {
-            setError(`${t('l2.enable-error')}${e}`);
+            setError(`${t(errorKey)}${e}`);
         } finally {
             setEnabling(false);
         }
@@ -60,8 +61,30 @@ export default function L2WalletCard() {
         return (
             <WalletWrapper style={promptStyle} data-testid="l2-not-enabled">
                 <Typography>{t('l2.enable-description')}</Typography>
-                <Button variant="black" onClick={enable} disabled={enabling} data-testid="l2-enable">
+                <Button
+                    variant="black"
+                    onClick={() => open('enable_l2_wallet', 'l2.enable-error')}
+                    disabled={enabling}
+                    data-testid="l2-enable"
+                >
                     {t('l2.enable')}
+                </Button>
+                {error && <Typography variant="p">{error}</Typography>}
+            </WalletWrapper>
+        );
+    }
+
+    if (locked) {
+        return (
+            <WalletWrapper style={promptStyle} data-testid="l2-locked">
+                <Typography>{t('l2.unlock-description')}</Typography>
+                <Button
+                    variant="black"
+                    onClick={() => open('unlock_l2_wallet', 'l2.unlock-error')}
+                    disabled={enabling}
+                    data-testid="l2-unlock"
+                >
+                    {t('l2.unlock')}
                 </Button>
                 {error && <Typography variant="p">{error}</Typography>}
             </WalletWrapper>

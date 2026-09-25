@@ -243,6 +243,8 @@ export interface L2ClaimResult {
 
 export interface L2WalletState {
     enabled: boolean;
+    /** Enabled, but the store stays shut until the user enters their PIN. */
+    locked: boolean;
     accounts: L2Account[];
     seed_source: 'l1' | 'imported';
 }

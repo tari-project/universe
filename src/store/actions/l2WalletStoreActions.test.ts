@@ -23,19 +23,28 @@ describe('handleL2WalletStateUpdate', () => {
     it('replaces the stored state with the latest update', () => {
         handleL2WalletStateUpdate({
             enabled: true,
+            locked: false,
             seed_source: 'l1',
             accounts: [account('a', true), account('b', false)],
         });
-        handleL2WalletStateUpdate({ enabled: true, seed_source: 'l1', accounts: [account('b', false)] });
+        handleL2WalletStateUpdate({ enabled: true, locked: false, seed_source: 'l1', accounts: [account('b', false)] });
 
         const state = useL2WalletStore.getState();
         expect(state.accounts.map((a) => a.name)).toEqual(['b']);
         expect(state.accounts[0].history).toHaveLength(1);
     });
 
+    it('keeps the locked flag from the latest update', () => {
+        handleL2WalletStateUpdate({ enabled: true, locked: true, seed_source: 'l1', accounts: [] });
+        expect(useL2WalletStore.getState().locked).toBe(true);
+        handleL2WalletStateUpdate({ enabled: true, locked: false, seed_source: 'l1', accounts: [account('a', true)] });
+        expect(useL2WalletStore.getState().locked).toBe(false);
+    });
+
     it('selects the default account, else the first', () => {
         handleL2WalletStateUpdate({
             enabled: true,
+            locked: false,
             seed_source: 'l1',
             accounts: [account('a', false), account('b', true)],
         });
@@ -43,6 +52,7 @@ describe('handleL2WalletStateUpdate', () => {
 
         handleL2WalletStateUpdate({
             enabled: true,
+            locked: false,
             seed_source: 'l1',
             accounts: [account('a', false), account('c', false)],
         });

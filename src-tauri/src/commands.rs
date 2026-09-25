@@ -616,9 +616,15 @@ pub async fn forgot_pin(
         _ => None,
     };
 
-    InternalWallet::recover_forgotten_pin(&app_handle, tari_cipher_seed, monero_seed)
+    let pin =
+        InternalWallet::recover_forgotten_pin(&app_handle, tari_cipher_seed.clone(), monero_seed)
+            .await
+            .map_err(|e| e.to_string())?;
+    // The L2 store is encrypted with the forgotten PIN. A failure here leaves the new PIN in
+    // place, so running the recovery again retries it.
+    OotleWalletManager::reset_forgotten_pin(&tari_cipher_seed, &pin)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("PIN reset, but Layer 2 could not move to the new PIN: {e}"))?;
 
     info!(target: LOG_TARGET_APP_LOGIC, "PIN recovery completed successfully");
     Ok(())
@@ -1679,6 +1685,16 @@ pub async fn burn_to_l2(
 #[tauri::command]
 pub async fn enable_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String> {
     info!(target: LOG_TARGET_APP_LOGIC, "[enable_l2_wallet] called");
+    OotleWalletManager::enable(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Open the locked L2 wallet. Unlocking and enabling are the same step, behind the PIN
+/// prompt: the store opens with the PIN, and one that was never enabled gets the L1 seed.
+#[tauri::command]
+pub async fn unlock_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[unlock_l2_wallet] called");
     OotleWalletManager::enable(&app_handle)
         .await
         .map_err(|e| e.to_string())

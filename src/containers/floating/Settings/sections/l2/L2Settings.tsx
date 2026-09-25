@@ -47,6 +47,7 @@ export const L2Settings = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const hasPin = useWalletStore((s) => s.is_pin_locked);
     const enabled = useL2WalletStore((s) => s.enabled);
+    const locked = useL2WalletStore((s) => s.locked);
     const account = useL2WalletStore(selectL2Account);
     const indexerUrl = useConfigCoreStore((s) => s.ootle_indexer_url);
     const seedSource = useL2WalletStore((s) => s.seed_source);
@@ -62,14 +63,14 @@ export const L2Settings = () => {
         fetchL2State().catch((e) => console.warn('Could not load L2 wallet state:', e));
     }, [hasPin]);
 
-    async function enable() {
+    async function open(command: 'enable_l2_wallet' | 'unlock_l2_wallet', errorKey: string) {
         setEnabling(true);
         setError('');
         try {
-            await invoke('enable_l2_wallet');
+            await invoke(command);
             await fetchL2State();
         } catch (e) {
-            setError(`${t('l2.enable-error')}${e}`);
+            setError(`${t(errorKey)}${e}`);
         } finally {
             setEnabling(false);
         }
@@ -105,8 +106,33 @@ export const L2Settings = () => {
                     {error && <Typography>{error}</Typography>}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <Button onClick={enable} disabled={enabling} data-testid="l2-settings-enable">
+                    <Button
+                        onClick={() => open('enable_l2_wallet', 'l2.enable-error')}
+                        disabled={enabling}
+                        data-testid="l2-settings-enable"
+                    >
                         {t('l2.enable')}
+                    </Button>
+                </SettingsGroupAction>
+            </SettingsGroup>
+        );
+    } else if (locked && !seedChangePending) {
+        status = (
+            <SettingsGroup data-testid="l2-settings-locked">
+                <SettingsGroupContent>
+                    <SettingsGroupTitle>
+                        <Typography variant="h6">{t('l2.status')}</Typography>
+                    </SettingsGroupTitle>
+                    <Typography>{t('l2.unlock-description')}</Typography>
+                    {error && <Typography>{error}</Typography>}
+                </SettingsGroupContent>
+                <SettingsGroupAction>
+                    <Button
+                        onClick={() => open('unlock_l2_wallet', 'l2.unlock-error')}
+                        disabled={enabling}
+                        data-testid="l2-settings-unlock"
+                    >
+                        {t('l2.unlock')}
                     </Button>
                 </SettingsGroupAction>
             </SettingsGroup>
@@ -172,7 +198,7 @@ export const L2Settings = () => {
                 </SettingsGroupWrapper>
             )}
             {/* An import or reset turns L2 off while the wallet phase restarts, so keep the section up while it runs. */}
-            {hasPin && (enabled || seedChangePending) && (
+            {hasPin && ((enabled && !locked) || seedChangePending) && (
                 <SettingsGroupWrapper data-testid="l2-settings-seed-words">
                     <SettingsGroup>
                         <SettingsGroupContent>

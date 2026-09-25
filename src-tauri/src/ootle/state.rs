@@ -40,6 +40,8 @@ const HISTORY_LIMIT: usize = 50;
 #[derive(Clone, Debug, Default, Serialize)]
 pub struct L2WalletState {
     pub enabled: bool,
+    /// L2 is enabled but its store stays shut until the user enters their PIN.
+    pub locked: bool,
     pub accounts: Vec<L2Account>,
     pub seed_source: SeedSource,
 }
@@ -112,6 +114,7 @@ pub fn build_state(sdk: &OotleSdk) -> Result<L2WalletState, anyhow::Error> {
         .collect::<Result<_, _>>()?;
     Ok(L2WalletState {
         enabled: true,
+        locked: false,
         accounts,
         seed_source: super::seed_source(),
     })
