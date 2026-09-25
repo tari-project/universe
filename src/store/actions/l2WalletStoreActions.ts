@@ -6,7 +6,12 @@ import { useL2WalletStore } from '../useL2WalletStore';
 
 /** The backend always sends the whole wallet state, so it replaces what the store holds for it. */
 export const handleL2WalletStateUpdate = (state: L2WalletState) => {
-    useL2WalletStore.setState({ enabled: state.enabled, accounts: state.accounts, seed_source: state.seed_source });
+    useL2WalletStore.setState({
+        enabled: state.enabled,
+        locked: state.locked,
+        accounts: state.accounts,
+        seed_source: state.seed_source,
+    });
 };
 
 /** Import and reset restart the wallet phase, which sends the new state when it's back. */

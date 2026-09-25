@@ -9,6 +9,7 @@ interface L2WalletStoreState extends L2WalletState {
 
 export const initialState: L2WalletStoreState = {
     enabled: false,
+    locked: false,
     accounts: [],
     seed_source: 'l1',
     networkStats: null,

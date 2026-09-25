@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
-import { fireEvent, render, screen, within } from '@app/test/test-utils';
+import { fireEvent, render, screen, waitFor, within } from '@app/test/test-utils';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { initialState, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
@@ -14,6 +14,7 @@ vi.mock('@tauri-apps/api/window', () => ({
 
 const enabledState: L2WalletState = {
     enabled: true,
+    locked: false,
     seed_source: 'l1',
     accounts: [
         {
@@ -58,6 +59,17 @@ describe('L2WalletCard', () => {
 
         expect(await screen.findByTestId('l2-enable')).toBeInTheDocument();
         expect(invoke).toHaveBeenCalledWith('l2_get_state');
+        expect(screen.queryByTestId('l2-wallet')).not.toBeInTheDocument();
+    });
+
+    it('offers Unlock Layer 2 while the store is locked and unlocks with the PIN', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        serve({ enabled: true, locked: true, seed_source: 'l1', accounts: [] });
+        render(<L2WalletCard />);
+
+        fireEvent.click(await screen.findByTestId('l2-unlock'));
+        await waitFor(() => expect(invoke).toHaveBeenCalledWith('unlock_l2_wallet'));
+        expect(screen.queryByTestId('l2-enable')).not.toBeInTheDocument();
         expect(screen.queryByTestId('l2-wallet')).not.toBeInTheDocument();
     });
 
