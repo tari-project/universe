@@ -232,7 +232,7 @@ fn read_burns(dir: &Path, status: &'static str) -> Result<Vec<L2Burn>, anyhow::E
         let Some(file) = path.file_name().and_then(|name| name.to_str()) else {
             continue;
         };
-        if !path.is_file() || !file.ends_with(".json") {
+        if !path.is_file() || !file.ends_with(".json") || file == PENDING_CLAIMS_FILE {
             continue;
         }
         match read_proof(&path) {
