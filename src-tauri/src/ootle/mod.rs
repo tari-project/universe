@@ -164,6 +164,7 @@ impl OotleWalletManager {
         // directory might be deleted below.
         INSTANCE.sdk.lock().await.take();
         INSTANCE.transactions.lock().await.take();
+        recover_store_swap(&store_dir)?;
         let reset = match InternalWallet::tari_wallet_details().await {
             Some(details) => claim_store_for(&store_dir, details.id.as_str())?,
             None => false,
@@ -399,8 +400,10 @@ async fn replace_store(words: &SeedWords, owner: &str) -> Result<(), Transaction
     Ok(())
 }
 
-/// Deletes the store in `store_dir` and creates a new one restored from `words`, marked
-/// as owned by `owner`. Does not touch the network.
+/// Replaces the store in `store_dir` with a new one restored from `words`, marked as
+/// owned by `owner`. The old store is moved aside first and only deleted once the new
+/// one is complete. If building the new one fails, the old one goes back in place. Does
+/// not touch the network.
 fn restore_store(
     store_dir: &Path,
     network: Network,
@@ -409,9 +412,61 @@ fn restore_store(
     words: &SeedWords,
     owner: &str,
 ) -> Result<(), anyhow::Error> {
-    if store_dir.exists() {
-        std::fs::remove_dir_all(store_dir)?;
+    let old_dir = store_dir.with_extension("old");
+    let had_old = store_dir.exists();
+    if had_old {
+        std::fs::rename(store_dir, &old_dir)?;
     }
+    let result = create_store(store_dir, network, indexer_url, password, words, owner);
+    if result.is_err() {
+        if let Err(e) = std::fs::remove_dir_all(store_dir) {
+            warn!(target: LOG_TARGET, "Could not remove the unfinished L2 store: {e}");
+        }
+        if had_old {
+            std::fs::rename(&old_dir, store_dir).map_err(|e| {
+                anyhow::anyhow!(
+                    "L2 restore failed and the old store could not be put back, it is in {}: {e}",
+                    old_dir.display()
+                )
+            })?;
+        }
+        return result;
+    }
+    if had_old && let Err(e) = std::fs::remove_dir_all(&old_dir) {
+        warn!(target: LOG_TARGET, "Could not remove the old L2 store: {e}");
+    }
+    Ok(())
+}
+
+/// Settles a [`restore_store`] swap cut short by a crash. The owner file is the last
+/// thing a swap writes, so a store dir with it means the swap completed and only the
+/// old store's cleanup was lost. Without it the new store is unfinished and the old one
+/// goes back in place.
+fn recover_store_swap(store_dir: &Path) -> Result<(), anyhow::Error> {
+    let old_dir = store_dir.with_extension("old");
+    if !old_dir.exists() {
+        return Ok(());
+    }
+    if store_dir.join(L1_WALLET_ID_FILE).exists() {
+        std::fs::remove_dir_all(&old_dir)?;
+    } else {
+        if store_dir.exists() {
+            std::fs::remove_dir_all(store_dir)?;
+        }
+        std::fs::rename(&old_dir, store_dir)?;
+        warn!(target: LOG_TARGET, "L2 store swap was cut short, put the old store back");
+    }
+    Ok(())
+}
+
+fn create_store(
+    store_dir: &Path,
+    network: Network,
+    indexer_url: Url,
+    password: &str,
+    words: &SeedWords,
+    owner: &str,
+) -> Result<(), anyhow::Error> {
     let mut sdk = open_sdk(store_dir, network, indexer_url, password)?;
     sdk.initialize_cipher_seed(CipherSeedRestore::FromSeedWords(words))?;
     std::fs::write(store_dir.join(L1_WALLET_ID_FILE), owner)?;
@@ -830,6 +885,98 @@ mod tests {
         assert!(claim_store_for(&store_dir, "second").expect("replaced wallet"));
         assert!(!enabled(&store_dir));
         assert!(!claim_store_for(&store_dir, "second").expect("new owner"));
+    }
+
+    #[test]
+    fn a_failed_restore_keeps_the_old_store() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store_dir = dir.path().join("esmeralda");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let stored_words = |store_dir: &Path| {
+            let mut sdk =
+                open_sdk(store_dir, Network::Esmeralda, url.clone(), "test").expect("sdk");
+            sdk.load_seed_words()
+                .expect("load")
+                .map(|w| w.join(" ").reveal().clone())
+        };
+        let owner = |store_dir: &Path| {
+            std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).expect("owner")
+        };
+        let words = |seed: CipherSeed| {
+            seed.to_mnemonic(MnemonicLanguage::English, None)
+                .expect("words")
+        };
+        let restore = |words: &SeedWords, owner: &str| {
+            restore_store(
+                &store_dir,
+                Network::Esmeralda,
+                url.clone(),
+                "test",
+                words,
+                owner,
+            )
+        };
+
+        let old = words(CipherSeed::random());
+        restore(&old, "first").expect("first store");
+
+        // Fails after the new store's database exists, at seed initialisation.
+        let mut bad = SeedWords::new(vec![]);
+        bad.push("notaseedword".to_string());
+        assert!(restore(&bad, IMPORTED_SEED).is_err());
+        assert_eq!(
+            stored_words(&store_dir),
+            Some(old.join(" ").reveal().clone())
+        );
+        assert_eq!(owner(&store_dir), "first");
+        assert!(!store_dir.with_extension("old").exists());
+
+        let new = words(CipherSeed::random());
+        restore(&new, IMPORTED_SEED).expect("good restore");
+        assert_eq!(
+            stored_words(&store_dir),
+            Some(new.join(" ").reveal().clone())
+        );
+        assert_eq!(owner(&store_dir), IMPORTED_SEED);
+        assert!(!store_dir.with_extension("old").exists());
+    }
+
+    #[test]
+    fn a_swap_cut_short_is_settled_on_open() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let store_dir = dir.path().join("esmeralda");
+        let old_dir = store_dir.with_extension("old");
+        let write = |dir: &Path, file: &str, text: &str| {
+            std::fs::create_dir_all(dir).expect("dir");
+            std::fs::write(dir.join(file), text).expect("write");
+        };
+        let read = |file: &str| std::fs::read_to_string(store_dir.join(file)).ok();
+
+        // Nothing to settle.
+        recover_store_swap(&store_dir).expect("no swap");
+        assert!(!store_dir.exists());
+
+        // Cut short after the new database was created but before the owner file.
+        write(&old_dir, L1_WALLET_ID_FILE, "old");
+        write(&old_dir, "wallet.sqlite", "old db");
+        write(&store_dir, "wallet.sqlite", "half built");
+        recover_store_swap(&store_dir).expect("roll back");
+        assert_eq!(read(L1_WALLET_ID_FILE).as_deref(), Some("old"));
+        assert_eq!(read("wallet.sqlite").as_deref(), Some("old db"));
+        assert!(!old_dir.exists());
+
+        // Cut short before the new store dir existed.
+        std::fs::rename(&store_dir, &old_dir).expect("move aside");
+        recover_store_swap(&store_dir).expect("roll back");
+        assert_eq!(read("wallet.sqlite").as_deref(), Some("old db"));
+        assert!(!old_dir.exists());
+
+        // Cut short after the owner file, only the cleanup was lost.
+        write(&old_dir, "wallet.sqlite", "stale");
+        write(&store_dir, L1_WALLET_ID_FILE, "new");
+        recover_store_swap(&store_dir).expect("finish");
+        assert_eq!(read(L1_WALLET_ID_FILE).as_deref(), Some("new"));
+        assert!(!old_dir.exists());
     }
 
     #[test]
