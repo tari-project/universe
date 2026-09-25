@@ -97,10 +97,18 @@ const towerOffset = (sidebarOpen: boolean, l2Open: boolean) => {
     const cards = Number(sidebarOpen) + Number(l2Open);
     return sidebarTowerOffset + cards * SB_WIDTH + (cards > 1 ? SB_SPACING : 0);
 };
+// Only one card is open at a time unless the user allowed them side by side in settings.
+const sideBySide = () => useConfigUIStore.getState().l2_side_by_side;
 export const setSidebarOpen = (sidebarOpen: boolean) =>
-    useUIStore.setState((s) => ({ sidebarOpen, towerSidebarOffset: towerOffset(sidebarOpen, s.l2Open) }));
+    useUIStore.setState((s) => {
+        const l2Open = sidebarOpen && !sideBySide() ? false : s.l2Open;
+        return { sidebarOpen, l2Open, towerSidebarOffset: towerOffset(sidebarOpen, l2Open) };
+    });
 export const setL2Open = (l2Open: boolean) =>
-    useUIStore.setState((s) => ({ l2Open, towerSidebarOffset: towerOffset(s.sidebarOpen, l2Open) }));
+    useUIStore.setState((s) => {
+        const sidebarOpen = l2Open && !sideBySide() ? false : s.sidebarOpen;
+        return { sidebarOpen, l2Open, towerSidebarOffset: towerOffset(sidebarOpen, l2Open) };
+    });
 
 export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState((c) => ({ ...c, seedlessUI }));
 export const setShouldShowExchangeSpecificModal = (shouldShowExchangeSpecificModal: boolean) =>

@@ -9,6 +9,10 @@ import type { L2WalletState } from '@app/types/events-payloads.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Input } from '@app/components/elements/inputs/Input';
+import { ToggleSwitch } from '@app/components/elements/inputs/switch/ToggleSwitch';
+import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
+import { setL2SideBySide } from '@app/store/actions/appConfigStoreActions.ts';
+import { setL2Open } from '@app/store/actions/uiStoreActions.ts';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
@@ -47,6 +51,7 @@ export const L2Settings = () => {
     const indexerUrl = useConfigCoreStore((s) => s.ootle_indexer_url);
     const seedSource = useL2WalletStore((s) => s.seed_source);
     const seedChangePending = useL2WalletStore((s) => s.seedChangePending);
+    const sideBySide = useConfigUIStore((s) => s.l2_side_by_side);
     const [enabling, setEnabling] = useState(false);
     const [confirmReset, setConfirmReset] = useState(false);
     const [error, setError] = useState('');
@@ -111,6 +116,27 @@ export const L2Settings = () => {
     return (
         <>
             {status && <SettingsGroupWrapper>{status}</SettingsGroupWrapper>}
+            <SettingsGroupWrapper>
+                <SettingsGroup>
+                    <SettingsGroupContent>
+                        <SettingsGroupTitle>
+                            <Typography variant="h6">{t('l2.side-by-side')}</Typography>
+                        </SettingsGroupTitle>
+                        <Typography>{t('l2.side-by-side-description')}</Typography>
+                    </SettingsGroupContent>
+                    <SettingsGroupAction>
+                        <ToggleSwitch
+                            data-testid="l2-settings-side-by-side"
+                            checked={sideBySide}
+                            onChange={({ target }) => {
+                                setL2SideBySide(target.checked);
+                                // Turning it off with both cards open leaves the L1 card.
+                                if (!target.checked) setL2Open(false);
+                            }}
+                        />
+                    </SettingsGroupAction>
+                </SettingsGroup>
+            </SettingsGroupWrapper>
             {hasPin && enabled && account && (
                 <>
                     <SettingsGroupWrapper data-testid="l2-settings-account">

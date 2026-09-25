@@ -286,6 +286,8 @@
     "address": "Ootle wallet address",
     "address-description": "Share this to receive XTR on Ootle.",
     "public-key": "Ootle owner public key",
-    "public-key-description": "The claim key for burns from your Tari wallet. Burn to L2 fills it in for you."
+    "public-key-description": "The claim key for burns from your Tari wallet. Burn to L2 fills it in for you.",
+    "side-by-side": "Allow wallets to be side by side",
+    "side-by-side-description": "Show the Tari and Ootle wallets next to each other. Off, each nav button opens its wallet on its own."
   }
 }

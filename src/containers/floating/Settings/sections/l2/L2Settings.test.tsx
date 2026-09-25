@@ -5,6 +5,7 @@ import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useMiningStore } from '@app/store';
 import { initialState, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
 import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
+import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
 import { Network } from '@app/utils/network';
 import SettingsNavigation from '../../components/Navigation.tsx';
@@ -117,6 +118,17 @@ describe('L2Settings', () => {
         fireEvent.click(screen.getByTestId('l2-settings-use-l1-seed'));
         fireEvent.click(await screen.findByTestId('l2-settings-use-l1-seed-confirm'));
         await waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_use_l1_seed', undefined));
+    });
+
+    it('saves the side by side choice', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        useConfigUIStore.setState({ l2_side_by_side: false });
+        serve(enabledState);
+        render(<L2Settings />);
+
+        fireEvent.click(await screen.findByTestId('l2-settings-side-by-side'));
+        expect(useConfigUIStore.getState().l2_side_by_side).toBe(true);
+        expect(invoke).toHaveBeenCalledWith('set_l2_side_by_side', { enabled: true });
     });
 
     it('hides the seed words section when L2 is off', async () => {

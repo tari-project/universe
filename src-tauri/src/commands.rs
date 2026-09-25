@@ -1338,6 +1338,13 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
 }
 
 #[tauri::command]
+pub async fn set_l2_side_by_side(enabled: bool) -> Result<(), InvokeError> {
+    ConfigUI::update_field(ConfigUIContent::set_l2_side_by_side, enabled)
+        .await
+        .map_err(InvokeError::from_anyhow)
+}
+
+#[tauri::command]
 pub async fn set_visual_mode(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigUI::update_field(ConfigUIContent::set_visual_mode, enabled)
