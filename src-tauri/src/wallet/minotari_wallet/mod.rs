@@ -38,7 +38,7 @@ pub struct BurnReceipt {
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::{
-    LOG_TARGET_STATUSES, UniverseAppState,
+    APPLICATION_FOLDER_ID, LOG_TARGET_STATUSES, UniverseAppState,
     credential_manager::CredentialManager,
     events::PinPromptContext,
     events_emitter::EventsEmitter,
@@ -416,8 +416,27 @@ impl MinotariWalletManager {
         })
     }
 
+    /// `<app local data>/burn_proofs/<network>`. Kept out of the minotari wallet folder
+    /// because a history refresh or seed import deletes that folder, and these files are
+    /// what the L2 claim needs. Proofs left in the old place inside it move on first use.
     pub fn burn_proofs_dir() -> Result<PathBuf, anyhow::Error> {
-        Ok(MinotariWalletDatabaseManager::minotari_wallet_dir()?.join("burn_proofs"))
+        let network = Network::get_current_or_user_setting_or_default()
+            .to_string()
+            .to_lowercase();
+        let dir = dirs::data_local_dir()
+            .ok_or_else(|| anyhow::anyhow!("Failed to get local data directory"))?
+            .join(APPLICATION_FOLDER_ID)
+            .join("burn_proofs")
+            .join(network);
+        let legacy = MinotariWalletDatabaseManager::minotari_wallet_dir()?.join("burn_proofs");
+        Ok(move_legacy_burn_proofs(legacy, dir))
+    }
+
+    /// Refuses while a burn is broadcast but not yet mined. Its proof is only a row in
+    /// wallet.db until the worker writes the claim file, and that row can't be moved, so
+    /// deleting the wallet folder now would make the burn unclaimable.
+    pub fn ensure_no_pending_burns() -> Result<(), anyhow::Error> {
+        pending_burns_guard(Path::new(&MinotariWalletDatabaseManager::database_path()?))
     }
 
     /// Burns broadcast but not yet mined deep enough for their claim proof to be written.
@@ -1352,10 +1371,128 @@ fn burn_times(conn: &Connection) -> Result<HashMap<String, u64>, anyhow::Error> 
     .collect()
 }
 
+/// Returns `dir`, first renaming `legacy` to it when only the old folder exists. On a
+/// failed rename the old folder stays in use so no proof goes missing.
+fn move_legacy_burn_proofs(legacy: PathBuf, dir: PathBuf) -> PathBuf {
+    if !legacy.is_dir() || dir.exists() {
+        return dir;
+    }
+    let moved = dir
+        .parent()
+        .map_or(Ok(()), std::fs::create_dir_all)
+        .and_then(|()| std::fs::rename(&legacy, &dir));
+    match moved {
+        Ok(()) => {
+            info!(target: LOG_TARGET, "Moved burn proofs from {} to {}", legacy.display(), dir.display());
+            dir
+        }
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Could not move burn proofs to {}, still using {}: {e}", dir.display(), legacy.display());
+            legacy
+        }
+    }
+}
+
+/// Reads the database file directly so the check works whether or not the wallet phase
+/// has the pool open. A database that can't be read has no rows left to lose. A burn
+/// whose transaction was rejected (or failed to broadcast, recorded the same way) never
+/// gets mined, so it doesn't count or it would block forever.
+fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
+    if !database_path.exists() {
+        return Ok(());
+    }
+    let pending = init_db(database_path.to_path_buf())
+        .map_err(anyhow::Error::from)
+        .and_then(|pool| {
+            Ok(pool.get()?.query_row(
+                "SELECT COUNT(*) FROM burn_proofs b
+                 WHERE b.status = 'pending_merkle' AND NOT EXISTS (
+                   SELECT 1 FROM completed_transactions c
+                   WHERE c.sent_output_hash = lower(hex(b.output_hash)) AND c.status = 'rejected')",
+                [],
+                |row| row.get::<_, usize>(0),
+            )?)
+        });
+    match pending {
+        Ok(0) => Ok(()),
+        Ok(1) => Err(anyhow::anyhow!(
+            "1 burn to Layer 2 is still waiting to be mined. Try again once it's mined."
+        )),
+        Ok(n) => Err(anyhow::anyhow!(
+            "{n} burns to Layer 2 are still waiting to be mined. Try again once they're mined."
+        )),
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Could not read pending burns, not blocking: {e}");
+            Ok(())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{blocks_to_report, burn_times, confirmation_status, scan_progress_percent};
+    use super::{
+        blocks_to_report, burn_times, confirmation_status, move_legacy_burn_proofs,
+        pending_burns_guard, scan_progress_percent,
+    };
     use minotari_wallet::transactions::TransactionDisplayStatus;
+
+    #[test]
+    fn burn_proofs_move_out_of_the_wallet_folder_once() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let legacy = root.path().join("minotari-wallet/esmeralda/burn_proofs");
+        let dir = root.path().join("burn_proofs/esmeralda");
+        std::fs::create_dir_all(&legacy).expect("legacy dir");
+        std::fs::write(legacy.join("proof.json"), "{}").expect("proof");
+
+        assert_eq!(move_legacy_burn_proofs(legacy.clone(), dir.clone()), dir);
+        assert!(dir.join("proof.json").exists());
+        assert!(!legacy.exists());
+        // Deleting the wallet folder, as a refresh does, leaves the proofs alone.
+        std::fs::remove_dir_all(root.path().join("minotari-wallet")).expect("refresh");
+        assert_eq!(move_legacy_burn_proofs(legacy, dir.clone()), dir);
+        assert!(dir.join("proof.json").exists());
+    }
+
+    #[test]
+    fn a_pending_burn_blocks_deleting_the_wallet_db() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let path = dir.path().join("wallet.db");
+        assert!(pending_burns_guard(&path).is_ok());
+        let pool = minotari_wallet::db::init_db(path.clone()).expect("db");
+        assert!(pending_burns_guard(&path).is_ok());
+
+        let conn = pool.get().expect("connection");
+        conn.execute_batch("PRAGMA foreign_keys = OFF")
+            .expect("pragma");
+        for id in [1u8, 2] {
+            conn.execute(
+                "INSERT INTO burn_proofs (account_id, output_hash, commitment, claim_public_key,
+                   ownership_proof_nonce, ownership_proof_sig, kernel_excess, kernel_excess_nonce,
+                   kernel_excess_sig, sender_offset_public_key, encrypted_data, value)
+                 VALUES (1, ?1, ?1, '', zeroblob(32), zeroblob(32), zeroblob(32),
+                   zeroblob(32), zeroblob(32), zeroblob(32), x'', 1)",
+                [[id; 32].as_slice()],
+            )
+            .expect("burn proof");
+        }
+        let err = pending_burns_guard(&path).expect_err("refused");
+        assert!(err.to_string().starts_with("2 burns to Layer 2"), "{err}");
+
+        // The second burn was rejected by the network: it will never be mined.
+        conn.execute(
+            "INSERT INTO completed_transactions (id, account_id, pending_tx_id, status,
+               kernel_excess, sent_output_hash, serialized_transaction)
+             VALUES (7, 1, 'p', 'rejected', x'', ?1, x'')",
+            [hex::encode([2u8; 32])],
+        )
+        .expect("rejected burn");
+        let err = pending_burns_guard(&path).expect_err("refused");
+        assert!(err.to_string().starts_with("1 burn to Layer 2"), "{err}");
+
+        conn.execute("UPDATE burn_proofs SET status = 'complete'", [])
+            .expect("mined");
+        assert!(pending_burns_guard(&path).is_ok());
+    }
 
     #[test]
     fn a_burn_is_timed_by_when_it_was_made() {
