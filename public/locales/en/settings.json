@@ -231,6 +231,7 @@
     "connections": "Connections",
     "experimental": "Experimental",
     "general": "General",
+    "l2": "Layer 2",
     "mcp": "MCP Server",
     "mining": "Mining",
     "p2p": "Pool Mining",
@@ -266,5 +267,18 @@
   "waiting-for-data": "Waiting for chain data...",
   "yes": "Yes",
   "your-feedback": "Describe your issue, including your Telegram handle if you have one, so that we can contact you with updates.",
-  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>"
+  "your-reference": "Your reference:<br/><bold>{{logRef}}</bold>",
+  "l2": {
+    "status": "Status",
+    "enabled": "Layer 2 is on.",
+    "pin-required": "You must set a PIN to use Layer 2",
+    "set-pin": "Set a PIN",
+    "enable-description": "Layer 2 uses a wallet made from your existing seed words. You'll be asked for your PIN.",
+    "enable": "Enable Layer 2",
+    "enable-error": "Couldn't enable Layer 2: ",
+    "account": "Default account",
+    "address": "Address",
+    "public-key": "Owner public key",
+    "indexer": "Indexer"
+  }
 }

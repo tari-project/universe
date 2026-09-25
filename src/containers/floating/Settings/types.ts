@@ -2,6 +2,7 @@ export const SETTINGS_TYPES = [
     'general',
     'airdrop',
     'wallet',
+    'l2',
     'mining',
     'pools',
     'connections',
