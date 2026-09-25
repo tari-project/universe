@@ -46,8 +46,8 @@ use tari_ootle_transaction::{Transaction, TransactionId};
 use tari_ootle_wallet_sdk::{
     crypto::{OutputWitness, StealthInputWitness, StealthOutputWitness, memo::Memo},
     models::{
-        AccountWithAddress, KeyBranch, TransactionContext, TransactionContextKind, WalletEvent,
-        WalletSecretKey,
+        AccountWithAddress, KeyBranch, TransactionContext, TransactionContextKind,
+        TransactionStatus, WalletEvent, WalletSecretKey,
     },
     network::WalletNetworkInterface,
 };
@@ -65,6 +65,9 @@ use super::{LOG_TARGET, OotleSdk, send::VALIDITY_EPOCHS};
 
 /// Claimed proof files move here, the same place tari_walletd puts them.
 const CLAIMED_DIR: &str = "claimed";
+/// Submitted claims waiting to finalize, transaction id to proof file, kept next to the
+/// proofs so a restart doesn't lose track of them.
+const PENDING_CLAIMS_FILE: &str = "pending_claims.json";
 /// Proof files are small. Same cap as tari_walletd.
 const MAX_PROOF_BYTES: u64 = 1 << 20;
 /// What the claim burn verifier says when the L2 hasn't synced the burn's L1 block yet.
@@ -255,9 +258,70 @@ pub fn read_proof(path: &Path) -> Result<BurnProof, anyhow::Error> {
     Ok(serde_json::from_slice(&std::fs::read(path)?)?)
 }
 
+/// The submitted claims `track_claim` saved in `dir`, transaction id to proof file.
+pub fn load_claims(dir: &Path) -> HashMap<TransactionId, String> {
+    let read = match std::fs::read(dir.join(PENDING_CLAIMS_FILE)) {
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return HashMap::new(),
+        read => read,
+    };
+    read.map_err(anyhow::Error::from)
+        .and_then(|json| Ok(serde_json::from_slice(&json)?))
+        .unwrap_or_else(|e| {
+            warn!(target: LOG_TARGET, "Could not read the pending claims: {e}");
+            HashMap::new()
+        })
+}
+
+fn save_claims(dir: &Path, claims: &HashMap<TransactionId, String>) {
+    let saved = serde_json::to_vec(claims)
+        .map_err(std::io::Error::from)
+        .and_then(|json| std::fs::write(dir.join(PENDING_CLAIMS_FILE), json));
+    if let Err(e) = saved {
+        warn!(target: LOG_TARGET, "Could not save the pending claims: {e}");
+    }
+}
+
+fn mark_claimed(dir: &Path, file: &str) {
+    let moved = std::fs::create_dir_all(dir.join(CLAIMED_DIR))
+        .and_then(|()| std::fs::rename(dir.join(file), dir.join(CLAIMED_DIR).join(file)));
+    if let Err(e) = moved {
+        warn!(target: LOG_TARGET, "Could not mark {file} claimed: {e}");
+    }
+}
+
+/// Settles tracked claims that finished while nothing was listening (Universe was closed
+/// or events were missed). `status` looks a claim transaction up in the wallet, `None`
+/// when the wallet doesn't have it. Accepted claims are marked claimed, rejected, invalid
+/// and unknown ones are dropped so their burn is claimable again, pending ones stay.
+pub fn reconcile_claims(
+    dir: &Path,
+    claims: &mut HashMap<TransactionId, String>,
+    status: impl Fn(TransactionId) -> Result<Option<TransactionStatus>, anyhow::Error>,
+) {
+    let before = claims.clone();
+    claims.retain(|id, file| match status(*id) {
+        Ok(Some(TransactionStatus::New | TransactionStatus::Pending)) => true,
+        Ok(Some(TransactionStatus::Accepted)) => {
+            mark_claimed(dir, file);
+            false
+        }
+        Ok(status) => {
+            warn!(target: LOG_TARGET, "Claim of {file} ended {status:?}, it stays claimable");
+            false
+        }
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Could not look up the claim of {file}: {e}");
+            true
+        }
+    });
+    if *claims != before {
+        save_claims(dir, claims);
+    }
+}
+
 /// Moves the proof file of an accepted claim into the claimed directory and returns how
 /// a tracked claim ended once it finalizes or turns out invalid. `claims` maps submitted
-/// claim transactions to their proof file.
+/// claim transactions to their proof file and is saved in `dir` whenever it changes.
 pub fn track_claim(
     dir: &Path,
     claims: &mut HashMap<TransactionId, String>,
@@ -269,24 +333,23 @@ pub fn track_claim(
                 event.context.as_ref().and_then(|c| c.kind.as_ref())
             {
                 claims.insert(event.transaction_id, file_name.clone());
+                save_claims(dir, claims);
             }
             None
         }
         WalletEvent::TransactionFinalized(event) => {
             let file = claims.remove(&event.transaction_id)?;
+            save_claims(dir, claims);
             if let Some(reason) = event.finalize.result.any_reject() {
                 warn!(target: LOG_TARGET, "Claim of {file} was rejected, it stays claimable: {reason}");
                 return Some(L2ClaimResult::new(&file, false, Some(reason.to_string())));
             }
-            let moved = std::fs::create_dir_all(dir.join(CLAIMED_DIR))
-                .and_then(|()| std::fs::rename(dir.join(&file), dir.join(CLAIMED_DIR).join(&file)));
-            if let Err(e) = moved {
-                warn!(target: LOG_TARGET, "Could not mark {file} claimed: {e}");
-            }
+            mark_claimed(dir, &file);
             Some(L2ClaimResult::new(&file, true, None))
         }
         WalletEvent::TransactionInvalid(event) => {
             let file = claims.remove(&event.transaction_id)?;
+            save_claims(dir, claims);
             let reason = event
                 .finalize
                 .as_ref()
@@ -622,6 +685,46 @@ mod tests {
             order,
             ["aa", new.as_str(), unknown.as_str(), "bb", old.as_str()]
         );
+    }
+
+    #[test]
+    fn saved_claims_reload_and_settle_against_the_wallet() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = dir.path();
+        let id = |n: u8| TransactionId::from([n; 32]);
+        let file = |n: u8| format!("{n}.json");
+        for n in 1..=5 {
+            write(dir, &file(n), PROOF);
+        }
+        assert!(load_claims(dir).is_empty());
+        save_claims(dir, &(1..=5).map(|n| (id(n), file(n))).collect());
+
+        let mut claims = load_claims(dir);
+        assert_eq!(claims.len(), 5);
+        assert_eq!(claims.get(&id(3)), Some(&file(3)));
+        reconcile_claims(dir, &mut claims, |tx| match tx.as_bytes()[0] {
+            1 => Ok(Some(TransactionStatus::Accepted)),
+            2 => Ok(Some(TransactionStatus::Rejected)),
+            3 => Ok(Some(TransactionStatus::Pending)),
+            4 => Ok(None),
+            _ => Err(anyhow!("store busy")),
+        });
+
+        let still_tracked = |claims: &HashMap<TransactionId, String>| {
+            let mut ids: Vec<u8> = claims.keys().map(|tx| tx.as_bytes()[0]).collect();
+            ids.sort();
+            ids
+        };
+        assert_eq!(still_tracked(&claims), [3, 5]);
+        assert_eq!(still_tracked(&load_claims(dir)), [3, 5]);
+        assert!(dir.join(CLAIMED_DIR).join(file(1)).is_file());
+        assert!(!dir.join(file(1)).exists());
+        for n in 2..=5 {
+            assert!(dir.join(file(n)).is_file(), "{n} stays claimable");
+        }
+
+        write(dir, PENDING_CLAIMS_FILE, "not json");
+        assert!(load_claims(dir).is_empty());
     }
 
     #[test]

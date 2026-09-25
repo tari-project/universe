@@ -726,7 +726,16 @@ async fn emit_state_on_events(
     mut events: broadcast::Receiver<WalletEvent>,
 ) -> Result<(), anyhow::Error> {
     let proof_dir = MinotariWalletManager::burn_proofs_dir()?;
-    let mut claims = HashMap::new();
+    // Claims submitted before a restart or while events were missed are settled from
+    // the wallet's own record of them.
+    let status = |id| {
+        let found = sdk.transaction_api().get(id);
+        tari_ootle_common_types::optional::Optional::optional(found)
+            .map(|tx| tx.map(|tx| tx.status))
+            .map_err(anyhow::Error::from)
+    };
+    let mut claims = claim::load_claims(&proof_dir);
+    claim::reconcile_claims(&proof_dir, &mut claims, status);
     emit_state(&sdk).await;
     loop {
         match events.recv().await {
@@ -744,7 +753,10 @@ async fn emit_state_on_events(
                     EventsEmitter::emit_l2_claim_result(result).await;
                 }
             }
-            Err(broadcast::error::RecvError::Lagged(_)) => emit_state(&sdk).await,
+            Err(broadcast::error::RecvError::Lagged(_)) => {
+                claim::reconcile_claims(&proof_dir, &mut claims, status);
+                emit_state(&sdk).await;
+            }
             Err(broadcast::error::RecvError::Closed) => return Ok(()),
         }
     }
