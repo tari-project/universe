@@ -42,7 +42,7 @@ use tari_transaction_components_wallet::{
 use crate::credential_manager::CredentialManager;
 use crate::wallet::minotari_wallet::base_node_http_url;
 
-const CONFIRMATION_WINDOW: u64 = 3;
+pub(crate) const CONFIRMATION_WINDOW: u64 = 3;
 /// Duration in seconds that UTXOs are locked after transaction creation.
 ///
 /// The lock only has to outlive signing and broadcasting, which run back to back with
@@ -50,7 +50,7 @@ const CONFIRMATION_WINDOW: u64 = 3;
 /// the reservation is claimed for broadcast the unlocker leaves it alone, so a short
 /// window never frees the inputs of a transaction that is on the network — it only
 /// bounds how long a send that died mid-flight keeps the funds unspendable.
-const UTXO_LOCK_DURATION_SECS: u64 = 300;
+pub(crate) const UTXO_LOCK_DURATION_SECS: u64 = 300;
 
 /// Parse a destination address the way the send validation does.
 ///

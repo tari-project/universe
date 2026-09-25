@@ -22,7 +22,7 @@ export default function WalletSidebarContent() {
                 {isSwapping ? <SwapUI /> : <Wallet section={section} setSection={setSection} />}
             </AnimatePresence>
 
-            {section !== 'history' && <SendModal section={section} setSection={setSection} />}
+            {section === 'send' && <SendModal section={section} setSection={setSection} />}
             <TransactionModal
                 show={section === 'receive'}
                 title={`${t('tabs.receive')}  ${t('tari')}`}

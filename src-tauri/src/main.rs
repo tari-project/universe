@@ -111,6 +111,7 @@ mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
 mod node;
+mod ootle;
 mod pin;
 mod port_allocator;
 mod process_adapter;
@@ -470,6 +471,7 @@ fn main() {
             commands::set_should_auto_launch,
             commands::set_tor_config,
             commands::set_use_tor,
+            commands::set_l2_side_by_side,
             commands::set_visual_mode,
             commands::start_cpu_mining,
             commands::start_gpu_mining,
@@ -490,6 +492,17 @@ fn main() {
             commands::websocket_get_status,
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,
+            commands::burn_to_l2,
+            commands::enable_l2_wallet,
+            commands::unlock_l2_wallet,
+            commands::l2_get_state,
+            commands::l2_get_seed_words,
+            commands::l2_import_seed_words,
+            commands::l2_use_l1_seed,
+            commands::l2_claimable_burns,
+            commands::l2_claim_burn,
+            commands::l2_send,
+            commands::l2_validate_address,
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,

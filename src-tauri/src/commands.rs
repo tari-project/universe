@@ -49,6 +49,7 @@ use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
 use crate::network_utils::NetworkExt;
 use crate::node::node_adapter::BaseNodeStatus;
 use crate::node::node_manager::NodeType;
+use crate::ootle::{L2Burn, L2WalletState, OotleWalletManager};
 use crate::pin::PinManager;
 use crate::release_notes::ReleaseNotes;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
@@ -61,8 +62,12 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
+use crate::wallet::minotari_wallet::BurnReceipt;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
-use crate::wallet::send_gate::{GatedSendRequest, SendOrigin, gated_send};
+use crate::wallet::send_gate::{
+    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_claim,
+    gated_l2_send, gated_send,
+};
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
 
@@ -611,9 +616,15 @@ pub async fn forgot_pin(
         _ => None,
     };
 
-    InternalWallet::recover_forgotten_pin(&app_handle, tari_cipher_seed, monero_seed)
+    let pin =
+        InternalWallet::recover_forgotten_pin(&app_handle, tari_cipher_seed.clone(), monero_seed)
+            .await
+            .map_err(|e| e.to_string())?;
+    // The L2 store is encrypted with the forgotten PIN. A failure here leaves the new PIN in
+    // place, so running the recovery again retries it.
+    OotleWalletManager::reset_forgotten_pin(&tari_cipher_seed, &pin)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!("PIN reset, but Layer 2 could not move to the new PIN: {e}"))?;
 
     info!(target: LOG_TARGET_APP_LOGIC, "PIN recovery completed successfully");
     Ok(())
@@ -625,6 +636,8 @@ pub async fn import_seed_words(
     app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
+    // The import deletes the wallet folder, and an unmined burn's proof lives in it.
+    MinotariWalletManager::ensure_no_pending_burns().map_err(InvokeError::from_anyhow)?;
 
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
@@ -1333,6 +1346,13 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
 }
 
 #[tauri::command]
+pub async fn set_l2_side_by_side(enabled: bool) -> Result<(), InvokeError> {
+    ConfigUI::update_field(ConfigUIContent::set_l2_side_by_side, enabled)
+        .await
+        .map_err(InvokeError::from_anyhow)
+}
+
+#[tauri::command]
 pub async fn set_visual_mode(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigUI::update_field(ConfigUIContent::set_visual_mode, enabled)
@@ -1634,6 +1654,135 @@ pub async fn send_one_sided_to_stealth_address(
         warn!(target: LOG_TARGET_APP_LOGIC, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
+}
+
+/// Burn funds for L2. Refused without a PIN; with one, the PIN prompt is the gate.
+#[tauri::command]
+pub async fn burn_to_l2(
+    amount: String,
+    claim_public_key: String,
+    payment_id: Option<String>,
+) -> Result<BurnReceipt, String> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET_APP_LOGIC, "[burn_to_l2] called with args: (amount: {amount:?}, claim_public_key: {claim_public_key:?}, payment_id: {payment_id:?})");
+    let receipt = gated_burn(GatedBurnRequest {
+        request_id: SendOrigin::App.new_request_id(),
+        amount,
+        claim_public_key,
+        payment_id,
+    })
+    .await
+    .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET_APP_LOGIC, "burn_to_l2 took too long: {:?}", timer.elapsed());
+    }
+    Ok(receipt)
+}
+
+/// Turn the L2 wallet on. Refused without a PIN; the PIN prompt unlocks the L1 seed the
+/// L2 wallet is restored from.
+#[tauri::command]
+pub async fn enable_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[enable_l2_wallet] called");
+    OotleWalletManager::enable(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Open the locked L2 wallet. Unlocking and enabling are the same step, behind the PIN
+/// prompt: the store opens with the PIN, and one that was never enabled gets the L1 seed.
+#[tauri::command]
+pub async fn unlock_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[unlock_l2_wallet] called");
+    OotleWalletManager::enable(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Send XTR on L2 from one of the wallet's accounts. Refused without a PIN; with one,
+/// the PIN prompt is the gate. Returns the L2 transaction id.
+#[tauri::command]
+pub async fn l2_send(
+    app_handle: tauri::AppHandle,
+    account: String,
+    destination: String,
+    amount: String,
+) -> Result<String, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called with args: (account: {account:?}, destination: {destination:?}, amount: {amount:?})");
+    gated_l2_send(GatedL2SendRequest {
+        app_handle,
+        request_id: SendOrigin::App.new_request_id(),
+        amount,
+        destination,
+        account,
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// Checks an L2 address before the send form lets the user review it.
+#[tauri::command]
+pub fn l2_validate_address(address: String) -> Result<(), String> {
+    OotleWalletManager::parse_address(&address)
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
+/// Everything the L2 panel shows: accounts, XTR balances and history.
+#[tauri::command]
+pub async fn l2_get_state() -> Result<L2WalletState, String> {
+    OotleWalletManager::state().await.map_err(|e| e.to_string())
+}
+
+/// The L2 seed words, behind the PIN prompt.
+#[tauri::command]
+pub async fn l2_get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_get_seed_words] called");
+    OotleWalletManager::seed_words(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Replace the L2 wallet with one restored from seed words used for L2 only, behind the
+/// PIN prompt. The L1 wallet is not touched.
+#[tauri::command]
+pub async fn l2_import_seed_words(
+    app_handle: tauri::AppHandle,
+    seed_words: Vec<String>,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_import_seed_words] called");
+    OotleWalletManager::import_seed_words(&app_handle, seed_words)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Put the L2 wallet back on the L1 seed after an import, behind the PIN prompt.
+#[tauri::command]
+pub async fn l2_use_l1_seed(app_handle: tauri::AppHandle) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_use_l1_seed] called");
+    OotleWalletManager::use_l1_seed(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Burns to L2 from this wallet, pending, claimable or claimed.
+#[tauri::command]
+pub async fn l2_claimable_burns() -> Result<Vec<L2Burn>, String> {
+    OotleWalletManager::burns().await.map_err(|e| e.to_string())
+}
+
+/// Claim a burn on L2 by its commitment. Refused without a PIN; with one, the PIN
+/// prompt is the gate. Returns the L2 transaction id.
+#[tauri::command]
+pub async fn l2_claim_burn(
+    app_handle: tauri::AppHandle,
+    commitment: String,
+) -> Result<String, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_claim_burn] called with args: (commitment: {commitment:?})");
+    gated_l2_claim(app_handle, SendOrigin::App.new_request_id(), commitment)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -2156,6 +2305,7 @@ pub async fn get_wallet_transaction_history() -> Result<Vec<DisplayedTransaction
 
 #[tauri::command]
 pub async fn refresh_wallet_history(app_handle: tauri::AppHandle) -> Result<(), String> {
+    MinotariWalletManager::ensure_no_pending_burns().map_err(|e| e.to_string())?;
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet])
         .await;

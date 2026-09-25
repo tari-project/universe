@@ -40,6 +40,9 @@ pub enum EventType {
     WalletTransactionsFound,
     WalletTransactionsCleared,
     WalletTransactionUpdated,
+    L2WalletStateUpdate,
+    L2NetworkStats,
+    L2ClaimResult,
     BaseNodeUpdate,
     GpuDevicesUpdate,
     CpuPoolsStatsUpdate,
@@ -224,6 +227,10 @@ pub struct McpServerStatusPayload {
 #[derive(Debug, Serialize, Clone)]
 pub struct McpTransactionConfirmationPayload {
     pub request_id: String,
+    /// `"send"`, `"burn"`, `"l2_send"` or `"l2_claim"`; decides how `destination` is labelled in the dialog.
+    pub kind: String,
+    /// The recipient address for a send, the L2 claim public key (hex) for a burn, the
+    /// Ootle address for an L2 send, the burn commitment (hex) for an L2 claim.
     pub destination: String,
     pub amount_micro_minotari: u64,
     pub amount_display: String,
@@ -243,10 +250,27 @@ pub enum PinPromptContext {
         destination: String,
         payment_id: Option<String>,
     },
+    /// Burning L1 funds to be claimed on L2 by `claim_public_key`.
+    Burn {
+        amount_micro_minotari: u64,
+        claim_public_key: String,
+        payment_id: Option<String>,
+    },
     /// The wallet details are missing from the config and are being rebuilt from the stored seed.
     RestoreWalletDetails,
     /// The stored seed is PIN-protected although the config says no PIN is set.
     SeedNeedsPin,
+    /// Sending XTR (micro units) on L2 from `account` to the Ootle address `destination`.
+    L2Send {
+        amount_micro_minotari: u64,
+        destination: String,
+        account: String,
+    },
+    /// Claiming an L1 burn of `amount_micro_minotari` on L2, `commitment` (hex) being the burn.
+    L2Claim {
+        amount_micro_minotari: u64,
+        commitment: String,
+    },
 }
 
 #[derive(Debug, Serialize, Clone)]

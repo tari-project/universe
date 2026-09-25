@@ -23,19 +23,26 @@
 //! The single gated entry point for spending funds.
 //!
 //! Every caller that can move funds (the `send_one_sided_to_stealth_address` Tauri
-//! command used by the in-app send flow and by the tapplet bridge, and the MCP
-//! `send_transaction` tool) goes through [`gated_send`]. Two user-facing gates exist:
+//! command used by the in-app send flow and by the tapplet bridge, the MCP
+//! `send_transaction` tool, the `burn_to_l2` command, the `l2_send` command and the
+//! `l2_claim_burn` command) goes through the same gates: [`gated_send`], [`gated_burn`],
+//! [`gated_l2_send`] and [`gated_l2_claim`] share [`pass_gates`]. Two user-facing gates exist:
 //!
 //! * **PIN** — when a PIN is configured it is requested (and validated, with lockout on
-//!   repeated failures) by [`crate::internal_wallet::InternalWallet::get_key_manager`],
+//!   repeated failures) by [`crate::internal_wallet::InternalWallet::get_signing_wallet`],
 //!   which [`crate::wallet::minotari_wallet::MinotariWalletManager::send_one_sided_transaction`]
-//!   calls before it creates (and so locks the inputs of) the transaction. That is
-//!   the real gate: a script running in the webview does not know the PIN. The prompt
-//!   carries a [`crate::events::PinPromptContext::Send`] so the user can see the amount
-//!   and destination they are approving.
+//!   and [`crate::wallet::minotari_wallet::MinotariWalletManager::burn_to_l2`] call
+//!   before they create (and so lock the inputs of) the transaction, and
+//!   [`crate::ootle::OotleWalletManager::send_xtr`] and
+//!   [`crate::ootle::OotleWalletManager::claim_burn`] ask for it before they build the L2
+//!   transaction. That is the real
+//!   gate: a script running in the webview does not know the PIN. The prompt carries a
+//!   [`crate::events::PinPromptContext`] so the user can see the amount and the
+//!   destination (or L2 claim key) they are approving.
 //! * **Confirmation dialog** — a backend-driven approve/deny dialog emitted to the
 //!   frontend. It is required whenever there is no PIN to fall back on (and always for
-//!   MCP, which additionally refuses to run at all without a configured PIN).
+//!   MCP, which additionally refuses to run at all without a configured PIN). Burns
+//!   also refuse to run without a PIN, so they never fall back to the dialog alone.
 
 use std::fmt;
 use std::str::FromStr;
@@ -43,6 +50,7 @@ use std::sync::LazyLock;
 use std::time::Duration;
 
 use log::{info, warn};
+use tari_common::configuration::Network;
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
 use crate::LOG_TARGET_APP_LOGIC;
@@ -50,8 +58,9 @@ use crate::events::McpTransactionConfirmationPayload;
 use crate::events::PinPromptContext;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::rate_limiter::TransactionRateLimiter;
+use crate::ootle::OotleWalletManager;
 use crate::pin::PinManager;
-use crate::wallet::minotari_wallet::MinotariWalletManager;
+use crate::wallet::minotari_wallet::{BurnReceipt, MinotariWalletManager};
 
 const DIALOG_TIMEOUT_SECS: u64 = 120;
 
@@ -60,6 +69,7 @@ pub enum TransactionError {
     Disabled(String),
     NoPinConfigured(String),
     InvalidAmount(String),
+    InvalidAddress(String),
     RateLimited(String),
     Denied(String),
     Timeout(String),
@@ -73,6 +83,7 @@ impl fmt::Display for TransactionError {
             TransactionError::Disabled(msg)
             | TransactionError::NoPinConfigured(msg)
             | TransactionError::InvalidAmount(msg)
+            | TransactionError::InvalidAddress(msg)
             | TransactionError::RateLimited(msg)
             | TransactionError::Denied(msg)
             | TransactionError::Timeout(msg)
@@ -141,6 +152,115 @@ pub struct GatedSendRequest {
     pub payment_id: Option<String>,
 }
 
+/// A burn of L1 funds, claimable on L2 by `claim_public_key`. Only the in-app UI can
+/// ask for one, so the origin is always [`SendOrigin::App`].
+pub struct GatedBurnRequest {
+    pub request_id: String,
+    pub amount: String,
+    /// Hex-encoded L2 claim public key.
+    pub claim_public_key: String,
+    pub payment_id: Option<String>,
+}
+
+/// An XTR send from one of the wallet's own L2 accounts. Only the in-app UI can ask
+/// for one, so the origin is always [`SendOrigin::App`].
+pub struct GatedL2SendRequest {
+    pub app_handle: tauri::AppHandle,
+    pub request_id: String,
+    pub amount: String,
+    /// Ootle address to send to.
+    pub destination: String,
+    /// Component address of the L2 account paying.
+    pub account: String,
+}
+
+/// What is being spent, in the terms the user has to approve it in.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SpendKind {
+    Send {
+        destination: String,
+    },
+    Burn {
+        claim_public_key: String,
+    },
+    L2Send {
+        destination: String,
+        account: String,
+    },
+    L2Claim {
+        commitment: String,
+    },
+}
+
+impl SpendKind {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SpendKind::Send { .. } => "send",
+            SpendKind::Burn { .. } => "burn",
+            SpendKind::L2Send { .. } => "l2_send",
+            SpendKind::L2Claim { .. } => "l2_claim",
+        }
+    }
+
+    /// The counterparty shown to the user: the address for a send, the L2 claim key
+    /// for a burn. A burn has no recipient, and the claim key is the only thing that
+    /// can ever get the funds back, so that is what the user must be asked to check. A
+    /// claim shows the commitment of the burn being claimed.
+    pub fn counterparty(&self) -> &str {
+        match self {
+            SpendKind::Send { destination } | SpendKind::L2Send { destination, .. } => destination,
+            SpendKind::Burn { claim_public_key } => claim_public_key,
+            SpendKind::L2Claim { commitment } => commitment,
+        }
+    }
+
+    fn pin_context(
+        &self,
+        amount_micro_minotari: u64,
+        payment_id: Option<String>,
+    ) -> PinPromptContext {
+        match self {
+            SpendKind::Send { destination } => PinPromptContext::Send {
+                amount_micro_minotari,
+                destination: destination.clone(),
+                payment_id,
+            },
+            SpendKind::Burn { claim_public_key } => PinPromptContext::Burn {
+                amount_micro_minotari,
+                claim_public_key: claim_public_key.clone(),
+                payment_id,
+            },
+            SpendKind::L2Send {
+                destination,
+                account,
+            } => PinPromptContext::L2Send {
+                amount_micro_minotari,
+                destination: destination.clone(),
+                account: account.clone(),
+            },
+            SpendKind::L2Claim { commitment } => PinPromptContext::L2Claim {
+                amount_micro_minotari,
+                commitment: commitment.clone(),
+            },
+        }
+    }
+
+    /// The currency the amount is in: XTR on L2, XTM on L1.
+    fn currency(&self) -> &'static str {
+        match self {
+            SpendKind::L2Send { .. } | SpendKind::L2Claim { .. } => "XTR",
+            SpendKind::Send { .. } | SpendKind::Burn { .. } => "XTM",
+        }
+    }
+}
+
+/// Proof that a spend has passed the gates. Holds the gate permit for as long as it
+/// lives, so drop it only once the transaction has been signed and broadcast.
+struct GatePass {
+    _permit: tokio::sync::SemaphorePermit<'static>,
+    pin_context: PinPromptContext,
+}
+
 static TXN_DIALOG_GATE: LazyLock<tokio::sync::Semaphore> =
     LazyLock::new(|| tokio::sync::Semaphore::new(1));
 
@@ -189,12 +309,193 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionErro
     } = request;
 
     let amount_u64 = parse_amount(&amount)?;
-    let pin_configured = PinManager::pin_locked().await;
-    let needs_confirmation = origin.requires_confirmation(pin_configured);
+    let kind = SpendKind::Send { destination };
+    let pass = pass_gates(origin, request_id, &amount, amount_u64, &kind, &payment_id).await?;
+
+    // The PIN dialog (when a PIN is configured) is raised from here on, before the
+    // minotari transaction is created, and carries the amount/destination.
+    info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "send gate: executing send (origin={}, destination={}, amount={amount})",
+        origin.as_str(),
+        kind.counterparty()
+    );
+    let SpendKind::Send { destination } = kind else {
+        unreachable!("gated_send builds a Send kind")
+    };
+    MinotariWalletManager::send_one_sided_transaction(
+        destination,
+        amount_u64,
+        payment_id,
+        Some(pass.pin_context),
+    )
+    .await
+    .map(|_| ())
+    .map_err(|e| TransactionError::WalletError(format!("Transaction failed: {e}")))
+}
+
+/// Networks with an L2 Universe can use. A burn anywhere else would just destroy funds.
+pub fn network_supports_l2(network: Network) -> bool {
+    matches!(network, Network::Esmeralda)
+}
+
+/// Checks run before anything on L2 (and any burn to it) shows a dialog or takes the
+/// gate permit. L2 needs a PIN: without one the only gate would be a confirmation
+/// dialog, and a script in the webview can answer that.
+pub fn check_l2_allowed(network: Network, pin_configured: bool) -> Result<(), TransactionError> {
+    if !network_supports_l2(network) {
+        return Err(TransactionError::Disabled(format!(
+            "Layer 2 is not available on {network}"
+        )));
+    }
+    if !pin_configured {
+        return Err(TransactionError::NoPinConfigured(
+            "No PIN configured. Set up a PIN before using Layer 2.".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+/// Burn funds for L2 behind the same gates as [`gated_send`]. A burn cannot be undone,
+/// so it is never allowed to skip a gate a send would have to pass.
+pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, TransactionError> {
+    let GatedBurnRequest {
+        request_id,
+        amount,
+        claim_public_key,
+        payment_id,
+    } = request;
+
+    check_l2_allowed(
+        Network::get_current_or_user_setting_or_default(),
+        PinManager::pin_locked().await,
+    )?;
+    let amount_u64 = parse_amount(&amount)?;
+    let kind = SpendKind::Burn { claim_public_key };
+    let pass = pass_gates(
+        SendOrigin::App,
+        request_id,
+        &amount,
+        amount_u64,
+        &kind,
+        &payment_id,
+    )
+    .await?;
 
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: origin={} amount={amount} destination={destination} pin_configured={pin_configured} confirmation_dialog={needs_confirmation}",
+        "send gate: executing burn (claim_public_key={}, amount={amount})",
+        kind.counterparty()
+    );
+    let SpendKind::Burn { claim_public_key } = kind else {
+        unreachable!("gated_burn builds a Burn kind")
+    };
+    MinotariWalletManager::burn_to_l2(
+        claim_public_key,
+        amount_u64,
+        payment_id,
+        Some(pass.pin_context),
+    )
+    .await
+    .map_err(|e| TransactionError::WalletError(format!("Burn failed: {e}")))
+}
+
+/// Send XTR on L2 behind the same gates as [`gated_send`]. Refused without a PIN or off
+/// Esmeralda, and the amount and destination address are checked before any dialog or
+/// permit. Returns the L2 transaction id.
+pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, TransactionError> {
+    let GatedL2SendRequest {
+        app_handle,
+        request_id,
+        amount,
+        destination,
+        account,
+    } = request;
+
+    check_l2_allowed(
+        Network::get_current_or_user_setting_or_default(),
+        PinManager::pin_locked().await,
+    )?;
+    let amount_u64 = parse_amount(&amount)?;
+    let address = OotleWalletManager::parse_address(&destination)?;
+    let kind = SpendKind::L2Send {
+        destination,
+        account,
+    };
+    let pass = pass_gates(
+        SendOrigin::App,
+        request_id,
+        &amount,
+        amount_u64,
+        &kind,
+        &None,
+    )
+    .await?;
+
+    info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "send gate: executing L2 send (destination={}, amount={amount})",
+        kind.counterparty()
+    );
+    let SpendKind::L2Send { account, .. } = kind else {
+        unreachable!("gated_l2_send builds an L2Send kind")
+    };
+    OotleWalletManager::send_xtr(&app_handle, &account, address, amount_u64, pass.pin_context).await
+}
+
+/// Claim an L1 burn on L2 behind the same gates as [`gated_l2_send`]. Refused without a
+/// PIN or off Esmeralda, and only for a burn whose proof file is there to claim. Returns
+/// the L2 transaction id.
+pub async fn gated_l2_claim(
+    app_handle: tauri::AppHandle,
+    request_id: String,
+    commitment: String,
+) -> Result<String, TransactionError> {
+    check_l2_allowed(
+        Network::get_current_or_user_setting_or_default(),
+        PinManager::pin_locked().await,
+    )?;
+    let (file_name, proof) = OotleWalletManager::find_claimable_burn(&commitment)?;
+    let amount_u64 = proof.claim_proof.value;
+    let amount = format!("{}.{:06}", amount_u64 / 1_000_000, amount_u64 % 1_000_000);
+    let kind = SpendKind::L2Claim { commitment };
+    let pass = pass_gates(
+        SendOrigin::App,
+        request_id,
+        &amount,
+        amount_u64,
+        &kind,
+        &None,
+    )
+    .await?;
+
+    info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "send gate: executing L2 claim (commitment={}, amount={amount})",
+        kind.counterparty()
+    );
+    OotleWalletManager::claim_burn(&app_handle, file_name, proof, pass.pin_context).await
+}
+
+/// Run the consent gates for one spend: serialise on the gate permit, then show the
+/// approve/deny dialog when the origin requires it. On success the returned
+/// [`GatePass`] carries the permit and the PIN context to sign under.
+async fn pass_gates(
+    origin: SendOrigin,
+    request_id: String,
+    amount: &str,
+    amount_u64: u64,
+    kind: &SpendKind,
+    payment_id: &Option<String>,
+) -> Result<GatePass, TransactionError> {
+    let pin_configured = PinManager::pin_locked().await;
+    let needs_confirmation = origin.requires_confirmation(pin_configured);
+    let destination = kind.counterparty();
+
+    info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "send gate: kind={} origin={} amount={amount} destination={destination} pin_configured={pin_configured} confirmation_dialog={needs_confirmation}",
+        kind.as_str(),
         origin.as_str()
     );
 
@@ -205,7 +506,7 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionErro
     // is delivered to every listener registered at that moment, so without this permit a
     // burst of sends would all be signed by the one PIN entry the user typed for the
     // transaction they could see.
-    let _permit = TXN_DIALOG_GATE
+    let permit = TXN_DIALOG_GATE
         .acquire()
         .await
         .map_err(|_| TransactionError::InternalError("Transaction gate closed".to_string()))?;
@@ -234,7 +535,7 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionErro
             });
         }
 
-        let amount_display = format!("{amount} XTM");
+        let amount_display = format!("{amount} {}", kind.currency());
         info!(
             target: LOG_TARGET_APP_LOGIC,
             "send gate: confirmation dialog emitted (request_id={request_id}, origin={}, destination={destination}, amount={amount_display})",
@@ -243,7 +544,8 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionErro
 
         EventsEmitter::emit_mcp_transaction_confirmation(McpTransactionConfirmationPayload {
             request_id,
-            destination: destination.clone(),
+            kind: kind.as_str().to_string(),
+            destination: destination.to_string(),
             amount_micro_minotari: amount_u64,
             amount_display,
             origin: origin.as_str().to_string(),
@@ -255,27 +557,10 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionErro
         info!(target: LOG_TARGET_APP_LOGIC, "send gate: transaction approved by user (origin={})", origin.as_str());
     }
 
-    // The PIN dialog (when a PIN is configured) is raised from here on, before the
-    // minotari transaction is created, and carries the amount/destination.
-    info!(
-        target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing send (origin={}, destination={destination}, amount={amount})",
-        origin.as_str()
-    );
-    let pin_context = PinPromptContext::Send {
-        amount_micro_minotari: amount_u64,
-        destination: destination.clone(),
-        payment_id: payment_id.clone(),
-    };
-    MinotariWalletManager::send_one_sided_transaction(
-        destination,
-        amount_u64,
-        payment_id,
-        Some(pin_context),
-    )
-    .await
-    .map(|_| ())
-    .map_err(|e| TransactionError::WalletError(format!("Transaction failed: {e}")))
+    Ok(GatePass {
+        _permit: permit,
+        pin_context: kind.pin_context(amount_u64, payment_id.clone()),
+    })
 }
 
 async fn await_confirmation(
@@ -385,6 +670,97 @@ mod tests {
     fn only_mcp_is_rate_limited() {
         assert!(SendOrigin::Mcp.enforces_rate_limit());
         assert!(!SendOrigin::App.enforces_rate_limit());
+    }
+
+    #[test]
+    fn spend_kind_shows_the_user_what_the_funds_go_to() {
+        let send = SpendKind::Send {
+            destination: "addr".to_string(),
+        };
+        let burn = SpendKind::Burn {
+            claim_public_key: "claimkey".to_string(),
+        };
+        assert_eq!(send.as_str(), "send");
+        assert_eq!(burn.as_str(), "burn");
+        assert_eq!(send.counterparty(), "addr");
+        assert_eq!(burn.counterparty(), "claimkey");
+        assert!(matches!(
+            send.pin_context(1, None),
+            PinPromptContext::Send {
+                amount_micro_minotari: 1,
+                ..
+            }
+        ));
+        assert!(matches!(
+            burn.pin_context(2, Some("memo".to_string())),
+            PinPromptContext::Burn { amount_micro_minotari: 2, ref claim_public_key, payment_id: Some(_) }
+                if claim_public_key == "claimkey"
+        ));
+    }
+
+    #[test]
+    fn l2_send_asks_about_the_l2_address_in_xtr() {
+        let send = SpendKind::L2Send {
+            destination: "otl_esm_addr".to_string(),
+            account: "component_abc".to_string(),
+        };
+        assert_eq!(send.as_str(), "l2_send");
+        assert_eq!(send.counterparty(), "otl_esm_addr");
+        assert_eq!(send.currency(), "XTR");
+        assert_eq!(
+            SpendKind::Send {
+                destination: "addr".to_string()
+            }
+            .currency(),
+            "XTM"
+        );
+        assert!(matches!(
+            send.pin_context(3, None),
+            PinPromptContext::L2Send { amount_micro_minotari: 3, ref destination, ref account }
+                if destination == "otl_esm_addr" && account == "component_abc"
+        ));
+    }
+
+    #[test]
+    fn l2_claim_asks_about_the_burn_commitment_in_xtr() {
+        let claim = SpendKind::L2Claim {
+            commitment: "dae29ac8".to_string(),
+        };
+        assert_eq!(claim.as_str(), "l2_claim");
+        assert_eq!(claim.counterparty(), "dae29ac8");
+        assert_eq!(claim.currency(), "XTR");
+        assert!(matches!(
+            claim.pin_context(4, None),
+            PinPromptContext::L2Claim { amount_micro_minotari: 4, ref commitment }
+                if commitment == "dae29ac8"
+        ));
+    }
+
+    #[test]
+    fn only_esmeralda_supports_l2() {
+        assert!(network_supports_l2(Network::Esmeralda));
+        for network in [
+            Network::MainNet,
+            Network::StageNet,
+            Network::NextNet,
+            Network::LocalNet,
+            Network::Igor,
+        ] {
+            assert!(!network_supports_l2(network), "{network} must not offer L2");
+        }
+    }
+
+    #[test]
+    fn l2_needs_a_pin_and_esmeralda() {
+        assert!(check_l2_allowed(Network::Esmeralda, true).is_ok());
+        assert!(matches!(
+            check_l2_allowed(Network::Esmeralda, false),
+            Err(TransactionError::NoPinConfigured(_))
+        ));
+        assert!(matches!(
+            check_l2_allowed(Network::MainNet, true),
+            Err(TransactionError::Disabled(_))
+        ));
     }
 
     #[test]

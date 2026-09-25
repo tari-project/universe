@@ -19,6 +19,9 @@ export default function EnterPinDialog() {
     // Only shown when the backend told us what the PIN is for. Everything else keeps the
     // plain "Enter your PIN" dialog.
     const sendContext = pinContext?.kind === 'send' ? pinContext : null;
+    const burnContext = pinContext?.kind === 'burn' ? pinContext : null;
+    const l2SendContext = pinContext?.kind === 'l2_send' ? pinContext : null;
+    const l2ClaimContext = pinContext?.kind === 'l2_claim' ? pinContext : null;
     const reasonKey =
         pinContext?.kind === 'restore_wallet_details'
             ? 'security.pin.restore-wallet-details'
@@ -56,7 +59,15 @@ export default function EnterPinDialog() {
             <DialogContent variant="transparent">
                 <Wrapper>
                     <Header>
-                        <Heading>{sendContext ? t('security.pin.approve-send') : t('security.pin.enter')}</Heading>{' '}
+                        <Heading>
+                            {burnContext
+                                ? t('security.pin.approve-burn')
+                                : l2ClaimContext
+                                  ? t('l2.claim.approve')
+                                  : sendContext || l2SendContext
+                                    ? t('security.pin.approve-send')
+                                    : t('security.pin.enter')}
+                        </Heading>{' '}
                         <CloseButton onClick={handleClose} />
                     </Header>
                     {reasonKey && (
@@ -70,6 +81,31 @@ export default function EnterPinDialog() {
                             destination={sendContext.destination}
                             paymentId={sendContext.payment_id}
                             subtitle={t('security.pin.approve-send-subtitle')}
+                        />
+                    )}
+                    {burnContext && (
+                        <TransactionContextSummary
+                            kind="burn"
+                            amountMicroMinotari={burnContext.amount_micro_minotari}
+                            destination={burnContext.claim_public_key}
+                            paymentId={burnContext.payment_id}
+                            subtitle={t('security.pin.approve-burn-subtitle')}
+                        />
+                    )}
+                    {l2SendContext && (
+                        <TransactionContextSummary
+                            kind="l2_send"
+                            amountMicroMinotari={l2SendContext.amount_micro_minotari}
+                            destination={l2SendContext.destination}
+                            subtitle={t('security.pin.approve-send-subtitle')}
+                        />
+                    )}
+                    {l2ClaimContext && (
+                        <TransactionContextSummary
+                            kind="l2_claim"
+                            amountMicroMinotari={l2ClaimContext.amount_micro_minotari}
+                            destination={l2ClaimContext.commitment}
+                            subtitle={t('l2.claim.approve-subtitle')}
                         />
                     )}
                     <EnterPin onSubmit={handleSubmit} />

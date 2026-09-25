@@ -82,7 +82,9 @@
       "forgot-monero-placeholder": "Enter Monero seed words (optional)...",
       "forgot-monero-replace": "Continue and create a new Monero wallet",
       "restore-wallet-details": "Your wallet details were missing from the settings file. Enter your PIN to restore them from your wallet keys. Nothing else will change.",
-      "seed-needs-pin": "Your wallet keys are protected by a PIN, but your settings say no PIN is set. Your seed is safe and nothing has been changed. Enter your PIN to continue."
+      "seed-needs-pin": "Your wallet keys are protected by a PIN, but your settings say no PIN is set. Your seed is safe and nothing has been changed. Enter your PIN to continue.",
+      "approve-burn": "Approve burn",
+      "approve-burn-subtitle": "Enter your PIN to burn these funds. Burning cannot be undone; only the L2 claim key can recover them. If you did not start this, close this dialog."
     },
     "reminder": {
       "description": "You haven't secured your wallet yet. Backing up your seed phrase keeps your tokens safe and ensures only you can access them.\nLet's do it now—it'll only take a moment",
@@ -136,7 +138,12 @@
     "total-fees": "Total Fees",
     "transaction-copy-raw": "Copy raw details",
     "transaction-description": "Transaction Description",
-    "transaction-id": "Transaction ID"
+    "transaction-id": "Transaction ID",
+    "label-claimPublicKey": "L2 Claim Public Key",
+    "placeholder-claimPublicKey": "64 hex characters",
+    "field-claimPublicKey": "claim public key",
+    "label-l2Address": "L2 Address",
+    "placeholder-l2Address": "Enter L2 address"
   },
   "swap": {
     "accept": "Accept",
@@ -207,7 +214,8 @@
   "tabs": {
     "history": "History",
     "receive": "Receive",
-    "send": "Send"
+    "send": "Send",
+    "burn": "Burn"
   },
   "tari": "Tari",
   "transactions": "Transactions",
@@ -222,5 +230,100 @@
     "mine-directly-to-exchange": "Mine directly to {{exchangeName}}",
     "mining-here": "Mining here",
     "or": "or"
+  },
+  "burn": {
+    "title": "Burn to L2",
+    "review-title": "Review burn",
+    "review-label": "You are burning",
+    "claim-public-key": "L2 claim public key",
+    "warning": "Burning destroys these funds on L1. They can only be claimed on L2 with the private key matching this claim public key. This cannot be undone.",
+    "cta-review": "Review burn",
+    "cta-confirm": "Burn funds",
+    "error-invalid-claim-key": "The claim public key must be 64 hex characters",
+    "processing-title": "Burning your XTM",
+    "processing-text": "Your burn is being broadcast. This can take a few minutes.",
+    "completed-title": "Burn broadcast",
+    "completed-text": "Once the burn is mined you can claim it from Burns to claim in your Layer 2 wallet.",
+    "error-message": "Error burning funds: ",
+    "pin-required": "Set a PIN to burn",
+    "claim-key-default": "The claim key defaults to this wallet's own L2 account."
+  },
+  "l2": {
+    "title": "Layer 2",
+    "account-name": "Ootle Wallet",
+    "pin-required": "You must set a PIN to use Layer 2",
+    "set-pin": "Set a PIN",
+    "enable-description": "Layer 2 uses a wallet made from your existing seed words. You'll be asked for your PIN.",
+    "enable": "Enable Layer 2",
+    "enable-error": "Couldn't enable Layer 2: ",
+    "unlock-description": "Layer 2 is locked. Enter your PIN to open it.",
+    "unlock": "Unlock Layer 2",
+    "unlock-error": "Couldn't unlock Layer 2: ",
+    "loading": "Loading your Layer 2 wallet...",
+    "balance-split": "Revealed {{revealed}} · Confidential {{confidential}}",
+    "receive-title": "Receive on Layer 2",
+    "empty": "No Layer 2 activity yet",
+    "filter": {
+      "waiting-claims": "Waiting claims"
+    },
+    "source": {
+      "transaction": "Transaction",
+      "scan": "Received",
+      "recovery": "Recovered"
+    },
+    "details": {
+      "amount": "Amount",
+      "source": "Type",
+      "date": "Date",
+      "transaction-id": "Transaction ID",
+      "status": "Status",
+      "fee": "Fee",
+      "invalid-reason": "Reason"
+    },
+    "send": {
+      "title": "Send on Layer 2",
+      "review-title": "Review L2 send",
+      "address": "L2 address",
+      "cta-review": "Review",
+      "cta-confirm": "Send XTR",
+      "error-invalid-address": "That isn't a valid Layer 2 address for this network",
+      "error-message": "Error sending on Layer 2: ",
+      "processing-title": "Your XTR is on the way",
+      "processing-text": "Working out the fee and submitting. This can take a minute.",
+      "completed-title": "Sent",
+      "completed-text": "Your L2 transaction was submitted."
+    },
+    "tiles": {
+      "epoch": "Epoch",
+      "epoch-progress": "Block {{block}} of {{length}}",
+      "next-epoch": "Next epoch",
+      "blocks-left_one": "{{count}} block left",
+      "blocks-left_other": "{{count}} blocks left",
+      "activity": "Activity",
+      "transactions": "Transactions",
+      "fees": "Fees",
+      "burned": "Burned"
+    },
+    "claim": {
+      "commitment": "Burn commitment",
+      "review-label": "You are claiming",
+      "cta": "Claim",
+      "claiming": "Claiming...",
+      "chip-pending": "Pending",
+      "chip-waiting": "Waiting",
+      "pending": "Waiting for the burn to be mined",
+      "ready": "Ready to claim",
+      "checking": "Checking with the node",
+      "claimable-in_one": "Claimable in {{count}} block, about {{time}}",
+      "claimable-in_other": "Claimable in {{count}} blocks, about {{time}}",
+      "foreign": "Sent to a claim key this wallet doesn't hold",
+      "rejected": "Claim rejected",
+      "confirmed": "Claim confirmed",
+      "not-yet-claimable": "The L2 hasn't seen this burn yet. On esmeralda it follows L1 by 100 blocks, try again in a while.",
+      "submitted": "Claim submitted, waiting for confirmation",
+      "failed": "Claim failed",
+      "approve": "Approve claim",
+      "approve-subtitle": "Enter your PIN to claim this burn into your Layer 2 wallet. If you did not start this, close this dialog."
+    }
   }
 }

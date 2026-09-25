@@ -516,11 +516,12 @@ impl InternalWallet {
         Ok(())
     }
 
+    /// Returns the new PIN, which the L2 store is moved onto next.
     pub async fn recover_forgotten_pin(
         app_handle: &AppHandle,
         tari_seed: CipherSeed,
         monero_seed: Option<MoneroSeed>,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<SafePassword, anyhow::Error> {
         let pin_password = PinManager::create_pin(app_handle).await?;
 
         let encrypted_monero_seed = if *ConfigWallet::content().await.monero_address_is_generated()
@@ -566,7 +567,7 @@ impl InternalWallet {
                 .await
                 .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
                 .id;
-            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password))?;
+            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?;
             InternalWallet::set_credentials(
                 app_handle,
                 wallet_id.clone(),
@@ -587,7 +588,7 @@ impl InternalWallet {
                 Hidden::hide(Some(encrypted_tari_seed.clone()));
         }
 
-        Ok(())
+        Ok(pin_password)
     }
 
     pub async fn create_pin(app_handle: &AppHandle) -> Result<(), anyhow::Error> {
@@ -1031,31 +1032,27 @@ impl InternalWallet {
         app_handle: &AppHandle,
         pin_context: Option<PinPromptContext>,
     ) -> Result<WalletKeyManager, anyhow::Error> {
+        let signing_wallet = Self::get_signing_wallet(app_handle, pin_context).await?;
+        WalletKeyManager::new(signing_wallet).map_err(|e| anyhow!(e.to_string()))
+    }
+
+    /// The full (spend-capable) wallet rebuilt from the stored seed, raising the PIN
+    /// prompt when a PIN is configured. This is the one place the seed leaves the
+    /// keychain for signing; every spend path goes through here.
+    pub async fn get_signing_wallet(
+        app_handle: &AppHandle,
+        pin_context: Option<PinPromptContext>,
+    ) -> Result<WalletWalletType, anyhow::Error> {
         let tari_wallet_details = Self::tari_wallet_details().await;
 
         if tari_wallet_details.is_some() {
             let tari_cipher_seed = Self::get_tari_seed_with_prompt(app_handle, pin_context).await?;
-
-            // The `minotari` signing crate uses tari 5.7.0-pre.8, so rebuild the cipher seed
-            // as a wallet-side `CipherSeed`. The binary form is identical across the two
-            // versions (CIPHER_SEED_VERSION == 2), so this round-trip is lossless. The
-            // intermediate buffer is the master entropy in the clear, so it is wiped on
-            // drop rather than left in the heap.
-            let wallet_cipher_seed = WalletCipherSeed::from_binary(&Zeroizing::new(
-                tari_cipher_seed
-                    .to_binary()
-                    .map_err(|e| anyhow!(e.to_string()))?,
-            ))
-            .map_err(|e| anyhow!(e.to_string()))?;
+            let wallet_cipher_seed = to_wallet_cipher_seed(&tari_cipher_seed)?;
 
             let seed_words_wallet = WalletSeedWordsWallet::construct_new(wallet_cipher_seed)
                 .map_err(|e| anyhow!(e.to_string()))?;
 
-            let tx_key_manager =
-                WalletKeyManager::new(WalletWalletType::SeedWords(seed_words_wallet))
-                    .map_err(|e| anyhow!(e.to_string()))?;
-
-            Ok(tx_key_manager)
+            Ok(WalletWalletType::SeedWords(seed_words_wallet))
         } else {
             Err(anyhow!(
                 "Seedless Wallet does not support Key Manager extraction"
@@ -1694,4 +1691,16 @@ fn zero_fill(path: &Path, len: u64, chunk_len: usize) -> std::io::Result<()> {
         remaining -= chunk as u64;
     }
     file.sync_all()
+}
+
+/// The `minotari` signing crate and the Ootle wallet SDK use tari 5.7.0-pre.8, so rebuild
+/// the cipher seed as a wallet-side `CipherSeed`. The binary form is identical across the
+/// two versions (CIPHER_SEED_VERSION == 2), so this round-trip is lossless. The
+/// intermediate buffer is the master entropy in the clear, so it is wiped on drop rather
+/// than left in the heap.
+pub fn to_wallet_cipher_seed(seed: &CipherSeed) -> Result<WalletCipherSeed, anyhow::Error> {
+    WalletCipherSeed::from_binary(&Zeroizing::new(
+        seed.to_binary().map_err(|e| anyhow!(e.to_string()))?,
+    ))
+    .map_err(|e| anyhow!(e.to_string()))
 }

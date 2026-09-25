@@ -133,6 +133,14 @@ impl PinManager {
 }
 
 // Utils
+
+/// The frontend answers every PIN dialog on the same uncorrelated
+/// "pin-dialog-response" event, so two prompts outstanding at once would both get the
+/// one PIN the user typed for whichever dialog they saw. Only one prompt at a time.
+/// Held only for a single emit-and-wait, never across prompts, so a caller that
+/// prompts twice (or holds the send gate permit) just queues behind it.
+static PIN_PROMPT: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
 async fn pin_dialog_with_emitter<F, Fut>(
     app_handle: &AppHandle,
     emit_fn: F,
@@ -141,6 +149,8 @@ where
     F: Fn() -> Fut,
     Fut: std::future::Future<Output = ()>,
 {
+    let _prompt = PIN_PROMPT.lock().await;
+
     // Display the PIN dialog using the provided emitter
     emit_fn().await;
 

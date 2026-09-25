@@ -55,6 +55,7 @@ pub enum CredentialError {
 const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
 const KEYCHAIN_USERNAME: &str = "inner_wallet_credentials";
 const MINOTARI_DB_ENTRY: &str = "minotari_db_password";
+const OOTLE_KEYRING_ENTRY: &str = "ootle_keyring_password";
 const MINOTARI_DB_PASSWORD_BYTES: usize = 32;
 
 pub struct CredentialManager {
@@ -105,16 +106,34 @@ impl CredentialManager {
     /// database on disk is deleted and rebuilt on its own schedule, and any window where
     /// the two disagree leaves a database nothing can open.
     pub async fn minotari_db_password() -> Result<Zeroizing<String>, CredentialError> {
-        let entry = Entry::new(
+        Self::install_password(MINOTARI_DB_ENTRY)
+    }
+
+    /// Password older builds encrypted the Ootle (L2) seed with, if this install has one.
+    /// The L2 store is encrypted with the PIN now; this is only read to move an older store
+    /// onto it. Never minted.
+    pub fn legacy_ootle_keyring_password() -> Result<Option<Zeroizing<String>>, CredentialError> {
+        match Self::install_entry(OOTLE_KEYRING_ENTRY)?.get_secret() {
+            Ok(secret) if !secret.is_empty() => Ok(Some(Zeroizing::new(hex::encode(secret)))),
+            Ok(_) | Err(KeyringError::NoEntry) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    fn install_password(name: &str) -> Result<Zeroizing<String>, CredentialError> {
+        Self::read_or_create_password(&Self::install_entry(name)?)
+    }
+
+    fn install_entry(name: &str) -> Result<Entry, CredentialError> {
+        Ok(Entry::new(
             APPLICATION_FOLDER_ID,
             &format!(
                 "{}_{}_{}",
                 KEYCHAIN_USERNAME,
                 Network::get_current().as_key_str(),
-                MINOTARI_DB_ENTRY
+                name
             ),
-        )?;
-        Self::read_or_create_password(&entry)
+        )?)
     }
 
     /// Never overwrites a secret that is already there: the database it opens cannot be
@@ -130,9 +149,7 @@ impl CredentialManager {
         SystemRandom::new()
             .fill(secret.as_mut_slice())
             .map_err(|_| {
-                CredentialError::Io(io::Error::other(
-                    "Failed to generate a minotari database password",
-                ))
+                CredentialError::Io(io::Error::other("Failed to generate a keyring password"))
             })?;
         entry.set_secret(secret.as_slice())?;
         Ok(Zeroizing::new(hex::encode(secret.as_slice())))

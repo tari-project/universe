@@ -27,6 +27,7 @@ export interface ConfigUI {
     was_staged_security_modal_shown: boolean;
     feedback?: FeedbackPrompts;
     shutdown_mode_selected: boolean;
+    l2_side_by_side: boolean;
 }
 
 export interface FeedbackPrompt {

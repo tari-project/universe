@@ -1,6 +1,6 @@
 import { Button } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
-import { setSidebarOpen, setShowTapplet } from '@app/store/actions/uiStoreActions';
+import { setL2Open, setSidebarOpen, setShowTapplet } from '@app/store/actions/uiStoreActions';
 import { BRIDGE_TAPPLET_ID } from '@app/store/consts.ts';
 import { setActiveTappById } from '@app/store/useTappletsStore.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
@@ -14,6 +14,7 @@ export default function BridgeButton() {
         await setActiveTappById(BRIDGE_TAPPLET_ID, true);
         setShowTapplet(true);
         setSidebarOpen(false);
+        setL2Open(false);
     }, []);
 
     return (

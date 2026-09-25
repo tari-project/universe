@@ -26,6 +26,7 @@ use super::{
     utils::{setup_default_adapter::SetupDefaultAdapter, timeout_watcher::TimeoutWatcher},
 };
 use crate::LOG_TARGET_APP_LOGIC;
+use crate::ootle::OotleWalletManager;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::{
     binaries::{Binaries, BinaryResolver},
@@ -133,6 +134,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
     ) -> ProgressStepper {
         ProgressStepperBuilder::new()
             .add_step(SetupStep::MinotariWallet, true)
+            .add_step(SetupStep::OotleWallet, false)
             .add_incremental_step(SetupStep::SetupBridge, false)
             .build(
                 app_handle,
@@ -200,6 +202,12 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 }
 
                 Ok(())
+            })
+            .await?;
+
+        progress_stepper
+            .complete_step(SetupStep::OotleWallet, || {
+                OotleWalletManager::initialize(&data_dir)
             })
             .await?;
 

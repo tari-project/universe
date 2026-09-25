@@ -55,6 +55,59 @@ describe('McpTransactionDialog', () => {
         });
     });
 
+    it('labels a burn approval with the L2 claim key, not a destination address', async () => {
+        setMcpPendingTransaction({
+            request_id: 'app_tx_burn',
+            kind: 'burn',
+            origin: 'app',
+            destination: 'ab'.repeat(32),
+            amount_micro_minotari: 1_500_000,
+            amount_display: '1.5 XTM',
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('burn.claim-public-key')).toBeInTheDocument();
+            expect(screen.getByText('burn.review-label')).toBeInTheDocument();
+        });
+        expect(screen.queryByText('send.destination-address')).not.toBeInTheDocument();
+    });
+
+    it('labels an L2 send with the L2 address and XTR', async () => {
+        setMcpPendingTransaction({
+            request_id: 'app_tx_l2',
+            kind: 'l2_send',
+            origin: 'app',
+            destination: 'otl_esm_example',
+            amount_micro_minotari: 1_000_000,
+            amount_display: '1 XTR',
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('l2.send.address')).toBeInTheDocument();
+            expect(screen.getByText('XTR')).toBeInTheDocument();
+        });
+        expect(screen.getByText('otl_esm_example')).toBeInTheDocument();
+        expect(screen.queryByText('send.destination-address')).not.toBeInTheDocument();
+        expect(screen.queryByText('XTM')).not.toBeInTheDocument();
+    });
+
+    it('labels an L2 claim with the burn commitment and XTR', async () => {
+        setMcpPendingTransaction({
+            request_id: 'app_tx_claim',
+            kind: 'l2_claim',
+            origin: 'app',
+            destination: 'dae29ac8',
+            amount_micro_minotari: 1_000_000,
+            amount_display: '1.000000 XTR',
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('l2.claim.commitment')).toBeInTheDocument();
+            expect(screen.getByText('XTR')).toBeInTheDocument();
+        });
+        expect(screen.getByText('dae29ac8')).toBeInTheDocument();
+    });
+
     it('shows destination address label', async () => {
         setMcpPendingTransaction({
             request_id: 'mcp_tx_123',

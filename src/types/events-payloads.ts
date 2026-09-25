@@ -151,4 +151,112 @@ export interface SeedNeedsPinPromptContext {
     kind: 'seed_needs_pin';
 }
 
-export type PinPromptContext = SendPinPromptContext | RestoreWalletDetailsPinPromptContext | SeedNeedsPinPromptContext;
+/** Burning L1 funds to be claimed on L2 by `claim_public_key`. */
+export interface BurnPinPromptContext {
+    kind: 'burn';
+    amount_micro_minotari: number;
+    claim_public_key: string;
+    payment_id?: string | null;
+}
+
+/** Sending XTR (micro units) on L2 from `account` to the Ootle address `destination`. */
+export interface L2SendPinPromptContext {
+    kind: 'l2_send';
+    amount_micro_minotari: number;
+    destination: string;
+    account: string;
+}
+
+/** Claiming an L1 burn of `amount_micro_minotari` on L2. `commitment` (hex) identifies the burn. */
+export interface L2ClaimPinPromptContext {
+    kind: 'l2_claim';
+    amount_micro_minotari: number;
+    commitment: string;
+}
+
+export type PinPromptContext =
+    | SendPinPromptContext
+    | BurnPinPromptContext
+    | L2SendPinPromptContext
+    | L2ClaimPinPromptContext
+    | RestoreWalletDetailsPinPromptContext
+    | SeedNeedsPinPromptContext;
+
+export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim';
+
+/** XTR in micro units. Revealed sits in the account vault, confidential in stealth UTXOs. */
+export interface L2Balance {
+    revealed: number;
+    confidential: number;
+}
+
+/** A settled XTR movement on an L2 account. `amount` is signed micro XTR. */
+export interface L2BalanceChange {
+    id: number;
+    transaction_id: string | null;
+    amount: number;
+    source: 'transaction' | 'scan' | 'recovery';
+    timestamp: number;
+}
+
+/** A transaction this wallet submitted on L2, with its current status. */
+export interface L2Transaction {
+    id: string;
+    status: string;
+    fee: number | null;
+    invalid_reason: string | null;
+    timestamp: number;
+}
+
+export interface L2Account {
+    name: string | null;
+    address: string;
+    component_address: string;
+    /** Owner public key, hex. The key an L1 burn is claimed with. */
+    public_key: string;
+    is_default: boolean;
+    balance: L2Balance;
+    history: L2BalanceChange[];
+    transactions: L2Transaction[];
+}
+
+/** A burn to L2 from this wallet. `amount` is micro XTM burned; `proof_file` is set once the proof is written. */
+export interface L2Burn {
+    commitment: string;
+    claim_public_key: string;
+    amount: number;
+    proof_file: string | null;
+    status: 'pending' | 'claimable' | 'claimed' | 'foreign';
+    /** The L1 height the burn was mined at, null when the L1 wallet doesn't know it. */
+    mined_height: number | null;
+    /** Unix seconds, when the burn was made. */
+    timestamp: number;
+}
+
+/** How a submitted claim of the burn with `commitment` (hex) ended on L2. */
+export interface L2ClaimResult {
+    commitment: string;
+    accepted: boolean;
+    reason: string | null;
+    not_yet_claimable: boolean;
+}
+
+export interface L2WalletState {
+    enabled: boolean;
+    /** Enabled, but the store stays shut until the user enters their PIN. */
+    locked: boolean;
+    accounts: L2Account[];
+    seed_source: 'l1' | 'imported';
+}
+
+/** Micro XTR amounts. Block counts and times are L1. */
+export interface L2NetworkStats {
+    epoch: number;
+    block_height: number;
+    epoch_length: number;
+    blocks_into_epoch: number;
+    block_target_secs: number;
+    tx_count: number;
+    fee_volume: number;
+    burned: number;
+}
