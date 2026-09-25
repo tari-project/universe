@@ -61,7 +61,10 @@ use tari_template_lib::{
     },
 };
 
-use super::{LOG_TARGET, OotleSdk, send::VALIDITY_EPOCHS};
+use super::{
+    LOG_TARGET, OotleSdk,
+    send::{VALIDITY_EPOCHS, ensure_not_rejected},
+};
 
 /// Claimed proof files move here, the same place tari_walletd puts them.
 const CLAIMED_DIR: &str = "claimed";
@@ -341,10 +344,13 @@ pub async fn claim_burn(
     let transaction = build(result.finalize.required_fees(), false)?;
     let context = TransactionContext::with_accounts([*account.component_address()])
         .with_kind(TransactionContextKind::ClaimBurn { file_name });
-    transactions
+    let id = transactions
         .submit_transaction_with_opts(transaction, Some(context), None)
         .await
-        .map_err(|e| anyhow!("The claim was not submitted: {e}"))
+        .map_err(|e| anyhow!("The claim was not submitted: {e}"))?;
+    // A rejected claim never gets a submitted event, so it stays claimable.
+    ensure_not_rejected(sdk, id)?;
+    Ok(id)
 }
 
 struct Claim<'a> {

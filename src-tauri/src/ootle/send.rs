@@ -34,7 +34,7 @@ use tari_ootle_wallet_sdk::{
         stealth_transfer::{BadgeUsage, StealthTransferParams, TransferFeeParams, TransferOutput},
     },
     crypto::pay_to::PayTo,
-    models::{AccountWithAddress, TransactionContext, WalletLockDropGuard},
+    models::{AccountWithAddress, TransactionContext, TransactionStatus, WalletLockDropGuard},
     network::WalletNetworkInterface,
 };
 use tari_ootle_wallet_sdk_services::transaction_service::TransactionServiceHandle;
@@ -90,9 +90,31 @@ pub async fn send_xtr(
         )
         .await
         .map_err(|e| anyhow!("The L2 transaction was not submitted: {e}"))?;
+    // A rejected send returns here and drops the lock, which frees its inputs.
+    ensure_not_rejected(sdk, id)?;
     // The wallet releases the lock once the transaction is finalized.
     lock.keep_locked();
     Ok(id)
+}
+
+/// The SDK returns the id even when the network rejects the submission outright, and
+/// only records the rejection on the stored transaction. Fails if it did.
+pub(super) fn ensure_not_rejected(sdk: &OotleSdk, id: TransactionId) -> Result<(), anyhow::Error> {
+    let transaction = sdk.transaction_api().get(id)?;
+    rejection(transaction.status, transaction.invalid_reason.as_deref()).map_or(Ok(()), Err)
+}
+
+fn rejection(status: TransactionStatus, reason: Option<&str>) -> Option<anyhow::Error> {
+    matches!(
+        status,
+        TransactionStatus::InvalidTransaction | TransactionStatus::Rejected
+    )
+    .then(|| {
+        anyhow!(
+            "The network rejected it: {}",
+            reason.unwrap_or("no reason given")
+        )
+    })
 }
 
 /// Dry runs the transfer, raising the fee to what the run reports until a build at a
@@ -147,4 +169,18 @@ async fn build(
         .signer_api()
         .sign(transfer.main_signer.key_id, transaction)?;
     Ok((lock, transaction))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn only_rejected_or_invalid_submissions_fail() {
+        let err = rejection(TransactionStatus::InvalidTransaction, Some("input spent")).unwrap();
+        assert!(err.to_string().contains("input spent"));
+        assert!(rejection(TransactionStatus::Rejected, None).is_some());
+        assert!(rejection(TransactionStatus::Pending, None).is_none());
+        assert!(rejection(TransactionStatus::Accepted, None).is_none());
+    }
 }
