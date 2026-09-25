@@ -85,8 +85,8 @@ describe('L2Settings', () => {
         serve(enabledState);
         render(<L2Settings />);
 
-        expect(await screen.findByTestId('l2-settings-address')).toHaveTextContent('otl_esm_test');
-        expect(screen.getByTestId('l2-settings-public-key')).toHaveTextContent('ab'.repeat(32));
+        expect(await screen.findByTestId('l2-settings-address')).toHaveValue('otl_esm_test');
+        expect(screen.getByTestId('l2-settings-public-key')).toHaveValue('ab'.repeat(32));
         expect(screen.getByTestId('l2-settings-indexer')).toHaveTextContent('http://54.38.0.31:50124/');
         expect(screen.queryByTestId('l2-settings-enable')).not.toBeInTheDocument();
     });
@@ -135,7 +135,7 @@ describe('L2Settings', () => {
         const words = Array.from({ length: 24 }, (_, i) => `word${i}`);
 
         fireEvent.click(await screen.findByTestId('wallet-seed-edit'));
-        fireEvent.change(screen.getByRole('textbox'), { target: { value: words.join(' ') } });
+        fireEvent.change(screen.getByTestId('wallet-seed-input'), { target: { value: words.join(' ') } });
         await waitFor(() => expect(screen.getByTestId('wallet-seed-submit')).toBeEnabled());
         fireEvent.click(screen.getByTestId('wallet-seed-submit'));
 

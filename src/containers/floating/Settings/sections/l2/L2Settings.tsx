@@ -8,6 +8,7 @@ import { handleL2WalletStateUpdate } from '@app/store/actions/l2WalletStoreActio
 import type { L2WalletState } from '@app/types/events-payloads.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { Input } from '@app/components/elements/inputs/Input';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
@@ -16,6 +17,8 @@ import { resetL2ToL1Seed } from '@app/store/actions/l2WalletStoreActions.ts';
 import { CopyToClipboard } from '../wallet/WalletAddressMarkup/WalletAddressMarkup.tsx';
 import { CTASArea, InputArea, WalletSettingsGrid } from '../wallet/styles.ts';
 import {
+    SettingsGroup,
+    SettingsGroupAction,
     SettingsGroupContent,
     SettingsGroupTitle,
     SettingsGroupWrapper,
@@ -23,21 +26,16 @@ import {
 
 const fetchL2State = () => invoke<L2WalletState>('l2_get_state').then(handleL2WalletStateUpdate);
 
-function Field({ label, value, testId }: { label: string; value: string; testId: string }) {
+function Field({ value, testId }: { value: string; testId: string }) {
     return (
-        <SettingsGroupContent>
-            <Typography variant="p">{label}</Typography>
-            <WalletSettingsGrid>
-                <InputArea>
-                    <Typography style={{ wordBreak: 'break-all' }} data-testid={testId}>
-                        {value}
-                    </Typography>
-                </InputArea>
-                <CTASArea>
-                    <CopyToClipboard text={value} />
-                </CTASArea>
-            </WalletSettingsGrid>
-        </SettingsGroupContent>
+        <WalletSettingsGrid>
+            <InputArea>
+                <Input type="text" value={value} readOnly style={{ fontSize: 12 }} data-testid={testId} />
+            </InputArea>
+            <CTASArea>
+                <CopyToClipboard text={value} />
+            </CTASArea>
+        </WalletSettingsGrid>
     );
 }
 
@@ -75,84 +73,91 @@ export const L2Settings = () => {
     let status;
     if (!hasPin) {
         status = (
-            <SettingsGroupContent data-testid="l2-settings-pin-required">
-                <Typography>{t('l2.pin-required')}</Typography>
-                <Button
-                    size="small"
-                    variant="black"
-                    onClick={() => invoke('create_pin').catch((e) => console.error('Failed to create PIN:', e))}
-                >
-                    {t('l2.set-pin')}
-                </Button>
-            </SettingsGroupContent>
+            <SettingsGroup data-testid="l2-settings-pin-required">
+                <SettingsGroupContent>
+                    <SettingsGroupTitle>
+                        <Typography variant="h6">{t('l2.status')}</Typography>
+                    </SettingsGroupTitle>
+                    <Typography>{t('l2.pin-required')}</Typography>
+                </SettingsGroupContent>
+                <SettingsGroupAction>
+                    <Button
+                        onClick={() => invoke('create_pin').catch((e) => console.error('Failed to create PIN:', e))}
+                    >
+                        {t('l2.set-pin')}
+                    </Button>
+                </SettingsGroupAction>
+            </SettingsGroup>
         );
     } else if (!enabled && !seedChangePending) {
         status = (
-            <SettingsGroupContent data-testid="l2-settings-not-enabled">
-                <Typography>{t('l2.enable-description')}</Typography>
-                <Button
-                    size="small"
-                    variant="black"
-                    onClick={enable}
-                    disabled={enabling}
-                    data-testid="l2-settings-enable"
-                >
-                    {t('l2.enable')}
-                </Button>
-                {error && <Typography variant="p">{error}</Typography>}
-            </SettingsGroupContent>
+            <SettingsGroup data-testid="l2-settings-not-enabled">
+                <SettingsGroupContent>
+                    <SettingsGroupTitle>
+                        <Typography variant="h6">{t('l2.status')}</Typography>
+                    </SettingsGroupTitle>
+                    <Typography>{t('l2.enable-description')}</Typography>
+                    {error && <Typography>{error}</Typography>}
+                </SettingsGroupContent>
+                <SettingsGroupAction>
+                    <Button onClick={enable} disabled={enabling} data-testid="l2-settings-enable">
+                        {t('l2.enable')}
+                    </Button>
+                </SettingsGroupAction>
+            </SettingsGroup>
         );
-    } else {
-        status = <Typography data-testid="l2-settings-enabled">{t('l2.enabled')}</Typography>;
     }
 
     return (
         <>
-            <SettingsGroupWrapper>
-                <SettingsGroupTitle>
-                    <Typography variant="h6">{t('l2.status')}</Typography>
-                </SettingsGroupTitle>
-                {status}
-            </SettingsGroupWrapper>
+            {status && <SettingsGroupWrapper>{status}</SettingsGroupWrapper>}
             {hasPin && enabled && account && (
                 <SettingsGroupWrapper data-testid="l2-settings-account">
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('l2.account')}</Typography>
                     </SettingsGroupTitle>
-                    <Field label={t('l2.address')} value={account.address} testId="l2-settings-address" />
-                    <Field label={t('l2.public-key')} value={account.public_key} testId="l2-settings-public-key" />
+                    <Field value={account.address} testId="l2-settings-address" />
+                    <Field value={account.public_key} testId="l2-settings-public-key" />
                 </SettingsGroupWrapper>
             )}
             {indexerUrl && (
                 <SettingsGroupWrapper>
-                    <SettingsGroupTitle>
-                        <Typography variant="h6">{t('l2.indexer')}</Typography>
-                    </SettingsGroupTitle>
-                    <Typography data-testid="l2-settings-indexer">{indexerUrl}</Typography>
+                    <SettingsGroup>
+                        <SettingsGroupContent>
+                            <SettingsGroupTitle>
+                                <Typography variant="h6">{t('l2.indexer')}</Typography>
+                            </SettingsGroupTitle>
+                            <Typography data-testid="l2-settings-indexer">{indexerUrl}</Typography>
+                        </SettingsGroupContent>
+                    </SettingsGroup>
                 </SettingsGroupWrapper>
             )}
             {/* An import or reset turns L2 off while the wallet phase restarts, so keep the section up while it runs. */}
             {hasPin && (enabled || seedChangePending) && (
                 <SettingsGroupWrapper data-testid="l2-settings-seed-words">
-                    <SettingsGroupTitle>
-                        <Typography variant="h6">{t('l2.seed-words')}</Typography>
-                    </SettingsGroupTitle>
-                    <Typography variant="p" data-testid="l2-settings-seed-note">
-                        {t(seedSource === 'imported' ? 'l2.seed-note-imported' : 'l2.seed-note-l1')}
-                    </Typography>
+                    <SettingsGroup>
+                        <SettingsGroupContent>
+                            <SettingsGroupTitle>
+                                <Typography variant="h6">{t('l2.seed-words')}</Typography>
+                            </SettingsGroupTitle>
+                            <Typography data-testid="l2-settings-seed-note">
+                                {t(seedSource === 'imported' ? 'l2.seed-note-imported' : 'l2.seed-note-l1')}
+                            </Typography>
+                        </SettingsGroupContent>
+                        {seedSource === 'imported' && (
+                            <SettingsGroupAction>
+                                <Button
+                                    onClick={() => setConfirmReset(true)}
+                                    disabled={seedChangePending}
+                                    data-testid="l2-settings-use-l1-seed"
+                                >
+                                    {t('l2.use-l1-seed')}
+                                </Button>
+                            </SettingsGroupAction>
+                        )}
+                    </SettingsGroup>
                     <SeedWords isL2 />
                     {seedChangePending && <LoadingDots />}
-                    {seedSource === 'imported' && (
-                        <Button
-                            size="small"
-                            variant="black"
-                            onClick={() => setConfirmReset(true)}
-                            disabled={seedChangePending}
-                            data-testid="l2-settings-use-l1-seed"
-                        >
-                            {t('l2.use-l1-seed')}
-                        </Button>
-                    )}
                 </SettingsGroupWrapper>
             )}
             <Dialog open={confirmReset} onOpenChange={setConfirmReset}>
