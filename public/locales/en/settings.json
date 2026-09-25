@@ -275,7 +275,6 @@
     "enable-description": "Layer 2 uses a wallet made from your existing seed words. You'll be asked for your PIN.",
     "enable": "Enable Layer 2",
     "enable-error": "Couldn't enable Layer 2: ",
-    "account": "Ootle wallet address",
     "indexer": "Indexer",
     "seed-words": "Seed words",
     "seed-note-l1": "Your Ootle wallet uses the same seed words as your Tari wallet.",
@@ -283,6 +282,10 @@
     "use-l1-seed": "Use my Tari wallet seed",
     "confirm-import": "Import Layer 2 seed words",
     "seed-change-error": "Couldn't change the Layer 2 seed words",
-    "confirm-replace-copy": "Your current Layer 2 wallet will be replaced.\nYou can only get it back with its seed words."
+    "confirm-replace-copy": "Your current Layer 2 wallet will be replaced.\nYou can only get it back with its seed words.",
+    "address": "Ootle wallet address",
+    "address-description": "Share this to receive XTR on Ootle.",
+    "public-key": "Ootle owner public key",
+    "public-key-description": "The claim key for burns from your Tari wallet. Burn to L2 fills it in for you."
   }
 }

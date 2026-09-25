@@ -112,13 +112,26 @@ export const L2Settings = () => {
         <>
             {status && <SettingsGroupWrapper>{status}</SettingsGroupWrapper>}
             {hasPin && enabled && account && (
-                <SettingsGroupWrapper data-testid="l2-settings-account">
-                    <SettingsGroupTitle>
-                        <Typography variant="h6">{t('l2.account')}</Typography>
-                    </SettingsGroupTitle>
-                    <Field value={account.address} testId="l2-settings-address" />
-                    <Field value={account.public_key} testId="l2-settings-public-key" />
-                </SettingsGroupWrapper>
+                <>
+                    <SettingsGroupWrapper data-testid="l2-settings-account">
+                        <SettingsGroupContent>
+                            <SettingsGroupTitle>
+                                <Typography variant="h6">{t('l2.address')}</Typography>
+                            </SettingsGroupTitle>
+                            <Typography>{t('l2.address-description')}</Typography>
+                        </SettingsGroupContent>
+                        <Field value={account.address} testId="l2-settings-address" />
+                    </SettingsGroupWrapper>
+                    <SettingsGroupWrapper $subGroup>
+                        <SettingsGroupContent>
+                            <SettingsGroupTitle>
+                                <Typography variant="h6">{t('l2.public-key')}</Typography>
+                            </SettingsGroupTitle>
+                            <Typography>{t('l2.public-key-description')}</Typography>
+                        </SettingsGroupContent>
+                        <Field value={account.public_key} testId="l2-settings-public-key" />
+                    </SettingsGroupWrapper>
+                </>
             )}
             {indexerUrl && (
                 <SettingsGroupWrapper>
