@@ -108,6 +108,8 @@ use state::SeedSource;
 const LOG_TARGET: &str = "tari::universe::ootle";
 /// Same as tari_walletd: stop looking for more recovered accounts after this many misses.
 const RECOVERY_ABANDON_COUNT: usize = 10;
+/// How long an L2 seed swap waits for the restarted wallet phase to find the new store.
+const SWAP_OPEN_WAIT: std::time::Duration = std::time::Duration::from_secs(120);
 /// Holds the id of the L1 wallet the store in the same directory belongs to, or
 /// [`IMPORTED_SEED`].
 const L1_WALLET_ID_FILE: &str = "l1-wallet-id";
@@ -133,6 +135,7 @@ static INSTANCE: LazyLock<OotleWalletManager> = LazyLock::new(|| OotleWalletMana
     store_dir: Mutex::new(None),
     seed_imported: AtomicBool::new(false),
     locked: AtomicBool::new(false),
+    found: tokio::sync::Notify::new(),
 });
 
 pub struct OotleWalletManager {
@@ -149,12 +152,20 @@ pub struct OotleWalletManager {
     seed_imported: AtomicBool,
     /// The store holds a seed but is not open: it needs the PIN.
     locked: AtomicBool,
+    /// Wakes whoever waits for the wallet phase to have looked for the store.
+    found: tokio::sync::Notify,
 }
 
 impl OotleWalletManager {
     /// Finds the L2 store and notes whether L2 was enabled in it, which leaves it locked
     /// until [`Self::enable`] opens it with the PIN. Does nothing off Esmeralda.
     pub async fn initialize(data_dir: &Path) -> Result<(), anyhow::Error> {
+        let result = Self::find_store(data_dir).await;
+        INSTANCE.found.notify_waiters();
+        result
+    }
+
+    async fn find_store(data_dir: &Path) -> Result<(), anyhow::Error> {
         let network = Network::get_current_or_user_setting_or_default();
         if !network_supports_l2(network) {
             info!(target: LOG_TARGET, "L2 wallet skipped, not available on {network}");
@@ -201,42 +212,7 @@ impl OotleWalletManager {
         let pin = PinManager::get_validated_pin(app_handle, None)
             .await
             .map_err(wallet_error)?;
-        let password = pin_text(&pin)?;
-        let mut guard = INSTANCE.sdk.lock().await;
-        if guard.is_some() {
-            return Ok(());
-        }
-        let (store_dir, network, indexer_url) = store_location().await?;
-        let sdk = match stored_seed(&store_dir).map_err(wallet_error)? {
-            Some(seed) => open_enabled_store(
-                &store_dir,
-                network,
-                indexer_url,
-                &seed,
-                password,
-                CredentialManager::legacy_ootle_keyring_password,
-            )
-            .map_err(wallet_error)?,
-            None => {
-                let seed = InternalWallet::get_tari_seed(Some(pin.clone()))
-                    .await
-                    .map_err(wallet_error)?;
-                let seed_words = l2_seed_words(&seed).map_err(wallet_error)?;
-                let mut sdk =
-                    open_sdk(&store_dir, network, indexer_url, password).map_err(wallet_error)?;
-                sdk.initialize_cipher_seed(CipherSeedRestore::FromSeedWords(&seed_words))
-                    .map_err(wallet_error)?;
-                sdk
-            }
-        };
-        let needs_recovery = sdk.is_recovery_needed().map_err(wallet_error)?;
-        start_services(&sdk, needs_recovery)
-            .await
-            .map_err(wallet_error)?;
-        INSTANCE.locked.store(false, Ordering::Relaxed);
-        *guard = Some(sdk);
-        info!(target: LOG_TARGET, "L2 wallet unlocked");
-        Ok(())
+        open_and_start(&pin).await
     }
 
     /// Moves the L2 store onto the new PIN after the user reset a forgotten one. Its seed
@@ -313,7 +289,10 @@ impl OotleWalletManager {
         let pin = PinManager::get_validated_pin(app_handle, None)
             .await
             .map_err(wallet_error)?;
-        replace_store(Some(&words), IMPORTED_SEED, pin_text(&pin)?).await
+        let found = INSTANCE.found.notified();
+        replace_store(Some(&words), IMPORTED_SEED, pin_text(&pin)?).await?;
+        open_after_swap(found, &pin).await;
+        Ok(())
     }
 
     /// Replaces the L2 wallet with one restored from the L1 seed, undoing an import, once
@@ -334,7 +313,10 @@ impl OotleWalletManager {
             .await
             .map_err(wallet_error)?;
         let words = l2_seed_words(&seed).map_err(wallet_error)?;
-        replace_store(Some(&words), wallet_id.as_str(), pin_text(&pin)?).await
+        let found = INSTANCE.found.notified();
+        replace_store(Some(&words), wallet_id.as_str(), pin_text(&pin)?).await?;
+        open_after_swap(found, &pin).await;
+        Ok(())
     }
 
     /// Everything the L2 panel shows. Refused without a PIN or off Esmeralda, and
@@ -431,6 +413,65 @@ impl OotleWalletManager {
         info!(target: LOG_TARGET, "L2 claim submitted: {id}");
         emit_state(&sdk).await;
         Ok(id.to_string())
+    }
+}
+
+/// Opens the store with the PIN and starts the services, restoring the L1 seed into a
+/// store L2 was never enabled in first. A store the old keyring password still encrypts is
+/// moved onto the PIN. Does nothing when the store is already open.
+async fn open_and_start(pin: &tari_utilities::SafePassword) -> Result<(), TransactionError> {
+    let password = pin_text(pin)?;
+    let mut guard = INSTANCE.sdk.lock().await;
+    if guard.is_some() {
+        return Ok(());
+    }
+    let (store_dir, network, indexer_url) = store_location().await?;
+    let sdk = match stored_seed(&store_dir).map_err(wallet_error)? {
+        Some(seed) => open_enabled_store(
+            &store_dir,
+            network,
+            indexer_url,
+            &seed,
+            password,
+            CredentialManager::legacy_ootle_keyring_password,
+        )
+        .map_err(wallet_error)?,
+        None => {
+            let seed = InternalWallet::get_tari_seed(Some(pin.clone()))
+                .await
+                .map_err(wallet_error)?;
+            let seed_words = l2_seed_words(&seed).map_err(wallet_error)?;
+            let mut sdk =
+                open_sdk(&store_dir, network, indexer_url, password).map_err(wallet_error)?;
+            sdk.initialize_cipher_seed(CipherSeedRestore::FromSeedWords(&seed_words))
+                .map_err(wallet_error)?;
+            sdk
+        }
+    };
+    let needs_recovery = sdk.is_recovery_needed().map_err(wallet_error)?;
+    start_services(&sdk, needs_recovery)
+        .await
+        .map_err(wallet_error)?;
+    INSTANCE.locked.store(false, Ordering::Relaxed);
+    *guard = Some(sdk);
+    info!(target: LOG_TARGET, "L2 wallet unlocked");
+    Ok(())
+}
+
+/// Opens the store a swap just built with the PIN the user entered for the swap, once the
+/// restarted wallet phase has found it (`found` must be taken before the swap), so they
+/// aren't asked again. When that takes too long, or opening fails, the store stays locked
+/// and the Unlock button takes it from there.
+async fn open_after_swap(
+    found: tokio::sync::futures::Notified<'_>,
+    pin: &tari_utilities::SafePassword,
+) {
+    if tokio::time::timeout(SWAP_OPEN_WAIT, found).await.is_err() {
+        warn!(target: LOG_TARGET, "Wallet phase did not reach the L2 store in time, it stays locked");
+        return;
+    }
+    if let Err(e) = open_and_start(pin).await {
+        warn!(target: LOG_TARGET, "Could not open the new L2 store, it stays locked: {e}");
     }
 }
 
