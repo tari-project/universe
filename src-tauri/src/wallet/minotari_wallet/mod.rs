@@ -1394,14 +1394,25 @@ fn move_legacy_burn_proofs(legacy: PathBuf, dir: PathBuf) -> PathBuf {
 }
 
 /// Reads the database file directly so the check works whether or not the wallet phase
-/// has the pool open. A database that can't be read has no rows left to lose.
+/// has the pool open. A database that can't be read has no rows left to lose. A burn
+/// whose transaction was rejected (or failed to broadcast, recorded the same way) never
+/// gets mined, so it doesn't count or it would block forever.
 fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
     if !database_path.exists() {
         return Ok(());
     }
     let pending = init_db(database_path.to_path_buf())
         .map_err(anyhow::Error::from)
-        .and_then(|pool| Ok(get_pending_burn_proofs(&*pool.get()?)?.len()));
+        .and_then(|pool| {
+            Ok(pool.get()?.query_row(
+                "SELECT COUNT(*) FROM burn_proofs b
+                 WHERE b.status = 'pending_merkle' AND NOT EXISTS (
+                   SELECT 1 FROM completed_transactions c
+                   WHERE c.sent_output_hash = lower(hex(b.output_hash)) AND c.status = 'rejected')",
+                [],
+                |row| row.get::<_, usize>(0),
+            )?)
+        });
     match pending {
         Ok(0) => Ok(()),
         Ok(1) => Err(anyhow::anyhow!(
@@ -1453,15 +1464,28 @@ mod tests {
         let conn = pool.get().expect("connection");
         conn.execute_batch("PRAGMA foreign_keys = OFF")
             .expect("pragma");
+        for id in [1u8, 2] {
+            conn.execute(
+                "INSERT INTO burn_proofs (account_id, output_hash, commitment, claim_public_key,
+                   ownership_proof_nonce, ownership_proof_sig, kernel_excess, kernel_excess_nonce,
+                   kernel_excess_sig, sender_offset_public_key, encrypted_data, value)
+                 VALUES (1, ?1, ?1, '', zeroblob(32), zeroblob(32), zeroblob(32),
+                   zeroblob(32), zeroblob(32), zeroblob(32), x'', 1)",
+                [[id; 32].as_slice()],
+            )
+            .expect("burn proof");
+        }
+        let err = pending_burns_guard(&path).expect_err("refused");
+        assert!(err.to_string().starts_with("2 burns to Layer 2"), "{err}");
+
+        // The second burn was rejected by the network: it will never be mined.
         conn.execute(
-            "INSERT INTO burn_proofs (account_id, output_hash, commitment, claim_public_key,
-               ownership_proof_nonce, ownership_proof_sig, kernel_excess, kernel_excess_nonce,
-               kernel_excess_sig, sender_offset_public_key, encrypted_data, value)
-             VALUES (1, zeroblob(32), zeroblob(32), '', zeroblob(32), zeroblob(32), zeroblob(32),
-               zeroblob(32), zeroblob(32), zeroblob(32), x'', 1)",
-            [],
+            "INSERT INTO completed_transactions (id, account_id, pending_tx_id, status,
+               kernel_excess, sent_output_hash, serialized_transaction)
+             VALUES (7, 1, 'p', 'rejected', x'', ?1, x'')",
+            [hex::encode([2u8; 32])],
         )
-        .expect("burn proof");
+        .expect("rejected burn");
         let err = pending_burns_guard(&path).expect_err("refused");
         assert!(err.to_string().starts_with("1 burn to Layer 2"), "{err}");
 
