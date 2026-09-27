@@ -28,6 +28,7 @@ use std::{
     collections::{HashMap, HashSet},
     iter,
     path::Path,
+    sync::{Mutex, PoisonError},
     time::SystemTime,
 };
 
@@ -63,14 +64,16 @@ use tari_template_lib::{
 
 use super::{
     LOG_TARGET, OotleSdk,
-    send::{MAX_L2_FEE, VALIDITY_EPOCHS, check_fee, ensure_not_rejected, with_indexer_timeout},
+    send::{MAX_L2_FEE, VALIDITY_EPOCHS, check_fee, submit, with_indexer_timeout},
 };
 
 /// Claimed proof files move here, the same place tari_walletd puts them.
 const CLAIMED_DIR: &str = "claimed";
-/// Submitted claims waiting to finalize, transaction id to proof file, kept next to the
-/// proofs so a restart doesn't lose track of them.
+/// Submitted claims and sends waiting to finalize, transaction id to proof file (`null`
+/// for a send), kept next to the proofs so a restart doesn't lose track of them.
 const PENDING_CLAIMS_FILE: &str = "pending_claims.json";
+/// The submit path and the event listener both change the pending claims file.
+static PENDING_CLAIMS_LOCK: Mutex<()> = Mutex::new(());
 /// Proof files are small. Same cap as tari_walletd.
 const MAX_PROOF_BYTES: u64 = 1 << 20;
 /// What the claim burn verifier says when the L2 hasn't synced the burn's L1 block yet.
@@ -100,11 +103,13 @@ pub struct L2Burn {
     pub timestamp: u64,
 }
 
-/// How a submitted claim ended on L2.
+/// How a submitted claim or send ended on L2.
 #[derive(Clone, Debug, Serialize, PartialEq)]
 pub struct L2ClaimResult {
-    /// Hex, the claimed burn's commitment.
-    pub commitment: String,
+    /// "claim" or "send".
+    pub kind: &'static str,
+    /// Hex, the claimed burn's commitment. `None` for a send.
+    pub commitment: Option<String>,
     pub accepted: bool,
     /// Why the claim was rejected, when the L2 said.
     pub reason: Option<String>,
@@ -113,16 +118,21 @@ pub struct L2ClaimResult {
 }
 
 impl L2ClaimResult {
-    /// The result for a claim of the proof `file` ({claim key}-{commitment}.json).
-    fn new(file: &str, accepted: bool, reason: Option<String>) -> Self {
-        let commitment = file
-            .strip_suffix(".json")
-            .and_then(|name| name.rsplit_once('-'))
-            .map_or(file, |(_, commitment)| commitment);
+    /// The result for a claim of the proof `file` ({claim key}-{commitment}.json), or for
+    /// a send when there's no file.
+    fn new(file: Option<&str>, accepted: bool, reason: Option<String>) -> Self {
+        let commitment = file.map(|file| {
+            file.strip_suffix(".json")
+                .and_then(|name| name.rsplit_once('-'))
+                .map_or(file, |(_, commitment)| commitment)
+                .to_string()
+        });
         Self {
-            commitment: commitment.to_string(),
+            kind: if file.is_some() { "claim" } else { "send" },
+            not_yet_claimable: file.is_some()
+                && reason.as_deref().is_some_and(is_burn_not_yet_claimable),
+            commitment,
             accepted,
-            not_yet_claimable: reason.as_deref().is_some_and(is_burn_not_yet_claimable),
             reason,
         }
     }
@@ -261,8 +271,12 @@ pub fn read_proof(path: &Path) -> Result<BurnProof, anyhow::Error> {
     Ok(serde_json::from_slice(&std::fs::read(path)?)?)
 }
 
-/// The submitted claims `track_claim` saved in `dir`, transaction id to proof file.
-pub fn load_claims(dir: &Path) -> HashMap<TransactionId, String> {
+/// Submitted claims and sends, transaction id to the claim's proof file or `None` for
+/// a send.
+type Tracked = HashMap<TransactionId, Option<String>>;
+
+/// The submitted claims and sends saved in `dir`.
+fn load_claims(dir: &Path) -> Tracked {
     let read = match std::fs::read(dir.join(PENDING_CLAIMS_FILE)) {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return HashMap::new(),
         read => read,
@@ -275,13 +289,41 @@ pub fn load_claims(dir: &Path) -> HashMap<TransactionId, String> {
         })
 }
 
-fn save_claims(dir: &Path, claims: &HashMap<TransactionId, String>) {
+fn save_claims(dir: &Path, claims: &Tracked) {
     let saved = serde_json::to_vec(claims)
         .map_err(std::io::Error::from)
-        .and_then(|json| std::fs::write(dir.join(PENDING_CLAIMS_FILE), json));
+        .and_then(|json| {
+            std::fs::create_dir_all(dir)?;
+            std::fs::write(dir.join(PENDING_CLAIMS_FILE), json)
+        });
     if let Err(e) = saved {
         warn!(target: LOG_TARGET, "Could not save the pending claims: {e}");
     }
+}
+
+/// Loads what's tracked in `dir`, lets `change` edit it and saves it if it changed.
+fn update_tracked<R>(dir: &Path, change: impl FnOnce(&mut Tracked) -> R) -> R {
+    let _lock = PENDING_CLAIMS_LOCK
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner);
+    let mut tracked = load_claims(dir);
+    let before = tracked.clone();
+    let result = change(&mut tracked);
+    if tracked != before {
+        save_claims(dir, &tracked);
+    }
+    result
+}
+
+/// Remembers a transaction about to be submitted, a claim of `claim_file` or a send when
+/// that's `None`, so its outcome is reported whenever it settles.
+pub fn track(dir: &Path, id: TransactionId, claim_file: Option<String>) {
+    update_tracked(dir, |tracked| tracked.insert(id, claim_file));
+}
+
+/// Forgets a transaction that was never submitted.
+pub fn untrack(dir: &Path, id: TransactionId) {
+    update_tracked(dir, |tracked| tracked.remove(&id));
 }
 
 fn mark_claimed(dir: &Path, file: &str) {
@@ -292,77 +334,83 @@ fn mark_claimed(dir: &Path, file: &str) {
     }
 }
 
-/// Settles tracked claims that finished while nothing was listening (Universe was closed
-/// or events were missed). `status` looks a claim transaction up in the wallet, `None`
-/// when the wallet doesn't have it. Accepted claims are marked claimed, rejected, invalid
-/// and unknown ones are dropped so their burn is claimable again, pending ones stay.
-pub fn reconcile_claims(
+/// Settles a tracked transaction once it's finalized or invalid: an accepted claim's
+/// proof file moves into the claimed directory, a rejected claim's stays claimable.
+fn settle(
     dir: &Path,
-    claims: &mut HashMap<TransactionId, String>,
-    status: impl Fn(TransactionId) -> Result<Option<TransactionStatus>, anyhow::Error>,
-) {
-    let before = claims.clone();
-    claims.retain(|id, file| match status(*id) {
-        Ok(Some(TransactionStatus::New | TransactionStatus::Pending)) => true,
-        Ok(Some(TransactionStatus::Accepted)) => {
-            mark_claimed(dir, file);
-            false
+    file: Option<String>,
+    accepted: bool,
+    reason: Option<String>,
+) -> L2ClaimResult {
+    match (&file, accepted) {
+        (Some(file), true) => mark_claimed(dir, file),
+        (Some(file), false) => {
+            warn!(target: LOG_TARGET, "Claim of {file} was rejected, it stays claimable: {reason:?}")
         }
-        Ok(status) => {
-            warn!(target: LOG_TARGET, "Claim of {file} ended {status:?}, it stays claimable");
-            false
-        }
-        Err(e) => {
-            warn!(target: LOG_TARGET, "Could not look up the claim of {file}: {e}");
-            true
-        }
-    });
-    if *claims != before {
-        save_claims(dir, claims);
+        (None, true) => {}
+        (None, false) => warn!(target: LOG_TARGET, "An L2 send was rejected: {reason:?}"),
     }
+    L2ClaimResult::new(file.as_deref(), accepted, reason)
 }
 
-/// Moves the proof file of an accepted claim into the claimed directory and returns how
-/// a tracked claim ended once it finalizes or turns out invalid. `claims` maps submitted
-/// claim transactions to their proof file and is saved in `dir` whenever it changes.
-pub fn track_claim(
+/// Settles tracked claims and sends that finished while nothing was listening (Universe
+/// was closed or events were missed) and returns how they ended. `status` looks a
+/// transaction up in the wallet, `None` when the wallet doesn't have it. Accepted and
+/// rejected ones settle, unknown ones are dropped (their burn is claimable again),
+/// pending ones stay.
+pub fn reconcile_claims(
     dir: &Path,
-    claims: &mut HashMap<TransactionId, String>,
-    event: &WalletEvent,
-) -> Option<L2ClaimResult> {
-    match event {
-        WalletEvent::TransactionSubmitted(event) => {
-            if let Some(TransactionContextKind::ClaimBurn { file_name }) =
-                event.context.as_ref().and_then(|c| c.kind.as_ref())
-            {
-                claims.insert(event.transaction_id, file_name.clone());
-                save_claims(dir, claims);
+    status: impl Fn(TransactionId) -> Result<Option<TransactionStatus>, anyhow::Error>,
+) -> Vec<L2ClaimResult> {
+    update_tracked(dir, |tracked| {
+        let mut ended = Vec::new();
+        tracked.retain(|id, file| match status(*id) {
+            Ok(Some(TransactionStatus::New | TransactionStatus::Pending)) => true,
+            Ok(Some(status)) => {
+                ended.push((file.take(), status == TransactionStatus::Accepted));
+                false
             }
-            None
-        }
-        WalletEvent::TransactionFinalized(event) => {
-            let file = claims.remove(&event.transaction_id)?;
-            save_claims(dir, claims);
-            if let Some(reason) = event.finalize.result.any_reject() {
-                warn!(target: LOG_TARGET, "Claim of {file} was rejected, it stays claimable: {reason}");
-                return Some(L2ClaimResult::new(&file, false, Some(reason.to_string())));
+            Ok(None) => {
+                warn!(target: LOG_TARGET, "The wallet has no record of {id} ({file:?}), no longer tracking it");
+                false
             }
-            mark_claimed(dir, &file);
-            Some(L2ClaimResult::new(&file, true, None))
-        }
-        WalletEvent::TransactionInvalid(event) => {
-            let file = claims.remove(&event.transaction_id)?;
-            save_claims(dir, claims);
-            let reason = event
-                .finalize
-                .as_ref()
-                .and_then(|f| f.result.any_reject())
-                .map(|r| r.to_string());
-            warn!(target: LOG_TARGET, "Claim of {file} is invalid, it stays claimable: {reason:?}");
-            Some(L2ClaimResult::new(&file, false, reason))
-        }
-        _ => None,
-    }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Could not look up {id} ({file:?}): {e}");
+                true
+            }
+        });
+        ended
+            .into_iter()
+            .map(|(file, accepted)| settle(dir, file, accepted, None))
+            .collect()
+    })
+}
+
+/// How a tracked claim or send ended, once it finalizes or turns out invalid. `None` for
+/// any other event or a transaction that isn't tracked.
+pub fn track_claim(dir: &Path, event: &WalletEvent) -> Option<L2ClaimResult> {
+    let (id, reason) = match event {
+        WalletEvent::TransactionFinalized(event) => (
+            event.transaction_id,
+            event.finalize.result.any_reject().map(|r| r.to_string()),
+        ),
+        WalletEvent::TransactionInvalid(event) => (
+            event.transaction_id,
+            Some(
+                event
+                    .finalize
+                    .as_ref()
+                    .and_then(|f| f.result.any_reject())
+                    .map_or_else(
+                        || "The transaction is invalid".to_string(),
+                        |r| r.to_string(),
+                    ),
+            ),
+        ),
+        _ => return None,
+    };
+    let file = update_tracked(dir, |tracked| tracked.remove(&id))?;
+    Some(settle(dir, file, reason.is_none(), reason))
 }
 
 /// Claims the burn in `proof` into the wallet account its claim key belongs to and
@@ -408,15 +456,21 @@ pub async fn claim_burn(
     let fee = check_claim_fee(result.finalize.required_fees(), proof.claim_proof.value)?;
     approve_fee(fee).await?;
     let transaction = build(fee, false)?;
-    let context = TransactionContext::with_accounts([*account.component_address()])
-        .with_kind(TransactionContextKind::ClaimBurn { file_name });
-    let id = transactions
-        .submit_transaction_with_opts(transaction, Some(context), None)
-        .await
-        .map_err(|e| anyhow!("The claim was not submitted: {e}"))?;
-    // A rejected claim never gets a submitted event, so it stays claimable.
-    ensure_not_rejected(sdk, id)?;
-    Ok(id)
+    let context = TransactionContext::with_accounts([*account.component_address()]).with_kind(
+        TransactionContextKind::ClaimBurn {
+            file_name: file_name.clone(),
+        },
+    );
+    // A claim that's rejected outright stays claimable.
+    submit(
+        sdk,
+        transactions,
+        transaction,
+        context,
+        None,
+        Some(file_name),
+    )
+    .await
 }
 
 /// The fee comes out of the burn itself, so on top of the flat ceiling it may take at
@@ -585,17 +639,26 @@ mod tests {
                        current epoch, and therefore is not yet claimable.";
         let file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
         let result = |accepted, reason: Option<&str>| {
-            let r = L2ClaimResult::new(&file, accepted, reason.map(str::to_string));
-            (r.commitment, r.accepted, r.not_yet_claimable)
+            let r = L2ClaimResult::new(Some(&file), accepted, reason.map(str::to_string));
+            (
+                r.kind,
+                r.commitment.unwrap_or_default(),
+                r.accepted,
+                r.not_yet_claimable,
+            )
         };
-        assert_eq!(result(true, None), (COMMITMENT.to_string(), true, false));
+        let commitment = COMMITMENT.to_string();
+        assert_eq!(
+            result(true, None),
+            ("claim", commitment.clone(), true, false)
+        );
         assert_eq!(
             result(false, Some(not_yet)),
-            (COMMITMENT.to_string(), false, true)
+            ("claim", commitment.clone(), false, true)
         );
         assert_eq!(
             result(false, Some("Execution failure: Insufficient funds")),
-            (COMMITMENT.to_string(), false, false)
+            ("claim", commitment, false, false)
         );
     }
 
@@ -721,26 +784,45 @@ mod tests {
             write(dir, &file(n), PROOF);
         }
         assert!(load_claims(dir).is_empty());
-        save_claims(dir, &(1..=5).map(|n| (id(n), file(n))).collect());
+        for n in 1..=5 {
+            track(dir, id(n), Some(file(n)));
+        }
+        // Sends 16 and 17, accepted and rejected.
+        track(dir, id(16), None);
+        track(dir, id(17), None);
+        track(dir, id(9), None);
+        untrack(dir, id(9));
 
-        let mut claims = load_claims(dir);
-        assert_eq!(claims.len(), 5);
-        assert_eq!(claims.get(&id(3)), Some(&file(3)));
-        reconcile_claims(dir, &mut claims, |tx| match tx.as_bytes()[0] {
-            1 => Ok(Some(TransactionStatus::Accepted)),
-            2 => Ok(Some(TransactionStatus::Rejected)),
+        let claims = load_claims(dir);
+        assert_eq!(claims.len(), 7);
+        assert_eq!(claims.get(&id(3)), Some(&Some(file(3))));
+        assert_eq!(claims.get(&id(16)), Some(&None));
+        let settled = reconcile_claims(dir, |tx| match tx.as_bytes()[0] {
+            1 | 16 => Ok(Some(TransactionStatus::Accepted)),
+            2 | 17 => Ok(Some(TransactionStatus::Rejected)),
             3 => Ok(Some(TransactionStatus::Pending)),
             4 => Ok(None),
             _ => Err(anyhow!("store busy")),
         });
 
-        let still_tracked = |claims: &HashMap<TransactionId, String>| {
-            let mut ids: Vec<u8> = claims.keys().map(|tx| tx.as_bytes()[0]).collect();
-            ids.sort();
-            ids
-        };
-        assert_eq!(still_tracked(&claims), [3, 5]);
-        assert_eq!(still_tracked(&load_claims(dir)), [3, 5]);
+        let mut settled: Vec<_> = settled
+            .into_iter()
+            .map(|r| (r.kind, r.commitment, r.accepted))
+            .collect();
+        settled.sort();
+        assert_eq!(
+            settled,
+            [
+                ("claim", Some(file(1)), true),
+                ("claim", Some(file(2)), false),
+                ("send", None, false),
+                ("send", None, true),
+            ]
+        );
+        let mut still_tracked: Vec<u8> =
+            load_claims(dir).keys().map(|tx| tx.as_bytes()[0]).collect();
+        still_tracked.sort();
+        assert_eq!(still_tracked, [3, 5]);
         assert!(dir.join(CLAIMED_DIR).join(file(1)).is_file());
         assert!(!dir.join(file(1)).exists());
         for n in 2..=5 {
@@ -749,6 +831,28 @@ mod tests {
 
         write(dir, PENDING_CLAIMS_FILE, "not json");
         assert!(load_claims(dir).is_empty());
+    }
+
+    #[test]
+    fn a_rejected_send_reports_once_and_needs_no_proof_dir() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        // A wallet that never burned has no proof dir yet.
+        let dir = dir.path().join("burn_proofs");
+        let id = TransactionId::from([7; 32]);
+        track(&dir, id, None);
+        let invalid = WalletEvent::TransactionInvalid(
+            tari_ootle_wallet_sdk::models::TransactionInvalidEvent {
+                transaction_id: id,
+                status: TransactionStatus::InvalidTransaction,
+                finalize: None,
+                final_fee: None,
+            },
+        );
+
+        let result = track_claim(&dir, &invalid).expect("tracked send");
+        assert_eq!((result.kind, result.accepted), ("send", false));
+        assert!(result.reason.is_some());
+        assert!(track_claim(&dir, &invalid).is_none(), "reported once");
     }
 
     #[test]

@@ -65,6 +65,7 @@ describe('handleL2WalletStateUpdate', () => {
 
 describe('handleL2ClaimResult', () => {
     const result = {
+        kind: 'claim' as const,
         commitment: 'aa'.repeat(32),
         accepted: false,
         reason: 'Insufficient funds',
@@ -85,5 +86,12 @@ describe('handleL2ClaimResult', () => {
     it('explains a burn the L2 has not seen yet instead of the raw reason', () => {
         handleL2ClaimResult({ ...result, reason: 'is not yet claimable', not_yet_claimable: true });
         expect(lastToast()).toMatchObject({ type: 'error', text: 'l2.claim.not-yet-claimable' });
+    });
+
+    it('toasts how a send ended', () => {
+        handleL2ClaimResult({ ...result, kind: 'send', commitment: null, accepted: true, reason: null });
+        expect(lastToast()).toMatchObject({ type: 'success', title: 'l2.send.confirmed' });
+        handleL2ClaimResult({ ...result, kind: 'send', commitment: null, reason: 'Input already spent' });
+        expect(lastToast()).toMatchObject({ type: 'error', title: 'l2.send.rejected', text: 'Input already spent' });
     });
 });

@@ -34,6 +34,14 @@ export const importL2SeedWords = (seedWords: string[]) => changeL2Seed('l2_impor
 export const resetL2ToL1Seed = () => changeL2Seed('l2_use_l1_seed');
 
 export const handleL2ClaimResult = (result: L2ClaimResult) => {
+    if (result.kind === 'send') {
+        addToast({
+            title: t(result.accepted ? 'l2.send.confirmed' : 'l2.send.rejected', { ns: 'wallet' }),
+            text: result.reason ?? undefined,
+            type: result.accepted ? 'success' : 'error',
+        });
+        return;
+    }
     if (result.accepted) {
         addToast({ title: t('l2.claim.confirmed', { ns: 'wallet' }), type: 'success' });
         return;

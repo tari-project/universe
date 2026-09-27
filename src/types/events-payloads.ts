@@ -247,9 +247,11 @@ export interface L2Burn {
     timestamp: number;
 }
 
-/** How a submitted claim of the burn with `commitment` (hex) ended on L2. */
+/** How a submitted claim of the burn with `commitment` (hex), or a send, ended on L2. */
 export interface L2ClaimResult {
-    commitment: string;
+    kind: 'claim' | 'send';
+    /** Null for a send. */
+    commitment: string | null;
     accepted: boolean;
     reason: string | null;
     not_yet_claimable: boolean;
