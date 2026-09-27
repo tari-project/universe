@@ -36,6 +36,7 @@ import {
     handleSystrayAppShutdownRequested,
 } from '@app/store/actions/appStateStoreActions';
 import {
+    closePinPrompt,
     handleBaseNodeStatusUpdate,
     setWalletBalance,
     updateWalletScanningProgress,
@@ -253,13 +254,17 @@ const useTauriEventsListener = () => {
                         setDialogToShow('keychain');
                         break;
                     case 'CreatePin':
-                        useSecurityStore.setState({ modal: 'create_pin' });
+                        useSecurityStore.setState({ modal: 'create_pin', pinPromptId: event.payload.id });
                         break;
                     case 'EnterPin':
                         useSecurityStore.setState({
                             modal: 'enter_pin',
-                            pinContext: event.payload ?? null,
+                            pinContext: event.payload.context ?? null,
+                            pinPromptId: event.payload.id,
                         });
+                        break;
+                    case 'ClosePinDialog':
+                        closePinPrompt(event.payload);
                         break;
                     case 'UpdateGpuDevicesSettings':
                         handleGpuDevicesSettingsUpdated(event.payload);

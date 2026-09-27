@@ -749,11 +749,11 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_set_pin() {
+    pub async fn emit_set_pin(id: u64) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::CreatePin,
-            payload: (),
+            payload: crate::events::PinPromptPayload { id, context: None },
         };
         if let Err(e) = Self::get_app_handle()
             .await
@@ -763,17 +763,31 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_ask_for_pin(context: Option<crate::events::PinPromptContext>) {
+    pub async fn emit_ask_for_pin(id: u64, context: Option<crate::events::PinPromptContext>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::EnterPin,
-            payload: context,
+            payload: crate::events::PinPromptPayload { id, context },
         };
         if let Err(e) = Self::get_app_handle()
             .await
             .emit(BACKEND_STATE_UPDATE, event)
         {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit EnterPin event: {e:?}");
+        }
+    }
+
+    /// Closes the PIN dialog of prompt `id`, which the backend stopped waiting for.
+    pub async fn emit_close_pin_dialog(id: u64) {
+        let event = Event {
+            event_type: EventType::ClosePinDialog,
+            payload: id,
+        };
+        if let Err(e) = Self::get_app_handle()
+            .await
+            .emit(BACKEND_STATE_UPDATE, event)
+        {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to emit ClosePinDialog event: {e:?}");
         }
     }
     pub async fn emit_update_gpu_devices_settings(payload: GpuDevicesSettingsByMiner) {

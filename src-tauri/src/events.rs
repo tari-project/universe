@@ -81,6 +81,7 @@ pub enum EventType {
     ShowKeyringDialog,
     CreatePin,
     EnterPin,
+    ClosePinDialog,
     UpdateGpuDevicesSettings,
     PinLocked,
     SeedBackedUp,
@@ -260,6 +261,14 @@ pub enum PinPromptContext {
     RestoreWalletDetails,
     /// The stored seed is PIN-protected although the config says no PIN is set.
     SeedNeedsPin,
+    /// Unlocking (or first enabling) the L2 wallet.
+    L2Unlock,
+    /// Revealing the L2 seed words.
+    L2SeedExport,
+    /// Replacing the L2 wallet with imported seed words.
+    L2SeedImport,
+    /// Replacing the L2 wallet with one restored from the L1 seed.
+    L2SeedReset,
     /// Sending XTR (micro units) on L2 from `account` to the Ootle address `destination`.
     L2Send {
         amount_micro_minotari: u64,
@@ -271,6 +280,14 @@ pub enum PinPromptContext {
         amount_micro_minotari: u64,
         commitment: String,
     },
+}
+
+/// Payload of the `CreatePin` and `EnterPin` events. The frontend echoes `id` in its
+/// `pin-dialog-response`, so an answer meant for one prompt can't satisfy another.
+#[derive(Debug, Serialize, Clone)]
+pub struct PinPromptPayload {
+    pub id: u64,
+    pub context: Option<PinPromptContext>,
 }
 
 #[derive(Debug, Serialize, Clone)]

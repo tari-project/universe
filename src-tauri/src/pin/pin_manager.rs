@@ -20,6 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::{
+    sync::atomic::{AtomicU64, Ordering},
+    time::Duration,
+};
+
+use serde::Deserialize;
 use tari_utilities::SafePassword;
 use tauri::{AppHandle, Listener};
 use tokio::sync::oneshot;
@@ -134,45 +140,75 @@ impl PinManager {
 
 // Utils
 
-/// The frontend answers every PIN dialog on the same uncorrelated
-/// "pin-dialog-response" event, so two prompts outstanding at once would both get the
-/// one PIN the user typed for whichever dialog they saw. Only one prompt at a time.
-/// Held only for a single emit-and-wait, never across prompts, so a caller that
-/// prompts twice (or holds the send gate permit) just queues behind it.
+/// Only one PIN prompt at a time, so the user always knows which dialog they are
+/// answering. Held only for a single emit-and-wait, never across prompts, so a caller
+/// that prompts twice (or holds the send gate permit) just queues behind it.
 static PIN_PROMPT: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+static NEXT_PROMPT_ID: AtomicU64 = AtomicU64::new(1);
+/// A dialog nobody answers (a lost event, a reloaded webview) must not hold
+/// `PIN_PROMPT` for the rest of the session.
+const PIN_PROMPT_TIMEOUT: Duration = Duration::from_secs(5 * 60);
+
+/// What the frontend sends on "pin-dialog-response": the id of the prompt it answers
+/// and the PIN, or no PIN when the user cancelled.
+#[derive(Deserialize)]
+struct PinDialogResponse {
+    id: u64,
+    pin: Option<u64>,
+}
+
+/// The answer a "pin-dialog-response" payload gives prompt `id`: `None` when it answers
+/// another prompt (or isn't a response at all), `Some(None)` when the user cancelled or
+/// the PIN isn't 4 to 6 digits.
+fn pin_for_prompt(payload: &str, id: u64) -> Option<Option<String>> {
+    let response: PinDialogResponse = serde_json::from_str(payload).ok()?;
+    if response.id != id {
+        return None;
+    }
+    Some(
+        response
+            .pin
+            .map(|pin| pin.to_string())
+            .filter(|pin| (4..=6).contains(&pin.len())),
+    )
+}
 
 async fn pin_dialog_with_emitter<F, Fut>(
     app_handle: &AppHandle,
     emit_fn: F,
 ) -> Result<String, anyhow::Error>
 where
-    F: Fn() -> Fut,
+    F: Fn(u64) -> Fut,
     Fut: std::future::Future<Output = ()>,
 {
     let _prompt = PIN_PROMPT.lock().await;
+    let id = NEXT_PROMPT_ID.fetch_add(1, Ordering::Relaxed);
 
-    // Display the PIN dialog using the provided emitter
-    emit_fn().await;
-
-    // Listen for the pin dialog response event
+    // Listen before showing the dialog so a fast answer can't be missed.
     let (tx, rx) = oneshot::channel();
-    app_handle.once("pin-dialog-response", move |event| {
-        let pin = event.payload().trim();
-
-        if pin.len() >= 4 && pin.len() <= 6 {
-            let _unused = tx.send(Some(pin.to_string()));
-        } else {
-            let _unused = tx.send(None);
+    let tx = std::sync::Mutex::new(Some(tx));
+    let listener = app_handle.listen("pin-dialog-response", move |event| {
+        if let Some(pin) = pin_for_prompt(event.payload(), id)
+            && let Some(tx) = tx.lock().ok().and_then(|mut tx| tx.take())
+        {
+            let _unused = tx.send(pin);
         }
     });
+    emit_fn(id).await;
 
-    // Await the response
-    let pin = rx.await.unwrap_or_default();
-    if let Some(pin) = pin {
-        Ok(pin.to_string())
-    } else {
-        log::info!(target: LOG_TARGET_APP_LOGIC,"PIN entry cancelled");
-        Err(anyhow::anyhow!("PIN entry cancelled"))
+    let response = tokio::time::timeout(PIN_PROMPT_TIMEOUT, rx).await;
+    app_handle.unlisten(listener);
+    match response {
+        Ok(Ok(Some(pin))) => Ok(pin),
+        Err(_elapsed) => {
+            log::info!(target: LOG_TARGET_APP_LOGIC, "PIN entry timed out");
+            EventsEmitter::emit_close_pin_dialog(id).await;
+            Err(anyhow::anyhow!("PIN entry cancelled"))
+        }
+        Ok(_) => {
+            log::info!(target: LOG_TARGET_APP_LOGIC, "PIN entry cancelled");
+            Err(anyhow::anyhow!("PIN entry cancelled"))
+        }
     }
 }
 
@@ -180,12 +216,31 @@ async fn enter_pin_dialog(
     app_handle: &AppHandle,
     context: Option<PinPromptContext>,
 ) -> Result<String, anyhow::Error> {
-    pin_dialog_with_emitter(app_handle, || {
-        EventsEmitter::emit_ask_for_pin(context.clone())
+    pin_dialog_with_emitter(app_handle, |id| {
+        EventsEmitter::emit_ask_for_pin(id, context.clone())
     })
     .await
 }
 
 async fn create_pin_dialog(app_handle: &AppHandle) -> Result<String, anyhow::Error> {
     pin_dialog_with_emitter(app_handle, EventsEmitter::emit_set_pin).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::pin_for_prompt;
+
+    #[test]
+    fn only_a_response_to_this_prompt_counts() {
+        assert_eq!(
+            pin_for_prompt(r#"{"id":7,"pin":123456}"#, 7),
+            Some(Some("123456".into()))
+        );
+        assert_eq!(pin_for_prompt(r#"{"id":6,"pin":123456}"#, 7), None);
+        assert_eq!(pin_for_prompt(r#"{"pin":123456}"#, 7), None);
+        assert_eq!(pin_for_prompt("123456", 7), None);
+        assert_eq!(pin_for_prompt(r#"{"id":7}"#, 7), Some(None));
+        assert_eq!(pin_for_prompt(r#"{"id":7,"pin":123}"#, 7), Some(None));
+        assert_eq!(pin_for_prompt(r#"{"id":7,"pin":1234567}"#, 7), Some(None));
+    }
 }

@@ -151,6 +151,11 @@ export interface SeedNeedsPinPromptContext {
     kind: 'seed_needs_pin';
 }
 
+/** Unlocking (or first enabling) the L2 wallet, revealing, importing or resetting its seed. */
+export interface L2SeedPinPromptContext {
+    kind: 'l2_unlock' | 'l2_seed_export' | 'l2_seed_import' | 'l2_seed_reset';
+}
+
 /** Burning L1 funds to be claimed on L2 by `claim_public_key`. */
 export interface BurnPinPromptContext {
     kind: 'burn';
@@ -180,7 +185,14 @@ export type PinPromptContext =
     | L2SendPinPromptContext
     | L2ClaimPinPromptContext
     | RestoreWalletDetailsPinPromptContext
-    | SeedNeedsPinPromptContext;
+    | SeedNeedsPinPromptContext
+    | L2SeedPinPromptContext;
+
+/** Payload of `CreatePin` and `EnterPin`. `id` goes back in the `pin-dialog-response`. */
+export interface PinPromptPayload {
+    id: number;
+    context?: PinPromptContext | null;
+}
 
 export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim';
 

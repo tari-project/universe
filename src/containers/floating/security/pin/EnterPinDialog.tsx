@@ -1,12 +1,22 @@
-import { emit } from '@tauri-apps/api/event';
 import { useTranslation } from 'react-i18next';
-import { useSecurityStore } from '@app/store/useSecurityStore.ts';
+import { respondToPin, useSecurityStore } from '@app/store/useSecurityStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import EnterPin from '@app/components/security/pin/EnterPin.tsx';
 import { TransactionContextSummary } from '@app/components/transactions/send/TransactionContextSummary.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import type { PinPromptContext } from '@app/types/events-payloads.ts';
 import { Header, Heading, Wrapper } from './styles.ts';
+
+// The prompts with no amount to show say in one line what the PIN authorises.
+const REASON_KEYS: Partial<Record<PinPromptContext['kind'], string>> = {
+    restore_wallet_details: 'security.pin.restore-wallet-details',
+    seed_needs_pin: 'security.pin.seed-needs-pin',
+    l2_unlock: 'security.pin.l2-unlock',
+    l2_seed_export: 'security.pin.l2-seed-export',
+    l2_seed_import: 'security.pin.l2-seed-import',
+    l2_seed_reset: 'security.pin.l2-seed-reset',
+};
 
 export default function EnterPinDialog() {
     const { t } = useTranslation('wallet');
@@ -22,12 +32,7 @@ export default function EnterPinDialog() {
     const burnContext = pinContext?.kind === 'burn' ? pinContext : null;
     const l2SendContext = pinContext?.kind === 'l2_send' ? pinContext : null;
     const l2ClaimContext = pinContext?.kind === 'l2_claim' ? pinContext : null;
-    const reasonKey =
-        pinContext?.kind === 'restore_wallet_details'
-            ? 'security.pin.restore-wallet-details'
-            : pinContext?.kind === 'seed_needs_pin'
-              ? 'security.pin.seed-needs-pin'
-              : null;
+    const reasonKey = pinContext ? REASON_KEYS[pinContext.kind] : undefined;
 
     function handleClose() {
         if (pinResolver) {
@@ -35,7 +40,7 @@ export default function EnterPinDialog() {
             useSecurityStore.setState({ pinResolver: null, pinContext: null });
             setModal(null);
         } else {
-            void emit('pin-dialog-response', { pin: undefined });
+            void respondToPin();
             useSecurityStore.setState({ pinContext: null });
             setModal(null);
         }
@@ -47,7 +52,7 @@ export default function EnterPinDialog() {
             useSecurityStore.setState({ pinResolver: null, pinContext: null });
             setModal(null);
         } else {
-            emit('pin-dialog-response', Number(pin)).finally(() => {
+            respondToPin(pin).finally(() => {
                 useSecurityStore.setState({ pinContext: null });
                 setModal(null);
             });
