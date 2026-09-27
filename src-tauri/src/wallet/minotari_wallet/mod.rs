@@ -94,7 +94,7 @@ use std::{
 use tari_common::configuration::Network;
 use tari_common_types_wallet::transaction::TxId;
 use tari_common_wallet::configuration::Network as WalletNetwork;
-use tari_transaction_components_wallet::rpc::models::TxLocation;
+use tari_transaction_components_wallet::rpc::models::{TxLocation, TxSubmissionResponse};
 use tari_transaction_components_wallet::tari_amount::MicroMinotari as WalletMicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
@@ -390,18 +390,8 @@ impl MinotariWalletManager {
         } = result;
 
         let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
-        match client.submit_transaction(transaction).await {
-            Ok(r) if r.accepted => mark_completed_transaction_as_broadcasted(&conn, tx_id, 1)?,
-            Ok(r) => {
-                let reason = r.rejection_reason.to_string();
-                mark_completed_transaction_as_rejected(&conn, tx_id, &reason)?;
-                return Err(anyhow::anyhow!("Burn rejected by network: {reason}"));
-            }
-            Err(e) => {
-                mark_completed_transaction_as_rejected(&conn, tx_id, &e.to_string())?;
-                return Err(anyhow::anyhow!("Burn broadcast failed: {e}"));
-            }
-        }
+        let submitted = client.submit_transaction(transaction).await;
+        record_burn_broadcast(&conn, tx_id, submitted)?;
         drop(conn);
 
         BalanceTracker::current()
@@ -441,7 +431,7 @@ impl MinotariWalletManager {
 
     /// Burns broadcast but not yet mined deep enough for their claim proof to be written.
     pub async fn pending_burns() -> Result<Vec<DbBurnProof>, anyhow::Error> {
-        Ok(get_pending_burn_proofs(&*Self::get_db_connection().await?)?)
+        pending_burns(&*Self::get_db_connection().await?)
     }
 
     /// When each of this wallet's burns was made, unix seconds by commitment (hex).
@@ -1393,46 +1383,72 @@ fn move_legacy_burn_proofs(legacy: PathBuf, dir: PathBuf) -> PathBuf {
     }
 }
 
+/// Only an explicit rejection by the node marks the burn rejected. A transport error
+/// leaves it completed: the node may have it and mine it, and the scanner's monitor
+/// rebroadcasts it until it's mined or rejected. Until then it stays a pending burn.
+fn record_burn_broadcast(
+    conn: &Connection,
+    tx_id: TxId,
+    submitted: Result<TxSubmissionResponse, anyhow::Error>,
+) -> Result<(), anyhow::Error> {
+    match submitted {
+        Ok(r) if r.accepted => Ok(mark_completed_transaction_as_broadcasted(conn, tx_id, 1)?),
+        Ok(r) => {
+            let reason = r.rejection_reason.to_string();
+            mark_completed_transaction_as_rejected(conn, tx_id, &reason)?;
+            Err(anyhow::anyhow!("Burn rejected by network: {reason}"))
+        }
+        Err(e) => Err(anyhow::anyhow!(
+            "Couldn't confirm the burn reached the network ({e}). It may still go through, so check again later before burning again."
+        )),
+    }
+}
+
+/// Pending burn proofs, less those whose transaction was rejected: a rejected burn is
+/// never mined, so it would sit pending forever.
+fn pending_burns(conn: &Connection) -> Result<Vec<DbBurnProof>, anyhow::Error> {
+    let rejected: HashSet<i64> = conn
+        .prepare(
+            "SELECT b.id FROM burn_proofs b JOIN completed_transactions c
+               ON c.sent_output_hash = lower(hex(b.output_hash)) WHERE c.status = 'rejected'",
+        )?
+        .query_map([], |row| row.get(0))?
+        .collect::<Result<_, _>>()?;
+    Ok(get_pending_burn_proofs(conn)?
+        .into_iter()
+        .filter(|b| !rejected.contains(&b.id))
+        .collect())
+}
+
 /// Reads the database file directly so the check works whether or not the wallet phase
-/// has the pool open. A database that can't be read has no rows left to lose. A burn
-/// whose transaction was rejected (or failed to broadcast, recorded the same way) never
-/// gets mined, so it doesn't count or it would block forever.
+/// has the pool open. Fails closed: a database that can't be read might still hold an
+/// unmined burn's only proof row.
 fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
     if !database_path.exists() {
         return Ok(());
     }
     let pending = init_db(database_path.to_path_buf())
         .map_err(anyhow::Error::from)
-        .and_then(|pool| {
-            Ok(pool.get()?.query_row(
-                "SELECT COUNT(*) FROM burn_proofs b
-                 WHERE b.status = 'pending_merkle' AND NOT EXISTS (
-                   SELECT 1 FROM completed_transactions c
-                   WHERE c.sent_output_hash = lower(hex(b.output_hash)) AND c.status = 'rejected')",
-                [],
-                |row| row.get::<_, usize>(0),
-            )?)
-        });
-    match pending {
-        Ok(0) => Ok(()),
-        Ok(1) => Err(anyhow::anyhow!(
+        .and_then(|pool| pending_burns(&*pool.get()?))
+        .map_err(|e| {
+            anyhow::anyhow!("Couldn't check for burns to Layer 2 waiting to be mined, so nothing was changed. Try again. ({e})")
+        })?;
+    match pending.len() {
+        0 => Ok(()),
+        1 => Err(anyhow::anyhow!(
             "1 burn to Layer 2 is still waiting to be mined. Try again once it's mined."
         )),
-        Ok(n) => Err(anyhow::anyhow!(
+        n => Err(anyhow::anyhow!(
             "{n} burns to Layer 2 are still waiting to be mined. Try again once they're mined."
         )),
-        Err(e) => {
-            warn!(target: LOG_TARGET, "Could not read pending burns, not blocking: {e}");
-            Ok(())
-        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        blocks_to_report, burn_times, confirmation_status, move_legacy_burn_proofs,
-        pending_burns_guard, scan_progress_percent,
+        blocks_to_report, burn_times, confirmation_status, move_legacy_burn_proofs, pending_burns,
+        pending_burns_guard, record_burn_broadcast, scan_progress_percent,
     };
     use minotari_wallet::transactions::TransactionDisplayStatus;
 
@@ -1488,10 +1504,63 @@ mod tests {
         .expect("rejected burn");
         let err = pending_burns_guard(&path).expect_err("refused");
         assert!(err.to_string().starts_with("1 burn to Layer 2"), "{err}");
+        // The panel's list leaves the rejected burn out too.
+        let listed = pending_burns(&conn).expect("pending burns");
+        assert_eq!(listed.len(), 1);
+        assert_eq!(listed[0].commitment, vec![1u8; 32]);
 
         conn.execute("UPDATE burn_proofs SET status = 'complete'", [])
             .expect("mined");
         assert!(pending_burns_guard(&path).is_ok());
+    }
+
+    #[test]
+    fn a_burn_whose_broadcast_errored_stays_pending() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let path = dir.path().join("wallet.db");
+        let pool = minotari_wallet::db::init_db(path.clone()).expect("db");
+        let conn = pool.get().expect("connection");
+        conn.execute_batch("PRAGMA foreign_keys = OFF")
+            .expect("pragma");
+        conn.execute(
+            "INSERT INTO burn_proofs (account_id, output_hash, commitment, claim_public_key,
+               ownership_proof_nonce, ownership_proof_sig, kernel_excess, kernel_excess_nonce,
+               kernel_excess_sig, sender_offset_public_key, encrypted_data, value)
+             VALUES (1, ?1, ?1, '', zeroblob(32), zeroblob(32), zeroblob(32),
+               zeroblob(32), zeroblob(32), zeroblob(32), x'', 1)",
+            [[3u8; 32].as_slice()],
+        )
+        .expect("burn proof");
+        conn.execute(
+            "INSERT INTO completed_transactions (id, account_id, pending_tx_id, status,
+               kernel_excess, sent_output_hash, serialized_transaction)
+             VALUES (9, 1, 'p', 'completed', x'', ?1, x'')",
+            [hex::encode([3u8; 32])],
+        )
+        .expect("burn transaction");
+
+        let err = record_burn_broadcast(&conn, 9u64.into(), Err(anyhow::anyhow!("timed out")))
+            .expect_err("reported");
+        assert!(err.to_string().contains("may still go through"), "{err}");
+        let status: String = conn
+            .query_row(
+                "SELECT status FROM completed_transactions WHERE id = 9",
+                [],
+                |r| r.get(0),
+            )
+            .expect("status");
+        assert_eq!(status, "completed");
+        assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
+        assert!(pending_burns_guard(&path).is_err());
+    }
+
+    #[test]
+    fn an_unreadable_wallet_db_blocks_deleting_it() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let path = dir.path().join("wallet.db");
+        std::fs::write(&path, "not a database").expect("file");
+        let err = pending_burns_guard(&path).expect_err("refused");
+        assert!(err.to_string().starts_with("Couldn't check"), "{err}");
     }
 
     #[test]
