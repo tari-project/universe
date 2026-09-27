@@ -11,6 +11,7 @@ interface Props {
     /** Recipient address for a send, L2 claim public key for a burn, Ootle address for an L2 send, burn commitment for an L2 claim. */
     destination: string;
     paymentId?: string | null;
+    feeMicroMinotari?: number | null;
     subtitle?: string;
     kind?: SpendKind;
 }
@@ -24,6 +25,7 @@ export function TransactionContextSummary({
     amountMicroMinotari,
     destination,
     paymentId,
+    feeMicroMinotari,
     subtitle,
     kind = 'send',
 }: Props) {
@@ -46,6 +48,13 @@ export function TransactionContextSummary({
         {
             label: t('send.transaction-description'),
             value: paymentId,
+        },
+        {
+            label: t('send.network-fee'),
+            value:
+                feeMicroMinotari != null
+                    ? `${formatNumber(feeMicroMinotari, FormatPreset.XTM_DECIMALS)} ${isL2 ? 'XTR' : 'XTM'}`
+                    : null,
         },
     ];
 

@@ -366,12 +366,17 @@ impl OotleWalletManager {
                     .map_err(wallet_error)
             })?;
 
-        PinManager::get_validated_pin(app_handle, Some(pin_context))
-            .await
-            .map_err(wallet_error)?;
-        let id = send::send_xtr(&sdk, &transactions, account, destination, amount)
-            .await
-            .map_err(|e| TransactionError::WalletError(format!("L2 send failed: {e}")))?;
+        let approve_fee = async |fee| approve_l2_fee(app_handle, pin_context, fee).await;
+        let id = send::send_xtr(
+            &sdk,
+            &transactions,
+            account,
+            destination,
+            amount,
+            approve_fee,
+        )
+        .await
+        .map_err(|e| TransactionError::WalletError(format!("L2 send failed: {e}")))?;
         info!(target: LOG_TARGET, "L2 send submitted: {id}");
         emit_state(&sdk).await;
         Ok(id.to_string())
@@ -405,10 +410,8 @@ impl OotleWalletManager {
     ) -> Result<String, TransactionError> {
         let sdk = started_sdk().await?;
         let transactions = transaction_service().await?;
-        PinManager::get_validated_pin(app_handle, Some(pin_context))
-            .await
-            .map_err(wallet_error)?;
-        let id = claim::claim_burn(&sdk, &transactions, proof, file_name)
+        let approve_fee = async |fee| approve_l2_fee(app_handle, pin_context, fee).await;
+        let id = claim::claim_burn(&sdk, &transactions, proof, file_name, approve_fee)
             .await
             .map_err(|e| TransactionError::WalletError(format!("L2 claim failed: {e}")))?;
         info!(target: LOG_TARGET, "L2 claim submitted: {id}");
@@ -850,6 +853,18 @@ fn open_sdk(
     )?;
     upsert_genesis_resources(&sdk)?;
     Ok(sdk)
+}
+
+/// Asks for the PIN to approve an L2 spend, showing the fee the dry run settled on.
+async fn approve_l2_fee(
+    app_handle: &AppHandle,
+    pin_context: PinPromptContext,
+    fee: u64,
+) -> Result<(), anyhow::Error> {
+    PinManager::get_validated_pin(app_handle, Some(pin_context.with_fee(fee)))
+        .await
+        .map(|_| ())
+        .map_err(|e| anyhow::anyhow!("{e}"))
 }
 
 fn wallet_error(e: impl std::fmt::Display) -> TransactionError {

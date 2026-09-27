@@ -237,10 +237,12 @@ impl SpendKind {
                 amount_micro_minotari,
                 destination: destination.clone(),
                 account: account.clone(),
+                fee_micro_minotari: None,
             },
             SpendKind::L2Claim { commitment } => PinPromptContext::L2Claim {
                 amount_micro_minotari,
                 commitment: commitment.clone(),
+                fee_micro_minotari: None,
             },
         }
     }
@@ -716,7 +718,7 @@ mod tests {
         );
         assert!(matches!(
             send.pin_context(3, None),
-            PinPromptContext::L2Send { amount_micro_minotari: 3, ref destination, ref account }
+            PinPromptContext::L2Send { amount_micro_minotari: 3, ref destination, ref account, fee_micro_minotari: None }
                 if destination == "otl_esm_addr" && account == "component_abc"
         ));
     }
@@ -730,8 +732,8 @@ mod tests {
         assert_eq!(claim.counterparty(), "dae29ac8");
         assert_eq!(claim.currency(), "XTR");
         assert!(matches!(
-            claim.pin_context(4, None),
-            PinPromptContext::L2Claim { amount_micro_minotari: 4, ref commitment }
+            claim.pin_context(4, None).with_fee(7),
+            PinPromptContext::L2Claim { amount_micro_minotari: 4, ref commitment, fee_micro_minotari: Some(7) }
                 if commitment == "dae29ac8"
         ));
     }
