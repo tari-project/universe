@@ -261,16 +261,36 @@ pub enum PinPromptContext {
     /// The stored seed is PIN-protected although the config says no PIN is set.
     SeedNeedsPin,
     /// Sending XTR (micro units) on L2 from `account` to the Ootle address `destination`.
+    /// The fee is set once the dry run has priced the transaction.
     L2Send {
         amount_micro_minotari: u64,
         destination: String,
         account: String,
+        fee_micro_minotari: Option<u64>,
     },
-    /// Claiming an L1 burn of `amount_micro_minotari` on L2, `commitment` (hex) being the burn.
+    /// Claiming an L1 burn of `amount_micro_minotari` on L2, `commitment` (hex) being the
+    /// burn. The fee comes out of the amount.
     L2Claim {
         amount_micro_minotari: u64,
         commitment: String,
+        fee_micro_minotari: Option<u64>,
     },
+}
+
+impl PinPromptContext {
+    /// Sets the fee an L2 send or claim will pay. Other contexts are left as they are.
+    pub fn with_fee(mut self, fee: u64) -> Self {
+        if let Self::L2Send {
+            fee_micro_minotari, ..
+        }
+        | Self::L2Claim {
+            fee_micro_minotari, ..
+        } = &mut self
+        {
+            *fee_micro_minotari = Some(fee);
+        }
+        self
+    }
 }
 
 #[derive(Debug, Serialize, Clone)]

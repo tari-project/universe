@@ -97,6 +97,7 @@ export default function EnterPinDialog() {
                             kind="l2_send"
                             amountMicroMinotari={l2SendContext.amount_micro_minotari}
                             destination={l2SendContext.destination}
+                            feeMicroMinotari={l2SendContext.fee_micro_minotari}
                             subtitle={t('security.pin.approve-send-subtitle')}
                         />
                     )}
@@ -105,6 +106,7 @@ export default function EnterPinDialog() {
                             kind="l2_claim"
                             amountMicroMinotari={l2ClaimContext.amount_micro_minotari}
                             destination={l2ClaimContext.commitment}
+                            feeMicroMinotari={l2ClaimContext.fee_micro_minotari}
                             subtitle={t('l2.claim.approve-subtitle')}
                         />
                     )}

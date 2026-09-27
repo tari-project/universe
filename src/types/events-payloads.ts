@@ -165,6 +165,7 @@ export interface L2SendPinPromptContext {
     amount_micro_minotari: number;
     destination: string;
     account: string;
+    fee_micro_minotari: number | null;
 }
 
 /** Claiming an L1 burn of `amount_micro_minotari` on L2. `commitment` (hex) identifies the burn. */
@@ -172,6 +173,7 @@ export interface L2ClaimPinPromptContext {
     kind: 'l2_claim';
     amount_micro_minotari: number;
     commitment: string;
+    fee_micro_minotari: number | null;
 }
 
 export type PinPromptContext =

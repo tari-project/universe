@@ -23,6 +23,8 @@
 //! Sending XTR from an L2 account, the way tari_walletd's stealth transfer handler and
 //! its web UI do it: dry run until the fee settles, then build at that fee and submit.
 
+use std::time::Duration;
+
 use anyhow::{anyhow, bail};
 use tari_crypto::tari_utilities::ByteArray;
 use tari_ootle_common_types::Epoch;
@@ -50,17 +52,29 @@ use super::OotleSdk;
 pub(super) const VALIDITY_EPOCHS: u64 = 3;
 /// Same as tari_walletd: dry runs before giving up on the fee settling.
 const MAX_FEE_ROUNDS: usize = 5;
+/// The fee is whatever the indexer's dry run says and the engine never refunds it, so a
+/// bad or tampered reply could sweep the account. Esmeralda averages about 6,600 micro XTR
+/// a transaction (fee volume over receipt count on the indexer's network/economics, and
+/// that includes template publishes at 250,000 each); a transfer is a few thousand.
+/// 0.1 XTR leaves plenty of headroom and still caps the damage.
+pub(super) const MAX_L2_FEE: u64 = 100_000;
+/// Every indexer call made while the send gate permit is held gets this long, so a
+/// stalled indexer can't wedge every L1 and L2 spend behind it.
+const INDEXER_TIMEOUT: Duration = Duration::from_secs(30);
 
 /// Sends `amount` micro XTR from `account` to `destination` as a blinded stealth output.
-/// Fails before anything is submitted if the account can't cover the amount and fee.
+/// Fails before anything is submitted if the account can't cover the amount and fee, or
+/// the fee is over [`MAX_L2_FEE`]. `approve_fee` gets the settled fee before anything is
+/// signed for real, and stops the send by returning an error.
 pub async fn send_xtr(
     sdk: &OotleSdk,
     transactions: &TransactionServiceHandle,
     account: AccountWithAddress,
     destination: OotleAddress,
     amount: u64,
+    approve_fee: impl AsyncFnOnce(u64) -> Result<(), anyhow::Error>,
 ) -> Result<TransactionId, anyhow::Error> {
-    let epoch = sdk.get_network_interface().get_current_epoch().await?;
+    let epoch = with_indexer_timeout(sdk.get_network_interface().get_current_epoch()).await??;
     let mut params = StealthTransferParams {
         fee_params: TransferFeeParams::new(UtxoInputSelection::PreferRevealed),
         input_selection: UtxoInputSelection::PreferRevealed,
@@ -78,6 +92,7 @@ pub async fn send_xtr(
         is_dry_run: true,
     };
     params.max_fee = estimate_fee(sdk, transactions, &account, params.clone()).await?;
+    approve_fee(params.max_fee).await?;
     params.is_dry_run = false;
 
     let component = *account.component_address();
@@ -129,9 +144,8 @@ async fn estimate_fee(
     for _ in 0..MAX_FEE_ROUNDS {
         let (lock, transaction) = build(sdk, account.clone(), params.clone()).await?;
         lock.release();
-        let result = transactions
-            .submit_dry_run_transaction(transaction)
-            .await
+        let result = with_indexer_timeout(transactions.submit_dry_run_transaction(transaction))
+            .await?
             .map_err(|e| anyhow!("The L2 fee estimate failed: {e}"))?;
         let finalize = result.finalize;
         if finalize.charged_fees() <= params.max_fee {
@@ -140,9 +154,31 @@ async fn estimate_fee(
             }
             return Ok(params.max_fee);
         }
-        params.max_fee = finalize.required_fees();
+        params.max_fee = check_fee(finalize.required_fees(), MAX_L2_FEE)?;
     }
     bail!("The L2 fee estimate did not settle after {MAX_FEE_ROUNDS} dry runs")
+}
+
+/// Refuses a fee above `ceiling`, returning it otherwise.
+pub(super) fn check_fee(fee: u64, ceiling: u64) -> Result<u64, anyhow::Error> {
+    if fee > ceiling {
+        bail!("The network asked for a fee of {fee} micro XTR, over the {ceiling} limit");
+    }
+    Ok(fee)
+}
+
+/// Runs an indexer call under [`INDEXER_TIMEOUT`].
+pub(super) async fn with_indexer_timeout<T>(
+    call: impl Future<Output = T>,
+) -> Result<T, anyhow::Error> {
+    tokio::time::timeout(INDEXER_TIMEOUT, call)
+        .await
+        .map_err(|_| {
+            anyhow!(
+                "The L2 indexer didn't answer within {} seconds",
+                INDEXER_TIMEOUT.as_secs()
+            )
+        })
 }
 
 /// Builds and signs the transfer. The returned guard holds the spent inputs locked
@@ -152,7 +188,8 @@ async fn build(
     account: AccountWithAddress,
     params: StealthTransferParams,
 ) -> Result<(WalletLockDropGuard<'_, SqliteWalletStore>, Transaction), anyhow::Error> {
-    let (lock, transfer) = sdk.stealth_transfer_api().transfer(account, params).await?;
+    let (lock, transfer) =
+        with_indexer_timeout(sdk.stealth_transfer_api().transfer(account, params)).await??;
     let main_pk = RistrettoPublicKeyBytes::try_from(transfer.main_signer.public_key().as_bytes())?;
     let main_signer = sdk.signer_api().with_context(&main_pk);
     let transaction = match transfer.additional_signer.as_ref() {
@@ -182,5 +219,12 @@ mod tests {
         assert!(rejection(TransactionStatus::Rejected, None).is_some());
         assert!(rejection(TransactionStatus::Pending, None).is_none());
         assert!(rejection(TransactionStatus::Accepted, None).is_none());
+    }
+
+    #[test]
+    fn fees_over_the_ceiling_are_refused() {
+        assert_eq!(check_fee(MAX_L2_FEE, MAX_L2_FEE).unwrap(), MAX_L2_FEE);
+        let err = check_fee(MAX_L2_FEE + 1, MAX_L2_FEE).unwrap_err();
+        assert!(err.to_string().contains("over the 100000 limit"));
     }
 }
