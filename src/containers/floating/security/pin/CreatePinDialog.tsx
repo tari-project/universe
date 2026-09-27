@@ -1,5 +1,4 @@
-import { emit } from '@tauri-apps/api/event';
-import { useSecurityStore } from '@app/store/useSecurityStore.ts';
+import { respondToPin, useSecurityStore } from '@app/store/useSecurityStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Header, Wrapper } from './styles.ts';
 import { useState } from 'react';
@@ -15,13 +14,13 @@ export default function CreatePinDialog() {
     const isOpen = modal === 'create_pin';
 
     function handleClose() {
-        void emit('pin-dialog-response', { pin: undefined });
+        void respondToPin();
         setShowComplete(false);
         setModal(null);
     }
 
     function handleSubmit(pin: string) {
-        emit('pin-dialog-response', Number(pin)).then(() => {
+        respondToPin(pin).then(() => {
             if (!showComplete) {
                 setShowComplete(true);
             } else {

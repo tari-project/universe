@@ -57,11 +57,11 @@ export async function once(
 
 /**
  * Frontend→backend events matter: backend flows block on them (the PIN
- * dialogs' `pin-dialog-response` is awaited by `app_handle.once` in
+ * dialogs' `pin-dialog-response` is awaited by an `app_handle.listen` in
  * pin_manager.rs). The WS bridge runs each invoke inside the app's real
  * hidden webview, so calling Tauri's built-in `plugin:event|emit` there
  * takes the exact production IPC path — which reaches the Rust listeners.
- * (A Rust-side `app.emit` does NOT wake an `app_handle.once`, so the
+ * (A Rust-side `app.emit` does NOT wake an `app_handle.listen`, so the
  * event must originate from the webview.)
  */
 export async function emit(event: string, payload?: unknown): Promise<void> {

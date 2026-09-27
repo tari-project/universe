@@ -10,7 +10,7 @@ import {
     GpuMinerType,
     MinerControlsState,
     NodeTypeUpdatePayload,
-    PinPromptContext,
+    PinPromptPayload,
     ProgressTrackerUpdatePayload,
     SetupPhase,
     ShowReleaseNotesPayload,
@@ -178,11 +178,15 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'CreatePin';
-          payload: undefined;
+          payload: PinPromptPayload;
       }
     | {
           event_type: 'EnterPin';
-          payload?: PinPromptContext | null;
+          payload: PinPromptPayload;
+      }
+    | {
+          event_type: 'ClosePinDialog';
+          payload: number;
       }
     | {
           event_type: 'UpdateGpuDevicesSettings';

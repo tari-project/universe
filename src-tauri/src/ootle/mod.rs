@@ -210,7 +210,7 @@ impl OotleWalletManager {
             Network::get_current_or_user_setting_or_default(),
             PinManager::pin_locked().await,
         )?;
-        let pin = PinManager::get_validated_pin(app_handle, None)
+        let pin = PinManager::get_validated_pin(app_handle, Some(PinPromptContext::L2Unlock))
             .await
             .map_err(wallet_error)?;
         open_and_start(&pin).await
@@ -263,7 +263,7 @@ impl OotleWalletManager {
             PinManager::pin_locked().await,
         )?;
         let mut sdk = started_sdk().await?;
-        PinManager::get_validated_pin_if_defined(app_handle, None)
+        PinManager::get_validated_pin_if_defined(app_handle, Some(PinPromptContext::L2SeedExport))
             .await
             .map_err(wallet_error)?;
         let words = sdk
@@ -287,7 +287,7 @@ impl OotleWalletManager {
             PinManager::pin_locked().await,
         )?;
         let words = parse_seed_words(&seed_words)?;
-        let pin = PinManager::get_validated_pin(app_handle, None)
+        let pin = PinManager::get_validated_pin(app_handle, Some(PinPromptContext::L2SeedImport))
             .await
             .map_err(wallet_error)?;
         let found = INSTANCE.found.notified();
@@ -307,7 +307,7 @@ impl OotleWalletManager {
             .await
             .ok_or_else(|| TransactionError::WalletError("No L1 wallet found".to_string()))?
             .id;
-        let pin = PinManager::get_validated_pin(app_handle, None)
+        let pin = PinManager::get_validated_pin(app_handle, Some(PinPromptContext::L2SeedReset))
             .await
             .map_err(wallet_error)?;
         let seed = InternalWallet::get_tari_seed(Some(pin.clone()))
