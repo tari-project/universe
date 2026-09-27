@@ -973,13 +973,14 @@ async fn start_services(sdk: &OotleSdk, needs_recovery: bool) -> Result<(), anyh
 }
 
 /// Sends the whole L2 state to the frontend now and again whenever the wallet reports
-/// an account, balance or transaction change, and marks accepted burn claims claimed.
+/// an account, balance or transaction change, marks accepted burn claims claimed and
+/// reports how tracked claims and sends ended.
 async fn emit_state_on_events(
     sdk: OotleSdk,
     mut events: broadcast::Receiver<WalletEvent>,
 ) -> Result<(), anyhow::Error> {
     let proof_dir = MinotariWalletManager::burn_proofs_dir()?;
-    // Claims submitted before a restart or while events were missed are settled from
+    // Claims and sends submitted before a restart or while events were missed are settled from
     // the wallet's own record of them.
     let status = |id| {
         let found = sdk.transaction_api().get(id);
@@ -987,9 +988,9 @@ async fn emit_state_on_events(
             .map(|tx| tx.map(|tx| tx.status))
             .map_err(anyhow::Error::from)
     };
-    let mut claims = claim::load_claims(&proof_dir);
-    claim::reconcile_claims(&proof_dir, &mut claims, status);
+    let settled = claim::reconcile_claims(&proof_dir, status);
     emit_state(&sdk).await;
+    emit_results(settled).await;
     loop {
         match events.recv().await {
             Ok(
@@ -1000,18 +1001,24 @@ async fn emit_state_on_events(
             // A claim's proof file moves before the state goes out, so the panel's burn
             // list refreshes with it gone.
             Ok(event) => {
-                let result = claim::track_claim(&proof_dir, &mut claims, &event);
+                let result = claim::track_claim(&proof_dir, &event);
                 emit_state(&sdk).await;
-                if let Some(result) = result {
-                    EventsEmitter::emit_l2_claim_result(result).await;
-                }
+                emit_results(result).await;
             }
             Err(broadcast::error::RecvError::Lagged(_)) => {
-                claim::reconcile_claims(&proof_dir, &mut claims, status);
+                let settled = claim::reconcile_claims(&proof_dir, status);
                 emit_state(&sdk).await;
+                emit_results(settled).await;
             }
             Err(broadcast::error::RecvError::Closed) => return Ok(()),
         }
+    }
+}
+
+/// Tells the frontend how tracked claims and sends ended.
+async fn emit_results(results: impl IntoIterator<Item = L2ClaimResult>) {
+    for result in results {
+        EventsEmitter::emit_l2_claim_result(result).await;
     }
 }
 

@@ -24,8 +24,9 @@
 //! its web UI do it: dry run until the fee settles, then build at that fee and submit.
 
 use anyhow::{anyhow, bail};
+use log::warn;
 use tari_crypto::tari_utilities::ByteArray;
-use tari_ootle_common_types::Epoch;
+use tari_ootle_common_types::{Epoch, optional::Optional};
 use tari_ootle_transaction::{Transaction, TransactionId};
 use tari_ootle_wallet_sdk::{
     OotleAddress,
@@ -44,7 +45,8 @@ use tari_template_lib::{
     types::{Amount, constants::STEALTH_TARI_RESOURCE_ADDRESS},
 };
 
-use super::OotleSdk;
+use super::{LOG_TARGET, OotleSdk, claim};
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 
 /// Same as tari_walletd: about an hour at the 20 minute epoch target.
 pub(super) const VALIDITY_EPOCHS: u64 = 3;
@@ -80,28 +82,73 @@ pub async fn send_xtr(
     params.max_fee = estimate_fee(sdk, transactions, &account, params.clone()).await?;
     params.is_dry_run = false;
 
-    let component = *account.component_address();
+    let context = TransactionContext::with_accounts([*account.component_address()]);
     let (lock, transaction) = build(sdk, account, params).await?;
-    let id = transactions
-        .submit_transaction_with_opts(
-            transaction,
-            Some(TransactionContext::with_accounts([component])),
-            Some(lock.id()),
-        )
+    submit(sdk, transactions, transaction, context, Some(lock), None).await
+}
+
+/// Submits `transaction` and returns its id unless it definitely failed. It's tracked
+/// before it goes out (`claim_file` for a claim, `None` for a send) so its outcome is
+/// reported whenever it settles.
+///
+/// A transport error is not a failure: the SDK keeps the transaction `New` and resubmits
+/// it on its next poll, so it stays tracked and `lock` keeps its inputs until the wallet
+/// releases them on finalize, the same as for a transaction the network took. Only an
+/// explicit rejection, or a transaction the wallet never stored, fails and drops `lock`,
+/// which frees the inputs.
+pub(super) async fn submit(
+    sdk: &OotleSdk,
+    transactions: &TransactionServiceHandle,
+    transaction: Transaction,
+    context: TransactionContext,
+    lock: Option<WalletLockDropGuard<'_, SqliteWalletStore>>,
+    claim_file: Option<String>,
+) -> Result<TransactionId, anyhow::Error> {
+    let dir = MinotariWalletManager::burn_proofs_dir()?;
+    let id = transaction.calculate_id();
+    claim::track(&dir, id, claim_file);
+    let submitted = transactions
+        .submit_transaction_with_opts(transaction, Some(context), lock.as_ref().map(|l| l.id()))
         .await
-        .map_err(|e| anyhow!("The L2 transaction was not submitted: {e}"))?;
-    // A rejected send returns here and drops the lock, which frees its inputs.
-    ensure_not_rejected(sdk, id)?;
-    // The wallet releases the lock once the transaction is finalized.
-    lock.keep_locked();
+        .map(drop)
+        .map_err(|e| e.to_string());
+    let stored = sdk
+        .transaction_api()
+        .get(id)
+        .optional()
+        .map(|tx| tx.map(|tx| (tx.status, tx.invalid_reason)))
+        .map_err(|e| e.to_string());
+    if let Some(e) = failure(&submitted, stored) {
+        claim::untrack(&dir, id);
+        return Err(e);
+    }
+    if let Err(e) = submitted {
+        warn!(target: LOG_TARGET, "Submitting {id} failed, the wallet will resubmit it: {e}");
+    }
+    if let Some(lock) = lock {
+        lock.keep_locked();
+    }
     Ok(id)
 }
 
-/// The SDK returns the id even when the network rejects the submission outright, and
-/// only records the rejection on the stored transaction. Fails if it did.
-pub(super) fn ensure_not_rejected(sdk: &OotleSdk, id: TransactionId) -> Result<(), anyhow::Error> {
-    let transaction = sdk.transaction_api().get(id)?;
-    rejection(transaction.status, transaction.invalid_reason.as_deref()).map_or(Ok(()), Err)
+/// Why a submission failed for good, from what the transaction service returned and what
+/// the wallet stored for the transaction, or `None` while it may still go through. The
+/// SDK returns the id even when the network rejects the submission outright and only
+/// records the rejection on the stored transaction. When the wallet can't be read the
+/// outcome is unknown, so the transaction is treated as submitted.
+fn failure(
+    submitted: &Result<(), String>,
+    stored: Result<Option<(TransactionStatus, Option<String>)>, String>,
+) -> Option<anyhow::Error> {
+    match (submitted, stored) {
+        (_, Ok(Some((status, reason)))) => rejection(status, reason.as_deref()),
+        (Err(e), Ok(None)) => Some(anyhow!("The L2 transaction was not submitted: {e}")),
+        (Ok(()), Ok(None)) => None,
+        (_, Err(e)) => {
+            warn!(target: LOG_TARGET, "Could not read back a submitted L2 transaction: {e}");
+            None
+        }
+    }
 }
 
 fn rejection(status: TransactionStatus, reason: Option<&str>) -> Option<anyhow::Error> {
@@ -174,6 +221,22 @@ async fn build(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn only_a_rejection_or_an_unstored_transaction_fails_a_submission() {
+        let stored = |status| Ok(Some((status, Some("input spent".to_string()))));
+        let transport = Err("connection reset".to_string());
+        // The SDK kept it New after a transport error and will resubmit it.
+        assert!(failure(&transport, stored(TransactionStatus::New)).is_none());
+        assert!(failure(&Ok(()), stored(TransactionStatus::Pending)).is_none());
+        let rejected = failure(&Ok(()), stored(TransactionStatus::InvalidTransaction)).unwrap();
+        assert!(rejected.to_string().contains("input spent"));
+        // Never stored, so nothing will resubmit it.
+        let unsent = failure(&transport, Ok(None)).unwrap();
+        assert!(unsent.to_string().contains("connection reset"));
+        // Can't tell, so it keeps its inputs locked.
+        assert!(failure(&transport, Err("store busy".to_string())).is_none());
+    }
 
     #[test]
     fn only_rejected_or_invalid_submissions_fail() {

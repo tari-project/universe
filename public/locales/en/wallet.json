@@ -290,8 +290,10 @@
       "error-message": "Error sending on Layer 2: ",
       "processing-title": "Your XTR is on the way",
       "processing-text": "Working out the fee and submitting. This can take a minute.",
-      "completed-title": "Sent",
-      "completed-text": "Your L2 transaction was submitted."
+      "completed-title": "Submitted",
+      "completed-text": "Waiting for the network to confirm it. You'll get a notification when it's confirmed or rejected.",
+      "confirmed": "L2 send confirmed",
+      "rejected": "L2 send rejected"
     },
     "tiles": {
       "epoch": "Epoch",
