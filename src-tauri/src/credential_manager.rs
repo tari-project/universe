@@ -109,15 +109,12 @@ impl CredentialManager {
         Self::install_password(MINOTARI_DB_ENTRY)
     }
 
-    /// Password older builds encrypted the Ootle (L2) seed with, if this install has one.
-    /// The L2 store is encrypted with the PIN now; this is only read to move an older store
-    /// onto it. Never minted.
-    pub fn legacy_ootle_keyring_password() -> Result<Option<Zeroizing<String>>, CredentialError> {
-        match Self::install_entry(OOTLE_KEYRING_ENTRY)?.get_secret() {
-            Ok(secret) if !secret.is_empty() => Ok(Some(Zeroizing::new(hex::encode(secret)))),
-            Ok(_) | Err(KeyringError::NoEntry) => Ok(None),
-            Err(e) => Err(e.into()),
-        }
+    /// Per-install secret the Ootle (L2) store password starts with, the PIN follows it, so
+    /// a copy of the store file is no use without the keyring. Minted on first use and never
+    /// rotated: older builds encrypted the store with this secret alone, and moving such a
+    /// store onto the new password needs the same value.
+    pub fn ootle_keyring_password() -> Result<Zeroizing<String>, CredentialError> {
+        Self::install_password(OOTLE_KEYRING_ENTRY)
     }
 
     fn install_password(name: &str) -> Result<Zeroizing<String>, CredentialError> {
