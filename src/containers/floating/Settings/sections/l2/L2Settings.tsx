@@ -154,11 +154,13 @@ export const L2Settings = () => {
                         <ToggleSwitch
                             data-testid="l2-settings-side-by-side"
                             checked={sideBySide}
-                            onChange={({ target }) => {
-                                setL2SideBySide(target.checked);
-                                // Turning it off with both cards open leaves the L1 card.
-                                if (!target.checked) setL2Open(false);
-                            }}
+                            onChange={({ target }) =>
+                                setL2SideBySide(target.checked).then(() => {
+                                    // Turning it off with both cards open leaves the L1 card; a failed
+                                    // write rolls the setting back, so read it rather than the click.
+                                    if (!useConfigUIStore.getState().l2_side_by_side) setL2Open(false);
+                                })
+                            }
                         />
                     </SettingsGroupAction>
                 </SettingsGroup>

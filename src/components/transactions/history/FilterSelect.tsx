@@ -24,9 +24,10 @@ interface FilterSelectProps {
     types?: readonly string[];
     value?: string;
     onChange?: (value: string) => void;
+    testId?: string;
 }
 
-export const FilterSelect = React.memo(({ types = FILTER_TYPES, value, onChange }: FilterSelectProps) => {
+export const FilterSelect = React.memo(({ types = FILTER_TYPES, value, onChange, testId }: FilterSelectProps) => {
     const { t } = useTranslation('wallet', { useSuspense: false });
     const storeFilter = useWalletStore((s) => s.transaction_history_filter);
 
@@ -40,7 +41,7 @@ export const FilterSelect = React.memo(({ types = FILTER_TYPES, value, onChange 
     )();
 
     return (
-        <FilterWrapper data-testid="tx-history-filter">
+        <FilterWrapper data-testid={testId ?? 'tx-history-filter'}>
             <Select
                 options={filterOptions}
                 selectedValue={value ?? storeFilter}

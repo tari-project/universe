@@ -378,7 +378,8 @@ export const setDisplayMode = async (displayMode: displayMode) => {
 
 export const setL2SideBySide = async (enabled: boolean) => {
     useConfigUIStore.setState((c) => ({ ...c, l2_side_by_side: enabled }));
-    invoke('set_l2_side_by_side', { enabled }).catch((e) => {
+    // Awaited so callers can act on the settled value (rolled back below on failure).
+    await invoke('set_l2_side_by_side', { enabled }).catch((e) => {
         console.error('Could not set L2 side by side', e);
         setError('Could not change the side by side setting');
         useConfigUIStore.setState((c) => ({ ...c, l2_side_by_side: !enabled }));

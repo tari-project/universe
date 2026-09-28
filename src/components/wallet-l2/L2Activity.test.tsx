@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
-import { fireEvent, render, screen, waitFor } from '@app/test/test-utils';
+import { act, fireEvent, render, screen, waitFor } from '@app/test/test-utils';
 import type { L2Account, L2Burn, L2NetworkStats } from '@app/types/events-payloads.ts';
 import L2Activity from './L2Activity';
 import { useL2WalletStore } from '@app/store/useL2WalletStore.ts';
@@ -113,6 +113,21 @@ describe('L2Activity', () => {
         render(<L2Activity account={account} filter="all-activity" />);
         expect(await screen.findByText('l2.claim.checking')).toBeInTheDocument();
         expect(screen.queryByTestId('l2-claim-button')).not.toBeInTheDocument();
+    });
+
+    it('drops a burn list that lands after a newer one was requested', async () => {
+        const pending: ((burns: L2Burn[]) => void)[] = [];
+        vi.mocked(invoke).mockImplementation((async (cmd: string) =>
+            cmd === 'l2_claimable_burns'
+                ? new Promise<L2Burn[]>((resolve) => pending.push(resolve))
+                : undefined) as typeof invoke);
+        const { rerender } = render(<L2Activity account={account} filter="all-activity" />);
+        rerender(<L2Activity account={{ ...account }} filter="all-activity" />);
+        await waitFor(() => expect(pending).toHaveLength(2));
+
+        await act(async () => pending[1]([]));
+        await act(async () => pending[0]([burn('aa'.repeat(32), 'claimable')]));
+        expect(screen.queryByTestId('l2-claim-row')).not.toBeInTheDocument();
     });
 
     it('shows the empty text when only claimed burns are left', async () => {

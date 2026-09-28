@@ -48,9 +48,15 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
     // Every L2 state update hands us a new account, including the one sent when a claim
     // is accepted and its burn moves to claimed, so the list follows the state.
     useEffect(() => {
+        let ignore = false;
         invoke<L2Burn[]>('l2_claimable_burns')
-            .then(setBurns)
+            .then((list) => {
+                if (!ignore) setBurns(list);
+            })
             .catch((e) => console.warn('Could not load L2 burns:', e));
+        return () => {
+            ignore = true;
+        };
     }, [account]);
 
     async function claim(commitment: string) {

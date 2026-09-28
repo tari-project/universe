@@ -193,7 +193,7 @@ describe('L2WalletCard', () => {
                   : undefined) as typeof invoke);
         render(<L2WalletCard />);
         const pick = async (label: string) => {
-            fireEvent.click(within(screen.getByTestId('tx-history-filter')).getByRole('combobox'));
+            fireEvent.click(within(screen.getByTestId('l2-history-filter')).getByRole('combobox'));
             fireEvent.click(await screen.findByRole('option', { name: label }));
         };
 

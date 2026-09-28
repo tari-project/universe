@@ -94,7 +94,7 @@ export default function L2Wallet({ account }: { account: L2Account }) {
             </DetailsCard>
 
             <TabsWrapper>
-                <FilterSelect types={FILTER_TYPES} value={filter} onChange={setFilter} />
+                <FilterSelect types={FILTER_TYPES} value={filter} onChange={setFilter} testId="l2-history-filter" />
                 <NavWrapper>
                     <NavButton
                         $isActive={section === 'send'}
