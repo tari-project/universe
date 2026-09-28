@@ -33,10 +33,6 @@ const date = (seconds: number) => formatEffectiveDate(new Date(seconds * 1000).t
 // Same preset choice as the L1 transaction details.
 const detail = (value: number) =>
     `${formatNumber(value, value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS)} XTR`;
-const formatWait = (seconds: number) => {
-    const minutes = Math.ceil(seconds / 60);
-    return minutes < 60 ? `${minutes} min` : `${Math.round(minutes / 60)} h`;
-};
 
 type Row = { change: L2BalanceChange; burn?: never } | { burn: L2Burn; change?: never };
 const rowTime = (row: Row) => (row.change ?? row.burn).timestamp;
@@ -170,9 +166,13 @@ function L2BurnRow({ burn, amount, claiming, onClaim }: L2BurnRowProps) {
     else if (burn.status === 'foreign') status = t('l2.claim.foreign');
     else if (checking) status = t('l2.claim.checking');
     else if (waiting && stats) {
+        const minutes = Math.ceil((blocksToWait * stats.block_target_secs) / 60);
         status = t('l2.claim.claimable-in', {
             count: blocksToWait,
-            time: formatWait(blocksToWait * stats.block_target_secs),
+            time:
+                minutes < 60
+                    ? t('l2.claim.wait-minutes', { count: minutes })
+                    : t('l2.claim.wait-hours', { count: Math.round(minutes / 60) }),
         });
     }
     let chip = '';
