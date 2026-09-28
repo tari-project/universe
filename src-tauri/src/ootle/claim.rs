@@ -66,6 +66,7 @@ use super::{
     LOG_TARGET, OotleSdk,
     send::{MAX_L2_FEE, VALIDITY_EPOCHS, check_fee, submit, with_indexer_timeout},
 };
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 
 /// Claimed proof files move here, the same place tari_walletd puts them.
 const CLAIMED_DIR: &str = "claimed";
@@ -226,8 +227,21 @@ pub fn find_claimable(dir: &Path, commitment: &str) -> Result<(String, BurnProof
         .find(|burn| burn.commitment == commitment)
         .and_then(|burn| burn.proof_file)
         .ok_or_else(|| anyhow!("No claimable burn with commitment {commitment}"))?;
+    ensure_no_pending_claim(dir, &file)?;
     let proof = read_proof(&dir.join(&file))?;
     Ok((file, proof))
+}
+
+/// Refuses `file` while a claim of it is still waiting to finalize: its proof only moves
+/// once the network accepts, so a second claim would be submitted and rejected on-chain.
+fn ensure_no_pending_claim(dir: &Path, file: &str) -> Result<(), anyhow::Error> {
+    if load_claims(dir)
+        .values()
+        .any(|f| f.as_deref() == Some(file))
+    {
+        bail!("This burn already has a claim waiting for the network.");
+    }
+    Ok(())
 }
 
 /// The burns with a proof file in `dir`, timed by when the file was last modified.
@@ -424,6 +438,9 @@ pub async fn claim_burn(
     file_name: String,
     approve_fee: impl AsyncFnOnce(u64) -> Result<(), anyhow::Error>,
 ) -> Result<TransactionId, anyhow::Error> {
+    // Checked again here, under the send gate permit: a second click passes
+    // find_claimable before the first claim is tracked.
+    ensure_no_pending_claim(&MinotariWalletManager::burn_proofs_dir()?, &file_name)?;
     let claim_key = proof.claim_proof.burn_public_key;
     let account = sdk
         .accounts_api()
@@ -736,6 +753,26 @@ mod tests {
                 .expect("empty")
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn a_burn_with_a_claim_pending_cannot_be_claimed_again() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = dir.path();
+        let file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
+        write(dir, &file, PROOF);
+        let id = TransactionId::from([1; 32]);
+        track(dir, id, Some(file));
+
+        let Err(err) = find_claimable(dir, COMMITMENT) else {
+            panic!("a burn with a claim pending must not be claimable");
+        };
+        assert_eq!(
+            err.to_string(),
+            "This burn already has a claim waiting for the network."
+        );
+        untrack(dir, id);
+        assert!(find_claimable(dir, COMMITMENT).is_ok());
     }
 
     #[test]
