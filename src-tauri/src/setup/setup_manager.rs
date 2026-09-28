@@ -788,6 +788,12 @@ impl SetupManager {
         }
     }
 
+    /// The lock [`Self::restart_phases`] holds. Anyone stopping and resuming phases by
+    /// hand takes it too, so a restart cannot interleave with their work in between.
+    pub async fn restart_safe_lock(&self) -> tokio::sync::MutexGuard<'_, ()> {
+        self.restart_safe_lock.lock().await
+    }
+
     pub async fn restart_phases(&self, phases: Vec<SetupPhase>) {
         info!(target: LOG_TARGET_APP_LOGIC, "Restarting phases: {phases:?}");
         let _lock = self.restart_safe_lock.lock().await;

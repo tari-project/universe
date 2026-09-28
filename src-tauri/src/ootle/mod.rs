@@ -185,7 +185,7 @@ impl OotleWalletManager {
             info!(target: LOG_TARGET, "L2 wallet skipped, not available on {network}");
             return Ok(());
         }
-        let store_dir = data_dir.join("ootle-wallet").join(network.as_key_str());
+        let store_dir = l2_store_dir(data_dir, network);
         // A restart of the wallet phase leaves the old store open; let it go before the
         // directory might be deleted below.
         INSTANCE.sdk.lock().await.take();
@@ -217,8 +217,8 @@ impl OotleWalletManager {
     /// Asks for the PIN, opens the store with it and starts the services. A store L2 was
     /// never enabled in gets the L1 seed restored into it first; that is how L2 is turned
     /// on. A locked store is unlocked; one older builds encrypted with the keyring secret
-    /// alone or the PIN alone is rebuilt under both from its own seed words. Refused without
-    /// a PIN or off Esmeralda.
+    /// alone is rebuilt under the secret and the PIN from its own seed words. Refused
+    /// without a PIN or off Esmeralda.
     pub async fn enable(app_handle: &AppHandle) -> Result<(), TransactionError> {
         check_l2_allowed(
             Network::get_current_or_user_setting_or_default(),
@@ -233,22 +233,22 @@ impl OotleWalletManager {
     /// Moves the L2 store onto the new PIN after the user reset a forgotten one. Its seed
     /// is encrypted with the old PIN, so it is rebuilt: from the L1 seed when it holds the
     /// L1 seed, from its own words when an older build encrypted it with the keyring
-    /// secret alone or the PIN alone and that still opens it. A store of imported words
+    /// secret alone and that still opens it. A store of imported words
     /// under the forgotten PIN can't be opened by anyone any more and is deleted, so the
-    /// user can enable L2 again.
+    /// user can enable L2 again. Works from the store on disk under `data_dir`, so it also
+    /// covers a reset before the wallet phase has found the store.
     pub async fn reset_forgotten_pin(
+        data_dir: &Path,
         l1_seed: &tari_common_types::seeds::cipher_seed::CipherSeed,
         pin: &tari_utilities::SafePassword,
     ) -> Result<(), TransactionError> {
         let lifecycle = INSTANCE.lifecycle.lock().await;
-        let Some(store_dir) = INSTANCE.store_dir.lock().await.clone() else {
-            return Ok(());
-        };
+        let store_dir = l2_store_dir(data_dir, Network::get_current_or_user_setting_or_default());
         let Some(seed) = stored_seed(&store_dir).map_err(wallet_error)? else {
             return Ok(());
         };
-        let secret = keyring_secret()?;
         let pin = pin_text(pin)?;
+        let secret = keyring_secret()?;
         let password = store_password(&secret, pin);
         // The new PIN can be the old one, which leaves nothing to do.
         if decipher_words(&seed, &password)
@@ -257,16 +257,15 @@ impl OotleWalletManager {
         {
             return Ok(());
         }
-        let words = match legacy_words(&seed, &secret, pin).map_err(wallet_error)? {
-            Some(words) => Some(words),
-            None if seed_source() == SeedSource::L1 => {
-                Some(l2_seed_words(l1_seed).map_err(wallet_error)?)
-            }
-            None => None,
-        };
         let owner =
             std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).map_err(wallet_error)?;
-        replace_store(&lifecycle, words.as_ref(), &owner, &password).await
+        // An older build encrypted the store with the keyring secret alone.
+        let words = match decipher_words(&seed, &secret).map_err(wallet_error)? {
+            Some(words) => Some(words),
+            None if owner != IMPORTED_SEED => Some(l2_seed_words(l1_seed).map_err(wallet_error)?),
+            None => None,
+        };
+        replace_store(&lifecycle, &store_dir, words.as_ref(), &owner, &password).await
     }
 
     /// The L2 seed words, once the user enters their PIN. Refused without a PIN, off
@@ -308,7 +307,15 @@ impl OotleWalletManager {
         let found = INSTANCE.found.notified();
         // The restarted phase's initialize takes the lock, so let it go before waiting.
         let lifecycle = INSTANCE.lifecycle.lock().await;
-        replace_store(&lifecycle, Some(&words), IMPORTED_SEED, &password).await?;
+        let store_dir = found_store_dir().await?;
+        replace_store(
+            &lifecycle,
+            &store_dir,
+            Some(&words),
+            IMPORTED_SEED,
+            &password,
+        )
+        .await?;
         drop(lifecycle);
         open_after_swap(found, &pin).await;
         Ok(())
@@ -335,7 +342,15 @@ impl OotleWalletManager {
         let password = store_password(&keyring_secret()?, pin_text(&pin)?);
         let found = INSTANCE.found.notified();
         let lifecycle = INSTANCE.lifecycle.lock().await;
-        replace_store(&lifecycle, Some(&words), wallet_id.as_str(), &password).await?;
+        let store_dir = found_store_dir().await?;
+        replace_store(
+            &lifecycle,
+            &store_dir,
+            Some(&words),
+            wallet_id.as_str(),
+            &password,
+        )
+        .await?;
         drop(lifecycle);
         open_after_swap(found, &pin).await;
         Ok(())
@@ -443,7 +458,7 @@ impl OotleWalletManager {
 
 /// Opens the store with the keyring secret and the PIN and starts the services, restoring
 /// the L1 seed into a store L2 was never enabled in first. A store older builds encrypted
-/// with the keyring secret alone or the PIN alone is moved onto both. Does nothing when
+/// with the keyring secret alone is moved onto the secret and the PIN. Does nothing when
 /// the store is already open, and is refused while the wallet phase that found the store
 /// is stopped.
 async fn open_and_start(pin: &tari_utilities::SafePassword) -> Result<(), TransactionError> {
@@ -455,12 +470,34 @@ async fn open_and_start(pin: &tari_utilities::SafePassword) -> Result<(), Transa
     if guard.is_some() {
         return Ok(());
     }
-    let (store_dir, network, indexer_url) = store_location().await?;
+    let store_dir = found_store_dir().await?;
+    let (network, indexer_url) = network_and_indexer().await?;
     let secret = keyring_secret()?;
     let pin_str = pin_text(pin)?;
     let sdk = match stored_seed(&store_dir).map_err(wallet_error)? {
-        Some(seed) => open_enabled_store(&store_dir, network, indexer_url, &seed, &secret, pin_str)
-            .map_err(wallet_error)?,
+        Some(seed) => {
+            // A store holding the L1 seed is rebuilt from it when no password opens it any
+            // more (a lost keyring entry); the L1 seed is the L2 seed, so nothing is lost.
+            let l1_words = match seed_source() {
+                SeedSource::L1 => {
+                    let l1_seed = InternalWallet::get_tari_seed(Some(pin.clone()))
+                        .await
+                        .map_err(wallet_error)?;
+                    Some(l2_seed_words(&l1_seed).map_err(wallet_error)?)
+                }
+                SeedSource::Imported => None,
+            };
+            open_enabled_store(
+                &store_dir,
+                network,
+                indexer_url,
+                &seed,
+                &secret,
+                pin_str,
+                l1_words.as_ref(),
+            )
+            .map_err(wallet_error)?
+        }
         None => {
             let seed = InternalWallet::get_tari_seed(Some(pin.clone()))
                 .await
@@ -501,20 +538,28 @@ async fn open_after_swap(
     }
 }
 
-/// Stops the wallet phase (which runs the L2 services), swaps the store for one restored
-/// from `words`, encrypted with `password` and owned by `owner` (or just deletes it when
-/// there are no words), then resumes the phase, which finds the store locked and sends the
-/// new state. Unlocking starts the services with recovery on. The phase resumes even when
-/// the swap fails, so the L1 wallet always comes back. The caller holds the lifecycle lock
-/// and lets it go before waiting for the resumed phase, whose initialize takes it.
+/// Stops the wallet phase (which runs the L2 services), swaps the store in `store_dir` for
+/// one restored from `words`, encrypted with `password` and owned by `owner` (or just
+/// deletes it when there are no words), then resumes the phase, which finds the store
+/// locked and sends the new state. Unlocking starts the services with recovery on. The
+/// phase resumes even when the swap fails, so the L1 wallet always comes back. The caller
+/// holds the lifecycle lock and lets it go before waiting for the resumed phase, whose
+/// initialize takes it.
 async fn replace_store(
     _lifecycle: &MutexGuard<'_, Option<(TaskTracker, PhaseSignal)>>,
+    store_dir: &Path,
     words: Option<&SeedWords>,
     owner: &str,
     password: &str,
 ) -> Result<(), TransactionError> {
-    let (store_dir, network, indexer_url) = store_location().await?;
+    let (network, indexer_url) = network_and_indexer().await?;
 
+    // The lock restart_phases holds, so a node-type or Tor restart cannot stop and resume
+    // the wallet phase in the middle of the swap and leave two wallet phases running.
+    // Taken under the lifecycle lock: safe, because restart_phases never waits for the
+    // lifecycle lock while holding this one (the resumed phase's initialize, which takes
+    // it, runs on a spawned task).
+    let _restart = SetupManager::get_instance().restart_safe_lock().await;
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
@@ -522,8 +567,8 @@ async fn replace_store(
     INSTANCE.sdk.lock().await.take();
     INSTANCE.transactions.lock().await.take();
     let result = match words {
-        Some(words) => restore_store(&store_dir, network, indexer_url, password, words, owner),
-        None => std::fs::remove_dir_all(&store_dir).map_err(Into::into),
+        Some(words) => restore_store(store_dir, network, indexer_url, password, words, owner),
+        None => std::fs::remove_dir_all(store_dir).map_err(Into::into),
     };
     SetupManager::get_instance()
         .resume_phases(vec![SetupPhase::Wallet])
@@ -536,21 +581,29 @@ async fn replace_store(
     Ok(())
 }
 
-/// Where the store lives, the network and the indexer, once the wallet phase has found it.
-async fn store_location() -> Result<(PathBuf, Network, Url), TransactionError> {
-    let store_dir = INSTANCE
+/// `<data dir>/ootle-wallet/<network>`.
+fn l2_store_dir(data_dir: &Path, network: Network) -> PathBuf {
+    data_dir.join("ootle-wallet").join(network.as_key_str())
+}
+
+/// Where the store lives, once the wallet phase has found it.
+async fn found_store_dir() -> Result<PathBuf, TransactionError> {
+    INSTANCE
         .store_dir
         .lock()
         .await
         .clone()
-        .ok_or_else(not_started)?;
+        .ok_or_else(not_started)
+}
+
+/// The network and its indexer.
+async fn network_and_indexer() -> Result<(Network, Url), TransactionError> {
     let indexer_url = ConfigCore::content()
         .await
         .ootle_indexer_url()
         .clone()
         .ok_or_else(|| TransactionError::Disabled("No Ootle indexer configured".to_string()))?;
     Ok((
-        store_dir,
         Network::get_current_or_user_setting_or_default(),
         indexer_url,
     ))
@@ -579,8 +632,9 @@ fn decipher_words(seed: &[u8], password: &str) -> Result<Option<SeedWords>, anyh
 
 /// Opens the store in `store_dir`, whose enciphered seed is `seed`, with the password made
 /// of the keyring `secret` and the `pin`. A store older builds encrypted with the secret
-/// alone, or with the PIN alone, is rebuilt under that password from its own seed words
-/// first, keeping its owner. A store none of them opens is left as it is.
+/// alone is rebuilt under that password from its own seed words first, keeping its owner.
+/// One neither opens is rebuilt from `l1_words` when there are any (the store holds the
+/// L1 seed), and left as it is otherwise (imported words no one can recover).
 fn open_enabled_store(
     store_dir: &Path,
     network: Network,
@@ -588,11 +642,16 @@ fn open_enabled_store(
     seed: &[u8],
     secret: &str,
     pin: &str,
+    l1_words: Option<&SeedWords>,
 ) -> Result<OotleSdk, anyhow::Error> {
     let password = store_password(secret, pin);
     if decipher_words(seed, &password)?.is_none() {
-        let words = legacy_words(seed, secret, pin)?
-            .ok_or_else(|| anyhow::anyhow!("The Layer 2 wallet does not open with this PIN"))?;
+        let words = match decipher_words(seed, secret)? {
+            Some(words) => words,
+            None => l1_words
+                .cloned()
+                .ok_or_else(|| anyhow::anyhow!("The Layer 2 wallet does not open with this PIN"))?,
+        };
         let owner = std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE))?;
         restore_store(
             store_dir,
@@ -605,15 +664,6 @@ fn open_enabled_store(
         info!(target: LOG_TARGET, "L2 store moved onto the keyring secret and the PIN");
     }
     open_sdk(store_dir, network, indexer_url, &password)
-}
-
-/// The seed words in a store an older build encrypted with the keyring secret alone, or
-/// with the PIN alone, or None when neither opens it.
-fn legacy_words(seed: &[u8], secret: &str, pin: &str) -> Result<Option<SeedWords>, anyhow::Error> {
-    match decipher_words(seed, secret)? {
-        Some(words) => Ok(Some(words)),
-        None => decipher_words(seed, pin),
-    }
 }
 
 /// What the panel gets while the store is not open: enabled and locked, or not enabled.
@@ -1326,7 +1376,7 @@ mod tests {
     }
 
     #[test]
-    fn keyring_only_and_pin_only_stores_move_onto_the_secret_and_pin() {
+    fn a_keyring_only_store_moves_onto_the_secret_and_pin_and_a_pin_only_one_is_refused() {
         let dir = tempfile::tempdir().expect("temp dir");
         let url = Url::parse("http://127.0.0.1:1").expect("url");
         // Built at runtime so the test values don't read as a leaked secret.
@@ -1338,18 +1388,9 @@ mod tests {
             words.join(" ").reveal().clone()
         };
 
-        for (name, legacy) in [("keyring", secret.as_str()), ("pin", pin.as_str())] {
+        // A store encrypted with `legacy`, marked imported, and its seed.
+        let legacy_store = |name: &str, legacy: &str| {
             let store_dir = dir.path().join(name);
-            let open = |seed: &[u8], secret: &str, pin: &str| {
-                open_enabled_store(
-                    &store_dir,
-                    Network::Esmeralda,
-                    url.clone(),
-                    seed,
-                    secret,
-                    pin,
-                )
-            };
             assert!(stored_seed(&store_dir).expect("no store").is_none());
             let mut sdk =
                 open_sdk(&store_dir, Network::Esmeralda, url.clone(), legacy).expect("sdk");
@@ -1360,31 +1401,162 @@ mod tests {
             drop(sdk);
             std::fs::write(store_dir.join(L1_WALLET_ID_FILE), IMPORTED_SEED).expect("owner");
             let seed = stored_seed(&store_dir).expect("read").expect("seed");
+            (store_dir, words, seed)
+        };
 
-            // With neither the secret nor the PIN that encrypted it, the store is left alone.
-            assert!(open(&seed, "other", "other").is_err());
-            let seed = stored_seed(&store_dir).expect("read").expect("seed");
-            assert!(decipher_words(&seed, legacy).expect("decipher").is_some());
+        // A PIN-only store is an offline brute force target, so it is not migrated.
+        let (store_dir, _, seed) = legacy_store("pin", &pin);
+        assert!(
+            open_enabled_store(
+                &store_dir,
+                Network::Esmeralda,
+                url.clone(),
+                &seed,
+                &secret,
+                &pin,
+                None
+            )
+            .is_err()
+        );
+        let seed = stored_seed(&store_dir).expect("read").expect("seed");
+        assert!(decipher_words(&seed, &pin).expect("decipher").is_some());
 
-            let mut sdk = open(&seed, &secret, &pin).expect("moved onto secret and pin");
-            assert_eq!(words_of(&mut sdk), words, "{name}");
+        let (store_dir, words, seed) = legacy_store("keyring", &secret);
+        let open = |seed: &[u8], secret: &str, pin: &str| {
+            open_enabled_store(
+                &store_dir,
+                Network::Esmeralda,
+                url.clone(),
+                seed,
+                secret,
+                pin,
+                None,
+            )
+        };
+
+        // With neither the secret nor the PIN that encrypted it, the store is left alone.
+        assert!(open(&seed, "other", "other").is_err());
+        let seed = stored_seed(&store_dir).expect("read").expect("seed");
+        assert!(decipher_words(&seed, &secret).expect("decipher").is_some());
+
+        let mut sdk = open(&seed, &secret, &pin).expect("moved onto secret and pin");
+        assert_eq!(words_of(&mut sdk), words);
+        drop(sdk);
+        assert_eq!(
+            std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).expect("owner"),
+            IMPORTED_SEED
+        );
+        let seed = stored_seed(&store_dir).expect("read").expect("seed");
+        assert!(
+            decipher_words(&seed, &password)
+                .expect("decipher")
+                .is_some()
+        );
+        assert!(decipher_words(&seed, &secret).expect("decipher").is_none());
+        assert!(decipher_words(&seed, &pin).expect("decipher").is_none());
+        // Moved once, it opens directly and the wrong PIN doesn't.
+        open(&seed, &secret, &pin).expect("opens with secret and pin");
+        assert!(open(&seed, &secret, "other").is_err());
+    }
+
+    #[test]
+    fn a_store_no_password_opens_is_rebuilt_from_the_l1_seed_unless_imported() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let secret = ["install", "secret"].concat();
+        let pin = ["test", "pin"].concat();
+        let words_text = |words: &SeedWords| words.join(" ").reveal().clone();
+        // A store whose keyring entry is gone: encrypted under a secret no one has any more.
+        let lost_store = |name: &str, owner: &str| {
+            let store_dir = dir.path().join(name);
+            let mut sdk =
+                open_sdk(&store_dir, Network::Esmeralda, url.clone(), "lost").expect("sdk");
+            sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+                .expect("seed");
             drop(sdk);
-            assert_eq!(
-                std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).expect("owner"),
-                IMPORTED_SEED
-            );
+            std::fs::write(store_dir.join(L1_WALLET_ID_FILE), owner).expect("owner");
             let seed = stored_seed(&store_dir).expect("read").expect("seed");
-            assert!(
-                decipher_words(&seed, &password)
-                    .expect("decipher")
-                    .is_some()
-            );
-            assert!(decipher_words(&seed, &secret).expect("decipher").is_none());
-            assert!(decipher_words(&seed, &pin).expect("decipher").is_none());
-            // Moved once, it opens directly and the wrong PIN doesn't.
-            open(&seed, &secret, &pin).expect("opens with secret and pin");
-            assert!(open(&seed, &secret, "other").is_err());
-        }
+            (store_dir, seed)
+        };
+        let l1_seed = tari_common_types::seeds::cipher_seed::CipherSeed::random();
+        let l1_words = l2_seed_words(&l1_seed).expect("l1 words");
+
+        let (store_dir, seed) = lost_store("l1", "wallet-1");
+        let mut sdk = open_enabled_store(
+            &store_dir,
+            Network::Esmeralda,
+            url.clone(),
+            &seed,
+            &secret,
+            &pin,
+            Some(&l1_words),
+        )
+        .expect("rebuilt from the l1 seed");
+        let words = sdk.load_seed_words().expect("load").expect("words");
+        assert_eq!(words_text(&words), words_text(&l1_words));
+        drop(sdk);
+        assert_eq!(
+            std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).expect("owner"),
+            "wallet-1"
+        );
+        let seed = stored_seed(&store_dir).expect("read").expect("seed");
+        assert!(
+            decipher_words(&seed, &store_password(&secret, &pin))
+                .expect("decipher")
+                .is_some()
+        );
+
+        let (store_dir, seed) = lost_store("imported", IMPORTED_SEED);
+        assert!(
+            open_enabled_store(
+                &store_dir,
+                Network::Esmeralda,
+                url.clone(),
+                &seed,
+                &secret,
+                &pin,
+                None,
+            )
+            .is_err()
+        );
+        assert_eq!(
+            stored_seed(&store_dir).expect("read").expect("seed"),
+            seed,
+            "an imported store nobody opens is left alone"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_forgotten_pin_reset_reaches_the_store_on_disk_before_the_phase_found_it() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let l1_seed = tari_common_types::seeds::cipher_seed::CipherSeed::random();
+        // Not UTF-8, so the reset fails at the PIN, which comes right after the store is
+        // read and before the OS keyring is touched. Ok here would mean the store was skipped.
+        let mut pin = tari_utilities::SafePassword::from("");
+        pin.reveal_mut().push(0xff);
+
+        // No store on disk: nothing to move.
+        assert!(
+            OotleWalletManager::reset_forgotten_pin(dir.path(), &l1_seed, &pin)
+                .await
+                .is_ok()
+        );
+
+        let store_dir = l2_store_dir(
+            dir.path(),
+            Network::get_current_or_user_setting_or_default(),
+        );
+        let mut sdk = open_sdk(&store_dir, Network::Esmeralda, url, "old").expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("seed");
+        drop(sdk);
+        assert!(INSTANCE.store_dir.lock().await.is_none());
+        assert!(
+            OotleWalletManager::reset_forgotten_pin(dir.path(), &l1_seed, &pin)
+                .await
+                .is_err()
+        );
     }
 
     #[tokio::test]
