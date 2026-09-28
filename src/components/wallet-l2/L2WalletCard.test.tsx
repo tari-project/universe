@@ -62,6 +62,20 @@ describe('L2WalletCard', () => {
         expect(screen.queryByTestId('l2-wallet')).not.toBeInTheDocument();
     });
 
+    it('stays quiet when the PIN prompt for Enable is cancelled', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'l2_get_state') return initialState;
+            if (cmd === 'enable_l2_wallet') throw 'PIN entry cancelled';
+        }) as typeof invoke);
+        render(<L2WalletCard />);
+
+        fireEvent.click(await screen.findByTestId('l2-enable'));
+        await waitFor(() => expect(invoke).toHaveBeenCalledWith('enable_l2_wallet'));
+        await waitFor(() => expect(screen.getByTestId('l2-enable')).toBeEnabled());
+        expect(screen.queryByText(/l2.enable-error/)).not.toBeInTheDocument();
+    });
+
     it('offers Unlock Layer 2 while the store is locked and unlocks with the PIN', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         serve({ enabled: true, locked: true, seed_source: 'l1', accounts: [] });

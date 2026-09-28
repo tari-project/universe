@@ -9,6 +9,7 @@ import { StyledForm, Wrapper } from './Send.styles.ts';
 import { FormRootError } from './FormRootError.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { setError as setStoreError } from '@app/store';
+import { PIN_CANCELLED_RE } from '@app/store/actions/l2WalletStoreActions.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 
 interface SendModalProps {
@@ -83,7 +84,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 // when no PIN is set), so "the user said no" and "nobody answered in time"
                 // are normal outcomes here, not failures worth a scary error toast.
                 const message = `${error}`;
-                const wasCancelled = /denied by user|PIN entry cancelled/i.test(message);
+                const wasCancelled = PIN_CANCELLED_RE.test(message);
                 const timedOut = /timed out waiting for confirmation/i.test(message);
 
                 if (wasCancelled || timedOut) {

@@ -24,6 +24,7 @@ import ProcessingIcon from '@app/components/transactions/send/SendReview/icons/P
 import CompletedIcon from '@app/components/transactions/send/SendReview/icons/CompletedIcon';
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 import { setError as setStoreError } from '@app/store';
+import { PIN_CANCELLED_RE } from '@app/store/actions/l2WalletStoreActions.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 
 interface BurnModalProps {
@@ -156,7 +157,7 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
             } catch (error) {
                 // Same outcomes as a send: the backend's PIN / confirmation gate said no.
                 const message = `${error}`;
-                const wasCancelled = /denied by user|PIN entry cancelled/i.test(message);
+                const wasCancelled = PIN_CANCELLED_RE.test(message);
                 const timedOut = /timed out waiting for confirmation/i.test(message);
                 if (wasCancelled || timedOut) {
                     setError('root.invoke_error', {
