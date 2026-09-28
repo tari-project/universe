@@ -622,7 +622,11 @@ pub async fn forgot_pin(
             .map_err(|e| e.to_string())?;
     // The L2 store is encrypted with the forgotten PIN. A failure here leaves the new PIN in
     // place, so running the recovery again retries it.
-    OotleWalletManager::reset_forgotten_pin(&tari_cipher_seed, &pin)
+    let data_dir = app_handle
+        .path()
+        .app_local_data_dir()
+        .map_err(|e| e.to_string())?;
+    OotleWalletManager::reset_forgotten_pin(&data_dir, &tari_cipher_seed, &pin)
         .await
         .map_err(|e| format!("PIN reset, but Layer 2 could not move to the new PIN: {e}"))?;
 
