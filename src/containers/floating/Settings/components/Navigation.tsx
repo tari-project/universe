@@ -5,12 +5,15 @@ import { SETTINGS_TYPES, SettingsType } from '../types.ts';
 import { ButtonContainer, Container, LinkContainer, SectionButton, TermsBtn } from './Navigation.styles.ts';
 
 import { open } from '@tauri-apps/plugin-shell';
+import { useMiningStore } from '@app/store';
+import { networkSupportsL2 } from '@app/utils/network';
 interface SettingsNavigationProps {
     activeSection: SettingsType;
     onChangeActiveSection: (section: SettingsType) => void;
 }
 export default function SettingsNavigation({ activeSection, onChangeActiveSection }: SettingsNavigationProps) {
     const { t } = useTranslation('settings', { useSuspense: false });
+    const l2Supported = useMiningStore((s) => networkSupportsL2(s.network));
 
     function handleClick(section: SettingsType) {
         onChangeActiveSection(section);
@@ -19,7 +22,7 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
     return (
         <Container>
             <ButtonContainer>
-                {SETTINGS_TYPES.map((type: SettingsType) => {
+                {SETTINGS_TYPES.filter((type) => type !== 'l2' || l2Supported).map((type: SettingsType) => {
                     const isActiveSection = activeSection === type;
                     const name = t(`tabs.${type}`);
                     return (

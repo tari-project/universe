@@ -90,6 +90,8 @@ pub struct ConfigUIContent {
     wallet_ui_mode: WalletUIMode,
     feedback: HashMap<String, FeedbackPrompt>,
     shutdown_mode_selected: bool,
+    /// Whether the L1 and L2 wallet cards may be open at the same time.
+    l2_side_by_side: bool,
 }
 
 impl Default for ConfigUIContent {
@@ -106,6 +108,7 @@ impl Default for ConfigUIContent {
             show_experimental_settings: false,
             was_staged_security_modal_shown: false,
             wallet_ui_mode: WalletUIMode::Standard,
+            l2_side_by_side: false,
             feedback: HashMap::from([
                 (
                     "early_close".to_string(),

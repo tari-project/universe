@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { setError, useSecurityStore } from '@app/store';
 import { useConfigWalletStore } from '@app/store/useAppConfigStore.ts';
+import { useL2WalletStore } from '@app/store/useL2WalletStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import CloseButton from '@app/components/elements/buttons/CloseButton.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -24,6 +25,9 @@ export default function ForgotPinDialog() {
     const modal = useSecurityStore((s) => s.modal);
     const setModal = useSecurityStore((s) => s.setModal);
     const moneroAddressIsGenerated = useConfigWalletStore((s) => s.monero_address_is_generated);
+    // An imported L2 seed is encrypted with the forgotten PIN and isn't in the L1 words, so
+    // the reset deletes that store.
+    const deletesImportedL2 = useL2WalletStore((s) => s.enabled && s.seed_source === 'imported');
 
     const isOpen = modal === 'forgot_pin';
 
@@ -67,6 +71,9 @@ export default function ForgotPinDialog() {
                             <InputArea>
                                 <Edit />
                             </InputArea>
+                            {deletesImportedL2 && (
+                                <Typography variant="p">{t('security.pin.forgot-l2-imported-warning')}</Typography>
+                            )}
                             {moneroAddressIsGenerated && (
                                 <>
                                     <Typography variant="p">{t('security.pin.forgot-monero-warning')}</Typography>

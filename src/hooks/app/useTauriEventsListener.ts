@@ -36,6 +36,7 @@ import {
     handleSystrayAppShutdownRequested,
 } from '@app/store/actions/appStateStoreActions';
 import {
+    closePinPrompt,
     handleBaseNodeStatusUpdate,
     setWalletBalance,
     updateWalletScanningProgress,
@@ -77,6 +78,11 @@ import {
     handleWalletTransactionsCleared,
     handleWalletTransactionUpdated,
 } from '@app/store/actions/walletStoreActions';
+import {
+    handleL2ClaimResult,
+    handleL2NetworkStats,
+    handleL2WalletStateUpdate,
+} from '@app/store/actions/l2WalletStoreActions';
 import { handleConfigCoreLoaded } from '@app/store/actions/config/core.ts';
 import { handleFeedbackExitSurveyRequested } from '@app/store/stores/userFeedbackStore';
 
@@ -248,13 +254,17 @@ const useTauriEventsListener = () => {
                         setDialogToShow('keychain');
                         break;
                     case 'CreatePin':
-                        useSecurityStore.setState({ modal: 'create_pin' });
+                        useSecurityStore.setState({ modal: 'create_pin', pinPromptId: event.payload.id });
                         break;
                     case 'EnterPin':
                         useSecurityStore.setState({
                             modal: 'enter_pin',
-                            pinContext: event.payload ?? null,
+                            pinContext: event.payload.context ?? null,
+                            pinPromptId: event.payload.id,
                         });
+                        break;
+                    case 'ClosePinDialog':
+                        closePinPrompt(event.payload);
                         break;
                     case 'UpdateGpuDevicesSettings':
                         handleGpuDevicesSettingsUpdated(event.payload);
@@ -297,6 +307,15 @@ const useTauriEventsListener = () => {
                         break;
                     case 'WalletTransactionUpdated':
                         await handleWalletTransactionUpdated(event.payload);
+                        break;
+                    case 'L2WalletStateUpdate':
+                        handleL2WalletStateUpdate(event.payload);
+                        break;
+                    case 'L2NetworkStats':
+                        handleL2NetworkStats(event.payload);
+                        break;
+                    case 'L2ClaimResult':
+                        handleL2ClaimResult(event.payload);
                         break;
                     case 'SetShowBatteryAlert':
                         setShowBatteryAlert(event.payload);

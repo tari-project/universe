@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { addToast } from '@app/components/ToastStack/useToastStore';
-import type { TransactionOrigin } from '@app/types/events-payloads.ts';
+import type { SpendKind, TransactionOrigin } from '@app/types/events-payloads.ts';
 
 export interface McpAuditEntry {
     timestamp: string;
@@ -14,6 +14,9 @@ export interface McpAuditEntry {
 
 export interface McpPendingTransaction {
     request_id: string;
+    /** Defaults to `send`; `burn` means `destination` is the L2 claim public key. */
+    kind?: SpendKind;
+    /** Recipient address for a send, L2 claim public key for a burn. */
     destination: string;
     amount_micro_minotari: number;
     amount_display: string;

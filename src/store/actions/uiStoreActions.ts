@@ -9,7 +9,7 @@ import { setVisualMode } from './appConfigStoreActions.ts';
 
 import { Theme } from '@app/theme/types.ts';
 import { ConnectionStatusPayload } from '@app/types/events-payloads.ts';
-import { SB_WIDTH } from '@app/theme/styles.ts';
+import { SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
 import { useConfigUIStore } from '../useAppConfigStore.ts';
 import { CONNECTION_STATUS, DialogType, sidebarTowerOffset, TOWER_CANVAS_ID } from '../types/ui.ts';
 
@@ -92,10 +92,22 @@ export const setIsReconnecting = (isReconnecting: boolean) => useUIStore.setStat
 
 export const toggleHideWalletBalance = () =>
     useUIStore.setState((current) => ({ hideWalletBalance: !current.hideWalletBalance }));
+// The tower shifts right by every open card, plus the gap between the two cards.
+const towerOffset = (sidebarOpen: boolean, l2Open: boolean) => {
+    const cards = Number(sidebarOpen) + Number(l2Open);
+    return sidebarTowerOffset + cards * SB_WIDTH + (cards > 1 ? SB_SPACING : 0);
+};
+// Only one card is open at a time unless the user allowed them side by side in settings.
+const sideBySide = () => useConfigUIStore.getState().l2_side_by_side;
 export const setSidebarOpen = (sidebarOpen: boolean) =>
-    useUIStore.setState({
-        sidebarOpen,
-        towerSidebarOffset: sidebarOpen ? sidebarTowerOffset + SB_WIDTH : sidebarTowerOffset,
+    useUIStore.setState((s) => {
+        const l2Open = sidebarOpen && !sideBySide() ? false : s.l2Open;
+        return { sidebarOpen, l2Open, towerSidebarOffset: towerOffset(sidebarOpen, l2Open) };
+    });
+export const setL2Open = (l2Open: boolean) =>
+    useUIStore.setState((s) => {
+        const sidebarOpen = l2Open && !sideBySide() ? false : s.sidebarOpen;
+        return { sidebarOpen, l2Open, towerSidebarOffset: towerOffset(sidebarOpen, l2Open) };
     });
 
 export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState((c) => ({ ...c, seedlessUI }));

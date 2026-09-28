@@ -10,7 +10,7 @@ export const mergeTransactions = (
 ): DisplayedTransaction[] => {
     const updatedList = [...currentList];
 
-    // ponytail: TxId is a u64 on the wire; both sides of this comparison come out of the same
+    // TxId is a u64 on the wire; both sides of this comparison come out of the same
     // JSON.parse, so ids past 2^53 round identically and a false match needs two ids that already
     // collided before the merge - negligible. Upgrade path: serialise TxId as a string.
     const indexById = new Map<number, number>();

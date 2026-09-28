@@ -2,12 +2,15 @@ import {
     BackgroundNodeSyncUpdatePayload,
     ConnectionStatusPayload,
     CriticalProblemPayload,
+    L2WalletState,
+    L2NetworkStats,
+    L2ClaimResult,
     DetectedDevicesPayload,
     GpuMiner,
     GpuMinerType,
     MinerControlsState,
     NodeTypeUpdatePayload,
-    PinPromptContext,
+    PinPromptPayload,
     ProgressTrackerUpdatePayload,
     SetupPhase,
     ShowReleaseNotesPayload,
@@ -175,11 +178,15 @@ export type BackendStateUpdateEvent =
       }
     | {
           event_type: 'CreatePin';
-          payload: undefined;
+          payload: PinPromptPayload;
       }
     | {
           event_type: 'EnterPin';
-          payload?: PinPromptContext | null;
+          payload: PinPromptPayload;
+      }
+    | {
+          event_type: 'ClosePinDialog';
+          payload: number;
       }
     | {
           event_type: 'UpdateGpuDevicesSettings';
@@ -244,6 +251,18 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'WalletTransactionUpdated';
           payload: DisplayedTransaction;
+      }
+    | {
+          event_type: 'L2WalletStateUpdate';
+          payload: L2WalletState;
+      }
+    | {
+          event_type: 'L2NetworkStats';
+          payload: L2NetworkStats;
+      }
+    | {
+          event_type: 'L2ClaimResult';
+          payload: L2ClaimResult;
       }
     | {
           event_type: 'SetShowBatteryAlert';

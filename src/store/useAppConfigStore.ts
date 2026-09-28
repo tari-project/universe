@@ -50,6 +50,7 @@ const configUIInitialState: UIConfigStoreState = {
     wallet_ui_mode: WalletUIMode.Standard,
     was_staged_security_modal_shown: false,
     shutdown_mode_selected: false,
+    l2_side_by_side: false,
 };
 
 const configPoolsInitialState: ConfigPools = {

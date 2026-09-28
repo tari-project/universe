@@ -239,7 +239,11 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             if STOP_ON_ERROR_CODES.contains(&code) {
                                 warn!(target: LOG_TARGET_APP_LOGIC, "Node data or config is corrupt or needs a restart, deleting and trying again.");
                                 state.node_manager.clean_data_folder(&node_data_dir).await?;
-                                crate::wallet::clean_wallet_data_folders(&data_dir).await?;
+                                // The wallet db can hold the only proof of a burn that is broadcast but not mined.
+                                match MinotariWalletManager::ensure_no_pending_burns() {
+                                    Ok(()) => crate::wallet::clean_wallet_data_folders(&data_dir).await?,
+                                    Err(e) => warn!(target: LOG_TARGET_APP_LOGIC, "Keeping the wallet data folder: {e}"),
+                                }
                             }
                             continue;
                         }

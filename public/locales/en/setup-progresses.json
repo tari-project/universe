@@ -61,6 +61,7 @@
     "migrating-database": "Migrating Database from version {{current_db_version}} to {{target_db_version}} progress: {{current_block}}/{{total_blocks}}",
     "mm-proxy": "Starting Merge Mining Proxy",
     "network-speed-test": "Network Speed Test",
+    "ootle-wallet": "Starting Layer 2 Wallet",
     "setup-bridge": "Preparing Bridge",
     "setup-bridge-download": "Preparing Bridge | Downloading: {{ progress }}%",
     "start-tor": "Starting Tor",

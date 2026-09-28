@@ -4,18 +4,20 @@ import { setError } from '@app/store';
 
 interface Arguments {
     fetchMoneroSeeds?: boolean;
+    fetchL2Seeds?: boolean;
 }
 export function useGetSeedWords(args?: Arguments) {
     const hasFetched = useRef(false);
     const [seedWords, setSeedWords] = useState<string[]>([]);
     const [seedWordsFetching, setSeedWordsFetching] = useState(false);
 
-    const { fetchMoneroSeeds = false } = args || {};
+    const { fetchMoneroSeeds = false, fetchL2Seeds = false } = args || {};
 
     const getSeedWords = useCallback(async () => {
         setSeedWordsFetching(true);
 
-        const commandName = fetchMoneroSeeds ? 'get_monero_seed_words' : 'get_seed_words';
+        let commandName = fetchMoneroSeeds ? 'get_monero_seed_words' : 'get_seed_words';
+        if (fetchL2Seeds) commandName = 'l2_get_seed_words';
         try {
             const seedWords: string[] = await invoke(commandName);
             if (seedWords.length) {
@@ -36,7 +38,7 @@ export function useGetSeedWords(args?: Arguments) {
         } finally {
             setSeedWordsFetching(false);
         }
-    }, [fetchMoneroSeeds]);
+    }, [fetchMoneroSeeds, fetchL2Seeds]);
 
     return {
         seedWords,

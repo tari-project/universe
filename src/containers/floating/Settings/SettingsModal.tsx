@@ -20,6 +20,7 @@ import {
     MiningSettings,
     WalletSettings,
     ReleaseNotes,
+    L2Settings,
 } from './sections';
 
 import { Container, ContentContainer, EndContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
@@ -37,6 +38,7 @@ const SettingsModal = memo(function SettingsModal() {
         connections: <ConnectionsSettings />,
         pools: <PoolsSettings />,
         wallet: <WalletSettings />,
+        l2: <L2Settings />,
         airdrop: <AirdropSettings />,
         mcp: <McpSettings />,
         experimental: <ExperimentalSettings />,

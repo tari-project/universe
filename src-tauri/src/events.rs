@@ -40,6 +40,9 @@ pub enum EventType {
     WalletTransactionsFound,
     WalletTransactionsCleared,
     WalletTransactionUpdated,
+    L2WalletStateUpdate,
+    L2NetworkStats,
+    L2ClaimResult,
     BaseNodeUpdate,
     GpuDevicesUpdate,
     CpuPoolsStatsUpdate,
@@ -78,6 +81,7 @@ pub enum EventType {
     ShowKeyringDialog,
     CreatePin,
     EnterPin,
+    ClosePinDialog,
     UpdateGpuDevicesSettings,
     PinLocked,
     SeedBackedUp,
@@ -224,6 +228,10 @@ pub struct McpServerStatusPayload {
 #[derive(Debug, Serialize, Clone)]
 pub struct McpTransactionConfirmationPayload {
     pub request_id: String,
+    /// `"send"`, `"burn"`, `"l2_send"` or `"l2_claim"`; decides how `destination` is labelled in the dialog.
+    pub kind: String,
+    /// The recipient address for a send, the L2 claim public key (hex) for a burn, the
+    /// Ootle address for an L2 send, the burn commitment (hex) for an L2 claim.
     pub destination: String,
     pub amount_micro_minotari: u64,
     pub amount_display: String,
@@ -243,10 +251,63 @@ pub enum PinPromptContext {
         destination: String,
         payment_id: Option<String>,
     },
+    /// Burning L1 funds to be claimed on L2 by `claim_public_key`.
+    Burn {
+        amount_micro_minotari: u64,
+        claim_public_key: String,
+        payment_id: Option<String>,
+    },
     /// The wallet details are missing from the config and are being rebuilt from the stored seed.
     RestoreWalletDetails,
     /// The stored seed is PIN-protected although the config says no PIN is set.
     SeedNeedsPin,
+    /// Unlocking (or first enabling) the L2 wallet.
+    L2Unlock,
+    /// Revealing the L2 seed words.
+    L2SeedExport,
+    /// Replacing the L2 wallet with imported seed words.
+    L2SeedImport,
+    /// Replacing the L2 wallet with one restored from the L1 seed.
+    L2SeedReset,
+    /// Sending XTR (micro units) on L2 from `account` to the Ootle address `destination`.
+    /// The fee is set once the dry run has priced the transaction.
+    L2Send {
+        amount_micro_minotari: u64,
+        destination: String,
+        account: String,
+        fee_micro_minotari: Option<u64>,
+    },
+    /// Claiming an L1 burn of `amount_micro_minotari` on L2, `commitment` (hex) being the
+    /// burn. The fee comes out of the amount.
+    L2Claim {
+        amount_micro_minotari: u64,
+        commitment: String,
+        fee_micro_minotari: Option<u64>,
+    },
+}
+
+impl PinPromptContext {
+    /// Sets the fee an L2 send or claim will pay. Other contexts are left as they are.
+    pub fn with_fee(mut self, fee: u64) -> Self {
+        if let Self::L2Send {
+            fee_micro_minotari, ..
+        }
+        | Self::L2Claim {
+            fee_micro_minotari, ..
+        } = &mut self
+        {
+            *fee_micro_minotari = Some(fee);
+        }
+        self
+    }
+}
+
+/// Payload of the `CreatePin` and `EnterPin` events. The frontend echoes `id` in its
+/// `pin-dialog-response`, so an answer meant for one prompt can't satisfy another.
+#[derive(Debug, Serialize, Clone)]
+pub struct PinPromptPayload {
+    pub id: u64,
+    pub context: Option<PinPromptContext>,
 }
 
 #[derive(Debug, Serialize, Clone)]

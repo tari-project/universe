@@ -7,6 +7,7 @@ import { MiningSettings } from './mining/MiningSettings.tsx';
 
 import { WalletSettings } from './wallet/WalletSettings.tsx';
 import { ReleaseNotes } from './releaseNotes/ReleaseNotes.tsx';
+import { L2Settings } from './l2/L2Settings.tsx';
 
 export {
     AirdropSettings,
@@ -17,4 +18,5 @@ export {
     MiningSettings,
     WalletSettings,
     ReleaseNotes,
+    L2Settings,
 };
