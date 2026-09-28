@@ -554,6 +554,12 @@ async fn replace_store(
 ) -> Result<(), TransactionError> {
     let (network, indexer_url) = network_and_indexer().await?;
 
+    // The lock restart_phases holds, so a node-type or Tor restart cannot stop and resume
+    // the wallet phase in the middle of the swap and leave two wallet phases running.
+    // Taken under the lifecycle lock: safe, because restart_phases never waits for the
+    // lifecycle lock while holding this one (the resumed phase's initialize, which takes
+    // it, runs on a spawned task).
+    let _restart = SetupManager::get_instance().restart_safe_lock().await;
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet])
         .await;
