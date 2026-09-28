@@ -123,7 +123,7 @@ export const L2Settings = () => {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('l2.status')}</Typography>
                     </SettingsGroupTitle>
-                    <Typography>{t('l2.unlock-description')}</Typography>
+                    <Typography style={{ whiteSpace: 'pre-line' }}>{t('l2.unlock-description')}</Typography>
                     {error && <Typography>{error}</Typography>}
                 </SettingsGroupContent>
                 <SettingsGroupAction>

@@ -77,7 +77,7 @@ export default function L2WalletCard() {
     if (locked) {
         return (
             <WalletWrapper style={promptStyle} data-testid="l2-locked">
-                <Typography>{t('l2.unlock-description')}</Typography>
+                <Typography style={{ whiteSpace: 'pre-line' }}>{t('l2.unlock-description')}</Typography>
                 <Button
                     variant="black"
                     onClick={() => open('unlock_l2_wallet', 'l2.unlock-error')}
