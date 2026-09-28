@@ -16,6 +16,7 @@ import {
     StyledForm,
     Wrapper,
 } from '@app/components/transactions/send/Send.styles.ts';
+import { FormRootError } from '@app/components/transactions/send/FormRootError.tsx';
 import { TransactionContextSummary } from '@app/components/transactions/send/TransactionContextSummary.tsx';
 import { StatusHero } from '@app/components/transactions/components/StatusHero/StatusHero';
 import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
@@ -196,6 +197,7 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
             <FormProvider {...methods}>
                 <Wrapper $isLoading={methods.formState.isSubmitting}>
                     <StyledForm onSubmit={methods.handleSubmit(handleFormSubmit)}>
+                        <FormRootError />
                         {status === 'fields' && <BurnForm />}
                         {status === 'reviewing' && (
                             <>

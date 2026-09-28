@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { SendForm } from './SendForm.tsx';
 import { SendReview } from './SendReview/SendReview.tsx';
 import { StyledForm, Wrapper } from './Send.styles.ts';
+import { FormRootError } from './FormRootError.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { setError as setStoreError } from '@app/store';
 import { queryClient } from '@app/App/queryClient.ts';
@@ -136,7 +137,10 @@ export default function SendModal({ section, setSection }: SendModalProps) {
         >
             <FormProvider {...methods}>
                 <Wrapper $isLoading={methods.formState.isSubmitting}>
-                    <StyledForm onSubmit={methods.handleSubmit(handleFormSubmit)}>{formContentMarkup}</StyledForm>
+                    <StyledForm onSubmit={methods.handleSubmit(handleFormSubmit)}>
+                        <FormRootError />
+                        {formContentMarkup}
+                    </StyledForm>
                 </Wrapper>
             </FormProvider>
         </TransactionModal>
