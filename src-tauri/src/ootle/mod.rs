@@ -217,8 +217,8 @@ impl OotleWalletManager {
     /// Asks for the PIN, opens the store with it and starts the services. A store L2 was
     /// never enabled in gets the L1 seed restored into it first; that is how L2 is turned
     /// on. A locked store is unlocked; one older builds encrypted with the keyring secret
-    /// alone or the PIN alone is rebuilt under both from its own seed words. Refused without
-    /// a PIN or off Esmeralda.
+    /// alone is rebuilt under the secret and the PIN from its own seed words. Refused
+    /// without a PIN or off Esmeralda.
     pub async fn enable(app_handle: &AppHandle) -> Result<(), TransactionError> {
         check_l2_allowed(
             Network::get_current_or_user_setting_or_default(),
@@ -233,7 +233,7 @@ impl OotleWalletManager {
     /// Moves the L2 store onto the new PIN after the user reset a forgotten one. Its seed
     /// is encrypted with the old PIN, so it is rebuilt: from the L1 seed when it holds the
     /// L1 seed, from its own words when an older build encrypted it with the keyring
-    /// secret alone or the PIN alone and that still opens it. A store of imported words
+    /// secret alone and that still opens it. A store of imported words
     /// under the forgotten PIN can't be opened by anyone any more and is deleted, so the
     /// user can enable L2 again.
     pub async fn reset_forgotten_pin(
@@ -257,7 +257,8 @@ impl OotleWalletManager {
         {
             return Ok(());
         }
-        let words = match legacy_words(&seed, &secret, pin).map_err(wallet_error)? {
+        // An older build encrypted the store with the keyring secret alone.
+        let words = match decipher_words(&seed, &secret).map_err(wallet_error)? {
             Some(words) => Some(words),
             None if seed_source() == SeedSource::L1 => {
                 Some(l2_seed_words(l1_seed).map_err(wallet_error)?)
@@ -443,7 +444,7 @@ impl OotleWalletManager {
 
 /// Opens the store with the keyring secret and the PIN and starts the services, restoring
 /// the L1 seed into a store L2 was never enabled in first. A store older builds encrypted
-/// with the keyring secret alone or the PIN alone is moved onto both. Does nothing when
+/// with the keyring secret alone is moved onto the secret and the PIN. Does nothing when
 /// the store is already open, and is refused while the wallet phase that found the store
 /// is stopped.
 async fn open_and_start(pin: &tari_utilities::SafePassword) -> Result<(), TransactionError> {
@@ -579,8 +580,8 @@ fn decipher_words(seed: &[u8], password: &str) -> Result<Option<SeedWords>, anyh
 
 /// Opens the store in `store_dir`, whose enciphered seed is `seed`, with the password made
 /// of the keyring `secret` and the `pin`. A store older builds encrypted with the secret
-/// alone, or with the PIN alone, is rebuilt under that password from its own seed words
-/// first, keeping its owner. A store none of them opens is left as it is.
+/// alone is rebuilt under that password from its own seed words first, keeping its owner.
+/// A store neither opens is left as it is.
 fn open_enabled_store(
     store_dir: &Path,
     network: Network,
@@ -591,7 +592,7 @@ fn open_enabled_store(
 ) -> Result<OotleSdk, anyhow::Error> {
     let password = store_password(secret, pin);
     if decipher_words(seed, &password)?.is_none() {
-        let words = legacy_words(seed, secret, pin)?
+        let words = decipher_words(seed, secret)?
             .ok_or_else(|| anyhow::anyhow!("The Layer 2 wallet does not open with this PIN"))?;
         let owner = std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE))?;
         restore_store(
@@ -605,15 +606,6 @@ fn open_enabled_store(
         info!(target: LOG_TARGET, "L2 store moved onto the keyring secret and the PIN");
     }
     open_sdk(store_dir, network, indexer_url, &password)
-}
-
-/// The seed words in a store an older build encrypted with the keyring secret alone, or
-/// with the PIN alone, or None when neither opens it.
-fn legacy_words(seed: &[u8], secret: &str, pin: &str) -> Result<Option<SeedWords>, anyhow::Error> {
-    match decipher_words(seed, secret)? {
-        Some(words) => Ok(Some(words)),
-        None => decipher_words(seed, pin),
-    }
 }
 
 /// What the panel gets while the store is not open: enabled and locked, or not enabled.
@@ -1326,7 +1318,7 @@ mod tests {
     }
 
     #[test]
-    fn keyring_only_and_pin_only_stores_move_onto_the_secret_and_pin() {
+    fn a_keyring_only_store_moves_onto_the_secret_and_pin_and_a_pin_only_one_is_refused() {
         let dir = tempfile::tempdir().expect("temp dir");
         let url = Url::parse("http://127.0.0.1:1").expect("url");
         // Built at runtime so the test values don't read as a leaked secret.
@@ -1338,18 +1330,9 @@ mod tests {
             words.join(" ").reveal().clone()
         };
 
-        for (name, legacy) in [("keyring", secret.as_str()), ("pin", pin.as_str())] {
+        // A store encrypted with `legacy`, marked imported, and its seed.
+        let legacy_store = |name: &str, legacy: &str| {
             let store_dir = dir.path().join(name);
-            let open = |seed: &[u8], secret: &str, pin: &str| {
-                open_enabled_store(
-                    &store_dir,
-                    Network::Esmeralda,
-                    url.clone(),
-                    seed,
-                    secret,
-                    pin,
-                )
-            };
             assert!(stored_seed(&store_dir).expect("no store").is_none());
             let mut sdk =
                 open_sdk(&store_dir, Network::Esmeralda, url.clone(), legacy).expect("sdk");
@@ -1360,31 +1343,60 @@ mod tests {
             drop(sdk);
             std::fs::write(store_dir.join(L1_WALLET_ID_FILE), IMPORTED_SEED).expect("owner");
             let seed = stored_seed(&store_dir).expect("read").expect("seed");
+            (store_dir, words, seed)
+        };
 
-            // With neither the secret nor the PIN that encrypted it, the store is left alone.
-            assert!(open(&seed, "other", "other").is_err());
-            let seed = stored_seed(&store_dir).expect("read").expect("seed");
-            assert!(decipher_words(&seed, legacy).expect("decipher").is_some());
+        // A PIN-only store is an offline brute force target, so it is not migrated.
+        let (store_dir, _, seed) = legacy_store("pin", &pin);
+        assert!(
+            open_enabled_store(
+                &store_dir,
+                Network::Esmeralda,
+                url.clone(),
+                &seed,
+                &secret,
+                &pin
+            )
+            .is_err()
+        );
+        let seed = stored_seed(&store_dir).expect("read").expect("seed");
+        assert!(decipher_words(&seed, &pin).expect("decipher").is_some());
 
-            let mut sdk = open(&seed, &secret, &pin).expect("moved onto secret and pin");
-            assert_eq!(words_of(&mut sdk), words, "{name}");
-            drop(sdk);
-            assert_eq!(
-                std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).expect("owner"),
-                IMPORTED_SEED
-            );
-            let seed = stored_seed(&store_dir).expect("read").expect("seed");
-            assert!(
-                decipher_words(&seed, &password)
-                    .expect("decipher")
-                    .is_some()
-            );
-            assert!(decipher_words(&seed, &secret).expect("decipher").is_none());
-            assert!(decipher_words(&seed, &pin).expect("decipher").is_none());
-            // Moved once, it opens directly and the wrong PIN doesn't.
-            open(&seed, &secret, &pin).expect("opens with secret and pin");
-            assert!(open(&seed, &secret, "other").is_err());
-        }
+        let (store_dir, words, seed) = legacy_store("keyring", &secret);
+        let open = |seed: &[u8], secret: &str, pin: &str| {
+            open_enabled_store(
+                &store_dir,
+                Network::Esmeralda,
+                url.clone(),
+                seed,
+                secret,
+                pin,
+            )
+        };
+
+        // With neither the secret nor the PIN that encrypted it, the store is left alone.
+        assert!(open(&seed, "other", "other").is_err());
+        let seed = stored_seed(&store_dir).expect("read").expect("seed");
+        assert!(decipher_words(&seed, &secret).expect("decipher").is_some());
+
+        let mut sdk = open(&seed, &secret, &pin).expect("moved onto secret and pin");
+        assert_eq!(words_of(&mut sdk), words);
+        drop(sdk);
+        assert_eq!(
+            std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).expect("owner"),
+            IMPORTED_SEED
+        );
+        let seed = stored_seed(&store_dir).expect("read").expect("seed");
+        assert!(
+            decipher_words(&seed, &password)
+                .expect("decipher")
+                .is_some()
+        );
+        assert!(decipher_words(&seed, &secret).expect("decipher").is_none());
+        assert!(decipher_words(&seed, &pin).expect("decipher").is_none());
+        // Moved once, it opens directly and the wrong PIN doesn't.
+        open(&seed, &secret, &pin).expect("opens with secret and pin");
+        assert!(open(&seed, &secret, "other").is_err());
     }
 
     #[tokio::test]
