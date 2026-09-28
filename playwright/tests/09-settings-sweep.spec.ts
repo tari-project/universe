@@ -93,10 +93,18 @@ test.describe('Settings Sweep', () => {
     // Turning the pool off switches GPU mining to a direct node connection, which needs a
     // miner advertising SoloMining. While none does, the toggle must be locked and say why,
     // rather than letting mining be switched into a state it cannot start from.
-    await expect(gpuToggle).toBeDisabled({ timeout: 10_000 });
-    await expect(page.getByText(/no installed GPU miner supports solo mining/i).first()).toBeVisible({
-      timeout: 5_000,
-    });
+    //
+    // The lock only applies while the pool is on. The seeded config turns it off (and some
+    // GPU machines ignore that seed), so branch on the observed state: an off switch must
+    // stay enabled so it can be turned back on, and the warning must not show.
+    const reason = page.getByText(/no installed GPU miner supports solo mining/i);
+    if (await gpuToggle.isChecked()) {
+      await expect(gpuToggle).toBeDisabled({ timeout: 10_000 });
+      await expect(reason.first()).toBeVisible({ timeout: 5_000 });
+    } else {
+      await expect(gpuToggle).toBeEnabled({ timeout: 10_000 });
+      await expect(reason).toHaveCount(0);
+    }
   });
 
   test('connections tab: node configuration, node info, network and peers sections', async ({ appPage: page }) => {
