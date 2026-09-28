@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use getset::{Getters, Setters};
-use log::error;
+use log::{error, warn};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -93,7 +93,11 @@ pub struct ConfigCoreContent {
     shutdown_mode: ShutdownMode,
     show_window_on_startup: bool,
     node_data_directory: Option<PathBuf>,
-    /// Indexer the Ootle (L2) wallet talks to. None where Universe has no L2.
+    /// User override for the indexer the Ootle (L2) wallet talks to. The network
+    /// default is not persisted; `ootle_indexer_url()` resolves it at read time so a
+    /// changed default reaches existing installs.
+    #[getset(skip)]
+    #[serde(deserialize_with = "deserialize_http_url")]
     ootle_indexer_url: Option<Url>,
 }
 
@@ -102,6 +106,25 @@ fn default_ootle_indexer_url(network: Network) -> Option<Url> {
         Network::Esmeralda => Url::parse("http://54.38.0.31:50124").ok(),
         _ => None,
     }
+}
+
+/// Only http(s) reaches the SDK's REST client; anything else counts as unset.
+fn http_only(url: Option<Url>) -> Option<Url> {
+    url.filter(|u| {
+        let ok = matches!(u.scheme(), "http" | "https");
+        if !ok {
+            warn!(target: LOG_TARGET_APP_LOGIC, "Ignoring ootle_indexer_url with scheme {:?}: only http and https are accepted", u.scheme());
+        }
+        ok
+    })
+}
+
+fn resolve_ootle_indexer_url(stored: Option<Url>, network: Network) -> Option<Url> {
+    http_only(stored).or_else(|| default_ootle_indexer_url(network))
+}
+
+fn deserialize_http_url<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<Url>, D::Error> {
+    Ok(http_only(Option::<Url>::deserialize(d)?))
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -163,7 +186,7 @@ impl Default for ConfigCoreContent {
             shutdown_mode: ShutdownMode::Tasktray,
             show_window_on_startup: true,
             node_data_directory: None,
-            ootle_indexer_url: default_ootle_indexer_url(network),
+            ootle_indexer_url: None,
         }
     }
 }
@@ -171,6 +194,14 @@ impl ConfigContentImpl for ConfigCoreContent {}
 impl ConfigCoreContent {
     pub fn is_on_exchange_specific_variant(&self) -> bool {
         MinerType::from_str(&self.exchange_id).is_exchange_mode()
+    }
+
+    /// The stored override if it is http(s), else the network default.
+    pub fn ootle_indexer_url(&self) -> Option<Url> {
+        resolve_ootle_indexer_url(
+            self.ootle_indexer_url.clone(),
+            Network::get_current_or_user_setting_or_default(),
+        )
     }
 }
 
@@ -241,6 +272,14 @@ impl ConfigImpl for ConfigCore {
     fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
     }
+
+    /// The copy handed out (and emitted to the frontend) carries the resolved
+    /// indexer URL; the stored content keeps only the user override.
+    async fn content() -> Self::Config {
+        let mut content = Self::current().read().await.content.clone();
+        content.ootle_indexer_url = content.ootle_indexer_url();
+        content
+    }
 }
 
 #[cfg(test)]
@@ -262,5 +301,41 @@ mod tests {
         ] {
             assert!(default_ootle_indexer_url(network).is_none(), "{network}");
         }
+    }
+
+    #[test]
+    fn the_default_indexer_is_resolved_at_read_time_not_persisted() {
+        let persisted = serde_json::to_value(ConfigCoreContent::default()).expect("json");
+        assert!(persisted["ootle_indexer_url"].is_null());
+        assert_eq!(
+            resolve_ootle_indexer_url(None, Network::Esmeralda),
+            default_ootle_indexer_url(Network::Esmeralda)
+        );
+        let custom = Url::parse("https://indexer.example:443").ok();
+        assert_eq!(
+            resolve_ootle_indexer_url(custom.clone(), Network::Esmeralda),
+            custom
+        );
+    }
+
+    #[test]
+    fn a_non_http_indexer_url_is_treated_as_unset() {
+        let file_url = Url::parse("file:///etc/passwd").ok();
+        assert_eq!(
+            resolve_ootle_indexer_url(file_url.clone(), Network::Esmeralda),
+            default_ootle_indexer_url(Network::Esmeralda)
+        );
+        assert_eq!(resolve_ootle_indexer_url(file_url, Network::MainNet), None);
+
+        let loaded: ConfigCoreContent =
+            serde_json::from_str(r#"{"ootle_indexer_url":"file:///etc/passwd"}"#).expect("json");
+        assert_eq!(loaded.ootle_indexer_url, None);
+        let loaded: ConfigCoreContent =
+            serde_json::from_str(r#"{"ootle_indexer_url":"http://54.38.0.31:50124"}"#)
+                .expect("json");
+        assert_eq!(
+            loaded.ootle_indexer_url.map(String::from),
+            Some("http://54.38.0.31:50124/".to_string())
+        );
     }
 }
