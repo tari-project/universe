@@ -150,16 +150,17 @@ static NEXT_PROMPT_ID: AtomicU64 = AtomicU64::new(1);
 const PIN_PROMPT_TIMEOUT: Duration = Duration::from_secs(5 * 60);
 
 /// What the frontend sends on "pin-dialog-response": the id of the prompt it answers
-/// and the PIN, or no PIN when the user cancelled.
+/// and the PIN, or no PIN when the user cancelled. A string, never a number: `012345`
+/// must not arrive as `12345`.
 #[derive(Deserialize)]
 struct PinDialogResponse {
     id: u64,
-    pin: Option<u64>,
+    pin: Option<String>,
 }
 
 /// The answer a "pin-dialog-response" payload gives prompt `id`: `None` when it answers
 /// another prompt (or isn't a response at all), `Some(None)` when the user cancelled or
-/// the PIN isn't 4 to 6 digits.
+/// the PIN isn't 4 to 6 ASCII digits.
 fn pin_for_prompt(payload: &str, id: u64) -> Option<Option<String>> {
     let response: PinDialogResponse = serde_json::from_str(payload).ok()?;
     if response.id != id {
@@ -168,8 +169,7 @@ fn pin_for_prompt(payload: &str, id: u64) -> Option<Option<String>> {
     Some(
         response
             .pin
-            .map(|pin| pin.to_string())
-            .filter(|pin| (4..=6).contains(&pin.len())),
+            .filter(|pin| (4..=6).contains(&pin.len()) && pin.bytes().all(|b| b.is_ascii_digit())),
     )
 }
 
@@ -233,14 +233,32 @@ mod tests {
     #[test]
     fn only_a_response_to_this_prompt_counts() {
         assert_eq!(
-            pin_for_prompt(r#"{"id":7,"pin":123456}"#, 7),
+            pin_for_prompt(r#"{"id":7,"pin":"123456"}"#, 7),
             Some(Some("123456".into()))
         );
-        assert_eq!(pin_for_prompt(r#"{"id":6,"pin":123456}"#, 7), None);
-        assert_eq!(pin_for_prompt(r#"{"pin":123456}"#, 7), None);
+        assert_eq!(pin_for_prompt(r#"{"id":6,"pin":"123456"}"#, 7), None);
+        assert_eq!(pin_for_prompt(r#"{"pin":"123456"}"#, 7), None);
         assert_eq!(pin_for_prompt("123456", 7), None);
         assert_eq!(pin_for_prompt(r#"{"id":7}"#, 7), Some(None));
-        assert_eq!(pin_for_prompt(r#"{"id":7,"pin":123}"#, 7), Some(None));
-        assert_eq!(pin_for_prompt(r#"{"id":7,"pin":1234567}"#, 7), Some(None));
+    }
+
+    #[test]
+    fn pin_is_four_to_six_ascii_digits_with_leading_zeros_kept() {
+        for pin in ["012345", "000001", "000000", "1234"] {
+            assert_eq!(
+                pin_for_prompt(&format!(r#"{{"id":7,"pin":"{pin}"}}"#), 7),
+                Some(Some(pin.into())),
+                "{pin}"
+            );
+        }
+        for pin in ["123", "1234567", "12a4", "１２３４", "12 4", ""] {
+            assert_eq!(
+                pin_for_prompt(&format!(r#"{{"id":7,"pin":"{pin}"}}"#), 7),
+                Some(None),
+                "{pin}"
+            );
+        }
+        // A numeric payload is the old wire format; it is not a PIN any more.
+        assert_eq!(pin_for_prompt(r#"{"id":7,"pin":123456}"#, 7), None);
     }
 }

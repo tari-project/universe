@@ -39,7 +39,7 @@ describe('EnterPinDialog', () => {
             .getByTestId('pin-input')
             .querySelectorAll('input')
             .forEach((input, i) => fireEvent.change(input, { target: { value: `${i + 1}` } }));
-        await waitFor(() => expect(emit).toHaveBeenCalledWith('pin-dialog-response', { id: 42, pin: 123456 }));
+        await waitFor(() => expect(emit).toHaveBeenCalledWith('pin-dialog-response', { id: 42, pin: '123456' }));
         unmount();
 
         useSecurityStore.setState({ modal: 'enter_pin' });

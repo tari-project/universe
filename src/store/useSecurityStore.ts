@@ -47,7 +47,7 @@ export function requestPin(): Promise<string | undefined> {
 export function respondToPin(pin?: string) {
     return emit('pin-dialog-response', {
         id: useSecurityStore.getState().pinPromptId,
-        pin: pin ? Number(pin) : undefined,
+        pin,
     });
 }
 
