@@ -122,11 +122,14 @@ pub(super) async fn submit(
     let dir = MinotariWalletManager::burn_proofs_dir()?;
     let id = transaction.calculate_id();
     claim::track(&dir, id, claim_file);
-    let submitted = transactions
-        .submit_transaction_with_opts(transaction, Some(context), lock.as_ref().map(|l| l.id()))
-        .await
-        .map(drop)
-        .map_err(|e| e.to_string());
+    let submitted = with_indexer_timeout(transactions.submit_transaction_with_opts(
+        transaction,
+        Some(context),
+        lock.as_ref().map(|l| l.id()),
+    ))
+    .await
+    .map_err(|e| e.to_string())
+    .and_then(|sent| sent.map(drop).map_err(|e| e.to_string()));
     let stored = sdk
         .transaction_api()
         .get(id)
@@ -218,14 +221,19 @@ pub(super) fn check_fee(fee: u64, ceiling: u64) -> Result<u64, anyhow::Error> {
 pub(super) async fn with_indexer_timeout<T>(
     call: impl Future<Output = T>,
 ) -> Result<T, anyhow::Error> {
-    tokio::time::timeout(INDEXER_TIMEOUT, call)
-        .await
-        .map_err(|_| {
-            anyhow!(
-                "The L2 indexer didn't answer within {} seconds",
-                INDEXER_TIMEOUT.as_secs()
-            )
-        })
+    with_timeout(INDEXER_TIMEOUT, call).await
+}
+
+async fn with_timeout<T>(
+    limit: Duration,
+    call: impl Future<Output = T>,
+) -> Result<T, anyhow::Error> {
+    tokio::time::timeout(limit, call).await.map_err(|_| {
+        anyhow!(
+            "The L2 indexer didn't answer within {} seconds",
+            limit.as_secs()
+        )
+    })
 }
 
 /// Builds and signs the transfer. The returned guard holds the spent inputs locked
@@ -273,6 +281,19 @@ mod tests {
         assert!(unsent.to_string().contains("connection reset"));
         // Can't tell, so it keeps its inputs locked.
         assert!(failure(&transport, Err("store busy".to_string())).is_none());
+    }
+
+    #[tokio::test]
+    async fn a_stalled_submit_times_out_as_a_transport_error() {
+        let stalled = std::future::pending::<Result<(), String>>();
+        let submitted = with_timeout(Duration::from_millis(10), stalled)
+            .await
+            .map_err(|e| e.to_string())
+            .and_then(|sent| sent);
+        assert!(submitted.as_ref().unwrap_err().contains("didn't answer"));
+        // Stored New, so it stays pending and keeps its lock like any transport error.
+        assert!(failure(&submitted, Ok(Some((TransactionStatus::New, None)))).is_none());
+        assert!(failure(&submitted, Ok(None)).is_some());
     }
 
     #[test]

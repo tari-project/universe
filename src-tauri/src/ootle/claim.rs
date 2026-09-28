@@ -66,6 +66,7 @@ use super::{
     LOG_TARGET, OotleSdk,
     send::{MAX_L2_FEE, VALIDITY_EPOCHS, check_fee, submit, with_indexer_timeout},
 };
+use crate::wallet::minotari_wallet::MinotariWalletManager;
 
 /// Claimed proof files move here, the same place tari_walletd puts them.
 const CLAIMED_DIR: &str = "claimed";
@@ -226,8 +227,21 @@ pub fn find_claimable(dir: &Path, commitment: &str) -> Result<(String, BurnProof
         .find(|burn| burn.commitment == commitment)
         .and_then(|burn| burn.proof_file)
         .ok_or_else(|| anyhow!("No claimable burn with commitment {commitment}"))?;
+    ensure_no_pending_claim(dir, &file)?;
     let proof = read_proof(&dir.join(&file))?;
     Ok((file, proof))
+}
+
+/// Refuses `file` while a claim of it is still waiting to finalize: its proof only moves
+/// once the network accepts, so a second claim would be submitted and rejected on-chain.
+fn ensure_no_pending_claim(dir: &Path, file: &str) -> Result<(), anyhow::Error> {
+    if load_claims(dir)
+        .values()
+        .any(|f| f.as_deref() == Some(file))
+    {
+        bail!("This burn already has a claim waiting for the network.");
+    }
+    Ok(())
 }
 
 /// The burns with a proof file in `dir`, timed by when the file was last modified.
@@ -289,12 +303,17 @@ fn load_claims(dir: &Path) -> Tracked {
         })
 }
 
+/// Written to a sibling file and renamed over, so a crash mid-write can't leave half a
+/// file, which would load as no pending claims at all.
 fn save_claims(dir: &Path, claims: &Tracked) {
+    let path = dir.join(PENDING_CLAIMS_FILE);
+    let tmp = path.with_extension("json.tmp");
     let saved = serde_json::to_vec(claims)
         .map_err(std::io::Error::from)
         .and_then(|json| {
             std::fs::create_dir_all(dir)?;
-            std::fs::write(dir.join(PENDING_CLAIMS_FILE), json)
+            std::fs::write(&tmp, json)?;
+            std::fs::rename(&tmp, &path)
         });
     if let Err(e) = saved {
         warn!(target: LOG_TARGET, "Could not save the pending claims: {e}");
@@ -424,6 +443,9 @@ pub async fn claim_burn(
     file_name: String,
     approve_fee: impl AsyncFnOnce(u64) -> Result<(), anyhow::Error>,
 ) -> Result<TransactionId, anyhow::Error> {
+    // Checked again here, under the send gate permit: a second click passes
+    // find_claimable before the first claim is tracked.
+    ensure_no_pending_claim(&MinotariWalletManager::burn_proofs_dir()?, &file_name)?;
     let claim_key = proof.claim_proof.burn_public_key;
     let account = sdk
         .accounts_api()
@@ -739,6 +761,26 @@ mod tests {
     }
 
     #[test]
+    fn a_burn_with_a_claim_pending_cannot_be_claimed_again() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = dir.path();
+        let file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
+        write(dir, &file, PROOF);
+        let id = TransactionId::from([1; 32]);
+        track(dir, id, Some(file));
+
+        let Err(err) = find_claimable(dir, COMMITMENT) else {
+            panic!("a burn with a claim pending must not be claimable");
+        };
+        assert_eq!(
+            err.to_string(),
+            "This burn already has a claim waiting for the network."
+        );
+        untrack(dir, id);
+        assert!(find_claimable(dir, COMMITMENT).is_ok());
+    }
+
+    #[test]
     fn burns_list_newest_first_by_when_they_were_made() {
         let dir = tempfile::tempdir().expect("temp dir");
         let dir = dir.path();
@@ -831,6 +873,42 @@ mod tests {
 
         write(dir, PENDING_CLAIMS_FILE, "not json");
         assert!(load_claims(dir).is_empty());
+    }
+
+    #[test]
+    fn pending_claims_are_written_whole() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = dir.path();
+        let files = || -> Vec<String> {
+            let mut names: Vec<_> = std::fs::read_dir(dir)
+                .expect("dir")
+                .map(|e| e.expect("entry").file_name().to_string_lossy().into_owned())
+                .collect();
+            names.sort();
+            names
+        };
+        let inode = || {
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::MetadataExt;
+                std::fs::metadata(dir.join(PENDING_CLAIMS_FILE))
+                    .map(|m| m.ino())
+                    .ok()
+            }
+            #[cfg(not(unix))]
+            None::<u64>
+        };
+        let id = |n: u8| TransactionId::from([n; 32]);
+        track(dir, id(1), Some("a.json".to_string()));
+        let first = inode();
+        track(dir, id(2), None);
+
+        assert_eq!(files(), [PENDING_CLAIMS_FILE]);
+        // Each save is a fresh file renamed into place, never an in-place rewrite.
+        assert_ne!(first, inode());
+        let claims = load_claims(dir);
+        assert_eq!(claims.get(&id(1)), Some(&Some("a.json".to_string())));
+        assert_eq!(claims.get(&id(2)), Some(&None));
     }
 
     #[test]
