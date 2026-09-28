@@ -125,6 +125,33 @@ describe('L2WalletCard', () => {
         expect(screen.getByText('burn.claim-key-default')).toBeInTheDocument();
     });
 
+    it('forgets a send that was closed while processing', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        let finishSend: (id: string) => void = () => undefined;
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'l2_get_state') return enabledState;
+            if (cmd === 'l2_claimable_burns') return [];
+            if (cmd === 'l2_send') return new Promise<string>((resolve) => (finishSend = resolve));
+        }) as typeof invoke);
+        render(<L2WalletCard />);
+
+        fireEvent.click(await screen.findByTestId('l2-send-button'));
+        const [addressInput, amountInput] = await screen.findAllByRole('textbox');
+        fireEvent.change(addressInput, { target: { value: 'otl_esm_good' } });
+        fireEvent.change(amountInput, { target: { value: '1' } });
+        await waitFor(() => expect(screen.getByTestId('l2-send-review-button')).toBeEnabled());
+        fireEvent.click(screen.getByTestId('l2-send-review-button'));
+        fireEvent.click(await screen.findByTestId('l2-send-confirm-button'));
+        await screen.findByTestId('l2-send-status');
+
+        fireEvent.click(screen.getByTestId('modal-close'));
+        finishSend('tx-1');
+
+        fireEvent.click(await screen.findByTestId('l2-send-button'));
+        expect(await screen.findAllByRole('textbox')).toHaveLength(2);
+        expect(screen.queryByTestId('l2-send-status')).not.toBeInTheDocument();
+    });
+
     it('shows View details on a hovered history row', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         serve(enabledState);
