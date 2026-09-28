@@ -34,9 +34,11 @@ export const GpuPoolsSettings = () => {
     const availableGpuPools = useConfigPoolsStore(useShallow(getAvailableGpuPools));
     const isSoloMiningSupported = useMiningStore(getIsGpuSoloMiningSupported);
 
-    // Turning the GPU pool off switches GPU mining to a direct node connection. Only gate
-    // the toggle once the miner list has actually arrived, so an unknown list never blocks it.
-    const isSoloMiningUnsupported = isSoloMiningSupported === false;
+    // Turning the GPU pool off switches GPU mining to a direct node connection. Only lock
+    // the toggle once the miner list has actually arrived, so an unknown list never blocks it,
+    // and only while the pool is on: turning it back on is always allowed, so a persisted
+    // `false` (setup forces it off on solo networks) never leaves the switch stuck.
+    const isPoolLocked = isSoloMiningSupported === false && isGpuPoolEnabled;
 
     const handleToggleGpuPool = (enabled: boolean) => {
         void toggleGpuPool(enabled);
@@ -70,13 +72,13 @@ export const GpuPoolsSettings = () => {
                         <Typography variant="h6">{'GPU pool'}</Typography>
                     </SettingsGroupTitle>
                     <Typography>{t('mining-toggle-warning')}</Typography>
-                    {isSoloMiningUnsupported && <Typography>{t('gpu-solo-mining-unavailable')}</Typography>}
+                    {isPoolLocked && <Typography>{t('gpu-solo-mining-unavailable')}</Typography>}
                 </SettingsGroupContent>
 
                 <SettingsGroupAction>
                     <ToggleSwitch
                         checked={isGpuPoolEnabled}
-                        disabled={isSoloMiningUnsupported}
+                        disabled={isPoolLocked}
                         onChange={(e) => handleToggleGpuPool(e.target.checked)}
                         data-testid="pool-toggle-gpu"
                     />

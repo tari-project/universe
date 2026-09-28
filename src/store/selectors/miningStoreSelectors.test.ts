@@ -130,14 +130,11 @@ describe('miningStoreSelectors', () => {
         });
 
         it('returns true when only one of several miners advertises solo mining', () => {
-            // Built via fromEntries rather than an object literal: GpuMinerType currently has a
-            // single variant, so two computed keys would collide as a duplicate property.
-            const soloCapableMiner = 'SoloCapableMiner' as GpuMinerType;
             const state: Partial<MiningStoreState> = {
-                availableMiners: Object.fromEntries([
-                    [GpuMinerType.LolMiner, createMockMiner(GpuMinerType.LolMiner, [GpuMinerFeature.PoolMining])],
-                    [soloCapableMiner, createMockMiner(soloCapableMiner, [GpuMinerFeature.SoloMining])],
-                ]) as MiningStoreState['availableMiners'],
+                availableMiners: {
+                    [GpuMinerType.LolMiner]: createMockMiner(GpuMinerType.LolMiner, [GpuMinerFeature.PoolMining]),
+                    [GpuMinerType.TariMiner]: createMockMiner(GpuMinerType.TariMiner, [GpuMinerFeature.SoloMining]),
+                },
             };
 
             expect(getIsGpuSoloMiningSupported(state as MiningStoreState)).toBe(true);
