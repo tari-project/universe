@@ -303,12 +303,17 @@ fn load_claims(dir: &Path) -> Tracked {
         })
 }
 
+/// Written to a sibling file and renamed over, so a crash mid-write can't leave half a
+/// file, which would load as no pending claims at all.
 fn save_claims(dir: &Path, claims: &Tracked) {
+    let path = dir.join(PENDING_CLAIMS_FILE);
+    let tmp = path.with_extension("json.tmp");
     let saved = serde_json::to_vec(claims)
         .map_err(std::io::Error::from)
         .and_then(|json| {
             std::fs::create_dir_all(dir)?;
-            std::fs::write(dir.join(PENDING_CLAIMS_FILE), json)
+            std::fs::write(&tmp, json)?;
+            std::fs::rename(&tmp, &path)
         });
     if let Err(e) = saved {
         warn!(target: LOG_TARGET, "Could not save the pending claims: {e}");
@@ -868,6 +873,42 @@ mod tests {
 
         write(dir, PENDING_CLAIMS_FILE, "not json");
         assert!(load_claims(dir).is_empty());
+    }
+
+    #[test]
+    fn pending_claims_are_written_whole() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let dir = dir.path();
+        let files = || -> Vec<String> {
+            let mut names: Vec<_> = std::fs::read_dir(dir)
+                .expect("dir")
+                .map(|e| e.expect("entry").file_name().to_string_lossy().into_owned())
+                .collect();
+            names.sort();
+            names
+        };
+        let inode = || {
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::MetadataExt;
+                std::fs::metadata(dir.join(PENDING_CLAIMS_FILE))
+                    .map(|m| m.ino())
+                    .ok()
+            }
+            #[cfg(not(unix))]
+            None::<u64>
+        };
+        let id = |n: u8| TransactionId::from([n; 32]);
+        track(dir, id(1), Some("a.json".to_string()));
+        let first = inode();
+        track(dir, id(2), None);
+
+        assert_eq!(files(), [PENDING_CLAIMS_FILE]);
+        // Each save is a fresh file renamed into place, never an in-place rewrite.
+        assert_ne!(first, inode());
+        let claims = load_claims(dir);
+        assert_eq!(claims.get(&id(1)), Some(&Some("a.json".to_string())));
+        assert_eq!(claims.get(&id(2)), Some(&None));
     }
 
     #[test]
