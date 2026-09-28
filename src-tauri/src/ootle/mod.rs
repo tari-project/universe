@@ -460,8 +460,29 @@ async fn open_and_start(pin: &tari_utilities::SafePassword) -> Result<(), Transa
     let secret = keyring_secret()?;
     let pin_str = pin_text(pin)?;
     let sdk = match stored_seed(&store_dir).map_err(wallet_error)? {
-        Some(seed) => open_enabled_store(&store_dir, network, indexer_url, &seed, &secret, pin_str)
-            .map_err(wallet_error)?,
+        Some(seed) => {
+            // A store holding the L1 seed is rebuilt from it when no password opens it any
+            // more (a lost keyring entry); the L1 seed is the L2 seed, so nothing is lost.
+            let l1_words = match seed_source() {
+                SeedSource::L1 => {
+                    let l1_seed = InternalWallet::get_tari_seed(Some(pin.clone()))
+                        .await
+                        .map_err(wallet_error)?;
+                    Some(l2_seed_words(&l1_seed).map_err(wallet_error)?)
+                }
+                SeedSource::Imported => None,
+            };
+            open_enabled_store(
+                &store_dir,
+                network,
+                indexer_url,
+                &seed,
+                &secret,
+                pin_str,
+                l1_words.as_ref(),
+            )
+            .map_err(wallet_error)?
+        }
         None => {
             let seed = InternalWallet::get_tari_seed(Some(pin.clone()))
                 .await
@@ -581,7 +602,8 @@ fn decipher_words(seed: &[u8], password: &str) -> Result<Option<SeedWords>, anyh
 /// Opens the store in `store_dir`, whose enciphered seed is `seed`, with the password made
 /// of the keyring `secret` and the `pin`. A store older builds encrypted with the secret
 /// alone is rebuilt under that password from its own seed words first, keeping its owner.
-/// A store neither opens is left as it is.
+/// One neither opens is rebuilt from `l1_words` when there are any (the store holds the
+/// L1 seed), and left as it is otherwise (imported words no one can recover).
 fn open_enabled_store(
     store_dir: &Path,
     network: Network,
@@ -589,11 +611,16 @@ fn open_enabled_store(
     seed: &[u8],
     secret: &str,
     pin: &str,
+    l1_words: Option<&SeedWords>,
 ) -> Result<OotleSdk, anyhow::Error> {
     let password = store_password(secret, pin);
     if decipher_words(seed, &password)?.is_none() {
-        let words = decipher_words(seed, secret)?
-            .ok_or_else(|| anyhow::anyhow!("The Layer 2 wallet does not open with this PIN"))?;
+        let words = match decipher_words(seed, secret)? {
+            Some(words) => words,
+            None => l1_words
+                .cloned()
+                .ok_or_else(|| anyhow::anyhow!("The Layer 2 wallet does not open with this PIN"))?,
+        };
         let owner = std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE))?;
         restore_store(
             store_dir,
@@ -1355,7 +1382,8 @@ mod tests {
                 url.clone(),
                 &seed,
                 &secret,
-                &pin
+                &pin,
+                None
             )
             .is_err()
         );
@@ -1371,6 +1399,7 @@ mod tests {
                 seed,
                 secret,
                 pin,
+                None,
             )
         };
 
@@ -1397,6 +1426,73 @@ mod tests {
         // Moved once, it opens directly and the wrong PIN doesn't.
         open(&seed, &secret, &pin).expect("opens with secret and pin");
         assert!(open(&seed, &secret, "other").is_err());
+    }
+
+    #[test]
+    fn a_store_no_password_opens_is_rebuilt_from_the_l1_seed_unless_imported() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        let secret = ["install", "secret"].concat();
+        let pin = ["test", "pin"].concat();
+        let words_text = |words: &SeedWords| words.join(" ").reveal().clone();
+        // A store whose keyring entry is gone: encrypted under a secret no one has any more.
+        let lost_store = |name: &str, owner: &str| {
+            let store_dir = dir.path().join(name);
+            let mut sdk =
+                open_sdk(&store_dir, Network::Esmeralda, url.clone(), "lost").expect("sdk");
+            sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+                .expect("seed");
+            drop(sdk);
+            std::fs::write(store_dir.join(L1_WALLET_ID_FILE), owner).expect("owner");
+            let seed = stored_seed(&store_dir).expect("read").expect("seed");
+            (store_dir, seed)
+        };
+        let l1_seed = tari_common_types::seeds::cipher_seed::CipherSeed::random();
+        let l1_words = l2_seed_words(&l1_seed).expect("l1 words");
+
+        let (store_dir, seed) = lost_store("l1", "wallet-1");
+        let mut sdk = open_enabled_store(
+            &store_dir,
+            Network::Esmeralda,
+            url.clone(),
+            &seed,
+            &secret,
+            &pin,
+            Some(&l1_words),
+        )
+        .expect("rebuilt from the l1 seed");
+        let words = sdk.load_seed_words().expect("load").expect("words");
+        assert_eq!(words_text(&words), words_text(&l1_words));
+        drop(sdk);
+        assert_eq!(
+            std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).expect("owner"),
+            "wallet-1"
+        );
+        let seed = stored_seed(&store_dir).expect("read").expect("seed");
+        assert!(
+            decipher_words(&seed, &store_password(&secret, &pin))
+                .expect("decipher")
+                .is_some()
+        );
+
+        let (store_dir, seed) = lost_store("imported", IMPORTED_SEED);
+        assert!(
+            open_enabled_store(
+                &store_dir,
+                Network::Esmeralda,
+                url.clone(),
+                &seed,
+                &secret,
+                &pin,
+                None,
+            )
+            .is_err()
+        );
+        assert_eq!(
+            stored_seed(&store_dir).expect("read").expect("seed"),
+            seed,
+            "an imported store nobody opens is left alone"
+        );
     }
 
     #[tokio::test]
