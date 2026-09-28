@@ -14,6 +14,9 @@ export const handleL2WalletStateUpdate = (state: L2WalletState) => {
     });
 };
 
+/** The backend's PIN / confirmation gate said no: a normal outcome, not an error to show. */
+export const PIN_CANCELLED_RE = /PIN entry cancelled|User canceled|denied by user/i;
+
 /** Import and reset restart the wallet phase, which sends the new state when it's back. */
 const changeL2Seed = async (command: string, args?: Record<string, unknown>) => {
     useL2WalletStore.setState({ seedChangePending: true });
@@ -21,7 +24,7 @@ const changeL2Seed = async (command: string, args?: Record<string, unknown>) => 
         await invoke(command, args);
     } catch (e) {
         const message = String(e);
-        if (!message.includes('User canceled the operation') && !message.includes('PIN entry cancelled')) {
+        if (!PIN_CANCELLED_RE.test(message)) {
             addToast({ title: t('l2.seed-change-error', { ns: 'settings' }), text: message, type: 'error' });
         }
         console.error(`${command} failed`, e);

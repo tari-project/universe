@@ -62,6 +62,20 @@ describe('L2WalletCard', () => {
         expect(screen.queryByTestId('l2-wallet')).not.toBeInTheDocument();
     });
 
+    it('stays quiet when the PIN prompt for Enable is cancelled', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'l2_get_state') return initialState;
+            if (cmd === 'enable_l2_wallet') throw 'PIN entry cancelled';
+        }) as typeof invoke);
+        render(<L2WalletCard />);
+
+        fireEvent.click(await screen.findByTestId('l2-enable'));
+        await waitFor(() => expect(invoke).toHaveBeenCalledWith('enable_l2_wallet'));
+        await waitFor(() => expect(screen.getByTestId('l2-enable')).toBeEnabled());
+        expect(screen.queryByText(/l2.enable-error/)).not.toBeInTheDocument();
+    });
+
     it('offers Unlock Layer 2 while the store is locked and unlocks with the PIN', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         serve({ enabled: true, locked: true, seed_source: 'l1', accounts: [] });
@@ -125,6 +139,33 @@ describe('L2WalletCard', () => {
         expect(screen.getByText('burn.claim-key-default')).toBeInTheDocument();
     });
 
+    it('forgets a send that was closed while processing', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        let finishSend: (id: string) => void = () => undefined;
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'l2_get_state') return enabledState;
+            if (cmd === 'l2_claimable_burns') return [];
+            if (cmd === 'l2_send') return new Promise<string>((resolve) => (finishSend = resolve));
+        }) as typeof invoke);
+        render(<L2WalletCard />);
+
+        fireEvent.click(await screen.findByTestId('l2-send-button'));
+        const [addressInput, amountInput] = await screen.findAllByRole('textbox');
+        fireEvent.change(addressInput, { target: { value: 'otl_esm_good' } });
+        fireEvent.change(amountInput, { target: { value: '1' } });
+        await waitFor(() => expect(screen.getByTestId('l2-send-review-button')).toBeEnabled());
+        fireEvent.click(screen.getByTestId('l2-send-review-button'));
+        fireEvent.click(await screen.findByTestId('l2-send-confirm-button'));
+        await screen.findByTestId('l2-send-status');
+
+        fireEvent.click(screen.getByTestId('modal-close'));
+        finishSend('tx-1');
+
+        fireEvent.click(await screen.findByTestId('l2-send-button'));
+        expect(await screen.findAllByRole('textbox')).toHaveLength(2);
+        expect(screen.queryByTestId('l2-send-status')).not.toBeInTheDocument();
+    });
+
     it('shows View details on a hovered history row', async () => {
         useWalletStore.setState({ is_pin_locked: true });
         serve(enabledState);
@@ -152,7 +193,7 @@ describe('L2WalletCard', () => {
                   : undefined) as typeof invoke);
         render(<L2WalletCard />);
         const pick = async (label: string) => {
-            fireEvent.click(within(screen.getByTestId('tx-history-filter')).getByRole('combobox'));
+            fireEvent.click(within(screen.getByTestId('l2-history-filter')).getByRole('combobox'));
             fireEvent.click(await screen.findByRole('option', { name: label }));
         };
 

@@ -6,6 +6,7 @@ import { useMiningStore } from '@app/store';
 import { initialState, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
 import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
 import { Network } from '@app/utils/network';
 import SettingsNavigation from '../../components/Navigation.tsx';
@@ -130,6 +131,22 @@ describe('L2Settings', () => {
         fireEvent.click(await screen.findByTestId('l2-settings-side-by-side'));
         expect(useConfigUIStore.getState().l2_side_by_side).toBe(true);
         expect(invoke).toHaveBeenCalledWith('set_l2_side_by_side', { enabled: true });
+    });
+
+    it('keeps the L2 card open when turning side by side off fails to save', async () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        useConfigUIStore.setState({ l2_side_by_side: true });
+        useUIStore.setState({ l2Open: true });
+        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+            if (cmd === 'l2_get_state') return enabledState;
+            if (cmd === 'set_l2_side_by_side') throw 'disk full';
+        }) as typeof invoke);
+        render(<L2Settings />);
+
+        fireEvent.click(await screen.findByTestId('l2-settings-side-by-side'));
+        await waitFor(() => expect(invoke).toHaveBeenCalledWith('set_l2_side_by_side', { enabled: false }));
+        await waitFor(() => expect(useConfigUIStore.getState().l2_side_by_side).toBe(true));
+        expect(useUIStore.getState().l2Open).toBe(true);
     });
 
     it('hides the seed words section when L2 is off', async () => {

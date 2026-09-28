@@ -94,7 +94,7 @@ export default function L2Wallet({ account }: { account: L2Account }) {
             </DetailsCard>
 
             <TabsWrapper>
-                <FilterSelect types={FILTER_TYPES} value={filter} onChange={setFilter} />
+                <FilterSelect types={FILTER_TYPES} value={filter} onChange={setFilter} testId="l2-history-filter" />
                 <NavWrapper>
                     <NavButton
                         $isActive={section === 'send'}
@@ -133,11 +133,10 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                 <L2Activity account={account} filter={filter} />
             </div>
 
-            <L2SendModal
-                show={section === 'send'}
-                account={account.component_address}
-                onClose={() => setSection('history')}
-            />
+            {/* Mounted only while open, like BurnModal, so a send that finishes after the X can't leave a stale Submitted screen. */}
+            {section === 'send' && (
+                <L2SendModal show account={account.component_address} onClose={() => setSection('history')} />
+            )}
 
             {section === 'burn' && (
                 <BurnModal section={section} setSection={setSection} claimPublicKey={account.public_key} />

@@ -15,6 +15,7 @@ import {
     StyledForm,
     Wrapper,
 } from '@app/components/transactions/send/Send.styles.ts';
+import { FormRootError } from '@app/components/transactions/send/FormRootError.tsx';
 import { TransactionContextSummary } from '@app/components/transactions/send/TransactionContextSummary.tsx';
 import { StatusHero } from '@app/components/transactions/components/StatusHero/StatusHero';
 import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
@@ -22,6 +23,7 @@ import ProcessingIcon from '@app/components/transactions/send/SendReview/icons/P
 import CompletedIcon from '@app/components/transactions/send/SendReview/icons/CompletedIcon';
 import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 import { setError as setStoreError } from '@app/store';
+import { PIN_CANCELLED_RE } from '@app/store/actions/l2WalletStoreActions.ts';
 
 interface L2SendModalProps {
     show: boolean;
@@ -138,7 +140,7 @@ export default function L2SendModal({ show, account, onClose }: L2SendModalProps
             } catch (error) {
                 // Same outcomes as an L1 send: the backend's PIN gate said no.
                 const message = `${error}`;
-                if (/denied by user|PIN entry cancelled/i.test(message)) {
+                if (PIN_CANCELLED_RE.test(message)) {
                     setError('root.invoke_error', { message: t('send.error-denied') });
                 } else {
                     setStoreError(`${t('l2.send.error-message')}${error}`);
@@ -176,6 +178,7 @@ export default function L2SendModal({ show, account, onClose }: L2SendModalProps
             <FormProvider {...methods}>
                 <Wrapper $isLoading={methods.formState.isSubmitting}>
                     <StyledForm onSubmit={methods.handleSubmit(handleFormSubmit)}>
+                        <FormRootError />
                         {status === 'fields' && <L2SendForm />}
                         {status === 'reviewing' && (
                             <>

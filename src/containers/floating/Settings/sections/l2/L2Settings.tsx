@@ -4,7 +4,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { selectL2Account, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
 import { useConfigCoreStore } from '@app/store/stores/config/useConfigCoreStore.ts';
-import { handleL2WalletStateUpdate } from '@app/store/actions/l2WalletStoreActions.ts';
+import { handleL2WalletStateUpdate, PIN_CANCELLED_RE } from '@app/store/actions/l2WalletStoreActions.ts';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -70,7 +70,7 @@ export const L2Settings = () => {
             await invoke(command);
             await fetchL2State();
         } catch (e) {
-            setError(`${t(errorKey)}${e}`);
+            if (!PIN_CANCELLED_RE.test(String(e))) setError(`${t(errorKey)}${e}`);
         } finally {
             setEnabling(false);
         }
@@ -154,11 +154,13 @@ export const L2Settings = () => {
                         <ToggleSwitch
                             data-testid="l2-settings-side-by-side"
                             checked={sideBySide}
-                            onChange={({ target }) => {
-                                setL2SideBySide(target.checked);
-                                // Turning it off with both cards open leaves the L1 card.
-                                if (!target.checked) setL2Open(false);
-                            }}
+                            onChange={({ target }) =>
+                                setL2SideBySide(target.checked).then(() => {
+                                    // Turning it off with both cards open leaves the L1 card; a failed
+                                    // write rolls the setting back, so read it rather than the click.
+                                    if (!useConfigUIStore.getState().l2_side_by_side) setL2Open(false);
+                                })
+                            }
                         />
                     </SettingsGroupAction>
                 </SettingsGroup>
