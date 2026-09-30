@@ -33,15 +33,15 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
-use base64::{Engine, prelude::BASE64_STANDARD};
 use log::warn;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tari_crypto::{
     keys::PublicKey as _,
     ristretto::{RistrettoPublicKey, RistrettoSecretKey},
     tari_utilities::ByteArray,
 };
 use tari_engine_types::confidential::{ClaimBurnOutputData, MinotariBurnClaimProof};
+use tari_ootle_app_utilities::burn_claim_proof::claim_proof_from_l1;
 use tari_ootle_common_types::{Epoch, optional::Optional};
 use tari_ootle_transaction::{Transaction, TransactionId};
 use tari_ootle_wallet_sdk::{
@@ -53,12 +53,13 @@ use tari_ootle_wallet_sdk::{
     network::WalletNetworkInterface,
 };
 use tari_ootle_wallet_sdk_services::transaction_service::TransactionServiceHandle;
+use tari_sidechain_wallet::CompleteClaimBurnProof;
 use tari_template_lib::{
     prelude::RistrettoPublicKeyBytes,
     types::{
-        EncryptedData,
+        Amount, EncryptedData,
         constants::{STEALTH_TARI_RESOURCE_ADDRESS, TARI_TOKEN},
-        stealth::SpendAuthorization,
+        stealth::{RevealedOutput, SpendAuthorization},
     },
 };
 
@@ -96,7 +97,7 @@ pub struct L2Burn {
     /// "claimed" once a claim is accepted on L2. "foreign" instead of "claimable" when
     /// the claim key isn't one of this wallet's L2 accounts.
     pub status: &'static str,
-    /// The L1 height the burn was mined at, once the L1 node has said. The L2 can't
+    /// The L1 height the burn was mined at, once its proof is written. The L2 can't
     /// accept its claim until it has imported that block.
     pub mined_height: Option<u64>,
     /// Unix seconds, when the burn was made (its proof file's mtime when the L1 wallet
@@ -154,19 +155,30 @@ impl L2Burn {
     }
 }
 
-/// The proof file the L1 burn proof worker writes, in the JSON tari_walletd reads.
-#[derive(Deserialize)]
+/// A proof file the L1 burn proof worker writes, converted into the claim the L2 takes.
 pub struct BurnProof {
     pub claim_proof: MinotariBurnClaimProof,
-    /// Base64.
-    encrypted_data: String,
+    /// The L2 account key `P` the burn was made out to.
+    pub account_key: RistrettoPublicKeyBytes,
+    /// The L1 height the burn was mined at.
+    pub mined_height: u64,
+    encrypted_data: EncryptedData,
 }
 
 impl BurnProof {
-    fn encrypted_data(&self) -> Result<EncryptedData, anyhow::Error> {
-        let bytes = BASE64_STANDARD.decode(&self.encrypted_data)?;
-        EncryptedData::try_from(bytes)
-            .map_err(|len| anyhow!("The burn proof's encrypted data is {len} bytes, too long"))
+    fn from_json(json: &[u8]) -> Result<Self, anyhow::Error> {
+        let file: CompleteClaimBurnProof = serde_json::from_slice(json)?;
+        let encrypted_data = EncryptedData::try_from(file.encrypted_data)
+            .map_err(|len| anyhow!("The burn proof's encrypted data is {len} bytes, too long"))?;
+        Ok(Self {
+            claim_proof: claim_proof_from_l1(&file.claim_proof)
+                .map_err(|e| anyhow!("Invalid burn proof: {e}"))?,
+            account_key: RistrettoPublicKeyBytes::try_from(
+                file.claim_proof.burn_public_key.as_bytes(),
+            )?,
+            mined_height: file.claim_proof.output_proof.block_height,
+            encrypted_data,
+        })
     }
 }
 
@@ -262,11 +274,11 @@ fn read_burns(dir: &Path, status: &'static str) -> Result<Vec<L2Burn>, anyhow::E
         match read_proof(&path) {
             Ok(proof) => burns.push(L2Burn {
                 commitment: hex::encode(proof.claim_proof.commitment.as_bytes()),
-                claim_public_key: hex::encode(proof.claim_proof.burn_public_key.as_bytes()),
+                claim_public_key: hex::encode(proof.account_key.as_bytes()),
                 amount: proof.claim_proof.value,
                 proof_file: Some(file.to_string()),
                 status,
-                mined_height: None,
+                mined_height: Some(proof.mined_height),
                 timestamp: std::fs::metadata(&path)?
                     .modified()?
                     .duration_since(SystemTime::UNIX_EPOCH)?
@@ -282,7 +294,7 @@ pub fn read_proof(path: &Path) -> Result<BurnProof, anyhow::Error> {
     if std::fs::metadata(path)?.len() > MAX_PROOF_BYTES {
         bail!("The burn proof file is too large");
     }
-    Ok(serde_json::from_slice(&std::fs::read(path)?)?)
+    BurnProof::from_json(&std::fs::read(path)?)
 }
 
 /// Submitted claims and sends, transaction id to the claim's proof file or `None` for
@@ -446,7 +458,7 @@ pub async fn claim_burn(
     // Checked again here, under the send gate permit: a second click passes
     // find_claimable before the first claim is tracked.
     ensure_no_pending_claim(&MinotariWalletManager::burn_proofs_dir()?, &file_name)?;
-    let claim_key = proof.claim_proof.burn_public_key;
+    let claim_key = proof.account_key;
     let account = sdk
         .accounts_api()
         .get_account_by_public_key(&claim_key)
@@ -454,14 +466,13 @@ pub async fn claim_burn(
         .ok_or_else(|| {
             anyhow!("The claim key {claim_key} isn't one of this wallet's L2 accounts")
         })?;
-    let encrypted_data = proof.encrypted_data()?;
     let epoch = with_indexer_timeout(sdk.get_network_interface().get_current_epoch()).await??;
     let max_epoch = Epoch(epoch.as_u64().saturating_add(VALIDITY_EPOCHS));
     let build = |fee, dry_run| {
         let claim = Claim {
             account: &account,
             proof: &proof.claim_proof,
-            encrypted_data: &encrypted_data,
+            encrypted_data: &proof.encrypted_data,
             max_fee: fee,
             max_epoch,
             dry_run,
@@ -562,11 +573,15 @@ fn build_claim(sdk: &OotleSdk, claim: Claim<'_>) -> Result<Transaction, anyhow::
         tag,
     };
     let input = StealthInputWitness::new(decrypted.into_mask_and_value());
+    // The claim key signs, so it is the only badge in scope to take the revealed fee.
     let statement = crypto.generate_transfer_statement(
         iter::once(input),
-        0,
+        Amount::zero(),
         iter::once(&output),
-        claim.max_fee,
+        Some(RevealedOutput::new(
+            Amount::from(claim.max_fee),
+            claim.proof.output.features.claim_public_key,
+        )),
     )?;
     let output_data = ClaimBurnOutputData {
         encrypted_data: claim.encrypted_data.clone(),
@@ -587,8 +602,8 @@ fn build_claim(sdk: &OotleSdk, claim: Claim<'_>) -> Result<Transaction, anyhow::
 }
 
 /// The account's owner key, the stealth claim secret `s = H(p·R) + p` and the burn's
-/// sender offset key `R`. Fails unless the burn's ownership proof was made for `s·G`,
-/// which is the check the network makes too.
+/// sender offset key `R`. Fails unless the burn output names `s·G` as its claim key and
+/// its ownership proof was made for it, which are the checks the network makes too.
 fn claim_keys(
     sdk: &OotleSdk,
     account: &AccountWithAddress,
@@ -599,13 +614,19 @@ fn claim_keys(
         .ok_or_else(|| anyhow!("This L2 account has no owner key to claim with"))?;
     let owner = sdk.key_manager_api().get_key(key_id)?;
     let sender_offset =
-        RistrettoPublicKey::from_canonical_bytes(proof.sender_offset_public_key.as_bytes())
+        RistrettoPublicKey::from_canonical_bytes(proof.output.sender_offset_public_key.as_bytes())
             .map_err(|e| anyhow!("The burn proof has a bad sender offset key: {e}"))?;
     let crypto = sdk.stealth_crypto_api();
     let stealth_secret = crypto.derive_burn_claim_stealth_secret(owner.secret(), &sender_offset);
     let stealth_key = RistrettoPublicKeyBytes::try_from(
         RistrettoPublicKey::from_secret_key(&stealth_secret).as_bytes(),
     )?;
+    if stealth_key != proof.output.features.claim_public_key {
+        bail!(
+            "claim key mismatch: the burn is made out to claim key {}, not this account's {stealth_key}",
+            proof.output.features.claim_public_key
+        );
+    }
     if !crypto.validate_burn_claim_ownership_proof(
         sdk.network(),
         &proof.ownership_proof,
@@ -627,8 +648,9 @@ mod tests {
 
     use super::*;
 
-    /// A real esmeralda burn proof written by the burn proof worker (1000 XTM, claim key
-    /// of a tari_walletd account, not of any wallet made here).
+    /// A burn proof in the format the burn proof worker writes (1000 XTM, mined at 12345),
+    /// for an account key and claim key of no wallet made here. Its inclusion and
+    /// ownership proofs are placeholders.
     const PROOF: &str = include_str!("test_burn_proof.json");
     const COMMITMENT: &str = "dae29ac8a7d02f1adc193c5c68cab83a33d2dff3f7ac78c5c3434f5189126f42";
     const CLAIM_KEY: &str = "7c29fa218284a767bedb04b2fb44e55fa22fc01c201b56f30d1d79357a2e4d76";
@@ -641,7 +663,7 @@ mod tests {
     /// The fixture with its commitment swapped, so it reads as a different burn.
     fn other_proof(commitment: &str) -> String {
         let mut json: serde_json::Value = serde_json::from_str(PROOF).expect("json");
-        json["claim_proof"]["commitment"] = commitment.into();
+        json["claim_proof"]["output_proof"]["output"]["commitment"] = commitment.into();
         json.to_string()
     }
 
@@ -686,17 +708,14 @@ mod tests {
 
     #[test]
     fn reads_the_burn_proof_workers_file() {
-        let proof: BurnProof = serde_json::from_str(PROOF).expect("proof");
+        let proof = BurnProof::from_json(PROOF.as_bytes()).expect("proof");
         assert_eq!(
             hex::encode(proof.claim_proof.commitment.as_bytes()),
             COMMITMENT
         );
-        assert_eq!(
-            hex::encode(proof.claim_proof.burn_public_key.as_bytes()),
-            CLAIM_KEY
-        );
+        assert_eq!(hex::encode(proof.account_key.as_bytes()), CLAIM_KEY);
         assert_eq!(proof.claim_proof.value, 1_000_000_000);
-        assert!(proof.encrypted_data().is_ok());
+        assert_eq!(proof.mined_height, 12_345);
     }
 
     #[test]
@@ -950,7 +969,7 @@ mod tests {
             .accounts_api()
             .get_account_by_address(account.component_address())
             .expect("account");
-        let proof: BurnProof = serde_json::from_str(PROOF).expect("proof");
+        let proof = BurnProof::from_json(PROOF.as_bytes()).expect("proof");
         let claimable = |key: String| L2Burn {
             status: "claimable",
             ..L2Burn::pending(String::new(), key, 1)
@@ -963,13 +982,10 @@ mod tests {
         let Err(e) = claim_keys(&sdk, &account, &proof.claim_proof) else {
             panic!("a burn for someone else's key must not validate");
         };
-        assert!(
-            e.to_string().contains("ownership proof validation failed"),
-            "{e}"
-        );
+        assert!(e.to_string().contains("claim key mismatch"), "{e}");
         assert!(
             sdk.accounts_api()
-                .get_account_by_public_key(&proof.claim_proof.burn_public_key)
+                .get_account_by_public_key(&proof.account_key)
                 .optional()
                 .expect("lookup")
                 .is_none()
