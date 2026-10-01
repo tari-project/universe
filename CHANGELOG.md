@@ -4,7 +4,7 @@ _October 1, 2026_
 
 🔄 Rolling out via auto-update
 
-A quiet one. The bundled node, wallet and merge mining proxy move up to Tari v6.0.1-pre.2, which tightens how the node checks the transactions it's handed and keeps its mempool in line under load. Nothing changes in how you mine, and your wallet and rewards aren't touched. 💜🐢
+This one's a security update. It fixes a bug in the wallet, and we'd like everyone on it, so please let the update install when Tari Universe offers it. The bundled node, wallet and merge mining proxy move up to Tari v6.0.1-pre.2 to carry the fix. Nothing changes in how you mine. 💜🐢
 
 ---
 
