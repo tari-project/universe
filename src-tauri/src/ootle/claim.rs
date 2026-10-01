@@ -40,7 +40,10 @@ use tari_crypto::{
     ristretto::{RistrettoPublicKey, RistrettoSecretKey},
     tari_utilities::ByteArray,
 };
-use tari_engine_types::confidential::{ClaimBurnOutputData, MinotariBurnClaimProof};
+use tari_engine_types::{
+    commit_result::{ExecutionFailureCode, RejectReason},
+    confidential::{ClaimBurnOutputData, MinotariBurnClaimProof},
+};
 use tari_ootle_app_utilities::burn_claim_proof::claim_proof_from_l1;
 use tari_ootle_common_types::{Epoch, optional::Optional};
 use tari_ootle_transaction::{Transaction, TransactionId};
@@ -78,9 +81,6 @@ const PENDING_CLAIMS_FILE: &str = "pending_claims.json";
 static PENDING_CLAIMS_LOCK: Mutex<()> = Mutex::new(());
 /// Proof files are small. Same cap as tari_walletd.
 const MAX_PROOF_BYTES: u64 = 1 << 20;
-/// What the claim burn verifier says when the L2 hasn't synced the burn's L1 block yet.
-/// Same phrase tari_walletd's auto claim matches to retry later.
-const BURN_NOT_YET_CLAIMABLE_MARKER: &str = "not yet claimable";
 
 /// A burn to L2 and how far along its claim is.
 #[derive(Clone, Debug, Serialize, PartialEq)]
@@ -122,7 +122,7 @@ pub struct L2ClaimResult {
 impl L2ClaimResult {
     /// The result for a claim of the proof `file` ({claim key}-{commitment}.json), or for
     /// a send when there's no file.
-    fn new(file: Option<&str>, accepted: bool, reason: Option<String>) -> Self {
+    fn new(file: Option<&str>, accepted: bool, reason: Option<String>, not_yet: bool) -> Self {
         let commitment = file.map(|file| {
             file.strip_suffix(".json")
                 .and_then(|name| name.rsplit_once('-'))
@@ -131,8 +131,7 @@ impl L2ClaimResult {
         });
         Self {
             kind: if file.is_some() { "claim" } else { "send" },
-            not_yet_claimable: file.is_some()
-                && reason.as_deref().is_some_and(is_burn_not_yet_claimable),
+            not_yet_claimable: file.is_some() && not_yet,
             commitment,
             accepted,
             reason,
@@ -162,6 +161,8 @@ pub struct BurnProof {
     pub account_key: RistrettoPublicKeyBytes,
     /// The L1 height the burn was mined at.
     pub mined_height: u64,
+    /// The L1 epoch the burn was mined in. The L2 takes the claim once it's past it.
+    mined_in_epoch: u64,
     encrypted_data: EncryptedData,
 }
 
@@ -177,6 +178,7 @@ impl BurnProof {
                 file.claim_proof.burn_public_key.as_bytes(),
             )?,
             mined_height: file.claim_proof.output_proof.block_height,
+            mined_in_epoch: file.mined_in_epoch,
             encrypted_data,
         })
     }
@@ -228,8 +230,8 @@ pub fn mark_foreign(sdk: &OotleSdk, burns: &mut [L2Burn]) -> Result<(), anyhow::
 
 /// True if a claim was rejected because the burn's L1 block isn't synced into a
 /// claimable epoch yet, rather than because the claim is bad.
-fn is_burn_not_yet_claimable(reject_reason: &str) -> bool {
-    reject_reason.contains(BURN_NOT_YET_CLAIMABLE_MARKER)
+fn is_burn_not_yet_claimable(reject: &RejectReason) -> bool {
+    reject.execution_failure_code() == Some(ExecutionFailureCode::NotYetValid)
 }
 
 /// The claimable proof for `commitment` and its file name.
@@ -372,6 +374,7 @@ fn settle(
     file: Option<String>,
     accepted: bool,
     reason: Option<String>,
+    not_yet: bool,
 ) -> L2ClaimResult {
     match (&file, accepted) {
         (Some(file), true) => mark_claimed(dir, file),
@@ -381,7 +384,7 @@ fn settle(
         (None, true) => {}
         (None, false) => warn!(target: LOG_TARGET, "An L2 send was rejected: {reason:?}"),
     }
-    L2ClaimResult::new(file.as_deref(), accepted, reason)
+    L2ClaimResult::new(file.as_deref(), accepted, reason, not_yet)
 }
 
 /// Settles tracked claims and sends that finished while nothing was listening (Universe
@@ -412,7 +415,7 @@ pub fn reconcile_claims(
         });
         ended
             .into_iter()
-            .map(|(file, accepted)| settle(dir, file, accepted, None))
+            .map(|(file, accepted)| settle(dir, file, accepted, None, false))
             .collect()
     })
 }
@@ -420,28 +423,27 @@ pub fn reconcile_claims(
 /// How a tracked claim or send ended, once it finalizes or turns out invalid. `None` for
 /// any other event or a transaction that isn't tracked.
 pub fn track_claim(dir: &Path, event: &WalletEvent) -> Option<L2ClaimResult> {
-    let (id, reason) = match event {
+    let (id, reject, invalid) = match event {
         WalletEvent::TransactionFinalized(event) => (
             event.transaction_id,
-            event.finalize.result.any_reject().map(|r| r.to_string()),
+            event.finalize.result.any_reject(),
+            false,
         ),
         WalletEvent::TransactionInvalid(event) => (
             event.transaction_id,
-            Some(
-                event
-                    .finalize
-                    .as_ref()
-                    .and_then(|f| f.result.any_reject())
-                    .map_or_else(
-                        || "The transaction is invalid".to_string(),
-                        |r| r.to_string(),
-                    ),
-            ),
+            event.finalize.as_ref().and_then(|f| f.result.any_reject()),
+            true,
         ),
         _ => return None,
     };
+    let reason = match reject {
+        Some(reject) => Some(reject.to_string()),
+        None if invalid => Some("The transaction is invalid".to_string()),
+        None => None,
+    };
+    let not_yet = reject.is_some_and(is_burn_not_yet_claimable);
     let file = update_tracked(dir, |tracked| tracked.remove(&id))?;
-    Some(settle(dir, file, reason.is_none(), reason))
+    Some(settle(dir, file, reason.is_none(), reason, not_yet))
 }
 
 /// Claims the burn in `proof` into the wallet account its claim key belongs to and
@@ -467,6 +469,8 @@ pub async fn claim_burn(
             anyhow!("The claim key {claim_key} isn't one of this wallet's L2 accounts")
         })?;
     let epoch = with_indexer_timeout(sdk.get_network_interface().get_current_epoch()).await??;
+    // The dry run doesn't check L1 inclusion, so it can't catch a claim made too early.
+    ensure_claimable_in(epoch, proof.mined_in_epoch)?;
     let max_epoch = Epoch(epoch.as_u64().saturating_add(VALIDITY_EPOCHS));
     let build = |fee, dry_run| {
         let claim = Claim {
@@ -504,6 +508,19 @@ pub async fn claim_burn(
         Some(file_name),
     )
     .await
+}
+
+/// Refuses a claim until the L2 is past the epoch the burn was mined in, which is when
+/// its validators have the burn's L1 block. Before that the network rejects the claim.
+fn ensure_claimable_in(epoch: Epoch, mined_in_epoch: u64) -> Result<(), anyhow::Error> {
+    if epoch.as_u64() <= mined_in_epoch {
+        bail!(
+            "The L2 hasn't seen this burn yet. It's at epoch {} and can take the claim from epoch {}.",
+            epoch.as_u64(),
+            mined_in_epoch.saturating_add(1)
+        );
+    }
+    Ok(())
 }
 
 /// The fee comes out of the burn itself, so on top of the flat ceiling it may take at
@@ -678,12 +695,20 @@ mod tests {
 
     #[test]
     fn rejections_map_to_the_result() {
-        let not_yet = "Execution failure: At instruction #0: Invalid burn claim proof: block header not found \
-                       for hash 0a1b2c. The claim may be invalid, or the burn may have occurred after the \
-                       current epoch, and therefore is not yet claimable.";
+        let failure = |code| RejectReason::ExecutionFailure {
+            code,
+            message: "At instruction #1: irrelevant to the decision".to_string(),
+        };
+        assert!(is_burn_not_yet_claimable(&failure(
+            ExecutionFailureCode::NotYetValid
+        )));
+        assert!(!is_burn_not_yet_claimable(&failure(
+            ExecutionFailureCode::InsufficientFunds
+        )));
+
         let file = format!("{CLAIM_KEY}-{COMMITMENT}.json");
-        let result = |accepted, reason: Option<&str>| {
-            let r = L2ClaimResult::new(Some(&file), accepted, reason.map(str::to_string));
+        let result = |accepted, not_yet| {
+            let r = L2ClaimResult::new(Some(&file), accepted, None, not_yet);
             (
                 r.kind,
                 r.commitment.unwrap_or_default(),
@@ -693,17 +718,24 @@ mod tests {
         };
         let commitment = COMMITMENT.to_string();
         assert_eq!(
-            result(true, None),
+            result(true, false),
             ("claim", commitment.clone(), true, false)
         );
         assert_eq!(
-            result(false, Some(not_yet)),
+            result(false, true),
             ("claim", commitment.clone(), false, true)
         );
-        assert_eq!(
-            result(false, Some("Execution failure: Insufficient funds")),
-            ("claim", commitment, false, false)
+        assert!(
+            !L2ClaimResult::new(None, false, None, true).not_yet_claimable,
+            "a send is never a burn claim"
         );
+    }
+
+    #[test]
+    fn claims_wait_until_the_l2_is_past_the_burns_epoch() {
+        assert!(ensure_claimable_in(Epoch(3), 3).is_err());
+        assert!(ensure_claimable_in(Epoch(2), 3).is_err());
+        assert!(ensure_claimable_in(Epoch(4), 3).is_ok());
     }
 
     #[test]
