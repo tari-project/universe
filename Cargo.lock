@@ -7642,7 +7642,7 @@ dependencies = [
 
 [[package]]
 name = "process-wrapper"
-version = "1.6.15"
+version = "1.6.16"
 dependencies = [
  "libc",
  "windows-sys 0.59.0",
@@ -10225,7 +10225,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "1.6.15"
+version = "1.6.16"
 dependencies = [
  "anyhow",
  "async-trait",
