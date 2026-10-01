@@ -571,3 +571,42 @@ jobs:
         run: |
           sentry-cli debug-files check ./target/release/tari_universe.pdb
           sentry-cli debug-files upload --org tari-labs --project tari-universe ./target/release/tari_universe.pdb
+
+  # Linux ships as a Flatpak, built alongside the Windows and macOS builds for the
+  # same network, with the production identity on the release branch and the beta
+  # one everywhere else.
+  flatpak:
+    needs: set-matrix
+    permissions:
+      contents: read
+    uses: ./.github/workflows/flatpak.yml
+    with:
+      tari_network: ${{ needs.set-matrix.outputs.tari_network }}
+      tari_target_network: ${{ needs.set-matrix.outputs.tari_target_network }}
+      beta: ${{ !startsWith(github.ref, 'refs/heads/release') }}
+
+  # The draft release only exists once the platform builds have created it.
+  flatpak-to-release:
+    name: Attach Flatpak to release
+    needs: [builds, flatpak]
+    if: ${{ startsWith(github.ref, 'refs/heads/release') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: src-tauri/tauri.conf.json
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.flatpak.outputs.artifact }}
+
+      - name: Upload to the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUNDLE: ${{ needs.flatpak.outputs.artifact }}
+        run: |
+          VERSION="$(jq -r .version src-tauri/tauri.conf.json)"
+          gh release upload "v${VERSION}" "${BUNDLE}" --clobber

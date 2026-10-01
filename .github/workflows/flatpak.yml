@@ -1,39 +1,93 @@
 name: Flatpak
 
-# Builds a Linux Flatpak bundle of Tari Universe and (on release) attaches it as
-# a release asset. Designed to need zero per-release maintenance:
+# Builds a Linux Flatpak bundle of Tari Universe. release.yml calls it alongside
+# the Windows and macOS builds, with the same network and production/beta
+# identity, and attaches the bundle to the draft release on the release branch.
+# Designed to need zero per-release maintenance:
 #   * the manifest builds the checked-out tree (no pinned commit/version), and
 #   * the offline cargo/npm sources are regenerated here from this commit's
 #     lockfiles, so they can never drift out of sync with a release.
 #
-# Standalone — does not touch the existing release pipeline. It produces a
-# sideload bundle (`flatpak install <file>.flatpak`); it does not auto-update.
+# It produces a sideload bundle (`flatpak install <file>.flatpak`); it does not
+# auto-update. A beta build installs as com.tari.universe.beta, next to the
+# production app.
 
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      tari_network:
+        type: string
+        required: true
+      tari_target_network:
+        type: string
+        required: true
+      beta:
+        description: "Beta identity (com.tari.universe.beta) instead of production"
+        type: boolean
+        required: true
+    outputs:
+      artifact:
+        description: "Name of the uploaded .flatpak artifact"
+        value: ${{ jobs.flatpak.outputs.artifact }}
   workflow_dispatch:
     inputs:
       ref:
         description: "Git ref to build (default: current branch)"
         required: false
         default: ""
+      tari_network:
+        default: mainnet
+        required: true
+        type: choice
+        options:
+          - mainnet
+          - esmeralda
+          - nextnet
 
 permissions:
-  contents: write # upload the bundle to the triggering release
+  contents: read
 
 concurrency:
-  group: flatpak-${{ github.event.inputs.ref || github.ref }}
+  group: flatpak-${{ inputs.ref || github.ref }}-${{ inputs.tari_network }}
   cancel-in-progress: true
 
 jobs:
   flatpak:
-    name: Flatpak (x86_64)
+    name: Flatpak (x86_64) for ${{ inputs.tari_network }}
     runs-on: ubuntu-24.04
+    outputs:
+      artifact: ${{ steps.bundle.outputs.artifact }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
+          ref: ${{ inputs.ref || github.ref }}
+
+      # release.yml passes all three. A manual run only picks the network: mainnet
+      # builds the production app, anything else the beta one, as release.yml does.
+      - name: Resolve network and identity
+        env:
+          NETWORK: ${{ inputs.tari_network }}
+          TARGET: ${{ inputs.tari_target_network }}
+          BETA_INPUT: ${{ inputs.beta }}
+        run: |
+          set -euo pipefail
+          if [ -n "$TARGET" ]; then
+            BETA="$BETA_INPUT"
+          else
+            case "$NETWORK" in
+              mainnet) TARGET=mainnet BETA=false ;;
+              nextnet) TARGET=nextnet BETA=true ;;
+              *) TARGET=testnet BETA=true ;;
+            esac
+          fi
+          if [ "$BETA" = true ]; then APP_ID=com.tari.universe.beta; else APP_ID=com.tari.universe; fi
+          {
+            echo "TARI_NETWORK=$NETWORK"
+            echo "TARI_TARGET_NETWORK=$TARGET"
+            echo "BETA=$BETA"
+            echo "APP_ID=$APP_ID"
+          } >> "$GITHUB_ENV"
+          echo "network=$NETWORK target=$TARGET beta=$BETA app_id=$APP_ID"
 
       - name: Install Flatpak tooling
         run: |
@@ -66,32 +120,68 @@ jobs:
       # `type: dir` over this checkout). Source files keep their Alpha/local
       # defaults; the strip lives only here, so a local build stays Alpha and we
       # never hand-maintain the production naming or the metainfo version/date.
-      - name: Set production identity and release metadata
-        env:
-          RELEASE_DATE: ${{ github.event.release.published_at }}
+      # Apply the app identity + AppStream release metadata to the working tree
+      # BEFORE flatpak-builder copies it (the manifest's app source is `type: dir`
+      # over this checkout). Source files keep their Alpha/local defaults; the
+      # rewrite lives only here, so a local build stays Alpha. The production
+      # naming mirrors release.yml's "RELEASE Builds" yq rewrite and the beta
+      # naming its "BETA Builds" one.
+      - name: Set app identity, network and release metadata
         run: |
           set -euo pipefail
           conf=src-tauri/tauri.conf.json
+          manifest=flatpak/com.tari.universe.yml
+          desktop=flatpak/com.tari.universe.desktop
+          metainfo=flatpak/com.tari.universe.metainfo.xml
           VERSION="$(jq -r .version "$conf")"
 
-          # Mirror release.yml's "RELEASE Builds" yq rewrite (Linux naming) so the
-          # production identity has a single source of truth.
           yq eval ".productName = \"tari_universe\"" --output-format=json -i "$conf"
           yq eval ".mainBinaryName = \"tari_universe\"" --output-format=json -i "$conf"
-          yq eval ".identifier = \"com.tari.universe\"" --output-format=json -i "$conf"
-          yq eval ".app.windows[0].title = \"Tari Universe v${VERSION}\"" --output-format=json -i "$conf"
+          yq eval ".identifier = \"${APP_ID}\"" --output-format=json -i "$conf"
+
+          # The manifest builds mainnet; point it at this network. build.rs reads
+          # the matching src-tauri/env.<network> at compile time.
+          sed -i -e "s|^    TARI_NETWORK: mainnet$|    TARI_NETWORK: ${TARI_NETWORK}|" \
+            -e "s|^    TARI_TARGET_NETWORK: mainnet$|    TARI_TARGET_NETWORK: ${TARI_TARGET_NETWORK}|" "$manifest"
+          grep -q "^    TARI_NETWORK: ${TARI_NETWORK}$" "$manifest"
+          grep -q "^    TARI_TARGET_NETWORK: ${TARI_TARGET_NETWORK}$" "$manifest"
+
+          if [ "$BETA" = true ]; then
+            yq eval ".app.windows[0].title = \"Tari Universe (Beta) v${VERSION} | ${TARI_NETWORK}\"" --output-format=json -i "$conf"
+            # Beta app id, feature and dev-mode frontend, like the other beta
+            # builds, so it installs next to the production app with its own data.
+            sed -i -e "s|^app-id: com.tari.universe$|app-id: ${APP_ID}|" \
+              -e "s|--features release-ci$|--features release-ci-beta|" \
+              -e "s|pnpm/pnpm run build$|pnpm/pnpm run build -- --mode development|" \
+              -e "s| src-tauri/icons/| src-tauri/beta-icons/|" \
+              -e "s|/app/share/applications/com.tari.universe.desktop$|/app/share/applications/${APP_ID}.desktop|" \
+              -e "s|/app/share/metainfo/com.tari.universe.metainfo.xml$|/app/share/metainfo/${APP_ID}.metainfo.xml|" \
+              -e "s|/apps/com.tari.universe.png$|/apps/${APP_ID}.png|" "$manifest"
+            # systemtray_manager.rs loads the tray icon from this fixed path.
+            sed -i "s|^\( *\)- install -Dm644 src-tauri/beta-icons/icon.png /app/share/icons/hicolor/512x512/apps/${APP_ID}.png$|&\n\1- install -Dm644 src-tauri/beta-icons/icon.png /app/share/icons/hicolor/512x512/apps/com.tari.universe.png|" "$manifest"
+            sed -i -e "s|^Name=Tari Universe$|Name=Tari Universe (Beta)|" -e "s|^Icon=com.tari.universe$|Icon=${APP_ID}|" "$desktop"
+            sed -i -e "s|<id>com.tari.universe</id>|<id>${APP_ID}</id>|" \
+              -e "s|<launchable type=\"desktop-id\">com.tari.universe.desktop</launchable>|<launchable type=\"desktop-id\">${APP_ID}.desktop</launchable>|" \
+              -e "0,/<name>Tari Universe<\/name>/s||<name>Tari Universe (Beta)</name>|" "$metainfo"
+            for check in "^app-id: ${APP_ID}$" "--features release-ci-beta$" "run build -- --mode development$" \
+              "/app/share/applications/${APP_ID}.desktop$" "/app/share/metainfo/${APP_ID}.metainfo.xml$" \
+              "beta-icons/32x32.png /app/share/icons/hicolor/32x32/apps/${APP_ID}.png$" "512x512/apps/com.tari.universe.png$"; do
+              grep -q -e "$check" "$manifest" || { echo "manifest rewrite missed: $check"; exit 1; }
+            done
+            grep -q "^Icon=${APP_ID}$" "$desktop"
+            grep -q "<id>${APP_ID}</id>" "$metainfo"
+          else
+            yq eval ".app.windows[0].title = \"Tari Universe v${VERSION}\"" --output-format=json -i "$conf"
+          fi
 
           # AppStream <release>: derive version + date from the build rather than
           # hand-editing the metainfo each release (it would otherwise drift from
-          # tauri.conf.json). On a release event use its publish date; otherwise
-          # today's UTC date.
-          DATE="${RELEASE_DATE%%T*}"
-          [ -n "$DATE" ] || DATE="$(date -u +%F)"
-          sed -i -E "s|<release version=\"[^\"]*\" date=\"[^\"]*\"[[:space:]]*/>|<release version=\"${VERSION}\" date=\"${DATE}\"/>|" \
-            flatpak/com.tari.universe.metainfo.xml
+          # tauri.conf.json).
+          DATE="$(date -u +%F)"
+          sed -i -E "s|<release version=\"[^\"]*\" date=\"[^\"]*\"[[:space:]]*/>|<release version=\"${VERSION}\" date=\"${DATE}\"/>|" "$metainfo"
 
-          echo "Production identity set to com.tari.universe; release v${VERSION} (${DATE})"
-          grep -n '<release' flatpak/com.tari.universe.metainfo.xml
+          echo "Identity ${APP_ID} on ${TARI_NETWORK}; release v${VERSION} (${DATE})"
+          grep -n '<release' "$metainfo"
 
       - name: Build Flatpak
         working-directory: flatpak
@@ -101,13 +191,16 @@ jobs:
             build-dir com.tari.universe.yml
 
       - name: Bundle .flatpak
+        id: bundle
         working-directory: flatpak
         run: |
           VERSION="$(jq -r .version ../src-tauri/tauri.conf.json)"
-          OUT="tari-universe-${VERSION}-x86_64.flatpak"
-          flatpak build-bundle repo "${OUT}" com.tari.universe
+          if [ "$BETA" = true ]; then SUFFIX="-beta-${TARI_NETWORK}"; else SUFFIX=""; fi
+          OUT="tari-universe${SUFFIX}-${VERSION}-x86_64.flatpak"
+          flatpak build-bundle repo "${OUT}" "${APP_ID}"
           echo "OUT=${OUT}" >> "$GITHUB_ENV"
           echo "BUNDLE=flatpak/${OUT}" >> "$GITHUB_ENV"
+          echo "artifact=${OUT}" >> "$GITHUB_OUTPUT"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
@@ -115,9 +208,3 @@ jobs:
           name: ${{ env.OUT }}
           path: ${{ env.BUNDLE }}
           if-no-files-found: error
-
-      - name: Attach to release
-        if: github.event_name == 'release'
-        run: gh release upload "${{ github.event.release.tag_name }}" "${{ env.BUNDLE }}" --clobber
-        env:
-          GH_TOKEN: ${{ github.token }}

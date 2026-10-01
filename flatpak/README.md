@@ -61,20 +61,26 @@ flatpak run com.tari.universe
 
 ## CI / future releases
 
-`.github/workflows/flatpak.yml` builds the bundle and, on a published release,
-attaches `tari-universe-<version>-x86_64.flatpak` as a release asset. It's
-**self-maintaining**: it regenerates the offline sources from the release's own
-lockfiles each run, and the manifest builds the checked-out commit — so new
-releases need no manual updates here. It's standalone and doesn't touch the
-existing `release.yml`. Trigger it manually via *Actions → Flatpak → Run workflow*.
+`release.yml` builds the Flatpak alongside the Windows and macOS builds, for the
+same network, by calling `.github/workflows/flatpak.yml`. On the `release` branch
+it builds the production app and attaches `tari-universe-<version>-x86_64.flatpak`
+to the draft release. Everywhere else (beta branches, `build-*` branches, the
+nightly) it builds the beta app on that network,
+`tari-universe-beta-<network>-<version>-x86_64.flatpak`, as a run artifact. It's
+**self-maintaining**: it regenerates the offline sources from the commit's own
+lockfiles each run, and the manifest builds the checked-out commit, so new
+releases need no manual updates here. Trigger it on its own via
+*Actions → Flatpak → Run workflow*, picking the network.
 
-Before building, CI strips the `(Alpha)` branding / `.alpha` identifier with the
-**same `yq` rewrite `release.yml` uses for its RELEASE builds** (one source of
-truth for the production naming), and writes the AppStream `<release>` version +
-date from `tauri.conf.json` / the release date. None of that is checked in, so a
-**local** `flatpak-builder` build keeps the Alpha branding — that's the intended
-local default. To produce a production-identical build locally, apply the same
-`yq`/`sed` rewrites from the *Set production identity* step before building.
+Before building, CI applies the app identity, network and AppStream `<release>`
+version + date in the *Set app identity, network and release metadata* step. The
+production identity is the same `yq` rewrite `release.yml` uses for its RELEASE
+builds. The beta one mirrors its BETA builds: app id `com.tari.universe.beta`,
+`(Beta)` naming and icons, `--features release-ci-beta` and a development-mode
+frontend, so it installs next to the production app with its own data. None of
+that is checked in, so a **local** `flatpak-builder` build keeps the Alpha
+branding, which is the intended local default. To produce a CI-identical build
+locally, apply the same rewrites from that step before building.
 
 ## Mining capability notes
 
@@ -167,7 +173,9 @@ The guards are inert in non-Flatpak builds, so the patch is safe to keep.
 ## App ID / network
 
 The manifest builds the **mainnet** variant (`--features release-ci`,
-`TARI_NETWORK=mainnet`), which sets the app data folder id to `com.tari.universe`
-— matching the Flatpak app-id. For a testnet build, drop `--features release-ci`
-(folder id becomes `com.tari.universe.alpha`) and set `TARI_NETWORK=esmeralda`;
-rename the manifest/app-id to match if you want the sandbox path to line up.
+`TARI_NETWORK=mainnet`), which sets the app data folder id to `com.tari.universe`,
+matching the Flatpak app-id. CI rewrites it for other networks (see
+[CI / future releases](#ci--future-releases)): the beta variant uses
+`--features release-ci-beta`, whose folder id `com.tari.universe.beta` matches the
+beta app-id. `build.rs` reads `src-tauri/env.<TARI_NETWORK>` at compile time, so
+the network needs nothing else.
