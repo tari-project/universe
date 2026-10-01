@@ -1,3 +1,13 @@
+🚀 TARI UNIVERSE v1.6.15: Hotfix – The Confluence Part 4
+
+_October 1, 2026_
+
+🔄 Rolling out via auto-update
+
+A quiet one. The bundled node, wallet and merge mining proxy move up to Tari v6.0.1-pre.2, which tightens how the node checks the transactions it's handed and keeps its mempool in line under load. Nothing changes in how you mine, and your wallet and rewards aren't touched. 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.6.14: Hotfix – The Confluence Part 3
 
 _September 22, 2026_
