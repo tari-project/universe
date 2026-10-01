@@ -4,7 +4,7 @@ _October 1, 2026_
 
 🔄 Rolling out via auto-update
 
-This one's a security update. It fixes a bug in the wallet, and we'd like everyone on it, so please let the update install when Tari Universe offers it. The bundled node, wallet and merge mining proxy move up to Tari v6.0.1-pre.2 to carry the fix. Nothing changes in how you mine. 💜🐢
+This one's a security update. It fixes a bug in the wallet, and we'd like everyone on it. The bundled node, wallet and merge mining proxy move up to Tari v6.0.1-pre.2 to carry the fix. Nothing changes in how you mine. 💜🐢
 
 ---
 
