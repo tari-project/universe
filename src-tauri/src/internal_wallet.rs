@@ -1693,7 +1693,7 @@ fn zero_fill(path: &Path, len: u64, chunk_len: usize) -> std::io::Result<()> {
     file.sync_all()
 }
 
-/// The `minotari` signing crate and the Ootle wallet SDK use tari 5.7.0-pre.8, so rebuild
+/// The `minotari` signing crate and the Ootle wallet SDK use tari 6.0.1-pre.2, so rebuild
 /// the cipher seed as a wallet-side `CipherSeed`. The binary form is identical across the
 /// two versions (CIPHER_SEED_VERSION == 2), so this round-trip is lossless. The
 /// intermediate buffer is the master entropy in the clear, so it is wiped on drop rather

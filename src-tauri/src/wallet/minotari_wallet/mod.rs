@@ -94,7 +94,7 @@ use std::{
 use tari_common::configuration::Network;
 use tari_common_types_wallet::transaction::TxId;
 use tari_common_wallet::configuration::Network as WalletNetwork;
-use tari_transaction_components_wallet::rpc::models::{TxLocation, TxSubmissionResponse};
+use tari_transaction_components_wallet::rpc::models::TxSubmissionResponse;
 use tari_transaction_components_wallet::tari_amount::MicroMinotari as WalletMicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
@@ -119,8 +119,8 @@ pub(crate) async fn base_node_http_url() -> Result<String, anyhow::Error> {
     Ok(app_state.node_manager.get_http_api_url().await)
 }
 
-/// The `minotari` wallet crate depends on tari 5.7.0-pre.8, while the rest of the app
-/// uses tari v6.0.1-pre.0. Derive the wallet-side network from the app's
+/// The `minotari` wallet crate depends on crates.io tari 6.0.1-pre.2, while the app
+/// uses the git v6.0.1-pre.2 tag. Derive the wallet-side network from the app's
 /// canonical network so the two can never diverge (e.g. sending to the wrong
 /// network). The variant sets are identical across both versions.
 pub(crate) fn wallet_network() -> WalletNetwork {
@@ -305,7 +305,7 @@ impl MinotariWalletManager {
     /// Burn `amount` µT so it can be claimed on L2 by `claim_public_key`.
     ///
     /// The partial burn proof is persisted before broadcast; [`Self::run_burn_proof_worker`]
-    /// completes it with the kernel merkle proof once the burn is mined and writes the
+    /// completes it with the output inclusion proof once the burn is mined and writes the
     /// claim file named in the returned [`BurnReceipt`].
     pub async fn burn_to_l2(
         claim_public_key: String,
@@ -439,22 +439,7 @@ impl MinotariWalletManager {
         burn_times(&*Self::get_db_connection().await?)
     }
 
-    /// The L1 height the node says the transaction with this kernel signature was mined
-    /// at, or None while it isn't mined.
-    pub async fn mined_height(
-        excess_sig_nonce: &[u8],
-        excess_sig: &[u8],
-    ) -> Result<Option<u64>, anyhow::Error> {
-        let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
-        let response = client
-            .transaction_query(excess_sig_nonce, excess_sig)
-            .await?;
-        Ok(response
-            .mined_height
-            .filter(|_| response.location == TxLocation::Mined))
-    }
-
-    /// Completes pending burn proofs with their kernel merkle proof once the burn is
+    /// Completes pending burn proofs with their output inclusion proof once the burn is
     /// mined, writing the L2 claim file. Same lifecycle as the transaction unlocker.
     pub async fn run_burn_proof_worker() -> Result<(), anyhow::Error> {
         if INSTANCE.burn_proof_handle.read().await.is_some() {
@@ -464,7 +449,8 @@ impl MinotariWalletManager {
         // The node URL is captured at start; a node switch takes effect on the next wallet phase restart.
         let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
         let (shutdown_tx, shutdown_rx) = tokio::sync::broadcast::channel(1);
-        let handle = BurnProofWorker::new(pool, client, Self::burn_proofs_dir()?).run(shutdown_rx);
+        let handle = BurnProofWorker::new(pool, client, Self::burn_proofs_dir()?, wallet_network())
+            .run(shutdown_rx);
         *INSTANCE.burn_proof_handle.write().await = Some(handle);
         info!(target: LOG_TARGET, "Burn proof worker spawned.");
 

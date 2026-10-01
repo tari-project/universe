@@ -29,7 +29,6 @@
 //! stays locked, and nothing L2 runs, until the user unlocks it with the PIN.
 
 use std::{
-    collections::HashMap,
     future::Future,
     path::{Path, PathBuf},
     str::FromStr,
@@ -132,7 +131,6 @@ static INSTANCE: LazyLock<OotleWalletManager> = LazyLock::new(|| OotleWalletMana
     sdk: Mutex::new(None),
     notify: Notify::new(100),
     transactions: Mutex::new(None),
-    mined_heights: Mutex::new(HashMap::new()),
     store_dir: Mutex::new(None),
     seed_imported: AtomicBool::new(false),
     locked: AtomicBool::new(false),
@@ -145,9 +143,6 @@ pub struct OotleWalletManager {
     notify: Notify<WalletEvent>,
     /// Set once the services run, which is when L2 is enabled.
     transactions: Mutex<Option<TransactionServiceHandle>>,
-    /// L1 heights the node said burns were mined at, by commitment. Kept in memory only,
-    /// a restart just asks again.
-    mined_heights: Mutex<HashMap<String, u64>>,
     /// Where the open store lives, set on every open.
     store_dir: Mutex<Option<PathBuf>>,
     /// Whether the open store holds imported seed words rather than the L1 seed.
@@ -805,13 +800,7 @@ async fn listed_burns() -> Result<Vec<L2Burn>, TransactionError> {
     let times = MinotariWalletManager::burn_times()
         .await
         .map_err(wallet_error)?;
-    let mut burns =
-        claim::list_burns(&burn_proofs_dir()?, pending, &times).map_err(wallet_error)?;
-    let heights = INSTANCE.mined_heights.lock().await;
-    for burn in &mut burns {
-        burn.mined_height = heights.get(&burn.commitment).copied();
-    }
-    Ok(burns)
+    claim::list_burns(&burn_proofs_dir()?, pending, &times).map_err(wallet_error)
 }
 
 /// A new burn or proof file is an L1 side change, so no wallet event reports it. Sends
@@ -819,8 +808,7 @@ async fn listed_burns() -> Result<Vec<L2Burn>, TransactionError> {
 /// its burns.
 async fn emit_state_on_new_burns(sdk: &OotleSdk, last: &mut Option<Vec<L2Burn>>) {
     match listed_burns().await {
-        Ok(mut burns) => {
-            find_mined_heights(&mut burns).await;
+        Ok(burns) => {
             if last.as_ref() != Some(&burns) {
                 *last = Some(burns);
                 emit_state(sdk).await;
@@ -828,44 +816,6 @@ async fn emit_state_on_new_burns(sdk: &OotleSdk, last: &mut Option<Vec<L2Burn>>)
         }
         Err(e) => warn!(target: LOG_TARGET, "Could not list burns to L2: {e}"),
     }
-}
-
-/// Asks the L1 node where each claimable burn without a height was mined, and remembers
-/// the answer. A failed query, or one the node doesn't have mined, leaves the height
-/// unknown until the next tick.
-async fn find_mined_heights(burns: &mut [L2Burn]) {
-    let Ok(dir) = burn_proofs_dir() else {
-        return;
-    };
-    let unknown = burns
-        .iter_mut()
-        .filter(|b| b.status == "claimable" && b.mined_height.is_none());
-    for burn in unknown {
-        let Some(file) = &burn.proof_file else {
-            continue;
-        };
-        match mined_height(&dir.join(file)).await {
-            Ok(Some(height)) => {
-                INSTANCE
-                    .mined_heights
-                    .lock()
-                    .await
-                    .insert(burn.commitment.clone(), height);
-                burn.mined_height = Some(height);
-            }
-            Ok(None) => {}
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Could not ask the node where {file} was mined: {e}")
-            }
-        }
-    }
-}
-
-/// The L1 height the burn in this proof file was mined at, going by its kernel signature.
-async fn mined_height(proof_file: &Path) -> Result<Option<u64>, anyhow::Error> {
-    let sig = claim::read_proof(proof_file)?.claim_proof.kernel.excess_sig;
-    MinotariWalletManager::mined_height(sig.public_nonce().as_bytes(), sig.signature().as_bytes())
-        .await
 }
 
 fn burn_proofs_dir() -> Result<std::path::PathBuf, TransactionError> {
@@ -1033,7 +983,7 @@ async fn start_services(
     tracker: TaskTracker,
     mut phase_signal: PhaseSignal,
 ) -> Result<(), anyhow::Error> {
-    // The SDK services take the tari 5.x shutdown signal, so relay the phase's one to it.
+    // The SDK services take the crates.io tari shutdown signal, so relay the phase's one to it.
     let mut shutdown = Shutdown::new();
     let signal = shutdown.to_signal();
     tracker.spawn(async move {
