@@ -145,6 +145,11 @@ uuid = "1.18.1"
 zeroize = "1"
 zip = "2.2.0"
 
+# The Ootle wallet SDK pulls in OpenSSL through webauthn-rs. The macOS runner's OpenSSL is
+# arm64 only, so the x86_64 half of the universal build can't link it. Vendor it like Windows.
+[target.'cfg(target_os = "macos")'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
+
 [target.'cfg(windows)'.dependencies]
 device_query = "2.1.0"
 libsqlite3-sys = { version = "0.35.0", features = [
