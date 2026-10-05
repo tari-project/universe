@@ -1,34 +1,32 @@
 import { useQuery } from '@tanstack/react-query';
-import { useAirdropStore } from '@app/store';
 import { defaultHeaders } from '@app/utils';
 import { isLocalNet } from '@app/utils/network.ts';
+import { useConfigBEInMemoryStore } from '@app/store';
 
-export const KEY_MINER_STATS = 'miners';
+export const KEY_NODE_STATS = 'nodes';
 
-interface MinerStats {
-    totalMiners: number;
+interface NodeStats {
+    confirmed_nodes_24h: number;
 }
 
 async function fetchMinerStats() {
     if (isLocalNet()) {
-        return { totalMiners: 1 };
+        return { confirmed_nodes_24h: 1 };
     }
-    const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdrop_api_url;
-    const res = await fetch(`${airdropApiUrl}/miner/stats`, { headers: defaultHeaders });
-
+    const networkStatsUrl = useConfigBEInMemoryStore.getState().netmap_api_base_url;
+    const res = await fetch(`${networkStatsUrl}/api/v1/stats`);
     if (!res.ok) {
-        console.error('Failed to fetch miner stats');
+        console.error('Failed to fetch node stats');
     }
-
     return res.json();
 }
 
 export function useMinerStats() {
-    return useQuery<MinerStats['totalMiners']>({
-        queryKey: [KEY_MINER_STATS],
+    return useQuery<NodeStats['confirmed_nodes_24h']>({
+        queryKey: [KEY_NODE_STATS],
         queryFn: async () => {
             const stats = await fetchMinerStats();
-            return stats?.totalMiners ?? 0;
+            return stats.confirmed_nodes_24h;
         },
         refetchOnWindowFocus: true,
         refetchInterval: 30 * 1000,

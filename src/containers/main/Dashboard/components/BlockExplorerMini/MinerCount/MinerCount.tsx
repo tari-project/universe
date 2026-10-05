@@ -30,7 +30,7 @@ export default function MinerCount() {
                             notation,
                         }}
                     />
-                    {` ${t('bubbles.active-miners')}`}
+                    {` ${t('bubbles.active-nodes')}`}
                 </CountText>
             </Content>
         </Wrapper>

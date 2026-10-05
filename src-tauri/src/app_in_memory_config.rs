@@ -36,6 +36,11 @@ pub const EXCHANGE_ID: &str = env!("EXCHANGE_ID");
 const BRIDGE_BACKEND_API_URL: &str = env!("BRIDGE_BACKEND_API_URL");
 pub const WALLET_CONNECT_PROJECT_ID: &str = env!("BRIDGE_WALLET_CONNECT_PROJECT_ID");
 
+const NETMAP_API_BASE_URL: &str = env!(
+    "NETMAP_API_BASE_URL",
+    "NETMAP_API_BASE_URL env var not defined"
+);
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppInMemoryConfig {
     pub airdrop_url: String,
@@ -44,6 +49,7 @@ pub struct AppInMemoryConfig {
     pub exchange_id: String,
     pub bridge_backend_api_url: String,
     pub wallet_connect_project_id: String,
+    pub netmap_api_base_url: String,
 }
 
 impl Default for AppInMemoryConfig {
@@ -55,6 +61,7 @@ impl Default for AppInMemoryConfig {
             exchange_id: EXCHANGE_ID.into(),
             bridge_backend_api_url: BRIDGE_BACKEND_API_URL.into(),
             wallet_connect_project_id: WALLET_CONNECT_PROJECT_ID.into(),
+            netmap_api_base_url: NETMAP_API_BASE_URL.into(),
         }
     }
 }

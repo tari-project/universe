@@ -73,6 +73,7 @@ jobs:
         env:
           AIRDROP_BASE_URL: http://localhost:4000
           AIRDROP_API_BASE_URL: http://localhost:3004
+          NETMAP_API_BASE_URL: http://localhost:3004
           AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
           TELEMETRY_API_URL: http://localhost:3004
           EXCHANGE_ID: universal
@@ -211,6 +212,7 @@ jobs:
         env:
           AIRDROP_BASE_URL: http://localhost:4000
           AIRDROP_API_BASE_URL: http://localhost:3004
+          NETMAP_API_BASE_URL: http://localhost:3004
           AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
           TELEMETRY_API_URL: http://localhost:3004
           EXCHANGE_ID: universal
