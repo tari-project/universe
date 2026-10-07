@@ -42,49 +42,38 @@ describe('L2WalletCard', () => {
         useL2WalletStore.setState({ ...initialState }, true);
     });
 
-    it('asks for a PIN and does not touch L2 when none is set', () => {
+    it('closes itself without a PIN and does not touch L2', () => {
         useWalletStore.setState({ is_pin_locked: false });
+        useUIStore.setState({ l2Open: true });
         serve(enabledState);
         render(<L2WalletCard />);
 
-        expect(screen.getByTestId('l2-pin-required')).toBeInTheDocument();
+        expect(useUIStore.getState().l2Open).toBe(false);
         expect(screen.queryByTestId('l2-wallet')).not.toBeInTheDocument();
         expect(invoke).not.toHaveBeenCalled();
     });
 
-    it('offers Enable Layer 2 when a PIN is set but L2 is off', async () => {
+    it.each([
+        ['locked', { enabled: true, locked: true, seed_source: 'l1', accounts: [] }],
+        ['not enabled', initialState],
+    ] as [string, L2WalletState][])('closes itself when L2 is %s, with no unlock screen', async (_, state) => {
         useWalletStore.setState({ is_pin_locked: true });
+        useUIStore.setState({ l2Open: true });
+        serve(state);
+        render(<L2WalletCard />);
+
+        await waitFor(() => expect(useUIStore.getState().l2Open).toBe(false));
+        expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    });
+
+    it('stays open while a seed change reopens the wallet', () => {
+        useWalletStore.setState({ is_pin_locked: true });
+        useUIStore.setState({ l2Open: true });
+        useL2WalletStore.setState({ seedChangePending: true });
         serve(initialState);
         render(<L2WalletCard />);
 
-        expect(await screen.findByTestId('l2-enable')).toBeInTheDocument();
-        expect(invoke).toHaveBeenCalledWith('l2_get_state');
-        expect(screen.queryByTestId('l2-wallet')).not.toBeInTheDocument();
-    });
-
-    it('stays quiet when the PIN prompt for Enable is cancelled', async () => {
-        useWalletStore.setState({ is_pin_locked: true });
-        vi.mocked(invoke).mockImplementation((async (cmd: string) => {
-            if (cmd === 'l2_get_state') return initialState;
-            if (cmd === 'enable_l2_wallet') throw 'PIN entry cancelled';
-        }) as typeof invoke);
-        render(<L2WalletCard />);
-
-        fireEvent.click(await screen.findByTestId('l2-enable'));
-        await waitFor(() => expect(invoke).toHaveBeenCalledWith('enable_l2_wallet'));
-        await waitFor(() => expect(screen.getByTestId('l2-enable')).toBeEnabled());
-        expect(screen.queryByText(/l2.enable-error/)).not.toBeInTheDocument();
-    });
-
-    it('offers Unlock Layer 2 while the store is locked and unlocks with the PIN', async () => {
-        useWalletStore.setState({ is_pin_locked: true });
-        serve({ enabled: true, locked: true, seed_source: 'l1', accounts: [] });
-        render(<L2WalletCard />);
-
-        fireEvent.click(await screen.findByTestId('l2-unlock'));
-        await waitFor(() => expect(invoke).toHaveBeenCalledWith('unlock_l2_wallet'));
-        expect(screen.queryByTestId('l2-enable')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('l2-wallet')).not.toBeInTheDocument();
+        expect(useUIStore.getState().l2Open).toBe(true);
     });
 
     it('masks amounts the way L1 does when the balance is hidden', async () => {

@@ -495,6 +495,7 @@ fn main() {
             commands::burn_to_l2,
             commands::enable_l2_wallet,
             commands::unlock_l2_wallet,
+            commands::l2_create_pin_and_enable,
             commands::set_ootle_indexer_url,
             commands::l2_get_state,
             commands::l2_get_seed_words,

@@ -1725,6 +1725,16 @@ pub async fn unlock_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String
         .map_err(|e| e.to_string())
 }
 
+/// Create the wallet PIN and turn the L2 wallet on with it, for a wallet that has no PIN
+/// yet. One PIN entry covers both.
+#[tauri::command]
+pub async fn l2_create_pin_and_enable(app_handle: tauri::AppHandle) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_create_pin_and_enable] called");
+    OotleWalletManager::create_pin_and_enable(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Send XTR on L2 from one of the wallet's accounts. Refused without a PIN; with one,
 /// the PIN prompt is the gate. Returns the L2 transaction id.
 #[tauri::command]

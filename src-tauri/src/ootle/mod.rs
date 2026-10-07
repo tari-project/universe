@@ -225,6 +225,17 @@ impl OotleWalletManager {
         open_and_start(&pin).await
     }
 
+    /// Has the user create a PIN and opens L2 with it, so turning L2 on from a wallet with
+    /// no PIN asks for the PIN once. Refused off Esmeralda.
+    pub async fn create_pin_and_enable(app_handle: &AppHandle) -> Result<(), TransactionError> {
+        check_l2_allowed(Network::get_current_or_user_setting_or_default(), true)?;
+        let pin = InternalWallet::create_pin(app_handle)
+            .await
+            .map_err(wallet_error)?;
+        EventsEmitter::emit_pin_locked(true).await;
+        open_and_start(&pin).await
+    }
+
     /// Moves the L2 store onto the new PIN after the user reset a forgotten one. Its seed
     /// is encrypted with the old PIN, so it is rebuilt: from the L1 seed when it holds the
     /// L1 seed, from its own words when an older build encrypted it with the keyring
