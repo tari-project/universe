@@ -80,7 +80,6 @@ function IndexerField() {
                     <SettingsGroupTitle>
                         <Typography variant="h6">{t('l2.indexer')}</Typography>
                     </SettingsGroupTitle>
-                    <Typography>{t('l2.indexer-description')}</Typography>
                 </SettingsGroupContent>
             </SettingsGroup>
             <AddressSettingsGroup>
@@ -242,21 +241,25 @@ export const L2Settings = () => {
             {hasPin && enabled && account && (
                 <>
                     <SettingsGroupWrapper data-testid="l2-settings-account">
-                        <SettingsGroupContent>
-                            <SettingsGroupTitle>
-                                <Typography variant="h6">{t('l2.address')}</Typography>
-                            </SettingsGroupTitle>
-                            <Typography>{t('l2.address-description')}</Typography>
-                        </SettingsGroupContent>
+                        <SettingsGroup>
+                            <SettingsGroupContent>
+                                <SettingsGroupTitle>
+                                    <Typography variant="h6">{t('l2.address')}</Typography>
+                                </SettingsGroupTitle>
+                                <Typography>{t('l2.address-description')}</Typography>
+                            </SettingsGroupContent>
+                        </SettingsGroup>
                         <Field value={account.address} testId="l2-settings-address" />
                     </SettingsGroupWrapper>
                     <SettingsGroupWrapper $subGroup>
-                        <SettingsGroupContent>
-                            <SettingsGroupTitle>
-                                <Typography variant="h6">{t('l2.public-key')}</Typography>
-                            </SettingsGroupTitle>
-                            <Typography>{t('l2.public-key-description')}</Typography>
-                        </SettingsGroupContent>
+                        <SettingsGroup>
+                            <SettingsGroupContent>
+                                <SettingsGroupTitle>
+                                    <Typography variant="h6">{t('l2.public-key')}</Typography>
+                                </SettingsGroupTitle>
+                                <Typography>{t('l2.public-key-description')}</Typography>
+                            </SettingsGroupContent>
+                        </SettingsGroup>
                         <Field value={account.public_key} testId="l2-settings-public-key" />
                     </SettingsGroupWrapper>
                 </>

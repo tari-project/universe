@@ -280,7 +280,6 @@
     "unlock": "Unlock Layer 2",
     "unlock-error": "Couldn't unlock Layer 2: ",
     "indexer": "Indexer",
-    "indexer-description": "The Ootle indexer your Layer 2 wallet talks to. Changes apply straight away. Clear the field to go back to the default.",
     "indexer-error": "Invalid indexer URL: {{reason}}",
     "seed-words": "Seed words",
     "seed-note-l1": "Your Ootle wallet uses the same seed words as your Tari wallet.",

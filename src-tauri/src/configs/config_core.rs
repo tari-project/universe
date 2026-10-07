@@ -103,7 +103,7 @@ pub struct ConfigCoreContent {
 
 fn default_ootle_indexer_url(network: Network) -> Option<Url> {
     match network {
-        Network::Esmeralda => Url::parse("http://54.38.0.31:50124").ok(),
+        Network::Esmeralda => Url::parse("https://ootle-indexer-a.tari.com/").ok(),
         _ => None,
     }
 }
@@ -153,8 +153,13 @@ pub fn canonicalise_ootle_indexer_url(input: &str) -> Result<Url, anyhow::Error>
     Ok(url)
 }
 
+/// Defaults that have since been taken down. A copy of one in a config file is stale, not
+/// a choice the user made, so it loads as unset and the current default applies.
+const RETIRED_OOTLE_INDEXER_URLS: &[&str] = &["http://54.38.0.31:50124/"];
+
 fn deserialize_http_url<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<Url>, D::Error> {
-    Ok(http_only(Option::<Url>::deserialize(d)?))
+    Ok(http_only(Option::<Url>::deserialize(d)?)
+        .filter(|u| !RETIRED_OOTLE_INDEXER_URLS.contains(&u.as_str())))
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -326,7 +331,7 @@ mod tests {
     fn only_esmeralda_has_a_default_ootle_indexer() {
         assert_eq!(
             default_ootle_indexer_url(Network::Esmeralda).map(String::from),
-            Some("http://54.38.0.31:50124/".to_string())
+            Some("https://ootle-indexer-a.tari.com/".to_string())
         );
         for network in [
             Network::MainNet,
@@ -395,11 +400,19 @@ mod tests {
             serde_json::from_str(r#"{"ootle_indexer_url":"file:///etc/passwd"}"#).expect("json");
         assert_eq!(loaded.ootle_indexer_url, None);
         let loaded: ConfigCoreContent =
-            serde_json::from_str(r#"{"ootle_indexer_url":"http://54.38.0.31:50124"}"#)
+            serde_json::from_str(r#"{"ootle_indexer_url":"http://localhost:18300"}"#)
                 .expect("json");
         assert_eq!(
             loaded.ootle_indexer_url.map(String::from),
-            Some("http://54.38.0.31:50124/".to_string())
+            Some("http://localhost:18300/".to_string())
         );
+    }
+
+    #[test]
+    fn a_retired_default_indexer_loads_as_unset() {
+        let loaded: ConfigCoreContent =
+            serde_json::from_str(r#"{"ootle_indexer_url":"http://54.38.0.31:50124/"}"#)
+                .expect("json");
+        assert_eq!(loaded.ootle_indexer_url, None);
     }
 }

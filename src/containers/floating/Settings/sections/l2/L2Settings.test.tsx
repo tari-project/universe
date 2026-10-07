@@ -84,13 +84,13 @@ describe('L2Settings', () => {
 
     it('shows the default account address, public key and the indexer once enabled', async () => {
         useWalletStore.setState({ is_pin_locked: true });
-        useConfigCoreStore.setState({ ootle_indexer_url: 'http://54.38.0.31:50124/' });
+        useConfigCoreStore.setState({ ootle_indexer_url: 'https://ootle-indexer-a.tari.com/' });
         serve(enabledState);
         render(<L2Settings />);
 
         expect(await screen.findByTestId('l2-settings-address')).toHaveValue('otl_esm_test');
         expect(screen.getByTestId('l2-settings-public-key')).toHaveValue('ab'.repeat(32));
-        expect(screen.getByTestId('l2-settings-indexer')).toHaveValue('http://54.38.0.31:50124/');
+        expect(screen.getByTestId('l2-settings-indexer')).toHaveValue('https://ootle-indexer-a.tari.com/');
         expect(screen.queryByTestId('l2-settings-enable')).not.toBeInTheDocument();
     });
 
@@ -105,7 +105,7 @@ describe('L2Settings', () => {
 
     it('saves an edited indexer URL and shows what the backend resolved', async () => {
         useWalletStore.setState({ is_pin_locked: true });
-        useConfigCoreStore.setState({ ootle_indexer_url: 'http://54.38.0.31:50124/' });
+        useConfigCoreStore.setState({ ootle_indexer_url: 'https://ootle-indexer-a.tari.com/' });
         vi.mocked(invoke).mockImplementation((async (cmd: string) => {
             if (cmd === 'l2_get_state') return enabledState;
             if (cmd === 'set_ootle_indexer_url') return 'http://localhost:18300/';
@@ -123,7 +123,7 @@ describe('L2Settings', () => {
 
     it('shows why an indexer URL was refused and keeps the old one', async () => {
         useWalletStore.setState({ is_pin_locked: true });
-        useConfigCoreStore.setState({ ootle_indexer_url: 'http://54.38.0.31:50124/' });
+        useConfigCoreStore.setState({ ootle_indexer_url: 'https://ootle-indexer-a.tari.com/' });
         vi.mocked(invoke).mockImplementation((async (cmd: string) => {
             if (cmd === 'l2_get_state') return enabledState;
             if (cmd === 'set_ootle_indexer_url') throw 'missing host';
@@ -135,7 +135,7 @@ describe('L2Settings', () => {
         fireEvent.blur(field);
 
         expect(await screen.findByTestId('l2-settings-indexer-error')).toBeInTheDocument();
-        expect(useConfigCoreStore.getState().ootle_indexer_url).toBe('http://54.38.0.31:50124/');
+        expect(useConfigCoreStore.getState().ootle_indexer_url).toBe('https://ootle-indexer-a.tari.com/');
     });
 
     it('picks the seed words note from seed_source and offers the L1 seed back only after an import', async () => {
