@@ -24,7 +24,9 @@ use crate::airdrop::{get_der_encode_pub_key, get_websocket_key};
 use crate::app_in_memory_config::{AppInMemoryConfig, DEFAULT_EXCHANGE_ID, ExchangeMiner};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
+use crate::configs::config_core::{
+    AirdropTokens, ConfigCore, ConfigCoreContent, canonicalise_ootle_indexer_url,
+};
 use crate::configs::config_mining::{
     ConfigMining, ConfigMiningContent, MiningModeType, PauseOnBatteryModeState,
 };
@@ -1723,6 +1725,16 @@ pub async fn unlock_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String
         .map_err(|e| e.to_string())
 }
 
+/// Create the wallet PIN and turn the L2 wallet on with it, for a wallet that has no PIN
+/// yet. One PIN entry covers both.
+#[tauri::command]
+pub async fn l2_create_pin_and_enable(app_handle: tauri::AppHandle) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_create_pin_and_enable] called");
+    OotleWalletManager::create_pin_and_enable(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Send XTR on L2 from one of the wallet's accounts. Refused without a PIN; with one,
 /// the PIN prompt is the gate. Returns the L2 transaction id.
 #[tauri::command]
@@ -1750,6 +1762,28 @@ pub fn l2_validate_address(address: String) -> Result<(), String> {
     OotleWalletManager::parse_address(&address)
         .map(|_| ())
         .map_err(|e| e.to_string())
+}
+
+/// Point the L2 wallet at another indexer, or back at the network default when `url` is
+/// blank. Applies to the running wallet straight away. Returns the URL now in use, which
+/// is None off networks with a default when the override is cleared.
+#[tauri::command]
+pub async fn set_ootle_indexer_url(url: String) -> Result<Option<String>, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[set_ootle_indexer_url] called with url: {url:?}");
+    let url = url.trim();
+    let custom = if url.is_empty() {
+        None
+    } else {
+        Some(canonicalise_ootle_indexer_url(url).map_err(|e| e.to_string())?)
+    };
+    ConfigCore::update_field(ConfigCoreContent::set_ootle_indexer_url, custom)
+        .await
+        .map_err(|e| e.to_string())?;
+    let resolved = ConfigCore::content().await.ootle_indexer_url();
+    if let Some(indexer) = resolved.clone() {
+        OotleWalletManager::set_indexer_url(indexer).await;
+    }
+    Ok(resolved.map(String::from))
 }
 
 /// Everything the L2 panel shows: accounts, XTR balances and history.

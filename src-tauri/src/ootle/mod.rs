@@ -225,6 +225,17 @@ impl OotleWalletManager {
         open_and_start(&pin).await
     }
 
+    /// Has the user create a PIN and opens L2 with it, so turning L2 on from a wallet with
+    /// no PIN asks for the PIN once. Refused off Esmeralda.
+    pub async fn create_pin_and_enable(app_handle: &AppHandle) -> Result<(), TransactionError> {
+        check_l2_allowed(Network::get_current_or_user_setting_or_default(), true)?;
+        let pin = InternalWallet::create_pin(app_handle)
+            .await
+            .map_err(wallet_error)?;
+        EventsEmitter::emit_pin_locked(true).await;
+        open_and_start(&pin).await
+    }
+
     /// Moves the L2 store onto the new PIN after the user reset a forgotten one. Its seed
     /// is encrypted with the old PIN, so it is rebuilt: from the L1 seed when it holds the
     /// L1 seed, from its own words when an older build encrypted it with the keyring
@@ -411,6 +422,24 @@ impl OotleWalletManager {
         info!(target: LOG_TARGET, "L2 send submitted: {id}");
         emit_state(&sdk).await;
         Ok(id.to_string())
+    }
+
+    /// Points the open wallet at `indexer`. Every indexer call builds its client from the
+    /// SDK's shared endpoint, and the finalization stream resubscribes there when its
+    /// connection drops, so nothing restarts and the store stays unlocked. A closed store
+    /// picks the URL up from the config when it opens.
+    pub async fn set_indexer_url(indexer: Url) {
+        if let Some(sdk) = INSTANCE.sdk.lock().await.as_ref() {
+            match sdk
+                .get_network_interface()
+                .set_endpoints(vec![indexer.clone()])
+            {
+                Ok(()) => info!(target: LOG_TARGET, "L2 wallet now uses indexer {indexer}"),
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Could not switch the L2 wallet to indexer {indexer}: {e}")
+                }
+            }
+        }
     }
 
     /// Burns to L2 made from this wallet and whether they can be claimed yet. Refused
@@ -991,11 +1020,9 @@ async fn start_services(
         shutdown.trigger();
     });
 
-    if let Some(indexer) = ConfigCore::content().await.ootle_indexer_url().clone() {
-        let network = Network::get_current_or_user_setting_or_default();
-        let poll = network_stats::poll(sdk.clone(), indexer, network);
-        spawn_service(&tracker, &signal, "network poller", poll);
-    }
+    let network = Network::get_current_or_user_setting_or_default();
+    let poll = network_stats::poll(sdk.clone(), network);
+    spawn_service(&tracker, &signal, "network poller", poll);
 
     let notify = INSTANCE.notify.clone();
     let events = emit_state_on_events(sdk.clone(), notify.subscribe());
@@ -1013,7 +1040,7 @@ async fn start_services(
     spawn_service(&tracker, &signal, "utxo recovery", recovery.run(waker));
 
     let (monitor, monitor_handle) =
-        AccountMonitor::new(notify, sdk.clone(), scanner_handle, signal.clone());
+        AccountMonitor::new(notify, sdk.clone(), scanner_handle.clone(), signal.clone());
     spawn_service(&tracker, &signal, "account monitor", monitor.run());
 
     if needs_recovery {
@@ -1021,6 +1048,7 @@ async fn start_services(
         let scanner = AccountRecoveryService::new(
             sdk.clone(),
             monitor_handle,
+            scanner_handle,
             RECOVERY_ABANDON_COUNT,
             birthday,
         );

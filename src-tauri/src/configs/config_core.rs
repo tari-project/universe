@@ -103,7 +103,7 @@ pub struct ConfigCoreContent {
 
 fn default_ootle_indexer_url(network: Network) -> Option<Url> {
     match network {
-        Network::Esmeralda => Url::parse("http://54.38.0.31:50124").ok(),
+        Network::Esmeralda => Url::parse("https://ootle-indexer-a.tari.com/").ok(),
         _ => None,
     }
 }
@@ -123,8 +123,43 @@ fn resolve_ootle_indexer_url(stored: Option<Url>, network: Network) -> Option<Ur
     http_only(stored).or_else(|| default_ootle_indexer_url(network))
 }
 
+/// Checks a user-entered indexer URL and returns the form the SDK needs: http(s) with
+/// a host, no credentials, query or fragment, and a path ending in `/` because the
+/// indexer client appends its routes to it as text. Any host goes, localhost included.
+pub fn canonicalise_ootle_indexer_url(input: &str) -> Result<Url, anyhow::Error> {
+    let mut url = Url::parse(input.trim()).map_err(|e| anyhow::anyhow!("{e}"))?;
+    if !matches!(url.scheme(), "http" | "https") {
+        anyhow::bail!(
+            "scheme {:?} is not supported; use http or https",
+            url.scheme()
+        );
+    }
+    if url.host_str().is_none_or(str::is_empty) {
+        anyhow::bail!("missing host");
+    }
+    if !url.username().is_empty() || url.password().is_some() {
+        anyhow::bail!("userinfo (user:pass@) is not permitted");
+    }
+    if url.query().is_some() {
+        anyhow::bail!("query strings are not permitted");
+    }
+    if url.fragment().is_some() {
+        anyhow::bail!("fragments are not permitted");
+    }
+    if !url.path().ends_with('/') {
+        let path = format!("{}/", url.path());
+        url.set_path(&path);
+    }
+    Ok(url)
+}
+
+/// Defaults that have since been taken down. A copy of one in a config file is stale, not
+/// a choice the user made, so it loads as unset and the current default applies.
+const RETIRED_OOTLE_INDEXER_URLS: &[&str] = &["http://54.38.0.31:50124/"];
+
 fn deserialize_http_url<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<Url>, D::Error> {
-    Ok(http_only(Option::<Url>::deserialize(d)?))
+    Ok(http_only(Option::<Url>::deserialize(d)?)
+        .filter(|u| !RETIRED_OOTLE_INDEXER_URLS.contains(&u.as_str())))
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -194,6 +229,12 @@ impl ConfigContentImpl for ConfigCoreContent {}
 impl ConfigCoreContent {
     pub fn is_on_exchange_specific_variant(&self) -> bool {
         MinerType::from_str(&self.exchange_id).is_exchange_mode()
+    }
+
+    /// Sets the user override; None goes back to the network default.
+    pub fn set_ootle_indexer_url(&mut self, url: Option<Url>) -> &mut Self {
+        self.ootle_indexer_url = url;
+        self
     }
 
     /// The stored override if it is http(s), else the network default.
@@ -290,7 +331,7 @@ mod tests {
     fn only_esmeralda_has_a_default_ootle_indexer() {
         assert_eq!(
             default_ootle_indexer_url(Network::Esmeralda).map(String::from),
-            Some("http://54.38.0.31:50124/".to_string())
+            Some("https://ootle-indexer-a.tari.com/".to_string())
         );
         for network in [
             Network::MainNet,
@@ -319,6 +360,34 @@ mod tests {
     }
 
     #[test]
+    fn indexer_urls_are_canonicalised() {
+        let ok = |input: &str| {
+            canonicalise_ootle_indexer_url(input)
+                .map(String::from)
+                .expect(input)
+        };
+        assert_eq!(ok("http://localhost:18300"), "http://localhost:18300/");
+        assert_eq!(ok(" http://127.0.0.1:18300/ "), "http://127.0.0.1:18300/");
+        assert_eq!(ok("https://indexer.example"), "https://indexer.example/");
+        assert_eq!(ok("http://[::1]:18300"), "http://[::1]:18300/");
+        assert_eq!(
+            ok("https://proxy.example/ootle/indexer"),
+            "https://proxy.example/ootle/indexer/"
+        );
+        for bad in [
+            "",
+            "localhost:18300",
+            "ftp://indexer.example",
+            "file:///etc/passwd",
+            "http://user:pass@indexer.example",
+            "http://indexer.example/?a=b",
+            "http://indexer.example/#x",
+        ] {
+            assert!(canonicalise_ootle_indexer_url(bad).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
     fn a_non_http_indexer_url_is_treated_as_unset() {
         let file_url = Url::parse("file:///etc/passwd").ok();
         assert_eq!(
@@ -331,11 +400,19 @@ mod tests {
             serde_json::from_str(r#"{"ootle_indexer_url":"file:///etc/passwd"}"#).expect("json");
         assert_eq!(loaded.ootle_indexer_url, None);
         let loaded: ConfigCoreContent =
-            serde_json::from_str(r#"{"ootle_indexer_url":"http://54.38.0.31:50124"}"#)
+            serde_json::from_str(r#"{"ootle_indexer_url":"http://localhost:18300"}"#)
                 .expect("json");
         assert_eq!(
             loaded.ootle_indexer_url.map(String::from),
-            Some("http://54.38.0.31:50124/".to_string())
+            Some("http://localhost:18300/".to_string())
         );
+    }
+
+    #[test]
+    fn a_retired_default_indexer_loads_as_unset() {
+        let loaded: ConfigCoreContent =
+            serde_json::from_str(r#"{"ootle_indexer_url":"http://54.38.0.31:50124/"}"#)
+                .expect("json");
+        assert_eq!(loaded.ootle_indexer_url, None);
     }
 }

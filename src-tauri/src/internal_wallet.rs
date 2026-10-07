@@ -591,7 +591,8 @@ impl InternalWallet {
         Ok(pin_password)
     }
 
-    pub async fn create_pin(app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+    /// Asks for a new PIN, enciphers the stored seeds with it and returns it.
+    pub async fn create_pin(app_handle: &AppHandle) -> Result<SafePassword, anyhow::Error> {
         if PinManager::pin_locked().await {
             // The stored seeds are already enciphered with a PIN and nothing decrypts twice.
             return Err(anyhow!("A PIN is already set for this wallet"));
@@ -652,7 +653,7 @@ impl InternalWallet {
         };
         let encrypted_tari_seed = {
             // Encrypt Tari Seed with PIN
-            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password))?;
+            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?;
             InternalWallet::set_credentials(
                 app_handle,
                 wallet_id,
@@ -673,7 +674,7 @@ impl InternalWallet {
                 Hidden::hide(Some(encrypted_tari_seed.clone()));
         }
 
-        Ok(())
+        Ok(pin_password)
     }
 
     async fn get_credentials(
