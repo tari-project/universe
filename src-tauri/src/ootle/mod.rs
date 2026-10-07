@@ -413,6 +413,17 @@ impl OotleWalletManager {
         Ok(id.to_string())
     }
 
+    /// Points the open wallet at `indexer`. Every indexer call builds its client from the
+    /// SDK's shared endpoint, and the finalization stream resubscribes there when its
+    /// connection drops, so nothing restarts and the store stays unlocked. A closed store
+    /// picks the URL up from the config when it opens.
+    pub async fn set_indexer_url(indexer: Url) {
+        if let Some(sdk) = INSTANCE.sdk.lock().await.as_ref() {
+            sdk.get_network_interface().set_endpoint(indexer.clone());
+            info!(target: LOG_TARGET, "L2 wallet now uses indexer {indexer}");
+        }
+    }
+
     /// Burns to L2 made from this wallet and whether they can be claimed yet. Refused
     /// without a PIN or off Esmeralda.
     pub async fn burns() -> Result<Vec<L2Burn>, TransactionError> {
@@ -991,11 +1002,9 @@ async fn start_services(
         shutdown.trigger();
     });
 
-    if let Some(indexer) = ConfigCore::content().await.ootle_indexer_url().clone() {
-        let network = Network::get_current_or_user_setting_or_default();
-        let poll = network_stats::poll(sdk.clone(), indexer, network);
-        spawn_service(&tracker, &signal, "network poller", poll);
-    }
+    let network = Network::get_current_or_user_setting_or_default();
+    let poll = network_stats::poll(sdk.clone(), network);
+    spawn_service(&tracker, &signal, "network poller", poll);
 
     let notify = INSTANCE.notify.clone();
     let events = emit_state_on_events(sdk.clone(), notify.subscribe());
