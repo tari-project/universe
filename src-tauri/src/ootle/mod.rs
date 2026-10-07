@@ -419,8 +419,15 @@ impl OotleWalletManager {
     /// picks the URL up from the config when it opens.
     pub async fn set_indexer_url(indexer: Url) {
         if let Some(sdk) = INSTANCE.sdk.lock().await.as_ref() {
-            sdk.get_network_interface().set_endpoint(indexer.clone());
-            info!(target: LOG_TARGET, "L2 wallet now uses indexer {indexer}");
+            match sdk
+                .get_network_interface()
+                .set_endpoints(vec![indexer.clone()])
+            {
+                Ok(()) => info!(target: LOG_TARGET, "L2 wallet now uses indexer {indexer}"),
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Could not switch the L2 wallet to indexer {indexer}: {e}")
+                }
+            }
         }
     }
 
@@ -1022,7 +1029,7 @@ async fn start_services(
     spawn_service(&tracker, &signal, "utxo recovery", recovery.run(waker));
 
     let (monitor, monitor_handle) =
-        AccountMonitor::new(notify, sdk.clone(), scanner_handle, signal.clone());
+        AccountMonitor::new(notify, sdk.clone(), scanner_handle.clone(), signal.clone());
     spawn_service(&tracker, &signal, "account monitor", monitor.run());
 
     if needs_recovery {
@@ -1030,6 +1037,7 @@ async fn start_services(
         let scanner = AccountRecoveryService::new(
             sdk.clone(),
             monitor_handle,
+            scanner_handle,
             RECOVERY_ABANDON_COUNT,
             birthday,
         );
