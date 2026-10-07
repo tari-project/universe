@@ -5,6 +5,9 @@ allowBuilds:
 blockExoticSubdeps: true
 # Supply chain security configuration. See https://pnpm.io/supply-chain-security for more information.
 minimumReleaseAge: 10080 # 7 days
+# Security fix for GHSA-68fv-2mgg-jv7q, published 2026-09-30; exact version only.
+minimumReleaseAgeExclude:
+  - source-map-js@1.2.2
 trustPolicy: no-downgrade
 trustPolicyIgnoreAfter: 43200 # 30 days
 
@@ -12,3 +15,9 @@ trustPolicyIgnoreAfter: 43200 # 30 days
 overrides:
   brace-expansion@1: ^1.1.20
   brace-expansion@5: ^5.0.11
+  source-map-js: ^1.2.2
+
+# No patched braces release exists yet (latest is 3.0.3); dev-only via knip > fast-glob > micromatch.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-vfj7-8cjw-p6xm
