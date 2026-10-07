@@ -54,7 +54,8 @@ jobs:
 
       - name: Fail on high/critical vulnerabilities
         run: |
-          if jq '.metadata.vulnerabilities.critical + .metadata.vulnerabilities.high' audit-report.json | grep -q '^[1-9]'; then
+          # Count advisories rather than metadata totals, which include ignored GHSAs.
+          if jq '[.advisories[] | select(.severity == "high" or .severity == "critical")] | length' audit-report.json | grep -q '^[1-9]'; then
             echo "❌ High/Critical vulnerabilities found!"
             exit 1
           else
