@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { defaultHeaders } from '@app/utils';
 import { isLocalNet } from '@app/utils/network.ts';
 import { useConfigBEInMemoryStore } from '@app/store';
 
@@ -9,25 +8,26 @@ interface NodeStats {
     confirmed_nodes_24h: number;
 }
 
-async function fetchMinerStats() {
+async function fetchNodeStats(netmapApiUrl: string): Promise<NodeStats> {
     if (isLocalNet()) {
         return { confirmed_nodes_24h: 1 };
     }
-    const networkStatsUrl = useConfigBEInMemoryStore.getState().netmap_api_base_url;
-    const res = await fetch(`${networkStatsUrl}/api/v1/stats`);
+    const res = await fetch(`${netmapApiUrl}/api/v1/stats`);
     if (!res.ok) {
-        console.error('Failed to fetch node stats');
+        throw new Error(`Failed to fetch node stats: ${res.status}`);
     }
     return res.json();
 }
 
-export function useMinerStats() {
+export function useNodeStats() {
+    const netmapApiUrl = useConfigBEInMemoryStore((s) => s.netmap_api_base_url);
     return useQuery<NodeStats['confirmed_nodes_24h']>({
-        queryKey: [KEY_NODE_STATS],
+        queryKey: [KEY_NODE_STATS, netmapApiUrl],
         queryFn: async () => {
-            const stats = await fetchMinerStats();
-            return stats.confirmed_nodes_24h;
+            const stats = await fetchNodeStats(netmapApiUrl);
+            return stats?.confirmed_nodes_24h ?? 0;
         },
+        enabled: isLocalNet() || !!netmapApiUrl,
         refetchOnWindowFocus: true,
         refetchInterval: 30 * 1000,
     });
