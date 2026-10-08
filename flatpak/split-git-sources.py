@@ -35,6 +35,8 @@ def main(path: str) -> None:
             match = COPY_RE.match(command)
             if match:
                 git_crates.add(match.group(2))
+                # Nothing else creates the git directory before the first copy.
+                commands.append(f'mkdir -p "{VENDOR_GIT}"')
                 command = f'{match.group(1)}"{VENDOR_GIT}/{match.group(2)}"'
             commands.append(command)
         source["commands"] = commands
