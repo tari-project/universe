@@ -1,39 +1,54 @@
 name: Flatpak
 
-# Builds a Linux Flatpak bundle of Tari Universe and (on release) attaches it as
-# a release asset. Designed to need zero per-release maintenance:
+# Builds a Linux Flatpak bundle of Tari Universe and uploads it as a workflow
+# artifact. Designed to need zero per-release maintenance:
 #   * the manifest builds the checked-out tree (no pinned commit/version), and
 #   * the offline cargo/npm sources are regenerated here from this commit's
 #     lockfiles, so they can never drift out of sync with a release.
 #
-# Standalone — does not touch the existing release pipeline. It produces a
-# sideload bundle (`flatpak install <file>.flatpak`); it does not auto-update.
+# release.yml calls this alongside the Windows and macOS builds and attaches the
+# bundle to the draft release. It produces a sideload bundle
+# (`flatpak install <file>.flatpak`); it does not auto-update.
 
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      tari_network:
+        description: "Network to build for"
+        type: string
+        default: mainnet
+    outputs:
+      artifact:
+        description: "Name of the uploaded bundle artifact"
+        value: ${{ jobs.flatpak.outputs.artifact }}
   workflow_dispatch:
     inputs:
       ref:
         description: "Git ref to build (default: current branch)"
         required: false
         default: ""
+      tari_network:
+        description: "Network to build for"
+        type: choice
+        default: mainnet
+        options:
+          - mainnet
+          - esmeralda
+          - nextnet
 
 permissions:
-  contents: write # upload the bundle to the triggering release
-
-concurrency:
-  group: flatpak-${{ github.event.inputs.ref || github.ref }}
-  cancel-in-progress: true
+  contents: read
 
 jobs:
   flatpak:
-    name: Flatpak (x86_64)
+    name: Flatpak (x86_64) for ${{ inputs.tari_network }}
     runs-on: ubuntu-24.04
+    outputs:
+      artifact: ${{ steps.bundle.outputs.artifact }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
+          ref: ${{ inputs.ref || github.ref }}
 
       - name: Install Flatpak tooling
         run: |
@@ -66,31 +81,53 @@ jobs:
       # `type: dir` over this checkout). Source files keep their Alpha/local
       # defaults; the strip lives only here, so a local build stays Alpha and we
       # never hand-maintain the production naming or the metainfo version/date.
+      # The manifest builds mainnet. Other networks swap in their network the same
+      # way release.yml's set-matrix does (test networks target testnet), and build
+      # with release-ci-beta like release.yml's BETA builds, so their data stays
+      # apart from mainnet's.
+      - name: Set network
+        env:
+          TARI_NETWORK: ${{ inputs.tari_network }}
+        run: |
+          set -euo pipefail
+          case "$TARI_NETWORK" in
+            mainnet | nextnet) TARGET="$TARI_NETWORK" ;;
+            *) TARGET=testnet ;;
+          esac
+          sed -i -E \
+            -e "s/^(    TARI_NETWORK: ).*/\1${TARI_NETWORK}/" \
+            -e "s/^(    TARI_TARGET_NETWORK: ).*/\1${TARGET}/" \
+            flatpak/com.tari.universe.yml
+          if [ "$TARI_NETWORK" != mainnet ]; then
+            sed -i 's/--features release-ci$/--features release-ci-beta/' flatpak/com.tari.universe.yml
+          fi
+          grep -nE '^    TARI_(TARGET_)?NETWORK: |--features release-ci' flatpak/com.tari.universe.yml
+
       - name: Set production identity and release metadata
         env:
-          RELEASE_DATE: ${{ github.event.release.published_at }}
+          TARI_NETWORK: ${{ inputs.tari_network }}
         run: |
           set -euo pipefail
           conf=src-tauri/tauri.conf.json
           VERSION="$(jq -r .version "$conf")"
+          IDENTIFIER=com.tari.universe
+          [ "$TARI_NETWORK" = mainnet ] || IDENTIFIER=com.tari.universe.beta
 
           # Mirror release.yml's "RELEASE Builds" yq rewrite (Linux naming) so the
           # production identity has a single source of truth.
           yq eval ".productName = \"tari_universe\"" --output-format=json -i "$conf"
           yq eval ".mainBinaryName = \"tari_universe\"" --output-format=json -i "$conf"
-          yq eval ".identifier = \"com.tari.universe\"" --output-format=json -i "$conf"
+          yq eval ".identifier = \"${IDENTIFIER}\"" --output-format=json -i "$conf"
           yq eval ".app.windows[0].title = \"Tari Universe v${VERSION}\"" --output-format=json -i "$conf"
 
           # AppStream <release>: derive version + date from the build rather than
           # hand-editing the metainfo each release (it would otherwise drift from
-          # tauri.conf.json). On a release event use its publish date; otherwise
-          # today's UTC date.
-          DATE="${RELEASE_DATE%%T*}"
-          [ -n "$DATE" ] || DATE="$(date -u +%F)"
+          # tauri.conf.json). The build date stands in for the release date.
+          DATE="$(date -u +%F)"
           sed -i -E "s|<release version=\"[^\"]*\" date=\"[^\"]*\"[[:space:]]*/>|<release version=\"${VERSION}\" date=\"${DATE}\"/>|" \
             flatpak/com.tari.universe.metainfo.xml
 
-          echo "Production identity set to com.tari.universe; release v${VERSION} (${DATE})"
+          echo "Identity set to ${IDENTIFIER} for ${TARI_NETWORK}; release v${VERSION} (${DATE})"
           grep -n '<release' flatpak/com.tari.universe.metainfo.xml
 
       - name: Build Flatpak
@@ -101,13 +138,20 @@ jobs:
             build-dir com.tari.universe.yml
 
       - name: Bundle .flatpak
+        id: bundle
         working-directory: flatpak
+        env:
+          TARI_NETWORK: ${{ inputs.tari_network }}
         run: |
           VERSION="$(jq -r .version ../src-tauri/tauri.conf.json)"
-          OUT="tari-universe-${VERSION}-x86_64.flatpak"
+          # Test network bundles say so in the name, mainnet keeps the plain one.
+          SUFFIX=""
+          [ "$TARI_NETWORK" = mainnet ] || SUFFIX="-${TARI_NETWORK}"
+          OUT="tari-universe-${VERSION}${SUFFIX}-x86_64.flatpak"
           flatpak build-bundle repo "${OUT}" com.tari.universe
           echo "OUT=${OUT}" >> "$GITHUB_ENV"
           echo "BUNDLE=flatpak/${OUT}" >> "$GITHUB_ENV"
+          echo "artifact=${OUT}" >> "$GITHUB_OUTPUT"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
@@ -115,9 +159,3 @@ jobs:
           name: ${{ env.OUT }}
           path: ${{ env.BUNDLE }}
           if-no-files-found: error
-
-      - name: Attach to release
-        if: github.event_name == 'release'
-        run: gh release upload "${{ github.event.release.tag_name }}" "${{ env.BUNDLE }}" --clobber
-        env:
-          GH_TOKEN: ${{ github.token }}
