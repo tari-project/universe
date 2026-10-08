@@ -24,7 +24,9 @@ use crate::airdrop::{get_der_encode_pub_key, get_websocket_key};
 use crate::app_in_memory_config::{AppInMemoryConfig, DEFAULT_EXCHANGE_ID, ExchangeMiner};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent};
+use crate::configs::config_core::{
+    AirdropTokens, ConfigCore, ConfigCoreContent, canonicalise_ootle_indexer_url,
+};
 use crate::configs::config_mining::{
     ConfigMining, ConfigMiningContent, MiningModeType, PauseOnBatteryModeState,
 };
@@ -1723,6 +1725,16 @@ pub async fn unlock_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String
         .map_err(|e| e.to_string())
 }
 
+/// Create the wallet PIN and turn the L2 wallet on with it, for a wallet that has no PIN
+/// yet. One PIN entry covers both.
+#[tauri::command]
+pub async fn l2_create_pin_and_enable(app_handle: tauri::AppHandle) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_create_pin_and_enable] called");
+    OotleWalletManager::create_pin_and_enable(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Send XTR on L2 from one of the wallet's accounts. Refused without a PIN; with one,
 /// the PIN prompt is the gate. Returns the L2 transaction id.
 #[tauri::command]
@@ -1750,6 +1762,28 @@ pub fn l2_validate_address(address: String) -> Result<(), String> {
     OotleWalletManager::parse_address(&address)
         .map(|_| ())
         .map_err(|e| e.to_string())
+}
+
+/// Point the L2 wallet at another indexer, or back at the network default when `url` is
+/// blank. Applies to the running wallet straight away. Returns the URL now in use, which
+/// is None off networks with a default when the override is cleared.
+#[tauri::command]
+pub async fn set_ootle_indexer_url(url: String) -> Result<Option<String>, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[set_ootle_indexer_url] called with url: {url:?}");
+    let url = url.trim();
+    let custom = if url.is_empty() {
+        None
+    } else {
+        Some(canonicalise_ootle_indexer_url(url).map_err(|e| e.to_string())?)
+    };
+    ConfigCore::update_field(ConfigCoreContent::set_ootle_indexer_url, custom)
+        .await
+        .map_err(|e| e.to_string())?;
+    let resolved = ConfigCore::content().await.ootle_indexer_url();
+    if let Some(indexer) = resolved.clone() {
+        OotleWalletManager::set_indexer_url(indexer).await;
+    }
+    Ok(resolved.map(String::from))
 }
 
 /// Everything the L2 panel shows: accounts, XTR balances and history.
@@ -1952,7 +1986,7 @@ fn canonicalise_remote_base_node_address(input: &str) -> Result<String, anyhow::
     }
 
     let port = parsed
-        .port()
+        .port_or_known_default()
         .ok_or_else(|| anyhow::anyhow!("an explicit port is required (e.g. :443)"))?;
 
     // `url` normalises an empty path to "/" — treat that the same as no path
@@ -2574,4 +2608,88 @@ pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> 
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::canonicalise_remote_base_node_address;
+
+    #[test]
+    fn implicit_default_https_port_survives() {
+        assert_eq!(
+            canonicalise_remote_base_node_address(
+                "https://node-grpc-us-01.nodes.taritalk.xyz:443/"
+            )
+            .unwrap(),
+            "https://node-grpc-us-01.nodes.taritalk.xyz:443"
+        );
+    }
+
+    #[test]
+    fn implicit_default_http_port_survives() {
+        assert_eq!(
+            canonicalise_remote_base_node_address("http://example.com:80/").unwrap(),
+            "http://example.com:80"
+        );
+    }
+
+    #[test]
+    fn explicit_non_default_port_still_works() {
+        assert_eq!(
+            canonicalise_remote_base_node_address("https://example.com:18142").unwrap(),
+            "https://example.com:18142"
+        );
+    }
+
+    #[test]
+    fn mixed_case_scheme_and_host_are_lowercased_with_default_port() {
+        assert_eq!(
+            canonicalise_remote_base_node_address("HTTPS://Example.Com:443").unwrap(),
+            "https://example.com:443"
+        );
+    }
+
+    #[test]
+    fn unsupported_scheme_is_rejected() {
+        let err = canonicalise_remote_base_node_address("ftp://example.com:443").unwrap_err();
+        assert!(err.to_string().contains("not supported"), "{err}");
+    }
+
+    #[test]
+    fn userinfo_is_rejected() {
+        let err =
+            canonicalise_remote_base_node_address("https://user:pass@example.com:443").unwrap_err();
+        assert!(err.to_string().contains("userinfo"), "{err}");
+    }
+
+    #[test]
+    fn ipv6_literal_is_rejected() {
+        let err = canonicalise_remote_base_node_address("https://[::1]:443").unwrap_err();
+        assert!(err.to_string().contains("IPv6"), "{err}");
+    }
+
+    #[test]
+    fn path_segments_are_rejected() {
+        let err =
+            canonicalise_remote_base_node_address("https://example.com:443/some/path").unwrap_err();
+        assert!(err.to_string().contains("path"), "{err}");
+    }
+
+    #[test]
+    fn query_strings_are_rejected() {
+        let err = canonicalise_remote_base_node_address("https://example.com:443?x=y").unwrap_err();
+        assert!(err.to_string().contains("query"), "{err}");
+    }
+
+    #[test]
+    fn fragments_are_rejected() {
+        let err =
+            canonicalise_remote_base_node_address("https://example.com:443#frag").unwrap_err();
+        assert!(err.to_string().contains("fragment"), "{err}");
+    }
+
+    #[test]
+    fn unparseable_input_is_rejected() {
+        assert!(canonicalise_remote_base_node_address("not a valid url at all").is_err());
+    }
 }

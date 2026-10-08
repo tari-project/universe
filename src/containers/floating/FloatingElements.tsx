@@ -16,6 +16,7 @@ import LongTimeUserFeedbackDialog from './user/surveys/LongTimeUserFeedbackDialo
 
 import EXModal from './EXModal/EXModal.tsx';
 import EnterPinDialog from './security/pin/EnterPinDialog.tsx';
+import L2PinRequiredDialog from './security/pin/L2PinRequiredDialog.tsx';
 import ExternalDependenciesDialog from './ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import FailedModuleInitializationDialog from './FailedModuleInitializationDialog/FailedModuleInitializationDialog.tsx';
 import ForgotPinDialog from './security/pin/ForgotPinDialog.tsx';
@@ -62,6 +63,7 @@ const FloatingElements = () => {
             <SeedPhrase />
             <CreatePinDialog />
             <EnterPinDialog />
+            <L2PinRequiredDialog />
             <SettingsModal />
             <McpTransactionDialog />
             <AirdropClaimModal />

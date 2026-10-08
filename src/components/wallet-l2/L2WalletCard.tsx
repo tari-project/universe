@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { selectL2Account, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
-import { handleL2WalletStateUpdate, PIN_CANCELLED_RE } from '@app/store/actions/l2WalletStoreActions.ts';
+import { handleL2WalletStateUpdate } from '@app/store/actions/l2WalletStoreActions.ts';
+import { setL2Open } from '@app/store/actions/uiStoreActions.ts';
 import type { L2WalletState } from '@app/types/events-payloads.ts';
-import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { WalletWrapper } from '@app/components/wallet/sidebarWallet/wallet.styles.ts';
 import L2Wallet from './L2Wallet.tsx';
@@ -19,9 +19,9 @@ export default function L2WalletCard() {
     const hasPin = useWalletStore((s) => s.is_pin_locked);
     const enabled = useL2WalletStore((s) => s.enabled);
     const locked = useL2WalletStore((s) => s.locked);
+    const seedChangePending = useL2WalletStore((s) => s.seedChangePending);
     const account = useL2WalletStore(selectL2Account);
-    const [enabling, setEnabling] = useState(false);
-    const [error, setError] = useState('');
+    const open = hasPin && enabled && !locked;
 
     // Events keep the store current; this catches up with whatever was sent before the card opened.
     useEffect(() => {
@@ -29,69 +29,14 @@ export default function L2WalletCard() {
         fetchL2State().catch((e) => console.warn('Could not load L2 wallet state:', e));
     }, [hasPin]);
 
-    async function open(command: 'enable_l2_wallet' | 'unlock_l2_wallet', errorKey: string) {
-        setEnabling(true);
-        setError('');
-        try {
-            await invoke(command);
-            await fetchL2State();
-        } catch (e) {
-            if (!PIN_CANCELLED_RE.test(String(e))) setError(`${t(errorKey)}${e}`);
-        } finally {
-            setEnabling(false);
-        }
-    }
+    // The sidebar only shows the card once the wallet is open. If it locks again (a wallet
+    // restart), close the card and let the sidebar ask for the PIN next time. A seed change
+    // reopens the wallet itself, so the card waits for it.
+    useEffect(() => {
+        if (!open && !seedChangePending) setL2Open(false);
+    }, [open, seedChangePending]);
 
-    if (!hasPin) {
-        return (
-            <WalletWrapper style={promptStyle} data-testid="l2-pin-required">
-                <Typography>{t('l2.pin-required')}</Typography>
-                <Button
-                    variant="black"
-                    onClick={() => invoke('create_pin').catch((e) => console.error('Failed to create PIN:', e))}
-                    data-testid="l2-set-pin"
-                >
-                    {t('l2.set-pin')}
-                </Button>
-            </WalletWrapper>
-        );
-    }
-
-    if (!enabled) {
-        return (
-            <WalletWrapper style={promptStyle} data-testid="l2-not-enabled">
-                <Typography>{t('l2.enable-description')}</Typography>
-                <Button
-                    variant="black"
-                    onClick={() => open('enable_l2_wallet', 'l2.enable-error')}
-                    disabled={enabling}
-                    data-testid="l2-enable"
-                >
-                    {t('l2.enable')}
-                </Button>
-                {error && <Typography variant="p">{error}</Typography>}
-            </WalletWrapper>
-        );
-    }
-
-    if (locked) {
-        return (
-            <WalletWrapper style={promptStyle} data-testid="l2-locked">
-                <Typography style={{ whiteSpace: 'pre-line' }}>{t('l2.unlock-description')}</Typography>
-                <Button
-                    variant="black"
-                    onClick={() => open('unlock_l2_wallet', 'l2.unlock-error')}
-                    disabled={enabling}
-                    data-testid="l2-unlock"
-                >
-                    {t('l2.unlock')}
-                </Button>
-                {error && <Typography variant="p">{error}</Typography>}
-            </WalletWrapper>
-        );
-    }
-
-    if (!account) {
+    if (!open || !account) {
         return (
             <WalletWrapper style={promptStyle} data-testid="l2-loading">
                 <Typography>{t('l2.loading')}</Typography>
