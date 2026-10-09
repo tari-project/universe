@@ -20,7 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{sync::LazyLock, thread};
+use std::sync::LazyLock;
+#[cfg(not(target_os = "windows"))]
+use std::thread;
 
 use log::{error, info};
 use tari_shutdown::Shutdown;
@@ -282,17 +284,7 @@ impl CpuManager {
     }
 
     async fn determine_number_of_cores_to_use(cpu_usage_percentage: u32) -> u32 {
-        let max_cpu_available = thread::available_parallelism();
-        let max_cpu_available = match max_cpu_available {
-            Ok(available_cpus) => {
-                info!(target:LOG_TARGET_APP_LOGIC, "Available CPU cores: {available_cpus}");
-                u32::try_from(available_cpus.get()).unwrap_or(1)
-            }
-            Err(err) => {
-                error!("Available CPU cores: Unknown, error: {err}");
-                1
-            }
-        };
+        let max_cpu_available = Self::max_logical_processors();
 
         let cpu_cores_to_use = max_cpu_available
             .saturating_mul(cpu_usage_percentage)
@@ -302,6 +294,35 @@ impl CpuManager {
         info!(target: LOG_TARGET_APP_LOGIC, "Using {cpu_cores_to_use} CPU cores for mining");
 
         cpu_cores_to_use
+    }
+
+    /// Machine-wide logical processor count used to size the miner thread pool.
+    ///
+    /// On Windows this enumerates every processor group: machines with more
+    /// than 64 logical cores are split into groups of at most 64, and
+    /// `thread::available_parallelism()` only sees the calling process's own
+    /// group, undercounting the machine (see
+    /// `crate::utils::processor_groups::logical_processor_count`).
+    #[cfg(target_os = "windows")]
+    fn max_logical_processors() -> u32 {
+        let count = crate::utils::processor_groups::logical_processor_count();
+        info!(target: LOG_TARGET_APP_LOGIC, "Available CPU cores: {count}");
+        count
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    fn max_logical_processors() -> u32 {
+        let max_cpu_available = thread::available_parallelism();
+        match max_cpu_available {
+            Ok(available_cpus) => {
+                info!(target:LOG_TARGET_APP_LOGIC, "Available CPU cores: {available_cpus}");
+                u32::try_from(available_cpus.get()).unwrap_or(1)
+            }
+            Err(err) => {
+                error!("Available CPU cores: Unknown, error: {err}");
+                1
+            }
+        }
     }
 
     pub async fn stop_mining(&mut self) -> Result<(), anyhow::Error> {
