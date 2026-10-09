@@ -5,7 +5,7 @@
         "minotari_node": "6.0.1-pre.2 | 724c5f0",
         "mmproxy": "6.0.1-pre.2 | 724c5f0",
         "sha-p2pool": "1.0.3 | cff9241",
-        "tariminer": "1.1.6",
+        "tariminer": "1.1.7",
         "tor": "15.0.5",
         "wallet": "6.0.1-pre.2 | 724c5f0",
         "xmrig": "6.26.0"
