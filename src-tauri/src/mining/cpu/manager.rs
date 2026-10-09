@@ -282,17 +282,30 @@ impl CpuManager {
     }
 
     async fn determine_number_of_cores_to_use(cpu_usage_percentage: u32) -> u32 {
-        let max_cpu_available = thread::available_parallelism();
-        let max_cpu_available = match max_cpu_available {
-            Ok(available_cpus) => {
-                info!(target:LOG_TARGET_APP_LOGIC, "Available CPU cores: {available_cpus}");
-                u32::try_from(available_cpus.get()).unwrap_or(1)
+        let max_cpu_available = {
+            #[cfg(windows)]
+            {
+                use windows_sys::Win32::System::Threading::{GetActiveProcessorCount, ALL_PROCESSOR_GROUPS};
+                let count = unsafe { GetActiveProcessorCount(ALL_PROCESSOR_GROUPS) };
+                if count > 0 {
+                    count
+                } else {
+                    1
+                }
             }
-            Err(err) => {
-                error!("Available CPU cores: Unknown, error: {err}");
-                1
+            #[cfg(not(windows))]
+            {
+                match thread::available_parallelism() {
+                    Ok(available_cpus) => u32::try_from(available_cpus.get()).unwrap_or(1),
+                    Err(err) => {
+                        error!("Available CPU cores: Unknown, error: {err}");
+                        1
+                    }
+                }
             }
         };
+
+        info!(target:LOG_TARGET_APP_LOGIC, "Available CPU cores: {max_cpu_available}");
 
         let cpu_cores_to_use = max_cpu_available
             .saturating_mul(cpu_usage_percentage)
