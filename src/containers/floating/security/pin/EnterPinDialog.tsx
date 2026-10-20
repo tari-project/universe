@@ -126,7 +126,9 @@ export default function EnterPinDialog() {
                             subtitle={
                                 abandonContext.accept_unreconcilable
                                     ? t('abandon.unreconcilable-note')
-                                    : t('abandon.note')
+                                    : abandonContext.is_burn
+                                      ? t('abandon.burn-note')
+                                      : t('abandon.note')
                             }
                         />
                     )}

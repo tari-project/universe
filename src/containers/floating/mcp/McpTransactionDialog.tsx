@@ -134,7 +134,9 @@ export default function McpTransactionDialog() {
                                         ? t('wallet:send.confirm-subtitle')
                                         : pending.accept_unreconcilable
                                           ? t('wallet:abandon.unreconcilable-note')
-                                          : t('wallet:abandon.note')
+                                          : pending.is_burn
+                                            ? t('wallet:abandon.burn-note')
+                                            : t('wallet:abandon.note')
                                 }
                             />
                             <Button

@@ -89,7 +89,7 @@ use minotari_wallet::{
     db::{
         AccountBalance, AccountRow, CompletedTransactionStatus, DbBurnProof, fetch_unspent_outputs,
         get_account_by_name, get_completed_transactions_by_status, get_displayed_transaction_by_id,
-        get_latest_scanned_tip_block_by_account, get_pending_burn_proofs,
+        get_latest_scanned_tip_block_by_account, get_output_spend, get_pending_burn_proofs,
     },
     get_balance,
     http::WalletHttpClient,
@@ -127,7 +127,7 @@ use tari_common_types::transaction::TxId;
 use tari_transaction_components::fee::Fee;
 use tari_transaction_components::rpc::models::{TxLocation, TxSubmissionResponse};
 use tari_transaction_components::tari_amount::MicroMinotari;
-use tari_transaction_components::transaction_components::MAX_TRANSACTION_INPUTS;
+use tari_transaction_components::transaction_components::{MAX_TRANSACTION_INPUTS, Transaction};
 use tari_transaction_components::weight::TransactionWeight;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
@@ -1522,23 +1522,57 @@ fn record_burn_broadcast(
     record_first_broadcast(Some(conn), tx_id, submitted).accepted_by_node
 }
 
-/// Pending burn proofs, less those whose transaction was rejected because its inputs
-/// were spent elsewhere: that burn can never be mined. A burn the user abandoned still
-/// counts: a node may still mine it, and this database holds its only proof row. If
-/// the scan later sees its inputs spent elsewhere, it rejects it again and it drops out.
+/// Pending burn proofs, less those whose transaction can never be mined: one the scan
+/// rejected because its inputs were spent elsewhere, and one the user abandoned whose
+/// inputs the scan has since seen spent (by another transaction: the burn itself would
+/// have been marked mined). An abandoned burn with unspent inputs still counts: a node
+/// may still mine it, and this database holds its only proof row.
 fn pending_burns(conn: &Connection) -> Result<Vec<DbBurnProof>, anyhow::Error> {
-    let rejected: HashSet<i64> = conn
-        .prepare(
-            "SELECT b.id FROM burn_proofs b JOIN completed_transactions c
-               ON c.sent_output_hash = lower(hex(b.output_hash))
-             WHERE c.status = 'rejected' AND c.last_rejected_reason IS NOT ?1",
-        )?
-        .query_map([ABANDONED_REASON], |row| row.get(0))?
-        .collect::<Result<_, _>>()?;
+    let mut stmt = conn.prepare(
+        "SELECT b.id, c.account_id, c.last_rejected_reason, c.serialized_transaction
+           FROM burn_proofs b JOIN completed_transactions c
+             ON c.sent_output_hash = lower(hex(b.output_hash))
+          WHERE c.status = 'rejected'",
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, i64>(0)?,
+            row.get::<_, i64>(1)?,
+            row.get::<_, Option<String>>(2)?,
+            row.get::<_, Vec<u8>>(3)?,
+        ))
+    })?;
+    let mut dead = HashSet::new();
+    for row in rows {
+        let (id, account_id, reason, serialized_transaction) = row?;
+        if reason.as_deref() != Some(ABANDONED_REASON)
+            || any_input_spent(conn, account_id, &serialized_transaction)?
+        {
+            dead.insert(id);
+        }
+    }
     Ok(get_pending_burn_proofs(conn)?
         .into_iter()
-        .filter(|b| !rejected.contains(&b.id))
+        .filter(|b| !dead.contains(&b.id))
         .collect())
+}
+
+/// Whether the scan has seen any input of this transaction spent on chain. One that
+/// can't be read counts as unspent, so its burn stays guarded.
+fn any_input_spent(
+    conn: &Connection,
+    account_id: i64,
+    serialized_transaction: &[u8],
+) -> Result<bool, anyhow::Error> {
+    let Ok(transaction) = serde_json::from_slice::<Transaction>(serialized_transaction) else {
+        return Ok(false);
+    };
+    for input in transaction.body().inputs() {
+        if get_output_spend(conn, account_id, &input.output_hash())?.is_some() {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
 
 /// Reads the database file directly so the check works whether or not the wallet phase
@@ -1574,9 +1608,11 @@ mod tests {
     };
     use crate::wallet::minotari_wallet::transaction::{CONFIRMATION_WINDOW, SEND_FEE_PER_GRAM};
     use minotari_wallet::db::{
-        SqlitePool, create_account, get_account_by_name, init_db, insert_scanned_tip_block,
-        insert_unconfirmed_change_output, mark_completed_transaction_as_rejected_in_block,
+        SqlitePool, create_account, get_account_by_name, init_db, insert_input,
+        insert_scanned_tip_block, insert_unconfirmed_change_output,
+        mark_completed_transaction_as_rejected_in_block, update_output_status,
     };
+    use minotari_wallet::models::OutputStatus;
     use minotari_wallet::transactions::{
         abandon::AbandonSendError,
         burn::{BurnTxParams, create_burn_tx},
@@ -1595,7 +1631,9 @@ mod tests {
         TxSubmissionRejectionReason, TxSubmissionResponse,
     };
     use tari_transaction_components::tari_amount::MicroMinotari;
-    use tari_transaction_components::transaction_components::{MemoField, WalletOutput};
+    use tari_transaction_components::transaction_components::{
+        MemoField, Transaction, TransactionInput, WalletOutput,
+    };
     use zeroize::Zeroizing;
 
     const PASSWORD: &str = "pass";
@@ -1673,11 +1711,28 @@ mod tests {
             [],
         )
         .expect("locked input");
+        // The burn spends the wallet's one output.
+        let transaction = Transaction::new(
+            vec![TransactionInput::new_with_output_hash(
+                FixedHash::from([1u8; 32]),
+                Default::default(),
+                Default::default(),
+            )],
+            Vec::new(),
+            Vec::new(),
+            PrivateKey::default(),
+            PrivateKey::default(),
+        );
         conn.execute(
             "INSERT INTO completed_transactions (id, account_id, pending_tx_id, status,
                kernel_excess, sent_output_hash, serialized_transaction, broadcast_attempts)
-             VALUES (12, ?1, 'p', 'completed', x'', ?2, x'', ?3)",
-            (account_id, hex::encode([6u8; 32]), attempts),
+             VALUES (12, ?1, 'p', 'completed', x'', ?2, ?3, ?4)",
+            (
+                account_id,
+                hex::encode([6u8; 32]),
+                serde_json::to_vec(&transaction).expect("transaction"),
+                attempts,
+            ),
         )
         .expect("burn transaction");
         conn.execute(
@@ -1898,15 +1953,18 @@ mod tests {
         assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
         assert!(pending_burns_guard(&path).is_err());
 
-        // The scan sees its released inputs spent by another transaction.
-        mark_completed_transaction_as_rejected_in_block(
-            &conn,
-            12u64.into(),
-            "inputs spent by a different transaction",
-            150,
-            &[5u8; 32],
-        )
-        .expect("rejected by the scan");
+        // Another transaction spends the released input, and the scan records it as it
+        // does for any spent output: an input row and the output marked spent. The
+        // burn's own row stays as abandon left it.
+        let output_id: i64 = conn
+            .query_row(
+                "SELECT id FROM outputs WHERE output_hash = ?1",
+                [[1u8; 32].as_slice()],
+                |r| r.get(0),
+            )
+            .expect("output");
+        insert_input(&conn, account_id, output_id, 150, &[5u8; 32], 1_700_000_000).expect("input");
+        update_output_status(&conn, output_id, OutputStatus::Spent).expect("spent");
         assert!(pending_burns(&conn).expect("pending burns").is_empty());
         assert!(pending_burns_guard(&path).is_ok());
     }

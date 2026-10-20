@@ -270,6 +270,7 @@ pub enum SpendKind {
         tx_id: String,
         /// The user accepted that it has no change output to recognise it by.
         accept_unreconcilable: bool,
+        is_burn: bool,
     },
 }
 
@@ -330,10 +331,12 @@ impl SpendKind {
             SpendKind::Abandon {
                 tx_id,
                 accept_unreconcilable,
+                is_burn,
             } => PinPromptContext::Abandon {
                 amount_micro_minotari,
                 tx_id: tx_id.clone(),
                 accept_unreconcilable: *accept_unreconcilable,
+                is_burn: *is_burn,
             },
         }
     }
@@ -509,16 +512,19 @@ pub async fn gated_abandon(
     let stalled = MinotariWalletManager::stalled_transactions()
         .await
         .map_err(|e| wallet_failure("Abandon failed", e))?;
-    let Some(amount_u64) = stalled.iter().find(|s| s.tx_id == tx_id).map(|s| s.amount) else {
+    let Some(entry) = stalled.iter().find(|s| s.tx_id == tx_id) else {
         return Err(TransactionError::AbandonRefused {
             code: "abandon_not_stalled",
             message: format!("Transaction {tx_id} is not stalled"),
         });
     };
+    let amount_u64 = entry.amount;
+    let is_burn = entry.burn_commitment.is_some();
     let amount = format!("{}.{:06}", amount_u64 / 1_000_000, amount_u64 % 1_000_000);
     let kind = SpendKind::Abandon {
         tx_id,
         accept_unreconcilable,
+        is_burn,
     };
     let pass = pass_gates(
         SendOrigin::App,
@@ -704,6 +710,7 @@ async fn pass_gates(
                     ..
                 }
             ),
+            is_burn: matches!(kind, SpendKind::Abandon { is_burn: true, .. }),
         })
         .await;
 

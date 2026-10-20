@@ -188,6 +188,7 @@ export interface AbandonPinPromptContext {
     tx_id: string;
     /** The user accepted that it has no change output to recognise it by. */
     accept_unreconcilable: boolean;
+    is_burn: boolean;
 }
 
 export type PinPromptContext =

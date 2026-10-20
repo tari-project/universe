@@ -241,6 +241,8 @@ pub struct McpTransactionConfirmationPayload {
     pub payment_id: Option<String>,
     /// For an abandon: the user accepted that it has no change output to recognise it by.
     pub accept_unreconcilable: bool,
+    /// For an abandon: it is a burn to L2.
+    pub is_burn: bool,
 }
 
 /// Optional context attached to the `EnterPin` event so the PIN dialog can tell the
@@ -292,6 +294,7 @@ pub enum PinPromptContext {
         tx_id: String,
         /// The user accepted that it has no change output to recognise it by.
         accept_unreconcilable: bool,
+        is_burn: bool,
     },
 }
 

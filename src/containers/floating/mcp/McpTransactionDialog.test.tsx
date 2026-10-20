@@ -89,6 +89,23 @@ describe('McpTransactionDialog', () => {
         expect(screen.queryByText('wallet:abandon.note')).not.toBeInTheDocument();
     });
 
+    it('warns that an abandoned burn may still land', async () => {
+        setMcpPendingTransaction({
+            request_id: 'app_tx_abandon_burn',
+            kind: 'abandon',
+            origin: 'app',
+            destination: '12',
+            amount_micro_minotari: 1_500_000,
+            amount_display: '1.5 XTM',
+            is_burn: true,
+        });
+        render(<McpTransactionDialog />);
+        await waitFor(() => {
+            expect(screen.getByText('wallet:abandon.burn-note')).toBeInTheDocument();
+        });
+        expect(screen.queryByText('wallet:abandon.note')).not.toBeInTheDocument();
+    });
+
     it('labels an L2 send with the L2 address and XTR', async () => {
         setMcpPendingTransaction({
             request_id: 'app_tx_l2',
