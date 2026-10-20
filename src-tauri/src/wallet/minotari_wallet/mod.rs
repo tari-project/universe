@@ -1597,15 +1597,15 @@ fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
         .map_err(anyhow::Error::from)
         .and_then(|pool| pending_burns(&*pool.get()?))
         .map_err(|e| {
-            anyhow::anyhow!("Couldn't check for burns to Layer 2 waiting to be mined, so nothing was changed. Try again. ({e})")
+            anyhow::anyhow!("Couldn't check for unsettled burns to Layer 2, so nothing was changed. Try again. ({e})")
         })?;
     match pending.len() {
         0 => Ok(()),
         1 => Err(anyhow::anyhow!(
-            "1 burn to Layer 2 is still waiting to be mined. Try again once it's mined."
+            "1 burn to Layer 2 isn't settled yet (waiting to be mined or for its claim proof). This wallet holds the only proof needed to claim it, so it can't be reset or re-imported until it settles, which may need a later app update."
         )),
         n => Err(anyhow::anyhow!(
-            "{n} burns to Layer 2 are still waiting to be mined. Try again once they're mined."
+            "{n} burns to Layer 2 aren't settled yet (waiting to be mined or for their claim proofs). This wallet holds the only proofs needed to claim them, so it can't be reset or re-imported until they settle, which may need a later app update."
         )),
     }
 }
