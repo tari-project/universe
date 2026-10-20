@@ -120,6 +120,7 @@
     "error-timeout": "Transaction confirmation timed out.",
     "error-change-not-affordable": "Not enough left over to pay the fee and keep the change every transaction needs. Try a smaller amount, or press Max.",
     "error-max-unavailable": "Couldn't work out the maximum amount. Try again in a moment.",
+    "not-accepted-yet": "Your transaction is recorded, but the network hasn't accepted it yet. The wallet will keep sending it automatically, so don't send it again.",
     "estimated-completion-time": "Estimated completion time",
     "field-address": "address",
     "field-amount": "amount",

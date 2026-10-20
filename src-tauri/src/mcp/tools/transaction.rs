@@ -109,7 +109,7 @@ pub async fn send_transaction(
     .await;
 
     match result {
-        Ok(()) => {
+        Ok(_) => {
             EventsEmitter::emit_mcp_transaction_result(
                 crate::events::McpTransactionResultPayload {
                     request_id,

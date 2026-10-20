@@ -64,6 +64,7 @@
     "error-message": "Erro ao enviar transação: ",
     "error-change-not-affordable": "Não sobra o suficiente para pagar a taxa e manter o troco que toda transação precisa. Tente um valor menor ou toque em Máx.",
     "error-max-unavailable": "Não foi possível calcular o valor máximo. Tente novamente em instantes.",
+    "not-accepted-yet": "Sua transação foi registrada, mas a rede ainda não a aceitou. A carteira continuará enviando automaticamente, então não envie de novo.",
     "estimated-completion-time": "Tempo estimado de conclusão",
     "field-address": "endereço",
     "field-amount": "valor",

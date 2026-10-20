@@ -65,6 +65,7 @@
     "error-message": "İşlem gönderme hatası: ",
     "error-change-not-affordable": "Ücreti ödemek ve her işlemin gerektirdiği para üstünü ayırmak için yeterli bakiye kalmıyor. Daha küçük bir tutar deneyin ya da Maks'a basın.",
     "error-max-unavailable": "Azami tutar hesaplanamadı. Birazdan tekrar deneyin.",
+    "not-accepted-yet": "İşleminiz kaydedildi ancak ağ henüz kabul etmedi. Cüzdan onu otomatik olarak yeniden gönderecek, bu yüzden tekrar göndermeyin.",
     "estimated-completion-time": "Tahmini tamamlanma süresi",
     "field-address": "adres",
     "field-amount": "tutar",

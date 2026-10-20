@@ -65,6 +65,7 @@
     "error-message": "Lỗi khi gửi giao dịch: ",
     "error-change-not-affordable": "Không còn đủ để trả phí và giữ lại tiền thừa mà mọi giao dịch đều cần. Hãy thử số tiền nhỏ hơn hoặc nhấn Tối đa.",
     "error-max-unavailable": "Không thể tính số tiền tối đa. Hãy thử lại sau giây lát.",
+    "not-accepted-yet": "Giao dịch của bạn đã được ghi lại nhưng mạng chưa chấp nhận. Ví sẽ tự động gửi lại, vì vậy đừng gửi lại lần nữa.",
     "estimated-completion-time": "Thời gian hoàn tất dự kiến",
     "field-address": "địa chỉ",
     "field-amount": "số tiền",

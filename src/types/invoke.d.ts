@@ -19,7 +19,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(
         param: 'send_one_sided_to_stealth_address',
         payload: { amount: string; destination: string; paymentId?: string }
-    ): Promise<void>;
+    ): Promise<{ accepted_by_node: boolean; node_reason?: string | null }>;
     function invoke(
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }

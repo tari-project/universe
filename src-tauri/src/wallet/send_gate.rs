@@ -60,7 +60,7 @@ use crate::events_emitter::EventsEmitter;
 use crate::mcp::rate_limiter::TransactionRateLimiter;
 use crate::ootle::OotleWalletManager;
 use crate::pin::PinManager;
-use crate::wallet::minotari_wallet::{BurnReceipt, MinotariWalletManager};
+use crate::wallet::minotari_wallet::{BurnReceipt, MinotariWalletManager, SendReceipt};
 
 const DIALOG_TIMEOUT_SECS: u64 = 120;
 
@@ -299,9 +299,10 @@ pub fn parse_amount(amount: &str) -> Result<u64, TransactionError> {
 
 /// Send funds behind the user-consent gates described in the module docs.
 ///
-/// Returns as soon as the transaction has been signed and broadcast; emitting result
-/// events / balance refreshes is left to the caller.
-pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionError> {
+/// Returns as soon as the transaction has been signed, recorded and broadcast, saying
+/// whether the node accepted it; emitting result events / balance refreshes is left to
+/// the caller.
+pub async fn gated_send(request: GatedSendRequest) -> Result<SendReceipt, TransactionError> {
     let GatedSendRequest {
         origin,
         request_id,
@@ -332,7 +333,6 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<(), TransactionErro
         Some(pass.pin_context),
     )
     .await
-    .map(|_| ())
     .map_err(|e| TransactionError::WalletError(format!("Transaction failed: {e}")))
 }
 

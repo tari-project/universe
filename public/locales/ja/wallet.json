@@ -65,6 +65,7 @@
     "error-message": "トランザクション送信エラー: ",
     "error-change-not-affordable": "手数料を支払い、すべての取引に必要なおつりを残すには残高が足りません。金額を減らすか、「最大」を押してください。",
     "error-max-unavailable": "最大金額を計算できませんでした。少し待ってからもう一度お試しください。",
+    "not-accepted-yet": "取引は記録されましたが、まだネットワークに受け入れられていません。ウォレットが自動的に再送信するので、もう一度送信しないでください。",
     "estimated-completion-time": "完了予定時間",
     "field-address": "アドレス",
     "field-amount": "金額",

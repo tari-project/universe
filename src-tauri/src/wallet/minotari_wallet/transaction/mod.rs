@@ -24,13 +24,17 @@ use crate::wallet::minotari_wallet::wallet_network;
 use anyhow::anyhow;
 use log::{info, warn};
 use minotari_wallet::{
-    DisplayedTransaction,
     db::SqlitePool,
-    transactions::{manager::TransactionSender, one_sided_transaction::Recipient},
+    transactions::{
+        input_selector::map_change_required_error,
+        manager::{FinalizedSend, TransactionSender},
+        one_sided_transaction::Recipient,
+    },
 };
 use std::str::FromStr;
 use tari_common_types::tari_address::TariAddress;
 use tari_transaction_components::{
+    TransactionBuilderError,
     consensus::ConsensusManager,
     key_manager::KeyManager,
     offline_signing::{
@@ -128,7 +132,7 @@ impl TransactionManager {
             network,
             unsigned_tx,
         )
-        .map_err(|e| anyhow!("Failed to sign one-sided transaction: {}", e))?;
+        .map_err(sign_error)?;
 
         Ok(signed_transaction)
     }
@@ -136,7 +140,7 @@ impl TransactionManager {
     pub async fn finalize_one_sided_transaction(
         &mut self,
         signed_transaction: SignedOneSidedTransactionResult,
-    ) -> Result<DisplayedTransaction, anyhow::Error> {
+    ) -> Result<FinalizedSend, anyhow::Error> {
         info!("Finalizing one-sided transaction...");
         let sent = self
             .transaction_sender
@@ -146,17 +150,27 @@ impl TransactionManager {
         if !sent.accepted_by_node {
             warn!(
                 "The node has not accepted the send yet: {}",
-                sent.node_reason.unwrap_or_default()
+                sent.node_reason.as_deref().unwrap_or_default()
             );
         }
 
-        Ok(sent.displayed_transaction)
+        Ok(sent)
     }
+}
+
+/// A signing failure, with the builder's refusal to build without a change output
+/// turned into the library's `ChangeNotAffordable`, whose text the UI recognises.
+fn sign_error(error: TransactionBuilderError) -> anyhow::Error {
+    anyhow!(
+        "Failed to sign one-sided transaction: {}",
+        map_change_required_error(error)
+    )
 }
 
 #[cfg(test)]
 mod tests {
-    use super::parse_destination_address;
+    use super::{parse_destination_address, sign_error};
+    use tari_transaction_components::{TransactionBuilderError, tari_amount::MicroMinotari};
 
     // Same Esmeralda fixtures as the send validation tests in
     // `crate::utils::address_utils`, which is the parser this one has to agree with.
@@ -172,5 +186,21 @@ mod tests {
         assert!(parse_destination_address(ESME_ONE_SIDED_EMOJI_ADDRESS).is_ok());
         assert!(parse_destination_address(NEXTNET_ONE_SIDED_ADDRESS).is_err());
         assert!(parse_destination_address("not an address").is_err());
+    }
+
+    #[test]
+    fn signing_without_room_for_change_reads_as_the_change_error() {
+        let error = sign_error(TransactionBuilderError::OfflineTransactionRequiresChange {
+            remainder: MicroMinotari(40),
+            change_fee: MicroMinotari(100),
+        });
+        // `CHANGE_NOT_AFFORDABLE_RE` in src/components/transactions/send/types.ts.
+        assert!(
+            error
+                .to_string()
+                .to_lowercase()
+                .contains("not enough funds for a change output"),
+            "{error}"
+        );
     }
 }

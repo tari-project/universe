@@ -62,8 +62,8 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet::minotari_wallet::BurnReceipt;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
+use crate::wallet::minotari_wallet::{BurnReceipt, SendReceipt};
 use crate::wallet::send_gate::{
     GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_claim,
     gated_l2_send, gated_send,
@@ -1660,10 +1660,10 @@ pub async fn send_one_sided_to_stealth_address(
     amount: String,
     destination: String,
     payment_id: Option<String>,
-) -> Result<(), String> {
+) -> Result<SendReceipt, String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
-    gated_send(GatedSendRequest {
+    let receipt = gated_send(GatedSendRequest {
         origin: SendOrigin::App,
         request_id: SendOrigin::App.new_request_id(),
         amount,
@@ -1676,7 +1676,7 @@ pub async fn send_one_sided_to_stealth_address(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
-    Ok(())
+    Ok(receipt)
 }
 
 /// Burn funds for L2. Refused without a PIN; with one, the PIN prompt is the gate.

@@ -35,6 +35,16 @@ pub struct BurnReceipt {
     pub proof_file: String,
 }
 
+/// What the UI gets back from a send. A send is recorded whether or not the node
+/// accepted it; one it hasn't accepted yet is rebroadcast automatically and must not
+/// be sent again.
+#[derive(Debug, Clone, Serialize)]
+pub struct SendReceipt {
+    pub accepted_by_node: bool,
+    /// The node's answer when it hasn't accepted the send.
+    pub node_reason: Option<String>,
+}
+
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
 use crate::{
@@ -221,7 +231,7 @@ impl MinotariWalletManager {
         amount: u64,
         payment_id: Option<String>,
         pin_context: Option<PinPromptContext>,
-    ) -> Result<DisplayedTransaction, anyhow::Error> {
+    ) -> Result<SendReceipt, anyhow::Error> {
         if amount == 0 {
             return Err(anyhow::anyhow!(
                 "Transaction amount must be greater than zero"
@@ -274,9 +284,10 @@ impl MinotariWalletManager {
 
         info!("Finalizing and broadcasting one-sided transaction...");
 
-        let displayed_transaction = transaction_manager
+        let sent = transaction_manager
             .finalize_one_sided_transaction(signed_transaction)
             .await?;
+        let displayed_transaction = sent.displayed_transaction;
 
         // Store as pending transaction for later matching with scanned transactions
         Self::store_pending_transaction(&displayed_transaction).await;
@@ -291,10 +302,13 @@ impl MinotariWalletManager {
             .await;
 
         // Emit to frontend immediately so user sees the pending transaction
-        EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction.clone()]).await;
+        EventsEmitter::emit_wallet_transactions_found(vec![displayed_transaction]).await;
 
         info!("One-sided transaction sent successfully.");
-        Ok(displayed_transaction)
+        Ok(SendReceipt {
+            accepted_by_node: sent.accepted_by_node,
+            node_reason: sent.node_reason,
+        })
     }
 
     /// Burn `amount` µT so it can be claimed on L2 by `claim_public_key`.
@@ -1423,8 +1437,8 @@ fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
 #[cfg(test)]
 mod tests {
     use super::{
-        blocks_to_report, burn_times, max_sendable, move_legacy_burn_proofs, pending_burns,
-        pending_burns_guard, record_burn_broadcast, scan_progress_percent,
+        SendReceipt, blocks_to_report, burn_times, max_sendable, move_legacy_burn_proofs,
+        pending_burns, pending_burns_guard, record_burn_broadcast, scan_progress_percent,
     };
     use crate::wallet::minotari_wallet::transaction::{CONFIRMATION_WINDOW, SEND_FEE_PER_GRAM};
     use minotari_wallet::db::{
@@ -1432,14 +1446,16 @@ mod tests {
         insert_unconfirmed_change_output, mark_completed_transaction_as_rejected_in_block,
     };
     use minotari_wallet::transactions::{
-        input_selector::UtxoSelectionError, manager::TransactionSender,
+        burn::{BurnTxParams, create_burn_tx},
+        input_selector::UtxoSelectionError,
+        manager::{TransactionSender, record_first_broadcast},
         one_sided_transaction::Recipient,
     };
     use r2d2_sqlite::rusqlite::named_params;
     use std::collections::HashSet;
     use tari_common::configuration::Network;
     use tari_common_types::seeds::cipher_seed::CipherSeed;
-    use tari_common_types::types::{FixedHash, PrivateKey};
+    use tari_common_types::types::{CompressedPublicKey, FixedHash, PrivateKey};
     use tari_transaction_components::key_manager::wallet_types::{SeedWordsWallet, WalletType};
     use tari_transaction_components::rpc::models::{
         TxSubmissionRejectionReason, TxSubmissionResponse,
@@ -1759,6 +1775,13 @@ mod tests {
             ),
             "got: {err}"
         );
+        // `CHANGE_NOT_AFFORDABLE_RE` in src/components/transactions/send/types.ts.
+        assert!(
+            err.to_string()
+                .to_lowercase()
+                .contains("not enough funds for a change output"),
+            "{err}"
+        );
 
         let prepared = prepare_send(&pool, max).expect("the max amount sends");
         let inputs: u64 = prepared
@@ -1769,6 +1792,73 @@ mod tests {
             .sum();
         let change = inputs - max - prepared.info.fee.as_u64();
         assert!(change > 0, "the send carries change");
+    }
+
+    #[test]
+    fn a_burn_without_room_for_change_reads_as_the_change_error() {
+        let value = 1_000_000;
+        let (pool, _account_id, _dir) = funded_wallet(&[value]);
+        let mut conn = pool.get().expect("connection");
+        let account = get_account_by_name(&conn, "test")
+            .expect("account")
+            .expect("account exists");
+        let claim_key = CompressedPublicKey::from_secret_key(&PrivateKey::from(7u64));
+
+        // Walk down from the whole balance until the burn covers its fee; that first
+        // amount leaves no room for change.
+        let mut amount = value - 1;
+        let error = loop {
+            let params = BurnTxParams {
+                account_id: account.id,
+                amount: MicroMinotari::from(amount),
+                claim_public_key: Some(claim_key.clone()),
+                sidechain_deployment_key: None,
+                fee_per_gram: MicroMinotari::from(SEND_FEE_PER_GRAM),
+                payment_id: None,
+                idempotency_key: Some(uuid::Uuid::new_v4().to_string()),
+                seconds_to_lock: 300,
+                confirmation_window: CONFIRMATION_WINDOW,
+            };
+            let Err(err) = create_burn_tx(&account, &mut conn, Network::LocalNet, PASSWORD, params)
+            else {
+                panic!("a burn of {amount} built without room for change");
+            };
+            match err.downcast_ref::<UtxoSelectionError>() {
+                Some(UtxoSelectionError::InsufficientFunds { .. }) => amount -= 100,
+                _ => break err,
+            }
+        };
+        // `burn_to_l2` shows this as "Failed to build burn transaction: {e}";
+        // `CHANGE_NOT_AFFORDABLE_RE` in src/components/transactions/send/types.ts.
+        assert!(
+            error
+                .to_string()
+                .to_lowercase()
+                .contains("not enough funds for a change output"),
+            "{error}"
+        );
+    }
+
+    #[test]
+    fn a_send_the_node_refused_reaches_the_ui_as_not_accepted() {
+        let refused = TxSubmissionResponse {
+            accepted: false,
+            rejection_reason: TxSubmissionRejectionReason::Orphan,
+            is_synced: true,
+            details: None,
+        };
+        let first = record_first_broadcast(None, 3u64.into(), Ok(refused));
+        let receipt = SendReceipt {
+            accepted_by_node: first.accepted_by_node,
+            node_reason: first.node_reason,
+        };
+        // The field names SendModal reads.
+        let json = serde_json::to_value(&receipt).expect("json");
+        assert_eq!(json["accepted_by_node"], serde_json::json!(false));
+        assert!(
+            json["node_reason"].as_str().is_some_and(|r| !r.is_empty()),
+            "{json}"
+        );
     }
 
     #[test]

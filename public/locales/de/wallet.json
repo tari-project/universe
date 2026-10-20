@@ -65,6 +65,7 @@
     "error-message": "Fehler beim Senden der Transaktion: ",
     "error-change-not-affordable": "Es bleibt nicht genug übrig, um die Gebühr zu zahlen und das Wechselgeld zu behalten, das jede Transaktion braucht. Versuche einen kleineren Betrag oder tippe auf Max.",
     "error-max-unavailable": "Der Höchstbetrag konnte nicht ermittelt werden. Versuche es gleich noch einmal.",
+    "not-accepted-yet": "Deine Transaktion ist gespeichert, aber das Netzwerk hat sie noch nicht angenommen. Die Wallet sendet sie automatisch erneut, also sende sie nicht noch einmal.",
     "estimated-completion-time": "Geschätzte Fertigstellungszeit",
     "field-address": "Adresse",
     "field-amount": "Betrag",

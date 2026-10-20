@@ -65,6 +65,7 @@
     "error-message": "Błąd wysyłania transakcji: ",
     "error-change-not-affordable": "Nie zostaje wystarczająco dużo, by zapłacić opłatę i zachować resztę, której wymaga każda transakcja. Spróbuj mniejszej kwoty lub naciśnij Maks.",
     "error-max-unavailable": "Nie udało się obliczyć maksymalnej kwoty. Spróbuj ponownie za chwilę.",
+    "not-accepted-yet": "Transakcja została zapisana, ale sieć jeszcze jej nie przyjęła. Portfel będzie ją automatycznie wysyłać ponownie, więc nie wysyłaj jej drugi raz.",
     "estimated-completion-time": "Szacowany czas zakończenia",
     "field-address": "adres",
     "field-amount": "kwota",

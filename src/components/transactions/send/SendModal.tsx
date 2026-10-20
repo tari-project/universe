@@ -24,6 +24,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const { t } = useTranslation('wallet');
     const [status, setStatus] = useState<SendStatus>('fields');
     const [isBack, setIsBack] = useState(false);
+    const [notAcceptedYet, setNotAcceptedYet] = useState(false);
     // Without a PIN the backend's confirmation dialog is the review step.
     const hasReviewStep = useWalletStore((s) => s.is_pin_locked);
 
@@ -37,6 +38,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     const resetForm = () => {
         reset();
         setIsBack(false);
+        setNotAcceptedYet(false);
         setStatus('fields');
     };
 
@@ -76,10 +78,11 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                     destination: data.address,
                     paymentId: data.message,
                 };
-                await invoke('send_one_sided_to_stealth_address', {
+                const receipt = await invoke('send_one_sided_to_stealth_address', {
                     ...payload,
                     amount: payload.amount.toString(),
                 });
+                setNotAcceptedYet(receipt?.accepted_by_node === false);
                 await queryClient.invalidateQueries({ queryKey: ['transactions'] });
                 setStatus('completed');
             } catch (error) {
@@ -130,6 +133,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 message={methods.getValues().message}
                 networkFee={0.06}
                 feePercentage={0.02}
+                notAcceptedYet={notAcceptedYet}
                 handleClose={handleClose}
             />
         );

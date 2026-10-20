@@ -19,6 +19,8 @@ interface Props {
     message?: string;
     networkFee?: number;
     feePercentage?: number;
+    /** The send is recorded but the node hasn't accepted it yet; it is retried automatically. */
+    notAcceptedYet?: boolean;
     handleClose: () => void;
 }
 
@@ -30,6 +32,7 @@ export function SendReview({
     message,
     //networkFee,
     //feePercentage,
+    notAcceptedYet,
     handleClose,
 }: Props) {
     const { t } = useTranslation('wallet');
@@ -100,6 +103,13 @@ export function SendReview({
                                 <strong>{`${formattedAmount} XTM`}</strong> {t('send.completed-amount-sent')}{' '}
                                 <strong>{formattedAddress}</strong>
                                 {`.`}
+                                {notAcceptedYet && (
+                                    <>
+                                        <br />
+                                        <br />
+                                        <span data-testid="send-not-accepted">{t('send.not-accepted-yet')}</span>
+                                    </>
+                                )}
                             </>
                         </StatusHero>
                     )}

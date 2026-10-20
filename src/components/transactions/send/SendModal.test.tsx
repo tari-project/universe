@@ -67,6 +67,42 @@ describe('SendModal', () => {
         await waitFor(() => expect(sendCalls()).toHaveLength(1));
     });
 
+    it('tells the user when the node has not accepted the send yet', async () => {
+        useWalletStore.setState({ is_pin_locked: false });
+        const invokeMock = vi.mocked(invoke) as unknown as Mock<(command: string) => Promise<unknown>>;
+        invokeMock.mockImplementation(async (command) => {
+            if (command === 'send_one_sided_to_stealth_address') {
+                return { accepted_by_node: false, node_reason: 'Transaction not accepted: Orphan' };
+            }
+            return [];
+        });
+        render(<SendModal section="send" setSection={vi.fn()} />);
+
+        fireEvent.click(await screen.findByTestId('send-review-button'));
+
+        expect(await screen.findByText('send.completed-title')).toBeInTheDocument();
+        expect(screen.getByTestId('send-not-accepted')).toHaveTextContent('send.not-accepted-yet');
+        invokeMock.mockResolvedValue([]);
+    });
+
+    it('shows no notice when the node accepted the send', async () => {
+        useWalletStore.setState({ is_pin_locked: false });
+        const invokeMock = vi.mocked(invoke) as unknown as Mock<(command: string) => Promise<unknown>>;
+        invokeMock.mockImplementation(async (command) => {
+            if (command === 'send_one_sided_to_stealth_address') {
+                return { accepted_by_node: true, node_reason: null };
+            }
+            return [];
+        });
+        render(<SendModal section="send" setSection={vi.fn()} />);
+
+        fireEvent.click(await screen.findByTestId('send-review-button'));
+
+        expect(await screen.findByText('send.completed-title')).toBeInTheDocument();
+        expect(screen.queryByTestId('send-not-accepted')).not.toBeInTheDocument();
+        invokeMock.mockResolvedValue([]);
+    });
+
     it('explains a send that leaves no room for its change output', async () => {
         useWalletStore.setState({ is_pin_locked: false });
         const invokeMock = vi.mocked(invoke) as unknown as Mock<(command: string) => Promise<unknown>>;
