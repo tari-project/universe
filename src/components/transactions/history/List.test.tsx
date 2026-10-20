@@ -91,6 +91,30 @@ describe('transaction history empty state', () => {
         invokeMock().mockResolvedValue([]);
     });
 
+    it('looks for stalled transactions only when the pending ones change, and not while scanning', async () => {
+        const stalledCalls = () => invokeMock().mock.calls.filter(([cmd]) => cmd === 'get_stalled_transactions');
+        wallet.wallet_scanning.is_initial_scan_complete = false;
+        wallet.wallet_transactions = [{ id: 12, source: 'Transfer', status: 'pending' }];
+        const { rerender } = render(list());
+        expect(stalledCalls()).toHaveLength(0);
+
+        wallet.wallet_scanning.is_initial_scan_complete = true;
+        rerender(list());
+        await vi.waitFor(() => expect(stalledCalls()).toHaveLength(1));
+
+        // A scan batch replaces the array; the pending ones stay the same.
+        wallet.wallet_transactions = [
+            { id: 12, source: 'Transfer', status: 'pending' },
+            { id: 13, source: 'Coinbase', status: 'confirmed' },
+        ];
+        rerender(list());
+        expect(stalledCalls()).toHaveLength(1);
+
+        wallet.wallet_transactions = [{ id: 12, source: 'Transfer', status: 'rejected' }];
+        rerender(list());
+        await vi.waitFor(() => expect(stalledCalls()).toHaveLength(2));
+    });
+
     it('hides the empty state when transactions exist', () => {
         wallet.wallet_transactions = [{ id: 'tx-1', source: 'Received' }];
         render(list());

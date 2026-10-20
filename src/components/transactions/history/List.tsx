@@ -8,7 +8,7 @@ import { useWalletStore } from '@app/store';
 
 import { EmptyText, ListItemWrapper, ListMask, ListWrapper } from './List.styles.ts';
 import { handleWalletTransactionsFound, setSelectedTransactionId } from '@app/store/actions/walletStoreActions.ts';
-import { DisplayedTransaction, TransactionSource } from '@app/types/app-status.ts';
+import { DisplayedTransaction, TransactionDisplayStatus, TransactionSource } from '@app/types/app-status.ts';
 import { HistoryListItem } from './transactionHistoryItem/HistoryItem.tsx';
 import { PlaceholderItem } from './transactionHistoryItem/HistoryItem.styles.ts';
 import { useStalledTransactions } from '@app/hooks/wallet/useStalledTransactions.ts';
@@ -24,8 +24,17 @@ export function List({ setIsScrolled, scrolled = false }: ListProps) {
     const transactionsFilter = useWalletStore((s) => s.transaction_history_filter);
     const walletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);
     const walletImporting = useWalletStore((s) => s.is_wallet_importing);
-    // Looked up again whenever the history changes, e.g. after an abandon.
-    const stalled = useStalledTransactions(walletTransactionsAll);
+    // Only a pending send can stall, so look again when the pending ones change (a send
+    // made, mined or abandoned), not on every scan batch. Not during the initial scan.
+    const pendingIds = useMemo(
+        () =>
+            (walletTransactionsAll ?? [])
+                .filter((tx) => tx.status === TransactionDisplayStatus.Pending)
+                .map((tx) => tx.id)
+                .join(','),
+        [walletTransactionsAll]
+    );
+    const stalled = useStalledTransactions(pendingIds, !walletScanning);
     const stalledIds = useMemo(() => new Set(stalled.map((s) => Number(s.tx_id))), [stalled]);
 
     // Track seen transaction IDs to show "new" indicator for new transactions

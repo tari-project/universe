@@ -47,7 +47,13 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
     const [burns, setBurns] = useState<L2Burn[]>([]);
     const [claiming, setClaiming] = useState<string | null>(null);
     const [abandonId, setAbandonId] = useState<string | null>(null);
-    const stalled = useStalledTransactions(account);
+    // Only an unmined burn can stall: look again when those change.
+    const stalled = useStalledTransactions(
+        burns
+            .filter((b) => b.status === 'pending')
+            .map((b) => b.commitment)
+            .join(',')
+    );
 
     // Every L2 state update hands us a new account, including the one sent when a claim
     // is accepted and its burn moves to claimed, so the list follows the state.

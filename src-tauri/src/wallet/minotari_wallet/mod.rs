@@ -84,9 +84,8 @@ use minotari_wallet::{
     TransactionHistoryService,
     db::{
         AccountBalance, AccountRow, CompletedTransactionStatus, DbBurnProof, fetch_unspent_outputs,
-        get_account_by_name, get_completed_transactions_by_status,
-        get_displayed_transactions_by_account, get_latest_scanned_tip_block_by_account,
-        get_pending_burn_proofs,
+        get_account_by_name, get_completed_transactions_by_status, get_displayed_transaction_by_id,
+        get_latest_scanned_tip_block_by_account, get_pending_burn_proofs,
     },
     get_balance,
     http::WalletHttpClient,
@@ -382,6 +381,12 @@ impl MinotariWalletManager {
         };
         drop(signing_wallet);
 
+        // Everything that can fail happens before the burn is recorded: once
+        // `persist_burn_records` commits, the monitor broadcasts it, so an error after
+        // that would invite the user to burn again.
+        let proofs_dir = Self::burn_proofs_dir()?;
+        let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
+
         let idempotency_key = uuid::Uuid::new_v4().to_string();
         let params = BurnTxParams {
             account_id: account.id,
@@ -405,7 +410,7 @@ impl MinotariWalletManager {
         // Proof first, broadcast second: a burn whose proof is lost is money gone for good.
         persist_burn_records(&mut conn, &result, account.id, &idempotency_key)?;
 
-        let proof_file = Self::burn_proofs_dir()?.join(format!(
+        let proof_file = proofs_dir.join(format!(
             "{}-{}.json",
             result.new_burn_proof.claim_public_key,
             hex::encode(&result.new_burn_proof.commitment)
@@ -417,7 +422,6 @@ impl MinotariWalletManager {
             ..
         } = result;
 
-        let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
         let submitted = client.submit_transaction(transaction).await;
         let accepted_by_node = record_burn_broadcast(&conn, tx_id, submitted);
         drop(conn);
@@ -1405,33 +1409,38 @@ fn stalled_transactions(
     conn: &Connection,
     account_id: i64,
 ) -> Result<Vec<StalledTransaction>, anyhow::Error> {
-    let burns = get_pending_burn_proofs(conn)?;
-    let displayed = get_displayed_transactions_by_account(conn, account_id)?;
-    let mut stalled = Vec::new();
+    let mut stalled_txs = Vec::new();
     for status in [
         CompletedTransactionStatus::Completed,
         CompletedTransactionStatus::Broadcast,
     ] {
         for tx in get_completed_transactions_by_status(conn, account_id, status)? {
-            if tx.broadcast_attempts < MAX_BROADCAST_ATTEMPTS {
-                continue;
+            if tx.broadcast_attempts >= MAX_BROADCAST_ATTEMPTS {
+                stalled_txs.push(tx);
             }
-            let burn = burns.iter().find(|b| {
-                tx.sent_output_hash.as_deref() == Some(hex::encode(b.output_hash).as_str())
-            });
-            let amount = match burn {
-                Some(b) => u64::try_from(b.value).unwrap_or_default(),
-                None => displayed
-                    .iter()
-                    .find(|d| d.id == tx.id)
-                    .map_or(0, |d| d.amount.as_u64()),
-            };
-            stalled.push(StalledTransaction {
-                tx_id: tx.id.to_string(),
-                amount,
-                burn_commitment: burn.map(|b| hex::encode(&b.commitment)),
-            });
         }
+    }
+    // Usually nothing is stalled: then nothing more is read.
+    if stalled_txs.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let burns = get_pending_burn_proofs(conn)?;
+    let mut stalled = Vec::new();
+    for tx in stalled_txs {
+        let burn = burns
+            .iter()
+            .find(|b| tx.sent_output_hash.as_deref() == Some(hex::encode(b.output_hash).as_str()));
+        let amount = match burn {
+            Some(b) => u64::try_from(b.value).unwrap_or_default(),
+            None => get_displayed_transaction_by_id(conn, &tx.id.to_string())?
+                .map_or(0, |d| d.amount.as_u64()),
+        };
+        stalled.push(StalledTransaction {
+            tx_id: tx.id.to_string(),
+            amount,
+            burn_commitment: burn.map(|b| hex::encode(&b.commitment)),
+        });
     }
     Ok(stalled)
 }

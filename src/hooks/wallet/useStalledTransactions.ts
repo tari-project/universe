@@ -6,7 +6,8 @@ import type { StalledTransaction } from '@app/types/app-status.ts';
 const REFRESH_MS = 60_000;
 
 /** The sends and burns the network keeps refusing. Fetched once per list, again whenever
- * `refreshKey` changes, and every minute while `enabled`. */
+ * `refreshKey` changes (keep it to something that changes rarely), and every minute while
+ * `enabled`. */
 export function useStalledTransactions(refreshKey: unknown, enabled = true): StalledTransaction[] {
     const [stalled, setStalled] = useState<StalledTransaction[]>([]);
 
