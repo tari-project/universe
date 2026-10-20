@@ -40,6 +40,20 @@ describe('AbandonStalled', () => {
         invokeMock.mockResolvedValue([]);
     });
 
+    it('never offers to abandon a burn without change', async () => {
+        const invokeMock = mockInvoke(async () => {
+            throw '[abandon_no_change_output] Abandon failed: no change output';
+        });
+        render(<AbandonStalled stalledId="12" isBurn />);
+
+        fireEvent.click(await screen.findByTestId('tx-details-abandon'));
+        fireEvent.click(screen.getByTestId('tx-details-abandon-confirm'));
+
+        expect(await screen.findByText('abandon.error-burn-unreconcilable')).toBeInTheDocument();
+        expect(screen.queryByTestId('tx-details-abandon-anyway')).not.toBeInTheDocument();
+        invokeMock.mockResolvedValue([]);
+    });
+
     it('asks again before abandoning a transaction without change', async () => {
         const abandon = vi.fn(async (args: unknown) => {
             if (!(args as { acceptUnreconcilable: boolean }).acceptUnreconcilable) {

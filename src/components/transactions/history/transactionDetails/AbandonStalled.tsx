@@ -14,6 +14,7 @@ const ABANDON_ERROR_KEYS: Record<string, string> = {
     abandon_input_spent: 'abandon.error-input-spent',
     abandon_change_in_use: 'abandon.error-change-in-use',
     abandon_change_already_mined: 'abandon.error-change-already-mined',
+    abandon_burn_unreconcilable: 'abandon.error-burn-unreconcilable',
 };
 
 type Step = 'idle' | 'confirm' | 'confirm-unreconcilable' | 'done';
@@ -38,7 +39,12 @@ export function AbandonStalled({ stalledId, isBurn = false }: Props) {
         } catch (e) {
             const code = commandErrorCode(e);
             if (code === 'abandon_no_change_output') {
-                setStep('confirm-unreconcilable');
+                // A burn is never abandoned without a change output: the wallet couldn't tell it landing.
+                if (isBurn) {
+                    setError(t('abandon.error-burn-unreconcilable'));
+                } else {
+                    setStep('confirm-unreconcilable');
+                }
                 return;
             }
             const key = (code && ABANDON_ERROR_KEYS[code]) || sendErrorKey(e);

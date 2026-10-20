@@ -196,7 +196,8 @@
     "error-change-in-use": "Die kleingeld word deur 'n ander transaksie gebruik. Laat daardie een eers vaar of handel dit af.",
     "error-change-already-mined": "Dit lyk asof dit gemyn is. Wag vir die beursie om dit af te handel.",
     "chip": "Vasgeval",
-    "burn-note": "Die verbranding word laat vaar en die fondse word vrygestel. As 'n nodus dit nog hou, kan dit steeds gemyn word, so moenie die beursie terugstel of weer invoer voordat dit afgehandel is nie: die beursie hou die enigste bewys wat nodig is om dit te eis. 'n Transaksie wat intussen met die vrygestelde fondse gemaak is, kan misluk."
+    "burn-note": "Die verbranding word laat vaar en die fondse word vrygestel. As 'n nodus dit nog hou, kan dit steeds gemyn word, so moenie die beursie terugstel of weer invoer voordat dit afgehandel is nie: die beursie hou die enigste bewys wat nodig is om dit te eis. 'n Transaksie wat intussen met die vrygestelde fondse gemaak is, kan misluk.",
+    "error-burn-unreconcilable": "Hierdie verbranding het geen kleingeld-uitset nie, so dit kan nie veilig laat vaar word nie: as dit gemyn word, sou die beursie dit nie kon agterkom nie. Dit bly hangend totdat dit afgehandel is."
   },
   "burn": {
     "unavailable": "Verbrandings na Laag 2 is tydelik nie in hierdie weergawe beskikbaar nie."

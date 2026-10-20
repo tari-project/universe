@@ -64,7 +64,7 @@ use crate::mcp::rate_limiter::TransactionRateLimiter;
 use crate::ootle::OotleWalletManager;
 use crate::pin::{PinCancelled, PinManager};
 use crate::wallet::minotari_wallet::{
-    BURNS_ENABLED, BurnReceipt, MinotariWalletManager, SendReceipt,
+    BURNS_ENABLED, BurnReceipt, MinotariWalletManager, SendReceipt, StalledTransaction,
 };
 
 const DIALOG_TIMEOUT_SECS: u64 = 120;
@@ -518,6 +518,7 @@ pub async fn gated_abandon(
             message: format!("Transaction {tx_id} is not stalled"),
         });
     };
+    check_abandon(entry, accept_unreconcilable)?;
     let amount_u64 = entry.amount;
     let is_burn = entry.burn_commitment.is_some();
     let amount = format!("{}.{:06}", amount_u64 / 1_000_000, amount_u64 % 1_000_000);
@@ -551,6 +552,24 @@ pub async fn gated_abandon(
     )
     .await
     .map_err(|e| wallet_failure("Abandon failed", e))
+}
+
+/// A burn is never abandoned without a change output: once it landed, the scan couldn't
+/// tell that from its inputs going elsewhere, and the wallet would drop its only proof.
+fn check_abandon(
+    entry: &StalledTransaction,
+    accept_unreconcilable: bool,
+) -> Result<(), TransactionError> {
+    if accept_unreconcilable && entry.burn_commitment.is_some() {
+        return Err(TransactionError::AbandonRefused {
+            code: "abandon_burn_unreconcilable",
+            message: format!(
+                "Burn {} has no change output, so it can't be abandoned safely",
+                entry.tx_id
+            ),
+        });
+    }
+    Ok(())
 }
 
 /// Send XTR on L2 behind the same gates as [`gated_send`]. Refused without a PIN or off
@@ -809,6 +828,24 @@ mod tests {
     // =========================================================================
     // Error codes
     // =========================================================================
+
+    #[test]
+    fn a_burn_is_never_abandoned_without_a_change_output() {
+        let burn = StalledTransaction {
+            tx_id: "12".to_string(),
+            amount: 1,
+            burn_commitment: Some("ab".repeat(32)),
+        };
+        let error = check_abandon(&burn, true).expect_err("refused");
+        assert_eq!(error.code(), "abandon_burn_unreconcilable");
+        assert!(check_abandon(&burn, false).is_ok());
+
+        let send = StalledTransaction {
+            burn_commitment: None,
+            ..burn
+        };
+        assert!(check_abandon(&send, true).is_ok());
+    }
 
     #[tokio::test]
     async fn a_burn_is_refused_while_burns_are_off() {

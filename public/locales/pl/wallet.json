@@ -196,7 +196,8 @@
     "error-change-in-use": "Jej reszta jest używana przez inną transakcję. Najpierw porzuć lub rozlicz tamtą.",
     "error-change-already-mined": "Wygląda na to, że została wykopana. Poczekaj, aż portfel ją rozliczy.",
     "chip": "Utknęła",
-    "burn-note": "Spalenie zostaje porzucone, a jego środki zwolnione. Jeśli węzeł wciąż je przechowuje, nadal może zostać wykopane, więc nie resetuj ani nie importuj ponownie portfela, dopóki się nie rozliczy: portfel przechowuje jedyny dowód potrzebny do odebrania. Transakcja wykonana w międzyczasie ze zwolnionych środków może się nie powieść."
+    "burn-note": "Spalenie zostaje porzucone, a jego środki zwolnione. Jeśli węzeł wciąż je przechowuje, nadal może zostać wykopane, więc nie resetuj ani nie importuj ponownie portfela, dopóki się nie rozliczy: portfel przechowuje jedyny dowód potrzebny do odebrania. Transakcja wykonana w międzyczasie ze zwolnionych środków może się nie powieść.",
+    "error-burn-unreconcilable": "To spalenie nie ma wyjścia reszty, więc nie można go bezpiecznie porzucić: gdyby zostało wykopane, portfel by tego nie rozpoznał. Pozostaje oczekujące, dopóki się nie rozliczy."
   },
   "burn": {
     "unavailable": "Spalanie na warstwę 2 jest tymczasowo niedostępne w tej wersji."

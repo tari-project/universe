@@ -359,6 +359,7 @@
     "error-change-in-use": "Its change is used by another transaction. Abandon or settle that one first.",
     "error-change-already-mined": "It appears to have been mined. Wait for the wallet to settle it.",
     "chip": "Stalled",
-    "burn-note": "The burn is abandoned and its funds are released. If a node still holds it, it can still be mined, so don't reset or re-import the wallet until it settles: the wallet keeps the only proof needed to claim it. A transaction made with the released funds in the meantime may fail."
+    "burn-note": "The burn is abandoned and its funds are released. If a node still holds it, it can still be mined, so don't reset or re-import the wallet until it settles: the wallet keeps the only proof needed to claim it. A transaction made with the released funds in the meantime may fail.",
+    "error-burn-unreconcilable": "This burn has no change output, so it can't be abandoned safely: if it landed, the wallet couldn't tell. It stays pending until it settles."
   }
 }

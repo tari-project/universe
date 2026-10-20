@@ -88,7 +88,8 @@ use minotari_wallet::{
     TransactionHistoryService,
     db::{
         AccountBalance, AccountRow, CompletedTransactionStatus, DbBurnProof, fetch_unspent_outputs,
-        get_account_by_name, get_completed_transactions_by_status, get_displayed_transaction_by_id,
+        get_account_by_name, get_change_output_hash_for_request,
+        get_completed_transactions_by_status, get_displayed_transaction_by_id,
         get_latest_scanned_tip_block_by_account, get_output_spend, get_pending_burn_proofs,
     },
     get_balance,
@@ -1525,11 +1526,13 @@ fn record_burn_broadcast(
 /// Pending burn proofs, less those whose transaction can never be mined: one the scan
 /// rejected because its inputs were spent elsewhere, and one the user abandoned whose
 /// inputs the scan has since seen spent (by another transaction: the burn itself would
-/// have been marked mined). An abandoned burn with unspent inputs still counts: a node
-/// may still mine it, and this database holds its only proof row.
+/// have been marked mined by its change row). An abandoned burn with unspent inputs, or
+/// with no change row, still counts: a node may still mine it, and this database holds
+/// its only proof row.
 fn pending_burns(conn: &Connection) -> Result<Vec<DbBurnProof>, anyhow::Error> {
     let mut stmt = conn.prepare(
-        "SELECT b.id, c.account_id, c.last_rejected_reason, c.serialized_transaction
+        "SELECT b.id, c.account_id, c.pending_tx_id, c.last_rejected_reason,
+                c.serialized_transaction
            FROM burn_proofs b JOIN completed_transactions c
              ON c.sent_output_hash = lower(hex(b.output_hash))
           WHERE c.status = 'rejected'",
@@ -1538,16 +1541,24 @@ fn pending_burns(conn: &Connection) -> Result<Vec<DbBurnProof>, anyhow::Error> {
         Ok((
             row.get::<_, i64>(0)?,
             row.get::<_, i64>(1)?,
-            row.get::<_, Option<String>>(2)?,
-            row.get::<_, Vec<u8>>(3)?,
+            row.get::<_, String>(2)?,
+            row.get::<_, Option<String>>(3)?,
+            row.get::<_, Vec<u8>>(4)?,
         ))
     })?;
     let mut dead = HashSet::new();
     for row in rows {
-        let (id, account_id, reason, serialized_transaction) = row?;
-        if reason.as_deref() != Some(ABANDONED_REASON)
-            || any_input_spent(conn, account_id, &serialized_transaction)?
-        {
+        let (id, account_id, pending_tx_id, reason, serialized_transaction) = row?;
+        let dead_burn = match reason.as_deref() {
+            // Without a change row (a burn from before this version) the scan can't
+            // tell it landing from its inputs going elsewhere, so it stays guarded.
+            Some(ABANDONED_REASON) => {
+                get_change_output_hash_for_request(conn, &pending_tx_id)?.is_some()
+                    && any_input_spent(conn, account_id, &serialized_transaction)?
+            }
+            _ => true,
+        };
+        if dead_burn {
             dead.insert(id);
         }
     }
@@ -1967,6 +1978,31 @@ mod tests {
         update_output_status(&conn, output_id, OutputStatus::Spent).expect("spent");
         assert!(pending_burns(&conn).expect("pending burns").is_empty());
         assert!(pending_burns_guard(&path).is_ok());
+    }
+
+    #[test]
+    fn an_abandoned_burn_without_a_change_row_stays_guarded_once_its_input_is_spent() {
+        let (pool, account_id, dir) = recorded_burn(MAX_BROADCAST_ATTEMPTS);
+        let path = dir.path().join("wallet.db");
+        let mut conn = pool.get().expect("connection");
+        // A burn made before this version: no change row.
+        conn.execute("DELETE FROM outputs WHERE created_by_request_id = 'p'", [])
+            .expect("no change row");
+        abandon_stalled(&mut conn, account_id, "12", true).expect("abandoned");
+
+        // Its input recorded spent: it may be the burn itself that landed.
+        let output_id: i64 = conn
+            .query_row(
+                "SELECT id FROM outputs WHERE output_hash = ?1",
+                [[1u8; 32].as_slice()],
+                |r| r.get(0),
+            )
+            .expect("output");
+        insert_input(&conn, account_id, output_id, 150, &[5u8; 32], 1_700_000_000).expect("input");
+        update_output_status(&conn, output_id, OutputStatus::Spent).expect("spent");
+
+        assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
+        assert!(pending_burns_guard(&path).is_err());
     }
 
     #[test]
