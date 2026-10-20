@@ -1717,7 +1717,7 @@ pub async fn abandon_stalled_transaction(
     tx_id: String,
     accept_unreconcilable: bool,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "[abandon_stalled_transaction] called with args: (tx_id: {tx_id}, accept_unreconcilable: {accept_unreconcilable})");
+    info!(target: LOG_TARGET_APP_LOGIC, "[abandon_stalled_transaction] called with args: (tx_id: {tx_id:?}, accept_unreconcilable: {accept_unreconcilable})");
     gated_abandon(
         SendOrigin::App.new_request_id(),
         tx_id,

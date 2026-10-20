@@ -44,6 +44,10 @@ import L2SendModal from './L2SendModal.tsx';
 
 const FILTER_TYPES = ['all-activity', 'transactions', 'l2.filter.waiting-claims'] as const;
 
+// Burns to L2 are off in this build (as BURNS_ENABLED in the backend's minotari wallet
+// module): the L2 claim code can't read the new burn proofs yet.
+const BURNS_ENABLED = false;
+
 export default function L2Wallet({ account }: { account: L2Account }) {
     const { t } = useTranslation('wallet');
     const [section, setSection] = useState('history');
@@ -53,6 +57,7 @@ export default function L2Wallet({ account }: { account: L2Account }) {
     // A burn spends L1 funds, so it waits on the L1 wallet like the L1 send does.
     const isL1Scanning = useWalletStore((s) => !s.wallet_scanning.is_initial_scan_complete);
     const hasPin = useWalletStore((s) => s.is_pin_locked);
+    const burnHint = !BURNS_ENABLED ? t('burn.unavailable') : hasPin ? undefined : t('burn.pin-required');
 
     const { revealed, confidential } = account.balance;
     const xtr = (value: number) => (hideBalance ? '*******' : formatNumber(value, FormatPreset.XTM_LONG));
@@ -113,13 +118,13 @@ export default function L2Wallet({ account }: { account: L2Account }) {
                         {t('tabs.receive')}
                     </NavButton>
                     {/* The disabled button ignores the pointer, so the hint sits on a wrapper. */}
-                    <BurnHint title={hasPin ? undefined : t('burn.pin-required')}>
+                    <BurnHint title={burnHint}>
                         <NavButton
                             $isActive={section === 'burn'}
                             aria-selected={section === 'burn'}
                             onClick={() => setSection('burn')}
-                            disabled={isL1Scanning || !hasPin}
-                            aria-label={hasPin ? undefined : t('burn.pin-required')}
+                            disabled={!BURNS_ENABLED || isL1Scanning || !hasPin}
+                            aria-label={burnHint}
                             data-testid="l2-burn-button"
                         >
                             {t('tabs.burn')}

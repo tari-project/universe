@@ -179,10 +179,10 @@
     "or": "lub"
   },
   "abandon": {
-    "stalled": "Sieć wciąż odrzuca tę transakcję. Portfel nadal ją ponawia, a jej środki pozostają zablokowane, dopóki nie zostanie wykopana lub jej nie porzucisz.",
+    "stalled": "Twój węzeł bazowy wciąż odrzuca tę transakcję. Portfel nadal ją ponawia, a jej środki pozostają zablokowane, dopóki nie zostanie wykopana lub jej nie porzucisz. Zanim ją porzucisz, spróbuj ponownie później lub przełącz się na inny węzeł bazowy.",
     "cta": "Porzuć transakcję",
-    "note": "Transakcja zostaje porzucona, a jej środki zwolnione. Jeśli węzeł wciąż ją przechowuje, nadal może zostać wykopana: portfel pokaże ją wtedy jako wykopaną, a transakcja wykonana w międzyczasie ze zwolnionych środków się nie powiedzie.",
-    "unreconcilable-note": "OSTRZEŻENIE: ta transakcja nie ma wyjścia reszty. Jeśli węzeł wciąż ją przechowuje i zostanie wykopana, portfel NIE pokaże jej jako wykopanej: pozostanie porzucona, a jej środki będą widoczne jako wydane, zaś transakcja wykonana w międzyczasie ze zwolnionych środków się nie powiedzie.",
+    "note": "Transakcja zostaje porzucona, a jej środki zwolnione. Jeśli węzeł wciąż ją przechowuje, nadal może zostać wykopana: portfel pokaże ją wtedy jako wykopaną, a transakcja wykonana w międzyczasie ze zwolnionych środków może się nie powieść.",
+    "unreconcilable-note": "OSTRZEŻENIE: ta transakcja nie ma wyjścia reszty. Jeśli węzeł wciąż ją przechowuje i zostanie wykopana, portfel NIE pokaże jej jako wykopanej: pozostanie porzucona, a jej środki będą widoczne jako wydane, zaś transakcja wykonana w międzyczasie ze zwolnionych środków może się nie powieść.",
     "confirm": "Porzuć",
     "confirm-anyway": "Porzuć mimo to",
     "review-label": "Porzucasz",
@@ -191,10 +191,14 @@
     "error-message": "Nie udało się porzucić transakcji: ",
     "error-not-found": "Tej transakcji nie ma w tym portfelu.",
     "error-not-pending": "Tej transakcji nie można już porzucić: została wykopana lub odrzucona.",
-    "error-not-stalled": "Sieć nie odrzuciła jeszcze tej transakcji wystarczająco wiele razy. Spróbuj ponownie później.",
+    "error-not-stalled": "Twój węzeł bazowy nie odrzucił jeszcze tej transakcji wystarczająco wiele razy. Spróbuj ponownie później.",
     "error-input-spent": "Jej środki zostały już wydane w łańcuchu. Portfel rozliczy ją sam.",
     "error-change-in-use": "Jej reszta jest używana przez inną transakcję. Najpierw porzuć lub rozlicz tamtą.",
     "error-change-already-mined": "Wygląda na to, że została wykopana. Poczekaj, aż portfel ją rozliczy.",
-    "chip": "Utknęła"
+    "chip": "Utknęła",
+    "burn-note": "Spalenie zostaje porzucone, a jego środki zwolnione. Jeśli węzeł wciąż je przechowuje, nadal może zostać wykopane, więc nie resetuj ani nie importuj ponownie portfela, dopóki się nie rozliczy: portfel przechowuje jedyny dowód potrzebny do odebrania. Transakcja wykonana w międzyczasie ze zwolnionych środków może się nie powieść."
+  },
+  "burn": {
+    "unavailable": "Spalanie na warstwę 2 jest tymczasowo niedostępne w tej wersji."
   }
 }

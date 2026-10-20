@@ -23,6 +23,8 @@ export interface McpPendingTransaction {
     /** Defaults to `mcp`; `app` means the in-app send command asked for approval. */
     origin?: TransactionOrigin;
     payment_id?: string | null;
+    /** For an abandon: the user accepted that it has no change output to recognise it by. */
+    accept_unreconcilable?: boolean;
 }
 
 export type McpTxStatus = 'reviewing' | 'processing' | 'completed';

@@ -38,6 +38,10 @@ pub struct BurnReceipt {
     pub accepted_by_node: bool,
 }
 
+/// Burns to L2 are off in this build: minotari writes tari_sidechain 6.2 burn proofs
+/// that the pinned ootle claim code can't read yet. Turn back on with that ootle update.
+pub(crate) const BURNS_ENABLED: bool = false;
+
 /// A send or burn the node keeps refusing (stalled), which the user may abandon.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct StalledTransaction {
@@ -93,7 +97,7 @@ use minotari_wallet::{
     tasks::{burn_proof_worker::BurnProofWorker, unlocker::TransactionUnlocker},
     transactions::{
         TransactionSource,
-        abandon::{AbandonedSend, abandon_send},
+        abandon::{ABANDONED_REASON, AbandonedSend, abandon_send},
         burn::{BurnTxParams, BurnTxResult, create_burn_tx, persist_burn_records},
         fee_estimator::estimated_output_size_for_payment_id,
         manager::record_first_broadcast,
@@ -728,7 +732,8 @@ impl MinotariWalletManager {
         if let Err(e) = Self::run_transaction_unlocker().await {
             error!(target: LOG_TARGET, "Failed to start transaction unlocker: {:?}", e);
         }
-        if let Err(e) = Self::run_burn_proof_worker().await {
+        // Off with burns: unfinished burns stay pending, so the delete guard keeps them.
+        if BURNS_ENABLED && let Err(e) = Self::run_burn_proof_worker().await {
             error!(target: LOG_TARGET, "Failed to start burn proof worker: {:?}", e);
         }
 
@@ -1517,15 +1522,18 @@ fn record_burn_broadcast(
     record_first_broadcast(Some(conn), tx_id, submitted).accepted_by_node
 }
 
-/// Pending burn proofs, less those whose transaction the scan rejected (its inputs were
-/// spent elsewhere): a rejected burn is never mined, so it would sit pending forever.
+/// Pending burn proofs, less those whose transaction was rejected because its inputs
+/// were spent elsewhere: that burn can never be mined. A burn the user abandoned still
+/// counts: a node may still mine it, and this database holds its only proof row. If
+/// the scan later sees its inputs spent elsewhere, it rejects it again and it drops out.
 fn pending_burns(conn: &Connection) -> Result<Vec<DbBurnProof>, anyhow::Error> {
     let rejected: HashSet<i64> = conn
         .prepare(
             "SELECT b.id FROM burn_proofs b JOIN completed_transactions c
-               ON c.sent_output_hash = lower(hex(b.output_hash)) WHERE c.status = 'rejected'",
+               ON c.sent_output_hash = lower(hex(b.output_hash))
+             WHERE c.status = 'rejected' AND c.last_rejected_reason IS NOT ?1",
         )?
-        .query_map([], |row| row.get(0))?
+        .query_map([ABANDONED_REASON], |row| row.get(0))?
         .collect::<Result<_, _>>()?;
     Ok(get_pending_burn_proofs(conn)?
         .into_iter()
@@ -1856,7 +1864,7 @@ mod tests {
     }
 
     #[test]
-    fn abandoning_a_stalled_burn_stops_it_blocking_the_wallet_db() {
+    fn an_abandoned_burn_blocks_the_wallet_db_until_the_scan_rejects_it() {
         let (pool, account_id, dir) = recorded_burn(MAX_BROADCAST_ATTEMPTS);
         let path = dir.path().join("wallet.db");
         let mut conn = pool.get().expect("connection");
@@ -1886,6 +1894,19 @@ mod tests {
                 .expect("stalled")
                 .is_empty()
         );
+        // A node may still mine it, and this database holds its only proof row.
+        assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
+        assert!(pending_burns_guard(&path).is_err());
+
+        // The scan sees its released inputs spent by another transaction.
+        mark_completed_transaction_as_rejected_in_block(
+            &conn,
+            12u64.into(),
+            "inputs spent by a different transaction",
+            150,
+            &[5u8; 32],
+        )
+        .expect("rejected by the scan");
         assert!(pending_burns(&conn).expect("pending burns").is_empty());
         assert!(pending_burns_guard(&path).is_ok());
     }

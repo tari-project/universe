@@ -254,7 +254,8 @@
     "completed-text": "Once the burn is mined you can claim it from Burns to claim in your Layer 2 wallet.",
     "error-message": "Error burning funds: ",
     "pin-required": "Set a PIN to burn",
-    "claim-key-default": "The claim key defaults to this wallet's own L2 account."
+    "claim-key-default": "The claim key defaults to this wallet's own L2 account.",
+    "unavailable": "Burns to Layer 2 are temporarily unavailable in this version."
   },
   "l2": {
     "title": "Layer 2",
@@ -341,10 +342,10 @@
     }
   },
   "abandon": {
-    "stalled": "The network keeps refusing this transaction. The wallet still retries it, and its funds stay locked until it is mined or you abandon it.",
+    "stalled": "Your base node keeps refusing this transaction. The wallet keeps retrying it, and its funds stay locked until it is mined or you abandon it. Before abandoning it, try again later or switch to another base node.",
     "cta": "Abandon transaction",
-    "note": "The transaction is abandoned and its funds are released. If a node still holds it, it can still be mined: the wallet will then show it as mined, and a transaction made with the released funds in the meantime will fail.",
-    "unreconcilable-note": "WARNING: this transaction has no change output. If a node still holds it and it is mined, the wallet will NOT show it as mined: it stays abandoned while its funds show as spent, and a transaction made with the released funds in the meantime will fail.",
+    "note": "The transaction is abandoned and its funds are released. If a node still holds it, it can still be mined: the wallet will then show it as mined, and a transaction made with the released funds in the meantime may fail.",
+    "unreconcilable-note": "WARNING: this transaction has no change output. If a node still holds it and it is mined, the wallet will NOT show it as mined: it stays abandoned while its funds show as spent, and a transaction made with the released funds in the meantime may fail.",
     "confirm": "Abandon it",
     "confirm-anyway": "Abandon anyway",
     "review-label": "You are abandoning",
@@ -353,10 +354,11 @@
     "error-message": "Couldn't abandon the transaction: ",
     "error-not-found": "This transaction isn't in this wallet.",
     "error-not-pending": "This transaction can no longer be abandoned: it has been mined or rejected.",
-    "error-not-stalled": "The network hasn't refused this transaction often enough yet. Try again later.",
+    "error-not-stalled": "Your base node hasn't refused this transaction often enough yet. Try again later.",
     "error-input-spent": "Its funds have already been spent on chain. The wallet will settle it on its own.",
     "error-change-in-use": "Its change is used by another transaction. Abandon or settle that one first.",
     "error-change-already-mined": "It appears to have been mined. Wait for the wallet to settle it.",
-    "chip": "Stalled"
+    "chip": "Stalled",
+    "burn-note": "The burn is abandoned and its funds are released. If a node still holds it, it can still be mined, so don't reset or re-import the wallet until it settles: the wallet keeps the only proof needed to claim it. A transaction made with the released funds in the meantime may fail."
   }
 }

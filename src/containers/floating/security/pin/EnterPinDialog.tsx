@@ -123,7 +123,11 @@ export default function EnterPinDialog() {
                             kind="abandon"
                             amountMicroMinotari={abandonContext.amount_micro_minotari}
                             destination={abandonContext.tx_id}
-                            subtitle={t('abandon.note')}
+                            subtitle={
+                                abandonContext.accept_unreconcilable
+                                    ? t('abandon.unreconcilable-note')
+                                    : t('abandon.note')
+                            }
                         />
                     )}
                     <EnterPin onSubmit={handleSubmit} />

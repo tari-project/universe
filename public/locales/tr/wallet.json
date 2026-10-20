@@ -179,10 +179,10 @@
     "or": "veya"
   },
   "abandon": {
-    "stalled": "Ağ bu işlemi reddetmeye devam ediyor. Cüzdan yeniden denemeye devam ediyor ve işlem kazılana ya da siz vazgeçene kadar fonları kilitli kalıyor.",
+    "stalled": "Temel düğümünüz bu işlemi reddetmeye devam ediyor. Cüzdan yeniden denemeye devam ediyor ve işlem kazılana ya da siz vazgeçene kadar fonları kilitli kalıyor. Vazgeçmeden önce daha sonra tekrar deneyin veya başka bir temel düğüme geçin.",
     "cta": "İşlemden vazgeç",
-    "note": "İşlemden vazgeçilir ve fonları serbest bırakılır. Bir düğüm hâlâ işlemi tutuyorsa yine de kazılabilir: cüzdan o zaman işlemi kazılmış olarak gösterir ve bu arada serbest kalan fonlarla yapılan işlem başarısız olur.",
-    "unreconcilable-note": "UYARI: bu işlemin para üstü çıktısı yok. Bir düğüm hâlâ tutuyorsa ve işlem kazılırsa cüzdan onu kazılmış olarak GÖSTERMEZ: işlem vazgeçilmiş olarak kalır, fonları ise harcanmış görünür ve bu arada serbest kalan fonlarla yapılan işlem başarısız olur.",
+    "note": "İşlemden vazgeçilir ve fonları serbest bırakılır. Bir düğüm hâlâ işlemi tutuyorsa yine de kazılabilir: cüzdan o zaman işlemi kazılmış olarak gösterir ve bu arada serbest kalan fonlarla yapılan işlem başarısız olabilir.",
+    "unreconcilable-note": "UYARI: bu işlemin para üstü çıktısı yok. Bir düğüm hâlâ tutuyorsa ve işlem kazılırsa cüzdan onu kazılmış olarak GÖSTERMEZ: işlem vazgeçilmiş olarak kalır, fonları ise harcanmış görünür ve bu arada serbest kalan fonlarla yapılan işlem başarısız olabilir.",
     "confirm": "Vazgeç",
     "confirm-anyway": "Yine de vazgeç",
     "review-label": "Vazgeçiyorsunuz",
@@ -191,10 +191,14 @@
     "error-message": "İşlemden vazgeçilemedi: ",
     "error-not-found": "Bu işlem bu cüzdanda değil.",
     "error-not-pending": "Bu işlemden artık vazgeçilemez: kazıldı ya da reddedildi.",
-    "error-not-stalled": "Ağ bu işlemi henüz yeterince reddetmedi. Daha sonra tekrar deneyin.",
+    "error-not-stalled": "Temel düğümünüz bu işlemi henüz yeterince reddetmedi. Daha sonra tekrar deneyin.",
     "error-input-spent": "Fonları zaten zincirde harcandı. Cüzdan bunu kendisi halledecek.",
     "error-change-in-use": "Para üstü başka bir işlemde kullanılıyor. Önce o işlemden vazgeçin ya da tamamlanmasını bekleyin.",
     "error-change-already-mined": "Kazılmış görünüyor. Cüzdanın tamamlamasını bekleyin.",
-    "chip": "Takıldı"
+    "chip": "Takıldı",
+    "burn-note": "Yakmadan vazgeçilir ve fonları serbest bırakılır. Bir düğüm hâlâ tutuyorsa yine de kazılabilir; bu yüzden sonuçlanana kadar cüzdanı sıfırlamayın veya yeniden içe aktarmayın: talep etmek için gereken tek kanıt cüzdandadır. Bu arada serbest kalan fonlarla yapılan işlem başarısız olabilir."
+  },
+  "burn": {
+    "unavailable": "Katman 2'ye yakma bu sürümde geçici olarak kullanılamıyor."
   }
 }

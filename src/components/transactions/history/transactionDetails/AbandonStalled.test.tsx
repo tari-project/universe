@@ -30,6 +30,16 @@ describe('AbandonStalled', () => {
         invokeMock.mockResolvedValue([]);
     });
 
+    it('warns that an abandoned burn may still land', async () => {
+        const invokeMock = mockInvoke(async () => undefined);
+        render(<AbandonStalled stalledId="12" isBurn />);
+
+        fireEvent.click(await screen.findByTestId('tx-details-abandon'));
+        expect(screen.getByText('abandon.burn-note')).toBeInTheDocument();
+        expect(screen.queryByText('abandon.note')).not.toBeInTheDocument();
+        invokeMock.mockResolvedValue([]);
+    });
+
     it('asks again before abandoning a transaction without change', async () => {
         const abandon = vi.fn(async (args: unknown) => {
             if (!(args as { acceptUnreconcilable: boolean }).acceptUnreconcilable) {

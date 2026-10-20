@@ -63,7 +63,9 @@ use crate::events_emitter::EventsEmitter;
 use crate::mcp::rate_limiter::TransactionRateLimiter;
 use crate::ootle::OotleWalletManager;
 use crate::pin::{PinCancelled, PinManager};
-use crate::wallet::minotari_wallet::{BurnReceipt, MinotariWalletManager, SendReceipt};
+use crate::wallet::minotari_wallet::{
+    BURNS_ENABLED, BurnReceipt, MinotariWalletManager, SendReceipt,
+};
 
 const DIALOG_TIMEOUT_SECS: u64 = 120;
 
@@ -82,6 +84,8 @@ pub enum TransactionError {
     PinCancelled(String),
     /// The funds cover the amount and fee, but not the change output every send keeps.
     ChangeNotAffordable(String),
+    /// Burns to L2 are off in this build.
+    BurnsDisabled(String),
     /// The wallet refused to abandon a send; `code` says why.
     AbandonRefused {
         code: &'static str,
@@ -105,6 +109,7 @@ impl TransactionError {
             TransactionError::InternalError(_) => "internal_error",
             TransactionError::PinCancelled(_) => "pin_cancelled",
             TransactionError::ChangeNotAffordable(_) => "change_not_affordable",
+            TransactionError::BurnsDisabled(_) => "burns_disabled",
             TransactionError::AbandonRefused { code, .. } => code,
         }
     }
@@ -157,6 +162,7 @@ impl fmt::Display for TransactionError {
             | TransactionError::InternalError(msg)
             | TransactionError::PinCancelled(msg)
             | TransactionError::ChangeNotAffordable(msg)
+            | TransactionError::BurnsDisabled(msg)
             | TransactionError::AbandonRefused { message: msg, .. } => write!(f, "{}", msg),
         }
     }
@@ -262,6 +268,8 @@ pub enum SpendKind {
     /// Giving up stalled send or burn `tx_id`, which hands its inputs back.
     Abandon {
         tx_id: String,
+        /// The user accepted that it has no change output to recognise it by.
+        accept_unreconcilable: bool,
     },
 }
 
@@ -285,7 +293,7 @@ impl SpendKind {
             SpendKind::Send { destination } | SpendKind::L2Send { destination, .. } => destination,
             SpendKind::Burn { claim_public_key } => claim_public_key,
             SpendKind::L2Claim { commitment } => commitment,
-            SpendKind::Abandon { tx_id } => tx_id,
+            SpendKind::Abandon { tx_id, .. } => tx_id,
         }
     }
 
@@ -319,9 +327,13 @@ impl SpendKind {
                 commitment: commitment.clone(),
                 fee_micro_minotari: None,
             },
-            SpendKind::Abandon { tx_id } => PinPromptContext::Abandon {
+            SpendKind::Abandon {
+                tx_id,
+                accept_unreconcilable,
+            } => PinPromptContext::Abandon {
                 amount_micro_minotari,
                 tx_id: tx_id.clone(),
+                accept_unreconcilable: *accept_unreconcilable,
             },
         }
     }
@@ -447,6 +459,11 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
         payment_id,
     } = request;
 
+    if !BURNS_ENABLED {
+        return Err(TransactionError::BurnsDisabled(
+            "Burns to Layer 2 are not available in this version".to_string(),
+        ));
+    }
     check_l2_allowed(
         Network::get_current_or_user_setting_or_default(),
         PinManager::pin_locked().await,
@@ -499,7 +516,10 @@ pub async fn gated_abandon(
         });
     };
     let amount = format!("{}.{:06}", amount_u64 / 1_000_000, amount_u64 % 1_000_000);
-    let kind = SpendKind::Abandon { tx_id };
+    let kind = SpendKind::Abandon {
+        tx_id,
+        accept_unreconcilable,
+    };
     let pass = pass_gates(
         SendOrigin::App,
         request_id,
@@ -515,7 +535,7 @@ pub async fn gated_abandon(
         "send gate: executing abandon (tx_id={}, amount={amount})",
         kind.counterparty()
     );
-    let SpendKind::Abandon { tx_id } = kind else {
+    let SpendKind::Abandon { tx_id, .. } = kind else {
         unreachable!("gated_abandon builds an Abandon kind")
     };
     MinotariWalletManager::abandon_stalled_transaction(
@@ -677,6 +697,13 @@ async fn pass_gates(
             amount_display,
             origin: origin.as_str().to_string(),
             payment_id: payment_id.clone(),
+            accept_unreconcilable: matches!(
+                kind,
+                SpendKind::Abandon {
+                    accept_unreconcilable: true,
+                    ..
+                }
+            ),
         })
         .await;
 
@@ -775,6 +802,19 @@ mod tests {
     // =========================================================================
     // Error codes
     // =========================================================================
+
+    #[tokio::test]
+    async fn a_burn_is_refused_while_burns_are_off() {
+        let error = gated_burn(GatedBurnRequest {
+            request_id: SendOrigin::App.new_request_id(),
+            amount: "1".to_string(),
+            claim_public_key: "ab".repeat(32),
+            payment_id: None,
+        })
+        .await
+        .expect_err("burns are off");
+        assert_eq!(error.code(), "burns_disabled");
+    }
 
     #[test]
     fn node_text_cannot_pass_for_an_error_code() {

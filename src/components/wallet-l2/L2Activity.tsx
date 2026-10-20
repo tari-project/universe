@@ -137,7 +137,7 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
             <TransactionModal show={abandonId !== null} title={t('abandon.cta')} handleClose={() => setAbandonId(null)}>
                 {abandonId && (
                     <DetailsWrapper>
-                        <AbandonStalled key={abandonId} stalledId={abandonId} />
+                        <AbandonStalled key={abandonId} stalledId={abandonId} isBurn />
                     </DetailsWrapper>
                 )}
             </TransactionModal>

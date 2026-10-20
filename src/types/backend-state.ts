@@ -285,6 +285,7 @@ export type BackendStateUpdateEvent =
               amount_display: string;
               origin?: TransactionOrigin;
               payment_id?: string | null;
+              accept_unreconcilable?: boolean;
           };
       }
     | {

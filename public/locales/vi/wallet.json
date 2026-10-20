@@ -179,10 +179,10 @@
     "or": "or"
   },
   "abandon": {
-    "stalled": "Mạng liên tục từ chối giao dịch này. Ví vẫn đang gửi lại, và tiền của giao dịch bị khóa cho đến khi nó được đào hoặc bạn từ bỏ nó.",
+    "stalled": "Nút cơ sở của bạn liên tục từ chối giao dịch này. Ví vẫn tiếp tục thử lại, và tiền của giao dịch bị khóa cho đến khi nó được đào hoặc bạn từ bỏ nó. Trước khi từ bỏ, hãy thử lại sau hoặc chuyển sang nút cơ sở khác.",
     "cta": "Từ bỏ giao dịch",
-    "note": "Giao dịch bị từ bỏ và tiền được giải phóng. Nếu một nút vẫn giữ giao dịch, nó vẫn có thể được đào: khi đó ví sẽ hiển thị là đã đào, và giao dịch dùng số tiền đã giải phóng trong thời gian đó sẽ thất bại.",
-    "unreconcilable-note": "CẢNH BÁO: giao dịch này không có đầu ra tiền thừa. Nếu một nút vẫn giữ nó và nó được đào, ví sẽ KHÔNG hiển thị là đã đào: nó vẫn ở trạng thái từ bỏ trong khi tiền hiển thị là đã chi, và giao dịch dùng số tiền đã giải phóng trong thời gian đó sẽ thất bại.",
+    "note": "Giao dịch bị từ bỏ và tiền được giải phóng. Nếu một nút vẫn giữ giao dịch, nó vẫn có thể được đào: khi đó ví sẽ hiển thị là đã đào, và giao dịch dùng số tiền đã giải phóng trong thời gian đó có thể thất bại.",
+    "unreconcilable-note": "CẢNH BÁO: giao dịch này không có đầu ra tiền thừa. Nếu một nút vẫn giữ nó và nó được đào, ví sẽ KHÔNG hiển thị là đã đào: nó vẫn ở trạng thái từ bỏ trong khi tiền hiển thị là đã chi, và giao dịch dùng số tiền đã giải phóng trong thời gian đó có thể thất bại.",
     "confirm": "Từ bỏ",
     "confirm-anyway": "Vẫn từ bỏ",
     "review-label": "Bạn đang từ bỏ",
@@ -191,10 +191,14 @@
     "error-message": "Không thể từ bỏ giao dịch: ",
     "error-not-found": "Giao dịch này không có trong ví này.",
     "error-not-pending": "Không thể từ bỏ giao dịch này nữa: nó đã được đào hoặc bị từ chối.",
-    "error-not-stalled": "Mạng chưa từ chối giao dịch này đủ số lần. Hãy thử lại sau.",
+    "error-not-stalled": "Nút cơ sở của bạn chưa từ chối giao dịch này đủ số lần. Hãy thử lại sau.",
     "error-input-spent": "Tiền của nó đã được chi trên chuỗi. Ví sẽ tự xử lý.",
     "error-change-in-use": "Tiền thừa của nó đang được một giao dịch khác dùng. Hãy từ bỏ hoặc xử lý giao dịch đó trước.",
     "error-change-already-mined": "Có vẻ nó đã được đào. Hãy chờ ví xử lý.",
-    "chip": "Bị kẹt"
+    "chip": "Bị kẹt",
+    "burn-note": "Lệnh đốt bị từ bỏ và tiền được giải phóng. Nếu một nút vẫn giữ nó, nó vẫn có thể được đào, vì vậy đừng đặt lại hoặc nhập lại ví cho đến khi nó được xử lý xong: ví giữ bằng chứng duy nhất cần để nhận nó. Giao dịch dùng số tiền đã giải phóng trong thời gian đó có thể thất bại."
+  },
+  "burn": {
+    "unavailable": "Đốt sang Lớp 2 tạm thời không khả dụng trong phiên bản này."
   }
 }

@@ -179,10 +179,10 @@
     "or": "atau"
   },
   "abandon": {
-    "stalled": "Jaringan terus menolak transaksi ini. Dompet masih mencobanya lagi, dan dananya tetap terkunci sampai transaksi ditambang atau Anda membatalkannya.",
+    "stalled": "Node dasar Anda terus menolak transaksi ini. Dompet terus mencobanya lagi, dan dananya tetap terkunci sampai transaksi ditambang atau Anda membatalkannya. Sebelum membatalkannya, coba lagi nanti atau beralih ke node dasar lain.",
     "cta": "Batalkan transaksi",
-    "note": "Transaksi dibatalkan dan dananya dilepaskan. Jika suatu node masih menyimpannya, transaksi masih bisa ditambang: dompet akan menampilkannya sebagai sudah ditambang, dan transaksi yang dibuat dengan dana yang dilepaskan sementara itu akan gagal.",
-    "unreconcilable-note": "PERINGATAN: transaksi ini tidak memiliki output kembalian. Jika suatu node masih menyimpannya dan transaksi ditambang, dompet TIDAK akan menampilkannya sebagai sudah ditambang: transaksi tetap dibatalkan sementara dananya tampak sudah terpakai, dan transaksi yang dibuat dengan dana yang dilepaskan sementara itu akan gagal.",
+    "note": "Transaksi dibatalkan dan dananya dilepaskan. Jika suatu node masih menyimpannya, transaksi masih bisa ditambang: dompet akan menampilkannya sebagai sudah ditambang, dan transaksi yang dibuat dengan dana yang dilepaskan sementara itu mungkin gagal.",
+    "unreconcilable-note": "PERINGATAN: transaksi ini tidak memiliki output kembalian. Jika suatu node masih menyimpannya dan transaksi ditambang, dompet TIDAK akan menampilkannya sebagai sudah ditambang: transaksi tetap dibatalkan sementara dananya tampak sudah terpakai, dan transaksi yang dibuat dengan dana yang dilepaskan sementara itu mungkin gagal.",
     "confirm": "Batalkan",
     "confirm-anyway": "Tetap batalkan",
     "review-label": "Anda membatalkan",
@@ -191,10 +191,14 @@
     "error-message": "Tidak dapat membatalkan transaksi: ",
     "error-not-found": "Transaksi ini tidak ada di dompet ini.",
     "error-not-pending": "Transaksi ini tidak dapat dibatalkan lagi: sudah ditambang atau ditolak.",
-    "error-not-stalled": "Jaringan belum cukup sering menolak transaksi ini. Coba lagi nanti.",
+    "error-not-stalled": "Node dasar Anda belum cukup sering menolak transaksi ini. Coba lagi nanti.",
     "error-input-spent": "Dananya sudah terpakai di rantai. Dompet akan menyelesaikannya sendiri.",
     "error-change-in-use": "Kembaliannya dipakai oleh transaksi lain. Batalkan atau selesaikan transaksi itu terlebih dahulu.",
     "error-change-already-mined": "Transaksi ini tampaknya sudah ditambang. Tunggu dompet menyelesaikannya.",
-    "chip": "Macet"
+    "chip": "Macet",
+    "burn-note": "Burn dibatalkan dan dananya dilepaskan. Jika suatu node masih menyimpannya, burn masih bisa ditambang, jadi jangan reset atau impor ulang dompet sampai selesai: dompet menyimpan satu-satunya bukti untuk mengklaimnya. Transaksi yang dibuat dengan dana yang dilepaskan sementara itu mungkin gagal."
+  },
+  "burn": {
+    "unavailable": "Burn ke Layer 2 untuk sementara tidak tersedia di versi ini."
   }
 }

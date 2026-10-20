@@ -27,6 +27,8 @@ export function sendErrorKey(error: unknown): string | undefined {
             return 'send.error-timeout';
         case 'change_not_affordable':
             return 'send.error-change-not-affordable';
+        case 'burns_disabled':
+            return 'burn.unavailable';
         default:
             return undefined;
     }

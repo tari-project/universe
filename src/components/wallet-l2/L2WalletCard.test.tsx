@@ -126,7 +126,7 @@ describe('L2WalletCard', () => {
         expect(await screen.findByTestId('l2-burn-button')).toBeDisabled();
     });
 
-    it('opens the burn form with the default account key as the claim key', async () => {
+    it('keeps burns off in this version and says why', async () => {
         useWalletStore.setState({
             is_pin_locked: true,
             wallet_scanning: { scanned_height: 1, total_height: 1, progress: 100, is_initial_scan_complete: true },
@@ -134,9 +134,9 @@ describe('L2WalletCard', () => {
         serve(enabledState);
         render(<L2WalletCard />);
 
-        fireEvent.click(await screen.findByTestId('l2-burn-button'));
-        expect(await screen.findByDisplayValue('ab'.repeat(32))).toBeInTheDocument();
-        expect(screen.getByText('burn.claim-key-default')).toBeInTheDocument();
+        const burnButton = await screen.findByTestId('l2-burn-button');
+        expect(burnButton).toBeDisabled();
+        expect(burnButton).toHaveAttribute('aria-label', 'burn.unavailable');
     });
 
     it('forgets a send that was closed while processing', async () => {

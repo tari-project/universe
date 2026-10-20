@@ -179,10 +179,10 @@
     "or": "oder"
   },
   "abandon": {
-    "stalled": "Das Netzwerk lehnt diese Transaktion weiterhin ab. Die Wallet versucht es weiter, und ihre Mittel bleiben gesperrt, bis sie gemint wird oder du sie aufgibst.",
+    "stalled": "Dein Basisknoten lehnt diese Transaktion weiterhin ab. Die Wallet versucht es weiter, und ihre Mittel bleiben gesperrt, bis sie gemint wird oder du sie aufgibst. Versuche es später erneut oder wechsle den Basisknoten, bevor du sie aufgibst.",
     "cta": "Transaktion aufgeben",
-    "note": "Die Transaktion wird aufgegeben und ihre Mittel werden freigegeben. Hält ein Node sie noch, kann sie trotzdem gemint werden: Die Wallet zeigt sie dann als gemint an, und eine zwischenzeitlich mit den freigegebenen Mitteln getätigte Transaktion schlägt fehl.",
-    "unreconcilable-note": "WARNUNG: Diese Transaktion hat keinen Wechselgeld-Output. Hält ein Node sie noch und wird sie gemint, zeigt die Wallet sie NICHT als gemint an: Sie bleibt aufgegeben, während ihre Mittel als ausgegeben erscheinen, und eine zwischenzeitlich mit den freigegebenen Mitteln getätigte Transaktion schlägt fehl.",
+    "note": "Die Transaktion wird aufgegeben und ihre Mittel werden freigegeben. Hält ein Node sie noch, kann sie trotzdem gemint werden: Die Wallet zeigt sie dann als gemint an, und eine zwischenzeitlich mit den freigegebenen Mitteln getätigte Transaktion kann fehlschlagen.",
+    "unreconcilable-note": "WARNUNG: Diese Transaktion hat keinen Wechselgeld-Output. Hält ein Node sie noch und wird sie gemint, zeigt die Wallet sie NICHT als gemint an: Sie bleibt aufgegeben, während ihre Mittel als ausgegeben erscheinen, und eine zwischenzeitlich mit den freigegebenen Mitteln getätigte Transaktion kann fehlschlagen.",
     "confirm": "Aufgeben",
     "confirm-anyway": "Trotzdem aufgeben",
     "review-label": "Du gibst auf",
@@ -191,10 +191,14 @@
     "error-message": "Die Transaktion konnte nicht aufgegeben werden: ",
     "error-not-found": "Diese Transaktion ist nicht in dieser Wallet.",
     "error-not-pending": "Diese Transaktion kann nicht mehr aufgegeben werden: Sie wurde gemint oder abgelehnt.",
-    "error-not-stalled": "Das Netzwerk hat diese Transaktion noch nicht oft genug abgelehnt. Versuche es später erneut.",
+    "error-not-stalled": "Dein Basisknoten hat diese Transaktion noch nicht oft genug abgelehnt. Versuche es später erneut.",
     "error-input-spent": "Ihre Mittel wurden bereits on-chain ausgegeben. Die Wallet klärt das selbst.",
     "error-change-in-use": "Ihr Wechselgeld wird von einer anderen Transaktion verwendet. Gib diese zuerst auf oder warte, bis sie abgeschlossen ist.",
     "error-change-already-mined": "Sie scheint gemint worden zu sein. Warte, bis die Wallet sie abschließt.",
-    "chip": "Hängt fest"
+    "chip": "Hängt fest",
+    "burn-note": "Der Burn wird aufgegeben und seine Mittel werden freigegeben. Hält ein Node ihn noch, kann er trotzdem gemint werden. Setze die Wallet daher nicht zurück und importiere sie nicht neu, bis er abgeschlossen ist: Die Wallet hält den einzigen Nachweis, der zum Einlösen nötig ist. Eine zwischenzeitlich mit den freigegebenen Mitteln getätigte Transaktion kann fehlschlagen."
+  },
+  "burn": {
+    "unavailable": "Burns auf Layer 2 sind in dieser Version vorübergehend nicht verfügbar."
   }
 }

@@ -21,10 +21,11 @@ type Step = 'idle' | 'confirm' | 'confirm-unreconcilable' | 'done';
 interface Props {
     /** The backend's id of the stalled send or burn. */
     stalledId: string;
+    isBurn?: boolean;
 }
 
 /** For a send or burn the network keeps refusing: says so, and lets the user give it up. */
-export function AbandonStalled({ stalledId }: Props) {
+export function AbandonStalled({ stalledId, isBurn = false }: Props) {
     const { t } = useTranslation('wallet');
     const [step, setStep] = useState<Step>('idle');
     const [error, setError] = useState<string>();
@@ -59,7 +60,7 @@ export function AbandonStalled({ stalledId }: Props) {
             )}
             {step === 'confirm' && (
                 <>
-                    <Typography variant="p">{t('abandon.note')}</Typography>
+                    <Typography variant="p">{isBurn ? t('abandon.burn-note') : t('abandon.note')}</Typography>
                     <Button
                         size="large"
                         fluid

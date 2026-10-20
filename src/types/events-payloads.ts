@@ -186,6 +186,8 @@ export interface AbandonPinPromptContext {
     kind: 'abandon';
     amount_micro_minotari: number;
     tx_id: string;
+    /** The user accepted that it has no change output to recognise it by. */
+    accept_unreconcilable: boolean;
 }
 
 export type PinPromptContext =
