@@ -194,6 +194,7 @@
     "error-not-stalled": "Die netwerk het hierdie transaksie nog nie gereeld genoeg geweier nie. Probeer later weer.",
     "error-input-spent": "Die fondse is reeds op die ketting bestee. Die beursie sal dit self afhandel.",
     "error-change-in-use": "Die kleingeld word deur 'n ander transaksie gebruik. Laat daardie een eers vaar of handel dit af.",
-    "error-change-already-mined": "Dit lyk asof dit gemyn is. Wag vir die beursie om dit af te handel."
+    "error-change-already-mined": "Dit lyk asof dit gemyn is. Wag vir die beursie om dit af te handel.",
+    "chip": "Vasgeval"
   }
 }

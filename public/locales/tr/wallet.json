@@ -194,6 +194,7 @@
     "error-not-stalled": "Ağ bu işlemi henüz yeterince reddetmedi. Daha sonra tekrar deneyin.",
     "error-input-spent": "Fonları zaten zincirde harcandı. Cüzdan bunu kendisi halledecek.",
     "error-change-in-use": "Para üstü başka bir işlemde kullanılıyor. Önce o işlemden vazgeçin ya da tamamlanmasını bekleyin.",
-    "error-change-already-mined": "Kazılmış görünüyor. Cüzdanın tamamlamasını bekleyin."
+    "error-change-already-mined": "Kazılmış görünüyor. Cüzdanın tamamlamasını bekleyin.",
+    "chip": "Takıldı"
   }
 }

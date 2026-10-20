@@ -194,6 +194,7 @@
     "error-not-stalled": "Le réseau n'a pas encore refusé cette transaction assez souvent. Réessayez plus tard.",
     "error-input-spent": "Ses fonds ont déjà été dépensés sur la chaîne. Le portefeuille la réglera de lui-même.",
     "error-change-in-use": "Sa monnaie est utilisée par une autre transaction. Abandonnez ou réglez d'abord celle-ci.",
-    "error-change-already-mined": "Elle semble avoir été minée. Attendez que le portefeuille la règle."
+    "error-change-already-mined": "Elle semble avoir été minée. Attendez que le portefeuille la règle.",
+    "chip": "Bloquée"
   }
 }

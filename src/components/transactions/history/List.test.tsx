@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 import { render, screen } from '@app/test/test-utils';
 import { List } from './List';
@@ -26,10 +26,13 @@ vi.mock('@app/store/actions/walletStoreActions.ts', () => ({
 }));
 vi.mock('virtua', () => ({ VList: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 vi.mock('./transactionHistoryItem/HistoryItem.tsx', () => ({
-    HistoryListItem: () => <div data-testid="transaction" />,
+    HistoryListItem: ({ isStalled }: { isStalled?: boolean }) => (
+        <div data-testid="transaction" data-stalled={String(Boolean(isStalled))} />
+    ),
 }));
 
 const list = () => <List setIsScrolled={vi.fn()} />;
+const invokeMock = () => invoke as unknown as Mock<(cmd: string) => Promise<unknown>>;
 
 describe('transaction history empty state', () => {
     beforeEach(() => {
@@ -48,7 +51,7 @@ describe('transaction history empty state', () => {
         unmount();
 
         render(list());
-        expect(invoke).toHaveBeenCalledTimes(1);
+        expect(invokeMock().mock.calls.filter(([cmd]) => cmd === 'get_wallet_transaction_history')).toHaveLength(1);
     });
 
     it('shows the empty state once there is nothing to wait for', () => {
@@ -69,6 +72,23 @@ describe('transaction history empty state', () => {
         wallet.is_wallet_importing = false;
         rerender(list());
         expect(screen.getByTestId('tx-list-empty')).toBeInTheDocument();
+    });
+
+    it('marks a stalled transaction in its row', async () => {
+        wallet.wallet_transactions = [
+            { id: 12, source: 'Transfer' },
+            { id: 13, source: 'Transfer' },
+        ];
+        vi.mocked(invoke).mockImplementation((async (cmd: string) =>
+            cmd === 'get_stalled_transactions'
+                ? [{ tx_id: '12', amount: 5, burn_commitment: null }]
+                : []) as typeof invoke);
+        render(list());
+
+        await vi.waitFor(() =>
+            expect(screen.getAllByTestId('transaction').map((row) => row.dataset.stalled)).toEqual(['true', 'false'])
+        );
+        invokeMock().mockResolvedValue([]);
     });
 
     it('hides the empty state when transactions exist', () => {

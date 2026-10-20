@@ -194,6 +194,7 @@
     "error-not-stalled": "Das Netzwerk hat diese Transaktion noch nicht oft genug abgelehnt. Versuche es später erneut.",
     "error-input-spent": "Ihre Mittel wurden bereits on-chain ausgegeben. Die Wallet klärt das selbst.",
     "error-change-in-use": "Ihr Wechselgeld wird von einer anderen Transaktion verwendet. Gib diese zuerst auf oder warte, bis sie abgeschlossen ist.",
-    "error-change-already-mined": "Sie scheint gemint worden zu sein. Warte, bis die Wallet sie abschließt."
+    "error-change-already-mined": "Sie scheint gemint worden zu sein. Warte, bis die Wallet sie abschließt.",
+    "chip": "Hängt fest"
   }
 }

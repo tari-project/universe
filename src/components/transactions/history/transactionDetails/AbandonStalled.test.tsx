@@ -9,7 +9,6 @@ import { AbandonStalled } from './AbandonStalled';
 function mockInvoke(abandon: (args: unknown) => Promise<unknown>) {
     const invokeMock = vi.mocked(invoke) as unknown as Mock<(command: string, args?: unknown) => Promise<unknown>>;
     invokeMock.mockImplementation(async (command, args) => {
-        if (command === 'get_stalled_transaction_ids') return ['12'];
         if (command === 'abandon_stalled_transaction') return abandon(args);
         return [];
     });
@@ -17,19 +16,10 @@ function mockInvoke(abandon: (args: unknown) => Promise<unknown>) {
 }
 
 describe('AbandonStalled', () => {
-    it('shows nothing for a transaction that is not stalled', async () => {
-        const invokeMock = mockInvoke(async () => undefined);
-        render(<AbandonStalled transactionId={13} expanded />);
-
-        await vi.waitFor(() => expect(invokeMock).toHaveBeenCalledWith('get_stalled_transaction_ids'));
-        expect(screen.queryByTestId('tx-details-stalled')).not.toBeInTheDocument();
-        invokeMock.mockResolvedValue([]);
-    });
-
     it('abandons a stalled transaction after showing the warning', async () => {
         const abandon = vi.fn(async () => undefined);
         const invokeMock = mockInvoke(abandon);
-        render(<AbandonStalled transactionId={12} expanded />);
+        render(<AbandonStalled stalledId="12" />);
 
         fireEvent.click(await screen.findByTestId('tx-details-abandon'));
         expect(screen.getByText('abandon.note')).toBeInTheDocument();
@@ -47,7 +37,7 @@ describe('AbandonStalled', () => {
             }
         });
         const invokeMock = mockInvoke(abandon);
-        render(<AbandonStalled transactionId={12} expanded />);
+        render(<AbandonStalled stalledId="12" />);
 
         fireEvent.click(await screen.findByTestId('tx-details-abandon'));
         fireEvent.click(screen.getByTestId('tx-details-abandon-confirm'));
@@ -63,7 +53,7 @@ describe('AbandonStalled', () => {
         const invokeMock = mockInvoke(async () => {
             throw '[abandon_not_stalled] Abandon failed: Send 12 is not stalled';
         });
-        render(<AbandonStalled transactionId={12} expanded />);
+        render(<AbandonStalled stalledId="12" />);
 
         fireEvent.click(await screen.findByTestId('tx-details-abandon'));
         fireEvent.click(screen.getByTestId('tx-details-abandon-confirm'));

@@ -54,7 +54,6 @@ use minotari_wallet::transactions::{
     abandon::AbandonSendError, input_selector::UtxoSelectionError,
 };
 use tari_common::configuration::Network;
-use tari_common_types::transaction::TxId;
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
 use crate::LOG_TARGET_APP_LOGIC;
@@ -489,12 +488,16 @@ pub async fn gated_abandon(
     tx_id: String,
     accept_unreconcilable: bool,
 ) -> Result<(), TransactionError> {
-    let id = TxId::from(tx_id.parse::<u64>().map_err(|_| {
-        TransactionError::InternalError(format!("Invalid transaction id '{tx_id}'"))
-    })?);
-    let amount_u64 = MinotariWalletManager::transaction_amount(id)
+    // Burns have no history entry until mined, so the amount comes from the stalled list.
+    let stalled = MinotariWalletManager::stalled_transactions()
         .await
         .map_err(|e| wallet_failure("Abandon failed", e))?;
+    let Some(amount_u64) = stalled.iter().find(|s| s.tx_id == tx_id).map(|s| s.amount) else {
+        return Err(TransactionError::AbandonRefused {
+            code: "abandon_not_stalled",
+            message: format!("Transaction {tx_id} is not stalled"),
+        });
+    };
     let amount = format!("{}.{:06}", amount_u64 / 1_000_000, amount_u64 % 1_000_000);
     let kind = SpendKind::Abandon { tx_id };
     let pass = pass_gates(
@@ -512,8 +515,11 @@ pub async fn gated_abandon(
         "send gate: executing abandon (tx_id={}, amount={amount})",
         kind.counterparty()
     );
+    let SpendKind::Abandon { tx_id } = kind else {
+        unreachable!("gated_abandon builds an Abandon kind")
+    };
     MinotariWalletManager::abandon_stalled_transaction(
-        id,
+        &tx_id,
         accept_unreconcilable,
         Some(pass.pin_context),
     )

@@ -11,6 +11,7 @@ import { handleWalletTransactionsFound, setSelectedTransactionId } from '@app/st
 import { DisplayedTransaction, TransactionSource } from '@app/types/app-status.ts';
 import { HistoryListItem } from './transactionHistoryItem/HistoryItem.tsx';
 import { PlaceholderItem } from './transactionHistoryItem/HistoryItem.styles.ts';
+import { useStalledTransactions } from '@app/hooks/wallet/useStalledTransactions.ts';
 
 interface ListProps {
     setIsScrolled: (isScrolled: boolean) => void;
@@ -23,6 +24,9 @@ export function List({ setIsScrolled, scrolled = false }: ListProps) {
     const transactionsFilter = useWalletStore((s) => s.transaction_history_filter);
     const walletScanning = useWalletStore((s) => !s.wallet_scanning?.is_initial_scan_complete);
     const walletImporting = useWalletStore((s) => s.is_wallet_importing);
+    // Looked up again whenever the history changes, e.g. after an abandon.
+    const stalled = useStalledTransactions(walletTransactionsAll);
+    const stalledIds = useMemo(() => new Set(stalled.map((s) => Number(s.tx_id))), [stalled]);
 
     // Track seen transaction IDs to show "new" indicator for new transactions
     const [seenTransactionIds, setSeenTransactionIds] = useState<Set<number>>(new Set());
@@ -116,6 +120,7 @@ export function List({ setIsScrolled, scrolled = false }: ListProps) {
                                 key={tx.id}
                                 index={i}
                                 itemIsNew={isNewTransaction}
+                                isStalled={stalledIds.has(tx.id)}
                                 setDetailsItem={handleDetailsChange}
                             />
                         );

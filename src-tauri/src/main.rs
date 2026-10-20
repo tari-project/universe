@@ -506,7 +506,7 @@ fn main() {
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
             commands::get_max_sendable_amount,
-            commands::get_stalled_transaction_ids,
+            commands::get_stalled_transactions,
             commands::abandon_stalled_transaction,
             commands::trigger_phases_restart,
             commands::set_node_type,

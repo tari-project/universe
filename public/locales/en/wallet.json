@@ -356,6 +356,7 @@
     "error-not-stalled": "The network hasn't refused this transaction often enough yet. Try again later.",
     "error-input-spent": "Its funds have already been spent on chain. The wallet will settle it on its own.",
     "error-change-in-use": "Its change is used by another transaction. Abandon or settle that one first.",
-    "error-change-already-mined": "It appears to have been mined. Wait for the wallet to settle it."
+    "error-change-already-mined": "It appears to have been mined. Wait for the wallet to settle it.",
+    "chip": "Stalled"
   }
 }

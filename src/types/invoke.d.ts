@@ -6,7 +6,7 @@ import {
     BaseNodeStatus,
     DisplayedTransaction,
 } from './app-status';
-import { PaperWalletDetails } from './app-status.ts';
+import { PaperWalletDetails, StalledTransaction } from './app-status.ts';
 import { LocalBlockStats } from './mining/blocks.ts';
 import { displayMode } from '../store/types.ts';
 import { BasePoolData, ConfigBackendInMemory, PauseOnBatteryModeState } from './configs.ts';
@@ -105,7 +105,7 @@ declare module '@tauri-apps/api/core' {
     ): Promise<void>;
     function invoke(param: 'validate_minotari_amount', payload: { amount: string }): Promise<string>;
     function invoke(param: 'get_max_sendable_amount', payload: { paymentId?: string }): Promise<number>;
-    function invoke(param: 'get_stalled_transaction_ids'): Promise<string[]>;
+    function invoke(param: 'get_stalled_transactions'): Promise<StalledTransaction[]>;
     function invoke(
         param: 'abandon_stalled_transaction',
         payload: { txId: string; acceptUnreconcilable: boolean }

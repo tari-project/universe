@@ -190,7 +190,9 @@ describe('L2WalletCard', () => {
                 ? enabledState
                 : cmd === 'l2_claimable_burns'
                   ? [{ ...burn, status: 'pending' }]
-                  : undefined) as typeof invoke);
+                  : cmd === 'get_stalled_transactions'
+                    ? []
+                    : undefined) as typeof invoke);
         render(<L2WalletCard />);
         const pick = async (label: string) => {
             fireEvent.click(within(screen.getByTestId('l2-history-filter')).getByRole('combobox'));

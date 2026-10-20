@@ -194,6 +194,7 @@
     "error-not-stalled": "Jaringan belum cukup sering menolak transaksi ini. Coba lagi nanti.",
     "error-input-spent": "Dananya sudah terpakai di rantai. Dompet akan menyelesaikannya sendiri.",
     "error-change-in-use": "Kembaliannya dipakai oleh transaksi lain. Batalkan atau selesaikan transaksi itu terlebih dahulu.",
-    "error-change-already-mined": "Transaksi ini tampaknya sudah ditambang. Tunggu dompet menyelesaikannya."
+    "error-change-already-mined": "Transaksi ini tampaknya sudah ditambang. Tunggu dompet menyelesaikannya.",
+    "chip": "Macet"
   }
 }

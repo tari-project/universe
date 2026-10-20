@@ -38,6 +38,17 @@ pub struct BurnReceipt {
     pub accepted_by_node: bool,
 }
 
+/// A send or burn the node keeps refusing (stalled), which the user may abandon.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct StalledTransaction {
+    /// A string: a u64 doesn't always fit a JavaScript number.
+    pub tx_id: String,
+    /// µT sent or burned.
+    pub amount: u64,
+    /// Hex commitment when it is a burn: burns are listed by it, not by transaction id.
+    pub burn_commitment: Option<String>,
+}
+
 /// What the UI gets back from a send. A send is recorded whether or not the node
 /// accepted it; one it hasn't accepted yet is rebroadcast automatically and must not
 /// be sent again.
@@ -83,7 +94,7 @@ use minotari_wallet::{
     tasks::{burn_proof_worker::BurnProofWorker, unlocker::TransactionUnlocker},
     transactions::{
         TransactionSource,
-        abandon::abandon_send,
+        abandon::{AbandonedSend, abandon_send},
         burn::{BurnTxParams, BurnTxResult, create_burn_tx, persist_burn_records},
         fee_estimator::estimated_output_size_for_payment_id,
         manager::record_first_broadcast,
@@ -634,30 +645,18 @@ impl MinotariWalletManager {
         max_sendable(&conn, account_id, payment_id.as_deref())
     }
 
-    /// Ids of the sends and burns the node keeps refusing (stalled), as strings: they
-    /// don't fit a JavaScript number.
-    pub async fn stalled_transaction_ids() -> Result<Vec<String>, anyhow::Error> {
+    /// The sends and burns the node keeps refusing (stalled).
+    pub async fn stalled_transactions() -> Result<Vec<StalledTransaction>, anyhow::Error> {
         let account_id = Self::owner_account_id().await?;
         let conn = Self::get_db_connection().await?;
-        stalled_transaction_ids(&conn, account_id)
+        stalled_transactions(&conn, account_id)
     }
 
-    /// The amount of a send or burn in the history, in µT.
-    pub async fn transaction_amount(tx_id: TxId) -> Result<u64, anyhow::Error> {
-        let account_id = Self::owner_account_id().await?;
-        let conn = Self::get_db_connection().await?;
-        get_displayed_transactions_by_account(&conn, account_id)?
-            .into_iter()
-            .find(|tx| tx.id == tx_id)
-            .map(|tx| tx.amount.as_u64())
-            .ok_or_else(|| anyhow::anyhow!("No transaction {tx_id} in this wallet"))
-    }
-
-    /// Gives up a stalled send or burn and releases its inputs. The library refuses
-    /// one that isn't stalled, and one without a change output unless
+    /// Gives up stalled send or burn `tx_id` and releases its inputs. Only a stalled one
+    /// can be abandoned, and one without a change output only with
     /// `accept_unreconcilable`. The PIN, when one is set, is asked for first.
     pub async fn abandon_stalled_transaction(
-        tx_id: TxId,
+        tx_id: &str,
         accept_unreconcilable: bool,
         pin_context: Option<PinPromptContext>,
     ) -> Result<(), anyhow::Error> {
@@ -672,14 +671,7 @@ impl MinotariWalletManager {
 
         let account_id = Self::owner_account_id().await?;
         let mut conn = Self::get_db_connection().await?;
-        let abandoned = abandon_send(
-            &mut conn,
-            account_id,
-            tx_id,
-            false,
-            accept_unreconcilable,
-            None,
-        )?;
+        let abandoned = abandon_stalled(&mut conn, account_id, tx_id, accept_unreconcilable)?;
         drop(conn);
         info!(target: LOG_TARGET, "Transaction {tx_id} abandoned by the user.");
 
@@ -1407,23 +1399,64 @@ fn max_sendable(
 }
 
 /// Sends and burns not mined yet that the node has refused `MAX_BROADCAST_ATTEMPTS`
-/// times in a row: only these can be abandoned.
-fn stalled_transaction_ids(
+/// times in a row: only these can be abandoned. A burn has no displayed transaction
+/// until it is mined, so its amount comes from its burn proof.
+fn stalled_transactions(
     conn: &Connection,
     account_id: i64,
-) -> Result<Vec<String>, anyhow::Error> {
-    let mut ids = Vec::new();
+) -> Result<Vec<StalledTransaction>, anyhow::Error> {
+    let burns = get_pending_burn_proofs(conn)?;
+    let displayed = get_displayed_transactions_by_account(conn, account_id)?;
+    let mut stalled = Vec::new();
     for status in [
         CompletedTransactionStatus::Completed,
         CompletedTransactionStatus::Broadcast,
     ] {
         for tx in get_completed_transactions_by_status(conn, account_id, status)? {
-            if tx.broadcast_attempts >= MAX_BROADCAST_ATTEMPTS {
-                ids.push(tx.id.to_string());
+            if tx.broadcast_attempts < MAX_BROADCAST_ATTEMPTS {
+                continue;
             }
+            let burn = burns.iter().find(|b| {
+                tx.sent_output_hash.as_deref() == Some(hex::encode(b.output_hash).as_str())
+            });
+            let amount = match burn {
+                Some(b) => u64::try_from(b.value).unwrap_or_default(),
+                None => displayed
+                    .iter()
+                    .find(|d| d.id == tx.id)
+                    .map_or(0, |d| d.amount.as_u64()),
+            };
+            stalled.push(StalledTransaction {
+                tx_id: tx.id.to_string(),
+                amount,
+                burn_commitment: burn.map(|b| hex::encode(&b.commitment)),
+            });
         }
     }
-    Ok(ids)
+    Ok(stalled)
+}
+
+/// Abandons stalled send or burn `tx_id`, never forced: one the node hasn't refused
+/// often enough is refused.
+fn abandon_stalled(
+    conn: &mut Connection,
+    account_id: i64,
+    tx_id: &str,
+    accept_unreconcilable: bool,
+) -> Result<AbandonedSend, anyhow::Error> {
+    let id = TxId::from(
+        tx_id
+            .parse::<u64>()
+            .map_err(|_| anyhow::anyhow!("Invalid transaction id '{tx_id}'"))?,
+    );
+    Ok(abandon_send(
+        conn,
+        account_id,
+        id,
+        false,
+        accept_unreconcilable,
+        None,
+    )?)
 }
 
 /// When each of the wallet's burns was made, unix seconds by commitment (hex).
@@ -1518,9 +1551,9 @@ fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
 #[cfg(test)]
 mod tests {
     use super::{
-        SendReceipt, blocks_to_report, burn_times, max_sendable, move_legacy_burn_proofs,
-        pending_burns, pending_burns_guard, record_burn_broadcast, scan_progress_percent,
-        stalled_transaction_ids,
+        SendReceipt, StalledTransaction, abandon_stalled, blocks_to_report, burn_times,
+        max_sendable, move_legacy_burn_proofs, pending_burns, pending_burns_guard,
+        record_burn_broadcast, scan_progress_percent, stalled_transactions,
     };
     use crate::wallet::minotari_wallet::transaction::{CONFIRMATION_WINDOW, SEND_FEE_PER_GRAM};
     use minotari_wallet::db::{
@@ -1528,7 +1561,7 @@ mod tests {
         insert_unconfirmed_change_output, mark_completed_transaction_as_rejected_in_block,
     };
     use minotari_wallet::transactions::{
-        abandon::{AbandonSendError, abandon_send},
+        abandon::AbandonSendError,
         burn::{BurnTxParams, create_burn_tx},
         input_selector::UtxoSelectionError,
         manager::{TransactionSender, record_first_broadcast},
@@ -1818,13 +1851,18 @@ mod tests {
         let (pool, account_id, dir) = recorded_burn(MAX_BROADCAST_ATTEMPTS);
         let path = dir.path().join("wallet.db");
         let mut conn = pool.get().expect("connection");
+        // A burn has no history entry until it is mined; the stalled list still has it.
         assert_eq!(
-            stalled_transaction_ids(&conn, account_id).expect("stalled"),
-            vec!["12".to_string()]
+            stalled_transactions(&conn, account_id).expect("stalled"),
+            vec![StalledTransaction {
+                tx_id: "12".to_string(),
+                amount: 1,
+                burn_commitment: Some(hex::encode([6u8; 32])),
+            }]
         );
         assert!(pending_burns_guard(&path).is_err());
 
-        abandon_send(&mut conn, account_id, 12u64.into(), false, false, None).expect("abandoned");
+        abandon_stalled(&mut conn, account_id, "12", false).expect("abandoned");
 
         let status: String = conn
             .query_row(
@@ -1835,7 +1873,7 @@ mod tests {
             .expect("status");
         assert_eq!(status, "rejected");
         assert!(
-            stalled_transaction_ids(&conn, account_id)
+            stalled_transactions(&conn, account_id)
                 .expect("stalled")
                 .is_empty()
         );
@@ -1848,14 +1886,19 @@ mod tests {
         let (pool, account_id, _dir) = recorded_burn(1);
         let mut conn = pool.get().expect("connection");
         assert!(
-            stalled_transaction_ids(&conn, account_id)
+            stalled_transactions(&conn, account_id)
                 .expect("stalled")
                 .is_empty()
         );
 
-        let err = abandon_send(&mut conn, account_id, 12u64.into(), false, false, None)
-            .expect_err("not stalled");
-        assert!(matches!(err, AbandonSendError::NotStalled { .. }), "{err}");
+        let err = abandon_stalled(&mut conn, account_id, "12", false).expect_err("not stalled");
+        assert!(
+            matches!(
+                err.downcast_ref::<AbandonSendError>(),
+                Some(AbandonSendError::NotStalled { .. })
+            ),
+            "{err:#}"
+        );
         assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
     }
 

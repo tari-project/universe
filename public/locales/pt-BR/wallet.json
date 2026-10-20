@@ -192,6 +192,7 @@
     "error-not-stalled": "A rede ainda não recusou esta transação vezes suficientes. Tente novamente mais tarde.",
     "error-input-spent": "Seus fundos já foram gastos na cadeia. A carteira vai resolver isso sozinha.",
     "error-change-in-use": "O troco dela está sendo usado por outra transação. Abandone ou resolva aquela primeiro.",
-    "error-change-already-mined": "Parece que ela foi minerada. Aguarde a carteira resolvê-la."
+    "error-change-already-mined": "Parece que ela foi minerada. Aguarde a carteira resolvê-la.",
+    "chip": "Travada"
   }
 }

@@ -194,6 +194,7 @@
     "error-not-stalled": "网络拒绝此交易的次数还不够。请稍后再试。",
     "error-input-spent": "其资金已在链上被花费。钱包会自行处理。",
     "error-change-in-use": "其找零正被另一笔交易使用。请先放弃或处理那笔交易。",
-    "error-change-already-mined": "它似乎已被打包。请等待钱包处理。"
+    "error-change-already-mined": "它似乎已被打包。请等待钱包处理。",
+    "chip": "已停滞"
   }
 }

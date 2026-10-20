@@ -194,6 +194,7 @@
     "error-not-stalled": "Sieć nie odrzuciła jeszcze tej transakcji wystarczająco wiele razy. Spróbuj ponownie później.",
     "error-input-spent": "Jej środki zostały już wydane w łańcuchu. Portfel rozliczy ją sam.",
     "error-change-in-use": "Jej reszta jest używana przez inną transakcję. Najpierw porzuć lub rozlicz tamtą.",
-    "error-change-already-mined": "Wygląda na to, że została wykopana. Poczekaj, aż portfel ją rozliczy."
+    "error-change-already-mined": "Wygląda na to, że została wykopana. Poczekaj, aż portfel ją rozliczy.",
+    "chip": "Utknęła"
   }
 }
