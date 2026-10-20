@@ -1,6 +1,6 @@
 import { FormProvider, useForm } from 'react-hook-form';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
-import { CHANGE_NOT_AFFORDABLE_RE, type SendInputs } from '@app/components/transactions/send/types.ts';
+import { commandErrorMessage, sendErrorKey, type SendInputs } from '@app/components/transactions/send/types.ts';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SendForm } from './SendForm.tsx';
@@ -9,7 +9,6 @@ import { StyledForm, Wrapper } from './Send.styles.ts';
 import { FormRootError } from './FormRootError.tsx';
 import { invoke } from '@tauri-apps/api/core';
 import { setError as setStoreError } from '@app/store';
-import { PIN_CANCELLED_RE } from '@app/store/actions/l2WalletStoreActions.ts';
 import { queryClient } from '@app/App/queryClient.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 
@@ -89,20 +88,14 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 // The backend gates the send itself (PIN dialog, or an approve/deny dialog
                 // when no PIN is set), so "the user said no" and "nobody answered in time"
                 // are normal outcomes here, not failures worth a scary error toast.
-                const message = `${error}`;
-                const wasCancelled = PIN_CANCELLED_RE.test(message);
-                const timedOut = /timed out waiting for confirmation/i.test(message);
-
-                if (wasCancelled || timedOut) {
-                    setError(`root.invoke_error`, {
-                        message: wasCancelled ? t('send.error-denied') : t('send.error-timeout'),
-                    });
-                } else if (CHANGE_NOT_AFFORDABLE_RE.test(message)) {
-                    setError(`root.invoke_error`, { message: t('send.error-change-not-affordable') });
+                const knownKey = sendErrorKey(error);
+                if (knownKey) {
+                    setError(`root.invoke_error`, { message: t(knownKey) });
                 } else {
-                    setStoreError(`Error sending transaction: ${error}`);
+                    const message = commandErrorMessage(error);
+                    setStoreError(`Error sending transaction: ${message}`);
                     setError(`root.invoke_error`, {
-                        message: `${t('send.error-message')} ${error}`,
+                        message: `${t('send.error-message')} ${message}`,
                     });
                 }
                 setStatus('fields');

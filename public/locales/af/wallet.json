@@ -177,5 +177,23 @@
     "mine-directly-to-exchange": "Myn direk na {{exchangeName}}",
     "mining-here": "Myn hier",
     "or": "of"
+  },
+  "abandon": {
+    "stalled": "Die netwerk weier hierdie transaksie steeds. Die beursie probeer dit steeds, en die fondse bly gesluit totdat dit gemyn word of jy dit laat vaar.",
+    "cta": "Laat transaksie vaar",
+    "note": "Die transaksie word laat vaar en die fondse word vrygestel. As 'n nodus dit nog hou, kan dit steeds gemyn word: die beursie sal dit dan as gemyn wys, en 'n transaksie wat intussen met die vrygestelde fondse gemaak is, sal misluk.",
+    "unreconcilable-note": "WAARSKUWING: hierdie transaksie het geen kleingeld-uitset nie. As 'n nodus dit nog hou en dit gemyn word, sal die beursie dit NIE as gemyn wys nie: dit bly laat vaar terwyl die fondse as bestee wys, en 'n transaksie wat intussen met die vrygestelde fondse gemaak is, sal misluk.",
+    "confirm": "Laat dit vaar",
+    "confirm-anyway": "Laat dit in elk geval vaar",
+    "review-label": "Jy laat vaar",
+    "approve": "Keur goed om te laat vaar",
+    "done": "Transaksie laat vaar. Die fondse is weer beskikbaar.",
+    "error-message": "Kon nie die transaksie laat vaar nie: ",
+    "error-not-found": "Hierdie transaksie is nie in hierdie beursie nie.",
+    "error-not-pending": "Hierdie transaksie kan nie meer laat vaar word nie: dit is gemyn of afgekeur.",
+    "error-not-stalled": "Die netwerk het hierdie transaksie nog nie gereeld genoeg geweier nie. Probeer later weer.",
+    "error-input-spent": "Die fondse is reeds op die ketting bestee. Die beursie sal dit self afhandel.",
+    "error-change-in-use": "Die kleingeld word deur 'n ander transaksie gebruik. Laat daardie een eers vaar of handel dit af.",
+    "error-change-already-mined": "Dit lyk asof dit gemyn is. Wag vir die beursie om dit af te handel."
   }
 }

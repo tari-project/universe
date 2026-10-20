@@ -2,6 +2,7 @@ import { BackendBridgeTransaction, setError as setStoreError, useConfigUIStore, 
 import { invoke } from '@tauri-apps/api/core';
 import { t } from 'i18next';
 import { addToast } from '@app/components/ToastStack/useToastStore';
+import { commandErrorMessage } from '@app/components/transactions/send/types';
 import { BaseNodeStatus, BridgeEnvs } from '../app-status';
 import {
     AccountData,
@@ -179,7 +180,7 @@ export class TappletSigner {
             }
             return true;
         } catch (error) {
-            setStoreError(`Error sending transaction: ${error}`);
+            setStoreError(`Error sending transaction: ${commandErrorMessage(error)}`);
             return false;
         }
     }

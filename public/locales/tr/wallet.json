@@ -177,5 +177,23 @@
     "mine-directly-to-exchange": "{{exchangeName}}\"e doğrudan madencilik yap",
     "mining-here": "Burada madencilik yapılıyor",
     "or": "veya"
+  },
+  "abandon": {
+    "stalled": "Ağ bu işlemi reddetmeye devam ediyor. Cüzdan yeniden denemeye devam ediyor ve işlem kazılana ya da siz vazgeçene kadar fonları kilitli kalıyor.",
+    "cta": "İşlemden vazgeç",
+    "note": "İşlemden vazgeçilir ve fonları serbest bırakılır. Bir düğüm hâlâ işlemi tutuyorsa yine de kazılabilir: cüzdan o zaman işlemi kazılmış olarak gösterir ve bu arada serbest kalan fonlarla yapılan işlem başarısız olur.",
+    "unreconcilable-note": "UYARI: bu işlemin para üstü çıktısı yok. Bir düğüm hâlâ tutuyorsa ve işlem kazılırsa cüzdan onu kazılmış olarak GÖSTERMEZ: işlem vazgeçilmiş olarak kalır, fonları ise harcanmış görünür ve bu arada serbest kalan fonlarla yapılan işlem başarısız olur.",
+    "confirm": "Vazgeç",
+    "confirm-anyway": "Yine de vazgeç",
+    "review-label": "Vazgeçiyorsunuz",
+    "approve": "Vazgeçmeyi onayla",
+    "done": "İşlemden vazgeçildi. Fonları yeniden kullanılabilir.",
+    "error-message": "İşlemden vazgeçilemedi: ",
+    "error-not-found": "Bu işlem bu cüzdanda değil.",
+    "error-not-pending": "Bu işlemden artık vazgeçilemez: kazıldı ya da reddedildi.",
+    "error-not-stalled": "Ağ bu işlemi henüz yeterince reddetmedi. Daha sonra tekrar deneyin.",
+    "error-input-spent": "Fonları zaten zincirde harcandı. Cüzdan bunu kendisi halledecek.",
+    "error-change-in-use": "Para üstü başka bir işlemde kullanılıyor. Önce o işlemden vazgeçin ya da tamamlanmasını bekleyin.",
+    "error-change-already-mined": "Kazılmış görünüyor. Cüzdanın tamamlamasını bekleyin."
   }
 }

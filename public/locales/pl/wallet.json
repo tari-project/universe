@@ -177,5 +177,23 @@
     "mine-directly-to-exchange": "Kop bezpośrednio do {{exchangeName}}",
     "mining-here": "Kopanie tutaj",
     "or": "lub"
+  },
+  "abandon": {
+    "stalled": "Sieć wciąż odrzuca tę transakcję. Portfel nadal ją ponawia, a jej środki pozostają zablokowane, dopóki nie zostanie wykopana lub jej nie porzucisz.",
+    "cta": "Porzuć transakcję",
+    "note": "Transakcja zostaje porzucona, a jej środki zwolnione. Jeśli węzeł wciąż ją przechowuje, nadal może zostać wykopana: portfel pokaże ją wtedy jako wykopaną, a transakcja wykonana w międzyczasie ze zwolnionych środków się nie powiedzie.",
+    "unreconcilable-note": "OSTRZEŻENIE: ta transakcja nie ma wyjścia reszty. Jeśli węzeł wciąż ją przechowuje i zostanie wykopana, portfel NIE pokaże jej jako wykopanej: pozostanie porzucona, a jej środki będą widoczne jako wydane, zaś transakcja wykonana w międzyczasie ze zwolnionych środków się nie powiedzie.",
+    "confirm": "Porzuć",
+    "confirm-anyway": "Porzuć mimo to",
+    "review-label": "Porzucasz",
+    "approve": "Zatwierdź porzucenie",
+    "done": "Transakcja porzucona. Jej środki są znów dostępne.",
+    "error-message": "Nie udało się porzucić transakcji: ",
+    "error-not-found": "Tej transakcji nie ma w tym portfelu.",
+    "error-not-pending": "Tej transakcji nie można już porzucić: została wykopana lub odrzucona.",
+    "error-not-stalled": "Sieć nie odrzuciła jeszcze tej transakcji wystarczająco wiele razy. Spróbuj ponownie później.",
+    "error-input-spent": "Jej środki zostały już wydane w łańcuchu. Portfel rozliczy ją sam.",
+    "error-change-in-use": "Jej reszta jest używana przez inną transakcję. Najpierw porzuć lub rozlicz tamtą.",
+    "error-change-already-mined": "Wygląda na to, że została wykopana. Poczekaj, aż portfel ją rozliczy."
   }
 }

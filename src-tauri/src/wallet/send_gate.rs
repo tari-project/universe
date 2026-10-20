@@ -50,7 +50,11 @@ use std::sync::LazyLock;
 use std::time::Duration;
 
 use log::{info, warn};
+use minotari_wallet::transactions::{
+    abandon::AbandonSendError, input_selector::UtxoSelectionError,
+};
 use tari_common::configuration::Network;
+use tari_common_types::transaction::TxId;
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
 use crate::LOG_TARGET_APP_LOGIC;
@@ -59,7 +63,7 @@ use crate::events::PinPromptContext;
 use crate::events_emitter::EventsEmitter;
 use crate::mcp::rate_limiter::TransactionRateLimiter;
 use crate::ootle::OotleWalletManager;
-use crate::pin::PinManager;
+use crate::pin::{PinCancelled, PinManager};
 use crate::wallet::minotari_wallet::{BurnReceipt, MinotariWalletManager, SendReceipt};
 
 const DIALOG_TIMEOUT_SECS: u64 = 120;
@@ -75,6 +79,69 @@ pub enum TransactionError {
     Timeout(String),
     WalletError(String),
     InternalError(String),
+    /// The user closed the PIN prompt.
+    PinCancelled(String),
+    /// The funds cover the amount and fee, but not the change output every send keeps.
+    ChangeNotAffordable(String),
+    /// The wallet refused to abandon a send; `code` says why.
+    AbandonRefused {
+        code: &'static str,
+        message: String,
+    },
+}
+
+impl TransactionError {
+    /// A stable code the frontend switches on. It comes from the error's type, never
+    /// from its text, which can carry what a base node said.
+    pub fn code(&self) -> &'static str {
+        match self {
+            TransactionError::Disabled(_) => "disabled",
+            TransactionError::NoPinConfigured(_) => "no_pin",
+            TransactionError::InvalidAmount(_) => "invalid_amount",
+            TransactionError::InvalidAddress(_) => "invalid_address",
+            TransactionError::RateLimited(_) => "rate_limited",
+            TransactionError::Denied(_) => "denied",
+            TransactionError::Timeout(_) => "timeout",
+            TransactionError::WalletError(_) => "wallet_error",
+            TransactionError::InternalError(_) => "internal_error",
+            TransactionError::PinCancelled(_) => "pin_cancelled",
+            TransactionError::ChangeNotAffordable(_) => "change_not_affordable",
+            TransactionError::AbandonRefused { code, .. } => code,
+        }
+    }
+
+    /// The error as a Tauri command returns it: `[code] message`. The code always
+    /// leads, so text from a node inside the message cannot pass for one.
+    pub fn to_command_error(&self) -> String {
+        format!("[{}] {}", self.code(), self)
+    }
+}
+
+/// A wallet failure, classified by the error types in its chain.
+fn wallet_failure(context: &str, error: anyhow::Error) -> TransactionError {
+    let message = format!("{context}: {error:#}");
+    for cause in error.chain() {
+        if cause.is::<PinCancelled>() {
+            return TransactionError::PinCancelled(message);
+        }
+        if let Some(UtxoSelectionError::ChangeNotAffordable { .. }) = cause.downcast_ref() {
+            return TransactionError::ChangeNotAffordable(message);
+        }
+        if let Some(refused) = cause.downcast_ref::<AbandonSendError>() {
+            let code = match refused {
+                AbandonSendError::NotFound(_) => "abandon_not_found",
+                AbandonSendError::NotPending { .. } => "abandon_not_pending",
+                AbandonSendError::NotStalled { .. } => "abandon_not_stalled",
+                AbandonSendError::InputSpent { .. } => "abandon_input_spent",
+                AbandonSendError::ChangeInUse { .. } => "abandon_change_in_use",
+                AbandonSendError::ChangeAlreadyMined { .. } => "abandon_change_already_mined",
+                AbandonSendError::NoChangeOutput { .. } => "abandon_no_change_output",
+                AbandonSendError::Db(_) => break,
+            };
+            return TransactionError::AbandonRefused { code, message };
+        }
+    }
+    TransactionError::WalletError(message)
 }
 
 impl fmt::Display for TransactionError {
@@ -88,7 +155,10 @@ impl fmt::Display for TransactionError {
             | TransactionError::Denied(msg)
             | TransactionError::Timeout(msg)
             | TransactionError::WalletError(msg)
-            | TransactionError::InternalError(msg) => write!(f, "{}", msg),
+            | TransactionError::InternalError(msg)
+            | TransactionError::PinCancelled(msg)
+            | TransactionError::ChangeNotAffordable(msg)
+            | TransactionError::AbandonRefused { message: msg, .. } => write!(f, "{}", msg),
         }
     }
 }
@@ -190,6 +260,10 @@ pub enum SpendKind {
     L2Claim {
         commitment: String,
     },
+    /// Giving up stalled send or burn `tx_id`, which hands its inputs back.
+    Abandon {
+        tx_id: String,
+    },
 }
 
 impl SpendKind {
@@ -199,6 +273,7 @@ impl SpendKind {
             SpendKind::Burn { .. } => "burn",
             SpendKind::L2Send { .. } => "l2_send",
             SpendKind::L2Claim { .. } => "l2_claim",
+            SpendKind::Abandon { .. } => "abandon",
         }
     }
 
@@ -211,6 +286,7 @@ impl SpendKind {
             SpendKind::Send { destination } | SpendKind::L2Send { destination, .. } => destination,
             SpendKind::Burn { claim_public_key } => claim_public_key,
             SpendKind::L2Claim { commitment } => commitment,
+            SpendKind::Abandon { tx_id } => tx_id,
         }
     }
 
@@ -244,6 +320,10 @@ impl SpendKind {
                 commitment: commitment.clone(),
                 fee_micro_minotari: None,
             },
+            SpendKind::Abandon { tx_id } => PinPromptContext::Abandon {
+                amount_micro_minotari,
+                tx_id: tx_id.clone(),
+            },
         }
     }
 
@@ -251,7 +331,7 @@ impl SpendKind {
     fn currency(&self) -> &'static str {
         match self {
             SpendKind::L2Send { .. } | SpendKind::L2Claim { .. } => "XTR",
-            SpendKind::Send { .. } | SpendKind::Burn { .. } => "XTM",
+            SpendKind::Send { .. } | SpendKind::Burn { .. } | SpendKind::Abandon { .. } => "XTM",
         }
     }
 }
@@ -333,7 +413,7 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<SendReceipt, Transa
         Some(pass.pin_context),
     )
     .await
-    .map_err(|e| TransactionError::WalletError(format!("Transaction failed: {e}")))
+    .map_err(|e| wallet_failure("Transaction failed", e))
 }
 
 /// Networks with an L2 Universe can use. A burn anywhere else would just destroy funds.
@@ -399,7 +479,46 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
         Some(pass.pin_context),
     )
     .await
-    .map_err(|e| TransactionError::WalletError(format!("Burn failed: {e}")))
+    .map_err(|e| wallet_failure("Burn failed", e))
+}
+
+/// Abandon a stalled send or burn behind the same gates as [`gated_send`]: it hands
+/// the inputs back, and if the original still lands, a later spend of them fails.
+pub async fn gated_abandon(
+    request_id: String,
+    tx_id: String,
+    accept_unreconcilable: bool,
+) -> Result<(), TransactionError> {
+    let id = TxId::from(tx_id.parse::<u64>().map_err(|_| {
+        TransactionError::InternalError(format!("Invalid transaction id '{tx_id}'"))
+    })?);
+    let amount_u64 = MinotariWalletManager::transaction_amount(id)
+        .await
+        .map_err(|e| wallet_failure("Abandon failed", e))?;
+    let amount = format!("{}.{:06}", amount_u64 / 1_000_000, amount_u64 % 1_000_000);
+    let kind = SpendKind::Abandon { tx_id };
+    let pass = pass_gates(
+        SendOrigin::App,
+        request_id,
+        &amount,
+        amount_u64,
+        &kind,
+        &None,
+    )
+    .await?;
+
+    info!(
+        target: LOG_TARGET_APP_LOGIC,
+        "send gate: executing abandon (tx_id={}, amount={amount})",
+        kind.counterparty()
+    );
+    MinotariWalletManager::abandon_stalled_transaction(
+        id,
+        accept_unreconcilable,
+        Some(pass.pin_context),
+    )
+    .await
+    .map_err(|e| wallet_failure("Abandon failed", e))
 }
 
 /// Send XTR on L2 behind the same gates as [`gated_send`]. Refused without a PIN or off
@@ -645,6 +764,57 @@ fn deny_and_log(txn: InFlightTxn) {
 mod tests {
     use super::*;
     use serial_test::serial;
+    use tari_transaction_components::tari_amount::MicroMinotari;
+
+    // =========================================================================
+    // Error codes
+    // =========================================================================
+
+    #[test]
+    fn node_text_cannot_pass_for_an_error_code() {
+        let from_node = anyhow::anyhow!(
+            "Transaction not accepted: denied by user; PIN entry cancelled; Not enough funds for a change output"
+        );
+        let error = wallet_failure("Burn failed", from_node);
+        assert_eq!(error.code(), "wallet_error");
+        assert!(
+            error.to_command_error().starts_with("[wallet_error] "),
+            "{}",
+            error.to_command_error()
+        );
+    }
+
+    #[test]
+    fn error_codes_come_from_the_error_types() {
+        let cancelled = anyhow::Error::new(PinCancelled).context("Failed to sign");
+        assert_eq!(
+            wallet_failure("Transaction failed", cancelled).code(),
+            "pin_cancelled"
+        );
+
+        let no_change = anyhow::Error::new(UtxoSelectionError::ChangeNotAffordable {
+            shortfall: MicroMinotari(61),
+        })
+        .context("Failed to create unsigned transaction");
+        let error = wallet_failure("Transaction failed", no_change);
+        assert_eq!(error.code(), "change_not_affordable");
+        assert!(error.to_string().contains("change output"), "{error}");
+
+        let not_stalled = anyhow::Error::new(AbandonSendError::NotStalled {
+            tx_id: 12u64.into(),
+            attempts: 1,
+        });
+        assert_eq!(
+            wallet_failure("Abandon failed", not_stalled).code(),
+            "abandon_not_stalled"
+        );
+
+        let denied = TransactionError::Denied("Transaction denied by user".to_string());
+        assert_eq!(
+            denied.to_command_error(),
+            "[denied] Transaction denied by user"
+        );
+    }
 
     // =========================================================================
     // Gate policy

@@ -177,5 +177,23 @@
     "mine-directly-to-exchange": "Menambang langsung ke {{exchangeName}}",
     "mining-here": "Menambang di sini",
     "or": "atau"
+  },
+  "abandon": {
+    "stalled": "Jaringan terus menolak transaksi ini. Dompet masih mencobanya lagi, dan dananya tetap terkunci sampai transaksi ditambang atau Anda membatalkannya.",
+    "cta": "Batalkan transaksi",
+    "note": "Transaksi dibatalkan dan dananya dilepaskan. Jika suatu node masih menyimpannya, transaksi masih bisa ditambang: dompet akan menampilkannya sebagai sudah ditambang, dan transaksi yang dibuat dengan dana yang dilepaskan sementara itu akan gagal.",
+    "unreconcilable-note": "PERINGATAN: transaksi ini tidak memiliki output kembalian. Jika suatu node masih menyimpannya dan transaksi ditambang, dompet TIDAK akan menampilkannya sebagai sudah ditambang: transaksi tetap dibatalkan sementara dananya tampak sudah terpakai, dan transaksi yang dibuat dengan dana yang dilepaskan sementara itu akan gagal.",
+    "confirm": "Batalkan",
+    "confirm-anyway": "Tetap batalkan",
+    "review-label": "Anda membatalkan",
+    "approve": "Setujui pembatalan",
+    "done": "Transaksi dibatalkan. Dananya tersedia kembali.",
+    "error-message": "Tidak dapat membatalkan transaksi: ",
+    "error-not-found": "Transaksi ini tidak ada di dompet ini.",
+    "error-not-pending": "Transaksi ini tidak dapat dibatalkan lagi: sudah ditambang atau ditolak.",
+    "error-not-stalled": "Jaringan belum cukup sering menolak transaksi ini. Coba lagi nanti.",
+    "error-input-spent": "Dananya sudah terpakai di rantai. Dompet akan menyelesaikannya sendiri.",
+    "error-change-in-use": "Kembaliannya dipakai oleh transaksi lain. Batalkan atau selesaikan transaksi itu terlebih dahulu.",
+    "error-change-already-mined": "Transaksi ini tampaknya sudah ditambang. Tunggu dompet menyelesaikannya."
   }
 }

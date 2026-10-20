@@ -175,5 +175,23 @@
     "mine-directly-to-exchange": "{{exchangeName}}",
     "mining-here": "Minerando aqui",
     "or": "ou"
+  },
+  "abandon": {
+    "stalled": "A rede continua recusando esta transação. A carteira ainda tenta reenviá-la, e os fundos ficam bloqueados até ela ser minerada ou você abandoná-la.",
+    "cta": "Abandonar transação",
+    "note": "A transação é abandonada e seus fundos são liberados. Se algum nó ainda a tiver, ela ainda pode ser minerada: a carteira então a mostrará como minerada, e uma transação feita nesse meio-tempo com os fundos liberados falhará.",
+    "unreconcilable-note": "ATENÇÃO: esta transação não tem saída de troco. Se algum nó ainda a tiver e ela for minerada, a carteira NÃO a mostrará como minerada: ela continuará abandonada enquanto seus fundos aparecem como gastos, e uma transação feita nesse meio-tempo com os fundos liberados falhará.",
+    "confirm": "Abandonar",
+    "confirm-anyway": "Abandonar mesmo assim",
+    "review-label": "Você está abandonando",
+    "approve": "Aprovar abandono",
+    "done": "Transação abandonada. Seus fundos estão disponíveis novamente.",
+    "error-message": "Não foi possível abandonar a transação: ",
+    "error-not-found": "Esta transação não está nesta carteira.",
+    "error-not-pending": "Esta transação não pode mais ser abandonada: ela foi minerada ou rejeitada.",
+    "error-not-stalled": "A rede ainda não recusou esta transação vezes suficientes. Tente novamente mais tarde.",
+    "error-input-spent": "Seus fundos já foram gastos na cadeia. A carteira vai resolver isso sozinha.",
+    "error-change-in-use": "O troco dela está sendo usado por outra transação. Abandone ou resolva aquela primeiro.",
+    "error-change-already-mined": "Parece que ela foi minerada. Aguarde a carteira resolvê-la."
   }
 }

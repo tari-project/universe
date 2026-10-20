@@ -65,8 +65,8 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::wallet::minotari_wallet::{BurnReceipt, SendReceipt};
 use crate::wallet::send_gate::{
-    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_claim,
-    gated_l2_send, gated_send,
+    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_abandon, gated_burn,
+    gated_l2_claim, gated_l2_send, gated_send,
 };
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
@@ -1671,7 +1671,7 @@ pub async fn send_one_sided_to_stealth_address(
         payment_id,
     })
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_command_error())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
@@ -1695,12 +1695,36 @@ pub async fn burn_to_l2(
         payment_id,
     })
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_command_error())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "burn_to_l2 took too long: {:?}", timer.elapsed());
     }
     Ok(receipt)
+}
+
+/// Ids of the sends and burns the node keeps refusing, which the user may abandon.
+#[tauri::command]
+pub async fn get_stalled_transaction_ids() -> Result<Vec<String>, InvokeError> {
+    MinotariWalletManager::stalled_transaction_ids()
+        .await
+        .map_err(|e| InvokeError::from(e.to_string()))
+}
+
+/// Give up a stalled send or burn and release its inputs, behind the send gates.
+#[tauri::command]
+pub async fn abandon_stalled_transaction(
+    tx_id: String,
+    accept_unreconcilable: bool,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[abandon_stalled_transaction] called with args: (tx_id: {tx_id}, accept_unreconcilable: {accept_unreconcilable})");
+    gated_abandon(
+        SendOrigin::App.new_request_id(),
+        tx_id,
+        accept_unreconcilable,
+    )
+    .await
+    .map_err(|e| e.to_command_error())
 }
 
 /// Turn the L2 wallet on. Refused without a PIN; the PIN prompt unlocks the L1 seed the

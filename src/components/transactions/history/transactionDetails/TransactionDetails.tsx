@@ -9,6 +9,7 @@ import { AccordionItem } from '@app/components/transactions/components/Accordion
 import { DisplayedTransaction, TransactionInput, TransactionOutput } from '@app/types/app-status.ts';
 import { getTransactionListEntries, getInputDetails, getOutputDetails } from './getTransactionListEntries.tsx';
 import { Wrapper, OperationsSection, OperationsTitle } from './styles.ts';
+import { AbandonStalled } from './AbandonStalled.tsx';
 
 interface TransactionDetailsProps {
     transaction: DisplayedTransaction;
@@ -53,6 +54,8 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
             <Wrapper>
                 {/* Main transaction details */}
                 <StatusList entries={mainEntries} />
+
+                <AbandonStalled key={transaction.id} transactionId={transaction.id} expanded={expanded} />
 
                 {/* Operations section */}
                 {hasDetails && (

@@ -284,6 +284,11 @@ pub enum PinPromptContext {
         commitment: String,
         fee_micro_minotari: Option<u64>,
     },
+    /// Abandoning stalled send or burn `tx_id`, which hands its inputs back.
+    Abandon {
+        amount_micro_minotari: u64,
+        tx_id: String,
+    },
 }
 
 impl PinPromptContext {

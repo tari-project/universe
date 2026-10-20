@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::wallet::minotari_wallet::wallet_network;
-use anyhow::anyhow;
+use anyhow::{Context, anyhow};
 use log::{info, warn};
 use minotari_wallet::{
     db::SqlitePool,
@@ -107,7 +107,7 @@ impl TransactionManager {
         let prepared_one_sided_transaction = self
             .transaction_sender
             .start_new_transaction(idempotency_key, recipient, seconds_to_lock)
-            .map_err(|e| anyhow!("Failed to create unsigned transaction: {}", e))?;
+            .context("Failed to create unsigned transaction")?;
 
         Ok(prepared_one_sided_transaction)
     }
@@ -159,17 +159,15 @@ impl TransactionManager {
 }
 
 /// A signing failure, with the builder's refusal to build without a change output
-/// turned into the library's `ChangeNotAffordable`, whose text the UI recognises.
+/// turned into the library's typed `ChangeNotAffordable`.
 fn sign_error(error: TransactionBuilderError) -> anyhow::Error {
-    anyhow!(
-        "Failed to sign one-sided transaction: {}",
-        map_change_required_error(error)
-    )
+    map_change_required_error(error).context("Failed to sign one-sided transaction")
 }
 
 #[cfg(test)]
 mod tests {
     use super::{parse_destination_address, sign_error};
+    use minotari_wallet::transactions::input_selector::UtxoSelectionError;
     use tari_transaction_components::{TransactionBuilderError, tari_amount::MicroMinotari};
 
     // Same Esmeralda fixtures as the send validation tests in
@@ -194,13 +192,12 @@ mod tests {
             remainder: MicroMinotari(40),
             change_fee: MicroMinotari(100),
         });
-        // `CHANGE_NOT_AFFORDABLE_RE` in src/components/transactions/send/types.ts.
         assert!(
-            error
-                .to_string()
-                .to_lowercase()
-                .contains("not enough funds for a change output"),
-            "{error}"
+            matches!(
+                error.downcast_ref::<UtxoSelectionError>(),
+                Some(UtxoSelectionError::ChangeNotAffordable { .. })
+            ),
+            "{error:#}"
         );
     }
 }

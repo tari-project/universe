@@ -67,7 +67,6 @@ struct SendTransactionSuccess {
     /// False when the node hasn't accepted the send yet: it is recorded and
     /// rebroadcast automatically, so it must not be sent again.
     accepted_by_node: bool,
-    node_reason: Option<String>,
 }
 
 pub async fn send_transaction(
@@ -129,7 +128,6 @@ pub async fn send_transaction(
                 amount: amount_display,
                 amount_micro_minotari: amount_u64,
                 accepted_by_node: receipt.accepted_by_node,
-                node_reason: receipt.node_reason,
             };
             serde_json::to_string(&result)
                 .map_err(|e| TransactionError::InternalError(e.to_string()))
