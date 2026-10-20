@@ -118,6 +118,7 @@
     "error-invalid-amount": "The amount is invalid",
     "error-message": "Error sending transaction: ",
     "error-timeout": "Transaction confirmation timed out.",
+    "error-change-not-affordable": "Not enough left over to pay the fee and keep the change every transaction needs. Try a smaller amount, or press Max.",
     "estimated-completion-time": "Estimated completion time",
     "field-address": "address",
     "field-amount": "amount",

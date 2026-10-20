@@ -41,7 +41,7 @@ use std::{
 
 use log::{error, info, warn};
 use tari_common::configuration::Network;
-use tari_common_types_wallet::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
+use tari_common_types_ootle::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_crypto::tari_utilities::SafePassword;
 use tari_engine_types::resource::Resource;
 use tari_ootle_common_types::optional::Optional;
@@ -1561,7 +1561,7 @@ mod tests {
 
     #[tokio::test]
     async fn unlock_is_refused_once_the_phase_that_found_the_store_stopped() {
-        let mut shutdown = tari_shutdown::Shutdown::new();
+        let shutdown = tari_shutdown::Shutdown::new();
         let signal = shutdown.to_signal();
         shutdown.trigger();
         *INSTANCE.lifecycle.lock().await = Some((TaskTracker::new(), signal));

@@ -543,7 +543,7 @@ async fn shutdown_signal_prevents_restart() {
         status_monitor,
         _uptime,
         mut duration_since_last_healthy,
-        mut global_shutdown,
+        global_shutdown,
         tracker,
         inner_shutdown,
         mut stats,
@@ -608,7 +608,7 @@ async fn a_stuck_handle_unhealthy_gives_up_when_the_watcher_is_shut_down() {
     const CHILD_EXIT_CODE: i32 = 7;
     child.exit_code.store(CHILD_EXIT_CODE, Ordering::SeqCst);
 
-    let mut stopper = inner_shutdown.clone();
+    let stopper = inner_shutdown.clone();
     tokio::spawn(async move {
         tokio::time::sleep(Duration::from_millis(50)).await;
         stopper.trigger();

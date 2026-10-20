@@ -63,6 +63,7 @@
     "error-invalid-address": "Die adres is ongeldig",
     "error-invalid-amount": "Die bedrag is ongeldig",
     "error-message": "Fout met stuur van transaksie: ",
+    "error-change-not-affordable": "Nie genoeg oor om die fooi te betaal en die kleingeld te hou wat elke transaksie nodig het nie. Probeer 'n kleiner bedrag, of druk Maks.",
     "estimated-completion-time": "Geskatte voltooiingstyd",
     "field-address": "adres",
     "field-amount": "bedrag",

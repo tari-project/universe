@@ -22,27 +22,30 @@
 
 use crate::wallet::minotari_wallet::wallet_network;
 use anyhow::anyhow;
-use log::info;
+use log::{info, warn};
 use minotari_wallet::{
     DisplayedTransaction,
     db::SqlitePool,
     transactions::{manager::TransactionSender, one_sided_transaction::Recipient},
 };
 use std::str::FromStr;
-use tari_common_types_wallet::tari_address::TariAddress;
-use tari_transaction_components_wallet::{
+use tari_common_types::tari_address::TariAddress;
+use tari_transaction_components::{
     consensus::ConsensusManager,
-    key_manager::KeyManager as WalletKeyManager,
+    key_manager::KeyManager,
     offline_signing::{
         models::{PrepareOneSidedTransactionForSigningResult, SignedOneSidedTransactionResult},
         sign_locked_transaction,
     },
+    tari_amount::MicroMinotari,
 };
 
 use crate::credential_manager::CredentialManager;
 use crate::wallet::minotari_wallet::base_node_http_url;
 
 pub(crate) const CONFIRMATION_WINDOW: u64 = 3;
+/// Fee rate, in µT per gram, for every send and burn this wallet makes.
+pub(crate) const SEND_FEE_PER_GRAM: u64 = 5;
 /// Duration in seconds that UTXOs are locked after transaction creation.
 ///
 /// The lock only has to outlive signing and broadcasting, which run back to back with
@@ -78,13 +81,14 @@ pub struct TransactionManager {
 impl TransactionManager {
     pub async fn new(pool: SqlitePool, sender_address: String) -> Result<Self, anyhow::Error> {
         let network = wallet_network();
-        let transaction_sender = TransactionSender::new(
+        let mut transaction_sender = TransactionSender::new(
             pool,
             sender_address,
             CredentialManager::minotari_db_password().await?,
             network,
             CONFIRMATION_WINDOW,
         )?;
+        transaction_sender.fee_per_gram = MicroMinotari::from(SEND_FEE_PER_GRAM);
 
         Ok(Self { transaction_sender })
     }
@@ -111,7 +115,7 @@ impl TransactionManager {
     /// aborted by the user, so nothing stays locked after a cancelled send.
     pub async fn sign_one_sided_transaction(
         &self,
-        key_manager: &WalletKeyManager,
+        key_manager: &KeyManager,
         unsigned_tx: PrepareOneSidedTransactionForSigningResult,
     ) -> Result<SignedOneSidedTransactionResult, anyhow::Error> {
         info!("Signing one-sided transaction...");
@@ -134,12 +138,19 @@ impl TransactionManager {
         signed_transaction: SignedOneSidedTransactionResult,
     ) -> Result<DisplayedTransaction, anyhow::Error> {
         info!("Finalizing one-sided transaction...");
-        let displayed_transaction = self
+        let sent = self
             .transaction_sender
             .finalize_transaction_and_broadcast(signed_transaction, base_node_http_url().await?)
             .await?;
+        // Recorded either way; the post-scan monitor rebroadcasts it until it is mined.
+        if !sent.accepted_by_node {
+            warn!(
+                "The node has not accepted the send yet: {}",
+                sent.node_reason.unwrap_or_default()
+            );
+        }
 
-        Ok(displayed_transaction)
+        Ok(sent.displayed_transaction)
     }
 }
 

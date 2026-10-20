@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 import { render, screen, waitFor, fireEvent } from '@app/test/test-utils';
 import { useWalletStore } from '@app/store/useWalletStore';
@@ -65,5 +65,22 @@ describe('SendModal', () => {
 
         fireEvent.click(screen.getByTestId('send-confirm-button'));
         await waitFor(() => expect(sendCalls()).toHaveLength(1));
+    });
+
+    it('explains a send that leaves no room for its change output', async () => {
+        useWalletStore.setState({ is_pin_locked: false });
+        const invokeMock = vi.mocked(invoke) as unknown as Mock<(command: string) => Promise<unknown>>;
+        invokeMock.mockImplementation(async (command) => {
+            if (command === 'send_one_sided_to_stealth_address') {
+                throw 'Failed to create unsigned transaction: Not enough funds for a change output: needs 61 µT more to create a change output';
+            }
+            return [];
+        });
+        render(<SendModal section="send" setSection={vi.fn()} />);
+
+        fireEvent.click(await screen.findByTestId('send-review-button'));
+
+        expect(await screen.findByTestId('form-root-error')).toHaveTextContent('send.error-change-not-affordable');
+        invokeMock.mockResolvedValue([]);
     });
 });

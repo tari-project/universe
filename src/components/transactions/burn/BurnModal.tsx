@@ -8,7 +8,7 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { FormField } from '@app/components/transactions/send/FormField.tsx';
-import type { InputName, SendInputs } from '@app/components/transactions/send/types.ts';
+import { CHANGE_NOT_AFFORDABLE_RE, type InputName, type SendInputs } from '@app/components/transactions/send/types.ts';
 import type { SendStatus } from '@app/components/transactions/send/SendModal.tsx';
 import {
     BottomWrapper,
@@ -163,6 +163,8 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
                     setError('root.invoke_error', {
                         message: wasCancelled ? t('send.error-denied') : t('send.error-timeout'),
                     });
+                } else if (CHANGE_NOT_AFFORDABLE_RE.test(message)) {
+                    setError('root.invoke_error', { message: t('send.error-change-not-affordable') });
                 } else {
                     setStoreError(`${t('burn.error-message')}${error}`);
                     setError('root.invoke_error', { message: `${t('burn.error-message')}${error}` });

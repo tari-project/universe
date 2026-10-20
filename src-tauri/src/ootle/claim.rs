@@ -36,7 +36,7 @@ use anyhow::{anyhow, bail};
 use base64::{Engine, prelude::BASE64_STANDARD};
 use log::warn;
 use serde::{Deserialize, Serialize};
-use tari_crypto::{
+use tari_crypto_ootle::{
     keys::PublicKey as _,
     ristretto::{RistrettoPublicKey, RistrettoSecretKey},
     tari_utilities::ByteArray,

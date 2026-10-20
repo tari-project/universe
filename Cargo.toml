@@ -4,3 +4,26 @@ resolver = "2"
 
 [profile.release]
 debug = true
+
+# TEMP: local tari-ootle 6b0a9d745 + libsqlite3-sys cap raised to <0.38; replace with a pushed git rev before merging.
+[patch."https://github.com/tari-project/tari-ootle.git"]
+ootle-network = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/ootle_network" }
+ootle_byte_type = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/ootle_byte_type" }
+ootle_serde = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/ootle_serde" }
+tari_bor = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/tari_bor" }
+tari_consensus_types = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/consensus_types" }
+tari_engine_types = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/engine_types" }
+tari_indexer_client = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/clients/tari_indexer_client" }
+tari_ootle_address = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/ootle_address" }
+tari_ootle_common_types = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/common_types" }
+tari_ootle_template_metadata = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/template_metadata" }
+tari_ootle_transaction = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/transaction" }
+tari_ootle_wallet_crypto = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/wallet/crypto" }
+tari_ootle_wallet_sdk = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/wallet/sdk" }
+tari_ootle_wallet_sdk_services = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/wallet/sdk_services" }
+tari_ootle_wallet_storage_sqlite = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/wallet/storage_sqlite" }
+tari_template_abi = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/template_abi" }
+tari_template_builtin = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/template_builtin" }
+tari_template_lib = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/template_lib" }
+tari_template_lib_types = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/template_lib_types" }
+tari_template_macros = { path = "/Users/schalkvanheerden/Code/.worktrees/tari-ootle/universe_sqlite_cap/crates/template_macros" }

@@ -62,6 +62,7 @@
     "error-invalid-address": "O endereço é inválido",
     "error-invalid-amount": "O valor é inválido",
     "error-message": "Erro ao enviar transação: ",
+    "error-change-not-affordable": "Não sobra o suficiente para pagar a taxa e manter o troco que toda transação precisa. Tente um valor menor ou toque em Máx.",
     "estimated-completion-time": "Tempo estimado de conclusão",
     "field-address": "endereço",
     "field-amount": "valor",

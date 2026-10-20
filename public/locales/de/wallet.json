@@ -63,6 +63,7 @@
     "error-invalid-address": "Die Adresse ist ungültig",
     "error-invalid-amount": "Der Betrag ist ungültig",
     "error-message": "Fehler beim Senden der Transaktion: ",
+    "error-change-not-affordable": "Es bleibt nicht genug übrig, um die Gebühr zu zahlen und das Wechselgeld zu behalten, das jede Transaktion braucht. Versuche einen kleineren Betrag oder tippe auf Max.",
     "estimated-completion-time": "Geschätzte Fertigstellungszeit",
     "field-address": "Adresse",
     "field-amount": "Betrag",

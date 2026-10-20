@@ -505,6 +505,7 @@ fn main() {
             commands::l2_validate_address,
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
+            commands::get_max_sendable_amount,
             commands::trigger_phases_restart,
             commands::set_node_type,
             commands::set_remote_base_node_address,

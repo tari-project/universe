@@ -104,6 +104,7 @@ declare module '@tauri-apps/api/core' {
         payload: { address: string; sendingMethod?: number }
     ): Promise<void>;
     function invoke(param: 'validate_minotari_amount', payload: { amount: string }): Promise<string>;
+    function invoke(param: 'get_max_sendable_amount', payload: { paymentId?: string }): Promise<number>;
     function invoke(param: 'trigger_phases_restart'): Promise<void>;
     function invoke(param: 'set_node_type', payload: { nodeType: NodeType }): Promise<void>;
     function invoke(param: 'set_external_tari_address', payload: { address: string }): Promise<void>;

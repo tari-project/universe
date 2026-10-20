@@ -1836,6 +1836,15 @@ pub async fn validate_minotari_amount(amount: String) -> Result<(), InvokeError>
     }
 }
 
+/// The largest amount, in µT, a send with `payment_id` can carry once it pays its fee
+/// and keeps the change output every send must have.
+#[tauri::command]
+pub async fn get_max_sendable_amount(payment_id: Option<String>) -> Result<u64, InvokeError> {
+    MinotariWalletManager::max_sendable_amount(payment_id)
+        .await
+        .map_err(|e| InvokeError::from(e.to_string()))
+}
+
 #[tauri::command]
 pub async fn trigger_phases_restart() -> Result<(), InvokeError> {
     SetupManager::get_instance()

@@ -36,13 +36,6 @@ use tari_transaction_components::key_manager::wallet_types::{SeedWordsWallet, Wa
 use tari_transaction_components::key_manager::{
     KeyManager, SecretTransactionKeyManagerInterface, TransactionKeyManagerInterface,
 };
-// Wallet-side (tari 5.3.1) key manager types, used only for signing transactions
-// via the `minotari` crate. See `wallet::minotari_wallet::wallet_network`.
-use tari_common_types_wallet::seeds::cipher_seed::CipherSeed as WalletCipherSeed;
-use tari_transaction_components_wallet::key_manager::KeyManager as WalletKeyManager;
-use tari_transaction_components_wallet::key_manager::wallet_types::{
-    SeedWordsWallet as WalletSeedWordsWallet, WalletType as WalletWalletType,
-};
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
@@ -1031,9 +1024,9 @@ impl InternalWallet {
     pub async fn get_key_manager(
         app_handle: &AppHandle,
         pin_context: Option<PinPromptContext>,
-    ) -> Result<WalletKeyManager, anyhow::Error> {
+    ) -> Result<KeyManager, anyhow::Error> {
         let signing_wallet = Self::get_signing_wallet(app_handle, pin_context).await?;
-        WalletKeyManager::new(signing_wallet).map_err(|e| anyhow!(e.to_string()))
+        KeyManager::new(signing_wallet).map_err(|e| anyhow!(e.to_string()))
     }
 
     /// The full (spend-capable) wallet rebuilt from the stored seed, raising the PIN
@@ -1042,17 +1035,15 @@ impl InternalWallet {
     pub async fn get_signing_wallet(
         app_handle: &AppHandle,
         pin_context: Option<PinPromptContext>,
-    ) -> Result<WalletWalletType, anyhow::Error> {
+    ) -> Result<WalletType, anyhow::Error> {
         let tari_wallet_details = Self::tari_wallet_details().await;
 
         if tari_wallet_details.is_some() {
             let tari_cipher_seed = Self::get_tari_seed_with_prompt(app_handle, pin_context).await?;
-            let wallet_cipher_seed = to_wallet_cipher_seed(&tari_cipher_seed)?;
-
-            let seed_words_wallet = WalletSeedWordsWallet::construct_new(wallet_cipher_seed)
+            let seed_words_wallet = SeedWordsWallet::construct_new(tari_cipher_seed)
                 .map_err(|e| anyhow!(e.to_string()))?;
 
-            Ok(WalletWalletType::SeedWords(seed_words_wallet))
+            Ok(WalletType::SeedWords(seed_words_wallet))
         } else {
             Err(anyhow!(
                 "Seedless Wallet does not support Key Manager extraction"
@@ -1693,13 +1684,14 @@ fn zero_fill(path: &Path, len: u64, chunk_len: usize) -> std::io::Result<()> {
     file.sync_all()
 }
 
-/// The `minotari` signing crate and the Ootle wallet SDK use tari 5.7.0-pre.8, so rebuild
-/// the cipher seed as a wallet-side `CipherSeed`. The binary form is identical across the
-/// two versions (CIPHER_SEED_VERSION == 2), so this round-trip is lossless. The
-/// intermediate buffer is the master entropy in the clear, so it is wiped on drop rather
-/// than left in the heap.
-pub fn to_wallet_cipher_seed(seed: &CipherSeed) -> Result<WalletCipherSeed, anyhow::Error> {
-    WalletCipherSeed::from_binary(&Zeroizing::new(
+/// The Ootle wallet SDK uses tari 5.7.0-pre.8, so rebuild the cipher seed as its
+/// `CipherSeed`. The binary form is identical across the two versions
+/// (CIPHER_SEED_VERSION == 2), so this round-trip is lossless. The intermediate buffer
+/// is the master entropy in the clear, so it is wiped on drop rather than left in the heap.
+pub fn to_wallet_cipher_seed(
+    seed: &CipherSeed,
+) -> Result<tari_common_types_ootle::seeds::cipher_seed::CipherSeed, anyhow::Error> {
+    tari_common_types_ootle::seeds::cipher_seed::CipherSeed::from_binary(&Zeroizing::new(
         seed.to_binary().map_err(|e| anyhow!(e.to_string()))?,
     ))
     .map_err(|e| anyhow!(e.to_string()))

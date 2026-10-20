@@ -1,6 +1,6 @@
 import { FormProvider, useForm } from 'react-hook-form';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
-import type { SendInputs } from '@app/components/transactions/send/types.ts';
+import { CHANGE_NOT_AFFORDABLE_RE, type SendInputs } from '@app/components/transactions/send/types.ts';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SendForm } from './SendForm.tsx';
@@ -94,6 +94,8 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                     setError(`root.invoke_error`, {
                         message: wasCancelled ? t('send.error-denied') : t('send.error-timeout'),
                     });
+                } else if (CHANGE_NOT_AFFORDABLE_RE.test(message)) {
+                    setError(`root.invoke_error`, { message: t('send.error-change-not-affordable') });
                 } else {
                     setStoreError(`Error sending transaction: ${error}`);
                     setError(`root.invoke_error`, {

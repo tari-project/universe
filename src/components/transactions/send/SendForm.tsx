@@ -1,5 +1,6 @@
 import { ChangeEvent, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { invoke } from '@tauri-apps/api/core';
 
 import { useFormContext } from 'react-hook-form';
 
@@ -158,7 +159,11 @@ export function SendForm({ isBack, hasReviewStep = true }: Props) {
                                     onClick={async (e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        setValue('amount', numericAvailableBalance, {
+                                        // The balance less the fee and the change output every send keeps.
+                                        const maxSendable = await invoke('get_max_sendable_amount', {
+                                            paymentId: getValues().message,
+                                        });
+                                        setValue('amount', maxSendable / 1_000_000, {
                                             shouldValidate: true,
                                         });
                                         await handleAmountBlur();

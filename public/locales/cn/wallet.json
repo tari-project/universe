@@ -63,6 +63,7 @@
     "error-invalid-address": "地址无效",
     "error-invalid-amount": "金额无效",
     "error-message": "发送交易错误：",
+    "error-change-not-affordable": "剩余金额不足以支付手续费并保留每笔交易所需的找零。请尝试更小的金额，或点击“最大”。",
     "estimated-completion-time": "预计完成时间",
     "field-address": "地址",
     "field-amount": "金额",

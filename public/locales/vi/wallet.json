@@ -63,6 +63,7 @@
     "error-invalid-address": "Địa chỉ không hợp lệ",
     "error-invalid-amount": "Số tiền không hợp lệ",
     "error-message": "Lỗi khi gửi giao dịch: ",
+    "error-change-not-affordable": "Không còn đủ để trả phí và giữ lại tiền thừa mà mọi giao dịch đều cần. Hãy thử số tiền nhỏ hơn hoặc nhấn Tối đa.",
     "estimated-completion-time": "Thời gian hoàn tất dự kiến",
     "field-address": "địa chỉ",
     "field-amount": "số tiền",

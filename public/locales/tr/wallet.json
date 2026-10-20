@@ -63,6 +63,7 @@
     "error-invalid-address": "Adres geçersiz",
     "error-invalid-amount": "Tutar geçersiz",
     "error-message": "İşlem gönderme hatası: ",
+    "error-change-not-affordable": "Ücreti ödemek ve her işlemin gerektirdiği para üstünü ayırmak için yeterli bakiye kalmıyor. Daha küçük bir tutar deneyin ya da Maks'a basın.",
     "estimated-completion-time": "Tahmini tamamlanma süresi",
     "field-address": "adres",
     "field-amount": "tutar",
