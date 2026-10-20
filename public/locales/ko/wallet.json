@@ -64,6 +64,7 @@
     "error-invalid-amount": "금액이 유효하지 않음",
     "error-message": "거래 전송 오류: ",
     "error-change-not-affordable": "수수료를 내고 모든 거래에 필요한 잔돈을 남기기에 남은 금액이 부족합니다. 더 적은 금액을 입력하거나 최대를 누르세요.",
+    "error-max-unavailable": "최대 금액을 계산하지 못했습니다. 잠시 후 다시 시도하세요.",
     "estimated-completion-time": "예상 완료 시간",
     "field-address": "주소",
     "field-amount": "금액",

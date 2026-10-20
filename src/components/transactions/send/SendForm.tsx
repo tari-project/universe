@@ -160,9 +160,16 @@ export function SendForm({ isBack, hasReviewStep = true }: Props) {
                                         e.preventDefault();
                                         e.stopPropagation();
                                         // The balance less the fee and the change output every send keeps.
-                                        const maxSendable = await invoke('get_max_sendable_amount', {
-                                            paymentId: getValues().message,
-                                        });
+                                        let maxSendable: number;
+                                        try {
+                                            maxSendable = await invoke('get_max_sendable_amount', {
+                                                paymentId: getValues().message,
+                                            });
+                                        } catch (error) {
+                                            console.error('Could not get the max sendable amount:', error);
+                                            setError('amount', { message: t('send.error-max-unavailable') });
+                                            return;
+                                        }
                                         setValue('amount', maxSendable / 1_000_000, {
                                             shouldValidate: true,
                                         });

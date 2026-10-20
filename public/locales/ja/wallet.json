@@ -64,6 +64,7 @@
     "error-invalid-amount": "金額が無効です",
     "error-message": "トランザクション送信エラー: ",
     "error-change-not-affordable": "手数料を支払い、すべての取引に必要なおつりを残すには残高が足りません。金額を減らすか、「最大」を押してください。",
+    "error-max-unavailable": "最大金額を計算できませんでした。少し待ってからもう一度お試しください。",
     "estimated-completion-time": "完了予定時間",
     "field-address": "アドレス",
     "field-amount": "金額",

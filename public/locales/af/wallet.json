@@ -64,6 +64,7 @@
     "error-invalid-amount": "Die bedrag is ongeldig",
     "error-message": "Fout met stuur van transaksie: ",
     "error-change-not-affordable": "Nie genoeg oor om die fooi te betaal en die kleingeld te hou wat elke transaksie nodig het nie. Probeer 'n kleiner bedrag, of druk Maks.",
+    "error-max-unavailable": "Kon nie die maksimum bedrag bereken nie. Probeer weer oor 'n oomblik.",
     "estimated-completion-time": "Geskatte voltooiingstyd",
     "field-address": "adres",
     "field-amount": "bedrag",

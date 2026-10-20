@@ -64,6 +64,7 @@
     "error-invalid-amount": "Le montant est invalide",
     "error-message": "Erreur lors de l\"envoi de la transaction : ",
     "error-change-not-affordable": "Il ne reste pas assez pour payer les frais et conserver la monnaie dont chaque transaction a besoin. Essayez un montant plus petit ou appuyez sur Max.",
+    "error-max-unavailable": "Impossible de calculer le montant maximum. Réessayez dans un instant.",
     "estimated-completion-time": "Temps estimé de complétion",
     "field-address": "adresse",
     "field-amount": "montant",

@@ -64,6 +64,7 @@
     "error-invalid-amount": "Jumlah tidak valid",
     "error-message": "Kesalahan mengirim transaksi: ",
     "error-change-not-affordable": "Sisa saldo tidak cukup untuk membayar biaya dan menyimpan kembalian yang dibutuhkan setiap transaksi. Coba jumlah yang lebih kecil, atau tekan Maks.",
+    "error-max-unavailable": "Tidak dapat menghitung jumlah maksimum. Coba lagi sebentar lagi.",
     "estimated-completion-time": "Perkiraan waktu penyelesaian",
     "field-address": "alamat",
     "field-amount": "jumlah",

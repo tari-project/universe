@@ -64,6 +64,7 @@
     "error-invalid-amount": "金额无效",
     "error-message": "发送交易错误：",
     "error-change-not-affordable": "剩余金额不足以支付手续费并保留每笔交易所需的找零。请尝试更小的金额，或点击“最大”。",
+    "error-max-unavailable": "无法计算最大金额。请稍后再试。",
     "estimated-completion-time": "预计完成时间",
     "field-address": "地址",
     "field-amount": "金额",

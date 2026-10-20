@@ -64,6 +64,7 @@
     "error-invalid-amount": "राशि अमान्य है",
     "error-message": "लेन-देन भेजने में त्रुटि: ",
     "error-change-not-affordable": "शुल्क चुकाने और हर लेन-देन के लिए ज़रूरी चेंज रखने के लिए पर्याप्त राशि नहीं बची है। कम राशि आज़माएँ, या अधिकतम दबाएँ।",
+    "error-max-unavailable": "अधिकतम राशि का पता नहीं चल सका। थोड़ी देर में फिर से कोशिश करें।",
     "estimated-completion-time": "अनुमानित पूर्णता समय",
     "field-address": "पता",
     "field-amount": "राशि",

@@ -60,7 +60,6 @@ use minotari_wallet::{
     db::{
         AccountBalance, AccountRow, DbBurnProof, fetch_unspent_outputs, get_account_by_name,
         get_latest_scanned_tip_block_by_account, get_pending_burn_proofs,
-        mark_completed_transaction_as_broadcasted, mark_completed_transaction_as_rejected,
     },
     get_balance,
     http::WalletHttpClient,
@@ -70,6 +69,7 @@ use minotari_wallet::{
         TransactionSource,
         burn::{BurnTxParams, BurnTxResult, create_burn_tx, persist_burn_records},
         fee_estimator::estimated_output_size_for_payment_id,
+        manager::record_first_broadcast,
         one_sided_transaction::Recipient,
     },
     utils::{
@@ -1362,30 +1362,26 @@ fn move_legacy_burn_proofs(legacy: PathBuf, dir: PathBuf) -> PathBuf {
     }
 }
 
-/// Only an explicit rejection by the node marks the burn rejected. A transport error
-/// leaves it completed: the node may have it and mine it, and the monitor that runs
-/// after each scan cycle rebroadcasts completed transactions until the scan sees them
-/// mined. Until then it stays a pending burn.
+/// Records the burn's first broadcast the way the library records a send's. A burn the
+/// node refused, or that got no answer, stays completed with its inputs locked: the
+/// monitor that runs after each scan cycle rebroadcasts it, and only the scan can
+/// reject it. Until then it is a pending burn, and the user is told it may still go
+/// through.
 fn record_burn_broadcast(
     conn: &Connection,
     tx_id: TxId,
     submitted: Result<TxSubmissionResponse, anyhow::Error>,
 ) -> Result<(), anyhow::Error> {
-    match submitted {
-        Ok(r) if r.accepted => Ok(mark_completed_transaction_as_broadcasted(conn, tx_id, 1)?),
-        Ok(r) => {
-            let reason = r.rejection_reason.to_string();
-            mark_completed_transaction_as_rejected(conn, tx_id, &reason)?;
-            Err(anyhow::anyhow!("Burn rejected by network: {reason}"))
-        }
-        Err(e) => Err(anyhow::anyhow!(
-            "Couldn't confirm the burn reached the network ({e}). It may still go through, so check again later before burning again."
+    match record_first_broadcast(Some(conn), tx_id, submitted).node_reason {
+        None => Ok(()),
+        Some(reason) => Err(anyhow::anyhow!(
+            "Couldn't confirm the network accepted the burn ({reason}). It may still go through, so check again later before burning again."
         )),
     }
 }
 
-/// Pending burn proofs, less those whose transaction was rejected: a rejected burn is
-/// never mined, so it would sit pending forever.
+/// Pending burn proofs, less those whose transaction the scan rejected (its inputs were
+/// spent elsewhere): a rejected burn is never mined, so it would sit pending forever.
 fn pending_burns(conn: &Connection) -> Result<Vec<DbBurnProof>, anyhow::Error> {
     let rejected: HashSet<i64> = conn
         .prepare(
@@ -1433,7 +1429,7 @@ mod tests {
     use crate::wallet::minotari_wallet::transaction::{CONFIRMATION_WINDOW, SEND_FEE_PER_GRAM};
     use minotari_wallet::db::{
         SqlitePool, create_account, get_account_by_name, init_db, insert_scanned_tip_block,
-        mark_completed_transaction_as_rejected_in_block,
+        insert_unconfirmed_change_output, mark_completed_transaction_as_rejected_in_block,
     };
     use minotari_wallet::transactions::{
         input_selector::UtxoSelectionError, manager::TransactionSender,
@@ -1443,13 +1439,39 @@ mod tests {
     use std::collections::HashSet;
     use tari_common::configuration::Network;
     use tari_common_types::seeds::cipher_seed::CipherSeed;
-    use tari_common_types::types::FixedHash;
+    use tari_common_types::types::{FixedHash, PrivateKey};
     use tari_transaction_components::key_manager::wallet_types::{SeedWordsWallet, WalletType};
+    use tari_transaction_components::rpc::models::{
+        TxSubmissionRejectionReason, TxSubmissionResponse,
+    };
     use tari_transaction_components::tari_amount::MicroMinotari;
     use tari_transaction_components::transaction_components::{MemoField, WalletOutput};
     use zeroize::Zeroizing;
 
     const PASSWORD: &str = "pass";
+
+    /// An output worth `value`, told apart from others by `seed`.
+    fn test_output(value: u64, seed: u8) -> WalletOutput {
+        WalletOutput::new_from_parts(
+            Default::default(),
+            MicroMinotari::from(value),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            Default::default(),
+            0,
+            Default::default(),
+            Default::default(),
+            MicroMinotari::from(0),
+            None,
+            MemoField::new_empty(),
+            FixedHash::from([seed; 32]),
+            Default::default(),
+        )
+    }
 
     /// A wallet database with one account holding a spendable output of each value.
     fn funded_wallet(values: &[u64]) -> (SqlitePool, i64, tempfile::TempDir) {
@@ -1467,25 +1489,7 @@ mod tests {
         insert_scanned_tip_block(&conn, account_id, 200, &[0u8; 32]).expect("tip");
         for (i, value) in values.iter().enumerate() {
             let seed = u8::try_from(i + 1).expect("few outputs");
-            let output = WalletOutput::new_from_parts(
-                Default::default(),
-                MicroMinotari::from(*value),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                Default::default(),
-                0,
-                Default::default(),
-                Default::default(),
-                MicroMinotari::from(0),
-                None,
-                MemoField::new_empty(),
-                FixedHash::from([seed; 32]),
-                Default::default(),
-            );
+            let output = test_output(*value, seed);
             conn.execute(
                 "INSERT INTO outputs (account_id, tx_id, output_hash, mined_in_block_height,
                    mined_in_block_hash, value, mined_timestamp, wallet_output_json, status,
@@ -1575,7 +1579,7 @@ mod tests {
         let err = pending_burns_guard(&path).expect_err("refused");
         assert!(err.to_string().starts_with("2 burns to Layer 2"), "{err}");
 
-        // The second burn was rejected by the network: it will never be mined.
+        // The second burn was rejected: it will never be mined.
         conn.execute(
             "INSERT INTO completed_transactions (id, account_id, pending_tx_id, status,
                kernel_excess, sent_output_hash, serialized_transaction)
@@ -1633,6 +1637,72 @@ mod tests {
         assert_eq!(status, "completed");
         assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
         assert!(pending_burns_guard(&path).is_err());
+    }
+
+    #[test]
+    fn a_burn_the_node_refused_stays_pending_for_the_scan_to_settle() {
+        let (pool, account_id, _dir) = funded_wallet(&[1_000_000]);
+        let conn = pool.get().expect("connection");
+        conn.execute_batch("PRAGMA foreign_keys = OFF")
+            .expect("pragma");
+        // What `persist_burn_records` leaves behind: the input locked by the burn's
+        // request, the completed burn, its proof and its unconfirmed change.
+        conn.execute(
+            "UPDATE outputs SET status = 'LOCKED', locked_by_request_id = 'p'",
+            [],
+        )
+        .expect("locked input");
+        conn.execute(
+            "INSERT INTO completed_transactions (id, account_id, pending_tx_id, status,
+               kernel_excess, sent_output_hash, serialized_transaction)
+             VALUES (12, ?1, 'p', 'completed', x'', ?2, x'')",
+            (account_id, hex::encode([6u8; 32])),
+        )
+        .expect("burn transaction");
+        conn.execute(
+            "INSERT INTO burn_proofs (account_id, output_hash, commitment, claim_public_key,
+               ownership_proof_nonce, ownership_proof_sig, kernel_excess, kernel_excess_nonce,
+               kernel_excess_sig, sender_offset_public_key, encrypted_data, value)
+             VALUES (?1, ?2, ?2, '', zeroblob(32), zeroblob(32), zeroblob(32),
+               zeroblob(32), zeroblob(32), zeroblob(32), x'', 1)",
+            (account_id, [6u8; 32].as_slice()),
+        )
+        .expect("burn proof");
+        insert_unconfirmed_change_output(
+            &conn,
+            account_id,
+            &PrivateKey::default(),
+            "p",
+            &test_output(400_000, 7),
+        )
+        .expect("change");
+
+        let refused = TxSubmissionResponse {
+            accepted: false,
+            rejection_reason: TxSubmissionRejectionReason::DoubleSpend,
+            is_synced: true,
+            details: None,
+        };
+        let err = record_burn_broadcast(&conn, 12u64.into(), Ok(refused)).expect_err("reported");
+        assert!(err.to_string().contains("may still go through"), "{err}");
+
+        let status: String = conn
+            .query_row(
+                "SELECT status FROM completed_transactions WHERE id = 12",
+                [],
+                |r| r.get(0),
+            )
+            .expect("status");
+        assert_eq!(status, "completed");
+        let output_statuses: Vec<String> = conn
+            .prepare("SELECT status FROM outputs ORDER BY status")
+            .expect("query")
+            .query_map([], |r| r.get(0))
+            .expect("rows")
+            .collect::<Result<_, _>>()
+            .expect("statuses");
+        assert_eq!(output_statuses, vec!["LOCKED", "UNCONFIRMED"]);
+        assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
     }
 
     #[test]
