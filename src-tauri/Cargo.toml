@@ -97,15 +97,15 @@ tari_crypto_ootle = { package = "tari_crypto", version = "0.23.1" }
 tari_shutdown = "=6.2.0-pre.1"
 tari_transaction_components = "=6.2.0-pre.1"
 tari_utilities = "0.10.0"
-tari_ootle_common_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "6b0a9d745" }
-tari_ootle_wallet_sdk = { git = "https://github.com/tari-project/tari-ootle.git", rev = "6b0a9d745" }
-tari_ootle_wallet_sdk_services = { git = "https://github.com/tari-project/tari-ootle.git", rev = "6b0a9d745", features = [
+tari_ootle_common_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "3ca97dddf" }
+tari_ootle_wallet_sdk = { git = "https://github.com/tari-project/tari-ootle.git", rev = "3ca97dddf" }
+tari_ootle_wallet_sdk_services = { git = "https://github.com/tari-project/tari-ootle.git", rev = "3ca97dddf", features = [
   "indexer_client",
 ] }
-tari_ootle_wallet_storage_sqlite = { git = "https://github.com/tari-project/tari-ootle.git", rev = "6b0a9d745" }
-tari_ootle_transaction = { git = "https://github.com/tari-project/tari-ootle.git", rev = "6b0a9d745" }
-tari_engine_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "6b0a9d745" }
-tari_template_lib = { git = "https://github.com/tari-project/tari-ootle.git", rev = "6b0a9d745" }
+tari_ootle_wallet_storage_sqlite = { git = "https://github.com/tari-project/tari-ootle.git", rev = "3ca97dddf" }
+tari_ootle_transaction = { git = "https://github.com/tari-project/tari-ootle.git", rev = "3ca97dddf" }
+tari_engine_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "3ca97dddf" }
+tari_template_lib = { git = "https://github.com/tari-project/tari-ootle.git", rev = "3ca97dddf" }
 tauri = { version = "2", features = [
   "protocol-asset",
   "isolation",
