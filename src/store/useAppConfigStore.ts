@@ -70,6 +70,7 @@ const configBEInMemoryInitialState: ConfigBackendInMemory = {
     airdrop_twitter_auth_url: '',
     exchange_id: '',
     bridge_backend_api_url: '',
+    netmap_api_base_url: '',
 };
 
 export const useConfigWalletStore = create<ConfigWallet>()(() => ({

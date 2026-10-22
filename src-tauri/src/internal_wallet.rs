@@ -43,7 +43,6 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::fs;
 use tokio::sync::{OnceCell, RwLock};
-use zeroize::Zeroizing;
 
 use tari_utilities::hex::Hex;
 
@@ -430,7 +429,7 @@ impl InternalWallet {
                 Some(p) => p,
                 None => PinManager::get_validated_pin(app_handle, None).await?,
             };
-            tari_seed.encipher(Some(pin_password))?
+            tari_seed.encipher(Some(pin_password))?.to_vec()
         } else {
             tari_seed
                 .to_binary()
@@ -560,7 +559,7 @@ impl InternalWallet {
                 .await
                 .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
                 .id;
-            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?;
+            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?.to_vec();
             InternalWallet::set_credentials(
                 app_handle,
                 wallet_id.clone(),
@@ -584,7 +583,8 @@ impl InternalWallet {
         Ok(pin_password)
     }
 
-    pub async fn create_pin(app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+    /// Asks for a new PIN, enciphers the stored seeds with it and returns it.
+    pub async fn create_pin(app_handle: &AppHandle) -> Result<SafePassword, anyhow::Error> {
         if PinManager::pin_locked().await {
             // The stored seeds are already enciphered with a PIN and nothing decrypts twice.
             return Err(anyhow!("A PIN is already set for this wallet"));
@@ -645,7 +645,7 @@ impl InternalWallet {
         };
         let encrypted_tari_seed = {
             // Encrypt Tari Seed with PIN
-            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password))?;
+            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?.to_vec();
             InternalWallet::set_credentials(
                 app_handle,
                 wallet_id,
@@ -666,7 +666,7 @@ impl InternalWallet {
                 Hidden::hide(Some(encrypted_tari_seed.clone()));
         }
 
-        Ok(())
+        Ok(pin_password)
     }
 
     async fn get_credentials(
@@ -1682,17 +1682,4 @@ fn zero_fill(path: &Path, len: u64, chunk_len: usize) -> std::io::Result<()> {
         remaining -= chunk as u64;
     }
     file.sync_all()
-}
-
-/// The Ootle wallet SDK uses tari 5.7.0-pre.8, so rebuild the cipher seed as its
-/// `CipherSeed`. The binary form is identical across the two versions
-/// (CIPHER_SEED_VERSION == 2), so this round-trip is lossless. The intermediate buffer
-/// is the master entropy in the clear, so it is wiped on drop rather than left in the heap.
-pub fn to_wallet_cipher_seed(
-    seed: &CipherSeed,
-) -> Result<tari_common_types_ootle::seeds::cipher_seed::CipherSeed, anyhow::Error> {
-    tari_common_types_ootle::seeds::cipher_seed::CipherSeed::from_binary(&Zeroizing::new(
-        seed.to_binary().map_err(|e| anyhow!(e.to_string()))?,
-    ))
-    .map_err(|e| anyhow!(e.to_string()))
 }

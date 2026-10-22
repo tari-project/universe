@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { emit } from '@tauri-apps/api/event';
 import type { PinPromptContext } from '@app/types/events-payloads.ts';
 
-const _DIALOGS = ['intro', 'verify_seedphrase', 'create_pin', 'enter_pin', 'forgot_pin'] as const;
+const _DIALOGS = ['intro', 'verify_seedphrase', 'create_pin', 'enter_pin', 'forgot_pin', 'l2_pin_required'] as const;
 
 type DialogsTuple = typeof _DIALOGS;
 export type DialogsType = DialogsTuple[number] | null;

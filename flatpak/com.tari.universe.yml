@@ -73,6 +73,9 @@ build-options:
     # The Tari crates compile .proto definitions with prost-build, which shells
     # out to protoc (provided by the protobuf module below).
     PROTOC: /app/bin/protoc
+    # utoipa-swagger-ui (through the minotari wallet crate) downloads Swagger UI
+    # in its build script; point it at the copy vendored below instead.
+    SWAGGER_UI_DOWNLOAD_URL: file:///run/build/tari-universe/swagger-ui.zip
     # Build the mainnet/production variant. This selects env.mainnet at compile
     # time and sets the app data folder id to `com.tari.universe`.
     TARI_NETWORK: mainnet
@@ -218,6 +221,13 @@ modules:
       # Vendored offline dependency trees (generated — see generate-sources.sh)
       - cargo-sources.json
       - node-sources.json
+
+      # Swagger UI for utoipa-swagger-ui's build script (see SWAGGER_UI_DOWNLOAD_URL).
+      # The version is the crate's default; bump both together.
+      - type: file
+        dest-filename: swagger-ui.zip
+        url: https://github.com/swagger-api/swagger-ui/archive/refs/tags/v5.17.14.zip
+        sha256: 481244d0812097b11fbaeef79f71d942b171617f9c9f9514e63acbe13e71ccdc
 
       # pnpm itself. node22 provides node/npm/yarn/corepack but no pnpm, and
       # corepack can't fetch it offline, so vendor the standalone binary (pinned

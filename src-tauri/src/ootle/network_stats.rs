@@ -69,8 +69,9 @@ struct Economics {
     total_exhaust_burned: String,
 }
 
-/// Runs straight away and then every 30 seconds, until the wallet stops.
-pub async fn poll(sdk: OotleSdk, indexer: Url, network: Network) -> Result<(), anyhow::Error> {
+/// Runs straight away and then every 30 seconds, until the wallet stops. Asks whichever
+/// indexer the wallet uses at the time, so a changed indexer URL applies on the next tick.
+pub async fn poll(sdk: OotleSdk, network: Network) -> Result<(), anyhow::Error> {
     let client = reqwest::Client::builder()
         .timeout(REQUEST_TIMEOUT)
         .build()?;
@@ -80,6 +81,7 @@ pub async fn poll(sdk: OotleSdk, indexer: Url, network: Network) -> Result<(), a
     let mut interval = tokio::time::interval(POLL_INTERVAL);
     loop {
         interval.tick().await;
+        let indexer = sdk.get_network_interface().get_endpoint();
         match fetch_stats(&client, &indexer, &consensus).await {
             Ok(stats) if last_stats.as_ref() != Some(&stats) => {
                 last_stats = Some(stats.clone());

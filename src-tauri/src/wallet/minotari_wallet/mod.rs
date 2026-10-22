@@ -126,7 +126,7 @@ use std::{
 use tari_common::configuration::Network;
 use tari_common_types::transaction::TxId;
 use tari_transaction_components::fee::Fee;
-use tari_transaction_components::rpc::models::{TxLocation, TxSubmissionResponse};
+use tari_transaction_components::rpc::models::TxSubmissionResponse;
 use tari_transaction_components::tari_amount::MicroMinotari;
 use tari_transaction_components::transaction_components::{MAX_TRANSACTION_INPUTS, Transaction};
 use tari_transaction_components::weight::TransactionWeight;
@@ -337,7 +337,7 @@ impl MinotariWalletManager {
     /// Burn `amount` µT so it can be claimed on L2 by `claim_public_key`.
     ///
     /// The partial burn proof is persisted before broadcast; [`Self::run_burn_proof_worker`]
-    /// completes it with the kernel merkle proof once the burn is mined and writes the
+    /// completes it with the output inclusion proof once the burn is mined and writes the
     /// claim file named in the returned [`BurnReceipt`].
     pub async fn burn_to_l2(
         claim_public_key: String,
@@ -477,22 +477,7 @@ impl MinotariWalletManager {
         burn_times(&*Self::get_db_connection().await?)
     }
 
-    /// The L1 height the node says the transaction with this kernel signature was mined
-    /// at, or None while it isn't mined.
-    pub async fn mined_height(
-        excess_sig_nonce: &[u8],
-        excess_sig: &[u8],
-    ) -> Result<Option<u64>, anyhow::Error> {
-        let client = WalletHttpClient::new(base_node_http_url().await?.parse()?)?;
-        let response = client
-            .transaction_query(excess_sig_nonce, excess_sig)
-            .await?;
-        Ok(response
-            .mined_height
-            .filter(|_| response.location == TxLocation::Mined))
-    }
-
-    /// Completes pending burn proofs with their kernel merkle proof once the burn is
+    /// Completes pending burn proofs with their output inclusion proof once the burn is
     /// mined, writing the L2 claim file. Same lifecycle as the transaction unlocker.
     pub async fn run_burn_proof_worker() -> Result<(), anyhow::Error> {
         if INSTANCE.burn_proof_handle.read().await.is_some() {

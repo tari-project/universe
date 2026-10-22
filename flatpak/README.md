@@ -61,12 +61,15 @@ flatpak run com.tari.universe
 
 ## CI / future releases
 
-`.github/workflows/flatpak.yml` builds the bundle and, on a published release,
-attaches `tari-universe-<version>-x86_64.flatpak` as a release asset. It's
+`.github/workflows/flatpak.yml` builds the bundle. `release.yml` calls it next to
+the Windows and macOS builds: a release build attaches
+`tari-universe-<version>-x86_64.flatpak` to the draft release, and an ad-hoc build
+(Supported or Linux-x64) keeps it as a workflow artifact, with the network in the
+name for test networks (`tari-universe-<version>-esmeralda-x86_64.flatpak`). It's
 **self-maintaining**: it regenerates the offline sources from the release's own
 lockfiles each run, and the manifest builds the checked-out commit — so new
-releases need no manual updates here. It's standalone and doesn't touch the
-existing `release.yml`. Trigger it manually via *Actions → Flatpak → Run workflow*.
+releases need no manual updates here. Trigger it on its own via
+*Actions → Flatpak → Run workflow*, picking the network.
 
 Before building, CI strips the `(Alpha)` branding / `.alpha` identifier with the
 **same `yq` rewrite `release.yml` uses for its RELEASE builds** (one source of
@@ -168,6 +171,8 @@ The guards are inert in non-Flatpak builds, so the patch is safe to keep.
 
 The manifest builds the **mainnet** variant (`--features release-ci`,
 `TARI_NETWORK=mainnet`), which sets the app data folder id to `com.tari.universe`
-— matching the Flatpak app-id. For a testnet build, drop `--features release-ci`
-(folder id becomes `com.tari.universe.alpha`) and set `TARI_NETWORK=esmeralda`;
-rename the manifest/app-id to match if you want the sandbox path to line up.
+— matching the Flatpak app-id. For another network, CI sets `TARI_NETWORK` (and
+`TARI_TARGET_NETWORK`) and builds with `--features release-ci-beta` like
+`release.yml`'s beta builds, so the folder id becomes `com.tari.universe.beta`. The
+Flatpak app-id stays `com.tari.universe`, so installing a test network bundle
+replaces an installed mainnet one.

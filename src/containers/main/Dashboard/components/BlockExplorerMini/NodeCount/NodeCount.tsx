@@ -1,19 +1,19 @@
 import i18n from 'i18next';
 import NumberFlow from '@number-flow/react';
 
-import { useMinerStats } from '@app/hooks/mining/useMinerCount.ts';
+import { useNodeStats } from '@app/hooks/mining/useNodeStats.ts';
 
 import { Content, CountText, Dot, Wrapper } from './styles.ts';
 import { useTranslation } from 'react-i18next';
 import { useRef } from 'react';
 
-export default function MinerCount() {
+export default function NodeCount() {
     const { t } = useTranslation('mining-view');
-    const { data: totalMiners } = useMinerStats();
+    const { data: activeNodes } = useNodeStats();
     const contentRef = useRef<HTMLDivElement>(null);
     const contentWidth = contentRef.current?.clientWidth;
 
-    const value = totalMiners || 0;
+    const value = activeNodes || 0;
     const rounded = value >= 50_000 ? Math.floor(value / 1000) * 1000 : value;
     const notation = value >= 50_000 ? 'compact' : 'standard';
 
@@ -30,7 +30,7 @@ export default function MinerCount() {
                             notation,
                         }}
                     />
-                    {` ${t('bubbles.active-miners')}`}
+                    {` ${t('bubbles.active-nodes')}`}
                 </CountText>
             </Content>
         </Wrapper>

@@ -280,6 +280,7 @@
     "unlock": "Unlock Layer 2",
     "unlock-error": "Couldn't unlock Layer 2: ",
     "indexer": "Indexer",
+    "indexer-error": "Invalid indexer URL: {{reason}}",
     "seed-words": "Seed words",
     "seed-note-l1": "Your Ootle wallet uses the same seed words as your Tari wallet.",
     "seed-note-imported": "Your Ootle wallet uses its own imported seed words. Back them up separately.",

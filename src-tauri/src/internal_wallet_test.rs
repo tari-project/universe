@@ -134,27 +134,22 @@ async fn the_wallet_accessors_degrade_before_initialization() {
 
 // --- The seed decode has to be proven ------------------------------------------------------
 
-/// Why every plain decode is proven against the recorded address: `from_binary` is
-/// unauthenticated, so PIN-enciphered bytes come back as a structurally valid seed with
-/// different entropy. Returned unchecked, that is a different wallet address, which the user
-/// experiences as a lost wallet.
+/// Since tari 6.3 a PIN-enciphered seed is a version of its own (3), so `from_binary` refuses
+/// one written now instead of reading it as a different seed. Seeds enciphered by earlier
+/// versions are version 2 and still decode that way into a different wallet; the address
+/// proof below is what catches those.
 #[test]
-fn enciphered_bytes_decode_through_the_plain_path_into_a_different_seed() {
+fn enciphered_bytes_no_longer_decode_through_the_plain_path() {
     let seed = CipherSeed::random();
     let enciphered = seed
         .encipher(Some(SafePassword::from("1234")))
         .expect("encipher the fixture seed");
 
-    let decoded = CipherSeed::from_binary(&enciphered)
-        .expect("from_binary accepts enciphered bytes, which is the whole problem");
-
-    assert_ne!(
-        decoded.entropy(),
-        seed.entropy(),
-        "an unproven plain decode yields a different wallet"
-    );
-    // The proof the wallet uses is the derived address; entropy is what drives it.
-    assert_ne!(decoded.to_binary().ok(), seed.to_binary().ok());
+    assert!(CipherSeed::from_binary(&enciphered).is_err());
+    let deciphered =
+        CipherSeed::from_enciphered_bytes(&enciphered, Some(SafePassword::from("1234")))
+            .expect("the PIN opens it");
+    assert_eq!(deciphered.entropy(), seed.entropy());
 }
 
 /// The proof `get_tari_seed` runs on every decode: derive the address from the seed in hand and

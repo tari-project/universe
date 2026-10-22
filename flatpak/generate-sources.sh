@@ -38,6 +38,9 @@ curl -sSL -o flatpak-cargo-generator.py "$CARGO_GEN_URL"
 echo "${CARGO_GEN_SHA256}  flatpak-cargo-generator.py" | sha256sum -c -
 echo "==> Generating cargo-sources.json from ../Cargo.lock"
 ./.venv/bin/python flatpak-cargo-generator.py ../Cargo.lock -o cargo-sources.json
+# The tari crates are locked from both the tari git tag and crates.io at the same
+# version; vendor the git copies to their own directory so the two don't collide.
+./.venv/bin/python split-git-sources.py cargo-sources.json
 
 # --- Node ---
 # pnpm support only exists in the upstream (git) flatpak-node-generator, not in

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
@@ -18,8 +18,16 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.ts
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import SeedWords from '@app/components/wallet/seedwords/SeedWords.tsx';
 import { resetL2ToL1Seed } from '@app/store/actions/l2WalletStoreActions.ts';
+import { setOotleIndexerUrl } from '@app/store/actions/config/core.ts';
 import { CopyToClipboard } from '../wallet/WalletAddressMarkup/WalletAddressMarkup.tsx';
 import { CTASArea, InputArea, WalletSettingsGrid } from '../wallet/styles.ts';
+import {
+    AddressErrorMessage,
+    AddressFieldWrapper,
+    AddressInput,
+    AddressSettingsGroup,
+    AddressSettingsGroupContent,
+} from '../connections/NodeTypeConfiguration.styles.ts';
 import {
     SettingsGroup,
     SettingsGroupAction,
@@ -43,13 +51,78 @@ function Field({ value, testId }: { value: string; testId: string }) {
     );
 }
 
+function IndexerField() {
+    const { t } = useTranslation('settings', { useSuspense: false });
+    const indexerUrl = useConfigCoreStore((s) => s.ootle_indexer_url) ?? '';
+    const [input, setInput] = useState(indexerUrl);
+    const [error, setError] = useState('');
+    const errorId = useId();
+
+    useEffect(() => setInput(indexerUrl), [indexerUrl]);
+
+    async function save() {
+        if (input.trim() === indexerUrl) {
+            setError('');
+            return;
+        }
+        try {
+            await setOotleIndexerUrl(input);
+            setError('');
+        } catch (e) {
+            setError(String(e) || 'validation failed');
+        }
+    }
+
+    return (
+        <SettingsGroupWrapper>
+            <SettingsGroup>
+                <SettingsGroupContent>
+                    <SettingsGroupTitle>
+                        <Typography variant="h6">{t('l2.indexer')}</Typography>
+                    </SettingsGroupTitle>
+                </SettingsGroupContent>
+            </SettingsGroup>
+            <AddressSettingsGroup>
+                <AddressSettingsGroupContent>
+                    <AddressFieldWrapper>
+                        <AddressInput
+                            name="ootle-indexer-url"
+                            type="url"
+                            inputMode="url"
+                            autoComplete="off"
+                            spellCheck={false}
+                            placeholder="http://localhost:18300"
+                            value={input}
+                            onChange={(e) => {
+                                setInput(e.target.value);
+                                setError('');
+                            }}
+                            onBlur={save}
+                            onKeyDown={(e) => e.key === 'Enter' && save()}
+                            $hasError={Boolean(error)}
+                            aria-label={t('l2.indexer')}
+                            aria-invalid={Boolean(error)}
+                            aria-describedby={error ? errorId : undefined}
+                            data-testid="l2-settings-indexer"
+                        />
+                        {error && (
+                            <AddressErrorMessage id={errorId} role="alert" data-testid="l2-settings-indexer-error">
+                                {t('l2.indexer-error', { reason: error })}
+                            </AddressErrorMessage>
+                        )}
+                    </AddressFieldWrapper>
+                </AddressSettingsGroupContent>
+            </AddressSettingsGroup>
+        </SettingsGroupWrapper>
+    );
+}
+
 export const L2Settings = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const hasPin = useWalletStore((s) => s.is_pin_locked);
     const enabled = useL2WalletStore((s) => s.enabled);
     const locked = useL2WalletStore((s) => s.locked);
     const account = useL2WalletStore(selectL2Account);
-    const indexerUrl = useConfigCoreStore((s) => s.ootle_indexer_url);
     const seedSource = useL2WalletStore((s) => s.seed_source);
     const seedChangePending = useL2WalletStore((s) => s.seedChangePending);
     const sideBySide = useConfigUIStore((s) => s.l2_side_by_side);
@@ -168,37 +241,30 @@ export const L2Settings = () => {
             {hasPin && enabled && account && (
                 <>
                     <SettingsGroupWrapper data-testid="l2-settings-account">
-                        <SettingsGroupContent>
-                            <SettingsGroupTitle>
-                                <Typography variant="h6">{t('l2.address')}</Typography>
-                            </SettingsGroupTitle>
-                            <Typography>{t('l2.address-description')}</Typography>
-                        </SettingsGroupContent>
+                        <SettingsGroup>
+                            <SettingsGroupContent>
+                                <SettingsGroupTitle>
+                                    <Typography variant="h6">{t('l2.address')}</Typography>
+                                </SettingsGroupTitle>
+                                <Typography>{t('l2.address-description')}</Typography>
+                            </SettingsGroupContent>
+                        </SettingsGroup>
                         <Field value={account.address} testId="l2-settings-address" />
                     </SettingsGroupWrapper>
                     <SettingsGroupWrapper $subGroup>
-                        <SettingsGroupContent>
-                            <SettingsGroupTitle>
-                                <Typography variant="h6">{t('l2.public-key')}</Typography>
-                            </SettingsGroupTitle>
-                            <Typography>{t('l2.public-key-description')}</Typography>
-                        </SettingsGroupContent>
+                        <SettingsGroup>
+                            <SettingsGroupContent>
+                                <SettingsGroupTitle>
+                                    <Typography variant="h6">{t('l2.public-key')}</Typography>
+                                </SettingsGroupTitle>
+                                <Typography>{t('l2.public-key-description')}</Typography>
+                            </SettingsGroupContent>
+                        </SettingsGroup>
                         <Field value={account.public_key} testId="l2-settings-public-key" />
                     </SettingsGroupWrapper>
                 </>
             )}
-            {indexerUrl && (
-                <SettingsGroupWrapper>
-                    <SettingsGroup>
-                        <SettingsGroupContent>
-                            <SettingsGroupTitle>
-                                <Typography variant="h6">{t('l2.indexer')}</Typography>
-                            </SettingsGroupTitle>
-                            <Typography data-testid="l2-settings-indexer">{indexerUrl}</Typography>
-                        </SettingsGroupContent>
-                    </SettingsGroup>
-                </SettingsGroupWrapper>
-            )}
+            <IndexerField />
             {/* An import or reset turns L2 off while the wallet phase restarts, so keep the section up while it runs. */}
             {hasPin && ((enabled && !locked) || seedChangePending) && (
                 <SettingsGroupWrapper data-testid="l2-settings-seed-words">

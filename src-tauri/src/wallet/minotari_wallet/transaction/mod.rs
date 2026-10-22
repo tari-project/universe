@@ -38,8 +38,9 @@ use tari_transaction_components::{
     consensus::ConsensusManager,
     key_manager::KeyManager,
     offline_signing::{
+        ConfirmationMode, PayloadSummary,
         models::{PrepareOneSidedTransactionForSigningResult, SignedOneSidedTransactionResult},
-        sign_locked_transaction,
+        present_payload_summary, sign_locked_transaction,
     },
     tari_amount::MicroMinotari,
 };
@@ -126,11 +127,21 @@ impl TransactionManager {
         let network = wallet_network();
         let rules = ConsensusManager::builder(network).build();
 
+        // The user approved this send at the send gate, and the payload was built here
+        // from our own database, so there's nothing more to confirm. The summary this
+        // logs carries the recipient and amount; the log config keeps that target quiet.
+        let summary = PayloadSummary::from_one_sided(unsigned_tx);
+        let confirmation = present_payload_summary(
+            &summary,
+            ConfirmationMode::NonInteractive,
+            &mut std::io::sink(),
+            &mut std::io::empty(),
+        )?;
         let signed_transaction = sign_locked_transaction(
             key_manager,
             rules.consensus_constants(0).clone(),
             network,
-            unsigned_tx,
+            summary.confirm(confirmation)?,
         )
         .map_err(sign_error)?;
 

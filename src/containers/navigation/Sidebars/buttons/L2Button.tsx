@@ -3,6 +3,7 @@ import { Button } from './styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { setL2Open, setShowTapplet } from '@app/store/actions/uiStoreActions';
 import { deactivateTapplet } from '@app/store/useTappletsStore.ts';
+import { openL2 } from '@app/store/actions/l2OpenActions.ts';
 
 export default function L2Button() {
     const { t } = useTranslation('wallet');
@@ -19,10 +20,11 @@ export default function L2Button() {
                     // Leave the bridge the way the Mine button does, then open the L2 card.
                     setShowTapplet(false);
                     deactivateTapplet();
-                    setL2Open(true);
+                } else if (l2Open) {
+                    setL2Open(false);
                     return;
                 }
-                setL2Open(!l2Open);
+                void openL2();
             }}
             aria-label={t('l2.title')}
             title={t('l2.title')}

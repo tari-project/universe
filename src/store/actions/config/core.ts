@@ -107,6 +107,12 @@ export const setRemoteBaseNodeAddress = async (address: string) => {
         throw e;
     }
 };
+// Pessimistic like setRemoteBaseNodeAddress: the store takes the URL the backend
+// resolved (canonicalised, or the network default for a blank input).
+export const setOotleIndexerUrl = async (url: string) => {
+    const resolved = await invoke<string | null>('set_ootle_indexer_url', { url });
+    store.setState((c) => ({ ...c, ootle_indexer_url: resolved }));
+};
 export const setNodeType = async (nodeType: NodeType) => {
     const previousNodeType = store.getState().node_type;
     store.setState((c) => ({ ...c, node_type: nodeType }));

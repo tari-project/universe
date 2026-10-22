@@ -138,6 +138,7 @@ export interface ConfigBackendInMemory {
     airdrop_twitter_auth_url: string;
     exchange_id: string;
     bridge_backend_api_url: string;
+    netmap_api_base_url: string;
 }
 
 export interface ConfigMcp {

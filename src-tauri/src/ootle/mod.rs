@@ -29,7 +29,6 @@
 //! stays locked, and nothing L2 runs, until the user unlocks it with the PIN.
 
 use std::{
-    collections::HashMap,
     future::Future,
     path::{Path, PathBuf},
     str::FromStr,
@@ -41,13 +40,13 @@ use std::{
 
 use log::{error, info, warn};
 use tari_common::configuration::Network;
-use tari_common_types_ootle::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
+use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_crypto::tari_utilities::SafePassword;
 use tari_engine_types::resource::Resource;
 use tari_ootle_common_types::optional::Optional;
 use tari_ootle_wallet_sdk::{
-    CipherSeed, Network as OotleNetwork, OotleAddress, SeedWords, WalletSdk, WalletSdkConfig,
-    WalletSdkSpec,
+    CipherSeed, IndexerTrust, Network as OotleNetwork, OotleAddress, SeedWords, WalletSdk,
+    WalletSdkConfig, WalletSdkSpec,
     apis::config::{ConfigApi, ConfigKey},
     cipher_seed::CipherSeedRestore,
     local_key_store::LocalKeyStore,
@@ -86,7 +85,7 @@ use crate::{
     credential_manager::CredentialManager,
     events::PinPromptContext,
     events_emitter::EventsEmitter,
-    internal_wallet::{InternalWallet, to_wallet_cipher_seed},
+    internal_wallet::InternalWallet,
     pin::PinManager,
     setup::setup_manager::{SetupManager, SetupPhase},
     tasks_tracker::TasksTrackers,
@@ -132,7 +131,6 @@ static INSTANCE: LazyLock<OotleWalletManager> = LazyLock::new(|| OotleWalletMana
     sdk: Mutex::new(None),
     notify: Notify::new(100),
     transactions: Mutex::new(None),
-    mined_heights: Mutex::new(HashMap::new()),
     store_dir: Mutex::new(None),
     seed_imported: AtomicBool::new(false),
     locked: AtomicBool::new(false),
@@ -145,9 +143,6 @@ pub struct OotleWalletManager {
     notify: Notify<WalletEvent>,
     /// Set once the services run, which is when L2 is enabled.
     transactions: Mutex<Option<TransactionServiceHandle>>,
-    /// L1 heights the node said burns were mined at, by commitment. Kept in memory only,
-    /// a restart just asks again.
-    mined_heights: Mutex<HashMap<String, u64>>,
     /// Where the open store lives, set on every open.
     store_dir: Mutex<Option<PathBuf>>,
     /// Whether the open store holds imported seed words rather than the L1 seed.
@@ -227,6 +222,17 @@ impl OotleWalletManager {
         let pin = PinManager::get_validated_pin(app_handle, Some(PinPromptContext::L2Unlock))
             .await
             .map_err(wallet_error)?;
+        open_and_start(&pin).await
+    }
+
+    /// Has the user create a PIN and opens L2 with it, so turning L2 on from a wallet with
+    /// no PIN asks for the PIN once. Refused off Esmeralda.
+    pub async fn create_pin_and_enable(app_handle: &AppHandle) -> Result<(), TransactionError> {
+        check_l2_allowed(Network::get_current_or_user_setting_or_default(), true)?;
+        let pin = InternalWallet::create_pin(app_handle)
+            .await
+            .map_err(wallet_error)?;
+        EventsEmitter::emit_pin_locked(true).await;
         open_and_start(&pin).await
     }
 
@@ -416,6 +422,24 @@ impl OotleWalletManager {
         info!(target: LOG_TARGET, "L2 send submitted: {id}");
         emit_state(&sdk).await;
         Ok(id.to_string())
+    }
+
+    /// Points the open wallet at `indexer`. Every indexer call builds its client from the
+    /// SDK's shared endpoint, and the finalization stream resubscribes there when its
+    /// connection drops, so nothing restarts and the store stays unlocked. A closed store
+    /// picks the URL up from the config when it opens.
+    pub async fn set_indexer_url(indexer: Url) {
+        if let Some(sdk) = INSTANCE.sdk.lock().await.as_ref() {
+            match sdk
+                .get_network_interface()
+                .set_endpoints(vec![indexer.clone()])
+            {
+                Ok(()) => info!(target: LOG_TARGET, "L2 wallet now uses indexer {indexer}"),
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Could not switch the L2 wallet to indexer {indexer}: {e}")
+                }
+            }
+        }
     }
 
     /// Burns to L2 made from this wallet and whether they can be claimed yet. Refused
@@ -805,13 +829,7 @@ async fn listed_burns() -> Result<Vec<L2Burn>, TransactionError> {
     let times = MinotariWalletManager::burn_times()
         .await
         .map_err(wallet_error)?;
-    let mut burns =
-        claim::list_burns(&burn_proofs_dir()?, pending, &times).map_err(wallet_error)?;
-    let heights = INSTANCE.mined_heights.lock().await;
-    for burn in &mut burns {
-        burn.mined_height = heights.get(&burn.commitment).copied();
-    }
-    Ok(burns)
+    claim::list_burns(&burn_proofs_dir()?, pending, &times).map_err(wallet_error)
 }
 
 /// A new burn or proof file is an L1 side change, so no wallet event reports it. Sends
@@ -819,8 +837,7 @@ async fn listed_burns() -> Result<Vec<L2Burn>, TransactionError> {
 /// its burns.
 async fn emit_state_on_new_burns(sdk: &OotleSdk, last: &mut Option<Vec<L2Burn>>) {
     match listed_burns().await {
-        Ok(mut burns) => {
-            find_mined_heights(&mut burns).await;
+        Ok(burns) => {
             if last.as_ref() != Some(&burns) {
                 *last = Some(burns);
                 emit_state(sdk).await;
@@ -828,44 +845,6 @@ async fn emit_state_on_new_burns(sdk: &OotleSdk, last: &mut Option<Vec<L2Burn>>)
         }
         Err(e) => warn!(target: LOG_TARGET, "Could not list burns to L2: {e}"),
     }
-}
-
-/// Asks the L1 node where each claimable burn without a height was mined, and remembers
-/// the answer. A failed query, or one the node doesn't have mined, leaves the height
-/// unknown until the next tick.
-async fn find_mined_heights(burns: &mut [L2Burn]) {
-    let Ok(dir) = burn_proofs_dir() else {
-        return;
-    };
-    let unknown = burns
-        .iter_mut()
-        .filter(|b| b.status == "claimable" && b.mined_height.is_none());
-    for burn in unknown {
-        let Some(file) = &burn.proof_file else {
-            continue;
-        };
-        match mined_height(&dir.join(file)).await {
-            Ok(Some(height)) => {
-                INSTANCE
-                    .mined_heights
-                    .lock()
-                    .await
-                    .insert(burn.commitment.clone(), height);
-                burn.mined_height = Some(height);
-            }
-            Ok(None) => {}
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Could not ask the node where {file} was mined: {e}")
-            }
-        }
-    }
-}
-
-/// The L1 height the burn in this proof file was mined at, going by its kernel signature.
-async fn mined_height(proof_file: &Path) -> Result<Option<u64>, anyhow::Error> {
-    let sig = claim::read_proof(proof_file)?.claim_proof.kernel.excess_sig;
-    MinotariWalletManager::mined_height(sig.public_nonce().as_bytes(), sig.signature().as_bytes())
-        .await
 }
 
 fn burn_proofs_dir() -> Result<std::path::PathBuf, TransactionError> {
@@ -939,6 +918,7 @@ fn open_sdk(
     let config = WalletSdkConfig {
         network: ootle_network(network),
         override_keyring_password: Some(SafePassword::from(password)),
+        indexer_trust: IndexerTrust::default(),
     };
     let indexer = IndexerRestApiNetworkInterface::new(indexer_url);
     let sdk = OotleSdk::initialize_with_local_key_store(
@@ -982,7 +962,6 @@ fn ootle_network(network: Network) -> OotleNetwork {
 fn l2_seed_words(
     seed: &tari_common_types::seeds::cipher_seed::CipherSeed,
 ) -> Result<SeedWords, anyhow::Error> {
-    let seed: CipherSeed = to_wallet_cipher_seed(seed)?;
     Ok(seed.to_mnemonic(MnemonicLanguage::English, None)?)
 }
 
@@ -1033,19 +1012,17 @@ async fn start_services(
     tracker: TaskTracker,
     mut phase_signal: PhaseSignal,
 ) -> Result<(), anyhow::Error> {
-    // The SDK services take the tari 5.x shutdown signal, so relay the phase's one to it.
-    let mut shutdown = Shutdown::new();
+    // The SDK services take the crates.io tari shutdown signal, so relay the phase's one to it.
+    let shutdown = Shutdown::new();
     let signal = shutdown.to_signal();
     tracker.spawn(async move {
         phase_signal.wait().await;
         shutdown.trigger();
     });
 
-    if let Some(indexer) = ConfigCore::content().await.ootle_indexer_url().clone() {
-        let network = Network::get_current_or_user_setting_or_default();
-        let poll = network_stats::poll(sdk.clone(), indexer, network);
-        spawn_service(&tracker, &signal, "network poller", poll);
-    }
+    let network = Network::get_current_or_user_setting_or_default();
+    let poll = network_stats::poll(sdk.clone(), network);
+    spawn_service(&tracker, &signal, "network poller", poll);
 
     let notify = INSTANCE.notify.clone();
     let events = emit_state_on_events(sdk.clone(), notify.subscribe());
@@ -1063,7 +1040,7 @@ async fn start_services(
     spawn_service(&tracker, &signal, "utxo recovery", recovery.run(waker));
 
     let (monitor, monitor_handle) =
-        AccountMonitor::new(notify, sdk.clone(), scanner_handle, signal.clone());
+        AccountMonitor::new(notify, sdk.clone(), scanner_handle.clone(), signal.clone());
     spawn_service(&tracker, &signal, "account monitor", monitor.run());
 
     if needs_recovery {
@@ -1071,6 +1048,7 @@ async fn start_services(
         let scanner = AccountRecoveryService::new(
             sdk.clone(),
             monitor_handle,
+            scanner_handle,
             RECOVERY_ABANDON_COUNT,
             birthday,
         );

@@ -571,3 +571,46 @@ jobs:
         run: |
           sentry-cli debug-files check ./target/release/tari_universe.pdb
           sentry-cli debug-files upload --org tari-labs --project tari-universe ./target/release/tari_universe.pdb
+
+  # The Flatpak builds alongside the other platforms for release builds and
+  # ad-hoc builds that include Linux x64. Nightly and beta-branch builds skip it.
+  flatpak:
+    name: Flatpak
+    needs: set-matrix
+    if: >-
+      ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release'))
+      || (github.event_name == 'workflow_dispatch'
+      && contains(fromJSON('["Supported", "Linux-x64"]'), github.event.inputs.platforms)) }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/flatpak.yml
+    with:
+      tari_network: ${{ needs.set-matrix.outputs.tari_network }}
+
+  # Release builds attach the bundle to the draft release, once the other builds
+  # have created it. Ad-hoc builds keep it as a workflow artifact.
+  flatpak-release:
+    name: Attach Flatpak to release
+    needs: [builds, flatpak]
+    if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/release') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: src-tauri/tauri.conf.json
+          sparse-checkout-cone-mode: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.flatpak.outputs.artifact }}
+
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="v$(jq -r .version src-tauri/tauri.conf.json)"
+          gh release upload "$TAG" "${{ needs.flatpak.outputs.artifact }}" --clobber --repo "${{ github.repository }}"
+          gh release view "$TAG" --repo "${{ github.repository }}" --json assets --jq '.assets[].name'

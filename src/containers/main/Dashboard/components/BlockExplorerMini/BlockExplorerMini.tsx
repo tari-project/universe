@@ -4,7 +4,7 @@ import { BlockBubbleData } from '@app/types/mining/blocks.ts';
 import BlockEntry from './BlockEntry/BlockEntry';
 import BlockScrollList from './BlockScrollList/BlockScrollList';
 import { timeAgo } from './utils/formatting';
-import MinerCount from '@app/containers/main/Dashboard/components/BlockExplorerMini/MinerCount/MinerCount.tsx';
+import NodeCount from '@app/containers/main/Dashboard/components/BlockExplorerMini/NodeCount/NodeCount.tsx';
 import { Wrapper, StickyEntryWrapper, LoadingPlaceholder, InsideHolder } from './styles';
 
 export default function BlockExplorerMini() {
@@ -72,7 +72,7 @@ export default function BlockExplorerMini() {
 
     return (
         <Wrapper>
-            <MinerCount />
+            <NodeCount />
             <InsideHolder>
                 <StickyEntryWrapper>
                     {stickyEntry && (

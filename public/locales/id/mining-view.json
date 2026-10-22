@@ -1,6 +1,6 @@
 {
   "bubbles": {
-    "active-miners": "penambang aktif",
+    "active-nodes": "node aktif",
     "ago": "yang lalu",
     "block": "blok",
     "got-rewarded": "mendapatkan hadiah",
