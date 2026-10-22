@@ -38,10 +38,6 @@ pub struct BurnReceipt {
     pub accepted_by_node: bool,
 }
 
-/// Burns to L2 are off in this build: minotari writes tari_sidechain 6.2 burn proofs
-/// that the pinned ootle claim code can't read yet. Turn back on with that ootle update.
-pub(crate) const BURNS_ENABLED: bool = false;
-
 /// A send or burn the node keeps refusing (stalled), which the user may abandon.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct StalledTransaction {
@@ -718,8 +714,7 @@ impl MinotariWalletManager {
         if let Err(e) = Self::run_transaction_unlocker().await {
             error!(target: LOG_TARGET, "Failed to start transaction unlocker: {:?}", e);
         }
-        // Off with burns: unfinished burns stay pending, so the delete guard keeps them.
-        if BURNS_ENABLED && let Err(e) = Self::run_burn_proof_worker().await {
+        if let Err(e) = Self::run_burn_proof_worker().await {
             error!(target: LOG_TARGET, "Failed to start burn proof worker: {:?}", e);
         }
 

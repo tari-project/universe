@@ -198,8 +198,5 @@
     "chip": "Bị kẹt",
     "burn-note": "Lệnh đốt bị từ bỏ và tiền được giải phóng. Nếu một nút vẫn giữ nó, nó vẫn có thể được đào, vì vậy đừng đặt lại hoặc nhập lại ví cho đến khi nó được xử lý xong: ví giữ bằng chứng duy nhất cần để nhận nó. Giao dịch dùng số tiền đã giải phóng trong thời gian đó có thể thất bại.",
     "error-burn-unreconcilable": "Lệnh đốt này không có đầu ra tiền thừa nên không thể từ bỏ an toàn: nếu nó được đào, ví sẽ không nhận ra. Nó vẫn ở trạng thái chờ cho đến khi được xử lý xong."
-  },
-  "burn": {
-    "unavailable": "Đốt sang Lớp 2 tạm thời không khả dụng trong phiên bản này."
   }
 }

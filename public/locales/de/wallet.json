@@ -198,8 +198,5 @@
     "chip": "Hängt fest",
     "burn-note": "Der Burn wird aufgegeben und seine Mittel werden freigegeben. Hält ein Node ihn noch, kann er trotzdem gemint werden. Setze die Wallet daher nicht zurück und importiere sie nicht neu, bis er abgeschlossen ist: Die Wallet hält den einzigen Nachweis, der zum Einlösen nötig ist. Eine zwischenzeitlich mit den freigegebenen Mitteln getätigte Transaktion kann fehlschlagen.",
     "error-burn-unreconcilable": "Dieser Burn hat keinen Wechselgeld-Output und kann daher nicht sicher aufgegeben werden: Würde er gemint, könnte die Wallet es nicht erkennen. Er bleibt ausstehend, bis er abgeschlossen ist."
-  },
-  "burn": {
-    "unavailable": "Burns auf Layer 2 sind in dieser Version vorübergehend nicht verfügbar."
   }
 }

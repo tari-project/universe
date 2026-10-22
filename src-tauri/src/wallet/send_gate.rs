@@ -64,7 +64,7 @@ use crate::mcp::rate_limiter::TransactionRateLimiter;
 use crate::ootle::OotleWalletManager;
 use crate::pin::{PinCancelled, PinManager};
 use crate::wallet::minotari_wallet::{
-    BURNS_ENABLED, BurnReceipt, MinotariWalletManager, SendReceipt, StalledTransaction,
+    BurnReceipt, MinotariWalletManager, SendReceipt, StalledTransaction,
 };
 
 const DIALOG_TIMEOUT_SECS: u64 = 120;
@@ -84,8 +84,6 @@ pub enum TransactionError {
     PinCancelled(String),
     /// The funds cover the amount and fee, but not the change output every send keeps.
     ChangeNotAffordable(String),
-    /// Burns to L2 are off in this build.
-    BurnsDisabled(String),
     /// The wallet refused to abandon a send; `code` says why.
     AbandonRefused {
         code: &'static str,
@@ -109,7 +107,6 @@ impl TransactionError {
             TransactionError::InternalError(_) => "internal_error",
             TransactionError::PinCancelled(_) => "pin_cancelled",
             TransactionError::ChangeNotAffordable(_) => "change_not_affordable",
-            TransactionError::BurnsDisabled(_) => "burns_disabled",
             TransactionError::AbandonRefused { code, .. } => code,
         }
     }
@@ -162,7 +159,6 @@ impl fmt::Display for TransactionError {
             | TransactionError::InternalError(msg)
             | TransactionError::PinCancelled(msg)
             | TransactionError::ChangeNotAffordable(msg)
-            | TransactionError::BurnsDisabled(msg)
             | TransactionError::AbandonRefused { message: msg, .. } => write!(f, "{}", msg),
         }
     }
@@ -462,11 +458,6 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
         payment_id,
     } = request;
 
-    if !BURNS_ENABLED {
-        return Err(TransactionError::BurnsDisabled(
-            "Burns to Layer 2 are not available in this version".to_string(),
-        ));
-    }
     check_l2_allowed(
         Network::get_current_or_user_setting_or_default(),
         PinManager::pin_locked().await,
@@ -845,19 +836,6 @@ mod tests {
             ..burn
         };
         assert!(check_abandon(&send, true).is_ok());
-    }
-
-    #[tokio::test]
-    async fn a_burn_is_refused_while_burns_are_off() {
-        let error = gated_burn(GatedBurnRequest {
-            request_id: SendOrigin::App.new_request_id(),
-            amount: "1".to_string(),
-            claim_public_key: "ab".repeat(32),
-            payment_id: None,
-        })
-        .await
-        .expect_err("burns are off");
-        assert_eq!(error.code(), "burns_disabled");
     }
 
     #[test]

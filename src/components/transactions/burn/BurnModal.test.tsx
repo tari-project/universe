@@ -58,18 +58,6 @@ describe('BurnModal', () => {
         invokeMock.mockResolvedValue([]);
     });
 
-    it('explains that burns are off in this version', async () => {
-        const invokeMock = await burnWith(async (command) => {
-            if (command === 'burn_to_l2') {
-                throw '[burns_disabled] Burns to Layer 2 are not available in this version';
-            }
-            return [];
-        });
-
-        expect(await screen.findByTestId('form-root-error')).toHaveTextContent('burn.unavailable');
-        invokeMock.mockResolvedValue([]);
-    });
-
     it('explains a burn that leaves no room for its change output', async () => {
         const invokeMock = await burnWith(async (command) => {
             if (command === 'burn_to_l2') {

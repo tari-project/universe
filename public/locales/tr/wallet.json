@@ -198,8 +198,5 @@
     "chip": "Takıldı",
     "burn-note": "Yakmadan vazgeçilir ve fonları serbest bırakılır. Bir düğüm hâlâ tutuyorsa yine de kazılabilir; bu yüzden sonuçlanana kadar cüzdanı sıfırlamayın veya yeniden içe aktarmayın: talep etmek için gereken tek kanıt cüzdandadır. Bu arada serbest kalan fonlarla yapılan işlem başarısız olabilir.",
     "error-burn-unreconcilable": "Bu yakmanın para üstü çıktısı yok, bu yüzden güvenle vazgeçilemez: kazılırsa cüzdan bunu anlayamaz. Sonuçlanana kadar beklemede kalır."
-  },
-  "burn": {
-    "unavailable": "Katman 2'ye yakma bu sürümde geçici olarak kullanılamıyor."
   }
 }

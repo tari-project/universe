@@ -196,8 +196,5 @@
     "chip": "Travada",
     "burn-note": "A queima é abandonada e seus fundos são liberados. Se algum nó ainda a tiver, ela ainda pode ser minerada, então não redefina nem reimporte a carteira até ela ser resolvida: a carteira guarda a única prova necessária para resgatá-la. Uma transação feita nesse meio-tempo com os fundos liberados pode falhar.",
     "error-burn-unreconcilable": "Esta queima não tem saída de troco, então não pode ser abandonada com segurança: se ela for minerada, a carteira não saberia. Ela continua pendente até ser resolvida."
-  },
-  "burn": {
-    "unavailable": "As queimas para a Camada 2 estão temporariamente indisponíveis nesta versão."
   }
 }

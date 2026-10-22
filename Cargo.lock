@@ -10384,6 +10384,7 @@ dependencies = [
  "tari_ootle_wallet_sdk_services",
  "tari_ootle_wallet_storage_sqlite",
  "tari_shutdown",
+ "tari_sidechain 8.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tari_sidechain 8.0.0 (git+https://github.com/tari-project/tari-ootle.git?rev=959172e2c)",
  "tari_template_lib",
  "tari_transaction_components",

@@ -198,8 +198,5 @@
     "chip": "Bloquée",
     "burn-note": "Le burn est abandonné et ses fonds sont libérés. Si un nœud le détient encore, il peut encore être miné : ne réinitialisez pas et ne réimportez pas le portefeuille avant qu'il soit réglé, car le portefeuille conserve la seule preuve nécessaire pour le réclamer. Une transaction faite entre-temps avec les fonds libérés pourrait échouer.",
     "error-burn-unreconcilable": "Ce burn n'a pas de sortie de monnaie, il ne peut donc pas être abandonné sans risque : s'il était miné, le portefeuille ne pourrait pas le savoir. Il reste en attente jusqu'à ce qu'il soit réglé."
-  },
-  "burn": {
-    "unavailable": "Les burns vers la couche 2 sont temporairement indisponibles dans cette version."
   }
 }

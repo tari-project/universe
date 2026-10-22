@@ -254,8 +254,7 @@
     "completed-text": "Once the burn is mined you can claim it from Burns to claim in your Layer 2 wallet.",
     "error-message": "Error burning funds: ",
     "pin-required": "Set a PIN to burn",
-    "claim-key-default": "The claim key defaults to this wallet's own L2 account.",
-    "unavailable": "Burns to Layer 2 are temporarily unavailable in this version."
+    "claim-key-default": "The claim key defaults to this wallet's own L2 account."
   },
   "l2": {
     "title": "Layer 2",

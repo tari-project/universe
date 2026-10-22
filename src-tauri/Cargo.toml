@@ -170,3 +170,5 @@ tempfile = "3.10"
 test-case = "3.3"
 tokio-test = "0.4"
 wiremock = "0.6"
+# The published tari_sidechain minotari writes burn proofs with, to build test proofs.
+tari_sidechain_l1 = { package = "tari_sidechain", version = "8.0.0" }

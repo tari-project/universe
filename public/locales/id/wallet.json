@@ -198,8 +198,5 @@
     "chip": "Macet",
     "burn-note": "Burn dibatalkan dan dananya dilepaskan. Jika suatu node masih menyimpannya, burn masih bisa ditambang, jadi jangan reset atau impor ulang dompet sampai selesai: dompet menyimpan satu-satunya bukti untuk mengklaimnya. Transaksi yang dibuat dengan dana yang dilepaskan sementara itu mungkin gagal.",
     "error-burn-unreconcilable": "Burn ini tidak memiliki output kembalian, jadi tidak dapat dibatalkan dengan aman: jika burn ini ditambang, dompet tidak akan mengetahuinya. Burn tetap tertunda sampai selesai."
-  },
-  "burn": {
-    "unavailable": "Burn ke Layer 2 untuk sementara tidak tersedia di versi ini."
   }
 }
