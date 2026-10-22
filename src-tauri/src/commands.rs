@@ -426,11 +426,25 @@ pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<S
     result
 }
 
+/// Sync with phone is off in this build: under tari 6.3 it exports a version 3 seed, which the
+/// current Aurora app can't read yet.
+const PAPER_WALLET_ENABLED: bool = false;
+
+/// Refuses sync with phone while it is off, before anything reads the seed or asks for a PIN.
+fn paper_wallet_allowed() -> Result<(), String> {
+    if PAPER_WALLET_ENABLED {
+        Ok(())
+    } else {
+        Err("Sync with phone is temporarily unavailable in this version.".to_string())
+    }
+}
+
 #[tauri::command]
 pub async fn get_paper_wallet_details(
     auth_uuid: Option<String>,
     app_handle: tauri::AppHandle,
 ) -> Result<PaperWalletConfig, InvokeError> {
+    paper_wallet_allowed().map_err(InvokeError::from)?;
     let timer = Instant::now();
 
     let wallet_balance = BalanceTracker::current().get_account_balance().await.total;
@@ -2645,7 +2659,13 @@ pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> 
 
 #[cfg(test)]
 mod tests {
-    use super::canonicalise_remote_base_node_address;
+    use super::{canonicalise_remote_base_node_address, paper_wallet_allowed};
+
+    #[test]
+    fn sync_with_phone_is_refused_while_it_is_off() {
+        let error = paper_wallet_allowed().expect_err("off in this version");
+        assert!(error.contains("temporarily unavailable"), "{error}");
+    }
 
     #[test]
     fn implicit_default_https_port_survives() {

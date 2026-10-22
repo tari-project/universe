@@ -12,6 +12,7 @@
   "paper-wallet-button": "Sincronizar com o Telefone",
   "paper-wallet-tooltip-message": "Acompanhe seu saldo XTM em qualquer lugar sincronizando o Universe com o Tari Universe Mobile.",
   "paper-wallet-tooltip-title": "Sincronizar com o Telefone",
+  "paper-wallet-unavailable": "A sincronização com o celular está temporariamente indisponível nesta versão.",
   "recent-wins": "Vitórias recentes",
   "rewards": "Recompensas",
   "setup-scheduler": "Configurar Agendador",
