@@ -1,3 +1,39 @@
+🚀 TARI UNIVERSE v1.6.17: Twin Tides
+
+_October 22, 2026_
+
+🔄 Rolling out via auto-update
+
+Hey Tari fam,
+
+This is a big one. It's the first release since The Confluence to carry everything we've been building through the summer, so it sat on the dock a while.. and the boat is full. Your wallet now lives inside Tari Universe, the open-source TARI.Miner joins the GPU lineup, Linux gets a proper home again with Flatpak, and the first Layer 2 wallet is here to play with on testnet. Two tides, one Universe.
+
+✨ WHAT'S NEW
+
+- 💼 **Your wallet moved in** – The Tari wallet used to run as its own program next to Tari Universe. It now runs inside the app, so that's one less process to start, sync and keep alive. Your seed words, balance and history come along exactly as they were.
+- ⛏️ **Open-source GPU mining** – TARI.Miner, the open-source C29 miner, is now a choice in Settings next to lolMiner. It's NVIDIA-only for now and mines on one GPU at a time. Open source, so anyone can read exactly what's running on their card.
+- 🌊 **A first look at Layer 2 (testnet only)** – Picture this: a second wallet, on a second layer, right next to your first. The Ootle Layer 2 wallet is in the Esmeralda (testnet) build attached to this release. It isn't on mainnet yet, so your mainnet app won't show it. In the testnet build, click the new L2 button in the sidebar and enter your PIN (or set one up first) and you get a balance, a QR code to receive, sends, and burns from your Tari wallet that you can claim on L2. Turn on **Allow wallets to be side by side** in Settings to watch both tides at once. Bug reports very welcome!
+- 🐧 **Linux is back, via Flatpak** – One bundle for every distro, with CPU and GPU mining included. Grab `tari-universe-1.6.17-x86_64.flatpak` from the release and run `flatpak install` on it. Heads up: it doesn't auto-update yet, so grab the new bundle when a release lands.
+- 🖥️ **Start quietly in the tray** – New in Settings: **Show window on startup**. Turn it off and Tari Universe launches straight to the tray and gets mining without popping up a window.
+- 📊 **Active Nodes, not Active Miners** – The active miners count on the mining screen was unreliable, so we swapped it for active nodes, which comes from a better-maintained source and lines up with the number on the explorer.
+
+✨ WHAT'S FIXED
+
+- 🔐 **Extra protection for your seed words** – We've added more safeguards around your seed. Saving it or resetting your PIN now keeps your existing seed safe until the new one is fully in place, Tari Universe checks for a wallet you already have before it ever creates a new one, and if your seed can't be read at startup you'll hear about it right away. Config files are now saved in a single step too, so they stay intact even if your computer shuts down mid-save.
+- 💸 **Sends show up once** – A send that hadn't been mined yet was being marked confirmed a few seconds after you sent it, and then showed up twice in your history once it actually landed in a block. That's fixed. And with no PIN set, you now confirm a send once, not twice.
+- 📜 **No more flickering history** – Your transaction list (and the "No transactions" pill) would blink in and out every time the wallet refreshed in the background. It now sits still.
+- 🎮 **GPU mining only where it can actually mine** – Integrated GPUs were being offered GPU mining and then failing. We now ask lolMiner whether your GPU can really mine C29 before offering it. The GPU pool toggle also locks, with a reason, when none of your installed GPU miners can mine solo.
+- 🛡️ **Tighter security around tapplets** – Messages from apps running inside Tari Universe (like the Bridge) are now checked to come from where they claim to, and we closed one path where a send could go out without you agreeing to it.
+- 🙈 **Your secrets stay out of logs** – Support bundles, debug logs and telemetry no longer carry secrets, your user name or raw config values. We also removed an old fallback that could keep a credential in plain text after it moved to your keychain.
+- 🌐 **Remote nodes on :443 work** – If you pointed Tari Universe at a remote node with an address like `https://node.example.com:443`, it was rejected for "needing a port" even though it had one. Now it's accepted.
+- ⏰ **Timers that keep time** – The wallet sync countdown now starts once there's an estimate to count down from, countdowns no longer stack on top of each other, and a clock that's slightly off can't make the block timer go negative.
+- 🔁 **A more patient node** – If your node hit a config error while starting up, Tari Universe gave up. It now cleans up and tries again.
+- 🔧 **Under the hood** – Updated to Tari v6.0.1-pre.2 and Ootle v0.44, vendored OpenSSL into the macOS build, patched a handful of high-severity dependency advisories, stopped sending Sentry reports for problems on your machine that we can't fix (full disks, flaky downloads and friends), and built out end-to-end tests that now cover most of our manual QA checklist.
+
+Thank you for your patience while this one came together. You are Tari. We are ALL Tari 💜🐢
+
+---
+
 🚀 TARI UNIVERSE v1.6.15: Hotfix – The Confluence Part 4
 
 _October 1, 2026_
