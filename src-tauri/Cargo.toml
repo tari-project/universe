@@ -94,20 +94,20 @@ tari_crypto = "0.24.1"
 tari_shutdown = "=6.3.0-pre.1"
 tari_transaction_components = "=6.3.0-pre.1"
 tari_utilities = "0.10.0"
-tari_ootle_common_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "959172e2c" }
-tari_ootle_wallet_sdk = { git = "https://github.com/tari-project/tari-ootle.git", rev = "959172e2c" }
-tari_ootle_wallet_sdk_services = { git = "https://github.com/tari-project/tari-ootle.git", rev = "959172e2c", features = [
+tari_ootle_common_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
+tari_ootle_wallet_sdk = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
+tari_ootle_wallet_sdk_services = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408", features = [
   "indexer_client",
 ] }
-tari_ootle_wallet_storage_sqlite = { git = "https://github.com/tari-project/tari-ootle.git", rev = "959172e2c" }
-tari_ootle_transaction = { git = "https://github.com/tari-project/tari-ootle.git", rev = "959172e2c" }
-tari_engine_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "959172e2c" }
-tari_template_lib = { git = "https://github.com/tari-project/tari-ootle.git", rev = "959172e2c" }
+tari_ootle_wallet_storage_sqlite = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
+tari_ootle_transaction = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
+tari_engine_types = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
+tari_template_lib = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
 # Converts the L1 burn proof file into the Ootle claim proof. No `execution`, which pulls in the engine.
-tari_ootle_app_utilities = { git = "https://github.com/tari-project/tari-ootle.git", rev = "959172e2c", default-features = false }
+tari_ootle_app_utilities = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408", default-features = false }
 # Ootle's tari_sidechain: its CompleteClaimBurnProof reads the proof files minotari writes
 # with the published tari_sidechain (same JSON).
-tari_sidechain = { git = "https://github.com/tari-project/tari-ootle.git", rev = "959172e2c" }
+tari_sidechain = { git = "https://github.com/tari-project/tari-ootle.git", rev = "c72aa408" }
 tauri = { version = "2", features = [
   "protocol-asset",
   "isolation",

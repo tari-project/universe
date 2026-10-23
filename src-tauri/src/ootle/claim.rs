@@ -576,7 +576,12 @@ fn build_claim(sdk: &OotleSdk, claim: Claim<'_>) -> Result<Transaction, anyhow::
         view_only.public_key(),
         &STEALTH_TARI_RESOURCE_ADDRESS,
     );
-    let owner_key = crypto.derive_stealth_owner_public_key(network, &owner.to_public_key(), &nonce);
+    let owner_key = crypto.derive_stealth_owner_public_key(
+        network,
+        &owner.to_public_key(),
+        view_only.public_key(),
+        &nonce,
+    );
     let output = StealthOutputWitness {
         witness: OutputWitness {
             amount,

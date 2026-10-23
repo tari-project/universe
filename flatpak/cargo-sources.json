@@ -20,8 +20,8 @@
     {
         "type": "git",
         "url": "https://github.com/tari-project/tari-ootle",
-        "commit": "959172e2ce9022d81f2a7a70d58550a8e3bbdc7b",
-        "dest": "flatpak-cargo/git/tari-ootle-959172e"
+        "commit": "c72aa4083877153bdfc737b5da6a02872bc6a81d",
+        "dest": "flatpak-cargo/git/tari-ootle-c72aa40"
     },
     {
         "type": "git",
@@ -8143,7 +8143,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/ootle_network\" \"cargo/vendor-git/ootle-network\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/ootle_network\" \"cargo/vendor-git/ootle-network\""
         ]
     },
     {
@@ -8162,7 +8162,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/ootle_byte_type\" \"cargo/vendor-git/ootle_byte_type\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/ootle_byte_type\" \"cargo/vendor-git/ootle_byte_type\""
         ]
     },
     {
@@ -8181,7 +8181,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/ootle_serde\" \"cargo/vendor-git/ootle_serde\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/ootle_serde\" \"cargo/vendor-git/ootle_serde\""
         ]
     },
     {
@@ -12548,7 +12548,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/tari_bor\" \"cargo/vendor-git/tari_bor\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/tari_bor\" \"cargo/vendor-git/tari_bor\""
         ]
     },
     {
@@ -12658,7 +12658,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/consensus_types\" \"cargo/vendor-git/tari_consensus_types\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/consensus_types\" \"cargo/vendor-git/tari_consensus_types\""
         ]
     },
     {
@@ -12703,7 +12703,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/engine_types\" \"cargo/vendor-git/tari_engine_types\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/engine_types\" \"cargo/vendor-git/tari_engine_types\""
         ]
     },
     {
@@ -12748,7 +12748,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/clients/tari_indexer_client\" \"cargo/vendor-git/tari_indexer_client\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/clients/tari_indexer_client\" \"cargo/vendor-git/tari_indexer_client\""
         ]
     },
     {
@@ -12780,7 +12780,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/jellyfish\" \"cargo/vendor-git/tari_jellyfish\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/jellyfish\" \"cargo/vendor-git/tari_jellyfish\""
         ]
     },
     {
@@ -12851,7 +12851,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/ootle_address\" \"cargo/vendor-git/tari_ootle_address\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/ootle_address\" \"cargo/vendor-git/tari_ootle_address\""
         ]
     },
     {
@@ -12870,7 +12870,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/applications/tari_ootle_app_utilities\" \"cargo/vendor-git/tari_ootle_app_utilities\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/applications/tari_ootle_app_utilities\" \"cargo/vendor-git/tari_ootle_app_utilities\""
         ]
     },
     {
@@ -12889,7 +12889,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/common_types\" \"cargo/vendor-git/tari_ootle_common_types\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/common_types\" \"cargo/vendor-git/tari_ootle_common_types\""
         ]
     },
     {
@@ -12908,7 +12908,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/wallet/light_client\" \"cargo/vendor-git/tari_ootle_light_client\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/wallet/light_client\" \"cargo/vendor-git/tari_ootle_light_client\""
         ]
     },
     {
@@ -12927,7 +12927,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/storage\" \"cargo/vendor-git/tari_ootle_storage\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/storage\" \"cargo/vendor-git/tari_ootle_storage\""
         ]
     },
     {
@@ -12946,7 +12946,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/template_metadata\" \"cargo/vendor-git/tari_ootle_template_metadata\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/template_metadata\" \"cargo/vendor-git/tari_ootle_template_metadata\""
         ]
     },
     {
@@ -12965,7 +12965,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/transaction\" \"cargo/vendor-git/tari_ootle_transaction\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/transaction\" \"cargo/vendor-git/tari_ootle_transaction\""
         ]
     },
     {
@@ -12984,7 +12984,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/wallet/crypto\" \"cargo/vendor-git/tari_ootle_wallet_crypto\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/wallet/crypto\" \"cargo/vendor-git/tari_ootle_wallet_crypto\""
         ]
     },
     {
@@ -13003,7 +13003,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/wallet/sdk\" \"cargo/vendor-git/tari_ootle_wallet_sdk\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/wallet/sdk\" \"cargo/vendor-git/tari_ootle_wallet_sdk\""
         ]
     },
     {
@@ -13022,7 +13022,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/wallet/sdk_services\" \"cargo/vendor-git/tari_ootle_wallet_sdk_services\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/wallet/sdk_services\" \"cargo/vendor-git/tari_ootle_wallet_sdk_services\""
         ]
     },
     {
@@ -13041,7 +13041,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/wallet/storage_sqlite\" \"cargo/vendor-git/tari_ootle_wallet_storage_sqlite\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/wallet/storage_sqlite\" \"cargo/vendor-git/tari_ootle_wallet_storage_sqlite\""
         ]
     },
     {
@@ -13125,7 +13125,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/sidechain\" \"cargo/vendor-git/tari_sidechain\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/sidechain\" \"cargo/vendor-git/tari_sidechain\""
         ]
     },
     {
@@ -13144,7 +13144,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/state_tree\" \"cargo/vendor-git/tari_state_tree\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/state_tree\" \"cargo/vendor-git/tari_state_tree\""
         ]
     },
     {
@@ -13176,7 +13176,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/template_abi\" \"cargo/vendor-git/tari_template_abi\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/template_abi\" \"cargo/vendor-git/tari_template_abi\""
         ]
     },
     {
@@ -13195,7 +13195,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/template_builtin\" \"cargo/vendor-git/tari_template_builtin\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/template_builtin\" \"cargo/vendor-git/tari_template_builtin\""
         ]
     },
     {
@@ -13214,7 +13214,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/template_lib\" \"cargo/vendor-git/tari_template_lib\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/template_lib\" \"cargo/vendor-git/tari_template_lib\""
         ]
     },
     {
@@ -13233,7 +13233,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/template_lib_types\" \"cargo/vendor-git/tari_template_lib_types\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/template_lib_types\" \"cargo/vendor-git/tari_template_lib_types\""
         ]
     },
     {
@@ -13252,7 +13252,7 @@
         "type": "shell",
         "commands": [
             "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-959172e/crates/template_macros\" \"cargo/vendor-git/tari_template_macros\""
+            "cp -r --reflink=auto \"flatpak-cargo/git/tari-ootle-c72aa40/crates/template_macros\" \"cargo/vendor-git/tari_template_macros\""
         ]
     },
     {
@@ -17104,7 +17104,7 @@
     },
     {
         "type": "inline",
-        "contents": "[source.vendored-sources]\ndirectory = \"cargo/vendor\"\n\n[source.vendored-git-sources]\ndirectory = \"cargo/vendor-git\"\n\n[source.crates-io]\nreplace-with = \"vendored-sources\"\n\n[source.\"https://github.com/tauri-apps/fix-path-env-rs\"]\ngit = \"https://github.com/tauri-apps/fix-path-env-rs\"\nreplace-with = \"vendored-git-sources\"\n\n[source.\"https://github.com/tari-project/minotari-cli\"]\ngit = \"https://github.com/tari-project/minotari-cli\"\nreplace-with = \"vendored-git-sources\"\nrev = \"9371489\"\n\n[source.\"https://github.com/tari-project/monero-address-creator\"]\ngit = \"https://github.com/tari-project/monero-address-creator\"\nreplace-with = \"vendored-git-sources\"\nrev = \"6129ca0\"\n\n[source.\"https://github.com/tari-project/tari-ootle\"]\ngit = \"https://github.com/tari-project/tari-ootle\"\nreplace-with = \"vendored-git-sources\"\nrev = \"959172e2c\"\n\n[source.\"https://github.com/tari-project/psp\"]\ngit = \"https://github.com/tari-project/psp\"\nreplace-with = \"vendored-git-sources\"\nrev = \"ddef0c6\"\n",
+        "contents": "[source.vendored-sources]\ndirectory = \"cargo/vendor\"\n\n[source.vendored-git-sources]\ndirectory = \"cargo/vendor-git\"\n\n[source.crates-io]\nreplace-with = \"vendored-sources\"\n\n[source.\"https://github.com/tauri-apps/fix-path-env-rs\"]\ngit = \"https://github.com/tauri-apps/fix-path-env-rs\"\nreplace-with = \"vendored-git-sources\"\n\n[source.\"https://github.com/tari-project/minotari-cli\"]\ngit = \"https://github.com/tari-project/minotari-cli\"\nreplace-with = \"vendored-git-sources\"\nrev = \"9371489\"\n\n[source.\"https://github.com/tari-project/monero-address-creator\"]\ngit = \"https://github.com/tari-project/monero-address-creator\"\nreplace-with = \"vendored-git-sources\"\nrev = \"6129ca0\"\n\n[source.\"https://github.com/tari-project/tari-ootle\"]\ngit = \"https://github.com/tari-project/tari-ootle\"\nreplace-with = \"vendored-git-sources\"\nrev = \"c72aa408\"\n\n[source.\"https://github.com/tari-project/psp\"]\ngit = \"https://github.com/tari-project/psp\"\nreplace-with = \"vendored-git-sources\"\nrev = \"ddef0c6\"\n",
         "dest": "cargo",
         "dest-filename": "config"
     }
