@@ -219,20 +219,18 @@ describe('TappletSigner.runOne', () => {
                 [[{ amount: '100', address: ADDRESS, payRef: '0f8fad5b-d9cb-169f-a165-70867728950e' }]],
                 [[{ amount: '100', address: ADDRESS, payRef: `${PAY_REF}${PAY_REF}` }]],
             ])('rejects args %j without invoking any command', async (args) => {
-                const result = await signer.runOne('sendOotleStealth', args);
-
-                expect(result).toEqual({ error: 'Invalid arguments for tapplet signer method: sendOotleStealth' });
+                await expect(signer.runOne('sendOotleStealth', args)).rejects.toThrow(
+                    'Invalid arguments for tapplet signer method: sendOotleStealth'
+                );
                 expect(invoke).not.toHaveBeenCalled();
             });
 
             it('rejects an address the backend says is invalid without sending', async () => {
                 mockCommands({ l2_get_state: l2State(), l2_validate_address: new Error('Invalid L2 address') });
 
-                const result = await signer.runOne('sendOotleStealth', [
-                    { amount: '100', address: ADDRESS, payRef: PAY_REF },
-                ]);
-
-                expect(result).toEqual({ error: 'Invalid arguments for tapplet signer method: sendOotleStealth' });
+                await expect(
+                    signer.runOne('sendOotleStealth', [{ amount: '100', address: ADDRESS, payRef: PAY_REF }])
+                ).rejects.toThrow('Invalid arguments for tapplet signer method: sendOotleStealth');
                 expect(invoke).not.toHaveBeenCalledWith('l2_send', expect.anything());
             });
 
@@ -296,11 +294,9 @@ describe('TappletSigner.runOne', () => {
                 [[{ transactionId: 'tx1', timeoutSecs: 601 }]],
                 [[{ transactionId: 'tx1', timeoutSecs: '30' }]],
             ])('rejects args %j without invoking any command', async (args) => {
-                const result = await signer.runOne('waitOotleTransaction', args);
-
-                expect(result).toEqual({
-                    error: 'Invalid arguments for tapplet signer method: waitOotleTransaction',
-                });
+                await expect(signer.runOne('waitOotleTransaction', args)).rejects.toThrow(
+                    'Invalid arguments for tapplet signer method: waitOotleTransaction'
+                );
                 expect(invoke).not.toHaveBeenCalled();
             });
         });

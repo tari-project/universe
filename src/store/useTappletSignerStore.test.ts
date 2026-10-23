@@ -71,6 +71,27 @@ describe('runTappletTransaction', () => {
         expect(postMessage).not.toHaveBeenCalled();
     });
 
+    it('replies with resultError when an Ootle method gets bad arguments', async () => {
+        useTappletSignerStore.setState({ isInitialized: true, tappletSigner: TappletSigner.build({ id: 'test' }) });
+
+        await runTappletTransaction(
+            signerCallEvent({
+                id: 9,
+                methodName: 'sendOotleStealth',
+                args: [{ amount: '0', address: '', payRef: 'x' }],
+            })
+        );
+
+        expect(postMessage).toHaveBeenCalledWith(
+            {
+                id: 9,
+                resultError: 'Error: Invalid arguments for tapplet signer method: sendOotleStealth',
+                type: 'signer-call',
+            },
+            { targetOrigin: TAPPLET_ORIGIN }
+        );
+    });
+
     it('lets the tapplet settle its request when the call throws', async () => {
         runOne.mockRejectedValueOnce(new Error('boom'));
 

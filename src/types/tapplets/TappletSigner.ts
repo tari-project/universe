@@ -54,6 +54,12 @@ function invalidArgsResult(method: string): { error: string } {
     return { error: `Invalid arguments for tapplet signer method: ${method}` };
 }
 
+/** For the Ootle methods: bad arguments throw, so the tapplet gets a `resultError` reply. */
+function invalidArgsError(method: string): Error {
+    console.warn(`Blocked tapplet signer call to "${method}" with invalid arguments`);
+    return new Error(`Invalid arguments for tapplet signer method: ${method}`);
+}
+
 function isNonEmptyString(value: unknown): value is string {
     return typeof value === 'string' && value.trim().length > 0;
 }
@@ -197,12 +203,12 @@ export class TappletSigner {
                 return this.getOotleBalance();
             case 'sendOotleStealth': {
                 const req = callArgs[0];
-                if (!isSendOotleStealthRequest(req)) return invalidArgsResult(method);
+                if (!isSendOotleStealthRequest(req)) throw invalidArgsError(method);
                 return this.sendOotleStealth(req);
             }
             case 'waitOotleTransaction': {
                 const req = callArgs[0];
-                if (!isWaitOotleTransactionRequest(req)) return invalidArgsResult(method);
+                if (!isWaitOotleTransactionRequest(req)) throw invalidArgsError(method);
                 return this.waitOotleTransaction(req);
             }
             default:
@@ -274,7 +280,7 @@ export class TappletSigner {
         try {
             await invoke('l2_validate_address', { address: req.address });
         } catch {
-            return invalidArgsResult('sendOotleStealth');
+            throw invalidArgsError('sendOotleStealth');
         }
         const transactionId = await invoke<string>('l2_send', {
             account: account.component_address,
