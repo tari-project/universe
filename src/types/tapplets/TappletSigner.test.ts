@@ -396,6 +396,24 @@ describe('TappletSigner.runOne', () => {
                 expect(await cooldownSecs()).toBe(10);
             });
 
+            it('starts the denial cooldown over after five quiet minutes', async () => {
+                vi.useFakeTimers();
+                await nextL2Send(new Error('PIN entry cancelled'));
+                expect(await cooldownSecs()).toBe(10);
+                await nextL2Send(new Error('PIN entry cancelled'));
+                expect(await cooldownSecs()).toBe(20);
+
+                // Just short of five quiet minutes the count still stands...
+                await vi.advanceTimersByTimeAsync(299_000);
+                await nextL2Send(new Error('PIN entry cancelled'));
+                expect(await cooldownSecs()).toBe(40);
+
+                // ...after them it starts over.
+                await vi.advanceTimersByTimeAsync(300_000);
+                await nextL2Send(new Error('PIN entry cancelled'));
+                expect(await cooldownSecs()).toBe(10);
+            });
+
             it.each([
                 ['sendOotleStealth', L2_REQ, 'l2_send_from_tapplet'],
                 ['sendOneSided', L1_REQ, 'send_one_sided_to_stealth_address'],
@@ -480,17 +498,42 @@ describe('TappletSigner.runOne', () => {
                 expect(invoke).toHaveBeenCalledTimes(4);
             });
 
-            it('refuses a new wait for an id for 5 s after its last one ended', async () => {
+            it('delays a new wait for an id until 5 s after its last one ended, joining repeat calls', async () => {
                 vi.useFakeTimers();
+                mockCommands({ l2_get_state: l2State({}, 'Pending') });
+                const wait = (timeoutSecs: number) =>
+                    signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs }]);
+
+                const timedOut = wait(1);
+                await vi.advanceTimersByTimeAsync(2_000);
+                await expect(timedOut).resolves.toEqual({ status: 'Pending' });
+                vi.mocked(invoke).mockClear();
+
                 mockCommands({ l2_get_state: l2State({}, 'Accepted') });
+                const retry = wait(30);
+                const duplicate = wait(30);
+                // The first wait ended at 2 s, so the retry starts polling at 7 s.
+                await vi.advanceTimersByTimeAsync(4_500);
+                expect(invoke).not.toHaveBeenCalled();
+                await vi.advanceTimersByTimeAsync(1_000);
+                await expect(retry).resolves.toEqual({ status: 'Accepted' });
+                await expect(duplicate).resolves.toEqual({ status: 'Accepted' });
+                expect(invoke).toHaveBeenCalledTimes(1);
+            });
+
+            it('retries straight after a wait that could not read the L2 state, after the delay', async () => {
+                vi.useFakeTimers();
+                mockCommands({ l2_get_state: new Error('store busy') });
                 const wait = () => signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 30 }]);
 
-                await expect(wait()).resolves.toEqual({ status: 'Accepted' });
-                await expect(wait()).rejects.toThrow(/^busy$/);
+                await expect(wait()).resolves.toEqual(L2_UNAVAILABLE);
+                mockCommands({ l2_get_state: l2State({}, 'Accepted') });
+                const retry = wait();
                 await vi.advanceTimersByTimeAsync(4_000);
-                await expect(wait()).rejects.toThrow(/^busy$/);
+                expect(invoke).toHaveBeenCalledTimes(1);
                 await vi.advanceTimersByTimeAsync(1_000);
-                await expect(wait()).resolves.toEqual({ status: 'Accepted' });
+                await expect(retry).resolves.toEqual({ status: 'Accepted' });
+                expect(invoke).toHaveBeenCalledTimes(2);
             });
 
             it('refuses a fifth distinct id while four are waited on, then frees the slots', async () => {

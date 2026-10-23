@@ -48,12 +48,15 @@ const PAY_REF_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 const MICRO_AMOUNT_RE = /^[1-9][0-9]{0,19}$/;
 /** Ootle addresses and transaction ids are far shorter; this only bounds what a tapplet can send. */
 const MAX_FIELD_LENGTH = 300;
-/** After a denied PIN prompt, tapplet sends are refused this long, doubling per denial up to the max. */
+/**
+ * After a denied PIN prompt, tapplet sends are refused this long, doubling per denial up to the max.
+ * A success, or no denial for the max after a cooldown ends, starts it over.
+ */
 const DENIAL_COOLDOWN_MS = 10_000;
 const MAX_DENIAL_COOLDOWN_MS = 5 * 60_000;
 /** After a send that failed for any other reason. */
 const FAILURE_COOLDOWN_MS = 3_000;
-/** A finished wait for an id can't be restarted sooner than this. */
+/** A new wait for an id starts polling no sooner than this after the last one ended. */
 const WAIT_RESTART_MS = 5_000;
 const MAX_WAIT_SECS = 600;
 const WAIT_POLL_MS = 2000;
@@ -166,6 +169,7 @@ export class TappletSigner {
     private sendCooldownUntil = 0;
     /** Denials since the last successful send; each one doubles the cooldown. */
     private denials = 0;
+    private denialCooldownUntil = 0;
     /** When the last wait for each id finished. */
     private ootleWaitEndedAt = new Map<string, number>();
     /** Ids sendOotleStealth returned; the only ones waitOotleTransaction will poll for. */
@@ -293,8 +297,10 @@ export class TappletSigner {
         this.sendInFlight = false;
         if (outcome === 'sent') this.denials = 0;
         if (outcome === 'denied') {
+            if (Date.now() >= this.denialCooldownUntil + MAX_DENIAL_COOLDOWN_MS) this.denials = 0;
             const cooldown = Math.min(DENIAL_COOLDOWN_MS * 2 ** this.denials, MAX_DENIAL_COOLDOWN_MS);
-            this.sendCooldownUntil = Date.now() + cooldown;
+            this.denialCooldownUntil = Date.now() + cooldown;
+            this.sendCooldownUntil = this.denialCooldownUntil;
             this.denials += 1;
         }
         if (outcome === 'failed') this.sendCooldownUntil = Date.now() + FAILURE_COOLDOWN_MS;
@@ -379,8 +385,9 @@ export class TappletSigner {
     /**
      * Polls the L2 state until the transaction leaves New/Pending, or the timeout runs out.
      * Only for ids sendOotleStealth returned. A repeat call for an id already being waited on
-     * joins that wait and keeps its deadline. Throws 'busy' when four other ids are waited on,
-     * or when the last wait for this id ended less than five seconds ago.
+     * joins that wait and keeps its deadline. A new wait within five seconds of the last one for
+     * this id starts polling once those five seconds are up; its timeout counts from then.
+     * Throws 'busy' when four other ids are waited on.
      */
     public async waitOotleTransaction(
         req: WaitOotleTransactionRequest
@@ -388,13 +395,16 @@ export class TappletSigner {
         if (!this.ootleSentIds.has(req.transactionId)) throw invalidArgsError('waitOotleTransaction');
         const running = this.ootleWaits.get(req.transactionId);
         if (running) return running;
-        const endedAt = this.ootleWaitEndedAt.get(req.transactionId) ?? -Infinity;
-        if (Date.now() < endedAt + WAIT_RESTART_MS) throw busyError();
         if (this.ootleWaits.size >= MAX_OOTLE_WAITS) throw busyError();
-        const wait = this.pollOotleTransaction(req).finally(() => {
-            this.ootleWaits.delete(req.transactionId);
-            this.ootleWaitEndedAt.set(req.transactionId, Date.now());
-        });
+        const endedAt = this.ootleWaitEndedAt.get(req.transactionId) ?? -Infinity;
+        const delayMs = endedAt + WAIT_RESTART_MS - Date.now();
+        const start = delayMs > 0 ? new Promise((resolve) => setTimeout(resolve, delayMs)) : Promise.resolve();
+        const wait = start
+            .then(() => this.pollOotleTransaction(req))
+            .finally(() => {
+                this.ootleWaits.delete(req.transactionId);
+                this.ootleWaitEndedAt.set(req.transactionId, Date.now());
+            });
         this.ootleWaits.set(req.transactionId, wait);
         return wait;
     }
