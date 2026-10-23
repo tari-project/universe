@@ -519,17 +519,30 @@ pub fn l2_send_memo(
     Ok(Some((text.to_string(), memo)))
 }
 
-/// Control characters, and the bidi and zero-width format characters that would make a pay
-/// reference read differently in the PIN prompt from what is sent.
+/// Control characters, and the bidi, zero-width, line separator, tag and invisible filler
+/// characters that would make a pay reference read differently in the PIN prompt from what
+/// is sent.
 fn is_hidden_char(c: char) -> bool {
     c.is_control()
         || matches!(
             c,
-            '\u{200B}'..='\u{200F}'
+            '\u{00AD}'
+                | '\u{034F}'
+                | '\u{061C}'
+                | '\u{115F}'
+                | '\u{1160}'
+                | '\u{180E}'
+                | '\u{200B}'..='\u{200F}'
+                | '\u{2028}'
+                | '\u{2029}'
                 | '\u{202A}'..='\u{202E}'
                 | '\u{2060}'..='\u{2064}'
                 | '\u{2066}'..='\u{2069}'
+                | '\u{3164}'
                 | '\u{FEFF}'
+                | '\u{FFA0}'
+                | '\u{FFF9}'..='\u{FFFB}'
+                | '\u{E0000}'..='\u{E007F}'
         )
 }
 
@@ -1017,6 +1030,11 @@ mod tests {
             "nul\0",
             "del\u{7F}",
             "c1\u{85}",
+            "arabic\u{061C}mark",
+            "line\u{2028}sep",
+            "soft\u{00AD}hyphen",
+            "tag\u{E0041}",
+            "filler\u{3164}",
         ] {
             let err = l2_send_memo(Some(pay_ref), &ootle_address()).expect_err(pay_ref);
             assert!(
@@ -1028,11 +1046,21 @@ mod tests {
             .expect("printable unicode is fine")
             .expect("a memo");
         assert_eq!(shown, "café-ref 1");
+        let uuid = "0f8fad5b-d9cb-469f-a165-70867728950e";
+        let (shown, _) = l2_send_memo(Some(uuid), &ootle_address())
+            .expect("a uuid is fine")
+            .expect("a memo");
+        assert_eq!(shown, uuid);
     }
 
     #[test]
     fn l2_send_memo_rejects_an_embedded_pay_ref_that_is_not_clean_text() {
-        for bytes in [vec![0xff, 0xfe, b'a'], "ref\u{200D}".as_bytes().to_vec()] {
+        for bytes in [
+            vec![0xff, 0xfe, b'a'],
+            "ref\u{200D}".as_bytes().to_vec(),
+            "ref\u{061C}".as_bytes().to_vec(),
+            "ref\u{E0041}".as_bytes().to_vec(),
+        ] {
             let embedded = PayRef::new_checked(bytes.clone()).expect("pay ref");
             let address = ootle_address().with_pay_ref(embedded);
             let err = l2_send_memo(None, &address).expect_err("rejected");
