@@ -534,6 +534,7 @@ fn main() {
             commands::l2_claimable_burns,
             commands::l2_claim_burn,
             commands::l2_send,
+            commands::l2_send_from_tapplet,
             commands::l2_validate_address,
             commands::verify_address_for_send,
             commands::validate_minotari_amount,

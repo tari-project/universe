@@ -31,6 +31,29 @@ describe('EnterPinDialog', () => {
         expect(pinStrings[key]).toBeTruthy();
     });
 
+    it.each([
+        ['tapplet', true],
+        ['app', false],
+    ] as const)('shows the pay ref of an L2 send from %s, labelled only for a tapplet', (origin, labelled) => {
+        useSecurityStore.setState({
+            modal: 'enter_pin',
+            pinPromptId: 1,
+            pinContext: {
+                kind: 'l2_send',
+                amount_micro_minotari: 1_000_000,
+                destination: 'otl_esm_1bridge',
+                account: 'component_abc',
+                pay_ref: '0f8fad5b-d9cb-469f-a165-70867728950e',
+                origin,
+                fee_micro_minotari: 10,
+            },
+        });
+        render(<EnterPinDialog />);
+        expect(screen.getByText('0f8fad5b-d9cb-469f-a165-70867728950e')).toBeInTheDocument();
+        expect(screen.queryByText('security.pin.requested-by-tapplet') !== null).toBe(labelled);
+        expect(pinStrings['requested-by-tapplet']).toBe('Requested by the bridge tapplet');
+    });
+
     it('answers with the id of the prompt it shows', async () => {
         useSecurityStore.setState({ modal: 'enter_pin', pinContext: null, pinPromptId: 42 });
         const { unmount } = render(<EnterPinDialog />);

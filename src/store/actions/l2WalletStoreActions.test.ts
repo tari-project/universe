@@ -10,7 +10,7 @@ const account = (name: string, is_default: boolean): L2Account => ({
     component_address: `component_${name}`,
     public_key: name.padEnd(64, '0'),
     is_default,
-    balance: { revealed: 0, confidential: 1_000_000 },
+    balance: { revealed: 0, confidential: 1_000_000, total: '1000000' },
     history: [{ id: 1, transaction_id: null, amount: 1_000_000, source: 'scan', timestamp: 1 }],
     transactions: [],
 });

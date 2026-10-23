@@ -102,6 +102,8 @@ pub enum SendOrigin {
     App,
     /// The MCP `send_transaction` tool.
     Mcp,
+    /// The `l2_send_from_tapplet` Tauri command, which only the tapplet signer calls.
+    Tapplet,
 }
 
 impl SendOrigin {
@@ -109,6 +111,7 @@ impl SendOrigin {
         match self {
             SendOrigin::App => "app",
             SendOrigin::Mcp => "mcp",
+            SendOrigin::Tapplet => "tapplet",
         }
     }
 
@@ -116,6 +119,7 @@ impl SendOrigin {
         match self {
             SendOrigin::App => "app_tx",
             SendOrigin::Mcp => "mcp_tx",
+            SendOrigin::Tapplet => "tapplet_tx",
         }
     }
 
@@ -133,7 +137,7 @@ impl SendOrigin {
     fn requires_confirmation(self, pin_configured: bool) -> bool {
         match self {
             SendOrigin::Mcp => true,
-            SendOrigin::App => !pin_configured,
+            SendOrigin::App | SendOrigin::Tapplet => !pin_configured,
         }
     }
 
@@ -163,9 +167,10 @@ pub struct GatedBurnRequest {
     pub payment_id: Option<String>,
 }
 
-/// An XTR send from one of the wallet's own L2 accounts. Only the in-app UI can ask
-/// for one, so the origin is always [`SendOrigin::App`].
+/// An XTR send from one of the wallet's own L2 accounts, asked for by the in-app UI
+/// ([`SendOrigin::App`]) or the tapplet signer ([`SendOrigin::Tapplet`]).
 pub struct GatedL2SendRequest {
+    pub origin: SendOrigin,
     pub app_handle: tauri::AppHandle,
     pub request_id: String,
     pub amount: String,
@@ -189,6 +194,8 @@ pub enum SpendKind {
     L2Send {
         destination: String,
         account: String,
+        /// The pay reference the output carries, as text.
+        pay_ref: Option<String>,
     },
     L2Claim {
         commitment: String,
@@ -219,6 +226,7 @@ impl SpendKind {
 
     fn pin_context(
         &self,
+        origin: SendOrigin,
         amount_micro_minotari: u64,
         payment_id: Option<String>,
     ) -> PinPromptContext {
@@ -236,10 +244,13 @@ impl SpendKind {
             SpendKind::L2Send {
                 destination,
                 account,
+                pay_ref,
             } => PinPromptContext::L2Send {
                 amount_micro_minotari,
                 destination: destination.clone(),
                 account: account.clone(),
+                pay_ref: pay_ref.clone(),
+                origin: origin.as_str().to_string(),
                 fee_micro_minotari: None,
             },
             SpendKind::L2Claim { commitment } => PinPromptContext::L2Claim {
@@ -410,6 +421,7 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
 /// permit. Returns the L2 transaction id.
 pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, TransactionError> {
     let GatedL2SendRequest {
+        origin,
         app_handle,
         request_id,
         amount,
@@ -424,24 +436,18 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
     )?;
     let amount_u64 = parse_amount(&amount)?;
     let address = OotleWalletManager::parse_address(&destination)?;
-    let memo = l2_send_memo(pay_ref.as_deref(), &address)?;
+    let (pay_ref, memo) = l2_send_memo(pay_ref.as_deref(), &address)?.unzip();
     let kind = SpendKind::L2Send {
         destination,
         account,
+        pay_ref,
     };
-    let pass = pass_gates(
-        SendOrigin::App,
-        request_id,
-        &amount,
-        amount_u64,
-        &kind,
-        &None,
-    )
-    .await?;
+    let pass = pass_gates(origin, request_id, &amount, amount_u64, &kind, &None).await?;
 
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing L2 send (destination={}, amount={amount})",
+        "send gate: executing L2 send (origin={}, destination={}, amount={amount})",
+        origin.as_str(),
         kind.counterparty()
     );
     let SpendKind::L2Send { account, .. } = kind else {
@@ -458,27 +464,33 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
     .await
 }
 
-/// The output memo carrying the pay reference, as tari_walletd builds it: an explicit
-/// `pay_ref` wins, otherwise the one embedded in the destination address, if any.
+/// The pay reference an L2 send carries, as text for the PIN prompt, and the output memo
+/// holding it. An explicit `pay_ref` must match the one embedded in the destination
+/// address, if there is one; without an explicit one the embedded one is used.
 pub fn l2_send_memo(
     pay_ref: Option<&str>,
     destination: &OotleAddress,
-) -> Result<Option<Memo>, TransactionError> {
-    let pay_ref = match pay_ref {
-        Some(pay_ref) => PayRef::new_checked(pay_ref.as_bytes()).ok_or_else(|| {
-            TransactionError::InvalidAddress(format!(
-                "Pay reference must be 1 to {} bytes",
-                PayRef::MAX_LEN
-            ))
-        })?,
-        None => match destination.pay_ref() {
-            Some(pay_ref) => pay_ref.clone(),
-            None => return Ok(None),
-        },
+) -> Result<Option<(String, Memo)>, TransactionError> {
+    let embedded = destination.pay_ref().map(|p| p.as_bytes());
+    let bytes = match (pay_ref, embedded) {
+        (Some(explicit), Some(embedded)) if explicit.as_bytes() != embedded => {
+            return Err(TransactionError::InvalidAddress(
+                "Pay reference differs from the one in the destination address".to_string(),
+            ));
+        }
+        (Some(explicit), _) => explicit.as_bytes(),
+        (None, Some(embedded)) => embedded,
+        (None, None) => return Ok(None),
     };
-    Memo::new_pay_ref_and_message(pay_ref.as_bytes(), "")
-        .map(Some)
-        .ok_or_else(|| TransactionError::InvalidAddress("Pay reference too long".to_string()))
+    if PayRef::new_checked(bytes).is_none() {
+        return Err(TransactionError::InvalidAddress(format!(
+            "Pay reference must be 1 to {} bytes",
+            PayRef::MAX_LEN
+        )));
+    }
+    let memo = Memo::new_pay_ref_and_message(bytes, "")
+        .ok_or_else(|| TransactionError::InvalidAddress("Pay reference too long".to_string()))?;
+    Ok(Some((String::from_utf8_lossy(bytes).into_owned(), memo)))
 }
 
 /// Claim an L1 burn on L2 behind the same gates as [`gated_l2_send`]. Refused without a
@@ -597,7 +609,7 @@ async fn pass_gates(
 
     Ok(GatePass {
         _permit: permit,
-        pin_context: kind.pin_context(amount_u64, payment_id.clone()),
+        pin_context: kind.pin_context(origin, amount_u64, payment_id.clone()),
     })
 }
 
@@ -708,6 +720,13 @@ mod tests {
     fn only_mcp_is_rate_limited() {
         assert!(SendOrigin::Mcp.enforces_rate_limit());
         assert!(!SendOrigin::App.enforces_rate_limit());
+        assert!(!SendOrigin::Tapplet.enforces_rate_limit());
+    }
+
+    #[test]
+    fn tapplet_origin_confirms_like_the_app() {
+        assert!(SendOrigin::Tapplet.requires_confirmation(false));
+        assert!(!SendOrigin::Tapplet.requires_confirmation(true));
     }
 
     #[test]
@@ -723,14 +742,14 @@ mod tests {
         assert_eq!(send.counterparty(), "addr");
         assert_eq!(burn.counterparty(), "claimkey");
         assert!(matches!(
-            send.pin_context(1, None),
+            send.pin_context(SendOrigin::App, 1, None),
             PinPromptContext::Send {
                 amount_micro_minotari: 1,
                 ..
             }
         ));
         assert!(matches!(
-            burn.pin_context(2, Some("memo".to_string())),
+            burn.pin_context(SendOrigin::App, 2, Some("memo".to_string())),
             PinPromptContext::Burn { amount_micro_minotari: 2, ref claim_public_key, payment_id: Some(_) }
                 if claim_public_key == "claimkey"
         ));
@@ -741,6 +760,7 @@ mod tests {
         let send = SpendKind::L2Send {
             destination: "otl_esm_addr".to_string(),
             account: "component_abc".to_string(),
+            pay_ref: None,
         };
         assert_eq!(send.as_str(), "l2_send");
         assert_eq!(send.counterparty(), "otl_esm_addr");
@@ -753,9 +773,23 @@ mod tests {
             "XTM"
         );
         assert!(matches!(
-            send.pin_context(3, None),
-            PinPromptContext::L2Send { amount_micro_minotari: 3, ref destination, ref account, fee_micro_minotari: None }
-                if destination == "otl_esm_addr" && account == "component_abc"
+            send.pin_context(SendOrigin::App, 3, None),
+            PinPromptContext::L2Send { amount_micro_minotari: 3, ref destination, ref account, pay_ref: None, ref origin, fee_micro_minotari: None }
+                if destination == "otl_esm_addr" && account == "component_abc" && origin == "app"
+        ));
+    }
+
+    #[test]
+    fn l2_send_pin_prompt_shows_a_tapplet_origin_and_the_pay_ref() {
+        let send = SpendKind::L2Send {
+            destination: "otl_esm_addr".to_string(),
+            account: "component_abc".to_string(),
+            pay_ref: Some("bridge-ref".to_string()),
+        };
+        assert!(matches!(
+            send.pin_context(SendOrigin::Tapplet, 3, None),
+            PinPromptContext::L2Send { pay_ref: Some(ref pay_ref), ref origin, .. }
+                if pay_ref == "bridge-ref" && origin == "tapplet"
         ));
     }
 
@@ -768,7 +802,7 @@ mod tests {
         assert_eq!(claim.counterparty(), "dae29ac8");
         assert_eq!(claim.currency(), "XTR");
         assert!(matches!(
-            claim.pin_context(4, None).with_fee(7),
+            claim.pin_context(SendOrigin::App, 4, None).with_fee(7),
             PinPromptContext::L2Claim { amount_micro_minotari: 4, ref commitment, fee_micro_minotari: Some(7) }
                 if commitment == "dae29ac8"
         ));
@@ -807,6 +841,12 @@ mod tests {
         assert_eq!(SendOrigin::Mcp.as_str(), "mcp");
         assert!(SendOrigin::App.new_request_id().starts_with("app_tx_"));
         assert!(SendOrigin::Mcp.new_request_id().starts_with("mcp_tx_"));
+        assert_eq!(SendOrigin::Tapplet.as_str(), "tapplet");
+        assert!(
+            SendOrigin::Tapplet
+                .new_request_id()
+                .starts_with("tapplet_tx_")
+        );
         assert_ne!(
             SendOrigin::Mcp.new_request_id(),
             SendOrigin::Mcp.new_request_id(),
@@ -864,26 +904,36 @@ mod tests {
     #[test]
     fn l2_send_memo_carries_an_explicit_pay_ref() {
         let pay_ref = "0f8fad5b-d9cb-469f-a165-70867728950e";
-        let memo = l2_send_memo(Some(pay_ref), &ootle_address())
+        let (shown, memo) = l2_send_memo(Some(pay_ref), &ootle_address())
             .expect("valid pay ref")
             .expect("a memo");
+        assert_eq!(shown, pay_ref);
         assert_eq!(memo_pay_ref(&memo), pay_ref.as_bytes());
     }
 
     #[test]
-    fn l2_send_memo_prefers_the_explicit_pay_ref_over_the_address_one() {
+    fn l2_send_memo_falls_back_to_the_address_pay_ref() {
         let embedded = PayRef::new_checked(b"from-address".as_slice()).expect("pay ref");
         let address = ootle_address().with_pay_ref(embedded);
 
-        let explicit = l2_send_memo(Some("explicit"), &address)
-            .expect("valid pay ref")
-            .expect("a memo");
-        assert_eq!(memo_pay_ref(&explicit), b"explicit");
-
-        let fallback = l2_send_memo(None, &address)
+        let (shown, memo) = l2_send_memo(None, &address)
             .expect("no pay ref")
             .expect("a memo");
-        assert_eq!(memo_pay_ref(&fallback), b"from-address");
+        assert_eq!(shown, "from-address");
+        assert_eq!(memo_pay_ref(&memo), b"from-address");
+
+        let (_, same) = l2_send_memo(Some("from-address"), &address)
+            .expect("same pay ref")
+            .expect("a memo");
+        assert_eq!(memo_pay_ref(&same), b"from-address");
+    }
+
+    #[test]
+    fn l2_send_memo_rejects_a_pay_ref_that_differs_from_the_address_one() {
+        let embedded = PayRef::new_checked(b"from-address".as_slice()).expect("pay ref");
+        let address = ootle_address().with_pay_ref(embedded);
+        let err = l2_send_memo(Some("explicit"), &address).expect_err("rejected");
+        assert!(matches!(err, TransactionError::InvalidAddress(_)));
     }
 
     #[test]

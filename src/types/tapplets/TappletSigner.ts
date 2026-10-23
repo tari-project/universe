@@ -48,6 +48,9 @@ const PAY_REF_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 const MICRO_AMOUNT_RE = /^[1-9][0-9]*$/;
 const MAX_WAIT_SECS = 600;
 const WAIT_POLL_MS = 2000;
+const MAX_OOTLE_WAITS = 4;
+/** Backend errors that mean the PIN prompt was cancelled, failed or is locked out. */
+const PIN_DENIED_RE = /\bpin\b|cancel|denied/i;
 
 function invalidArgsResult(method: string): { error: string } {
     console.warn(`Blocked tapplet signer call to "${method}" with invalid arguments`);
@@ -58,6 +61,12 @@ function invalidArgsResult(method: string): { error: string } {
 function invalidArgsError(method: string): Error {
     console.warn(`Blocked tapplet signer call to "${method}" with invalid arguments`);
     return new Error(`Invalid arguments for tapplet signer method: ${method}`);
+}
+
+/** Backend error text stays local: the tapplet gets only 'denied' or 'failed'. */
+function backendError(method: string, error: unknown): Error {
+    console.error(`Tapplet signer method "${method}" failed: ${error}`);
+    return new Error(PIN_DENIED_RE.test(`${error}`) ? 'denied' : 'failed');
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -131,6 +140,9 @@ export class TappletSigner {
     public providerName = 'TappletSigner';
     id: string;
     params: TappletSignerParams;
+    /** One tapplet send at a time, so queued sends can't take over the user's PIN prompts. */
+    private ootleSendInFlight = false;
+    private ootleWaits = new Set<string>();
 
     private constructor(
         params: TappletSignerParams,
@@ -259,59 +271,86 @@ export class TappletSigner {
     public async getOotleAccount(): Promise<OotleAccountData | { error: string }> {
         const account = await defaultOotleAccount();
         if (!account) return L2_UNAVAILABLE;
-        const network = await invoke('get_network');
-        return { address: account.address, network: network as string };
+        try {
+            const network = await invoke('get_network');
+            return { address: account.address, network: network as string };
+        } catch (error) {
+            throw backendError('getOotleAccount', error);
+        }
     }
 
     /** The L2 state has no pending balance, so `pending` is always 0. */
     public async getOotleBalance(): Promise<OotleBalance | { error: string }> {
         const account = await defaultOotleAccount();
         if (!account) return L2_UNAVAILABLE;
-        const available = BigInt(account.balance.revealed) + BigInt(account.balance.confidential);
-        return { available: available.toString(), pending: '0' };
+        return { available: account.balance.total, pending: '0' };
     }
 
-    /** Sends from the default L2 account. `l2_send` asks for the PIN, a failure or denial throws. */
+    /**
+     * Sends from the default L2 account behind the PIN prompt, labelled as a tapplet send.
+     * Throws 'busy' while another send is in flight, 'denied' or 'failed' when the backend refuses.
+     */
     public async sendOotleStealth(
         req: SendOotleStealthRequest
     ): Promise<{ transactionId: string } | { error: string }> {
-        const account = await defaultOotleAccount();
-        if (!account) return L2_UNAVAILABLE;
+        if (this.ootleSendInFlight) throw new Error('busy');
+        this.ootleSendInFlight = true;
         try {
-            await invoke('l2_validate_address', { address: req.address });
-        } catch {
-            throw invalidArgsError('sendOotleStealth');
+            const account = await defaultOotleAccount();
+            if (!account) return L2_UNAVAILABLE;
+            try {
+                await invoke('l2_validate_address', { address: req.address });
+            } catch {
+                throw invalidArgsError('sendOotleStealth');
+            }
+            try {
+                const transactionId = await invoke<string>('l2_send_from_tapplet', {
+                    account: account.component_address,
+                    destination: req.address,
+                    amount: microToXtr(req.amount),
+                    payRef: req.payRef,
+                });
+                return { transactionId };
+            } catch (error) {
+                throw backendError('sendOotleStealth', error);
+            }
+        } finally {
+            this.ootleSendInFlight = false;
         }
-        const transactionId = await invoke<string>('l2_send', {
-            account: account.component_address,
-            destination: req.address,
-            amount: microToXtr(req.amount),
-            payRef: req.payRef,
-        });
-        return { transactionId };
     }
 
-    /** Polls the L2 state until the transaction leaves New/Pending, or the timeout runs out. */
+    /**
+     * Polls the L2 state until the transaction leaves New/Pending, or the timeout runs out.
+     * Throws 'busy' when this transaction is already waited on or too many waits are running.
+     */
     public async waitOotleTransaction(
         req: WaitOotleTransactionRequest
     ): Promise<{ status: string } | { error: string }> {
-        const deadline = Date.now() + req.timeoutSecs * 1000;
-        let status = 'Pending';
-        while (Date.now() < deadline) {
-            let state: L2WalletState;
-            try {
-                state = await invoke<L2WalletState>('l2_get_state');
-            } catch {
-                return L2_UNAVAILABLE;
-            }
-            for (const account of state.accounts) {
-                const tx = account.transactions.find((t) => t.id === req.transactionId);
-                if (tx) status = tx.status;
-            }
-            if (status !== 'New' && status !== 'Pending') return { status };
-            await new Promise((resolve) => setTimeout(resolve, WAIT_POLL_MS));
+        if (this.ootleWaits.has(req.transactionId) || this.ootleWaits.size >= MAX_OOTLE_WAITS) {
+            throw new Error('busy');
         }
-        return { status };
+        this.ootleWaits.add(req.transactionId);
+        try {
+            const deadline = Date.now() + req.timeoutSecs * 1000;
+            let status = 'Pending';
+            while (Date.now() < deadline) {
+                let state: L2WalletState;
+                try {
+                    state = await invoke<L2WalletState>('l2_get_state');
+                } catch {
+                    return L2_UNAVAILABLE;
+                }
+                for (const account of state.accounts) {
+                    const tx = account.transactions.find((t) => t.id === req.transactionId);
+                    if (tx) status = tx.status;
+                }
+                if (status !== 'New' && status !== 'Pending') return { status };
+                await new Promise((resolve) => setTimeout(resolve, WAIT_POLL_MS));
+            }
+            return { status };
+        } finally {
+            this.ootleWaits.delete(req.transactionId);
+        }
     }
 
     public async getBaseNodeStatus(): Promise<BaseNodeStatus> {

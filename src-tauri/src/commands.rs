@@ -1753,14 +1753,39 @@ pub async fn l2_send(
     amount: String,
     pay_ref: Option<String>,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called with args: (account: {account:?}, destination: {destination:?}, amount: {amount:?}, pay_ref: {pay_ref:?})");
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called with args: (account: {account:?}, destination: {destination:?}, amount: {amount:?})");
     gated_l2_send(GatedL2SendRequest {
+        origin: SendOrigin::App,
         app_handle,
         request_id: SendOrigin::App.new_request_id(),
         amount,
         destination,
         account,
         pay_ref,
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// [`l2_send`] for the tapplet signer only, so the send gate and the PIN prompt show the
+/// bridge tapplet asked for it. The in-app UI never calls this.
+#[tauri::command]
+pub async fn l2_send_from_tapplet(
+    app_handle: tauri::AppHandle,
+    account: String,
+    destination: String,
+    amount: String,
+    pay_ref: String,
+) -> Result<String, String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send_from_tapplet] called with args: (account: {account:?}, destination: {destination:?}, amount: {amount:?})");
+    gated_l2_send(GatedL2SendRequest {
+        origin: SendOrigin::Tapplet,
+        app_handle,
+        request_id: SendOrigin::Tapplet.new_request_id(),
+        amount,
+        destination,
+        account,
+        pay_ref: Some(pay_ref),
     })
     .await
     .map_err(|e| e.to_string())

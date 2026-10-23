@@ -170,6 +170,9 @@ export interface L2SendPinPromptContext {
     amount_micro_minotari: number;
     destination: string;
     account: string;
+    pay_ref: string | null;
+    /** Who asked for the send: the in-app UI or the bridge tapplet. */
+    origin: 'app' | 'tapplet';
     fee_micro_minotari: number | null;
 }
 
@@ -202,6 +205,8 @@ export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim';
 export interface L2Balance {
     revealed: number;
     confidential: number;
+    /** revealed + confidential as a decimal string, exact past 2^53. */
+    total: string;
 }
 
 /** A settled XTR movement on an L2 account. `amount` is signed micro XTR. */

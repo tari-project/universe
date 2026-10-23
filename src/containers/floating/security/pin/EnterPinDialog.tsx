@@ -102,9 +102,15 @@ export default function EnterPinDialog() {
                             kind="l2_send"
                             amountMicroMinotari={l2SendContext.amount_micro_minotari}
                             destination={l2SendContext.destination}
+                            paymentId={l2SendContext.pay_ref}
                             feeMicroMinotari={l2SendContext.fee_micro_minotari}
                             subtitle={t('security.pin.approve-send-subtitle')}
                         />
+                    )}
+                    {l2SendContext?.origin === 'tapplet' && (
+                        <Typography variant="p" style={{ opacity: 0.5, fontSize: 12 }}>
+                            {t('security.pin.requested-by-tapplet')}
+                        </Typography>
                     )}
                     {l2ClaimContext && (
                         <TransactionContextSummary

@@ -86,6 +86,7 @@
       "l2-seed-export": "Enter your PIN to reveal your Layer 2 seed words. Anyone who sees them can take your funds. If you did not ask for them, close this dialog.",
       "l2-seed-import": "Enter your PIN to replace your Layer 2 wallet with the seed words you entered. If you did not start this, close this dialog.",
       "l2-seed-reset": "Enter your PIN to replace your Layer 2 wallet with one restored from your Tari seed. If you did not start this, close this dialog.",
+      "requested-by-tapplet": "Requested by the bridge tapplet",
       "restore-wallet-details": "Your wallet details were missing from the settings file. Enter your PIN to restore them from your wallet keys. Nothing else will change.",
       "seed-needs-pin": "Your wallet keys are protected by a PIN, but your settings say no PIN is set. Your seed is safe and nothing has been changed. Enter your PIN to continue.",
       "approve-burn": "Approve burn",

@@ -128,7 +128,7 @@ describe('TappletSigner.runOne', () => {
                         component_address: 'component_abc',
                         public_key: 'aa',
                         is_default: true,
-                        balance: { revealed: 1_000, confidential: 2_500_000 },
+                        balance: { revealed: 1_000, confidential: 2_500_000, total: '2501000' },
                         history: [],
                         transactions: [{ id: 'tx1', status, fee: 10, invalid_reason: null, timestamp: 0 }],
                     },
@@ -145,6 +145,10 @@ describe('TappletSigner.runOne', () => {
                 return response;
             }) as typeof invoke);
         }
+
+        beforeEach(() => {
+            vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        });
 
         afterEach(() => {
             vi.mocked(invoke).mockReset();
@@ -170,6 +174,13 @@ describe('TappletSigner.runOne', () => {
 
                 await expect(signer.runOne('getOotleAccount', [])).resolves.toEqual(L2_UNAVAILABLE);
             });
+
+            it('hides backend error text behind a fixed code', async () => {
+                mockCommands({ l2_get_state: l2State(), get_network: new Error('config file unreadable at /home/x') });
+
+                await expect(signer.runOne('getOotleAccount', [])).rejects.toThrow(/^failed$/);
+                expect(console.error).toHaveBeenCalledWith(expect.stringContaining('config file unreadable'));
+            });
         });
 
         describe('getOotleBalance', () => {
@@ -178,6 +189,17 @@ describe('TappletSigner.runOne', () => {
 
                 await expect(signer.runOne('getOotleBalance', [])).resolves.toEqual({
                     available: '2501000',
+                    pending: '0',
+                });
+            });
+
+            it('passes the backend total through exactly past 2^53', async () => {
+                const state = l2State();
+                state.accounts[0].balance.total = '9007199254740993';
+                mockCommands({ l2_get_state: state });
+
+                await expect(signer.runOne('getOotleBalance', [])).resolves.toEqual({
+                    available: '9007199254740993',
                     pending: '0',
                 });
             });
@@ -191,7 +213,7 @@ describe('TappletSigner.runOne', () => {
 
         describe('sendOotleStealth', () => {
             it('sends micro XTR as XTR from the default account with the pay ref', async () => {
-                mockCommands({ l2_get_state: l2State(), l2_validate_address: null, l2_send: 'tx1' });
+                mockCommands({ l2_get_state: l2State(), l2_validate_address: null, l2_send_from_tapplet: 'tx1' });
 
                 const result = await signer.runOne('sendOotleStealth', [
                     { amount: '1500001', address: ADDRESS, payRef: PAY_REF },
@@ -199,7 +221,7 @@ describe('TappletSigner.runOne', () => {
 
                 expect(result).toEqual({ transactionId: 'tx1' });
                 expect(invoke).toHaveBeenCalledWith('l2_validate_address', { address: ADDRESS });
-                expect(invoke).toHaveBeenCalledWith('l2_send', {
+                expect(invoke).toHaveBeenCalledWith('l2_send_from_tapplet', {
                     account: 'component_abc',
                     destination: ADDRESS,
                     amount: '1.500001',
@@ -231,7 +253,7 @@ describe('TappletSigner.runOne', () => {
                 await expect(
                     signer.runOne('sendOotleStealth', [{ amount: '100', address: ADDRESS, payRef: PAY_REF }])
                 ).rejects.toThrow('Invalid arguments for tapplet signer method: sendOotleStealth');
-                expect(invoke).not.toHaveBeenCalledWith('l2_send', expect.anything());
+                expect(invoke).not.toHaveBeenCalledWith('l2_send_from_tapplet', expect.anything());
             });
 
             it('is l2_unavailable without sending when L2 is locked', async () => {
@@ -242,19 +264,51 @@ describe('TappletSigner.runOne', () => {
                 ]);
 
                 expect(result).toEqual(L2_UNAVAILABLE);
-                expect(invoke).not.toHaveBeenCalledWith('l2_send', expect.anything());
+                expect(invoke).not.toHaveBeenCalledWith('l2_send_from_tapplet', expect.anything());
             });
 
-            it('throws when the PIN prompt is cancelled so the tapplet gets a resultError', async () => {
+            it.each([
+                ['PIN entry cancelled', 'denied'],
+                ['Pin is locked out. Remaining seconds: 290', 'denied'],
+                ["L2 send failed: The L2 indexer didn't answer within 30 seconds", 'failed'],
+            ])('turns the backend error "%s" into "%s"', async (backend, code) => {
                 mockCommands({
                     l2_get_state: l2State(),
                     l2_validate_address: null,
-                    l2_send: new Error('PIN entry cancelled'),
+                    l2_send_from_tapplet: new Error(backend),
                 });
 
                 await expect(
                     signer.runOne('sendOotleStealth', [{ amount: '100', address: ADDRESS, payRef: PAY_REF }])
-                ).rejects.toThrow('PIN entry cancelled');
+                ).rejects.toThrow(new RegExp(`^${code}$`));
+                expect(console.error).toHaveBeenCalledWith(expect.stringContaining(backend));
+            });
+
+            it('refuses a second send while one is in flight, then allows the next', async () => {
+                let finishSend: (id: string) => void = () => undefined;
+                vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+                    if (cmd === 'l2_get_state') return l2State();
+                    if (cmd === 'l2_send_from_tapplet') return new Promise((resolve) => (finishSend = resolve));
+                    return null;
+                }) as typeof invoke);
+                const req = [{ amount: '100', address: ADDRESS, payRef: PAY_REF }];
+
+                const first = signer.runOne('sendOotleStealth', req);
+                await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_send_from_tapplet', expect.anything()));
+                await expect(signer.runOne('sendOotleStealth', req)).rejects.toThrow(/^busy$/);
+
+                finishSend('tx1');
+                await expect(first).resolves.toEqual({ transactionId: 'tx1' });
+                finishSend = () => undefined;
+                const next = signer.runOne('sendOotleStealth', req);
+                await vi.waitFor(() => {
+                    const sends = vi
+                        .mocked(invoke)
+                        .mock.calls.filter(([cmd]) => String(cmd) === 'l2_send_from_tapplet');
+                    expect(sends).toHaveLength(2);
+                });
+                finishSend('tx2');
+                await expect(next).resolves.toEqual({ transactionId: 'tx2' });
             });
         });
 
@@ -275,6 +329,23 @@ describe('TappletSigner.runOne', () => {
                 await vi.advanceTimersByTimeAsync(6_000);
 
                 await expect(result).resolves.toEqual({ status: 'Pending' });
+            });
+
+            it('allows one wait per transaction and at most four at a time', async () => {
+                vi.useFakeTimers();
+                mockCommands({ l2_get_state: l2State({}, 'Pending') });
+                const wait = (transactionId: string) =>
+                    signer.runOne('waitOotleTransaction', [{ transactionId, timeoutSecs: 5 }]);
+
+                const waits = ['tx1', 'tx2', 'tx3', 'tx4'].map(wait);
+                await expect(wait('tx1')).rejects.toThrow(/^busy$/);
+                await expect(wait('tx5')).rejects.toThrow(/^busy$/);
+
+                await vi.advanceTimersByTimeAsync(6_000);
+                await Promise.all(waits);
+                const again = wait('tx1');
+                await vi.advanceTimersByTimeAsync(6_000);
+                await expect(again).resolves.toEqual({ status: 'Pending' });
             });
 
             it('is l2_unavailable when the L2 state cannot be read', async () => {

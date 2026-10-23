@@ -270,11 +270,14 @@ pub enum PinPromptContext {
     /// Replacing the L2 wallet with one restored from the L1 seed.
     L2SeedReset,
     /// Sending XTR (micro units) on L2 from `account` to the Ootle address `destination`.
-    /// The fee is set once the dry run has priced the transaction.
+    /// `origin` is `"app"` or `"tapplet"`. The fee is set once the dry run has priced the
+    /// transaction.
     L2Send {
         amount_micro_minotari: u64,
         destination: String,
         account: String,
+        pay_ref: Option<String>,
+        origin: String,
         fee_micro_minotari: Option<u64>,
     },
     /// Claiming an L1 burn of `amount_micro_minotari` on L2, `commitment` (hex) being the
