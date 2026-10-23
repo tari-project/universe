@@ -24,6 +24,7 @@ use anyhow::anyhow;
 use monero_address_creator::Seed as MoneroSeed;
 use monero_address_creator::network::Mainnet;
 use serde::{Deserialize, Serialize};
+use std::fmt::Write as _;
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -36,13 +37,6 @@ use tari_transaction_components::key_manager::wallet_types::{SeedWordsWallet, Wa
 use tari_transaction_components::key_manager::{
     KeyManager, SecretTransactionKeyManagerInterface, TransactionKeyManagerInterface,
 };
-// Wallet-side (tari 5.3.1) key manager types, used only for signing transactions
-// via the `minotari` crate. See `wallet::minotari_wallet::wallet_network`.
-use tari_common_types_wallet::seeds::cipher_seed::CipherSeed as WalletCipherSeed;
-use tari_transaction_components_wallet::key_manager::KeyManager as WalletKeyManager;
-use tari_transaction_components_wallet::key_manager::wallet_types::{
-    SeedWordsWallet as WalletSeedWordsWallet, WalletType as WalletWalletType,
-};
 use tari_utilities::encoding::MBase58;
 use tari_utilities::message_format::MessageFormat;
 use tari_utilities::{Hidden, SafePassword};
@@ -50,9 +44,9 @@ use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::fs;
 use tokio::sync::{OnceCell, RwLock};
-use zeroize::Zeroizing;
 
 use tari_utilities::hex::Hex;
+use zeroize::Zeroizing;
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::configs::config_ui::ConfigUI;
@@ -266,8 +260,7 @@ impl InternalWallet {
                     CipherSeed::from_enciphered_bytes(&tari_seed_binary, Some(pin_password))
                         .map_err(|_| anyhow!("Wrong PIN entered!"))?
                 } else {
-                    CipherSeed::from_binary(&tari_seed_binary)
-                        .map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))?
+                    decode_plain_seed(&tari_seed_binary)?
                 };
 
                 let tari_wallet_details =
@@ -437,7 +430,7 @@ impl InternalWallet {
                 Some(p) => p,
                 None => PinManager::get_validated_pin(app_handle, None).await?,
             };
-            tari_seed.encipher(Some(pin_password))?
+            tari_seed.encipher(Some(pin_password))?.to_vec()
         } else {
             tari_seed
                 .to_binary()
@@ -567,7 +560,7 @@ impl InternalWallet {
                 .await
                 .ok_or_else(|| anyhow!("Seedless Wallet does not support PIN enciphering"))?
                 .id;
-            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?;
+            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?.to_vec();
             InternalWallet::set_credentials(
                 app_handle,
                 wallet_id.clone(),
@@ -653,7 +646,7 @@ impl InternalWallet {
         };
         let encrypted_tari_seed = {
             // Encrypt Tari Seed with PIN
-            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?;
+            let encrypted_tari_seed = tari_seed.encipher(Some(pin_password.clone()))?.to_vec();
             InternalWallet::set_credentials(
                 app_handle,
                 wallet_id,
@@ -805,8 +798,7 @@ impl InternalWallet {
                         }
                     } else {
                         // Seed not yet encrypted with PIN
-                        CipherSeed::from_binary(&encrypted_tari_seed)
-                            .map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))?
+                        decode_plain_seed(&encrypted_tari_seed)?
                     };
                     let wallet_details = InternalWallet::get_tari_wallet_details(
                         tari_wallet_id.clone(),
@@ -1032,9 +1024,9 @@ impl InternalWallet {
     pub async fn get_key_manager(
         app_handle: &AppHandle,
         pin_context: Option<PinPromptContext>,
-    ) -> Result<WalletKeyManager, anyhow::Error> {
+    ) -> Result<KeyManager, anyhow::Error> {
         let signing_wallet = Self::get_signing_wallet(app_handle, pin_context).await?;
-        WalletKeyManager::new(signing_wallet).map_err(|e| anyhow!(e.to_string()))
+        KeyManager::new(signing_wallet).map_err(|e| anyhow!(e.to_string()))
     }
 
     /// The full (spend-capable) wallet rebuilt from the stored seed, raising the PIN
@@ -1043,17 +1035,15 @@ impl InternalWallet {
     pub async fn get_signing_wallet(
         app_handle: &AppHandle,
         pin_context: Option<PinPromptContext>,
-    ) -> Result<WalletWalletType, anyhow::Error> {
+    ) -> Result<WalletType, anyhow::Error> {
         let tari_wallet_details = Self::tari_wallet_details().await;
 
         if tari_wallet_details.is_some() {
             let tari_cipher_seed = Self::get_tari_seed_with_prompt(app_handle, pin_context).await?;
-            let wallet_cipher_seed = to_wallet_cipher_seed(&tari_cipher_seed)?;
-
-            let seed_words_wallet = WalletSeedWordsWallet::construct_new(wallet_cipher_seed)
+            let seed_words_wallet = SeedWordsWallet::construct_new(tari_cipher_seed)
                 .map_err(|e| anyhow!(e.to_string()))?;
 
-            Ok(WalletWalletType::SeedWords(seed_words_wallet))
+            Ok(WalletType::SeedWords(seed_words_wallet))
         } else {
             Err(anyhow!(
                 "Seedless Wallet does not support Key Manager extraction"
@@ -1157,7 +1147,7 @@ impl InternalWallet {
         let primary = if pin_provided {
             CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, pin_password).ok()
         } else {
-            CipherSeed::from_binary(&encrypted_tari_seed).ok()
+            decode_plain_seed(&encrypted_tari_seed).ok()
         };
         if let Some(seed) = primary
             && seed_proves_recorded_address(&seed, recorded.as_ref()).await != Some(false)
@@ -1168,7 +1158,7 @@ impl InternalWallet {
         // The stored bytes can be in the other form than the PIN state says. That decode is only
         // trusted when the recorded address proves it, so a wrong seed is never returned.
         let secondary = if pin_provided {
-            CipherSeed::from_binary(&encrypted_tari_seed).ok()
+            decode_plain_seed(&encrypted_tari_seed).ok()
         } else {
             CipherSeed::from_enciphered_bytes(&encrypted_tari_seed, None).ok()
         };
@@ -1441,6 +1431,43 @@ pub(crate) fn decrypt_legacy_tari_seed(
         .ok_or_else(|| anyhow!("Failed to decrypt legacy Tari seed"))
 }
 
+/// Reads a seed stored without a PIN. Since tari 6.3 that is the seed enciphered under the
+/// default passphrase; before it, it was the bincode of the plain struct, which 6.3 still
+/// reads but only in its JSON form.
+pub(crate) fn decode_plain_seed(bytes: &[u8]) -> Result<CipherSeed, anyhow::Error> {
+    if let Ok(seed) = CipherSeed::from_binary(bytes) {
+        return Ok(seed);
+    }
+    // version (1), birthday (2, little endian), entropy (16), salt (5)
+    if bytes.len() != 24 {
+        return Err(anyhow!("Could not parse Tari Seed from binary"));
+    }
+    // Sized up front, so the buffer holding the entropy never reallocates and leaves a copy.
+    let mut json = Zeroizing::new(String::with_capacity(160));
+    let push_list = |json: &mut String, list: &[u8]| -> std::fmt::Result {
+        json.push('[');
+        for (i, byte) in list.iter().enumerate() {
+            if i > 0 {
+                json.push(',');
+            }
+            write!(json, "{byte}")?;
+        }
+        json.push(']');
+        Ok(())
+    };
+    write!(
+        json,
+        "{{\"version\":{},\"birthday\":{},\"entropy\":",
+        bytes[0],
+        u16::from_le_bytes([bytes[1], bytes[2]])
+    )?;
+    push_list(&mut json, &bytes[3..19])?;
+    json.push_str(",\"salt\":");
+    push_list(&mut json, &bytes[19..24])?;
+    json.push('}');
+    CipherSeed::from_json(&json).map_err(|e| anyhow!("Could not parse Tari Seed from binary: {e}"))
+}
+
 /// Derive the address from a decoded seed and compare it with the recorded one. `None` when
 /// nothing is recorded, so there is nothing to prove against.
 pub(crate) async fn seed_proves_recorded_address(
@@ -1692,16 +1719,4 @@ fn zero_fill(path: &Path, len: u64, chunk_len: usize) -> std::io::Result<()> {
         remaining -= chunk as u64;
     }
     file.sync_all()
-}
-
-/// The `minotari` signing crate and the Ootle wallet SDK use tari 6.0.1-pre.2, so rebuild
-/// the cipher seed as a wallet-side `CipherSeed`. The binary form is identical across the
-/// two versions (CIPHER_SEED_VERSION == 2), so this round-trip is lossless. The
-/// intermediate buffer is the master entropy in the clear, so it is wiped on drop rather
-/// than left in the heap.
-pub fn to_wallet_cipher_seed(seed: &CipherSeed) -> Result<WalletCipherSeed, anyhow::Error> {
-    WalletCipherSeed::from_binary(&Zeroizing::new(
-        seed.to_binary().map_err(|e| anyhow!(e.to_string()))?,
-    ))
-    .map_err(|e| anyhow!(e.to_string()))
 }

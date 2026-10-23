@@ -63,6 +63,9 @@
     "error-invalid-address": "Adres geçersiz",
     "error-invalid-amount": "Tutar geçersiz",
     "error-message": "İşlem gönderme hatası: ",
+    "error-change-not-affordable": "Ücreti ödemek ve her işlemin gerektirdiği para üstünü ayırmak için yeterli bakiye kalmıyor. Daha küçük bir tutar deneyin ya da Maks'a basın.",
+    "error-max-unavailable": "Azami tutar hesaplanamadı. Birazdan tekrar deneyin.",
+    "not-accepted-yet": "İşleminiz kaydedildi ancak ağ henüz kabul etmedi. Cüzdan onu otomatik olarak yeniden gönderecek, bu yüzden tekrar göndermeyin.",
     "estimated-completion-time": "Tahmini tamamlanma süresi",
     "field-address": "adres",
     "field-amount": "tutar",
@@ -174,5 +177,26 @@
     "mine-directly-to-exchange": "{{exchangeName}}\"e doğrudan madencilik yap",
     "mining-here": "Burada madencilik yapılıyor",
     "or": "veya"
+  },
+  "abandon": {
+    "stalled": "Temel düğümünüz bu işlemi reddetmeye devam ediyor. Cüzdan yeniden denemeye devam ediyor ve işlem kazılana ya da siz vazgeçene kadar fonları kilitli kalıyor. Vazgeçmeden önce daha sonra tekrar deneyin veya başka bir temel düğüme geçin.",
+    "cta": "İşlemden vazgeç",
+    "note": "İşlemden vazgeçilir ve fonları serbest bırakılır. Bir düğüm hâlâ işlemi tutuyorsa yine de kazılabilir: cüzdan o zaman işlemi kazılmış olarak gösterir ve bu arada serbest kalan fonlarla yapılan işlem başarısız olabilir.",
+    "unreconcilable-note": "UYARI: bu işlemin para üstü çıktısı yok. Bir düğüm hâlâ tutuyorsa ve işlem kazılırsa cüzdan onu kazılmış olarak GÖSTERMEZ: işlem vazgeçilmiş olarak kalır, fonları ise harcanmış görünür ve bu arada serbest kalan fonlarla yapılan işlem başarısız olabilir.",
+    "confirm": "Vazgeç",
+    "confirm-anyway": "Yine de vazgeç",
+    "review-label": "Vazgeçiyorsunuz",
+    "approve": "Vazgeçmeyi onayla",
+    "done": "İşlemden vazgeçildi. Fonları yeniden kullanılabilir.",
+    "error-message": "İşlemden vazgeçilemedi: ",
+    "error-not-found": "Bu işlem bu cüzdanda değil.",
+    "error-not-pending": "Bu işlemden artık vazgeçilemez: kazıldı ya da reddedildi.",
+    "error-not-stalled": "Temel düğümünüz bu işlemi henüz yeterince reddetmedi. Daha sonra tekrar deneyin.",
+    "error-input-spent": "Fonları zaten zincirde harcandı. Cüzdan bunu kendisi halledecek.",
+    "error-change-in-use": "Para üstü başka bir işlemde kullanılıyor. Önce o işlemden vazgeçin ya da tamamlanmasını bekleyin.",
+    "error-change-already-mined": "Kazılmış görünüyor. Cüzdanın tamamlamasını bekleyin.",
+    "chip": "Takıldı",
+    "burn-note": "Yakmadan vazgeçilir ve fonları serbest bırakılır. Bir düğüm hâlâ tutuyorsa yine de kazılabilir; bu yüzden sonuçlanana kadar cüzdanı sıfırlamayın veya yeniden içe aktarmayın: talep etmek için gereken tek kanıt cüzdandadır. Bu arada serbest kalan fonlarla yapılan işlem başarısız olabilir.",
+    "error-burn-unreconcilable": "Bu yakmanın para üstü çıktısı yok, bu yüzden güvenle vazgeçilemez: kazılırsa cüzdan bunu anlayamaz. Sonuçlanana kadar beklemede kalır."
   }
 }

@@ -71,7 +71,21 @@ test.describe('Receive Flow', () => {
 });
 
 test.describe('Sync with Phone (desktop side)', () => {
-  test('"I have the app" reveals the QR code and identification code', async ({ appPage: page }) => {
+  // Sync with phone is off in this build (PAPER_WALLET_ENABLED): its tari 6.3 export isn't
+  // readable by the current Aurora app. Swap these two tests back when it is turned on again.
+  test('is unavailable: the button is disabled and explains why', async ({ appPage: page }) => {
+    await openSettingsTab(page, 'wallet');
+
+    const button = page.locator(sel.settings.syncWithPhone);
+    await expect(button).toBeDisabled({ timeout: 10_000 });
+    await expect(page.locator(sel.settings.syncWithPhoneUnavailable)).toBeVisible({ timeout: 10_000 });
+    await button.click({ force: true, timeout: 5_000 }).catch(() => {});
+    await expect(page.locator(sel.sync.haveApp)).toBeHidden({ timeout: 5_000 });
+
+    await page.keyboard.press('Escape');
+  });
+
+  test.skip('"I have the app" reveals the QR code and identification code', async ({ appPage: page }) => {
     await openSettingsTab(page, 'wallet');
 
     await page.locator(sel.settings.syncWithPhone).click({ timeout: 10_000 });

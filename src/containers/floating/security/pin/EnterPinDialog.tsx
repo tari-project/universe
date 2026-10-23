@@ -32,6 +32,7 @@ export default function EnterPinDialog() {
     const burnContext = pinContext?.kind === 'burn' ? pinContext : null;
     const l2SendContext = pinContext?.kind === 'l2_send' ? pinContext : null;
     const l2ClaimContext = pinContext?.kind === 'l2_claim' ? pinContext : null;
+    const abandonContext = pinContext?.kind === 'abandon' ? pinContext : null;
     const reasonKey = pinContext ? REASON_KEYS[pinContext.kind] : undefined;
 
     function handleClose() {
@@ -67,11 +68,13 @@ export default function EnterPinDialog() {
                         <Heading>
                             {burnContext
                                 ? t('security.pin.approve-burn')
-                                : l2ClaimContext
-                                  ? t('l2.claim.approve')
-                                  : sendContext || l2SendContext
-                                    ? t('security.pin.approve-send')
-                                    : t('security.pin.enter')}
+                                : abandonContext
+                                  ? t('abandon.approve')
+                                  : l2ClaimContext
+                                    ? t('l2.claim.approve')
+                                    : sendContext || l2SendContext
+                                      ? t('security.pin.approve-send')
+                                      : t('security.pin.enter')}
                         </Heading>{' '}
                         <CloseButton onClick={handleClose} />
                     </Header>
@@ -113,6 +116,20 @@ export default function EnterPinDialog() {
                             destination={l2ClaimContext.commitment}
                             feeMicroMinotari={l2ClaimContext.fee_micro_minotari}
                             subtitle={t('l2.claim.approve-subtitle')}
+                        />
+                    )}
+                    {abandonContext && (
+                        <TransactionContextSummary
+                            kind="abandon"
+                            amountMicroMinotari={abandonContext.amount_micro_minotari}
+                            destination={abandonContext.tx_id}
+                            subtitle={
+                                abandonContext.accept_unreconcilable
+                                    ? t('abandon.unreconcilable-note')
+                                    : abandonContext.is_burn
+                                      ? t('abandon.burn-note')
+                                      : t('abandon.note')
+                            }
                         />
                     )}
                     <EnterPin onSubmit={handleSubmit} />

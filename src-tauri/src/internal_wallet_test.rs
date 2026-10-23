@@ -69,8 +69,8 @@
 
 use super::internal_wallet::{
     InternalWallet, LegacyWalletConfig, SEED_PIN_REQUIRED, SeedNeedsPin, TariAddressType,
-    decrypt_legacy_tari_seed, previous_wallet_files, seed_proves_recorded_address,
-    wipe_and_remove_file,
+    decode_plain_seed, decrypt_legacy_tari_seed, previous_wallet_files,
+    seed_proves_recorded_address, wipe_and_remove_file,
 };
 use tari_common_types::seeds::cipher_seed::CipherSeed;
 use tari_utilities::SafePassword;
@@ -134,27 +134,64 @@ async fn the_wallet_accessors_degrade_before_initialization() {
 
 // --- The seed decode has to be proven ------------------------------------------------------
 
-/// Why every plain decode is proven against the recorded address: `from_binary` is
-/// unauthenticated, so PIN-enciphered bytes come back as a structurally valid seed with
-/// different entropy. Returned unchecked, that is a different wallet address, which the user
-/// experiences as a lost wallet.
+/// A PIN-enciphered seed doesn't decode through the plain path: since tari 6.3 `from_binary`
+/// reads only a seed enciphered under the default passphrase, and the pre-6.3 plain layout is a
+/// different length. The address proof below still checks every decode that does succeed.
 #[test]
-fn enciphered_bytes_decode_through_the_plain_path_into_a_different_seed() {
+fn enciphered_bytes_no_longer_decode_through_the_plain_path() {
     let seed = CipherSeed::random();
     let enciphered = seed
         .encipher(Some(SafePassword::from("1234")))
         .expect("encipher the fixture seed");
 
-    let decoded = CipherSeed::from_binary(&enciphered)
-        .expect("from_binary accepts enciphered bytes, which is the whole problem");
+    assert!(decode_plain_seed(&enciphered).is_err());
+    let deciphered =
+        CipherSeed::from_enciphered_bytes(&enciphered, Some(SafePassword::from("1234")))
+            .expect("the PIN opens it");
+    assert_eq!(deciphered.entropy(), seed.entropy());
+}
 
-    assert_ne!(
-        decoded.entropy(),
-        seed.entropy(),
-        "an unproven plain decode yields a different wallet"
+/// A seed the released app stored without a PIN: the tari 6.0.1-pre.2 bincode of the plain
+/// struct (version 2, birthday 1234, entropy 1..=16, salt 9, 8, 7, 6, 5), from that version.
+const LEGACY_PLAIN_SEED: [u8; 24] = [
+    2, 210, 4, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 9, 8, 7, 6, 5,
+];
+
+#[tokio::test]
+async fn a_seed_stored_without_a_pin_before_tari_6_3_still_reads() {
+    let seed = decode_plain_seed(&LEGACY_PLAIN_SEED).expect("the legacy seed reads");
+    assert_eq!(seed.entropy(), (1u8..=16).collect::<Vec<_>>().as_slice());
+    assert_eq!(seed.birthday(), 1234);
+
+    // The same seed built directly from its fields derives the same address.
+    let direct = CipherSeed::from_json(
+        r#"{"version":2,"birthday":1234,"entropy":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],"salt":[9,8,7,6,5]}"#,
+    )
+    .expect("the seed's fields");
+    let id = WalletId::new("legacy".to_string());
+    let from_legacy = InternalWallet::get_tari_wallet_details(id.clone(), seed)
+        .await
+        .expect("details");
+    let from_direct = InternalWallet::get_tari_wallet_details(id, direct.clone())
+        .await
+        .expect("details");
+    assert_eq!(from_legacy.tari_address, from_direct.tari_address);
+    // And the same keys tari 6.0.1-pre.2 derives from it, so its recorded address still matches.
+    assert_eq!(
+        from_legacy.view_private_key_hex.reveal(),
+        "c784e6d00d93fc03685e899b3d3770b5d0d78883cb6cf9cbcf2ab9a35f899702"
     );
-    // The proof the wallet uses is the derived address; entropy is what drives it.
-    assert_ne!(decoded.to_binary().ok(), seed.to_binary().ok());
+    assert_eq!(
+        from_legacy.spend_public_key_hex,
+        "38fca5f7ee2a4d990ecc3c7183f935a1195aa1f6d256d48f78becd0065806d41"
+    );
+
+    // A seed stored without a PIN by this version reads too.
+    let stored_now = direct.to_binary().expect("store");
+    assert_eq!(
+        decode_plain_seed(&stored_now).expect("reads").entropy(),
+        direct.entropy()
+    );
 }
 
 /// The proof `get_tari_seed` runs on every decode: derive the address from the seed in hand and

@@ -148,7 +148,8 @@ test.describe.serial('Security PIN', () => {
     await doneBtn.click({ timeout: 5_000 });
   });
 
-  test('sync with phone prompts for the PIN before showing the QR', async ({ appPage: page }) => {
+  // Sync with phone is off in this build (PAPER_WALLET_ENABLED); re-enable with it.
+  test.skip('sync with phone prompts for the PIN before showing the QR', async ({ appPage: page }) => {
     await openSettingsTab(page, 'wallet');
     await page.locator(sel.settings.syncWithPhone).click({ timeout: 10_000 });
     const haveApp = page.locator(sel.sync.haveApp);

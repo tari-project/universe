@@ -6,7 +6,7 @@ import {
     BaseNodeStatus,
     DisplayedTransaction,
 } from './app-status';
-import { PaperWalletDetails } from './app-status.ts';
+import { PaperWalletDetails, StalledTransaction } from './app-status.ts';
 import { LocalBlockStats } from './mining/blocks.ts';
 import { displayMode } from '../store/types.ts';
 import { BasePoolData, ConfigBackendInMemory, PauseOnBatteryModeState } from './configs.ts';
@@ -19,7 +19,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(
         param: 'send_one_sided_to_stealth_address',
         payload: { amount: string; destination: string; paymentId?: string }
-    ): Promise<void>;
+    ): Promise<{ accepted_by_node: boolean; node_reason?: string | null }>;
     function invoke(
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }
@@ -104,6 +104,12 @@ declare module '@tauri-apps/api/core' {
         payload: { address: string; sendingMethod?: number }
     ): Promise<void>;
     function invoke(param: 'validate_minotari_amount', payload: { amount: string }): Promise<string>;
+    function invoke(param: 'get_max_sendable_amount', payload: { paymentId?: string }): Promise<number>;
+    function invoke(param: 'get_stalled_transactions'): Promise<StalledTransaction[]>;
+    function invoke(
+        param: 'abandon_stalled_transaction',
+        payload: { txId: string; acceptUnreconcilable: boolean }
+    ): Promise<void>;
     function invoke(param: 'trigger_phases_restart'): Promise<void>;
     function invoke(param: 'set_node_type', payload: { nodeType: NodeType }): Promise<void>;
     function invoke(param: 'set_external_tari_address', payload: { address: string }): Promise<void>;

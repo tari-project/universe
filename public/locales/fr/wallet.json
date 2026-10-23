@@ -63,6 +63,9 @@
     "error-invalid-address": "L\"adresse est invalide",
     "error-invalid-amount": "Le montant est invalide",
     "error-message": "Erreur lors de l\"envoi de la transaction : ",
+    "error-change-not-affordable": "Il ne reste pas assez pour payer les frais et conserver la monnaie dont chaque transaction a besoin. Essayez un montant plus petit ou appuyez sur Max.",
+    "error-max-unavailable": "Impossible de calculer le montant maximum. Réessayez dans un instant.",
+    "not-accepted-yet": "Votre transaction est enregistrée, mais le réseau ne l'a pas encore acceptée. Le portefeuille la renverra automatiquement : ne l'envoyez pas une seconde fois.",
     "estimated-completion-time": "Temps estimé de complétion",
     "field-address": "adresse",
     "field-amount": "montant",
@@ -174,5 +177,26 @@
     "mine-directly-to-exchange": "Miner directement vers {{exchangeName}}",
     "mining-here": "Minage ici",
     "or": "ou"
+  },
+  "abandon": {
+    "stalled": "Votre nœud de base refuse toujours cette transaction. Le portefeuille continue de la renvoyer et ses fonds restent bloqués jusqu'à ce qu'elle soit minée ou que vous l'abandonniez. Avant de l'abandonner, réessayez plus tard ou changez de nœud de base.",
+    "cta": "Abandonner la transaction",
+    "note": "La transaction est abandonnée et ses fonds sont libérés. Si un nœud la détient encore, elle peut encore être minée : le portefeuille l'affichera alors comme minée, et une transaction faite entre-temps avec les fonds libérés pourrait échouer.",
+    "unreconcilable-note": "ATTENTION : cette transaction n'a pas de sortie de monnaie. Si un nœud la détient encore et qu'elle est minée, le portefeuille ne l'affichera PAS comme minée : elle restera abandonnée alors que ses fonds apparaîtront dépensés, et une transaction faite entre-temps avec les fonds libérés pourrait échouer.",
+    "confirm": "L'abandonner",
+    "confirm-anyway": "Abandonner quand même",
+    "review-label": "Vous abandonnez",
+    "approve": "Approuver l'abandon",
+    "done": "Transaction abandonnée. Ses fonds sont de nouveau disponibles.",
+    "error-message": "Impossible d'abandonner la transaction : ",
+    "error-not-found": "Cette transaction n'est pas dans ce portefeuille.",
+    "error-not-pending": "Cette transaction ne peut plus être abandonnée : elle a été minée ou rejetée.",
+    "error-not-stalled": "Votre nœud de base n'a pas encore refusé cette transaction assez souvent. Réessayez plus tard.",
+    "error-input-spent": "Ses fonds ont déjà été dépensés sur la chaîne. Le portefeuille la réglera de lui-même.",
+    "error-change-in-use": "Sa monnaie est utilisée par une autre transaction. Abandonnez ou réglez d'abord celle-ci.",
+    "error-change-already-mined": "Elle semble avoir été minée. Attendez que le portefeuille la règle.",
+    "chip": "Bloquée",
+    "burn-note": "Le burn est abandonné et ses fonds sont libérés. Si un nœud le détient encore, il peut encore être miné : ne réinitialisez pas et ne réimportez pas le portefeuille avant qu'il soit réglé, car le portefeuille conserve la seule preuve nécessaire pour le réclamer. Une transaction faite entre-temps avec les fonds libérés pourrait échouer.",
+    "error-burn-unreconcilable": "Ce burn n'a pas de sortie de monnaie, il ne peut donc pas être abandonné sans risque : s'il était miné, le portefeuille ne pourrait pas le savoir. Il reste en attente jusqu'à ce qu'il soit réglé."
   }
 }

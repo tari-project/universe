@@ -239,6 +239,10 @@ pub struct McpTransactionConfirmationPayload {
     /// anything reaching the Tauri command) or `"mcp"` (MCP transaction tool).
     pub origin: String,
     pub payment_id: Option<String>,
+    /// For an abandon: the user accepted that it has no change output to recognise it by.
+    pub accept_unreconcilable: bool,
+    /// For an abandon: it is a burn to L2.
+    pub is_burn: bool,
 }
 
 /// Optional context attached to the `EnterPin` event so the PIN dialog can tell the
@@ -283,6 +287,14 @@ pub enum PinPromptContext {
         amount_micro_minotari: u64,
         commitment: String,
         fee_micro_minotari: Option<u64>,
+    },
+    /// Abandoning stalled send or burn `tx_id`, which hands its inputs back.
+    Abandon {
+        amount_micro_minotari: u64,
+        tx_id: String,
+        /// The user accepted that it has no change output to recognise it by.
+        accept_unreconcilable: bool,
+        is_burn: bool,
     },
 }
 

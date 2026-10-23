@@ -63,6 +63,9 @@
     "error-invalid-address": "Die adres is ongeldig",
     "error-invalid-amount": "Die bedrag is ongeldig",
     "error-message": "Fout met stuur van transaksie: ",
+    "error-change-not-affordable": "Nie genoeg oor om die fooi te betaal en die kleingeld te hou wat elke transaksie nodig het nie. Probeer 'n kleiner bedrag, of druk Maks.",
+    "error-max-unavailable": "Kon nie die maksimum bedrag bereken nie. Probeer weer oor 'n oomblik.",
+    "not-accepted-yet": "Jou transaksie is aangeteken, maar die netwerk het dit nog nie aanvaar nie. Die beursie stuur dit outomaties weer, so moenie dit weer stuur nie.",
     "estimated-completion-time": "Geskatte voltooiingstyd",
     "field-address": "adres",
     "field-amount": "bedrag",
@@ -174,5 +177,26 @@
     "mine-directly-to-exchange": "Myn direk na {{exchangeName}}",
     "mining-here": "Myn hier",
     "or": "of"
+  },
+  "abandon": {
+    "stalled": "Jou basisnodus weier steeds hierdie transaksie. Die beursie probeer dit steeds, en die fondse bly gesluit totdat dit gemyn word of jy dit laat vaar. Probeer later weer of skakel oor na 'n ander basisnodus voordat jy dit laat vaar.",
+    "cta": "Laat transaksie vaar",
+    "note": "Die transaksie word laat vaar en die fondse word vrygestel. As 'n nodus dit nog hou, kan dit steeds gemyn word: die beursie sal dit dan as gemyn wys, en 'n transaksie wat intussen met die vrygestelde fondse gemaak is, kan misluk.",
+    "unreconcilable-note": "WAARSKUWING: hierdie transaksie het geen kleingeld-uitset nie. As 'n nodus dit nog hou en dit gemyn word, sal die beursie dit NIE as gemyn wys nie: dit bly laat vaar terwyl die fondse as bestee wys, en 'n transaksie wat intussen met die vrygestelde fondse gemaak is, kan misluk.",
+    "confirm": "Laat dit vaar",
+    "confirm-anyway": "Laat dit in elk geval vaar",
+    "review-label": "Jy laat vaar",
+    "approve": "Keur goed om te laat vaar",
+    "done": "Transaksie laat vaar. Die fondse is weer beskikbaar.",
+    "error-message": "Kon nie die transaksie laat vaar nie: ",
+    "error-not-found": "Hierdie transaksie is nie in hierdie beursie nie.",
+    "error-not-pending": "Hierdie transaksie kan nie meer laat vaar word nie: dit is gemyn of afgekeur.",
+    "error-not-stalled": "Jou basisnodus het hierdie transaksie nog nie gereeld genoeg geweier nie. Probeer later weer.",
+    "error-input-spent": "Die fondse is reeds op die ketting bestee. Die beursie sal dit self afhandel.",
+    "error-change-in-use": "Die kleingeld word deur 'n ander transaksie gebruik. Laat daardie een eers vaar of handel dit af.",
+    "error-change-already-mined": "Dit lyk asof dit gemyn is. Wag vir die beursie om dit af te handel.",
+    "chip": "Vasgeval",
+    "burn-note": "Die verbranding word laat vaar en die fondse word vrygestel. As 'n nodus dit nog hou, kan dit steeds gemyn word, so moenie die beursie terugstel of weer invoer voordat dit afgehandel is nie: die beursie hou die enigste bewys wat nodig is om dit te eis. 'n Transaksie wat intussen met die vrygestelde fondse gemaak is, kan misluk.",
+    "error-burn-unreconcilable": "Hierdie verbranding het geen kleingeld-uitset nie, so dit kan nie veilig laat vaar word nie: as dit gemyn word, sou die beursie dit nie kon agterkom nie. Dit bly hangend totdat dit afgehandel is."
   }
 }

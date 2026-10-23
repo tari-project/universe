@@ -118,6 +118,15 @@ export interface TransactionDetails {
     sent_payrefs: string[];
 }
 
+/** A send or burn the network keeps refusing, which the user may abandon. */
+export interface StalledTransaction {
+    /** A string: a u64 doesn't always fit a JavaScript number. */
+    tx_id: string;
+    amount: number;
+    /** Hex commitment when it is a burn: burns are listed by it, not by transaction id. */
+    burn_commitment: string | null;
+}
+
 export interface DisplayedTransaction {
     id: number;
     direction: TransactionDirection;

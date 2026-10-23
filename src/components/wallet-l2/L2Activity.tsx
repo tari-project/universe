@@ -27,6 +27,8 @@ import {
     ValueWrapper,
 } from '@app/components/transactions/history/transactionHistoryItem/HistoryItem.styles.ts';
 import { Wrapper as DetailsWrapper } from '@app/components/transactions/history/transactionDetails/styles.ts';
+import { AbandonStalled } from '@app/components/transactions/history/transactionDetails/AbandonStalled.tsx';
+import { useStalledTransactions } from '@app/hooks/wallet/useStalledTransactions.ts';
 
 // The backend sends unix seconds; formatEffectiveDate wants an ISO string.
 const date = (seconds: number) => formatEffectiveDate(new Date(seconds * 1000).toISOString());
@@ -44,6 +46,14 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [burns, setBurns] = useState<L2Burn[]>([]);
     const [claiming, setClaiming] = useState<string | null>(null);
+    const [abandonId, setAbandonId] = useState<string | null>(null);
+    // Only an unmined burn can stall: look again when those change.
+    const stalled = useStalledTransactions(
+        burns
+            .filter((b) => b.status === 'pending')
+            .map((b) => b.commitment)
+            .join(',')
+    );
 
     // Every L2 state update hands us a new account, including the one sent when a claim
     // is accepted and its burn moves to claimed, so the list follows the state.
@@ -95,6 +105,8 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
                             amount={xtr(burn.amount)}
                             claiming={claiming}
                             onClaim={() => claim(burn.commitment)}
+                            stalledId={stalled.find((s) => s.burn_commitment === burn.commitment)?.tx_id}
+                            onAbandon={setAbandonId}
                         />
                     ) : (
                         <L2HistoryRow key={change.id} onDetails={() => setSelectedId(change.id)}>
@@ -121,6 +133,14 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
                     )
                 )}
             </ListItemWrapper>
+
+            <TransactionModal show={abandonId !== null} title={t('abandon.cta')} handleClose={() => setAbandonId(null)}>
+                {abandonId && (
+                    <DetailsWrapper>
+                        <AbandonStalled key={abandonId} stalledId={abandonId} isBurn />
+                    </DetailsWrapper>
+                )}
+            </TransactionModal>
 
             <TransactionModal
                 show={Boolean(selected)}
@@ -155,12 +175,15 @@ interface L2BurnRowProps {
     amount: string;
     claiming: string | null;
     onClaim: () => void;
+    /** Set when the network keeps refusing the burn; it can then be abandoned. */
+    stalledId?: string;
+    onAbandon: (stalledId: string) => void;
 }
 
 // A burn row: a Pending chip until it's mined, a checking status until the L1 node says
 // where it was mined, a Waiting chip until the L2 has imported that block, then the Claim
 // button. Without the L2 height the button shows, so nothing gets stuck.
-function L2BurnRow({ burn, amount, claiming, onClaim }: L2BurnRowProps) {
+function L2BurnRow({ burn, amount, claiming, onClaim, stalledId, onAbandon }: L2BurnRowProps) {
     const { t } = useTranslation('wallet');
     const stats = useL2WalletStore((s) => s.networkStats);
     const blocksToWait = burn.mined_height === null || !stats ? 0 : Math.max(0, burn.mined_height - stats.block_height);
@@ -182,7 +205,8 @@ function L2BurnRow({ burn, amount, claiming, onClaim }: L2BurnRowProps) {
         });
     }
     let chip = '';
-    if (burn.status === 'pending') chip = t('l2.claim.chip-pending');
+    if (stalledId) chip = t('abandon.chip');
+    else if (burn.status === 'pending') chip = t('l2.claim.chip-pending');
     else if (waiting) chip = t('l2.claim.chip-waiting');
 
     return (
@@ -206,6 +230,16 @@ function L2BurnRow({ burn, amount, claiming, onClaim }: L2BurnRowProps) {
                         {amount}
                         <CurrencyText>{`XTR`}</CurrencyText>
                     </ValueWrapper>
+                    {stalledId && (
+                        <Button
+                            size="smaller"
+                            variant="black"
+                            onClick={() => onAbandon(stalledId)}
+                            data-testid="l2-burn-abandon"
+                        >
+                            {t('abandon.cta')}
+                        </Button>
+                    )}
                     {burn.status === 'claimable' && !waiting && !checking && (
                         <Button
                             size="smaller"

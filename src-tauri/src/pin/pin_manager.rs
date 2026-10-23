@@ -39,6 +39,18 @@ use crate::{
     pin::pin_locker::PinLocker,
 };
 
+/// The user closed the PIN prompt or let it time out. Typed so callers can tell it apart
+/// from a failure without reading the message.
+#[derive(Debug)]
+pub struct PinCancelled;
+
+impl std::fmt::Display for PinCancelled {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("PIN entry cancelled")
+    }
+}
+impl std::error::Error for PinCancelled {}
+
 pub struct PinManager {}
 
 impl PinManager {
@@ -203,11 +215,11 @@ where
         Err(_elapsed) => {
             log::info!(target: LOG_TARGET_APP_LOGIC, "PIN entry timed out");
             EventsEmitter::emit_close_pin_dialog(id).await;
-            Err(anyhow::anyhow!("PIN entry cancelled"))
+            Err(PinCancelled.into())
         }
         Ok(_) => {
             log::info!(target: LOG_TARGET_APP_LOGIC, "PIN entry cancelled");
-            Err(anyhow::anyhow!("PIN entry cancelled"))
+            Err(PinCancelled.into())
         }
     }
 }

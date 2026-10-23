@@ -1,5 +1,8 @@
 import { BackendBridgeTransaction, setError as setStoreError, useConfigUIStore, useWalletStore } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
+import { t } from 'i18next';
+import { addToast } from '@app/components/ToastStack/useToastStore';
+import { commandErrorMessage } from '@app/components/transactions/send/types';
 import { BaseNodeStatus, BridgeEnvs } from '../app-status';
 import {
     AccountData,
@@ -166,14 +169,18 @@ export class TappletSigner {
 
     public async sendOneSided(req: SendOneSidedRequest): Promise<boolean> {
         try {
-            await invoke('send_one_sided_to_stealth_address', {
+            const receipt = await invoke('send_one_sided_to_stealth_address', {
                 amount: req.amount,
                 destination: req.address,
                 paymentId: req.paymentId,
             });
+            // Recorded and retried automatically, so it still counts as sent.
+            if (receipt?.accepted_by_node === false) {
+                addToast({ title: t('send.not-accepted-yet', { ns: 'wallet' }), type: 'warning' });
+            }
             return true;
         } catch (error) {
-            setStoreError(`Error sending transaction: ${error}`);
+            setStoreError(`Error sending transaction: ${commandErrorMessage(error)}`);
             return false;
         }
     }

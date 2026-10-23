@@ -181,8 +181,19 @@ export interface L2ClaimPinPromptContext {
     fee_micro_minotari: number | null;
 }
 
+/** Abandoning stalled send or burn `tx_id`, which hands its inputs back. */
+export interface AbandonPinPromptContext {
+    kind: 'abandon';
+    amount_micro_minotari: number;
+    tx_id: string;
+    /** The user accepted that it has no change output to recognise it by. */
+    accept_unreconcilable: boolean;
+    is_burn: boolean;
+}
+
 export type PinPromptContext =
     | SendPinPromptContext
+    | AbandonPinPromptContext
     | BurnPinPromptContext
     | L2SendPinPromptContext
     | L2ClaimPinPromptContext
@@ -196,7 +207,7 @@ export interface PinPromptPayload {
     context?: PinPromptContext | null;
 }
 
-export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim';
+export type SpendKind = 'send' | 'burn' | 'l2_send' | 'l2_claim' | 'abandon';
 
 /** XTR in micro units. Revealed sits in the account vault, confidential in stealth UTXOs. */
 export interface L2Balance {

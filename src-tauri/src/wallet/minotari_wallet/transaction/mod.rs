@@ -21,28 +21,36 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::wallet::minotari_wallet::wallet_network;
-use anyhow::anyhow;
-use log::info;
+use anyhow::{Context, anyhow};
+use log::{info, warn};
 use minotari_wallet::{
-    DisplayedTransaction,
     db::SqlitePool,
-    transactions::{manager::TransactionSender, one_sided_transaction::Recipient},
+    transactions::{
+        input_selector::map_change_required_error,
+        manager::{FinalizedSend, TransactionSender},
+        one_sided_transaction::Recipient,
+    },
 };
 use std::str::FromStr;
-use tari_common_types_wallet::tari_address::TariAddress;
-use tari_transaction_components_wallet::{
+use tari_common_types::tari_address::TariAddress;
+use tari_transaction_components::{
+    TransactionBuilderError,
     consensus::ConsensusManager,
-    key_manager::KeyManager as WalletKeyManager,
+    key_manager::KeyManager,
     offline_signing::{
+        ConfirmationMode, PayloadSummary,
         models::{PrepareOneSidedTransactionForSigningResult, SignedOneSidedTransactionResult},
-        sign_locked_transaction,
+        present_payload_summary, sign_locked_transaction,
     },
+    tari_amount::MicroMinotari,
 };
 
 use crate::credential_manager::CredentialManager;
 use crate::wallet::minotari_wallet::base_node_http_url;
 
 pub(crate) const CONFIRMATION_WINDOW: u64 = 3;
+/// Fee rate, in µT per gram, for every send and burn this wallet makes.
+pub(crate) const SEND_FEE_PER_GRAM: u64 = 5;
 /// Duration in seconds that UTXOs are locked after transaction creation.
 ///
 /// The lock only has to outlive signing and broadcasting, which run back to back with
@@ -78,13 +86,14 @@ pub struct TransactionManager {
 impl TransactionManager {
     pub async fn new(pool: SqlitePool, sender_address: String) -> Result<Self, anyhow::Error> {
         let network = wallet_network();
-        let transaction_sender = TransactionSender::new(
+        let mut transaction_sender = TransactionSender::new(
             pool,
             sender_address,
             CredentialManager::minotari_db_password().await?,
             network,
             CONFIRMATION_WINDOW,
         )?;
+        transaction_sender.fee_per_gram = MicroMinotari::from(SEND_FEE_PER_GRAM);
 
         Ok(Self { transaction_sender })
     }
@@ -99,7 +108,7 @@ impl TransactionManager {
         let prepared_one_sided_transaction = self
             .transaction_sender
             .start_new_transaction(idempotency_key, recipient, seconds_to_lock)
-            .map_err(|e| anyhow!("Failed to create unsigned transaction: {}", e))?;
+            .context("Failed to create unsigned transaction")?;
 
         Ok(prepared_one_sided_transaction)
     }
@@ -111,20 +120,30 @@ impl TransactionManager {
     /// aborted by the user, so nothing stays locked after a cancelled send.
     pub async fn sign_one_sided_transaction(
         &self,
-        key_manager: &WalletKeyManager,
+        key_manager: &KeyManager,
         unsigned_tx: PrepareOneSidedTransactionForSigningResult,
     ) -> Result<SignedOneSidedTransactionResult, anyhow::Error> {
         info!("Signing one-sided transaction...");
         let network = wallet_network();
         let rules = ConsensusManager::builder(network).build();
 
+        // The user approved this send at the send gate, and the payload was built here
+        // from our own database, so there's nothing more to confirm. The summary this
+        // logs carries the recipient and amount; the log config keeps that target quiet.
+        let summary = PayloadSummary::from_one_sided(unsigned_tx);
+        let confirmation = present_payload_summary(
+            &summary,
+            ConfirmationMode::NonInteractive,
+            &mut std::io::sink(),
+            &mut std::io::empty(),
+        )?;
         let signed_transaction = sign_locked_transaction(
             key_manager,
             rules.consensus_constants(0).clone(),
             network,
-            unsigned_tx,
+            summary.confirm(confirmation)?,
         )
-        .map_err(|e| anyhow!("Failed to sign one-sided transaction: {}", e))?;
+        .map_err(sign_error)?;
 
         Ok(signed_transaction)
     }
@@ -132,20 +151,35 @@ impl TransactionManager {
     pub async fn finalize_one_sided_transaction(
         &mut self,
         signed_transaction: SignedOneSidedTransactionResult,
-    ) -> Result<DisplayedTransaction, anyhow::Error> {
+    ) -> Result<FinalizedSend, anyhow::Error> {
         info!("Finalizing one-sided transaction...");
-        let displayed_transaction = self
+        let sent = self
             .transaction_sender
             .finalize_transaction_and_broadcast(signed_transaction, base_node_http_url().await?)
             .await?;
+        // Recorded either way; the post-scan monitor rebroadcasts it until it is mined.
+        if !sent.accepted_by_node {
+            warn!(
+                "The node has not accepted the send yet: {}",
+                sent.node_reason.as_deref().unwrap_or_default()
+            );
+        }
 
-        Ok(displayed_transaction)
+        Ok(sent)
     }
+}
+
+/// A signing failure, with the builder's refusal to build without a change output
+/// turned into the library's typed `ChangeNotAffordable`.
+fn sign_error(error: TransactionBuilderError) -> anyhow::Error {
+    map_change_required_error(error).context("Failed to sign one-sided transaction")
 }
 
 #[cfg(test)]
 mod tests {
-    use super::parse_destination_address;
+    use super::{parse_destination_address, sign_error};
+    use minotari_wallet::transactions::input_selector::UtxoSelectionError;
+    use tari_transaction_components::{TransactionBuilderError, tari_amount::MicroMinotari};
 
     // Same Esmeralda fixtures as the send validation tests in
     // `crate::utils::address_utils`, which is the parser this one has to agree with.
@@ -161,5 +195,20 @@ mod tests {
         assert!(parse_destination_address(ESME_ONE_SIDED_EMOJI_ADDRESS).is_ok());
         assert!(parse_destination_address(NEXTNET_ONE_SIDED_ADDRESS).is_err());
         assert!(parse_destination_address("not an address").is_err());
+    }
+
+    #[test]
+    fn signing_without_room_for_change_reads_as_the_change_error() {
+        let error = sign_error(TransactionBuilderError::OfflineTransactionRequiresChange {
+            remainder: MicroMinotari(40),
+            change_fee: MicroMinotari(100),
+        });
+        assert!(
+            matches!(
+                error.downcast_ref::<UtxoSelectionError>(),
+                Some(UtxoSelectionError::ChangeNotAffordable { .. })
+            ),
+            "{error:#}"
+        );
     }
 }

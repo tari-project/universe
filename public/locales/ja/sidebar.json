@@ -12,6 +12,7 @@
   "paper-wallet-button": "電話と同期",
   "paper-wallet-tooltip-message": "Tari Universe MobileにUniverseウォレットを同期して、どこでもXTMを追跡できます。",
   "paper-wallet-tooltip-title": "電話と同期",
+  "paper-wallet-unavailable": "このバージョンでは、スマートフォンとの同期は一時的に利用できません。",
   "recent-wins": "最近の勝利",
   "reward": {
     "stacked": "あなたは積み上げました"
