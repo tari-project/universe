@@ -519,30 +519,30 @@ pub fn l2_send_memo(
     Ok(Some((text.to_string(), memo)))
 }
 
-/// Control characters, and the bidi, zero-width, line separator, tag and invisible filler
-/// characters that would make a pay reference read differently in the PIN prompt from what
+/// Characters that would make a pay reference read differently in the PIN prompt from what
 /// is sent.
 fn is_hidden_char(c: char) -> bool {
+    // Default_Ignorable_Code_Point plus line/paragraph separators and interlinear annotations.
     c.is_control()
         || matches!(
             c,
             '\u{00AD}'
                 | '\u{034F}'
                 | '\u{061C}'
-                | '\u{115F}'
-                | '\u{1160}'
-                | '\u{180E}'
+                | '\u{115F}'..='\u{1160}'
+                | '\u{17B4}'..='\u{17B5}'
+                | '\u{180B}'..='\u{180F}'
                 | '\u{200B}'..='\u{200F}'
-                | '\u{2028}'
-                | '\u{2029}'
-                | '\u{202A}'..='\u{202E}'
-                | '\u{2060}'..='\u{2064}'
-                | '\u{2066}'..='\u{2069}'
+                | '\u{2028}'..='\u{202E}'
+                | '\u{2060}'..='\u{206F}'
                 | '\u{3164}'
+                | '\u{FE00}'..='\u{FE0F}'
                 | '\u{FEFF}'
                 | '\u{FFA0}'
-                | '\u{FFF9}'..='\u{FFFB}'
-                | '\u{E0000}'..='\u{E007F}'
+                | '\u{FFF0}'..='\u{FFFB}'
+                | '\u{1BCA0}'..='\u{1BCA3}'
+                | '\u{1D173}'..='\u{1D17A}'
+                | '\u{E0000}'..='\u{E0FFF}'
         )
 }
 
@@ -1035,6 +1035,11 @@ mod tests {
             "soft\u{00AD}hyphen",
             "tag\u{E0041}",
             "filler\u{3164}",
+            "selector\u{FE0F}",
+            "inhibit\u{206B}",
+            "mongolian\u{180B}",
+            "music\u{1D173}",
+            "selector\u{E0100}",
         ] {
             let err = l2_send_memo(Some(pay_ref), &ootle_address()).expect_err(pay_ref);
             assert!(
@@ -1060,6 +1065,11 @@ mod tests {
             "ref\u{200D}".as_bytes().to_vec(),
             "ref\u{061C}".as_bytes().to_vec(),
             "ref\u{E0041}".as_bytes().to_vec(),
+            "ref\u{FE0F}".as_bytes().to_vec(),
+            "ref\u{206B}".as_bytes().to_vec(),
+            "ref\u{180B}".as_bytes().to_vec(),
+            "ref\u{1D173}".as_bytes().to_vec(),
+            "ref\u{E0100}".as_bytes().to_vec(),
         ] {
             let embedded = PayRef::new_checked(bytes.clone()).expect("pay ref");
             let address = ootle_address().with_pay_ref(embedded);
