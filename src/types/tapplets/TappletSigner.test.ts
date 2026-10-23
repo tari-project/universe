@@ -416,19 +416,37 @@ describe('TappletSigner.runOne', () => {
                 await expect(result).resolves.toEqual({ status: 'Pending' });
             });
 
-            it('allows one wait per transaction and at most four at a time', async () => {
+            it('joins a repeat wait on the same id and polls once per interval', async () => {
+                vi.useFakeTimers();
+                let status = 'Pending';
+                vi.mocked(invoke).mockImplementation((async (_cmd: string) => l2State({}, status)) as typeof invoke);
+                const wait = () => signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 30 }]);
+
+                const first = wait();
+                const second = wait();
+                await vi.advanceTimersByTimeAsync(4_500);
+                // Polls at 0, 2 and 4 seconds: one wait, not two.
+                expect(invoke).toHaveBeenCalledTimes(3);
+
+                status = 'Accepted';
+                await vi.advanceTimersByTimeAsync(2_000);
+                await expect(first).resolves.toEqual({ status: 'Accepted' });
+                await expect(second).resolves.toEqual({ status: 'Accepted' });
+                expect(invoke).toHaveBeenCalledTimes(4);
+            });
+
+            it('refuses a fifth distinct id while four are waited on, then frees the slots', async () => {
                 vi.useFakeTimers();
                 mockCommands({ l2_get_state: l2State({}, 'Pending') });
                 const wait = (transactionId: string) =>
                     signer.runOne('waitOotleTransaction', [{ transactionId, timeoutSecs: 5 }]);
 
                 const waits = ['tx1', 'tx2', 'tx3', 'tx4'].map(wait);
-                await expect(wait('tx1')).rejects.toThrow(/^busy$/);
                 await expect(wait('tx5')).rejects.toThrow(/^busy$/);
 
                 await vi.advanceTimersByTimeAsync(6_000);
                 await Promise.all(waits);
-                const again = wait('tx1');
+                const again = wait('tx5');
                 await vi.advanceTimersByTimeAsync(6_000);
                 await expect(again).resolves.toEqual({ status: 'Pending' });
             });

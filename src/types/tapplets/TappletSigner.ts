@@ -152,7 +152,8 @@ export class TappletSigner {
     private sendCooldownUntil = 0;
     /** Ids sendOotleStealth returned; the only ones waitOotleTransaction will poll for. */
     private ootleSentIds = new Set<string>();
-    private ootleWaits = new Set<string>();
+    /** Running waits by transaction id, so a remounted tapplet joins the wait it left behind. */
+    private ootleWaits = new Map<string, Promise<{ status: string } | { error: string }>>();
 
     private constructor(
         params: TappletSignerParams,
@@ -351,38 +352,41 @@ export class TappletSigner {
 
     /**
      * Polls the L2 state until the transaction leaves New/Pending, or the timeout runs out.
-     * Only for ids sendOotleStealth returned. Throws 'busy' when this transaction is already
-     * waited on or too many waits are running.
+     * Only for ids sendOotleStealth returned. A repeat call for an id already being waited on
+     * joins that wait and keeps its deadline. Throws 'busy' when four other ids are waited on.
      */
     public async waitOotleTransaction(
         req: WaitOotleTransactionRequest
     ): Promise<{ status: string } | { error: string }> {
         if (!this.ootleSentIds.has(req.transactionId)) throw invalidArgsError('waitOotleTransaction');
-        if (this.ootleWaits.has(req.transactionId) || this.ootleWaits.size >= MAX_OOTLE_WAITS) {
-            throw new Error('busy');
-        }
-        this.ootleWaits.add(req.transactionId);
-        try {
-            const deadline = Date.now() + req.timeoutSecs * 1000;
-            let status = 'Pending';
-            while (Date.now() < deadline) {
-                let state: L2WalletState;
-                try {
-                    state = await invoke<L2WalletState>('l2_get_state');
-                } catch {
-                    return L2_UNAVAILABLE;
-                }
-                for (const account of state.accounts) {
-                    const tx = account.transactions.find((t) => t.id === req.transactionId);
-                    if (tx) status = tx.status;
-                }
-                if (status !== 'New' && status !== 'Pending') return { status };
-                await new Promise((resolve) => setTimeout(resolve, WAIT_POLL_MS));
+        const running = this.ootleWaits.get(req.transactionId);
+        if (running) return running;
+        if (this.ootleWaits.size >= MAX_OOTLE_WAITS) throw new Error('busy');
+        const wait = this.pollOotleTransaction(req).finally(() => this.ootleWaits.delete(req.transactionId));
+        this.ootleWaits.set(req.transactionId, wait);
+        return wait;
+    }
+
+    private async pollOotleTransaction(
+        req: WaitOotleTransactionRequest
+    ): Promise<{ status: string } | { error: string }> {
+        const deadline = Date.now() + req.timeoutSecs * 1000;
+        let status = 'Pending';
+        while (Date.now() < deadline) {
+            let state: L2WalletState;
+            try {
+                state = await invoke<L2WalletState>('l2_get_state');
+            } catch {
+                return L2_UNAVAILABLE;
             }
-            return { status };
-        } finally {
-            this.ootleWaits.delete(req.transactionId);
+            for (const account of state.accounts) {
+                const tx = account.transactions.find((t) => t.id === req.transactionId);
+                if (tx) status = tx.status;
+            }
+            if (status !== 'New' && status !== 'Pending') return { status };
+            await new Promise((resolve) => setTimeout(resolve, WAIT_POLL_MS));
         }
+        return { status };
     }
 
     public async getBaseNodeStatus(): Promise<BaseNodeStatus> {
