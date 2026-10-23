@@ -161,9 +161,13 @@ openssl = { version = "0.10", features = [
 planif = "1.0.0"
 whoami = "1.5.2"
 windows-sys = { version = "0.52", features = [
+  "Win32_Foundation",
   "Win32_Storage_FileSystem",
+  "Win32_System_LibraryLoader",
+  "Win32_System_SystemInformation",
+  "Win32_System_Threading",
   "Win32_System_WindowsProgramming",
-] } # GetDriveTypeW for SMB-mapped drive-letter detection in data_location
+] } # GetDriveTypeW for SMB-mapped drive-letter detection in data_location; processor group topology + affinity APIs for the >64-core mining fix (#3299)
 winreg = "0.52.0"
 
 

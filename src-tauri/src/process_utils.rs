@@ -70,7 +70,7 @@ pub fn launch_child_process(
     {
         use crate::consts::PROCESS_CREATION_NO_WINDOW;
 
-        Ok(tokio::process::Command::new(&actual_binary)
+        let child = tokio::process::Command::new(&actual_binary)
             .args(&actual_args)
             .current_dir(current_dir)
             .envs(envs.cloned().unwrap_or_default())
@@ -78,7 +78,16 @@ pub fn launch_child_process(
             .stderr(stderr)
             .kill_on_drop(true)
             .creation_flags(PROCESS_CREATION_NO_WINDOW)
-            .spawn()?)
+            .spawn()?;
+
+        // On machines with >64 logical cores Windows confines a new process
+        // to a single processor group; widen the child's affinity so its
+        // threads can actually run on every core. No-op on smaller machines.
+        if let Some(pid) = child.id() {
+            crate::utils::processor_groups::widen_child_process_affinity(pid);
+        }
+
+        Ok(child)
     }
 }
 
