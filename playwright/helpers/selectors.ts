@@ -9,6 +9,7 @@ export const sel = {
     seedToggle: '[data-testid="wallet-seed-toggle"]',
     setupPin: '[data-testid="wallet-setup-pin"]',
     syncWithPhone: '[data-testid="wallet-sync-phone"]',
+    syncWithPhoneUnavailable: '[data-testid="wallet-sync-phone-unavailable"]',
     seedEdit: '[data-testid="wallet-seed-edit"]',
     seedInput: '[data-testid="wallet-seed-input"]',
     seedSubmit: '[data-testid="wallet-seed-submit"]',
