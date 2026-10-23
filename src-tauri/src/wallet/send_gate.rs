@@ -224,6 +224,14 @@ impl SpendKind {
         }
     }
 
+    /// The counterparty as it goes in the logs: an L2 address without its pay reference.
+    fn logged_counterparty(&self) -> String {
+        match self {
+            SpendKind::L2Send { destination, .. } => l2_log_destination(destination),
+            _ => self.counterparty().to_string(),
+        }
+    }
+
     fn pin_context(
         &self,
         origin: SendOrigin,
@@ -437,8 +445,9 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
     let amount_u64 = parse_amount(&amount)?;
     let address = OotleWalletManager::parse_address(&destination)?;
     let (pay_ref, memo) = l2_send_memo(pay_ref.as_deref(), &address)?.unzip();
+    // The parsed form, so the PIN prompt never shows padding the parser trimmed away.
     let kind = SpendKind::L2Send {
-        destination,
+        destination: address.to_string(),
         account,
         pay_ref,
     };
@@ -448,7 +457,7 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
         target: LOG_TARGET_APP_LOGIC,
         "send gate: executing L2 send (origin={}, destination={}, amount={amount})",
         origin.as_str(),
-        kind.counterparty()
+        kind.logged_counterparty()
     );
     let SpendKind::L2Send { account, .. } = kind else {
         unreachable!("gated_l2_send builds an L2Send kind")
@@ -462,6 +471,14 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
         pass.pin_context,
     )
     .await
+}
+
+/// An Ootle address for the logs, with any embedded pay reference dropped.
+pub fn l2_log_destination(destination: &str) -> String {
+    match OotleAddress::from_str(destination.trim()) {
+        Ok(address) => address.without_pay_ref().to_string(),
+        Err(_) => "<invalid address>".to_string(),
+    }
 }
 
 /// The pay reference an L2 send carries, as text for the PIN prompt, and the output memo
@@ -541,10 +558,11 @@ async fn pass_gates(
     let pin_configured = PinManager::pin_locked().await;
     let needs_confirmation = origin.requires_confirmation(pin_configured);
     let destination = kind.counterparty();
+    let logged_destination = kind.logged_counterparty();
 
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: kind={} origin={} amount={amount} destination={destination} pin_configured={pin_configured} confirmation_dialog={needs_confirmation}",
+        "send gate: kind={} origin={} amount={amount} destination={logged_destination} pin_configured={pin_configured} confirmation_dialog={needs_confirmation}",
         kind.as_str(),
         origin.as_str()
     );
@@ -588,7 +606,7 @@ async fn pass_gates(
         let amount_display = format!("{amount} {}", kind.currency());
         info!(
             target: LOG_TARGET_APP_LOGIC,
-            "send gate: confirmation dialog emitted (request_id={request_id}, origin={}, destination={destination}, amount={amount_display})",
+            "send gate: confirmation dialog emitted (request_id={request_id}, origin={}, destination={logged_destination}, amount={amount_display})",
             origin.as_str()
         );
 
@@ -934,6 +952,34 @@ mod tests {
         let address = ootle_address().with_pay_ref(embedded);
         let err = l2_send_memo(Some("explicit"), &address).expect_err("rejected");
         assert!(matches!(err, TransactionError::InvalidAddress(_)));
+    }
+
+    #[test]
+    fn l2_logs_drop_the_address_pay_ref() {
+        let plain = ootle_address().to_string();
+        let embedded = PayRef::new_checked(b"secret-ref".as_slice()).expect("pay ref");
+        let with_ref = ootle_address().with_pay_ref(embedded).to_string();
+        assert_ne!(plain, with_ref);
+
+        assert_eq!(l2_log_destination(&with_ref), plain);
+        assert_eq!(l2_log_destination(&format!("  {with_ref} ")), plain);
+        assert_eq!(l2_log_destination("garbage"), "<invalid address>");
+
+        let send = SpendKind::L2Send {
+            destination: with_ref.clone(),
+            account: "component_abc".to_string(),
+            pay_ref: Some("secret-ref".to_string()),
+        };
+        assert_eq!(send.logged_counterparty(), plain);
+        assert_eq!(
+            send.counterparty(),
+            with_ref,
+            "the PIN prompt still shows the full address"
+        );
+        let l1 = SpendKind::Send {
+            destination: "addr".to_string(),
+        };
+        assert_eq!(l1.logged_counterparty(), "addr");
     }
 
     #[test]

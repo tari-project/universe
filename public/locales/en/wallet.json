@@ -65,6 +65,7 @@
     },
     "pin": {
       "approve-send": "Approve transaction",
+      "approve-tapplet-send": "Bridge tapplet is asking to send",
       "approve-send-subtitle": "Enter your PIN to authorise this transaction. If you did not start it, close this dialog.",
       "create": "Create PIN",
       "create-confirm": "Confirm PIN",

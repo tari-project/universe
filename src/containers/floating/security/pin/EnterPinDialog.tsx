@@ -31,6 +31,7 @@ export default function EnterPinDialog() {
     const sendContext = pinContext?.kind === 'send' ? pinContext : null;
     const burnContext = pinContext?.kind === 'burn' ? pinContext : null;
     const l2SendContext = pinContext?.kind === 'l2_send' ? pinContext : null;
+    const fromTapplet = l2SendContext?.origin === 'tapplet';
     const l2ClaimContext = pinContext?.kind === 'l2_claim' ? pinContext : null;
     const reasonKey = pinContext ? REASON_KEYS[pinContext.kind] : undefined;
 
@@ -69,9 +70,11 @@ export default function EnterPinDialog() {
                                 ? t('security.pin.approve-burn')
                                 : l2ClaimContext
                                   ? t('l2.claim.approve')
-                                  : sendContext || l2SendContext
-                                    ? t('security.pin.approve-send')
-                                    : t('security.pin.enter')}
+                                  : fromTapplet
+                                    ? t('security.pin.approve-tapplet-send')
+                                    : sendContext || l2SendContext
+                                      ? t('security.pin.approve-send')
+                                      : t('security.pin.enter')}
                         </Heading>{' '}
                         <CloseButton onClick={handleClose} />
                     </Header>
@@ -97,6 +100,7 @@ export default function EnterPinDialog() {
                             subtitle={t('security.pin.approve-burn-subtitle')}
                         />
                     )}
+                    {fromTapplet && <Typography variant="p">{t('security.pin.requested-by-tapplet')}</Typography>}
                     {l2SendContext && (
                         <TransactionContextSummary
                             kind="l2_send"
@@ -106,11 +110,6 @@ export default function EnterPinDialog() {
                             feeMicroMinotari={l2SendContext.fee_micro_minotari}
                             subtitle={t('security.pin.approve-send-subtitle')}
                         />
-                    )}
-                    {l2SendContext?.origin === 'tapplet' && (
-                        <Typography variant="p" style={{ opacity: 0.5, fontSize: 12 }}>
-                            {t('security.pin.requested-by-tapplet')}
-                        </Typography>
                     )}
                     {l2ClaimContext && (
                         <TransactionContextSummary

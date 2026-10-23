@@ -45,7 +45,11 @@ export type TappletCallableMethod =
 /** Returned by the Ootle methods when L2 is off this network, not enabled, or locked. */
 export const L2_UNAVAILABLE = { error: 'l2_unavailable' };
 const PAY_REF_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MICRO_AMOUNT_RE = /^[1-9][0-9]*$/;
+const MICRO_AMOUNT_RE = /^[1-9][0-9]{0,19}$/;
+/** Ootle addresses and transaction ids are far shorter; this only bounds what a tapplet can send. */
+const MAX_FIELD_LENGTH = 300;
+/** After a denied PIN prompt, tapplet sends are refused this long so they can't re-prompt at once. */
+const DENIAL_COOLDOWN_MS = 10_000;
 const MAX_WAIT_SECS = 600;
 const WAIT_POLL_MS = 2000;
 const MAX_OOTLE_WAITS = 4;
@@ -90,6 +94,8 @@ function isSendOotleStealthRequest(value: unknown): value is SendOotleStealthReq
         typeof req.amount === 'string' &&
         MICRO_AMOUNT_RE.test(req.amount) &&
         isNonEmptyString(req.address) &&
+        req.address === req.address.trim() &&
+        req.address.length <= MAX_FIELD_LENGTH &&
         typeof req.payRef === 'string' &&
         PAY_REF_RE.test(req.payRef)
     );
@@ -100,6 +106,7 @@ function isWaitOotleTransactionRequest(value: unknown): value is WaitOotleTransa
     const req = value as Record<string, unknown>;
     return (
         isNonEmptyString(req.transactionId) &&
+        req.transactionId.length <= MAX_FIELD_LENGTH &&
         Number.isInteger(req.timeoutSecs) &&
         (req.timeoutSecs as number) > 0 &&
         (req.timeoutSecs as number) <= MAX_WAIT_SECS
@@ -140,8 +147,11 @@ export class TappletSigner {
     public providerName = 'TappletSigner';
     id: string;
     params: TappletSignerParams;
-    /** One tapplet send at a time, so queued sends can't take over the user's PIN prompts. */
-    private ootleSendInFlight = false;
+    /** One tapplet send (L1 or L2) at a time, so queued sends can't take over the user's PIN prompts. */
+    private sendInFlight = false;
+    private sendCooldownUntil = 0;
+    /** Ids sendOotleStealth returned; the only ones waitOotleTransaction will poll for. */
+    private ootleSentIds = new Set<string>();
     private ootleWaits = new Set<string>();
 
     private constructor(
@@ -254,7 +264,20 @@ export class TappletSigner {
         return bridgeTx;
     }
 
+    /** Throws 'busy' while another tapplet send runs or a denial cooldown is on, else claims the slot. */
+    private startTappletSend(): void {
+        if (this.sendInFlight || Date.now() < this.sendCooldownUntil) throw new Error('busy');
+        this.sendInFlight = true;
+    }
+
+    private finishTappletSend(denied: boolean): void {
+        this.sendInFlight = false;
+        if (denied) this.sendCooldownUntil = Date.now() + DENIAL_COOLDOWN_MS;
+    }
+
     public async sendOneSided(req: SendOneSidedRequest): Promise<boolean> {
+        this.startTappletSend();
+        let denied = false;
         try {
             await invoke('send_one_sided_to_stealth_address', {
                 amount: req.amount,
@@ -263,8 +286,11 @@ export class TappletSigner {
             });
             return true;
         } catch (error) {
+            denied = PIN_DENIED_RE.test(`${error}`);
             setStoreError(`Error sending transaction: ${error}`);
             return false;
+        } finally {
+            this.finishTappletSend(denied);
         }
     }
 
@@ -288,13 +314,14 @@ export class TappletSigner {
 
     /**
      * Sends from the default L2 account behind the PIN prompt, labelled as a tapplet send.
-     * Throws 'busy' while another send is in flight, 'denied' or 'failed' when the backend refuses.
+     * Throws 'busy' while another send is in flight or after a denial, 'denied' or 'failed' when
+     * the backend refuses.
      */
     public async sendOotleStealth(
         req: SendOotleStealthRequest
     ): Promise<{ transactionId: string } | { error: string }> {
-        if (this.ootleSendInFlight) throw new Error('busy');
-        this.ootleSendInFlight = true;
+        this.startTappletSend();
+        let denied = false;
         try {
             const account = await defaultOotleAccount();
             if (!account) return L2_UNAVAILABLE;
@@ -310,22 +337,27 @@ export class TappletSigner {
                     amount: microToXtr(req.amount),
                     payRef: req.payRef,
                 });
+                this.ootleSentIds.add(transactionId);
                 return { transactionId };
             } catch (error) {
-                throw backendError('sendOotleStealth', error);
+                const code = backendError('sendOotleStealth', error);
+                denied = code.message === 'denied';
+                throw code;
             }
         } finally {
-            this.ootleSendInFlight = false;
+            this.finishTappletSend(denied);
         }
     }
 
     /**
      * Polls the L2 state until the transaction leaves New/Pending, or the timeout runs out.
-     * Throws 'busy' when this transaction is already waited on or too many waits are running.
+     * Only for ids sendOotleStealth returned. Throws 'busy' when this transaction is already
+     * waited on or too many waits are running.
      */
     public async waitOotleTransaction(
         req: WaitOotleTransactionRequest
     ): Promise<{ status: string } | { error: string }> {
+        if (!this.ootleSentIds.has(req.transactionId)) throw invalidArgsError('waitOotleTransaction');
         if (this.ootleWaits.has(req.transactionId) || this.ootleWaits.size >= MAX_OOTLE_WAITS) {
             throw new Error('busy');
         }

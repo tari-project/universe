@@ -68,7 +68,7 @@ use crate::wallet::minotari_wallet::BurnReceipt;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::wallet::send_gate::{
     GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_claim,
-    gated_l2_send, gated_send,
+    gated_l2_send, gated_send, l2_log_destination,
 };
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
@@ -1753,7 +1753,7 @@ pub async fn l2_send(
     amount: String,
     pay_ref: Option<String>,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called with args: (account: {account:?}, destination: {destination:?}, amount: {amount:?})");
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called with args: (account: {account:?}, destination: {:?}, amount: {amount:?})", l2_log_destination(&destination));
     gated_l2_send(GatedL2SendRequest {
         origin: SendOrigin::App,
         app_handle,
@@ -1777,7 +1777,7 @@ pub async fn l2_send_from_tapplet(
     amount: String,
     pay_ref: String,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send_from_tapplet] called with args: (account: {account:?}, destination: {destination:?}, amount: {amount:?})");
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send_from_tapplet] called with args: (account: {account:?}, destination: {:?}, amount: {amount:?})", l2_log_destination(&destination));
     gated_l2_send(GatedL2SendRequest {
         origin: SendOrigin::Tapplet,
         app_handle,

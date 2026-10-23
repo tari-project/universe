@@ -240,6 +240,10 @@ describe('TappletSigner.runOne', () => {
                 [[{ amount: '100', address: ADDRESS, payRef: 'bridge-1' }]],
                 [[{ amount: '100', address: ADDRESS, payRef: '0f8fad5b-d9cb-169f-a165-70867728950e' }]],
                 [[{ amount: '100', address: ADDRESS, payRef: `${PAY_REF}${PAY_REF}` }]],
+                [[{ amount: '1'.repeat(21), address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: '100', address: ` ${ADDRESS}`, payRef: PAY_REF }]],
+                [[{ amount: '100', address: `${ADDRESS}\n`, payRef: PAY_REF }]],
+                [[{ amount: '100', address: `otl_esm_1${'q'.repeat(300)}`, payRef: PAY_REF }]],
             ])('rejects args %j without invoking any command', async (args) => {
                 await expect(signer.runOne('sendOotleStealth', args)).rejects.toThrow(
                     'Invalid arguments for tapplet signer method: sendOotleStealth'
@@ -312,7 +316,88 @@ describe('TappletSigner.runOne', () => {
             });
         });
 
+        describe('one tapplet send at a time', () => {
+            const L2_REQ = [{ amount: '100', address: ADDRESS, payRef: PAY_REF }];
+            const L1_REQ = [{ amount: '100', address: 'tari-address' }];
+
+            it('refuses an L2 send while an L1 send waits on its PIN prompt, and the other way round', async () => {
+                let finish: (value: unknown) => void = () => undefined;
+                vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+                    if (cmd === 'l2_get_state') return l2State();
+                    if (cmd === 'send_one_sided_to_stealth_address' || cmd === 'l2_send_from_tapplet') {
+                        return new Promise((resolve) => (finish = resolve));
+                    }
+                    return null;
+                }) as typeof invoke);
+
+                const l1 = signer.runOne('sendOneSided', L1_REQ);
+                await expect(signer.runOne('sendOotleStealth', L2_REQ)).rejects.toThrow(/^busy$/);
+                finish(undefined);
+                await expect(l1).resolves.toBe(true);
+
+                const l2 = signer.runOne('sendOotleStealth', L2_REQ);
+                await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_send_from_tapplet', expect.anything()));
+                await expect(signer.runOne('sendOneSided', L1_REQ)).rejects.toThrow(/^busy$/);
+                finish('tx1');
+                await expect(l2).resolves.toEqual({ transactionId: 'tx1' });
+            });
+
+            it.each([
+                ['sendOotleStealth', L2_REQ, 'l2_send_from_tapplet'],
+                ['sendOneSided', L1_REQ, 'send_one_sided_to_stealth_address'],
+            ] as const)('refuses tapplet sends for a while after %s is denied', async (method, req, command) => {
+                vi.useFakeTimers();
+                mockCommands({
+                    l2_get_state: l2State(),
+                    l2_validate_address: null,
+                    [command]: new Error('PIN entry cancelled'),
+                });
+
+                await signer.runOne(method, req).catch(() => undefined);
+                await expect(signer.runOne('sendOotleStealth', L2_REQ)).rejects.toThrow(/^busy$/);
+                await expect(signer.runOne('sendOneSided', L1_REQ)).rejects.toThrow(/^busy$/);
+
+                await vi.advanceTimersByTimeAsync(10_000);
+                mockCommands({ l2_get_state: l2State(), l2_validate_address: null, l2_send_from_tapplet: 'tx9' });
+                await expect(signer.runOne('sendOotleStealth', L2_REQ)).resolves.toEqual({ transactionId: 'tx9' });
+            });
+
+            it('has no cooldown after a send that failed for another reason', async () => {
+                mockCommands({
+                    l2_get_state: l2State(),
+                    l2_validate_address: null,
+                    l2_send_from_tapplet: new Error('L2 send failed: indexer down'),
+                });
+                await expect(signer.runOne('sendOotleStealth', L2_REQ)).rejects.toThrow(/^failed$/);
+
+                mockCommands({ l2_get_state: l2State(), l2_validate_address: null, l2_send_from_tapplet: 'tx2' });
+                await expect(signer.runOne('sendOotleStealth', L2_REQ)).resolves.toEqual({ transactionId: 'tx2' });
+            });
+        });
+
         describe('waitOotleTransaction', () => {
+            /** Sends through the signer so it knows the ids, then clears the mock's call log. */
+            async function sendTransactions(...ids: string[]) {
+                for (const id of ids) {
+                    mockCommands({ l2_get_state: l2State(), l2_validate_address: null, l2_send_from_tapplet: id });
+                    await signer.runOne('sendOotleStealth', [{ amount: '100', address: ADDRESS, payRef: PAY_REF }]);
+                }
+                vi.mocked(invoke).mockClear();
+            }
+
+            beforeEach(async () => {
+                await sendTransactions('tx1', 'tx2', 'tx3', 'tx4', 'tx5');
+            });
+
+            it('refuses ids this signer did not send', async () => {
+                mockCommands({ l2_get_state: l2State({}, 'Accepted') });
+
+                await expect(
+                    signer.runOne('waitOotleTransaction', [{ transactionId: 'someone-elses-tx', timeoutSecs: 30 }])
+                ).rejects.toThrow('Invalid arguments for tapplet signer method: waitOotleTransaction');
+                expect(invoke).not.toHaveBeenCalled();
+            });
+
             it('returns the settled status', async () => {
                 mockCommands({ l2_get_state: l2State({}, 'Accepted') });
 
@@ -364,6 +449,7 @@ describe('TappletSigner.runOne', () => {
                 [[{ transactionId: 'tx1', timeoutSecs: 1.5 }]],
                 [[{ transactionId: 'tx1', timeoutSecs: 601 }]],
                 [[{ transactionId: 'tx1', timeoutSecs: '30' }]],
+                [[{ transactionId: 'x'.repeat(301), timeoutSecs: 30 }]],
             ])('rejects args %j without invoking any command', async (args) => {
                 await expect(signer.runOne('waitOotleTransaction', args)).rejects.toThrow(
                     'Invalid arguments for tapplet signer method: waitOotleTransaction'
