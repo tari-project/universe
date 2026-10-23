@@ -51,6 +51,7 @@ use std::time::Duration;
 
 use log::{info, warn};
 use tari_common::configuration::Network;
+use tari_ootle_wallet_sdk::{OotleAddress, PayRef, crypto::memo::Memo};
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
 
 use crate::LOG_TARGET_APP_LOGIC;
@@ -172,6 +173,8 @@ pub struct GatedL2SendRequest {
     pub destination: String,
     /// Component address of the L2 account paying.
     pub account: String,
+    /// Pay reference for the recipient, UTF-8, at most 64 bytes.
+    pub pay_ref: Option<String>,
 }
 
 /// What is being spent, in the terms the user has to approve it in.
@@ -412,6 +415,7 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
         amount,
         destination,
         account,
+        pay_ref,
     } = request;
 
     check_l2_allowed(
@@ -420,6 +424,7 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
     )?;
     let amount_u64 = parse_amount(&amount)?;
     let address = OotleWalletManager::parse_address(&destination)?;
+    let memo = l2_send_memo(pay_ref.as_deref(), &address)?;
     let kind = SpendKind::L2Send {
         destination,
         account,
@@ -442,7 +447,38 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
     let SpendKind::L2Send { account, .. } = kind else {
         unreachable!("gated_l2_send builds an L2Send kind")
     };
-    OotleWalletManager::send_xtr(&app_handle, &account, address, amount_u64, pass.pin_context).await
+    OotleWalletManager::send_xtr(
+        &app_handle,
+        &account,
+        address,
+        amount_u64,
+        memo,
+        pass.pin_context,
+    )
+    .await
+}
+
+/// The output memo carrying the pay reference, as tari_walletd builds it: an explicit
+/// `pay_ref` wins, otherwise the one embedded in the destination address, if any.
+pub fn l2_send_memo(
+    pay_ref: Option<&str>,
+    destination: &OotleAddress,
+) -> Result<Option<Memo>, TransactionError> {
+    let pay_ref = match pay_ref {
+        Some(pay_ref) => PayRef::new_checked(pay_ref.as_bytes()).ok_or_else(|| {
+            TransactionError::InvalidAddress(format!(
+                "Pay reference must be 1 to {} bytes",
+                PayRef::MAX_LEN
+            ))
+        })?,
+        None => match destination.pay_ref() {
+            Some(pay_ref) => pay_ref.clone(),
+            None => return Ok(None),
+        },
+    };
+    Memo::new_pay_ref_and_message(pay_ref.as_bytes(), "")
+        .map(Some)
+        .ok_or_else(|| TransactionError::InvalidAddress("Pay reference too long".to_string()))
 }
 
 /// Claim an L1 burn on L2 behind the same gates as [`gated_l2_send`]. Refused without a
@@ -808,6 +844,62 @@ mod tests {
     #[test]
     fn parse_amount_rejects_negative() {
         assert!(parse_amount("-1").is_err());
+    }
+
+    // =========================================================================
+    // L2 pay reference
+    // =========================================================================
+
+    fn ootle_address() -> OotleAddress {
+        let key =
+            tari_template_lib::prelude::RistrettoPublicKeyBytes::try_from([1u8; 32].as_slice())
+                .expect("key bytes");
+        OotleAddress::new(tari_ootle_wallet_sdk::Network::Esmeralda, key, key)
+    }
+
+    fn memo_pay_ref(memo: &Memo) -> Vec<u8> {
+        memo.as_pay_ref().expect("memo has a pay ref").to_vec()
+    }
+
+    #[test]
+    fn l2_send_memo_carries_an_explicit_pay_ref() {
+        let pay_ref = "0f8fad5b-d9cb-469f-a165-70867728950e";
+        let memo = l2_send_memo(Some(pay_ref), &ootle_address())
+            .expect("valid pay ref")
+            .expect("a memo");
+        assert_eq!(memo_pay_ref(&memo), pay_ref.as_bytes());
+    }
+
+    #[test]
+    fn l2_send_memo_prefers_the_explicit_pay_ref_over_the_address_one() {
+        let embedded = PayRef::new_checked(b"from-address".as_slice()).expect("pay ref");
+        let address = ootle_address().with_pay_ref(embedded);
+
+        let explicit = l2_send_memo(Some("explicit"), &address)
+            .expect("valid pay ref")
+            .expect("a memo");
+        assert_eq!(memo_pay_ref(&explicit), b"explicit");
+
+        let fallback = l2_send_memo(None, &address)
+            .expect("no pay ref")
+            .expect("a memo");
+        assert_eq!(memo_pay_ref(&fallback), b"from-address");
+    }
+
+    #[test]
+    fn l2_send_memo_is_empty_without_any_pay_ref() {
+        assert!(l2_send_memo(None, &ootle_address()).expect("ok").is_none());
+    }
+
+    #[test]
+    fn l2_send_memo_rejects_an_empty_or_oversized_pay_ref() {
+        let too_long = "a".repeat(PayRef::MAX_LEN + 1);
+        for pay_ref in ["", too_long.as_str()] {
+            let err = l2_send_memo(Some(pay_ref), &ootle_address()).expect_err("rejected");
+            assert!(matches!(err, TransactionError::InvalidAddress(_)));
+        }
+        let longest = "a".repeat(PayRef::MAX_LEN);
+        assert!(l2_send_memo(Some(&longest), &ootle_address()).is_ok());
     }
 
     // =========================================================================

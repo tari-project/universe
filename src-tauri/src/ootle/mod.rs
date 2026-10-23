@@ -49,6 +49,7 @@ use tari_ootle_wallet_sdk::{
     WalletSdkSpec,
     apis::config::{ConfigApi, ConfigKey},
     cipher_seed::CipherSeedRestore,
+    crypto::memo::Memo,
     local_key_store::LocalKeyStore,
     models::{EpochBirthday, WalletEvent},
 };
@@ -388,14 +389,15 @@ impl OotleWalletManager {
         )
     }
 
-    /// Sends `amount` micro XTR from `account` (a component address) to `destination`
-    /// once the user enters their PIN, and returns the L2 transaction id. The caller has
+    /// Sends `amount` micro XTR from `account` (a component address) to `destination`,
+    /// with `memo` on the output, once the user enters their PIN, and returns the L2 transaction id. The caller has
     /// already passed the send gate.
     pub async fn send_xtr(
         app_handle: &AppHandle,
         account: &str,
         destination: OotleAddress,
         amount: u64,
+        memo: Option<Memo>,
         pin_context: PinPromptContext,
     ) -> Result<String, TransactionError> {
         let sdk = started_sdk().await?;
@@ -415,6 +417,7 @@ impl OotleWalletManager {
             account,
             destination,
             amount,
+            memo,
             approve_fee,
         )
         .await

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 
 vi.mock('@tauri-apps/api/window', () => ({
@@ -8,8 +8,9 @@ vi.mock('@tauri-apps/api/window', () => ({
     })),
 }));
 
-import { TappletSigner } from './TappletSigner';
+import { L2_UNAVAILABLE, TappletSigner } from './TappletSigner';
 import { useWalletStore } from '@app/store/useWalletStore';
+import { L2WalletState } from '@app/types/events-payloads';
 
 describe('TappletSigner.runOne', () => {
     let signer: TappletSigner;
@@ -108,6 +109,200 @@ describe('TappletSigner.runOne', () => {
 
         it('tolerates a missing args array', async () => {
             await expect(signer.runOne('isConnected', undefined)).resolves.toBe(true);
+        });
+    });
+
+    describe('Ootle methods', () => {
+        const PAY_REF = '0f8fad5b-d9cb-469f-a165-70867728950e';
+        const ADDRESS = 'otl_esm_1destination';
+
+        function l2State(overrides: Partial<L2WalletState> = {}, status = 'Accepted'): L2WalletState {
+            return {
+                enabled: true,
+                locked: false,
+                seed_source: 'l1',
+                accounts: [
+                    {
+                        name: 'default',
+                        address: 'otl_esm_1mine',
+                        component_address: 'component_abc',
+                        public_key: 'aa',
+                        is_default: true,
+                        balance: { revealed: 1_000, confidential: 2_500_000 },
+                        history: [],
+                        transactions: [{ id: 'tx1', status, fee: 10, invalid_reason: null, timestamp: 0 }],
+                    },
+                ],
+                ...overrides,
+            };
+        }
+
+        /** Answers each command from `responses`, throwing the ones that are errors. */
+        function mockCommands(responses: Record<string, unknown>) {
+            vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+                const response = responses[cmd];
+                if (response instanceof Error) throw response;
+                return response;
+            }) as typeof invoke);
+        }
+
+        afterEach(() => {
+            vi.mocked(invoke).mockReset();
+            vi.useRealTimers();
+        });
+
+        describe('getOotleAccount', () => {
+            it('returns the default account address and network', async () => {
+                mockCommands({ l2_get_state: l2State(), get_network: 'esmeralda' });
+
+                await expect(signer.runOne('getOotleAccount', [])).resolves.toEqual({
+                    address: 'otl_esm_1mine',
+                    network: 'esmeralda',
+                });
+            });
+
+            it.each([
+                ['the network has no L2', new Error('Layer 2 is not available on mainnet')],
+                ['L2 is not enabled', l2State({ enabled: false, accounts: [] })],
+                ['the wallet is locked', l2State({ locked: true, accounts: [] })],
+            ])('is l2_unavailable when %s', async (_, state) => {
+                mockCommands({ l2_get_state: state, get_network: 'mainnet' });
+
+                await expect(signer.runOne('getOotleAccount', [])).resolves.toEqual(L2_UNAVAILABLE);
+            });
+        });
+
+        describe('getOotleBalance', () => {
+            it('sums revealed and confidential micro XTR as a string', async () => {
+                mockCommands({ l2_get_state: l2State() });
+
+                await expect(signer.runOne('getOotleBalance', [])).resolves.toEqual({
+                    available: '2501000',
+                    pending: '0',
+                });
+            });
+
+            it('is l2_unavailable when L2 is not enabled', async () => {
+                mockCommands({ l2_get_state: l2State({ enabled: false, accounts: [] }) });
+
+                await expect(signer.runOne('getOotleBalance', [])).resolves.toEqual(L2_UNAVAILABLE);
+            });
+        });
+
+        describe('sendOotleStealth', () => {
+            it('sends micro XTR as XTR from the default account with the pay ref', async () => {
+                mockCommands({ l2_get_state: l2State(), l2_validate_address: null, l2_send: 'tx1' });
+
+                const result = await signer.runOne('sendOotleStealth', [
+                    { amount: '1500001', address: ADDRESS, payRef: PAY_REF },
+                ]);
+
+                expect(result).toEqual({ transactionId: 'tx1' });
+                expect(invoke).toHaveBeenCalledWith('l2_validate_address', { address: ADDRESS });
+                expect(invoke).toHaveBeenCalledWith('l2_send', {
+                    account: 'component_abc',
+                    destination: ADDRESS,
+                    amount: '1.500001',
+                    payRef: PAY_REF,
+                });
+            });
+
+            it.each([
+                [[]],
+                [[{ amount: '0', address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: '-5', address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: '1.5', address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: 100, address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: '100', address: '', payRef: PAY_REF }]],
+                [[{ amount: '100', address: ADDRESS }]],
+                [[{ amount: '100', address: ADDRESS, payRef: 'bridge-1' }]],
+                [[{ amount: '100', address: ADDRESS, payRef: '0f8fad5b-d9cb-169f-a165-70867728950e' }]],
+                [[{ amount: '100', address: ADDRESS, payRef: `${PAY_REF}${PAY_REF}` }]],
+            ])('rejects args %j without invoking any command', async (args) => {
+                const result = await signer.runOne('sendOotleStealth', args);
+
+                expect(result).toEqual({ error: 'Invalid arguments for tapplet signer method: sendOotleStealth' });
+                expect(invoke).not.toHaveBeenCalled();
+            });
+
+            it('rejects an address the backend says is invalid without sending', async () => {
+                mockCommands({ l2_get_state: l2State(), l2_validate_address: new Error('Invalid L2 address') });
+
+                const result = await signer.runOne('sendOotleStealth', [
+                    { amount: '100', address: ADDRESS, payRef: PAY_REF },
+                ]);
+
+                expect(result).toEqual({ error: 'Invalid arguments for tapplet signer method: sendOotleStealth' });
+                expect(invoke).not.toHaveBeenCalledWith('l2_send', expect.anything());
+            });
+
+            it('is l2_unavailable without sending when L2 is locked', async () => {
+                mockCommands({ l2_get_state: l2State({ locked: true, accounts: [] }) });
+
+                const result = await signer.runOne('sendOotleStealth', [
+                    { amount: '100', address: ADDRESS, payRef: PAY_REF },
+                ]);
+
+                expect(result).toEqual(L2_UNAVAILABLE);
+                expect(invoke).not.toHaveBeenCalledWith('l2_send', expect.anything());
+            });
+
+            it('throws when the PIN prompt is cancelled so the tapplet gets a resultError', async () => {
+                mockCommands({
+                    l2_get_state: l2State(),
+                    l2_validate_address: null,
+                    l2_send: new Error('PIN entry cancelled'),
+                });
+
+                await expect(
+                    signer.runOne('sendOotleStealth', [{ amount: '100', address: ADDRESS, payRef: PAY_REF }])
+                ).rejects.toThrow('PIN entry cancelled');
+            });
+        });
+
+        describe('waitOotleTransaction', () => {
+            it('returns the settled status', async () => {
+                mockCommands({ l2_get_state: l2State({}, 'Accepted') });
+
+                await expect(
+                    signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 30 }])
+                ).resolves.toEqual({ status: 'Accepted' });
+            });
+
+            it('reports Pending once the timeout runs out', async () => {
+                vi.useFakeTimers();
+                mockCommands({ l2_get_state: l2State({}, 'Pending') });
+
+                const result = signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 5 }]);
+                await vi.advanceTimersByTimeAsync(6_000);
+
+                await expect(result).resolves.toEqual({ status: 'Pending' });
+            });
+
+            it('is l2_unavailable when the L2 state cannot be read', async () => {
+                mockCommands({ l2_get_state: new Error('Layer 2 is not available on mainnet') });
+
+                await expect(
+                    signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 30 }])
+                ).resolves.toEqual(L2_UNAVAILABLE);
+            });
+
+            it.each([
+                [[]],
+                [[{ transactionId: '', timeoutSecs: 30 }]],
+                [[{ transactionId: 'tx1' }]],
+                [[{ transactionId: 'tx1', timeoutSecs: 0 }]],
+                [[{ transactionId: 'tx1', timeoutSecs: 1.5 }]],
+                [[{ transactionId: 'tx1', timeoutSecs: 601 }]],
+                [[{ transactionId: 'tx1', timeoutSecs: '30' }]],
+            ])('rejects args %j without invoking any command', async (args) => {
+                const result = await signer.runOne('waitOotleTransaction', args);
+
+                expect(result).toEqual({
+                    error: 'Invalid arguments for tapplet signer method: waitOotleTransaction',
+                });
+                expect(invoke).not.toHaveBeenCalled();
+            });
         });
     });
 
