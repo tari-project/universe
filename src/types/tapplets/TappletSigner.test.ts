@@ -362,17 +362,62 @@ describe('TappletSigner.runOne', () => {
                 await expect(signer.runOne('sendOotleStealth', L2_REQ)).resolves.toEqual({ transactionId: 'tx9' });
             });
 
-            it('has no cooldown after a send that failed for another reason', async () => {
-                mockCommands({
-                    l2_get_state: l2State(),
-                    l2_validate_address: null,
-                    l2_send_from_tapplet: new Error('L2 send failed: indexer down'),
-                });
-                await expect(signer.runOne('sendOotleStealth', L2_REQ)).rejects.toThrow(/^failed$/);
+            /** Answers the next L2 send with `result`: a transaction id, or an Error to throw. */
+            function nextL2Send(result: string | Error) {
+                mockCommands({ l2_get_state: l2State(), l2_validate_address: null, l2_send_from_tapplet: result });
+                return signer.runOne('sendOotleStealth', L2_REQ).catch((e: Error) => e.message);
+            }
 
-                mockCommands({ l2_get_state: l2State(), l2_validate_address: null, l2_send_from_tapplet: 'tx2' });
-                await expect(signer.runOne('sendOotleStealth', L2_REQ)).resolves.toEqual({ transactionId: 'tx2' });
+            /** How long sends stay refused, to the second. Probes with a locked wallet, which neither sends nor cools down. */
+            async function cooldownSecs(): Promise<number> {
+                mockCommands({ l2_get_state: l2State({ locked: true, accounts: [] }) });
+                for (let secs = 0; secs <= 400; secs++) {
+                    const busy = await signer
+                        .runOne('sendOotleStealth', L2_REQ)
+                        .then(() => false)
+                        .catch((e: Error) => e.message === 'busy');
+                    if (!busy) return secs;
+                    await vi.advanceTimersByTimeAsync(1_000);
+                }
+                throw new Error('cooldown never ended');
+            }
+
+            it('doubles the denial cooldown up to five minutes and resets it after a send', async () => {
+                vi.useFakeTimers();
+                const cooldowns: number[] = [];
+                for (let i = 0; i < 7; i++) {
+                    await nextL2Send(new Error('PIN entry cancelled'));
+                    cooldowns.push(await cooldownSecs());
+                }
+                expect(cooldowns).toEqual([10, 20, 40, 80, 160, 300, 300]);
+
+                await expect(nextL2Send('tx1')).resolves.toEqual({ transactionId: 'tx1' });
+                await nextL2Send(new Error('PIN entry cancelled'));
+                expect(await cooldownSecs()).toBe(10);
             });
+
+            it.each([
+                ['sendOotleStealth', L2_REQ, 'l2_send_from_tapplet'],
+                ['sendOneSided', L1_REQ, 'send_one_sided_to_stealth_address'],
+            ] as const)(
+                'refuses sends for 3 s after %s fails, without growing the denial cooldown',
+                async (method, req, command) => {
+                    vi.useFakeTimers();
+                    await nextL2Send(new Error('PIN entry cancelled'));
+                    expect(await cooldownSecs()).toBe(10);
+
+                    mockCommands({
+                        l2_get_state: l2State(),
+                        l2_validate_address: null,
+                        [command]: new Error('indexer down'),
+                    });
+                    await signer.runOne(method, req).catch(() => undefined);
+                    expect(await cooldownSecs()).toBe(3);
+
+                    await nextL2Send(new Error('PIN entry cancelled'));
+                    expect(await cooldownSecs()).toBe(20);
+                }
+            );
         });
 
         describe('waitOotleTransaction', () => {
@@ -433,6 +478,19 @@ describe('TappletSigner.runOne', () => {
                 await expect(first).resolves.toEqual({ status: 'Accepted' });
                 await expect(second).resolves.toEqual({ status: 'Accepted' });
                 expect(invoke).toHaveBeenCalledTimes(4);
+            });
+
+            it('refuses a new wait for an id for 5 s after its last one ended', async () => {
+                vi.useFakeTimers();
+                mockCommands({ l2_get_state: l2State({}, 'Accepted') });
+                const wait = () => signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 30 }]);
+
+                await expect(wait()).resolves.toEqual({ status: 'Accepted' });
+                await expect(wait()).rejects.toThrow(/^busy$/);
+                await vi.advanceTimersByTimeAsync(4_000);
+                await expect(wait()).rejects.toThrow(/^busy$/);
+                await vi.advanceTimersByTimeAsync(1_000);
+                await expect(wait()).resolves.toEqual({ status: 'Accepted' });
             });
 
             it('refuses a fifth distinct id while four are waited on, then frees the slots', async () => {

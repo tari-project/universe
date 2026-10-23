@@ -505,9 +505,32 @@ pub fn l2_send_memo(
             PayRef::MAX_LEN
         )));
     }
+    let text = std::str::from_utf8(bytes)
+        .ok()
+        .filter(|text| !text.chars().any(is_hidden_char))
+        .ok_or_else(|| {
+            TransactionError::InvalidAddress(
+                "Pay reference must be UTF-8 text without control or invisible characters"
+                    .to_string(),
+            )
+        })?;
     let memo = Memo::new_pay_ref_and_message(bytes, "")
         .ok_or_else(|| TransactionError::InvalidAddress("Pay reference too long".to_string()))?;
-    Ok(Some((String::from_utf8_lossy(bytes).into_owned(), memo)))
+    Ok(Some((text.to_string(), memo)))
+}
+
+/// Control characters, and the bidi and zero-width format characters that would make a pay
+/// reference read differently in the PIN prompt from what is sent.
+fn is_hidden_char(c: char) -> bool {
+    c.is_control()
+        || matches!(
+            c,
+            '\u{200B}'..='\u{200F}'
+                | '\u{202A}'..='\u{202E}'
+                | '\u{2060}'..='\u{2064}'
+                | '\u{2066}'..='\u{2069}'
+                | '\u{FEFF}'
+        )
 }
 
 /// Claim an L1 burn on L2 behind the same gates as [`gated_l2_send`]. Refused without a
@@ -980,6 +1003,44 @@ mod tests {
             destination: "addr".to_string(),
         };
         assert_eq!(l1.logged_counterparty(), "addr");
+    }
+
+    #[test]
+    fn l2_send_memo_rejects_hidden_characters_in_an_explicit_pay_ref() {
+        for pay_ref in [
+            "ref\u{202E}fer",
+            "ref\u{200B}",
+            "\u{FEFF}ref",
+            "ref\u{2066}x\u{2069}",
+            "ref\u{2060}",
+            "line\nbreak",
+            "nul\0",
+            "del\u{7F}",
+            "c1\u{85}",
+        ] {
+            let err = l2_send_memo(Some(pay_ref), &ootle_address()).expect_err(pay_ref);
+            assert!(
+                matches!(err, TransactionError::InvalidAddress(_)),
+                "{pay_ref:?}"
+            );
+        }
+        let (shown, _) = l2_send_memo(Some("café-ref 1"), &ootle_address())
+            .expect("printable unicode is fine")
+            .expect("a memo");
+        assert_eq!(shown, "café-ref 1");
+    }
+
+    #[test]
+    fn l2_send_memo_rejects_an_embedded_pay_ref_that_is_not_clean_text() {
+        for bytes in [vec![0xff, 0xfe, b'a'], "ref\u{200D}".as_bytes().to_vec()] {
+            let embedded = PayRef::new_checked(bytes.clone()).expect("pay ref");
+            let address = ootle_address().with_pay_ref(embedded);
+            let err = l2_send_memo(None, &address).expect_err("rejected");
+            assert!(
+                matches!(err, TransactionError::InvalidAddress(_)),
+                "{bytes:?}"
+            );
+        }
     }
 
     #[test]

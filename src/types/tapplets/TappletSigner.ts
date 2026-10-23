@@ -48,8 +48,13 @@ const PAY_REF_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 const MICRO_AMOUNT_RE = /^[1-9][0-9]{0,19}$/;
 /** Ootle addresses and transaction ids are far shorter; this only bounds what a tapplet can send. */
 const MAX_FIELD_LENGTH = 300;
-/** After a denied PIN prompt, tapplet sends are refused this long so they can't re-prompt at once. */
+/** After a denied PIN prompt, tapplet sends are refused this long, doubling per denial up to the max. */
 const DENIAL_COOLDOWN_MS = 10_000;
+const MAX_DENIAL_COOLDOWN_MS = 5 * 60_000;
+/** After a send that failed for any other reason. */
+const FAILURE_COOLDOWN_MS = 3_000;
+/** A finished wait for an id can't be restarted sooner than this. */
+const WAIT_RESTART_MS = 5_000;
 const MAX_WAIT_SECS = 600;
 const WAIT_POLL_MS = 2000;
 const MAX_OOTLE_WAITS = 4;
@@ -61,11 +66,20 @@ function invalidArgsResult(method: string): { error: string } {
     return { error: `Invalid arguments for tapplet signer method: ${method}` };
 }
 
+/** The signer refusing a call (bad arguments, 'busy'). The tapplet gets a `resultError`, the user no toast. */
+export class TappletSignerRejection extends Error {}
+
 /** For the Ootle methods: bad arguments throw, so the tapplet gets a `resultError` reply. */
 function invalidArgsError(method: string): Error {
     console.warn(`Blocked tapplet signer call to "${method}" with invalid arguments`);
-    return new Error(`Invalid arguments for tapplet signer method: ${method}`);
+    return new TappletSignerRejection(`Invalid arguments for tapplet signer method: ${method}`);
 }
+
+function busyError(): Error {
+    return new TappletSignerRejection('busy');
+}
+
+type SendOutcome = 'sent' | 'denied' | 'failed' | 'none';
 
 /** Backend error text stays local: the tapplet gets only 'denied' or 'failed'. */
 function backendError(method: string, error: unknown): Error {
@@ -150,6 +164,10 @@ export class TappletSigner {
     /** One tapplet send (L1 or L2) at a time, so queued sends can't take over the user's PIN prompts. */
     private sendInFlight = false;
     private sendCooldownUntil = 0;
+    /** Denials since the last successful send; each one doubles the cooldown. */
+    private denials = 0;
+    /** When the last wait for each id finished. */
+    private ootleWaitEndedAt = new Map<string, number>();
     /** Ids sendOotleStealth returned; the only ones waitOotleTransaction will poll for. */
     private ootleSentIds = new Set<string>();
     /** Running waits by transaction id, so a remounted tapplet joins the wait it left behind. */
@@ -267,31 +285,38 @@ export class TappletSigner {
 
     /** Throws 'busy' while another tapplet send runs or a denial cooldown is on, else claims the slot. */
     private startTappletSend(): void {
-        if (this.sendInFlight || Date.now() < this.sendCooldownUntil) throw new Error('busy');
+        if (this.sendInFlight || Date.now() < this.sendCooldownUntil) throw busyError();
         this.sendInFlight = true;
     }
 
-    private finishTappletSend(denied: boolean): void {
+    private finishTappletSend(outcome: SendOutcome): void {
         this.sendInFlight = false;
-        if (denied) this.sendCooldownUntil = Date.now() + DENIAL_COOLDOWN_MS;
+        if (outcome === 'sent') this.denials = 0;
+        if (outcome === 'denied') {
+            const cooldown = Math.min(DENIAL_COOLDOWN_MS * 2 ** this.denials, MAX_DENIAL_COOLDOWN_MS);
+            this.sendCooldownUntil = Date.now() + cooldown;
+            this.denials += 1;
+        }
+        if (outcome === 'failed') this.sendCooldownUntil = Date.now() + FAILURE_COOLDOWN_MS;
     }
 
     public async sendOneSided(req: SendOneSidedRequest): Promise<boolean> {
         this.startTappletSend();
-        let denied = false;
+        let outcome: SendOutcome = 'none';
         try {
             await invoke('send_one_sided_to_stealth_address', {
                 amount: req.amount,
                 destination: req.address,
                 paymentId: req.paymentId,
             });
+            outcome = 'sent';
             return true;
         } catch (error) {
-            denied = PIN_DENIED_RE.test(`${error}`);
+            outcome = PIN_DENIED_RE.test(`${error}`) ? 'denied' : 'failed';
             setStoreError(`Error sending transaction: ${error}`);
             return false;
         } finally {
-            this.finishTappletSend(denied);
+            this.finishTappletSend(outcome);
         }
     }
 
@@ -322,7 +347,7 @@ export class TappletSigner {
         req: SendOotleStealthRequest
     ): Promise<{ transactionId: string } | { error: string }> {
         this.startTappletSend();
-        let denied = false;
+        let outcome: SendOutcome = 'none';
         try {
             const account = await defaultOotleAccount();
             if (!account) return L2_UNAVAILABLE;
@@ -339,21 +364,23 @@ export class TappletSigner {
                     payRef: req.payRef,
                 });
                 this.ootleSentIds.add(transactionId);
+                outcome = 'sent';
                 return { transactionId };
             } catch (error) {
                 const code = backendError('sendOotleStealth', error);
-                denied = code.message === 'denied';
+                outcome = code.message === 'denied' ? 'denied' : 'failed';
                 throw code;
             }
         } finally {
-            this.finishTappletSend(denied);
+            this.finishTappletSend(outcome);
         }
     }
 
     /**
      * Polls the L2 state until the transaction leaves New/Pending, or the timeout runs out.
      * Only for ids sendOotleStealth returned. A repeat call for an id already being waited on
-     * joins that wait and keeps its deadline. Throws 'busy' when four other ids are waited on.
+     * joins that wait and keeps its deadline. Throws 'busy' when four other ids are waited on,
+     * or when the last wait for this id ended less than five seconds ago.
      */
     public async waitOotleTransaction(
         req: WaitOotleTransactionRequest
@@ -361,8 +388,13 @@ export class TappletSigner {
         if (!this.ootleSentIds.has(req.transactionId)) throw invalidArgsError('waitOotleTransaction');
         const running = this.ootleWaits.get(req.transactionId);
         if (running) return running;
-        if (this.ootleWaits.size >= MAX_OOTLE_WAITS) throw new Error('busy');
-        const wait = this.pollOotleTransaction(req).finally(() => this.ootleWaits.delete(req.transactionId));
+        const endedAt = this.ootleWaitEndedAt.get(req.transactionId) ?? -Infinity;
+        if (Date.now() < endedAt + WAIT_RESTART_MS) throw busyError();
+        if (this.ootleWaits.size >= MAX_OOTLE_WAITS) throw busyError();
+        const wait = this.pollOotleTransaction(req).finally(() => {
+            this.ootleWaits.delete(req.transactionId);
+            this.ootleWaitEndedAt.set(req.transactionId, Date.now());
+        });
         this.ootleWaits.set(req.transactionId, wait);
         return wait;
     }

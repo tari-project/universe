@@ -8,7 +8,8 @@ vi.mock('@tauri-apps/api/window', () => ({
 }));
 
 import { runTappletTransaction, useTappletSignerStore } from './useTappletSignerStore';
-import { TappletSigner } from '@app/types/tapplets/TappletSigner';
+import { TappletSigner, TappletSignerRejection } from '@app/types/tapplets/TappletSigner';
+import { useAppStateStore } from '@app/store/appStateStore';
 import { TransactionEvent } from '@app/types/tapplets/transaction';
 
 const TAPPLET_ORIGIN = 'http://127.0.0.1:41234';
@@ -90,6 +91,23 @@ describe('runTappletTransaction', () => {
             },
             { targetOrigin: TAPPLET_ORIGIN }
         );
+    });
+
+    it.each([
+        ['busy', new TappletSignerRejection('busy'), false],
+        ['invalid args', new TappletSignerRejection('Invalid arguments for tapplet signer method: x'), false],
+        ['a backend failure', new Error('failed'), true],
+    ])('toasts %s only when it is not a signer rejection', async (_, error, toasted) => {
+        useAppStateStore.setState({ error: undefined });
+        runOne.mockRejectedValueOnce(error);
+
+        await runTappletTransaction(signerCallEvent({ id: 4, methodName: 'sendOotleStealth', args: [] }));
+
+        expect(postMessage).toHaveBeenCalledWith(
+            { id: 4, resultError: `${error}`, type: 'signer-call' },
+            { targetOrigin: TAPPLET_ORIGIN }
+        );
+        expect(useAppStateStore.getState().error !== undefined).toBe(toasted);
     });
 
     it('lets the tapplet settle its request when the call throws', async () => {

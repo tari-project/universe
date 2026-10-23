@@ -85,7 +85,7 @@ export const Tapplet = ({ source }: TappletProps) => {
                     break;
                 }
                 case 'ERROR':
-                    setStoreError(`${event.data.payload?.message}`, true);
+                    setStoreError(`Bridge tapplet: ${event.data.payload?.message}`, true);
                     break;
             }
         },
