@@ -9,6 +9,8 @@ import { AccordionItem } from '@app/components/transactions/components/Accordion
 import { DisplayedTransaction, TransactionInput, TransactionOutput } from '@app/types/app-status.ts';
 import { getTransactionListEntries, getInputDetails, getOutputDetails } from './getTransactionListEntries.tsx';
 import { Wrapper, OperationsSection, OperationsTitle } from './styles.ts';
+import { AbandonStalled } from './AbandonStalled.tsx';
+import { useStalledTransactions } from '@app/hooks/wallet/useStalledTransactions.ts';
 
 interface TransactionDetailsProps {
     transaction: DisplayedTransaction;
@@ -35,6 +37,10 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
         });
     };
 
+    const stalled = useStalledTransactions(transaction.id, expanded);
+    // Matched as numbers: the history holds ids as JavaScript numbers.
+    const stalledId = stalled.find((s) => Number(s.tx_id) === transaction.id)?.tx_id;
+
     const mainEntries = getTransactionListEntries(transaction);
     const copyIcon = !isCopied ? <IoCopyOutline size={12} /> : <IoCheckmarkOutline size={12} />;
 
@@ -53,6 +59,8 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
             <Wrapper>
                 {/* Main transaction details */}
                 <StatusList entries={mainEntries} />
+
+                {stalledId && <AbandonStalled key={stalledId} stalledId={stalledId} />}
 
                 {/* Operations section */}
                 {hasDetails && (

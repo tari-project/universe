@@ -64,11 +64,11 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet::minotari_wallet::BurnReceipt;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
+use crate::wallet::minotari_wallet::{BurnReceipt, SendReceipt, StalledTransaction};
 use crate::wallet::send_gate::{
-    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_claim,
-    gated_l2_send, gated_send,
+    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_abandon, gated_burn,
+    gated_l2_claim, gated_l2_send, gated_send,
 };
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
@@ -426,11 +426,25 @@ pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<S
     result
 }
 
+/// Sync with phone is off in this build: under tari 6.3 it exports a version 3 seed, which the
+/// current Aurora app can't read yet.
+const PAPER_WALLET_ENABLED: bool = false;
+
+/// Refuses sync with phone while it is off, before anything reads the seed or asks for a PIN.
+fn paper_wallet_allowed() -> Result<(), String> {
+    if PAPER_WALLET_ENABLED {
+        Ok(())
+    } else {
+        Err("Sync with phone is temporarily unavailable in this version.".to_string())
+    }
+}
+
 #[tauri::command]
 pub async fn get_paper_wallet_details(
     auth_uuid: Option<String>,
     app_handle: tauri::AppHandle,
 ) -> Result<PaperWalletConfig, InvokeError> {
+    paper_wallet_allowed().map_err(InvokeError::from)?;
     let timer = Instant::now();
 
     let wallet_balance = BalanceTracker::current().get_account_balance().await.total;
@@ -1662,10 +1676,10 @@ pub async fn send_one_sided_to_stealth_address(
     amount: String,
     destination: String,
     payment_id: Option<String>,
-) -> Result<(), String> {
+) -> Result<SendReceipt, String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
-    gated_send(GatedSendRequest {
+    let receipt = gated_send(GatedSendRequest {
         origin: SendOrigin::App,
         request_id: SendOrigin::App.new_request_id(),
         amount,
@@ -1673,12 +1687,12 @@ pub async fn send_one_sided_to_stealth_address(
         payment_id,
     })
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_command_error())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
-    Ok(())
+    Ok(receipt)
 }
 
 /// Burn funds for L2. Refused without a PIN; with one, the PIN prompt is the gate.
@@ -1697,12 +1711,36 @@ pub async fn burn_to_l2(
         payment_id,
     })
     .await
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| e.to_command_error())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "burn_to_l2 took too long: {:?}", timer.elapsed());
     }
     Ok(receipt)
+}
+
+/// The sends and burns the node keeps refusing, which the user may abandon.
+#[tauri::command]
+pub async fn get_stalled_transactions() -> Result<Vec<StalledTransaction>, InvokeError> {
+    MinotariWalletManager::stalled_transactions()
+        .await
+        .map_err(|e| InvokeError::from(e.to_string()))
+}
+
+/// Give up a stalled send or burn and release its inputs, behind the send gates.
+#[tauri::command]
+pub async fn abandon_stalled_transaction(
+    tx_id: String,
+    accept_unreconcilable: bool,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET_APP_LOGIC, "[abandon_stalled_transaction] called with args: (tx_id: {tx_id:?}, accept_unreconcilable: {accept_unreconcilable})");
+    gated_abandon(
+        SendOrigin::App.new_request_id(),
+        tx_id,
+        accept_unreconcilable,
+    )
+    .await
+    .map_err(|e| e.to_command_error())
 }
 
 /// Turn the L2 wallet on. Refused without a PIN; the PIN prompt unlocks the L1 seed the
@@ -1868,6 +1906,15 @@ pub async fn validate_minotari_amount(amount: String) -> Result<(), InvokeError>
         std::cmp::Ordering::Less => Ok(()),
         _ => Err(InvokeError::from("Insufficient balance".to_string())),
     }
+}
+
+/// The largest amount, in µT, a send with `payment_id` can carry once it pays its fee
+/// and keeps the change output every send must have.
+#[tauri::command]
+pub async fn get_max_sendable_amount(payment_id: Option<String>) -> Result<u64, InvokeError> {
+    MinotariWalletManager::max_sendable_amount(payment_id)
+        .await
+        .map_err(|e| InvokeError::from(e.to_string()))
 }
 
 #[tauri::command]
@@ -2612,7 +2659,13 @@ pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> 
 
 #[cfg(test)]
 mod tests {
-    use super::canonicalise_remote_base_node_address;
+    use super::{canonicalise_remote_base_node_address, paper_wallet_allowed};
+
+    #[test]
+    fn sync_with_phone_is_refused_while_it_is_off() {
+        let error = paper_wallet_allowed().expect_err("off in this version");
+        assert!(error.contains("temporarily unavailable"), "{error}");
+    }
 
     #[test]
     fn implicit_default_https_port_survives() {

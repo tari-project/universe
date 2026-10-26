@@ -39,14 +39,15 @@ use std::{
 };
 
 use log::{error, info, warn};
+use r2d2_sqlite::rusqlite::{Connection, OpenFlags};
 use tari_common::configuration::Network;
-use tari_common_types_wallet::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
+use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
 use tari_crypto::tari_utilities::SafePassword;
 use tari_engine_types::resource::Resource;
 use tari_ootle_common_types::optional::Optional;
 use tari_ootle_wallet_sdk::{
-    CipherSeed, Network as OotleNetwork, OotleAddress, SeedWords, WalletSdk, WalletSdkConfig,
-    WalletSdkSpec,
+    CipherSeed, IndexerTrust, Network as OotleNetwork, OotleAddress, SeedWords, WalletSdk,
+    WalletSdkConfig, WalletSdkSpec,
     apis::config::{ConfigApi, ConfigKey},
     cipher_seed::CipherSeedRestore,
     local_key_store::LocalKeyStore,
@@ -85,7 +86,7 @@ use crate::{
     credential_manager::CredentialManager,
     events::PinPromptContext,
     events_emitter::EventsEmitter,
-    internal_wallet::{InternalWallet, to_wallet_cipher_seed},
+    internal_wallet::InternalWallet,
     pin::PinManager,
     setup::setup_manager::{SetupManager, SetupPhase},
     tasks_tracker::TasksTrackers,
@@ -528,11 +529,27 @@ async fn open_and_start(pin: &tari_utilities::SafePassword) -> Result<(), Transa
                 .map_err(wallet_error)?;
             let seed_words = l2_seed_words(&seed).map_err(wallet_error)?;
             let password = store_password(&secret, pin_str);
-            let mut sdk =
-                open_sdk(&store_dir, network, indexer_url, &password).map_err(wallet_error)?;
-            sdk.initialize_cipher_seed(CipherSeedRestore::FromSeedWords(&seed_words))
+            // A seedless store with ootle v0.44's schema holds nothing; build it afresh.
+            if has_old_schema(&store_dir).map_err(wallet_error)? {
+                let owner = std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE))
+                    .map_err(wallet_error)?;
+                restore_store(
+                    &store_dir,
+                    network,
+                    indexer_url.clone(),
+                    &password,
+                    &seed_words,
+                    &owner,
+                )
                 .map_err(wallet_error)?;
-            sdk
+                open_sdk(&store_dir, network, indexer_url, &password).map_err(wallet_error)?
+            } else {
+                let mut sdk =
+                    open_sdk(&store_dir, network, indexer_url, &password).map_err(wallet_error)?;
+                sdk.initialize_cipher_seed(CipherSeedRestore::FromSeedWords(&seed_words))
+                    .map_err(wallet_error)?;
+                sdk
+            }
         }
     };
     let needs_recovery = sdk.is_recovery_needed().map_err(wallet_error)?;
@@ -646,6 +663,25 @@ fn stored_seed(store_dir: &Path) -> Result<Option<Zeroizing<Box<[u8]>>>, anyhow:
         .optional()?)
 }
 
+/// Whether the store in `store_dir` was made by ootle v0.44 (Universe 1.6.16 and 1.6.17).
+/// Later ootle squashed its migrations into the one v0.44 recorded first, so such a store
+/// reads as migrated while it lacks tables the wallet now needs. Checked by one of those
+/// tables, which every verified indexer read uses, rather than by the migration records,
+/// whose names say nothing about the schema.
+fn has_old_schema(store_dir: &Path) -> Result<bool, anyhow::Error> {
+    let db = store_dir.join("wallet.sqlite");
+    if !db.exists() {
+        return Ok(false);
+    }
+    let conn = Connection::open_with_flags(&db, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+    let tables: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'trusted_validator_sets'",
+        [],
+        |row| row.get(0),
+    )?;
+    Ok(tables == 0)
+}
+
 /// The seed words in an enciphered `seed`, or None when `password` does not open it.
 fn decipher_words(seed: &[u8], password: &str) -> Result<Option<SeedWords>, anyhow::Error> {
     match CipherSeed::from_enciphered_bytes(seed, Some(SafePassword::from(password))) {
@@ -656,9 +692,10 @@ fn decipher_words(seed: &[u8], password: &str) -> Result<Option<SeedWords>, anyh
 
 /// Opens the store in `store_dir`, whose enciphered seed is `seed`, with the password made
 /// of the keyring `secret` and the `pin`. A store older builds encrypted with the secret
-/// alone is rebuilt under that password from its own seed words first, keeping its owner.
-/// One neither opens is rebuilt from `l1_words` when there are any (the store holds the
-/// L1 seed), and left as it is otherwise (imported words no one can recover).
+/// alone, or made with ootle v0.44's schema, is rebuilt under that password from its own
+/// seed words first, keeping its owner. One neither opens is rebuilt from `l1_words` when
+/// there are any (the store holds the L1 seed), and left as it is otherwise (imported
+/// words no one can recover).
 fn open_enabled_store(
     store_dir: &Path,
     network: Network,
@@ -669,12 +706,16 @@ fn open_enabled_store(
     l1_words: Option<&SeedWords>,
 ) -> Result<OotleSdk, anyhow::Error> {
     let password = store_password(secret, pin);
-    if decipher_words(seed, &password)?.is_none() {
-        let words = match decipher_words(seed, secret)? {
+    let words = decipher_words(seed, &password)?;
+    if words.is_none() || has_old_schema(store_dir)? {
+        let words = match words {
             Some(words) => words,
-            None => l1_words
-                .cloned()
-                .ok_or_else(|| anyhow::anyhow!("The Layer 2 wallet does not open with this PIN"))?,
+            None => match decipher_words(seed, secret)? {
+                Some(words) => words,
+                None => l1_words.cloned().ok_or_else(|| {
+                    anyhow::anyhow!("The Layer 2 wallet does not open with this PIN")
+                })?,
+            },
         };
         let owner = std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE))?;
         restore_store(
@@ -685,7 +726,7 @@ fn open_enabled_store(
             &words,
             &owner,
         )?;
-        info!(target: LOG_TARGET, "L2 store moved onto the keyring secret and the PIN");
+        info!(target: LOG_TARGET, "L2 store rebuilt from its seed words onto the current schema, the keyring secret and the PIN");
     }
     open_sdk(store_dir, network, indexer_url, &password)
 }
@@ -918,6 +959,7 @@ fn open_sdk(
     let config = WalletSdkConfig {
         network: ootle_network(network),
         override_keyring_password: Some(SafePassword::from(password)),
+        indexer_trust: IndexerTrust::default(),
     };
     let indexer = IndexerRestApiNetworkInterface::new(indexer_url);
     let sdk = OotleSdk::initialize_with_local_key_store(
@@ -961,7 +1003,6 @@ fn ootle_network(network: Network) -> OotleNetwork {
 fn l2_seed_words(
     seed: &tari_common_types::seeds::cipher_seed::CipherSeed,
 ) -> Result<SeedWords, anyhow::Error> {
-    let seed: CipherSeed = to_wallet_cipher_seed(seed)?;
     Ok(seed.to_mnemonic(MnemonicLanguage::English, None)?)
 }
 
@@ -1013,7 +1054,7 @@ async fn start_services(
     mut phase_signal: PhaseSignal,
 ) -> Result<(), anyhow::Error> {
     // The SDK services take the crates.io tari shutdown signal, so relay the phase's one to it.
-    let mut shutdown = Shutdown::new();
+    let shutdown = Shutdown::new();
     let signal = shutdown.to_signal();
     tracker.spawn(async move {
         phase_signal.wait().await;
@@ -1181,6 +1222,68 @@ mod tests {
         assert!(claim_store_for(&store_dir, "second").expect("replaced wallet"));
         assert!(!enabled(&store_dir));
         assert!(!claim_store_for(&store_dir, "second").expect("new owner"));
+    }
+
+    /// A store ootle v0.44 made (Universe 1.6.16 and 1.6.17): its seed still reads, and
+    /// opening it rebuilds it from its own seed words onto the current schema.
+    #[test]
+    fn a_store_from_ootle_v0_44_is_rebuilt_from_its_seed() {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let url = Url::parse("http://127.0.0.1:1").expect("url");
+        // Built at runtime so the test values don't read as a leaked secret.
+        let secret = ["install", "secret"].concat();
+        let pin = ["test", "pin"].concat();
+        let password = store_password(&secret, &pin);
+        let words_of = |sdk: &mut OotleSdk| {
+            let words = sdk.load_seed_words().expect("load").expect("words");
+            words.join(" ").reveal().clone()
+        };
+
+        // A seed made by the current wallet, to put into a v0.44 store.
+        let new_dir = dir.path().join("new");
+        let mut sdk = open_sdk(&new_dir, Network::Esmeralda, url.clone(), &password).expect("sdk");
+        sdk.initialize_cipher_seed(CipherSeedRestore::CreateNewIfRequired)
+            .expect("seed");
+        let words = words_of(&mut sdk);
+        drop(sdk);
+
+        let store_dir = dir.path().join("esmeralda");
+        std::fs::create_dir_all(&store_dir).expect("dir");
+        let conn = Connection::open(store_dir.join("wallet.sqlite")).expect("db");
+        conn.execute_batch(include_str!("test_v044_wallet_schema.sql"))
+            .expect("the v0.44 schema");
+        conn.execute(
+            "ATTACH DATABASE ?1 AS new",
+            [new_dir.join("wallet.sqlite").to_string_lossy()],
+        )
+        .expect("attach");
+        conn.execute("INSERT INTO config SELECT * FROM new.config", [])
+            .expect("the seed");
+        drop(conn);
+        std::fs::write(store_dir.join(L1_WALLET_ID_FILE), "owner").expect("owner");
+        assert!(has_old_schema(&store_dir).expect("schema"));
+
+        let seed = stored_seed(&store_dir)
+            .expect("read")
+            .expect("the seed reads from the v0.44 schema");
+        let mut sdk = open_enabled_store(
+            &store_dir,
+            Network::Esmeralda,
+            url,
+            &seed,
+            &secret,
+            &pin,
+            None,
+        )
+        .expect("rebuilt and opened");
+        assert_eq!(words_of(&mut sdk), words);
+        drop(sdk);
+        assert!(!has_old_schema(&store_dir).expect("schema"));
+        assert_eq!(
+            std::fs::read_to_string(store_dir.join(L1_WALLET_ID_FILE)).expect("owner"),
+            "owner"
+        );
+        assert!(!store_dir.with_extension("old").exists());
     }
 
     #[test]
@@ -1539,7 +1642,7 @@ mod tests {
 
     #[tokio::test]
     async fn unlock_is_refused_once_the_phase_that_found_the_store_stopped() {
-        let mut shutdown = tari_shutdown::Shutdown::new();
+        let shutdown = tari_shutdown::Shutdown::new();
         let signal = shutdown.to_signal();
         shutdown.trigger();
         *INSTANCE.lifecycle.lock().await = Some((TaskTracker::new(), signal));

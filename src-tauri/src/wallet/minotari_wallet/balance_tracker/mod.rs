@@ -27,7 +27,7 @@ use tokio::sync::RwLock;
 use crate::events_emitter::EventsEmitter;
 use crate::wallet::minotari_wallet::LOG_TARGET;
 use log::info;
-use tari_transaction_components_wallet::tari_amount::MicroMinotari;
+use tari_transaction_components::tari_amount::MicroMinotari;
 
 pub static EMPTY_BALANCE: AccountBalance = AccountBalance {
     total: MicroMinotari(0),

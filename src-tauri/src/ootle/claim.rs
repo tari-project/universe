@@ -56,7 +56,7 @@ use tari_ootle_wallet_sdk::{
     network::WalletNetworkInterface,
 };
 use tari_ootle_wallet_sdk_services::transaction_service::TransactionServiceHandle;
-use tari_sidechain_wallet::CompleteClaimBurnProof;
+use tari_sidechain::CompleteClaimBurnProof;
 use tari_template_lib::{
     prelude::RistrettoPublicKeyBytes,
     types::{
@@ -576,7 +576,12 @@ fn build_claim(sdk: &OotleSdk, claim: Claim<'_>) -> Result<Transaction, anyhow::
         view_only.public_key(),
         &STEALTH_TARI_RESOURCE_ADDRESS,
     );
-    let owner_key = crypto.derive_stealth_owner_public_key(network, &owner.to_public_key(), &nonce);
+    let owner_key = crypto.derive_stealth_owner_public_key(
+        network,
+        &owner.to_public_key(),
+        view_only.public_key(),
+        &nonce,
+    );
     let output = StealthOutputWitness {
         witness: OutputWitness {
             amount,
@@ -748,6 +753,30 @@ mod tests {
         assert_eq!(hex::encode(proof.account_key.as_bytes()), CLAIM_KEY);
         assert_eq!(proof.claim_proof.value, 1_000_000_000);
         assert_eq!(proof.mined_height, 12_345);
+    }
+
+    #[test]
+    fn reads_a_proof_in_the_shape_minotari_writes() {
+        // minotari's BurnProofWorker writes the published tari_sidechain type with
+        // serde_json::to_vec_pretty. The claim code reads it with ootle's own type.
+        let written: tari_sidechain_l1::CompleteClaimBurnProof =
+            serde_json::from_str(PROOF).expect("the published format");
+        let json = serde_json::to_vec_pretty(&written).expect("json");
+        assert_eq!(
+            String::from_utf8(json.clone()).expect("utf8").trim_end(),
+            PROOF.trim_end(),
+            "the fixture is exactly what the worker writes"
+        );
+
+        let proof = BurnProof::from_json(&json).expect("converted by claim_proof_from_l1");
+        assert_eq!(
+            hex::encode(proof.claim_proof.commitment.as_bytes()),
+            COMMITMENT
+        );
+        assert_eq!(hex::encode(proof.account_key.as_bytes()), CLAIM_KEY);
+        assert_eq!(proof.claim_proof.value, 1_000_000_000);
+        assert_eq!(proof.mined_height, 12_345);
+        assert_eq!(proof.mined_in_epoch, written.mined_in_epoch);
     }
 
     #[test]

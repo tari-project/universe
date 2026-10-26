@@ -63,6 +63,9 @@
     "error-invalid-address": "Adres jest nieprawidłowy",
     "error-invalid-amount": "Kwota jest nieprawidłowa",
     "error-message": "Błąd wysyłania transakcji: ",
+    "error-change-not-affordable": "Nie zostaje wystarczająco dużo, by zapłacić opłatę i zachować resztę, której wymaga każda transakcja. Spróbuj mniejszej kwoty lub naciśnij Maks.",
+    "error-max-unavailable": "Nie udało się obliczyć maksymalnej kwoty. Spróbuj ponownie za chwilę.",
+    "not-accepted-yet": "Transakcja została zapisana, ale sieć jeszcze jej nie przyjęła. Portfel będzie ją automatycznie wysyłać ponownie, więc nie wysyłaj jej drugi raz.",
     "estimated-completion-time": "Szacowany czas zakończenia",
     "field-address": "adres",
     "field-amount": "kwota",
@@ -174,5 +177,26 @@
     "mine-directly-to-exchange": "Kop bezpośrednio do {{exchangeName}}",
     "mining-here": "Kopanie tutaj",
     "or": "lub"
+  },
+  "abandon": {
+    "stalled": "Twój węzeł bazowy wciąż odrzuca tę transakcję. Portfel nadal ją ponawia, a jej środki pozostają zablokowane, dopóki nie zostanie wykopana lub jej nie porzucisz. Zanim ją porzucisz, spróbuj ponownie później lub przełącz się na inny węzeł bazowy.",
+    "cta": "Porzuć transakcję",
+    "note": "Transakcja zostaje porzucona, a jej środki zwolnione. Jeśli węzeł wciąż ją przechowuje, nadal może zostać wykopana: portfel pokaże ją wtedy jako wykopaną, a transakcja wykonana w międzyczasie ze zwolnionych środków może się nie powieść.",
+    "unreconcilable-note": "OSTRZEŻENIE: ta transakcja nie ma wyjścia reszty. Jeśli węzeł wciąż ją przechowuje i zostanie wykopana, portfel NIE pokaże jej jako wykopanej: pozostanie porzucona, a jej środki będą widoczne jako wydane, zaś transakcja wykonana w międzyczasie ze zwolnionych środków może się nie powieść.",
+    "confirm": "Porzuć",
+    "confirm-anyway": "Porzuć mimo to",
+    "review-label": "Porzucasz",
+    "approve": "Zatwierdź porzucenie",
+    "done": "Transakcja porzucona. Jej środki są znów dostępne.",
+    "error-message": "Nie udało się porzucić transakcji: ",
+    "error-not-found": "Tej transakcji nie ma w tym portfelu.",
+    "error-not-pending": "Tej transakcji nie można już porzucić: została wykopana lub odrzucona.",
+    "error-not-stalled": "Twój węzeł bazowy nie odrzucił jeszcze tej transakcji wystarczająco wiele razy. Spróbuj ponownie później.",
+    "error-input-spent": "Jej środki zostały już wydane w łańcuchu. Portfel rozliczy ją sam.",
+    "error-change-in-use": "Jej reszta jest używana przez inną transakcję. Najpierw porzuć lub rozlicz tamtą.",
+    "error-change-already-mined": "Wygląda na to, że została wykopana. Poczekaj, aż portfel ją rozliczy.",
+    "chip": "Utknęła",
+    "burn-note": "Spalenie zostaje porzucone, a jego środki zwolnione. Jeśli węzeł wciąż je przechowuje, nadal może zostać wykopane, więc nie resetuj ani nie importuj ponownie portfela, dopóki się nie rozliczy: portfel przechowuje jedyny dowód potrzebny do odebrania. Transakcja wykonana w międzyczasie ze zwolnionych środków może się nie powieść.",
+    "error-burn-unreconcilable": "To spalenie nie ma wyjścia reszty, więc nie można go bezpiecznie porzucić: gdyby zostało wykopane, portfel by tego nie rozpoznał. Pozostaje oczekujące, dopóki się nie rozliczy."
   }
 }

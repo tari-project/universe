@@ -9,7 +9,7 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 
-import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
+import { PAPER_WALLET_ENABLED, usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
 
 export const SyncWithPhone = () => {
     const { t } = useTranslation('sidebar', { useSuspense: false });
@@ -23,9 +23,18 @@ export const SyncWithPhone = () => {
                         <Typography variant="h6">{t('sidebar:paper-wallet-tooltip-title')}</Typography>
                     </SettingsGroupTitle>
                     <Typography>{t('sidebar:paper-wallet-tooltip-message')}</Typography>
+                    {!PAPER_WALLET_ENABLED && (
+                        <Typography data-testid="wallet-sync-phone-unavailable">
+                            {t('sidebar:paper-wallet-unavailable')}
+                        </Typography>
+                    )}
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <Button onClick={() => setShowPaperWalletModal(true)} data-testid="wallet-sync-phone">
+                    <Button
+                        onClick={() => setShowPaperWalletModal(true)}
+                        disabled={!PAPER_WALLET_ENABLED}
+                        data-testid="wallet-sync-phone"
+                    >
                         {t('sidebar:paper-wallet-tooltip-title')}
                     </Button>
                 </SettingsGroupAction>
