@@ -145,6 +145,10 @@ uuid = "1.18.1"
 zeroize = "1"
 zip = "2.2.0"
 
+# zbus 3 is already in the tree through psp; used to probe logind before psp unwraps on it.
+[target.'cfg(target_os = "linux")'.dependencies]
+zbus = "3"
+
 # The Ootle wallet SDK pulls in OpenSSL through webauthn-rs. The macOS runner's OpenSSL is
 # arm64 only, so the x86_64 half of the universal build can't link it. Vendor it like Windows.
 [target.'cfg(target_os = "macos")'.dependencies]
