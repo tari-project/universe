@@ -654,12 +654,13 @@ fn main() {
                 } else {
                     block_on(state.updates_manager.initial_try_update(&handle_clone));
 
-                    tauri::async_runtime::spawn(async move {
+                    // Box: this runs on the main thread, whose stack is only 1 MB on Windows.
+                    tauri::async_runtime::spawn(Box::pin(async move {
                         SetupManager::get_instance()
                             .start_setup(handle_clone.clone())
                             .await;
                         SetupManager::spawn_sleep_mode_handler().await;
-                    });
+                    }));
                 }
             }
             tauri::RunEvent::ExitRequested { api, code, .. } => {
