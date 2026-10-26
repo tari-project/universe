@@ -608,7 +608,7 @@ fn damaged(at: &str, byte: u8) -> Vec<u8> {
 
 #[test]
 fn scrape_wallet_config_survives_a_damaged_byte() {
-    use super::internal_wallet::scrape_wallet_config;
+    use super::internal_wallet::{MONERO_WALLET_ID, scrape_wallet_config};
 
     let id = WalletId::new("abc123".to_string());
     let monero = "4AdUndXHHZ6cfufTMvppY6JwXNouMBzSkbLYfpAV5Usx3skxNgYeYTRj5UzqtReoS44qo9mtmXCqY45DJ852K5Jv2684Rge";
@@ -652,6 +652,21 @@ fn scrape_wallet_config_survives_a_damaged_byte() {
     raw[details_index] = b'-';
     let (candidates, _, _) = scrape_wallet_config(&raw);
     assert!(!candidates.contains(&id), "{candidates:?}");
+
+    // the Monero seed's keyring entry is shaped like an id and must never be offered, even
+    // when the whole-file scan runs because both key names are damaged
+    let mut raw = damaged("tari_wallets", b'X');
+    let details_index = INTACT_CONFIG
+        .find("tari_wallet_details")
+        .expect("details key");
+    raw[details_index] = b'X';
+    raw.extend_from_slice(br#" "monero" "#);
+    let (candidates, _, _) = scrape_wallet_config(&raw);
+    assert!(
+        !candidates.contains(&WalletId::new(MONERO_WALLET_ID.to_string())),
+        "{candidates:?}"
+    );
+    assert!(candidates.contains(&id), "{candidates:?}");
 
     // a damaged key name on both keyed scans still reaches the id through the whole-file scan
     let mut raw = damaged("tari_wallets", b'X');

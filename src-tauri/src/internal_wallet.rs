@@ -490,7 +490,7 @@ impl InternalWallet {
 
     async fn add_monero_wallet(monero_seed: MoneroSeed) -> Result<Vec<u8>, anyhow::Error> {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Adding new Monero Wallet");
-        let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
+        let cm = CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()));
         // A generated seed must never overwrite the Monero credential already in the keyring.
         if monero_credential_exists().await {
             return Err(wallet_config_missing_problem());
@@ -518,7 +518,7 @@ impl InternalWallet {
 
     fn remove_monero_wallet() -> Result<(), anyhow::Error> {
         log::info!(target: LOG_TARGET_APP_LOGIC, "Removing Monero Wallet");
-        let cm = CredentialManager::new_default(WalletId::new("monero".to_string()));
+        let cm = CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()));
         cm.delete_credential()?;
 
         Ok(())
@@ -550,7 +550,7 @@ impl InternalWallet {
             let encrypted_monero_seed = cryptography::encrypt(monero_seed.inner(), &pin_password)?;
             InternalWallet::set_credentials(
                 app_handle,
-                WalletId::new("monero".to_string()),
+                WalletId::new(MONERO_WALLET_ID.to_string()),
                 &Credential {
                     encrypted_seed: encrypted_monero_seed.clone(),
                 },
@@ -622,7 +622,7 @@ impl InternalWallet {
             // encrypting it again would bury the seed.
             let stored_monero_seed = InternalWallet::get_credentials(
                 app_handle,
-                WalletId::new("monero".to_string()),
+                WalletId::new(MONERO_WALLET_ID.to_string()),
                 false,
             )
             .await?
@@ -636,7 +636,7 @@ impl InternalWallet {
                         cryptography::encrypt(&stored_monero_seed, &pin_password)?;
                     InternalWallet::set_credentials(
                         app_handle,
-                        WalletId::new("monero".to_string()),
+                        WalletId::new(MONERO_WALLET_ID.to_string()),
                         &Credential {
                             encrypted_seed: encrypted_monero_seed.clone(),
                         },
@@ -879,7 +879,7 @@ impl InternalWallet {
             };
             InternalWallet::set_credentials(
                 app_handle,
-                WalletId::new("monero".to_string()),
+                WalletId::new(MONERO_WALLET_ID.to_string()),
                 &credentials,
                 true,
             )
@@ -1009,7 +1009,7 @@ impl InternalWallet {
                 if legacy_credential.monero_seed.is_some()
                     && let Err(e) = InternalWallet::get_credentials(
                         app_handle,
-                        WalletId::new("monero".to_string()),
+                        WalletId::new(MONERO_WALLET_ID.to_string()),
                         true,
                     )
                     .await
@@ -1241,7 +1241,7 @@ impl InternalWallet {
                 monero_seed
             } else {
                 // Fallback to credentials manager
-                match CredentialManager::new_default(WalletId::new("monero".to_string()))
+                match CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()))
                     .get_credentials()
                     .await
                 {
@@ -1510,7 +1510,7 @@ pub async fn get_old_wallet_config(
 /// True when the keyring already holds a Monero seed. A keyring error is not proof of one:
 /// generating a seed would fail on the same keyring anyway.
 async fn monero_credential_exists() -> bool {
-    CredentialManager::new_default(WalletId::new("monero".to_string()))
+    CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()))
         .get_credentials()
         .await
         .is_ok()
@@ -1549,6 +1549,10 @@ fn wallet_settings_problem(description_key: &str, detail: &str) -> anyhow::Error
         error_message: Some(detail.to_string()),
     })
 }
+
+/// The keyring entry the Monero seed lives under. It is shaped like a Tari wallet id, so the
+/// corrupt-config scrape must never offer it as one.
+pub(crate) const MONERO_WALLET_ID: &str = "monero";
 
 /// Constant Sentry message; the evidence kind travels as a tag.
 const PREVIOUS_WALLET_EVIDENT: &str =
@@ -1698,11 +1702,12 @@ pub(crate) fn scrape_wallet_config(raw: &[u8]) -> (Vec<WalletId>, Option<String>
     (candidates, monero_address, generated)
 }
 
-/// Every distinct quoted id in `quoted`, in order, appended once.
+/// Every distinct quoted id in `quoted`, in order, appended once. The Monero seed's entry is
+/// never a candidate: the keyring would verify it and restore the Monero seed as a Tari wallet.
 fn push_quoted_ids(candidates: &mut Vec<WalletId>, id: &Regex, quoted: &str) {
     for found in id.captures_iter(quoted) {
         let wallet_id = WalletId::new(found[1].to_string());
-        if !candidates.contains(&wallet_id) {
+        if wallet_id.as_str() != MONERO_WALLET_ID && !candidates.contains(&wallet_id) {
             candidates.push(wallet_id);
         }
     }
@@ -1747,9 +1752,10 @@ pub(crate) async fn discard_unreadable_wallet_config() -> Result<(), anyhow::Err
     if !ConfigWallet::content().await.monero_address().is_empty() {
         return Ok(());
     }
-    let Ok(credential) = CredentialManager::new_default(WalletId::new("monero".to_string()))
-        .get_credentials()
-        .await
+    let Ok(credential) =
+        CredentialManager::new_default(WalletId::new(MONERO_WALLET_ID.to_string()))
+            .get_credentials()
+            .await
     else {
         return Ok(());
     };
