@@ -581,11 +581,8 @@ fn credential_error_tag_separates_a_missing_entry_from_a_platform_failure() {
     );
 }
 
-#[test]
-fn scrape_wallet_config_reads_a_truncated_config() {
-    use super::internal_wallet::scrape_wallet_config;
-
-    let truncated = r#"{
+/// A config as `to_string_pretty` writes it, up to the fields the scrape reads.
+const INTACT_CONFIG: &str = r#"{
   "version_counter": 3,
   "tari_wallets": [
     "abc123"
@@ -594,44 +591,76 @@ fn scrape_wallet_config_reads_a_truncated_config() {
   "wxtm_addresses": {},
   "monero_address_is_generated": true,
   "keyring_accessed": true,
-  "wallet_migration_nonce": 0,
-  "created_at": {
-    "secs_since_epoch": 17"#;
-    let (wallets, monero_address, generated) =
-        scrape_wallet_config(truncated).expect("the wallet list survived the truncation");
-    assert_eq!(wallets, vec![WalletId::new("abc123".to_string())]);
-    assert!(monero_address.starts_with("4AdUndXHH"));
+  "tari_wallet_details": {
+    "id": "abc123",
+    "tari_address": "f4..."
+  },
+  "seed_backed_up": false
+}"#;
+
+/// `INTACT_CONFIG` with the byte at the first occurrence of `at` replaced.
+fn damaged(at: &str, byte: u8) -> Vec<u8> {
+    let mut raw = INTACT_CONFIG.as_bytes().to_vec();
+    let index = INTACT_CONFIG.find(at).expect("marker present");
+    raw[index] = byte;
+    raw
+}
+
+#[test]
+fn scrape_wallet_config_survives_a_damaged_byte() {
+    use super::internal_wallet::scrape_wallet_config;
+
+    let id = WalletId::new("abc123".to_string());
+    let monero = "4AdUndXHHZ6cfufTMvppY6JwXNouMBzSkbLYfpAV5Usx3skxNgYeYTRj5UzqtReoS44qo9mtmXCqY45DJ852K5Jv2684Rge";
+    assert_eq!(
+        scrape_wallet_config(INTACT_CONFIG.as_bytes()),
+        (vec![id.clone()], Some(monero.to_string()), true)
+    );
+
+    // (a) inside the first id: the copy in tari_wallet_details still names the wallet
+    let (candidates, _, _) = scrape_wallet_config(&damaged("c123", b'\xff'));
+    assert_eq!(candidates, vec![id.clone()]);
+
+    // (b) inside a key name before tari_wallets
+    let (candidates, monero_address, generated) =
+        scrape_wallet_config(&damaged("version_counter", b'\0'));
+    assert_eq!(candidates, vec![id.clone()]);
+    assert_eq!(monero_address.as_deref(), Some(monero));
     assert!(generated);
 
+    // (c) in the middle of the Monero address: the seed is still recoverable
+    let (candidates, monero_address, _) = scrape_wallet_config(&damaged("Usx3skx", b'\x01'));
+    assert_eq!(candidates, vec![id.clone()]);
     assert_eq!(
-        scrape_wallet_config(&"\0".repeat(512)),
-        None,
-        "a zeroed file names nothing"
+        monero_address, None,
+        "a damaged address is absent, not wrong"
     );
-    assert_eq!(
-        scrape_wallet_config(""),
-        None,
-        "an empty file names nothing"
-    );
-    assert_eq!(
-        scrape_wallet_config(r#"{"tari_wallets": [], "monero_address": "4Ad"}"#),
-        None,
-        "an empty wallet list is not a wallet"
-    );
-    assert_eq!(
-        scrape_wallet_config(r#"{"tari_wallets": ["abc123"], "monero_address": "4Ad"}"#),
-        Some((
-            vec![WalletId::new("abc123".to_string())],
-            "4Ad".to_string(),
-            false
-        )),
-        "a missing generated flag defaults to an imported address"
-    );
-    assert_eq!(
-        scrape_wallet_config(r#"{"tari_wallets": ["abc123"], "monero_addr"#),
-        None,
-        "a wallet id without a Monero address is not a loadable config"
-    );
+
+    // (d) invalid UTF-8 as the very first byte
+    let (candidates, monero_address, _) = scrape_wallet_config(&damaged("{", b'\xfe'));
+    assert_eq!(candidates, vec![id.clone()]);
+    assert_eq!(monero_address.as_deref(), Some(monero));
+
+    // (e) a NUL-filled file
+    assert_eq!(scrape_wallet_config(&[0u8; 512]), (Vec::new(), None, false));
+    assert_eq!(scrape_wallet_config(b""), (Vec::new(), None, false));
+
+    // (f) both id copies damaged: the keyed scans find nothing, the whole-file scan runs and
+    // whatever six-character tokens it finds are only candidates for the keyring to reject
+    let mut raw = damaged("c123", b'\xff');
+    let details_index = INTACT_CONFIG.rfind("c123").expect("second copy");
+    raw[details_index] = b'-';
+    let (candidates, _, _) = scrape_wallet_config(&raw);
+    assert!(!candidates.contains(&id), "{candidates:?}");
+
+    // a damaged key name on both keyed scans still reaches the id through the whole-file scan
+    let mut raw = damaged("tari_wallets", b'X');
+    let details_index = INTACT_CONFIG
+        .find("tari_wallet_details")
+        .expect("details key");
+    raw[details_index] = b'X';
+    let (candidates, _, _) = scrape_wallet_config(&raw);
+    assert!(candidates.contains(&id), "{candidates:?}");
 }
 
 #[test]

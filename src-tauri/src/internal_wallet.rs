@@ -23,6 +23,7 @@
 use anyhow::anyhow;
 use monero_address_creator::Seed as MoneroSeed;
 use monero_address_creator::network::Mainnet;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -1596,46 +1597,49 @@ async fn restore_wallet_config_from_moved_aside() -> Result<bool, anyhow::Error>
         return Ok(false);
     };
     let raw = std::fs::read(config_path.with_file_name(moved_aside)).unwrap_or_default();
-    let Some((wallets, monero_address, generated)) =
-        scrape_wallet_config(&String::from_utf8_lossy(&raw))
-    else {
+    let (candidates, monero_address, generated) = scrape_wallet_config(&raw);
+    if candidates.is_empty() {
         report_moved_aside_recovery("wallet_id_not_in_corrupt_file");
         return Ok(false);
-    };
-    let Some(wallet_id) = wallets.first() else {
+    }
+    // The scan can hand back a damaged id or a stray token; the keyring decides which
+    // candidate is the wallet, in file order.
+    let mut verified = None;
+    for wallet_id in candidates {
+        if let Ok(credential) = CredentialManager::new_default(wallet_id.clone())
+            .get_credentials()
+            .await
+        {
+            verified = Some((wallet_id, credential));
+            break;
+        }
+    }
+    let Some((wallet_id, credential)) = verified else {
+        report_moved_aside_recovery("wallet_id_in_corrupt_file_but_no_seed");
         return Ok(false);
     };
-    let credential = match CredentialManager::new_default(wallet_id.clone())
-        .get_credentials()
-        .await
-    {
-        Ok(credential) => credential,
-        Err(e) => {
-            log::error!(target: LOG_TARGET_APP_LOGIC, "[restore_wallet_config_from_moved_aside] the keyring has no seed for the recovered wallet id: {}", credential_error_tag(&e));
-            report_moved_aside_recovery("wallet_id_in_corrupt_file_but_no_seed");
-            return Ok(false);
-        }
-    };
     let pin_locked = !seed_is_plain(&credential.encrypted_seed);
-    if pin_locked && !generated {
+    if pin_locked && !(generated && monero_address.is_some()) {
         // While the Tari details are being rebuilt a PIN can only be checked against a
-        // generated Monero seed; an imported Monero address leaves nothing to check it against.
+        // generated Monero seed; an imported or lost Monero address leaves nothing to check
+        // it against.
         report_moved_aside_recovery("wallet_id_in_corrupt_file_but_pin_unverifiable");
         return Ok(false);
     }
     ConfigWallet::update_field(
-        |content, (wallets, monero_address, generated, pin_locked): (_, String, bool, bool)| {
-            content.set_tari_wallets(wallets);
-            if generated {
-                content.set_generated_monero_address(monero_address);
-            } else {
-                content.set_user_monero_address(monero_address);
-            }
+        |content, (wallet_id, monero_address, generated, pin_locked): (_, Option<String>, bool, bool)| {
+            content.set_tari_wallets(vec![wallet_id]);
+            // A lost Monero address stays empty: the load reports it instead of failing.
+            match monero_address {
+                Some(address) if generated => content.set_generated_monero_address(address),
+                Some(address) => content.set_user_monero_address(address),
+                None => content,
+            };
             let mut pin_locker_state = PinLockerState::default();
             pin_locker_state.set_pin_locked(pin_locked);
             content.set_pin_locker_state(pin_locker_state)
         },
-        (wallets, monero_address, generated, pin_locked),
+        (wallet_id, monero_address, generated, pin_locked),
     )
     .await?;
     report_moved_aside_recovery("wallet_id_recovered_from_corrupt");
@@ -1656,24 +1660,52 @@ fn report_moved_aside_recovery(outcome: &'static str) {
     );
 }
 
-/// The fields a loadable config needs, read out of a config file that no longer parses as a
-/// whole. The file is written in declaration order, so a truncated one keeps its wallet list
-/// and Monero address long after the cached details near its end are gone; a zeroed one keeps
-/// nothing. `None` without a wallet or a Monero address: the load refuses either way.
-pub(crate) fn scrape_wallet_config(raw: &str) -> Option<(Vec<WalletId>, String, bool)> {
-    let wallets = scrape_field::<Vec<WalletId>>(raw, "tari_wallets").filter(|w| !w.is_empty())?;
-    let monero_address = scrape_field::<String>(raw, "monero_address").filter(|a| !a.is_empty())?;
-    let generated = scrape_field(raw, "monero_address_is_generated").unwrap_or(false);
-    Some((wallets, monero_address, generated))
+/// Wallet id candidates, the Monero address and its generated flag, read by shape out of a
+/// config file that no longer parses: the damage is usually a stray byte somewhere inside the
+/// file, so nothing here parses JSON. Control characters and replacement characters from a
+/// lossy decode are dropped first. Ids are the six alphanumerics `rand_utils::get_rand_string`
+/// mints, and the config holds each in two places, `tari_wallets` and `tari_wallet_details.id`,
+/// so one damaged copy still leaves the other. When a key name is what got damaged, every
+/// quoted six-character token in the file is a candidate instead, and the keyring sorts out
+/// the strays. A damaged Monero address is simply absent, never a reason to lose the seed.
+pub(crate) fn scrape_wallet_config(raw: &[u8]) -> (Vec<WalletId>, Option<String>, bool) {
+    let text: String = String::from_utf8_lossy(raw)
+        .chars()
+        .filter(|c| !c.is_control() && *c != '\u{FFFD}')
+        .collect();
+    let id = Regex::new(r#""([A-Za-z0-9]{6})""#).expect("static regex");
+    let wallet_list = Regex::new(r#""tari_wallets"\s*:\s*\[([^\]]*)\]"#).expect("static regex");
+    let details_id =
+        Regex::new(r#""tari_wallet_details"\s*:\s*\{\s*"id"\s*:\s*("[A-Za-z0-9]{6}")"#)
+            .expect("static regex");
+    let mut candidates: Vec<WalletId> = Vec::new();
+    if let Some(list) = wallet_list.captures(&text) {
+        push_quoted_ids(&mut candidates, &id, &list[1]);
+    }
+    if let Some(details) = details_id.captures(&text) {
+        push_quoted_ids(&mut candidates, &id, &details[1]);
+    }
+    if candidates.is_empty() {
+        push_quoted_ids(&mut candidates, &id, &text);
+    }
+
+    let monero = Regex::new(r#""monero_address"\s*:\s*"([48][1-9A-HJ-NP-Za-km-z]{94})""#)
+        .expect("static regex");
+    let monero_address = monero.captures(&text).map(|found| found[1].to_string());
+    let generated = Regex::new(r#""monero_address_is_generated"\s*:\s*true"#)
+        .expect("static regex")
+        .is_match(&text);
+    (candidates, monero_address, generated)
 }
 
-/// One JSON value from the text after `"key":`, whatever follows it.
-fn scrape_field<T: serde::de::DeserializeOwned>(raw: &str, key: &str) -> Option<T> {
-    let value_start = raw.find(&format!("\"{key}\":"))? + key.len() + 3;
-    serde_json::Deserializer::from_str(&raw[value_start..])
-        .into_iter()
-        .next()?
-        .ok()
+/// Every distinct quoted id in `quoted`, in order, appended once.
+fn push_quoted_ids(candidates: &mut Vec<WalletId>, id: &Regex, quoted: &str) {
+    for found in id.captures_iter(quoted) {
+        let wallet_id = WalletId::new(found[1].to_string());
+        if !candidates.contains(&wallet_id) {
+            candidates.push(wallet_id);
+        }
+    }
 }
 
 /// True when the stored Tari seed is the plain `to_binary` form. The unauthenticated decode
