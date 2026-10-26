@@ -1,5 +1,5 @@
 [package]
-version = "1.6.15"
+version = "1.6.17"
 description = "Tari Universe"
 edition = "2024"
 name = "tari-universe"
