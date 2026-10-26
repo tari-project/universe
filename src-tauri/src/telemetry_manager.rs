@@ -915,3 +915,100 @@ async fn send_notification_data(
 
     Ok(())
 }
+
+/// What the airdrop backend is told about a burn this app made, so burns made ahead
+/// of the L2 launch can be counted. Only what is already public on chain plus the
+/// amount: the L2 claim key stays out, the chain only ever sees a stealth key derived
+/// from it and reporting it here would link the user's L2 account to the burn.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct BurnReport {
+    pub app_id: String,
+    pub version: String,
+    pub network: String,
+    pub tx_id: String,
+    pub commitment: String,
+    pub excess_sig_nonce: String,
+    pub excess_sig: String,
+    pub amount_micro_minotari: u64,
+}
+
+/// Reports a burn the base node just accepted into its mempool. Fire and forget: the
+/// burn already happened, so a failure here is logged and never surfaced. The backend
+/// checks the kernel signature against the network itself, so nothing is retried.
+pub fn report_burn(
+    receipt: &crate::wallet::minotari_wallet::BurnReceipt,
+    amount_micro_minotari: u64,
+) {
+    let mut report = BurnReport {
+        app_id: String::new(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        network: Network::get_current_or_user_setting_or_default()
+            .as_key_str()
+            .to_string(),
+        tx_id: receipt.tx_id.clone(),
+        commitment: receipt.commitment.clone(),
+        excess_sig_nonce: receipt.kernel_excess_nonce.clone(),
+        excess_sig: receipt.kernel_excess_sig.clone(),
+        amount_micro_minotari,
+    };
+    tauri::async_runtime::spawn(async move {
+        let config = ConfigCore::content().await;
+        if !*config.allow_telemetry() {
+            return;
+        }
+        report.app_id = config.anon_id().clone();
+        let token = config.airdrop_tokens().clone().map(|tokens| tokens.token);
+        let url = format!(
+            "{}/miner/burns",
+            AppInMemoryConfig::default().airdrop_api_url
+        );
+        let mut request = reqwest::Client::new()
+            .post(url)
+            .header("User-Agent", format!("tari-universe/{}", report.version))
+            .json(&report);
+        if let Some(token) = token {
+            request = request.header("Authorization", format!("Bearer {token}"));
+        }
+        match request.send().await {
+            Ok(response) if response.status().is_success() => {
+                debug!(target: LOG_TARGET_APP_LOGIC, "Burn {} reported", report.tx_id);
+            }
+            Ok(response) => {
+                warn!(target: LOG_TARGET_APP_LOGIC, "Burn report rejected: http {}", response.status());
+            }
+            Err(e) => warn!(target: LOG_TARGET_APP_LOGIC, "Burn report failed: {e}"),
+        }
+    });
+}
+
+#[cfg(test)]
+mod burn_report_tests {
+    use super::BurnReport;
+
+    #[test]
+    fn burn_report_serializes_with_the_backend_field_names() {
+        let report = BurnReport {
+            app_id: "anon".into(),
+            version: "1.6.18".into(),
+            network: "esmeralda".into(),
+            tx_id: "7".into(),
+            commitment: "ab".into(),
+            excess_sig_nonce: "cd".into(),
+            excess_sig: "ef".into(),
+            amount_micro_minotari: 1_000_000,
+        };
+        let json = serde_json::to_value(&report).expect("serializes");
+        assert_eq!(json["appId"], "anon");
+        assert_eq!(json["txId"], "7");
+        assert_eq!(json["commitment"], "ab");
+        assert_eq!(json["excessSigNonce"], "cd");
+        assert_eq!(json["excessSig"], "ef");
+        assert_eq!(json["amountMicroMinotari"], 1_000_000);
+        assert_eq!(json["network"], "esmeralda");
+        assert!(
+            json.get("claimPublicKey").is_none(),
+            "the L2 account key must never leave the app"
+        );
+    }
+}

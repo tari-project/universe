@@ -392,14 +392,16 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
     let SpendKind::Burn { claim_public_key } = kind else {
         unreachable!("gated_burn builds a Burn kind")
     };
-    MinotariWalletManager::burn_to_l2(
+    let receipt = MinotariWalletManager::burn_to_l2(
         claim_public_key,
         amount_u64,
         payment_id,
         Some(pass.pin_context),
     )
     .await
-    .map_err(|e| TransactionError::WalletError(format!("Burn failed: {e}")))
+    .map_err(|e| TransactionError::WalletError(format!("Burn failed: {e}")))?;
+    crate::telemetry_manager::report_burn(&receipt, amount_u64);
+    Ok(receipt)
 }
 
 /// Send XTR on L2 behind the same gates as [`gated_send`]. Refused without a PIN or off
