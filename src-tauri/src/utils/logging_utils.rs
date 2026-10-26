@@ -24,7 +24,10 @@ use anyhow::Error;
 use std::{fs, fs::File, io::Write, path::Path};
 
 pub fn setup_logging(config_file: &Path, base_path: &Path, default: &str) -> Result<String, Error> {
-    println!(
+    // stdout may be closed or hung up when launched from a desktop file or a
+    // dead terminal; a println! would panic, so ignore write errors.
+    let _unused = writeln!(
+        std::io::stdout(),
         "Initializing logging according to {:?}",
         config_file.to_str().unwrap_or("[??]")
     );

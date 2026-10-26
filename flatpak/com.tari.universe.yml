@@ -48,6 +48,9 @@ finish-args:
   - --talk-name=org.freedesktop.Notifications
   # Wallet seed-phrase / PIN storage via the Secret Service (keyring crate)
   - --talk-name=org.freedesktop.secrets
+  # Suspend / screen-lock events from logind (psp crate). Without this the
+  # system-bus calls fail with ServiceUnknown; the app skips the monitor then.
+  - --system-talk-name=org.freedesktop.login1
   # Wallet backup import/export + log bundle export
   - --filesystem=xdg-download
   # Read-only access to the host GTK config so the window chrome follows the

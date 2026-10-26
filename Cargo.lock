@@ -10343,6 +10343,7 @@ dependencies = [
  "windows-sys 0.52.0",
  "winreg 0.52.0",
  "wiremock",
+ "zbus 3.3.0",
  "zeroize",
  "zip 2.4.2",
 ]
