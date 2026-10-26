@@ -15,7 +15,8 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
     const { t } = useTranslation(['setup-progresses', 'common', 'settings'], { useSuspense: false });
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
 
-    const { isExiting, handleClose, handleRestart } = useErrorDialogsButtonsLogic();
+    const { isExiting, handleClose, handleRestart, handleStartFresh } = useErrorDialogsButtonsLogic();
+    const canStartFresh = criticalProblem?.description === 'common:wallet-config-unreadable';
 
     return (
         <Dialog open={!!criticalProblem}>
@@ -39,6 +40,11 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
                                     {t('settings:settings')}
                                 </Button>
                                 <Stack direction="row" gap={8} justifyContent="space-around">
+                                    {canStartFresh && (
+                                        <Button backgroundColor="info" size="smaller" onClick={handleStartFresh}>
+                                            {t('common:wallet-config-start-fresh')}
+                                        </Button>
+                                    )}
                                     <Button backgroundColor="error" size="smaller" onClick={handleClose}>
                                         {t('close-tari-universe')}
                                     </Button>

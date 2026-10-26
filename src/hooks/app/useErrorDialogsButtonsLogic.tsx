@@ -24,9 +24,23 @@ export const useErrorDialogsButtonsLogic = () => {
         setIsExiting(false);
     }, []);
 
+    // The user has confirmed their seed words are backed up: move the unreadable wallet
+    // config aside and restart so setup creates a new wallet.
+    const handleStartFresh = useCallback(async () => {
+        try {
+            setIsExiting(true);
+            await invoke('discard_unreadable_wallet_config');
+            await invoke('restart_application');
+        } catch (e) {
+            console.error('Error discarding the wallet config | handleStartFresh in CriticalProblemDialog: ', e);
+        }
+        setIsExiting(false);
+    }, []);
+
     return {
         isExiting,
         handleClose,
         handleRestart,
+        handleStartFresh,
     };
 };
