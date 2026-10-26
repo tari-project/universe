@@ -1751,6 +1751,7 @@ mod tests {
     fn prepare_send(
         pool: &SqlitePool,
         amount: u64,
+        payment_id: Option<&str>,
     ) -> Result<tari_transaction_components::offline_signing::models::PrepareOneSidedTransactionForSigningResult, anyhow::Error>
 {
         let password = Zeroizing::new(PASSWORD.to_string());
@@ -1769,7 +1770,7 @@ mod tests {
                 .get_address(Network::LocalNet, &password)
                 .expect("address"),
             amount: MicroMinotari::from(amount),
-            payment_id: None,
+            payment_id: payment_id.map(str::to_string),
         };
         sender.start_new_transaction(uuid::Uuid::new_v4().to_string(), recipient, 300)
     }
@@ -2047,29 +2048,40 @@ mod tests {
 
     #[test]
     fn the_max_sendable_amount_sends_with_change_and_one_micro_tari_more_does_not() {
-        // The last output is worth less than the fee to spend it, so it adds nothing.
-        let (pool, account_id, _dir) = funded_wallet(&[3_000_000, 1_250_000, 40]);
-        let max = max_sendable(&pool.get().expect("connection"), account_id, None).expect("max");
-        assert!(max > 4_000_000 && max < 4_250_000, "max {max}");
+        // With and without a payment id: the recipient memo carries it next to the sender's address.
+        for payment_id in [None, Some("invoice-42")] {
+            // The last output is worth less than the fee to spend it, so it adds nothing.
+            let (pool, account_id, _dir) = funded_wallet(&[3_000_000, 1_250_000, 40]);
+            let max = max_sendable(&pool.get().expect("connection"), account_id, payment_id)
+                .expect("max");
+            assert!(max > 4_000_000 && max < 4_250_000, "max {max}");
 
-        let err = prepare_send(&pool, max + 1).expect_err("no room for change");
-        assert!(
-            matches!(
-                err.downcast_ref::<UtxoSelectionError>(),
-                Some(UtxoSelectionError::ChangeNotAffordable { .. })
-            ),
-            "got: {err}"
-        );
+            let err = prepare_send(&pool, max + 1, payment_id).expect_err("no room for change");
+            assert!(
+                matches!(
+                    err.downcast_ref::<UtxoSelectionError>(),
+                    Some(UtxoSelectionError::ChangeNotAffordable { .. })
+                ),
+                "got: {err}"
+            );
 
-        let prepared = prepare_send(&pool, max).expect("the max amount sends");
-        let inputs: u64 = prepared
-            .info
-            .inputs
-            .iter()
-            .map(|input| input.value().as_u64())
-            .sum();
-        let change = inputs - max - prepared.info.fee.as_u64();
-        assert!(change > 0, "the send carries change");
+            let prepared = prepare_send(&pool, max, payment_id).expect("the max amount sends");
+            let inputs: u64 = prepared
+                .info
+                .inputs
+                .iter()
+                .map(|input| input.value().as_u64())
+                .sum();
+            let change = inputs - max - prepared.info.fee.as_u64();
+            assert!(change > 0, "the send carries change");
+            assert!(
+                prepared.info.recipients[0]
+                    .payment_id
+                    .claimed_sender_address()
+                    .is_some(),
+                "the recipient memo names the sender"
+            );
+        }
     }
 
     #[test]
