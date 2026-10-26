@@ -251,7 +251,10 @@
     "completed-text": "Once the burn is mined you can claim it from Burns to claim in your Layer 2 wallet.",
     "error-message": "Error burning funds: ",
     "pin-required": "Set a PIN to burn",
-    "claim-key-default": "The claim key defaults to this wallet's own L2 account."
+    "claim-key-default": "The claim key defaults to this wallet's own L2 account.",
+    "share-button": "Share on X",
+    "share-text-pre": "I just pre-burned {{amount}} XTM to Tari L2 ahead of the Ootle launch. {{url}}",
+    "share-text": "I just burned {{amount}} XTM to Tari L2. {{url}}"
   },
   "l2": {
     "title": "Layer 2",
