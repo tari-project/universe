@@ -16,8 +16,12 @@ overrides:
   brace-expansion@1: ^1.1.20
   brace-expansion@5: ^5.0.11
   source-map-js: ^1.2.2
+  zod@4: '>=4.6.6'
 
 # No patched braces release exists yet (latest is 3.0.3); dev-only via knip > fast-glob > micromatch.
 auditConfig:
   ignoreGhsas:
     - GHSA-vfj7-8cjw-p6xm
+    # zod 3.x has no patched release (fix is 4.6.6 only); dev-only via eslint-plugin-react-compiler > zod,
+    # which still pins zod ^3 and breaks on zod 4 (z.function().args removed). The 4.x line is overridden above.
+    - GHSA-mrhx-c7xc-m3w5
