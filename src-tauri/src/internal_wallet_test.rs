@@ -580,3 +580,105 @@ fn credential_error_tag_separates_a_missing_entry_from_a_platform_failure() {
         "decode_error"
     );
 }
+
+#[test]
+fn scrape_wallet_config_reads_a_truncated_config() {
+    use super::internal_wallet::scrape_wallet_config;
+
+    let truncated = r#"{
+  "version_counter": 3,
+  "tari_wallets": [
+    "abc123"
+  ],
+  "monero_address": "4AdUndXHHZ6cfufTMvppY6JwXNouMBzSkbLYfpAV5Usx3skxNgYeYTRj5UzqtReoS44qo9mtmXCqY45DJ852K5Jv2684Rge",
+  "wxtm_addresses": {},
+  "monero_address_is_generated": true,
+  "keyring_accessed": true,
+  "wallet_migration_nonce": 0,
+  "created_at": {
+    "secs_since_epoch": 17"#;
+    let (wallets, monero_address, generated) =
+        scrape_wallet_config(truncated).expect("the wallet list survived the truncation");
+    assert_eq!(wallets, vec![WalletId::new("abc123".to_string())]);
+    assert!(monero_address.starts_with("4AdUndXHH"));
+    assert!(generated);
+
+    assert_eq!(
+        scrape_wallet_config(&"\0".repeat(512)),
+        None,
+        "a zeroed file names nothing"
+    );
+    assert_eq!(
+        scrape_wallet_config(""),
+        None,
+        "an empty file names nothing"
+    );
+    assert_eq!(
+        scrape_wallet_config(r#"{"tari_wallets": [], "monero_address": "4Ad"}"#),
+        None,
+        "an empty wallet list is not a wallet"
+    );
+    assert_eq!(
+        scrape_wallet_config(r#"{"tari_wallets": ["abc123"], "monero_address": "4Ad"}"#),
+        Some((
+            vec![WalletId::new("abc123".to_string())],
+            "4Ad".to_string(),
+            false
+        )),
+        "a missing generated flag defaults to an imported address"
+    );
+    assert_eq!(
+        scrape_wallet_config(r#"{"tari_wallets": ["abc123"], "monero_addr"#),
+        None,
+        "a wallet id without a Monero address is not a loadable config"
+    );
+}
+
+#[test]
+fn seed_is_plain_tells_a_pin_enciphered_seed_from_a_plain_one() {
+    use super::internal_wallet::seed_is_plain;
+
+    let seed = CipherSeed::random();
+    assert!(seed_is_plain(&seed.to_binary().expect("plain seed")));
+    let pin = SafePassword::from("1234".to_string());
+    assert!(!seed_is_plain(
+        &seed.encipher(Some(pin)).expect("enciphered seed")
+    ));
+    assert!(!seed_is_plain(&[]));
+}
+
+#[test]
+fn move_unreadable_wallet_config_to_recovery_keeps_the_files() {
+    use super::internal_wallet::move_unreadable_wallet_config_to_recovery;
+    use super::internal_wallet::previous_wallet_files;
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let config_backup = dir.path().join("config_wallet.json.backup");
+    let corrupt = dir.path().join("config_wallet.json.corrupt.1790000000");
+    let config = dir.path().join("config_wallet.json");
+    std::fs::write(&config_backup, "\0").expect("write backup");
+    std::fs::write(&corrupt, "\0").expect("write the config moved aside");
+    std::fs::write(&config, "{}").expect("write config");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &dir.path().join("absent")),
+        Some("wallet_config_unreadable")
+    );
+
+    move_unreadable_wallet_config_to_recovery(dir.path()).expect("move aside");
+
+    assert_eq!(
+        previous_wallet_files(&config_backup, &dir.path().join("absent")),
+        None,
+        "nothing beside the config counts as evidence any more"
+    );
+    assert!(config.exists(), "the live config is left alone");
+    let recovery = dir.path().join("recovery");
+    assert!(recovery.join("config_wallet.json.backup").exists());
+    assert!(
+        recovery
+            .join("config_wallet.json.corrupt.1790000000")
+            .exists()
+    );
+
+    move_unreadable_wallet_config_to_recovery(dir.path()).expect("nothing left to move is fine");
+}

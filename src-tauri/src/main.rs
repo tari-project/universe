@@ -435,6 +435,7 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::discard_unreadable_wallet_config,
             commands::download_and_start_installer,
             commands::exit_application,
             commands::fetch_tor_bridges,

@@ -67,7 +67,7 @@ use crate::events_emitter::EventsEmitter;
 use crate::mining::pools::PoolManagerInterfaceTrait;
 use crate::mining::pools::cpu_pool_manager::CpuPoolManager;
 use crate::mining::pools::gpu_pool_manager::GpuPoolManager;
-use crate::pin::PinManager;
+use crate::pin::{PinLockerState, PinManager};
 use crate::utils::{cryptography, rand_utils};
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 
@@ -290,7 +290,14 @@ impl InternalWallet {
             None,
         )
         .await?;
-        let wallet_config = ConfigWallet::content().await;
+        let mut wallet_config = ConfigWallet::content().await;
+        // An unreadable config was moved aside and replaced with defaults. Rebuild it from the
+        // moved-aside file before concluding that no wallet exists here.
+        if wallet_config.tari_wallets().is_empty()
+            && restore_wallet_config_from_moved_aside().await?
+        {
+            wallet_config = ConfigWallet::content().await;
+        }
 
         let internal_wallet =
             if InternalWallet::validate_wallet_config_for_seed(app_handle, &wallet_config).await? {
@@ -1566,9 +1573,163 @@ fn refuse_if_previous_wallet_evident(app_config_dir: &Path) -> Result<(), anyhow
     // The dialog describes the config itself: missing or unreadable. The evidence only decided
     // whether to block and travels in the log line and the Sentry tag above.
     Err(match config_moved_aside(&config_backup) {
-        Some(moved_aside) => wallet_settings_problem("wallet-config-unreadable", &moved_aside),
+        Some(moved_aside) => wallet_settings_problem(
+            "wallet-config-unreadable",
+            &config_backup
+                .with_file_name(moved_aside)
+                .display()
+                .to_string(),
+        ),
         None => wallet_config_missing_problem(),
     })
+}
+
+/// Rebuilds the wallet config from the `config_wallet.json.corrupt.<timestamp>` that startup
+/// moved aside, when its wallet list survived and the keyring still holds that wallet's seed.
+/// `Ok(true)` when the config names the wallet again; the normal load then rebuilds the cached
+/// details from the seed. A zeroed file, a seed the keyring no longer has, or a PIN-enciphered
+/// seed with nothing to check a PIN against all leave the config as it is, and the caller
+/// refuses to create a wallet exactly as before.
+async fn restore_wallet_config_from_moved_aside() -> Result<bool, anyhow::Error> {
+    let config_path = ConfigWallet::_get_config_path();
+    let Some(moved_aside) = config_moved_aside(&config_path) else {
+        return Ok(false);
+    };
+    let raw = std::fs::read(config_path.with_file_name(moved_aside)).unwrap_or_default();
+    let Some((wallets, monero_address, generated)) =
+        scrape_wallet_config(&String::from_utf8_lossy(&raw))
+    else {
+        report_moved_aside_recovery("wallet_id_not_in_corrupt_file");
+        return Ok(false);
+    };
+    let Some(wallet_id) = wallets.first() else {
+        return Ok(false);
+    };
+    let credential = match CredentialManager::new_default(wallet_id.clone())
+        .get_credentials()
+        .await
+    {
+        Ok(credential) => credential,
+        Err(e) => {
+            log::error!(target: LOG_TARGET_APP_LOGIC, "[restore_wallet_config_from_moved_aside] the keyring has no seed for the recovered wallet id: {}", credential_error_tag(&e));
+            report_moved_aside_recovery("wallet_id_in_corrupt_file_but_no_seed");
+            return Ok(false);
+        }
+    };
+    let pin_locked = !seed_is_plain(&credential.encrypted_seed);
+    if pin_locked && !generated {
+        // While the Tari details are being rebuilt a PIN can only be checked against a
+        // generated Monero seed; an imported Monero address leaves nothing to check it against.
+        report_moved_aside_recovery("wallet_id_in_corrupt_file_but_pin_unverifiable");
+        return Ok(false);
+    }
+    ConfigWallet::update_field(
+        |content, (wallets, monero_address, generated, pin_locked): (_, String, bool, bool)| {
+            content.set_tari_wallets(wallets);
+            if generated {
+                content.set_generated_monero_address(monero_address);
+            } else {
+                content.set_user_monero_address(monero_address);
+            }
+            let mut pin_locker_state = PinLockerState::default();
+            pin_locker_state.set_pin_locked(pin_locked);
+            content.set_pin_locker_state(pin_locker_state)
+        },
+        (wallets, monero_address, generated, pin_locked),
+    )
+    .await?;
+    report_moved_aside_recovery("wallet_id_recovered_from_corrupt");
+    Ok(true)
+}
+
+/// Same tag as the refusal, so one Sentry query shows how each moved-aside config ended.
+fn report_moved_aside_recovery(outcome: &'static str) {
+    log::warn!(target: LOG_TARGET_APP_LOGIC, "[restore_wallet_config_from_moved_aside] {outcome}");
+    sentry::with_scope(
+        |scope| scope.set_tag("previous_wallet_evidence", outcome),
+        || {
+            sentry::capture_message(
+                "Wallet config recovery from the moved-aside file",
+                sentry::Level::Warning,
+            )
+        },
+    );
+}
+
+/// The fields a loadable config needs, read out of a config file that no longer parses as a
+/// whole. The file is written in declaration order, so a truncated one keeps its wallet list
+/// and Monero address long after the cached details near its end are gone; a zeroed one keeps
+/// nothing. `None` without a wallet or a Monero address: the load refuses either way.
+pub(crate) fn scrape_wallet_config(raw: &str) -> Option<(Vec<WalletId>, String, bool)> {
+    let wallets = scrape_field::<Vec<WalletId>>(raw, "tari_wallets").filter(|w| !w.is_empty())?;
+    let monero_address = scrape_field::<String>(raw, "monero_address").filter(|a| !a.is_empty())?;
+    let generated = scrape_field(raw, "monero_address_is_generated").unwrap_or(false);
+    Some((wallets, monero_address, generated))
+}
+
+/// One JSON value from the text after `"key":`, whatever follows it.
+fn scrape_field<T: serde::de::DeserializeOwned>(raw: &str, key: &str) -> Option<T> {
+    let value_start = raw.find(&format!("\"{key}\":"))? + key.len() + 3;
+    serde_json::Deserializer::from_str(&raw[value_start..])
+        .into_iter()
+        .next()?
+        .ok()
+}
+
+/// True when the stored Tari seed is the plain `to_binary` form. The unauthenticated decode
+/// accepts PIN-enciphered bytes too, but those do not re-encode to the same bytes.
+pub(crate) fn seed_is_plain(encrypted_seed: &[u8]) -> bool {
+    CipherSeed::from_binary(encrypted_seed)
+        .and_then(|seed| seed.to_binary())
+        .is_ok_and(|plain| plain == encrypted_seed)
+}
+
+/// Moves the unreadable config and its backup into `recovery/` beside the config, where they
+/// stop counting as evidence of a previous wallet but stay available to support.
+pub(crate) fn move_unreadable_wallet_config_to_recovery(config_dir: &Path) -> std::io::Result<()> {
+    let recovery_dir = config_dir.join("recovery");
+    std::fs::create_dir_all(&recovery_dir)?;
+    for entry in std::fs::read_dir(config_dir)?.flatten() {
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
+        if name_str.starts_with("config_wallet.json.corrupt.")
+            || name_str == "config_wallet.json.backup"
+        {
+            std::fs::rename(entry.path(), recovery_dir.join(&name))?;
+        }
+    }
+    Ok(())
+}
+
+/// The dialog's way out once the user confirmed their seed words are backed up. The files that
+/// make `refuse_if_previous_wallet_evident` block go to `recovery/`, and a Monero seed the
+/// keyring holds in plain form gets its address back, so the next launch creates a new Tari
+/// wallet without touching the Monero one. A PIN-enciphered Monero seed cannot be decoded
+/// here, so that launch still stops at the missing-config dialog.
+pub(crate) async fn discard_unreadable_wallet_config() -> Result<(), anyhow::Error> {
+    let config_path = ConfigWallet::_get_config_path();
+    let config_dir = config_path
+        .parent()
+        .ok_or_else(|| anyhow!("The wallet config path has no parent directory"))?;
+    move_unreadable_wallet_config_to_recovery(config_dir)?;
+    if !ConfigWallet::content().await.monero_address().is_empty() {
+        return Ok(());
+    }
+    let Ok(credential) = CredentialManager::new_default(WalletId::new("monero".to_string()))
+        .get_credentials()
+        .await
+    else {
+        return Ok(());
+    };
+    let Ok(seed_bytes) = <[u8; 32]>::try_from(credential.encrypted_seed.as_slice()) else {
+        log::warn!(target: LOG_TARGET_APP_LOGIC, "[discard_unreadable_wallet_config] the Monero seed is PIN-enciphered, its address cannot be restored");
+        return Ok(());
+    };
+    if let Ok(address) = MoneroSeed::new(seed_bytes).to_address::<Mainnet>() {
+        ConfigWallet::update_field(ConfigWalletContent::set_generated_monero_address, address)
+            .await?;
+    }
+    Ok(())
 }
 
 /// Evidence that this machine already held a Tari wallet, as an enum-like tag. Only files that
