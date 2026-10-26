@@ -252,6 +252,7 @@
     "error-message": "Error burning funds: ",
     "pin-required": "Set a PIN to burn",
     "claim-key-default": "The claim key defaults to this wallet's own L2 account.",
+    "pre-burn-notice": "Pre-burn: XTM burned before the Ootle goes live can only be claimed on L2 after launch. Be one of the brave and burn now!",
     "share-button": "Share on X",
     "share-text-pre": "I just pre-burned {{amount}} XTM to Tari L2 ahead of the Ootle launch. {{url}}",
     "share-text": "I just burned {{amount}} XTM to Tari L2. {{url}}"

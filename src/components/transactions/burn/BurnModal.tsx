@@ -82,6 +82,11 @@ function BurnForm() {
 
     return (
         <>
+            {isPreBurn() && (
+                <Typography variant="p" style={{ fontSize: 13, fontWeight: 600 }} data-testid="burn-pre-burn-notice">
+                    {t('burn.pre-burn-notice')}
+                </Typography>
+            )}
             <Typography variant="p" style={{ opacity: 0.7, fontSize: 12 }}>
                 {t('burn.warning')}
             </Typography>
