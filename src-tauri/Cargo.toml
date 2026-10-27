@@ -156,6 +156,9 @@ zbus = "3"
 # arm64 only, so the x86_64 half of the universal build can't link it. Vendor it like Windows.
 [target.'cfg(target_os = "macos")'.dependencies]
 openssl = { version = "0.10", features = ["vendored"] }
+# async-compression's xz codec finds liblzma through pkg-config, which on the runner is
+# Homebrew's. A signed app can't load that, so build liblzma from source instead.
+liblzma-sys = { version = "0.4", features = ["static"] }
 
 [target.'cfg(windows)'.dependencies]
 device_query = "2.1.0"
