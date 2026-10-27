@@ -525,9 +525,9 @@ impl SystemTrayManager {
                 block_on(Self::close_tari_universe_action(app.clone()));
             }
             "mining_toggle" => {
-                tauri::async_runtime::spawn(async move {
+                tauri::async_runtime::spawn(Box::pin(async move {
                     Self::toggle_mining_action().await;
-                });
+                }));
             }
             _ => {
                 error!(target: LOG_TARGET_APP_LOGIC, "menu item {:?} not handled", event.id);

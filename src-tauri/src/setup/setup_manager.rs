@@ -272,7 +272,8 @@ impl SetupManager {
                 let websocket_manager_clone = websocket_manager_clone.clone();
                 let app_handle_clone = app_handle_clone.clone();
 
-                tauri::async_runtime::spawn(async move {
+                // Box: webview listeners run on the main thread (1 MB stack on Windows).
+                tauri::async_runtime::spawn(Box::pin(async move {
                     info!(target: LOG_TARGET_APP_LOGIC, "Restarting websocket events manager after reconnection");
                     let mut events_manager_guard = websocket_event_manager_clone.write().await;
                     match events_manager_guard
@@ -286,14 +287,14 @@ impl SetupManager {
                             info!(target: LOG_TARGET_APP_LOGIC, "Websocket events manager restarted successfully");
                         }
                     }
-                });
+                }));
             });
             let websocket_tx = state.websocket_message_tx.clone();
             webview.listen("ws-tx", move |event: tauri::Event| {
                 let event_cloned = event.clone();
                 let websocket_tx_clone = websocket_tx.clone();
 
-                tauri::async_runtime::spawn(async move {
+                tauri::async_runtime::spawn(Box::pin(async move {
                     let message = event_cloned.payload();
                     if let Ok(message) = serde_json::from_str::<WebsocketMessage>(message)
                         .inspect_err(|e| error!("websocket malformatted: {e}"))
@@ -307,7 +308,7 @@ impl SetupManager {
                     {
                         log::trace!("websocket message sent {message:?}");
                     }
-                });
+                }));
             });
         } else {
             info!(target: LOG_TARGET_APP_LOGIC, "No main webview window — skipping webview event listeners (headless mode)");

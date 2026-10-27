@@ -48,6 +48,14 @@ impl SystemStatus {
 
     pub fn start_listener(&self) -> PowerMonitor {
         let power_monitor = PowerMonitor::new();
+        // psp unwraps the login1 session lookup internally (ServiceUnknown in a
+        // sandbox without login1 access, UnknownObject outside a logind session),
+        // so make the same call here first and skip the monitor if it fails.
+        #[cfg(target_os = "linux")]
+        if let Err(e) = login1_session_available() {
+            error!(target: LOG_TARGET_APP_LOGIC, "Skipping power monitor, logind session unavailable: {e}");
+            return power_monitor;
+        }
         let _unused = power_monitor.start_listening().inspect_err(|e| {
             error!(target: LOG_TARGET_APP_LOGIC, "Failed to start power monitor: {e:?}");
         });
@@ -84,4 +92,16 @@ impl SystemStatus {
     pub fn current() -> &'static SystemStatus {
         &INSTANCE
     }
+}
+
+#[cfg(target_os = "linux")]
+fn login1_session_available() -> zbus::Result<()> {
+    zbus::blocking::Connection::system()?.call_method(
+        Some("org.freedesktop.login1"),
+        "/org/freedesktop/login1/session/auto",
+        Some("org.freedesktop.DBus.Properties"),
+        "Get",
+        &("org.freedesktop.login1.Session", "Id"),
+    )?;
+    Ok(())
 }

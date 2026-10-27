@@ -580,3 +580,149 @@ fn credential_error_tag_separates_a_missing_entry_from_a_platform_failure() {
         "decode_error"
     );
 }
+
+/// A config as `to_string_pretty` writes it, up to the fields the scrape reads.
+const INTACT_CONFIG: &str = r#"{
+  "version_counter": 3,
+  "tari_wallets": [
+    "abc123"
+  ],
+  "monero_address": "4AdUndXHHZ6cfufTMvppY6JwXNouMBzSkbLYfpAV5Usx3skxNgYeYTRj5UzqtReoS44qo9mtmXCqY45DJ852K5Jv2684Rge",
+  "wxtm_addresses": {},
+  "monero_address_is_generated": true,
+  "keyring_accessed": true,
+  "tari_wallet_details": {
+    "id": "abc123",
+    "tari_address": "f4..."
+  },
+  "seed_backed_up": false
+}"#;
+
+/// `INTACT_CONFIG` with the byte at the first occurrence of `at` replaced.
+fn damaged(at: &str, byte: u8) -> Vec<u8> {
+    let mut raw = INTACT_CONFIG.as_bytes().to_vec();
+    let index = INTACT_CONFIG.find(at).expect("marker present");
+    raw[index] = byte;
+    raw
+}
+
+#[test]
+fn scrape_wallet_config_survives_a_damaged_byte() {
+    use super::internal_wallet::{MONERO_WALLET_ID, scrape_wallet_config};
+
+    let id = WalletId::new("abc123".to_string());
+    let monero = "4AdUndXHHZ6cfufTMvppY6JwXNouMBzSkbLYfpAV5Usx3skxNgYeYTRj5UzqtReoS44qo9mtmXCqY45DJ852K5Jv2684Rge";
+    assert_eq!(
+        scrape_wallet_config(INTACT_CONFIG.as_bytes()),
+        (vec![id.clone()], Some(monero.to_string()), true)
+    );
+
+    // (a) inside the first id: the copy in tari_wallet_details still names the wallet
+    let (candidates, _, _) = scrape_wallet_config(&damaged("c123", b'\xff'));
+    assert_eq!(candidates, vec![id.clone()]);
+
+    // (b) inside a key name before tari_wallets
+    let (candidates, monero_address, generated) =
+        scrape_wallet_config(&damaged("version_counter", b'\0'));
+    assert_eq!(candidates, vec![id.clone()]);
+    assert_eq!(monero_address.as_deref(), Some(monero));
+    assert!(generated);
+
+    // (c) in the middle of the Monero address: the seed is still recoverable
+    let (candidates, monero_address, _) = scrape_wallet_config(&damaged("Usx3skx", b'\x01'));
+    assert_eq!(candidates, vec![id.clone()]);
+    assert_eq!(
+        monero_address, None,
+        "a damaged address is absent, not wrong"
+    );
+
+    // (d) invalid UTF-8 as the very first byte
+    let (candidates, monero_address, _) = scrape_wallet_config(&damaged("{", b'\xfe'));
+    assert_eq!(candidates, vec![id.clone()]);
+    assert_eq!(monero_address.as_deref(), Some(monero));
+
+    // (e) a NUL-filled file
+    assert_eq!(scrape_wallet_config(&[0u8; 512]), (Vec::new(), None, false));
+    assert_eq!(scrape_wallet_config(b""), (Vec::new(), None, false));
+
+    // (f) both id copies damaged: the keyed scans find nothing, the whole-file scan runs and
+    // whatever six-character tokens it finds are only candidates for the keyring to reject
+    let mut raw = damaged("c123", b'\xff');
+    let details_index = INTACT_CONFIG.rfind("c123").expect("second copy");
+    raw[details_index] = b'-';
+    let (candidates, _, _) = scrape_wallet_config(&raw);
+    assert!(!candidates.contains(&id), "{candidates:?}");
+
+    // the Monero seed's keyring entry is shaped like an id and must never be offered, even
+    // when the whole-file scan runs because both key names are damaged
+    let mut raw = damaged("tari_wallets", b'X');
+    let details_index = INTACT_CONFIG
+        .find("tari_wallet_details")
+        .expect("details key");
+    raw[details_index] = b'X';
+    raw.extend_from_slice(br#" "monero" "#);
+    let (candidates, _, _) = scrape_wallet_config(&raw);
+    assert!(
+        !candidates.contains(&WalletId::new(MONERO_WALLET_ID.to_string())),
+        "{candidates:?}"
+    );
+    assert!(candidates.contains(&id), "{candidates:?}");
+
+    // a damaged key name on both keyed scans still reaches the id through the whole-file scan
+    let mut raw = damaged("tari_wallets", b'X');
+    let details_index = INTACT_CONFIG
+        .find("tari_wallet_details")
+        .expect("details key");
+    raw[details_index] = b'X';
+    let (candidates, _, _) = scrape_wallet_config(&raw);
+    assert!(candidates.contains(&id), "{candidates:?}");
+}
+
+#[test]
+fn seed_is_plain_tells_a_pin_enciphered_seed_from_a_plain_one() {
+    use super::internal_wallet::seed_is_plain;
+
+    let seed = CipherSeed::random();
+    assert!(seed_is_plain(&seed.to_binary().expect("plain seed")));
+    let pin = SafePassword::from("1234".to_string());
+    assert!(!seed_is_plain(
+        &seed.encipher(Some(pin)).expect("enciphered seed")
+    ));
+    assert!(!seed_is_plain(&[]));
+}
+
+#[test]
+fn move_unreadable_wallet_config_to_recovery_keeps_the_files() {
+    use super::internal_wallet::move_unreadable_wallet_config_to_recovery;
+    use super::internal_wallet::previous_wallet_files;
+
+    let dir = tempfile::tempdir().expect("temp dir");
+    let config_backup = dir.path().join("config_wallet.json.backup");
+    let corrupt = dir.path().join("config_wallet.json.corrupt.1790000000");
+    let config = dir.path().join("config_wallet.json");
+    std::fs::write(&config_backup, "\0").expect("write backup");
+    std::fs::write(&corrupt, "\0").expect("write the config moved aside");
+    std::fs::write(&config, "{}").expect("write config");
+    assert_eq!(
+        previous_wallet_files(&config_backup, &dir.path().join("absent")),
+        Some("wallet_config_unreadable")
+    );
+
+    move_unreadable_wallet_config_to_recovery(dir.path()).expect("move aside");
+
+    assert_eq!(
+        previous_wallet_files(&config_backup, &dir.path().join("absent")),
+        None,
+        "nothing beside the config counts as evidence any more"
+    );
+    assert!(config.exists(), "the live config is left alone");
+    let recovery = dir.path().join("recovery");
+    assert!(recovery.join("config_wallet.json.backup").exists());
+    assert!(
+        recovery
+            .join("config_wallet.json.corrupt.1790000000")
+            .exists()
+    );
+
+    move_unreadable_wallet_config_to_recovery(dir.path()).expect("nothing left to move is fine");
+}

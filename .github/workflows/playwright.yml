@@ -37,6 +37,10 @@ jobs:
 
       - name: Install system dependencies (linux)
         run: |
+          # The self-hosted runner image ships a HashiCorp apt source whose signing
+          # key is no longer trusted, so apt-get update exits 100 on it. Nothing in
+          # this job needs that repository; drop it before refreshing the index.
+          sudo rm -f /etc/apt/sources.list.d/hashicorp*
           sudo apt-get update
           sudo apt-get install --no-install-recommends --assume-yes \
             libwebkit2gtk-4.1-dev \
