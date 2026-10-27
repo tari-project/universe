@@ -386,6 +386,29 @@ jobs:
           includeRelease: true
           args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
+      - name: Check macOS binaries only link system libraries
+        if: ${{ startsWith(runner.os, 'macOS') }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          bins=(target/*/release/bundle/macos/*.app/Contents/MacOS/*)
+          if [[ ${#bins[@]} -eq 0 ]]; then
+            echo "::error::No macOS app binaries found to check"
+            exit 1
+          fi
+          status=0
+          for bin in "${bins[@]}"; do
+            for arch in $(lipo -archs "$bin"); do
+              bad=$(otool -arch "$arch" -L "$bin" | tail -n +2 | awk '{print $1}' | grep -vE '^(/System/|/usr/lib/|@rpath/|@executable_path/)' || true)
+              if [[ -n "$bad" ]]; then
+                echo "::error::$bin ($arch) links libraries that won't exist on users' machines:"
+                echo "$bad"
+                status=1
+              fi
+            done
+          done
+          exit $status
+
       - name: Add msbuild to PATH (windows)
         uses: microsoft/setup-msbuild@v3
         if: startsWith(runner.os,'Windows')
