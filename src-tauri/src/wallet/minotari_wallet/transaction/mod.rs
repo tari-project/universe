@@ -29,13 +29,14 @@ use minotari_wallet::{
     transactions::{manager::TransactionSender, one_sided_transaction::Recipient},
 };
 use std::str::FromStr;
-use tari_common_types_wallet::tari_address::TariAddress;
-use tari_transaction_components_wallet::{
+use tari_common_types::tari_address::TariAddress;
+use tari_transaction_components::{
     consensus::ConsensusManager,
     key_manager::KeyManager as WalletKeyManager,
     offline_signing::{
+        ConfirmationMode, PayloadSummary,
         models::{PrepareOneSidedTransactionForSigningResult, SignedOneSidedTransactionResult},
-        sign_locked_transaction,
+        present_payload_summary, sign_locked_transaction,
     },
 };
 
@@ -69,6 +70,22 @@ pub fn parse_destination_address(address: &str) -> Result<TariAddress, anyhow::E
         ));
     }
     Ok(destination_address)
+}
+
+/// The payment ID the recipient output carries: an ID encoded in the destination address
+/// wins over the send form's Message, as the console wallet always did. Exchanges put the
+/// deposit reference in the address, and a hand-typed variation of it must not replace it.
+pub fn resolve_payment_id(
+    destination: &TariAddress,
+    supplied: Option<String>,
+) -> Result<Option<String>, anyhow::Error> {
+    let embedded = destination.get_memo_field_payment_id_bytes();
+    if embedded.is_empty() {
+        return Ok(supplied.filter(|id| !id.is_empty()));
+    }
+    String::from_utf8(embedded)
+        .map(Some)
+        .map_err(|_| anyhow!("Destination address contains a non-text payment ID"))
 }
 
 pub struct TransactionManager {
@@ -118,11 +135,19 @@ impl TransactionManager {
         let network = wallet_network();
         let rules = ConsensusManager::builder(network).build();
 
+        // The backend send gate already obtained approval for this wallet-built payload.
+        let summary = PayloadSummary::from_one_sided(unsigned_tx);
+        let confirmation = present_payload_summary(
+            &summary,
+            ConfirmationMode::NonInteractive,
+            &mut std::io::sink(),
+            &mut std::io::empty(),
+        )?;
         let signed_transaction = sign_locked_transaction(
             key_manager,
             rules.consensus_constants(0).clone(),
             network,
-            unsigned_tx,
+            summary.confirm(confirmation)?,
         )
         .map_err(|e| anyhow!("Failed to sign one-sided transaction: {}", e))?;
 
@@ -134,24 +159,66 @@ impl TransactionManager {
         signed_transaction: SignedOneSidedTransactionResult,
     ) -> Result<DisplayedTransaction, anyhow::Error> {
         info!("Finalizing one-sided transaction...");
-        let displayed_transaction = self
+        let sent = self
             .transaction_sender
             .finalize_transaction_and_broadcast(signed_transaction, base_node_http_url().await?)
             .await?;
 
-        Ok(displayed_transaction)
+        Ok(sent.displayed_transaction)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::parse_destination_address;
+    use super::{parse_destination_address, resolve_payment_id};
+    use std::str::FromStr;
+    use tari_common_types::tari_address::TariAddress;
 
     // Same Esmeralda fixtures as the send validation tests in
     // `crate::utils::address_utils`, which is the parser this one has to agree with.
     const ESME_ONE_SIDED_ADDRESS: &str = "f25eNHz2YnBVKHaqNuacGyDFB321RwwCnTr4vb2SjQCgDZVXyNNthc7zftQKRDu6evLjvSUD8W5akpPMdhS4HQ9kF3g";
     const ESME_ONE_SIDED_EMOJI_ADDRESS: &str = "🍗📟😇🦀🚽💈🎠🍚🦂🌕🎩💨👂🏰📜👞🎵🐬🐚💄🚨🔋🐀🐯💻👗🐊👠🦀🐝🚦🍌🎋🎼🍗🎮🎉👗🐮🎨👾🔧🤖💋🐾💨🎃🍀🦂🐀🐬🔱🥝👕🎳⏰🎃🐉💍🙈🍉🔱🎣🐢👒🍊💦";
     const NEXTNET_ONE_SIDED_ADDRESS: &str = "32FZ9MmtkbcxNwF1Qia1RykS2i3ycaJC5er32xaFi1fpkNKjKvVo6VFPKjoigSME76EmsaDPZLXu2e3ivp5MWSU54j1";
+    const LOCALNET_DEPOSIT_ADDRESS: &str = "H6BhBUPxTJWtZVxhbExYLz623LRHXLKSaaVYZWXK2Yvn5jP4nufiUQzKo6fgHp2t3VuY6PiGGPubmynEDzxyXDXjAXPedBhZFgJT4dAVXEW1re";
+
+    #[test]
+    fn embedded_address_payment_id_wins_over_the_message() {
+        let TariAddress::Dual(mut address) =
+            parse_destination_address(ESME_ONE_SIDED_ADDRESS).unwrap()
+        else {
+            panic!("fixture must be a dual address");
+        };
+        let plain = TariAddress::Dual(address.clone());
+        assert_eq!(resolve_payment_id(&plain, None).unwrap(), None);
+        assert_eq!(
+            resolve_payment_id(&plain, Some(String::new())).unwrap(),
+            None
+        );
+        assert_eq!(
+            resolve_payment_id(&plain, Some("note".into()))
+                .unwrap()
+                .as_deref(),
+            Some("note")
+        );
+
+        address
+            .add_memo_field_payment_id(b"ID5931480726".to_vec())
+            .unwrap();
+        let destination = TariAddress::Dual(address);
+        for supplied in [None, Some(String::new()), Some("wrong".into())] {
+            assert_eq!(
+                resolve_payment_id(&destination, supplied)
+                    .unwrap()
+                    .as_deref(),
+                Some("ID5931480726")
+            );
+        }
+        let localnet = TariAddress::from_str(LOCALNET_DEPOSIT_ADDRESS).unwrap();
+        assert_eq!(
+            resolve_payment_id(&localnet, None).unwrap().as_deref(),
+            Some("PW-DEPOSIT-123")
+        );
+    }
 
     #[test]
     fn accepts_the_address_forms_send_validation_accepts() {
