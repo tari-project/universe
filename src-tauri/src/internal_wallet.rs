@@ -1706,10 +1706,7 @@ fn push_quoted_ids(candidates: &mut Vec<WalletId>, id: &Regex, quoted: &str) {
 
 /// True when the stored Tari seed can be read without a PIN, including legacy 24-byte seeds.
 pub(crate) fn seed_is_plain(encrypted_seed: &[u8]) -> bool {
-    if encrypted_seed.len() == 24 {
-        return decode_plain_seed(encrypted_seed).is_ok();
-    }
-    CipherSeed::from_enciphered_bytes(encrypted_seed, None).is_ok()
+    decode_plain_seed(encrypted_seed).is_ok()
 }
 
 /// Moves the unreadable config and its backup into `recovery/` beside the config, where they
