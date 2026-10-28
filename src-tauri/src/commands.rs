@@ -24,8 +24,12 @@ use crate::airdrop::{get_der_encode_pub_key, get_websocket_key};
 use crate::app_in_memory_config::{AppInMemoryConfig, DEFAULT_EXCHANGE_ID, ExchangeMiner};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::configs::config_core::{AirdropTokens, ConfigCore, ConfigCoreContent, canonicalise_ootle_indexer_url};
-use crate::configs::config_mining::{ConfigMining, ConfigMiningContent, MiningModeType, PauseOnBatteryModeState};
+use crate::configs::config_core::{
+    AirdropTokens, ConfigCore, ConfigCoreContent, canonicalise_ootle_indexer_url,
+};
+use crate::configs::config_mining::{
+    ConfigMining, ConfigMiningContent, MiningModeType, PauseOnBatteryModeState,
+};
 use crate::configs::config_pools::{ConfigPools, ConfigPoolsContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent, DisplayMode};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent, WalletId};
@@ -63,8 +67,8 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet::minotari_wallet::BurnReceipt;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::wallet::send_gate::{
-    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_claim, gated_l2_send,
-    gated_send,
+    GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_claim,
+    gated_l2_send, gated_send,
 };
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
@@ -140,16 +144,19 @@ pub async fn select_exchange_miner(
     match InternalWallet::initialize_seedless(Some(new_external_tari_address)).await {
         Ok(_) => {
             log::info!(target: LOG_TARGET_APP_LOGIC, "Internal wallet initialized successfully after \"select_exchange_miner\"");
-        },
+        }
         Err(e) => {
             // Handle this critical error
             error!(target: LOG_TARGET_APP_LOGIC, "Error loading internal wallet: {e:?}");
-        },
+        }
     }
 
-    ConfigCore::update_field(ConfigCoreContent::set_exchange_id, exchange_miner.id.clone())
-        .await
-        .map_err(|e| e.to_string())?;
+    ConfigCore::update_field(
+        ConfigCoreContent::set_exchange_id,
+        exchange_miner.id.clone(),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
     EventsEmitter::emit_exchange_id_changed(exchange_miner.id.clone()).await;
 
@@ -163,7 +170,10 @@ pub async fn select_exchange_miner(
 }
 
 #[tauri::command]
-pub async fn frontend_ready(app: tauri::AppHandle, state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+pub async fn frontend_ready(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
     // In test mode every page load calls frontend_ready after registering
     // its event listeners — replay the cached backend state so fresh
     // Playwright contexts see current (real) module/config/wallet state,
@@ -176,7 +186,8 @@ pub async fn frontend_ready(app: tauri::AppHandle, state: tauri::State<'_, Unive
         EventsEmitter::emit_close_splashscreen().await;
     }
 
-    static FRONTEND_READY_CALLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+    static FRONTEND_READY_CALLED: std::sync::atomic::AtomicBool =
+        std::sync::atomic::AtomicBool::new(false);
     if FRONTEND_READY_CALLED.load(Ordering::SeqCst) {
         return Ok(());
     }
@@ -191,10 +202,10 @@ pub async fn frontend_ready(app: tauri::AppHandle, state: tauri::State<'_, Unive
                 if let Err(err) = window.show() {
                     error!(target: LOG_TARGET_APP_LOGIC, "Couldn't show the main window on startup {err:?}");
                 }
-            },
+            }
             None => {
                 error!(target: LOG_TARGET_APP_LOGIC, "Could not find main window to show on startup");
-            },
+            }
         }
     }
 
@@ -337,10 +348,16 @@ pub async fn get_applications_versions(
     let tari_universe_version = app.package_info().version.clone();
     let xmrig_version = binary_resolver.get_binary_version(Binaries::Xmrig).await;
 
-    let minotari_node_version = binary_resolver.get_binary_version(Binaries::MinotariNode).await;
-    let mm_proxy_version = binary_resolver.get_binary_version(Binaries::MergeMiningProxy).await;
+    let minotari_node_version = binary_resolver
+        .get_binary_version(Binaries::MinotariNode)
+        .await;
+    let mm_proxy_version = binary_resolver
+        .get_binary_version(Binaries::MergeMiningProxy)
+        .await;
     let xtrgpuminer_version = binary_resolver.get_binary_version(Binaries::LolMiner).await;
-    let bridge_version = binary_resolver.get_binary_version(Binaries::BridgeTapplet).await;
+    let bridge_version = binary_resolver
+        .get_binary_version(Binaries::BridgeTapplet)
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC,
@@ -472,7 +489,7 @@ pub async fn get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>,
             Ok(word) => res.push(word.clone()),
             Err(error) => {
                 error!(target: LOG_TARGET_APP_LOGIC, "Could not get seed word: {error:?}");
-            },
+            }
         }
     }
 
@@ -483,7 +500,10 @@ pub async fn get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<String>,
 }
 
 #[tauri::command]
-pub async fn set_external_tari_address(app_handle: tauri::AppHandle, address: String) -> Result<(), InvokeError> {
+pub async fn set_external_tari_address(
+    app_handle: tauri::AppHandle,
+    address: String,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
     SetupManager::get_instance()
@@ -564,12 +584,16 @@ pub async fn forgot_pin(
         .await
         .map_err(|e| e.to_string())?;
 
-    let extracted_wallet_details =
-        InternalWallet::get_tari_wallet_details(WalletId::new("nonsense".to_string()), tari_cipher_seed.clone())
-            .await
-            .map_err(|e| e.to_string())?;
+    let extracted_wallet_details = InternalWallet::get_tari_wallet_details(
+        WalletId::new("nonsense".to_string()),
+        tari_cipher_seed.clone(),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
-    let current_tari_address = InternalWallet::tari_address().await.map_err(|e| e.to_string())?;
+    let current_tari_address = InternalWallet::tari_address()
+        .await
+        .map_err(|e| e.to_string())?;
     if extracted_wallet_details.tari_address != current_tari_address {
         error!(target: LOG_TARGET_APP_LOGIC, "Seed words do not match current wallet address");
         return Err("Seed words do not match".to_string());
@@ -580,7 +604,8 @@ pub async fn forgot_pin(
     // a new Monero wallet.
     let monero_seed = match monero_seed_words {
         Some(words) if !words.is_empty() => {
-            let seed = MoneroSeed::from_seed_words(&words).map_err(|_| "Monero seed words do not match".to_string())?;
+            let seed = MoneroSeed::from_seed_words(&words)
+                .map_err(|_| "Monero seed words do not match".to_string())?;
             let address = seed
                 .to_address::<Mainnet>()
                 .map_err(|_| "Monero seed words do not match".to_string())?;
@@ -589,16 +614,20 @@ pub async fn forgot_pin(
                 return Err("Monero seed words do not match".to_string());
             }
             Some(seed)
-        },
+        }
         _ => None,
     };
 
-    let pin = InternalWallet::recover_forgotten_pin(&app_handle, tari_cipher_seed.clone(), monero_seed)
-        .await
-        .map_err(|e| e.to_string())?;
+    let pin =
+        InternalWallet::recover_forgotten_pin(&app_handle, tari_cipher_seed.clone(), monero_seed)
+            .await
+            .map_err(|e| e.to_string())?;
     // The L2 store is encrypted with the forgotten PIN. A failure here leaves the new PIN in
     // place, so running the recovery again retries it.
-    let data_dir = app_handle.path().app_local_data_dir().map_err(|e| e.to_string())?;
+    let data_dir = app_handle
+        .path()
+        .app_local_data_dir()
+        .map_err(|e| e.to_string())?;
     OotleWalletManager::reset_forgotten_pin(&data_dir, &tari_cipher_seed, &pin)
         .await
         .map_err(|e| format!("PIN reset, but Layer 2 could not move to the new PIN: {e}"))?;
@@ -608,7 +637,10 @@ pub async fn forgot_pin(
 }
 
 #[tauri::command]
-pub async fn import_seed_words(seed_words: Vec<String>, app_handle: tauri::AppHandle) -> Result<(), InvokeError> {
+pub async fn import_seed_words(
+    seed_words: Vec<String>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     SetupManager::get_instance()
         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
@@ -624,16 +656,19 @@ pub async fn import_seed_words(seed_words: Vec<String>, app_handle: tauri::AppHa
 
     match InternalWallet::import_tari_seed_words(seed_words, &app_handle).await {
         Ok((wallet_id, _seed_binary)) => {
-            ConfigCore::update_field(ConfigCoreContent::set_exchange_id, DEFAULT_EXCHANGE_ID.to_string())
-                .await
-                .map_err(InvokeError::from_anyhow)?;
+            ConfigCore::update_field(
+                ConfigCoreContent::set_exchange_id,
+                DEFAULT_EXCHANGE_ID.to_string(),
+            )
+            .await
+            .map_err(InvokeError::from_anyhow)?;
             EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
             log::info!(target: LOG_TARGET_APP_LOGIC, "Seed words imported successfully for wallet #{wallet_id:?}");
-        },
+        }
         Err(e) => {
             error!(target: LOG_TARGET_APP_LOGIC, "Error importing seed words by internal wallet: {e:?}");
             return Err(InvokeError::from_anyhow(e));
-        },
+        }
     }
 
     // The scan state was already reset by the import's side effects; this only has
@@ -669,16 +704,22 @@ pub async fn revert_to_internal_wallet(
         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
-    ConfigWallet::update_field(ConfigWalletContent::set_selected_external_tari_address, None)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigWallet::update_field(
+        ConfigWalletContent::set_selected_external_tari_address,
+        None,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     InternalWallet::initialize_with_seed(&app_handle)
         .await
         .map_err(InvokeError::from_anyhow)?;
-    ConfigCore::update_field(ConfigCoreContent::set_exchange_id, DEFAULT_EXCHANGE_ID.to_string())
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigCore::update_field(
+        ConfigCoreContent::set_exchange_id,
+        DEFAULT_EXCHANGE_ID.to_string(),
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
     EventsEmitter::emit_exchange_id_changed(DEFAULT_EXCHANGE_ID.to_string()).await;
 
     tauri::async_runtime::spawn(async move {
@@ -699,7 +740,7 @@ pub fn log_web_message(level: String, message: Vec<String>) {
     match level.as_str() {
         "error" => {
             error!(target: LOG_TARGET_WEB, "{joined_message}")
-        },
+        }
         _ => info!(target: LOG_TARGET_WEB, "{joined_message}"),
     }
 }
@@ -712,7 +753,10 @@ pub fn open_log_dir(app: tauri::AppHandle) {
     }
 }
 
-async fn reset_app_configs(app_handle: &tauri::AppHandle, reset_wallet: bool) -> Result<(), anyhow::Error> {
+async fn reset_app_configs(
+    app_handle: &tauri::AppHandle,
+    reset_wallet: bool,
+) -> Result<(), anyhow::Error> {
     let app_config_dir = app_handle.path().app_config_dir()?;
     let universe_app_configs_dir = app_config_dir
         .join("app_configs")
@@ -742,7 +786,10 @@ async fn reset_app_configs(app_handle: &tauri::AppHandle, reset_wallet: bool) ->
 
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
-pub async fn reset_settings(reset_wallet: bool, app_handle: tauri::AppHandle) -> Result<(), String> {
+pub async fn reset_settings(
+    reset_wallet: bool,
+    app_handle: tauri::AppHandle,
+) -> Result<(), String> {
     if reset_wallet {
         // Validate PIN if pin locked
         let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
@@ -761,7 +808,12 @@ pub async fn reset_settings(reset_wallet: bool, app_handle: tauri::AppHandle) ->
     let app_data_dir = app_handle.path().app_data_dir();
     let app_local_data_dir = app_handle.path().app_local_data_dir();
 
-    let dirs_to_remove = [app_config_dir, app_cache_dir, app_data_dir, app_local_data_dir];
+    let dirs_to_remove = [
+        app_config_dir,
+        app_cache_dir,
+        app_data_dir,
+        app_local_data_dir,
+    ];
     let valid_dir_paths: Vec<String> = dirs_to_remove
         .iter()
         .filter_map(|dir| {
@@ -783,7 +835,9 @@ pub async fn reset_settings(reset_wallet: bool, app_handle: tauri::AppHandle) ->
     let mut files_block_list = Vec::new();
     if reset_wallet {
         debug!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Clearing all wallets");
-        InternalWallet::clear_all_wallets().await.map_err(|e| e.to_string())?;
+        InternalWallet::clear_all_wallets()
+            .await
+            .map_err(|e| e.to_string())?;
     } else {
         folder_block_list.push("minotari-wallet");
         files_block_list.push("credentials_backup.bin");
@@ -806,11 +860,14 @@ pub async fn reset_settings(reset_wallet: bool, app_handle: tauri::AppHandle) ->
                         continue;
                     }
 
-                    let contains_wallet_config = read_dir(&path).map_err(|e| e.to_string())?.any(|inner_entry| {
-                        inner_entry
+                    let contains_wallet_config =
+                        read_dir(&path)
+                            .map_err(|e| e.to_string())?
+                            .any(|inner_entry| {
+                                inner_entry
                                     .map(|e| e.file_name() == "wallet_config.json") // legacy wallet config
                                     .unwrap_or(false)
-                    });
+                            });
 
                     let is_network_dir = path
                         .file_name()
@@ -857,7 +914,10 @@ pub async fn discard_unreadable_wallet_config() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn restart_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
+pub async fn restart_application(
+    _window: tauri::Window,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
     app.restart();
 }
 
@@ -896,17 +956,23 @@ pub async fn set_allow_telemetry(allow_telemetry: bool) -> Result<(), InvokeErro
 
 #[tauri::command]
 pub async fn set_allow_notifications(allow_notifications: bool) -> Result<(), InvokeError> {
-    ConfigCore::update_field(ConfigCoreContent::set_allow_notifications, allow_notifications)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigCore::update_field(
+        ConfigCoreContent::set_allow_notifications,
+        allow_notifications,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn set_application_language(application_language: String) -> Result<(), String> {
-    ConfigUI::update_field(ConfigUIContent::set_application_language, application_language)
-        .await
-        .map_err(|e| e.to_string())?;
+    ConfigUI::update_field(
+        ConfigUIContent::set_application_language,
+        application_language,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -933,7 +999,8 @@ pub async fn set_auto_update(auto_update: bool) -> Result<(), InvokeError> {
 #[tauri::command]
 pub async fn set_cpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    let _unused = ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
+    let _unused =
+        ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
 
     SystemTrayManager::send_event(SystemTrayEvents::CpuMiningState(enabled)).await;
 
@@ -1026,7 +1093,10 @@ pub async fn include_devices_of_unusable_gpu_miners() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     EventsEmitter::emit_update_gpu_devices_settings(
-        ConfigMining::content().await.gpu_devices_settings_by_miner().clone(),
+        ConfigMining::content()
+            .await
+            .gpu_devices_settings_by_miner()
+            .clone(),
     )
     .await;
 
@@ -1059,9 +1129,12 @@ pub async fn set_gpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
 #[tauri::command]
 pub async fn set_mine_on_app_start(mine_on_app_start: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    ConfigMining::update_field(ConfigMiningContent::set_mine_on_app_start, mine_on_app_start)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigMining::update_field(
+        ConfigMiningContent::set_mine_on_app_start,
+        mine_on_app_start,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_mine_on_app_start took too long: {:?}", timer.elapsed());
@@ -1085,7 +1158,10 @@ pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
             .map_err(InvokeError::from_anyhow)?;
     }
 
-    SystemTrayManager::send_event(SystemTrayEvents::MiningMode(MiningModeType::from(mode.clone()))).await;
+    SystemTrayManager::send_event(SystemTrayEvents::MiningMode(MiningModeType::from(
+        mode.clone(),
+    )))
+    .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "select_mining_mode took too long: {:?}", timer.elapsed());
@@ -1094,17 +1170,26 @@ pub async fn select_mining_mode(mode: String) -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
-pub async fn update_custom_mining_mode(custom_cpu_usage: u32, custom_gpu_usage: u32) -> Result<(), InvokeError> {
+pub async fn update_custom_mining_mode(
+    custom_cpu_usage: u32,
+    custom_gpu_usage: u32,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[update_custom_mining_mode] called with custom_cpu_usage: {custom_cpu_usage:?}, custom_gpu_usage: {custom_gpu_usage:?}");
 
-    ConfigMining::update_field(ConfigMiningContent::update_custom_mode_cpu_usage, custom_cpu_usage)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigMining::update_field(
+        ConfigMiningContent::update_custom_mode_cpu_usage,
+        custom_cpu_usage,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
-    ConfigMining::update_field(ConfigMiningContent::update_custom_mode_gpu_usage, custom_gpu_usage)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigMining::update_field(
+        ConfigMiningContent::update_custom_mode_gpu_usage,
+        custom_gpu_usage,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "update_custom_mining_mode took too long: {:?}", timer.elapsed());
@@ -1124,7 +1209,9 @@ pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeErro
         .map_err(InvokeError::from_anyhow)?;
 
     tauri::async_runtime::spawn(async move {
-        SetupManager::get_instance().restart_phases_from_queue().await;
+        SetupManager::get_instance()
+            .restart_phases_from_queue()
+            .await;
     });
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_monero_address took too long: {:?}", timer.elapsed());
@@ -1133,7 +1220,10 @@ pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeErro
 }
 
 #[tauri::command]
-pub async fn set_monerod_config(use_monero_fail: bool, monero_nodes: Vec<String>) -> Result<(), InvokeError> {
+pub async fn set_monerod_config(
+    use_monero_fail: bool,
+    monero_nodes: Vec<String>,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[set_monerod_config] called with use_monero_fail: {use_monero_fail:?}, monero_nodes: {monero_nodes:?}");
     ConfigCore::update_field_requires_restart(
@@ -1152,7 +1242,9 @@ pub async fn set_monerod_config(use_monero_fail: bool, monero_nodes: Vec<String>
     .await
     .map_err(InvokeError::from_anyhow)?;
 
-    SetupManager::get_instance().restart_phases_from_queue().await;
+    SetupManager::get_instance()
+        .restart_phases_from_queue()
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_monerod_config took too long: {:?}", timer.elapsed());
@@ -1162,7 +1254,9 @@ pub async fn set_monerod_config(use_monero_fail: bool, monero_nodes: Vec<String>
 }
 
 #[tauri::command]
-pub async fn set_show_experimental_settings(show_experimental_settings: bool) -> Result<(), InvokeError> {
+pub async fn set_show_experimental_settings(
+    show_experimental_settings: bool,
+) -> Result<(), InvokeError> {
     ConfigUI::update_field(
         ConfigUIContent::set_show_experimental_settings,
         show_experimental_settings,
@@ -1174,7 +1268,9 @@ pub async fn set_show_experimental_settings(show_experimental_settings: bool) ->
 }
 
 #[tauri::command]
-pub async fn set_should_always_use_system_language(should_always_use_system_language: bool) -> Result<(), InvokeError> {
+pub async fn set_should_always_use_system_language(
+    should_always_use_system_language: bool,
+) -> Result<(), InvokeError> {
     ConfigUI::update_field(
         ConfigUIContent::set_should_always_use_system_language_and_resolve_language,
         (
@@ -1190,9 +1286,12 @@ pub async fn set_should_always_use_system_language(should_always_use_system_lang
 
 #[tauri::command]
 pub async fn set_should_auto_launch(should_auto_launch: bool) -> Result<(), InvokeError> {
-    ConfigCore::update_field(ConfigCoreContent::set_should_auto_launch, should_auto_launch)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigCore::update_field(
+        ConfigCoreContent::set_should_auto_launch,
+        should_auto_launch,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     AutoLauncher::current()
         .update_auto_launcher(should_auto_launch)
@@ -1204,9 +1303,12 @@ pub async fn set_should_auto_launch(should_auto_launch: bool) -> Result<(), Invo
 
 #[tauri::command]
 pub async fn set_show_window_on_startup(show_window_on_startup: bool) -> Result<(), InvokeError> {
-    ConfigCore::update_field(ConfigCoreContent::set_show_window_on_startup, show_window_on_startup)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigCore::update_field(
+        ConfigCoreContent::set_show_window_on_startup,
+        show_window_on_startup,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     Ok(())
 }
@@ -1246,9 +1348,14 @@ pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<
     .await
     .map_err(InvokeError::from_anyhow)?;
 
-    SetupManager::get_instance().restart_phases_from_queue().await;
+    SetupManager::get_instance()
+        .restart_phases_from_queue()
+        .await;
 
-    let config_dir = app_handle.path().app_config_dir().expect("Could not get config dir");
+    let config_dir = app_handle
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
 
     //TODO: Do we still need this?
     if config_dir.exists() {
@@ -1293,10 +1400,12 @@ pub async fn set_airdrop_tokens(airdrop_tokens: Option<AirdropTokens>) -> Result
         .await
         .airdrop_tokens()
         .clone()
-        .and_then(|tokens| airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id));
-    let new_id = airdrop_tokens
-        .clone()
-        .and_then(|tokens| airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id));
+        .and_then(|tokens| {
+            airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
+        });
+    let new_id = airdrop_tokens.clone().and_then(|tokens| {
+        airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
+    });
 
     let user_id_changed = old_id != new_id;
 
@@ -1432,7 +1541,10 @@ pub async fn toggle_gpu_pool_mining(enabled: bool) -> Result<(), String> {
     if !enabled {
         let is_solo_mining_supported = GpuManager::read().await.is_solo_mining_supported();
         if !is_solo_mining_supported {
-            return Err("Cannot disable GPU pool mining: no available GPU miner supports solo mining".to_string());
+            return Err(
+                "Cannot disable GPU pool mining: no available GPU miner supports solo mining"
+                    .to_string(),
+            );
         }
     }
 
@@ -1517,7 +1629,12 @@ pub async fn start_mining_status(state: tauri::State<'_, UniverseAppState>) -> R
 pub async fn stop_mining_status(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     info!(target: LOG_TARGET_APP_LOGIC, "stop_mining_status called");
     let timer = Instant::now();
-    state.mining_status_manager.write().await.stop_polling().await;
+    state
+        .mining_status_manager
+        .write()
+        .await
+        .stop_polling()
+        .await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "stop_mining_status_sending took too long: {:?}", timer.elapsed());
     }
@@ -1607,7 +1724,9 @@ pub async fn burn_to_l2(
 #[tauri::command]
 pub async fn enable_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String> {
     info!(target: LOG_TARGET_APP_LOGIC, "[enable_l2_wallet] called");
-    OotleWalletManager::enable(&app_handle).await.map_err(|e| e.to_string())
+    OotleWalletManager::enable(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Open the locked L2 wallet. Unlocking and enabling are the same step, behind the PIN
@@ -1615,7 +1734,9 @@ pub async fn enable_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String
 #[tauri::command]
 pub async fn unlock_l2_wallet(app_handle: tauri::AppHandle) -> Result<(), String> {
     info!(target: LOG_TARGET_APP_LOGIC, "[unlock_l2_wallet] called");
-    OotleWalletManager::enable(&app_handle).await.map_err(|e| e.to_string())
+    OotleWalletManager::enable(&app_handle)
+        .await
+        .map_err(|e| e.to_string())
 }
 
 /// Create the wallet PIN and turn the L2 wallet on with it, for a wallet that has no PIN
@@ -1697,7 +1818,10 @@ pub async fn l2_get_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<Strin
 /// Replace the L2 wallet with one restored from seed words used for L2 only, behind the
 /// PIN prompt. The L1 wallet is not touched.
 #[tauri::command]
-pub async fn l2_import_seed_words(app_handle: tauri::AppHandle, seed_words: Vec<String>) -> Result<(), String> {
+pub async fn l2_import_seed_words(
+    app_handle: tauri::AppHandle,
+    seed_words: Vec<String>,
+) -> Result<(), String> {
     info!(target: LOG_TARGET_APP_LOGIC, "[l2_import_seed_words] called");
     OotleWalletManager::import_seed_words(&app_handle, seed_words)
         .await
@@ -1722,7 +1846,10 @@ pub async fn l2_claimable_burns() -> Result<Vec<L2Burn>, String> {
 /// Claim a burn on L2 by its commitment. Refused without a PIN; with one, the PIN
 /// prompt is the gate. Returns the L2 transaction id.
 #[tauri::command]
-pub async fn l2_claim_burn(app_handle: tauri::AppHandle, commitment: String) -> Result<String, String> {
+pub async fn l2_claim_burn(
+    app_handle: tauri::AppHandle,
+    commitment: String,
+) -> Result<String, String> {
     info!(target: LOG_TARGET_APP_LOGIC, "[l2_claim_burn] called with args: (commitment: {commitment:?})");
     gated_l2_claim(app_handle, SendOrigin::App.new_request_id(), commitment)
         .await
@@ -1730,7 +1857,10 @@ pub async fn l2_claim_burn(app_handle: tauri::AppHandle, commitment: String) -> 
 }
 
 #[tauri::command]
-pub fn verify_address_for_send(address: String, sending_method: Option<TariAddressFeatures>) -> Result<(), String> {
+pub fn verify_address_for_send(
+    address: String,
+    sending_method: Option<TariAddressFeatures>,
+) -> Result<(), String> {
     let sending_method = sending_method.unwrap_or(TariAddressFeatures::ONE_SIDED);
 
     verify_send(address, sending_method)
@@ -1741,7 +1871,10 @@ pub async fn validate_minotari_amount(amount: String) -> Result<(), InvokeError>
     let t_amount = Minotari::from_str(&amount).map_err(|e| e.to_string())?;
     let m_amount = MicroMinotari::from(t_amount);
 
-    let available_balance = BalanceTracker::current().get_account_balance().await.available;
+    let available_balance = BalanceTracker::current()
+        .get_account_balance()
+        .await
+        .available;
 
     // `m_amount` is a v5.4.0-rc.1 MicroMinotari while `available_balance` comes from
     // the minotari wallet (tari 5.3.1); compare by raw micro-Tari value.
@@ -1753,7 +1886,9 @@ pub async fn validate_minotari_amount(amount: String) -> Result<(), InvokeError>
 
 #[tauri::command]
 pub async fn trigger_phases_restart() -> Result<(), InvokeError> {
-    SetupManager::get_instance().restart_phases_from_queue().await;
+    SetupManager::get_instance()
+        .restart_phases_from_queue()
+        .await;
 
     Ok(())
 }
@@ -1772,7 +1907,10 @@ pub async fn set_node_type(
     app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     // map LocalAfterRemote or unknown value to Local
-    if node_type != NodeType::Local && node_type != NodeType::RemoteUntilLocal && node_type != NodeType::Remote {
+    if node_type != NodeType::Local
+        && node_type != NodeType::RemoteUntilLocal
+        && node_type != NodeType::Remote
+    {
         node_type = NodeType::Local;
     }
 
@@ -1810,7 +1948,9 @@ pub async fn set_node_type(
     state.node_manager.set_node_type(node_type.clone()).await;
     EventsManager::handle_node_type_update(&app_handle).await;
 
-    SetupManager::get_instance().restart_phases_from_queue().await;
+    SetupManager::get_instance()
+        .restart_phases_from_queue()
+        .await;
 
     Ok(())
 }
@@ -1891,7 +2031,9 @@ fn canonicalise_remote_base_node_address(input: &str) -> Result<String, anyhow::
 pub fn validate_remote_base_node_address(address: String) -> Result<String, InvokeError> {
     let trimmed = address.trim();
     if trimmed.is_empty() {
-        return Ok(ConfigCoreContent::default().remote_base_node_address().clone());
+        return Ok(ConfigCoreContent::default()
+            .remote_base_node_address()
+            .clone());
     }
     canonicalise_remote_base_node_address(trimmed).map_err(|e| {
         info!(target: LOG_TARGET_APP_LOGIC, "[validate_remote_base_node_address] rejected {address:?}: {e}");
@@ -1925,7 +2067,9 @@ pub async fn set_remote_base_node_address(address: String) -> Result<String, Inv
     // the empty string the user typed.
     let trimmed_address = address.trim();
     let resolved = if trimmed_address.is_empty() {
-        ConfigCoreContent::default().remote_base_node_address().clone()
+        ConfigCoreContent::default()
+            .remote_base_node_address()
+            .clone()
     } else {
         canonicalise_remote_base_node_address(trimmed_address).map_err(InvokeError::from_anyhow)?
     };
@@ -1938,7 +2082,9 @@ pub async fn set_remote_base_node_address(address: String) -> Result<String, Inv
     .await
     .map_err(InvokeError::from_anyhow)?;
 
-    SetupManager::get_instance().restart_phases_from_queue().await;
+    SetupManager::get_instance()
+        .restart_phases_from_queue()
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_remote_base_node_address took too long: {:?}", timer.elapsed());
@@ -1992,13 +2138,18 @@ pub async fn change_gpu_pool(gpu_pool: String) -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
-pub async fn update_selected_gpu_pool_config(updated_config: BasePoolData<GpuPool>) -> Result<(), InvokeError> {
+pub async fn update_selected_gpu_pool_config(
+    updated_config: BasePoolData<GpuPool>,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[update_selected_gpu_pool_config] called with updated_config: {updated_config:?}");
 
-    ConfigPools::update_field(ConfigPoolsContent::update_current_gpu_config, updated_config)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_current_gpu_config,
+        updated_config,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "update_selected_gpu_pool_config took too long: {:?}", timer.elapsed());
@@ -2008,13 +2159,18 @@ pub async fn update_selected_gpu_pool_config(updated_config: BasePoolData<GpuPoo
 }
 
 #[tauri::command]
-pub async fn update_selected_cpu_pool_config(updated_config: BasePoolData<CpuPool>) -> Result<(), InvokeError> {
+pub async fn update_selected_cpu_pool_config(
+    updated_config: BasePoolData<CpuPool>,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET_APP_LOGIC, "[update_selected_cpu_pool_config] called with updated_config: {updated_config:?}");
 
-    ConfigPools::update_field(ConfigPoolsContent::update_current_cpu_config, updated_config)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigPools::update_field(
+        ConfigPoolsContent::update_current_cpu_config,
+        updated_config,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "update_selected_cpu_pool_config took too long: {:?}", timer.elapsed());
@@ -2103,14 +2259,15 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    let handle_start = tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir).await });
+    let handle_start =
+        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir).await });
 
     let (addr, _cancel_token) = match handle_start.await {
         Ok(result) => result.map_err(|e| e.to_string())?,
         Err(e) => {
             error!(target: LOG_TARGET_APP_LOGIC, "❌ Error handling tapplet start: {e:?}");
             return Err(e.to_string());
-        },
+        }
     };
 
     Ok(ActiveTapplet {
@@ -2126,7 +2283,9 @@ pub async fn get_bridge_envs() -> Result<(String, String), String> {
     let walletconnect_id = option_env!("BRIDGE_WALLET_CONNECT_PROJECT_ID")
         .unwrap_or("")
         .to_string();
-    let backend_api = option_env!("BRIDGE_BACKEND_API_URL").unwrap_or("").to_string();
+    let backend_api = option_env!("BRIDGE_BACKEND_API_URL")
+        .unwrap_or("")
+        .to_string();
 
     Ok((walletconnect_id, backend_api))
 }
@@ -2143,7 +2302,9 @@ pub async fn parse_tari_address(address: String) -> Result<TariAddressVariants, 
 }
 
 #[tauri::command]
-pub async fn list_connected_peers(state: tauri::State<'_, UniverseAppState>) -> Result<Vec<String>, String> {
+pub async fn list_connected_peers(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<Vec<String>, String> {
     state
         .node_manager
         .list_connected_peers()
@@ -2249,12 +2410,16 @@ pub async fn refresh_wallet_history(app_handle: tauri::AppHandle) -> Result<(), 
 // This function encodes a payment ID into a Tari address creating new address for mining
 // It easier to encode it here as Bridge backend is not written in rust
 #[tauri::command]
-pub async fn encode_payment_id_to_address(payment_id: String, tari_address: String) -> Result<String, String> {
+pub async fn encode_payment_id_to_address(
+    payment_id: String,
+    tari_address: String,
+) -> Result<String, String> {
     info!(target: LOG_TARGET_APP_LOGIC, "encode_payment_id_to_address called with payment_id: {payment_id:?}, tari_address: {tari_address:?}");
-    let mut address_with_memo_field = DualAddress::from_base58(tari_address.as_str()).map_err(|e| {
-        error!(target: LOG_TARGET_APP_LOGIC, "Failed to parse Tari address: {e}");
-        e.to_string()
-    })?;
+    let mut address_with_memo_field =
+        DualAddress::from_base58(tari_address.as_str()).map_err(|e| {
+            error!(target: LOG_TARGET_APP_LOGIC, "Failed to parse Tari address: {e}");
+            e.to_string()
+        })?;
     address_with_memo_field
         .add_memo_field_payment_id(payment_id.as_bytes().to_vec())
         .map_err(|e| {
@@ -2269,15 +2434,20 @@ pub async fn encode_payment_id_to_address(payment_id: String, tari_address: Stri
 
 #[tauri::command]
 pub async fn save_wxtm_address(address: String, exchange_id: String) -> Result<(), String> {
-    ConfigWallet::update_field(ConfigWalletContent::add_wxtm_address, (exchange_id, address))
-        .await
-        .map_err(|e| e.to_string())?;
+    ConfigWallet::update_field(
+        ConfigWalletContent::add_wxtm_address,
+        (exchange_id, address),
+    )
+    .await
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
 
 #[tauri::command]
-pub async fn get_base_node_status(state: tauri::State<'_, UniverseAppState>) -> Result<BaseNodeStatus, String> {
+pub async fn get_base_node_status(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<BaseNodeStatus, String> {
     Ok(*state.node_status_watch_rx.borrow())
 }
 
@@ -2312,11 +2482,16 @@ pub async fn set_security_warning_dismissed() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn set_pause_on_battery_mode(pause_on_battery_mode: PauseOnBatteryModeState) -> Result<(), InvokeError> {
+pub async fn set_pause_on_battery_mode(
+    pause_on_battery_mode: PauseOnBatteryModeState,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    ConfigMining::update_field(ConfigMiningContent::set_pause_on_battery_mode, pause_on_battery_mode)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigMining::update_field(
+        ConfigMiningContent::set_pause_on_battery_mode,
+        pause_on_battery_mode,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, "set_pause_on_battery_mode took too long: {:?}", timer.elapsed());
     }
@@ -2410,7 +2585,9 @@ pub async fn mark_shutdown_selection_as_completed(dont_ask_again: bool) -> Resul
 pub async fn mark_feedback_survey_as_completed() -> Result<(), InvokeError> {
     let timer = Instant::now();
 
-    ShutdownManager::instance().mark_feedback_survey_as_completed().await;
+    ShutdownManager::instance()
+        .mark_feedback_survey_as_completed()
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET_APP_LOGIC, " mark_feedback_survey_as_completed took too long: {:?}", timer.elapsed());
@@ -2419,7 +2596,9 @@ pub async fn mark_feedback_survey_as_completed() -> Result<(), InvokeError> {
 }
 
 #[tauri::command]
-pub async fn update_shutdown_mode_selection(shutdown_mode: ShutdownMode) -> Result<(), InvokeError> {
+pub async fn update_shutdown_mode_selection(
+    shutdown_mode: ShutdownMode,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
 
     ConfigCore::update_field(ConfigCoreContent::set_shutdown_mode, shutdown_mode)
@@ -2452,7 +2631,10 @@ mod tests {
     #[test]
     fn implicit_default_https_port_survives() {
         assert_eq!(
-            canonicalise_remote_base_node_address("https://node-grpc-us-01.nodes.taritalk.xyz:443/").unwrap(),
+            canonicalise_remote_base_node_address(
+                "https://node-grpc-us-01.nodes.taritalk.xyz:443/"
+            )
+            .unwrap(),
             "https://node-grpc-us-01.nodes.taritalk.xyz:443"
         );
     }
@@ -2489,7 +2671,8 @@ mod tests {
 
     #[test]
     fn userinfo_is_rejected() {
-        let err = canonicalise_remote_base_node_address("https://user:pass@example.com:443").unwrap_err();
+        let err =
+            canonicalise_remote_base_node_address("https://user:pass@example.com:443").unwrap_err();
         assert!(err.to_string().contains("userinfo"), "{err}");
     }
 
@@ -2501,7 +2684,8 @@ mod tests {
 
     #[test]
     fn path_segments_are_rejected() {
-        let err = canonicalise_remote_base_node_address("https://example.com:443/some/path").unwrap_err();
+        let err =
+            canonicalise_remote_base_node_address("https://example.com:443/some/path").unwrap_err();
         assert!(err.to_string().contains("path"), "{err}");
     }
 
@@ -2513,7 +2697,8 @@ mod tests {
 
     #[test]
     fn fragments_are_rejected() {
-        let err = canonicalise_remote_base_node_address("https://example.com:443#frag").unwrap_err();
+        let err =
+            canonicalise_remote_base_node_address("https://example.com:443#frag").unwrap_err();
         assert!(err.to_string().contains("fragment"), "{err}");
     }
 
