@@ -10,6 +10,7 @@ vi.mock('@tauri-apps/api/window', () => ({
 
 import { L2_UNAVAILABLE, TappletSigner } from './TappletSigner';
 import { useWalletStore } from '@app/store/useWalletStore';
+import { initialState as l2StoreInitialState, useL2WalletStore } from '@app/store/useL2WalletStore';
 import { L2WalletState } from '@app/types/events-payloads';
 
 describe('TappletSigner.runOne', () => {
@@ -153,6 +154,7 @@ describe('TappletSigner.runOne', () => {
         afterEach(() => {
             vi.mocked(invoke).mockReset();
             vi.useRealTimers();
+            useL2WalletStore.setState({ ...l2StoreInitialState });
         });
 
         describe('getOotleAccount', () => {
@@ -209,6 +211,18 @@ describe('TappletSigner.runOne', () => {
 
                 await expect(signer.runOne('getOotleBalance', [])).resolves.toEqual(L2_UNAVAILABLE);
             });
+
+            it('reads an open wallet from the L2 store without asking the backend', async () => {
+                useL2WalletStore.setState(l2State());
+
+                for (let i = 0; i < 5; i++) {
+                    await expect(signer.runOne('getOotleBalance', [])).resolves.toEqual({
+                        available: '2501000',
+                        pending: '0',
+                    });
+                }
+                expect(invoke).not.toHaveBeenCalledWith('l2_get_state');
+            });
         });
 
         describe('sendOotleStealth', () => {
@@ -241,6 +255,7 @@ describe('TappletSigner.runOne', () => {
                 [[{ amount: '100', address: ADDRESS, payRef: '0f8fad5b-d9cb-169f-a165-70867728950e' }]],
                 [[{ amount: '100', address: ADDRESS, payRef: `${PAY_REF}${PAY_REF}` }]],
                 [[{ amount: '1'.repeat(21), address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: '9007199254740992', address: ADDRESS, payRef: PAY_REF }]],
                 [[{ amount: '100', address: ` ${ADDRESS}`, payRef: PAY_REF }]],
                 [[{ amount: '100', address: `${ADDRESS}\n`, payRef: PAY_REF }]],
                 [[{ amount: '100', address: `otl_esm_1${'q'.repeat(300)}`, payRef: PAY_REF }]],
@@ -249,6 +264,16 @@ describe('TappletSigner.runOne', () => {
                     'Invalid arguments for tapplet signer method: sendOotleStealth'
                 );
                 expect(invoke).not.toHaveBeenCalled();
+            });
+
+            it('accepts the largest amount the PIN prompt can show exactly', async () => {
+                mockCommands({ l2_get_state: l2State(), l2_validate_address: null, l2_send_from_tapplet: 'tx1' });
+
+                await expect(
+                    signer.runOne('sendOotleStealth', [
+                        { amount: '9007199254740991', address: ADDRESS, payRef: PAY_REF },
+                    ])
+                ).resolves.toEqual({ transactionId: 'tx1' });
             });
 
             it('rejects an address the backend says is invalid without sending', async () => {
@@ -274,7 +299,9 @@ describe('TappletSigner.runOne', () => {
             it.each([
                 ['PIN entry cancelled', 'denied'],
                 ['Pin is locked out. Remaining seconds: 290', 'denied'],
+                ['L2 send failed: Wrong PIN entered!', 'denied'],
                 ["L2 send failed: The L2 indexer didn't answer within 30 seconds", 'failed'],
+                ['L2 send failed: request cancelled by the indexer', 'failed'],
             ])('turns the backend error "%s" into "%s"', async (backend, code) => {
                 mockCommands({
                     l2_get_state: l2State(),
@@ -468,6 +495,23 @@ describe('TappletSigner.runOne', () => {
                     signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 30 }])
                 ).resolves.toEqual({ status: 'Accepted' });
             });
+
+            it.each(['New', 'DryRun', 'DryRunFailed', 'SomethingNew'])(
+                'keeps polling through the non-final status %s',
+                async (interim) => {
+                    vi.useFakeTimers();
+                    let status = interim;
+                    vi.mocked(invoke).mockImplementation((async (_cmd: string) =>
+                        l2State({}, status)) as typeof invoke);
+
+                    const result = signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 30 }]);
+                    await vi.advanceTimersByTimeAsync(4_500);
+                    status = 'Rejected';
+                    await vi.advanceTimersByTimeAsync(2_000);
+
+                    await expect(result).resolves.toEqual({ status: 'Rejected' });
+                }
+            );
 
             it('reports Pending once the timeout runs out', async () => {
                 vi.useFakeTimers();

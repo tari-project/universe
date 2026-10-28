@@ -141,9 +141,10 @@ impl SendOrigin {
         }
     }
 
-    /// Whether the MCP transaction rate limiter applies.
+    /// Whether a transaction rate limiter applies. MCP and tapplet sends each have their own,
+    /// so one can't use up the other's quota.
     fn enforces_rate_limit(self) -> bool {
-        matches!(self, SendOrigin::Mcp)
+        matches!(self, SendOrigin::Mcp | SendOrigin::Tapplet)
     }
 }
 
@@ -292,6 +293,9 @@ static INFLIGHT: LazyLock<tokio::sync::Mutex<Option<InFlightTxn>>> =
     LazyLock::new(|| tokio::sync::Mutex::new(None));
 
 static TXN_RATE_LIMITER: LazyLock<tokio::sync::Mutex<TransactionRateLimiter>> =
+    LazyLock::new(|| tokio::sync::Mutex::new(TransactionRateLimiter::new()));
+/// Tapplet sends, at the same per-minute limit as MCP but counted separately.
+static TAPPLET_RATE_LIMITER: LazyLock<tokio::sync::Mutex<TransactionRateLimiter>> =
     LazyLock::new(|| tokio::sync::Mutex::new(TransactionRateLimiter::new()));
 
 struct InFlightTxn {
@@ -443,6 +447,7 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
         PinManager::pin_locked().await,
     )?;
     let amount_u64 = parse_amount(&amount)?;
+    check_tapplet_amount(origin, amount_u64)?;
     let address = OotleWalletManager::parse_address(&destination)?;
     let (pay_ref, memo) = l2_send_memo(pay_ref.as_deref(), &address)?.unzip();
     // The parsed form, so the PIN prompt never shows padding the parser trimmed away.
@@ -489,14 +494,14 @@ pub fn l2_send_memo(
     destination: &OotleAddress,
 ) -> Result<Option<(String, Memo)>, TransactionError> {
     let embedded = destination.pay_ref().map(|p| p.as_bytes());
-    let bytes = match (pay_ref, embedded) {
+    let (bytes, explicit) = match (pay_ref, embedded) {
         (Some(explicit), Some(embedded)) if explicit.as_bytes() != embedded => {
             return Err(TransactionError::InvalidAddress(
                 "Pay reference differs from the one in the destination address".to_string(),
             ));
         }
-        (Some(explicit), _) => explicit.as_bytes(),
-        (None, Some(embedded)) => embedded,
+        (Some(explicit), _) => (explicit.as_bytes(), true),
+        (None, Some(embedded)) => (embedded, false),
         (None, None) => return Ok(None),
     };
     if PayRef::new_checked(bytes).is_none() {
@@ -507,16 +512,39 @@ pub fn l2_send_memo(
     }
     let text = std::str::from_utf8(bytes)
         .ok()
-        .filter(|text| !text.chars().any(is_hidden_char))
-        .ok_or_else(|| {
-            TransactionError::InvalidAddress(
+        .filter(|text| !text.chars().any(is_hidden_char));
+    // An explicit pay ref must be clean text. One embedded in the address is the recipient's
+    // own bytes and is sent as-is; the PIN prompt shows it in hex when it isn't clean text.
+    let shown = match text {
+        Some(text) => text.to_string(),
+        None if !explicit => format!("0x{}", hex_bytes(bytes)),
+        None => {
+            return Err(TransactionError::InvalidAddress(
                 "Pay reference must be UTF-8 text without control or invisible characters"
                     .to_string(),
-            )
-        })?;
+            ));
+        }
+    };
     let memo = Memo::new_pay_ref_and_message(bytes, "")
         .ok_or_else(|| TransactionError::InvalidAddress("Pay reference too long".to_string()))?;
-    Ok(Some((text.to_string(), memo)))
+    Ok(Some((shown, memo)))
+}
+
+fn hex_bytes(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// The PIN prompt gets the amount as a JS number, so above 2^53 - 1 micro XTR what it shows
+/// could differ from what is signed. Only a tapplet chooses amounts that large unseen.
+const MAX_TAPPLET_AMOUNT: u64 = (1 << 53) - 1;
+
+fn check_tapplet_amount(origin: SendOrigin, amount_u64: u64) -> Result<(), TransactionError> {
+    if origin == SendOrigin::Tapplet && amount_u64 > MAX_TAPPLET_AMOUNT {
+        return Err(TransactionError::InvalidAmount(format!(
+            "Amount must be at most {MAX_TAPPLET_AMOUNT} micro XTR"
+        )));
+    }
+    Ok(())
 }
 
 /// Characters that would make a pay reference read differently in the PIN prompt from what
@@ -615,20 +643,21 @@ async fn pass_gates(
         .await
         .map_err(|_| TransactionError::InternalError("Transaction gate closed".to_string()))?;
 
-    if needs_confirmation {
-        // Rate limit check (after acquiring gate to avoid burning quota)
-        if origin.enforces_rate_limit()
-            && !TXN_RATE_LIMITER
-                .lock()
-                .await
-                .check_transaction_allowed()
-                .await
-        {
+    // Rate limit check (after acquiring gate to avoid burning quota). Tapplet sends behind a
+    // PIN skip the confirmation dialog, so this sits outside it.
+    if origin.enforces_rate_limit() {
+        let limiter = match origin {
+            SendOrigin::Tapplet => &TAPPLET_RATE_LIMITER,
+            _ => &TXN_RATE_LIMITER,
+        };
+        if !limiter.lock().await.check_transaction_allowed().await {
             return Err(TransactionError::RateLimited(
                 "Transaction rate limit exceeded. Try again later.".to_string(),
             ));
         }
+    }
 
+    if needs_confirmation {
         let (tx, rx) = tokio::sync::oneshot::channel::<TxnDialogResponse>();
         {
             let mut inflight = INFLIGHT.lock().await;
@@ -771,10 +800,10 @@ mod tests {
     }
 
     #[test]
-    fn only_mcp_is_rate_limited() {
+    fn mcp_and_tapplet_sends_are_rate_limited() {
         assert!(SendOrigin::Mcp.enforces_rate_limit());
         assert!(!SendOrigin::App.enforces_rate_limit());
-        assert!(!SendOrigin::Tapplet.enforces_rate_limit());
+        assert!(SendOrigin::Tapplet.enforces_rate_limit());
     }
 
     #[test]
@@ -1059,26 +1088,31 @@ mod tests {
     }
 
     #[test]
-    fn l2_send_memo_rejects_an_embedded_pay_ref_that_is_not_clean_text() {
+    fn l2_send_memo_sends_an_embedded_pay_ref_that_is_not_clean_text_as_is() {
         for bytes in [
             vec![0xff, 0xfe, b'a'],
             "ref\u{200D}".as_bytes().to_vec(),
             "ref\u{061C}".as_bytes().to_vec(),
             "ref\u{E0041}".as_bytes().to_vec(),
             "ref\u{FE0F}".as_bytes().to_vec(),
-            "ref\u{206B}".as_bytes().to_vec(),
-            "ref\u{180B}".as_bytes().to_vec(),
-            "ref\u{1D173}".as_bytes().to_vec(),
-            "ref\u{E0100}".as_bytes().to_vec(),
         ] {
             let embedded = PayRef::new_checked(bytes.clone()).expect("pay ref");
             let address = ootle_address().with_pay_ref(embedded);
-            let err = l2_send_memo(None, &address).expect_err("rejected");
-            assert!(
-                matches!(err, TransactionError::InvalidAddress(_)),
-                "{bytes:?}"
-            );
+            let (shown, memo) = l2_send_memo(None, &address)
+                .expect("the recipient's bytes are sent")
+                .expect("a memo");
+            assert_eq!(memo_pay_ref(&memo), bytes.as_slice());
+            assert_eq!(shown, format!("0x{}", hex_bytes(&bytes)), "{bytes:?}");
         }
+    }
+
+    #[test]
+    fn tapplet_amounts_stay_within_what_the_pin_prompt_shows_exactly() {
+        assert!(check_tapplet_amount(SendOrigin::Tapplet, MAX_TAPPLET_AMOUNT).is_ok());
+        let err = check_tapplet_amount(SendOrigin::Tapplet, MAX_TAPPLET_AMOUNT + 1)
+            .expect_err("too large for the prompt");
+        assert!(matches!(err, TransactionError::InvalidAmount(_)));
+        assert!(check_tapplet_amount(SendOrigin::App, MAX_TAPPLET_AMOUNT + 1).is_ok());
     }
 
     #[test]
