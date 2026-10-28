@@ -24,13 +24,13 @@ use anyhow::{Error, anyhow};
 use async_trait::async_trait;
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ffi::OsStr;
 #[cfg(test)]
 use std::ffi::OsString;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock, Mutex};
 use std::time::Duration;
 use sysinfo::{Pid, ProcessesToUpdate, System};
 use tari_shutdown::{Shutdown, ShutdownSignal};
@@ -43,6 +43,23 @@ use tokio_util::task::TaskTracker;
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::download_utils::set_permissions;
+
+static REPORTED_PERMISSION_ERRORS: LazyLock<Mutex<HashSet<(String, PathBuf)>>> =
+    LazyLock::new(|| Mutex::new(HashSet::new()));
+
+fn format_permission_error(name: &str, path: &Path, err: &impl std::fmt::Display) -> String {
+    format!(
+        "Could not set permissions on {name} binary at {}: {err}",
+        path.display()
+    )
+}
+
+fn should_report_permission_error(name: &str, path: &Path) -> bool {
+    REPORTED_PERMISSION_ERRORS
+        .lock()
+        .map(|mut seen| seen.insert((name.to_string(), path.to_path_buf())))
+        .unwrap_or(true)
+}
 use crate::events::CriticalProblemPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::process_killer::kill_process;
@@ -474,14 +491,18 @@ impl ProcessInstanceTrait for ProcessInstance {
             return Ok(());
         };
 
+        if let Err(e) = set_permissions(&spec.file_path).await {
+            let msg = format_permission_error(&spec.name, &spec.file_path, &e);
+            error!(target: LOG_TARGET_APP_LOGIC, "{msg}");
+            if should_report_permission_error(&spec.name, &spec.file_path) {
+                sentry::capture_message(&msg, sentry::Level::Error);
+            }
+            return Err(anyhow!("{msg}"));
+        }
+
         let output_task_tracker = task_tracker.clone();
         let output_shutdown_signal = self.shutdown.to_signal();
         self.handle = Some(task_tracker.spawn(async move {
-            if let Err(e) = set_permissions(&spec.file_path).await {
-                error!(target: LOG_TARGET_APP_LOGIC, "{e}");
-                sentry::capture_message(&e.to_string(), sentry::Level::Error);
-                return Err(e);
-            }
             // start
             info!(target: LOG_TARGET_APP_LOGIC, "Launching process for: {}", spec.name);
             let mut child = launch_child_process(
@@ -716,5 +737,22 @@ mod tests {
         let (pid, start) = <TestAdapter as ProcessAdapter>::parse_pid_file("not-a-pid");
         assert_eq!(pid, None);
         assert_eq!(start, None);
+    }
+
+    #[test]
+    fn permission_error_message_includes_process_name_and_path() {
+        let path = Path::new("/tmp/missing/xmrig");
+        let msg = format_permission_error("xmrig", path, &"No such file or directory (os error 2)");
+        assert_eq!(
+            msg,
+            "Could not set permissions on xmrig binary at /tmp/missing/xmrig: No such file or directory (os error 2)"
+        );
+    }
+
+    #[test]
+    fn permission_error_is_reported_at_most_once_per_binary() {
+        let path = Path::new("/tmp/missing/minotari_node");
+        assert!(should_report_permission_error("minotari_node", path));
+        assert!(!should_report_permission_error("minotari_node", path));
     }
 }
