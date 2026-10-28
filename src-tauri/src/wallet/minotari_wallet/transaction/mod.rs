@@ -72,25 +72,16 @@ pub fn parse_destination_address(address: &str) -> Result<TariAddress, anyhow::E
     Ok(destination_address)
 }
 
-/// Use the payment ID encoded by an exchange address when the send form did not supply one.
-/// Refuse conflicting IDs so the output cannot silently use the wrong exchange reference.
+/// The payment ID the recipient output carries: an ID encoded in the destination address
+/// wins over the send form's Message, as the console wallet always did. Exchanges put the
+/// deposit reference in the address, and a hand-typed variation of it must not replace it.
 pub fn resolve_payment_id(
     destination: &TariAddress,
     supplied: Option<String>,
 ) -> Result<Option<String>, anyhow::Error> {
-    let supplied = supplied.filter(|id| !id.is_empty());
-    let TariAddress::Dual(dual) = destination else {
-        return Ok(supplied);
-    };
-    let embedded = dual.get_memo_field_payment_id_bytes();
+    let embedded = destination.get_memo_field_payment_id_bytes();
     if embedded.is_empty() {
-        return Ok(supplied);
-    }
-    if let Some(id) = supplied {
-        if id.as_bytes() != embedded {
-            return Err(anyhow!("Payment ID conflicts with the destination address"));
-        }
-        return Ok(Some(id));
+        return Ok(supplied.filter(|id| !id.is_empty()));
     }
     String::from_utf8(embedded)
         .map(Some)
@@ -191,33 +182,37 @@ mod tests {
     const LOCALNET_DEPOSIT_ADDRESS: &str = "H6BhBUPxTJWtZVxhbExYLz623LRHXLKSaaVYZWXK2Yvn5jP4nufiUQzKo6fgHp2t3VuY6PiGGPubmynEDzxyXDXjAXPedBhZFgJT4dAVXEW1re";
 
     #[test]
-    fn embedded_address_payment_id_is_resolved_and_conflicts_rejected() {
+    fn embedded_address_payment_id_wins_over_the_message() {
         let TariAddress::Dual(mut address) =
             parse_destination_address(ESME_ONE_SIDED_ADDRESS).unwrap()
         else {
             panic!("fixture must be a dual address");
         };
+        let plain = TariAddress::Dual(address.clone());
+        assert_eq!(resolve_payment_id(&plain, None).unwrap(), None);
+        assert_eq!(
+            resolve_payment_id(&plain, Some(String::new())).unwrap(),
+            None
+        );
+        assert_eq!(
+            resolve_payment_id(&plain, Some("note".into()))
+                .unwrap()
+                .as_deref(),
+            Some("note")
+        );
+
         address
             .add_memo_field_payment_id(b"ID5931480726".to_vec())
             .unwrap();
         let destination = TariAddress::Dual(address);
-        assert_eq!(
-            resolve_payment_id(&destination, None).unwrap().as_deref(),
-            Some("ID5931480726")
-        );
-        assert_eq!(
-            resolve_payment_id(&destination, Some(String::new()))
-                .unwrap()
-                .as_deref(),
-            Some("ID5931480726")
-        );
-        assert!(resolve_payment_id(&destination, Some("wrong".into())).is_err());
-        assert_eq!(
-            resolve_payment_id(&destination, Some("ID5931480726".into()))
-                .unwrap()
-                .as_deref(),
-            Some("ID5931480726")
-        );
+        for supplied in [None, Some(String::new()), Some("wrong".into())] {
+            assert_eq!(
+                resolve_payment_id(&destination, supplied)
+                    .unwrap()
+                    .as_deref(),
+                Some("ID5931480726")
+            );
+        }
         let localnet = TariAddress::from_str(LOCALNET_DEPOSIT_ADDRESS).unwrap();
         assert_eq!(
             resolve_payment_id(&localnet, None).unwrap().as_deref(),
