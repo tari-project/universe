@@ -1,3 +1,16 @@
+🚀 TARI UNIVERSE v1.6.19: Deposit Reference Fix
+
+_October 28, 2026_
+
+✨ WHAT'S FIXED
+
+- 💸 **Exchange deposits keep their payment ID** – When a deposit address includes a payment ID, Tari Universe now puts it in the transaction output. Exchanges can use that ID to match your XTM deposit to your account.
+- 🔧 **Under the hood** – Updated the built-in wallet to minotari v0.5.0 and the Tari libraries it needs.
+
+If an earlier deposit was not credited, keep its transaction details and contact the receiving exchange. This update does not change payments already on-chain.
+
+---
+
 🚀 TARI UNIVERSE v1.6.18: Twin Tides
 
 _October 26, 2026_

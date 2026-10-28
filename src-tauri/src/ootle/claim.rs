@@ -56,7 +56,7 @@ use tari_ootle_wallet_sdk::{
     network::WalletNetworkInterface,
 };
 use tari_ootle_wallet_sdk_services::transaction_service::TransactionServiceHandle;
-use tari_sidechain_wallet::CompleteClaimBurnProof;
+use tari_sidechain::CompleteClaimBurnProof;
 use tari_template_lib::{
     prelude::RistrettoPublicKeyBytes,
     types::{
@@ -576,7 +576,12 @@ fn build_claim(sdk: &OotleSdk, claim: Claim<'_>) -> Result<Transaction, anyhow::
         view_only.public_key(),
         &STEALTH_TARI_RESOURCE_ADDRESS,
     );
-    let owner_key = crypto.derive_stealth_owner_public_key(network, &owner.to_public_key(), &nonce);
+    let owner_key = crypto.derive_stealth_owner_public_key(
+        network,
+        &owner.to_public_key(),
+        view_only.public_key(),
+        &nonce,
+    );
     let output = StealthOutputWitness {
         witness: OutputWitness {
             amount,
