@@ -92,6 +92,8 @@ const status = await page.evaluate(async () => {
 
 The two sanctioned exceptions, both non-assertion paths: fixture teardown cleanup (`stopMiningDirect`) and the exchange-revert fallback when the UI genuinely has no affordance.
 
+The deposit payment ID regression in `04-send-flow.spec.ts` is an assertion exception: it sends through the UI, copies the sender's output hash from transaction details, then reads that output's scanned memo from the isolated test wallet database. The UI does not expose the recipient output memo, and the sender summary's `memo_hex` remains null after confirmation.
+
 ### Wait for conditions, not durations
 
 The app is heavy — node sync, wallet scans, and phase restarts all take real time, and how long varies run to run. A fixed sleep is either wastefully long or flakily short. Always poll for the condition you actually need:

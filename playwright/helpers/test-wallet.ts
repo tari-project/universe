@@ -35,6 +35,11 @@ export const TEST_WALLET = {
     'a16e656e637279707465645f7365656498180218ff051821189f1867184718f5182f187518a1185218e818ce18d7185c18e918fc1850182c18ad18f4188e18c8',
 };
 
+// TEST_WALLET's localnet dual address with payment ID "PW-DEPOSIT-123" embedded.
+export const TEST_WALLET_DEPOSIT_ADDRESS =
+  'H6BhBUPxTJWtZVxhbExYLz623LRHXLKSaaVYZWXK2Yvn5jP4nufiUQzKo6fgHp2t3VuY6PiGGPubmynEDzxyXDXjAXPedBhZFgJT4dAVXEW1re';
+export const TEST_WALLET_DEPOSIT_PAYMENT_ID = 'PW-DEPOSIT-123';
+
 // The generated Monero wallet that ships with the fixture profile, localnet
 // only. `global-setup` writes `seedHex` into the Monero credential file as a
 // PLAINTEXT 32-byte seed (that is what the app stores before any PIN exists)
