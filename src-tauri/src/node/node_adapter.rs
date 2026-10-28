@@ -56,9 +56,7 @@ use tokio::sync::watch;
 use tokio::time::timeout;
 use url::Url;
 
-use crate::network_utils::{
-    NetworkExt, get_best_block_from_block_scan, get_block_info_from_block_scan,
-};
+use crate::network_utils::{NetworkExt, get_best_block_from_block_scan, get_block_info_from_block_scan};
 
 const STALLED_BLOCK_TIMEOUT_SECS: u64 = 15 * 60;
 
@@ -67,9 +65,7 @@ pub trait NodeAdapter {
     fn get_grpc_address(&self) -> Option<(String, u16)>;
     fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error>;
     fn get_service(&self) -> Option<NodeAdapterService>;
-    async fn get_connection_details(
-        &self,
-    ) -> Result<(Option<RistrettoPublicKey>, String), anyhow::Error>;
+    async fn get_connection_details(&self) -> Result<(Option<RistrettoPublicKey>, String), anyhow::Error>;
     fn get_http_api_url(&self) -> String;
     fn use_tor(&mut self, use_tor: bool);
     fn set_tor_control_port(&mut self, tor_control_port: Option<u16>);
@@ -108,24 +104,16 @@ impl NodeAdapterService {
         self.network.is_solo_network()
     }
 
-    pub async fn get_network_state(
-        &self,
-        remote: bool,
-    ) -> Result<BaseNodeStatus, NodeStatusMonitorError> {
+    pub async fn get_network_state(&self, remote: bool) -> Result<BaseNodeStatus, NodeStatusMonitorError> {
         let http_address: Url = self
             .http_address
             .parse()
             .map_err(|e| anyhow::anyhow!("base node URL is invalid:{e}"))?;
-        let http_client =
-            minotari_node_wallet_client::http::Client::new(http_address.clone(), http_address);
+        let http_client = minotari_node_wallet_client::http::Client::new(http_address.clone(), http_address);
 
         let tip = http_client.get_tip_info().await?;
 
-        let block_height = tip
-            .metadata
-            .as_ref()
-            .map(|m| m.best_block_height())
-            .unwrap_or(0);
+        let block_height = tip.metadata.as_ref().map(|m| m.best_block_height()).unwrap_or(0);
         let block_time = tip.metadata.as_ref().map(|m| m.timestamp()).unwrap_or(0);
         let block_reward = self.consensus_manager.get_block_reward_at(block_height);
         let (readiness_status, num_connections) = if remote {
@@ -150,8 +138,7 @@ impl NodeAdapterService {
                 .unwrap_or(ReadinessStatus::NOT_READY);
             (status, res.num_connections)
         };
-        let is_synced =
-            (!remote && self.is_solo_network() && readiness_status.is_ready()) || tip.is_synced;
+        let is_synced = (!remote && self.is_solo_network() && readiness_status.is_ready()) || tip.is_synced;
         Ok(BaseNodeStatus {
             block_reward,
             block_height,
@@ -162,10 +149,7 @@ impl NodeAdapterService {
         })
     }
 
-    pub async fn get_historical_blocks(
-        &self,
-        heights: Vec<u64>,
-    ) -> Result<Vec<(u64, String)>, Error> {
+    pub async fn get_historical_blocks(&self, heights: Vec<u64>) -> Result<Vec<(u64, String)>, Error> {
         let address: Url = self
             .http_address
             .parse()
@@ -243,8 +227,7 @@ impl NodeAdapterService {
 
         Ok(NodeIdentity {
             public_key: Some(
-                RistrettoPublicKey::from_canonical_bytes(&res.public_key)
-                    .map_err(|e| anyhow!(e.to_string()))?,
+                RistrettoPublicKey::from_canonical_bytes(&res.public_key).map_err(|e| anyhow!(e.to_string()))?,
             ),
             public_addresses: res.public_addresses,
         })
@@ -271,8 +254,7 @@ impl NodeAdapterService {
             .http_address
             .parse()
             .map_err(|e| anyhow::anyhow!("base node URL is invalid:{e}"))?;
-        let http_client =
-            minotari_node_wallet_client::http::Client::new(http_address.clone(), http_address);
+        let http_client = minotari_node_wallet_client::http::Client::new(http_address.clone(), http_address);
 
         loop {
             if shutdown_signal.is_triggered() {
@@ -281,10 +263,7 @@ impl NodeAdapterService {
 
             let (initial_sync_achieved, metadata) = if remote {
                 let tip = http_client.get_tip_info().await?;
-                let tari_transaction_components::rpc::models::TipInfoResponse {
-                    is_synced,
-                    metadata,
-                } = tip;
+                let tari_transaction_components::rpc::models::TipInfoResponse { is_synced, metadata } = tip;
                 (is_synced, metadata)
             } else {
                 let client = grpc_client.as_mut().expect("Should have a client here");
@@ -315,20 +294,28 @@ impl NodeAdapterService {
                 (initial_sync_achieved, core_meta)
             };
 
-            let sync_progress = if metadata.is_some() && remote && initial_sync_achieved {
-                // if the remote node has intial sync status, we can just asume the rest will be correct, so dont ask
-                SyncProgressResponse {
-                    tip_height: metadata
-                        .as_ref()
-                        .map(|meta| meta.best_block_height())
-                        .unwrap_or_default(),
-                    local_height: metadata
-                        .as_ref()
-                        .map(|meta| meta.best_block_height())
-                        .unwrap_or_default(),
-                    state: SyncState::Done as i32,
-                    short_desc: "".to_string(),
-                    initial_connected_peers: 1,
+            let sync_progress = if remote {
+                let tip_height = metadata
+                    .as_ref()
+                    .map(|meta| meta.best_block_height())
+                    .unwrap_or_default();
+                if metadata.is_some() && initial_sync_achieved {
+                    // if the remote node has initial sync status, we can just assume the rest will be correct, so dont ask
+                    SyncProgressResponse {
+                        tip_height,
+                        local_height: tip_height,
+                        state: SyncState::Done as i32,
+                        short_desc: "".to_string(),
+                        initial_connected_peers: 1,
+                    }
+                } else {
+                    SyncProgressResponse {
+                        tip_height,
+                        local_height: 0,
+                        state: SyncState::Startup as i32,
+                        short_desc: "".to_string(),
+                        initial_connected_peers: 0,
+                    }
                 }
             } else {
                 let client = grpc_client.as_mut().expect("Should have a client here");
@@ -338,8 +325,7 @@ impl NodeAdapterService {
                     .map_err(|e| NodeStatusMonitorError::UnknownError(e.into()))?;
                 sync.into_inner()
             };
-            let sync_info =
-                SyncProgressInfo::from_sync_progress(&sync_progress, self.required_sync_peers);
+            let sync_info = SyncProgressInfo::from_sync_progress(&sync_progress, self.required_sync_peers);
 
             progress_percentage_tx.send(sync_info.percentage).ok();
             progress_params_tx.send(sync_info.progress_params).ok();
@@ -348,9 +334,9 @@ impl NodeAdapterService {
                 metadata.clone().is_some_and(|m| m.best_block_height() > 0)
             } else {
                 initial_sync_achieved
-                    && metadata.clone().is_some_and(|metadata| {
-                        metadata.best_block_height() > 0 && sync_info.percentage >= 1.0
-                    })
+                    && metadata
+                        .clone()
+                        .is_some_and(|metadata| metadata.best_block_height() > 0 && sync_info.percentage >= 1.0)
             };
             if sync_complete {
                 info!(target: LOG_TARGET_APP_LOGIC, "Initial sync achieved");
@@ -377,19 +363,15 @@ impl NodeAdapterService {
         let connected_peers = peers_list
             .iter()
             .filter(|peer| {
-                let since = match NaiveDateTime::parse_from_str(
-                    peer.addresses[0].last_seen.as_str(),
-                    "%Y-%m-%d %H:%M:%S%.f",
-                ) {
-                    Ok(datetime) => datetime,
-                    Err(_e) => {
-                        return false;
-                    }
-                };
+                let since =
+                    match NaiveDateTime::parse_from_str(peer.addresses[0].last_seen.as_str(), "%Y-%m-%d %H:%M:%S%.f") {
+                        Ok(datetime) => datetime,
+                        Err(_e) => {
+                            return false;
+                        },
+                    };
                 let since = Utc.from_utc_datetime(&since);
-                let duration = SystemTime::now()
-                    .duration_since(since.into())
-                    .unwrap_or_default();
+                let duration = SystemTime::now().duration_since(since.into()).unwrap_or_default();
                 duration.as_secs() < 60
             })
             .map(|peer| peer.addresses[0].address.to_hex())
@@ -465,12 +447,7 @@ impl NodeStatusMonitor {
 impl StatusMonitor for NodeStatusMonitor {
     async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         let remote = self.node_type.is_remote();
-        match timeout(
-            timeout_duration,
-            self.node_service.get_network_state(remote),
-        )
-        .await
-        {
+        match timeout(timeout_duration, self.node_service.get_network_state(remote)).await {
             Ok(res) => match res {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status);
@@ -492,11 +469,7 @@ impl StatusMonitor for NodeStatusMonitor {
                         return HealthStatus::WarningWithReason("No peers connected".to_string());
                     }
 
-                    if self
-                        .last_block_time
-                        .load(std::sync::atomic::Ordering::SeqCst)
-                        == status.block_time
-                    {
+                    if self.last_block_time.load(std::sync::atomic::Ordering::SeqCst) == status.block_time {
                         if !self.node_service.is_solo_network()
                             && uptime.as_secs() > STALLED_BLOCK_TIMEOUT_SECS
                             && EpochTime::now()
@@ -512,23 +485,21 @@ impl StatusMonitor for NodeStatusMonitor {
                             stalled_status.readiness_status = ReadinessStatus::NOT_READY;
                             let _ = self.status_broadcast.send(stalled_status);
 
-                            return HealthStatus::UnhealthyWithReason(
-                                "Block time stalled for 15 minutes".to_string(),
-                            );
+                            return HealthStatus::UnhealthyWithReason("Block time stalled for 15 minutes".to_string());
                         }
                     } else {
                         self.last_block_time
                             .store(status.block_time, std::sync::atomic::Ordering::SeqCst);
                     }
                     HealthStatus::Healthy
-                }
+                },
                 Err(e) => {
                     warn!(
                         "{:?} Node Health Check Error: checking base node status: {:?}",
                         self.node_type, e
                     );
                     HealthStatus::UnhealthyWithReason(format!("get_network_state failed: {}", e))
-                }
+                },
             },
             Err(e) => {
                 warn!(
@@ -547,7 +518,7 @@ impl StatusMonitor for NodeStatusMonitor {
                         return HealthStatus::WarningWithReason(
                             "get_network_state timed out, but identity succeeded".to_string(),
                         );
-                    }
+                    },
                     Err(e) => {
                         warn!(
                             "{:?} Node Health Check Error: checking base node identity: {:?}",
@@ -557,9 +528,9 @@ impl StatusMonitor for NodeStatusMonitor {
                             "Both network state and identity timed out: {}",
                             e
                         ));
-                    }
+                    },
                 }
-            }
+            },
         }
     }
 
@@ -676,9 +647,7 @@ impl From<minotari_node_grpc_client::grpc::ReadinessStatus> for ReadinessStatus 
     fn from(status: minotari_node_grpc_client::grpc::ReadinessStatus) -> Self {
         if let Some(status_oneof) = status.status {
             match status_oneof {
-                minotari_node_grpc_client::grpc::readiness_status::Status::State(state) => {
-                    Self::State(state)
-                }
+                minotari_node_grpc_client::grpc::readiness_status::Status::State(state) => Self::State(state),
                 minotari_node_grpc_client::grpc::readiness_status::Status::Migration(migration) => {
                     Self::Migration(MigrationProgress {
                         current_block: migration.current_block,
@@ -687,7 +656,7 @@ impl From<minotari_node_grpc_client::grpc::ReadinessStatus> for ReadinessStatus 
                         current_db_version: migration.current_db_version,
                         target_db_version: migration.target_db_version,
                     })
-                }
+                },
             }
         } else {
             Self::NOT_READY
@@ -706,7 +675,7 @@ impl From<ReadinessStatus> for minotari_node_grpc_client::grpc::ReadinessStatus 
         let status_oneof = match status {
             ReadinessStatus::State(state_value) => {
                 minotari_node_grpc_client::grpc::readiness_status::Status::State(state_value)
-            }
+            },
             ReadinessStatus::Migration(migration) => {
                 let migration_proto = minotari_node_grpc_client::grpc::MigrationProgress {
                     current_block: migration.current_block,
@@ -716,10 +685,8 @@ impl From<ReadinessStatus> for minotari_node_grpc_client::grpc::ReadinessStatus 
                     target_db_version: migration.target_db_version,
                     phase: minotari_node_grpc_client::grpc::MigrationPhase::Unspecified as i32,
                 };
-                minotari_node_grpc_client::grpc::readiness_status::Status::Migration(
-                    migration_proto,
-                )
-            }
+                minotari_node_grpc_client::grpc::readiness_status::Status::Migration(migration_proto)
+            },
         };
 
         minotari_node_grpc_client::grpc::ReadinessStatus {
@@ -752,7 +719,7 @@ impl ReadinessStatus {
                     progress.current_block,
                     progress.total_blocks
                 )
-            }
+            },
         }
     }
 
