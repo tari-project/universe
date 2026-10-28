@@ -30,7 +30,10 @@ pub(crate) struct SyncProgressInfo {
 }
 
 impl SyncProgressInfo {
-    pub fn from_sync_progress(sync_progress: &SyncProgressResponse, required_sync_peers: u32) -> Self {
+    pub fn from_sync_progress(
+        sync_progress: &SyncProgressResponse,
+        required_sync_peers: u32,
+    ) -> Self {
         let mut progress_params = HashMap::new();
         let mut percentage = 0f64;
 
@@ -46,8 +49,11 @@ impl SyncProgressInfo {
                     "initial_connected_peers".to_string(),
                     sync_progress.initial_connected_peers.to_string(),
                 );
-                progress_params.insert("required_peers".to_string(), required_sync_peers.to_string());
-            },
+                progress_params.insert(
+                    "required_peers".to_string(),
+                    required_sync_peers.to_string(),
+                );
+            }
             x if x == SyncState::Header as i32 => {
                 percentage = if sync_progress.tip_height == 0 {
                     0.0
@@ -59,13 +65,25 @@ impl SyncProgressInfo {
                     "local_header_height".to_string(),
                     sync_progress.local_height.to_string(),
                 );
-                progress_params.insert("tip_header_height".to_string(), sync_progress.tip_height.to_string());
+                progress_params.insert(
+                    "tip_header_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
                 progress_params.insert("local_block_height".to_string(), "0".to_string());
-                progress_params.insert("tip_block_height".to_string(), sync_progress.tip_height.to_string());
+                progress_params.insert(
+                    "tip_block_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
                 // Keep these fields for old translations that have not been updated
-                progress_params.insert("local_height".to_string(), sync_progress.local_height.to_string());
-                progress_params.insert("tip_height".to_string(), sync_progress.tip_height.to_string());
-            },
+                progress_params.insert(
+                    "local_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+            }
             x if x == SyncState::Block as i32 => {
                 percentage = if sync_progress.tip_height == 0 {
                     0.0
@@ -73,19 +91,37 @@ impl SyncProgressInfo {
                     sync_progress.local_height as f64 / sync_progress.tip_height as f64
                 };
                 progress_params.insert("step".to_string(), "Block".to_string());
-                progress_params.insert("local_header_height".to_string(), sync_progress.tip_height.to_string());
-                progress_params.insert("tip_header_height".to_string(), sync_progress.tip_height.to_string());
-                progress_params.insert("local_block_height".to_string(), sync_progress.local_height.to_string());
-                progress_params.insert("tip_block_height".to_string(), sync_progress.tip_height.to_string());
+                progress_params.insert(
+                    "local_header_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_header_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+                progress_params.insert(
+                    "local_block_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_block_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
                 // Keep these fields for old translations that have not been updated
-                progress_params.insert("local_height".to_string(), sync_progress.local_height.to_string());
-                progress_params.insert("tip_height".to_string(), sync_progress.tip_height.to_string());
-            },
+                progress_params.insert(
+                    "local_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+            }
             x if x == SyncState::Done as i32 => {
                 percentage = 1.0;
                 progress_params.insert("step".to_string(), "Done".to_string());
-            },
-            _ => {},
+            }
+            _ => {}
         }
 
         Self {
@@ -110,7 +146,10 @@ mod tests {
         };
         let info = SyncProgressInfo::from_sync_progress(&response, 3);
         assert_eq!(info.percentage, 1.0);
-        assert_eq!(info.progress_params.get("step").map(String::as_str), Some("Done"));
+        assert_eq!(
+            info.progress_params.get("step").map(String::as_str),
+            Some("Done")
+        );
     }
 
     #[test]
