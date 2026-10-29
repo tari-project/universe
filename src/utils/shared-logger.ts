@@ -9,22 +9,25 @@ const originalConsole = {
     error: console.error,
 };
 
-type InfoArgs = Console['info'];
-type WarnArgs = Console['warn'];
-type ErrorArgs = Console['error'];
-
-type ParseArgs = ErrorArgs | InfoArgs | WarnArgs;
-
-const parseArgument = (a?: ParseArgs): string => {
+const parseArgument = (a?: unknown): string => {
     try {
-        const argument = a?.toString()?.length ? a : 'FE Log Item';
-        return JSON.stringify(argument, null, 2);
+        if (typeof a === 'string') {
+            return a.length ? a : 'FE Log Item';
+        }
+        if (typeof a === 'number' || typeof a === 'boolean' || typeof a === 'bigint') {
+            return String(a);
+        }
+        if (a instanceof Error) {
+            return a.stack || a.message || String(a);
+        }
+        const serialized = a !== undefined && a !== null ? JSON.stringify(a) : '';
+        return serialized && serialized.length ? serialized : 'FE Log Item';
     } catch (e) {
         return String(`Logger Parse Error from ${a} - ${e}`);
     }
 };
 
-const getOptions = (args, level) => {
+const getOptions = (args: unknown[], level: keyof typeof originalConsole) => {
     const mapped = args.map(parseArgument);
     void invoke('log_web_message', {
         level,

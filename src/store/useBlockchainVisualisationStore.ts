@@ -3,7 +3,6 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { DisplayedTransaction } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
-import { updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 
 const appWindow = getCurrentWindow();
@@ -90,14 +89,7 @@ export async function processNewBlock() {
 }
 
 export const handleNewBlockPayload = async (block_height: number) => {
-    useBlockchainVisualisationStore.setState((c) => ({ ...c, latestBlockHeight: block_height }));
-    const isWalletScanned = useWalletStore.getState().wallet_scanning?.is_initial_scan_complete;
-    if (isWalletScanned) {
-        updateWalletScanningProgress({
-            progress: 1,
-            scanned_height: block_height,
-            total_height: block_height,
-            is_initial_scan_complete: true,
-        });
-    }
+    useBlockchainVisualisationStore.setState((c) =>
+        c.latestBlockHeight === block_height ? c : { ...c, latestBlockHeight: block_height }
+    );
 };

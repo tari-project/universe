@@ -23,10 +23,21 @@ function parseValues(
     stats: PoolStats,
     currentStats?: PoolStats,
     currentRewards?: RewardValues
-): { stats?: PoolStats; unpaidFMT?: string; diff?: number | null; canTriggerAnimation?: boolean } {
+): {
+    shouldUpdate: boolean;
+    stats?: PoolStats;
+    unpaidFMT?: string;
+    diff?: number | null;
+    canTriggerAnimation?: boolean;
+} {
     const shouldUpdate = canUpdate(stats, currentStats);
     if (!shouldUpdate) {
-        return { stats: currentStats, unpaidFMT: currentRewards?.unpaidFMT, diff: currentRewards?.rewardValue };
+        return {
+            shouldUpdate: false,
+            stats: currentStats,
+            unpaidFMT: currentRewards?.unpaidFMT,
+            diff: currentRewards?.rewardValue,
+        };
     }
 
     const isMining =
@@ -40,6 +51,7 @@ function parseValues(
     const _diff = stats?.unpaid ? stats?.unpaid - (currentStats?.unpaid || 0) : 0;
     const diff = Math.floor(removeXTMCryptoDecimals(_diff) * 10_000) / 10_000;
     return {
+        shouldUpdate: true,
         stats,
         unpaidFMT,
         diff,
@@ -49,10 +61,14 @@ function parseValues(
 
 export const clearCurrentSuccessValue = (type: PoolType) => {
     if (type === 'GPU') {
-        useMiningPoolsStore.setState((c) => ({ ...c, gpuRewards: { ...c.gpuRewards, rewardValue: 0 } }));
+        useMiningPoolsStore.setState((c) =>
+            c.gpuRewards?.rewardValue === 0 ? c : { ...c, gpuRewards: { ...c.gpuRewards, rewardValue: 0 } }
+        );
     }
     if (type === 'CPU') {
-        useMiningPoolsStore.setState((c) => ({ ...c, cpuRewards: { ...c.cpuRewards, rewardValue: 0 } }));
+        useMiningPoolsStore.setState((c) =>
+            c.cpuRewards?.rewardValue === 0 ? c : { ...c, cpuRewards: { ...c.cpuRewards, rewardValue: 0 } }
+        );
     }
 };
 
@@ -64,13 +80,21 @@ export const setCpuPoolStats = (cpuPoolStats: Record<string, PoolStats>) => {
 
     useMiningPoolsStore.setState((c) => {
         const parsed = parseValues(cpuPoolStats[currentSelectedPool], c.cpuPoolStats, c.cpuRewards);
+        const nextRewardValue = parsed.canTriggerAnimation ? parsed.diff : 0;
+        if (
+            !parsed.shouldUpdate &&
+            c.cpuRewards?.rewardValue === nextRewardValue &&
+            c.cpuRewards?.unpaidFMT === parsed.unpaidFMT
+        ) {
+            return c;
+        }
 
         return {
             ...c,
             cpuPoolStats: parsed.stats,
             cpuRewards: {
                 ...c.cpuRewards,
-                rewardValue: parsed.canTriggerAnimation ? parsed.diff : 0,
+                rewardValue: nextRewardValue,
                 unpaidFMT: parsed.unpaidFMT,
             },
         };
@@ -83,12 +107,21 @@ export const setGpuPoolStats = (gpuPoolStats: Record<string, PoolStats>) => {
 
     useMiningPoolsStore.setState((c) => {
         const parsed = parseValues(gpuPoolStats[currentSelectedPool], c.gpuPoolStats, c.gpuRewards);
+        const nextRewardValue = parsed.canTriggerAnimation ? parsed.diff : 0;
+        if (
+            !parsed.shouldUpdate &&
+            c.gpuRewards?.rewardValue === nextRewardValue &&
+            c.gpuRewards?.unpaidFMT === parsed.unpaidFMT
+        ) {
+            return c;
+        }
+
         return {
             ...c,
             gpuPoolStats: parsed.stats,
             gpuRewards: {
                 ...c.gpuRewards,
-                rewardValue: parsed.canTriggerAnimation ? parsed.diff : 0,
+                rewardValue: nextRewardValue,
                 unpaidFMT: parsed.unpaidFMT,
             },
         };

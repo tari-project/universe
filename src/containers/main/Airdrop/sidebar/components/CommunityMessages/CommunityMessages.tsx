@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 export const CommunityMessages = () => {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const [dismissedMessages, setDismissedMessages] = useState<string[]>([]);
-    const { communityMessages } = useAirdropStore();
+    const communityMessages = useAirdropStore((s) => s.communityMessages);
 
     const handleCloseMessage = useCallback(
         (id: string) => {

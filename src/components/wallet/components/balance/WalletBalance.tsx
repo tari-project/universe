@@ -44,17 +44,22 @@ export const WalletBalance = () => {
 
     const hideBalance = useUIStore((s) => s.hideWalletBalance);
     const isConnected = useNodeStore((s) => s.isNodeConnected);
-    const scanData = useWalletStore((s) => s.wallet_scanning);
-    const accountBalance = useWalletStore((s) => s.account_balance);
+    const isScanning = useWalletStore((s) => !s.wallet_scanning.is_initial_scan_complete);
+    const scanProgress = useWalletStore((s) =>
+        s.wallet_scanning.is_initial_scan_complete ? 100 : Math.floor(s.wallet_scanning.progress * 10) / 10
+    );
+    const scannedHeight = useWalletStore((s) =>
+        s.wallet_scanning.is_initial_scan_complete ? 0 : s.wallet_scanning.scanned_height
+    );
+    const totalHeight = useWalletStore((s) =>
+        s.wallet_scanning.is_initial_scan_complete ? 0 : s.wallet_scanning.total_height
+    );
+    const available = useWalletStore((s) => s.account_balance?.available);
+    const total = useWalletStore((s) => s.account_balance?.total);
 
-    const available = accountBalance?.available;
-    const total = accountBalance?.total;
-
-    const isScanning = !scanData.is_initial_scan_complete;
-    const scanProgress = Math.floor(scanData.progress * 10) / 10;
     // No progress event has arrived yet: the scan is starting up or the backend
     // has not learned the chain tip, so heights and a percentage would be wrong.
-    const hasScanData = scanData.total_height > 0;
+    const hasScanData = totalHeight > 0;
 
     const balance = removeXTMCryptoDecimals(roundToTwoDecimals(total || 0));
     const balanceMismatch = removeXTMCryptoDecimals(roundToTwoDecimals(available || 0)) != balance;
@@ -73,8 +78,8 @@ export const WalletBalance = () => {
                     {hasScanData && scanProgress < 100
                         ? t('wallet-scanning-with-progress', {
                               percentage: scanProgress,
-                              scanned: formatValue(scanData.scanned_height),
-                              total: formatValue(scanData.total_height),
+                              scanned: formatValue(scannedHeight),
+                              total: formatValue(totalHeight),
                           })
                         : t('wallet-is-scanning')}
                 </Trans>
