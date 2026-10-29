@@ -49,7 +49,7 @@ use crate::{
         database_manager::MinotariWalletDatabaseManager,
         transaction::{
             CONFIRMATION_WINDOW, TransactionManager, UTXO_LOCK_DURATION_SECS,
-            parse_destination_address,
+            parse_destination_address, resolve_payment_id,
         },
     },
 };
@@ -92,10 +92,9 @@ use std::{
     time::{Duration, Instant},
 };
 use tari_common::configuration::Network;
-use tari_common_types_wallet::transaction::TxId;
-use tari_common_wallet::configuration::Network as WalletNetwork;
-use tari_transaction_components_wallet::rpc::models::TxSubmissionResponse;
-use tari_transaction_components_wallet::tari_amount::MicroMinotari as WalletMicroMinotari;
+use tari_common_types::transaction::TxId;
+use tari_transaction_components::rpc::models::TxSubmissionResponse;
+use tari_transaction_components::tari_amount::MicroMinotari as WalletMicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
@@ -119,19 +118,9 @@ pub(crate) async fn base_node_http_url() -> Result<String, anyhow::Error> {
     Ok(app_state.node_manager.get_http_api_url().await)
 }
 
-/// The `minotari` wallet crate depends on crates.io tari 6.0.1-pre.2, while the app
-/// uses the git v6.0.1-pre.2 tag. Derive the wallet-side network from the app's
-/// canonical network so the two can never diverge (e.g. sending to the wrong
-/// network). The variant sets are identical across both versions.
-pub(crate) fn wallet_network() -> WalletNetwork {
-    match Network::get_current_or_user_setting_or_default() {
-        Network::MainNet => WalletNetwork::MainNet,
-        Network::StageNet => WalletNetwork::StageNet,
-        Network::NextNet => WalletNetwork::NextNet,
-        Network::LocalNet => WalletNetwork::LocalNet,
-        Network::Igor => WalletNetwork::Igor,
-        Network::Esmeralda => WalletNetwork::Esmeralda,
-    }
+/// Use the app's configured network for the wallet and destination address checks.
+pub(crate) fn wallet_network() -> Network {
+    Network::get_current_or_user_setting_or_default()
 }
 static REQUIRED_CONFIRMATIONS: u64 = 3;
 
@@ -237,6 +226,7 @@ impl MinotariWalletManager {
         info!(target: LOG_TARGET, "Sending a one-sided transaction.");
         let tari_address = Self::get_owner_address().await?;
         let destination_address = parse_destination_address(&address)?;
+        let payment_id = resolve_payment_id(&destination_address, payment_id)?;
 
         // Build the key manager (and so raise the PIN prompt) before anything locks
         // UTXOs: a cancelled, mistyped or timed-out PIN returns from here having locked
