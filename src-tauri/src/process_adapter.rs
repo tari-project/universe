@@ -43,6 +43,11 @@ use tokio_util::task::TaskTracker;
 
 use crate::LOG_TARGET_APP_LOGIC;
 use crate::download_utils::set_permissions;
+use crate::events::CriticalProblemPayload;
+use crate::events_emitter::EventsEmitter;
+use crate::process_killer::kill_process;
+use crate::process_utils::{graceful_kill, launch_child_process, write_pid_file};
+use crate::process_wrapper;
 
 static REPORTED_PERMISSION_ERRORS: LazyLock<Mutex<HashSet<(String, PathBuf)>>> =
     LazyLock::new(|| Mutex::new(HashSet::new()));
@@ -54,17 +59,35 @@ fn format_permission_error(name: &str, path: &Path, err: &impl std::fmt::Display
     )
 }
 
+/// Sentry gets the binary name and the OS error only: the path sits under the
+/// user's home directory, which would leak the username and split the issue per install.
+fn sentry_permission_error(name: &str, err: &anyhow::Error) -> String {
+    match err.downcast_ref::<std::io::Error>() {
+        Some(io) => format!("Could not set permissions on {name} binary: {io}"),
+        None => format!("Could not set permissions on {name} binary"),
+    }
+}
+
 fn should_report_permission_error(name: &str, path: &Path) -> bool {
     REPORTED_PERMISSION_ERRORS
         .lock()
         .map(|mut seen| seen.insert((name.to_string(), path.to_path_buf())))
         .unwrap_or(true)
 }
-use crate::events::CriticalProblemPayload;
-use crate::events_emitter::EventsEmitter;
-use crate::process_killer::kill_process;
-use crate::process_utils::{graceful_kill, launch_child_process, write_pid_file};
-use crate::process_wrapper;
+
+/// Makes `path` executable, logging the full path locally and reporting to Sentry
+/// once per binary per session.
+pub(crate) async fn ensure_binary_permissions(name: &str, path: &Path) -> Result<(), Error> {
+    if let Err(e) = set_permissions(path).await {
+        let msg = format_permission_error(name, path, &e);
+        error!(target: LOG_TARGET_APP_LOGIC, "{msg}");
+        if should_report_permission_error(name, path) {
+            sentry::capture_message(&sentry_permission_error(name, &e), sentry::Level::Error);
+        }
+        return Err(e.context(msg));
+    }
+    Ok(())
+}
 
 const SPACE_ERROR_MESSAGE: &str = "No space left on device";
 
@@ -491,14 +514,7 @@ impl ProcessInstanceTrait for ProcessInstance {
             return Ok(());
         };
 
-        if let Err(e) = set_permissions(&spec.file_path).await {
-            let msg = format_permission_error(&spec.name, &spec.file_path, &e);
-            error!(target: LOG_TARGET_APP_LOGIC, "{msg}");
-            if should_report_permission_error(&spec.name, &spec.file_path) {
-                sentry::capture_message(&msg, sentry::Level::Error);
-            }
-            return Err(anyhow!("{msg}"));
-        }
+        ensure_binary_permissions(&spec.name, &spec.file_path).await?;
 
         let output_task_tracker = task_tracker.clone();
         let output_shutdown_signal = self.shutdown.to_signal();
@@ -754,5 +770,13 @@ mod tests {
         let path = Path::new("/tmp/missing/minotari_node");
         assert!(should_report_permission_error("minotari_node", path));
         assert!(!should_report_permission_error("minotari_node", path));
+    }
+
+    #[test]
+    fn sentry_permission_error_omits_path() {
+        let err = anyhow::Error::from(std::io::Error::from(std::io::ErrorKind::NotFound));
+        let msg = sentry_permission_error("xmrig", &err.context("/home/alice/xmrig"));
+        assert!(msg.starts_with("Could not set permissions on xmrig binary"));
+        assert!(!msg.contains("alice"));
     }
 }

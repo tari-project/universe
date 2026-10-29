@@ -21,7 +21,9 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::process_adapter::{HandleUnhealthyResult, ProcessInstanceTrait};
+use crate::process_adapter::{
+    HandleUnhealthyResult, ProcessInstanceTrait, ensure_binary_permissions,
+};
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
 use crate::{LOG_TARGET_APP_LOGIC, LOG_TARGET_STATUSES};
 use futures_util::future::FusedFuture;
@@ -116,6 +118,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         }
         info!(target: LOG_TARGET_APP_LOGIC, "Starting process watcher for {name}");
         let binary_path = BinaryResolver::current().get_binary_path(binary).await?;
+        // Fail here, before the watcher task is spawned, so the caller sees the error.
+        ensure_binary_permissions(&name, &binary_path).await?;
         self.kill_previous_instances(base_path.clone(), &binary_path)
             .await?;
 
