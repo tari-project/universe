@@ -13,12 +13,6 @@
     },
     {
         "type": "git",
-        "url": "https://github.com/tari-project/tari",
-        "commit": "e5635bfc7534147e38d7af5d9c279e587c135183",
-        "dest": "flatpak-cargo/git/tari-e5635bf"
-    },
-    {
-        "type": "git",
         "url": "https://github.com/tari-project/monero-address-creator",
         "commit": "6129ca045cfa09fa2c8ddb57895fb1cda1a9fe79",
         "dest": "flatpak-cargo/git/monero-address-creator-6129ca0"
@@ -7204,79 +7198,55 @@
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/applications/minotari_app_grpc\" \"cargo/vendor-git/minotari_app_grpc\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/minotari_app_grpc/minotari_app_grpc-6.3.0-pre.2.crate",
+        "sha256": "1e01873546f511dcbc29df4d2ba1f963036134980295cd4f0c6cbd7ea4069b7b",
+        "dest": "cargo/vendor/minotari_app_grpc-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"minotari_app_grpc\"\ndescription = \"This crate is to provide a single source for all cross application grpc files and conversions to and from tari::core\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[package.metadata.cargo-machete]\nignored = [\"prost\"]\n\n[features]\ndefault = [\"base_node\"]\nbase_node = [\"tari_core\", \"tari_comms\"]\n\n[dependencies]\nbase64 = \"0.22\"\nprost = \"0.13.3\"\nrcgen = \"0.12.1\"\nsubtle = \"2.5.0\"\nzeroize = \"1\"\n\n[dependencies.tari_common_types]\npath = \"base_layer/common_types\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_comms]\noptional = true\npath = \"comms/core\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_core]\noptional = true\npath = \"base_layer/core\"\ndefault-features = false\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_crypto]\nversion = \"0.24.1\"\n\n[dependencies.tari_script]\npath = \"infrastructure/tari_script\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_node_components]\npath = \"base_layer/node_components\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_max_size]\npath = \"infrastructure/max_size\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_sidechain]\nversion = \"8.0.0\"\n\n[dependencies.tari_utilities]\nversion = \"0.10\"\n\n[dependencies.tari_transaction_components]\npath = \"base_layer/transaction_components\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.borsh]\nversion = \"1.5.7\"\n\n[dependencies.log]\nversion = \"0.4\"\n\n[dependencies.rand]\nversion = \"0.10.1\"\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dependencies.tokio]\nfeatures = [\"fs\"]\nversion = \"1.47\"\n\n[dependencies.tonic]\nversion = \"0.13.1\"\nfeatures = [\"tls-ring\"]\n\n[dev-dependencies]\nbincode = \"1.3\"\nserde = \"1\"\nserde_json = \"1\"\n\n[dev-dependencies.tari_common]\npath = \"common\"\nversion = \"6.3.0-pre.2\"\n\n[build-dependencies]\ntonic-build = \"0.13.1\"\n\n[build-dependencies.tari_features]\npath = \"common/tari_features\"\nversion = \"6.3.0-pre.2\"\n",
-        "dest": "cargo/vendor-git/minotari_app_grpc",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/minotari_app_grpc",
+        "contents": "{\"package\": \"1e01873546f511dcbc29df4d2ba1f963036134980295cd4f0c6cbd7ea4069b7b\", \"files\": {}}",
+        "dest": "cargo/vendor/minotari_app_grpc-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/applications/minotari_ledger_wallet/common\" \"cargo/vendor-git/minotari_ledger_wallet_common\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/minotari_ledger_wallet_common/minotari_ledger_wallet_common-6.3.0-pre.2.crate",
+        "sha256": "87e9f60b767d4f3ce6af30793f972391d769283f9170d1c2a0867eef48636794",
+        "dest": "cargo/vendor/minotari_ledger_wallet_common-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"minotari_ledger_wallet_common\"\ndescription = \"Common utilities and types for the Minotari Ledger Wallet application\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[dependencies.borsh]\nversion = \"1.5.7\"\noptional = true\nfeatures = [\"derive\"]\n\n[dependencies.bs58]\nversion = \"0.5.1\"\ndefault-features = false\nfeatures = [\"alloc\"]\n\n[dependencies.serde]\nversion = \"1\"\ndefault-features = false\nfeatures = [\"derive\"]\n\n[features]\nborsh = [\"dep:borsh\"]\nalloc = []\n",
-        "dest": "cargo/vendor-git/minotari_ledger_wallet_common",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/minotari_ledger_wallet_common",
+        "contents": "{\"package\": \"87e9f60b767d4f3ce6af30793f972391d769283f9170d1c2a0867eef48636794\", \"files\": {}}",
+        "dest": "cargo/vendor/minotari_ledger_wallet_common-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/clients/rust/base_node_grpc_client\" \"cargo/vendor-git/minotari_node_grpc_client\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/minotari_node_grpc_client/minotari_node_grpc_client-6.3.0-pre.2.crate",
+        "sha256": "a1730be3141744aa3dbd59fcea455e4a75aa1a7892b3fe1586a1ca1352106684",
+        "dest": "cargo/vendor/minotari_node_grpc_client-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"minotari_node_grpc_client\"\ndescription = \"Base node GRPC client\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nhomepage = \"https://tari.com\"\nreadme = \"README.md\"\nlicense = \"BSD-3-Clause\"\n\n[dependencies.minotari_app_grpc]\npath = \"applications/minotari_app_grpc\"\nversion = \"6.3.0-pre.2\"\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\"]\nversion = \"1.47\"\n",
-        "dest": "cargo/vendor-git/minotari_node_grpc_client",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/minotari_node_grpc_client",
+        "contents": "{\"package\": \"a1730be3141744aa3dbd59fcea455e4a75aa1a7892b3fe1586a1ca1352106684\", \"files\": {}}",
+        "dest": "cargo/vendor/minotari_node_grpc_client-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/clients/rust/base_node_wallet_client\" \"cargo/vendor-git/minotari_node_wallet_client\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/minotari_node_wallet_client/minotari_node_wallet_client-6.3.0-pre.2.crate",
+        "sha256": "d9c2f1a2c1f37ef38fdef084f8f2544a7e1b562bbd1844d7749d3c1b62e5d3d0",
+        "dest": "cargo/vendor/minotari_node_wallet_client-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"minotari_node_wallet_client\"\ndescription = \"A client for the base node wallet API\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[dependencies]\nasync-trait = \"0.1.88\"\nserde_json = \"1\"\nserde = \"1\"\n\n[dependencies.tari_common_types]\npath = \"base_layer/common_types\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_transaction_components]\npath = \"base_layer/transaction_components\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_utilities]\nversion = \"0.10\"\n\n[dependencies.tari_shutdown]\npath = \"infrastructure/shutdown\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.anyhow]\nversion = \"1.0\"\n\n[dependencies.url]\nversion = \"2.5.4\"\nfeatures = [\"default\", \"serde\"]\n\n[dependencies.reqwest]\nversion = \"0.12\"\nfeatures = [\"default\", \"json\"]\n\n[dependencies.tokio]\nfeatures = [\"macros\", \"sync\"]\nversion = \"1.47\"\n\n[dependencies.log]\nfeatures = []\nversion = \"0.4\"\n",
-        "dest": "cargo/vendor-git/minotari_node_wallet_client",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/minotari_node_wallet_client",
+        "contents": "{\"package\": \"d9c2f1a2c1f37ef38fdef084f8f2544a7e1b562bbd1844d7749d3c1b62e5d3d0\", \"files\": {}}",
+        "dest": "cargo/vendor/minotari_node_wallet_client-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -12594,117 +12564,81 @@
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/common\" \"cargo/vendor-git/tari_common\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_common/tari_common-6.3.0-pre.2.crate",
+        "sha256": "aca1e827bb9fe9197671534336a86db47abbc0575361a3308c989a5f2405b3b5",
+        "dest": "cargo/vendor/tari_common-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_common\"\ndescription = \"Utilities and features for the Tari domain layer, shared across both Base and Digital Asset layers.\"\nreadme = \"README.md\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[features]\nbuild = [\"prost-build\", \"sha2\"]\nstatic-application-info = [\"git2\"]\n\n[dependencies]\ndirs-next = \"1.0.2\"\npath-clean = \"0.1.0\"\nserde = \"1\"\nserde_json = \"1\"\nserde-value = \"0.7\"\n\n[dependencies.tari_features]\npath = \"common/tari_features\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.anyhow]\nversion = \"1.0\"\n\n[dependencies.config]\nversion = \"0.14.0\"\ndefault-features = false\nfeatures = [\"toml\"]\n\n[dependencies.git2]\nversion = \"0.21\"\ndefault-features = false\noptional = true\n\n[dependencies.log]\nversion = \"0.4\"\n\n[dependencies.log4rs]\ndefault-features = false\nfeatures = [\"config_parsing\", \"threshold_filter\"]\nversion = \"1.4\"\n\n[dependencies.multiaddr]\nversion = \"0.18.2\"\n\n[dependencies.prost-build]\nversion = \"0.11.9\"\noptional = true\n\n[dependencies.serde-saphyr]\nversion = \"2.0\"\ndefault-features = false\nfeatures = [\"deserialize\"]\n\n[dependencies.sha2]\nversion = \"0.10\"\noptional = true\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[target.\"cfg(unix)\".dependencies]\nlibc = \"0.2\"\n\n[dev-dependencies]\ntempfile = \"3.1.0\"\ntoml = \"0.5.8\"\n\n[dev-dependencies.log4rs]\ndefault-features = false\nfeatures = [\"all_components\", \"config_parsing\"]\nversion = \"1.4\"\n\n[dev-dependencies.tari_test_utils]\npath = \"infrastructure/test_utils\"\nversion = \"6.3.0-pre.2\"\n\n[build-dependencies.tari_features]\npath = \"common/tari_features\"\nversion = \"6.3.0-pre.2\"\n\n[lints.rust.unexpected_cfgs]\nlevel = \"warn\"\ncheck-cfg = [\"cfg(tari_target_network_mainnet)\", \"cfg(tari_target_network_nextnet)\"]\n",
-        "dest": "cargo/vendor-git/tari_common",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_common",
+        "contents": "{\"package\": \"aca1e827bb9fe9197671534336a86db47abbc0575361a3308c989a5f2405b3b5\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_common-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/common_sqlite\" \"cargo/vendor-git/tari_common_sqlite\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_common_sqlite/tari_common_sqlite-6.3.0-pre.2.crate",
+        "sha256": "a035fdc2d9928c76fb141846007661049b0f5ddc7b56305e0c54c947751adc02",
+        "dest": "cargo/vendor/tari_common_sqlite-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_common_sqlite\"\ndescription = \"Tari SQLite connection and pool wrapper\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[package.metadata.cargo-machete]\nignored = [\"libsqlite3-sys\"]\n\n[features]\ndefault = [\"bundled\"]\nbundled = [\"libsqlite3-sys/bundled\"]\n\n[dependencies]\ndiesel_migrations = \"2.3\"\nserde = \"1\"\nserde_json = \"1\"\nlazy_static = \"1.5.0\"\n\n[dependencies.tari_utilities]\nversion = \"0.10\"\n\n[dependencies.diesel]\nversion = \"2.3.10\"\nfeatures = [\"sqlite\", \"r2d2\", \"serde_json\", \"chrono\", \"64-column-tables\"]\n\n[dependencies.log]\nversion = \"0.4\"\n\n[dependencies.rand]\nversion = \"0.10.1\"\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dependencies.tokio]\nfeatures = [\"sync\", \"macros\", \"rt\"]\nversion = \"1.47\"\n\n[dependencies.libsqlite3-sys]\nversion = \"0.37\"\nfeatures = [\"bundled\"]\n\n[target.\"cfg(unix)\".dependencies]\nlibc = \"0.2\"\n\n[dev-dependencies]\ntempfile = \"3.1.0\"\n\n[dev-dependencies.tokio]\nfeatures = [\"sync\", \"macros\", \"rt\", \"time\", \"rt-multi-thread\"]\nversion = \"1.47\"\n",
-        "dest": "cargo/vendor-git/tari_common_sqlite",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_common_sqlite",
+        "contents": "{\"package\": \"a035fdc2d9928c76fb141846007661049b0f5ddc7b56305e0c54c947751adc02\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_common_sqlite-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/base_layer/common_types\" \"cargo/vendor-git/tari_common_types\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_common_types/tari_common_types-6.3.0-pre.2.crate",
+        "sha256": "524bbe1522acec310d8da169a708bb68bd40acc38019c8427875d9ec17074588",
+        "dest": "cargo/vendor/tari_common_types-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_common_types\"\ndescription = \"Tari cryptocurrency common types\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[package.metadata.cargo-machete]\nignored = []\n\n[features]\ndefault = []\nwasm = [\"wasm-bindgen\"]\n\n[dependencies]\nbase64 = \"0.22\"\nblake2 = \"0.10\"\nbs58 = \"0.5.1\"\nchacha20 = \"0.7.1\"\nchacha20poly1305 = \"0.10.1\"\ncrc32fast = \"1.2.1\"\ndigest = \"0.10\"\nnewtype-ops = \"0.1\"\nonce_cell = \"1.8.0\"\nstrum = \"0.22\"\nstrum_macros = \"0.22\"\nutoipa = \"6.0.0\"\nzeroize = \"1\"\nserde_json = \"1\"\nsubtle = \"2.4.1\"\n\n[dependencies.tari_crypto]\nversion = \"0.24.1\"\n\n[dependencies.tari_common]\npath = \"common\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_hashing]\npath = \"hashing\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_max_size]\npath = \"infrastructure/max_size\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_sidechain]\nversion = \"8.0.0\"\n\n[dependencies.tari_utilities]\nversion = \"0.10\"\n\n[dependencies.argon2]\nversion = \"0.6.0\"\nfeatures = [\"alloc\", \"zeroize\"]\n\n[dependencies.bitflags]\nversion = \"2.4\"\nfeatures = [\"serde\"]\n\n[dependencies.borsh]\nfeatures = [\"derive\"]\nversion = \"1.5.7\"\n\n[dependencies.rand]\nversion = \"0.10.1\"\n\n[dependencies.serde]\nfeatures = [\"derive\"]\nversion = \"1\"\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dependencies.primitive-types]\nversion = \"0.12\"\nfeatures = [\"serde\"]\n\n[dependencies.wasm-bindgen]\nversion = \"0.2.100\"\noptional = true\n\n[target.\"cfg(target_arch = \\\"wasm32\\\")\".dependencies.getrandom_02]\npackage = \"getrandom\"\nversion = \"0.2\"\nfeatures = [\"js\"]\n\n[target.\"cfg(target_arch = \\\"wasm32\\\")\".dependencies.getrandom]\nversion = \"0.4.2\"\nfeatures = [\"wasm_js\"]\n\n[target.\"cfg(target_arch = \\\"wasm32\\\")\".dependencies.js-sys]\nversion = \"0.3.55\"\n\n[dev-dependencies]\nhex = \"0.4\"\n\n[dev-dependencies.chrono]\nversion = \"0.4\"\ndefault-features = false\nfeatures = [\"serde\"]\n\n[lib]\ncrate-type = [\"cdylib\", \"rlib\"]\n",
-        "dest": "cargo/vendor-git/tari_common_types",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_common_types",
+        "contents": "{\"package\": \"524bbe1522acec310d8da169a708bb68bd40acc38019c8427875d9ec17074588\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_common_types-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/comms/core\" \"cargo/vendor-git/tari_comms\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_comms/tari_comms-6.3.0-pre.2.crate",
+        "sha256": "60eef191e7c50de0717ac55862861f44d48be5e61cc550718021c150f4439921",
+        "dest": "cargo/vendor/tari_comms-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_comms\"\ndescription = \"A peer-to-peer messaging system\"\nreadme = \"README.md\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[dependencies]\nasync-trait = \"0.1.36\"\nblake2 = \"0.10\"\ncidr = \"0.1.0\"\ndata-encoding = \"2.2.0\"\nderivative = \"2.2.0\"\ndiesel_migrations = \"2.3\"\ndigest = \"0.10\"\nonce_cell = \"1.8.0\"\npin-project = \"1.0.8\"\nprost = \"0.13.3\"\nserde = \"1\"\nserde_json = \"1\"\nserde_derive = \"1.0.119\"\nsha3 = \"0.10\"\ntracing = \"0.1.26\"\nyamux = \"0.13.10\"\nzeroize = \"1\"\nlocal-ip-address = \"0.6.5\"\n\n[dependencies.tari_crypto]\nversion = \"0.24.1\"\n\n[dependencies.tari_common_sqlite]\npath = \"common_sqlite\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_metrics]\noptional = true\npath = \"infrastructure/metrics\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_storage]\npath = \"infrastructure/storage\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_shutdown]\npath = \"infrastructure/shutdown\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_utilities]\nversion = \"0.10\"\n\n[dependencies.anyhow]\nversion = \"1.0\"\n\n[dependencies.bitflags]\nversion = \"2.4\"\nfeatures = [\"serde\"]\n\n[dependencies.bytes]\nversion = \"1\"\nfeatures = [\"serde\"]\n\n[dependencies.chrono]\nversion = \"0.4\"\ndefault-features = false\nfeatures = [\"serde\", \"clock\"]\n\n[dependencies.diesel]\nversion = \"2.3.10\"\nfeatures = [\"sqlite\", \"serde_json\", \"chrono\", \"numeric\"]\n\n[dependencies.futures]\nversion = \"^0.3\"\nfeatures = [\"async-await\"]\n\n[dependencies.log]\nfeatures = [\"std\"]\nversion = \"0.4\"\n\n[dependencies.multiaddr]\nversion = \"0.18.2\"\n\n[dependencies.nom]\nversion = \"7.1\"\nfeatures = [\"std\"]\ndefault-features = false\n\n[dependencies.rand]\nversion = \"0.10.1\"\n\n[dependencies.snow]\nversion = \"0.9.5\"\nfeatures = [\"default-resolver\"]\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dependencies.tokio]\nfeatures = [\"rt-multi-thread\", \"time\", \"sync\", \"signal\", \"net\", \"macros\", \"io-util\"]\nversion = \"1.47\"\n\n[dependencies.tokio-stream]\nversion = \"0.1.9\"\nfeatures = [\"sync\"]\n\n[dependencies.tokio-util]\nversion = \"0.7\"\nfeatures = [\"codec\", \"compat\"]\n\n[dependencies.tower]\nversion = \"0.5\"\nfeatures = [\"util\"]\n\n[dependencies.tari_comms_rpc_macros]\npath = \"comms/rpc_macros\"\nversion = \"6.3.0-pre.2\"\n\n[dev-dependencies]\nenv_logger = \"0.11\"\ntempfile = \"3.1.0\"\n\n[dev-dependencies.tari_test_utils]\npath = \"infrastructure/test_utils\"\nversion = \"6.3.0-pre.2\"\n\n[dev-dependencies.toml]\nversion = \"0.5\"\n\n[dev-dependencies.tokio]\nfeatures = [\"test-util\"]\nversion = \"1.47\"\n\n[dev-dependencies.syn]\nversion = \"2.0.118\"\nfeatures = [\"full\", \"visit\"]\n\n[build-dependencies.tari_common]\nfeatures = [\"build\"]\npath = \"common\"\nversion = \"6.3.0-pre.2\"\n\n[features]\nc_integration = []\nmetrics = [\"tari_metrics\"]\nrpc = [\"tower/make\", \"tower/util\"]\n",
-        "dest": "cargo/vendor-git/tari_comms",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_comms",
+        "contents": "{\"package\": \"60eef191e7c50de0717ac55862861f44d48be5e61cc550718021c150f4439921\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_comms-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/comms/dht\" \"cargo/vendor-git/tari_comms_dht\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_comms_dht/tari_comms_dht-6.3.0-pre.2.crate",
+        "sha256": "1070b62fc5aac705a594269816bf46b32eef305c5c7578672ced4fa0734c2e23",
+        "dest": "cargo/vendor/tari_comms_dht-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_comms_dht\"\ndescription = \"Tari comms DHT module\"\nreadme = \"README.md\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[dependencies]\nblake2 = \"0.10\"\nchacha20 = \"0.7.1\"\nchacha20poly1305 = \"0.10.1\"\ndiesel_migrations = \"2.3\"\ndigest = \"0.10\"\nfutures = \"^0.3.1\"\nprost = \"0.13.3\"\nserde = \"1\"\nzeroize = \"1\"\npin-project = \"0.4\"\n\n[dependencies.tari_comms]\nfeatures = [\"rpc\"]\npath = \"comms/core\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_common]\npath = \"common\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_common_sqlite]\npath = \"common_sqlite\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_comms_rpc_macros]\npath = \"comms/rpc_macros\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_crypto]\nversion = \"0.24.1\"\n\n[dependencies.tari_utilities]\nversion = \"0.10\"\n\n[dependencies.tari_shutdown]\npath = \"infrastructure/shutdown\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_metrics]\noptional = true\npath = \"infrastructure/metrics\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.anyhow]\nversion = \"1.0\"\n\n[dependencies.bitflags]\nversion = \"2.4\"\nfeatures = [\"serde\"]\n\n[dependencies.chrono]\nversion = \"0.4\"\ndefault-features = false\n\n[dependencies.diesel]\nversion = \"2.3.10\"\nfeatures = [\"sqlite\", \"serde_json\", \"chrono\", \"numeric\"]\n\n[dependencies.log]\nversion = \"0.4\"\n\n[dependencies.rand]\nversion = \"0.10.1\"\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dependencies.tower]\nversion = \"0.5\"\nfeatures = [\"full\"]\n\n[dependencies.tokio]\nfeatures = [\"rt\", \"macros\"]\nversion = \"1.47\"\n\n[dev-dependencies]\nenv_logger = \"0.11\"\nlmdb-zero = \"0.4.4\"\nonce_cell = \"1.8.0\"\ntempfile = \"3.1.0\"\npetgraph = \"0.5.1\"\nclap = \"4\"\n\n[dev-dependencies.tari_test_utils]\npath = \"infrastructure/test_utils\"\nversion = \"6.3.0-pre.2\"\n\n[dev-dependencies.tokio]\nfeatures = [\"test-util\"]\nversion = \"1.47\"\n\n[dev-dependencies.futures-test]\nversion = \"0.3.5\"\n\n[dev-dependencies.tokio-stream]\nversion = \"0.1.9\"\nfeatures = [\"sync\"]\n\n[build-dependencies.tari_common]\npath = \"common\"\nversion = \"6.3.0-pre.2\"\n\n[features]\ntest-mocks = []\nmetrics = [\"tari_metrics\", \"tari_comms/metrics\"]\n",
-        "dest": "cargo/vendor-git/tari_comms_dht",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_comms_dht",
+        "contents": "{\"package\": \"1070b62fc5aac705a594269816bf46b32eef305c5c7578672ced4fa0734c2e23\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_comms_dht-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/comms/rpc_macros\" \"cargo/vendor-git/tari_comms_rpc_macros\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_comms_rpc_macros/tari_comms_rpc_macros-6.3.0-pre.2.crate",
+        "sha256": "3b9d7382070c26adfb0dc9bd76406d265e9f2a1d10ff489e9ffd27825e4e5815",
+        "dest": "cargo/vendor/tari_comms_rpc_macros-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_comms_rpc_macros\"\ndescription = \"RPC service proc macro\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nhomepage = \"https://tari.com\"\nreadme = \"README.md\"\nlicense = \"BSD-3-Clause\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\n\n[lib]\nproc-macro = true\n\n[dependencies]\nproc-macro2 = \"1.0.24\"\nquote = \"1.0.7\"\n\n[dependencies.syn]\nversion = \"2.0\"\nfeatures = [\"fold\", \"full\", \"extra-traits\"]\n\n[dev-dependencies]\nfutures = \"0.3.5\"\nprost = \"0.13.3\"\ntower-service = \"0.3\"\ntrybuild = \"1.0\"\n\n[dev-dependencies.tari_comms]\npath = \"../core\"\nfeatures = [\"rpc\"]\n\n[dev-dependencies.tari_test_utils]\npath = \"../../infrastructure/test_utils\"\n\n[dev-dependencies.tokio]\nfeatures = [\"macros\"]\nversion = \"1.47\"\n",
-        "dest": "cargo/vendor-git/tari_comms_rpc_macros",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_comms_rpc_macros",
+        "contents": "{\"package\": \"3b9d7382070c26adfb0dc9bd76406d265e9f2a1d10ff489e9ffd27825e4e5815\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_comms_rpc_macros-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -12727,22 +12661,16 @@
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/base_layer/core\" \"cargo/vendor-git/tari_core\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_core/tari_core-6.3.0-pre.2.crate",
+        "sha256": "d688f591135bf19f5b4fffbd662c66f2a31fff57f1cf49b76e15206db0d49cf3",
+        "dest": "cargo/vendor/tari_core-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_core\"\ndescription = \"Core Tari protocol components\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[package.metadata.cargo-machete]\nignored = [\"hickory-proto\"]\n\n[features]\ndefault = []\nbenches = []\nc29_audit = []\nrxt_pow_data_audit = []\nmetrics = [\"tari_metrics\"]\nsqlite_bundled = [\"tari_common_sqlite/bundled\"]\n\n[dependencies]\nbincode = \"1.1.4\"\nblake2 = \"0.10\"\ndigest = \"0.10\"\ndirs-next = \"1.0.2\"\nfs2 = \"0.4.0\"\nhex = \"0.4.2\"\ninteger-encoding = \"3.0\"\nlmdb-zero = \"0.4.4\"\nonce_cell = \"1.8.0\"\nprost = \"0.13.3\"\nserde_json = \"1\"\nserde_valid = \"2\"\nsha3 = \"0.10\"\nsha2 = \"0.10\"\nstrum_macros = \"0.22\"\ntracing = \"0.1.26\"\nurl = \"2.5.4\"\n\n[dependencies.tari_common]\npath = \"common\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_common_types]\npath = \"base_layer/common_types\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_common_sqlite]\npath = \"common_sqlite\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_comms]\nfeatures = [\"rpc\"]\npath = \"comms/core\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_comms_dht]\npath = \"comms/dht\"\ndefault-features = false\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_comms_rpc_macros]\npath = \"comms/rpc_macros\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_crypto]\nfeatures = [\"borsh\"]\nversion = \"0.24.1\"\n\n[dependencies.tari_hashing]\npath = \"hashing\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_node_components]\npath = \"base_layer/node_components\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_max_size]\npath = \"infrastructure/max_size\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_metrics]\noptional = true\npath = \"infrastructure/metrics\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_mmr]\npath = \"base_layer/mmr\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_p2p]\npath = \"base_layer/p2p\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_script]\npath = \"infrastructure/tari_script\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_service_framework]\npath = \"base_layer/service_framework\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_shutdown]\npath = \"infrastructure/shutdown\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_sidechain]\nversion = \"8.0.0\"\n\n[dependencies.tari_storage]\npath = \"infrastructure/storage\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_transaction_components]\npath = \"base_layer/transaction_components\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_test_utils]\npath = \"infrastructure/test_utils\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_utilities]\nfeatures = [\"borsh\"]\nversion = \"0.10\"\n\n[dependencies.anyhow]\nversion = \"1.0\"\n\n[dependencies.async-trait]\nversion = \"0.1.50\"\n\n[dependencies.borsh]\nfeatures = [\"derive\"]\nversion = \"1.5.7\"\n\n[dependencies.chrono]\nversion = \"0.4\"\ndefault-features = false\nfeatures = [\"serde\"]\n\n[dependencies.futures]\nversion = \"^0.3.16\"\nfeatures = [\"async-await\"]\n\n[dependencies.hickory-proto]\nversion = \"0.26.3\"\n\n[dependencies.jmt]\nversion = \"0.11.0\"\nfeatures = [\"mocks\"]\n\n[dependencies.log]\nversion = \"0.4\"\n\n[dependencies.monero]\nversion = \"0.21.0\"\nfeatures = [\"serde-crate\"]\n\n[dependencies.rand]\nversion = \"0.10.1\"\n\n[dependencies.randomx-rs]\nversion = \"1.6\"\n\n[dependencies.serde]\nfeatures = [\"derive\"]\nversion = \"1\"\n\n[dependencies.tiny-keccak]\npackage = \"tari-tiny-keccak\"\nversion = \"2.0.2\"\nfeatures = [\"keccak\"]\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dependencies.tokio]\nfeatures = [\"time\", \"sync\", \"macros\", \"net\"]\nversion = \"1.47\"\n\n[dependencies.primitive-types]\nversion = \"0.12\"\nfeatures = [\"serde\"]\n\n[dev-dependencies]\nflate2 = \"1\"\ntempfile = \"3.1.0\"\nquickcheck = \"1.0\"\nserial_test = \"0.5\"\nenv_logger = \"0.11\"\n\n[dev-dependencies.criterion]\nversion = \"0.8\"\n\n[dev-dependencies.tokio]\nfeatures = [\"test-util\"]\nversion = \"1.47\"\n\n[dev-dependencies.tari_p2p]\nfeatures = [\"test-mocks\"]\npath = \"base_layer/p2p\"\nversion = \"6.3.0-pre.2\"\n\n[dev-dependencies.tari_comms_dht]\nfeatures = [\"test-mocks\"]\npath = \"comms/dht\"\ndefault-features = false\nversion = \"6.3.0-pre.2\"\n\n[dev-dependencies.tari_test_utils]\npath = \"infrastructure/test_utils\"\nversion = \"6.3.0-pre.2\"\n\n[dev-dependencies.config]\nversion = \"0.14.0\"\n\n[build-dependencies.tari_common]\nfeatures = [\"build\"]\npath = \"common\"\nversion = \"6.3.0-pre.2\"\n\n[build-dependencies.tari_features]\npath = \"common/tari_features\"\nversion = \"6.3.0-pre.2\"\n\n[[bench]]\nname = \"mempool\"\nharness = false\n\n[lints.rust.unexpected_cfgs]\nlevel = \"warn\"\ncheck-cfg = [\"cfg(tari_target_network_mainnet)\", \"cfg(tari_target_network_nextnet)\", \"cfg(tari_target_network_testnet)\"]\n\n[[example]]\nname = \"audit_c29\"\nrequired-features = [\"c29_audit\"]\ntest = true\n\n[[example]]\nname = \"audit_rxt_pow_data\"\nrequired-features = [\"rxt_pow_data_audit\"]\n",
-        "dest": "cargo/vendor-git/tari_core",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_core",
+        "contents": "{\"package\": \"d688f591135bf19f5b4fffbd662c66f2a31fff57f1cf49b76e15206db0d49cf3\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_core-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -12778,41 +12706,29 @@
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/common/tari_features\" \"cargo/vendor-git/tari_features\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_features/tari_features-6.3.0-pre.2.crate",
+        "sha256": "8c88eca8bd0c9bdbbc216625a6b3a7529f05567fa0848c859fd8f8144e932a00",
+        "dest": "cargo/vendor/tari_features-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_features\"\ndescription = \"Compilable features for Tari applications\"\nreadme = \"README.md\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n",
-        "dest": "cargo/vendor-git/tari_features",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_features",
+        "contents": "{\"package\": \"8c88eca8bd0c9bdbbc216625a6b3a7529f05567fa0848c859fd8f8144e932a00\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_features-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/hashing\" \"cargo/vendor-git/tari_hashing\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_hashing/tari_hashing-6.3.0-pre.2.crate",
+        "sha256": "5ffd7276f445c7963bd187b0a2309e7251996fb1a5631a418a6e555b1f6142cb",
+        "dest": "cargo/vendor/tari_hashing-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_hashing\"\ndescription = \"Tari hash domains\"\nreadme = \"README.md\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[package.metadata.cargo-machete]\nignored = [\"generic-array\"]\n\n[dependencies.tari_crypto]\nfeatures = [\"borsh\"]\nversion = \"0.24.1\"\n\n[dependencies.borsh]\nversion = \"1.5.7\"\n\n[dependencies.digest]\nversion = \"0.10\"\n\n[dependencies.blake2]\nversion = \"0.10\"\ndefault-features = false\n\n[dependencies.generic-array]\nversion = \"0.14\"\ndefault-features = false\nfeatures = [\"zeroize\"]\n\n[dependencies.zeroize]\nversion = \"1\"\ndefault-features = false\n\n[dev-dependencies]\nserde_json = \"1\"\n\n[dev-dependencies.serde]\nfeatures = [\"derive\"]\nversion = \"1\"\n",
-        "dest": "cargo/vendor-git/tari_hashing",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_hashing",
+        "contents": "{\"package\": \"5ffd7276f445c7963bd187b0a2309e7251996fb1a5631a418a6e555b1f6142cb\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_hashing-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -12867,22 +12783,16 @@
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/infrastructure/max_size\" \"cargo/vendor-git/tari_max_size\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_max_size/tari_max_size-6.3.0-pre.2.crate",
+        "sha256": "703d63f99faacd96f2d538eb3feae575e110827953ef54c971f2ea9f4bc0a251",
+        "dest": "cargo/vendor/tari_max_size-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_max_size\"\ndescription = \"Tari max size library\"\ncategories = [\"cryptography\"]\nreadme = \"README.md\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[dependencies]\ninteger-encoding = \"3.0\"\n\n[dependencies.tari_utilities]\nversion = \"0.10\"\n\n[dependencies.borsh]\nfeatures = [\"derive\"]\nversion = \"1.5.7\"\n\n[dependencies.serde]\nfeatures = [\"derive\"]\nversion = \"1\"\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dev-dependencies]\nbincode = \"1.3\"\nserde_json = \"1\"\n",
-        "dest": "cargo/vendor-git/tari_max_size",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_max_size",
+        "contents": "{\"package\": \"703d63f99faacd96f2d538eb3feae575e110827953ef54c971f2ea9f4bc0a251\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_max_size-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -12899,41 +12809,29 @@
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/base_layer/mmr\" \"cargo/vendor-git/tari_mmr\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_mmr/tari_mmr-6.3.0-pre.2.crate",
+        "sha256": "df40bc6d727874ccd318fc2715ea8000830e4b751199acea8976178e0aba5624",
+        "dest": "cargo/vendor/tari_mmr-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_mmr\"\ndescription = \"A Merkle Mountain Range implementation\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[features]\ndefault = []\n\n[dependencies]\ndigest = \"0.10\"\n\n[dependencies.tari_utilities]\nversion = \"0.10\"\n\n[dependencies.tari_crypto]\nversion = \"0.24.1\"\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dependencies.borsh]\nversion = \"1.5.7\"\n\n[dependencies.serde]\nfeatures = [\"derive\"]\nversion = \"1\"\n\n[dev-dependencies]\nblake2 = \"0.10\"\nserde_json = \"1.0\"\nbincode = \"1.1\"\n\n[dev-dependencies.rand]\nversion = \"0.10.1\"\n\n[dev-dependencies.criterion]\nversion = \"0.8\"\n\n[lib]\nbench = false\n\n[[bench]]\nname = \"mmr\"\nharness = false\n\n[[bench]]\nname = \"smt\"\nharness = false\n\n[[test]]\nname = \"tari_mmr_integration_tests\"\npath = \"tests/mmr_integration_tests.rs\"\n",
-        "dest": "cargo/vendor-git/tari_mmr",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_mmr",
+        "contents": "{\"package\": \"df40bc6d727874ccd318fc2715ea8000830e4b751199acea8976178e0aba5624\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_mmr-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/base_layer/node_components\" \"cargo/vendor-git/tari_node_components\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_node_components/tari_node_components-6.3.0-pre.2.crate",
+        "sha256": "7b90d8c8ab09898bdcdce5fa129f526f0baee14429d04983ce1735fba0299ef1",
+        "dest": "cargo/vendor/tari_node_components-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_node_components\"\ndescription = \"Tari Base Layer Node Components\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[package.metadata.cargo-machete]\nignored = []\n\n[features]\ndefault = []\nwasm = [\"wasm-bindgen\"]\n\n[dependencies]\nblake2 = \"0.10\"\ndigest = \"0.10\"\n\n[dependencies.tari_common_types]\npath = \"base_layer/common_types\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_hashing]\npath = \"hashing\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_transaction_components]\npath = \"base_layer/transaction_components\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_utilities]\nfeatures = [\"borsh\"]\nversion = \"0.10\"\n\n[dependencies.borsh]\nfeatures = [\"derive\"]\nversion = \"1.5.7\"\n\n[dependencies.chrono]\nversion = \"0.4\"\ndefault-features = false\nfeatures = [\"serde\"]\n\n[dependencies.primitive-types]\nversion = \"0.12\"\nfeatures = [\"serde\"]\n\n[dependencies.serde]\nfeatures = [\"derive\"]\nversion = \"1\"\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dependencies.wasm-bindgen]\nversion = \"0.2.100\"\noptional = true\n\n[target.\"cfg(target_arch = \\\"wasm32\\\")\".dependencies.chrono]\nversion = \"0.4\"\nfeatures = [\"serde\", \"wasmbind\"]\n\n[target.\"cfg(target_arch = \\\"wasm32\\\")\".dependencies.getrandom]\nversion = \"0.2\"\nfeatures = [\"js\"]\n\n[target.\"cfg(target_arch = \\\"wasm32\\\")\".dependencies.js-sys]\nversion = \"0.3.55\"\n\n[dev-dependencies]\n\n[lib]\ncrate-type = [\"cdylib\", \"rlib\"]\n",
-        "dest": "cargo/vendor-git/tari_node_components",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_node_components",
+        "contents": "{\"package\": \"7b90d8c8ab09898bdcdce5fa129f526f0baee14429d04983ce1735fba0299ef1\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_node_components-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -13146,79 +13044,55 @@
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/base_layer/p2p\" \"cargo/vendor-git/tari_p2p\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_p2p/tari_p2p-6.3.0-pre.2.crate",
+        "sha256": "2f43609e03dcc97c3ee739abd4b8a87e0f6bf441673c695869cd13e676ccd0df",
+        "dest": "cargo/vendor/tari_p2p-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_p2p\"\ndescription = \"Tari base layer-specific peer-to-peer communication features\"\nreadme = \"README.md\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[package.metadata.cargo-machete]\nignored = [\"tari_comms_rpc_macros\"]\n\n[dependencies]\nprost = \"0.13.3\"\nserde = \"1\"\ntower = \"0.5\"\n\n[dependencies.tari_comms]\npath = \"comms/core\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_comms_dht]\npath = \"comms/dht\"\ndefault-features = false\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_comms_rpc_macros]\npath = \"comms/rpc_macros\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_common]\npath = \"common\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_common_sqlite]\npath = \"common_sqlite\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_service_framework]\npath = \"base_layer/service_framework\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_shutdown]\npath = \"infrastructure/shutdown\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_utilities]\nversion = \"0.10\"\n\n[dependencies.anyhow]\nversion = \"1.0\"\n\n[dependencies.futures]\nversion = \"^0.3.1\"\n\n[dependencies.log]\nversion = \"0.4\"\n\n[dependencies.pgp]\nversion = \"0.19\"\noptional = true\n\n[dependencies.rand]\nversion = \"0.10.1\"\n\n[dependencies.reqwest]\nversion = \"0.12\"\noptional = true\ndefault-features = false\n\n[dependencies.semver]\nversion = \"1.0.1\"\noptional = true\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dependencies.tokio]\nfeatures = [\"macros\"]\nversion = \"1.47\"\n\n[dependencies.tokio-stream]\nversion = \"0.1.9\"\ndefault-features = false\nfeatures = [\"time\"]\n\n[dependencies.hickory-resolver]\nversion = \"0.26.3\"\nfeatures = [\"tokio\", \"tls-ring\", \"dnssec-ring\", \"rustls-platform-verifier\"]\n\n[dependencies.hickory-proto]\nversion = \"0.26.3\"\n\n[dev-dependencies]\ntoml = \"0.5.11\"\nconfig = \"0.14.0\"\nclap = \"4\"\ntempfile = \"3.1.0\"\n\n[dev-dependencies.tari_test_utils]\npath = \"infrastructure/test_utils\"\nversion = \"6.3.0-pre.2\"\n\n[build-dependencies.tari_common]\nfeatures = [\"build\"]\npath = \"common\"\nversion = \"6.3.0-pre.2\"\n\n[features]\ntest-mocks = []\nauto-update = [\"reqwest/default\", \"pgp\", \"semver\"]\n",
-        "dest": "cargo/vendor-git/tari_p2p",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_p2p",
+        "contents": "{\"package\": \"2f43609e03dcc97c3ee739abd4b8a87e0f6bf441673c695869cd13e676ccd0df\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_p2p-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/infrastructure/tari_script\" \"cargo/vendor-git/tari_script\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_script/tari_script-6.3.0-pre.2.crate",
+        "sha256": "070413a6ac657b6144dcf1fa51094ea06b028840961874da661db8948f34b5c8",
+        "dest": "cargo/vendor/tari_script-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_script\"\ndescription = \"Tari script library\"\ncategories = [\"cryptography\"]\nreadme = \"README.md\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[dependencies]\nblake2 = \"0.10\"\ndigest = \"0.10\"\ninteger-encoding = \"=3.0.4\"\nserde = \"1\"\nsha2 = \"0.10\"\nsha3 = \"0.10\"\n\n[dependencies.tari_crypto]\nversion = \"0.24.1\"\n\n[dependencies.tari_max_size]\npath = \"infrastructure/max_size\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_utilities]\nversion = \"0.10\"\n\n[dependencies.borsh]\nversion = \"1.5.7\"\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dev-dependencies.rand]\nversion = \"0.10.1\"\n",
-        "dest": "cargo/vendor-git/tari_script",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_script",
+        "contents": "{\"package\": \"070413a6ac657b6144dcf1fa51094ea06b028840961874da661db8948f34b5c8\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_script-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/base_layer/service_framework\" \"cargo/vendor-git/tari_service_framework\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_service_framework/tari_service_framework-6.3.0-pre.2.crate",
+        "sha256": "3b3120220c7de1e27075e3eb396e41e8da936d4828df4bc4847b31b7291eeb34",
+        "dest": "cargo/vendor/tari_service_framework-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_service_framework\"\ndescription = \"The Tari communication stack service framework\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[dependencies]\nasync-trait = \"0.1.50\"\n\n[dependencies.tari_shutdown]\npath = \"infrastructure/shutdown\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.anyhow]\nversion = \"1.0\"\n\n[dependencies.futures]\nversion = \"^0.3.16\"\nfeatures = [\"async-await\"]\n\n[dependencies.log]\nversion = \"0.4\"\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dependencies.tokio]\nfeatures = [\"rt\", \"sync\"]\nversion = \"1.47\"\n\n[dependencies.tower-service]\nversion = \"0.3\"\n\n[dev-dependencies]\ntower = \"0.5\"\n\n[dev-dependencies.tari_test_utils]\npath = \"infrastructure/test_utils\"\nversion = \"6.3.0-pre.2\"\n\n[dev-dependencies.tokio]\nfeatures = [\"rt-multi-thread\", \"macros\", \"time\"]\nversion = \"1.47\"\n\n[dev-dependencies.futures-test]\nversion = \"0.3.3\"\n",
-        "dest": "cargo/vendor-git/tari_service_framework",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_service_framework",
+        "contents": "{\"package\": \"3b3120220c7de1e27075e3eb396e41e8da936d4828df4bc4847b31b7291eeb34\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_service_framework-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/infrastructure/shutdown\" \"cargo/vendor-git/tari_shutdown\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_shutdown/tari_shutdown-6.3.0-pre.2.crate",
+        "sha256": "6e2ab9cce29682d0c65e7e2a75e5b770f158b7b59c5b4e1e93bf0c6854399286",
+        "dest": "cargo/vendor/tari_shutdown-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_shutdown\"\ndescription = \"A convenient shutdown signal\"\nreadme = \"README.md\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[dependencies.futures]\nversion = \"0.3.7\"\n\n[dev-dependencies.tokio]\nfeatures = [\"rt\", \"macros\", \"time\"]\nversion = \"1.47\"\n",
-        "dest": "cargo/vendor-git/tari_shutdown",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_shutdown",
+        "contents": "{\"package\": \"6e2ab9cce29682d0c65e7e2a75e5b770f158b7b59c5b4e1e93bf0c6854399286\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_shutdown-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -13273,22 +13147,16 @@
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/infrastructure/storage\" \"cargo/vendor-git/tari_storage\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_storage/tari_storage-6.3.0-pre.2.crate",
+        "sha256": "fc2f8ffdaa95888bac043fc4bacb5402fa7b2b343df992e3e950a388b9cb4ef8",
+        "dest": "cargo/vendor/tari_storage-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_storage\"\ndescription = \"Key-Value store API for the Tari project\"\nreadme = \"README.md\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[dependencies]\nbincode = \"1.1\"\nlmdb-zero = \"0.4.4\"\n\n[dependencies.log]\nversion = \"0.4\"\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dependencies.serde]\nfeatures = [\"derive\"]\nversion = \"1\"\n\n[dev-dependencies.rand]\nversion = \"0.10.1\"\n\n[dev-dependencies.tari_utilities]\nfeatures = [\"borsh\"]\nversion = \"0.10\"\n",
-        "dest": "cargo/vendor-git/tari_storage",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_storage",
+        "contents": "{\"package\": \"fc2f8ffdaa95888bac043fc4bacb5402fa7b2b343df992e3e950a388b9cb4ef8\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_storage-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -13387,41 +13255,29 @@
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/infrastructure/test_utils\" \"cargo/vendor-git/tari_test_utils\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_test_utils/tari_test_utils-6.3.0-pre.2.crate",
+        "sha256": "a383a9c4fe4464feb4b37cf8f45cea957471e9181ee35887a18e5232fb21329a",
+        "dest": "cargo/vendor/tari_test_utils-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_test_utils\"\ndescription = \"Utility functions used in Tari test functions\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[dependencies]\ntempfile = \"3.1.0\"\n\n[dependencies.tari_shutdown]\npath = \"infrastructure/shutdown\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.futures]\nversion = \"^0.3.1\"\n\n[dependencies.rand]\nversion = \"0.10.1\"\n\n[dependencies.tokio]\nfeatures = [\"rt-multi-thread\", \"time\", \"sync\"]\nversion = \"1.47\"\n\n[dev-dependencies.futures-test]\nversion = \"^0.3.1\"\n",
-        "dest": "cargo/vendor-git/tari_test_utils",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_test_utils",
+        "contents": "{\"package\": \"a383a9c4fe4464feb4b37cf8f45cea957471e9181ee35887a18e5232fb21329a\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_test_utils-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
-        "type": "shell",
-        "commands": [
-            "mkdir -p \"cargo/vendor-git\"",
-            "cp -r --reflink=auto \"flatpak-cargo/git/tari-e5635bf/base_layer/transaction_components\" \"cargo/vendor-git/tari_transaction_components\""
-        ]
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/tari_transaction_components/tari_transaction_components-6.3.0-pre.2.crate",
+        "sha256": "2d0248fcf01be68ddf7f7edfeb823b3c9a85e28c980f7650cee7053aa53097aa",
+        "dest": "cargo/vendor/tari_transaction_components-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "[package]\nname = \"tari_transaction_components\"\ndescription = \"Core Tari transaction components\"\nversion = \"6.3.0-pre.2\"\nedition = \"2024\"\nrust-version = \"1.93.0\"\nauthors = [\"The Tari Development Community\"]\nrepository = \"https://github.com/tari-project/tari\"\nlicense = \"BSD-3-Clause\"\n\n[package.metadata.cargo-machete]\nignored = [\"hickory-proto\"]\n\n[features]\nledger = [\"minotari_ledger_wallet_comms\"]\nwasm = [\"wasm-bindgen\"]\n\n[dependencies]\nbase64 = \"0.22\"\nbytes = \"1.11.1\"\nchacha20poly1305 = \"0.10.1\"\ndecimal-rs = \"0.1.42\"\ndigest = \"0.10\"\ninteger-encoding = \"3.0\"\nnum-format = \"0.4.0\"\nnewtype-ops = \"0.1.4\"\nnum-traits = \"0.2.15\"\nnum-derive = \"0.4.2\"\nserde_repr = \"0.1.8\"\nserde_valid = \"2\"\nstrum_macros = \"0.22\"\nserde_json = \"1\"\nblake2 = \"0.10\"\nuuid = \"1.17.0\"\nzeroize = \"1\"\nutoipa = \"6.0.0\"\n\n[dependencies.minotari_ledger_wallet_comms]\noptional = true\npath = \"applications/minotari_ledger_wallet/comms\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_common]\npath = \"common\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_common_types]\npath = \"base_layer/common_types\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_hashing]\npath = \"hashing\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_max_size]\npath = \"infrastructure/max_size\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_mmr]\npath = \"base_layer/mmr\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_script]\npath = \"infrastructure/tari_script\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.tari_sidechain]\nversion = \"8.0.0\"\n\n[dependencies.tari_utilities]\nversion = \"0.10\"\n\n[dependencies.minotari_ledger_wallet_common]\nfeatures = [\"borsh\"]\npath = \"applications/minotari_ledger_wallet/common\"\nversion = \"6.3.0-pre.2\"\n\n[dependencies.anyhow]\nversion = \"1.0\"\n\n[dependencies.bitflags]\nversion = \"2.4\"\nfeatures = [\"serde\"]\n\n[dependencies.borsh]\nfeatures = [\"derive\"]\nversion = \"1.5.7\"\n\n[dependencies.chrono]\nversion = \"0.4\"\ndefault-features = false\nfeatures = [\"serde\", \"now\"]\n\n[dependencies.primitive-types]\nversion = \"0.12\"\nfeatures = [\"serde\"]\n\n[dependencies.log]\nversion = \"0.4\"\n\n[dependencies.rand]\nversion = \"0.10.1\"\n\n[dependencies.tari_crypto]\nfeatures = [\"borsh\"]\nversion = \"0.24.1\"\n\n[dependencies.thiserror]\nversion = \"2\"\n\n[dependencies.serde]\nfeatures = [\"derive\"]\nversion = \"1\"\n\n[dependencies.semver]\nversion = \"1.0\"\nfeatures = [\"serde\"]\n\n[dependencies.wasm-bindgen]\nversion = \"0.2.100\"\noptional = true\n\n[target.\"cfg(target_arch = \\\"wasm32\\\")\".dependencies.chrono]\nversion = \"0.4\"\nfeatures = [\"serde\", \"wasmbind\"]\n\n[target.\"cfg(tari_ledger_speculos)\".dev-dependencies.minotari_ledger_wallet_comms_testing]\npath = \"../../applications/minotari_ledger_wallet/comms_testing\"\n\n[target.\"cfg(tari_ledger_speculos)\".dev-dependencies.ledger-transport]\nversion = \"0.11\"\n\n[dev-dependencies]\nbincode = \"1.3\"\nargon2 = \"0.6.0-rc.8\"\nhex = \"0.4\"\ntoml = \"0.5.8\"\nserde_json = \"1.0\"\nstatic_assertions = \"1.1.0\"\n\n[dev-dependencies.chrono]\nversion = \"0.4\"\ndefault-features = false\nfeatures = [\"serde\"]\n\n[dev-dependencies.tari_test_utils]\npath = \"infrastructure/test_utils\"\nversion = \"6.3.0-pre.2\"\n\n[lib]\ncrate-type = [\"cdylib\", \"rlib\"]\n\n[lints.rust.unexpected_cfgs]\nlevel = \"warn\"\ncheck-cfg = [\"cfg(tari_target_network_mainnet)\", \"cfg(tari_target_network_nextnet)\", \"cfg(tari_target_network_testnet)\", \"cfg(tari_ledger_speculos)\"]\n",
-        "dest": "cargo/vendor-git/tari_transaction_components",
-        "dest-filename": "Cargo.toml"
-    },
-    {
-        "type": "inline",
-        "contents": "{\"package\": null, \"files\": {}}",
-        "dest": "cargo/vendor-git/tari_transaction_components",
+        "contents": "{\"package\": \"2d0248fcf01be68ddf7f7edfeb823b3c9a85e28c980f7650cee7053aa53097aa\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_transaction_components-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -17209,7 +17065,7 @@
     },
     {
         "type": "inline",
-        "contents": "[source.vendored-sources]\ndirectory = \"cargo/vendor\"\n\n[source.vendored-git-sources]\ndirectory = \"cargo/vendor-git\"\n\n[source.crates-io]\nreplace-with = \"vendored-sources\"\n\n[source.\"https://github.com/tauri-apps/fix-path-env-rs\"]\ngit = \"https://github.com/tauri-apps/fix-path-env-rs\"\nreplace-with = \"vendored-git-sources\"\n\n[source.\"https://github.com/tari-project/minotari-cli\"]\ngit = \"https://github.com/tari-project/minotari-cli\"\nreplace-with = \"vendored-git-sources\"\ntag = \"v0.5.0\"\n\n[source.\"https://github.com/tari-project/tari\"]\ngit = \"https://github.com/tari-project/tari\"\nreplace-with = \"vendored-git-sources\"\ntag = \"v6.3.0-pre.2\"\n\n[source.\"https://github.com/tari-project/monero-address-creator\"]\ngit = \"https://github.com/tari-project/monero-address-creator\"\nreplace-with = \"vendored-git-sources\"\nrev = \"6129ca0\"\n\n[source.\"https://github.com/tari-project/tari-ootle\"]\ngit = \"https://github.com/tari-project/tari-ootle\"\nreplace-with = \"vendored-git-sources\"\nrev = \"c72aa408\"\n\n[source.\"https://github.com/tari-project/psp\"]\ngit = \"https://github.com/tari-project/psp\"\nreplace-with = \"vendored-git-sources\"\nrev = \"ddef0c6\"\n",
+        "contents": "[source.vendored-sources]\ndirectory = \"cargo/vendor\"\n\n[source.vendored-git-sources]\ndirectory = \"cargo/vendor-git\"\n\n[source.crates-io]\nreplace-with = \"vendored-sources\"\n\n[source.\"https://github.com/tauri-apps/fix-path-env-rs\"]\ngit = \"https://github.com/tauri-apps/fix-path-env-rs\"\nreplace-with = \"vendored-git-sources\"\n\n[source.\"https://github.com/tari-project/minotari-cli\"]\ngit = \"https://github.com/tari-project/minotari-cli\"\nreplace-with = \"vendored-git-sources\"\ntag = \"v0.5.0\"\n\n[source.\"https://github.com/tari-project/monero-address-creator\"]\ngit = \"https://github.com/tari-project/monero-address-creator\"\nreplace-with = \"vendored-git-sources\"\nrev = \"6129ca0\"\n\n[source.\"https://github.com/tari-project/tari-ootle\"]\ngit = \"https://github.com/tari-project/tari-ootle\"\nreplace-with = \"vendored-git-sources\"\nrev = \"c72aa408\"\n\n[source.\"https://github.com/tari-project/psp\"]\ngit = \"https://github.com/tari-project/psp\"\nreplace-with = \"vendored-git-sources\"\nrev = \"ddef0c6\"\n",
         "dest": "cargo",
         "dest-filename": "config"
     }
