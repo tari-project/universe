@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { BaseNodeStatus, BridgeEnvs } from '../app-status';
 import { L2Account, L2WalletState } from '../events-payloads';
 import { selectL2Account, useL2WalletStore } from '@app/store/useL2WalletStore.ts';
+import { handleL2WalletStateUpdate } from '@app/store/actions/l2WalletStoreActions.ts';
 import {
     AccountData,
     BridgeTxDetails,
@@ -46,12 +47,8 @@ export type TappletCallableMethod =
 /** Returned by the Ootle methods when L2 is off this network, not enabled, or locked. */
 export const L2_UNAVAILABLE = { error: 'l2_unavailable' };
 const PAY_REF_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+/** At most 10^15 - 1: the PIN prompt shows the amount as a JS number divided by 10^6, exact only below about 2^52. */
 const MICRO_AMOUNT_RE = /^[1-9][0-9]{0,14}$/;
-/**
- * The PIN prompt shows the amount as a JS number divided by 10^6, which is exact only below
- * about 2^52. Keep in step with `MAX_TAPPLET_AMOUNT` in send_gate.rs.
- */
-const MAX_MICRO_AMOUNT = 999_999_999_999_999n;
 /** Ootle addresses and transaction ids are far shorter; this only bounds what a tapplet can send. */
 const MAX_FIELD_LENGTH = 300;
 /**
@@ -62,15 +59,13 @@ const DENIAL_COOLDOWN_MS = 10_000;
 const MAX_DENIAL_COOLDOWN_MS = 5 * 60_000;
 /** After a send that failed for any other reason. */
 const FAILURE_COOLDOWN_MS = 3_000;
-/** A new wait for an id starts polling no sooner than this after the last one ended. */
-const WAIT_RESTART_MS = 5_000;
 const MAX_WAIT_SECS = 600;
-const WAIT_POLL_MS = 2000;
-const MAX_OOTLE_WAITS = 4;
 /** The backend's errors for a cancelled or timed-out PIN prompt, a wrong PIN, a lockout or a denied dialog. */
 const PIN_DENIED_RE = /PIN entry cancelled|Wrong PIN entered|Pin is locked out|Transaction denied by user/;
 /** The backend's tapplet rate limiter refusing a send. */
 const RATE_LIMITED_RE = /Transaction rate limit exceeded/;
+/** The backend refusing the destination before any prompt. */
+const INVALID_ADDRESS_RE = /Invalid L2 address/;
 /** Transaction statuses that won't change any more; anything else keeps the wait polling. */
 const FINAL_TX_STATUSES = ['Accepted', 'Rejected', 'InvalidTransaction', 'OnlyFeeAccepted'];
 
@@ -102,6 +97,7 @@ function backendError(method: string, error: unknown): Error {
     console.error(`Tapplet signer method "${method}" failed: ${error}`);
     if (RATE_LIMITED_RE.test(`${error}`)) return busyError();
     if (PIN_DENIED_RE.test(`${error}`)) return new TappletSignerRejection('denied');
+    if (INVALID_ADDRESS_RE.test(`${error}`)) return invalidArgsError(method);
     return new Error('failed');
 }
 
@@ -125,7 +121,6 @@ function isSendOotleStealthRequest(value: unknown): value is SendOotleStealthReq
     return (
         typeof req.amount === 'string' &&
         MICRO_AMOUNT_RE.test(req.amount) &&
-        BigInt(req.amount) <= MAX_MICRO_AMOUNT &&
         isNonEmptyString(req.address) &&
         req.address === req.address.trim() &&
         req.address.length <= MAX_FIELD_LENGTH &&
@@ -186,12 +181,8 @@ export class TappletSigner {
     /** Denials since the last successful send; each one doubles the cooldown. */
     private denials = 0;
     private denialCooldownUntil = 0;
-    /** When the last wait for each id finished. */
-    private ootleWaitEndedAt = new Map<string, number>();
-    /** Ids sendOotleStealth returned; the only ones waitOotleTransaction will poll for. */
+    /** Ids sendOotleStealth returned; the only ones waitOotleTransaction will wait on. */
     private ootleSentIds = new Set<string>();
-    /** Running waits by transaction id, so a remounted tapplet joins the wait it left behind. */
-    private ootleWaits = new Map<string, Promise<{ status: string } | { error: string }>>();
 
     private constructor(
         params: TappletSignerParams,
@@ -386,11 +377,6 @@ export class TappletSigner {
             const account = await this.defaultOotleAccount();
             if (!account) return L2_UNAVAILABLE;
             try {
-                await invoke('l2_validate_address', { address: req.address });
-            } catch {
-                throw invalidArgsError('sendOotleStealth');
-            }
-            try {
                 const transactionId = await invoke<string>('l2_send_from_tapplet', {
                     account: account.component_address,
                     destination: req.address,
@@ -411,52 +397,41 @@ export class TappletSigner {
     }
 
     /**
-     * Polls the L2 state until the transaction reaches a final status, or the timeout runs out.
-     * Only for ids sendOotleStealth returned. A repeat call for an id already being waited on
-     * joins that wait and keeps its deadline. A new wait within five seconds of the last one for
-     * this id starts polling once those five seconds are up; its timeout counts from then.
-     * Throws 'busy' when four other ids are waited on.
+     * Watches the L2 store (kept current by the wallet events) until the transaction reaches a
+     * final status, or the timeout runs out. Only for ids sendOotleStealth returned.
      */
     public async waitOotleTransaction(
         req: WaitOotleTransactionRequest
     ): Promise<{ status: string } | { error: string }> {
         if (!this.ootleSentIds.has(req.transactionId)) throw invalidArgsError('waitOotleTransaction');
-        const running = this.ootleWaits.get(req.transactionId);
-        if (running) return running;
-        if (this.ootleWaits.size >= MAX_OOTLE_WAITS) throw busyError();
-        const endedAt = this.ootleWaitEndedAt.get(req.transactionId) ?? -Infinity;
-        const delayMs = endedAt + WAIT_RESTART_MS - Date.now();
-        const start = delayMs > 0 ? new Promise((resolve) => setTimeout(resolve, delayMs)) : Promise.resolve();
-        const wait = start
-            .then(() => this.pollOotleTransaction(req))
-            .finally(() => {
-                this.ootleWaits.delete(req.transactionId);
-                this.ootleWaitEndedAt.set(req.transactionId, Date.now());
-            });
-        this.ootleWaits.set(req.transactionId, wait);
-        return wait;
-    }
-
-    private async pollOotleTransaction(
-        req: WaitOotleTransactionRequest
-    ): Promise<{ status: string } | { error: string }> {
-        const deadline = Date.now() + req.timeoutSecs * 1000;
-        let status = 'Pending';
-        while (Date.now() < deadline) {
-            let state: L2WalletState;
+        const stored = useL2WalletStore.getState();
+        if (!stored.enabled || stored.locked) {
+            // The store may not have heard from the wallet yet; one read fills it.
             try {
-                state = await invoke<L2WalletState>('l2_get_state');
+                handleL2WalletStateUpdate(await invoke<L2WalletState>('l2_get_state'));
             } catch {
                 return L2_UNAVAILABLE;
             }
-            for (const account of state.accounts) {
-                const tx = account.transactions.find((t) => t.id === req.transactionId);
-                if (tx) status = tx.status;
-            }
-            if (FINAL_TX_STATUSES.includes(status)) return { status };
-            await new Promise((resolve) => setTimeout(resolve, WAIT_POLL_MS));
         }
-        return { status };
+        return new Promise((resolve) => {
+            let status = 'Pending';
+            const finish = (result: { status: string } | { error: string }) => {
+                clearTimeout(timer);
+                unsubscribe();
+                resolve(result);
+            };
+            const check = (state: L2WalletState) => {
+                if (!state.enabled || state.locked) return finish(L2_UNAVAILABLE);
+                for (const account of state.accounts) {
+                    const tx = account.transactions.find((t) => t.id === req.transactionId);
+                    if (tx) status = tx.status;
+                }
+                if (FINAL_TX_STATUSES.includes(status)) finish({ status });
+            };
+            const timer = setTimeout(() => finish({ status }), req.timeoutSecs * 1000);
+            const unsubscribe = useL2WalletStore.subscribe(check);
+            check(useL2WalletStore.getState());
+        });
     }
 
     public async getBaseNodeStatus(): Promise<BaseNodeStatus> {

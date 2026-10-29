@@ -34,50 +34,30 @@ describe('EnterPinDialog', () => {
     it.each([
         ['tapplet', true],
         ['app', false],
-    ] as const)('shows the pay ref of an L2 send from %s, labelled only for a tapplet', (origin, labelled) => {
-        useSecurityStore.setState({
-            modal: 'enter_pin',
-            pinPromptId: 1,
-            pinContext: {
-                kind: 'l2_send',
-                amount_micro_minotari: 1_000_000,
-                destination: 'otl_esm_1bridge',
-                account: 'component_abc',
-                pay_ref: '0f8fad5b-d9cb-469f-a165-70867728950e',
-                origin,
-                fee_micro_minotari: 10,
-            },
-        });
-        render(<EnterPinDialog />);
-        expect(screen.getByText('0f8fad5b-d9cb-469f-a165-70867728950e')).toBeInTheDocument();
-        expect(screen.queryByText('security.pin.requested-by-tapplet') !== null).toBe(labelled);
-        expect(
-            screen.getByText(labelled ? 'security.pin.approve-tapplet-send' : 'security.pin.approve-send')
-        ).toBeInTheDocument();
-        expect(pinStrings['requested-by-tapplet']).toBe('Requested by the bridge tapplet');
-        expect(pinStrings['approve-tapplet-send']).toBe('Bridge tapplet is asking to send');
-    });
-
-    it('puts the tapplet label above the summary at normal prominence', () => {
-        useSecurityStore.setState({
-            modal: 'enter_pin',
-            pinPromptId: 1,
-            pinContext: {
-                kind: 'l2_send',
-                amount_micro_minotari: 1,
-                destination: 'otl_esm_1bridge',
-                account: 'component_abc',
-                pay_ref: null,
-                origin: 'tapplet',
-                fee_micro_minotari: null,
-            },
-        });
-        render(<EnterPinDialog />);
-        const label = screen.getByText('security.pin.requested-by-tapplet');
-        const destination = screen.getByText('otl_esm_1bridge');
-        expect(label.compareDocumentPosition(destination) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-        expect(label.getAttribute('style') ?? '').not.toMatch(/opacity|font-size/);
-    });
+    ] as const)(
+        'shows the pay ref of an L2 send from %s, headed as a tapplet send only for one',
+        (origin, labelled) => {
+            useSecurityStore.setState({
+                modal: 'enter_pin',
+                pinPromptId: 1,
+                pinContext: {
+                    kind: 'l2_send',
+                    amount_micro_minotari: 1_000_000,
+                    destination: 'otl_esm_1bridge',
+                    account: 'component_abc',
+                    pay_ref: '0f8fad5b-d9cb-469f-a165-70867728950e',
+                    origin,
+                    fee_micro_minotari: 10,
+                },
+            });
+            render(<EnterPinDialog />);
+            expect(screen.getByText('0f8fad5b-d9cb-469f-a165-70867728950e')).toBeInTheDocument();
+            expect(
+                screen.getByText(labelled ? 'security.pin.approve-tapplet-send' : 'security.pin.approve-send')
+            ).toBeInTheDocument();
+            expect(pinStrings['approve-tapplet-send']).toBe('Bridge tapplet is asking to send');
+        }
+    );
 
     it.each([
         ['l2_send', 10_049_990_000, '10,049.990000'],

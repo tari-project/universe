@@ -100,7 +100,6 @@ export default function EnterPinDialog() {
                             subtitle={t('security.pin.approve-burn-subtitle')}
                         />
                     )}
-                    {fromTapplet && <Typography variant="p">{t('security.pin.requested-by-tapplet')}</Typography>}
                     {l2SendContext && (
                         <TransactionContextSummary
                             kind="l2_send"
