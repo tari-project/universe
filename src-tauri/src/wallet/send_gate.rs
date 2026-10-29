@@ -294,9 +294,10 @@ static INFLIGHT: LazyLock<tokio::sync::Mutex<Option<InFlightTxn>>> =
 
 static TXN_RATE_LIMITER: LazyLock<tokio::sync::Mutex<TransactionRateLimiter>> =
     LazyLock::new(|| tokio::sync::Mutex::new(TransactionRateLimiter::new()));
-/// Tapplet sends, at the same per-minute limit as MCP but counted separately.
+/// Tapplet sends, counted separately from MCP and not tied to the MCP config's limit.
 static TAPPLET_RATE_LIMITER: LazyLock<tokio::sync::Mutex<TransactionRateLimiter>> =
     LazyLock::new(|| tokio::sync::Mutex::new(TransactionRateLimiter::new()));
+const TAPPLET_SENDS_PER_MINUTE: u32 = 5;
 
 struct InFlightTxn {
     origin: SendOrigin,
@@ -448,6 +449,7 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
     )?;
     let amount_u64 = parse_amount(&amount)?;
     check_tapplet_amount(origin, amount_u64)?;
+    check_tapplet_pay_ref(origin, pay_ref.as_deref())?;
     let address = OotleWalletManager::parse_address(&destination)?;
     let (pay_ref, memo) = l2_send_memo(pay_ref.as_deref(), &address)?.unzip();
     // The parsed form, so the PIN prompt never shows padding the parser trimmed away.
@@ -534,15 +536,41 @@ fn hex_bytes(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-/// The PIN prompt gets the amount as a JS number, so above 2^53 - 1 micro XTR what it shows
-/// could differ from what is signed. Only a tapplet chooses amounts that large unseen.
-const MAX_TAPPLET_AMOUNT: u64 = (1 << 53) - 1;
+/// The PIN prompt shows the amount as a JS number divided by 10^6. Above 2^52 micro XTR that
+/// quotient can round to a neighbouring micro XTR, so what it shows could differ from what is
+/// signed. Below 10^15 the quotient is under 2^30 and always rounds back exactly. Only a
+/// tapplet chooses amounts that large unseen. Keep in step with `MAX_MICRO_AMOUNT` in
+/// TappletSigner.ts.
+const MAX_TAPPLET_AMOUNT: u64 = 999_999_999_999_999;
 
 fn check_tapplet_amount(origin: SendOrigin, amount_u64: u64) -> Result<(), TransactionError> {
     if origin == SendOrigin::Tapplet && amount_u64 > MAX_TAPPLET_AMOUNT {
         return Err(TransactionError::InvalidAmount(format!(
             "Amount must be at most {MAX_TAPPLET_AMOUNT} micro XTR"
         )));
+    }
+    Ok(())
+}
+
+/// A tapplet's pay ref is a bridge order id: a hyphenated UUID v4. The signer checks this too,
+/// but it runs in the webview.
+fn check_tapplet_pay_ref(
+    origin: SendOrigin,
+    pay_ref: Option<&str>,
+) -> Result<(), TransactionError> {
+    if origin != SendOrigin::Tapplet {
+        return Ok(());
+    }
+    let is_uuid_v4 = pay_ref.is_some_and(|p| {
+        p.len() == 36
+            && uuid::Uuid::try_parse(p).is_ok_and(|u| {
+                u.get_version_num() == 4 && u.get_variant() == uuid::Variant::RFC4122
+            })
+    });
+    if !is_uuid_v4 {
+        return Err(TransactionError::InvalidAddress(
+            "Pay reference must be a UUID v4".to_string(),
+        ));
     }
     Ok(())
 }
@@ -646,11 +674,20 @@ async fn pass_gates(
     // Rate limit check (after acquiring gate to avoid burning quota). Tapplet sends behind a
     // PIN skip the confirmation dialog, so this sits outside it.
     if origin.enforces_rate_limit() {
-        let limiter = match origin {
-            SendOrigin::Tapplet => &TAPPLET_RATE_LIMITER,
-            _ => &TXN_RATE_LIMITER,
+        let allowed = match origin {
+            SendOrigin::Tapplet => TAPPLET_RATE_LIMITER
+                .lock()
+                .await
+                .check_allowed(TAPPLET_SENDS_PER_MINUTE),
+            _ => {
+                TXN_RATE_LIMITER
+                    .lock()
+                    .await
+                    .check_transaction_allowed()
+                    .await
+            }
         };
-        if !limiter.lock().await.check_transaction_allowed().await {
+        if !allowed {
             return Err(TransactionError::RateLimited(
                 "Transaction rate limit exceeded. Try again later.".to_string(),
             ));
@@ -1113,6 +1150,29 @@ mod tests {
             .expect_err("too large for the prompt");
         assert!(matches!(err, TransactionError::InvalidAmount(_)));
         assert!(check_tapplet_amount(SendOrigin::App, MAX_TAPPLET_AMOUNT + 1).is_ok());
+    }
+
+    #[test]
+    fn tapplet_pay_refs_must_be_uuid_v4() {
+        let v4 = "3f2b8c1e-9a4d-4e6f-8b2a-1c3d5e7f9a0b";
+        assert!(check_tapplet_pay_ref(SendOrigin::Tapplet, Some(v4)).is_ok());
+        assert!(check_tapplet_pay_ref(SendOrigin::Tapplet, Some(&v4.to_uppercase())).is_ok());
+        for bad in [
+            None,
+            Some("not-a-uuid"),
+            Some("3f2b8c1e9a4d4e6f8b2a1c3d5e7f9a0b"),
+            Some("{3f2b8c1e-9a4d-4e6f-8b2a-1c3d5e7f9a0b}"),
+            Some("3f2b8c1e-9a4d-1e6f-8b2a-1c3d5e7f9a0b"),
+            Some("3f2b8c1e-9a4d-4e6f-cb2a-1c3d5e7f9a0b"),
+        ] {
+            let err = check_tapplet_pay_ref(SendOrigin::Tapplet, bad).expect_err("refused");
+            assert!(
+                matches!(err, TransactionError::InvalidAddress(_)),
+                "{bad:?}"
+            );
+        }
+        assert!(check_tapplet_pay_ref(SendOrigin::App, Some("anything")).is_ok());
+        assert!(check_tapplet_pay_ref(SendOrigin::App, None).is_ok());
     }
 
     #[test]

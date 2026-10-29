@@ -8,7 +8,7 @@ vi.mock('@tauri-apps/api/window', () => ({
     })),
 }));
 
-import { L2_UNAVAILABLE, TappletSigner } from './TappletSigner';
+import { L2_UNAVAILABLE, TappletSigner, TappletSignerRejection } from './TappletSigner';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { initialState as l2StoreInitialState, useL2WalletStore } from '@app/store/useL2WalletStore';
 import { L2WalletState } from '@app/types/events-payloads';
@@ -255,7 +255,8 @@ describe('TappletSigner.runOne', () => {
                 [[{ amount: '100', address: ADDRESS, payRef: '0f8fad5b-d9cb-169f-a165-70867728950e' }]],
                 [[{ amount: '100', address: ADDRESS, payRef: `${PAY_REF}${PAY_REF}` }]],
                 [[{ amount: '1'.repeat(21), address: ADDRESS, payRef: PAY_REF }]],
-                [[{ amount: '9007199254740992', address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: '1000000000000000', address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: '9007199254740991', address: ADDRESS, payRef: PAY_REF }]],
                 [[{ amount: '100', address: ` ${ADDRESS}`, payRef: PAY_REF }]],
                 [[{ amount: '100', address: `${ADDRESS}\n`, payRef: PAY_REF }]],
                 [[{ amount: '100', address: `otl_esm_1${'q'.repeat(300)}`, payRef: PAY_REF }]],
@@ -271,7 +272,7 @@ describe('TappletSigner.runOne', () => {
 
                 await expect(
                     signer.runOne('sendOotleStealth', [
-                        { amount: '9007199254740991', address: ADDRESS, payRef: PAY_REF },
+                        { amount: '999999999999999', address: ADDRESS, payRef: PAY_REF },
                     ])
                 ).resolves.toEqual({ transactionId: 'tx1' });
             });
@@ -302,6 +303,7 @@ describe('TappletSigner.runOne', () => {
                 ['L2 send failed: Wrong PIN entered!', 'denied'],
                 ["L2 send failed: The L2 indexer didn't answer within 30 seconds", 'failed'],
                 ['L2 send failed: request cancelled by the indexer', 'failed'],
+                ['Transaction rate limit exceeded. Try again later.', 'busy'],
             ])('turns the backend error "%s" into "%s"', async (backend, code) => {
                 mockCommands({
                     l2_get_state: l2State(),
@@ -313,6 +315,23 @@ describe('TappletSigner.runOne', () => {
                     signer.runOne('sendOotleStealth', [{ amount: '100', address: ADDRESS, payRef: PAY_REF }])
                 ).rejects.toThrow(new RegExp(`^${code}$`));
                 expect(console.error).toHaveBeenCalledWith(expect.stringContaining(backend));
+            });
+
+            it.each([
+                ['PIN entry cancelled', true],
+                ['Transaction rate limit exceeded. Try again later.', true],
+                ["L2 send failed: The L2 indexer didn't answer within 30 seconds", false],
+            ])('a backend "%s" is a signer rejection (no toast): %s', async (backend, rejection) => {
+                mockCommands({
+                    l2_get_state: l2State(),
+                    l2_validate_address: null,
+                    l2_send_from_tapplet: new Error(backend),
+                });
+
+                const error = await signer
+                    .runOne('sendOotleStealth', [{ amount: '100', address: ADDRESS, payRef: PAY_REF }])
+                    .catch((e: unknown) => e);
+                expect(error instanceof TappletSignerRejection).toBe(rejection);
             });
 
             it('refuses a second send while one is in flight, then allows the next', async () => {

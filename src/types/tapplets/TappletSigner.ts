@@ -46,9 +46,12 @@ export type TappletCallableMethod =
 /** Returned by the Ootle methods when L2 is off this network, not enabled, or locked. */
 export const L2_UNAVAILABLE = { error: 'l2_unavailable' };
 const PAY_REF_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const MICRO_AMOUNT_RE = /^[1-9][0-9]{0,15}$/;
-/** Above this the PIN prompt, which gets the amount as a JS number, could show a different amount. */
-const MAX_MICRO_AMOUNT = BigInt(Number.MAX_SAFE_INTEGER);
+const MICRO_AMOUNT_RE = /^[1-9][0-9]{0,14}$/;
+/**
+ * The PIN prompt shows the amount as a JS number divided by 10^6, which is exact only below
+ * about 2^52. Keep in step with `MAX_TAPPLET_AMOUNT` in send_gate.rs.
+ */
+const MAX_MICRO_AMOUNT = 999_999_999_999_999n;
 /** Ootle addresses and transaction ids are far shorter; this only bounds what a tapplet can send. */
 const MAX_FIELD_LENGTH = 300;
 /**
@@ -66,6 +69,8 @@ const WAIT_POLL_MS = 2000;
 const MAX_OOTLE_WAITS = 4;
 /** The backend's errors for a cancelled or timed-out PIN prompt, a wrong PIN, a lockout or a denied dialog. */
 const PIN_DENIED_RE = /PIN entry cancelled|Wrong PIN entered|Pin is locked out|Transaction denied by user/;
+/** The backend's tapplet rate limiter refusing a send. */
+const RATE_LIMITED_RE = /Transaction rate limit exceeded/;
 /** Transaction statuses that won't change any more; anything else keeps the wait polling. */
 const FINAL_TX_STATUSES = ['Accepted', 'Rejected', 'InvalidTransaction', 'OnlyFeeAccepted'];
 
@@ -89,10 +94,15 @@ function busyError(): Error {
 
 type SendOutcome = 'sent' | 'denied' | 'failed' | 'none';
 
-/** Backend error text stays local: the tapplet gets only 'denied' or 'failed'. */
+/**
+ * Backend error text stays local: the tapplet gets only 'busy', 'denied' or 'failed'.
+ * Only 'failed' is toasted; the user just turned down 'denied' themselves.
+ */
 function backendError(method: string, error: unknown): Error {
     console.error(`Tapplet signer method "${method}" failed: ${error}`);
-    return new Error(PIN_DENIED_RE.test(`${error}`) ? 'denied' : 'failed');
+    if (RATE_LIMITED_RE.test(`${error}`)) return busyError();
+    if (PIN_DENIED_RE.test(`${error}`)) return new TappletSignerRejection('denied');
+    return new Error('failed');
 }
 
 function isNonEmptyString(value: unknown): value is string {
