@@ -558,6 +558,21 @@ describe('TappletSigner.runOne', () => {
                 await expect(result).resolves.toEqual(L2_UNAVAILABLE);
             });
 
+            it('refuses a fifth wait while four run, then frees the slot', async () => {
+                vi.useFakeTimers();
+                useL2WalletStore.setState(l2State({}, 'Pending'));
+                const wait = () => signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 5 }]);
+
+                const waits = [wait(), wait(), wait(), wait()];
+                await expect(wait()).rejects.toThrow(/^busy$/);
+
+                await vi.advanceTimersByTimeAsync(6_000);
+                await Promise.all(waits);
+                const again = wait();
+                await vi.advanceTimersByTimeAsync(6_000);
+                await expect(again).resolves.toEqual({ status: 'Pending' });
+            });
+
             it('is l2_unavailable when the L2 state cannot be read', async () => {
                 mockCommands({ l2_get_state: new Error('Layer 2 is not available on mainnet') });
 

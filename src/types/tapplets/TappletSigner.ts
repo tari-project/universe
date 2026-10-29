@@ -60,6 +60,7 @@ const MAX_DENIAL_COOLDOWN_MS = 5 * 60_000;
 /** After a send that failed for any other reason. */
 const FAILURE_COOLDOWN_MS = 3_000;
 const MAX_WAIT_SECS = 600;
+const MAX_OOTLE_WAITS = 4;
 /** The backend's errors for a cancelled or timed-out PIN prompt, a wrong PIN, a lockout or a denied dialog. */
 const PIN_DENIED_RE = /PIN entry cancelled|Wrong PIN entered|Pin is locked out|Transaction denied by user/;
 /** The backend's tapplet rate limiter refusing a send. */
@@ -183,6 +184,7 @@ export class TappletSigner {
     private denialCooldownUntil = 0;
     /** Ids sendOotleStealth returned; the only ones waitOotleTransaction will wait on. */
     private ootleSentIds = new Set<string>();
+    private ootleWaitCount = 0;
 
     private constructor(
         params: TappletSignerParams,
@@ -398,40 +400,46 @@ export class TappletSigner {
 
     /**
      * Watches the L2 store (kept current by the wallet events) until the transaction reaches a
-     * final status, or the timeout runs out. Only for ids sendOotleStealth returned.
+     * final status, or the timeout runs out. Only for ids sendOotleStealth returned; 'busy' past four waits.
      */
     public async waitOotleTransaction(
         req: WaitOotleTransactionRequest
     ): Promise<{ status: string } | { error: string }> {
         if (!this.ootleSentIds.has(req.transactionId)) throw invalidArgsError('waitOotleTransaction');
-        const stored = useL2WalletStore.getState();
-        if (!stored.enabled || stored.locked) {
-            // The store may not have heard from the wallet yet; one read fills it.
-            try {
-                handleL2WalletStateUpdate(await invoke<L2WalletState>('l2_get_state'));
-            } catch {
-                return L2_UNAVAILABLE;
-            }
-        }
-        return new Promise((resolve) => {
-            let status = 'Pending';
-            const finish = (result: { status: string } | { error: string }) => {
-                clearTimeout(timer);
-                unsubscribe();
-                resolve(result);
-            };
-            const check = (state: L2WalletState) => {
-                if (!state.enabled || state.locked) return finish(L2_UNAVAILABLE);
-                for (const account of state.accounts) {
-                    const tx = account.transactions.find((t) => t.id === req.transactionId);
-                    if (tx) status = tx.status;
+        if (this.ootleWaitCount >= MAX_OOTLE_WAITS) throw busyError();
+        this.ootleWaitCount += 1;
+        try {
+            const stored = useL2WalletStore.getState();
+            if (!stored.enabled || stored.locked) {
+                // The store may not have heard from the wallet yet; one read fills it.
+                try {
+                    handleL2WalletStateUpdate(await invoke<L2WalletState>('l2_get_state'));
+                } catch {
+                    return L2_UNAVAILABLE;
                 }
-                if (FINAL_TX_STATUSES.includes(status)) finish({ status });
-            };
-            const timer = setTimeout(() => finish({ status }), req.timeoutSecs * 1000);
-            const unsubscribe = useL2WalletStore.subscribe(check);
-            check(useL2WalletStore.getState());
-        });
+            }
+            return await new Promise((resolve) => {
+                let status = 'Pending';
+                const finish = (result: { status: string } | { error: string }) => {
+                    clearTimeout(timer);
+                    unsubscribe();
+                    resolve(result);
+                };
+                const check = (state: L2WalletState) => {
+                    if (!state.enabled || state.locked) return finish(L2_UNAVAILABLE);
+                    for (const account of state.accounts) {
+                        const tx = account.transactions.find((t) => t.id === req.transactionId);
+                        if (tx) status = tx.status;
+                    }
+                    if (FINAL_TX_STATUSES.includes(status)) finish({ status });
+                };
+                const timer = setTimeout(() => finish({ status }), req.timeoutSecs * 1000);
+                const unsubscribe = useL2WalletStore.subscribe(check);
+                check(useL2WalletStore.getState());
+            });
+        } finally {
+            this.ootleWaitCount -= 1;
+        }
     }
 
     public async getBaseNodeStatus(): Promise<BaseNodeStatus> {
