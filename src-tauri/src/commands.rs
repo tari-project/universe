@@ -734,6 +734,8 @@ pub async fn reset_settings(
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
     if reset_wallet {
+        // Resetting the wallet deletes its folder, and an unmined burn's proof lives in it.
+        MinotariWalletManager::ensure_no_pending_burns().map_err(|e| e.to_string())?;
         // Validate PIN if pin locked
         let _unused = PinManager::get_validated_pin_if_defined(&app_handle, None)
             .await

@@ -1205,10 +1205,16 @@ impl MinotariWalletManager {
         let wallet_dir = MinotariWalletDatabaseManager::minotari_wallet_dir()?;
         warn!(
             target: LOG_TARGET,
-            "Minotari wallet account cannot be decrypted with the stored password; removing {} and rescanning from the wallet birthday",
+            "Minotari wallet account cannot be decrypted with the stored password; discarding {} and rescanning from the wallet birthday",
             wallet_dir.display()
         );
-        tokio::fs::remove_dir_all(&wallet_dir).await?;
+        if let Some(aside) = discard_wallet_dir(&wallet_dir, Path::new(database_path))? {
+            warn!(
+                target: LOG_TARGET,
+                "It may hold the only proof of an unsettled burn to Layer 2, so it was moved to {} instead",
+                aside.display()
+            );
+        }
         Ok(())
     }
 
@@ -1353,6 +1359,11 @@ fn scan_progress_percent(current_height: u64, tip_height: u64) -> f64 {
 /// least 1 µT). Uses the selector's fee terms so the result is exactly what
 /// `InputSelector::fetch_unspent_outputs` will select for; one µT more fails with
 /// `ChangeNotAffordable`.
+///
+/// This mirrors minotari's `minotari/src/transactions/input_selector.rs` at v0.5.0 (query,
+/// fee terms, minimum change, dust rule, input cap). Re-check it against that file on every
+/// minotari bump; `the_max_sendable_amount_sends_with_change_and_one_micro_tari_more_does_not`
+/// is the guard.
 fn max_sendable(
     conn: &Connection,
     account_id: i64,
@@ -1419,9 +1430,18 @@ fn stalled_transactions(
             .iter()
             .find(|b| tx.sent_output_hash.as_deref() == Some(hex::encode(b.output_hash).as_str()));
         let amount = match burn {
-            Some(b) => u64::try_from(b.value).unwrap_or_default(),
+            Some(b) => u64::try_from(b.value).ok(),
             None => get_displayed_transaction_by_id(conn, &tx.id.to_string())?
-                .map_or(0, |d| d.amount.as_u64()),
+                .map(|d| d.amount.as_u64()),
+        };
+        // The abandon prompt shows this amount; without it the user would approve "0 XTM".
+        let Some(amount) = amount else {
+            warn!(
+                target: LOG_TARGET,
+                "Stalled transaction {} has no readable amount, so it isn't offered for abandoning",
+                tx.id
+            );
+            continue;
         };
         stalled.push(StalledTransaction {
             tx_id: tx.id.to_string(),
@@ -1570,6 +1590,26 @@ fn any_input_spent(
 /// Reads the database file directly so the check works whether or not the wallet phase
 /// has the pool open. Fails closed: a database that can't be read might still hold an
 /// unmined burn's only proof row.
+/// Deletes `wallet_dir`, unless its database may hold an unmined burn's proof (or can't be
+/// checked): then it is renamed beside itself and the new name returned, so the proof isn't lost.
+fn discard_wallet_dir(
+    wallet_dir: &Path,
+    database_path: &Path,
+) -> Result<Option<PathBuf>, std::io::Error> {
+    if pending_burns_guard(database_path).is_ok() {
+        std::fs::remove_dir_all(wallet_dir)?;
+        return Ok(None);
+    }
+    let secs = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    let mut name = wallet_dir.file_name().unwrap_or_default().to_os_string();
+    name.push(format!(".undecryptable-{secs}"));
+    let aside = wallet_dir.with_file_name(name);
+    std::fs::rename(wallet_dir, &aside)?;
+    Ok(Some(aside))
+}
+
 fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
     if !database_path.exists() {
         return Ok(());
@@ -1595,8 +1635,8 @@ fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
 mod tests {
     use super::{
         SendReceipt, StalledTransaction, abandon_stalled, blocks_to_report, burn_times,
-        max_sendable, move_legacy_burn_proofs, pending_burns, pending_burns_guard,
-        record_burn_broadcast, scan_progress_percent, stalled_transactions,
+        discard_wallet_dir, max_sendable, move_legacy_burn_proofs, pending_burns,
+        pending_burns_guard, record_burn_broadcast, scan_progress_percent, stalled_transactions,
     };
     use crate::wallet::minotari_wallet::transaction::{CONFIRMATION_WINDOW, SEND_FEE_PER_GRAM};
     use minotari_wallet::db::{
@@ -1791,6 +1831,46 @@ mod tests {
         std::fs::remove_dir_all(root.path().join("minotari-wallet")).expect("refresh");
         assert_eq!(move_legacy_burn_proofs(legacy, dir.clone()), dir);
         assert!(dir.join("proof.json").exists());
+    }
+
+    #[test]
+    fn an_undecryptable_wallet_with_a_pending_burn_is_moved_aside_not_deleted() {
+        let root = tempfile::tempdir().expect("temp dir");
+        let wallet_dir = root.path().join("minotari-wallet");
+        std::fs::create_dir_all(&wallet_dir).expect("wallet dir");
+        let path = wallet_dir.join("wallet.db");
+
+        // Nothing pending: deleted.
+        drop(minotari_wallet::db::init_db(path.clone()).expect("db"));
+        assert_eq!(
+            discard_wallet_dir(&wallet_dir, &path).expect("discard"),
+            None
+        );
+        assert!(!wallet_dir.exists());
+
+        // A burn not yet mined: kept under another name.
+        std::fs::create_dir_all(&wallet_dir).expect("wallet dir");
+        let pool = minotari_wallet::db::init_db(path.clone()).expect("db");
+        let conn = pool.get().expect("connection");
+        conn.execute_batch("PRAGMA foreign_keys = OFF")
+            .expect("pragma");
+        conn.execute(
+            "INSERT INTO burn_proofs (account_id, output_hash, commitment, claim_public_key,
+               ownership_proof_nonce, ownership_proof_sig, kernel_excess, kernel_excess_nonce,
+               kernel_excess_sig, sender_offset_public_key, encrypted_data, value)
+             VALUES (1, ?1, ?1, '', zeroblob(32), zeroblob(32), zeroblob(32),
+               zeroblob(32), zeroblob(32), zeroblob(32), x'', 1)",
+            [[1u8; 32].as_slice()],
+        )
+        .expect("burn proof");
+        drop(conn);
+        drop(pool);
+        let aside = discard_wallet_dir(&wallet_dir, &path)
+            .expect("discard")
+            .expect("moved aside");
+        assert!(!wallet_dir.exists());
+        assert!(aside.join("wallet.db").exists());
+        assert!(pending_burns_guard(&aside.join("wallet.db")).is_err());
     }
 
     #[test]
