@@ -387,6 +387,11 @@ pub fn parse_amount(amount: &str) -> Result<u64, TransactionError> {
     Ok(amount_u64)
 }
 
+/// `amount` µT as the decimal string a user would type for it.
+fn micro_to_decimal(amount: u64) -> String {
+    format!("{}.{:06}", amount / 1_000_000, amount % 1_000_000)
+}
+
 /// Send funds behind the user-consent gates described in the module docs.
 ///
 /// Returns as soon as the transaction has been signed, recorded and broadcast, saying
@@ -503,22 +508,15 @@ pub async fn gated_abandon(
         .map_err(|e| wallet_failure("Abandon failed", e))?;
     let Some(entry) = stalled.iter().find(|s| s.tx_id == tx_id) else {
         // Mined, rejected or already abandoned since the UI last looked: say that, not "try later".
-        let unmined = MinotariWalletManager::is_unmined_send(&tx_id)
-            .await
-            .map_err(|e| wallet_failure("Abandon failed", e))?;
         return Err(TransactionError::AbandonRefused {
-            code: if unmined {
-                "abandon_not_stalled"
-            } else {
-                "abandon_not_pending"
-            },
+            code: "abandon_not_pending",
             message: format!("Transaction {tx_id} is not stalled"),
         });
     };
     check_abandon(entry, accept_unreconcilable)?;
     let amount_u64 = entry.amount;
     let is_burn = entry.burn_commitment.is_some();
-    let amount = format!("{}.{:06}", amount_u64 / 1_000_000, amount_u64 % 1_000_000);
+    let amount = micro_to_decimal(amount_u64);
     let kind = SpendKind::Abandon {
         tx_id,
         accept_unreconcilable,
@@ -625,7 +623,7 @@ pub async fn gated_l2_claim(
     )?;
     let (file_name, proof) = OotleWalletManager::find_claimable_burn(&commitment)?;
     let amount_u64 = proof.claim_proof.value;
-    let amount = format!("{}.{:06}", amount_u64 / 1_000_000, amount_u64 % 1_000_000);
+    let amount = micro_to_decimal(amount_u64);
     let kind = SpendKind::L2Claim { commitment };
     let pass = pass_gates(
         SendOrigin::App,

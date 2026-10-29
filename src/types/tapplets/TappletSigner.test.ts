@@ -48,7 +48,6 @@ describe('TappletSigner.runOne', () => {
             useToastStore.setState({ toasts: [] });
             (invoke as unknown as Mock<() => Promise<unknown>>).mockResolvedValueOnce({
                 accepted_by_node: false,
-                node_reason: 'Orphan',
             });
 
             const result = await signer.runOne('sendOneSided', [{ amount: '100', address: 'tari-address' }]);
@@ -63,7 +62,6 @@ describe('TappletSigner.runOne', () => {
             useToastStore.setState({ toasts: [] });
             (invoke as unknown as Mock<() => Promise<unknown>>).mockResolvedValueOnce({
                 accepted_by_node: true,
-                node_reason: null,
             });
 
             await signer.runOne('sendOneSided', [{ amount: '100', address: 'tari-address' }]);

@@ -57,8 +57,6 @@ pub struct SendReceipt {
     /// The send's transaction id, as a string: a u64 doesn't always fit a JavaScript number.
     pub tx_id: String,
     pub accepted_by_node: bool,
-    /// The node's answer when it hasn't accepted the send.
-    pub node_reason: Option<String>,
 }
 
 use crate::configs::config_core::ConfigCore;
@@ -86,7 +84,7 @@ use minotari_wallet::{
     TransactionHistoryService,
     db::{
         AccountBalance, AccountRow, CompletedTransactionStatus, DbBurnProof, fetch_unspent_outputs,
-        get_account_by_name, get_change_output_hash_for_request, get_completed_transaction_by_id,
+        get_account_by_name, get_change_output_hash_for_request,
         get_completed_transactions_by_status, get_displayed_transaction_by_id,
         get_displayed_transactions_by_status, get_latest_scanned_tip_block_by_account,
         get_output_spend, get_pending_burn_proofs,
@@ -97,7 +95,7 @@ use minotari_wallet::{
     tasks::{burn_proof_worker::BurnProofWorker, unlocker::TransactionUnlocker},
     transactions::{
         TransactionDisplayStatus, TransactionSource,
-        abandon::{ABANDONED_REASON, AbandonedSend, abandon_send},
+        abandon::{ABANDONED_REASON, abandon_send},
         burn::{BurnTxParams, BurnTxResult, create_burn_tx, persist_burn_records},
         fee_estimator::estimated_output_size_for_payment_id,
         manager::record_first_broadcast,
@@ -125,7 +123,6 @@ use std::{
 use tari_common::configuration::Network;
 use tari_common_types::transaction::TxId;
 use tari_transaction_components::fee::Fee;
-use tari_transaction_components::rpc::models::TxSubmissionResponse;
 use tari_transaction_components::tari_amount::MicroMinotari;
 use tari_transaction_components::transaction_components::{MAX_TRANSACTION_INPUTS, Transaction};
 use tari_transaction_components::weight::TransactionWeight;
@@ -291,11 +288,7 @@ impl MinotariWalletManager {
             payment_id,
         };
 
-        log::debug!(
-            target: LOG_TARGET,
-            "Creating one-sided transaction from {} to {} for amount {}",
-            tari_address, address, amount
-        );
+        log::debug!(target: LOG_TARGET, "Creating one-sided transaction");
         let unsigned_one_sided_transaction = transaction_manager
             .create_one_sided_transaction(recipient)
             .await?;
@@ -330,7 +323,6 @@ impl MinotariWalletManager {
         Ok(SendReceipt {
             tx_id,
             accepted_by_node: sent.accepted_by_node,
-            node_reason: sent.node_reason,
         })
     }
 
@@ -428,7 +420,10 @@ impl MinotariWalletManager {
         } = result;
 
         let submitted = client.submit_transaction(transaction).await;
-        let accepted_by_node = record_burn_broadcast(&conn, tx_id, submitted);
+        // A burn the node refused, or that got no answer, stays completed with its inputs
+        // locked: the monitor rebroadcasts it, and only the scan (or an abandon) rejects it.
+        let accepted_by_node =
+            record_first_broadcast(Some(&conn), tx_id, submitted).accepted_by_node;
         drop(conn);
 
         BalanceTracker::current()
@@ -467,32 +462,11 @@ impl MinotariWalletManager {
         pending_burns_guard(Path::new(&MinotariWalletDatabaseManager::database_path()?))
     }
 
-    /// Burns broadcast but not yet mined deep enough for their claim proof to be written.
-    pub async fn pending_burns() -> Result<Vec<DbBurnProof>, anyhow::Error> {
+    /// Burns broadcast but not yet mined deep enough for their claim proof to be written,
+    /// each with whether the user abandoned it (it may yet be mined, but isn't simply
+    /// waiting any more).
+    pub async fn pending_burns() -> Result<Vec<(DbBurnProof, bool)>, anyhow::Error> {
         pending_burns(&*Self::get_db_connection().await?)
-    }
-
-    /// Whether send or burn `tx_id` is still waiting to be mined (completed or broadcast),
-    /// so one missing from the stalled list just hasn't been refused often enough yet.
-    pub async fn is_unmined_send(tx_id: &str) -> Result<bool, anyhow::Error> {
-        let Ok(id) = tx_id.parse::<u64>() else {
-            return Ok(false);
-        };
-        let conn = Self::get_db_connection().await?;
-        Ok(
-            get_completed_transaction_by_id(&conn, TxId::from(id))?.is_some_and(|tx| {
-                matches!(
-                    tx.status,
-                    CompletedTransactionStatus::Completed | CompletedTransactionStatus::Broadcast
-                )
-            }),
-        )
-    }
-
-    /// Commitments of the burns the user abandoned. One still listed by
-    /// [`Self::pending_burns`] may yet be mined, but isn't simply waiting any more.
-    pub async fn abandoned_burn_commitments() -> Result<HashSet<Vec<u8>>, anyhow::Error> {
-        abandoned_burn_commitments(&*Self::get_db_connection().await?)
     }
 
     /// When each of this wallet's burns was made, unix seconds by commitment (hex).
@@ -624,8 +598,17 @@ impl MinotariWalletManager {
         get_latest_scanned_tip_block_by_account(&conn, account_id).map_err(|e| e.into())
     }
 
-    /// The largest amount a send carrying `payment_id` can have, in µT.
-    pub async fn max_sendable_amount(payment_id: Option<String>) -> Result<u64, anyhow::Error> {
+    /// The largest amount a send to `address` carrying `payment_id` can have, in µT. The
+    /// payment ID is resolved as the send resolves it; an address that doesn't parse yet
+    /// embeds none.
+    pub async fn max_sendable_amount(
+        address: &str,
+        payment_id: Option<String>,
+    ) -> Result<u64, anyhow::Error> {
+        let payment_id = match parse_destination_address(address) {
+            Ok(destination) => resolve_payment_id(&destination, payment_id)?,
+            Err(_) => payment_id,
+        };
         let account_id = Self::owner_account_id().await?;
         let conn = Self::get_db_connection().await?;
         max_sendable(&conn, account_id, payment_id.as_deref())
@@ -655,9 +638,20 @@ impl MinotariWalletManager {
         // Only proves the PIN; nothing is signed.
         drop(InternalWallet::get_tari_seed_with_prompt(&app_handle, pin_context).await?);
 
+        let id = tx_id
+            .parse::<u64>()
+            .map_err(|_| anyhow::anyhow!("Invalid transaction id '{tx_id}'"))?;
         let account_id = Self::owner_account_id().await?;
         let mut conn = Self::get_db_connection().await?;
-        let abandoned = abandon_stalled(&mut conn, account_id, tx_id, accept_unreconcilable)?;
+        // Never forced: one the node hasn't refused often enough is refused.
+        let abandoned = abandon_send(
+            &mut conn,
+            account_id,
+            id.into(),
+            false,
+            accept_unreconcilable,
+            None,
+        )?;
         drop(conn);
         info!(target: LOG_TARGET, "Transaction {tx_id} abandoned by the user.");
 
@@ -1376,6 +1370,13 @@ fn blocks_to_report(
 /// agree. A wallet born well after genesis therefore starts above 0%. `0` when
 /// the tip is unknown, so a wallet whose node has not reported a height yet does
 /// not show a nonsense percentage.
+fn scan_progress_percent(current_height: u64, tip_height: u64) -> f64 {
+    if tip_height == 0 {
+        return 0.0;
+    }
+    ((current_height as f64 / tip_height as f64) * 100.0).min(100.0)
+}
+
 /// The ids in `current` not in `known`, which then becomes `current`. An entry that leaves
 /// the reorganized set (re-mined) is announced again if it is reorganized again.
 fn newly_reorged(known: &mut HashSet<TxId>, current: impl Iterator<Item = TxId>) -> HashSet<TxId> {
@@ -1389,13 +1390,6 @@ fn newly_reorged(known: &mut HashSet<TxId>, current: impl Iterator<Item = TxId>)
 /// mined since it finished. An unknown tip (0) proves nothing.
 fn scan_reached_tip(final_height: u64, tip_height: u64) -> bool {
     tip_height > 0 && final_height.saturating_add(REQUIRED_CONFIRMATIONS) >= tip_height
-}
-
-fn scan_progress_percent(current_height: u64, tip_height: u64) -> f64 {
-    if tip_height == 0 {
-        return 0.0;
-    }
-    ((current_height as f64 / tip_height as f64) * 100.0).min(100.0)
 }
 
 /// The largest amount a one-sided send with `payment_id` can carry: the spendable
@@ -1497,29 +1491,6 @@ fn stalled_transactions(
     Ok(stalled)
 }
 
-/// Abandons stalled send or burn `tx_id`, never forced: one the node hasn't refused
-/// often enough is refused.
-fn abandon_stalled(
-    conn: &mut Connection,
-    account_id: i64,
-    tx_id: &str,
-    accept_unreconcilable: bool,
-) -> Result<AbandonedSend, anyhow::Error> {
-    let id = TxId::from(
-        tx_id
-            .parse::<u64>()
-            .map_err(|_| anyhow::anyhow!("Invalid transaction id '{tx_id}'"))?,
-    );
-    Ok(abandon_send(
-        conn,
-        account_id,
-        id,
-        false,
-        accept_unreconcilable,
-        None,
-    )?)
-}
-
 /// When each of the wallet's burns was made, unix seconds by commitment (hex).
 fn burn_times(conn: &Connection) -> Result<HashMap<String, u64>, anyhow::Error> {
     let mut stmt = conn.prepare(
@@ -1557,25 +1528,13 @@ fn move_legacy_burn_proofs(legacy: PathBuf, dir: PathBuf) -> PathBuf {
     }
 }
 
-/// Records the burn's first broadcast the way the library records a send's, and says
-/// whether the node accepted it. A burn the node refused, or that got no answer, stays
-/// completed with its inputs locked: the monitor that runs after each scan cycle
-/// rebroadcasts it, and only the scan (or the user abandoning it) can reject it.
-fn record_burn_broadcast(
-    conn: &Connection,
-    tx_id: TxId,
-    submitted: Result<TxSubmissionResponse, anyhow::Error>,
-) -> bool {
-    record_first_broadcast(Some(conn), tx_id, submitted).accepted_by_node
-}
-
 /// Pending burn proofs, less those whose transaction can never be mined: one the scan
 /// rejected because its inputs were spent elsewhere, and one the user abandoned whose
 /// inputs the scan has since seen spent (by another transaction: the burn itself would
 /// have been marked mined by its change row). An abandoned burn with unspent inputs, or
 /// with no change row, still counts: a node may still mine it, and this database holds
-/// its only proof row.
-fn pending_burns(conn: &Connection) -> Result<Vec<DbBurnProof>, anyhow::Error> {
+/// its only proof row. Each comes with whether the user abandoned it.
+fn pending_burns(conn: &Connection) -> Result<Vec<(DbBurnProof, bool)>, anyhow::Error> {
     let mut stmt = conn.prepare(
         "SELECT b.id, c.account_id, c.pending_tx_id, c.last_rejected_reason,
                 c.serialized_transaction
@@ -1593,12 +1552,14 @@ fn pending_burns(conn: &Connection) -> Result<Vec<DbBurnProof>, anyhow::Error> {
         ))
     })?;
     let mut dead = HashSet::new();
+    let mut abandoned = HashSet::new();
     for row in rows {
         let (id, account_id, pending_tx_id, reason, serialized_transaction) = row?;
         let dead_burn = match reason.as_deref() {
             // Without a change row (a burn from before this version) the scan can't
             // tell it landing from its inputs going elsewhere, so it stays guarded.
             Some(ABANDONED_REASON) => {
+                abandoned.insert(id);
                 get_change_output_hash_for_request(conn, &pending_tx_id)?.is_some()
                     && any_input_spent(conn, account_id, &serialized_transaction)?
             }
@@ -1611,18 +1572,11 @@ fn pending_burns(conn: &Connection) -> Result<Vec<DbBurnProof>, anyhow::Error> {
     Ok(get_pending_burn_proofs(conn)?
         .into_iter()
         .filter(|b| !dead.contains(&b.id))
+        .map(|b| {
+            let was_abandoned = abandoned.contains(&b.id);
+            (b, was_abandoned)
+        })
         .collect())
-}
-
-fn abandoned_burn_commitments(conn: &Connection) -> Result<HashSet<Vec<u8>>, anyhow::Error> {
-    let mut stmt = conn.prepare(
-        "SELECT b.commitment
-           FROM burn_proofs b JOIN completed_transactions c
-             ON c.sent_output_hash = lower(hex(b.output_hash))
-          WHERE c.status = 'rejected' AND c.last_rejected_reason = ?1",
-    )?;
-    let rows = stmt.query_map([ABANDONED_REASON], |row| row.get::<_, Vec<u8>>(0))?;
-    Ok(rows.collect::<Result<_, _>>()?)
 }
 
 /// Whether the scan has seen any input of this transaction spent on chain. One that
@@ -1643,9 +1597,6 @@ fn any_input_spent(
     Ok(false)
 }
 
-/// Reads the database file directly so the check works whether or not the wallet phase
-/// has the pool open. Fails closed: a database that can't be read might still hold an
-/// unmined burn's only proof row.
 /// Deletes `wallet_dir`, unless its database may hold an unmined burn's proof (or can't be
 /// checked): then it is renamed beside itself and the new name returned, so the proof isn't lost.
 fn discard_wallet_dir(
@@ -1666,6 +1617,9 @@ fn discard_wallet_dir(
     Ok(Some(aside))
 }
 
+/// Reads the database file directly so the check works whether or not the wallet phase
+/// has the pool open. Fails closed: a database that can't be read might still hold an
+/// unmined burn's only proof row.
 fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
     if !database_path.exists() {
         return Ok(());
@@ -1690,16 +1644,16 @@ fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
 #[cfg(test)]
 mod tests {
     use super::{
-        SendReceipt, StalledTransaction, abandon_stalled, abandoned_burn_commitments,
-        blocks_to_report, burn_times, discard_wallet_dir, max_sendable, move_legacy_burn_proofs,
-        newly_reorged, pending_burns, pending_burns_guard, record_burn_broadcast,
+        StalledTransaction, abandon_send, blocks_to_report, burn_times, discard_wallet_dir,
+        max_sendable, move_legacy_burn_proofs, newly_reorged, pending_burns, pending_burns_guard,
         scan_progress_percent, scan_reached_tip, stalled_transactions,
     };
     use crate::wallet::minotari_wallet::transaction::{CONFIRMATION_WINDOW, SEND_FEE_PER_GRAM};
     use minotari_wallet::db::{
-        SqlitePool, create_account, get_account_by_name, init_db, insert_input,
+        SqlitePool, create_account, get_account_by_name, init_db, insert_input, insert_output,
         insert_scanned_tip_block, insert_unconfirmed_change_output,
-        mark_completed_transaction_as_rejected_in_block, update_output_status,
+        mark_completed_transaction_as_rejected_in_block, mark_output_confirmed,
+        update_output_status,
     };
     use minotari_wallet::models::OutputStatus;
     use minotari_wallet::transactions::{
@@ -1710,7 +1664,6 @@ mod tests {
         monitor::MAX_BROADCAST_ATTEMPTS,
         one_sided_transaction::Recipient,
     };
-    use r2d2_sqlite::rusqlite::named_params;
     use std::collections::HashSet;
     use tari_common::configuration::Network;
     use tari_common_types::seeds::cipher_seed::CipherSeed;
@@ -1766,23 +1719,24 @@ mod tests {
         insert_scanned_tip_block(&conn, account_id, 200, &[0u8; 32]).expect("tip");
         for (i, value) in values.iter().enumerate() {
             let seed = u8::try_from(i + 1).expect("few outputs");
+            let hash = FixedHash::from([seed; 32]);
             let output = test_output(*value, seed);
-            conn.execute(
-                "INSERT INTO outputs (account_id, tx_id, output_hash, mined_in_block_height,
-                   mined_in_block_hash, value, mined_timestamp, wallet_output_json, status,
-                   confirmed_height, confirmed_hash, is_burn, maturity)
-                 VALUES (:account_id, :tx_id, :hash, 100, :hash, :value, :ts, :json, 'UNSPENT',
-                   100, :hash, 0, 0)",
-                named_params! {
-                    ":account_id": account_id,
-                    ":tx_id": i64::from(seed),
-                    ":hash": vec![seed; 32],
-                    ":value": i64::try_from(*value).expect("value"),
-                    ":ts": chrono::Utc::now(),
-                    ":json": serde_json::to_string(&output).expect("json"),
-                },
+            insert_output(
+                &conn,
+                account_id,
+                &PrivateKey::default(),
+                hash.to_vec(),
+                &output,
+                100,
+                &hash,
+                0,
+                None,
+                None,
+                FixedHash::default(),
+                false,
             )
             .expect("output");
+            mark_output_confirmed(&conn, &hash, 100, hash.as_slice()).expect("confirmed");
         }
         (pool, account_id, dir)
     }
@@ -1995,7 +1949,7 @@ mod tests {
         // The panel's list leaves the rejected burn out too.
         let listed = pending_burns(&conn).expect("pending burns");
         assert_eq!(listed.len(), 1);
-        assert_eq!(listed[0].commitment, vec![1u8; 32]);
+        assert_eq!(listed[0].0.commitment, vec![1u8; 32]);
 
         conn.execute("UPDATE burn_proofs SET status = 'complete'", [])
             .expect("mined");
@@ -2027,11 +1981,10 @@ mod tests {
         )
         .expect("burn transaction");
 
-        assert!(!record_burn_broadcast(
-            &conn,
-            9u64.into(),
-            Err(anyhow::anyhow!("timed out"))
-        ));
+        assert!(
+            !record_first_broadcast(Some(&conn), 9u64.into(), Err(anyhow::anyhow!("timed out")))
+                .accepted_by_node
+        );
         let status: String = conn
             .query_row(
                 "SELECT status FROM completed_transactions WHERE id = 9",
@@ -2054,7 +2007,7 @@ mod tests {
             is_synced: true,
             details: None,
         };
-        assert!(!record_burn_broadcast(&conn, 12u64.into(), Ok(refused)));
+        assert!(!record_first_broadcast(Some(&conn), 12u64.into(), Ok(refused)).accepted_by_node);
 
         let status: String = conn
             .query_row(
@@ -2091,7 +2044,7 @@ mod tests {
         );
         assert!(pending_burns_guard(&path).is_err());
 
-        abandon_stalled(&mut conn, account_id, "12", false).expect("abandoned");
+        abandon_send(&mut conn, account_id, 12u64.into(), false, false, None).expect("abandoned");
 
         let status: String = conn
             .query_row(
@@ -2130,13 +2083,12 @@ mod tests {
     fn an_abandoned_burn_is_listed_as_abandoned() {
         let (pool, account_id, _dir) = recorded_burn(MAX_BROADCAST_ATTEMPTS);
         let mut conn = pool.get().expect("connection");
-        assert!(abandoned_burn_commitments(&conn).expect("read").is_empty());
+        assert!(!pending_burns(&conn).expect("pending burns")[0].1);
 
-        abandon_stalled(&mut conn, account_id, "12", false).expect("abandoned");
-        let abandoned = abandoned_burn_commitments(&conn).expect("read");
+        abandon_send(&mut conn, account_id, 12u64.into(), false, false, None).expect("abandoned");
         let pending = pending_burns(&conn).expect("pending burns");
         assert_eq!(pending.len(), 1, "still guarded: it may yet be mined");
-        assert!(abandoned.contains(&pending[0].commitment));
+        assert!(pending[0].1);
     }
 
     #[test]
@@ -2147,7 +2099,7 @@ mod tests {
         // A burn made before this version: no change row.
         conn.execute("DELETE FROM outputs WHERE created_by_request_id = 'p'", [])
             .expect("no change row");
-        abandon_stalled(&mut conn, account_id, "12", true).expect("abandoned");
+        abandon_send(&mut conn, account_id, 12u64.into(), false, true, None).expect("abandoned");
 
         // Its input recorded spent: it may be the burn itself that landed.
         let output_id: i64 = conn
@@ -2174,14 +2126,9 @@ mod tests {
                 .is_empty()
         );
 
-        let err = abandon_stalled(&mut conn, account_id, "12", false).expect_err("not stalled");
-        assert!(
-            matches!(
-                err.downcast_ref::<AbandonSendError>(),
-                Some(AbandonSendError::NotStalled { .. })
-            ),
-            "{err:#}"
-        );
+        let err = abandon_send(&mut conn, account_id, 12u64.into(), false, false, None)
+            .expect_err("not stalled");
+        assert!(matches!(err, AbandonSendError::NotStalled { .. }), "{err}");
         assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
     }
 
@@ -2303,29 +2250,6 @@ mod tests {
                 Some(UtxoSelectionError::ChangeNotAffordable { .. })
             ),
             "{error:#}"
-        );
-    }
-
-    #[test]
-    fn a_send_the_node_refused_reaches_the_ui_as_not_accepted() {
-        let refused = TxSubmissionResponse {
-            accepted: false,
-            rejection_reason: TxSubmissionRejectionReason::Orphan,
-            is_synced: true,
-            details: None,
-        };
-        let first = record_first_broadcast(None, 3u64.into(), Ok(refused));
-        let receipt = SendReceipt {
-            tx_id: "7".to_string(),
-            accepted_by_node: first.accepted_by_node,
-            node_reason: first.node_reason,
-        };
-        // The field names SendModal reads.
-        let json = serde_json::to_value(&receipt).expect("json");
-        assert_eq!(json["accepted_by_node"], serde_json::json!(false));
-        assert!(
-            json["node_reason"].as_str().is_some_and(|r| !r.is_empty()),
-            "{json}"
         );
     }
 

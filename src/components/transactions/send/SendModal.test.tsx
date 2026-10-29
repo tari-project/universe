@@ -72,7 +72,7 @@ describe('SendModal', () => {
         const invokeMock = vi.mocked(invoke) as unknown as Mock<(command: string) => Promise<unknown>>;
         invokeMock.mockImplementation(async (command) => {
             if (command === 'send_one_sided_to_stealth_address') {
-                return { accepted_by_node: false, node_reason: 'Transaction not accepted: Orphan' };
+                return { accepted_by_node: false };
             }
             return [];
         });
@@ -90,7 +90,7 @@ describe('SendModal', () => {
         const invokeMock = vi.mocked(invoke) as unknown as Mock<(command: string) => Promise<unknown>>;
         invokeMock.mockImplementation(async (command) => {
             if (command === 'send_one_sided_to_stealth_address') {
-                return { accepted_by_node: true, node_reason: null };
+                return { accepted_by_node: true };
             }
             return [];
         });

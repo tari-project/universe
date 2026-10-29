@@ -84,9 +84,9 @@ describe('McpTransactionDialog', () => {
         });
         render(<McpTransactionDialog />);
         await waitFor(() => {
-            expect(screen.getByText('wallet:abandon.unreconcilable-note')).toBeInTheDocument();
+            expect(screen.getByText('abandon.unreconcilable-note')).toBeInTheDocument();
         });
-        expect(screen.queryByText('wallet:abandon.note')).not.toBeInTheDocument();
+        expect(screen.queryByText('abandon.note')).not.toBeInTheDocument();
     });
 
     it('warns that an abandoned burn may still land', async () => {
@@ -101,9 +101,9 @@ describe('McpTransactionDialog', () => {
         });
         render(<McpTransactionDialog />);
         await waitFor(() => {
-            expect(screen.getByText('wallet:abandon.burn-note')).toBeInTheDocument();
+            expect(screen.getByText('abandon.burn-note')).toBeInTheDocument();
         });
-        expect(screen.queryByText('wallet:abandon.note')).not.toBeInTheDocument();
+        expect(screen.queryByText('abandon.note')).not.toBeInTheDocument();
     });
 
     it('labels an L2 send with the L2 address and XTR', async () => {

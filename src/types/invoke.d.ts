@@ -19,7 +19,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(
         param: 'send_one_sided_to_stealth_address',
         payload: { amount: string; destination: string; paymentId?: string }
-    ): Promise<{ tx_id: string; accepted_by_node: boolean; node_reason?: string | null }>;
+    ): Promise<{ tx_id: string; accepted_by_node: boolean }>;
     function invoke(
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }
@@ -104,7 +104,10 @@ declare module '@tauri-apps/api/core' {
         payload: { address: string; sendingMethod?: number }
     ): Promise<void>;
     function invoke(param: 'validate_minotari_amount', payload: { amount: string }): Promise<string>;
-    function invoke(param: 'get_max_sendable_amount', payload: { paymentId?: string }): Promise<number>;
+    function invoke(
+        param: 'get_max_sendable_amount',
+        payload: { address: string; paymentId?: string }
+    ): Promise<number>;
     function invoke(param: 'get_stalled_transactions'): Promise<StalledTransaction[]>;
     function invoke(
         param: 'abandon_stalled_transaction',

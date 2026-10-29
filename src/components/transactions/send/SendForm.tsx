@@ -163,6 +163,7 @@ export function SendForm({ isBack, hasReviewStep = true }: Props) {
                                         let maxSendable: number;
                                         try {
                                             maxSendable = await invoke('get_max_sendable_amount', {
+                                                address: getValues().address,
                                                 paymentId: getValues().message,
                                             });
                                         } catch (error) {

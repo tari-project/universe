@@ -14,6 +14,8 @@ interface Props {
     feeMicroMinotari?: number | null;
     subtitle?: string;
     kind?: SpendKind;
+    /** For an abandon: picks the warning shown in place of `subtitle`. */
+    abandon?: { accept_unreconcilable?: boolean; is_burn?: boolean };
 }
 
 /**
@@ -28,10 +30,19 @@ export function TransactionContextSummary({
     feeMicroMinotari,
     subtitle,
     kind = 'send',
+    abandon,
 }: Props) {
     const { t } = useTranslation('wallet');
     const isBurn = kind === 'burn';
     const isAbandon = kind === 'abandon';
+    const note =
+        !isAbandon || !abandon
+            ? subtitle
+            : abandon.accept_unreconcilable
+              ? t('abandon.unreconcilable-note')
+              : abandon.is_burn
+                ? t('abandon.burn-note')
+                : t('abandon.note');
     const isL2 = kind === 'l2_send' || kind === 'l2_claim';
     const destinationLabel = isBurn
         ? t('burn.claim-public-key')
@@ -80,9 +91,9 @@ export function TransactionContextSummary({
                 </WhiteBoxValue>
             </WhiteBox>
             <StatusList entries={entries} />
-            {subtitle && (
+            {note && (
                 <Typography variant="p" style={{ opacity: 0.5, fontSize: 12 }}>
-                    {subtitle}
+                    {note}
                 </Typography>
             )}
         </Wrapper>
