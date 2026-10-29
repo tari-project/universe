@@ -704,6 +704,13 @@ pub async fn revert_to_internal_wallet(
         .shutdown_phases(vec![SetupPhase::Wallet, SetupPhase::CpuMining])
         .await;
 
+    ConfigWallet::update_field(
+        ConfigWalletContent::set_selected_external_tari_address,
+        None,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
     InternalWallet::initialize_with_seed(&app_handle)
         .await
         .map_err(InvokeError::from_anyhow)?;
