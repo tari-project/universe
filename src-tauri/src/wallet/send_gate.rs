@@ -491,19 +491,18 @@ pub fn l2_log_destination(destination: &str) -> String {
 /// The pay reference an L2 send carries, as text for the PIN prompt, and the output memo
 /// holding it. An explicit `pay_ref` must match the one embedded in the destination
 /// address, if there is one; without an explicit one the embedded one is used.
-pub fn l2_send_memo(
+fn l2_send_memo(
     pay_ref: Option<&str>,
     destination: &OotleAddress,
 ) -> Result<Option<(String, Memo)>, TransactionError> {
     let embedded = destination.pay_ref().map(|p| p.as_bytes());
-    let (bytes, explicit) = match (pay_ref, embedded) {
-        (Some(explicit), Some(embedded)) if explicit.as_bytes() != embedded => {
+    let bytes = match (pay_ref.map(str::as_bytes), embedded) {
+        (Some(explicit), Some(embedded)) if explicit != embedded => {
             return Err(TransactionError::InvalidAddress(
                 "Pay reference differs from the one in the destination address".to_string(),
             ));
         }
-        (Some(explicit), _) => (explicit.as_bytes(), true),
-        (None, Some(embedded)) => (embedded, false),
+        (Some(bytes), _) | (None, Some(bytes)) => bytes,
         (None, None) => return Ok(None),
     };
     if PayRef::new_checked(bytes).is_none() {
@@ -512,35 +511,21 @@ pub fn l2_send_memo(
             PayRef::MAX_LEN
         )));
     }
-    let text = std::str::from_utf8(bytes)
-        .ok()
-        .filter(|text| !text.chars().any(is_hidden_char));
-    // An explicit pay ref must be clean text. One embedded in the address is the recipient's
-    // own bytes and is sent as-is; the PIN prompt shows it in hex when it isn't clean text.
-    let shown = match text {
-        Some(text) => text.to_string(),
-        None if !explicit => format!("0x{}", hex_bytes(bytes)),
-        None => {
-            return Err(TransactionError::InvalidAddress(
-                "Pay reference must be UTF-8 text without control or invisible characters"
-                    .to_string(),
-            ));
-        }
+    // Only printable ASCII is shown as text, so the PIN prompt can't show a lookalike of what is sent.
+    let shown = if bytes.iter().all(|b| b.is_ascii_graphic() || *b == b' ') {
+        String::from_utf8_lossy(bytes).into_owned()
+    } else {
+        format!("0x{}", hex::encode(bytes))
     };
     let memo = Memo::new_pay_ref_and_message(bytes, "")
         .ok_or_else(|| TransactionError::InvalidAddress("Pay reference too long".to_string()))?;
     Ok(Some((shown, memo)))
 }
 
-fn hex_bytes(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
-
 /// The PIN prompt shows the amount as a JS number divided by 10^6. Above 2^52 micro XTR that
 /// quotient can round to a neighbouring micro XTR, so what it shows could differ from what is
 /// signed. Below 10^15 the quotient is under 2^30 and always rounds back exactly. Only a
-/// tapplet chooses amounts that large unseen. Keep in step with `MAX_MICRO_AMOUNT` in
-/// TappletSigner.ts.
+/// tapplet chooses amounts that large unseen.
 const MAX_TAPPLET_AMOUNT: u64 = 999_999_999_999_999;
 
 fn check_tapplet_amount(origin: SendOrigin, amount_u64: u64) -> Result<(), TransactionError> {
@@ -573,33 +558,6 @@ fn check_tapplet_pay_ref(
         ));
     }
     Ok(())
-}
-
-/// Characters that would make a pay reference read differently in the PIN prompt from what
-/// is sent.
-fn is_hidden_char(c: char) -> bool {
-    // Default_Ignorable_Code_Point plus line/paragraph separators and interlinear annotations.
-    c.is_control()
-        || matches!(
-            c,
-            '\u{00AD}'
-                | '\u{034F}'
-                | '\u{061C}'
-                | '\u{115F}'..='\u{1160}'
-                | '\u{17B4}'..='\u{17B5}'
-                | '\u{180B}'..='\u{180F}'
-                | '\u{200B}'..='\u{200F}'
-                | '\u{2028}'..='\u{202E}'
-                | '\u{2060}'..='\u{206F}'
-                | '\u{3164}'
-                | '\u{FE00}'..='\u{FE0F}'
-                | '\u{FEFF}'
-                | '\u{FFA0}'
-                | '\u{FFF0}'..='\u{FFFB}'
-                | '\u{1BCA0}'..='\u{1BCA3}'
-                | '\u{1D173}'..='\u{1D17A}'
-                | '\u{E0000}'..='\u{E0FFF}'
-        )
 }
 
 /// Claim an L1 burn on L2 behind the same gates as [`gated_l2_send`]. Refused without a
@@ -1085,53 +1043,12 @@ mod tests {
     }
 
     #[test]
-    fn l2_send_memo_rejects_hidden_characters_in_an_explicit_pay_ref() {
-        for pay_ref in [
-            "ref\u{202E}fer",
-            "ref\u{200B}",
-            "\u{FEFF}ref",
-            "ref\u{2066}x\u{2069}",
-            "ref\u{2060}",
-            "line\nbreak",
-            "nul\0",
-            "del\u{7F}",
-            "c1\u{85}",
-            "arabic\u{061C}mark",
-            "line\u{2028}sep",
-            "soft\u{00AD}hyphen",
-            "tag\u{E0041}",
-            "filler\u{3164}",
-            "selector\u{FE0F}",
-            "inhibit\u{206B}",
-            "mongolian\u{180B}",
-            "music\u{1D173}",
-            "selector\u{E0100}",
-        ] {
-            let err = l2_send_memo(Some(pay_ref), &ootle_address()).expect_err(pay_ref);
-            assert!(
-                matches!(err, TransactionError::InvalidAddress(_)),
-                "{pay_ref:?}"
-            );
-        }
-        let (shown, _) = l2_send_memo(Some("café-ref 1"), &ootle_address())
-            .expect("printable unicode is fine")
-            .expect("a memo");
-        assert_eq!(shown, "café-ref 1");
-        let uuid = "0f8fad5b-d9cb-469f-a165-70867728950e";
-        let (shown, _) = l2_send_memo(Some(uuid), &ootle_address())
-            .expect("a uuid is fine")
-            .expect("a memo");
-        assert_eq!(shown, uuid);
-    }
-
-    #[test]
-    fn l2_send_memo_sends_an_embedded_pay_ref_that_is_not_clean_text_as_is() {
+    fn l2_send_memo_shows_a_pay_ref_that_is_not_printable_ascii_in_hex() {
         for bytes in [
             vec![0xff, 0xfe, b'a'],
+            "café".as_bytes().to_vec(),
             "ref\u{200D}".as_bytes().to_vec(),
-            "ref\u{061C}".as_bytes().to_vec(),
-            "ref\u{E0041}".as_bytes().to_vec(),
-            "ref\u{FE0F}".as_bytes().to_vec(),
+            "line\nbreak".as_bytes().to_vec(),
         ] {
             let embedded = PayRef::new_checked(bytes.clone()).expect("pay ref");
             let address = ootle_address().with_pay_ref(embedded);
@@ -1139,7 +1056,7 @@ mod tests {
                 .expect("the recipient's bytes are sent")
                 .expect("a memo");
             assert_eq!(memo_pay_ref(&memo), bytes.as_slice());
-            assert_eq!(shown, format!("0x{}", hex_bytes(&bytes)), "{bytes:?}");
+            assert_eq!(shown, format!("0x{}", hex::encode(&bytes)), "{bytes:?}");
         }
     }
 

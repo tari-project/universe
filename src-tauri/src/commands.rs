@@ -1742,16 +1742,14 @@ pub async fn l2_create_pin_and_enable(app_handle: tauri::AppHandle) -> Result<()
         .map_err(|e| e.to_string())
 }
 
-/// Send XTR on L2 from one of the wallet's accounts, with an optional pay reference for
-/// the recipient. Refused without a PIN; with one, the PIN prompt is the gate. Returns
-/// the L2 transaction id.
+/// Send XTR on L2 from one of the wallet's accounts. Refused without a PIN; with one,
+/// the PIN prompt is the gate. Returns the L2 transaction id.
 #[tauri::command]
 pub async fn l2_send(
     app_handle: tauri::AppHandle,
     account: String,
     destination: String,
     amount: String,
-    pay_ref: Option<String>,
 ) -> Result<String, String> {
     info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called with args: (account: {account:?}, destination: {:?}, amount: {amount:?})", l2_log_destination(&destination));
     gated_l2_send(GatedL2SendRequest {
@@ -1761,7 +1759,7 @@ pub async fn l2_send(
         amount,
         destination,
         account,
-        pay_ref,
+        pay_ref: None,
     })
     .await
     .map_err(|e| e.to_string())
