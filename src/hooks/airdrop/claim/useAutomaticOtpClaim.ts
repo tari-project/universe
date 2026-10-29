@@ -23,11 +23,14 @@ export function useAutomaticOtpClaim() {
     const [otpData, setOtpData] = useState<OtpResponse | null>(null);
     const unlistenRef = useRef<(() => void) | null>(null);
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const mountedRef = useRef(true);
+    const requestSeqRef = useRef(0);
 
     const walletAddress = useWalletStore((s) => s.tari_address_base58);
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
 
     const cleanup = useCallback(() => {
+        requestSeqRef.current += 1;
         if (unlistenRef.current) {
             unlistenRef.current();
             unlistenRef.current = null;
@@ -101,6 +104,10 @@ export function useAutomaticOtpClaim() {
                 throw new Error('Wallet address or airdrop token not available');
             }
 
+            // Clean up any previous listener or timeout before starting a new request
+            cleanup();
+            const requestSeq = requestSeqRef.current;
+
             setState((prev) => ({
                 ...prev,
                 currentStep: 'otp-request',
@@ -108,11 +115,18 @@ export function useAutomaticOtpClaim() {
             }));
 
             // Set up WebSocket listener for OTP response
+            let unlisten: () => void;
             try {
-                unlistenRef.current = await listen('ws-rx', handleWebSocketMessage);
+                unlisten = await listen('ws-rx', handleWebSocketMessage);
             } catch (_) {
                 throw new Error('Failed to set up WebSocket listener');
             }
+
+            if (!mountedRef.current || requestSeqRef.current !== requestSeq) {
+                unlisten();
+                return;
+            }
+            unlistenRef.current = unlisten;
 
             // Set timeout for OTP request (3 minutes)
             timeoutRef.current = setTimeout(
@@ -156,7 +170,11 @@ export function useAutomaticOtpClaim() {
 
     // Cleanup on unmount
     useEffect(() => {
-        return cleanup;
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+            cleanup();
+        };
     }, [cleanup]);
 
     return {

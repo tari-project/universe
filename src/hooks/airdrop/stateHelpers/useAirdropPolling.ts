@@ -22,6 +22,7 @@ export const useAirdropPolling = () => {
             clearTimeout(airdropTimeoutRef.current);
         }
         airdropTimeoutRef.current = setTimeout(async () => {
+            airdropTimeoutRef.current = undefined;
             await fetchCommunityMessages();
             await fetchAllUserData();
             await fetchLatestXSpaceEvent();
@@ -37,44 +38,65 @@ export const useAirdropPolling = () => {
             return;
         }
         featureFlagTimeoutRef.current = setTimeout(async () => {
+            featureFlagTimeoutRef.current = undefined;
             await fetchFeatureFlags();
-            if (featureFlagTimeoutRef.current) {
-                clearTimeout(featureFlagTimeoutRef.current);
-            }
         }, 1000 * 60); // Once every minute
     }, [fetchFeatureFlags]);
 
     useEffect(() => {
         fetchFeatureFlagDebounced();
         const interval = setInterval(fetchFeatureFlagDebounced, 1000 * 60); // Once every minute
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+            if (featureFlagTimeoutRef.current) {
+                clearTimeout(featureFlagTimeoutRef.current);
+                featureFlagTimeoutRef.current = undefined;
+            }
+        };
     }, [fetchFeatureFlagDebounced]);
 
     useEffect(() => {
-        const unlistenPromises: Promise<UnlistenFn>[] = [];
-        let interval: NodeJS.Timeout;
+        let cancelled = false;
+        const unlistenFns: UnlistenFn[] = [];
+        let interval: NodeJS.Timeout | undefined;
+
+        const registerListener = (handler: () => void) => {
+            listen('tauri://focus', () => {
+                if (!cancelled) {
+                    handler();
+                }
+            }).then((unlisten) => {
+                if (cancelled) {
+                    unlisten();
+                } else {
+                    unlistenFns.push(unlisten);
+                }
+            });
+        };
 
         // Re-fetch flags on focus
-        unlistenPromises.push(listen('tauri://focus', fetchFeatureFlags));
+        registerListener(fetchFeatureFlags);
 
         if (pollingEnabled) {
             // Re-fetch data on focus
-            unlistenPromises.push(listen('tauri://focus', fetchAirdropDataDebounced));
+            registerListener(fetchAirdropDataDebounced);
 
             // Start polling
-            interval = setInterval(async () => {
+            interval = setInterval(() => {
                 fetchAirdropDataDebounced();
             }, 1000 * 60); // Once every minute
         }
         return () => {
+            cancelled = true;
             if (interval) {
                 clearInterval(interval);
             }
             if (airdropTimeoutRef.current) {
                 clearTimeout(airdropTimeoutRef.current);
+                airdropTimeoutRef.current = undefined;
             }
-            for (const unlisten of unlistenPromises) {
-                unlisten.then((unlisten) => unlisten());
+            for (const unlisten of unlistenFns) {
+                unlisten();
             }
         };
     }, [fetchAirdropDataDebounced, fetchFeatureFlags, pollingEnabled]);

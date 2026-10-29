@@ -44,7 +44,7 @@ export const Wrapper = styled(m.div)<{ $isFirst?: boolean; $type: ToastType }>`
     }}
 `;
 
-export const ProgressCircle = styled.svg<{ $progress: number; $type?: ToastType }>`
+export const ProgressCircle = styled.svg<{ $progress?: number; $type?: ToastType }>`
     position: absolute;
     top: 0;
     left: 0;
