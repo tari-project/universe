@@ -27,9 +27,11 @@ import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 import { setError as setStoreError } from '@app/store';
 import { PIN_CANCELLED_RE } from '@app/store/actions/l2WalletStoreActions.ts';
 import { queryClient } from '@app/App/queryClient.ts';
-import { isPreBurn } from './shareBurn.ts';
 import { isMainNet } from '@app/utils/network.ts';
 import { FormatPreset, formatNumber } from '@app/utils/formatters.ts';
+
+// Pre-burn window ends 11 Nov 2026 00:00 UTC.
+const isPreBurn = () => Date.now() < Date.UTC(2026, 10, 11);
 
 interface BurnModalProps {
     section: string;
