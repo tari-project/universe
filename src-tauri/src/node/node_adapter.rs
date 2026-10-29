@@ -85,6 +85,31 @@ pub(crate) struct NodeAdapterService {
     consensus_manager: ConsensusManager,
 }
 
+/// Remote nodes don't expose sync progress over HTTP: report Done once the node
+/// says it's synced, otherwise Startup so the setup screen keeps waiting.
+fn remote_sync_progress(metadata: Option<&ChainMetadata>, is_synced: bool) -> SyncProgressResponse {
+    let tip_height = metadata
+        .map(|meta| meta.best_block_height())
+        .unwrap_or_default();
+    if metadata.is_some() && is_synced {
+        SyncProgressResponse {
+            tip_height,
+            local_height: tip_height,
+            state: SyncState::Done as i32,
+            short_desc: "".to_string(),
+            initial_connected_peers: 1,
+        }
+    } else {
+        SyncProgressResponse {
+            tip_height,
+            local_height: 0,
+            state: SyncState::Startup as i32,
+            short_desc: "".to_string(),
+            initial_connected_peers: 0,
+        }
+    }
+}
+
 impl NodeAdapterService {
     pub fn new(
         connection_address: String,
@@ -316,28 +341,7 @@ impl NodeAdapterService {
             };
 
             let sync_progress = if remote {
-                let tip_height = metadata
-                    .as_ref()
-                    .map(|meta| meta.best_block_height())
-                    .unwrap_or_default();
-                if metadata.is_some() && initial_sync_achieved {
-                    // if the remote node has initial sync status, we can just assume the rest will be correct, so dont ask
-                    SyncProgressResponse {
-                        tip_height,
-                        local_height: tip_height,
-                        state: SyncState::Done as i32,
-                        short_desc: "".to_string(),
-                        initial_connected_peers: 1,
-                    }
-                } else {
-                    SyncProgressResponse {
-                        tip_height,
-                        local_height: 0,
-                        state: SyncState::Startup as i32,
-                        short_desc: "".to_string(),
-                        initial_connected_peers: 0,
-                    }
-                }
+                remote_sync_progress(metadata.as_ref(), initial_sync_achieved)
             } else {
                 let client = grpc_client.as_mut().expect("Should have a client here");
                 let sync = client
@@ -819,4 +823,33 @@ pub enum NodeStatusMonitorError {
     UnknownError(#[from] anyhow::Error),
     #[error("Node not started")]
     NodeNotStarted,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn metadata(height: u64) -> ChainMetadata {
+        ChainMetadata::new(height, FixedHash::default(), 0, 0, 1.into(), 0).expect("valid metadata")
+    }
+
+    #[test]
+    fn remote_not_synced_reports_startup() {
+        for meta in [None, Some(metadata(100))] {
+            let progress = remote_sync_progress(meta.as_ref(), false);
+            assert_eq!(progress.state, SyncState::Startup as i32);
+            assert_eq!(progress.local_height, 0);
+        }
+        let progress = remote_sync_progress(None, true);
+        assert_eq!(progress.state, SyncState::Startup as i32);
+    }
+
+    #[test]
+    fn remote_synced_reports_done_at_full_progress() {
+        let progress = remote_sync_progress(Some(&metadata(100)), true);
+        assert_eq!(progress.state, SyncState::Done as i32);
+        assert_eq!(progress.local_height, 100);
+        let info = SyncProgressInfo::from_sync_progress(&progress, 1);
+        assert!(info.percentage >= 1.0);
+    }
 }
