@@ -148,39 +148,6 @@ test.describe.serial('Security PIN', () => {
     await doneBtn.click({ timeout: 5_000 });
   });
 
-  // Sync with phone is off in this build (PAPER_WALLET_ENABLED); re-enable with it.
-  test.skip('sync with phone prompts for the PIN before showing the QR', async ({ appPage: page }) => {
-    await openSettingsTab(page, 'wallet');
-    await page.locator(sel.settings.syncWithPhone).click({ timeout: 10_000 });
-    const haveApp = page.locator(sel.sync.haveApp);
-    await haveApp.waitFor({ state: 'visible', timeout: 15_000 });
-
-    // Converge on the PIN prompt: re-click "I have the app" if the first
-    // click was lost.
-    const pinInput = page.locator(sel.pin.input);
-    const deadline = Date.now() + 45_000;
-    while (Date.now() < deadline) {
-      if (await pinInput.isVisible().catch(() => false)) break;
-      if (await haveApp.isVisible().catch(() => false)) {
-        await haveApp.click({ timeout: 5_000, force: true }).catch(() => {});
-      }
-      if (
-        await pinInput.waitFor({ state: 'visible', timeout: 10_000 }).then(
-          () => true,
-          () => false
-        )
-      )
-        break;
-    }
-    await answerPinPrompt(page, TEST_PIN);
-
-    await expect(page.locator(sel.sync.qr)).toBeVisible({ timeout: 60_000 });
-    const code = page.locator(sel.sync.identificationCode);
-    await code.waitFor({ state: 'visible', timeout: 10_000 });
-    expect((await code.inputValue()).length).toBeGreaterThan(0);
-    await page.keyboard.press('Escape');
-  });
-
   test('MCP: token reveal and the transaction tier are PIN-gated', async ({ appPage: page }) => {
     await openSettingsTab(page, 'mcp');
 

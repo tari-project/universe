@@ -175,13 +175,6 @@
   "node-type": "Typ",
   "not-connected-to-tari": "Nicht mit dem Tari-Netzwerk verbunden",
   "open-logs-directory": "Protokollverzeichnis öffnen",
-  "paper-wallet": {
-    "connect-wallet-to-phone": "Verbinden Sie Ihr Tari-Universum-Wallet mit Ihrem Telefon",
-    "do-not-share-this-code": "Teilen Sie diesen Code mit niemandem",
-    "link-tari-aurora": "Tari Universe Mobile verknüpfen",
-    "load-qr-code": "QR-Code laden",
-    "passphrase": "Passphrase"
-  },
   "pause-on-battery-mode": {
     "description": "Pause mining when device is disconnected from charging",
     "title": "Pause on Battery Mode"

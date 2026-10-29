@@ -220,11 +220,6 @@ export interface ApplicationsVersions {
     bridge: ApplicationsInformation;
 }
 
-export interface PaperWalletDetails {
-    qr_link: string;
-    password: string;
-}
-
 export interface NetworkStatus {
     download_speed: number;
     upload_speed: number;

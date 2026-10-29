@@ -9,10 +9,6 @@
   "mining-schedules": "माइनिंग अनुसूचियाँ",
   "mining-schedules-description": "अपनी माइनिंग गतिविधि का समय निर्धारित करें",
   "next-milestone": "अगला मील का पत्थर",
-  "paper-wallet-button": "फोन के साथ सिंक करें",
-  "paper-wallet-tooltip-message": "अपने यूनिवर्स वॉलेट को तारी ऑरोरा से सिंक करके कहीं भी अपने XTM को ट्रैक करें।",
-  "paper-wallet-tooltip-title": "फोन के साथ सिंक करें",
-  "paper-wallet-unavailable": "इस संस्करण में फ़ोन से सिंक अस्थायी रूप से उपलब्ध नहीं है।",
   "recent-wins": "हाल की जीत",
   "reward": {
     "stacked": "You stacked"

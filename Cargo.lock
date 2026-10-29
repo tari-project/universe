@@ -1413,15 +1413,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "clap_complete"
-version = "4.5.66"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c757a3b7e39161a4e56f9365141ada2a6c915a8622c408ab6bb4b5d047371031"
-dependencies = [
- "clap 4.5.58",
-]
-
-[[package]]
 name = "clap_derive"
 version = "3.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1460,16 +1451,6 @@ name = "clap_lex"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a822ea5bc7590f9d40f1ba12c0dc3c2760f3482c6984db1573ad11031420831"
-
-[[package]]
-name = "clap_mangen"
-version = "0.2.31"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "439ea63a92086df93893164221ad4f24142086d535b3a0957b9b9bea2dc86301"
-dependencies = [
- "clap 4.5.58",
- "roff",
-]
 
 [[package]]
 name = "clipboard-win"
@@ -4606,25 +4587,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "include-lines"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4be037b494f74d7bded0680228b3133bc268cbe50282f51c25fa46b890cfedb9"
-dependencies = [
- "include-lines-proc",
-]
-
-[[package]]
-name = "include-lines-proc"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd1ff2792810c5bb1b591ae8ac768bda8b0238a3b61cb546d062709f2a6a4f77"
-dependencies = [
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "include_dir"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7270,20 +7232,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "phraze"
-version = "0.3.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "074aae809a0547b32f75030b1980ede0874a4819487d30391aec5e0546922fda"
-dependencies = [
- "clap 4.5.58",
- "clap_complete",
- "clap_mangen",
- "include-lines",
- "rand 0.10.1",
- "unicode-normalization",
-]
-
-[[package]]
 name = "pin-project"
 version = "0.4.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8601,12 +8549,6 @@ dependencies = [
  "serde_json",
  "syn 2.0.115",
 ]
-
-[[package]]
-name = "roff"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88f8660c1ff60292143c98d08fc6e2f654d722db50410e3f3797d40baaf9d8f3"
 
 [[package]]
 name = "ron"
@@ -10331,7 +10273,6 @@ dependencies = [
  "nvml-wrapper",
  "open",
  "openssl",
- "phraze",
  "planif",
  "psp",
  "r2d2",
@@ -12795,15 +12736,6 @@ name = "unicode-ident"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "537dd038a89878be9b64dd4bd1b260315c1bb94f4d784956b81e27a088d9a09e"
-
-[[package]]
-name = "unicode-normalization"
-version = "0.1.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fd4f6878c9cb28d874b009da9e8d183b5abc80117c40bbd187a1fde336be6e8"
-dependencies = [
- "tinyvec",
-]
 
 [[package]]
 name = "unicode-segmentation"

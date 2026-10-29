@@ -22,7 +22,6 @@ import FailedModuleInitializationDialog from './FailedModuleInitializationDialog
 import ForgotPinDialog from './security/pin/ForgotPinDialog.tsx';
 import KeychainDialog from './Keychain/KeychainDialog.tsx';
 import LudicrousCofirmationDialog from './LudicrousCofirmationDialog/LudicrousCofirmationDialog.tsx';
-import PaperWalletModal from './PaperWalletModal/PaperWalletModal.tsx';
 import ReleaseNotesDialog from './ReleaseNotesDialog/ReleaseNotesDialog.tsx';
 import SecurityPromptDialog from './security/prompt/SecurityPromptDialog.tsx';
 import SeedPhrase from './security/seedphrase/SeedPhrase.tsx';
@@ -46,7 +45,6 @@ const FloatingElements = () => {
             <ShutdownSelectionDialog />
             <CriticalErrorDialog />
             <ExternalDependenciesDialog />
-            <PaperWalletModal />
             <LudicrousCofirmationDialog />
             <ShareRewardModal />
             <ToastStack />

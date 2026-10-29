@@ -1323,12 +1323,6 @@ impl std::fmt::Display for TariAddressType {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
-pub struct PaperWalletConfig {
-    pub qr_link: String,
-    pub password: String,
-}
-
 /// Enum-like tag for a credential failure, safe to log and to send as a Sentry tag.
 /// Carries the kind of failure only, never the error's contents.
 pub fn credential_error_tag(error: &CredentialError) -> &'static str {

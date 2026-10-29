@@ -175,13 +175,6 @@
   "node-type": "Jenis",
   "not-connected-to-tari": "Tidak terhubung ke Jaringan Tari",
   "open-logs-directory": "Buka direktori log",
-  "paper-wallet": {
-    "connect-wallet-to-phone": "Hubungkan dompet Tari Universe Anda ke ponsel Anda",
-    "do-not-share-this-code": "Jangan bagikan kode ini kepada siapa pun",
-    "link-tari-aurora": "Hubungkan Tari Universe Mobile",
-    "load-qr-code": "Muat Kode QR",
-    "passphrase": "Kata Sandi"
-  },
   "pause-on-battery-mode": {
     "description": "Pause mining when device is disconnected from charging",
     "title": "Pause on Battery Mode"

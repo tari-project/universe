@@ -473,7 +473,6 @@ fn main() {
             commands::get_application_language,
             commands::get_monero_seed_words,
             commands::get_network,
-            commands::get_paper_wallet_details,
             commands::get_seed_words,
             commands::get_tor_config,
             commands::import_seed_words,

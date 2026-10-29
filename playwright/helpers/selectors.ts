@@ -8,8 +8,6 @@ export const sel = {
     seedWordsDisplay: '[data-testid="wallet-seed-words"]',
     seedToggle: '[data-testid="wallet-seed-toggle"]',
     setupPin: '[data-testid="wallet-setup-pin"]',
-    syncWithPhone: '[data-testid="wallet-sync-phone"]',
-    syncWithPhoneUnavailable: '[data-testid="wallet-sync-phone-unavailable"]',
     seedEdit: '[data-testid="wallet-seed-edit"]',
     seedInput: '[data-testid="wallet-seed-input"]',
     seedSubmit: '[data-testid="wallet-seed-submit"]',
@@ -52,12 +50,6 @@ export const sel = {
     address: '[data-testid="receive-address"]',
     emojiToggle: '[data-testid="receive-emoji-toggle"]',
     copyButton: '[data-testid="receive-copy-address"]',
-  },
-
-  sync: {
-    haveApp: '[data-testid="sync-have-app"]',
-    qr: '[data-testid="sync-qr"]',
-    identificationCode: '[data-testid="sync-identification-code"]',
   },
 
   pin: {

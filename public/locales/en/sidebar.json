@@ -9,10 +9,6 @@
   "mining-schedules": "Mining Schedules",
   "mining-schedules-description": "Schedule your mining activity",
   "next-milestone": "Next Milestone",
-  "paper-wallet-button": "Sync with Phone",
-  "paper-wallet-tooltip-message": "Track your XTM balance anywhere by syncing Universe with Tari Universe Mobile.",
-  "paper-wallet-tooltip-title": "Sync with Phone",
-  "paper-wallet-unavailable": "Sync with phone is temporarily unavailable in this version.",
   "recent-wins": "Recent wins",
   "reward": {
     "stacked": "You stacked"

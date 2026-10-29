@@ -177,13 +177,6 @@
   "not-connected-to-tari": "Nie połączono z siecią Tari",
   "not-connected-to-tari-network": null,
   "open-logs-directory": "Otwórz katalog logów",
-  "paper-wallet": {
-    "connect-wallet-to-phone": "Połącz swój portfel Tari Universe z telefonem",
-    "do-not-share-this-code": "Nie udostępniaj tego kodu nikomu",
-    "link-tari-aurora": "Połącz z Tari Universe Mobile",
-    "load-qr-code": "Załaduj kod QR",
-    "passphrase": "Hasło"
-  },
   "pause-on-battery-mode": {
     "description": "Pause mining when device is disconnected from charging",
     "title": "Pause on Battery Mode"

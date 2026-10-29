@@ -41,7 +41,7 @@ use crate::event_scheduler::{EventScheduler, SchedulerEventTiming, SchedulerEven
 use crate::events::ConnectionStatusPayload;
 use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
-use crate::internal_wallet::{InternalWallet, PaperWalletConfig, mnemonic_to_tari_cipher_seed};
+use crate::internal_wallet::{InternalWallet, mnemonic_to_tari_cipher_seed};
 use crate::mining::cpu::manager::CpuManager;
 use crate::mining::gpu::consts::GpuMinerType;
 use crate::mining::gpu::manager::GpuManager;
@@ -91,15 +91,11 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 use tari_common::configuration::Network;
 use tari_common_types::seeds::mnemonic::{Mnemonic, MnemonicLanguage};
-use tari_common_types::seeds::mnemonic_wordlists::MNEMONIC_ENGLISH_WORDS;
 use tari_common_types::tari_address::dual_address::DualAddress;
 use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_transaction_components::tari_amount::{MicroMinotari, Minotari};
-use tari_utilities::SafePassword;
-use tari_utilities::encoding::MBase58;
 use tauri::Manager;
 use tauri::ipc::InvokeError;
-use urlencoding::encode;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET_WEB: &str = "tari::universe::web";
@@ -424,66 +420,6 @@ pub async fn get_monero_seed_words(app_handle: tauri::AppHandle) -> Result<Vec<S
         warn!(target: LOG_TARGET_APP_LOGIC, "get_monero_seed_words took too long: {:?}", timer.elapsed());
     }
     result
-}
-
-/// Sync with phone is off in this build: under tari 6.3 it exports a version 3 seed, which the
-/// current Aurora app can't read yet.
-const PAPER_WALLET_ENABLED: bool = false;
-
-/// Refuses sync with phone while it is off, before anything reads the seed or asks for a PIN.
-fn paper_wallet_allowed() -> Result<(), String> {
-    if PAPER_WALLET_ENABLED {
-        Ok(())
-    } else {
-        Err("Sync with phone is temporarily unavailable in this version.".to_string())
-    }
-}
-
-#[tauri::command]
-pub async fn get_paper_wallet_details(
-    auth_uuid: Option<String>,
-    app_handle: tauri::AppHandle,
-) -> Result<PaperWalletConfig, InvokeError> {
-    paper_wallet_allowed().map_err(InvokeError::from)?;
-    let timer = Instant::now();
-
-    let wallet_balance = BalanceTracker::current().get_account_balance().await.total;
-
-    warn!(target: LOG_TARGET_APP_LOGIC, "auth_uuid {auth_uuid:?}");
-    let anon_id = ConfigCore::content().await.anon_id().clone();
-
-    let tari_cipher_seed = InternalWallet::get_tari_seed_with_prompt(&app_handle, None)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
-    let raw_passphrase = phraze::generate_a_passphrase(5, "-", false, &MNEMONIC_ENGLISH_WORDS);
-    let seed_file = tari_cipher_seed
-        .encipher(Some(SafePassword::from(&raw_passphrase)))
-        .map_err(|e| InvokeError::from_anyhow(anyhow::anyhow!(e.to_string())))?;
-    let seed_words_encrypted_base58 = seed_file.to_monero_base58();
-    let network = Network::get_current_or_user_setting_or_default()
-        .to_string()
-        .trim()
-        .to_lowercase();
-
-    let mut link = format!(
-        "tari://{}/paper_wallet?private_key={}&anon_id={}",
-        network,
-        seed_words_encrypted_base58,
-        encode(&anon_id),
-    );
-    link.push_str(&format!("&balance={}", encode(&wallet_balance.to_string())));
-    // Add auth_uuid as a query parameter if it exists
-    if let Some(uuid) = &auth_uuid {
-        link.push_str(&format!("&tt={}", encode(uuid)));
-    }
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET_APP_LOGIC, "get_paper_wallet_details took too long: {:?}", timer.elapsed());
-    };
-    Ok(PaperWalletConfig {
-        qr_link: link,
-        password: raw_passphrase,
-    })
 }
 
 #[tauri::command]
@@ -2666,13 +2602,7 @@ pub async fn set_custom_node_directory(path: String) -> Result<(), InvokeError> 
 
 #[cfg(test)]
 mod tests {
-    use super::{canonicalise_remote_base_node_address, paper_wallet_allowed};
-
-    #[test]
-    fn sync_with_phone_is_refused_while_it_is_off() {
-        let error = paper_wallet_allowed().expect_err("off in this version");
-        assert!(error.contains("temporarily unavailable"), "{error}");
-    }
+    use super::canonicalise_remote_base_node_address;
 
     #[test]
     fn implicit_default_https_port_survives() {
