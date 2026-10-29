@@ -56,6 +56,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'reset_settings', payload: { resetWallet: boolean }): Promise<string>;
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'discard_unreadable_wallet_config'): Promise<void>;
     function invoke(param: 'exit_application'): Promise<string>;
     function invoke(param: 'restart_application'): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;

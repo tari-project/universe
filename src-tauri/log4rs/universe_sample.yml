@@ -128,6 +128,14 @@ root:
     - stdout
 
 loggers:
+  # Signs every send non-interactively, which logs the recipient, amount and memo at
+  # info. Those lines would end up in feedback bundles; warnings and errors still do.
+  c::tx::offline_signing:
+    level: warn
+    appenders:
+      - other
+    additive: false
+
   tari::universe:
     level: info
     appenders:

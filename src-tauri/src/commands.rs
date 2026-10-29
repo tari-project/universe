@@ -914,6 +914,13 @@ pub async fn reset_settings(
 }
 
 #[tauri::command]
+pub async fn discard_unreadable_wallet_config() -> Result<(), String> {
+    crate::internal_wallet::discard_unreadable_wallet_config()
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub async fn restart_application(
     _window: tauri::Window,
     app: tauri::AppHandle,

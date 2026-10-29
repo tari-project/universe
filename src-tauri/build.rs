@@ -113,6 +113,13 @@ fn main() {
     }
 
     if cfg!(target_os = "windows") {
+        // Windows gives the main thread a 1 MB stack reserve (macOS and Linux: 8 MB). Tauri
+        // builds every async command future on that thread before spawning it, which has
+        // overflowed in the field (EXCEPTION_STACK_OVERFLOW under tokio::task::spawn).
+        // Reserving 8 MB is address space only; pages are committed on use.
+        if std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
+            println!("cargo::rustc-link-arg-bins=/STACK:8388608");
+        }
         let mut windows = tauri_build::WindowsAttributes::new();
         // Require Administrator permissions to handle Firewall prompts
         windows = windows.app_manifest(

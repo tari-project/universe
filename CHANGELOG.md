@@ -1,6 +1,20 @@
-🚀 TARI UNIVERSE v1.6.17: Twin Tides
+🚀 TARI UNIVERSE v1.6.19: Deposit Reference Fix
 
-_October 22, 2026_
+_October 29, 2026_
+
+✨ WHAT'S FIXED
+
+- 💸 **Exchange deposits keep their payment ID** – When a deposit address includes a payment ID, Tari Universe now puts it in the transaction output. Exchanges can use that ID to match your XTM deposit to your account.
+- 🧅 **macOS node keeps its Tor connection** – Since 28 October the Tor network requires a newer Tor than the one built into the node on macOS, which made the node stop seconds after starting. The node now ships Tor 0.4.9.15 (tari v6.3.0-pre.2).
+- 🔧 **Under the hood** – Updated the built-in wallet to minotari v0.5.0, and the node, merge mining proxy and Tari libraries to v6.3.0-pre.2.
+
+If an earlier deposit was not credited, keep its transaction details and contact the receiving exchange. This update does not change payments already on-chain.
+
+---
+
+🚀 TARI UNIVERSE v1.6.18: Twin Tides
+
+_October 27, 2026_
 
 🔄 Rolling out via auto-update
 
@@ -13,7 +27,7 @@ This is a big one. It's the first release since The Confluence to carry everythi
 - 💼 **Your wallet moved in** – The Tari wallet used to run as its own program next to Tari Universe. It now runs inside the app, so that's one less process to start, sync and keep alive. Your seed words, balance and history come along exactly as they were.
 - ⛏️ **Open-source GPU mining** – TARI.Miner, the open-source C29 miner, is now a choice in Settings next to lolMiner. It's NVIDIA-only for now and mines on one GPU at a time. Open source, so anyone can read exactly what's running on their card.
 - 🌊 **A first look at Layer 2 (testnet only)** – Picture this: a second wallet, on a second layer, right next to your first. The Ootle Layer 2 wallet is in the Esmeralda (testnet) build attached to this release. It isn't on mainnet yet, so your mainnet app won't show it. In the testnet build, click the new L2 button in the sidebar and enter your PIN (or set one up first) and you get a balance, a QR code to receive, sends, and burns from your Tari wallet that you can claim on L2. Turn on **Allow wallets to be side by side** in Settings to watch both tides at once. Bug reports very welcome!
-- 🐧 **Linux is back, via Flatpak** – One bundle for every distro, with CPU and GPU mining included. Grab `tari-universe-1.6.17-x86_64.flatpak` from the release and run `flatpak install` on it. Heads up: it doesn't auto-update yet, so grab the new bundle when a release lands.
+- 🐧 **Linux is back, via Flatpak** – One bundle for every distro, with CPU and GPU mining included. Grab `tari-universe-1.6.18-x86_64.flatpak` from the release and run `flatpak install` on it. Heads up: it doesn't auto-update yet, so grab the new bundle when a release lands.
 - 🖥️ **Start quietly in the tray** – New in Settings: **Show window on startup**. Turn it off and Tari Universe launches straight to the tray and gets mining without popping up a window.
 - 📊 **Active Nodes, not Active Miners** – The active miners count on the mining screen was unreliable, so we swapped it for active nodes, which comes from a better-maintained source and lines up with the number on the explorer.
 
@@ -28,7 +42,10 @@ This is a big one. It's the first release since The Confluence to carry everythi
 - 🌐 **Remote nodes on :443 work** – If you pointed Tari Universe at a remote node with an address like `https://node.example.com:443`, it was rejected for "needing a port" even though it had one. Now it's accepted.
 - ⏰ **Timers that keep time** – The wallet sync countdown now starts once there's an estimate to count down from, countdowns no longer stack on top of each other, and a clock that's slightly off can't make the block timer go negative.
 - 🔁 **A more patient node** – If your node hit a config error while starting up, Tari Universe gave up. It now cleans up and tries again.
-- 🔧 **Under the hood** – Updated to Tari v6.0.1-pre.2 and Ootle v0.44, vendored OpenSSL into the macOS build, patched a handful of high-severity dependency advisories, stopped sending Sentry reports for problems on your machine that we can't fix (full disks, flaky downloads and friends), and built out end-to-end tests that now cover most of our manual QA checklist.
+- 🪟 **No more crash loop on Windows** – A handful of Windows machines on the 1.6.17 preview hit a stack overflow a minute or so after every launch, and then again on the next launch. Windows gives the main thread far less stack than macOS and Linux do, so we've raised it to match and lightened what that thread carries. If you were stuck in that loop, this build is for you.
+- 🐧 **Flatpak that starts every time** – The Flatpak crashed on launch when it couldn't reach the system's login service, when there was no display to draw on, and when the terminal that started it had gone away. All three now log and carry on, or exit with a plain message, instead of panicking.
+- 💼 **A way back in after a damaged wallet config** – If your wallet config got corrupted (usually a stray byte from a crash mid-save on an older version), Tari Universe refused to create a new wallet on every launch and left you with nowhere to go. It now pulls your wallet id out of the damaged file and restores it when your seed is still in the keychain. If it can't, the dialog shows you where the file went and offers a **Start fresh** button once you've backed up your seed words. Nothing is deleted; the old files move to a `recovery` folder next to the config.
+- 🔧 **Under the hood** – Updated to Tari v6.0.1-pre.2 and Ootle v0.44, vendored OpenSSL into the macOS build, updated TARI.Miner to v1.1.8, refreshed the TLS stack and bundled root certificates along with zip, zstd and friends to clear every dependency advisory we could reach, stopped sending Sentry reports for problems on your machine that we can't fix (full disks, flaky downloads and friends), and built out end-to-end tests that now cover most of our manual QA checklist.
 
 Thank you for your patience while this one came together. You are Tari. We are ALL Tari 💜🐢
 

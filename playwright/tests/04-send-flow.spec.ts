@@ -1,8 +1,11 @@
 import { test, expect } from '../helpers/fixtures';
 import { ensureBalance, mineUntilBalanceExceeds, getWalletBalance } from '../helpers/wait-for';
 import { sel } from '../helpers/selectors';
-import { TEST_WALLET } from '../helpers/test-wallet';
+import { TEST_WALLET, TEST_WALLET_DEPOSIT_ADDRESS, TEST_WALLET_DEPOSIT_PAYMENT_ID } from '../helpers/test-wallet';
 import type { Page } from '@playwright/test';
+import { DatabaseSync } from 'node:sqlite';
+import path from 'node:path';
+import { getAppDataDir } from '../helpers/app-dirs';
 
 const INVALID_ADDRESS = 'this-is-not-a-valid-tari-address';
 const VALID_ADDRESS = TEST_WALLET.address;
@@ -200,5 +203,57 @@ test.describe('Send Transaction Flow', () => {
       .first()
       .click({ timeout: 5_000 });
     await txRow.waitFor({ state: 'visible', timeout: 60_000 });
+  });
+
+  test('preserves the payment ID encoded in a deposit address', async ({ appPage: page }) => {
+    await ensureBalance(page, 2, 180_000);
+
+    await openSendModal(page);
+    await fillAddressAwaitValidation(page, TEST_WALLET_DEPOSIT_ADDRESS, 'valid');
+    await page.locator(sel.send.amountInput).fill('1');
+    // An exchange supplies the ID in its address; the user leaves Message blank.
+    await expect(page.locator(sel.send.messageInput)).toHaveValue('');
+    await page.locator(sel.send.reviewButton).click();
+    await expect(page.getByText(/Confirm transaction/i).first()).toBeVisible({ timeout: 30_000 });
+    await page.locator(sel.send.appConfirmButton).click();
+    await expect(page.getByText(/You're Done/i).first()).toBeVisible({ timeout: 60_000 });
+    await page.locator(sel.send.doneButton).click();
+
+    // Sender history keeps its original record, whose memo_hex stays null.
+    // Match its sent output hash to the recipient output scanned on localnet.
+    const balanceNow = await getWalletBalance(page);
+    await mineUntilBalanceExceeds(page, Math.floor(balanceNow) + 1, 180_000);
+    await page.locator(sel.wallet.historyFilter).click();
+    await page.getByText(/^transactions$/i).first().click();
+
+    const row = page.locator('[data-index]').filter({ hasText: TEST_WALLET_DEPOSIT_PAYMENT_ID }).first();
+    await row.waitFor({ state: 'visible', timeout: 60_000 });
+    await row.hover({ force: true });
+    await row.locator(sel.send.rowDetails).click({ force: true });
+    await expect(page.locator(sel.send.copyRaw)).toBeVisible();
+    await page.locator(sel.send.copyRaw).click({ force: true });
+
+    const raw = await page.evaluate(
+      () => (window as unknown as { __PLAYWRIGHT_CLIPBOARD__?: string }).__PLAYWRIGHT_CLIPBOARD__ ?? ''
+    );
+    const sent = JSON.parse(raw) as { details: { sent_output_hashes: number[][] } };
+    expect(sent.details.sent_output_hashes).toHaveLength(1);
+    const sentHash = Buffer.from(sent.details.sent_output_hashes[0]);
+    const walletDb = path.join(getAppDataDir(), 'minotari-wallet', 'localnet', 'wallet.db');
+    const expectedMemoHex = Buffer.from(TEST_WALLET_DEPOSIT_PAYMENT_ID, 'utf8').toString('hex');
+
+    // The UI has no recipient-output memo field. Read the test profile's
+    // wallet DB to verify its scanner found this send's output and memo.
+    await expect.poll(() => {
+      const db = new DatabaseSync(walletDb);
+      try {
+        const output = db
+          .prepare('SELECT memo_hex, mined_in_block_height FROM outputs WHERE output_hash = ?')
+          .get(sentHash) as { memo_hex: string | null; mined_in_block_height: number } | undefined;
+        return output && output.mined_in_block_height > 0 ? output.memo_hex : null;
+      } finally {
+        db.close();
+      }
+    }, { timeout: 60_000, intervals: [500, 1000, 2000] }).toBe(expectedMemoHex);
   });
 });

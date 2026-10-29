@@ -153,10 +153,11 @@ const RESTART_EXIT_CODE: i32 = i32::MAX;
 const IGNORED_SENTRY_ERRORS: [&str; 4] = [
     "Failed to initialize gtk backend",
     "SIGABRT / SI_TKILL / 0x0",
-    // Broken-pipe-on-stdio panics: the app's stdout/stderr was closed by the parent
-    // process. This is the user's environment, not a bug, so it must not reach Sentry.
-    "panic: failed printing to stdout: Broken pipe",
-    "panic: failed printing to stderr: Broken pipe",
+    // Stdio panics (Broken pipe, Input/output error): the app's stdout/stderr was
+    // closed by the parent process or terminal. This is the user's environment, not
+    // a bug, so it must not reach Sentry.
+    "failed printing to stdout",
+    "failed printing to stderr",
 ];
 
 // test-mode uses a dedicated folder id (paired with the identifier override
@@ -214,6 +215,16 @@ struct UniverseAppState {
 fn main() {
     #[cfg(target_os = "linux")]
     {
+        // tao panics with "Failed to initialize gtk backend!" when there is no
+        // display to connect to (ssh, cron, tty). Exit cleanly instead.
+        if std::env::var_os("DISPLAY").is_none() && std::env::var_os("WAYLAND_DISPLAY").is_none() {
+            use std::io::Write;
+            let _unused = writeln!(
+                std::io::stderr(),
+                "Tari Universe needs a graphical session: neither DISPLAY nor WAYLAND_DISPLAY is set."
+            );
+            std::process::exit(1);
+        }
         if std::path::Path::new("/dev/dri").exists()
             && std::env::var("WAYLAND_DISPLAY").is_err()
             && std::env::var("XDG_SESSION_TYPE").unwrap_or_default() == "x11"
@@ -244,10 +255,24 @@ fn main() {
             release: sentry::release_name!(),
             attach_stacktrace: true,
             before_send: Some(Arc::new(|event| {
-                let is_in_ignored = event.logentry.as_ref().is_some_and(|entry| {
+                // Panics land in `exception` (type "panic", value = message), captured
+                // messages in `logentry`; check both.
+                let mut messages = event
+                    .logentry
+                    .as_ref()
+                    .map(|entry| entry.message.as_str())
+                    .into_iter()
+                    .chain(
+                        event
+                            .exception
+                            .values
+                            .iter()
+                            .filter_map(|e| e.value.as_deref()),
+                    );
+                let is_in_ignored = messages.any(|message| {
                     IGNORED_SENTRY_ERRORS
                         .iter()
-                        .any(|ignored| entry.message.starts_with(ignored))
+                        .any(|ignored| message.starts_with(ignored))
                 });
                 if is_in_ignored { None } else { Some(event) }
             })),
@@ -369,7 +394,11 @@ fn main() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
-            println!("{}, {argv:?}, {cwd}", app.package_info().name);
+            info!(
+                target: LOG_TARGET_APP_LOGIC,
+                "Second instance launched: {}, {argv:?}, {cwd}",
+                app.package_info().name
+            );
 
             match app.get_webview_window("main") {
                 Some(w) => {
@@ -435,6 +464,7 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::discard_unreadable_wallet_config,
             commands::download_and_start_installer,
             commands::exit_application,
             commands::fetch_tor_bridges,
@@ -628,12 +658,13 @@ fn main() {
                 } else {
                     block_on(state.updates_manager.initial_try_update(&handle_clone));
 
-                    tauri::async_runtime::spawn(async move {
+                    // Box: this runs on the main thread, whose stack is only 1 MB on Windows.
+                    tauri::async_runtime::spawn(Box::pin(async move {
                         SetupManager::get_instance()
                             .start_setup(handle_clone.clone())
                             .await;
                         SetupManager::spawn_sleep_mode_handler().await;
-                    });
+                    }));
                 }
             }
             tauri::RunEvent::ExitRequested { api, code, .. } => {

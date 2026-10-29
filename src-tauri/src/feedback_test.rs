@@ -154,7 +154,10 @@ fn read_archive(archive_file: &Path) -> ArchiveContents {
         let mut entry = archive
             .by_index(index)
             .expect("zip entry should be readable");
-        let name = entry.name().to_string();
+        let name = entry
+            .name()
+            .expect("zip entry name should decode")
+            .to_string();
         names.push(name.clone());
         if entry.is_file() {
             let mut bytes = Vec::new();

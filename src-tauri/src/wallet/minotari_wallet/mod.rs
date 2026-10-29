@@ -73,7 +73,7 @@ use crate::{
         database_manager::MinotariWalletDatabaseManager,
         transaction::{
             CONFIRMATION_WINDOW, SEND_FEE_PER_GRAM, TransactionManager, UTXO_LOCK_DURATION_SECS,
-            parse_destination_address,
+            parse_destination_address, resolve_payment_id,
         },
     },
 };
@@ -261,6 +261,7 @@ impl MinotariWalletManager {
         info!(target: LOG_TARGET, "Sending a one-sided transaction.");
         let tari_address = Self::get_owner_address().await?;
         let destination_address = parse_destination_address(&address)?;
+        let payment_id = resolve_payment_id(&destination_address, payment_id)?;
 
         // Build the key manager (and so raise the PIN prompt) before anything locks
         // UTXOs: a cancelled, mistyped or timed-out PIN returns from here having locked
