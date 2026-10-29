@@ -106,7 +106,7 @@ impl Binaries {
                 let file_name = "lolMiner";
                 Self::append_exe_if_windows(&mut PathBuf::from(version).join(file_name))
             }
-            // The release archive ships one backend per CUDA compute capability, the one that
+            // The release archive ships one backend per target GPU architecture, the one that
             // matches the GPU we mine with is published by the TARI.Miner adapter
             Binaries::TariMiner => {
                 Self::append_exe_if_windows(&mut selected_backend().relative_binary_path())
