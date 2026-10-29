@@ -95,7 +95,8 @@ pub struct L2Burn {
     pub proof_file: Option<String>,
     /// "pending" until the burn is mined and its proof written, then "claimable", then
     /// "claimed" once a claim is accepted on L2. "foreign" instead of "claimable" when
-    /// the claim key isn't one of this wallet's L2 accounts.
+    /// the claim key isn't one of this wallet's L2 accounts. "abandoned" instead of
+    /// "pending" once the user abandoned it: it may still be mined, and then turns claimable.
     pub status: &'static str,
     /// The L1 height the burn was mined at, once its proof is written. The L2 can't
     /// accept its claim until it has imported that block.

@@ -75,18 +75,27 @@ describe('transaction history empty state', () => {
     });
 
     it('marks a stalled transaction in its row', async () => {
+        // 14 is still in the stalled list from before it was mined.
         wallet.wallet_transactions = [
-            { id: 12, source: 'Transfer' },
-            { id: 13, source: 'Transfer' },
+            { id: 12, source: 'Transfer', status: 'pending' },
+            { id: 13, source: 'Transfer', status: 'pending' },
+            { id: 14, source: 'Transfer', status: 'unconfirmed' },
         ];
         vi.mocked(invoke).mockImplementation((async (cmd: string) =>
             cmd === 'get_stalled_transactions'
-                ? [{ tx_id: '12', amount: 5, burn_commitment: null }]
+                ? [
+                      { tx_id: '12', amount: 5, burn_commitment: null },
+                      { tx_id: '14', amount: 5, burn_commitment: null },
+                  ]
                 : []) as typeof invoke);
         render(list());
 
         await vi.waitFor(() =>
-            expect(screen.getAllByTestId('transaction').map((row) => row.dataset.stalled)).toEqual(['true', 'false'])
+            expect(screen.getAllByTestId('transaction').map((row) => row.dataset.stalled)).toEqual([
+                'true',
+                'false',
+                'false',
+            ])
         );
         invokeMock().mockResolvedValue([]);
     });

@@ -251,7 +251,8 @@ export interface L2Burn {
     claim_public_key: string;
     amount: number;
     proof_file: string | null;
-    status: 'pending' | 'claimable' | 'claimed' | 'foreign';
+    /** 'abandoned': the user abandoned it while pending; it may still be mined. */
+    status: 'pending' | 'abandoned' | 'claimable' | 'claimed' | 'foreign';
     /** The L1 height the burn was mined at, null when the L1 wallet doesn't know it. */
     mined_height: number | null;
     /** Unix seconds, when the burn was made. */

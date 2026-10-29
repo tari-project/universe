@@ -858,13 +858,21 @@ fn seed_source() -> SeedSource {
 /// Pending burns from the L1 wallet db and the proof files on disk, before the checks
 /// against the L2 wallet.
 async fn listed_burns() -> Result<Vec<L2Burn>, TransactionError> {
+    let abandoned = MinotariWalletManager::abandoned_burn_commitments()
+        .await
+        .map_err(wallet_error)?;
     let pending = MinotariWalletManager::pending_burns()
         .await
         .map_err(wallet_error)?
         .into_iter()
         .map(|row| {
             let amount = u64::try_from(row.value).unwrap_or_default();
-            L2Burn::pending(hex::encode(row.commitment), row.claim_public_key, amount)
+            let mut burn =
+                L2Burn::pending(hex::encode(&row.commitment), row.claim_public_key, amount);
+            if abandoned.contains(&row.commitment) {
+                burn.status = "abandoned";
+            }
+            burn
         })
         .collect();
     let times = MinotariWalletManager::burn_times()

@@ -502,8 +502,16 @@ pub async fn gated_abandon(
         .await
         .map_err(|e| wallet_failure("Abandon failed", e))?;
     let Some(entry) = stalled.iter().find(|s| s.tx_id == tx_id) else {
+        // Mined, rejected or already abandoned since the UI last looked: say that, not "try later".
+        let unmined = MinotariWalletManager::is_unmined_send(&tx_id)
+            .await
+            .map_err(|e| wallet_failure("Abandon failed", e))?;
         return Err(TransactionError::AbandonRefused {
-            code: "abandon_not_stalled",
+            code: if unmined {
+                "abandon_not_stalled"
+            } else {
+                "abandon_not_pending"
+            },
             message: format!("Transaction {tx_id} is not stalled"),
         });
     };

@@ -129,7 +129,7 @@ export function List({ setIsScrolled, scrolled = false }: ListProps) {
                                 key={tx.id}
                                 index={i}
                                 itemIsNew={isNewTransaction}
-                                isStalled={stalledIds.has(tx.id)}
+                                isStalled={stalledIds.has(tx.id) && tx.status === TransactionDisplayStatus.Pending}
                                 setDetailsItem={handleDetailsChange}
                             />
                         );

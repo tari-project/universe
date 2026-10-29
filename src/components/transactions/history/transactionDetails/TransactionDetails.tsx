@@ -6,7 +6,12 @@ import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard.ts';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { AccordionItem } from '@app/components/transactions/components/AccordionItem/AccordionItem.tsx';
-import { DisplayedTransaction, TransactionInput, TransactionOutput } from '@app/types/app-status.ts';
+import {
+    DisplayedTransaction,
+    TransactionDisplayStatus,
+    TransactionInput,
+    TransactionOutput,
+} from '@app/types/app-status.ts';
 import { getTransactionListEntries, getInputDetails, getOutputDetails } from './getTransactionListEntries.tsx';
 import { Wrapper, OperationsSection, OperationsTitle } from './styles.ts';
 import { AbandonStalled } from './AbandonStalled.tsx';
@@ -38,8 +43,12 @@ export const TransactionDetails = ({ transaction, expanded, handleClose }: Trans
     };
 
     const stalled = useStalledTransactions(transaction.id, expanded);
-    // Matched as numbers: the history holds ids as JavaScript numbers.
-    const stalledId = stalled.find((s) => Number(s.tx_id) === transaction.id)?.tx_id;
+    // Matched as numbers: the history holds ids as JavaScript numbers. Only while it is still
+    // unmined: the stalled list is refreshed once a minute, the transaction's status at once.
+    const stalledId =
+        transaction.status === TransactionDisplayStatus.Pending
+            ? stalled.find((s) => Number(s.tx_id) === transaction.id)?.tx_id
+            : undefined;
 
     const mainEntries = getTransactionListEntries(transaction);
     const copyIcon = !isCopied ? <IoCopyOutline size={12} /> : <IoCheckmarkOutline size={12} />;

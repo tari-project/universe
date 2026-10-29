@@ -105,7 +105,11 @@ export default function L2Activity({ account, filter }: { account: L2Account; fi
                             amount={xtr(burn.amount)}
                             claiming={claiming}
                             onClaim={() => claim(burn.commitment)}
-                            stalledId={stalled.find((s) => s.burn_commitment === burn.commitment)?.tx_id}
+                            stalledId={
+                                burn.status === 'pending'
+                                    ? stalled.find((s) => s.burn_commitment === burn.commitment)?.tx_id
+                                    : undefined
+                            }
                             onAbandon={setAbandonId}
                         />
                     ) : (
@@ -192,6 +196,7 @@ function L2BurnRow({ burn, amount, claiming, onClaim, stalledId, onAbandon }: L2
 
     let status = t('l2.claim.ready');
     if (burn.status === 'pending') status = t('l2.claim.pending');
+    else if (burn.status === 'abandoned') status = t('l2.claim.abandoned');
     else if (burn.status === 'foreign') status = t('l2.claim.foreign');
     else if (checking) status = t('l2.claim.checking');
     else if (waiting && stats) {
@@ -207,6 +212,7 @@ function L2BurnRow({ burn, amount, claiming, onClaim, stalledId, onAbandon }: L2
     let chip = '';
     if (stalledId) chip = t('abandon.chip');
     else if (burn.status === 'pending') chip = t('l2.claim.chip-pending');
+    else if (burn.status === 'abandoned') chip = t('l2.claim.chip-abandoned');
     else if (waiting) chip = t('l2.claim.chip-waiting');
 
     return (

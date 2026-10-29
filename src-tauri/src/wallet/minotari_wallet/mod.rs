@@ -54,6 +54,8 @@ pub struct StalledTransaction {
 /// be sent again.
 #[derive(Debug, Clone, Serialize)]
 pub struct SendReceipt {
+    /// The send's transaction id, as a string: a u64 doesn't always fit a JavaScript number.
+    pub tx_id: String,
     pub accepted_by_node: bool,
     /// The node's answer when it hasn't accepted the send.
     pub node_reason: Option<String>,
@@ -84,16 +86,17 @@ use minotari_wallet::{
     TransactionHistoryService,
     db::{
         AccountBalance, AccountRow, CompletedTransactionStatus, DbBurnProof, fetch_unspent_outputs,
-        get_account_by_name, get_change_output_hash_for_request,
+        get_account_by_name, get_change_output_hash_for_request, get_completed_transaction_by_id,
         get_completed_transactions_by_status, get_displayed_transaction_by_id,
-        get_latest_scanned_tip_block_by_account, get_output_spend, get_pending_burn_proofs,
+        get_displayed_transactions_by_status, get_latest_scanned_tip_block_by_account,
+        get_output_spend, get_pending_burn_proofs,
     },
     get_balance,
     http::WalletHttpClient,
     init_db,
     tasks::{burn_proof_worker::BurnProofWorker, unlocker::TransactionUnlocker},
     transactions::{
-        TransactionSource,
+        TransactionDisplayStatus, TransactionSource,
         abandon::{ABANDONED_REASON, AbandonedSend, abandon_send},
         burn::{BurnTxParams, BurnTxResult, create_burn_tx, persist_burn_records},
         fee_estimator::estimated_output_size_for_payment_id,
@@ -180,12 +183,13 @@ pub struct MinotariWalletManager {
     owner_tari_address: RwLock<Option<String>>,
     /// Indicates if initial sync is complete (first Completed event received)
     initial_sync_complete: AtomicBool,
-    /// Stores pending transactions by their sent_output_hashes for matching with scanned transactions
-    /// Key: comma-separated sorted output hashes, Value: DisplayedTransaction
-    pending_transactions: RwLock<HashMap<TxId, DisplayedTransaction>>,
     /// Coinbases the scan has already shown. The monitor re-sends a coinbase on every
     /// status change, and only the first sighting may be reported as a block won.
     seen_coinbases: RwLock<HashSet<TxId>>,
+    /// History entries the UI has been told were reorganized. A Partial scan rolls a reorg
+    /// back at the start of its cycle without emitting `ReorgDetected`, so every cycle
+    /// compares the database's reorganized entries with this.
+    reorged_ids: RwLock<HashSet<TxId>>,
     last_progress_emit_time: RwLock<Instant>,
     unlocker_handle: RwLock<Option<JoinHandle<Result<(), anyhow::Error>>>>,
     burn_proof_handle: RwLock<Option<JoinHandle<Result<(), anyhow::Error>>>>,
@@ -205,8 +209,8 @@ impl MinotariWalletManager {
             owner_tari_address: RwLock::new(None),
             last_scanned_height: RwLock::new(0),
             initial_sync_complete: AtomicBool::new(false),
-            pending_transactions: RwLock::new(HashMap::new()),
             seen_coinbases: RwLock::new(HashSet::new()),
+            reorged_ids: RwLock::new(HashSet::new()),
             last_progress_emit_time: RwLock::new(
                 Instant::now() - Duration::from_secs(PROGRESS_UPDATE_INTERVAL_SECS),
             ),
@@ -308,9 +312,7 @@ impl MinotariWalletManager {
             .finalize_one_sided_transaction(signed_transaction)
             .await?;
         let displayed_transaction = sent.displayed_transaction;
-
-        // Store as pending transaction for later matching with scanned transactions
-        Self::store_pending_transaction(&displayed_transaction).await;
+        let tx_id = displayed_transaction.id.to_string();
 
         // Re-read the balance the database now reports rather than guessing at it: the
         // spent inputs are locked, so `available` already reflects the send, fee
@@ -326,6 +328,7 @@ impl MinotariWalletManager {
 
         info!("One-sided transaction sent successfully.");
         Ok(SendReceipt {
+            tx_id,
             accepted_by_node: sent.accepted_by_node,
             node_reason: sent.node_reason,
         })
@@ -469,6 +472,29 @@ impl MinotariWalletManager {
         pending_burns(&*Self::get_db_connection().await?)
     }
 
+    /// Whether send or burn `tx_id` is still waiting to be mined (completed or broadcast),
+    /// so one missing from the stalled list just hasn't been refused often enough yet.
+    pub async fn is_unmined_send(tx_id: &str) -> Result<bool, anyhow::Error> {
+        let Ok(id) = tx_id.parse::<u64>() else {
+            return Ok(false);
+        };
+        let conn = Self::get_db_connection().await?;
+        Ok(
+            get_completed_transaction_by_id(&conn, TxId::from(id))?.is_some_and(|tx| {
+                matches!(
+                    tx.status,
+                    CompletedTransactionStatus::Completed | CompletedTransactionStatus::Broadcast
+                )
+            }),
+        )
+    }
+
+    /// Commitments of the burns the user abandoned. One still listed by
+    /// [`Self::pending_burns`] may yet be mined, but isn't simply waiting any more.
+    pub async fn abandoned_burn_commitments() -> Result<HashSet<Vec<u8>>, anyhow::Error> {
+        abandoned_burn_commitments(&*Self::get_db_connection().await?)
+    }
+
     /// When each of this wallet's burns was made, unix seconds by commitment (hex).
     pub async fn burn_times() -> Result<HashMap<String, u64>, anyhow::Error> {
         burn_times(&*Self::get_db_connection().await?)
@@ -506,37 +532,6 @@ impl MinotariWalletManager {
         Ok(())
     }
 
-    /// Store a pending transaction for later matching with scanned transactions
-    async fn store_pending_transaction(tx: &DisplayedTransaction) {
-        let mut pending = INSTANCE.pending_transactions.write().await;
-        pending.insert(tx.id, tx.clone());
-        info!(
-            target:
-            LOG_TARGET,
-            "Stored pending transaction with id: {}", tx.id
-        );
-    }
-
-    /// Try to find and remove a pending transaction that matches the given output hashes
-    /// Returns the pending transaction if found
-    async fn match_and_remove_pending_transaction(tx_id: &TxId) -> Option<DisplayedTransaction> {
-        let mut pending = INSTANCE.pending_transactions.write().await;
-        let result = pending.remove(tx_id);
-        if result.is_some() {
-            info!(
-                target: LOG_TARGET,
-                "Matched and removed pending transaction with id: {}", tx_id
-            );
-        }
-        result
-    }
-
-    /// Clear all pending transactions (e.g., on wallet import)
-    pub async fn clear_pending_transactions() {
-        let mut pending = INSTANCE.pending_transactions.write().await;
-        pending.clear();
-    }
-
     /// Forget everything the previous wallet's scan produced so a refresh or an
     /// import starts from a blank slate instead of inheriting stale sync flags,
     /// progress heights, balance and pending sends.
@@ -545,8 +540,8 @@ impl MinotariWalletManager {
             .initial_sync_complete
             .store(false, Ordering::SeqCst);
         *INSTANCE.last_scanned_height.write().await = 0;
-        Self::clear_pending_transactions().await;
         INSTANCE.seen_coinbases.write().await.clear();
+        INSTANCE.reorged_ids.write().await.clear();
         BalanceTracker::current().clear().await;
         EventsEmitter::emit_wallet_transactions_cleared().await;
         info!(target: LOG_TARGET, "Wallet scan state reset for rescan.");
@@ -792,18 +787,24 @@ impl MinotariWalletManager {
             "Starting blockchain scan for Minotari wallet at database path: {}", database_path
         );
 
-        // Create cancellation token
-        let cancel_token = CancellationToken::new();
-        *INSTANCE.cancel_token.write().await = Some(cancel_token.clone());
-
-        // Get shutdown signal for graceful termination
+        // Everything that can fail comes before the token is stored: a token left behind with
+        // no shutdown listener to clear it would make every later start a no-op.
+        let db_password = CredentialManager::minotari_db_password().await?;
         let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+
+        let cancel_token = CancellationToken::new();
+        {
+            let mut slot = INSTANCE.cancel_token.write().await;
+            if slot.is_some() {
+                return Ok(()); // Another start won the race since the check above.
+            }
+            *slot = Some(cancel_token.clone());
+        }
         let cancel_token_for_shutdown = cancel_token.clone();
         let cancel_token_for_scan = cancel_token.clone();
 
         let database_path_buf = PathBuf::from(database_path);
         let generation = INSTANCE.scan_generation.fetch_add(1, Ordering::SeqCst) + 1;
-        let db_password = CredentialManager::minotari_db_password().await?;
 
         // Tracked, not a bare `tokio::spawn`: `shutdown_phases(Wallet)` only awaits
         // tasks on this tracker, and a refresh/import deletes the database folder the
@@ -857,6 +858,7 @@ impl MinotariWalletManager {
                             .await;
 
                         Self::restart_unlocker_if_dead().await;
+                        Self::announce_new_reorgs().await;
                     }
 
                     let caught_up = match result {
@@ -894,6 +896,44 @@ impl MinotariWalletManager {
         Ok(())
     }
 
+    /// Tells the UI about history entries a reorg rolled back since the last cycle. Updates
+    /// only touch rows the UI already shows, so re-announcing old ones after a restart is
+    /// harmless.
+    async fn announce_new_reorgs() {
+        let reorged = match Self::reorganized_transactions().await {
+            Ok(reorged) => reorged,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Couldn't read reorganized transactions: {e:?}");
+                return;
+            }
+        };
+        let fresh_ids = newly_reorged(
+            &mut *INSTANCE.reorged_ids.write().await,
+            reorged.iter().map(|tx| tx.id),
+        );
+        let fresh: Vec<DisplayedTransaction> = reorged
+            .into_iter()
+            .filter(|tx| fresh_ids.contains(&tx.id))
+            .collect();
+        if fresh.is_empty() {
+            return;
+        }
+        info!(target: LOG_TARGET, "{} transactions were reorganized out of the chain", fresh.len());
+        for tx in fresh {
+            EventsEmitter::emit_wallet_transaction_updated(tx).await;
+        }
+    }
+
+    async fn reorganized_transactions() -> Result<Vec<DisplayedTransaction>, anyhow::Error> {
+        let account_id = Self::owner_account_id().await?;
+        let conn = Self::get_db_connection().await?;
+        Ok(get_displayed_transactions_by_status(
+            &conn,
+            account_id,
+            TransactionDisplayStatus::Reorganized,
+        )?)
+    }
+
     async fn process_scan_events(
         mut rx: tokio::sync::mpsc::UnboundedReceiver<ProcessingEvent>,
         generation: u64,
@@ -923,26 +963,7 @@ impl MinotariWalletManager {
                         transaction_count
                     );
 
-                    // Process transactions - check each for pending transaction match
-                    let mut transactions_to_emit = Vec::new();
-
-                    for tx in transactions_event.transactions {
-                        info!(target: LOG_TARGET, "TransactionsReady event - TX id: {}, status: {:?}", tx.id, tx.status);
-
-                        // Check if this scanned transaction matches any pending transaction
-                        if let Some(_pending_tx) =
-                            Self::match_and_remove_pending_transaction(&tx.id).await
-                        {
-                            // Emit update event - the scanned transaction replaces the pending one
-                            info!(
-                                target: LOG_TARGET,
-                                "Found matching pending transaction for scanned tx: {}",
-                                tx.id
-                            );
-                        }
-
-                        transactions_to_emit.push(tx);
-                    }
+                    let mut transactions_to_emit = transactions_event.transactions;
 
                     // Update balance based on new transactions
                     if !transactions_to_emit.is_empty() {
@@ -1106,10 +1127,19 @@ impl MinotariWalletManager {
                     *height = final_height;
                 }
 
-                // Mark initial sync as complete
+                // The library also reports Completed when the node's tip query fails or the
+                // node is behind, so only a scan that reached the tip counts as synced.
+                // Otherwise every older coinbase found later would be reported as a new win.
+                let tip_height = Self::get_chain_tip_height();
+                if !scan_reached_tip(final_height, tip_height) {
+                    warn!(
+                        target: LOG_TARGET_STATUSES,
+                        "Scan stopped at height {final_height}, short of the node tip {tip_height}; still syncing"
+                    );
+                    return;
+                }
                 INSTANCE.initial_sync_complete.store(true, Ordering::SeqCst);
 
-                let tip_height = Self::get_chain_tip_height();
                 EventsEmitter::emit_wallet_scanning_progress_update(
                     final_height,
                     if tip_height > 0 {
@@ -1135,8 +1165,8 @@ impl MinotariWalletManager {
                 );
             }
             ScanStatusEvent::MoreBlocksAvailable { .. } => {}
-            // Every cycle ends with `MaxBlocksReached`: the loop above starts the next
-            // one at once, so it is a progress marker, not a stall.
+            // A cycle that hit its block limit ends with `MaxBlocksReached` (a caught-up one
+            // with `Completed`): the loop starts the next at once, so it isn't a stall.
             ScanStatusEvent::Paused {
                 last_scanned_height,
                 reason: PauseReason::MaxBlocksReached { limit },
@@ -1346,6 +1376,21 @@ fn blocks_to_report(
 /// agree. A wallet born well after genesis therefore starts above 0%. `0` when
 /// the tip is unknown, so a wallet whose node has not reported a height yet does
 /// not show a nonsense percentage.
+/// The ids in `current` not in `known`, which then becomes `current`. An entry that leaves
+/// the reorganized set (re-mined) is announced again if it is reorganized again.
+fn newly_reorged(known: &mut HashSet<TxId>, current: impl Iterator<Item = TxId>) -> HashSet<TxId> {
+    let current: HashSet<TxId> = current.collect();
+    let fresh = current.difference(known).copied().collect();
+    *known = current;
+    fresh
+}
+
+/// Whether a scan that ended at `final_height` reached the node tip, allowing for blocks
+/// mined since it finished. An unknown tip (0) proves nothing.
+fn scan_reached_tip(final_height: u64, tip_height: u64) -> bool {
+    tip_height > 0 && final_height.saturating_add(REQUIRED_CONFIRMATIONS) >= tip_height
+}
+
 fn scan_progress_percent(current_height: u64, tip_height: u64) -> f64 {
     if tip_height == 0 {
         return 0.0;
@@ -1569,6 +1614,17 @@ fn pending_burns(conn: &Connection) -> Result<Vec<DbBurnProof>, anyhow::Error> {
         .collect())
 }
 
+fn abandoned_burn_commitments(conn: &Connection) -> Result<HashSet<Vec<u8>>, anyhow::Error> {
+    let mut stmt = conn.prepare(
+        "SELECT b.commitment
+           FROM burn_proofs b JOIN completed_transactions c
+             ON c.sent_output_hash = lower(hex(b.output_hash))
+          WHERE c.status = 'rejected' AND c.last_rejected_reason = ?1",
+    )?;
+    let rows = stmt.query_map([ABANDONED_REASON], |row| row.get::<_, Vec<u8>>(0))?;
+    Ok(rows.collect::<Result<_, _>>()?)
+}
+
 /// Whether the scan has seen any input of this transaction spent on chain. One that
 /// can't be read counts as unspent, so its burn stays guarded.
 fn any_input_spent(
@@ -1634,9 +1690,10 @@ fn pending_burns_guard(database_path: &Path) -> Result<(), anyhow::Error> {
 #[cfg(test)]
 mod tests {
     use super::{
-        SendReceipt, StalledTransaction, abandon_stalled, blocks_to_report, burn_times,
-        discard_wallet_dir, max_sendable, move_legacy_burn_proofs, pending_burns,
-        pending_burns_guard, record_burn_broadcast, scan_progress_percent, stalled_transactions,
+        SendReceipt, StalledTransaction, abandon_stalled, abandoned_burn_commitments,
+        blocks_to_report, burn_times, discard_wallet_dir, max_sendable, move_legacy_burn_proofs,
+        newly_reorged, pending_burns, pending_burns_guard, record_burn_broadcast,
+        scan_progress_percent, scan_reached_tip, stalled_transactions,
     };
     use crate::wallet::minotari_wallet::transaction::{CONFIRMATION_WINDOW, SEND_FEE_PER_GRAM};
     use minotari_wallet::db::{
@@ -1831,6 +1888,33 @@ mod tests {
         std::fs::remove_dir_all(root.path().join("minotari-wallet")).expect("refresh");
         assert_eq!(move_legacy_burn_proofs(legacy, dir.clone()), dir);
         assert!(dir.join("proof.json").exists());
+    }
+
+    #[test]
+    fn each_reorganized_entry_is_announced_once_per_reorg() {
+        let id = |n: u64| tari_common_types::transaction::TxId::from(n);
+        let mut known = HashSet::new();
+        assert_eq!(
+            newly_reorged(&mut known, [id(1), id(2)].into_iter()),
+            HashSet::from([id(1), id(2)])
+        );
+        assert!(newly_reorged(&mut known, [id(1), id(2)].into_iter()).is_empty());
+        // 2 was re-mined, then reorganized again.
+        assert!(newly_reorged(&mut known, [id(1)].into_iter()).is_empty());
+        assert_eq!(
+            newly_reorged(&mut known, [id(1), id(2)].into_iter()),
+            HashSet::from([id(2)])
+        );
+    }
+
+    #[test]
+    fn only_a_scan_that_reached_the_tip_counts_as_synced() {
+        assert!(scan_reached_tip(1000, 1000));
+        assert!(scan_reached_tip(997, 1000));
+        assert!(!scan_reached_tip(996, 1000));
+        // The library reports Completed at the start height when the tip query fails.
+        assert!(!scan_reached_tip(12, 380_000));
+        assert!(!scan_reached_tip(1000, 0));
     }
 
     #[test]
@@ -2043,6 +2127,19 @@ mod tests {
     }
 
     #[test]
+    fn an_abandoned_burn_is_listed_as_abandoned() {
+        let (pool, account_id, _dir) = recorded_burn(MAX_BROADCAST_ATTEMPTS);
+        let mut conn = pool.get().expect("connection");
+        assert!(abandoned_burn_commitments(&conn).expect("read").is_empty());
+
+        abandon_stalled(&mut conn, account_id, "12", false).expect("abandoned");
+        let abandoned = abandoned_burn_commitments(&conn).expect("read");
+        let pending = pending_burns(&conn).expect("pending burns");
+        assert_eq!(pending.len(), 1, "still guarded: it may yet be mined");
+        assert!(abandoned.contains(&pending[0].commitment));
+    }
+
+    #[test]
     fn an_abandoned_burn_without_a_change_row_stays_guarded_once_its_input_is_spent() {
         let (pool, account_id, dir) = recorded_burn(MAX_BROADCAST_ATTEMPTS);
         let path = dir.path().join("wallet.db");
@@ -2219,6 +2316,7 @@ mod tests {
         };
         let first = record_first_broadcast(None, 3u64.into(), Ok(refused));
         let receipt = SendReceipt {
+            tx_id: "7".to_string(),
             accepted_by_node: first.accepted_by_node,
             node_reason: first.node_reason,
         };
