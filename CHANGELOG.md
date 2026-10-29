@@ -4,7 +4,7 @@ _October 29, 2026_
 
 ✨ WHAT'S FIXED
 
-- 💸 **Sends to MEXC work again** – v1.6.19 refused to send to deposit addresses whose payment ID isn't plain text, with "Destination address contains a non-text payment ID". MEXC's addresses are like that. Tari Universe now sends the address's payment ID exactly as the exchange made it, so the deposit can be credited.
+- 💸 **Payment IDs that aren't text** – v1.6.19 read the payment ID in a deposit address as text, so some IDs failed with "Destination address contains a non-text payment ID". Tari Universe now sends the payment ID exactly as it is in the address.
 - 🔧 **Under the hood** – Updated the built-in wallet to minotari v0.5.2. It refuses a payment ID too large to send before reserving any funds, and your transaction history now shows the payment ID that was actually sent.
 
 When a deposit address carries its own payment ID, it replaces anything typed in Message, the same as the console wallet always did.
