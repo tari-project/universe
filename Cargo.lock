@@ -4413,7 +4413,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.61.2",
+ "windows-core 0.57.0",
 ]
 
 [[package]]
@@ -5702,8 +5702,8 @@ dependencies = [
 
 [[package]]
 name = "minotari"
-version = "0.5.0"
-source = "git+https://github.com/tari-project/minotari-cli.git?tag=v0.5.0#494b1564c023f01f74817461a67b00f567def305"
+version = "0.5.2"
+source = "git+https://github.com/tari-project/minotari-cli.git?tag=v0.5.2#52de86b6ba0f3555e6c890a3ed5b5597ff57a39e"
 dependencies = [
  "anyhow",
  "argon2 0.6.0",
@@ -5755,8 +5755,8 @@ dependencies = [
 
 [[package]]
 name = "minotari-scanning"
-version = "0.5.0"
-source = "git+https://github.com/tari-project/minotari-cli.git?tag=v0.5.0#494b1564c023f01f74817461a67b00f567def305"
+version = "0.5.2"
+source = "git+https://github.com/tari-project/minotari-cli.git?tag=v0.5.2#52de86b6ba0f3555e6c890a3ed5b5597ff57a39e"
 dependencies = [
  "anyhow",
  "async-trait",
