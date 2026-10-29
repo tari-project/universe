@@ -31,7 +31,8 @@ export default function EnterPinDialog() {
     const sendContext = pinContext?.kind === 'send' ? pinContext : null;
     const burnContext = pinContext?.kind === 'burn' ? pinContext : null;
     const l2SendContext = pinContext?.kind === 'l2_send' ? pinContext : null;
-    const fromTapplet = l2SendContext?.origin === 'tapplet';
+    const fromTapplet = (sendContext ?? l2SendContext)?.origin === 'tapplet';
+
     const l2ClaimContext = pinContext?.kind === 'l2_claim' ? pinContext : null;
     const reasonKey = pinContext ? REASON_KEYS[pinContext.kind] : undefined;
 

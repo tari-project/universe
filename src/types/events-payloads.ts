@@ -127,8 +127,8 @@ export interface GpuMiner {
     last_error?: string;
 }
 
-/** Which caller asked for a transaction: the in-app/tapplet bridge path, or the MCP tool. */
-export type TransactionOrigin = 'app' | 'mcp';
+/** Which caller asked for a transaction: the in-app UI, the MCP tool or the tapplet signer. */
+export type TransactionOrigin = 'app' | 'mcp' | 'tapplet';
 
 /**
  * Optional context attached to the `EnterPin` event, so the PIN dialog can tell the user
@@ -139,6 +139,7 @@ export interface SendPinPromptContext {
     amount_micro_minotari: number;
     destination: string;
     payment_id?: string | null;
+    origin: TransactionOrigin;
 }
 
 /** The wallet details were missing from the config and are being rebuilt from the stored seed. */

@@ -37,7 +37,7 @@ describe('TappletSigner.runOne', () => {
                 { amount: '100', address: 'tari-address', paymentId: 'bridge-1' },
             ]);
 
-            expect(invoke).toHaveBeenCalledWith('send_one_sided_to_stealth_address', {
+            expect(invoke).toHaveBeenCalledWith('send_one_sided_from_tapplet', {
                 amount: '100',
                 destination: 'tari-address',
                 paymentId: 'bridge-1',
@@ -256,9 +256,6 @@ describe('TappletSigner.runOne', () => {
                 [[{ amount: '1'.repeat(21), address: ADDRESS, payRef: PAY_REF }]],
                 [[{ amount: '1000000000000000', address: ADDRESS, payRef: PAY_REF }]],
                 [[{ amount: '9007199254740991', address: ADDRESS, payRef: PAY_REF }]],
-                [[{ amount: '100', address: ` ${ADDRESS}`, payRef: PAY_REF }]],
-                [[{ amount: '100', address: `${ADDRESS}\n`, payRef: PAY_REF }]],
-                [[{ amount: '100', address: `otl_esm_1${'q'.repeat(300)}`, payRef: PAY_REF }]],
             ])('rejects args %j without invoking any command', async (args) => {
                 await expect(signer.runOne('sendOotleStealth', args)).rejects.toThrow(
                     'Invalid arguments for tapplet signer method: sendOotleStealth'
@@ -371,7 +368,7 @@ describe('TappletSigner.runOne', () => {
                 let finish: (value: unknown) => void = () => undefined;
                 vi.mocked(invoke).mockImplementation((async (cmd: string) => {
                     if (cmd === 'l2_get_state') return l2State();
-                    if (cmd === 'send_one_sided_to_stealth_address' || cmd === 'l2_send_from_tapplet') {
+                    if (cmd === 'send_one_sided_from_tapplet' || cmd === 'l2_send_from_tapplet') {
                         return new Promise((resolve) => (finish = resolve));
                     }
                     return null;
@@ -391,7 +388,7 @@ describe('TappletSigner.runOne', () => {
 
             it.each([
                 ['sendOotleStealth', L2_REQ, 'l2_send_from_tapplet'],
-                ['sendOneSided', L1_REQ, 'send_one_sided_to_stealth_address'],
+                ['sendOneSided', L1_REQ, 'send_one_sided_from_tapplet'],
             ] as const)('refuses tapplet sends for a while after %s is denied', async (method, req, command) => {
                 vi.useFakeTimers();
                 mockCommands({
@@ -417,6 +414,7 @@ describe('TappletSigner.runOne', () => {
             /** How long sends stay refused, to the second. Probes with a locked wallet, which neither sends nor cools down. */
             async function cooldownSecs(): Promise<number> {
                 mockCommands({ l2_get_state: l2State({ locked: true, accounts: [] }) });
+                useL2WalletStore.setState({ ...l2StoreInitialState });
                 for (let secs = 0; secs <= 400; secs++) {
                     const busy = await signer
                         .runOne('sendOotleStealth', L2_REQ)
@@ -462,7 +460,7 @@ describe('TappletSigner.runOne', () => {
 
             it.each([
                 ['sendOotleStealth', L2_REQ, 'l2_send_from_tapplet'],
-                ['sendOneSided', L1_REQ, 'send_one_sided_to_stealth_address'],
+                ['sendOneSided', L1_REQ, 'send_one_sided_from_tapplet'],
             ] as const)(
                 'refuses sends for 3 s after %s fails, without growing the denial cooldown',
                 async (method, req, command) => {
@@ -491,6 +489,7 @@ describe('TappletSigner.runOne', () => {
                     await signer.runOne('sendOotleStealth', [{ amount: '100', address: ADDRESS, payRef: PAY_REF }]);
                 }
                 vi.mocked(invoke).mockClear();
+                useL2WalletStore.setState({ ...l2StoreInitialState });
             }
 
             beforeEach(async () => {
@@ -558,19 +557,40 @@ describe('TappletSigner.runOne', () => {
                 await expect(result).resolves.toEqual(L2_UNAVAILABLE);
             });
 
-            it('refuses a fifth wait while four run, then frees the slot', async () => {
+            it('refuses a fifth id while four are waited on, then frees the slot', async () => {
+                await sendTransactions('tx2', 'tx3', 'tx4', 'tx5');
                 vi.useFakeTimers();
                 useL2WalletStore.setState(l2State({}, 'Pending'));
-                const wait = () => signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 5 }]);
+                const wait = (id: string) =>
+                    signer.runOne('waitOotleTransaction', [{ transactionId: id, timeoutSecs: 5 }]);
 
-                const waits = [wait(), wait(), wait(), wait()];
-                await expect(wait()).rejects.toThrow(/^busy$/);
+                const waits = ['tx1', 'tx2', 'tx3', 'tx4'].map(wait);
+                await expect(wait('tx5')).rejects.toThrow(/^busy$/);
 
                 await vi.advanceTimersByTimeAsync(6_000);
                 await Promise.all(waits);
-                const again = wait();
+                const again = wait('tx5');
                 await vi.advanceTimersByTimeAsync(6_000);
                 await expect(again).resolves.toEqual({ status: 'Pending' });
+            });
+
+            it('joins a repeated wait on one id: one slot, one shared result', async () => {
+                await sendTransactions('tx2', 'tx3', 'tx4');
+                vi.useFakeTimers();
+                useL2WalletStore.setState(l2State({}, 'Pending'));
+                const wait = (id: string) =>
+                    signer.runOne('waitOotleTransaction', [{ transactionId: id, timeoutSecs: 5 }]);
+
+                const first = wait('tx1');
+                const second = wait('tx1');
+                const others = ['tx2', 'tx3', 'tx4'].map(wait);
+                useL2WalletStore.setState(l2State({}, 'Accepted'));
+
+                const [a, b] = await Promise.all([first, second]);
+                expect(a).toEqual({ status: 'Accepted' });
+                expect(b).toBe(a);
+                await vi.advanceTimersByTimeAsync(6_000);
+                await Promise.all(others);
             });
 
             it('is l2_unavailable when the L2 state cannot be read', async () => {

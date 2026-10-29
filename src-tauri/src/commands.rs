@@ -68,7 +68,7 @@ use crate::wallet::minotari_wallet::BurnReceipt;
 use crate::wallet::minotari_wallet::MinotariWalletManager;
 use crate::wallet::send_gate::{
     GatedBurnRequest, GatedL2SendRequest, GatedSendRequest, SendOrigin, gated_burn, gated_l2_claim,
-    gated_l2_send, gated_send, l2_log_destination,
+    gated_l2_send, gated_send,
 };
 use crate::wallet::wallet_types::TariAddressVariants;
 use crate::{LOG_TARGET_APP_LOGIC, UniverseAppState, airdrop};
@@ -1688,6 +1688,25 @@ pub async fn send_one_sided_to_stealth_address(
     Ok(())
 }
 
+/// [`send_one_sided_to_stealth_address`] for the tapplet signer only, so the send gate
+/// rate-limits it and the PIN prompt shows the bridge tapplet asked for it.
+#[tauri::command]
+pub async fn send_one_sided_from_tapplet(
+    amount: String,
+    destination: String,
+    payment_id: Option<String>,
+) -> Result<(), String> {
+    gated_send(GatedSendRequest {
+        origin: SendOrigin::Tapplet,
+        request_id: SendOrigin::Tapplet.new_request_id(),
+        amount,
+        destination,
+        payment_id,
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
 /// Burn funds for L2. Refused without a PIN; with one, the PIN prompt is the gate.
 #[tauri::command]
 pub async fn burn_to_l2(
@@ -1751,7 +1770,6 @@ pub async fn l2_send(
     destination: String,
     amount: String,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called with args: (account: {account:?}, destination: {:?}, amount: {amount:?})", l2_log_destination(&destination));
     gated_l2_send(GatedL2SendRequest {
         origin: SendOrigin::App,
         app_handle,
@@ -1775,7 +1793,6 @@ pub async fn l2_send_from_tapplet(
     amount: String,
     pay_ref: String,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send_from_tapplet] called with args: (account: {account:?}, destination: {:?}, amount: {amount:?})", l2_log_destination(&destination));
     gated_l2_send(GatedL2SendRequest {
         origin: SendOrigin::Tapplet,
         app_handle,

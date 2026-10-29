@@ -59,6 +59,22 @@ describe('EnterPinDialog', () => {
         }
     );
 
+    it('heads an L1 send from the tapplet as a tapplet send', () => {
+        useSecurityStore.setState({
+            modal: 'enter_pin',
+            pinPromptId: 1,
+            pinContext: {
+                kind: 'send',
+                amount_micro_minotari: 1_000_000,
+                destination: 'tari-address',
+                payment_id: null,
+                origin: 'tapplet',
+            },
+        });
+        render(<EnterPinDialog />);
+        expect(screen.getByText('security.pin.approve-tapplet-send')).toBeInTheDocument();
+    });
+
     it.each([
         ['l2_send', 10_049_990_000, '10,049.990000'],
         ['l2_send', 1, '0.000001'],
@@ -75,7 +91,13 @@ describe('EnterPinDialog', () => {
                       origin: 'app' as const,
                       fee_micro_minotari: null,
                   }
-                : { kind, amount_micro_minotari: amount, destination: 'tari-address', payment_id: null };
+                : {
+                      kind,
+                      amount_micro_minotari: amount,
+                      destination: 'tari-address',
+                      payment_id: null,
+                      origin: 'app' as const,
+                  };
         useSecurityStore.setState({ modal: 'enter_pin', pinPromptId: 1, pinContext });
         render(<EnterPinDialog />);
         expect(screen.getByText(shown)).toBeInTheDocument();

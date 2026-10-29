@@ -246,10 +246,12 @@ pub struct McpTransactionConfirmationPayload {
 #[derive(Debug, Serialize, Clone)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum PinPromptContext {
+    /// An L1 send. `origin` is `"app"`, `"mcp"` or `"tapplet"`.
     Send {
         amount_micro_minotari: u64,
         destination: String,
         payment_id: Option<String>,
+        origin: String,
     },
     /// Burning L1 funds to be claimed on L2 by `claim_public_key`.
     Burn {
