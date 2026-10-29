@@ -1,14 +1,3 @@
-🚀 TARI UNIVERSE v1.6.20: Tor Stays Up
-
-_October 29, 2026_
-
-✨ WHAT'S FIXED
-
-- 🧅 **macOS node keeps its Tor connection** – Since 28 October the Tor network requires a newer Tor than the one built into the node on macOS, which made the node stop seconds after starting. The node now ships Tor 0.4.9.15 (tari v6.3.0-pre.2).
-- 🔧 **Under the hood** – Updated the node, merge mining proxy and the Tari libraries to v6.3.0-pre.2.
-
----
-
 🚀 TARI UNIVERSE v1.6.19: Deposit Reference Fix
 
 _October 28, 2026_
@@ -16,7 +5,8 @@ _October 28, 2026_
 ✨ WHAT'S FIXED
 
 - 💸 **Exchange deposits keep their payment ID** – When a deposit address includes a payment ID, Tari Universe now puts it in the transaction output. Exchanges can use that ID to match your XTM deposit to your account.
-- 🔧 **Under the hood** – Updated the built-in wallet to minotari v0.5.0 and the Tari libraries it needs.
+- 🧅 **macOS node keeps its Tor connection** – Since 28 October the Tor network requires a newer Tor than the one built into the node on macOS, which made the node stop seconds after starting. The node now ships Tor 0.4.9.15 (tari v6.3.0-pre.2).
+- 🔧 **Under the hood** – Updated the built-in wallet to minotari v0.5.0, and the node, merge mining proxy and Tari libraries to v6.3.0-pre.2.
 
 If an earlier deposit was not credited, keep its transaction details and contact the receiving exchange. This update does not change payments already on-chain.
 
