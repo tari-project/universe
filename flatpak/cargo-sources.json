@@ -7200,53 +7200,53 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/minotari_app_grpc/minotari_app_grpc-6.3.0-pre.1.crate",
-        "sha256": "894e1313e24ebb0fcdf0ecf0839cc0aff7ef1fbd7cc3e42e974f0d121d1eca51",
-        "dest": "cargo/vendor/minotari_app_grpc-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/minotari_app_grpc/minotari_app_grpc-6.3.0-pre.2.crate",
+        "sha256": "1e01873546f511dcbc29df4d2ba1f963036134980295cd4f0c6cbd7ea4069b7b",
+        "dest": "cargo/vendor/minotari_app_grpc-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"894e1313e24ebb0fcdf0ecf0839cc0aff7ef1fbd7cc3e42e974f0d121d1eca51\", \"files\": {}}",
-        "dest": "cargo/vendor/minotari_app_grpc-6.3.0-pre.1",
+        "contents": "{\"package\": \"1e01873546f511dcbc29df4d2ba1f963036134980295cd4f0c6cbd7ea4069b7b\", \"files\": {}}",
+        "dest": "cargo/vendor/minotari_app_grpc-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/minotari_ledger_wallet_common/minotari_ledger_wallet_common-6.3.0-pre.1.crate",
-        "sha256": "15e327886623e5cfa80b6bfe2e14eb95c12b51b642cc7c32808c8356c0ec772e",
-        "dest": "cargo/vendor/minotari_ledger_wallet_common-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/minotari_ledger_wallet_common/minotari_ledger_wallet_common-6.3.0-pre.2.crate",
+        "sha256": "87e9f60b767d4f3ce6af30793f972391d769283f9170d1c2a0867eef48636794",
+        "dest": "cargo/vendor/minotari_ledger_wallet_common-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"15e327886623e5cfa80b6bfe2e14eb95c12b51b642cc7c32808c8356c0ec772e\", \"files\": {}}",
-        "dest": "cargo/vendor/minotari_ledger_wallet_common-6.3.0-pre.1",
+        "contents": "{\"package\": \"87e9f60b767d4f3ce6af30793f972391d769283f9170d1c2a0867eef48636794\", \"files\": {}}",
+        "dest": "cargo/vendor/minotari_ledger_wallet_common-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/minotari_node_grpc_client/minotari_node_grpc_client-6.3.0-pre.1.crate",
-        "sha256": "fb2fbcdcfa9f3b215eb2c141ee5c1e2ac406d3cb25cca9fd5472e7b060ad737d",
-        "dest": "cargo/vendor/minotari_node_grpc_client-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/minotari_node_grpc_client/minotari_node_grpc_client-6.3.0-pre.2.crate",
+        "sha256": "a1730be3141744aa3dbd59fcea455e4a75aa1a7892b3fe1586a1ca1352106684",
+        "dest": "cargo/vendor/minotari_node_grpc_client-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"fb2fbcdcfa9f3b215eb2c141ee5c1e2ac406d3cb25cca9fd5472e7b060ad737d\", \"files\": {}}",
-        "dest": "cargo/vendor/minotari_node_grpc_client-6.3.0-pre.1",
+        "contents": "{\"package\": \"a1730be3141744aa3dbd59fcea455e4a75aa1a7892b3fe1586a1ca1352106684\", \"files\": {}}",
+        "dest": "cargo/vendor/minotari_node_grpc_client-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/minotari_node_wallet_client/minotari_node_wallet_client-6.3.0-pre.1.crate",
-        "sha256": "cdacf24884e0aefd85c2ef274c16902cf36350ef597f391187f7c0362f42effb",
-        "dest": "cargo/vendor/minotari_node_wallet_client-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/minotari_node_wallet_client/minotari_node_wallet_client-6.3.0-pre.2.crate",
+        "sha256": "d9c2f1a2c1f37ef38fdef084f8f2544a7e1b562bbd1844d7749d3c1b62e5d3d0",
+        "dest": "cargo/vendor/minotari_node_wallet_client-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"cdacf24884e0aefd85c2ef274c16902cf36350ef597f391187f7c0362f42effb\", \"files\": {}}",
-        "dest": "cargo/vendor/minotari_node_wallet_client-6.3.0-pre.1",
+        "contents": "{\"package\": \"d9c2f1a2c1f37ef38fdef084f8f2544a7e1b562bbd1844d7749d3c1b62e5d3d0\", \"files\": {}}",
+        "dest": "cargo/vendor/minotari_node_wallet_client-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -12566,79 +12566,79 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_common/tari_common-6.3.0-pre.1.crate",
-        "sha256": "9507afa14b48d43fbf2156680e78c6915090e87b89524fde3fa196ecdbde72dc",
-        "dest": "cargo/vendor/tari_common-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_common/tari_common-6.3.0-pre.2.crate",
+        "sha256": "aca1e827bb9fe9197671534336a86db47abbc0575361a3308c989a5f2405b3b5",
+        "dest": "cargo/vendor/tari_common-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"9507afa14b48d43fbf2156680e78c6915090e87b89524fde3fa196ecdbde72dc\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_common-6.3.0-pre.1",
+        "contents": "{\"package\": \"aca1e827bb9fe9197671534336a86db47abbc0575361a3308c989a5f2405b3b5\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_common-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_common_sqlite/tari_common_sqlite-6.3.0-pre.1.crate",
-        "sha256": "71e20f41006fa29d2712bf9a7d4a6da61506332052a529755cf6ff9a1804d2cc",
-        "dest": "cargo/vendor/tari_common_sqlite-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_common_sqlite/tari_common_sqlite-6.3.0-pre.2.crate",
+        "sha256": "a035fdc2d9928c76fb141846007661049b0f5ddc7b56305e0c54c947751adc02",
+        "dest": "cargo/vendor/tari_common_sqlite-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"71e20f41006fa29d2712bf9a7d4a6da61506332052a529755cf6ff9a1804d2cc\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_common_sqlite-6.3.0-pre.1",
+        "contents": "{\"package\": \"a035fdc2d9928c76fb141846007661049b0f5ddc7b56305e0c54c947751adc02\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_common_sqlite-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_common_types/tari_common_types-6.3.0-pre.1.crate",
-        "sha256": "cd17b5aeb0bde8afb8c00f95e865c9241f0870fc8fe96594218ec59c3847cb05",
-        "dest": "cargo/vendor/tari_common_types-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_common_types/tari_common_types-6.3.0-pre.2.crate",
+        "sha256": "524bbe1522acec310d8da169a708bb68bd40acc38019c8427875d9ec17074588",
+        "dest": "cargo/vendor/tari_common_types-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"cd17b5aeb0bde8afb8c00f95e865c9241f0870fc8fe96594218ec59c3847cb05\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_common_types-6.3.0-pre.1",
+        "contents": "{\"package\": \"524bbe1522acec310d8da169a708bb68bd40acc38019c8427875d9ec17074588\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_common_types-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_comms/tari_comms-6.3.0-pre.1.crate",
-        "sha256": "4f3ed122c76ae18f8c8c275fabb05fd1b8abe6ff75630a6eda109af5d28038b8",
-        "dest": "cargo/vendor/tari_comms-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_comms/tari_comms-6.3.0-pre.2.crate",
+        "sha256": "60eef191e7c50de0717ac55862861f44d48be5e61cc550718021c150f4439921",
+        "dest": "cargo/vendor/tari_comms-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"4f3ed122c76ae18f8c8c275fabb05fd1b8abe6ff75630a6eda109af5d28038b8\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_comms-6.3.0-pre.1",
+        "contents": "{\"package\": \"60eef191e7c50de0717ac55862861f44d48be5e61cc550718021c150f4439921\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_comms-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_comms_dht/tari_comms_dht-6.3.0-pre.1.crate",
-        "sha256": "dcb54df67212bb251cb80014d260dfc4ae42ee1aec81f9053270abbcd14dc008",
-        "dest": "cargo/vendor/tari_comms_dht-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_comms_dht/tari_comms_dht-6.3.0-pre.2.crate",
+        "sha256": "1070b62fc5aac705a594269816bf46b32eef305c5c7578672ced4fa0734c2e23",
+        "dest": "cargo/vendor/tari_comms_dht-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"dcb54df67212bb251cb80014d260dfc4ae42ee1aec81f9053270abbcd14dc008\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_comms_dht-6.3.0-pre.1",
+        "contents": "{\"package\": \"1070b62fc5aac705a594269816bf46b32eef305c5c7578672ced4fa0734c2e23\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_comms_dht-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_comms_rpc_macros/tari_comms_rpc_macros-6.3.0-pre.1.crate",
-        "sha256": "0985213af15cc14410e85b2a2983d3e154e32d50930842119a03ab08e2c0c428",
-        "dest": "cargo/vendor/tari_comms_rpc_macros-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_comms_rpc_macros/tari_comms_rpc_macros-6.3.0-pre.2.crate",
+        "sha256": "3b9d7382070c26adfb0dc9bd76406d265e9f2a1d10ff489e9ffd27825e4e5815",
+        "dest": "cargo/vendor/tari_comms_rpc_macros-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"0985213af15cc14410e85b2a2983d3e154e32d50930842119a03ab08e2c0c428\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_comms_rpc_macros-6.3.0-pre.1",
+        "contents": "{\"package\": \"3b9d7382070c26adfb0dc9bd76406d265e9f2a1d10ff489e9ffd27825e4e5815\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_comms_rpc_macros-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -12663,14 +12663,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_core/tari_core-6.3.0-pre.1.crate",
-        "sha256": "c45c17338ae51c4d01b0b143d1d2de61da909f04ffc4cc46c578f5a133a18a45",
-        "dest": "cargo/vendor/tari_core-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_core/tari_core-6.3.0-pre.2.crate",
+        "sha256": "d688f591135bf19f5b4fffbd662c66f2a31fff57f1cf49b76e15206db0d49cf3",
+        "dest": "cargo/vendor/tari_core-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"c45c17338ae51c4d01b0b143d1d2de61da909f04ffc4cc46c578f5a133a18a45\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_core-6.3.0-pre.1",
+        "contents": "{\"package\": \"d688f591135bf19f5b4fffbd662c66f2a31fff57f1cf49b76e15206db0d49cf3\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_core-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -12708,27 +12708,27 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_features/tari_features-6.3.0-pre.1.crate",
-        "sha256": "01283a2e53971d248e5427d5279ac7ad69ccc6114c935ca23faad39e7fb675a8",
-        "dest": "cargo/vendor/tari_features-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_features/tari_features-6.3.0-pre.2.crate",
+        "sha256": "8c88eca8bd0c9bdbbc216625a6b3a7529f05567fa0848c859fd8f8144e932a00",
+        "dest": "cargo/vendor/tari_features-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"01283a2e53971d248e5427d5279ac7ad69ccc6114c935ca23faad39e7fb675a8\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_features-6.3.0-pre.1",
+        "contents": "{\"package\": \"8c88eca8bd0c9bdbbc216625a6b3a7529f05567fa0848c859fd8f8144e932a00\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_features-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_hashing/tari_hashing-6.3.0-pre.1.crate",
-        "sha256": "b942ce33ad5682da3d29a695e84d2ade47dc8fed7a67b0b7ed24483de1e2b572",
-        "dest": "cargo/vendor/tari_hashing-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_hashing/tari_hashing-6.3.0-pre.2.crate",
+        "sha256": "5ffd7276f445c7963bd187b0a2309e7251996fb1a5631a418a6e555b1f6142cb",
+        "dest": "cargo/vendor/tari_hashing-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"b942ce33ad5682da3d29a695e84d2ade47dc8fed7a67b0b7ed24483de1e2b572\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_hashing-6.3.0-pre.1",
+        "contents": "{\"package\": \"5ffd7276f445c7963bd187b0a2309e7251996fb1a5631a418a6e555b1f6142cb\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_hashing-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -12785,14 +12785,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_max_size/tari_max_size-6.3.0-pre.1.crate",
-        "sha256": "bc9178bd0de54eb5a76d6042ac6151ff62846f31d605d95e8e5a47986cf4708d",
-        "dest": "cargo/vendor/tari_max_size-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_max_size/tari_max_size-6.3.0-pre.2.crate",
+        "sha256": "703d63f99faacd96f2d538eb3feae575e110827953ef54c971f2ea9f4bc0a251",
+        "dest": "cargo/vendor/tari_max_size-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"bc9178bd0de54eb5a76d6042ac6151ff62846f31d605d95e8e5a47986cf4708d\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_max_size-6.3.0-pre.1",
+        "contents": "{\"package\": \"703d63f99faacd96f2d538eb3feae575e110827953ef54c971f2ea9f4bc0a251\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_max_size-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -12811,27 +12811,27 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_mmr/tari_mmr-6.3.0-pre.1.crate",
-        "sha256": "7870643c3a10f05cbd475e0da785e91c856a895e8c6c44fa6cc12903733a9b91",
-        "dest": "cargo/vendor/tari_mmr-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_mmr/tari_mmr-6.3.0-pre.2.crate",
+        "sha256": "df40bc6d727874ccd318fc2715ea8000830e4b751199acea8976178e0aba5624",
+        "dest": "cargo/vendor/tari_mmr-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"7870643c3a10f05cbd475e0da785e91c856a895e8c6c44fa6cc12903733a9b91\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_mmr-6.3.0-pre.1",
+        "contents": "{\"package\": \"df40bc6d727874ccd318fc2715ea8000830e4b751199acea8976178e0aba5624\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_mmr-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_node_components/tari_node_components-6.3.0-pre.1.crate",
-        "sha256": "b5830a59cd6023d1115534cecbc033b6926dd1db1cda9f841615485607f66e60",
-        "dest": "cargo/vendor/tari_node_components-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_node_components/tari_node_components-6.3.0-pre.2.crate",
+        "sha256": "7b90d8c8ab09898bdcdce5fa129f526f0baee14429d04983ce1735fba0299ef1",
+        "dest": "cargo/vendor/tari_node_components-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"b5830a59cd6023d1115534cecbc033b6926dd1db1cda9f841615485607f66e60\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_node_components-6.3.0-pre.1",
+        "contents": "{\"package\": \"7b90d8c8ab09898bdcdce5fa129f526f0baee14429d04983ce1735fba0299ef1\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_node_components-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -13046,53 +13046,53 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_p2p/tari_p2p-6.3.0-pre.1.crate",
-        "sha256": "df714017ead1f1a532213a0a5614f494260eb7931f41b233c35255556c20b011",
-        "dest": "cargo/vendor/tari_p2p-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_p2p/tari_p2p-6.3.0-pre.2.crate",
+        "sha256": "2f43609e03dcc97c3ee739abd4b8a87e0f6bf441673c695869cd13e676ccd0df",
+        "dest": "cargo/vendor/tari_p2p-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"df714017ead1f1a532213a0a5614f494260eb7931f41b233c35255556c20b011\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_p2p-6.3.0-pre.1",
+        "contents": "{\"package\": \"2f43609e03dcc97c3ee739abd4b8a87e0f6bf441673c695869cd13e676ccd0df\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_p2p-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_script/tari_script-6.3.0-pre.1.crate",
-        "sha256": "b4d13a40c071233b246b5c1d07dd2d9e67d2a6a16aa34fc5d162e46e4d8863bf",
-        "dest": "cargo/vendor/tari_script-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_script/tari_script-6.3.0-pre.2.crate",
+        "sha256": "070413a6ac657b6144dcf1fa51094ea06b028840961874da661db8948f34b5c8",
+        "dest": "cargo/vendor/tari_script-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"b4d13a40c071233b246b5c1d07dd2d9e67d2a6a16aa34fc5d162e46e4d8863bf\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_script-6.3.0-pre.1",
+        "contents": "{\"package\": \"070413a6ac657b6144dcf1fa51094ea06b028840961874da661db8948f34b5c8\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_script-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_service_framework/tari_service_framework-6.3.0-pre.1.crate",
-        "sha256": "ab7e91056ca8699df60163a967fad3d162dd7ae61c430c2cfe4d0debd065f5c4",
-        "dest": "cargo/vendor/tari_service_framework-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_service_framework/tari_service_framework-6.3.0-pre.2.crate",
+        "sha256": "3b3120220c7de1e27075e3eb396e41e8da936d4828df4bc4847b31b7291eeb34",
+        "dest": "cargo/vendor/tari_service_framework-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"ab7e91056ca8699df60163a967fad3d162dd7ae61c430c2cfe4d0debd065f5c4\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_service_framework-6.3.0-pre.1",
+        "contents": "{\"package\": \"3b3120220c7de1e27075e3eb396e41e8da936d4828df4bc4847b31b7291eeb34\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_service_framework-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_shutdown/tari_shutdown-6.3.0-pre.1.crate",
-        "sha256": "a2b52d705a9f73d9f0737deca9dd60239452a28bc68708d7a25ba8647d8acd1b",
-        "dest": "cargo/vendor/tari_shutdown-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_shutdown/tari_shutdown-6.3.0-pre.2.crate",
+        "sha256": "6e2ab9cce29682d0c65e7e2a75e5b770f158b7b59c5b4e1e93bf0c6854399286",
+        "dest": "cargo/vendor/tari_shutdown-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"a2b52d705a9f73d9f0737deca9dd60239452a28bc68708d7a25ba8647d8acd1b\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_shutdown-6.3.0-pre.1",
+        "contents": "{\"package\": \"6e2ab9cce29682d0c65e7e2a75e5b770f158b7b59c5b4e1e93bf0c6854399286\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_shutdown-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -13149,14 +13149,14 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_storage/tari_storage-6.3.0-pre.1.crate",
-        "sha256": "e1a759ee1957eba4c20dd958176a29569044370b260d77055b6163b2ad50955d",
-        "dest": "cargo/vendor/tari_storage-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_storage/tari_storage-6.3.0-pre.2.crate",
+        "sha256": "fc2f8ffdaa95888bac043fc4bacb5402fa7b2b343df992e3e950a388b9cb4ef8",
+        "dest": "cargo/vendor/tari_storage-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"e1a759ee1957eba4c20dd958176a29569044370b260d77055b6163b2ad50955d\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_storage-6.3.0-pre.1",
+        "contents": "{\"package\": \"fc2f8ffdaa95888bac043fc4bacb5402fa7b2b343df992e3e950a388b9cb4ef8\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_storage-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
@@ -13257,27 +13257,27 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_test_utils/tari_test_utils-6.3.0-pre.1.crate",
-        "sha256": "b8ffaddb9d1eb96a13e53b8a3e1f352c2c496df84a384ffb4450b475c8689067",
-        "dest": "cargo/vendor/tari_test_utils-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_test_utils/tari_test_utils-6.3.0-pre.2.crate",
+        "sha256": "a383a9c4fe4464feb4b37cf8f45cea957471e9181ee35887a18e5232fb21329a",
+        "dest": "cargo/vendor/tari_test_utils-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"b8ffaddb9d1eb96a13e53b8a3e1f352c2c496df84a384ffb4450b475c8689067\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_test_utils-6.3.0-pre.1",
+        "contents": "{\"package\": \"a383a9c4fe4464feb4b37cf8f45cea957471e9181ee35887a18e5232fb21329a\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_test_utils-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {
         "type": "archive",
         "archive-type": "tar-gzip",
-        "url": "https://static.crates.io/crates/tari_transaction_components/tari_transaction_components-6.3.0-pre.1.crate",
-        "sha256": "3763165e7ea3bd46e29df2047e1761c5bd9461e9c618c367d992cb4c74273f63",
-        "dest": "cargo/vendor/tari_transaction_components-6.3.0-pre.1"
+        "url": "https://static.crates.io/crates/tari_transaction_components/tari_transaction_components-6.3.0-pre.2.crate",
+        "sha256": "2d0248fcf01be68ddf7f7edfeb823b3c9a85e28c980f7650cee7053aa53097aa",
+        "dest": "cargo/vendor/tari_transaction_components-6.3.0-pre.2"
     },
     {
         "type": "inline",
-        "contents": "{\"package\": \"3763165e7ea3bd46e29df2047e1761c5bd9461e9c618c367d992cb4c74273f63\", \"files\": {}}",
-        "dest": "cargo/vendor/tari_transaction_components-6.3.0-pre.1",
+        "contents": "{\"package\": \"2d0248fcf01be68ddf7f7edfeb823b3c9a85e28c980f7650cee7053aa53097aa\", \"files\": {}}",
+        "dest": "cargo/vendor/tari_transaction_components-6.3.0-pre.2",
         "dest-filename": ".cargo-checksum.json"
     },
     {

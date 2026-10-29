@@ -2,12 +2,12 @@
     "binaries": {
         "bridge": "0.4.2",
         "lolminer": "1.98a",
-        "minotari_node": "6.0.1-pre.2 | 724c5f0",
-        "mmproxy": "6.0.1-pre.2 | 724c5f0",
+        "minotari_node": "6.3.0-pre.2 | e5635bf",
+        "mmproxy": "6.3.0-pre.2 | e5635bf",
         "sha-p2pool": "1.0.3 | cff9241",
         "tariminer": "1.1.8",
         "tor": "15.0.5",
-        "wallet": "6.0.1-pre.2 | 724c5f0",
+        "wallet": "6.3.0-pre.2 | e5635bf",
         "xmrig": "6.26.0"
     }
 }
