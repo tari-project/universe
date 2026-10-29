@@ -959,7 +959,8 @@ fn open_sdk(
     let config = WalletSdkConfig {
         network: ootle_network(network),
         override_keyring_password: Some(SafePassword::from(password)),
-        indexer_trust: IndexerTrust::default(),
+        // Spelled out: an upstream default change must not quietly downgrade to Trust.
+        indexer_trust: IndexerTrust::Verify,
     };
     let indexer = IndexerRestApiNetworkInterface::new(indexer_url);
     let sdk = OotleSdk::initialize_with_local_key_store(

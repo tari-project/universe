@@ -1623,7 +1623,7 @@ pub async fn send_one_sided_to_stealth_address(
     payment_id: Option<String>,
 ) -> Result<SendReceipt, String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET_APP_LOGIC, "[send_one_sided_to_stealth_address] called with args: (amount: {amount:?}, destination: {destination:?}, payment_id: {payment_id:?})");
+    info!(target: LOG_TARGET_APP_LOGIC, "[send_one_sided_to_stealth_address] called");
     let receipt = gated_send(GatedSendRequest {
         origin: SendOrigin::App,
         request_id: SendOrigin::App.new_request_id(),
@@ -1648,7 +1648,7 @@ pub async fn burn_to_l2(
     payment_id: Option<String>,
 ) -> Result<BurnReceipt, String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET_APP_LOGIC, "[burn_to_l2] called with args: (amount: {amount:?}, claim_public_key: {claim_public_key:?}, payment_id: {payment_id:?})");
+    info!(target: LOG_TARGET_APP_LOGIC, "[burn_to_l2] called");
     let receipt = gated_burn(GatedBurnRequest {
         request_id: SendOrigin::App.new_request_id(),
         amount,
@@ -1727,7 +1727,7 @@ pub async fn l2_send(
     destination: String,
     amount: String,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called with args: (account: {account:?}, destination: {destination:?}, amount: {amount:?})");
+    info!(target: LOG_TARGET_APP_LOGIC, "[l2_send] called");
     gated_l2_send(GatedL2SendRequest {
         app_handle,
         request_id: SendOrigin::App.new_request_id(),

@@ -409,9 +409,8 @@ pub async fn gated_send(request: GatedSendRequest) -> Result<SendReceipt, Transa
     // minotari transaction is created, and carries the amount/destination.
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing send (origin={}, destination={}, amount={amount})",
-        origin.as_str(),
-        kind.counterparty()
+        "send gate: executing send (origin={})",
+        origin.as_str()
     );
     let SpendKind::Send { destination } = kind else {
         unreachable!("gated_send builds a Send kind")
@@ -476,8 +475,7 @@ pub async fn gated_burn(request: GatedBurnRequest) -> Result<BurnReceipt, Transa
 
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing burn (claim_public_key={}, amount={amount})",
-        kind.counterparty()
+        "send gate: executing burn"
     );
     let SpendKind::Burn { claim_public_key } = kind else {
         unreachable!("gated_burn builds a Burn kind")
@@ -530,7 +528,7 @@ pub async fn gated_abandon(
 
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing abandon (tx_id={}, amount={amount})",
+        "send gate: executing abandon (tx_id={})",
         kind.counterparty()
     );
     let SpendKind::Abandon { tx_id, .. } = kind else {
@@ -597,8 +595,7 @@ pub async fn gated_l2_send(request: GatedL2SendRequest) -> Result<String, Transa
 
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing L2 send (destination={}, amount={amount})",
-        kind.counterparty()
+        "send gate: executing L2 send"
     );
     let SpendKind::L2Send { account, .. } = kind else {
         unreachable!("gated_l2_send builds an L2Send kind")
@@ -634,8 +631,7 @@ pub async fn gated_l2_claim(
 
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: executing L2 claim (commitment={}, amount={amount})",
-        kind.counterparty()
+        "send gate: executing L2 claim"
     );
     OotleWalletManager::claim_burn(&app_handle, file_name, proof, pass.pin_context).await
 }
@@ -655,9 +651,10 @@ async fn pass_gates(
     let needs_confirmation = origin.requires_confirmation(pin_configured);
     let destination = kind.counterparty();
 
+    // No amount or counterparty in these lines: app logs go out in feedback bundles.
     info!(
         target: LOG_TARGET_APP_LOGIC,
-        "send gate: kind={} origin={} amount={amount} destination={destination} pin_configured={pin_configured} confirmation_dialog={needs_confirmation}",
+        "send gate: kind={} origin={} pin_configured={pin_configured} confirmation_dialog={needs_confirmation}",
         kind.as_str(),
         origin.as_str()
     );
@@ -701,7 +698,7 @@ async fn pass_gates(
         let amount_display = format!("{amount} {}", kind.currency());
         info!(
             target: LOG_TARGET_APP_LOGIC,
-            "send gate: confirmation dialog emitted (request_id={request_id}, origin={}, destination={destination}, amount={amount_display})",
+            "send gate: confirmation dialog emitted (request_id={request_id}, origin={})",
             origin.as_str()
         );
 
