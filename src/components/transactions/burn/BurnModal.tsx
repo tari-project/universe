@@ -27,7 +27,9 @@ import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 import { setError as setStoreError } from '@app/store';
 import { PIN_CANCELLED_RE } from '@app/store/actions/l2WalletStoreActions.ts';
 import { queryClient } from '@app/App/queryClient.ts';
-import { BURNS_PAGE_URL, isPreBurn, shareAmount, xPostUrl } from './shareBurn.ts';
+import { isPreBurn } from './shareBurn.ts';
+import { isMainNet } from '@app/utils/network.ts';
+import { FormatPreset, formatNumber } from '@app/utils/formatters.ts';
 
 interface BurnModalProps {
     section: string;
@@ -82,7 +84,7 @@ function BurnForm() {
 
     return (
         <>
-            {isPreBurn() && (
+            {isMainNet() && isPreBurn() && (
                 <Typography variant="p" style={{ fontSize: 13, fontWeight: 600 }} data-testid="burn-pre-burn-notice">
                     {t('burn.pre-burn-notice')}
                 </Typography>
@@ -185,10 +187,12 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
 
     function handleShare() {
         const text = t(isPreBurn() ? 'burn.share-text-pre' : 'burn.share-text', {
-            amount: shareAmount(amountMicro),
-            url: BURNS_PAGE_URL,
+            amount: formatNumber(amountMicro, FormatPreset.XTM_COMPACT),
+            url: 'https://tari.com/burns',
         });
-        open(xPostUrl(text)).catch((e) => console.error('Could not open the share link', e));
+        open(`https://x.com/intent/post?text=${encodeURIComponent(text)}`).catch((e) =>
+            console.error('Could not open the share link', e)
+        );
     }
 
     const statusEntries: StatusListEntry[] = [

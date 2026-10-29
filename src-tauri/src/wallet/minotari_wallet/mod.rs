@@ -31,12 +31,6 @@ pub static LOG_TARGET: &str = "tari::universe::wallet::minotari_wallet";
 pub struct BurnReceipt {
     pub tx_id: String,
     pub output_hash: String,
-    /// Hex, the burned output's commitment.
-    pub commitment: String,
-    /// Hex, the burn kernel's excess signature. A base node answers
-    /// `/transactions?excess_sig_nonce=..&excess_sig_sig=..` with where the burn is.
-    pub kernel_excess_nonce: String,
-    pub kernel_excess_sig: String,
     /// Where the complete L2 claim proof will be written once the burn is mined.
     pub proof_file: String,
 }
@@ -400,6 +394,14 @@ impl MinotariWalletManager {
         let submitted = client.submit_transaction(transaction).await;
         record_burn_broadcast(&conn, tx_id, submitted)?;
         drop(conn);
+        crate::airdrop::report_burn(serde_json::json!({
+            "txId": tx_id.to_string(),
+            "commitment": hex::encode(&new_burn_proof.commitment),
+            "excessSigNonce": hex::encode(&new_burn_proof.kernel_excess_nonce),
+            "excessSig": hex::encode(&new_burn_proof.kernel_excess_sig),
+            "amountMicroMinotari": amount,
+        }))
+        .await;
 
         BalanceTracker::current()
             .update_from_transactions(Self::get_latest_account_balance().await)
@@ -409,9 +411,6 @@ impl MinotariWalletManager {
         Ok(BurnReceipt {
             tx_id: tx_id.to_string(),
             output_hash: hex::encode(output_hash),
-            commitment: hex::encode(&new_burn_proof.commitment),
-            kernel_excess_nonce: hex::encode(&new_burn_proof.kernel_excess_nonce),
-            kernel_excess_sig: hex::encode(&new_burn_proof.kernel_excess_sig),
             proof_file: proof_file.to_string_lossy().into_owned(),
         })
     }
