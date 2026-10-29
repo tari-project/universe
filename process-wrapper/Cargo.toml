@@ -1,6 +1,6 @@
 [package]
 name = "process-wrapper"
-version = "1.6.19"
+version = "1.6.20"
 edition = "2021"
 publish = false
 

@@ -4,3 +4,29 @@ resolver = "2"
 
 [profile.release]
 debug = true
+
+# minotari and tari-ootle take the tari crates from crates.io; resolve those to the
+# same tagged tree as src-tauri so the wallet types line up with the app's.
+[patch.crates-io]
+minotari_app_grpc = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+minotari_ledger_wallet_common = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+minotari_node_wallet_client = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_common = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_common_sqlite = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_common_types = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_comms = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_comms_dht = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_comms_rpc_macros = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_core = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_features = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_hashing = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_mmr = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_node_components = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_p2p = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_script = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_service_framework = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_storage = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_test_utils = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
+tari_transaction_components = { git = "https://github.com/tari-project/tari.git", tag = "v6.3.0-pre.2" }
