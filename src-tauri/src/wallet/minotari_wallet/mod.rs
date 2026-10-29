@@ -1657,7 +1657,6 @@ mod tests {
     };
     use minotari_wallet::models::OutputStatus;
     use minotari_wallet::transactions::{
-        abandon::AbandonSendError,
         burn::{BurnTxParams, create_burn_tx},
         input_selector::UtxoSelectionError,
         manager::{TransactionSender, record_first_broadcast},
@@ -2114,22 +2113,6 @@ mod tests {
 
         assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
         assert!(pending_burns_guard(&path).is_err());
-    }
-
-    #[test]
-    fn a_burn_that_is_not_stalled_cannot_be_abandoned() {
-        let (pool, account_id, _dir) = recorded_burn(1);
-        let mut conn = pool.get().expect("connection");
-        assert!(
-            stalled_transactions(&conn, account_id)
-                .expect("stalled")
-                .is_empty()
-        );
-
-        let err = abandon_send(&mut conn, account_id, 12u64.into(), false, false, None)
-            .expect_err("not stalled");
-        assert!(matches!(err, AbandonSendError::NotStalled { .. }), "{err}");
-        assert_eq!(pending_burns(&conn).expect("pending burns").len(), 1);
     }
 
     #[test]

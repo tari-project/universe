@@ -733,6 +733,14 @@ pub async fn reset_settings(
     reset_wallet: bool,
     app_handle: tauri::AppHandle,
 ) -> Result<(), String> {
+    // Held until the app restarts, so no burn can record a proof between the checks and
+    // the deletion. Only Tauri commands and MCP handlers take it, never a task that
+    // stop_all_processes waits on, and spends hold it across their own PIN prompt too.
+    let _gate = if reset_wallet {
+        Some(crate::wallet::send_gate::try_exclusive_permit().map_err(|e| e.to_string())?)
+    } else {
+        None
+    };
     if reset_wallet {
         // Resetting the wallet deletes its folder, and an unmined burn's proof lives in it.
         MinotariWalletManager::ensure_no_pending_burns().map_err(|e| e.to_string())?;
@@ -779,6 +787,8 @@ pub async fn reset_settings(
 
     let mut files_block_list = Vec::new();
     if reset_wallet {
+        // Re-checked with the wallet stopped and the gate still held, right before deletion.
+        MinotariWalletManager::ensure_no_pending_burns().map_err(|e| e.to_string())?;
         debug!(target: LOG_TARGET_APP_LOGIC, "[reset_settings] Clearing all wallets");
         InternalWallet::clear_all_wallets()
             .await

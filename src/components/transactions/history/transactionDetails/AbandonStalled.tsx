@@ -8,9 +8,7 @@ import { commandErrorCode, commandErrorMessage, sendErrorKey } from '@app/compon
 
 // Why the wallet refused to abandon, by the backend's error code.
 const ABANDON_ERROR_KEYS: Record<string, string> = {
-    abandon_not_found: 'abandon.error-not-found',
     abandon_not_pending: 'abandon.error-not-pending',
-    abandon_not_stalled: 'abandon.error-not-stalled',
     abandon_input_spent: 'abandon.error-input-spent',
     abandon_change_in_use: 'abandon.error-change-in-use',
     abandon_change_already_mined: 'abandon.error-change-already-mined',

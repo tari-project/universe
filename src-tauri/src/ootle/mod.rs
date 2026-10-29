@@ -1256,8 +1256,37 @@ mod tests {
         let store_dir = dir.path().join("esmeralda");
         std::fs::create_dir_all(&store_dir).expect("dir");
         let conn = Connection::open(store_dir.join("wallet.sqlite")).expect("db");
-        conn.execute_batch(include_str!("test_v044_wallet_schema.sql"))
-            .expect("the v0.44 schema");
+        // What of v0.44's schema the rebuild reads: its 14 migration records (only the
+        // first is still known to the SDK), the config table, and no `trusted_validator_sets`.
+        conn.execute_batch(
+            "CREATE TABLE __diesel_schema_migrations (
+                 version VARCHAR(50) PRIMARY KEY NOT NULL,
+                 run_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP);
+             INSERT INTO __diesel_schema_migrations (version) VALUES
+                 ('20230208122514'),
+                 ('20260223081528'),
+                 ('20260226054039'),
+                 ('20260303065935'),
+                 ('20260410120000'),
+                 ('20260512090000'),
+                 ('20260522100000'),
+                 ('20260529100000'),
+                 ('20260618160000'),
+                 ('20260625150000'),
+                 ('20260701143000'),
+                 ('20260709120000'),
+                 ('20260715100000'),
+                 ('20260923000000');
+             CREATE TABLE config (
+                 id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                 key TEXT NOT NULL,
+                 value TEXT NOT NULL,
+                 is_encrypted BOOLEAN NOT NULL,
+                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                 updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);
+             CREATE UNIQUE INDEX config_uniq_key ON config (key);",
+        )
+        .expect("the v0.44 schema");
         conn.execute(
             "ATTACH DATABASE ?1 AS new",
             [new_dir.join("wallet.sqlite").to_string_lossy()],

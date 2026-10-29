@@ -130,9 +130,10 @@ fn wallet_failure(context: &str, error: anyhow::Error) -> TransactionError {
         }
         if let Some(refused) = cause.downcast_ref::<AbandonSendError>() {
             let code = match refused {
-                AbandonSendError::NotFound(_) => "abandon_not_found",
-                AbandonSendError::NotPending { .. } => "abandon_not_pending",
-                AbandonSendError::NotStalled { .. } => "abandon_not_stalled",
+                // Not found / not stalled only happen if it changed since the pre-check.
+                AbandonSendError::NotFound(_)
+                | AbandonSendError::NotPending { .. }
+                | AbandonSendError::NotStalled { .. } => "abandon_not_pending",
                 AbandonSendError::InputSpent { .. } => "abandon_input_spent",
                 AbandonSendError::ChangeInUse { .. } => "abandon_change_in_use",
                 AbandonSendError::ChangeAlreadyMined { .. } => "abandon_change_already_mined",
@@ -355,6 +356,15 @@ struct GatePass {
 
 static TXN_DIALOG_GATE: LazyLock<tokio::sync::Semaphore> =
     LazyLock::new(|| tokio::sync::Semaphore::new(1));
+
+/// The gate permit, for work that must not overlap any spend: a wallet reset deletes
+/// the folder a burn records its claim proof in. Fails instead of waiting, so a reset
+/// doesn't sit behind a dialog the user has open.
+pub fn try_exclusive_permit() -> Result<tokio::sync::SemaphorePermit<'static>, anyhow::Error> {
+    TXN_DIALOG_GATE.try_acquire().map_err(|_| {
+        anyhow::anyhow!("A transaction is in progress. Try again once it has finished.")
+    })
+}
 
 static INFLIGHT: LazyLock<tokio::sync::Mutex<Option<InFlightTxn>>> =
     LazyLock::new(|| tokio::sync::Mutex::new(None));
@@ -877,7 +887,7 @@ mod tests {
         });
         assert_eq!(
             wallet_failure("Abandon failed", not_stalled).code(),
-            "abandon_not_stalled"
+            "abandon_not_pending"
         );
 
         let denied = TransactionError::Denied("Transaction denied by user".to_string());
@@ -1269,5 +1279,20 @@ mod tests {
             .expect("permit released")
             .expect("gate open");
         drop(reacquired);
+    }
+
+    /// A wallet reset must not start while a spend (a burn writing its proof) holds the permit.
+    #[tokio::test]
+    #[serial]
+    async fn exclusive_permit_refused_while_a_spend_holds_the_gate() {
+        let spend = TXN_DIALOG_GATE.acquire().await.expect("gate open");
+        assert!(try_exclusive_permit().is_err());
+        drop(spend);
+        let reset = try_exclusive_permit().expect("gate free");
+        assert!(
+            TXN_DIALOG_GATE.try_acquire().is_err(),
+            "reset holds the gate"
+        );
+        drop(reset);
     }
 }

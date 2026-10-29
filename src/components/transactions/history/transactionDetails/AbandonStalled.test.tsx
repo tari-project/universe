@@ -75,14 +75,14 @@ describe('AbandonStalled', () => {
 
     it('explains a refusal by its error code', async () => {
         const invokeMock = mockInvoke(async () => {
-            throw '[abandon_not_stalled] Abandon failed: Send 12 is not stalled';
+            throw '[abandon_not_pending] Abandon failed: Send 12 is not stalled';
         });
         render(<AbandonStalled stalledId="12" />);
 
         fireEvent.click(await screen.findByTestId('tx-details-abandon'));
         fireEvent.click(screen.getByTestId('tx-details-abandon-confirm'));
 
-        expect(await screen.findByText('abandon.error-not-stalled')).toBeInTheDocument();
+        expect(await screen.findByText('abandon.error-not-pending')).toBeInTheDocument();
         invokeMock.mockResolvedValue([]);
     });
 });
