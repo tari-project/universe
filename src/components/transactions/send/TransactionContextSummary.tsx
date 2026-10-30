@@ -86,7 +86,10 @@ export function TransactionContextSummary({
                 </WhiteBoxLabel>
                 <WhiteBoxValue>
                     <TariPurpleLogo />
-                    <Amount>{formatNumber(amountMicroMinotari, FormatPreset.XTM_COMPACT)}</Amount>
+                    {/* L2 shows the exact amount being signed; L1 keeps its compact form. */}
+                    <Amount>
+                        {formatNumber(amountMicroMinotari, isL2 ? FormatPreset.XTM_DECIMALS : FormatPreset.XTM_COMPACT)}
+                    </Amount>
                     <Currency>{isL2 ? `XTR` : `XTM`}</Currency>
                 </WhiteBoxValue>
             </WhiteBox>

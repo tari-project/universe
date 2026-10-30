@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { invoke } from '@tauri-apps/api/core';
 
 vi.mock('@tauri-apps/api/window', () => ({
@@ -8,9 +8,11 @@ vi.mock('@tauri-apps/api/window', () => ({
     })),
 }));
 
-import { TappletSigner } from './TappletSigner';
+import { L2_UNAVAILABLE, TappletSigner, TappletSignerRejection } from './TappletSigner';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
+import { initialState as l2StoreInitialState, useL2WalletStore } from '@app/store/useL2WalletStore';
+import { L2WalletState } from '@app/types/events-payloads';
 
 describe('TappletSigner.runOne', () => {
     let signer: TappletSigner;
@@ -36,7 +38,7 @@ describe('TappletSigner.runOne', () => {
                 { amount: '100', address: 'tari-address', paymentId: 'bridge-1' },
             ]);
 
-            expect(invoke).toHaveBeenCalledWith('send_one_sided_to_stealth_address', {
+            expect(invoke).toHaveBeenCalledWith('send_one_sided_from_tapplet', {
                 amount: '100',
                 destination: 'tari-address',
                 paymentId: 'bridge-1',
@@ -134,6 +136,528 @@ describe('TappletSigner.runOne', () => {
 
         it('tolerates a missing args array', async () => {
             await expect(signer.runOne('isConnected', undefined)).resolves.toBe(true);
+        });
+    });
+
+    describe('Ootle methods', () => {
+        const PAY_REF = '0f8fad5b-d9cb-469f-a165-70867728950e';
+        const ADDRESS = 'otl_esm_1destination';
+
+        function l2State(overrides: Partial<L2WalletState> = {}, status = 'Accepted'): L2WalletState {
+            return {
+                enabled: true,
+                locked: false,
+                seed_source: 'l1',
+                accounts: [
+                    {
+                        name: 'default',
+                        address: 'otl_esm_1mine',
+                        component_address: 'component_abc',
+                        public_key: 'aa',
+                        is_default: true,
+                        balance: { revealed: 1_000, confidential: 2_500_000, total: '2501000' },
+                        history: [],
+                        transactions: [{ id: 'tx1', status, fee: 10, invalid_reason: null, timestamp: 0 }],
+                    },
+                ],
+                ...overrides,
+            };
+        }
+
+        /** Answers each command from `responses`, throwing the ones that are errors. */
+        function mockCommands(responses: Record<string, unknown>) {
+            vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+                const response = responses[cmd];
+                if (response instanceof Error) throw response;
+                return response;
+            }) as typeof invoke);
+        }
+
+        beforeEach(() => {
+            vi.spyOn(console, 'error').mockImplementation(() => undefined);
+        });
+
+        afterEach(() => {
+            vi.mocked(invoke).mockReset();
+            vi.useRealTimers();
+            useL2WalletStore.setState({ ...l2StoreInitialState });
+        });
+
+        describe('getOotleAccount', () => {
+            it('returns the default account address and network', async () => {
+                mockCommands({ l2_get_state: l2State(), get_network: 'esmeralda' });
+
+                await expect(signer.runOne('getOotleAccount', [])).resolves.toEqual({
+                    address: 'otl_esm_1mine',
+                    network: 'esmeralda',
+                });
+            });
+
+            it.each([
+                ['the network has no L2', new Error('Layer 2 is not available on mainnet')],
+                ['L2 is not enabled', l2State({ enabled: false, accounts: [] })],
+                ['the wallet is locked', l2State({ locked: true, accounts: [] })],
+            ])('is l2_unavailable when %s', async (_, state) => {
+                mockCommands({ l2_get_state: state, get_network: 'mainnet' });
+
+                await expect(signer.runOne('getOotleAccount', [])).resolves.toEqual(L2_UNAVAILABLE);
+            });
+
+            it('hides backend error text behind a fixed code', async () => {
+                mockCommands({ l2_get_state: l2State(), get_network: new Error('config file unreadable at /home/x') });
+
+                await expect(signer.runOne('getOotleAccount', [])).rejects.toThrow(/^failed$/);
+                expect(console.error).toHaveBeenCalledWith(expect.stringContaining('config file unreadable'));
+            });
+        });
+
+        describe('getOotleBalance', () => {
+            it('sums revealed and confidential micro XTR as a string', async () => {
+                mockCommands({ l2_get_state: l2State() });
+
+                await expect(signer.runOne('getOotleBalance', [])).resolves.toEqual({
+                    available: '2501000',
+                    pending: '0',
+                });
+            });
+
+            it('passes the backend total through exactly past 2^53', async () => {
+                const state = l2State();
+                state.accounts[0].balance.total = '9007199254740993';
+                mockCommands({ l2_get_state: state });
+
+                await expect(signer.runOne('getOotleBalance', [])).resolves.toEqual({
+                    available: '9007199254740993',
+                    pending: '0',
+                });
+            });
+
+            it('is l2_unavailable when L2 is not enabled', async () => {
+                mockCommands({ l2_get_state: l2State({ enabled: false, accounts: [] }) });
+
+                await expect(signer.runOne('getOotleBalance', [])).resolves.toEqual(L2_UNAVAILABLE);
+            });
+
+            it('reads an open wallet from the L2 store without asking the backend', async () => {
+                useL2WalletStore.setState(l2State());
+
+                for (let i = 0; i < 5; i++) {
+                    await expect(signer.runOne('getOotleBalance', [])).resolves.toEqual({
+                        available: '2501000',
+                        pending: '0',
+                    });
+                }
+                expect(invoke).not.toHaveBeenCalledWith('l2_get_state');
+            });
+
+            it('does not overwrite a wallet event that lands while l2_get_state is in flight', async () => {
+                let answer: (state: L2WalletState) => void = () => undefined;
+                vi.mocked(invoke).mockImplementation(
+                    (() => new Promise<unknown>((resolve) => (answer = resolve))) as typeof invoke
+                );
+
+                const balance = signer.runOne('getOotleBalance', []);
+                await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_get_state'));
+                const fromEvent = l2State({ locked: true, accounts: [] });
+                useL2WalletStore.setState(fromEvent);
+                answer(l2State());
+
+                await expect(balance).resolves.toEqual(L2_UNAVAILABLE);
+                expect(useL2WalletStore.getState()).toMatchObject(fromEvent);
+            });
+        });
+
+        describe('sendOotleStealth', () => {
+            it('sends micro XTR as XTR from the default account with the pay ref', async () => {
+                mockCommands({ l2_get_state: l2State(), l2_send_from_tapplet: 'tx1' });
+
+                const result = await signer.runOne('sendOotleStealth', [
+                    { amount: '1500001', address: ADDRESS, payRef: PAY_REF },
+                ]);
+
+                expect(result).toEqual({ transactionId: 'tx1' });
+                expect(invoke).toHaveBeenCalledWith('l2_send_from_tapplet', {
+                    account: 'component_abc',
+                    destination: ADDRESS,
+                    amount: '1.500001',
+                    payRef: PAY_REF,
+                });
+            });
+
+            it.each([
+                [[]],
+                [[{ amount: '0', address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: '-5', address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: '1.5', address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: 100, address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: '100', address: '', payRef: PAY_REF }]],
+                [[{ amount: '100', address: ADDRESS }]],
+                [[{ amount: '100', address: ADDRESS, payRef: 'bridge-1' }]],
+                [[{ amount: '100', address: ADDRESS, payRef: '0f8fad5b-d9cb-169f-a165-70867728950e' }]],
+                [[{ amount: '100', address: ADDRESS, payRef: `${PAY_REF}${PAY_REF}` }]],
+                [[{ amount: '1'.repeat(21), address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: '1000000000000000', address: ADDRESS, payRef: PAY_REF }]],
+                [[{ amount: '9007199254740991', address: ADDRESS, payRef: PAY_REF }]],
+            ])('rejects args %j without invoking any command', async (args) => {
+                await expect(signer.runOne('sendOotleStealth', args)).rejects.toThrow(
+                    'Invalid arguments for tapplet signer method: sendOotleStealth'
+                );
+                expect(invoke).not.toHaveBeenCalled();
+            });
+
+            it('accepts the largest amount the PIN prompt can show exactly', async () => {
+                mockCommands({ l2_get_state: l2State(), l2_send_from_tapplet: 'tx1' });
+
+                await expect(
+                    signer.runOne('sendOotleStealth', [
+                        { amount: '999999999999999', address: ADDRESS, payRef: PAY_REF },
+                    ])
+                ).resolves.toEqual({ transactionId: 'tx1' });
+            });
+
+            it('turns an address the backend refuses into an invalid-arguments rejection', async () => {
+                mockCommands({
+                    l2_get_state: l2State(),
+                    l2_send_from_tapplet: new Error('Invalid L2 address: bad checksum'),
+                });
+
+                const error = await signer
+                    .runOne('sendOotleStealth', [{ amount: '100', address: ADDRESS, payRef: PAY_REF }])
+                    .catch((e: unknown) => e);
+                expect(error).toBeInstanceOf(TappletSignerRejection);
+                expect((error as Error).message).toBe('Invalid arguments for tapplet signer method: sendOotleStealth');
+            });
+
+            it('is l2_unavailable without sending when L2 is locked', async () => {
+                mockCommands({ l2_get_state: l2State({ locked: true, accounts: [] }) });
+
+                const result = await signer.runOne('sendOotleStealth', [
+                    { amount: '100', address: ADDRESS, payRef: PAY_REF },
+                ]);
+
+                expect(result).toEqual(L2_UNAVAILABLE);
+                expect(invoke).not.toHaveBeenCalledWith('l2_send_from_tapplet', expect.anything());
+            });
+
+            it.each([
+                ['PIN entry cancelled', 'denied'],
+                ['Pin is locked out. Remaining seconds: 290', 'denied'],
+                ['L2 send failed: Wrong PIN entered!', 'denied'],
+                ["L2 send failed: The L2 indexer didn't answer within 30 seconds", 'failed'],
+                ['L2 send failed: request cancelled by the indexer', 'failed'],
+                ['Transaction rate limit exceeded. Try again later.', 'busy'],
+            ])('turns the backend error "%s" into "%s"', async (backend, code) => {
+                mockCommands({
+                    l2_get_state: l2State(),
+                    l2_send_from_tapplet: new Error(backend),
+                });
+
+                await expect(
+                    signer.runOne('sendOotleStealth', [{ amount: '100', address: ADDRESS, payRef: PAY_REF }])
+                ).rejects.toThrow(new RegExp(`^${code}$`));
+                expect(console.error).toHaveBeenCalledWith(expect.stringContaining(backend));
+            });
+
+            it.each([
+                ['PIN entry cancelled', true],
+                ['Transaction rate limit exceeded. Try again later.', true],
+                ["L2 send failed: The L2 indexer didn't answer within 30 seconds", false],
+            ])('a backend "%s" is a signer rejection (no toast): %s', async (backend, rejection) => {
+                mockCommands({
+                    l2_get_state: l2State(),
+                    l2_send_from_tapplet: new Error(backend),
+                });
+
+                const error = await signer
+                    .runOne('sendOotleStealth', [{ amount: '100', address: ADDRESS, payRef: PAY_REF }])
+                    .catch((e: unknown) => e);
+                expect(error instanceof TappletSignerRejection).toBe(rejection);
+            });
+
+            it('refuses a second send while one is in flight, then allows the next', async () => {
+                let finishSend: (id: string) => void = () => undefined;
+                vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+                    if (cmd === 'l2_get_state') return l2State();
+                    if (cmd === 'l2_send_from_tapplet') return new Promise((resolve) => (finishSend = resolve));
+                    return null;
+                }) as typeof invoke);
+                const req = [{ amount: '100', address: ADDRESS, payRef: PAY_REF }];
+
+                const first = signer.runOne('sendOotleStealth', req);
+                await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_send_from_tapplet', expect.anything()));
+                await expect(signer.runOne('sendOotleStealth', req)).rejects.toThrow(/^busy$/);
+
+                finishSend('tx1');
+                await expect(first).resolves.toEqual({ transactionId: 'tx1' });
+                finishSend = () => undefined;
+                const next = signer.runOne('sendOotleStealth', req);
+                await vi.waitFor(() => {
+                    const sends = vi
+                        .mocked(invoke)
+                        .mock.calls.filter(([cmd]) => String(cmd) === 'l2_send_from_tapplet');
+                    expect(sends).toHaveLength(2);
+                });
+                finishSend('tx2');
+                await expect(next).resolves.toEqual({ transactionId: 'tx2' });
+            });
+        });
+
+        describe('one tapplet send at a time', () => {
+            const L2_REQ = [{ amount: '100', address: ADDRESS, payRef: PAY_REF }];
+            const L1_REQ = [{ amount: '100', address: 'tari-address' }];
+
+            it('refuses an L2 send while an L1 send waits on its PIN prompt, and the other way round', async () => {
+                let finish: (value: unknown) => void = () => undefined;
+                vi.mocked(invoke).mockImplementation((async (cmd: string) => {
+                    if (cmd === 'l2_get_state') return l2State();
+                    if (cmd === 'send_one_sided_from_tapplet' || cmd === 'l2_send_from_tapplet') {
+                        return new Promise((resolve) => (finish = resolve));
+                    }
+                    return null;
+                }) as typeof invoke);
+
+                const l1 = signer.runOne('sendOneSided', L1_REQ);
+                await expect(signer.runOne('sendOotleStealth', L2_REQ)).rejects.toThrow(/^busy$/);
+                finish(undefined);
+                await expect(l1).resolves.toBe(true);
+
+                const l2 = signer.runOne('sendOotleStealth', L2_REQ);
+                await vi.waitFor(() => expect(invoke).toHaveBeenCalledWith('l2_send_from_tapplet', expect.anything()));
+                await expect(signer.runOne('sendOneSided', L1_REQ)).rejects.toThrow(/^busy$/);
+                finish('tx1');
+                await expect(l2).resolves.toEqual({ transactionId: 'tx1' });
+            });
+
+            it.each([
+                ['sendOotleStealth', L2_REQ, 'l2_send_from_tapplet'],
+                ['sendOneSided', L1_REQ, 'send_one_sided_from_tapplet'],
+            ] as const)('refuses tapplet sends for a while after %s is denied', async (method, req, command) => {
+                vi.useFakeTimers();
+                mockCommands({
+                    l2_get_state: l2State(),
+                    [command]: new Error('PIN entry cancelled'),
+                });
+
+                await signer.runOne(method, req).catch(() => undefined);
+                await expect(signer.runOne('sendOotleStealth', L2_REQ)).rejects.toThrow(/^busy$/);
+                await expect(signer.runOne('sendOneSided', L1_REQ)).rejects.toThrow(/^busy$/);
+
+                await vi.advanceTimersByTimeAsync(10_000);
+                mockCommands({ l2_get_state: l2State(), l2_send_from_tapplet: 'tx9' });
+                await expect(signer.runOne('sendOotleStealth', L2_REQ)).resolves.toEqual({ transactionId: 'tx9' });
+            });
+
+            /** Answers the next L2 send with `result`: a transaction id, or an Error to throw. */
+            function nextL2Send(result: string | Error) {
+                mockCommands({ l2_get_state: l2State(), l2_send_from_tapplet: result });
+                return signer.runOne('sendOotleStealth', L2_REQ).catch((e: Error) => e.message);
+            }
+
+            /** How long sends stay refused, to the second. Probes with a locked wallet, which neither sends nor cools down. */
+            async function cooldownSecs(): Promise<number> {
+                mockCommands({ l2_get_state: l2State({ locked: true, accounts: [] }) });
+                useL2WalletStore.setState({ ...l2StoreInitialState });
+                for (let secs = 0; secs <= 400; secs++) {
+                    const busy = await signer
+                        .runOne('sendOotleStealth', L2_REQ)
+                        .then(() => false)
+                        .catch((e: Error) => e.message === 'busy');
+                    if (!busy) return secs;
+                    await vi.advanceTimersByTimeAsync(1_000);
+                }
+                throw new Error('cooldown never ended');
+            }
+
+            it('doubles the denial cooldown up to five minutes and resets it after a send', async () => {
+                vi.useFakeTimers();
+                const cooldowns: number[] = [];
+                for (let i = 0; i < 7; i++) {
+                    await nextL2Send(new Error('PIN entry cancelled'));
+                    cooldowns.push(await cooldownSecs());
+                }
+                expect(cooldowns).toEqual([10, 20, 40, 80, 160, 300, 300]);
+
+                await expect(nextL2Send('tx1')).resolves.toEqual({ transactionId: 'tx1' });
+                await nextL2Send(new Error('PIN entry cancelled'));
+                expect(await cooldownSecs()).toBe(10);
+            });
+
+            it('starts the denial cooldown over after five quiet minutes', async () => {
+                vi.useFakeTimers();
+                await nextL2Send(new Error('PIN entry cancelled'));
+                expect(await cooldownSecs()).toBe(10);
+                await nextL2Send(new Error('PIN entry cancelled'));
+                expect(await cooldownSecs()).toBe(20);
+
+                // Just short of five quiet minutes the count still stands...
+                await vi.advanceTimersByTimeAsync(299_000);
+                await nextL2Send(new Error('PIN entry cancelled'));
+                expect(await cooldownSecs()).toBe(40);
+
+                // ...after them it starts over.
+                await vi.advanceTimersByTimeAsync(300_000);
+                await nextL2Send(new Error('PIN entry cancelled'));
+                expect(await cooldownSecs()).toBe(10);
+            });
+
+            it.each([
+                ['sendOotleStealth', L2_REQ, 'l2_send_from_tapplet'],
+                ['sendOneSided', L1_REQ, 'send_one_sided_from_tapplet'],
+            ] as const)(
+                'refuses sends for 3 s after %s fails, without growing the denial cooldown',
+                async (method, req, command) => {
+                    vi.useFakeTimers();
+                    await nextL2Send(new Error('PIN entry cancelled'));
+                    expect(await cooldownSecs()).toBe(10);
+
+                    mockCommands({
+                        l2_get_state: l2State(),
+                        [command]: new Error('indexer down'),
+                    });
+                    await signer.runOne(method, req).catch(() => undefined);
+                    expect(await cooldownSecs()).toBe(3);
+
+                    await nextL2Send(new Error('PIN entry cancelled'));
+                    expect(await cooldownSecs()).toBe(20);
+                }
+            );
+        });
+
+        describe('waitOotleTransaction', () => {
+            /** Sends through the signer so it knows the ids, then clears the mock's call log. */
+            async function sendTransactions(...ids: string[]) {
+                for (const id of ids) {
+                    mockCommands({ l2_get_state: l2State(), l2_send_from_tapplet: id });
+                    await signer.runOne('sendOotleStealth', [{ amount: '100', address: ADDRESS, payRef: PAY_REF }]);
+                }
+                vi.mocked(invoke).mockClear();
+                useL2WalletStore.setState({ ...l2StoreInitialState });
+            }
+
+            beforeEach(async () => {
+                await sendTransactions('tx1');
+            });
+
+            it('refuses ids this signer did not send', async () => {
+                mockCommands({ l2_get_state: l2State({}, 'Accepted') });
+
+                await expect(
+                    signer.runOne('waitOotleTransaction', [{ transactionId: 'someone-elses-tx', timeoutSecs: 30 }])
+                ).rejects.toThrow('Invalid arguments for tapplet signer method: waitOotleTransaction');
+                expect(invoke).not.toHaveBeenCalled();
+            });
+
+            it('returns the settled status from the L2 store without polling', async () => {
+                useL2WalletStore.setState(l2State({}, 'Accepted'));
+
+                await expect(
+                    signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 30 }])
+                ).resolves.toEqual({ status: 'Accepted' });
+                expect(invoke).not.toHaveBeenCalled();
+            });
+
+            it.each(['New', 'DryRun', 'DryRunFailed', 'SomethingNew'])(
+                'waits through the non-final status %s for a store update',
+                async (interim) => {
+                    useL2WalletStore.setState(l2State({}, interim));
+
+                    const result = signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 30 }]);
+                    await Promise.resolve();
+                    useL2WalletStore.setState(l2State({}, 'Rejected'));
+
+                    await expect(result).resolves.toEqual({ status: 'Rejected' });
+                    expect(invoke).not.toHaveBeenCalled();
+                }
+            );
+
+            it('reports Pending once the timeout runs out', async () => {
+                vi.useFakeTimers();
+                useL2WalletStore.setState(l2State({}, 'Pending'));
+
+                const result = signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 5 }]);
+                await vi.advanceTimersByTimeAsync(6_000);
+
+                await expect(result).resolves.toEqual({ status: 'Pending' });
+            });
+
+            it('fills an empty store once from the backend', async () => {
+                mockCommands({ l2_get_state: l2State({}, 'Accepted') });
+
+                await expect(
+                    signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 30 }])
+                ).resolves.toEqual({ status: 'Accepted' });
+                expect(invoke).toHaveBeenCalledTimes(1);
+            });
+
+            it('is l2_unavailable when the wallet locks during the wait', async () => {
+                useL2WalletStore.setState(l2State({}, 'Pending'));
+
+                const result = signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 30 }]);
+                await Promise.resolve();
+                useL2WalletStore.setState({ locked: true, accounts: [] });
+
+                await expect(result).resolves.toEqual(L2_UNAVAILABLE);
+            });
+
+            it('refuses a fifth id while four are waited on, then frees the slot', async () => {
+                await sendTransactions('tx2', 'tx3', 'tx4', 'tx5');
+                vi.useFakeTimers();
+                useL2WalletStore.setState(l2State({}, 'Pending'));
+                const wait = (id: string) =>
+                    signer.runOne('waitOotleTransaction', [{ transactionId: id, timeoutSecs: 5 }]);
+
+                const waits = ['tx1', 'tx2', 'tx3', 'tx4'].map(wait);
+                await expect(wait('tx5')).rejects.toThrow(/^busy$/);
+
+                await vi.advanceTimersByTimeAsync(6_000);
+                await Promise.all(waits);
+                const again = wait('tx5');
+                await vi.advanceTimersByTimeAsync(6_000);
+                await expect(again).resolves.toEqual({ status: 'Pending' });
+            });
+
+            it('joins a repeated wait on one id: one slot, one shared result', async () => {
+                await sendTransactions('tx2', 'tx3', 'tx4');
+                vi.useFakeTimers();
+                useL2WalletStore.setState(l2State({}, 'Pending'));
+                const wait = (id: string) =>
+                    signer.runOne('waitOotleTransaction', [{ transactionId: id, timeoutSecs: 5 }]);
+
+                const first = wait('tx1');
+                const second = wait('tx1');
+                const others = ['tx2', 'tx3', 'tx4'].map(wait);
+                useL2WalletStore.setState(l2State({}, 'Accepted'));
+
+                const [a, b] = await Promise.all([first, second]);
+                expect(a).toEqual({ status: 'Accepted' });
+                expect(b).toBe(a);
+                await vi.advanceTimersByTimeAsync(6_000);
+                await Promise.all(others);
+            });
+
+            it('is l2_unavailable when the L2 state cannot be read', async () => {
+                mockCommands({ l2_get_state: new Error('Layer 2 is not available on mainnet') });
+
+                await expect(
+                    signer.runOne('waitOotleTransaction', [{ transactionId: 'tx1', timeoutSecs: 30 }])
+                ).resolves.toEqual(L2_UNAVAILABLE);
+            });
+
+            it.each([
+                [[]],
+                [[{ transactionId: '', timeoutSecs: 30 }]],
+                [[{ transactionId: 'tx1' }]],
+                [[{ transactionId: 'tx1', timeoutSecs: 0 }]],
+                [[{ transactionId: 'tx1', timeoutSecs: 1.5 }]],
+                [[{ transactionId: 'tx1', timeoutSecs: 601 }]],
+                [[{ transactionId: 'tx1', timeoutSecs: '30' }]],
+                [[{ transactionId: 'x'.repeat(301), timeoutSecs: 30 }]],
+            ])('rejects args %j without invoking any command', async (args) => {
+                await expect(signer.runOne('waitOotleTransaction', args)).rejects.toThrow(
+                    'Invalid arguments for tapplet signer method: waitOotleTransaction'
+                );
+                expect(invoke).not.toHaveBeenCalled();
+            });
         });
     });
 

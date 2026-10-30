@@ -73,7 +73,7 @@ use crate::{
         database_manager::MinotariWalletDatabaseManager,
         transaction::{
             CONFIRMATION_WINDOW, SEND_FEE_PER_GRAM, TransactionManager, UTXO_LOCK_DURATION_SECS,
-            parse_destination_address, resolve_payment_id,
+            parse_destination_address,
         },
     },
 };
@@ -100,7 +100,7 @@ use minotari_wallet::{
         fee_estimator::estimated_output_size_for_payment_id,
         manager::record_first_broadcast,
         monitor::MAX_BROADCAST_ATTEMPTS,
-        one_sided_transaction::Recipient,
+        one_sided_transaction::{Recipient, check_memos_and_estimate_output_size},
     },
     utils::{
         crypto::{encrypt_data, parse_claimable_public_key_hex},
@@ -121,7 +121,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tari_common::configuration::Network;
-use tari_common_types::transaction::TxId;
+use tari_common_types::{tari_address::TariAddress, transaction::TxId};
 use tari_transaction_components::fee::Fee;
 use tari_transaction_components::tari_amount::MicroMinotari;
 use tari_transaction_components::transaction_components::{MAX_TRANSACTION_INPUTS, Transaction};
@@ -262,7 +262,9 @@ impl MinotariWalletManager {
         info!(target: LOG_TARGET, "Sending a one-sided transaction.");
         let tari_address = Self::get_owner_address().await?;
         let destination_address = parse_destination_address(&address)?;
-        let payment_id = resolve_payment_id(&destination_address, payment_id)?;
+        // An ID embedded in the address replaces the Message: the wallet library sends the
+        // address's bytes as they are, text or not, as the console wallet does.
+        let payment_id = payment_id.filter(|id| !id.is_empty());
 
         // Build the key manager (and so raise the PIN prompt) before anything locks
         // UTXOs: a cancelled, mistyped or timed-out PIN returns from here having locked
@@ -416,6 +418,7 @@ impl MinotariWalletManager {
             transaction,
             output_hash,
             tx_id,
+            new_burn_proof,
             ..
         } = result;
 
@@ -425,6 +428,17 @@ impl MinotariWalletManager {
         let accepted_by_node =
             record_first_broadcast(Some(&conn), tx_id, submitted).accepted_by_node;
         drop(conn);
+        // Only node-accepted burns are reported, as before the broadcast was inlined.
+        if accepted_by_node {
+            crate::airdrop::report_burn(serde_json::json!({
+                "txId": tx_id.to_string(),
+                "commitment": hex::encode(&new_burn_proof.commitment),
+                "excessSigNonce": hex::encode(&new_burn_proof.kernel_excess_nonce),
+                "excessSig": hex::encode(&new_burn_proof.kernel_excess_sig),
+                "amountMicroMinotari": amount,
+            }))
+            .await;
+        }
 
         BalanceTracker::current()
             .update_from_transactions(Self::get_latest_account_balance().await)
@@ -599,19 +613,27 @@ impl MinotariWalletManager {
     }
 
     /// The largest amount a send to `address` carrying `payment_id` can have, in µT. The
-    /// payment ID is resolved as the send resolves it; an address that doesn't parse yet
-    /// embeds none.
+    /// output size is the one the library's selection charges for that send; an address
+    /// that doesn't parse yet embeds no payment ID.
     pub async fn max_sendable_amount(
         address: &str,
         payment_id: Option<String>,
     ) -> Result<u64, anyhow::Error> {
-        let payment_id = match parse_destination_address(address) {
-            Ok(destination) => resolve_payment_id(&destination, payment_id)?,
-            Err(_) => payment_id,
+        let payment_id = payment_id.filter(|id| !id.is_empty());
+        let output_size = match parse_destination_address(address) {
+            Ok(destination) => check_memos_and_estimate_output_size(
+                &[Recipient {
+                    address: destination,
+                    amount: MicroMinotari::zero(),
+                    payment_id,
+                }],
+                &Self::get_owner_address().await?.parse::<TariAddress>()?,
+            )?,
+            Err(_) => estimated_output_size_for_payment_id(payment_id.map_or(0, |id| id.len()))?,
         };
         let account_id = Self::owner_account_id().await?;
         let conn = Self::get_db_connection().await?;
-        max_sendable(&conn, account_id, payment_id.as_deref())
+        max_sendable(&conn, account_id, output_size)
     }
 
     /// The sends and burns the node keeps refusing (stalled).
@@ -1392,21 +1414,21 @@ fn scan_reached_tip(final_height: u64, tip_height: u64) -> bool {
     tip_height > 0 && final_height.saturating_add(REQUIRED_CONFIRMATIONS) >= tip_height
 }
 
-/// The largest amount a one-sided send with `payment_id` can carry: the spendable
+/// The largest amount a one-sided send whose outputs are `output_size` can carry: the spendable
 /// inputs, less the fee for a recipient and a change output and the smallest change
 /// the library's input selector accepts (what spending the change would cost, at
 /// least 1 µT). Uses the selector's fee terms so the result is exactly what
 /// `InputSelector::fetch_unspent_outputs` will select for; one µT more fails with
 /// `ChangeNotAffordable`.
 ///
-/// This mirrors minotari's `minotari/src/transactions/input_selector.rs` at v0.5.0 (query,
+/// This mirrors minotari's `minotari/src/transactions/input_selector.rs` at v0.5.2 (query,
 /// fee terms, minimum change, dust rule, input cap). Re-check it against that file on every
 /// minotari bump; `the_max_sendable_amount_sends_with_change_and_one_micro_tari_more_does_not`
 /// is the guard.
 fn max_sendable(
     conn: &Connection,
     account_id: i64,
-    payment_id: Option<&str>,
+    output_size: usize,
 ) -> Result<u64, anyhow::Error> {
     let tip_height =
         get_latest_scanned_tip_block_by_account(conn, account_id)?.map_or(0, |block| block.height);
@@ -1414,7 +1436,6 @@ fn max_sendable(
     let outputs = fetch_unspent_outputs(conn, account_id, min_height, tip_height)?;
 
     let fee_per_gram = MicroMinotari::from(SEND_FEE_PER_GRAM);
-    let output_size = estimated_output_size_for_payment_id(payment_id.map_or(0, str::len))?;
     let fee = Fee::new(TransactionWeight::latest());
     let kernel_fee = fee.calculate(fee_per_gram, 1, 0, 0, 0).as_u64();
     let input_fee = fee.calculate(fee_per_gram, 0, 1, 0, 0).as_u64();
@@ -1661,7 +1682,7 @@ mod tests {
         input_selector::UtxoSelectionError,
         manager::{TransactionSender, record_first_broadcast},
         monitor::MAX_BROADCAST_ATTEMPTS,
-        one_sided_transaction::Recipient,
+        one_sided_transaction::{Recipient, check_memos_and_estimate_output_size},
     };
     use std::collections::HashSet;
     use tari_common::configuration::Network;
@@ -2160,8 +2181,23 @@ mod tests {
         for payment_id in [None, Some("invoice-42")] {
             // The last output is worth less than the fee to spend it, so it adds nothing.
             let (pool, account_id, _dir) = funded_wallet(&[3_000_000, 1_250_000, 40]);
-            let max = max_sendable(&pool.get().expect("connection"), account_id, payment_id)
-                .expect("max");
+            let conn = pool.get().expect("connection");
+            let own_address = get_account_by_name(&conn, "test")
+                .expect("account")
+                .expect("account exists")
+                .get_address(Network::LocalNet, &Zeroizing::new(PASSWORD.to_string()))
+                .expect("address");
+            let output_size = check_memos_and_estimate_output_size(
+                &[Recipient {
+                    address: own_address.clone(),
+                    amount: MicroMinotari::zero(),
+                    payment_id: payment_id.map(str::to_string),
+                }],
+                &own_address,
+            )
+            .expect("output size");
+            let max = max_sendable(&conn, account_id, output_size).expect("max");
+            drop(conn);
             assert!(max > 4_000_000 && max < 4_250_000, "max {max}");
 
             let err = prepare_send(&pool, max + 1, payment_id).expect_err("no room for change");

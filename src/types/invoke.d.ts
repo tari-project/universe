@@ -21,6 +21,11 @@ declare module '@tauri-apps/api/core' {
         payload: { amount: string; destination: string; paymentId?: string }
     ): Promise<{ tx_id: string; accepted_by_node: boolean }>;
     function invoke(
+        param: 'send_one_sided_from_tapplet',
+        payload: { amount: string; destination: string; paymentId?: string }
+    ): Promise<{ tx_id: string; accepted_by_node: boolean }>;
+
+    function invoke(
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }
     ): Promise<void>;

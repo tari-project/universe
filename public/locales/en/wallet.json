@@ -64,6 +64,7 @@
     },
     "pin": {
       "approve-send": "Approve transaction",
+      "approve-tapplet-send": "Bridge tapplet is asking to send",
       "approve-send-subtitle": "Enter your PIN to authorise this transaction. If you did not start it, close this dialog.",
       "create": "Create PIN",
       "create-confirm": "Confirm PIN",
@@ -253,7 +254,11 @@
     "completed-text": "Once the burn is mined you can claim it from Burns to claim in your Layer 2 wallet.",
     "error-message": "Error burning funds: ",
     "pin-required": "Set a PIN to burn",
-    "claim-key-default": "The claim key defaults to this wallet's own L2 account."
+    "claim-key-default": "The claim key defaults to this wallet's own L2 account.",
+    "pre-burn-notice": "Pre-burn: XTM burned before the Ootle goes live can only be claimed on L2 after launch. Be one of the brave and burn now!",
+    "share-button": "Share on X",
+    "share-text-pre": "I just pre-burned {{amount}} XTM to Tari L2 ahead of the Ootle launch. {{url}}",
+    "share-text": "I just burned {{amount}} XTM to Tari L2. {{url}}"
   },
   "l2": {
     "title": "Layer 2",

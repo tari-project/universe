@@ -29,7 +29,7 @@ const enabledState: L2WalletState = {
             component_address: 'component_test',
             public_key: 'ab'.repeat(32),
             is_default: true,
-            balance: { revealed: 0, confidential: 0 },
+            balance: { revealed: 0, confidential: 0, total: '0' },
             history: [],
             transactions: [],
         },

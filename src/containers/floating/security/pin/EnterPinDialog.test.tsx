@@ -52,6 +52,78 @@ describe('EnterPinDialog', () => {
         expect(screen.getByText('abandon.approve')).toBeInTheDocument();
     });
 
+    it.each([
+        ['tapplet', true],
+        ['app', false],
+    ] as const)(
+        'shows the pay ref of an L2 send from %s, headed as a tapplet send only for one',
+        (origin, labelled) => {
+            useSecurityStore.setState({
+                modal: 'enter_pin',
+                pinPromptId: 1,
+                pinContext: {
+                    kind: 'l2_send',
+                    amount_micro_minotari: 1_000_000,
+                    destination: 'otl_esm_1bridge',
+                    account: 'component_abc',
+                    pay_ref: '0f8fad5b-d9cb-469f-a165-70867728950e',
+                    origin,
+                    fee_micro_minotari: 10,
+                },
+            });
+            render(<EnterPinDialog />);
+            expect(screen.getByText('0f8fad5b-d9cb-469f-a165-70867728950e')).toBeInTheDocument();
+            expect(
+                screen.getByText(labelled ? 'security.pin.approve-tapplet-send' : 'security.pin.approve-send')
+            ).toBeInTheDocument();
+            expect(pinStrings['approve-tapplet-send']).toBe('Bridge tapplet is asking to send');
+        }
+    );
+
+    it('heads an L1 send from the tapplet as a tapplet send', () => {
+        useSecurityStore.setState({
+            modal: 'enter_pin',
+            pinPromptId: 1,
+            pinContext: {
+                kind: 'send',
+                amount_micro_minotari: 1_000_000,
+                destination: 'tari-address',
+                payment_id: null,
+                origin: 'tapplet',
+            },
+        });
+        render(<EnterPinDialog />);
+        expect(screen.getByText('security.pin.approve-tapplet-send')).toBeInTheDocument();
+    });
+
+    it.each([
+        ['l2_send', 10_049_990_000, '10,049.990000'],
+        ['l2_send', 1, '0.000001'],
+        ['send', 10_049_990_000, '10.04K'],
+    ] as const)('shows a %s of %d micro as %s', (kind, amount, shown) => {
+        const pinContext =
+            kind === 'l2_send'
+                ? {
+                      kind,
+                      amount_micro_minotari: amount,
+                      destination: 'otl_esm_1bridge',
+                      account: 'component_abc',
+                      pay_ref: null,
+                      origin: 'app' as const,
+                      fee_micro_minotari: null,
+                  }
+                : {
+                      kind,
+                      amount_micro_minotari: amount,
+                      destination: 'tari-address',
+                      payment_id: null,
+                      origin: 'app' as const,
+                  };
+        useSecurityStore.setState({ modal: 'enter_pin', pinPromptId: 1, pinContext });
+        render(<EnterPinDialog />);
+        expect(screen.getByText(shown)).toBeInTheDocument();
+    });
+
     it('answers with the id of the prompt it shows', async () => {
         useSecurityStore.setState({ modal: 'enter_pin', pinContext: null, pinPromptId: 42 });
         const { unmount } = render(<EnterPinDialog />);

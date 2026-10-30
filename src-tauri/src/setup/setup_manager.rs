@@ -411,7 +411,7 @@ impl SetupManager {
         // In other cases we want to display standard wallet UI
         let mut wallet_initialized = false;
         if built_in_exchange_id.eq(DEFAULT_EXCHANGE_ID) {
-            if is_external_address_selected && is_on_exchange_specific_variant {
+            if is_external_address_selected {
                 let _unused = ConfigUI::set_wallet_ui_mode(WalletUIMode::Seedless).await;
                 if let Err(e) = InternalWallet::initialize_seedless(None).await {
                     EventsEmitter::emit_critical_problem(CriticalProblemPayload {

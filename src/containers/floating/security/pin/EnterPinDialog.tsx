@@ -31,6 +31,8 @@ export default function EnterPinDialog() {
     const sendContext = pinContext?.kind === 'send' ? pinContext : null;
     const burnContext = pinContext?.kind === 'burn' ? pinContext : null;
     const l2SendContext = pinContext?.kind === 'l2_send' ? pinContext : null;
+    const fromTapplet = (sendContext ?? l2SendContext)?.origin === 'tapplet';
+
     const l2ClaimContext = pinContext?.kind === 'l2_claim' ? pinContext : null;
     const abandonContext = pinContext?.kind === 'abandon' ? pinContext : null;
     const reasonKey = pinContext ? REASON_KEYS[pinContext.kind] : undefined;
@@ -72,9 +74,11 @@ export default function EnterPinDialog() {
                                   ? t('abandon.approve')
                                   : l2ClaimContext
                                     ? t('l2.claim.approve')
-                                    : sendContext || l2SendContext
-                                      ? t('security.pin.approve-send')
-                                      : t('security.pin.enter')}
+                                    : fromTapplet
+                                      ? t('security.pin.approve-tapplet-send')
+                                      : sendContext || l2SendContext
+                                        ? t('security.pin.approve-send')
+                                        : t('security.pin.enter')}
                         </Heading>{' '}
                         <CloseButton onClick={handleClose} />
                     </Header>
@@ -105,6 +109,7 @@ export default function EnterPinDialog() {
                             kind="l2_send"
                             amountMicroMinotari={l2SendContext.amount_micro_minotari}
                             destination={l2SendContext.destination}
+                            paymentId={l2SendContext.pay_ref}
                             feeMicroMinotari={l2SendContext.fee_micro_minotari}
                             subtitle={t('security.pin.approve-send-subtitle')}
                         />

@@ -79,22 +79,6 @@ pub fn parse_destination_address(address: &str) -> Result<TariAddress, anyhow::E
     Ok(destination_address)
 }
 
-/// The payment ID the recipient output carries: an ID encoded in the destination address
-/// wins over the send form's Message, as the console wallet always did. Exchanges put the
-/// deposit reference in the address, and a hand-typed variation of it must not replace it.
-pub fn resolve_payment_id(
-    destination: &TariAddress,
-    supplied: Option<String>,
-) -> Result<Option<String>, anyhow::Error> {
-    let embedded = destination.get_memo_field_payment_id_bytes();
-    if embedded.is_empty() {
-        return Ok(supplied.filter(|id| !id.is_empty()));
-    }
-    String::from_utf8(embedded)
-        .map(Some)
-        .map_err(|_| anyhow!("Destination address contains a non-text payment ID"))
-}
-
 pub struct TransactionManager {
     transaction_sender: TransactionSender,
 }
@@ -193,8 +177,10 @@ fn sign_error(error: TransactionBuilderError) -> anyhow::Error {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_destination_address, resolve_payment_id, sign_error};
-    use minotari_wallet::transactions::input_selector::UtxoSelectionError;
+    use super::{parse_destination_address, sign_error};
+    use minotari_wallet::transactions::{
+        input_selector::UtxoSelectionError, one_sided_transaction::Recipient,
+    };
     use std::str::FromStr;
     use tari_common_types::tari_address::TariAddress;
     use tari_transaction_components::{TransactionBuilderError, tari_amount::MicroMinotari};
@@ -204,44 +190,33 @@ mod tests {
     const ESME_ONE_SIDED_ADDRESS: &str = "f25eNHz2YnBVKHaqNuacGyDFB321RwwCnTr4vb2SjQCgDZVXyNNthc7zftQKRDu6evLjvSUD8W5akpPMdhS4HQ9kF3g";
     const ESME_ONE_SIDED_EMOJI_ADDRESS: &str = "🍗📟😇🦀🚽💈🎠🍚🦂🌕🎩💨👂🏰📜👞🎵🐬🐚💄🚨🔋🐀🐯💻👗🐊👠🦀🐝🚦🍌🎋🎼🍗🎮🎉👗🐮🎨👾🔧🤖💋🐾💨🎃🍀🦂🐀🐬🔱🥝👕🎳⏰🎃🐉💍🙈🍉🔱🎣🐢👒🍊💦";
     const NEXTNET_ONE_SIDED_ADDRESS: &str = "32FZ9MmtkbcxNwF1Qia1RykS2i3ycaJC5er32xaFi1fpkNKjKvVo6VFPKjoigSME76EmsaDPZLXu2e3ivp5MWSU54j1";
+    const MAINNET_MEXC_DEPOSIT_ADDRESS: &str = "165DUuzQoKG9BaBqprN3ZmsMRfvGHMwNwCpehJUqGoGLsSDtB535XA3PPzfRZhu2uYM9xfT8JsKoXEquWMr6XVwKK46oQHdBBjJg3sveDnoiE4cr2HBSyGx8qdxRoUEsbKsZD9f";
     const LOCALNET_DEPOSIT_ADDRESS: &str = "H6BhBUPxTJWtZVxhbExYLz623LRHXLKSaaVYZWXK2Yvn5jP4nufiUQzKo6fgHp2t3VuY6PiGGPubmynEDzxyXDXjAXPedBhZFgJT4dAVXEW1re";
 
+    /// MEXC's deposit addresses embed a 32-byte binary reference. The wallet library sends
+    /// those exact bytes, in place of any Message, so a send to one must not be refused.
     #[test]
-    fn embedded_address_payment_id_wins_over_the_message() {
-        let TariAddress::Dual(mut address) =
-            parse_destination_address(ESME_ONE_SIDED_ADDRESS).unwrap()
-        else {
-            panic!("fixture must be a dual address");
-        };
-        let plain = TariAddress::Dual(address.clone());
-        assert_eq!(resolve_payment_id(&plain, None).unwrap(), None);
-        assert_eq!(
-            resolve_payment_id(&plain, Some(String::new())).unwrap(),
-            None
-        );
-        assert_eq!(
-            resolve_payment_id(&plain, Some("note".into()))
-                .unwrap()
-                .as_deref(),
-            Some("note")
-        );
+    fn a_binary_address_payment_id_is_sent_as_its_bytes() {
+        let mexc = TariAddress::from_str(MAINNET_MEXC_DEPOSIT_ADDRESS).unwrap();
+        let embedded = mexc.get_memo_field_payment_id_bytes();
+        assert_eq!(embedded.len(), 32);
+        assert!(String::from_utf8(embedded.clone()).is_err());
 
-        address
-            .add_memo_field_payment_id(b"ID5931480726".to_vec())
-            .unwrap();
-        let destination = TariAddress::Dual(address);
-        for supplied in [None, Some(String::new()), Some("wrong".into())] {
-            assert_eq!(
-                resolve_payment_id(&destination, supplied)
-                    .unwrap()
-                    .as_deref(),
-                Some("ID5931480726")
-            );
-        }
-        let localnet = TariAddress::from_str(LOCALNET_DEPOSIT_ADDRESS).unwrap();
+        let recipient = Recipient {
+            address: mexc,
+            amount: 1_000.into(),
+            payment_id: Some("typed".to_string()),
+        };
+        assert_eq!(recipient.payment_id_bytes(), Some(embedded));
+
+        let localnet = Recipient {
+            address: TariAddress::from_str(LOCALNET_DEPOSIT_ADDRESS).unwrap(),
+            amount: 1_000.into(),
+            payment_id: None,
+        };
         assert_eq!(
-            resolve_payment_id(&localnet, None).unwrap().as_deref(),
-            Some("PW-DEPOSIT-123")
+            localnet.payment_id_bytes(),
+            Some(b"PW-DEPOSIT-123".to_vec())
         );
     }
 

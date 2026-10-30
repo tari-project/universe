@@ -2,6 +2,7 @@ import { ChangeEvent, useCallback, useState } from 'react';
 import { FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-shell';
 
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
@@ -30,6 +31,11 @@ import CompletedIcon from '@app/components/transactions/send/SendReview/icons/Co
 import { useValidateTariAddress } from '@app/hooks/wallet/useValidate.ts';
 import { setError as setStoreError } from '@app/store';
 import { queryClient } from '@app/App/queryClient.ts';
+import { isMainNet } from '@app/utils/network.ts';
+import { FormatPreset, formatNumber } from '@app/utils/formatters.ts';
+
+// Pre-burn window ends 11 Nov 2026 00:00 UTC.
+const isPreBurn = () => Date.now() < Date.UTC(2026, 10, 11);
 
 interface BurnModalProps {
     section: string;
@@ -86,6 +92,11 @@ function BurnForm() {
 
     return (
         <>
+            {isMainNet() && isPreBurn() && (
+                <Typography variant="p" style={{ fontSize: 13, fontWeight: 600 }} data-testid="burn-pre-burn-notice">
+                    {t('burn.pre-burn-notice')}
+                </Typography>
+            )}
             <Typography variant="p" style={{ opacity: 0.7, fontSize: 12 }}>
                 {t('burn.warning')}
             </Typography>
@@ -179,6 +190,16 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
     const values = methods.getValues();
     const amountMicro = Math.round(Number(values.amount || 0) * 1_000_000);
 
+    function handleShare() {
+        const text = t(isPreBurn() ? 'burn.share-text-pre' : 'burn.share-text', {
+            amount: formatNumber(amountMicro, FormatPreset.XTM_COMPACT),
+            url: 'https://tari.com/burns',
+        });
+        open(`https://x.com/intent/post?text=${encodeURIComponent(text)}`).catch((e) =>
+            console.error('Could not open the share link', e)
+        );
+    }
+
     const statusEntries: StatusListEntry[] = [
         {
             label: t('send.status'),
@@ -249,16 +270,28 @@ export default function BurnModal({ section, setSection, claimPublicKey }: BurnM
                                         {t('send.processing-button')}
                                     </Button>
                                 ) : (
-                                    <Button
-                                        type="button"
-                                        fluid
-                                        size="xlarge"
-                                        variant="purple"
-                                        onClick={handleClose}
-                                        data-testid="burn-done-button"
-                                    >
-                                        {t('send.done-button')}
-                                    </Button>
+                                    <>
+                                        <Button
+                                            type="button"
+                                            fluid
+                                            size="xlarge"
+                                            variant="green"
+                                            onClick={handleShare}
+                                            data-testid="burn-share-button"
+                                        >
+                                            {t('burn.share-button')}
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            fluid
+                                            size="xlarge"
+                                            variant="purple"
+                                            onClick={handleClose}
+                                            data-testid="burn-done-button"
+                                        >
+                                            {t('send.done-button')}
+                                        </Button>
+                                    </>
                                 )}
                             </div>
                         )}
